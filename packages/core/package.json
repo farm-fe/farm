@@ -1,0 +1,32 @@
+{
+  "name": "@farmfe/core",
+  "version": "0.0.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "core",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin"
+      ]
+    }
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@napi-rs/cli": "^2.10.0",
+    "ava": "^4.3.0",
+    "typescript": "^4.7.4"
+  },
+  "engines": {
+    "node": ">= 10"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build:rs": "napi build --platform --release --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ --js binding/index.js --dts binding/index.d.ts",
+    "build:rs:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "ava",
+    "version": "napi version"
+  }
+}

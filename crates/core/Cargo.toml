@@ -1,0 +1,4 @@
+[package]
+name = "farmfe_core"
+version = "0.0.1"
+edition = "2021"
