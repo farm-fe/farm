@@ -1,0 +1,16 @@
+{
+  "name": "@farmfe/cli",
+  "version": "0.0.0",
+  "description": "CLI of Farm",
+  "author": {
+    "name": "bright",
+    "email": "1611331@mail.nankai.edu.cn"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.1",
+    "typescript": "^4.7.4"
+  }
+}

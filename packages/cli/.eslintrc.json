@@ -1,0 +1,10 @@
+{
+  "root": true,
+  "extends": "../../.eslintrc.base.json",
+  "parserOptions": {
+    "project": ["./packages/cli/tsconfig.json"]
+  },
+  "rules": {
+    "semi": ["error", "always"]
+  }
+}

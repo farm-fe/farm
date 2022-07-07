@@ -51,6 +51,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_assets"
+version = "0.0.1"
+
+[[package]]
+name = "farmfe_plugin_css"
+version = "0.0.1"
+
+[[package]]
+name = "farmfe_plugin_html"
+version = "0.0.1"
+
+[[package]]
+name = "farmfe_plugin_resolve"
+version = "0.0.1"
+
+[[package]]
+name = "farmfe_plugin_sass"
+version = "0.0.1"
+
+[[package]]
 name = "farmfe_plugin_script"
 version = "0.0.1"
 
