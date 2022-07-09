@@ -1,4 +1,4 @@
-name: Publish packages and crates
+name: Lint
 on: [pull_request]
 
 jobs:
@@ -22,5 +22,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
+      - name: Install Dependencies
+        run: pnpm i
       - name: Run eslint
         run: npx eslint packages

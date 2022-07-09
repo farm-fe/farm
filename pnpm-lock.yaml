@@ -10,6 +10,7 @@ importers:
       '@typescript-eslint/parser': ^5.30.5
       cspell: ^6.2.2
       eslint: ^8.19.0
+      eslint-config-prettier: ^8.5.0
       husky: ^8.0.1
       lint-staged: ^13.0.3
       prettier: ^2.7.1
@@ -21,6 +22,7 @@ importers:
       '@typescript-eslint/parser': 5.30.5_4x5o4skxv6sl53vpwefgt23khm
       cspell: 6.2.2
       eslint: 8.19.0
+      eslint-config-prettier: 8.5.0_eslint@8.19.0
       husky: 8.0.1
       lint-staged: 13.0.3
       prettier: 2.7.1
@@ -1511,6 +1513,15 @@ packages:
   /escape-string-regexp/5.0.0:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
+    dev: true
+
+  /eslint-config-prettier/8.5.0_eslint@8.19.0:
+    resolution: {integrity: sha512-obmWKLUNCnhtQRKc+tmnYuQl0pFU1ibYJQ5BGhTVB08bHe9wC8qUeG7c08dj9XX+AuPj1YSGSQIHl1pnDHZR0Q==}
+    hasBin: true
+    peerDependencies:
+      eslint: '>=7.0.0'
+    dependencies:
+      eslint: 8.19.0
     dev: true
 
   /eslint-scope/5.1.1:

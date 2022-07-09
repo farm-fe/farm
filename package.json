@@ -9,6 +9,7 @@
     "@typescript-eslint/parser": "^5.30.5",
     "cspell": "^6.2.2",
     "eslint": "^8.19.0",
+    "eslint-config-prettier": "^8.5.0",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
@@ -20,7 +21,7 @@
   "lint-staged": {
     "*.ts": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write --ignore-unknown"
     ]
   }
 }
