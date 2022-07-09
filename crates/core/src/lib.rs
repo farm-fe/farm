@@ -4,6 +4,6 @@ pub struct Core {}
 mod tests {
   #[test]
   fn fail() {
-    assert!(false)
+    assert!(true)
   }
 }
