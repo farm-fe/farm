@@ -12,10 +12,6 @@ jobs:
         with:
           node-version: "16"
 
-      - name: Install Spell Checker
-        shell: bash
-        run: npm i -g cspell
-
       - name: Run Spell Check
         shell: bash
-        run: cspell "**"
+        run: npx cspell "**" --gitignore

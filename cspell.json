@@ -8,6 +8,19 @@
   "words": [
     "farmfe",
     "pnpm",
-    "commitlint"
+    "commitlint",
+    "napi",
+    "NAPI",
+    "gnueabihf",
+    "eabi",
+    "msvc",
+    "aarch"
+  ],
+  "ignorePaths": [
+    "pnpm-lock.yaml",
+    "**/package.json",
+    ".github/**",
+    "**/*.toml",
+    "**/*.node"
   ]
 }

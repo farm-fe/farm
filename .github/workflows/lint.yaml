@@ -1,14 +1,15 @@
 name: Publish packages and crates
-on:
-  push:
-    branches:
-      - "release"
+on: [pull_request]
 
 jobs:
   rust-lint:
     name: Rust Code Lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+      - uses: hermitcore/toolchain@downstream
+
       - name: Run cargo fmt
         run: cargo fmt
       - name: Run cargo clippy
@@ -17,5 +18,9 @@ jobs:
     name: TS Code Lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
       - name: Run eslint
         run: npx eslint packages

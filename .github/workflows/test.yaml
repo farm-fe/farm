@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - uses: hermitcore/toolchain@downstream
 
       - name: Run cargo check
         run: cargo check --color always --all --all-targets
@@ -29,5 +29,9 @@ jobs:
           - crate: farmfe_core
           - os: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+      - uses: hermitcore/toolchain@downstream
+
       - name: Run cargo test
         run: cargo test
