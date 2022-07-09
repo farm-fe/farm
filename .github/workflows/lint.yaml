@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
-      - uses: hermitcore/toolchain@downstream
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
 
       - name: Run cargo fmt
         run: cargo fmt
