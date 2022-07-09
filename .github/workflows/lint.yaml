@@ -1,0 +1,29 @@
+name: Lint
+on: [pull_request]
+
+jobs:
+  rust-lint:
+    name: Rust Code Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Run cargo fmt
+        run: cargo fmt
+      - name: Run cargo clippy
+        run: cargo clippy
+  eslint:
+    name: TS Code Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install Dependencies
+        run: npm install -g pnpm && pnpm i
+      - name: Run eslint
+        run: npx eslint packages
