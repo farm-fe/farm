@@ -1,5 +1,8 @@
 name: Check and Test
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+      - "crates/**"
 
 jobs:
   check:
@@ -45,7 +48,7 @@ jobs:
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: "0.20.1"
-          args: "-- --test-threads 2 --workspace --exclude farmfe_node"
+          args: "--test-threads 2 --workspace --exclude farmfe_node"
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1.0.2
