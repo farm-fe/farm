@@ -23,6 +23,6 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: pnpm i
+        run: npm install -g pnpm && pnpm i
       - name: Run eslint
         run: npx eslint packages
