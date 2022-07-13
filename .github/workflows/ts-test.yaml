@@ -1,0 +1,32 @@
+name: Testing Typescript Code
+on: [pull_request]
+
+jobs:
+  ts-test:
+    name: Typescript Test
+    runs-on: ${{ matrix.settings.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: macos-10.15
+            abi: darwin-x64
+          - os: macos-latest
+            abi: darwin-arm64
+          - os: windows-latest
+            abi: win32-x64-msvc
+    steps:
+      - name: Download Artifacts - ${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ github.ref_name }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
+      - name: Test - ${{ matrix.settings.abi }}
+        run: npm run test -- --coverage
+      - name: Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/coverage-final.json

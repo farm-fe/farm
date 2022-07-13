@@ -1,0 +1,27 @@
+name: Building Rust Binding And Upload Artifacts
+on: [pull_request]
+
+jobs:
+  build:
+    name: Build and Upload Artifacts
+    runs-on: ${{ matrix.setting.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: macos-10.15
+            abi: darwin-x64
+          - os: macos-latest
+            abi: darwin-arm64
+          - os: windows-latest
+            abi: win32-x64-msvc
+    steps:
+      - name: Build - ${{ matrix.settings.abi }}
+        run: npm run build:rs
+      - name: Upload - ${{ matrix.settings.abi }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.ref_name }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node

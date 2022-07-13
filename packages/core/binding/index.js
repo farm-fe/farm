@@ -25,10 +25,10 @@ switch (platform) {
   case 'android':
     switch (arch) {
       case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'core.android-arm64.node'))
+        localFileExisted = existsSync(join(__dirname, 'farm.android-arm64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.android-arm64.node')
+            nativeBinding = require('./farm.android-arm64.node')
           } else {
             nativeBinding = require('@farmfe/core-android-arm64')
           }
@@ -37,10 +37,10 @@ switch (platform) {
         }
         break
       case 'arm':
-        localFileExisted = existsSync(join(__dirname, 'core.android-arm-eabi.node'))
+        localFileExisted = existsSync(join(__dirname, 'farm.android-arm-eabi.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.android-arm-eabi.node')
+            nativeBinding = require('./farm.android-arm-eabi.node')
           } else {
             nativeBinding = require('@farmfe/core-android-arm-eabi')
           }
@@ -56,11 +56,11 @@ switch (platform) {
     switch (arch) {
       case 'x64':
         localFileExisted = existsSync(
-          join(__dirname, 'core.win32-x64-msvc.node')
+          join(__dirname, 'farm.win32-x64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.win32-x64-msvc.node')
+            nativeBinding = require('./farm.win32-x64-msvc.node')
           } else {
             nativeBinding = require('@farmfe/core-win32-x64-msvc')
           }
@@ -70,11 +70,11 @@ switch (platform) {
         break
       case 'ia32':
         localFileExisted = existsSync(
-          join(__dirname, 'core.win32-ia32-msvc.node')
+          join(__dirname, 'farm.win32-ia32-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.win32-ia32-msvc.node')
+            nativeBinding = require('./farm.win32-ia32-msvc.node')
           } else {
             nativeBinding = require('@farmfe/core-win32-ia32-msvc')
           }
@@ -84,11 +84,11 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'core.win32-arm64-msvc.node')
+          join(__dirname, 'farm.win32-arm64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.win32-arm64-msvc.node')
+            nativeBinding = require('./farm.win32-arm64-msvc.node')
           } else {
             nativeBinding = require('@farmfe/core-win32-arm64-msvc')
           }
@@ -103,10 +103,10 @@ switch (platform) {
   case 'darwin':
     switch (arch) {
       case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'core.darwin-x64.node'))
+        localFileExisted = existsSync(join(__dirname, 'farm.darwin-x64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.darwin-x64.node')
+            nativeBinding = require('./farm.darwin-x64.node')
           } else {
             nativeBinding = require('@farmfe/core-darwin-x64')
           }
@@ -116,11 +116,11 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'core.darwin-arm64.node')
+          join(__dirname, 'farm.darwin-arm64.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.darwin-arm64.node')
+            nativeBinding = require('./farm.darwin-arm64.node')
           } else {
             nativeBinding = require('@farmfe/core-darwin-arm64')
           }
@@ -136,10 +136,10 @@ switch (platform) {
     if (arch !== 'x64') {
       throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
     }
-    localFileExisted = existsSync(join(__dirname, 'core.freebsd-x64.node'))
+    localFileExisted = existsSync(join(__dirname, 'farm.freebsd-x64.node'))
     try {
       if (localFileExisted) {
-        nativeBinding = require('./core.freebsd-x64.node')
+        nativeBinding = require('./farm.freebsd-x64.node')
       } else {
         nativeBinding = require('@farmfe/core-freebsd-x64')
       }
@@ -152,11 +152,11 @@ switch (platform) {
       case 'x64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'core.linux-x64-musl.node')
+            join(__dirname, 'farm.linux-x64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./core.linux-x64-musl.node')
+              nativeBinding = require('./farm.linux-x64-musl.node')
             } else {
               nativeBinding = require('@farmfe/core-linux-x64-musl')
             }
@@ -165,11 +165,11 @@ switch (platform) {
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'core.linux-x64-gnu.node')
+            join(__dirname, 'farm.linux-x64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./core.linux-x64-gnu.node')
+              nativeBinding = require('./farm.linux-x64-gnu.node')
             } else {
               nativeBinding = require('@farmfe/core-linux-x64-gnu')
             }
@@ -181,11 +181,11 @@ switch (platform) {
       case 'arm64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'core.linux-arm64-musl.node')
+            join(__dirname, 'farm.linux-arm64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./core.linux-arm64-musl.node')
+              nativeBinding = require('./farm.linux-arm64-musl.node')
             } else {
               nativeBinding = require('@farmfe/core-linux-arm64-musl')
             }
@@ -194,11 +194,11 @@ switch (platform) {
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'core.linux-arm64-gnu.node')
+            join(__dirname, 'farm.linux-arm64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./core.linux-arm64-gnu.node')
+              nativeBinding = require('./farm.linux-arm64-gnu.node')
             } else {
               nativeBinding = require('@farmfe/core-linux-arm64-gnu')
             }
@@ -209,11 +209,11 @@ switch (platform) {
         break
       case 'arm':
         localFileExisted = existsSync(
-          join(__dirname, 'core.linux-arm-gnueabihf.node')
+          join(__dirname, 'farm.linux-arm-gnueabihf.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./core.linux-arm-gnueabihf.node')
+            nativeBinding = require('./farm.linux-arm-gnueabihf.node')
           } else {
             nativeBinding = require('@farmfe/core-linux-arm-gnueabihf')
           }
@@ -236,6 +236,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { JsCompiler } = nativeBinding
+const { JsResolveKind, Compiler } = nativeBinding
 
-module.exports.JsCompiler = JsCompiler
+module.exports.JsResolveKind = JsResolveKind
+module.exports.Compiler = Compiler

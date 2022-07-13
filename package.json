@@ -7,21 +7,28 @@
     "@commitlint/config-conventional": "^17.0.3",
     "@typescript-eslint/eslint-plugin": "^5.30.5",
     "@typescript-eslint/parser": "^5.30.5",
+    "c8": "^7.11.3",
     "cspell": "^6.2.2",
     "eslint": "^8.19.0",
     "eslint-config-prettier": "^8.5.0",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "vitest": "^0.18.0"
   },
   "scripts": {
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "vitest run"
   },
   "lint-staged": {
-    "*.ts": [
+    "packages/**/*.ts": [
       "eslint --fix",
       "prettier --write --ignore-unknown"
     ]
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true
   }
 }
