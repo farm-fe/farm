@@ -1,5 +1,8 @@
 name: Testing Typescript Code
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+      - "packages/**"
 
 jobs:
   ts-test:
@@ -25,8 +28,8 @@ jobs:
           path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test -- --coverage
-      - name: Coverage
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/coverage-final.json
+      # - name: Coverage
+      #   uses: codecov/codecov-action@v3
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: coverage/coverage-final.json
