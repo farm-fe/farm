@@ -60,10 +60,10 @@ macro_rules! define_struct_with_from_and_into {
       }
     }
 
-    impl Into<$ori_ty> for $name {
-      fn into(self) -> $ori_ty {
-        $ori_ty {
-          $($field: self.$field.into()),+
+    impl From<$name> for $ori_ty{
+      fn from(ori: $name) -> Self {
+        Self {
+          $($field: ori.$field.into()),+
         }
       }
     }
@@ -85,10 +85,10 @@ macro_rules! define_enum_with_from_and_into {
         }
       }
 
-      impl Into<$ori_ty> for $name {
-        fn into(self) -> $ori_ty {
-          match self {
-            $(Self::$field => $ori_ty::$field),+
+      impl From<$name> for $ori_ty {
+        fn from(ori: $name) -> Self {
+          match ori {
+            $($name::$field => Self::$field),+
           }
         }
       }

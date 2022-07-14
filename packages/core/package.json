@@ -26,8 +26,9 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding/index.js",
-    "prepublishOnly": "napi prepublish -t npm",
+    "prepublishOnly": "napi prepublish -t npm && npm run build",
     "version": "napi version",
-    "start": "tsc -w -p tsconfig.build.json"
+    "start": "tsc -w -p tsconfig.build.json",
+    "type-check": "tsc -p tsconfig.build.json --noEmit"
   }
 }

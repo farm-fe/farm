@@ -1,4 +1,4 @@
-name: Check and Test
+name: Rust Check and Test
 on:
   pull_request:
     paths:

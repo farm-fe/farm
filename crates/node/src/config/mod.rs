@@ -11,9 +11,9 @@ pub struct JsUserConfig {
   pub wasm_plugins: Vec<String>,
 }
 
-impl Into<Config> for JsUserConfig {
-  fn into(self) -> Config {
-    Config { input: self.input }
+impl From<JsUserConfig> for Config {
+  fn from(c: JsUserConfig) -> Self {
+    Self { input: c.input }
   }
 }
 
