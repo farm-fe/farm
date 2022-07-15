@@ -14,7 +14,8 @@
     "gnueabihf",
     "eabi",
     "msvc",
-    "aarch"
+    "aarch",
+    "bindgen"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

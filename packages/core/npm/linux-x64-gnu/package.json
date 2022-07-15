@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "core.linux-x64-gnu.node",
+  "main": "farm.linux-x64-gnu.node",
   "files": [
-    "core.linux-x64-gnu.node"
+    "farm.linux-x64-gnu.node"
   ],
   "license": "MIT",
   "engines": {

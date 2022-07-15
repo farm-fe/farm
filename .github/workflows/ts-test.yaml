@@ -1,0 +1,60 @@
+name: Typescript Check And Test
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/**"
+
+jobs:
+  call-rust-build:
+    uses: ./.github/workflows/rust-build.yaml
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install Dependencies
+        run: npm install -g pnpm && pnpm i --frozen-lockfile
+      - name: Type Check With Tsc
+        run: pnpm run --filter "@farmfe*" type-check
+  ts-test:
+    name: Typescript Test
+    runs-on: ${{ matrix.settings.os }}
+    needs: call-rust-build
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: macos-10.15
+            abi: darwin-x64
+          - os: windows-latest
+            abi: win32-x64-msvc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install Dependencies
+        run: npm install -g pnpm && pnpm i --frozen-lockfile
+
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding
+      - name: "Echo download path"
+        run: echo ${{steps.download.outputs.download-path}}
+      - name: Test - ${{ matrix.settings.abi }}
+        run: npm run test -- --coverage
+      # - name: Coverage
+      #   uses: codecov/codecov-action@v3
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: coverage/coverage-final.json

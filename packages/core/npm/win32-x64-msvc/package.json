@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "core.win32-x64-msvc.node",
+  "main": "farm.win32-x64-msvc.node",
   "files": [
-    "core.win32-x64-msvc.node"
+    "farm.win32-x64-msvc.node"
   ],
   "license": "MIT",
   "engines": {

@@ -1,7 +1,4 @@
 {
-  "compilerOptions": {
-    "noUnusedParameters": true,
-    "noUnusedLocals": true
-  },
+  "extends": "../../tsconfig.base.json",
   "exclude": ["node_modules"]
 }

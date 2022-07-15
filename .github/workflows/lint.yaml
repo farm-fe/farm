@@ -24,6 +24,6 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: npm install -g pnpm && pnpm i
+        run: npm install -g pnpm && pnpm i --frozen-lockfile
       - name: Run eslint
         run: npx eslint packages

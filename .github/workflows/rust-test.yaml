@@ -1,11 +1,11 @@
-name: Check and Test
+name: Rust Check and Test
 on:
   pull_request:
     paths:
       - "crates/**"
 
 jobs:
-  check:
+  cargo-check:
     name: Check
     runs-on: ubuntu-latest
     steps:
@@ -16,7 +16,7 @@ jobs:
 
       - name: Run cargo check
         run: cargo check --color always --all --all-targets
-  test:
+  cargo-test:
     name: Test
     runs-on: ${{ matrix.os }}
     strategy:

@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "core.darwin-x64.node",
+  "main": "farm.darwin-x64.node",
   "files": [
-    "core.darwin-x64.node"
+    "farm.darwin-x64.node"
   ],
   "license": "MIT",
   "engines": {
