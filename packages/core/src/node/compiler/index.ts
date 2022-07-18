@@ -1,18 +1,21 @@
 import {
   Compiler as BindingCompiler,
   JsUpdateResult,
-} from '../../binding/index';
-import { normalizeUserConfig, UserConfig } from './config';
+} from '../../../binding/index';
+import { normalizeUserCompilationConfig, UserConfig } from '../config';
 
 export class Compiler {
   bindingCompiler: BindingCompiler;
 
   constructor(config: UserConfig) {
-    this.bindingCompiler = new BindingCompiler(normalizeUserConfig(config));
+    this.bindingCompiler = new BindingCompiler(
+      normalizeUserCompilationConfig(config)
+    );
   }
 
   async compile() {
-    return this.bindingCompiler.compile();
+    await this.bindingCompiler.compile();
+    console.log('after rust compile');
   }
 
   compileSync() {

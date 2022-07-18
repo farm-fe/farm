@@ -236,7 +236,6 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { JsResolveKind, Compiler } = nativeBinding
+const { Compiler } = nativeBinding
 
-module.exports.JsResolveKind = JsResolveKind
 module.exports.Compiler = Compiler

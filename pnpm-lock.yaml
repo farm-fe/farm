@@ -32,6 +32,14 @@ importers:
       typescript: 4.7.4
       vitest: 0.18.0_c8@7.11.3
 
+  examples/react:
+    specifiers:
+      '@farmfe/cli': ../../packages/cli
+      '@farmfe/core': ../../packages/core
+    dependencies:
+      '@farmfe/cli': link:../../packages/cli
+      '@farmfe/core': link:../../packages/core
+
   packages/cli:
     specifiers:
       '@farmfe/core': workspace:^0.0.0
@@ -47,12 +55,14 @@ importers:
     specifiers:
       '@napi-rs/cli': ^2.10.0
       '@types/jest': ^28.1.4
+      '@types/node': ^18.0.1
       jest: ^28.1.2
       typescript: ^4.7.4
     devDependencies:
       '@napi-rs/cli': 2.10.0
       '@types/jest': 28.1.4
-      jest: 28.1.2
+      '@types/node': 18.0.1
+      jest: 28.1.2_@types+node@18.0.1
       typescript: 4.7.4
 
 packages:
@@ -3068,7 +3078,7 @@ packages:
       - supports-color
     dev: true
 
-  /jest-cli/28.1.2:
+  /jest-cli/28.1.2_@types+node@18.0.1:
     resolution: {integrity: sha512-l6eoi5Do/IJUXAFL9qRmDiFpBeEJAnjJb1dcd9i/VWfVWbp3mJhuH50dNtX67Ali4Ecvt4eBkWb4hXhPHkAZTw==}
     engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
     hasBin: true
@@ -3085,7 +3095,7 @@ packages:
       exit: 0.1.2
       graceful-fs: 4.2.10
       import-local: 3.1.0
-      jest-config: 28.1.2
+      jest-config: 28.1.2_@types+node@18.0.1
       jest-util: 28.1.1
       jest-validate: 28.1.1
       prompts: 2.4.2
@@ -3094,44 +3104,6 @@ packages:
       - '@types/node'
       - supports-color
       - ts-node
-    dev: true
-
-  /jest-config/28.1.2:
-    resolution: {integrity: sha512-g6EfeRqddVbjPVBVY4JWpUY4IvQoFRIZcv4V36QkqzE0IGhEC/VkugFeBMAeUE7PRgC8KJF0yvJNDeQRbamEVA==}
-    engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
-    peerDependencies:
-      '@types/node': '*'
-      ts-node: '>=9.0.0'
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-      ts-node:
-        optional: true
-    dependencies:
-      '@babel/core': 7.18.6
-      '@jest/test-sequencer': 28.1.1
-      '@jest/types': 28.1.1
-      babel-jest: 28.1.2_@babel+core@7.18.6
-      chalk: 4.1.2
-      ci-info: 3.3.2
-      deepmerge: 4.2.2
-      glob: 7.2.3
-      graceful-fs: 4.2.10
-      jest-circus: 28.1.2
-      jest-environment-node: 28.1.2
-      jest-get-type: 28.0.2
-      jest-regex-util: 28.0.2
-      jest-resolve: 28.1.1
-      jest-runner: 28.1.2
-      jest-util: 28.1.1
-      jest-validate: 28.1.1
-      micromatch: 4.0.5
-      parse-json: 5.2.0
-      pretty-format: 28.1.1
-      slash: 3.0.0
-      strip-json-comments: 3.1.1
-    transitivePeerDependencies:
-      - supports-color
     dev: true
 
   /jest-config/28.1.2_@types+node@18.0.1:
@@ -3457,7 +3429,7 @@ packages:
       supports-color: 8.1.1
     dev: true
 
-  /jest/28.1.2:
+  /jest/28.1.2_@types+node@18.0.1:
     resolution: {integrity: sha512-Tuf05DwLeCh2cfWCQbcz9UxldoDyiR1E9Igaei5khjonKncYdc6LDfynKCEWozK0oLE3GD+xKAo2u8x/0s6GOg==}
     engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
     hasBin: true
@@ -3470,7 +3442,7 @@ packages:
       '@jest/core': 28.1.2
       '@jest/types': 28.1.1
       import-local: 3.1.0
-      jest-cli: 28.1.2
+      jest-cli: 28.1.2_@types+node@18.0.1
     transitivePeerDependencies:
       - '@types/node'
       - supports-color

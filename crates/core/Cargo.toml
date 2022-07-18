@@ -4,6 +4,19 @@ version = "0.0.1"
 edition = "2021"
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"]}
+farm_macro_cache_item = { path = "../macro_cache_item" }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 parking_lot = "0.12"
+normpath = "0.3"
+pathdiff = "0.2"
+dashmap = "5.0"
+blake2 = "0.10"
+hex = "0.4"
+rkyv = "0.7"
+rkyv_dyn = "0.7"
+rkyv_typename = "0.7"
+ptr_meta = "0.1"
+thiserror = "1.0"
+rayon = "1.5"
+petgraph = "0.6"
