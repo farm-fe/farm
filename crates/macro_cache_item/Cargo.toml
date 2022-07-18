@@ -1,0 +1,12 @@
+[package]
+name = "farm_macro_cache_item"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+syn = { version = "1", features = ["full"] }
+quote = "1"

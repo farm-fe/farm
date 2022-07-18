@@ -1,0 +1,11 @@
+{
+  "name": "@farmfe/example-react",
+  "version": "0.0.0",
+  "dependencies": {
+    "@farmfe/cli": "../../packages/cli",
+    "@farmfe/core": "../../packages/core"
+  },
+  "scripts": {
+    "start": "farm"
+  }
+}

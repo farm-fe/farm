@@ -1,0 +1,12 @@
+[package]
+name = "farmfe_macro_plugin"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+proc-macro2 = "1"
+syn = { version = "1", features = ["full"] }
+quote = "1"
+
+[lib]
+proc-macro = true

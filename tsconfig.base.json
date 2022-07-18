@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "lib": ["DOM", "ES2015"],
-    "noUnusedParameters": true,
-    "noUnusedLocals": true
+    "sourceMap": true,
+    "declaration": true,
+    "esModuleInterop": true
+    // "noUnusedParameters": true,
+    // "noUnusedLocals": true
   }
 }

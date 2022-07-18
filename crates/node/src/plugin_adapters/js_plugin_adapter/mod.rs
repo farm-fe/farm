@@ -1,128 +1,127 @@
+use std::sync::Arc;
+
 use farmfe_core::{
   context::CompilationContext,
-  error::Result,
+  error::{CompilationError, Result},
   plugin::{
-    FilteringHookParam, Plugin, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
+    Plugin, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult, DEFAULT_PRIORITY,
   },
 };
-use napi::{bindgen_prelude::ToNapiValue, JsObject};
+use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
-use self::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
+use self::thread_safe_js_plugin_hook::{
+  JsPluginLoadHook, JsPluginResolveHook, JsPluginTransformHook,
+};
 
+pub mod context;
 mod thread_safe_js_plugin_hook;
 
 pub struct JsPluginAdapter {
   name: String,
-  js_resolve_hook: ThreadSafeJsPluginHook,
+  priority: i32,
+  js_resolve_hook: Option<JsPluginResolveHook>,
+  js_load_hook: Option<JsPluginLoadHook>,
+  js_transform_hook: Option<JsPluginTransformHook>,
 }
 
 impl JsPluginAdapter {
-  pub fn new(name: String, js_plugin_object: JsObject) -> Self {
+  pub fn new(env: &Env, js_plugin_object: JsObject) -> Result<Self> {
+    let name = get_named_property(env, &js_plugin_object, "name")?;
+    let priority =
+      get_named_property::<i32>(env, &js_plugin_object, "priority").unwrap_or(DEFAULT_PRIORITY);
+
+    let resolve_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "resolve").ok();
+    let load_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "load").ok();
+    let transform_hook_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "transform").ok();
+
+    println!(
+      "resolve {}\nload {}\ntransform {}\n",
+      resolve_hook_obj.is_some(),
+      load_hook_obj.is_some(),
+      transform_hook_obj.is_some()
+    );
     // TODO calculating hooks should execute
-    Self {
+    Ok(Self {
       name,
-      js_resolve_hook: ThreadSafeJsPluginHook::new(),
-    }
+      priority,
+      js_resolve_hook: resolve_hook_obj.map(|obj| JsPluginResolveHook::new(env, obj)),
+      js_load_hook: load_hook_obj.map(|obj| JsPluginLoadHook::new(env, obj)),
+      js_transform_hook: transform_hook_obj.map(|obj| JsPluginTransformHook::new(env, obj)),
+    })
   }
 }
 
 impl Plugin for JsPluginAdapter {
-  fn name(&self) -> String {
-    self.name.clone()
+  fn name(&self) -> &str {
+    &self.name
   }
 
-  // TODO filtering hooks should be executed
-  fn should_execute_hook(&self, _param: &FilteringHookParam<'_>) -> bool {
-    true
+  fn priority(&self) -> i32 {
+    self.priority
   }
 
   fn resolve(
     &self,
-    _param: &PluginResolveHookParam,
-    _context: &CompilationContext,
+    param: &PluginResolveHookParam,
+    context: &Arc<CompilationContext>,
   ) -> Result<Option<PluginResolveHookResult>> {
+    if let Some(js_resolve_hook) = &self.js_resolve_hook {
+      let cp = param.clone();
+      let ret = js_resolve_hook.call(cp, context.clone());
+      println!("js plugin: {:?}", ret);
+      ret
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn load(
+    &self,
+    _param: &PluginLoadHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<PluginLoadHookResult>> {
+    Ok(None)
+  }
+
+  fn transform(
+    &self,
+    _param: &PluginTransformHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<PluginTransformHookResult>> {
     Ok(None)
   }
 }
 
-macro_rules! define_struct_with_from_and_into {
-  ($ori_ty:ident, $name:ident { $(pub $field:ident: $ty:ty)+ }) => {
-    #[napi(object)]
-    pub struct $name {
-      $(pub $field:$ty),+
+pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &str) -> Result<T> {
+  if obj.has_named_property(field).map_err(|e| {
+    CompilationError::NAPIError(format!(
+      "Get field {} of config object failed. {:?}",
+      field, e
+    ))
+  })? {
+    unsafe {
+      T::from_napi_value(
+        env.raw(),
+        obj
+          .get_named_property::<JsUnknown>(field)
+          .map_err(|e| {
+            CompilationError::NAPIError(format!(
+              "Get field {} of config object failed. {:?}",
+              field, e
+            ))
+          })?
+          .raw(),
+      )
+      .map_err(|e| {
+        CompilationError::NAPIError(format!("Transform config field {} failed. {:?}", field, e))
+      })
     }
-
-    impl From<$ori_ty> for $name {
-      fn from(res: $ori_ty) -> Self {
-        Self {
-          $($field: res.$field.into()),+
-        }
-      }
-    }
-
-    impl From<$name> for $ori_ty{
-      fn from(ori: $name) -> Self {
-        Self {
-          $($field: ori.$field.into()),+
-        }
-      }
-    }
-  };
-}
-
-macro_rules! define_enum_with_from_and_into {
-    ($ori_ty:ident, $name:ident { $($field:ident)+ } ) => {
-      #[napi]
-      pub enum $name {
-        $($field),+
-      }
-
-      impl From<$ori_ty> for $name {
-        fn from(rk: $ori_ty) -> Self {
-          match rk {
-            $($ori_ty::$field => Self::$field),+
-          }
-        }
-      }
-
-      impl From<$name> for $ori_ty {
-        fn from(ori: $name) -> Self {
-          match ori {
-            $($name::$field => Self::$field),+
-          }
-        }
-      }
-    };
-}
-
-define_enum_with_from_and_into! {
-  ResolveKind,
-  JsResolveKind {
-    Entry
-    Import
-    DynamicImport
-    Require
-    AtImport
-    Url
-    ScriptSrc
-    LinkHref
-  }
-}
-
-define_struct_with_from_and_into! {
-  PluginResolveHookParam,
-  JsPluginResolveHookParam {
-    pub specifier: String
-    pub importer: Option<String>
-    pub kind: JsResolveKind
-  }
-}
-
-define_struct_with_from_and_into! {
-  PluginResolveHookResult,
-  JsPluginResolveHookResult {
-    pub id: String
-    pub external: bool
-    pub side_effects: bool
+  } else {
+    Err(CompilationError::NAPIError(format!(
+      "Invalid Config: the config object does not have field {}",
+      field
+    )))
   }
 }

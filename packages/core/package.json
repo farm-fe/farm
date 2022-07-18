@@ -1,8 +1,8 @@
 {
   "name": "@farmfe/core",
   "version": "0.0.0",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "napi": {
     "name": "farm",
     "triples": {
@@ -15,17 +15,22 @@
   "devDependencies": {
     "@napi-rs/cli": "^2.10.0",
     "@types/jest": "^28.1.4",
+    "@types/node": "^18.0.1",
     "jest": "^28.1.2",
     "typescript": "^4.7.4"
   },
   "engines": {
-    "node": ">= 10"
+    "node": ">= 12"
   },
+  "files": [
+    "binding",
+    "dist"
+  ],
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "build:rs": "npm run build:rs:debug -- --release",
-    "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding/index.js",
+    "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding/index.js --dts binding.d.ts",
     "prepublishOnly": "napi prepublish -t npm && npm run build",
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",
