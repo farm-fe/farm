@@ -11,10 +11,6 @@
 //! }
 //! ```
 
-use normpath::BasePathBuf;
-use normpath::PathExt;
-use std::path::Path;
-
 pub fn load_package_json(path: &str) {}
 
 pub fn parse_query(path: &str) {}

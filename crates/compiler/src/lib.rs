@@ -34,8 +34,8 @@ impl Compiler {
 
   pub fn compile(&self) -> Result<()> {
     // triggering build stage
-    // self.build()?;
-    // self.generate()?;
+    self.build()?;
+    self.generate()?;
 
     self.context.plugin_driver.finish(&Stats {}, &self.context)
   }

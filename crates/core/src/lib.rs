@@ -16,6 +16,9 @@ pub mod utils;
 pub const VERSION: &str = "0.1.0";
 
 // re-export common external crates
+pub use parking_lot;
 pub use rayon;
+pub use relative_path;
 pub use serde;
 pub use serde_json;
+pub use swc_ecma_ast;

@@ -1,4 +1,8 @@
+use std::error::Error;
+
 use thiserror::Error;
+
+use crate::resource::resource_pot::ResourcePotType;
 
 #[derive(Debug, Error)]
 pub enum CompilationError {
@@ -7,7 +11,7 @@ pub enum CompilationError {
     importer: String,
     specifier: String,
     #[source]
-    source: Option<Box<CompilationError>>,
+    source: Option<Box<dyn Error + Send + Sync>>,
   },
   // TODO, give the specific recommended plugin of this kind of module
   #[error("Can not load `{id}`. Original error: {source:?}.\n\nPotential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n")]
@@ -49,6 +53,35 @@ pub enum CompilationError {
   GenericError(String),
   #[error("{0}")]
   NAPIError(String),
+
+  #[error("Generate resources for {name}(type: {ty:?}) failed. This error usually caused by problematic plugin that implement `generate_resources` hook but does not return a valid result")]
+  GenerateResourcesError { name: String, ty: ResourcePotType },
 }
 
 pub type Result<T> = core::result::Result<T, CompilationError>;
+
+pub trait ToResolveError
+where
+  Self: Error + Sized + Send + Sync + 'static,
+{
+  fn to_resolve_error(self, specifier: String, importer: String) -> CompilationError {
+    CompilationError::ResolveError {
+      importer,
+      specifier,
+      source: Some(Box::new(self) as _),
+    }
+  }
+}
+
+impl<T: Error + Sized + Send + Sync + 'static> ToResolveError for T
+where
+  T: Error,
+{
+  fn to_resolve_error(self, specifier: String, importer: String) -> CompilationError {
+    CompilationError::ResolveError {
+      importer,
+      specifier,
+      source: Some(Box::new(self) as _),
+    }
+  }
+}

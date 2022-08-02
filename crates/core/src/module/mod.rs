@@ -9,6 +9,7 @@ use pathdiff::diff_paths;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
+use swc_ecma_ast::Module as SwcModule;
 
 use crate::config::Mode;
 
@@ -20,7 +21,9 @@ pub mod module_group;
 /// The [Module] is created by plugins in the parse hook of build stage
 #[cache_item]
 pub struct Module {
+  /// the id of this module, generated from the resolved id of the resolve hook.
   pub id: ModuleId,
+  /// the type of this module, for example [ModuleType::Js]
   pub module_type: ModuleType,
   pub meta: ModuleMetaData,
 }
@@ -73,7 +76,9 @@ pub struct EmptyModuleMetaData;
 
 /// Script specific meta data, for example, [swc_ecma_ast]
 #[cache_item]
-pub struct ModuleScriptMetaData {}
+pub struct ModuleScriptMetaData {
+  ast: SwcModule,
+}
 
 /// Internal support module types by the core plugins, other
 /// ModuleType will be set after the load hook, but can be change in transform hook too.
@@ -222,7 +227,9 @@ mod tests {
     let bytes = rkyv::to_bytes::<_, 256>(&module).unwrap();
 
     let archived = unsafe { rkyv::archived_root::<Module>(&bytes[..]) };
-    let deserialized_module: Module = archived.deserialize(&mut rkyv::Infallible).unwrap();
+    let deserialized_module: Module = archived
+      .deserialize(&mut rkyv::de::deserializers::SharedDeserializeMap::new())
+      .unwrap();
 
     assert_eq!(deserialized_module.id.path(), module.id.path());
 

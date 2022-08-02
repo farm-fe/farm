@@ -15,7 +15,7 @@ use crate::{
     module_group::{ModuleGroup, ModuleGroupMap},
     Module, ModuleType,
   },
-  resource::{resource_graph::ResourceGraph, Resource},
+  resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
 
@@ -128,7 +128,7 @@ impl PluginDriver {
     context: &Arc<CompilationContext>
   );
 
-  hook_serial!(module_parsed, &mut Module);
+  hook_serial!(process_module, &mut Module);
 
   hook_serial!(analyze_deps, &mut PluginAnalyzeDepsHookParam);
 
@@ -147,23 +147,33 @@ impl PluginDriver {
 
   hook_first!(
     merge_modules,
-    Result<Option<ResourceGraph>>,
+    Result<Option<ResourcePotGraph>>,
     module_group: &ModuleGroupMap,
     context: &Arc<CompilationContext>
   );
 
   hook_parallel!(
-    process_resource_graph,
-    resource_graph: &RwLock<ResourceGraph>
+    process_resource_pot_graph,
+    resource_pot_graph: &RwLock<ResourcePotGraph>
   );
 
-  hook_serial!(render_resource, &mut Resource);
+  hook_serial!(render_resource_pot, &mut ResourcePot);
 
-  hook_serial!(optimize_resource, &mut Resource);
+  hook_serial!(optimize_resource_pot, &mut ResourcePot);
 
-  hook_serial!(generate_resource, &mut Resource);
+  hook_first!(
+    generate_resources,
+    Result<Option<Vec<Resource>>>,
+    resource_pot: &ResourcePot,
+    context: &Arc<CompilationContext>
+  );
 
-  hook_serial!(write_resource, &mut Resource);
+  hook_first!(
+    write_resource,
+    Result<Option<()>>,
+    resource: &Resource,
+    context: &Arc<CompilationContext>
+  );
 
   hook_parallel!(generate_end);
 

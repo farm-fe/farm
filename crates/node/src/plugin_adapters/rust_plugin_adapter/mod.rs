@@ -4,6 +4,7 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
+  parking_lot::RwLock,
   plugin::{
     Plugin, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
@@ -81,12 +82,12 @@ impl Plugin for RustPluginAdapter {
     self.plugin.parse(param, context)
   }
 
-  fn module_parsed(
+  fn process_module(
     &self,
     module: &mut farmfe_core::module::Module,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.module_parsed(module, context)
+    self.plugin.process_module(module, context)
   }
 
   fn analyze_deps(
@@ -99,5 +100,87 @@ impl Plugin for RustPluginAdapter {
 
   fn build_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
     self.plugin.build_end(context)
+  }
+
+  fn generate_start(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    self.plugin.generate_start(context)
+  }
+
+  fn optimize_module_graph(
+    &self,
+    module_graph: &RwLock<farmfe_core::module::module_graph::ModuleGraph>,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.optimize_module_graph(module_graph, context)
+  }
+
+  fn analyze_module_graph(
+    &self,
+    module_graph: &RwLock<farmfe_core::module::module_graph::ModuleGraph>,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<farmfe_core::module::module_group::ModuleGroupMap>> {
+    self.plugin.analyze_module_graph(module_graph, context)
+  }
+
+  fn merge_modules(
+    &self,
+    module_group: &farmfe_core::module::module_group::ModuleGroupMap,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<farmfe_core::resource::resource_pot_graph::ResourcePotGraph>> {
+    self.plugin.merge_modules(module_group, context)
+  }
+
+  fn process_resource_pot_graph(
+    &self,
+    resource_graph: &RwLock<farmfe_core::resource::resource_pot_graph::ResourcePotGraph>,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self
+      .plugin
+      .process_resource_pot_graph(resource_graph, context)
+  }
+
+  fn render_resource_pot(
+    &self,
+    resource: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.render_resource_pot(resource, context)
+  }
+
+  fn optimize_resource_pot(
+    &self,
+    resource: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.optimize_resource_pot(resource, context)
+  }
+
+  fn generate_resources(
+    &self,
+    resource_pot: &farmfe_core::resource::resource_pot::ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<Vec<farmfe_core::resource::Resource>>> {
+    self.plugin.generate_resources(resource_pot, context)
+  }
+
+  fn write_resource(
+    &self,
+    resource: &farmfe_core::resource::Resource,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.write_resource(resource, context)
+  }
+
+  fn generate_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    self.plugin.generate_end(context)
+  }
+
+  fn finish(
+    &self,
+    stat: &farmfe_core::stats::Stats,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.finish(stat, context)
   }
 }

@@ -188,7 +188,7 @@ impl Compiler {
         }
       };
 
-      if let Err(e) = context.plugin_driver.module_parsed(&mut module, &context) {
+      if let Err(e) = context.plugin_driver.process_module(&mut module, &context) {
         err_sender
           .send(CompilationError::ModuleParsedError {
             id: parse_param.id,

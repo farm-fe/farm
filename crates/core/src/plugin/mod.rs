@@ -12,10 +12,7 @@ use crate::{
     module_group::{ModuleGroup, ModuleGroupMap},
     Module, ModuleType,
   },
-  resource::{
-    resource_graph::{self, ResourceGraph},
-    Resource,
-  },
+  resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
 
@@ -66,7 +63,7 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  fn module_parsed(
+  fn process_module(
     &self,
     _module: &mut Module,
     _context: &Arc<CompilationContext>,
@@ -114,52 +111,52 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _module_group: &ModuleGroupMap,
     _context: &Arc<CompilationContext>,
-  ) -> Result<Option<ResourceGraph>> {
+  ) -> Result<Option<ResourcePotGraph>> {
     Ok(None)
   }
 
   /// process resource graph before render and generating each resource
-  fn process_resource_graph(
+  fn process_resource_pot_graph(
     &self,
-    _resource_graph: &RwLock<ResourceGraph>,
+    _resource_graph: &RwLock<ResourcePotGraph>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  /// Render the [Resource] in [ResourceGraph].
+  /// Render the [ResourcePot] in [ResourcePotGraph].
   /// May merge the module's ast in the same resource to a single ast and transform the output format to custom module system and ESM
-  fn render_resource(
+  fn render_resource_pot(
     &self,
-    _resource: &mut Resource,
+    _resource: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  /// Optimize the final resource, for example, minimize every resource in the resource graph
-  fn optimize_resource(
+  /// Optimize the resource pot, for example, minimize
+  fn optimize_resource_pot(
     &self,
-    _resource: &mut Resource,
+    _resource: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  /// Generate resources based on the [ResourceGraph]
-  /// This hook is executed in serial and should update the content inside ResourceGraph
-  fn generate_resource(
+  /// Generate resources based on the [ResourcePot], return [Vec<ResourceFile>] represents the final generated files.
+  /// For example, a .js file and its corresponding source map file
+  fn generate_resources(
     &self,
-    _resource_graph: &mut Resource,
+    _resource_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
+  ) -> Result<Option<Vec<Resource>>> {
     Ok(None)
   }
 
-  /// Write the final output [Resource] to disk or not
+  /// Write the final output [Resource] to disk or others
   fn write_resource(
     &self,
-    _resource: &mut Resource,
+    _resource: &Resource,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -272,12 +269,18 @@ pub struct PluginTransformHookResult {
 }
 
 pub struct PluginParseHookParam {
+  /// resolved id
   pub id: String,
+  /// resolved query
   pub query: HashMap<String, String>,
   pub module_type: ModuleType,
+  /// source content(after transform)
   pub source: String,
+  /// source map chain after transform
   pub source_map_chain: Vec<String>,
+  /// resolved side effects
   pub side_effects: bool,
+  /// resolved package.json
   pub package_json_info: Value,
   /// if this hook is called by the compiler, its value is [None]
   /// if this hook is called by other plugins, its value is set by the caller plugins.
