@@ -21,4 +21,6 @@ thiserror = "1.0"
 rayon = "1.5"
 petgraph = "0.6"
 bytecheck = "0.6.9"
+downcast-rs = "1.2"
 swc_ecma_ast = { version = "0.89.0", features = ["rkyv-impl"] }
+swc_common = { version = "0.26", features = ["concurrent"] }

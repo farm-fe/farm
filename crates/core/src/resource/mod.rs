@@ -6,4 +6,6 @@ pub mod resource_pot;
 pub mod resource_pot_graph;
 
 #[cache_item]
-pub struct Resource {}
+pub struct Resource {
+  pub bytes: Vec<u8>,
+}

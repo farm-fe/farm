@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
-#![feature(unsize)]
+// #![feature(unsize)]
+// #![feature(trait_upcasting)]
 
 pub mod cache;
 pub mod config;
@@ -21,4 +22,5 @@ pub use rayon;
 pub use relative_path;
 pub use serde;
 pub use serde_json;
+pub use swc_common;
 pub use swc_ecma_ast;

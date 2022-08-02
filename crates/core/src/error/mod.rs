@@ -6,10 +6,10 @@ use crate::resource::resource_pot::ResourcePotType;
 
 #[derive(Debug, Error)]
 pub enum CompilationError {
-  #[error("Can not resolve `{specifier}` from {importer}.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The file that `{specifier}` points to does not exist.\n2.Install it first if `{specifier}` is an dependency from node_modules, if you are using pnpm refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n3. If `{specifier}` is a alias, make sure your alias config is correct.\n")]
+  #[error("Can not resolve `{src}` from {importer}.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The file that `{src}` points to does not exist.\n2.Install it first if `{src}` is an dependency from node_modules, if you are using pnpm refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n3. If `{src}` is a alias, make sure your alias config is correct.\n")]
   ResolveError {
     importer: String,
-    specifier: String,
+    src: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
   },
@@ -18,35 +18,35 @@ pub enum CompilationError {
   LoadError {
     id: String,
     #[source]
-    source: Option<Box<CompilationError>>,
+    source: Option<Box<dyn Error + Send + Sync>>,
   },
 
   #[error("Transform `{id}` failed.\nOriginal error: {source:?}")]
   TransformError {
     id: String,
     #[source]
-    source: Option<Box<CompilationError>>,
+    source: Option<Box<dyn Error + Send + Sync>>,
   },
   // TODO, give the specific recommended plugin of this kind of module
   #[error("Parse `{id}` failed.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
   ParseError {
     id: String,
     #[source]
-    source: Option<Box<CompilationError>>,
+    source: Option<Box<dyn Error + Send + Sync>>,
   },
 
   #[error("Hook `module_parsed` execute failed.\nOriginal error: {source:?}.")]
   ModuleParsedError {
     id: String,
     #[source]
-    source: Option<Box<CompilationError>>,
+    source: Option<Box<dyn Error + Send + Sync>>,
   },
 
   #[error("Hook `analyze_deps` execute failed.\nOriginal error: {source:?}.")]
   AnalyzeDepsError {
     id: String,
     #[source]
-    source: Option<Box<CompilationError>>,
+    source: Option<Box<dyn Error + Send + Sync>>,
   },
 
   #[error("{0}")]
@@ -64,10 +64,10 @@ pub trait ToResolveError
 where
   Self: Error + Sized + Send + Sync + 'static,
 {
-  fn to_resolve_error(self, specifier: String, importer: String) -> CompilationError {
+  fn to_resolve_error(self, src: String, importer: String) -> CompilationError {
     CompilationError::ResolveError {
       importer,
-      specifier,
+      src,
       source: Some(Box::new(self) as _),
     }
   }
@@ -77,10 +77,10 @@ impl<T: Error + Sized + Send + Sync + 'static> ToResolveError for T
 where
   T: Error,
 {
-  fn to_resolve_error(self, specifier: String, importer: String) -> CompilationError {
+  fn to_resolve_error(self, src: String, importer: String) -> CompilationError {
     CompilationError::ResolveError {
       importer,
-      specifier,
+      src,
       source: Some(Box::new(self) as _),
     }
   }

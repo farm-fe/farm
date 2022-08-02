@@ -38,7 +38,7 @@ impl Plugin for FarmPluginResolve {
     param: &PluginResolveHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<PluginResolveHookResult>> {
-    let specifier = &param.specifier;
+    let source = &param.source;
     let basedir = if let Some(importer) = &param.importer {
       Path::new(importer).parent().unwrap().to_path_buf()
     } else {
@@ -47,7 +47,7 @@ impl Plugin for FarmPluginResolve {
 
     self
       .resolver
-      .resolve(specifier, basedir, &param.kind)
+      .resolve(source, basedir, &param.kind)
       .map(|r| Some(r))
   }
 }

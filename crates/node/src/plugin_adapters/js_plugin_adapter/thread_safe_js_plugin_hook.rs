@@ -229,7 +229,7 @@ impl JsPluginResolveHook {
       .filters
       .specifiers
       .iter()
-      .any(|f| f.is_match(&param.specifier));
+      .any(|f| f.is_match(&param.source));
 
     if !skip {
       self

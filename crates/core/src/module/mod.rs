@@ -1,9 +1,10 @@
-use std::{any::Any, hash::Hash, marker::Unsize, path::Path};
+use std::{any::Any, hash::Hash, path::Path};
 
 use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
 };
+use downcast_rs::{impl_downcast, Downcast};
 use farm_macro_cache_item::cache_item;
 use pathdiff::diff_paths;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
@@ -47,28 +48,52 @@ pub enum ModuleMetaData {
 }
 
 impl ModuleMetaData {
-  pub fn as_script(self) -> ModuleScriptMetaData {
+  pub fn as_script_mut(&mut self) -> &mut ModuleScriptMetaData {
     match self {
       ModuleMetaData::Script(script) => script,
       ModuleMetaData::Custom(_) => panic!("ModuleMetaData is not Script"),
     }
   }
 
-  pub fn as_custom(self) -> Box<dyn Any> {
+  pub fn as_script(&self) -> &ModuleScriptMetaData {
+    match self {
+      ModuleMetaData::Script(script) => script,
+      ModuleMetaData::Custom(_) => panic!("ModuleMetaData is not Script"),
+    }
+  }
+
+  pub fn as_custom_mut<T: SerializeCustomModuleMetaData + 'static>(&mut self) -> &mut T {
     match self {
       ModuleMetaData::Script(_) => panic!("ModuleMetaData is not Script"),
-      ModuleMetaData::Custom(custom) => upcast(custom),
+      ModuleMetaData::Custom(custom) => {
+        if let Some(c) = custom.downcast_mut::<T>() {
+          c
+        } else {
+          panic!("custom meta type is not serializable");
+        }
+      }
+    }
+  }
+
+  pub fn as_custom<T: SerializeCustomModuleMetaData + 'static>(&self) -> &T {
+    match self {
+      ModuleMetaData::Script(_) => panic!("ModuleMetaData is not Script"),
+      ModuleMetaData::Custom(custom) => {
+        if let Some(c) = custom.downcast_ref::<T>() {
+          c
+        } else {
+          panic!("custom meta type is not serializable");
+        }
+      }
     }
   }
 }
 
-fn upcast<Dyn: ?Sized + Unsize<dyn Any>>(bar: Box<Dyn>) -> Box<dyn Any> {
-  bar
-}
-
 /// Trait that makes sure the trait object implements [rkyv::Serialize] and [rkyv::Deserialize]
 #[archive_dyn(deserialize)]
-pub trait CustomModuleMetaData: Any + Send + Sync {}
+pub trait CustomModuleMetaData: Any + Send + Sync + Downcast {}
+
+impl_downcast!(SerializeCustomModuleMetaData);
 
 /// initial empty custom data, plugins may replace this
 #[cache_item(CustomModuleMetaData)]
@@ -77,13 +102,13 @@ pub struct EmptyModuleMetaData;
 /// Script specific meta data, for example, [swc_ecma_ast]
 #[cache_item]
 pub struct ModuleScriptMetaData {
-  ast: SwcModule,
+  pub ast: SwcModule,
 }
 
 /// Internal support module types by the core plugins, other
 /// ModuleType will be set after the load hook, but can be change in transform hook too.
 #[cache_item]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ModuleType {
   // native supported module type by the core plugins
   Js,
@@ -227,7 +252,7 @@ mod tests {
     let bytes = rkyv::to_bytes::<_, 256>(&module).unwrap();
 
     let archived = unsafe { rkyv::archived_root::<Module>(&bytes[..]) };
-    let deserialized_module: Module = archived
+    let mut deserialized_module: Module = archived
       .deserialize(&mut rkyv::de::deserializers::SharedDeserializeMap::new())
       .unwrap();
 
@@ -236,11 +261,17 @@ mod tests {
     assert_eq!(
       deserialized_module
         .meta
-        .as_custom()
-        .downcast_ref::<StructModuleData>()
-        .unwrap()
+        .as_custom_mut::<StructModuleData>()
         .ast,
       "ast"
+    );
+
+    assert_eq!(
+      deserialized_module
+        .meta
+        .as_custom::<StructModuleData>()
+        .imports,
+      vec![String::from("./index")]
     );
   }
 }

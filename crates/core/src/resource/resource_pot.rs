@@ -1,6 +1,8 @@
 use std::any::Any;
 
+use downcast_rs::{impl_downcast, Downcast};
 use rkyv::{Archive, Deserialize, Serialize};
+use swc_ecma_ast::Module as SwcModule;
 
 use farm_macro_cache_item::cache_item;
 use rkyv_dyn::archive_dyn;
@@ -28,10 +30,54 @@ pub enum ResourcePotMetaData {
   Custom(Box<dyn SerializeCustomResourcePotMetaData>),
 }
 
+impl ResourcePotMetaData {
+  pub fn as_js(&self) -> &JsResourcePotMetaData {
+    match self {
+      ResourcePotMetaData::Js(r) => r,
+      _ => panic!("ResourcePotMetaData is not js!"),
+    }
+  }
+
+  pub fn as_js_mut(&mut self) -> &mut JsResourcePotMetaData {
+    match self {
+      ResourcePotMetaData::Js(r) => r,
+      _ => panic!("ResourcePotMetaData is not js!"),
+    }
+  }
+
+  pub fn as_custom<T: SerializeCustomResourcePotMetaData>(&self) -> &T {
+    match self {
+      ResourcePotMetaData::Custom(c) => {
+        if let Some(c) = c.downcast_ref::<T>() {
+          c
+        } else {
+          panic!("Custom resource meta data is not serializable!");
+        }
+      }
+      _ => panic!("ResourcePotMetaData is not custom!"),
+    }
+  }
+
+  pub fn as_custom_mut<T: SerializeCustomResourcePotMetaData>(&mut self) -> &mut T {
+    match self {
+      ResourcePotMetaData::Custom(c) => {
+        if let Some(c) = c.downcast_mut::<T>() {
+          c
+        } else {
+          panic!("Custom resource meta data is not serializable!");
+        }
+      }
+      _ => panic!("ResourcePotMetaData is not custom!"),
+    }
+  }
+}
+
 #[cache_item]
 pub struct JsResourcePotMetaData {
-  ast: String,
+  pub ast: SwcModule,
 }
 
 #[archive_dyn(deserialize)]
-pub trait CustomResourcePotMetaData: Any + Send + Sync {}
+pub trait CustomResourcePotMetaData: Any + Send + Sync + Downcast {}
+
+impl_downcast!(SerializeCustomResourcePotMetaData);

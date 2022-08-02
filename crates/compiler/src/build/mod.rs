@@ -19,7 +19,7 @@ use farmfe_core::{
 use crate::Compiler;
 
 pub struct BuildModuleParam {
-  pub specifier: String,
+  pub source: String,
   pub importer: Option<String>,
   pub kind: ResolveKind,
 }
@@ -31,11 +31,11 @@ impl Compiler {
     let thread_pool = Arc::new(rayon::ThreadPoolBuilder::new().build().unwrap());
     let (err_sender, err_receiver) = channel::<CompilationError>();
 
-    for specifier in self.context.config.input.values() {
+    for source in self.context.config.input.values() {
       Self::build_module(
         thread_pool.clone(),
         BuildModuleParam {
-          specifier: specifier.clone(),
+          source: source.clone(),
           importer: None,
           kind: ResolveKind::Entry,
         },
@@ -63,7 +63,7 @@ impl Compiler {
     let c_thread_pool = thread_pool.clone();
     thread_pool.spawn(move || {
       let resolve_param = PluginResolveHookParam {
-        specifier: param.specifier,
+        source: param.source,
         importer: param.importer,
         kind: param.kind,
         caller: None,
@@ -77,7 +77,7 @@ impl Compiler {
                 importer: resolve_param
                   .importer
                   .unwrap_or_else(|| context.config.root.clone()),
-                specifier: resolve_param.specifier.clone(),
+                src: resolve_param.source.clone(),
                 source: None,
               })
               .err();
@@ -90,7 +90,7 @@ impl Compiler {
               importer: resolve_param
                 .importer
                 .unwrap_or_else(|| context.config.root.clone()),
-              specifier: resolve_param.specifier.clone(),
+              src: resolve_param.source.clone(),
               source: Some(Box::new(e)),
             })
             .expect("Send resolve error failed");
@@ -133,7 +133,7 @@ impl Compiler {
       println!("loaded {:?}", loaded);
 
       let transform_param = PluginTransformHookParam {
-        source: loaded.source,
+        content: loaded.content,
         id: &resolved.id,
         module_type: loaded.module_type,
         query: resolved.query.clone(),
@@ -158,7 +158,7 @@ impl Compiler {
         id: resolved.id,
         query: resolved.query,
         module_type: ModuleType::Js,
-        source: String::from("code"),
+        content: transformed.content,
         source_map_chain: vec![],
         side_effects: false,
         package_json_info: from_str(r#"{ "name": "hello" }"#).unwrap(),
@@ -220,7 +220,7 @@ impl Compiler {
         Self::build_module(
           c_thread_pool.clone(),
           BuildModuleParam {
-            specifier: dep.specifier,
+            source: dep.source,
             importer: Some(parse_param.id.clone()),
             kind: dep.kind,
           },

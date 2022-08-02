@@ -171,7 +171,7 @@ pub trait Plugin: Any + Send + Sync {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
@@ -198,8 +198,8 @@ pub enum ResolveKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
 pub struct PluginResolveHookParam {
-  /// the specifier would like to resolve, for example, './index'
-  pub specifier: String,
+  /// the source would like to resolve, for example, './index'
+  pub source: String,
   /// the start location to resolve `specifier`, being [None] if resolving a entry or resolving a hmr update.
   pub importer: Option<String>,
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
@@ -240,7 +240,7 @@ pub struct PluginLoadHookParam<'a> {
 #[serde(rename = "camelCase")]
 pub struct PluginLoadHookResult {
   /// the source content of the module
-  pub source: String,
+  pub content: String,
   /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
   /// usually end with `.js` extension
   pub module_type: ModuleType,
@@ -250,7 +250,7 @@ pub struct PluginLoadHookResult {
 #[serde(rename = "camelCase")]
 pub struct PluginTransformHookParam<'a> {
   /// source content after load or transformed result of previous plugin
-  pub source: String,
+  pub content: String,
   /// module type after load
   pub module_type: ModuleType,
   pub id: &'a str,
@@ -261,7 +261,7 @@ pub struct PluginTransformHookParam<'a> {
 #[serde(rename = "camelCase", default)]
 pub struct PluginTransformHookResult {
   /// transformed source content, will be passed to next plugin.
-  pub source: String,
+  pub content: String,
   /// you can change the module type after transform.
   pub module_type: Option<ModuleType>,
   /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
@@ -275,8 +275,8 @@ pub struct PluginParseHookParam {
   pub query: HashMap<String, String>,
   pub module_type: ModuleType,
   /// source content(after transform)
-  pub source: String,
-  /// source map chain after transform
+  pub content: String,
+  /// source map chain after transform content
   pub source_map_chain: Vec<String>,
   /// resolved side effects
   pub side_effects: bool,
@@ -293,8 +293,8 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PluginAnalyzeDepsHookResultEntry {
-  pub specifier: String,
+  pub source: String,
   pub kind: ResolveKind,
 }

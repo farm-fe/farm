@@ -98,7 +98,7 @@ impl PluginDriver {
     context: &Arc<CompilationContext>,
   ) -> Result<PluginDriverTransformHookResult> {
     let mut result = PluginDriverTransformHookResult {
-      source: String::new(),
+      content: String::new(),
       source_map_chain: vec![],
       module_type: None,
     };
@@ -106,7 +106,7 @@ impl PluginDriver {
     for plugin in &self.plugins {
       // if the transform hook returns None, treat it as empty hook and ignore it
       if let Some(plugin_result) = plugin.transform(&param, context)? {
-        param.source = plugin_result.source;
+        param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
         if let Some(source_map) = plugin_result.source_map {
@@ -115,7 +115,7 @@ impl PluginDriver {
       }
     }
 
-    result.source = param.source;
+    result.content = param.content;
     result.module_type = Some(param.module_type);
 
     Ok(result)
@@ -182,9 +182,9 @@ impl PluginDriver {
 
 #[derive(Debug)]
 pub struct PluginDriverTransformHookResult {
-  source: String,
-  source_map_chain: Vec<String>,
-  module_type: Option<ModuleType>,
+  pub content: String,
+  pub source_map_chain: Vec<String>,
+  pub module_type: Option<ModuleType>,
 }
 
 #[cfg(test)]
@@ -244,7 +244,7 @@ mod tests {
 
     let param = PluginResolveHookParam {
       importer: None,
-      specifier: "./any".to_string(),
+      source: "./any".to_string(),
       kind: ResolveKind::Import,
       caller: None,
     };

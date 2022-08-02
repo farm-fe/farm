@@ -32,10 +32,6 @@ impl Resolver {
     kind: &ResolveKind,
   ) -> Result<PluginResolveHookResult> {
     // TODO: try load package.json first, the relative resolve may also need to use browser/exports field in package.json
-
-    // just used for error reporting
-    let importer = base_dir.to_string_lossy().to_string();
-
     let is_specifier_absolute = if let Ok(sp) = PathBuf::from_str(specifier) {
       sp.is_absolute()
     } else {
@@ -58,13 +54,13 @@ impl Resolver {
         normalized_path.to_path_buf()
       };
 
-      let try_file = self.resolve_file(&normalized_path);
+      // TODO try read symlink from the resolved path step by step to its parent util the root
+      let try_file = self.try_file(&normalized_path);
 
       if let Some(file) = try_file {
         file
       } else {
-        // try dir
-        let try_dir = self.resolve_directory(&normalized_path);
+        let try_dir = self.try_directory(&normalized_path);
 
         if let Some(file) = try_dir {
           file
@@ -86,14 +82,13 @@ impl Resolver {
     })
   }
 
-  pub fn resolve_directory(&self, dir: &PathBuf) -> Option<String> {
+  fn try_directory(&self, dir: &PathBuf) -> Option<String> {
     None
   }
 
   /// Try resolve as a file with the configured extensions.
-  /// ## Example
-  /// if `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension like `/root/index.ts` exists, return it
-  pub fn resolve_file(&self, file: &PathBuf) -> Option<String> {
+  /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
+  fn try_file(&self, file: &PathBuf) -> Option<String> {
     if file.exists() {
       Some(file.to_string_lossy().to_string())
     } else {
@@ -110,16 +105,12 @@ impl Resolver {
     }
   }
 
-  pub fn resolve_alias(&self, specifier: &str, base_dir: PathBuf) -> Option<String> {
+  fn try_alias(&self, specifier: &str, base_dir: PathBuf) -> Option<String> {
     None
   }
 
   /// Resolve the specifier as a package, return (resolve_path, package_info)
-  pub fn resolve_node_modules(
-    &self,
-    specifier: &str,
-    kind: &ResolveKind,
-  ) -> Option<(String, Value)> {
+  fn resolve_node_modules(&self, specifier: &str, kind: &ResolveKind) -> Option<(String, Value)> {
     None
   }
 }
