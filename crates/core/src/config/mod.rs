@@ -10,6 +10,7 @@ pub struct Config {
   pub mode: Mode,
   pub resolve: ResolveConfig,
   pub external: Vec<String>,
+  pub runtime: RuntimeConfig,
 }
 
 impl Default for Config {
@@ -23,6 +24,7 @@ impl Default for Config {
       mode: Mode::Development,
       resolve: ResolveConfig::default(),
       external: vec![],
+      runtime: Default::default(),
     }
   }
 }
@@ -78,4 +80,13 @@ impl Default for ResolveConfig {
       symlinks: true,
     }
   }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename = "camelCase", default)]
+pub struct RuntimeConfig {
+  /// the module system file path
+  pub module_system_file_path: String,
+  /// the module system's plugin's file path
+  pub module_system_plugins: Vec<String>,
 }
