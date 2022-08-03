@@ -85,8 +85,8 @@ impl Default for ResolveConfig {
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename = "camelCase", default)]
 pub struct RuntimeConfig {
-  /// the module system file path
-  pub module_system_file_path: String,
-  /// the module system's plugin's file path
-  pub module_system_plugins: Vec<String>,
+  /// the compiled runtime file path, if [None], the most simple runtime will be used.
+  pub path: Option<String>,
+  /// the runtime plugins
+  pub plugins: Vec<String>,
 }

@@ -13,7 +13,10 @@ use napi::{
   Env, Error, JsFunction, JsObject, JsUnknown, NapiRaw, Status,
 };
 
-use farmfe_core::{context::CompilationContext, plugin::PluginResolveHookParam};
+use farmfe_core::{
+  context::CompilationContext,
+  plugin::{PluginHookContext, PluginResolveHookParam},
+};
 
 const RESOLVE: &str = "resolve";
 
@@ -67,7 +70,7 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
   napi_get_cb_info(
     env,
     info,
-    &mut 1,
+    &mut 2,
     argv.as_mut_ptr(),
     ptr::null_mut(),
     &mut data,
@@ -77,13 +80,16 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
   let param: PluginResolveHookParam = Env::from_raw(env)
     .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
     .unwrap();
+  let hook_context: PluginHookContext = Env::from_raw(env)
+    .from_js_value(JsUnknown::from_napi_value(env, argv[1]).unwrap())
+    .unwrap();
 
   Env::from_raw(env)
     .execute_tokio_future(
       async move {
         let resolved = ctx
           .plugin_driver
-          .resolve(&param, &ctx)
+          .resolve(&param, &ctx, &hook_context)
           .map_err(|e| Error::new(Status::GenericFailure, format!("{}", e)))?;
 
         resolved.ok_or_else(|| {

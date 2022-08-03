@@ -4,7 +4,7 @@ use parking_lot::RwLock;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  Plugin, PluginAnalyzeDepsHookParam, PluginLoadHookParam, PluginLoadHookResult,
+  Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
   PluginParseHookParam, PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
 };
 use crate::{
@@ -82,14 +82,16 @@ impl PluginDriver {
     resolve,
     Result<Option<PluginResolveHookResult>>,
     param: &PluginResolveHookParam,
-    context: &Arc<CompilationContext>
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
   );
 
   hook_first!(
     load,
     Result<Option<PluginLoadHookResult>>,
     param: &PluginLoadHookParam,
-    context: &Arc<CompilationContext>
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
   );
 
   pub fn transform(
@@ -125,7 +127,8 @@ impl PluginDriver {
     parse,
     Result<Option<Module>>,
     param: &PluginParseHookParam,
-    context: &Arc<CompilationContext>
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
   );
 
   hook_serial!(process_module, &mut Module);
@@ -142,14 +145,16 @@ impl PluginDriver {
     analyze_module_graph,
     Result<Option<ModuleGroupMap>>,
     param: &RwLock<ModuleGraph>,
-    context: &Arc<CompilationContext>
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
   );
 
   hook_first!(
     merge_modules,
     Result<Option<ResourcePotGraph>>,
     module_group: &ModuleGroupMap,
-    context: &Arc<CompilationContext>
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
   );
 
   hook_parallel!(
@@ -165,7 +170,8 @@ impl PluginDriver {
     generate_resources,
     Result<Option<Vec<Resource>>>,
     resource_pot: &ResourcePot,
-    context: &Arc<CompilationContext>
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
   );
 
   hook_first!(
@@ -196,7 +202,9 @@ mod tests {
     config::Config,
     context::CompilationContext,
     error::Result,
-    plugin::{Plugin, PluginResolveHookParam, PluginResolveHookResult, ResolveKind},
+    plugin::{
+      Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
+    },
   };
 
   use super::PluginDriver;
@@ -214,6 +222,7 @@ mod tests {
           &self,
           _param: &PluginResolveHookParam,
           _context: &Arc<CompilationContext>,
+          _hook_context: &PluginHookContext,
         ) -> Result<Option<PluginResolveHookResult>> {
           if $should_return {
             Ok(Some(PluginResolveHookResult {
@@ -246,11 +255,16 @@ mod tests {
       importer: None,
       source: "./any".to_string(),
       kind: ResolveKind::Import,
-      caller: None,
     };
     let context = Arc::new(CompilationContext::new(Config::default(), vec![]));
+    let hook_context = PluginHookContext {
+      caller: None,
+      meta: HashMap::new(),
+    };
 
-    let resolved = plugin_driver.resolve(&param, &context).unwrap();
+    let resolved = plugin_driver
+      .resolve(&param, &context, &hook_context)
+      .unwrap();
 
     assert!(resolved.is_some());
     assert_eq!(resolved.unwrap().id, String::from("ResolvePlugin1"));
@@ -264,7 +278,9 @@ mod tests {
       Arc::new(ResolvePlugin4 {}),
     ]);
 
-    let resolved = plugin_driver.resolve(&param, &context).unwrap();
+    let resolved = plugin_driver
+      .resolve(&param, &context, &hook_context)
+      .unwrap();
 
     assert!(resolved.is_some());
     assert_eq!(resolved.unwrap().id, String::from("ResolvePlugin4"));
@@ -274,7 +290,9 @@ mod tests {
 
     let plugin_driver = PluginDriver::new(vec![Arc::new(ResolvePlugin5 {})]);
 
-    let resolved = plugin_driver.resolve(&param, &context).unwrap();
+    let resolved = plugin_driver
+      .resolve(&param, &context, &hook_context)
+      .unwrap();
 
     assert!(resolved.is_none());
   }

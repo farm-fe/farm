@@ -372,6 +372,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_runtime"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+]
+
+[[package]]
 name = "farmfe_plugin_sass"
 version = "0.0.1"
 dependencies = [
@@ -388,6 +395,13 @@ dependencies = [
  "swc_ecma_parser",
  "swc_ecma_visit",
  "testing_macros",
+]
+
+[[package]]
+name = "farmfe_toolkit"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
 ]
 
 [[package]]

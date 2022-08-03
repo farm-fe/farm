@@ -7,7 +7,7 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::Result,
-  plugin::{Plugin, PluginResolveHookParam, PluginResolveHookResult},
+  plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
 };
 use resolver::Resolver;
 
@@ -37,6 +37,7 @@ impl Plugin for FarmPluginResolve {
     &self,
     param: &PluginResolveHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     let source = &param.source;
     let basedir = if let Some(importer) = &param.importer {

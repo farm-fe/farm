@@ -5,8 +5,8 @@ use farmfe_core::{
   context::CompilationContext,
   module::ModuleType,
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginLoadHookParam,
-    PluginParseHookParam, ResolveKind,
+    Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
+    PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
   resource::resource_pot::{
     JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType,
@@ -23,13 +23,17 @@ fn load_parse_and_analyze_deps(file: PathBuf) {
   let plugin_script = farmfe_plugin_script::FarmScriptPlugin::new(&config);
   let context = Arc::new(CompilationContext::new(config, vec![]));
   let id = file.to_string_lossy().to_string();
+  let hook_context = PluginHookContext {
+    caller: None,
+    meta: HashMap::new(),
+  };
   let loaded = plugin_script.load(
     &PluginLoadHookParam {
       id: &id,
       query: HashMap::new(),
-      caller: None,
     },
     &context,
+    &hook_context,
   );
 
   assert!(loaded.is_ok());
@@ -65,9 +69,9 @@ console.log(a, b);"#
         source_map_chain: vec![],
         side_effects: false,
         package_json_info: Value::Null,
-        caller: None,
       },
       &context,
+      &hook_context,
     )
     .unwrap()
     .unwrap();
@@ -109,7 +113,7 @@ console.log(a, b);"#
   };
 
   let resources = plugin_script
-    .generate_resources(&resource_pot, &context)
+    .generate_resources(&resource_pot, &context, &hook_context)
     .unwrap()
     .unwrap();
   assert_eq!(resources.len(), 1);

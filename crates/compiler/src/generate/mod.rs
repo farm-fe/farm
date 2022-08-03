@@ -1,9 +1,9 @@
+use std::collections::HashMap;
+
 use farmfe_core::{
   error::{CompilationError, Result},
-  rayon::iter::{
-    IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
-  },
-  resource::Resource,
+  plugin::PluginHookContext,
+  rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
 
 use crate::Compiler;
@@ -11,7 +11,10 @@ use crate::Compiler;
 impl Compiler {
   pub(crate) fn generate(&self) -> Result<()> {
     self.context.plugin_driver.generate_start(&self.context)?;
-
+    let hook_context = PluginHookContext {
+      caller: None,
+      meta: HashMap::new(),
+    };
     self
       .context
       .plugin_driver
@@ -20,13 +23,13 @@ impl Compiler {
     let module_group_map = self
       .context
       .plugin_driver
-      .analyze_module_graph(&self.context.module_graph, &self.context)?
+      .analyze_module_graph(&self.context.module_graph, &self.context, &hook_context)?
       .unwrap();
 
     let resource_pot_graph = self
       .context
       .plugin_driver
-      .merge_modules(&module_group_map, &self.context)?
+      .merge_modules(&module_group_map, &self.context, &hook_context)?
       .unwrap();
 
     let mut g = self.context.resource_pot_graph.write();
@@ -51,10 +54,11 @@ impl Compiler {
         .context
         .plugin_driver
         .optimize_resource_pot(resource, &self.context)?;
-      let resources = self
-        .context
-        .plugin_driver
-        .generate_resources(resource, &self.context)?;
+      let resources =
+        self
+          .context
+          .plugin_driver
+          .generate_resources(resource, &self.context, &hook_context)?;
 
       if let Some(resources) = resources {
         resources.into_par_iter().try_for_each(|resource| {

@@ -7,8 +7,8 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{Module, ModuleId, ModuleMetaData, ModuleScriptMetaData, ModuleType},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginLoadHookParam, PluginLoadHookResult,
-    PluginParseHookParam,
+    Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginParseHookParam,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -36,6 +36,7 @@ impl Plugin for FarmScriptPlugin {
     &self,
     param: &PluginLoadHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
     let id = param.id;
 
@@ -63,6 +64,7 @@ impl Plugin for FarmScriptPlugin {
     &self,
     param: &PluginParseHookParam,
     context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<Module>> {
     if let Some(syntax) = self.syntax_from_module_type(&param.module_type) {
       let source_file = context.meta.script.cm.new_source_file(
@@ -110,6 +112,7 @@ impl Plugin for FarmScriptPlugin {
     &self,
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let ast = &resource_pot.meta.as_js().ast;

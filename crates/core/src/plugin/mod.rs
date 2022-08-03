@@ -35,6 +35,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _param: &PluginResolveHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     Ok(None)
   }
@@ -43,6 +44,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _param: &PluginLoadHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
     Ok(None)
   }
@@ -59,6 +61,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _param: &PluginParseHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<Module>> {
     Ok(None)
   }
@@ -102,6 +105,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _module_graph: &RwLock<ModuleGraph>,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<ModuleGroupMap>> {
     Ok(None)
   }
@@ -111,6 +115,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _module_group: &ModuleGroupMap,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<ResourcePotGraph>> {
     Ok(None)
   }
@@ -149,6 +154,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _resource_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<Resource>>> {
     Ok(None)
   }
@@ -194,6 +200,16 @@ pub enum ResolveKind {
   Custom(String),
 }
 
+/// Plugin hook call context, designed for <first type> hook.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginHookContext {
+  /// if this hook is called by the compiler, its value is [None]
+  /// if this hook is called by other plugins, its value is set by the caller plugins.
+  pub caller: Option<String>,
+  /// meta data passed between
+  pub meta: HashMap<String, String>,
+}
+
 /// Parameter of the resolve hook
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
@@ -204,9 +220,6 @@ pub struct PluginResolveHookParam {
   pub importer: Option<String>,
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   pub kind: ResolveKind,
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  pub caller: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -231,9 +244,6 @@ pub struct PluginResolveHookResult {
 pub struct PluginLoadHookParam<'a> {
   pub id: &'a str,
   pub query: HashMap<String, String>,
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  pub caller: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -282,9 +292,6 @@ pub struct PluginParseHookParam {
   pub side_effects: bool,
   /// resolved package.json
   pub package_json_info: Value,
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  pub caller: Option<String>,
 }
 
 pub struct PluginAnalyzeDepsHookParam<'a> {

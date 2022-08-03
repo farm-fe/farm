@@ -1,6 +1,9 @@
-use std::sync::{
-  mpsc::{channel, Sender},
-  Arc,
+use std::{
+  collections::HashMap,
+  sync::{
+    mpsc::{channel, Sender},
+    Arc,
+  },
 };
 
 use farmfe_core::{
@@ -8,8 +11,8 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::ModuleType,
   plugin::{
-    PluginAnalyzeDepsHookParam, PluginLoadHookParam, PluginParseHookParam, PluginResolveHookParam,
-    PluginTransformHookParam, ResolveKind,
+    PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
+    PluginResolveHookParam, PluginTransformHookParam, ResolveKind,
   },
   rayon,
   rayon::ThreadPool,
@@ -66,9 +69,15 @@ impl Compiler {
         source: param.source,
         importer: param.importer,
         kind: param.kind,
-        caller: None,
       };
-      let resolved = match context.plugin_driver.resolve(&resolve_param, &context) {
+      let hook_context = PluginHookContext {
+        caller: None,
+        meta: HashMap::new(),
+      };
+      let resolved = match context
+        .plugin_driver
+        .resolve(&resolve_param, &context, &hook_context)
+      {
         Ok(resolved) => match resolved {
           Some(res) => res,
           None => {
@@ -102,11 +111,13 @@ impl Compiler {
 
       let load_param = PluginLoadHookParam {
         id: &resolved.id,
-        caller: None,
         query: resolved.query.clone(),
       };
 
-      let loaded = match context.plugin_driver.load(&load_param, &context) {
+      let loaded = match context
+        .plugin_driver
+        .load(&load_param, &context, &hook_context)
+      {
         Ok(loaded) => match loaded {
           Some(loaded) => loaded,
           None => {
@@ -162,9 +173,11 @@ impl Compiler {
         source_map_chain: vec![],
         side_effects: false,
         package_json_info: from_str(r#"{ "name": "hello" }"#).unwrap(),
-        caller: None,
       };
-      let mut module = match context.plugin_driver.parse(&parse_param, &context) {
+      let mut module = match context
+        .plugin_driver
+        .parse(&parse_param, &context, &hook_context)
+      {
         Ok(module) => match module {
           Some(module) => module,
           None => {

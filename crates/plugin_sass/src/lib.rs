@@ -6,7 +6,7 @@ use farmfe_core::{
   error::Result,
   module::ModuleType,
   plugin::{
-    Plugin, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult, PluginTransformHookResult,
   },
 };
@@ -30,6 +30,7 @@ impl Plugin for FarmPluginSass {
     &self,
     _param: &PluginResolveHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     Ok(Some(PluginResolveHookResult {
       id: String::from("resolve from FarmSassPlugin"),
@@ -41,6 +42,7 @@ impl Plugin for FarmPluginSass {
     &self,
     param: &PluginLoadHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
     println!("load param {:?}", param);
 
