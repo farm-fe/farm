@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 farmfe_core = { path = "../core" }
 farmfe_plugin_resolve = { path = "../plugin_resolve" }
+farmfe_toolkit = { path = "../toolkit" }

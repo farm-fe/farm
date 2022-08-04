@@ -8,13 +8,10 @@ use super::{
   PluginParseHookParam, PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
 };
 use crate::{
+  config::Config,
   context::CompilationContext,
   error::Result,
-  module::{
-    module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupMap},
-    Module, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleType},
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
@@ -74,6 +71,13 @@ macro_rules! hook_parallel {
 impl PluginDriver {
   pub fn new(plugins: Vec<Arc<dyn Plugin>>) -> Self {
     Self { plugins }
+  }
+
+  pub fn config(&self, config: &mut Config) -> Result<()> {
+    for plugin in &self.plugins {
+      plugin.config(config)?;
+    }
+    Ok(())
   }
 
   hook_parallel!(build_start);

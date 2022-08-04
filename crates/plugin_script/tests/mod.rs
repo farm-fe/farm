@@ -15,7 +15,7 @@ use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::Module as SwcModule,
 };
-use testing_macros::fixture;
+use farmfe_toolkit::testing_macros::fixture;
 
 #[fixture("tests/fixtures/**/index.*")]
 fn load_parse_and_analyze_deps(file: PathBuf) {

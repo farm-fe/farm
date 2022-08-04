@@ -5,13 +5,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
+  config::Config,
   context::CompilationContext,
   error::Result,
-  module::{
-    module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupMap},
-    Module, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleType},
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
@@ -25,6 +22,10 @@ pub trait Plugin: Any + Send + Sync {
 
   fn priority(&self) -> i32 {
     DEFAULT_PRIORITY
+  }
+
+  fn config(&self, _config: &mut Config) -> Result<Option<()>> {
+    Ok(None)
   }
 
   fn build_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
@@ -123,7 +124,7 @@ pub trait Plugin: Any + Send + Sync {
   /// process resource graph before render and generating each resource
   fn process_resource_pot_graph(
     &self,
-    _resource_graph: &RwLock<ResourcePotGraph>,
+    _resource_pot_graph: &RwLock<ResourcePotGraph>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -133,7 +134,7 @@ pub trait Plugin: Any + Send + Sync {
   /// May merge the module's ast in the same resource to a single ast and transform the output format to custom module system and ESM
   fn render_resource_pot(
     &self,
-    _resource: &mut ResourcePot,
+    _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)

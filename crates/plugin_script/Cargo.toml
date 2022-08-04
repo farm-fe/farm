@@ -5,9 +5,4 @@ edition = "2021"
 
 [dependencies]
 farmfe_core = { path = "../core" }
-swc_ecma_parser = "0.116"
-swc_ecma_visit = "0.75.0"
-swc_ecma_codegen = "0.120"
-
-[dev-dependencies]
-testing_macros = "0.2"
+farmfe_toolkit = { path = "../toolkit" }

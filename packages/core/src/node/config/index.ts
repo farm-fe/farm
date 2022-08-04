@@ -49,14 +49,14 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
   const normalizedConfig: Config = {
     config,
     rustPlugins: [
-      path.join(
-        __dirname,
-        '../../../../../target/release/libfarmfe_plugin_sass.so'
-      ),
       // path.join(
       //   __dirname,
-      //   '../../../../../target/release/libfarmfe_plugin_sass.dylib'
+      //   '../../../../../target/release/libfarmfe_plugin_sass.so'
       // ),
+      path.join(
+        __dirname,
+        '../../../../../target/release/libfarmfe_plugin_sass.dylib'
+      ),
     ],
     // rustPlugins: [],
     jsPlugins: [

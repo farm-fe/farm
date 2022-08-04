@@ -3,7 +3,7 @@ use farmfe_core::{
   swc_ecma_ast::{Module, ModuleDecl, ModuleItem},
 };
 
-use swc_ecma_visit::{Visit, VisitWith};
+use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
 pub struct DepsAnalyzer<'a> {
   ast: &'a Module,

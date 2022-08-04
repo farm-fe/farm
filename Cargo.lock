@@ -301,6 +301,7 @@ version = "0.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_resolve",
+ "farmfe_toolkit",
 ]
 
 [[package]]
@@ -364,6 +365,14 @@ name = "farmfe_plugin_html"
 version = "0.0.1"
 
 [[package]]
+name = "farmfe_plugin_merge_modules"
+version = "0.0.0"
+dependencies = [
+ "farmfe_core",
+ "farmfe_toolkit",
+]
+
+[[package]]
 name = "farmfe_plugin_resolve"
 version = "0.0.1"
 dependencies = [
@@ -376,6 +385,7 @@ name = "farmfe_plugin_runtime"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "farmfe_toolkit",
 ]
 
 [[package]]
@@ -391,10 +401,7 @@ name = "farmfe_plugin_script"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
- "swc_ecma_codegen",
- "swc_ecma_parser",
- "swc_ecma_visit",
- "testing_macros",
+ "farmfe_toolkit",
 ]
 
 [[package]]
@@ -402,6 +409,10 @@ name = "farmfe_toolkit"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "swc_ecma_codegen",
+ "swc_ecma_parser",
+ "swc_ecma_visit",
+ "testing_macros",
 ]
 
 [[package]]

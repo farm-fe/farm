@@ -65,6 +65,18 @@ importers:
       jest: 28.1.2_@types+node@18.0.1
       typescript: 4.7.4
 
+  packages/runtime:
+    specifiers:
+      '@farmfe/cli': workspace:^0.0.0
+      '@farmfe/core': workspace:^0.0.0
+      '@types/node': ^18.0.1
+      typescript: ^4.7.4
+    devDependencies:
+      '@farmfe/cli': link:../cli
+      '@farmfe/core': link:../core
+      '@types/node': 18.0.1
+      typescript: 4.7.4
+
 packages:
 
   /@ampproject/remapping/2.2.0:

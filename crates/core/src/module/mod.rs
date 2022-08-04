@@ -139,49 +139,67 @@ impl ModuleType {
 
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct ModuleId {
   relative_path: String,
-  hash: String,
 }
 
 const LEN: usize = 4;
+
+// get platform independent relative path
+pub fn relative(from: &str, to: &str) -> String {
+  let rp =
+    diff_paths(to, from).unwrap_or_else(|| panic!("{} or {} is not absolute path", from, to));
+
+  // make sure the relative path is platform independent
+  // this can ensure that the relative path and hash stable across platforms
+  let mut result = String::new();
+
+  for comp in rp.components() {
+    match comp {
+      std::path::Component::Prefix(_)
+      | std::path::Component::RootDir
+      | std::path::Component::CurDir => unreachable!(),
+      std::path::Component::ParentDir => {
+        if result.is_empty() {
+          result += "..";
+        } else {
+          result += "/..";
+        }
+      }
+      std::path::Component::Normal(c) => {
+        let c = c.to_string_lossy().to_string();
+
+        if result.is_empty() {
+          result += &c;
+        } else {
+          result += &format!("/{}", c);
+        }
+      }
+    }
+  }
+
+  result
+}
 
 impl ModuleId {
   pub fn new(resolved_id: &str, cwd: &str) -> Self {
     let rp = Path::new(resolved_id);
     let relative_path = if rp.is_absolute() {
-      diff_paths(resolved_id, cwd)
-        .unwrap_or_else(|| {
-          panic!(
-            "resolved_id({}) or cwd({} is not absolute path",
-            resolved_id, cwd
-          )
-        })
-        .to_string_lossy()
-        .to_string()
+      relative(cwd, resolved_id)
     } else {
       resolved_id.to_string()
     };
 
-    let mut hasher = Blake2bVar::new(LEN).unwrap();
-    hasher.update(relative_path.as_bytes());
-    let mut buf = [0u8; LEN];
-    hasher.finalize_variable(&mut buf).unwrap();
-    let hash = hex::encode(buf);
-
-    Self {
-      relative_path,
-      hash,
-    }
+    Self { relative_path }
   }
 
   /// return self.relative_path in dev,
   /// return hash(self.relative_path) in prod
-  pub fn id(&self, mode: Mode) -> &str {
+  pub fn id(&self, mode: Mode) -> String {
     match mode {
-      Mode::Development => &self.relative_path,
-      Mode::Production => &self.hash,
+      Mode::Development => self.relative_path.to_string(),
+      Mode::Production => self.hash(),
     }
   }
 
@@ -189,8 +207,12 @@ impl ModuleId {
     &self.relative_path
   }
 
-  pub fn hash(&self) -> &str {
-    &self.hash
+  pub fn hash(&self) -> String {
+    let mut hasher = Blake2bVar::new(LEN).unwrap();
+    hasher.update(self.relative_path.as_bytes());
+    let mut buf = [0u8; LEN];
+    hasher.finalize_variable(&mut buf).unwrap();
+    hex::encode(buf)
   }
 }
 

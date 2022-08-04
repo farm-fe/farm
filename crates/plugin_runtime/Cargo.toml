@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 farmfe_core = { path = "../core" }
+farmfe_toolkit = { path = "../toolkit" }

@@ -1,8 +1,8 @@
 // The smallest runtime that only has a really simple module system to load and execute modules synchronously.
-// And only works with a single resource.
+// This minimal runtime is used for the Farm runtime and its plugins.
 
 // should insert below var decl during compile
-// var module = { ... };
+// var modules = { ... };
 // var entryModule = 'xxx';
 
 !(function (modules, entryModule) {
