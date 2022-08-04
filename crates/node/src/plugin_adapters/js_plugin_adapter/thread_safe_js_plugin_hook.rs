@@ -132,11 +132,11 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
   let (param, ctx, hook_context, sender) = *data;
   let js_context = create_js_context(raw_env, ctx);
 
-  fn to_napi_value<T: Serialize>(arg: T, raw_env: napi_env) -> napi_value {
+  unsafe fn to_napi_value<T: Serialize>(arg: T, raw_env: napi_env) -> napi_value {
     Env::from_raw(raw_env).to_js_value(&arg).unwrap().raw()
   }
 
-  let mut args: Vec<napi_value> = vec![
+  let args: Vec<napi_value> = vec![
     to_napi_value(param, raw_env),
     js_context.raw(),
     to_napi_value(hook_context, raw_env),
@@ -237,7 +237,7 @@ impl JsPluginResolveHook {
       }
     }) || self
       .filters
-      .specifiers
+      .sources
       .iter()
       .any(|f| f.is_match(&param.source));
 
@@ -287,17 +287,17 @@ impl JsPluginTransformHook {
   }
 }
 
-/// Resolve hook filters, works as `||`. If any importers or specifiers matches any regex item in the Vec, we treat it as filtered.
+/// Resolve hook filters, works as `||`. If any importers or sources matches any regex item in the Vec, we treat it as filtered.
 #[napi(object)]
 struct JsPluginResolveHookFilters {
   pub importers: Vec<String>,
-  pub specifiers: Vec<String>,
+  pub sources: Vec<String>,
 }
 
 #[derive(Debug)]
 struct PluginResolveHookFilters {
   pub importers: Vec<Regex>,
-  pub specifiers: Vec<Regex>,
+  pub sources: Vec<Regex>,
 }
 
 impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
@@ -308,8 +308,8 @@ impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
         .into_iter()
         .map(|f| Regex::new(&f).unwrap())
         .collect(),
-      specifiers: f
-        .specifiers
+      sources: f
+        .sources
         .into_iter()
         .map(|f| Regex::new(&f).unwrap())
         .collect(),
@@ -484,7 +484,10 @@ unsafe extern "C" fn catch_cb<T: DeserializeOwned>(
   napi_create_reference(env, rejected_value, 1, &mut error_ref);
 
   let result = Err(Error::from(error_ref)).map_err(|e| {
-    CompilationError::NAPIError(format!("Invalid hook return, except object. {:?}", e))
+    CompilationError::NAPIError(format!(
+      "Can not transform the js hook result to js error object. {:?}",
+      e
+    ))
   });
   let sender = Box::from_raw(data as *mut Sender<Result<Option<T>>>);
   sender.send(result).unwrap();

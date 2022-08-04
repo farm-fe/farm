@@ -49,43 +49,48 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
   const normalizedConfig: Config = {
     config,
     rustPlugins: [
-      // path.join(
-      //   __dirname,
-      //   '../../../../../target/release/libfarmfe_plugin_sass.so'
-      // ),
+      path.join(
+        __dirname,
+        '../../../../../target/release/libfarmfe_plugin_sass.so'
+      ),
       // path.join(
       //   __dirname,
       //   '../../../../../target/release/libfarmfe_plugin_sass.dylib'
       // ),
     ],
     // rustPlugins: [],
-    // jsPlugins: [
-    //   {
-    //     name: 'js-plugin',
-    //     priority: 10,
-    //     resolve: {
-    //       filters: {
-    //         importers: [],
-    //         specifiers: ['from_js_plugin'],
-    //       },
-    //       executor: async (param, context) => {
-    //         console.log(param, context);
+    jsPlugins: [
+      {
+        name: 'js-plugin',
+        priority: 10,
+        resolve: {
+          filters: {
+            importers: [],
+            sources: ['from_js_plugin'],
+          },
+          executor: async (param, context, hook_context) => {
+            console.log(param, context, hook_context);
 
-    //         if (!param.caller) {
-    //           const resolved = await context.resolve({
-    //             ...param,
-    //             specifier: './from_js_plugin',
-    //             caller: 'js-plugin',
-    //           });
-    //           console.log('call internal resolve in js', resolved);
-    //           resolved.id += '.js-plugin';
-    //           return resolved;
-    //         }
-    //       },
-    //     },
-    //   },
-    // ],
-    jsPlugins: [],
+            if (!hook_context.caller) {
+              const resolved = await context.resolve(
+                {
+                  ...param,
+                  source: './from_js_plugin',
+                },
+                {
+                  meta: hook_context.meta,
+                  caller: 'js-plugin',
+                }
+              );
+              console.log('call internal resolve in js', resolved);
+              resolved.id += '.js-plugin';
+              return resolved;
+            }
+          },
+        },
+      },
+    ],
+    // jsPlugins: [],
   };
 
   return normalizedConfig;

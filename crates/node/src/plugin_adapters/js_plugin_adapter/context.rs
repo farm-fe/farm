@@ -65,7 +65,7 @@ fn attach_resolve_property(
 }
 
 unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_value {
-  let mut argv: [napi_value; 1] = [ptr::null_mut()];
+  let mut argv: [napi_value; 2] = [ptr::null_mut(); 2];
   let mut data = ptr::null_mut();
   napi_get_cb_info(
     env,

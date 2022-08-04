@@ -6,7 +6,7 @@ use farmfe_core::{
   error::{CompilationError, Result},
   parking_lot::RwLock,
   plugin::{
-    Plugin, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
   },
 };
@@ -54,16 +54,18 @@ impl Plugin for RustPluginAdapter {
     &self,
     param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
-    self.plugin.resolve(param, context)
+    self.plugin.resolve(param, context, hook_context)
   }
 
   fn load(
     &self,
     param: &PluginLoadHookParam,
     context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
-    self.plugin.load(param, context)
+    self.plugin.load(param, context, hook_context)
   }
 
   fn transform(
@@ -78,8 +80,9 @@ impl Plugin for RustPluginAdapter {
     &self,
     param: &farmfe_core::plugin::PluginParseHookParam,
     context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<farmfe_core::module::Module>> {
-    self.plugin.parse(param, context)
+    self.plugin.parse(param, context, hook_context)
   }
 
   fn process_module(
@@ -118,16 +121,22 @@ impl Plugin for RustPluginAdapter {
     &self,
     module_graph: &RwLock<farmfe_core::module::module_graph::ModuleGraph>,
     context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<farmfe_core::module::module_group::ModuleGroupMap>> {
-    self.plugin.analyze_module_graph(module_graph, context)
+    self
+      .plugin
+      .analyze_module_graph(module_graph, context, hook_context)
   }
 
   fn merge_modules(
     &self,
     module_group: &farmfe_core::module::module_group::ModuleGroupMap,
     context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<farmfe_core::resource::resource_pot_graph::ResourcePotGraph>> {
-    self.plugin.merge_modules(module_group, context)
+    self
+      .plugin
+      .merge_modules(module_group, context, hook_context)
   }
 
   fn process_resource_pot_graph(
@@ -160,8 +169,11 @@ impl Plugin for RustPluginAdapter {
     &self,
     resource_pot: &farmfe_core::resource::resource_pot::ResourcePot,
     context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<farmfe_core::resource::Resource>>> {
-    self.plugin.generate_resources(resource_pot, context)
+    self
+      .plugin
+      .generate_resources(resource_pot, context, hook_context)
   }
 
   fn write_resource(

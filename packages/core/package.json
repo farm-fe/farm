@@ -26,6 +26,9 @@
     "binding",
     "dist"
   ],
+  "peerDependencies": {
+    "@farmfe/runtime": "workspace:^0.0.0"
+  },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",

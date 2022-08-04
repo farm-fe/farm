@@ -28,7 +28,7 @@ macro_rules! hook_first {
     pub fn $func_name(&self, $($arg: $ty),*) -> $ret_ty {
       for plugin in &self.plugins {
         let ret = plugin.$func_name($($arg),*)?;
-
+        println!("Plugin {}", plugin.name());
         if ret.is_some() {
           return Ok(ret)
         }

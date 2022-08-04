@@ -1,0 +1,19 @@
+{
+  "name": "@farmfe/runtime",
+  "version": "0.0.0",
+  "description": "Runtime of Farm",
+  "author": {
+    "name": "bright wu",
+    "email": "1611331@mail.nankai.edu.cn"
+  },
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.1",
+    "typescript": "^4.7.4",
+    "@farmfe/core": "workspace:^0.0.0",
+    "@farmfe/cli": "workspace:^0.0.0"
+  }
+}
