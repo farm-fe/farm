@@ -201,7 +201,7 @@ pub enum ResolveKind {
   Custom(String),
 }
 
-/// Plugin hook call context, designed for <first type> hook.
+/// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginHookContext {
   /// if this hook is called by the compiler, its value is [None]

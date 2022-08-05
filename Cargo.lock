@@ -300,7 +300,9 @@ name = "farmfe_compiler"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "farmfe_plugin_merge_modules",
  "farmfe_plugin_resolve",
+ "farmfe_plugin_script",
  "farmfe_toolkit",
 ]
 
@@ -313,6 +315,7 @@ dependencies = [
  "dashmap",
  "downcast-rs",
  "farm_macro_cache_item",
+ "hashbrown",
  "hex",
  "parking_lot",
  "pathdiff",

@@ -15,31 +15,40 @@ impl Compiler {
       caller: None,
       meta: HashMap::new(),
     };
+
+    // =============== Optimize Module Graph Start ================
     self
       .context
       .plugin_driver
       .optimize_module_graph(&self.context.module_graph, &self.context)?;
+    // =============== Optimize Module Graph End ================
 
+    // =============== Analyze Module Graph Start ================
     let module_group_map = self
       .context
       .plugin_driver
       .analyze_module_graph(&self.context.module_graph, &self.context, &hook_context)?
       .unwrap();
+    // =============== Analyze Module Graph End ================
 
+    // =============== Merge Modules Start ================
     let resource_pot_graph = self
       .context
       .plugin_driver
       .merge_modules(&module_group_map, &self.context, &hook_context)?
       .unwrap();
+    // =============== Merge Modules End ================
 
     let mut g = self.context.resource_pot_graph.write();
     g.replace(resource_pot_graph);
     drop(g);
 
+    // =============== Process Resource Pot Graph Start ================
     self
       .context
       .plugin_driver
       .process_resource_pot_graph(&self.context.resource_pot_graph, &self.context)?;
+    // =============== Process Resource Pot Graph End ================
 
     let mut g = self.context.resource_pot_graph.write();
     let resources = g.resources_mut();
@@ -71,7 +80,7 @@ impl Compiler {
         })?;
       } else {
         return Err(CompilationError::GenerateResourcesError {
-          name: resource.name.clone(),
+          name: resource.id.to_string(),
           ty: resource.resource_pot_type.clone(),
         });
       }

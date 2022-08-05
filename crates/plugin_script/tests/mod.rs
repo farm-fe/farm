@@ -9,7 +9,7 @@ use farmfe_core::{
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
   resource::resource_pot::{
-    JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType,
+    JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
   },
   serde_json::Value,
   swc_common::DUMMY_SP,
@@ -20,8 +20,8 @@ use farmfe_toolkit::testing_macros::fixture;
 #[fixture("tests/fixtures/**/index.*")]
 fn load_parse_and_analyze_deps(file: PathBuf) {
   let config = Config::default();
-  let plugin_script = farmfe_plugin_script::FarmScriptPlugin::new(&config);
-  let context = Arc::new(CompilationContext::new(config, vec![]));
+  let plugin_script = farmfe_plugin_script::FarmPluginScript::new(&config);
+  let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
   let id = file.to_string_lossy().to_string();
   let hook_context = PluginHookContext {
     caller: None,
@@ -101,7 +101,8 @@ console.log(a, b);"#
   );
 
   let resource_pot = ResourcePot {
-    name: "index".to_string(),
+    id: ResourcePotId::new("index".to_string()),
+    modules: vec![],
     resource_pot_type: ResourcePotType::Js,
     meta: ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast: SwcModule {

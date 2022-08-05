@@ -23,11 +23,11 @@ use farmfe_toolkit::{
 mod deps_analyzer;
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
-pub struct FarmScriptPlugin {}
+pub struct FarmPluginScript {}
 
-impl Plugin for FarmScriptPlugin {
+impl Plugin for FarmPluginScript {
   fn name(&self) -> &str {
-    "FarmScriptPlugin"
+    "FarmPluginScript"
   }
 
   fn load(
@@ -102,7 +102,7 @@ impl Plugin for FarmScriptPlugin {
       let ast = &resource_pot.meta.as_js().ast;
       let buf = codegen_module(ast, context.meta.script.cm.clone()).map_err(|_| {
         CompilationError::GenerateResourcesError {
-          name: resource_pot.name.clone(),
+          name: resource_pot.id.to_string(),
           ty: resource_pot.resource_pot_type.clone(),
         }
       })?;
@@ -114,7 +114,7 @@ impl Plugin for FarmScriptPlugin {
   }
 }
 
-impl FarmScriptPlugin {
+impl FarmPluginScript {
   pub fn new(_config: &Config) -> Self {
     Self {}
   }

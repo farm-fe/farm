@@ -7,11 +7,32 @@ use swc_ecma_ast::Module as SwcModule;
 use farm_macro_cache_item::cache_item;
 use rkyv_dyn::archive_dyn;
 
+use crate::module::ModuleId;
+
 #[cache_item]
 pub struct ResourcePot {
-  pub name: String,
+  pub id: ResourcePotId,
   pub resource_pot_type: ResourcePotType,
+  pub modules: Vec<ModuleId>,
   pub meta: ResourcePotMetaData,
+}
+
+#[cache_item]
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+pub struct ResourcePotId {
+  name: String,
+}
+
+impl ToString for ResourcePotId {
+  fn to_string(&self) -> String {
+    self.name.clone()
+  }
+}
+
+impl ResourcePotId {
+  pub fn new(name: String) -> Self {
+    Self { name }
+  }
 }
 
 #[cache_item]

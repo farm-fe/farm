@@ -6,13 +6,16 @@ use blake2::{
 };
 use downcast_rs::{impl_downcast, Downcast};
 use farm_macro_cache_item::cache_item;
+use hashbrown::HashSet;
 use pathdiff::diff_paths;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
 use swc_ecma_ast::Module as SwcModule;
 
-use crate::config::Mode;
+use crate::{config::Mode, resource::resource_pot::ResourcePotId};
+
+use self::module_group::ModuleGroupId;
 
 pub mod module_bucket;
 pub mod module_graph;
@@ -22,10 +25,15 @@ pub mod module_group;
 /// The [Module] is created by plugins in the parse hook of build stage
 #[cache_item]
 pub struct Module {
-  /// the id of this module, generated from the resolved id of the resolve hook.
+  /// the id of this module, generated from the resolved id.
   pub id: ModuleId,
   /// the type of this module, for example [ModuleType::Js]
   pub module_type: ModuleType,
+  /// the module groups this module belongs to, used to construct [crate::module::module_group::ModuleGroupMap]
+  pub module_groups: HashSet<ModuleGroupId>,
+  /// the resource pot this module belongs to
+  pub resource_pot: Option<ResourcePotId>,
+  /// the meta data of this module custom by plugins
   pub meta: ModuleMetaData,
 }
 
@@ -35,6 +43,8 @@ impl Module {
       id,
       module_type,
       meta: ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _),
+      module_groups: HashSet::new(),
+      resource_pot: None,
     }
   }
 }
@@ -140,6 +150,7 @@ impl ModuleType {
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
+#[archive_attr(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
   relative_path: String,
 }
@@ -216,6 +227,20 @@ impl ModuleId {
   }
 }
 
+impl From<&str> for ModuleId {
+  fn from(rp: &str) -> Self {
+    Self {
+      relative_path: rp.to_string(),
+    }
+  }
+}
+
+impl From<String> for ModuleId {
+  fn from(rp: String) -> Self {
+    Self { relative_path: rp }
+  }
+}
+
 impl ToString for ModuleId {
   fn to_string(&self) -> String {
     self.relative_path.clone()
@@ -226,6 +251,7 @@ impl ToString for ModuleId {
 mod tests {
   use crate::config::Mode;
   use farm_macro_cache_item::cache_item;
+  use hashbrown::HashSet;
   use rkyv::{Archive, Archived, Deserialize, Serialize};
   use rkyv_dyn::archive_dyn;
   use rkyv_typename::TypeName;
@@ -266,6 +292,8 @@ mod tests {
       imports: Vec<String>,
     }
 
+    module.module_groups = HashSet::from([ModuleId::new("1", ""), ModuleId::new("2", "")]);
+
     module.meta = ModuleMetaData::Custom(Box::new(StructModuleData {
       ast: String::from("ast"),
       imports: vec![String::from("./index")],
@@ -295,5 +323,12 @@ mod tests {
         .imports,
       vec![String::from("./index")]
     );
+
+    assert!(deserialized_module
+      .module_groups
+      .contains(&ModuleId::new("1", "")));
+    assert!(deserialized_module
+      .module_groups
+      .contains(&ModuleId::new("2", "")));
   }
 }

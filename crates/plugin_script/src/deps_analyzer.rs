@@ -17,7 +17,7 @@ impl<'a> DepsAnalyzer<'a> {
 
   pub fn analyze_deps(&mut self) -> Vec<PluginAnalyzeDepsHookResultEntry> {
     self.ast.visit_with(self);
-    self.deps.take().unwrap()
+    self.deps.take().unwrap_or(vec![])
   }
 
   fn insert_dep(&mut self, dep: PluginAnalyzeDepsHookResultEntry) {

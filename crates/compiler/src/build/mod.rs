@@ -89,7 +89,7 @@ impl Compiler {
 
       // ================ Resolve Start ===============
       let resolve_result = call_and_cache_error!(resolve, &resolve_param, &context, &hook_context);
-      // the module is handled and it won't be processed twice
+      // the module has already been handled and it should not be handled twice
       if context.cache_manager.is_module_handled(&resolve_result.id) {
         return;
       } else {
@@ -171,6 +171,11 @@ impl Compiler {
       let module_id = module.id.clone();
       let mut module_graph = context.module_graph.write();
       module_graph.add_module(module);
+
+      // mark entry module
+      if matches!(resolve_param.kind, ResolveKind::Entry) {
+        module_graph.entries.push(module_id.clone());
+      }
 
       if let Some(importer) = &resolve_param.importer {
         let importer_id = ModuleId::new(importer, &context.config.root);

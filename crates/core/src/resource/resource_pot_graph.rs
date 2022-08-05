@@ -1,14 +1,14 @@
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 use petgraph::{graph::NodeIndex, stable_graph::StableDiGraph};
 
-use super::resource_pot::ResourcePot;
+use super::resource_pot::{ResourcePot, ResourcePotId};
 
 pub struct ResourcePotGraphEdge {}
 
 pub struct ResourcePotGraph {
   g: StableDiGraph<ResourcePot, ResourcePotGraphEdge>,
-  name_index_map: HashMap<String, NodeIndex>,
+  name_index_map: HashMap<ResourcePotId, NodeIndex>,
 }
 
 impl ResourcePotGraph {
@@ -26,7 +26,7 @@ impl ResourcePotGraph {
   }
 
   pub fn add_resource(&mut self, resource: ResourcePot) {
-    let name = resource.name.clone();
+    let name = resource.id.clone();
     let index = self.g.add_node(resource);
     self.name_index_map.insert(name, index);
   }

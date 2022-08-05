@@ -260,7 +260,7 @@ mod tests {
       source: "./any".to_string(),
       kind: ResolveKind::Import,
     };
-    let context = Arc::new(CompilationContext::new(Config::default(), vec![]));
+    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::new(),
