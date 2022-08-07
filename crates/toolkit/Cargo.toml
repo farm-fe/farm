@@ -3,9 +3,18 @@ name = "farmfe_toolkit"
 version = "0.0.1"
 edition = "2021"
 
+[features]
+# full = [
+#   "swc_ecma_parser",
+#   "swc_ecma_visit",
+#   "swc_ecma_codegen",
+#   "swc_ecma_transforms",
+# ]
+
 [dependencies]
 farmfe_core = { path = "../core" }
-swc_ecma_parser = "0.116"
-swc_ecma_visit = "0.75.0"
-swc_ecma_codegen = "0.120"
+swc_ecma_parser = { version = "0.116" }
+swc_ecma_visit = { version = "0.75.0" }
+swc_ecma_codegen = { version = "0.120" }
+swc_ecma_transforms = { version = "0.181", features = ["module", "typescript"] }
 testing_macros = "0.2"

@@ -3,13 +3,17 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
+  hashbrown::HashSet,
   module::ModuleType,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  resource::resource_pot::{
-    JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
+  resource::{
+    resource_pot::{
+      JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
+    },
+    resource_pot_graph::ResourcePotGraph,
   },
   serde_json::Value,
   swc_common::DUMMY_SP,
@@ -100,21 +104,19 @@ console.log(a, b);"#
     ]
   );
 
-  let resource_pot = ResourcePot {
-    id: ResourcePotId::new("index".to_string()),
-    modules: vec![],
-    resource_pot_type: ResourcePotType::Js,
-    meta: ResourcePotMetaData::Js(JsResourcePotMetaData {
-      ast: SwcModule {
-        body: module.meta.as_script().ast.body.to_vec(),
-        shebang: None,
-        span: DUMMY_SP,
-      },
-    }),
-  };
+  let mut resource_pot = ResourcePot::new(ResourcePotId::new("index".to_string()));
+
+  resource_pot.resource_pot_type = ResourcePotType::Js;
+  resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
+    ast: SwcModule {
+      body: module.meta.as_script().ast.body.to_vec(),
+      shebang: None,
+      span: DUMMY_SP,
+    },
+  });
 
   let resources = plugin_script
-    .generate_resources(&resource_pot, &context, &hook_context)
+    .generate_resources(&mut resource_pot, &context, &hook_context)
     .unwrap()
     .unwrap();
   assert_eq!(resources.len(), 1);

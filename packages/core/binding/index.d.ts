@@ -87,6 +87,10 @@ export interface Config {
   config?: {
     input?: Record<string, string>;
     root?: string;
+    runtime: {
+      path: string;
+      plugins: string[];
+    };
   };
   jsPlugins?: object[];
   rustPlugins?: string[];

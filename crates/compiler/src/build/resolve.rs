@@ -13,7 +13,7 @@ pub fn resolve(
 ) -> Result<PluginResolveHookResult> {
   let resolved = match context
     .plugin_driver
-    .resolve(&resolve_param, context, hook_context)
+    .resolve(resolve_param, context, hook_context)
   {
     Ok(resolved) => match resolved {
       Some(res) => res,

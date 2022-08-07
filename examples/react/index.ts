@@ -1,3 +1,3 @@
-import main from './src/main';
+import { main } from './src/main';
 
 console.log(main);

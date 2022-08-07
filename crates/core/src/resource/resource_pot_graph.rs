@@ -25,17 +25,17 @@ impl ResourcePotGraph {
     self.name_index_map = other.name_index_map;
   }
 
-  pub fn add_resource(&mut self, resource: ResourcePot) {
+  pub fn add_resource_pot(&mut self, resource: ResourcePot) {
     let name = resource.id.clone();
     let index = self.g.add_node(resource);
     self.name_index_map.insert(name, index);
   }
 
-  pub fn resources(&self) -> Vec<&ResourcePot> {
+  pub fn resource_pots(&self) -> Vec<&ResourcePot> {
     self.g.node_weights().into_iter().collect()
   }
 
-  pub fn resources_mut(&mut self) -> Vec<&mut ResourcePot> {
+  pub fn resource_pots_mut(&mut self) -> Vec<&mut ResourcePot> {
     self.g.node_weights_mut().into_iter().collect()
   }
 }

@@ -12,7 +12,7 @@ pub fn transform(
   context: &Arc<CompilationContext>,
 ) -> Result<PluginDriverTransformHookResult> {
   let id = transform_param.id.to_string();
-  let transformed = match context.plugin_driver.transform(transform_param, &context) {
+  let transformed = match context.plugin_driver.transform(transform_param, context) {
     Ok(transformed) => transformed,
     Err(e) => {
       return Err(CompilationError::TransformError {

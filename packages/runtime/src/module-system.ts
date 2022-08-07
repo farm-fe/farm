@@ -44,7 +44,7 @@ globalThis.__acquire_farm_module_system__ =
       }
 
       // require should be async as we support `top level await`
-      async require(moduleId: string): Promise<any> {
+      require(moduleId: string): any {
         if (this.cache[moduleId]) {
           return this.cache[moduleId];
         }
@@ -62,7 +62,7 @@ globalThis.__acquire_farm_module_system__ =
           initialized: false,
         };
 
-        await initializer(module, module.exports, this.require.bind(this));
+        initializer(module, module.exports, this.require.bind(this));
 
         module.initialized = true;
         this.cache[moduleId] = module;
@@ -80,10 +80,10 @@ globalThis.__acquire_farm_module_system__ =
         this.modules[moduleId] = initializer;
       }
 
-      update(moduleId: string, init: ModuleInitialization): void {
-        Promise.resolve().then(() => console.log(123));
-        // update
-      }
+      // update(moduleId: string, init: ModuleInitialization): void {
+      //   Promise.resolve().then(() => console.log(123));
+      //   // update
+      // }
 
       // delete(moduleId: string): boolean {
       //   // delete

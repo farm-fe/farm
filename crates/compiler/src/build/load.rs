@@ -13,7 +13,7 @@ pub fn load(
 ) -> Result<PluginLoadHookResult> {
   let loaded = match context
     .plugin_driver
-    .load(&load_param, &context, &hook_context)
+    .load(load_param, context, hook_context)
   {
     Ok(loaded) => match loaded {
       Some(loaded) => loaded,

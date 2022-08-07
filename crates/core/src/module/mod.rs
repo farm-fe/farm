@@ -11,6 +11,7 @@ use pathdiff::diff_paths;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
+use swc_common::Mark;
 use swc_ecma_ast::Module as SwcModule;
 
 use crate::{config::Mode, resource::resource_pot::ResourcePotId};
@@ -133,6 +134,12 @@ pub enum ModuleType {
 }
 
 impl ModuleType {
+  pub fn is_typescript(&self) -> bool {
+    matches!(self, ModuleType::Ts) || matches!(self, ModuleType::Tsx)
+  }
+}
+
+impl ModuleType {
   /// transform native supported file type to [ModuleType]
   pub fn from_ext(ext: &str) -> Self {
     match ext {
@@ -184,7 +191,7 @@ pub fn relative(from: &str, to: &str) -> String {
         if result.is_empty() {
           result += &c;
         } else {
-          result += &format!("/{}", c);
+          result = format!("{}/{}", result, c);
         }
       }
     }

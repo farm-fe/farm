@@ -2,7 +2,7 @@ use std::{any::Any, sync::Arc};
 
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use swc_common::{FilePathMapping, SourceMap};
+use swc_common::{FilePathMapping, Globals, SourceMap};
 
 use crate::{
   cache::CacheManager,
@@ -68,14 +68,14 @@ impl Default for ContextMetaData {
 /// Shared script meta data used for [swc]
 pub struct ContextScriptMetaData {
   pub cm: Arc<SourceMap>,
-  pub globals: String,
+  pub globals: Globals,
 }
 
 impl ContextScriptMetaData {
   pub fn new() -> Self {
     Self {
       cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
-      globals: String::new(),
+      globals: Globals::new(),
     }
   }
 }

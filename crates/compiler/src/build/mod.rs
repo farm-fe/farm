@@ -125,7 +125,7 @@ impl Compiler {
         query: resolve_result.query,
         package_json_info: resolve_result
           .package_json_info
-          .unwrap_or(load_package_json_or_default(&context.config.root)),
+          .unwrap_or_else(|| load_package_json_or_default(&context.config.root)),
         side_effects: resolve_result.side_effects,
         module_type: transform_result
           .module_type
@@ -135,6 +135,7 @@ impl Compiler {
       };
       let mut module = call_and_cache_error!(parse, parse_param, &context, &hook_context);
       // ================ Parse End ===============
+      println!("parsed {}", resolve_result.id);
 
       // ================ Process Module Start ===============
       if let Err(e) = context.plugin_driver.process_module(&mut module, &context) {
@@ -147,6 +148,7 @@ impl Compiler {
         return;
       }
       // ================ Process Module End ===============
+      println!("processed module {}", resolve_result.id);
 
       // ================ Analyze Deps Start ===============
       let mut analyze_deps_param = PluginAnalyzeDepsHookParam {
@@ -167,6 +169,7 @@ impl Compiler {
       }
       let analyze_deps_result = analyze_deps_param.deps;
       // ================ Analyze Deps End ===============
+      println!("analyzed deps {}", resolve_result.id);
 
       let module_id = module.id.clone();
       let mut module_graph = context.module_graph.write();
@@ -174,7 +177,7 @@ impl Compiler {
 
       // mark entry module
       if matches!(resolve_param.kind, ResolveKind::Entry) {
-        module_graph.entries.push(module_id.clone());
+        module_graph.entries.insert(module_id.clone());
       }
 
       if let Some(importer) = &resolve_param.importer {

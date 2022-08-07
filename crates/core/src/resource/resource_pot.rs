@@ -1,11 +1,12 @@
 use std::any::Any;
 
 use downcast_rs::{impl_downcast, Downcast};
-use rkyv::{Archive, Deserialize, Serialize};
-use swc_ecma_ast::Module as SwcModule;
-
 use farm_macro_cache_item::cache_item;
+use hashbrown::HashSet;
+use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
+use rkyv_typename::TypeName;
+use swc_ecma_ast::Module as SwcModule;
 
 use crate::module::ModuleId;
 
@@ -13,8 +14,34 @@ use crate::module::ModuleId;
 pub struct ResourcePot {
   pub id: ResourcePotId,
   pub resource_pot_type: ResourcePotType,
-  pub modules: Vec<ModuleId>,
+  modules: HashSet<ModuleId>,
   pub meta: ResourcePotMetaData,
+  pub entry_module: Option<ModuleId>,
+}
+
+impl ResourcePot {
+  pub fn new(id: ResourcePotId) -> Self {
+    Self {
+      id,
+      // TODO, set resource type
+      resource_pot_type: ResourcePotType::Js,
+      modules: HashSet::new(),
+      meta: ResourcePotMetaData::Custom(Box::new(EmptyResourcePotMetaData) as _),
+      entry_module: None,
+    }
+  }
+
+  pub fn add_module(&mut self, module_id: ModuleId) {
+    self.modules.insert(module_id);
+  }
+
+  pub fn modules(&self) -> Vec<&ModuleId> {
+    self.modules.iter().collect()
+  }
+
+  pub fn remove_module(&mut self, module_id: &ModuleId) {
+    self.modules.remove(module_id);
+  }
 }
 
 #[cache_item]
@@ -38,6 +65,7 @@ impl ResourcePotId {
 #[cache_item]
 #[derive(Debug, Clone)]
 pub enum ResourcePotType {
+  Runtime,
   Js,
   Css,
   Html,
@@ -102,3 +130,6 @@ pub struct JsResourcePotMetaData {
 pub trait CustomResourcePotMetaData: Any + Send + Sync + Downcast {}
 
 impl_downcast!(SerializeCustomResourcePotMetaData);
+
+#[cache_item(CustomResourcePotMetaData)]
+pub struct EmptyResourcePotMetaData;

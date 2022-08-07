@@ -5,7 +5,7 @@
 // var modules = { ... };
 // var entryModule = 'xxx';
 
-!(function (modules, entryModule) {
+(function (modules, entryModule) {
   var cache = {};
 
   function require(id) {

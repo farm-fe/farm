@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use parking_lot::RwLock;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
@@ -24,8 +23,8 @@ macro_rules! hook_first {
   ($func_name:ident, $ret_ty:ty, $($arg:ident: $ty:ty),*) => {
     pub fn $func_name(&self, $($arg: $ty),*) -> $ret_ty {
       for plugin in &self.plugins {
-        let ret = plugin.$func_name($($arg),*)?;
         println!("Plugin {}", plugin.name());
+        let ret = plugin.$func_name($($arg),*)?;
         if ret.is_some() {
           return Ok(ret)
         }
@@ -143,12 +142,12 @@ impl PluginDriver {
 
   hook_parallel!(generate_start);
 
-  hook_serial!(optimize_module_graph, &RwLock<ModuleGraph>);
+  hook_serial!(optimize_module_graph, &mut ModuleGraph);
 
   hook_first!(
     analyze_module_graph,
     Result<Option<ModuleGroupMap>>,
-    param: &RwLock<ModuleGraph>,
+    param: &mut ModuleGraph,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
   );
@@ -161,10 +160,7 @@ impl PluginDriver {
     _hook_context: &PluginHookContext
   );
 
-  hook_parallel!(
-    process_resource_pot_graph,
-    resource_pot_graph: &RwLock<ResourcePotGraph>
-  );
+  hook_serial!(process_resource_pot_graph, &mut ResourcePotGraph);
 
   hook_serial!(render_resource_pot, &mut ResourcePot);
 
@@ -173,17 +169,12 @@ impl PluginDriver {
   hook_first!(
     generate_resources,
     Result<Option<Vec<Resource>>>,
-    resource_pot: &ResourcePot,
+    resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
   );
 
-  hook_first!(
-    write_resource,
-    Result<Option<()>>,
-    resource: &Resource,
-    context: &Arc<CompilationContext>
-  );
+  hook_serial!(write_resources, &mut Vec<Resource>);
 
   hook_parallel!(generate_end);
 

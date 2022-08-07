@@ -32,7 +32,7 @@ pub struct ModuleGraph {
   /// to index module in the graph using [ModuleId]
   id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
   /// entry modules of this module graph
-  pub entries: Vec<ModuleId>,
+  pub entries: HashSet<ModuleId>,
 }
 
 impl ModuleGraph {
@@ -40,7 +40,7 @@ impl ModuleGraph {
     Self {
       g: StableDiGraph::new(),
       id_index_map: HashMap::new(),
-      entries: vec![],
+      entries: HashSet::new(),
     }
   }
 
@@ -63,7 +63,7 @@ impl ModuleGraph {
       .detach();
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
-      if &self.g[edge_index].source == source {
+      if self.g[edge_index].source == source {
         return self.g[node_index].id.clone();
       }
     }
@@ -137,7 +137,7 @@ impl ModuleGraph {
   /// import b from './b';
   /// ```
   /// return `['module c', 'module b']`, ensure the order of original imports.
-  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind)> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -150,11 +150,15 @@ impl ModuleGraph {
     let mut deps = vec![];
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
-      deps.push((self.g[edge_index].order, self.g[node_index].id.clone()));
+      deps.push((
+        self.g[edge_index].order,
+        self.g[node_index].id.clone(),
+        self.g[edge_index].kind.clone(),
+      ));
     }
 
     deps.sort_by_key(|dep| dep.0);
-    deps.into_iter().map(|dep| dep.1).collect()
+    deps.into_iter().map(|dep| (dep.1, dep.2)).collect()
   }
 
   /// get dependent of the specific module.
@@ -190,17 +194,17 @@ impl ModuleGraph {
       cyclic: &mut Vec<ModuleId>,
     ) {
       // cycle detected
-      if stack.contains(&entry) {
+      if stack.contains(entry) {
         cyclic.push(entry.clone());
         return;
-      } else if visited.contains(&entry) {
+      } else if visited.contains(entry) {
         // skip visited module
         return;
       }
       visited.insert(entry.clone());
       stack.push(entry.clone());
 
-      for dep in &graph.dependencies(entry) {
+      for (dep, _) in &graph.dependencies(entry) {
         dfs(dep, graph, stack, visited, result, cyclic)
       }
 
@@ -238,6 +242,8 @@ impl Default for ModuleGraph {
 
 #[cfg(test)]
 mod tests {
+  use hashbrown::HashSet;
+
   use crate::{
     module::{Module, ModuleId, ModuleType},
     plugin::ResolveKind,
@@ -311,7 +317,7 @@ mod tests {
       )
       .unwrap();
 
-    graph.entries = vec!["A".into(), "B".into()];
+    graph.entries = HashSet::from(["A".into(), "B".into()]);
 
     graph
   }

@@ -1,6 +1,5 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
-use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -95,7 +94,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Some optimization of the module graph should be performed here, for example, tree shaking, scope hoisting
   fn optimize_module_graph(
     &self,
-    _module_graph: &RwLock<ModuleGraph>,
+    _module_graph: &mut ModuleGraph,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -104,7 +103,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Analyze module group based on module graph
   fn analyze_module_graph(
     &self,
-    _module_graph: &RwLock<ModuleGraph>,
+    _module_graph: &mut ModuleGraph,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<ModuleGroupMap>> {
@@ -124,7 +123,7 @@ pub trait Plugin: Any + Send + Sync {
   /// process resource graph before render and generating each resource
   fn process_resource_pot_graph(
     &self,
-    _resource_pot_graph: &RwLock<ResourcePotGraph>,
+    _resource_pot_graph: &mut ResourcePotGraph,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -149,21 +148,22 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Generate resources based on the [ResourcePot], return [Vec<ResourceFile>] represents the final generated files.
+  /// Generate resources based on the [ResourcePot], return [Vec<Resource>] represents the final generated files.
   /// For example, a .js file and its corresponding source map file
   fn generate_resources(
     &self,
-    _resource_pot: &ResourcePot,
+    _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<Resource>>> {
     Ok(None)
   }
 
-  /// Write the final output [Resource] to disk or others
-  fn write_resource(
+  /// Write the final output [Resource]s to disk or others.
+  /// By default the resource will write to disk or memory, if you want to override this behavior, set [Resource.emitted] to true.
+  fn write_resources(
     &self,
-    _resource: &Resource,
+    _resources: &mut Vec<Resource>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -199,6 +199,15 @@ pub enum ResolveKind {
   LinkHref,
   /// Custom ResolveKind, e.g. `const worker = new Worker(new Url("worker.js"))` of a web worker
   Custom(String),
+}
+
+impl ResolveKind {
+  /// dynamic if self is [ResolveKind::DynamicImport] or [ResolveKind::Custom("dynamic:xxx")]
+  /// used when analyzing module groups
+  pub fn is_dynamic(&self) -> bool {
+    matches!(self, ResolveKind::DynamicImport)
+      || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
+  }
 }
 
 /// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin

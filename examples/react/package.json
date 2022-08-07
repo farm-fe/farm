@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "dependencies": {
     "@farmfe/cli": "../../packages/cli",
-    "@farmfe/core": "../../packages/core"
+    "@farmfe/core": "../../packages/core",
+    "@farmfe/runtime": "../../packages/runtime"
   },
   "scripts": {
     "start": "farm"

@@ -12,12 +12,15 @@ use farmfe_core::{
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
-    Resource,
+    Resource, ResourceType,
   },
+  swc_common::{Mark, GLOBALS},
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{codegen_module, module_type_from_id, parse_module, syntax_from_module_type},
+  swc_ecma_transforms::{resolver, typescript::strip},
+  swc_ecma_visit::VisitMutWith,
 };
 
 mod deps_analyzer;
@@ -61,7 +64,7 @@ impl Plugin for FarmPluginScript {
       let swc_module = parse_module(
         &param.id,
         &param.content,
-        syntax,
+        syntax.clone(),
         context.meta.script.cm.clone(),
       )?;
 
@@ -69,6 +72,7 @@ impl Plugin for FarmPluginScript {
         ModuleId::new(&param.id, &context.config.root),
         param.module_type.clone(),
       );
+
       let meta = ModuleScriptMetaData { ast: swc_module };
       module.meta = ModuleMetaData::Script(meta);
 
@@ -92,9 +96,28 @@ impl Plugin for FarmPluginScript {
     Ok(Some(()))
   }
 
+  fn process_module(
+    &self,
+    module: &mut Module,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if module.module_type.is_typescript() {
+      GLOBALS.set(&context.meta.script.globals, || {
+        let top_level_mark = Mark::new();
+        let unresolved_mark = Mark::new();
+
+        let ast = &mut module.meta.as_script_mut().ast;
+        ast.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, true));
+        ast.visit_mut_with(&mut strip(top_level_mark));
+      });
+    }
+
+    Ok(Some(()))
+  }
+
   fn generate_resources(
     &self,
-    resource_pot: &ResourcePot,
+    resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<Resource>>> {
@@ -107,7 +130,12 @@ impl Plugin for FarmPluginScript {
         }
       })?;
 
-      Ok(Some(vec![Resource { bytes: buf }]))
+      Ok(Some(vec![Resource {
+        bytes: buf,
+        name: resource_pot.id.to_string(),
+        emitted: false,
+        resource_type: ResourceType::Js,
+      }]))
     } else {
       Ok(None)
     }

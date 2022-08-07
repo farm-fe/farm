@@ -18,18 +18,14 @@ pub fn parse(
   {
     Ok(module) => match module {
       Some(module) => Ok(module),
-      None => {
-        return Err(CompilationError::ParseError {
-          id: parse_param.id,
-          source: None,
-        });
-      }
-    },
-    Err(e) => {
-      return Err(CompilationError::ParseError {
+      None => Err(CompilationError::ParseError {
         id: parse_param.id,
-        source: Some(Box::new(e)),
-      });
-    }
+        source: None,
+      }),
+    },
+    Err(e) => Err(CompilationError::ParseError {
+      id: parse_param.id,
+      source: Some(Box::new(e)),
+    }),
   }
 }

@@ -4,11 +4,13 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
+  module::module_graph::ModuleGraph,
   parking_lot::RwLock,
   plugin::{
     Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
   },
+  resource::resource_pot_graph::ResourcePotGraph,
 };
 
 use libloading::Library;
@@ -111,7 +113,7 @@ impl Plugin for RustPluginAdapter {
 
   fn optimize_module_graph(
     &self,
-    module_graph: &RwLock<farmfe_core::module::module_graph::ModuleGraph>,
+    module_graph: &mut ModuleGraph,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.optimize_module_graph(module_graph, context)
@@ -119,7 +121,7 @@ impl Plugin for RustPluginAdapter {
 
   fn analyze_module_graph(
     &self,
-    module_graph: &RwLock<farmfe_core::module::module_graph::ModuleGraph>,
+    module_graph: &mut ModuleGraph,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> Result<Option<farmfe_core::module::module_group::ModuleGroupMap>> {
@@ -141,7 +143,7 @@ impl Plugin for RustPluginAdapter {
 
   fn process_resource_pot_graph(
     &self,
-    resource_graph: &RwLock<farmfe_core::resource::resource_pot_graph::ResourcePotGraph>,
+    resource_graph: &mut ResourcePotGraph,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self
@@ -167,7 +169,7 @@ impl Plugin for RustPluginAdapter {
 
   fn generate_resources(
     &self,
-    resource_pot: &farmfe_core::resource::resource_pot::ResourcePot,
+    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<farmfe_core::resource::Resource>>> {
@@ -176,12 +178,12 @@ impl Plugin for RustPluginAdapter {
       .generate_resources(resource_pot, context, hook_context)
   }
 
-  fn write_resource(
+  fn write_resources(
     &self,
-    resource: &farmfe_core::resource::Resource,
+    resources: &mut Vec<farmfe_core::resource::Resource>,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.write_resource(resource, context)
+    self.plugin.write_resources(resources, context)
   }
 
   fn generate_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {

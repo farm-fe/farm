@@ -40,7 +40,12 @@ export interface UserConfig {
  * @returns resolved config that parsed to rust compiler
  */
 export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
-  const config: Config['config'] = {};
+  const config: Config['config'] = {
+    runtime: {
+      path: require.resolve('@farmfe/runtime'),
+      plugins: [],
+    },
+  };
 
   for (const key of Object.keys(userConfig.compilation ?? {})) {
     config[key] = userConfig.compilation[key];

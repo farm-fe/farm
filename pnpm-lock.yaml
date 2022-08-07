@@ -16,6 +16,7 @@ importers:
       lint-staged: ^13.0.3
       prettier: ^2.7.1
       typescript: ^4.7.4
+      vite: ^3.0.4
       vitest: ^0.18.0
     devDependencies:
       '@commitlint/cli': 17.0.3
@@ -30,15 +31,18 @@ importers:
       lint-staged: 13.0.3
       prettier: 2.7.1
       typescript: 4.7.4
+      vite: 3.0.4
       vitest: 0.18.0_c8@7.11.3
 
   examples/react:
     specifiers:
       '@farmfe/cli': ../../packages/cli
       '@farmfe/core': ../../packages/core
+      '@farmfe/runtime': ../../packages/runtime
     dependencies:
       '@farmfe/cli': link:../../packages/cli
       '@farmfe/core': link:../../packages/core
+      '@farmfe/runtime': link:../../packages/runtime
 
   packages/cli:
     specifiers:
@@ -53,12 +57,14 @@ importers:
 
   packages/core:
     specifiers:
+      '@farmfe/runtime': workspace:^0.0.0
       '@napi-rs/cli': ^2.10.0
       '@types/jest': ^28.1.4
       '@types/node': ^18.0.1
       jest: ^28.1.2
       typescript: ^4.7.4
     devDependencies:
+      '@farmfe/runtime': link:../runtime
       '@napi-rs/cli': 2.10.0
       '@types/jest': 28.1.4
       '@types/node': 18.0.1
@@ -4661,20 +4667,23 @@ packages:
       spdx-expression-parse: 3.0.1
     dev: true
 
-  /vite/2.9.14:
-    resolution: {integrity: sha512-P/UCjSpSMcE54r4mPak55hWAZPlyfS369svib/gpmz8/01L822lMPOJ/RYW6tLCe1RPvMvOsJ17erf55bKp4Hw==}
-    engines: {node: '>=12.2.0'}
+  /vite/3.0.4:
+    resolution: {integrity: sha512-NU304nqnBeOx2MkQnskBQxVsa0pRAH5FphokTGmyy8M3oxbvw7qAXts2GORxs+h/2vKsD+osMhZ7An6yK6F1dA==}
+    engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
     peerDependencies:
       less: '*'
       sass: '*'
       stylus: '*'
+      terser: ^5.4.0
     peerDependenciesMeta:
       less:
         optional: true
       sass:
         optional: true
       stylus:
+        optional: true
+      terser:
         optional: true
     dependencies:
       esbuild: 0.14.49
@@ -4716,12 +4725,13 @@ packages:
       local-pkg: 0.4.1
       tinypool: 0.2.2
       tinyspy: 0.3.3
-      vite: 2.9.14
+      vite: 3.0.4
     transitivePeerDependencies:
       - less
       - sass
       - stylus
       - supports-color
+      - terser
     dev: true
 
   /vscode-languageserver-textdocument/1.0.5:

@@ -19,9 +19,13 @@ impl Compiler {
   /// The params are [farmfe_core::config::Config] and dynamic load rust plugins and js plugins [farmfe_core::plugin::Plugin]
   pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let mut plugins = vec![
+      Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
       // register internal core plugins
       Arc::new(farmfe_plugin_resolve::FarmPluginResolve::new(&config)) as _,
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
+      Arc::new(farmfe_plugin_merge_modules::FarmPluginMergeModules::new(
+        &config,
+      )) as _,
     ];
 
     plugins.append(&mut plugin_adapters);
@@ -47,6 +51,8 @@ impl Compiler {
         println!("dep: {:?}", dep);
       }
     }
+    drop(module_graph);
+
     self.generate()?;
 
     self.context.plugin_driver.finish(&Stats {}, &self.context)
