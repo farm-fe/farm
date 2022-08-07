@@ -156,7 +156,7 @@ impl ModuleType {
 
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
 #[archive_attr(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
   relative_path: String,

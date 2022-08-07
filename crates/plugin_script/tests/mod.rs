@@ -122,8 +122,14 @@ console.log(a, b);"#
   assert_eq!(resources.len(), 1);
 
   let code = String::from_utf8(resources[0].bytes.clone()).unwrap();
+  #[cfg(not(windows))]
   assert_eq!(
     code,
     "import a from \"./a\";\nimport b from \"./b\";\nconsole.log(a, b);\n"
+  );
+  #[cfg(windows)]
+  assert_eq!(
+    code,
+    "import a from \"./a\";\r\nimport b from \"./b\";\r\nconsole.log(a, b);\r\n"
   );
 }

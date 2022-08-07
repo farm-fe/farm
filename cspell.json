@@ -38,7 +38,11 @@
     "topo",
     "toposort",
     "mgfe",
-    "Deque"
+    "Deque",
+    "hashbrown",
+    "deserializers",
+    "codegen",
+    "ctxt"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

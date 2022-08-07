@@ -182,29 +182,36 @@ impl ModuleGraph {
     deps
   }
 
-  /// sort the module graph topologically using post order dfs
-  /// return (topologically sorted modules, cyclic modules)
-  pub fn toposort(&self) -> (Vec<ModuleId>, Vec<ModuleId>) {
+  /// sort the module graph topologically using post order dfs, note this topo sort also keeps the original import order.
+  /// return (topologically sorted modules, cyclic modules stack)
+  ///
+  /// **Unsupported Situation**: if the two entries shares the same dependencies but the import order is not the same, may cause one entry don't keep original import order, this may bring problems in css as css depends on the order.
+  pub fn toposort(&self) -> (Vec<ModuleId>, Vec<Vec<ModuleId>>) {
     fn dfs(
       entry: &ModuleId,
       graph: &ModuleGraph,
       stack: &mut Vec<ModuleId>,
       visited: &mut HashSet<ModuleId>,
       result: &mut Vec<ModuleId>,
-      cyclic: &mut Vec<ModuleId>,
+      cyclic: &mut Vec<Vec<ModuleId>>,
     ) {
       // cycle detected
       if stack.contains(entry) {
-        cyclic.push(entry.clone());
+        let pos = stack.iter().position(|m| m == entry).unwrap();
+        cyclic.push(stack.clone()[pos..].to_vec());
         return;
       } else if visited.contains(entry) {
         // skip visited module
         return;
       }
+
       visited.insert(entry.clone());
       stack.push(entry.clone());
 
-      for (dep, _) in &graph.dependencies(entry) {
+      let mut deps = graph.dependencies(entry);
+      deps.reverse(); // reverse it as we use post order traverse
+
+      for (dep, _) in &deps {
         dfs(dep, graph, stack, visited, result, cyclic)
       }
 
@@ -215,22 +222,47 @@ impl ModuleGraph {
     let mut result = vec![];
     let mut cyclic = vec![];
     let mut stack = vec![];
-    let mut visited = HashSet::new();
 
-    for entry in &self.entries {
-      dfs(
-        entry,
-        self,
-        &mut stack,
-        &mut visited,
-        &mut result,
-        &mut cyclic,
-      );
+    // sort entries to make sure it is stable
+    let mut entries = self.entries.iter().collect::<Vec<_>>();
+    entries.sort();
+
+    for entry in entries {
+      let mut res = vec![];
+      let mut visited = HashSet::new();
+
+      dfs(entry, self, &mut stack, &mut visited, &mut res, &mut cyclic);
+      res.reverse();
+
+      // merge the topo sort result of the entries.
+      if result.is_empty() {
+        result.extend(res);
+      } else {
+        self.merge_topo_sorted_vec(&mut result, &res);
+      }
     }
 
-    result.reverse();
-
     (result, cyclic)
+  }
+
+  fn merge_topo_sorted_vec(&self, base: &mut Vec<ModuleId>, new: &[ModuleId]) {
+    if new.is_empty() {
+      return;
+    }
+
+    if let Some(pos) = new.iter().position(|nm| base.contains(nm)) {
+      if pos > 0 {
+        let nm = &new[pos];
+        let base_pos = base.iter().position(|bm| bm == nm).unwrap();
+        base.splice(base_pos..(base_pos + 1), new[0..(pos + 1)].to_vec());
+
+        self.merge_topo_sorted_vec(base, &new[(pos + 1)..]);
+      } else {
+        self.merge_topo_sorted_vec(base, &new[(pos + 1)..]);
+      }
+    } else {
+      base.extend(new.to_vec());
+    }
   }
 }
 
@@ -327,11 +359,19 @@ mod tests {
     let graph = construct_test_module_graph();
 
     let (sorted, cycle) = graph.toposort();
-    println!("{:?} {:?}", sorted, cycle);
-    assert_eq!(cycle, vec!["A".into()]);
+    println!("{:?} \n\n {:?}", sorted, cycle);
+    assert_eq!(
+      cycle,
+      vec![
+        vec!["A".into(), "D".into(), "F".into()],
+        // vec!["A".into(), "C".into(), "F".into()],
+        vec!["D".into(), "F".into(), "A".into()],
+        vec!["F".into(), "A".into(), "C".into()]
+      ]
+    );
     assert_eq!(
       sorted,
-      vec!["B", "E", "G", "A", "D", "C", "F"]
+      vec!["A", "C", "B", "D", "F", "E", "G"]
         .into_iter()
         .map(|m| m.into())
         .collect::<Vec<ModuleId>>()

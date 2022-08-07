@@ -8,13 +8,10 @@
   },
   "main": "src/module-system.ts",
   "scripts": {
-    "build": "tsc",
-    "type-check": "tsc -p tsconfig.json --noEmit"
+    "build": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^18.0.1",
-    "typescript": "^4.7.4",
-    "@farmfe/core": "workspace:^0.0.0",
-    "@farmfe/cli": "workspace:^0.0.0"
+    "typescript": "^4.7.4"
   }
 }
