@@ -17,4 +17,4 @@ swc_ecma_parser = { version = "0.116" }
 swc_ecma_visit = { version = "0.75.0" }
 swc_ecma_codegen = { version = "0.120" }
 swc_ecma_transforms = { version = "0.181", features = ["module", "typescript"] }
-testing_macros = "0.2"
+glob = "0.3"

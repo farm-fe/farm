@@ -428,11 +428,11 @@ name = "farmfe_toolkit"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "glob",
  "swc_ecma_codegen",
  "swc_ecma_parser",
  "swc_ecma_transforms",
  "swc_ecma_visit",
- "testing_macros",
 ]
 
 [[package]]

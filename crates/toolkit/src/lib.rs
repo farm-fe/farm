@@ -10,4 +10,3 @@ pub use swc_ecma_codegen;
 pub use swc_ecma_parser;
 pub use swc_ecma_transforms;
 pub use swc_ecma_visit;
-pub use testing_macros;
