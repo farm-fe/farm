@@ -19,7 +19,7 @@ use farmfe_toolkit::testing_macros::fixture;
 
 #[fixture("tests/fixtures/**/index.*")]
 fn load_parse_and_analyze_deps(file: PathBuf) {
-  let config = Config::default();
+  let mut config = Config::default();
   let plugin_script = farmfe_plugin_script::FarmPluginScript::new(&config);
   let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
   let id = file.to_string_lossy().to_string();
@@ -41,12 +41,15 @@ fn load_parse_and_analyze_deps(file: PathBuf) {
   assert!(loaded.is_some());
   let loaded = loaded.unwrap();
 
+  let lines: Vec<&str> = loaded.content.lines().collect();
   assert_eq!(
-    loaded.content,
-    r#"import a from './a';
-import b from './b';
-
-console.log(a, b);"#
+    lines,
+    vec![
+      "import a from './a';",
+      "import b from './b';",
+      "",
+      "console.log(a, b);"
+    ]
   );
   assert_eq!(
     loaded.module_type,
@@ -75,6 +78,8 @@ console.log(a, b);"#
     )
     .unwrap()
     .unwrap();
+
+  println!("module id {:?}", module.id);
 
   assert_eq!(module.meta.as_script().ast.body.len(), 3);
 

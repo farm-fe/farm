@@ -169,6 +169,7 @@ pub fn relative(from: &str, to: &str) -> String {
   let rp =
     diff_paths(to, from).unwrap_or_else(|| panic!("{} or {} is not absolute path", from, to));
 
+  println!("diff paths of {} {} -> {:?}", from, to, rp);
   // make sure the relative path is platform independent
   // this can ensure that the relative path and hash stable across platforms
   let mut result = String::new();
@@ -177,12 +178,18 @@ pub fn relative(from: &str, to: &str) -> String {
     match comp {
       std::path::Component::Prefix(_)
       | std::path::Component::RootDir
-      | std::path::Component::CurDir => unreachable!(),
+      | std::path::Component::CurDir => {
+        if result.is_empty() {
+          result += ".";
+        } else {
+          unreachable!();
+        }
+      }
       std::path::Component::ParentDir => {
         if result.is_empty() {
           result += "..";
         } else {
-          result += "/..";
+          unreachable!();
         }
       }
       std::path::Component::Normal(c) => {
