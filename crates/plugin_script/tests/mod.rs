@@ -3,17 +3,13 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  hashbrown::HashSet,
   module::ModuleType,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  resource::{
-    resource_pot::{
-      JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
-    },
-    resource_pot_graph::ResourcePotGraph,
+  resource::resource_pot::{
+    JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
   },
   serde_json::Value,
   swc_common::DUMMY_SP,
@@ -122,14 +118,13 @@ console.log(a, b);"#
   assert_eq!(resources.len(), 1);
 
   let code = String::from_utf8(resources[0].bytes.clone()).unwrap();
-  #[cfg(not(windows))]
+  let lines: Vec<&str> = code.lines().collect();
   assert_eq!(
-    code,
-    "import a from \"./a\";\nimport b from \"./b\";\nconsole.log(a, b);\n"
-  );
-  #[cfg(windows)]
-  assert_eq!(
-    code,
-    "import a from \"./a\";\r\nimport b from \"./b\";\r\nconsole.log(a, b);\r\n"
+    lines,
+    vec![
+      "import a from \"./a\";",
+      "import b from \"./b\";",
+      "console.log(a, b);"
+    ]
   );
 }

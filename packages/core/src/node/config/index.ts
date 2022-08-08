@@ -2,17 +2,6 @@ import path from 'path';
 import { Config } from '../../../binding';
 import { Plugin } from '../plugin';
 
-type JsUserConfig = Config['config'];
-type FilteredUserConfigKeys = Exclude<
-  keyof JsUserConfig,
-  'jsPlugins' | 'wasmPlugins'
->;
-type FilteredUserConfig = {
-  [key in FilteredUserConfigKeys]: JsUserConfig[key];
-};
-
-export type UserCompilationConfig = Partial<FilteredUserConfig>;
-
 export interface UserServerConfig {
   port: number;
 }
@@ -28,7 +17,7 @@ export interface UserConfig {
   /** js plugin(which is a javascript object) and wasm plugin(which is string refer to a wasm file or a package) */
   plugins?: (string | Plugin)[];
   /** config related to compilation */
-  compilation?: UserCompilationConfig;
+  compilation?: Config['config'];
   /** config related to dev server */
   server?: UserServerConfig;
   watcher?: UserWatcherConfig;
@@ -40,15 +29,17 @@ export interface UserConfig {
  * @returns resolved config that parsed to rust compiler
  */
 export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
-  const config: Config['config'] = {
-    runtime: {
-      path: require.resolve('@farmfe/runtime'),
-      plugins: [],
-    },
-  };
+  const config: Config['config'] = {};
 
   for (const key of Object.keys(userConfig.compilation ?? {})) {
     config[key] = userConfig.compilation[key];
+  }
+
+  if (!config.runtime) {
+    config.runtime = {
+      path: require.resolve('@farmfe/runtime'),
+      plugins: [],
+    };
   }
 
   const normalizedConfig: Config = {
@@ -106,4 +97,8 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
  */
 export function resolveUserConfig(configPath: string): UserConfig {
   return {};
+}
+
+export function defineFarmConfig(userConfig: UserConfig): UserConfig {
+  return userConfig;
 }

@@ -15,7 +15,8 @@ use farmfe_core::{
   resource::resource_pot::{JsResourcePotMetaData, ResourcePotMetaData, ResourcePotType},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleItem, Stmt, Str,
+    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
+    Str,
   },
 };
 use farmfe_toolkit::{
@@ -221,34 +222,32 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
       // do not emit anything of Runtime, as it will be generated and injected when generating entry resources
       Ok(Some(vec![]))
-    } else if let Some(entry_module) = &resource_pot.entry_module {
+    } else if let Some(entry_module_id) = &resource_pot.entry_module {
       // modify the ast according to the type,
       // if js, insert the runtime ast in the front
-      // if html, insert a inline <script> tag inside <head>
       match resource_pot.resource_pot_type {
-        ResourcePotType::Runtime => todo!(),
         ResourcePotType::Js => {
           let mut runtime_ast = self.runtime_ast.lock().take().unwrap();
 
           let resource_pot_ast = &mut resource_pot.meta.as_js_mut().ast;
           resource_pot_ast.body.insert(0, runtime_ast.body.remove(0));
+
+          // TODO support top level await, and only support reexport default export now, should support more in the future
           // call the entry module
-          let call_stmt = parse_stmt(
+          let call_entry = parse_module(
             "farm-internal-call-entry-module",
             &format!(
-              r#"globalThis.__acquire_farm_module_system__().require("{}")"#,
-              entry_module.id(context.config.mode.clone())
+              r#"const entry = globalThis.__acquire_farm_module_system__().require("{}").default;export default entry;"#,
+              entry_module_id.id(context.config.mode.clone())
             ),
             Syntax::Es(Default::default()),
             context.meta.script.cm.clone(),
-            true,
           )?;
-          resource_pot_ast.body.push(ModuleItem::Stmt(call_stmt));
+
+          resource_pot_ast.body.extend(call_entry.body);
         }
-        ResourcePotType::Css => todo!(),
-        ResourcePotType::Html => todo!(),
-        ResourcePotType::Asset => todo!(),
-        ResourcePotType::Custom(_) => todo!(),
+        _ => { /* only inject entry execution for script, html entry will be injected after all resources generated */
+        }
       }
 
       Ok(None)

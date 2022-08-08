@@ -86,10 +86,24 @@ export interface PluginTransformHookResult {
 export interface Config {
   config?: {
     input?: Record<string, string>;
+    output?: {
+      filename?: string;
+      path?: string;
+      publicPath?: string;
+    };
+    resolve?: {
+      extensions?: string[];
+      alias?: Record<string, string>;
+      main_fields?: string[];
+      conditions?: string[];
+      symlinks: boolean;
+    };
+    external?: string[];
+    mode?: 'development' | 'production';
     root?: string;
-    runtime: {
+    runtime?: {
       path: string;
-      plugins: string[];
+      plugins?: string[];
     };
   };
   jsPlugins?: object[];

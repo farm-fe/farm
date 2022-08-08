@@ -45,12 +45,12 @@ impl Compiler {
     let modules = module_graph.modules();
     println!("module graph nodes length: {}", modules.len());
 
-    for m in modules {
-      if m.id.path().contains("index.ts") {
-        let dep = module_graph.get_dep_by_source(&m.id, "./src/main");
-        println!("dep: {:?}", dep);
-      }
-    }
+    // for m in modules {
+    //   if m.id.path().contains("index.ts") {
+    //     let dep = module_graph.get_dep_by_source(&m.id, "./src/main");
+    //     println!("dep: {:?}", dep);
+    //   }
+    // }
     drop(module_graph);
 
     self.generate()?;

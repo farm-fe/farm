@@ -27,22 +27,22 @@ impl Resolver {
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
   pub fn resolve(
     &self,
-    specifier: &str,
+    source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
   ) -> Result<PluginResolveHookResult> {
     // TODO: try load package.json first, the relative resolve may also need to use browser/exports field in package.json
-    let is_specifier_absolute = if let Ok(sp) = PathBuf::from_str(specifier) {
+    let is_source_absolute = if let Ok(sp) = PathBuf::from_str(source) {
       sp.is_absolute()
     } else {
       false
     };
 
-    let resolved_path = if is_specifier_absolute {
-      specifier.to_string()
-    } else if specifier.starts_with(".") {
+    let resolved_path = if is_source_absolute {
+      source.to_string()
+    } else if source.starts_with(".") {
       // if it starts with '.', it is a relative path
-      let normalized_path = RelativePath::new(specifier).to_logical_path(base_dir);
+      let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
       println!("{:?}", normalized_path);
       let normalized_path = normalized_path.as_path();
 
@@ -72,8 +72,11 @@ impl Resolver {
         }
       }
     } else {
-      // TODO support absolute path specifier
-      unimplemented!("resolving non-relative specifiers is not supported by now!");
+      // TODO support absolute path source
+      panic!(
+        "resolving non-relative source({}) is not supported by now!",
+        source
+      );
     };
 
     Ok(PluginResolveHookResult {
@@ -105,12 +108,12 @@ impl Resolver {
     }
   }
 
-  fn try_alias(&self, specifier: &str, base_dir: PathBuf) -> Option<String> {
+  fn try_alias(&self, source: &str, base_dir: PathBuf) -> Option<String> {
     None
   }
 
-  /// Resolve the specifier as a package, return (resolve_path, package_info)
-  fn resolve_node_modules(&self, specifier: &str, kind: &ResolveKind) -> Option<(String, Value)> {
+  /// Resolve the source as a package, return (resolve_path, package_info)
+  fn resolve_node_modules(&self, source: &str, kind: &ResolveKind) -> Option<(String, Value)> {
     None
   }
 }

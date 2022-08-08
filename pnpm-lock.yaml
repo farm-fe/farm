@@ -44,6 +44,16 @@ importers:
       '@farmfe/core': link:../../packages/core
       '@farmfe/runtime': link:../../packages/runtime
 
+  examples/script-entry:
+    specifiers:
+      '@farmfe/cli': ../../packages/cli
+      '@farmfe/core': ../../packages/core
+      '@farmfe/runtime': ../../packages/runtime
+    dependencies:
+      '@farmfe/cli': link:../../packages/cli
+      '@farmfe/core': link:../../packages/core
+      '@farmfe/runtime': link:../../packages/runtime
+
   packages/cli:
     specifiers:
       '@farmfe/core': workspace:^0.0.0

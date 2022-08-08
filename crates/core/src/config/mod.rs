@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename = "camelCase", default)]
 pub struct Config {
   pub input: HashMap<String, String>,
+  pub output: OutputConfig,
   pub root: String,
   pub mode: Mode,
   pub resolve: ResolveConfig,
@@ -21,6 +22,7 @@ impl Default for Config {
         .unwrap()
         .to_string_lossy()
         .to_string(),
+      output: OutputConfig::default(),
       mode: Mode::Development,
       resolve: ResolveConfig::default(),
       external: vec![],
@@ -29,10 +31,29 @@ impl Default for Config {
   }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename = "camelCase", default)]
+pub struct OutputConfig {
+  path: String,
+  public_path: String,
+  filename: String,
+}
+
+impl Default for OutputConfig {
+  fn default() -> Self {
+    Self {
+      filename: "[name].[contenthash].[ext]".to_string(),
+      public_path: "/".to_string(),
+      path: "dist".to_string(),
+    }
+  }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename = "camelCase")]
 pub enum Mode {
+  #[serde(rename = "development")]
   Development,
+  #[serde(rename = "production")]
   Production,
 }
 
@@ -68,6 +89,8 @@ impl Default for ResolveConfig {
         String::from("mjs"),
         String::from("js"),
         String::from("json"),
+        String::from("html"),
+        String::from("css"),
       ],
       conditions: vec![
         String::from("import"),
