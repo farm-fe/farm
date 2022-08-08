@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   plugin::{
-    Plugin, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult, DEFAULT_PRIORITY,
   },
 };
@@ -66,10 +66,11 @@ impl Plugin for JsPluginAdapter {
     &self,
     param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     if let Some(js_resolve_hook) = &self.js_resolve_hook {
       let cp = param.clone();
-      let ret = js_resolve_hook.call(cp, context.clone());
+      let ret = js_resolve_hook.call(cp, context.clone(), hook_context.clone());
       println!("js plugin: {:?}", ret);
       ret
     } else {
@@ -81,6 +82,7 @@ impl Plugin for JsPluginAdapter {
     &self,
     _param: &PluginLoadHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
     Ok(None)
   }

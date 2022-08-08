@@ -7,7 +7,7 @@ use farmfe_compiler::Compiler;
 pub mod plugin_adapters;
 
 use farmfe_core::config::Config;
-use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw, Status};
+use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, NapiRaw, Status};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 #[macro_use]
@@ -24,7 +24,7 @@ pub struct JsCompiler {
 #[napi]
 impl JsCompiler {
   #[napi(constructor)]
-  pub fn new(env: Env, config: JsObject) -> Self {
+  pub fn new(env: Env, config: JsObject) -> napi::Result<Self> {
     let js_plugins = unsafe {
       Vec::<JsObject>::from_napi_value(
         env.raw(),
@@ -72,9 +72,10 @@ impl JsCompiler {
       plugins_adapters.push(rust_plugin);
     }
 
-    Self {
-      compiler: Compiler::new(config, plugins_adapters),
-    }
+    Ok(Self {
+      compiler: Compiler::new(config, plugins_adapters)
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?,
+    })
   }
 
   /// async compile, return promise
@@ -90,7 +91,12 @@ impl JsCompiler {
 
   /// sync compile
   #[napi]
-  pub fn compile_sync(&self) {}
+  pub fn compile_sync(&self) -> napi::Result<()> {
+    self
+      .compiler
+      .compile()
+      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+  }
 
   /// async update, return promise
   ///

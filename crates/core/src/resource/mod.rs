@@ -1,42 +1,25 @@
-use std::any::Any;
-
 use rkyv::{Archive, Deserialize, Serialize};
 
 use farm_macro_cache_item::cache_item;
-use rkyv_dyn::archive_dyn;
 
-use self::file::ResourceFile;
-
-pub mod file;
-pub mod resource_graph;
-
-#[cache_item]
-pub struct Resource {
-  name: String,
-  resource_type: ResourceType,
-  meta: ResourceMetaData,
-  file: ResourceFile,
-}
+pub mod resource_pot;
+pub mod resource_pot_graph;
 
 #[cache_item]
 pub enum ResourceType {
   Js,
   Css,
   Html,
+  SourceMap,
   Asset,
   Custom(String),
 }
 
 #[cache_item]
-pub enum ResourceMetaData {
-  Js(JsResourceMetaData),
-  Custom(Box<dyn SerializeCustomResourceMetaData>),
+pub struct Resource {
+  pub name: String,
+  pub bytes: Vec<u8>,
+  // whether this resource emitted, if true, it won't be emitted again by the default strategy.
+  pub emitted: bool,
+  pub resource_type: ResourceType,
 }
-
-#[cache_item]
-pub struct JsResourceMetaData {
-  ast: String,
-}
-
-#[archive_dyn(deserialize)]
-pub trait CustomResourceMetaData: Any + Send + Sync {}

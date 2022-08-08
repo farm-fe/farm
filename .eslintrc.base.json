@@ -12,5 +12,8 @@
   "plugins": ["@typescript-eslint"],
   "env": {
     "node": true
+  },
+  "rules": {
+    "semi": ["error", "always"]
   }
 }

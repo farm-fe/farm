@@ -1,0 +1,9 @@
+#root {
+  background-color: whitesmoke;
+  font-size: 24px;
+  color: red;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  align-items: center;
+}

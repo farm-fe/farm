@@ -2,17 +2,6 @@ import path from 'path';
 import { Config } from '../../../binding';
 import { Plugin } from '../plugin';
 
-type JsUserConfig = Config['config'];
-type FilteredUserConfigKeys = Exclude<
-  keyof JsUserConfig,
-  'jsPlugins' | 'wasmPlugins'
->;
-type FilteredUserConfig = {
-  [key in FilteredUserConfigKeys]: JsUserConfig[key];
-};
-
-export type UserCompilationConfig = Partial<FilteredUserConfig>;
-
 export interface UserServerConfig {
   port: number;
 }
@@ -28,7 +17,7 @@ export interface UserConfig {
   /** js plugin(which is a javascript object) and wasm plugin(which is string refer to a wasm file or a package) */
   plugins?: (string | Plugin)[];
   /** config related to compilation */
-  compilation?: UserCompilationConfig;
+  compilation?: Config['config'];
   /** config related to dev server */
   server?: UserServerConfig;
   watcher?: UserWatcherConfig;
@@ -46,6 +35,13 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
     config[key] = userConfig.compilation[key];
   }
 
+  if (!config.runtime) {
+    config.runtime = {
+      path: require.resolve('@farmfe/runtime'),
+      plugins: [],
+    };
+  }
+
   const normalizedConfig: Config = {
     config,
     rustPlugins: [
@@ -59,33 +55,37 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
       // ),
     ],
     // rustPlugins: [],
-    // jsPlugins: [
-    //   {
-    //     name: 'js-plugin',
-    //     priority: 10,
-    //     resolve: {
-    //       filters: {
-    //         importers: [],
-    //         specifiers: ['from_js_plugin'],
-    //       },
-    //       executor: async (param, context) => {
-    //         console.log(param, context);
-
-    //         if (!param.caller) {
-    //           const resolved = await context.resolve({
-    //             ...param,
-    //             specifier: './from_js_plugin',
-    //             caller: 'js-plugin',
-    //           });
-    //           console.log('call internal resolve in js', resolved);
-    //           resolved.id += '.js-plugin';
-    //           return resolved;
-    //         }
-    //       },
-    //     },
-    //   },
-    // ],
-    jsPlugins: [],
+    jsPlugins: [
+      // {
+      //   name: 'js-plugin',
+      //   priority: 10,
+      //   resolve: {
+      //     filters: {
+      //       importers: [],
+      //       sources: ['from_js_plugin'],
+      //     },
+      //     executor: async (param, context, hook_context) => {
+      //       console.log(param, context, hook_context);
+      //       if (!hook_context.caller) {
+      //         const resolved = await context.resolve(
+      //           {
+      //             ...param,
+      //             source: './from_js_plugin',
+      //           },
+      //           {
+      //             meta: hook_context.meta,
+      //             caller: 'js-plugin',
+      //           }
+      //         );
+      //         console.log('call internal resolve in js', resolved);
+      //         resolved.id += '.js-plugin';
+      //         return resolved;
+      //       }
+      //     },
+      //   },
+      // },
+    ],
+    // jsPlugins: [],
   };
 
   return normalizedConfig;
@@ -97,4 +97,8 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
  */
 export function resolveUserConfig(configPath: string): UserConfig {
   return {};
+}
+
+export function defineFarmConfig(userConfig: UserConfig): UserConfig {
+  return userConfig;
 }

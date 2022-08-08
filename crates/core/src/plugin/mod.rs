@@ -1,21 +1,14 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
-use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
+  config::Config,
   context::CompilationContext,
   error::Result,
-  module::{
-    module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupMap},
-    Module, ModuleType,
-  },
-  resource::{
-    resource_graph::{self, ResourceGraph},
-    Resource,
-  },
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleType},
+  resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
 
@@ -30,6 +23,10 @@ pub trait Plugin: Any + Send + Sync {
     DEFAULT_PRIORITY
   }
 
+  fn config(&self, _config: &mut Config) -> Result<Option<()>> {
+    Ok(None)
+  }
+
   fn build_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     Ok(None)
   }
@@ -38,6 +35,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _param: &PluginResolveHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     Ok(None)
   }
@@ -46,6 +44,7 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _param: &PluginLoadHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
     Ok(None)
   }
@@ -62,11 +61,12 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _param: &PluginParseHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<Module>> {
     Ok(None)
   }
 
-  fn module_parsed(
+  fn process_module(
     &self,
     _module: &mut Module,
     _context: &Arc<CompilationContext>,
@@ -94,7 +94,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Some optimization of the module graph should be performed here, for example, tree shaking, scope hoisting
   fn optimize_module_graph(
     &self,
-    _module_graph: &RwLock<ModuleGraph>,
+    _module_graph: &mut ModuleGraph,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -103,8 +103,9 @@ pub trait Plugin: Any + Send + Sync {
   /// Analyze module group based on module graph
   fn analyze_module_graph(
     &self,
-    _module_graph: &RwLock<ModuleGraph>,
+    _module_graph: &mut ModuleGraph,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<ModuleGroupMap>> {
     Ok(None)
   }
@@ -114,52 +115,55 @@ pub trait Plugin: Any + Send + Sync {
     &self,
     _module_group: &ModuleGroupMap,
     _context: &Arc<CompilationContext>,
-  ) -> Result<Option<ResourceGraph>> {
+    _hook_context: &PluginHookContext,
+  ) -> Result<Option<ResourcePotGraph>> {
     Ok(None)
   }
 
   /// process resource graph before render and generating each resource
-  fn process_resource_graph(
+  fn process_resource_pot_graph(
     &self,
-    _resource_graph: &RwLock<ResourceGraph>,
+    _resource_pot_graph: &mut ResourcePotGraph,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  /// Render the [Resource] in [ResourceGraph].
+  /// Render the [ResourcePot] in [ResourcePotGraph].
   /// May merge the module's ast in the same resource to a single ast and transform the output format to custom module system and ESM
-  fn render_resource(
+  fn render_resource_pot(
     &self,
-    _resource: &mut Resource,
+    _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  /// Optimize the final resource, for example, minimize every resource in the resource graph
-  fn optimize_resource(
+  /// Optimize the resource pot, for example, minimize
+  fn optimize_resource_pot(
     &self,
-    _resource: &mut Resource,
+    _resource: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  /// Generate resources based on the [ResourceGraph]
-  /// This hook is executed in serial and should update the content inside ResourceGraph
-  fn generate_resource(
+  /// Generate resources based on the [ResourcePot], return [Vec<Resource>] represents the final generated files.
+  /// For example, a .js file and its corresponding source map file
+  fn generate_resources(
     &self,
-    _resource_graph: &mut Resource,
+    _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
+    _hook_context: &PluginHookContext,
+  ) -> Result<Option<Vec<Resource>>> {
     Ok(None)
   }
 
-  /// Write the final output [Resource] to disk or not
-  fn write_resource(
+  /// Write the final output [Resource]s to disk or others.
+  /// By default the resource will write to disk or memory, if you want to override this behavior, set [Resource.emitted] to true.
+  fn write_resources(
     &self,
-    _resource: &mut Resource,
+    _resources: &mut Vec<Resource>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -174,7 +178,7 @@ pub trait Plugin: Any + Send + Sync {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
@@ -197,19 +201,35 @@ pub enum ResolveKind {
   Custom(String),
 }
 
+impl ResolveKind {
+  /// dynamic if self is [ResolveKind::DynamicImport] or [ResolveKind::Custom("dynamic:xxx")]
+  /// used when analyzing module groups
+  pub fn is_dynamic(&self) -> bool {
+    matches!(self, ResolveKind::DynamicImport)
+      || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
+  }
+}
+
+/// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginHookContext {
+  /// if this hook is called by the compiler, its value is [None]
+  /// if this hook is called by other plugins, its value is set by the caller plugins.
+  pub caller: Option<String>,
+  /// meta data passed between
+  pub meta: HashMap<String, String>,
+}
+
 /// Parameter of the resolve hook
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
 pub struct PluginResolveHookParam {
-  /// the specifier would like to resolve, for example, './index'
-  pub specifier: String,
+  /// the source would like to resolve, for example, './index'
+  pub source: String,
   /// the start location to resolve `specifier`, being [None] if resolving a entry or resolving a hmr update.
   pub importer: Option<String>,
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   pub kind: ResolveKind,
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  pub caller: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -234,16 +254,13 @@ pub struct PluginResolveHookResult {
 pub struct PluginLoadHookParam<'a> {
   pub id: &'a str,
   pub query: HashMap<String, String>,
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  pub caller: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
 pub struct PluginLoadHookResult {
   /// the source content of the module
-  pub source: String,
+  pub content: String,
   /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
   /// usually end with `.js` extension
   pub module_type: ModuleType,
@@ -253,7 +270,7 @@ pub struct PluginLoadHookResult {
 #[serde(rename = "camelCase")]
 pub struct PluginTransformHookParam<'a> {
   /// source content after load or transformed result of previous plugin
-  pub source: String,
+  pub content: String,
   /// module type after load
   pub module_type: ModuleType,
   pub id: &'a str,
@@ -264,7 +281,7 @@ pub struct PluginTransformHookParam<'a> {
 #[serde(rename = "camelCase", default)]
 pub struct PluginTransformHookResult {
   /// transformed source content, will be passed to next plugin.
-  pub source: String,
+  pub content: String,
   /// you can change the module type after transform.
   pub module_type: Option<ModuleType>,
   /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
@@ -272,16 +289,19 @@ pub struct PluginTransformHookResult {
 }
 
 pub struct PluginParseHookParam {
+  /// resolved id
   pub id: String,
+  /// resolved query
   pub query: HashMap<String, String>,
   pub module_type: ModuleType,
-  pub source: String,
+  /// source content(after transform)
+  pub content: String,
+  /// source map chain after transform content
   pub source_map_chain: Vec<String>,
+  /// resolved side effects
   pub side_effects: bool,
+  /// resolved package.json
   pub package_json_info: Value,
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  pub caller: Option<String>,
 }
 
 pub struct PluginAnalyzeDepsHookParam<'a> {
@@ -290,8 +310,8 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PluginAnalyzeDepsHookResultEntry {
-  pub specifier: String,
+  pub source: String,
   pub kind: ResolveKind,
 }

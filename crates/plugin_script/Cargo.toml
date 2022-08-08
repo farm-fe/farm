@@ -2,3 +2,7 @@
 name = "farmfe_plugin_script"
 version = "0.0.1"
 edition = "2021"
+
+[dependencies]
+farmfe_core = { path = "../core" }
+farmfe_toolkit = { path = "../toolkit" }

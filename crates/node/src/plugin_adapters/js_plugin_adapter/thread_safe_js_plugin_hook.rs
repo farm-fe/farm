@@ -13,8 +13,8 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   plugin::{
-    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, PluginTransformHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
   },
   serde::{de::DeserializeOwned, Serialize},
 };
@@ -79,13 +79,14 @@ impl ThreadSafeJsPluginHook {
     &self,
     param: P,
     ctx: Arc<CompilationContext>,
+    hook_context: PluginHookContext,
   ) -> Result<Option<T>> {
     let (sender, receiver) = channel::<Result<Option<T>>>();
 
     unsafe {
       napi_call_threadsafe_function(
         self.raw_tsfn,
-        Box::into_raw(Box::new((param, ctx, sender))) as *mut c_void,
+        Box::into_raw(Box::new((param, ctx, hook_context, sender))) as *mut c_void,
         ThreadsafeFunctionCallMode::NonBlocking.into(),
       );
     }
@@ -122,16 +123,24 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
   let mut recv = ptr::null_mut();
   napi_get_undefined(raw_env, &mut recv);
 
-  let data: Box<(P, Arc<CompilationContext>, Sender<Result<Option<T>>>)> =
-    Box::from_raw(data.cast());
-  let (param, ctx, sender) = *data;
+  let data: Box<(
+    P,
+    Arc<CompilationContext>,
+    PluginHookContext,
+    Sender<Result<Option<T>>>,
+  )> = Box::from_raw(data.cast());
+  let (param, ctx, hook_context, sender) = *data;
   let js_context = create_js_context(raw_env, ctx);
 
-  let mut args: Vec<napi_value> = vec![param]
-    .into_iter()
-    .map(|p| Env::from_raw(raw_env).to_js_value(&p).unwrap().raw())
-    .collect();
-  args.push(js_context.raw());
+  unsafe fn to_napi_value<T: Serialize>(arg: T, raw_env: napi_env) -> napi_value {
+    Env::from_raw(raw_env).to_js_value(&arg).unwrap().raw()
+  }
+
+  let args: Vec<napi_value> = vec![
+    to_napi_value(param, raw_env),
+    js_context.raw(),
+    to_napi_value(hook_context, raw_env),
+  ];
 
   let mut result = ptr::null_mut();
   napi_call_function(raw_env, recv, func, args.len(), args.as_ptr(), &mut result);
@@ -218,6 +227,7 @@ impl JsPluginResolveHook {
     &self,
     param: PluginResolveHookParam,
     ctx: Arc<CompilationContext>,
+    hook_context: PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     let skip = self.filters.importers.iter().any(|i| {
       if let Some(importer) = &param.importer {
@@ -227,14 +237,14 @@ impl JsPluginResolveHook {
       }
     }) || self
       .filters
-      .specifiers
+      .sources
       .iter()
-      .any(|f| f.is_match(&param.specifier));
+      .any(|f| f.is_match(&param.source));
 
     if !skip {
       self
         .tsfn
-        .call::<PluginResolveHookParam, PluginResolveHookResult>(param, ctx)
+        .call::<PluginResolveHookParam, PluginResolveHookResult>(param, ctx, hook_context)
     } else {
       Ok(None)
     }
@@ -277,17 +287,17 @@ impl JsPluginTransformHook {
   }
 }
 
-/// Resolve hook filters, works as `||`. If any importers or specifiers matches any regex item in the Vec, we treat it as filtered.
+/// Resolve hook filters, works as `||`. If any importers or sources matches any regex item in the Vec, we treat it as filtered.
 #[napi(object)]
 struct JsPluginResolveHookFilters {
   pub importers: Vec<String>,
-  pub specifiers: Vec<String>,
+  pub sources: Vec<String>,
 }
 
 #[derive(Debug)]
 struct PluginResolveHookFilters {
   pub importers: Vec<Regex>,
-  pub specifiers: Vec<Regex>,
+  pub sources: Vec<Regex>,
 }
 
 impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
@@ -298,8 +308,8 @@ impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
         .into_iter()
         .map(|f| Regex::new(&f).unwrap())
         .collect(),
-      specifiers: f
-        .specifiers
+      sources: f
+        .sources
         .into_iter()
         .map(|f| Regex::new(&f).unwrap())
         .collect(),
@@ -474,7 +484,10 @@ unsafe extern "C" fn catch_cb<T: DeserializeOwned>(
   napi_create_reference(env, rejected_value, 1, &mut error_ref);
 
   let result = Err(Error::from(error_ref)).map_err(|e| {
-    CompilationError::NAPIError(format!("Invalid hook return, except object. {:?}", e))
+    CompilationError::NAPIError(format!(
+      "Can not transform the js hook result to js error object. {:?}",
+      e
+    ))
   });
   let sender = Box::from_raw(data as *mut Sender<Result<Option<T>>>);
   sender.send(result).unwrap();

@@ -34,7 +34,15 @@
     "libfarmfe",
     "dylib",
     "normpath",
-    "pathdiff"
+    "pathdiff",
+    "topo",
+    "toposort",
+    "mgfe",
+    "Deque",
+    "hashbrown",
+    "deserializers",
+    "codegen",
+    "ctxt"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

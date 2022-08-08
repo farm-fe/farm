@@ -6,7 +6,7 @@ use farmfe_core::{
   error::Result,
   module::ModuleType,
   plugin::{
-    Plugin, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult, PluginTransformHookResult,
   },
 };
@@ -30,6 +30,7 @@ impl Plugin for FarmPluginSass {
     &self,
     _param: &PluginResolveHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     Ok(Some(PluginResolveHookResult {
       id: String::from("resolve from FarmSassPlugin"),
@@ -41,11 +42,12 @@ impl Plugin for FarmPluginSass {
     &self,
     param: &PluginLoadHookParam,
     _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
     println!("load param {:?}", param);
 
     Ok(Some(PluginLoadHookResult {
-      source: String::from("hello"),
+      content: String::from("hello"),
       module_type: farmfe_core::module::ModuleType::Custom(String::from("scss")),
     }))
   }
@@ -56,7 +58,7 @@ impl Plugin for FarmPluginSass {
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     Ok(Some(PluginTransformHookResult {
-      source: String::from("transformed data"),
+      content: String::from("transformed data"),
       ..Default::default()
     }))
   }

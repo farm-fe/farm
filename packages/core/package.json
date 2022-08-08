@@ -17,7 +17,8 @@
     "@types/jest": "^28.1.4",
     "@types/node": "^18.0.1",
     "jest": "^28.1.2",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "@farmfe/runtime": "workspace:^0.0.0"
   },
   "engines": {
     "node": ">= 12"
@@ -26,6 +27,9 @@
     "binding",
     "dist"
   ],
+  "peerDependencies": {
+    "@farmfe/runtime": "workspace:^0.0.0"
+  },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
