@@ -3,13 +3,12 @@ use std::{collections::VecDeque, sync::Arc};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  hashbrown::HashSet,
+  hashbrown::{HashMap, HashSet},
   module::{
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupMap},
-    ModuleId,
+    ModuleId, ModuleType,
   },
-  parking_lot::RwLock,
   plugin::{Plugin, PluginHookContext},
   resource::{
     resource_pot::{ResourcePot, ResourcePotId},
@@ -61,7 +60,7 @@ impl Plugin for FarmPluginMergeModules {
 
   fn merge_modules(
     &self,
-    module_group_map: &ModuleGroupMap,
+    module_group_map: &mut ModuleGroupMap,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotGraph>> {
@@ -73,20 +72,45 @@ impl Plugin for FarmPluginMergeModules {
       module_group_map.len()
     );
     // merge all module groups into the same resource pot for now
-    for g in module_group_map.module_groups() {
-      let mut resource_pot = ResourcePot::new(ResourcePotId::new(g.id.to_string()));
+    for g in module_group_map.module_groups_mut() {
+      let mut module_type_resource_pot_map = HashMap::<ModuleType, ResourcePot>::new();
 
-      for m in g.modules() {
-        module_graph.module_mut(m).unwrap().resource_pot = Some(resource_pot.id.clone());
-        resource_pot.add_module(m.clone());
+      for module_id in g.modules() {
+        let module = module_graph.module_mut(module_id).unwrap();
 
-        if module_graph.entries.contains(m) {
-          resource_pot.entry_module = Some(m.clone());
+        let resource_pot = if module_type_resource_pot_map.contains_key(&module.module_type) {
+          let resource_pot = module_type_resource_pot_map
+            .get_mut(&module.module_type)
+            .unwrap();
+          module.resource_pot = Some(resource_pot.id.clone());
+          resource_pot.add_module(module_id.clone());
+
+          resource_pot
+        } else {
+          let mut resource_pot = ResourcePot::new(
+            ResourcePotId::new(module_id.to_string()),
+            module.module_type.clone().into(),
+            g.id.clone(),
+          );
+          module.resource_pot = Some(resource_pot.id.clone());
+          resource_pot.add_module(module_id.clone());
+          module_type_resource_pot_map.insert(module.module_type.clone(), resource_pot);
+
+          module_type_resource_pot_map
+            .get_mut(&module.module_type)
+            .unwrap()
+        };
+
+        if module_graph.entries.contains(module_id) {
+          resource_pot.entry_module = Some(module_id.clone());
         }
       }
 
-      // TODO add dependency info of resource pot
-      resource_pot_graph.add_resource_pot(resource_pot)
+      for resource_pot in module_type_resource_pot_map.into_values() {
+        g.add_resource_pot(resource_pot.id.clone());
+        // TODO add dependency info of resource pot
+        resource_pot_graph.add_resource_pot(resource_pot)
+      }
     }
 
     Ok(Some(resource_pot_graph))

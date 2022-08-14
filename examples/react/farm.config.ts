@@ -1,9 +1,9 @@
-import { defineFarmConfig } from '@farmfe/core';
+import type { UserConfig } from '@farmfe/core';
 
-export default defineFarmConfig({
+export default {
   compilation: {
     input: {
       index: './index.html',
     },
   },
-});
+} as UserConfig;

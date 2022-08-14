@@ -12,16 +12,19 @@ use farmfe_core::{
     Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult,
   },
-  resource::resource_pot::{JsResourcePotMetaData, ResourcePotMetaData, ResourcePotType},
+  resource::{
+    resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
+    resource_pot_graph::ResourcePotGraph,
+    Resource, ResourceType,
+  },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
-    Str,
+    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleItem, Stmt, Str,
   },
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
-  script::{merge_module_asts_of_resource_pot, module_type_from_id, parse_module, parse_stmt},
+  script::{codegen_module, merge_module_asts_of_resource_pot, module_type_from_id, parse_module},
   swc_ecma_parser::{EsConfig, Syntax},
 };
 
@@ -100,11 +103,7 @@ impl Plugin for FarmPluginRuntime {
 
       Ok(Some(PluginLoadHookResult {
         content,
-        module_type: module_type_from_id(&real_file_path).ok_or_else(|| {
-          CompilationError::GenericError(
-            "Unsupported file type of runtime, only support `js/jsx/ts/tsx/mjs/cjs`".to_string(),
-          )
-        })?,
+        module_type: module_type_from_id(&real_file_path),
       }))
     } else {
       Ok(None)
@@ -113,7 +112,7 @@ impl Plugin for FarmPluginRuntime {
 
   fn process_resource_pot_graph(
     &self,
-    resource_pot_graph: &mut farmfe_core::resource::resource_pot_graph::ResourcePotGraph,
+    resource_pot_graph: &mut ResourcePotGraph,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let mut module_graph = context.module_graph.write();
@@ -168,7 +167,7 @@ impl Plugin for FarmPluginRuntime {
 
   fn render_resource_pot(
     &self,
-    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // the runtime module and its plugins should be in the same resource pot
@@ -210,30 +209,54 @@ impl Plugin for FarmPluginRuntime {
 
   fn generate_resources(
     &self,
-    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<Vec<farmfe_core::resource::Resource>>> {
+  ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
     if matches!(&hook_context.caller, Some(c) if c == self.name()) {
       return Ok(None);
     }
 
     // only handle runtime resource pot and entry resource pot
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      // do not emit anything of Runtime, as it will be generated and injected when generating entry resources
-      Ok(Some(vec![]))
+      let runtime_ast = self.runtime_ast.lock();
+      let runtime_ast = runtime_ast.as_ref().unwrap();
+      let bytes = codegen_module(runtime_ast, context.meta.script.cm.clone()).map_err(|e| {
+        CompilationError::GenerateResourcesError {
+          name: resource_pot.id.to_string(),
+          ty: resource_pot.resource_pot_type.clone(),
+          source: Some(Box::new(e)),
+        }
+      })?;
+      // set emitted property of Runtime to true by default, as it will be generated and injected when generating entry resources,
+      // other plugins wants to modify this behavior in write_resources hook.
+      Ok(Some(vec![Resource {
+        name: resource_pot.id.to_string(),
+        bytes,
+        emitted: true, // do not emit runtime resource by default
+        resource_type: ResourceType::Runtime,
+        resource_pot: resource_pot.id.clone(),
+      }]))
     } else if let Some(entry_module_id) = &resource_pot.entry_module {
       // modify the ast according to the type,
       // if js, insert the runtime ast in the front
       match resource_pot.resource_pot_type {
         ResourcePotType::Js => {
-          let mut runtime_ast = self.runtime_ast.lock().take().unwrap();
+          let runtime_ast = self.runtime_ast.lock();
+          let runtime_ast = runtime_ast.as_ref().unwrap_or_else(|| {
+            panic!(
+              "runtime ast is not found when generating resources for {:?}",
+              resource_pot.id
+            )
+          });
 
           let resource_pot_ast = &mut resource_pot.meta.as_js_mut().ast;
-          resource_pot_ast.body.insert(0, runtime_ast.body.remove(0));
+          resource_pot_ast
+            .body
+            .insert(0, runtime_ast.body.to_vec().remove(0));
 
           // TODO support top level await, and only support reexport default export now, should support more in the future
-          // call the entry module
+          // call the entry module and
           let call_entry = parse_module(
             "farm-internal-call-entry-module",
             &format!(

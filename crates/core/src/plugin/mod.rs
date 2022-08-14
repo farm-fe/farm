@@ -113,7 +113,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Merging modules of the module group map to [crate::resource::resource_graph::ResourceGraph]
   fn merge_modules(
     &self,
-    _module_group: &ModuleGroupMap,
+    _module_group_map: &mut ModuleGroupMap,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<ResourcePotGraph>> {
@@ -163,7 +163,7 @@ pub trait Plugin: Any + Send + Sync {
   /// By default the resource will write to disk or memory, if you want to override this behavior, set [Resource.emitted] to true.
   fn write_resources(
     &self,
-    _resources: &mut Vec<Resource>,
+    _resources: &mut hashbrown::HashMap<String, Resource>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -288,6 +288,7 @@ pub struct PluginTransformHookResult {
   pub source_map: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct PluginParseHookParam {
   /// resolved id
   pub id: String,

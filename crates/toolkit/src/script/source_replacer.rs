@@ -10,7 +10,7 @@
 use farmfe_core::{
   config::Mode,
   module::{module_graph::ModuleGraph, ModuleId},
-  swc_common::Mark,
+  swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
 use swc_ecma_visit::VisitMut;
@@ -55,7 +55,24 @@ impl<'a> VisitMut for SourceReplacer<'a> {
           let id = self
             .module_graph
             .get_dep_by_source(&self.module_id, &source);
-          *value = id.id(self.mode.clone()).into();
+          // only execute script module
+          let dep_module = self.module_graph.module(&id).unwrap();
+
+          if dep_module.module_type.is_script() {
+            *value = id.id(self.mode.clone()).into();
+          } else {
+            // replace with an noop()
+            *call_expr = CallExpr {
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "noop".into(),
+                optional: false,
+              }))),
+              args: vec![],
+              type_args: None,
+            }
+          }
         }
       }
     }

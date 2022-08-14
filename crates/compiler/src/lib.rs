@@ -26,6 +26,8 @@ impl Compiler {
       Arc::new(farmfe_plugin_merge_modules::FarmPluginMergeModules::new(
         &config,
       )) as _,
+      Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
+      Arc::new(farmfe_plugin_css::FarmPluginCss::new(&config)) as _,
     ];
 
     plugins.append(&mut plugin_adapters);

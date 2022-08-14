@@ -23,5 +23,7 @@ rayon = "1.5"
 petgraph = "0.6"
 bytecheck = "0.6.9"
 downcast-rs = "1.2"
-swc_ecma_ast = { version = "0.89.0", features = ["rkyv-impl"] }
-swc_common = { version = "0.26", features = ["concurrent"] }
+swc_ecma_ast = { version = "0.90.7", features = ["rkyv-impl"] }
+swc_common = { version = "0.27.7", features = ["concurrent"] }
+swc_css_ast = { version = "0.107.0", features = ["rkyv-impl"] }
+swc_html_ast = { version = "0.24.4", features = ["rkyv-impl"] }
