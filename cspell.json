@@ -42,7 +42,11 @@
     "hashbrown",
     "deserializers",
     "codegen",
-    "ctxt"
+    "ctxt",
+    "Stylesheet",
+    "stylesheet",
+    "querystring",
+    "querify"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
