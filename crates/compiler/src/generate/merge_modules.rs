@@ -14,7 +14,7 @@ pub fn merge_modules(
 
   let mut module_group_map = context
     .plugin_driver
-    .analyze_module_graph(&mut *module_graph, context, &hook_context)?
+    .analyze_module_graph(&mut *module_graph, context, hook_context)?
     .ok_or(CompilationError::PluginHookResultCheckError {
       hook_name: "analyze_module_graph".to_string(),
     })?;
@@ -27,7 +27,7 @@ pub fn merge_modules(
 
   let resource_pot_graph = context
     .plugin_driver
-    .merge_modules(&mut module_group_map, context, &hook_context)?
+    .merge_modules(&mut module_group_map, context, hook_context)?
     .ok_or(CompilationError::PluginHookResultCheckError {
       hook_name: "merge_modules".to_string(),
     })?;

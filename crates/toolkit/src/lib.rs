@@ -3,7 +3,7 @@
 pub mod css;
 pub mod fs;
 pub mod html;
-pub mod npm_package;
+pub mod resolve;
 pub mod rkyv;
 pub mod script;
 pub mod testing_helpers;
@@ -21,3 +21,5 @@ pub use swc_css_visit;
 pub use swc_html_codegen;
 pub use swc_html_parser;
 pub use swc_html_visit;
+
+pub use lazy_static;

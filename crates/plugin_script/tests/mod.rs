@@ -1,6 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
+  common::PackageJsonInfo,
   config::Config,
   context::CompilationContext,
   module::ModuleType,
@@ -72,7 +73,7 @@ fn load_parse_and_analyze_deps() {
           content: loaded.content,
           source_map_chain: vec![],
           side_effects: false,
-          package_json_info: Value::Null,
+          package_json_info: PackageJsonInfo::default(),
         },
         &context,
         &hook_context,

@@ -75,6 +75,12 @@ pub enum CompilationError {
 
   #[error("Render Html Resource Pot {name} failed, A html resource pot should only contains one html module, current containing html modules: {modules:?}")]
   RenderHtmlResourcePotError { name: String, modules: Vec<String> },
+
+  #[error("Load package.json from `{package_json_path}` failed: {err_message}")]
+  LoadPackageJsonError {
+    package_json_path: String,
+    err_message: String,
+  },
 }
 
 pub type Result<T> = core::result::Result<T, CompilationError>;

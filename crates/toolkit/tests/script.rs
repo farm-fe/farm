@@ -9,7 +9,7 @@ use farmfe_toolkit::{
 
 #[test]
 fn parse_and_codegen_module() {
-  fixture("tests/fixtures/**/index.*", |file: PathBuf| {
+  fixture("tests/fixtures/script/**/index.*", |file: PathBuf| {
     let id = file.to_string_lossy().to_string();
     let content = read_file_utf8(&id).unwrap();
 

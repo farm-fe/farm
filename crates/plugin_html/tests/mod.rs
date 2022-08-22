@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
+  common::PackageJsonInfo,
   context::CompilationContext,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
@@ -42,7 +43,7 @@ fn html_build_stage() {
           query: HashMap::new(),
           source_map_chain: vec![],
           side_effects: false,
-          package_json_info: Value::Null,
+          package_json_info: PackageJsonInfo::default(),
         },
         &context,
         &hook_context,

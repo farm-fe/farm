@@ -4,6 +4,7 @@
 // #![feature(trait_upcasting)]
 
 pub mod cache;
+pub mod common;
 pub mod config;
 pub mod context;
 pub mod error;
@@ -19,6 +20,7 @@ pub use farm_macro_cache_item::cache_item;
 pub const VERSION: &str = "0.1.0";
 
 // re-export common external crates
+pub use dashmap;
 pub use hashbrown;
 pub use parking_lot;
 pub use rayon;

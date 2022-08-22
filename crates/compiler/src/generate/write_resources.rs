@@ -19,7 +19,7 @@ pub fn write_resources(context: &Arc<CompilationContext>) -> farmfe_core::error:
       let root = PathBuf::from(context.config.root.as_str());
       let output_path = root
         .join("dist")
-        .join(resource.name.split('/').last().unwrap().to_string());
+        .join(resource.name.split('/').last().unwrap());
 
       std::fs::create_dir_all(output_path.parent().unwrap()).unwrap();
       std::fs::write(output_path, &resource.bytes).unwrap();

@@ -17,7 +17,7 @@ use farmfe_core::{
   rayon,
   rayon::ThreadPool,
 };
-use farmfe_toolkit::npm_package::load_package_json_or_default;
+use farmfe_toolkit::resolve::default_package_json;
 
 use crate::{
   build::{load::load, parse::parse, resolve::resolve, transform::transform},
@@ -124,7 +124,7 @@ impl Compiler {
         query: resolve_result.query,
         package_json_info: resolve_result
           .package_json_info
-          .unwrap_or_else(|| load_package_json_or_default(&context.config.root)),
+          .unwrap_or_else(default_package_json),
         side_effects: resolve_result.side_effects,
         module_type: transform_result
           .module_type
