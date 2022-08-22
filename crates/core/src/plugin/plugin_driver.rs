@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use hashbrown::HashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
@@ -155,7 +156,7 @@ impl PluginDriver {
   hook_first!(
     merge_modules,
     Result<Option<ResourcePotGraph>>,
-    module_group: &ModuleGroupMap,
+    module_group_map: &mut ModuleGroupMap,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
   );
@@ -174,7 +175,7 @@ impl PluginDriver {
     _hook_context: &PluginHookContext
   );
 
-  hook_serial!(write_resources, &mut Vec<Resource>);
+  hook_serial!(write_resources, &mut HashMap<String, Resource>);
 
   hook_parallel!(generate_end);
 

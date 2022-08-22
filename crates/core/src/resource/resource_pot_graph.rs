@@ -8,27 +8,37 @@ pub struct ResourcePotGraphEdge {}
 
 pub struct ResourcePotGraph {
   g: StableDiGraph<ResourcePot, ResourcePotGraphEdge>,
-  name_index_map: HashMap<ResourcePotId, NodeIndex>,
+  id_index_map: HashMap<ResourcePotId, NodeIndex>,
 }
 
 impl ResourcePotGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      name_index_map: HashMap::new(),
+      id_index_map: HashMap::new(),
     }
   }
 
   /// replace current graph's content with other [ResourcePotGraph]'s content
   pub fn replace(&mut self, other: ResourcePotGraph) {
     self.g = other.g;
-    self.name_index_map = other.name_index_map;
+    self.id_index_map = other.id_index_map;
+  }
+
+  pub fn resource_pot(&self, id: &ResourcePotId) -> Option<&ResourcePot> {
+    let id = self.id_index_map.get(id).unwrap();
+    self.g.node_weight(*id)
+  }
+
+  pub fn resource_pot_mut(&mut self, id: &ResourcePotId) -> Option<&mut ResourcePot> {
+    let id = self.id_index_map.get(id).unwrap();
+    self.g.node_weight_mut(*id)
   }
 
   pub fn add_resource_pot(&mut self, resource: ResourcePot) {
     let name = resource.id.clone();
     let index = self.g.add_node(resource);
-    self.name_index_map.insert(name, index);
+    self.id_index_map.insert(name, index);
   }
 
   pub fn resource_pots(&self) -> Vec<&ResourcePot> {

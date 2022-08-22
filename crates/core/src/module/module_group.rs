@@ -1,5 +1,7 @@
 use hashbrown::HashMap;
 
+use crate::resource::resource_pot::ResourcePotId;
+
 use super::ModuleId;
 
 /// A `entry_module_id -> ModuleGroup` map
@@ -12,6 +14,10 @@ impl ModuleGroupMap {
     Self {
       groups: HashMap::new(),
     }
+  }
+
+  pub fn replace(&mut self, other: ModuleGroupMap) {
+    self.groups = other.groups;
   }
 
   pub fn add_module_group(&mut self, module_group: ModuleGroup) {
@@ -58,6 +64,8 @@ pub struct ModuleGroup {
   pub id: ModuleGroupId,
   /// the modules that this group has
   modules: Vec<ModuleId>,
+  /// the [ResourcePot]s this group merged to
+  resource_pots: Vec<ResourcePotId>,
 }
 
 impl ModuleGroup {
@@ -65,6 +73,7 @@ impl ModuleGroup {
     Self {
       modules: vec![id.clone()],
       id,
+      resource_pots: vec![],
     }
   }
 
@@ -74,5 +83,13 @@ impl ModuleGroup {
 
   pub fn modules(&self) -> &Vec<ModuleId> {
     &self.modules
+  }
+
+  pub fn add_resource_pot(&mut self, resource_pot_id: ResourcePotId) {
+    self.resource_pots.push(resource_pot_id);
+  }
+
+  pub fn resource_pots(&self) -> &Vec<ResourcePotId> {
+    &self.resource_pots
   }
 }

@@ -1,7 +1,10 @@
 use std::collections::HashSet;
 
+use hashbrown::HashMap;
 use parking_lot::Mutex;
+use serde_json::Value;
 
+/// All cache related operation are charged by [CacheManager]
 pub struct CacheManager {
   /// the modules which are already handled, a module(the resolved id is same) won't be processed twice
   handled_modules: Mutex<HashSet<String>>,

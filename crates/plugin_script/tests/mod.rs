@@ -1,6 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
+  common::PackageJsonInfo,
   config::Config,
   context::CompilationContext,
   module::ModuleType,
@@ -72,7 +73,7 @@ fn load_parse_and_analyze_deps() {
           content: loaded.content,
           source_map_chain: vec![],
           side_effects: false,
-          package_json_info: Value::Null,
+          package_json_info: PackageJsonInfo::default(),
         },
         &context,
         &hook_context,
@@ -104,7 +105,11 @@ fn load_parse_and_analyze_deps() {
       ]
     );
 
-    let mut resource_pot = ResourcePot::new(ResourcePotId::new("index".to_string()));
+    let mut resource_pot = ResourcePot::new(
+      ResourcePotId::new("index".to_string()),
+      ResourcePotType::Js,
+      "any".into(),
+    );
 
     resource_pot.resource_pot_type = ResourcePotType::Js;
     resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {

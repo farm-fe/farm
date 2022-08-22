@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
+  common::PackageJsonInfo,
   config::Config,
   context::CompilationContext,
   error::Result,
@@ -113,7 +114,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Merging modules of the module group map to [crate::resource::resource_graph::ResourceGraph]
   fn merge_modules(
     &self,
-    _module_group: &ModuleGroupMap,
+    _module_group_map: &mut ModuleGroupMap,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<ResourcePotGraph>> {
@@ -163,7 +164,7 @@ pub trait Plugin: Any + Send + Sync {
   /// By default the resource will write to disk or memory, if you want to override this behavior, set [Resource.emitted] to true.
   fn write_resources(
     &self,
-    _resources: &mut Vec<Resource>,
+    _resources: &mut hashbrown::HashMap<String, Resource>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -242,7 +243,7 @@ pub struct PluginResolveHookResult {
   /// whether this module has side effects, affects tree shaking
   pub side_effects: bool,
   /// the package.json of the resolved id, if [None], using root package.json(where farm.config placed) by default
-  pub package_json_info: Option<Value>,
+  pub package_json_info: Option<PackageJsonInfo>,
   /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [crate::utils::parse_query] is for you
@@ -288,6 +289,7 @@ pub struct PluginTransformHookResult {
   pub source_map: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct PluginParseHookParam {
   /// resolved id
   pub id: String,
@@ -301,7 +303,7 @@ pub struct PluginParseHookParam {
   /// resolved side effects
   pub side_effects: bool,
   /// resolved package.json
-  pub package_json_info: Value,
+  pub package_json_info: PackageJsonInfo,
 }
 
 pub struct PluginAnalyzeDepsHookParam<'a> {

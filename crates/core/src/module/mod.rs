@@ -11,8 +11,9 @@ use pathdiff::diff_paths;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
-use swc_common::Mark;
+use swc_css_ast::Stylesheet;
 use swc_ecma_ast::Module as SwcModule;
+use swc_html_ast::Document;
 
 use crate::{config::Mode, resource::resource_pot::ResourcePotId};
 
@@ -54,48 +55,82 @@ impl Module {
 /// Meta data which is not shared by core plugins should be stored in [ModuleMetaData::Custom]
 #[cache_item]
 pub enum ModuleMetaData {
-  Script(ModuleScriptMetaData),
+  Script(ScriptModuleMetaData),
+  Css(CssModuleMetaData),
+  Html(HtmlModuleMetaData),
   Custom(Box<dyn SerializeCustomModuleMetaData>),
 }
 
 impl ModuleMetaData {
-  pub fn as_script_mut(&mut self) -> &mut ModuleScriptMetaData {
-    match self {
-      ModuleMetaData::Script(script) => script,
-      ModuleMetaData::Custom(_) => panic!("ModuleMetaData is not Script"),
+  pub fn as_script_mut(&mut self) -> &mut ScriptModuleMetaData {
+    if let Self::Script(script) = self {
+      script
+    } else {
+      panic!("ModuleMetaData is not Script")
     }
   }
 
-  pub fn as_script(&self) -> &ModuleScriptMetaData {
-    match self {
-      ModuleMetaData::Script(script) => script,
-      ModuleMetaData::Custom(_) => panic!("ModuleMetaData is not Script"),
+  pub fn as_script(&self) -> &ScriptModuleMetaData {
+    if let Self::Script(script) = self {
+      script
+    } else {
+      panic!("ModuleMetaData is not Script")
+    }
+  }
+
+  pub fn as_css(&self) -> &CssModuleMetaData {
+    if let Self::Css(css) = self {
+      css
+    } else {
+      panic!("ModuleMetaData is not css")
+    }
+  }
+
+  pub fn as_css_mut(&mut self) -> &mut CssModuleMetaData {
+    if let Self::Css(css) = self {
+      css
+    } else {
+      panic!("ModuleMetaData is not css")
+    }
+  }
+
+  pub fn as_html(&self) -> &HtmlModuleMetaData {
+    if let Self::Html(html) = self {
+      html
+    } else {
+      panic!("ModuleMetaData is not html")
+    }
+  }
+
+  pub fn as_html_mut(&mut self) -> &mut HtmlModuleMetaData {
+    if let Self::Html(html) = self {
+      html
+    } else {
+      panic!("ModuleMetaData is not html")
     }
   }
 
   pub fn as_custom_mut<T: SerializeCustomModuleMetaData + 'static>(&mut self) -> &mut T {
-    match self {
-      ModuleMetaData::Script(_) => panic!("ModuleMetaData is not Script"),
-      ModuleMetaData::Custom(custom) => {
-        if let Some(c) = custom.downcast_mut::<T>() {
-          c
-        } else {
-          panic!("custom meta type is not serializable");
-        }
+    if let Self::Custom(custom) = self {
+      if let Some(c) = custom.downcast_mut::<T>() {
+        c
+      } else {
+        panic!("custom meta type is not serializable");
       }
+    } else {
+      panic!("ModuleMetaData is not Custom")
     }
   }
 
   pub fn as_custom<T: SerializeCustomModuleMetaData + 'static>(&self) -> &T {
-    match self {
-      ModuleMetaData::Script(_) => panic!("ModuleMetaData is not Script"),
-      ModuleMetaData::Custom(custom) => {
-        if let Some(c) = custom.downcast_ref::<T>() {
-          c
-        } else {
-          panic!("custom meta type is not serializable");
-        }
+    if let Self::Custom(custom) = self {
+      if let Some(c) = custom.downcast_ref::<T>() {
+        c
+      } else {
+        panic!("custom meta type is not serializable");
       }
+    } else {
+      panic!("ModuleMetaData is not Custom")
     }
   }
 }
@@ -112,14 +147,24 @@ pub struct EmptyModuleMetaData;
 
 /// Script specific meta data, for example, [swc_ecma_ast]
 #[cache_item]
-pub struct ModuleScriptMetaData {
+pub struct ScriptModuleMetaData {
   pub ast: SwcModule,
 }
 
-/// Internal support module types by the core plugins, other
-/// ModuleType will be set after the load hook, but can be change in transform hook too.
 #[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct CssModuleMetaData {
+  pub ast: Stylesheet,
+}
+
+#[cache_item]
+pub struct HtmlModuleMetaData {
+  pub ast: Document,
+}
+
+/// Internal support module types by the core plugins,
+/// other [ModuleType] will be set after the load hook, but can be change in transform hook too.
+#[cache_item]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ModuleType {
   // native supported module type by the core plugins
   Js,
@@ -136,6 +181,13 @@ pub enum ModuleType {
 impl ModuleType {
   pub fn is_typescript(&self) -> bool {
     matches!(self, ModuleType::Ts) || matches!(self, ModuleType::Tsx)
+  }
+
+  pub fn is_script(&self) -> bool {
+    matches!(self, ModuleType::Js)
+      || matches!(self, ModuleType::Jsx)
+      || matches!(self, ModuleType::Ts)
+      || matches!(self, ModuleType::Tsx)
   }
 }
 
@@ -169,7 +221,7 @@ pub fn relative(from: &str, to: &str) -> String {
   let rp =
     diff_paths(to, from).unwrap_or_else(|| panic!("{} or {} is not absolute path", from, to));
 
-  println!("diff paths of {} {} -> {:?}", from, to, rp);
+  println!("{:?}", rp);
   // make sure the relative path is platform independent
   // this can ensure that the relative path and hash stable across platforms
   let mut result = String::new();
@@ -189,7 +241,7 @@ pub fn relative(from: &str, to: &str) -> String {
         if result.is_empty() {
           result += "..";
         } else {
-          unreachable!();
+          result += "/.."
         }
       }
       std::path::Component::Normal(c) => {
@@ -291,6 +343,18 @@ mod tests {
     assert_eq!(module_id.id(Mode::Production), "5de94ab0");
     assert_eq!(module_id.path(), "module.html");
     assert_eq!(module_id.hash(), "5de94ab0");
+
+    #[cfg(not(target_os = "windows"))]
+    let resolved_path = "/root/packages/test/module.html";
+    #[cfg(not(target_os = "windows"))]
+    let module_id = ModuleId::new(resolved_path, "/root/packages/app");
+
+    #[cfg(target_os = "windows")]
+    let resolved_path = "C:\\root\\packages\\test\\module.html";
+    #[cfg(target_os = "windows")]
+    let module_id = ModuleId::new(resolved_path, "C:\\root\\packages\\app");
+
+    assert_eq!(module_id.id(Mode::Development), "../test/module.html");
   }
 
   #[test]

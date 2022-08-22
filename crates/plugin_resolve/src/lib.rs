@@ -1,4 +1,5 @@
 use std::{
+  collections::HashMap,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -8,6 +9,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::Result,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
+  serde_json::Value,
 };
 use resolver::Resolver;
 
@@ -36,15 +38,30 @@ impl Plugin for FarmPluginResolve {
   fn resolve(
     &self,
     param: &PluginResolveHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     let source = &param.source;
     let basedir = if let Some(importer) = &param.importer {
-      Path::new(importer).parent().unwrap().to_path_buf()
+      if let Some(p) = Path::new(importer).parent() {
+        p.to_path_buf()
+      } else {
+        Path::new(importer).to_path_buf()
+      }
     } else {
       Path::new(&self.root).to_path_buf()
     };
+
+    // check external first, if the source is set as external, return it immediately
+    if context.config.external.iter().any(|e| &param.source == e) {
+      return Ok(Some(PluginResolveHookResult {
+        id: param.source.clone(),
+        external: true,
+        side_effects: false,
+        package_json_info: None,
+        query: HashMap::new(),
+      }));
+    }
 
     self
       .resolver

@@ -20,6 +20,9 @@ type ModuleInitialization = (
   // __farm_load_resource__: (resourceId: string) => Promise<any>
 ) => void | Promise<void>;
 
+globalThis.noop = function () {
+  /* do nothing */
+};
 // These global variables will be injected during compilation, and module system plugin may use these global variables.
 // globalThis.__farm_module_system_resources__;
 // globalThis.__farm_module_system_public_paths__;

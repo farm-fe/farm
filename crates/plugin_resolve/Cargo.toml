@@ -5,6 +5,4 @@ edition = "2021"
 
 [dependencies]
 farmfe_core = { path = "../core" }
-
-[dev-dependencies]
-testing_macros = "0.2"
+farmfe_toolkit = { path = "../toolkit" }

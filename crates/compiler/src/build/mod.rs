@@ -17,14 +17,13 @@ use farmfe_core::{
   rayon,
   rayon::ThreadPool,
 };
-use farmfe_toolkit::npm_package::load_package_json_or_default;
+use farmfe_toolkit::resolve::default_package_json;
 
 use crate::{
   build::{load::load, parse::parse, resolve::resolve, transform::transform},
   Compiler,
 };
 
-mod analyze_deps;
 mod load;
 mod parse;
 mod resolve;
@@ -75,7 +74,7 @@ impl Compiler {
         meta: HashMap::new(),
       };
 
-      macro_rules! call_and_cache_error {
+      macro_rules! call_and_catch_error {
         ($func:ident, $($args:expr),+) => {
           match $func($($args),+) {
             Ok(r) => r,
@@ -88,7 +87,7 @@ impl Compiler {
       }
 
       // ================ Resolve Start ===============
-      let resolve_result = call_and_cache_error!(resolve, &resolve_param, &context, &hook_context);
+      let resolve_result = call_and_catch_error!(resolve, &resolve_param, &context, &hook_context);
       // the module has already been handled and it should not be handled twice
       if context.cache_manager.is_module_handled(&resolve_result.id) {
         return;
@@ -105,7 +104,7 @@ impl Compiler {
         query: resolve_result.query.clone(),
       };
 
-      let load_result = call_and_cache_error!(load, &load_param, &context, &hook_context);
+      let load_result = call_and_catch_error!(load, &load_param, &context, &hook_context);
       // ================ Load End ===============
 
       // ================ Transform Start ===============
@@ -116,7 +115,7 @@ impl Compiler {
         query: resolve_result.query.clone(),
       };
 
-      let transform_result = call_and_cache_error!(transform, transform_param, &context);
+      let transform_result = call_and_catch_error!(transform, transform_param, &context);
       // ================ Transform End ===============
 
       // ================ Parse Start ===============
@@ -125,7 +124,7 @@ impl Compiler {
         query: resolve_result.query,
         package_json_info: resolve_result
           .package_json_info
-          .unwrap_or_else(|| load_package_json_or_default(&context.config.root)),
+          .unwrap_or_else(default_package_json),
         side_effects: resolve_result.side_effects,
         module_type: transform_result
           .module_type
@@ -133,7 +132,7 @@ impl Compiler {
         content: transform_result.content,
         source_map_chain: transform_result.source_map_chain,
       };
-      let mut module = call_and_cache_error!(parse, parse_param, &context, &hook_context);
+      let mut module = call_and_catch_error!(parse, parse_param, &context, &hook_context);
       // ================ Parse End ===============
       println!("parsed {}", resolve_result.id);
 
@@ -169,7 +168,10 @@ impl Compiler {
       }
       let analyze_deps_result = analyze_deps_param.deps;
       // ================ Analyze Deps End ===============
-      println!("analyzed deps {}", resolve_result.id);
+      println!(
+        "analyzed deps {} -> {:?}",
+        resolve_result.id, analyze_deps_result
+      );
 
       let module_id = module.id.clone();
       let mut module_graph = context.module_graph.write();

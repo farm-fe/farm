@@ -9,4 +9,6 @@ farmfe_plugin_merge_modules = { path = "../plugin_merge_modules" }
 farmfe_plugin_resolve = { path = "../plugin_resolve" }
 farmfe_plugin_script = { path = "../plugin_script" }
 farmfe_plugin_runtime = { path = "../plugin_runtime" }
+farmfe_plugin_html = { path = "../plugin_html" }
+farmfe_plugin_css = { path = "../plugin_css" }
 farmfe_toolkit = { path = "../toolkit" }

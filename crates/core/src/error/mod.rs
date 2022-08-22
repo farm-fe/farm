@@ -35,14 +35,14 @@ pub enum CompilationError {
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("Hook `module_parsed` execute failed.\nOriginal error: {source:?}.")]
+  #[error("Hook `module_parsed` execute failed for module `{id}`.\nOriginal error: {source:?}.")]
   ModuleParsedError {
     id: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("Hook `analyze_deps` execute failed.\nOriginal error: {source:?}.")]
+  #[error("Hook `analyze_deps` execute failed for module `{id}`.\nOriginal error: {source:?}.")]
   AnalyzeDepsError {
     id: String,
     #[source]
@@ -51,11 +51,36 @@ pub enum CompilationError {
 
   #[error("{0}")]
   GenericError(String),
+
+  /// TODO optimize using source Error
   #[error("{0}")]
   NAPIError(String),
 
-  #[error("Generate resources for {name}(type: {ty:?}) failed. This error usually caused by problematic plugin that implement `generate_resources` hook but does not return a valid result")]
-  GenerateResourcesError { name: String, ty: ResourcePotType },
+  #[error("Hook `analyze_module_graph` execute failed.\nOriginal error: {source:?}.\n")]
+  AnalyzeModuleGraphError {
+    #[source]
+    source: Option<Box<dyn Error + Send + Sync>>,
+  },
+
+  #[error("No plugins return valid result for hook {hook_name}. You may need plugins if you are using module types which are not native supported.")]
+  PluginHookResultCheckError { hook_name: String },
+
+  #[error("Generate resources for {name}(type: {ty:?}) failed. Original error: {source:?}. This error usually caused by problematic plugin that implement `generate_resources` hook but does not return a valid result")]
+  GenerateResourcesError {
+    name: String,
+    ty: ResourcePotType,
+    #[source]
+    source: Option<Box<dyn Error + Send + Sync>>,
+  },
+
+  #[error("Render Html Resource Pot {name} failed, A html resource pot should only contains one html module, current containing html modules: {modules:?}")]
+  RenderHtmlResourcePotError { name: String, modules: Vec<String> },
+
+  #[error("Load package.json from `{package_json_path}` failed: {err_message}")]
+  LoadPackageJsonError {
+    package_json_path: String,
+    err_message: String,
+  },
 }
 
 pub type Result<T> = core::result::Result<T, CompilationError>;

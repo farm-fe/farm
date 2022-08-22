@@ -4,6 +4,7 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
+  hashbrown::HashMap,
   module::module_graph::ModuleGraph,
   parking_lot::RwLock,
   plugin::{
@@ -132,13 +133,13 @@ impl Plugin for RustPluginAdapter {
 
   fn merge_modules(
     &self,
-    module_group: &farmfe_core::module::module_group::ModuleGroupMap,
+    module_group_map: &mut farmfe_core::module::module_group::ModuleGroupMap,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> Result<Option<farmfe_core::resource::resource_pot_graph::ResourcePotGraph>> {
     self
       .plugin
-      .merge_modules(module_group, context, hook_context)
+      .merge_modules(module_group_map, context, hook_context)
   }
 
   fn process_resource_pot_graph(
@@ -180,7 +181,7 @@ impl Plugin for RustPluginAdapter {
 
   fn write_resources(
     &self,
-    resources: &mut Vec<farmfe_core::resource::Resource>,
+    resources: &mut HashMap<String, farmfe_core::resource::Resource>,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.write_resources(resources, context)

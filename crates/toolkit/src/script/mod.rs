@@ -19,6 +19,7 @@ use farmfe_core::{
 };
 use swc_ecma_transforms::{
   feature::enable_available_feature_from_es_version,
+  fixer,
   modules::{common_js, import_analysis::import_analyzer, util::ImportInterop},
   resolver,
 };
@@ -100,23 +101,29 @@ pub fn codegen_module(
   Ok(buf)
 }
 
-/// Get [ModuleType] from the resolved id's extension, return [None] if the extension is not supported
-/// TODO support extra extension
-pub fn module_type_from_id(id: &str) -> Option<ModuleType> {
-  if id.ends_with(".ts") {
-    Some(ModuleType::Ts)
-  } else if id.ends_with(".tsx") {
-    Some(ModuleType::Tsx)
-  } else if id.ends_with(".js") || id.ends_with(".mjs") || id.ends_with(".cjs") {
-    Some(ModuleType::Js)
-  } else if id.ends_with(".jsx") {
-    Some(ModuleType::Jsx)
-  } else {
-    None
+/// Get [ModuleType] from the resolved id's extension, return [ModuleType::Custom(ext)] if the extension is not internally supported.
+/// Panic if the id do not has a extension.
+pub fn module_type_from_id(id: &str) -> ModuleType {
+  let path = PathBuf::from(id);
+
+  match path
+    .extension()
+    .unwrap_or_else(|| panic!("extension of {} is None", id))
+    .to_str()
+    .unwrap()
+  {
+    "ts" => ModuleType::Ts,
+    "tsx" => ModuleType::Tsx,
+    "js" | "mjs" | "cjs" => ModuleType::Js,
+    "jsx" => ModuleType::Jsx,
+    "css" => ModuleType::Css,
+    "html" => ModuleType::Html,
+    ext => ModuleType::Custom(ext.to_string()),
   }
 }
 
 /// TODO support custom [EsConfig] and [TsConfig]
+/// return [None] if module type is not script
 pub fn syntax_from_module_type(module_type: &ModuleType) -> Option<Syntax> {
   match module_type {
     ModuleType::Js => Some(Syntax::Es(Default::default())),
@@ -235,6 +242,7 @@ pub fn merge_module_asts_of_resource_pot(
         context.config.mode.clone(),
       );
       cloned_module.visit_mut_with(&mut source_replacer);
+      cloned_module.visit_mut_with(&mut fixer(None));
     });
 
     // wrap module function

@@ -5,7 +5,7 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{Module, ModuleId, ModuleMetaData, ModuleScriptMetaData},
+  module::{Module, ModuleId, ModuleMetaData, ScriptModuleMetaData},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam,
@@ -41,8 +41,9 @@ impl Plugin for FarmPluginScript {
   ) -> Result<Option<PluginLoadHookResult>> {
     let id = param.id;
 
-    // only deal with known extension
-    if let Some(module_type) = module_type_from_id(id) {
+    let module_type = module_type_from_id(id);
+
+    if module_type.is_script() {
       let content = read_file_utf8(id)?;
 
       Ok(Some(PluginLoadHookResult {
@@ -73,7 +74,7 @@ impl Plugin for FarmPluginScript {
         param.module_type.clone(),
       );
 
-      let meta = ModuleScriptMetaData { ast: swc_module };
+      let meta = ScriptModuleMetaData { ast: swc_module };
       module.meta = ModuleMetaData::Script(meta);
 
       Ok(Some(module))
@@ -88,12 +89,16 @@ impl Plugin for FarmPluginScript {
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     let module = param.module;
-    let module_ast = &module.meta.as_script().ast;
-    let mut analyzer = DepsAnalyzer::new(module_ast);
 
-    param.deps.extend(analyzer.analyze_deps());
+    if module.module_type.is_script() {
+      let module_ast = &module.meta.as_script().ast;
+      let mut analyzer = DepsAnalyzer::new(module_ast);
 
-    Ok(Some(()))
+      param.deps.extend(analyzer.analyze_deps());
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
   }
 
   fn process_module(
@@ -123,18 +128,20 @@ impl Plugin for FarmPluginScript {
   ) -> Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let ast = &resource_pot.meta.as_js().ast;
-      let buf = codegen_module(ast, context.meta.script.cm.clone()).map_err(|_| {
+      let buf = codegen_module(ast, context.meta.script.cm.clone()).map_err(|e| {
         CompilationError::GenerateResourcesError {
           name: resource_pot.id.to_string(),
           ty: resource_pot.resource_pot_type.clone(),
+          source: Some(Box::new(e)),
         }
       })?;
 
       Ok(Some(vec![Resource {
         bytes: buf,
-        name: resource_pot.id.to_string(),
+        name: resource_pot.id.to_string() + ".js",
         emitted: false,
         resource_type: ResourceType::Js,
+        resource_pot: resource_pot.id.clone(),
       }]))
     } else {
       Ok(None)
