@@ -1,14 +1,16 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::{
   common::PackageJsonInfo,
   config::Config,
   context::CompilationContext,
   error::Result,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleType},
+  module::{
+    module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleId, ModuleMetaData,
+    ModuleType,
+  },
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
@@ -63,13 +65,13 @@ pub trait Plugin: Any + Send + Sync {
     _param: &PluginParseHookParam,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> Result<Option<Module>> {
+  ) -> Result<Option<ModuleMetaData>> {
     Ok(None)
   }
 
   fn process_module(
     &self,
-    _module: &mut Module,
+    _module: &mut PluginProcessModuleHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -228,7 +230,7 @@ pub struct PluginResolveHookParam {
   /// the source would like to resolve, for example, './index'
   pub source: String,
   /// the start location to resolve `specifier`, being [None] if resolving a entry or resolving a hmr update.
-  pub importer: Option<String>,
+  pub importer: Option<ModuleId>,
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   pub kind: ResolveKind,
 }
@@ -236,24 +238,22 @@ pub struct PluginResolveHookParam {
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename = "camelCase", default)]
 pub struct PluginResolveHookResult {
-  /// resolved id, normally a resolved path.
-  pub id: String,
+  /// resolved path, normally a resolved path.
+  pub resolved_path: String,
   /// whether this module should be external, if true, the module won't present in the final result
   pub external: bool,
   /// whether this module has side effects, affects tree shaking
   pub side_effects: bool,
-  /// the package.json of the resolved id, if [None], using root package.json(where farm.config placed) by default
-  pub package_json_info: Option<PackageJsonInfo>,
   /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
-  /// if you just want a normal query parsing like the example above, [crate::utils::parse_query] is for you
+  /// if you just want a normal query parsing like the example above, [farmfe_toolkit::resolve::parse_query] should be helpful
   pub query: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
 pub struct PluginLoadHookParam<'a> {
-  pub id: &'a str,
+  pub resolved_path: &'a str,
   pub query: HashMap<String, String>,
 }
 
@@ -274,7 +274,7 @@ pub struct PluginTransformHookParam<'a> {
   pub content: String,
   /// module type after load
   pub module_type: ModuleType,
-  pub id: &'a str,
+  pub resolved_path: &'a str,
   pub query: HashMap<String, String>,
 }
 
@@ -291,19 +291,21 @@ pub struct PluginTransformHookResult {
 
 #[derive(Debug)]
 pub struct PluginParseHookParam {
-  /// resolved id
-  pub id: String,
+  /// module id
+  pub module_id: ModuleId,
+  /// resolved path
+  pub resolved_path: String,
   /// resolved query
   pub query: HashMap<String, String>,
   pub module_type: ModuleType,
   /// source content(after transform)
   pub content: String,
-  /// source map chain after transform content
-  pub source_map_chain: Vec<String>,
-  /// resolved side effects
-  pub side_effects: bool,
-  /// resolved package.json
-  pub package_json_info: PackageJsonInfo,
+}
+
+pub struct PluginProcessModuleHookParam<'a> {
+  pub module_id: &'a ModuleId,
+  pub module_type: &'a ModuleType,
+  pub meta: &'a mut ModuleMetaData,
 }
 
 pub struct PluginAnalyzeDepsHookParam<'a> {

@@ -19,19 +19,19 @@ pub fn load(
       Some(loaded) => loaded,
       None => {
         return Err(CompilationError::LoadError {
-          id: load_param.id.to_string(),
+          resolved_path: load_param.resolved_path.to_string(),
           source: None,
         });
       }
     },
     Err(e) => {
       return Err(CompilationError::LoadError {
-        id: load_param.id.to_string(),
+        resolved_path: load_param.resolved_path.to_string(),
         source: Some(Box::new(e)),
       });
     }
   };
 
-  println!("loaded {:?}", loaded);
+  // println!("loaded {:?}", loaded);
   Ok(loaded)
 }

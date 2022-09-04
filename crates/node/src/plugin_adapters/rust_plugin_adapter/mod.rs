@@ -5,11 +5,12 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   hashbrown::HashMap,
-  module::module_graph::ModuleGraph,
+  module::{module_graph::ModuleGraph, ModuleMetaData},
   parking_lot::RwLock,
   plugin::{
-    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
-    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
+    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookParam, PluginTransformHookResult,
   },
   resource::resource_pot_graph::ResourcePotGraph,
 };
@@ -84,16 +85,16 @@ impl Plugin for RustPluginAdapter {
     param: &farmfe_core::plugin::PluginParseHookParam,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
-  ) -> Result<Option<farmfe_core::module::Module>> {
+  ) -> Result<Option<ModuleMetaData>> {
     self.plugin.parse(param, context, hook_context)
   }
 
   fn process_module(
     &self,
-    module: &mut farmfe_core::module::Module,
+    param: &mut PluginProcessModuleHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.process_module(module, context)
+    self.plugin.process_module(param, context)
   }
 
   fn analyze_deps(

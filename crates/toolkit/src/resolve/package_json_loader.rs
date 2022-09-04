@@ -9,6 +9,8 @@ use farmfe_core::{
 
 use crate::fs::read_file_utf8;
 
+use super::follow_symlinks;
+
 const PACKAGE_JSON_FILE: &str = "package.json";
 
 /// Load closest package.json, return [farmfe_core::error::Result] if not found.
@@ -23,6 +25,22 @@ pub struct PackageJsonLoader {
   cache: DashMap<String, PackageJsonInfo>,
 }
 
+pub struct Options {
+  // whether follow symlinks when resolving package.json
+  pub follow_symlinks: bool,
+  // whether resolve package.json in ancestor directories
+  pub resolve_ancestor_dir: bool,
+}
+
+impl Default for Options {
+  fn default() -> Self {
+    Self {
+      follow_symlinks: true,
+      resolve_ancestor_dir: true,
+    }
+  }
+}
+
 impl PackageJsonLoader {
   pub fn new() -> Self {
     Self {
@@ -31,7 +49,7 @@ impl PackageJsonLoader {
   }
 
   /// resolve package.json start from path to all its ancestor
-  pub fn load(&self, path: PathBuf) -> Result<PackageJsonInfo> {
+  pub fn load(&self, path: PathBuf, options: Options) -> Result<PackageJsonInfo> {
     let mut current = path.clone();
     let mut visited_stack = vec![];
 
@@ -49,10 +67,26 @@ impl PackageJsonLoader {
         );
       }
 
+      // TODO cover it with tests
+      if !options.resolve_ancestor_dir && visited_stack.len() == 1 {
+        return Err(CompilationError::LoadPackageJsonError {
+          package_json_path: current.to_string_lossy().to_string(),
+          err_message: "can not load node_modules when resolve_ancestor_dir set to false"
+            .to_string(),
+        });
+      }
+
+      if options.follow_symlinks && current.is_symlink() {
+        current = current.read_link().unwrap();
+      }
+
       visited_stack.push(current.clone());
 
-      let package_json_path = current.join(PACKAGE_JSON_FILE);
-      println!("{:?}", package_json_path);
+      let package_json_path = if options.follow_symlinks {
+        follow_symlinks(current.join(PACKAGE_JSON_FILE))
+      } else {
+        current.join(PACKAGE_JSON_FILE)
+      };
 
       if package_json_path.exists() && package_json_path.is_file() {
         let content = read_file_utf8(package_json_path.to_str().unwrap())?;

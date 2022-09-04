@@ -1,10 +1,9 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  common::PackageJsonInfo,
   config::Config,
   context::CompilationContext,
-  module::ModuleType,
+  module::{Module, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
@@ -12,7 +11,6 @@ use farmfe_core::{
   resource::resource_pot::{
     JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
   },
-  serde_json::Value,
   swc_common::DUMMY_SP,
   swc_ecma_ast::Module as SwcModule,
 };
@@ -31,7 +29,7 @@ fn load_parse_and_analyze_deps() {
     };
     let loaded = plugin_script.load(
       &PluginLoadHookParam {
-        id: &id,
+        resolved_path: &id,
         query: HashMap::new(),
       },
       &context,
@@ -64,22 +62,24 @@ fn load_parse_and_analyze_deps() {
       }
     );
 
-    let module = plugin_script
+    let module_meta = plugin_script
       .parse(
         &PluginParseHookParam {
-          id,
+          module_id: "any".into(),
+          resolved_path: id,
           query: HashMap::new(),
-          module_type: loaded.module_type,
+          module_type: loaded.module_type.clone(),
           content: loaded.content,
-          source_map_chain: vec![],
-          side_effects: false,
-          package_json_info: PackageJsonInfo::default(),
         },
         &context,
         &hook_context,
       )
       .unwrap()
       .unwrap();
+
+    let mut module = Module::new("any".into());
+    module.meta = module_meta;
+    module.module_type = loaded.module_type;
 
     assert_eq!(module.meta.as_script().ast.body.len(), 3);
 

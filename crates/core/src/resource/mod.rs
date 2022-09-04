@@ -1,6 +1,6 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-use farm_macro_cache_item::cache_item;
+use farmfe_macro_cache_item::cache_item;
 
 use self::resource_pot::ResourcePotId;
 

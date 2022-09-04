@@ -1,13 +1,14 @@
-use std::{any::Any, hash::Hash, path::Path};
+use std::{any::Any, collections::HashMap, hash::Hash, path::Path};
 
 use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
 };
 use downcast_rs::{impl_downcast, Downcast};
-use farm_macro_cache_item::cache_item;
+use farmfe_macro_cache_item::cache_item;
+use farmfe_utils::{relative, stringify_query};
 use hashbrown::HashSet;
-use pathdiff::diff_paths;
+use relative_path::RelativePath;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
@@ -37,18 +38,34 @@ pub struct Module {
   pub resource_pot: Option<ResourcePotId>,
   /// the meta data of this module custom by plugins
   pub meta: ModuleMetaData,
+  /// whether this module has side_effects
+  pub side_effects: bool,
+  /// the transformed source map chain of this module
+  pub source_map_chain: Vec<String>,
+  /// whether this module marked as external
+  pub external: bool,
 }
 
 impl Module {
-  pub fn new(id: ModuleId, module_type: ModuleType) -> Self {
+  pub fn new(id: ModuleId) -> Self {
     Self {
       id,
-      module_type,
+      module_type: ModuleType::Custom("unknown".to_string()),
       meta: ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _),
       module_groups: HashSet::new(),
       resource_pot: None,
+      side_effects: false,
+      source_map_chain: vec![],
+      external: false,
     }
   }
+}
+
+pub struct ModuleBasicInfo {
+  pub module_type: ModuleType,
+  pub side_effects: bool,
+  pub source_map_chain: Vec<String>,
+  pub external: bool,
 }
 
 /// Module meta data shared by core plugins through the compilation
@@ -145,10 +162,19 @@ impl_downcast!(SerializeCustomModuleMetaData);
 #[cache_item(CustomModuleMetaData)]
 pub struct EmptyModuleMetaData;
 
-/// Script specific meta data, for example, [swc_ecma_ast]
+/// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
 pub struct ScriptModuleMetaData {
   pub ast: SwcModule,
+  pub top_level_mark: u32,
+  pub unresolved_mark: u32,
+  pub module_system: ModuleSystem,
+}
+
+#[cache_item]
+pub enum ModuleSystem {
+  EsModule,
+  CommonJs,
 }
 
 #[cache_item]
@@ -184,10 +210,10 @@ impl ModuleType {
   }
 
   pub fn is_script(&self) -> bool {
-    matches!(self, ModuleType::Js)
-      || matches!(self, ModuleType::Jsx)
-      || matches!(self, ModuleType::Ts)
-      || matches!(self, ModuleType::Tsx)
+    matches!(
+      self,
+      ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx
+    )
   }
 }
 
@@ -208,85 +234,60 @@ impl ModuleType {
 
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
-#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
+#[derive(
+  PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 #[archive_attr(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
   relative_path: String,
+  query_string: String,
 }
 
 const LEN: usize = 4;
 
-// get platform independent relative path
-pub fn relative(from: &str, to: &str) -> String {
-  let rp =
-    diff_paths(to, from).unwrap_or_else(|| panic!("{} or {} is not absolute path", from, to));
+impl ModuleId {
+  /// the resolved_path and query determine a module
+  pub fn new(resolved_path: &str, query: &HashMap<String, String>, cwd: &str) -> Self {
+    let rp = Path::new(resolved_path);
+    let relative_path = if rp.is_absolute() {
+      relative(cwd, resolved_path)
+    } else {
+      resolved_path.to_string()
+    };
 
-  println!("{:?}", rp);
-  // make sure the relative path is platform independent
-  // this can ensure that the relative path and hash stable across platforms
-  let mut result = String::new();
+    let query_string = stringify_query(query);
 
-  for comp in rp.components() {
-    match comp {
-      std::path::Component::Prefix(_)
-      | std::path::Component::RootDir
-      | std::path::Component::CurDir => {
-        if result.is_empty() {
-          result += ".";
-        } else {
-          unreachable!();
-        }
-      }
-      std::path::Component::ParentDir => {
-        if result.is_empty() {
-          result += "..";
-        } else {
-          result += "/.."
-        }
-      }
-      std::path::Component::Normal(c) => {
-        let c = c.to_string_lossy().to_string();
-
-        if result.is_empty() {
-          result += &c;
-        } else {
-          result = format!("{}/{}", result, c);
-        }
-      }
+    Self {
+      relative_path,
+      query_string,
     }
   }
 
-  result
-}
-
-impl ModuleId {
-  pub fn new(resolved_id: &str, cwd: &str) -> Self {
-    let rp = Path::new(resolved_id);
-    let relative_path = if rp.is_absolute() {
-      relative(cwd, resolved_id)
-    } else {
-      resolved_id.to_string()
-    };
-
-    Self { relative_path }
-  }
-
-  /// return self.relative_path in dev,
+  /// return self.relative_path and self.query_string in dev,
   /// return hash(self.relative_path) in prod
   pub fn id(&self, mode: Mode) -> String {
     match mode {
-      Mode::Development => self.relative_path.to_string(),
+      Mode::Development => self.to_string(),
       Mode::Production => self.hash(),
     }
   }
 
-  pub fn path(&self) -> &str {
+  /// transform the id back to relative path
+  pub fn relative_path(&self) -> &str {
     &self.relative_path
+  }
+
+  /// transform the id back to resolved path
+  pub fn resolved_path(&self, root: &str) -> String {
+    RelativePath::new(self.relative_path())
+      .to_logical_path(root)
+      .to_string_lossy()
+      .to_string()
   }
 
   pub fn hash(&self) -> String {
     let mut hasher = Blake2bVar::new(LEN).unwrap();
-    hasher.update(self.relative_path.as_bytes());
+    hasher.update(self.to_string().as_bytes());
     let mut buf = [0u8; LEN];
     hasher.finalize_variable(&mut buf).unwrap();
     hex::encode(buf)
@@ -295,28 +296,41 @@ impl ModuleId {
 
 impl From<&str> for ModuleId {
   fn from(rp: &str) -> Self {
+    let (relative_path, query_string) = if rp.contains('?') {
+      let mut sp = rp.split('?');
+      (
+        sp.next().unwrap().to_string(),
+        sp.next().unwrap().to_string(),
+      )
+    } else {
+      (rp.to_string(), String::new())
+    };
+
     Self {
-      relative_path: rp.to_string(),
+      relative_path,
+      query_string,
     }
   }
 }
 
 impl From<String> for ModuleId {
   fn from(rp: String) -> Self {
-    Self { relative_path: rp }
+    ModuleId::from(rp.as_str())
   }
 }
 
 impl ToString for ModuleId {
   fn to_string(&self) -> String {
-    self.relative_path.clone()
+    format!("{}{}", self.relative_path, self.query_string)
   }
 }
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashMap;
+
   use crate::config::Mode;
-  use farm_macro_cache_item::cache_item;
+  use farmfe_macro_cache_item::cache_item;
   use hashbrown::HashSet;
   use rkyv::{Archive, Archived, Deserialize, Serialize};
   use rkyv_dyn::archive_dyn;
@@ -324,7 +338,7 @@ mod tests {
 
   use super::{
     CustomModuleMetaData, DeserializeCustomModuleMetaData, Module, ModuleId, ModuleMetaData,
-    ModuleType, SerializeCustomModuleMetaData,
+    SerializeCustomModuleMetaData,
   };
 
   #[test]
@@ -332,22 +346,27 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     let resolved_path = "/root/module.html";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, "/root");
+    let module_id = ModuleId::new(resolved_path, &HashMap::new(), "/root");
+    #[cfg(not(target_os = "windows"))]
+    let root = "/root";
 
     #[cfg(target_os = "windows")]
     let resolved_path = "C:\\root\\module.html";
     #[cfg(target_os = "windows")]
     let module_id = ModuleId::new(resolved_path, "C:\\root");
+    #[cfg(target_os = "windows")]
+    let root = "C:\\root";
 
     assert_eq!(module_id.id(Mode::Development), "module.html");
     assert_eq!(module_id.id(Mode::Production), "5de94ab0");
-    assert_eq!(module_id.path(), "module.html");
+    assert_eq!(module_id.relative_path(), "module.html");
+    assert_eq!(module_id.resolved_path(root), resolved_path);
     assert_eq!(module_id.hash(), "5de94ab0");
 
     #[cfg(not(target_os = "windows"))]
     let resolved_path = "/root/packages/test/module.html";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, "/root/packages/app");
+    let module_id = ModuleId::new(resolved_path, &HashMap::new(), "/root/packages/app");
 
     #[cfg(target_os = "windows")]
     let resolved_path = "C:\\root\\packages\\test\\module.html";
@@ -359,10 +378,7 @@ mod tests {
 
   #[test]
   fn module_serialization() {
-    let mut module = Module::new(
-      ModuleId::new("/root/index.ts", "/root"),
-      ModuleType::from_ext("ts"),
-    );
+    let mut module = Module::new(ModuleId::new("/root/index.ts", &HashMap::new(), "/root"));
 
     #[cache_item(CustomModuleMetaData)]
     struct StructModuleData {
@@ -370,7 +386,10 @@ mod tests {
       imports: Vec<String>,
     }
 
-    module.module_groups = HashSet::from([ModuleId::new("1", ""), ModuleId::new("2", "")]);
+    module.module_groups = HashSet::from([
+      ModuleId::new("1", &HashMap::new(), ""),
+      ModuleId::new("2", &HashMap::new(), ""),
+    ]);
 
     module.meta = ModuleMetaData::Custom(Box::new(StructModuleData {
       ast: String::from("ast"),
@@ -384,7 +403,10 @@ mod tests {
       .deserialize(&mut rkyv::de::deserializers::SharedDeserializeMap::new())
       .unwrap();
 
-    assert_eq!(deserialized_module.id.path(), module.id.path());
+    assert_eq!(
+      deserialized_module.id.relative_path(),
+      module.id.relative_path()
+    );
 
     assert_eq!(
       deserialized_module
@@ -404,9 +426,9 @@ mod tests {
 
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("1", "")));
+      .contains(&ModuleId::new("1", &HashMap::new(), "")));
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("2", "")));
+      .contains(&ModuleId::new("2", &HashMap::new(), "")));
   }
 }

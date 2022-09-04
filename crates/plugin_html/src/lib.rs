@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
   hashbrown::HashMap,
-  module::{HtmlModuleMetaData, Module, ModuleId, ModuleMetaData, ModuleType},
+  module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam,
@@ -39,11 +39,11 @@ impl Plugin for FarmPluginHtml {
     _context: &std::sync::Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
-    let module_type = module_type_from_id(param.id);
+    let module_type = module_type_from_id(param.resolved_path);
 
     if matches!(module_type, ModuleType::Html) {
       Ok(Some(PluginLoadHookResult {
-        content: read_file_utf8(param.id)?,
+        content: read_file_utf8(param.resolved_path)?,
         module_type,
       }))
     } else {
@@ -56,19 +56,18 @@ impl Plugin for FarmPluginHtml {
     param: &PluginParseHookParam,
     context: &std::sync::Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::module::Module>> {
+  ) -> farmfe_core::error::Result<Option<farmfe_core::module::ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Html) {
-      let module_id = ModuleId::new(&param.id, &context.config.root);
+      let module_id = ModuleId::new(&param.resolved_path, &param.query, &context.config.root);
       let html_document = parse_html_document(
         module_id.to_string().as_str(),
         &param.content,
         context.meta.html.cm.clone(),
       )?;
 
-      let mut module = Module::new(module_id, param.module_type.clone());
-      module.meta = ModuleMetaData::Html(HtmlModuleMetaData { ast: html_document });
+      let meta = ModuleMetaData::Html(HtmlModuleMetaData { ast: html_document });
 
-      Ok(Some(module))
+      Ok(Some(meta))
     } else {
       Ok(None)
     }

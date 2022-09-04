@@ -1,0 +1,7 @@
+[package]
+name = "farmfe_utils"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+pathdiff = "0.2"

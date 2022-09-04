@@ -9,7 +9,7 @@ fn load_package_json() {
     let dir = file.parent().unwrap();
     let main = dir.join("src").join("main.ts");
 
-    let result = resolve::load_package_json(main.clone());
+    let result = resolve::load_package_json(main.clone(), Default::default());
     assert!(result.is_ok());
     let result = result.unwrap();
 
@@ -18,7 +18,7 @@ fn load_package_json() {
 
     let sub = dir.join("sub");
 
-    let result = resolve::load_package_json(sub);
+    let result = resolve::load_package_json(sub, Default::default());
     assert!(result.is_ok());
     let result = result.unwrap();
 

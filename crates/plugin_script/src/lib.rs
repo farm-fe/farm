@@ -1,3 +1,5 @@
+#![feature(box_patterns)]
+
 use std::sync::Arc;
 
 use deps_analyzer::DepsAnalyzer;
@@ -5,21 +7,26 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{Module, ModuleId, ModuleMetaData, ScriptModuleMetaData},
+  module::{Module, ModuleId, ModuleMetaData, ModuleSystem, ScriptModuleMetaData},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::{Mark, GLOBALS},
+  swc_common::{comments::NoopComments, Mark, GLOBALS},
+  swc_ecma_ast::ModuleItem,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{codegen_module, module_type_from_id, parse_module, syntax_from_module_type},
-  swc_ecma_transforms::{resolver, typescript::strip},
+  swc_ecma_transforms::{
+    react::{react, Options},
+    resolver,
+    typescript::{strip, strip_with_jsx},
+  },
   swc_ecma_visit::VisitMutWith,
 };
 
@@ -39,12 +46,10 @@ impl Plugin for FarmPluginScript {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
-    let id = param.id;
-
-    let module_type = module_type_from_id(id);
+    let module_type = module_type_from_id(param.resolved_path);
 
     if module_type.is_script() {
-      let content = read_file_utf8(id)?;
+      let content = read_file_utf8(param.resolved_path)?;
 
       Ok(Some(PluginLoadHookResult {
         content,
@@ -60,24 +65,44 @@ impl Plugin for FarmPluginScript {
     param: &PluginParseHookParam,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> Result<Option<Module>> {
+  ) -> Result<Option<ModuleMetaData>> {
     if let Some(syntax) = syntax_from_module_type(&param.module_type) {
-      let swc_module = parse_module(
-        &param.id,
+      let mut swc_module = parse_module(
+        &param.module_id.to_string(),
         &param.content,
         syntax.clone(),
         context.meta.script.cm.clone(),
       )?;
 
-      let mut module = Module::new(
-        ModuleId::new(&param.id, &context.config.root),
-        param.module_type.clone(),
-      );
+      GLOBALS.set(&context.meta.script.globals, || {
+        let top_level_mark = Mark::new();
+        let unresolved_mark = Mark::new();
 
-      let meta = ScriptModuleMetaData { ast: swc_module };
-      module.meta = ModuleMetaData::Script(meta);
+        swc_module.visit_mut_with(&mut resolver(
+          unresolved_mark,
+          top_level_mark,
+          param.module_type.is_typescript(),
+        ));
 
-      Ok(Some(module))
+        let module_system = if swc_module
+          .body
+          .iter()
+          .any(|item| matches!(item, ModuleItem::ModuleDecl(_)))
+        {
+          ModuleSystem::EsModule
+        } else {
+          ModuleSystem::CommonJs
+        };
+
+        let meta = ScriptModuleMetaData {
+          ast: swc_module,
+          top_level_mark: top_level_mark.as_u32(),
+          unresolved_mark: unresolved_mark.as_u32(),
+          module_system,
+        };
+
+        Ok(Some(ModuleMetaData::Script(meta)))
+      })
     } else {
       Ok(None)
     }
@@ -86,15 +111,22 @@ impl Plugin for FarmPluginScript {
   fn analyze_deps(
     &self,
     param: &mut PluginAnalyzeDepsHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     let module = param.module;
 
     if module.module_type.is_script() {
       let module_ast = &module.meta.as_script().ast;
-      let mut analyzer = DepsAnalyzer::new(module_ast);
+      let mut analyzer = DepsAnalyzer::new(
+        module_ast,
+        Mark::from_u32(module.meta.as_script().unresolved_mark),
+      );
 
-      param.deps.extend(analyzer.analyze_deps());
+      GLOBALS.set(&context.meta.script.globals, || {
+        let deps = analyzer.analyze_deps();
+        param.deps.extend(deps);
+      });
+
       Ok(Some(()))
     } else {
       Ok(None)
@@ -103,17 +135,45 @@ impl Plugin for FarmPluginScript {
 
   fn process_module(
     &self,
-    module: &mut Module,
+    param: &mut PluginProcessModuleHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    if module.module_type.is_typescript() {
+    if param.module_type.is_typescript() {
       GLOBALS.set(&context.meta.script.globals, || {
-        let top_level_mark = Mark::new();
-        let unresolved_mark = Mark::new();
+        let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
+        let ast = &mut param.meta.as_script_mut().ast;
 
-        let ast = &mut module.meta.as_script_mut().ast;
-        ast.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, true));
-        ast.visit_mut_with(&mut strip(top_level_mark));
+        match param.module_type {
+          farmfe_core::module::ModuleType::Js => {
+            // TODO downgrade syntax
+          }
+          farmfe_core::module::ModuleType::Jsx => {
+            ast.visit_mut_with(&mut react(
+              context.meta.script.cm.clone(),
+              Some(NoopComments), // TODO parse comments
+              Options::default(),
+              top_level_mark,
+            ));
+          }
+          farmfe_core::module::ModuleType::Ts => {
+            ast.visit_mut_with(&mut strip(top_level_mark));
+          }
+          farmfe_core::module::ModuleType::Tsx => {
+            ast.visit_mut_with(&mut strip_with_jsx(
+              context.meta.script.cm.clone(),
+              Default::default(),
+              NoopComments, // TODO parse comments
+              top_level_mark,
+            ));
+            ast.visit_mut_with(&mut react(
+              context.meta.script.cm.clone(),
+              Some(NoopComments), // TODO parse comments
+              Options::default(),
+              top_level_mark,
+            ));
+          }
+          _ => {}
+        }
       });
     }
 
@@ -138,7 +198,7 @@ impl Plugin for FarmPluginScript {
 
       Ok(Some(vec![Resource {
         bytes: buf,
-        name: resource_pot.id.to_string() + ".js",
+        name: resource_pot.id.to_string().replace("../", "") + ".js", // TODO generate file name based on config
         emitted: false,
         resource_type: ResourceType::Js,
         resource_pot: resource_pot.id.clone(),

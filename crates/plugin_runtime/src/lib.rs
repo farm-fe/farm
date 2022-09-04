@@ -6,11 +6,11 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::CompilationError,
-  module::ModuleId,
+  module::{ModuleId, ModuleMetaData, ModuleSystem},
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
-    PluginResolveHookResult,
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
+    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
   },
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -19,7 +19,8 @@ use farmfe_core::{
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleItem, Stmt, Str,
+    CallExpr, Expr, ExprOrSpread, ExprStmt, ImportDecl, ImportSpecifier, Lit, Module as SwcModule,
+    ModuleDecl, ModuleItem, Stmt, Str,
   },
 };
 use farmfe_toolkit::{
@@ -53,7 +54,6 @@ impl Plugin for FarmPluginRuntime {
       "runtime".to_string(),
       format!("{}{}", config.runtime.path, RUNTIME_SUFFIX),
     );
-    println!("{}{}", config.runtime.path, RUNTIME_SUFFIX);
     Ok(Some(()))
   }
 
@@ -81,7 +81,7 @@ impl Plugin for FarmPluginRuntime {
       )?;
 
       if let Some(mut res) = resolve_result {
-        res.id = format!("{}{}", res.id, RUNTIME_SUFFIX);
+        res.resolved_path = format!("{}{}", res.resolved_path, RUNTIME_SUFFIX);
         Ok(Some(res))
       } else {
         Ok(None)
@@ -97,8 +97,8 @@ impl Plugin for FarmPluginRuntime {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
-    if param.id.ends_with(RUNTIME_SUFFIX) {
-      let real_file_path = param.id.replace(RUNTIME_SUFFIX, "");
+    if param.resolved_path.ends_with(RUNTIME_SUFFIX) {
+      let real_file_path = param.resolved_path.replace(RUNTIME_SUFFIX, "");
       let content = read_file_utf8(&real_file_path)?;
 
       Ok(Some(PluginLoadHookResult {
@@ -108,6 +108,47 @@ impl Plugin for FarmPluginRuntime {
     } else {
       Ok(None)
     }
+  }
+
+  fn process_module(
+    &self,
+    param: &mut PluginProcessModuleHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if let ModuleMetaData::Script(script) = &param.meta {
+      if !matches!(script.module_system, ModuleSystem::EsModule) {
+        return Ok(None);
+      }
+    } else {
+      return Ok(None);
+    }
+
+    let ast = &mut param.meta.as_script_mut().ast;
+    let create_import_decl = |src: &str| ImportDecl {
+      span: DUMMY_SP,
+      specifiers: vec![],
+      src: Str {
+        span: DUMMY_SP,
+        value: src.into(),
+        raw: None,
+      },
+      type_only: false,
+      asserts: None,
+    };
+    ast.body.insert(
+      0,
+      ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
+        "@swc/helpers/lib/_interop_require_wildcard.js",
+      ))),
+    );
+    ast.body.insert(
+      1,
+      ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
+        "@swc/helpers/lib/_interop_require_default.js",
+      ))),
+    );
+
+    Ok(Some(()))
   }
 
   fn process_resource_pot_graph(
@@ -172,9 +213,9 @@ impl Plugin for FarmPluginRuntime {
   ) -> farmfe_core::error::Result<Option<()>> {
     // the runtime module and its plugins should be in the same resource pot
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
-      let mut module_graph = context.module_graph.write();
+      let module_graph = context.module_graph.read();
       let rendered_resource_pot_ast =
-        merge_module_asts_of_resource_pot(resource_pot, &mut *module_graph, context);
+        merge_module_asts_of_resource_pot(resource_pot, &*module_graph, context);
 
       #[cfg(not(windows))]
       let wrapper = include_str!("./js-runtime/resource-wrapper.js");
@@ -255,8 +296,8 @@ impl Plugin for FarmPluginRuntime {
             .body
             .insert(0, runtime_ast.body.to_vec().remove(0));
 
-          // TODO support top level await, and only support reexport default export now, should support more in the future
-          // call the entry module and
+          // TODO support top level await, and only support reexport default export now, should support more export type in the future
+          // call the entry module
           let call_entry = parse_module(
             "farm-internal-call-entry-module",
             &format!(

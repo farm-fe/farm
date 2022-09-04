@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  module::{CssModuleMetaData, Module, ModuleId, ModuleMetaData, ModuleType},
+  module::{CssModuleMetaData, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam,
@@ -35,10 +35,10 @@ impl Plugin for FarmPluginCss {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
-    let module_type = module_type_from_id(param.id);
+    let module_type = module_type_from_id(param.resolved_path);
 
     if matches!(module_type, ModuleType::Css) {
-      let content = read_file_utf8(param.id)?;
+      let content = read_file_utf8(param.resolved_path)?;
 
       Ok(Some(PluginLoadHookResult {
         content,
@@ -54,21 +54,19 @@ impl Plugin for FarmPluginCss {
     param: &PluginParseHookParam,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<Module>> {
+  ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let module_id = ModuleId::new(&param.id, &context.config.root);
       let css_stylesheet = parse_css_stylesheet(
-        &module_id.to_string(),
+        &param.module_id.to_string(),
         &param.content,
         context.meta.css.cm.clone(),
       )?;
 
-      let mut module = Module::new(module_id, param.module_type.clone());
-      module.meta = ModuleMetaData::Css(CssModuleMetaData {
+      let meta = ModuleMetaData::Css(CssModuleMetaData {
         ast: css_stylesheet,
       });
 
-      Ok(Some(module))
+      Ok(Some(meta))
     } else {
       Ok(None)
     }
