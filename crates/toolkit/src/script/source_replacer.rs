@@ -13,7 +13,7 @@ use farmfe_core::{
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
-use swc_ecma_visit::VisitMut;
+use swc_ecma_visit::{VisitMut, VisitMutWith};
 
 pub struct SourceReplacer<'a> {
   unresolved_mark: Mark,
@@ -40,41 +40,52 @@ impl<'a> SourceReplacer<'a> {
 
 impl<'a> VisitMut for SourceReplacer<'a> {
   fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
-    if call_expr.args.len() != 1 {
-      return;
-    }
+    if call_expr.args.len() == 1 && is_commonjs_require(self.unresolved_mark, &*call_expr) {
+      if let ExprOrSpread {
+        spread: None,
+        expr: box Expr::Lit(Lit::Str(Str { value, .. })),
+      } = &mut call_expr.args[0]
+      {
+        let source = value.to_string();
+        let id = self
+          .module_graph
+          .get_dep_by_source(&self.module_id, &source);
+        // only execute script module
+        let dep_module = self.module_graph.module(&id).unwrap();
 
-    if let Callee::Expr(box Expr::Ident(Ident { span, sym, .. })) = &call_expr.callee {
-      if sym == "require" && span.ctxt.outer() == self.unresolved_mark {
-        if let ExprOrSpread {
-          spread: None,
-          expr: box Expr::Lit(Lit::Str(Str { value, .. })),
-        } = &mut call_expr.args[0]
-        {
-          let source = value.to_string();
-          let id = self
-            .module_graph
-            .get_dep_by_source(&self.module_id, &source);
-          // only execute script module
-          let dep_module = self.module_graph.module(&id).unwrap();
+        if &source == "react" {
+          println!(
+            "render resource pot: {:?} {:?}",
+            self.module_id, dep_module.id
+          );
+        }
 
-          if dep_module.module_type.is_script() {
-            *value = id.id(self.mode.clone()).into();
-          } else {
-            // replace with an noop()
-            *call_expr = CallExpr {
+        if dep_module.module_type.is_script() {
+          *value = id.id(self.mode.clone()).into();
+        } else {
+          // replace with an noop()
+          *call_expr = CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
               span: DUMMY_SP,
-              callee: Callee::Expr(Box::new(Expr::Ident(Ident {
-                span: DUMMY_SP,
-                sym: "noop".into(),
-                optional: false,
-              }))),
-              args: vec![],
-              type_args: None,
-            }
+              sym: "noop".into(),
+              optional: false,
+            }))),
+            args: vec![],
+            type_args: None,
           }
         }
       }
     }
+
+    call_expr.visit_mut_children_with(self);
+  }
+}
+
+pub fn is_commonjs_require(unresolved_mark: Mark, call_expr: &CallExpr) -> bool {
+  if let Callee::Expr(box Expr::Ident(Ident { span, sym, .. })) = &call_expr.callee {
+    sym == "require" && span.ctxt.outer() == unresolved_mark
+  } else {
+    false
   }
 }

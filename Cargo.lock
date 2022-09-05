@@ -314,15 +314,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "farm_macro_cache_item"
-version = "0.0.1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "farmfe_compiler"
 version = "0.0.1"
 dependencies = [
@@ -344,11 +335,11 @@ dependencies = [
  "bytecheck",
  "dashmap",
  "downcast-rs",
- "farm_macro_cache_item",
+ "farmfe_macro_cache_item",
+ "farmfe_utils",
  "hashbrown",
  "hex",
  "parking_lot",
- "pathdiff",
  "petgraph",
  "ptr_meta",
  "rayon",
@@ -363,6 +354,15 @@ dependencies = [
  "swc_ecma_ast",
  "swc_html_ast",
  "thiserror",
+]
+
+[[package]]
+name = "farmfe_macro_cache_item"
+version = "0.0.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -452,9 +452,9 @@ name = "farmfe_toolkit"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "farmfe_utils",
  "glob",
  "lazy_static",
- "querystring",
  "swc_css_codegen",
  "swc_css_parser",
  "swc_css_visit",
@@ -465,6 +465,13 @@ dependencies = [
  "swc_html_codegen",
  "swc_html_parser",
  "swc_html_visit",
+]
+
+[[package]]
+name = "farmfe_utils"
+version = "0.0.1"
+dependencies = [
+ "pathdiff",
 ]
 
 [[package]]
@@ -1065,12 +1072,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "querystring"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9318ead08c799aad12a55a3e78b82e0b6167271ffd1f627b758891282f739187"
 
 [[package]]
 name = "quote"
@@ -1684,6 +1685,7 @@ dependencies = [
  "swc_ecma_ast",
  "swc_ecma_transforms_base",
  "swc_ecma_transforms_module",
+ "swc_ecma_transforms_react",
  "swc_ecma_transforms_typescript",
  "swc_ecma_utils",
  "swc_ecma_visit",

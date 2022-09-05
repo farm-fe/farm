@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use farmfe_core::{config::ResolveConfig, plugin::ResolveKind};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_toolkit::testing_helpers::fixture;
@@ -16,7 +14,7 @@ fn resolve_relative_specifier() {
       assert!(resolved.is_ok());
       let resolved = resolved.unwrap();
       assert_eq!(
-        resolved.id,
+        resolved.resolved_path,
         cwd.join("index.ts").to_string_lossy().to_string()
       );
     },
@@ -36,7 +34,7 @@ fn resolve_node_modules_normal() {
       let resolved = resolved.unwrap();
 
       assert_eq!(
-        resolved.id,
+        resolved.resolved_path,
         cwd
           .join("node_modules")
           .join("pkg-a")
@@ -50,7 +48,7 @@ fn resolve_node_modules_normal() {
       let resolved = resolved.unwrap();
 
       assert_eq!(
-        resolved.id,
+        resolved.resolved_path,
         cwd
           .join("node_modules")
           .join("pkg-b")

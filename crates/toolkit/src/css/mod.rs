@@ -33,7 +33,7 @@ pub fn parse_css_stylesheet(
   parser
     .parse_all()
     .map_err(|e| CompilationError::ParseError {
-      id: id.to_string(),
+      resolved_path: id.to_string(),
       source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e)))),
     })
 }

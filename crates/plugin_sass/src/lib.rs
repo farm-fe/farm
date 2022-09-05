@@ -33,7 +33,7 @@ impl Plugin for FarmPluginSass {
     _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     Ok(Some(PluginResolveHookResult {
-      id: String::from("resolve from FarmSassPlugin"),
+      resolved_path: String::from("resolve from FarmSassPlugin"),
       ..Default::default()
     }))
   }

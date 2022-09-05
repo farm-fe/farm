@@ -13,12 +13,14 @@ edition = "2021"
 
 [dependencies]
 farmfe_core = { path = "../core" }
+farmfe_utils = { path = "../utils" }
 swc_ecma_parser = { version = "0.118.0" }
 swc_ecma_visit = { version = "0.76.6" }
 swc_ecma_codegen = { version = "0.122.0" }
 swc_ecma_transforms = { version = "0.185.0", features = [
   "module",
   "typescript",
+  "react",
 ] }
 swc_css_parser = { version = "0.117.0" }
 swc_css_visit = { version = "0.107.0" }
@@ -27,5 +29,4 @@ swc_html_parser = { version = "0.29.4" }
 swc_html_visit = { version = "0.24.4" }
 swc_html_codegen = { version = "0.32.5" }
 glob = "0.3"
-querystring = "1.1.0"
 lazy_static = "1.4.0"

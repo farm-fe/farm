@@ -5,13 +5,14 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
   Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-  PluginParseHookParam, PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+  PluginParseHookParam, PluginProcessModuleHookParam, PluginResolveHookParam,
+  PluginResolveHookResult, PluginTransformHookParam,
 };
 use crate::{
   config::Config,
   context::CompilationContext,
   error::Result,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleType},
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap, ModuleMetaData, ModuleType},
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
@@ -24,7 +25,6 @@ macro_rules! hook_first {
   ($func_name:ident, $ret_ty:ty, $($arg:ident: $ty:ty),*) => {
     pub fn $func_name(&self, $($arg: $ty),*) -> $ret_ty {
       for plugin in &self.plugins {
-        println!("Plugin {}", plugin.name());
         let ret = plugin.$func_name($($arg),*)?;
         if ret.is_some() {
           return Ok(ret)
@@ -129,13 +129,13 @@ impl PluginDriver {
 
   hook_first!(
     parse,
-    Result<Option<Module>>,
+    Result<Option<ModuleMetaData>>,
     param: &PluginParseHookParam,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
   );
 
-  hook_serial!(process_module, &mut Module);
+  hook_serial!(process_module, &mut PluginProcessModuleHookParam);
 
   hook_serial!(analyze_deps, &mut PluginAnalyzeDepsHookParam);
 
@@ -222,10 +222,9 @@ mod tests {
         ) -> Result<Option<PluginResolveHookResult>> {
           if $should_return {
             Ok(Some(PluginResolveHookResult {
-              id: stringify!($plugin_name).to_string(),
+              resolved_path: stringify!($plugin_name).to_string(),
               external: false,
               side_effects: false,
-              package_json_info: None,
               query: HashMap::new(),
             }))
           } else {
@@ -263,7 +262,10 @@ mod tests {
       .unwrap();
 
     assert!(resolved.is_some());
-    assert_eq!(resolved.unwrap().id, String::from("ResolvePlugin1"));
+    assert_eq!(
+      resolved.unwrap().resolved_path,
+      String::from("ResolvePlugin1")
+    );
 
     // should ignore first Ok(None) of ResolvePlugin1 and return next Ok(Some(..)) of ResolvePlugin2
     define_hook_first_plugin!(ResolvePlugin3, false);
@@ -279,7 +281,10 @@ mod tests {
       .unwrap();
 
     assert!(resolved.is_some());
-    assert_eq!(resolved.unwrap().id, String::from("ResolvePlugin4"));
+    assert_eq!(
+      resolved.unwrap().resolved_path,
+      String::from("ResolvePlugin4")
+    );
 
     // should return Ok(None)
     define_hook_first_plugin!(ResolvePlugin5, false);

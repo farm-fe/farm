@@ -17,9 +17,7 @@ pub fn write_resources(context: &Arc<CompilationContext>) -> farmfe_core::error:
     // TODO determine the emit location by config
     if !resource.emitted {
       let root = PathBuf::from(context.config.root.as_str());
-      let output_path = root
-        .join("dist")
-        .join(resource.name.split('/').last().unwrap());
+      let output_path = root.join("dist").join(&resource.name);
 
       std::fs::create_dir_all(output_path.parent().unwrap()).unwrap();
       std::fs::write(output_path, &resource.bytes).unwrap();

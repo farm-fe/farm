@@ -29,7 +29,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
   let mut graph = ModuleGraph::new();
 
   for id in module_ids {
-    let m = Module::new(id, ModuleType::Js);
+    let m = Module::new(id);
 
     graph.add_module(m);
   }

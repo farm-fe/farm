@@ -49,7 +49,7 @@ globalThis.__acquire_farm_module_system__ =
       // require should be async as we support `top level await`
       require(moduleId: string): any {
         if (this.cache[moduleId]) {
-          return this.cache[moduleId];
+          return this.cache[moduleId].exports;
         }
 
         const initializer = this.modules[moduleId];
@@ -65,10 +65,11 @@ globalThis.__acquire_farm_module_system__ =
           initialized: false,
         };
 
+        this.cache[moduleId] = module;
+
         initializer(module, module.exports, this.require.bind(this));
 
         module.initialized = true;
-        this.cache[moduleId] = module;
 
         return module.exports;
       }

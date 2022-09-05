@@ -9,7 +9,7 @@ use swc_ecma_parser::{EsConfig, Parser, StringInput, Syntax, TsConfig};
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, ModuleType},
+  module::{module_graph::ModuleGraph, ModuleSystem, ModuleType},
   resource::resource_pot::ResourcePot,
   swc_common::{comments::SingleThreadedComments, FileName, Mark, SourceMap, DUMMY_SP, GLOBALS},
   swc_ecma_ast::{
@@ -20,8 +20,8 @@ use farmfe_core::{
 use swc_ecma_transforms::{
   feature::enable_available_feature_from_es_version,
   fixer,
+  helpers::{inject_helpers, Helpers, HELPERS},
   modules::{common_js, import_analysis::import_analyzer, util::ImportInterop},
-  resolver,
 };
 use swc_ecma_visit::VisitMutWith;
 
@@ -43,7 +43,7 @@ pub fn parse_module(
   parser
     .parse_module()
     .map_err(|e| CompilationError::ParseError {
-      id: id.to_string(),
+      resolved_path: id.to_string(),
       source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e))) as _),
     })
 }
@@ -63,7 +63,7 @@ pub fn parse_stmt(
   parser
     .parse_stmt(top_level)
     .map_err(|e| CompilationError::ParseError {
-      id: id.to_string(),
+      resolved_path: id.to_string(),
       source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e))) as _),
     })
 }
@@ -181,8 +181,11 @@ pub fn wrap_module_ast(ast: SwcModule) -> Function {
       .to_vec()
       .into_iter()
       .map(|item| match item {
-        ModuleItem::ModuleDecl(_) => {
-          panic!("should transform all esm module item to commonjs first!")
+        ModuleItem::ModuleDecl(decl) => {
+          panic!(
+            "should transform all esm module item to commonjs first! {:?}",
+            decl
+          )
         }
         ModuleItem::Stmt(stmt) => stmt,
       })
@@ -202,10 +205,11 @@ pub fn wrap_module_ast(ast: SwcModule) -> Function {
   }
 }
 
-/// merge all modules in a [ResourcePot] ast to Farm's runtime [ObjectLit]
+/// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit].
+/// 1.
 pub fn merge_module_asts_of_resource_pot(
   resource_pot: &mut ResourcePot,
-  module_graph: &mut ModuleGraph,
+  module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> ObjectLit {
   let mut rendered_resource_ast = ObjectLit {
@@ -213,6 +217,7 @@ pub fn merge_module_asts_of_resource_pot(
     props: vec![],
   };
 
+  // TODO parallelize here
   for m_id in resource_pot.modules() {
     let module = module_graph.module(m_id).unwrap();
     let mut cloned_module = SwcModule {
@@ -222,27 +227,36 @@ pub fn merge_module_asts_of_resource_pot(
     };
 
     GLOBALS.set(&context.meta.script.globals, || {
-      // transform esm to commonjs
-      let top_level_mark = Mark::new();
-      let unresolved_mark = Mark::new();
+      HELPERS.set(&Helpers::new(true), || {
+        // transform esm to commonjs
+        let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
 
-      cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::None, true));
-      cloned_module.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
-      cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
-        unresolved_mark,
-        Default::default(),
-        enable_available_feature_from_es_version(EsVersion::Es2017),
-        None,
-      ));
-      // replace import source with module id
-      let mut source_replacer = SourceReplacer::new(
-        unresolved_mark,
-        module_graph,
-        m_id.clone(),
-        context.config.mode.clone(),
-      );
-      cloned_module.visit_mut_with(&mut source_replacer);
-      cloned_module.visit_mut_with(&mut fixer(None));
+        // ESM to commonjs, then commonjs to farm's runtime module systems
+        if matches!(
+          module.meta.as_script().module_system,
+          ModuleSystem::EsModule
+        ) {
+          cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
+          cloned_module.visit_mut_with(&mut inject_helpers());
+          cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
+            unresolved_mark,
+            Default::default(),
+            enable_available_feature_from_es_version(EsVersion::Es2017), // TODO using configured target version
+            None,
+          ));
+        }
+
+        // replace import source with module id
+        let mut source_replacer = SourceReplacer::new(
+          unresolved_mark,
+          module_graph,
+          m_id.clone(),
+          context.config.mode.clone(),
+        );
+        cloned_module.visit_mut_with(&mut source_replacer);
+        // TODO support comments
+        cloned_module.visit_mut_with(&mut fixer(None));
+      });
     });
 
     // wrap module function

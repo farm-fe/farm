@@ -68,6 +68,7 @@ impl Default for Mode {
 pub struct ResolveConfig {
   pub alias: HashMap<String, String>,
   pub main_fields: Vec<String>,
+  pub main_files: Vec<String>,
   pub extensions: Vec<String>,
   pub conditions: Vec<String>,
   pub symlinks: bool,
@@ -82,6 +83,7 @@ impl Default for ResolveConfig {
         String::from("module"),
         String::from("main"),
       ],
+      main_files: vec![String::from("index")],
       extensions: vec![
         String::from("tsx"),
         String::from("ts"),

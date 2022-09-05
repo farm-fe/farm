@@ -7,7 +7,7 @@ use farmfe_core::{
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
-use farmfe_toolkit::resolve::load_package_json;
+use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
 pub struct Resolver {
   config: ResolveConfig,
@@ -43,7 +43,7 @@ impl Resolver {
 
     if is_source_absolute {
       Ok(PluginResolveHookResult {
-        id: source.to_string(),
+        resolved_path: source.to_string(),
         ..Default::default()
       })
     } else if source.starts_with(".") {
@@ -51,10 +51,8 @@ impl Resolver {
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
       let normalized_path = normalized_path.as_path();
 
-      let normalized_path = if normalized_path.is_symlink() && self.config.symlinks {
-        normalized_path
-          .read_link()
-          .map_err(|e| CompilationError::GenericError(format!("Read symlink error: {:?}", e)))?
+      let normalized_path = if self.config.symlinks {
+        follow_symlinks(normalized_path.to_path_buf())
       } else {
         normalized_path.to_path_buf()
       };
@@ -69,7 +67,7 @@ impl Resolver {
         )))?;
 
       Ok(PluginResolveHookResult {
-        id: resolved_path,
+        resolved_path,
         ..Default::default()
       })
     } else {
@@ -86,8 +84,8 @@ impl Resolver {
       return None;
     }
 
-    for main_field in &self.config.main_fields {
-      let file = dir.join(main_field);
+    for main_file in &self.config.main_files {
+      let file = dir.join(main_file);
 
       if let Some(found) = self.try_file(&file) {
         return Some(found);
@@ -100,7 +98,8 @@ impl Resolver {
   /// Try resolve as a file with the configured extensions.
   /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
   fn try_file(&self, file: &PathBuf) -> Option<String> {
-    if file.exists() {
+    // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
+    if file.exists() && file.is_file() {
       Some(file.to_string_lossy().to_string())
     } else {
       let ext = self.config.extensions.iter().find(|&ext| {
@@ -142,58 +141,72 @@ impl Resolver {
     kind: &ResolveKind,
   ) -> Result<PluginResolveHookResult> {
     // find node_modules until root
-    let mut current = base_dir;
-    let mut found_node_modules_path = None;
+    let mut current = base_dir.clone();
 
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
 
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
-        found_node_modules_path = Some(maybe_node_modules_path);
-        break;
+        let package_path = if self.config.symlinks {
+          follow_symlinks(RelativePath::new(source).to_logical_path(maybe_node_modules_path))
+        } else {
+          RelativePath::new(source).to_logical_path(maybe_node_modules_path)
+        };
+
+        // TODO cover it with tests
+        if !package_path.join("package.json").exists() {
+          if let Some(resolved_path) = self
+            .try_file(&package_path)
+            .or_else(|| self.try_directory(&package_path))
+          {
+            return Ok(PluginResolveHookResult {
+              resolved_path,
+              external: false,       // TODO read this from browser
+              side_effects: false,   // TODO read this from side_effects in package.json
+              query: HashMap::new(), // TODO parse this from the source
+            });
+          }
+        } else if package_path.exists() && package_path.is_dir() {
+          let package_json_info = load_package_json(
+            package_path.clone(),
+            Options {
+              follow_symlinks: self.config.symlinks,
+              resolve_ancestor_dir: false, // only look for current directory
+            },
+          )?;
+          // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
+
+          // search normal entry, based on self.config.main_fields, e.g. module/main
+          let raw_package_json_info: Map<String, Value> =
+            from_str(package_json_info.raw()).unwrap();
+
+          for main_field in &self.config.main_fields {
+            if let Some(field_value) = raw_package_json_info.get(main_field) {
+              if let Value::String(str) = field_value {
+                let dir = package_json_info.dir();
+                let full_path = RelativePath::new(str).to_logical_path(dir);
+
+                if full_path.exists() {
+                  return Ok(PluginResolveHookResult {
+                    resolved_path: full_path.to_string_lossy().to_string(),
+                    external: false,       // TODO read this from browser
+                    side_effects: false,   // TODO read this from side_effects in package.json
+                    query: HashMap::new(), // TODO parse this from the source
+                  });
+                }
+              }
+            }
+          }
+        }
       }
 
       current = current.parent().unwrap().to_path_buf();
     }
 
-    if found_node_modules_path == None {
-      return Err(CompilationError::GenericError(
-        "can not found node_modules".to_string(),
-      ));
-    }
-
-    // TODO follow symlink
-    let package_dir = RelativePath::new(source).to_logical_path(found_node_modules_path.unwrap());
-    let package_json_info = load_package_json(package_dir)?;
-    println!("package json info {:?}", package_json_info);
-    // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
-
-    // search normal entry, based on self.config.main_fields, e.g. module/main
-    let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
-
-    for main_field in &self.config.main_fields {
-      if let Some(field_value) = raw_package_json_info.get(main_field) {
-        if let Value::String(str) = field_value {
-          let dir = package_json_info.dir();
-          let full_path = RelativePath::new(str).to_logical_path(dir);
-
-          if full_path.exists() {
-            return Ok(PluginResolveHookResult {
-              id: full_path.to_string_lossy().to_string(),
-              external: false,       // TODO read this from browser
-              side_effects: false,   // TODO read this from side_effects in package.json
-              query: HashMap::new(), // TODO parse this from the source
-              package_json_info: Some(package_json_info),
-            });
-          }
-        }
-      }
-    }
-
-    // try search node_modules
+    // unsupported node_modules resolving type
     panic!(
-      "resolving node modules source({}) is not supported by now!",
-      source
+      "resolving node modules(from {} from {:?}) is not supported by now!",
+      source, base_dir
     );
   }
 }

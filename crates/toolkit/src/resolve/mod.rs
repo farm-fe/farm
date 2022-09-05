@@ -13,24 +13,30 @@
 
 use std::path::PathBuf;
 
-use farmfe_core::{
-  common::PackageJsonInfo,
-  serde_json::{from_str, Value},
-};
+use farmfe_core::{common::PackageJsonInfo, serde_json::from_str};
 use lazy_static::lazy_static;
 
 pub mod package_json_loader;
+pub mod symlinks_analyzer;
 
 use package_json_loader::PackageJsonLoader;
 
+use crate::resolve::symlinks_analyzer::SymlinksAnalyzer;
+
+use self::package_json_loader::Options;
+
 lazy_static! {
   pub static ref PACKAGE_JSON_LOADER: PackageJsonLoader = PackageJsonLoader::new();
+  pub static ref SYMLINKS_ANALYZER: SymlinksAnalyzer = SymlinksAnalyzer::new();
 }
 
 /// Load closest package.json start from the specified path, return [farmfe_core::error::Result<Value>].
-pub fn load_package_json(path: PathBuf) -> farmfe_core::error::Result<PackageJsonInfo> {
+pub fn load_package_json(
+  path: PathBuf,
+  options: Options,
+) -> farmfe_core::error::Result<PackageJsonInfo> {
   // using global static package.json loader
-  PACKAGE_JSON_LOADER.load(path)
+  PACKAGE_JSON_LOADER.load(path, options)
 }
 
 /// The default package.json info is:
@@ -51,8 +57,8 @@ pub fn default_package_json() -> PackageJsonInfo {
   .unwrap()
 }
 
-/// see [querystring::querify]
-pub fn parse_query(path: &str) -> Vec<(&str, &str)> {
-  let query_str = path.split('?').last().unwrap();
-  querystring::querify(query_str)
+/// Try follow symlinks from the specified path, if any ancestor of the path is symlinked, it will be redirected to the real path.
+/// For example, the path is `/root/react/index.js` while `/root/react` is symlinked to `/root/store/react`, then the result should be `/root/store/react/index.js`.
+pub fn follow_symlinks(path: PathBuf) -> PathBuf {
+  SYMLINKS_ANALYZER.follow_symlinks(path)
 }

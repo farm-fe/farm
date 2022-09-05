@@ -14,37 +14,39 @@ pub enum CompilationError {
     source: Option<Box<dyn Error + Send + Sync>>,
   },
   // TODO, give the specific recommended plugin of this kind of module
-  #[error("Can not load `{id}`. Original error: {source:?}.\n\nPotential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n")]
+  #[error("Can not load `{resolved_path}`. Original error: {source:?}.\n\nPotential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n")]
   LoadError {
-    id: String,
+    resolved_path: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("Transform `{id}` failed.\nOriginal error: {source:?}")]
+  #[error("Transform `{resolved_path}` failed.\nOriginal error: {source:?}")]
   TransformError {
-    id: String,
+    resolved_path: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
   },
   // TODO, give the specific recommended plugin of this kind of module
-  #[error("Parse `{id}` failed.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
+  #[error("Parse `{resolved_path}` failed.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
   ParseError {
-    id: String,
+    resolved_path: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("Hook `module_parsed` execute failed for module `{id}`.\nOriginal error: {source:?}.")]
+  #[error("Hook `module_parsed` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}.")]
   ModuleParsedError {
-    id: String,
+    resolved_path: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("Hook `analyze_deps` execute failed for module `{id}`.\nOriginal error: {source:?}.")]
+  #[error(
+    "Hook `analyze_deps` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}."
+  )]
   AnalyzeDepsError {
-    id: String,
+    resolved_path: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
   },

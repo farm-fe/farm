@@ -1,13 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  common::PackageJsonInfo,
   context::CompilationContext,
+  module::{Module, ModuleId},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  serde_json::Value,
 };
 use farmfe_plugin_html::FarmPluginHtml;
 use farmfe_toolkit::testing_helpers::fixture;
@@ -25,7 +24,7 @@ fn html_build_stage() {
     let file_content = html_plugin
       .load(
         &PluginLoadHookParam {
-          id: file.to_str().unwrap(),
+          resolved_path: file.to_str().unwrap(),
           query: HashMap::new(),
         },
         &context,
@@ -34,22 +33,29 @@ fn html_build_stage() {
       .unwrap()
       .unwrap();
 
-    let html_module = html_plugin
+    let module_id = ModuleId::new(
+      file.to_str().unwrap(),
+      &HashMap::new(),
+      &context.config.root,
+    );
+    let html_module_meta_data = html_plugin
       .parse(
         &PluginParseHookParam {
-          id: file.to_string_lossy().to_string(),
+          module_id: module_id.clone(),
+          resolved_path: file.to_string_lossy().to_string(),
           content: file_content.content,
-          module_type: file_content.module_type,
+          module_type: file_content.module_type.clone(),
           query: HashMap::new(),
-          source_map_chain: vec![],
-          side_effects: false,
-          package_json_info: PackageJsonInfo::default(),
         },
         &context,
         &hook_context,
       )
       .unwrap()
       .unwrap();
+
+    let mut html_module = Module::new(module_id);
+    html_module.meta = html_module_meta_data;
+    html_module.module_type = file_content.module_type;
 
     let mut analyze_deps_param = PluginAnalyzeDepsHookParam {
       module: &html_module,

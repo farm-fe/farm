@@ -27,7 +27,7 @@ pub fn parse_html_document(
   parser
     .parse_document()
     .map_err(|e| CompilationError::ParseError {
-      id: id.to_string(),
+      resolved_path: id.to_string(),
       source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e)))),
     })
 }

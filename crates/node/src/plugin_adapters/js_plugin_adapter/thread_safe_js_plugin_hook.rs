@@ -231,7 +231,7 @@ impl JsPluginResolveHook {
   ) -> Result<Option<PluginResolveHookResult>> {
     let skip = self.filters.importers.iter().any(|i| {
       if let Some(importer) = &param.importer {
-        i.is_match(importer)
+        i.is_match(&importer.resolved_path(&ctx.config.root))
       } else {
         false
       }

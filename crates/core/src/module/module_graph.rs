@@ -114,14 +114,14 @@ impl ModuleGraph {
     let from = self.id_index_map.get(from).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"from node "{}" does not exist in the module graph when add edge"#,
-        from.path()
+        from.relative_path()
       ))
     })?;
 
     let to = self.id_index_map.get(to).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"to node "{}" does not exist in the module graph when add edge"#,
-        to.path()
+        to.relative_path()
       ))
     })?;
 
@@ -301,7 +301,7 @@ mod tests {
     let mut graph = ModuleGraph::new();
 
     for id in module_ids {
-      let m = Module::new(id, ModuleType::Js);
+      let m = Module::new(id);
 
       graph.add_module(m);
     }

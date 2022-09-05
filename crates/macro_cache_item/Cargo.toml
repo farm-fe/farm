@@ -1,5 +1,5 @@
 [package]
-name = "farm_macro_cache_item"
+name = "farmfe_macro_cache_item"
 version = "0.0.1"
 edition = "2021"
 

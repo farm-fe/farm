@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use farm_macro_cache_item::cache_item;
+use farmfe_macro_cache_item::cache_item;
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// package json info that farm used.
@@ -11,11 +11,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 pub struct PackageJsonInfo {
   pub name: String,
   pub version: String,
-  // module: String,
-  // main: String,
-  pub browser: Option<String>,
-  pub exports: Option<String>,
-  pub side_effects: Option<bool>,
+  // pub browser: Option<String>,
+  // pub exports: Option<String>,
+  // pub side_effects: Option<bool>,
   raw: Option<String>,
   /// the directory this package.json belongs to
   dir: Option<String>,
