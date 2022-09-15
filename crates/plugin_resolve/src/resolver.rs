@@ -205,7 +205,7 @@ impl Resolver {
 
     // unsupported node_modules resolving type
     panic!(
-      "resolving node modules(from {} from {:?}) is not supported by now!",
+      "resolving node modules(resolve {} from {:?}) is not supported by now!",
       source, base_dir
     );
   }

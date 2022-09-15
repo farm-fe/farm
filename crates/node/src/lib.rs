@@ -1,6 +1,6 @@
 #![deny(clippy::all)]
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_compiler::Compiler;
 
@@ -110,5 +110,19 @@ impl JsCompiler {
   #[napi]
   pub fn update_sync(&self, paths: Vec<String>) -> napi::Result<JsUpdateResult> {
     Ok(JsUpdateResult {})
+  }
+
+  #[napi]
+  pub fn resources(&self) -> HashMap<String, Vec<u8>> {
+    let context = self.compiler.context();
+    let resources = context.resources_map.lock();
+
+    let mut result = HashMap::new();
+
+    for resource in resources.values() {
+      result.insert(resource.name.clone(), resource.bytes.clone());
+    }
+
+    result
   }
 }

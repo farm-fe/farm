@@ -4,5 +4,10 @@
     "rootDir": "src",
     "outDir": "dist"
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "../core/tsconfig.build.json"
+    }
+  ]
 }

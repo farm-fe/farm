@@ -5,28 +5,32 @@ import {
 import { normalizeUserCompilationConfig, UserConfig } from '../config';
 
 export class Compiler {
-  bindingCompiler: BindingCompiler;
+  private _bindingCompiler: BindingCompiler;
 
   constructor(config: UserConfig) {
-    this.bindingCompiler = new BindingCompiler(
+    this._bindingCompiler = new BindingCompiler(
       normalizeUserCompilationConfig(config)
     );
   }
 
   async compile() {
-    await this.bindingCompiler.compile();
+    await this._bindingCompiler.compile();
     console.log('after rust compile');
   }
 
   compileSync() {
-    return this.bindingCompiler.compileSync();
+    return this._bindingCompiler.compileSync();
   }
 
   async update(paths: string[]): Promise<JsUpdateResult> {
-    return this.bindingCompiler.update(paths);
+    return this._bindingCompiler.update(paths);
   }
 
   updateSync(paths: string[]): JsUpdateResult {
-    return this.bindingCompiler.updateSync(paths);
+    return this._bindingCompiler.updateSync(paths);
+  }
+
+  resources(): Record<string, number[]> {
+    return this._bindingCompiler.resources();
   }
 }

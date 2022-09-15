@@ -9,7 +9,7 @@ use farmfe_core::{
   resource::resource_pot::ResourcePotId,
 };
 
-pub fn render_resource_pots(
+pub fn render_resource_pots_and_generate_resources(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<()> {

@@ -1,20 +1,19 @@
-import { Compiler } from '@farmfe/core';
-// import path from 'path';
+import path from 'path';
 
-// compile config
-// const configCompiler = new Compiler({
-//   compilation: {
-//     input: {
-//       config: path.join(process.cwd(), "farm.config.ts")
-//     }
-//   }
-// });
+import cac from 'cac';
 
-const compiler = new Compiler({
-  compilation: {
-    input: {
-      index: './index.html',
-    },
-  },
-});
-compiler.compile();
+import { start } from './start';
+
+const cli = cac();
+
+cli
+  .command(
+    'start',
+    'Compile the project in dev mode and serve it with farm dev server'
+  )
+  .action((...args) => {
+    console.log(args);
+    start();
+  });
+
+cli.parse();

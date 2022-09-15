@@ -24,11 +24,8 @@ impl SymlinksAnalyzer {
 
     let mut current = path.clone();
     let mut real_path = path.clone();
-    let mut visited = vec![];
 
     while current.parent().is_some() {
-      visited.push(current.clone());
-
       if current.is_symlink() {
         real_path = RelativePath::new(current.read_link().unwrap().to_str().unwrap())
           .to_logical_path(current.parent().unwrap());
@@ -40,17 +37,15 @@ impl SymlinksAnalyzer {
 
     // there is symlink existed
     let real_path = if real_path != path {
-      let relative_path = diff_paths(path, current.clone()).unwrap();
+      let relative_path = diff_paths(path.clone(), current.clone()).unwrap();
       let real_path = real_path.join(relative_path);
 
       real_path
     } else {
-      path
+      path.clone()
     };
 
-    for p in visited {
-      self.cache.insert(p, real_path.clone());
-    }
+    self.cache.insert(path, real_path.clone());
 
     real_path
   }

@@ -15,10 +15,10 @@
   "devDependencies": {
     "@napi-rs/cli": "^2.10.0",
     "@types/jest": "^28.1.4",
+    "@types/koa": "^2.13.5",
     "@types/node": "^18.0.1",
     "jest": "^28.1.2",
-    "typescript": "^4.7.4",
-    "@farmfe/runtime": "workspace:^0.0.0"
+    "typescript": "^4.7.4"
   },
   "engines": {
     "node": ">= 12"
@@ -27,9 +27,6 @@
     "binding",
     "dist"
   ],
-  "peerDependencies": {
-    "@farmfe/runtime": "workspace:^0.0.0"
-  },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
@@ -39,5 +36,10 @@
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",
     "type-check": "tsc -p tsconfig.build.json --noEmit"
+  },
+  "dependencies": {
+    "@farmfe/runtime": "workspace:^0.0.0",
+    "koa": "^2.13.4",
+    "lodash.merge": "^4.6.2"
   }
 }

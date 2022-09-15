@@ -1,11 +1,13 @@
+import path from 'path';
 import { test } from 'vitest';
 import { Compiler } from '../src/index';
 
 test('Binding - should parse config to rust correctly', async () => {
-  console.log(require.extensions);
-
   const compiler = new Compiler({
-    input: { index: './index.html' },
+    compilation: {
+      input: { index: './index.html' },
+      root: path.join(__dirname, 'fixtures', 'binding'),
+    },
     plugins: [],
   });
 
