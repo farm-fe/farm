@@ -63,4 +63,8 @@ impl Compiler {
   pub fn update(&self, paths: Vec<String>) -> Result<UpdateOutput> {
     Ok(UpdateOutput {})
   }
+
+  pub fn context(&self) -> &Arc<CompilationContext> {
+    &self.context
+  }
 }

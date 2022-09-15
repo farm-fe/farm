@@ -4,7 +4,8 @@ use farmfe_core::{error::Result, plugin::PluginHookContext};
 
 use crate::{
   generate::{
-    merge_modules::merge_modules, render_resource_pots::render_resource_pots,
+    merge_modules::merge_modules,
+    render_resource_pots::render_resource_pots_and_generate_resources,
     write_resources::write_resources,
   },
   Compiler,
@@ -49,7 +50,7 @@ impl Compiler {
     }
     /* =============== Process Resource Pot Graph End ================ */
 
-    render_resource_pots(&self.context, &hook_context)?;
+    render_resource_pots_and_generate_resources(&self.context, &hook_context)?;
 
     write_resources(&self.context)?;
 

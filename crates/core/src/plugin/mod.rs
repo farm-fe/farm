@@ -219,7 +219,7 @@ pub struct PluginHookContext {
   /// if this hook is called by the compiler, its value is [None]
   /// if this hook is called by other plugins, its value is set by the caller plugins.
   pub caller: Option<String>,
-  /// meta data passed between
+  /// meta data passed between plugins
   pub meta: HashMap<String, String>,
 }
 
@@ -253,7 +253,9 @@ pub struct PluginResolveHookResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "camelCase")]
 pub struct PluginLoadHookParam<'a> {
+  /// the resolved path from resolve hook
   pub resolved_path: &'a str,
+  /// the query map
   pub query: HashMap<String, String>,
 }
 
@@ -274,7 +276,9 @@ pub struct PluginTransformHookParam<'a> {
   pub content: String,
   /// module type after load
   pub module_type: ModuleType,
+  /// resolved path from resolve hook
   pub resolved_path: &'a str,
+  /// query from resolve hook
   pub query: HashMap<String, String>,
 }
 

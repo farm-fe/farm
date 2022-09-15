@@ -10,6 +10,7 @@
     "farm": "./bin/farm.mjs"
   },
   "scripts": {
+    "start": "rimraf dist && tsc -b -w",
     "build": "tsc",
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
@@ -18,6 +19,7 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
-    "@farmfe/core": "workspace:^0.0.0"
+    "@farmfe/core": "workspace:^0.0.0",
+    "cac": "^6.7.14"
   }
 }
