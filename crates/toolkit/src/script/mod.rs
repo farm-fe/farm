@@ -4,9 +4,10 @@ use swc_ecma_codegen::{
   text_writer::{JsWriter, WriteJs},
   Emitter, Node,
 };
-use swc_ecma_parser::{EsConfig, Parser, StringInput, Syntax, TsConfig};
+use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax, TsConfig};
 
 use farmfe_core::{
+  config::ScriptParserConfig,
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleSystem, ModuleType},
@@ -34,12 +35,14 @@ pub fn parse_module(
   id: &str,
   content: &str,
   syntax: Syntax,
+  target: EsVersion,
   cm: Arc<SourceMap>,
 ) -> Result<SwcModule> {
   let source_file = cm.new_source_file(FileName::Real(PathBuf::from(id)), content.to_string());
   let input = StringInput::from(&*source_file);
   // TODO support parsing comments
-  let mut parser = Parser::new(syntax, input, None);
+  let lexer = Lexer::new(syntax, target, input, None);
+  let mut parser = Parser::new_from(lexer);
   parser
     .parse_module()
     .map_err(|e| CompilationError::ParseError {
@@ -76,6 +79,7 @@ pub fn parse_stmt(
 /// ```
 pub fn codegen_module(
   ast: &SwcModule,
+  target: EsVersion,
   cm: Arc<SourceMap>,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
@@ -86,7 +90,7 @@ pub fn codegen_module(
 
     let mut emitter = Emitter {
       cfg: swc_ecma_codegen::Config {
-        target: Default::default(),
+        target,
         ascii_only: false,
         minify: false,
       },
@@ -122,19 +126,27 @@ pub fn module_type_from_id(id: &str) -> ModuleType {
   }
 }
 
-/// TODO support custom [EsConfig] and [TsConfig]
 /// return [None] if module type is not script
-pub fn syntax_from_module_type(module_type: &ModuleType) -> Option<Syntax> {
+pub fn syntax_from_module_type(
+  module_type: &ModuleType,
+  config: ScriptParserConfig,
+) -> Option<Syntax> {
   match module_type {
-    ModuleType::Js => Some(Syntax::Es(Default::default())),
+    ModuleType::Js => Some(Syntax::Es(EsConfig {
+      jsx: false,
+      ..config.es_config
+    })),
     ModuleType::Jsx => Some(Syntax::Es(EsConfig {
       jsx: true,
-      ..Default::default()
+      ..config.es_config
     })),
-    ModuleType::Ts => Some(Syntax::Typescript(Default::default())),
+    ModuleType::Ts => Some(Syntax::Typescript(TsConfig {
+      tsx: false,
+      ..config.ts_config
+    })),
     ModuleType::Tsx => Some(Syntax::Typescript(TsConfig {
       tsx: true,
-      ..Default::default()
+      ..config.ts_config
     })),
     _ => None,
   }

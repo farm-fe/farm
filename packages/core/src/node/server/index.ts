@@ -1,4 +1,7 @@
+import fs from 'fs/promises';
+
 import Koa from 'koa';
+import serve from 'koa-static';
 
 import { Compiler } from '../compiler';
 import { resources } from './middlewares/resources';
@@ -23,11 +26,26 @@ export class DevServer {
     this._options = normalizeDevServerOptions(options);
     this._app = new Koa();
 
-    this._app.use(resources(this._compiler));
+    if (this._options.writeToDisk) {
+      this._app.use(serve(this._compiler.config.config.output.path));
+    } else {
+      this._app.use(resources(this._compiler));
+    }
   }
 
   async listen(): Promise<void> {
     await this._compiler.compile();
+
+    if (this._options.writeToDisk) {
+      const resources = this._compiler.resources();
+      const promises = [];
+
+      for (const [name, resource] of Object.entries(resources)) {
+        promises.push(fs.writeFile(name, Buffer.from(resource)));
+      }
+
+      await Promise.all(promises);
+    }
 
     this._app.listen(this._options.port);
 

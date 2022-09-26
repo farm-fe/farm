@@ -1,0 +1,9 @@
+[package]
+name = "<FARM-RUST-PLUGIN-CARGO-NAME>"
+version = "0.0.0"
+
+[dependencies]
+farmfe_core = { version = "*" }
+farmfe_toolkit = { version = "*" }
+farmfe_utils = { version = "*" }
+farmfe_macro_plugin = { version = "*" }

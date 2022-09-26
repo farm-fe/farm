@@ -66,11 +66,14 @@ impl Plugin for FarmPluginScript {
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<ModuleMetaData>> {
-    if let Some(syntax) = syntax_from_module_type(&param.module_type) {
+    if let Some(syntax) =
+      syntax_from_module_type(&param.module_type, context.config.script.parser.clone())
+    {
       let mut swc_module = parse_module(
         &param.module_id.to_string(),
         &param.content,
         syntax.clone(),
+        context.config.script.target.clone(),
         context.meta.script.cm.clone(),
       )?;
 
@@ -188,12 +191,15 @@ impl Plugin for FarmPluginScript {
   ) -> Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let ast = &resource_pot.meta.as_js().ast;
-      let buf = codegen_module(ast, context.meta.script.cm.clone()).map_err(|e| {
-        CompilationError::GenerateResourcesError {
-          name: resource_pot.id.to_string(),
-          ty: resource_pot.resource_pot_type.clone(),
-          source: Some(Box::new(e)),
-        }
+      let buf = codegen_module(
+        ast,
+        context.config.script.target.clone(),
+        context.meta.script.cm.clone(),
+      )
+      .map_err(|e| CompilationError::GenerateResourcesError {
+        name: resource_pot.id.to_string(),
+        ty: resource_pot.resource_pot_type.clone(),
+        source: Some(Box::new(e)),
       })?;
 
       Ok(Some(vec![Resource {

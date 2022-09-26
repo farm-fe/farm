@@ -352,6 +352,7 @@ dependencies = [
  "swc_common",
  "swc_css_ast",
  "swc_ecma_ast",
+ "swc_ecma_parser",
  "swc_html_ast",
  "thiserror",
 ]

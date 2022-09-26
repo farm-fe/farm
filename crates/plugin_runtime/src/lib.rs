@@ -171,7 +171,8 @@ impl Plugin for FarmPluginRuntime {
         let mut runtime_ast = parse_module(
           "farm-internal-minimal-runtime",
           minimal_runtime,
-          Syntax::Es(EsConfig::default()),
+          Syntax::Es(context.config.script.parser.es_config.clone()),
+          context.config.script.target.clone(),
           context.meta.script.cm.clone(),
         )?;
 
@@ -225,7 +226,8 @@ impl Plugin for FarmPluginRuntime {
       let mut wrapper_ast = parse_module(
         "farm-internal-resource-wrapper",
         wrapper,
-        Syntax::Es(EsConfig::default()),
+        Syntax::Es(context.config.script.parser.es_config.clone()),
+        context.config.script.target.clone(),
         context.meta.script.cm.clone(),
       )?;
 
@@ -262,12 +264,15 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
       let runtime_ast = self.runtime_ast.lock();
       let runtime_ast = runtime_ast.as_ref().unwrap();
-      let bytes = codegen_module(runtime_ast, context.meta.script.cm.clone()).map_err(|e| {
-        CompilationError::GenerateResourcesError {
-          name: resource_pot.id.to_string(),
-          ty: resource_pot.resource_pot_type.clone(),
-          source: Some(Box::new(e)),
-        }
+      let bytes = codegen_module(
+        runtime_ast,
+        context.config.script.target.clone(),
+        context.meta.script.cm.clone(),
+      )
+      .map_err(|e| CompilationError::GenerateResourcesError {
+        name: resource_pot.id.to_string(),
+        ty: resource_pot.resource_pot_type.clone(),
+        source: Some(Box::new(e)),
       })?;
       // set emitted property of Runtime to true by default, as it will be generated and injected when generating entry resources,
       // other plugins wants to modify this behavior in write_resources hook.
@@ -304,7 +309,8 @@ impl Plugin for FarmPluginRuntime {
               r#"const entry = globalThis.__acquire_farm_module_system__().require("{}").default;export default entry;"#,
               entry_module_id.id(context.config.mode.clone())
             ),
-            Syntax::Es(Default::default()),
+            Syntax::Es(context.config.script.parser.es_config.clone()),
+            context.config.script.target.clone(),
             context.meta.script.cm.clone(),
           )?;
 

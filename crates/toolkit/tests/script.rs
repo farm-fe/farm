@@ -14,13 +14,13 @@ fn parse_and_codegen_module() {
     let content = read_file_utf8(&id).unwrap();
 
     let module_type = module_type_from_id(&id);
-    let syntax = syntax_from_module_type(&module_type).unwrap();
+    let syntax = syntax_from_module_type(&module_type, Default::default()).unwrap();
     let cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
-    let ast = parse_module(&id, &content, syntax, cm.clone()).unwrap();
+    let ast = parse_module(&id, &content, syntax, Default::default(), cm.clone()).unwrap();
 
     assert_eq!(ast.body.len(), 3);
 
-    let bytes = codegen_module(&ast, cm).unwrap();
+    let bytes = codegen_module(&ast, Default::default(), cm).unwrap();
 
     let code = String::from_utf8(bytes).unwrap();
     assert_eq!(

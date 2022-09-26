@@ -23,9 +23,6 @@ type ModuleInitialization = (
 globalThis.noop = function () {
   /* do nothing */
 };
-// These global variables will be injected during compilation, and module system plugin may use these global variables.
-// globalThis.__farm_module_system_resources__;
-// globalThis.__farm_module_system_public_paths__;
 
 globalThis.__acquire_farm_module_system__ =
   (function (/*resources, publicPaths*/) {
@@ -34,20 +31,17 @@ globalThis.__acquire_farm_module_system__ =
       modules: Record<string, ModuleInitialization>;
       // module cache after module initialized
       cache: Record<string, Module>;
-      // // resources generated during compilation
-      // resources: Record<string, Resource>;
       // // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
       // publicPaths: string[];
 
       constructor(/*resources: Record<string, Resource>, publicPaths: string[]*/) {
         this.modules = {};
         this.cache = {};
-        // this.resources = resources;
         // this.publicPaths = publicPaths;
       }
 
       // require should be async as we support `top level await`
-      require(moduleId: string): any {
+      async require(moduleId: string): Promise<any> {
         if (this.cache[moduleId]) {
           return this.cache[moduleId].exports;
         }
@@ -67,7 +61,7 @@ globalThis.__acquire_farm_module_system__ =
 
         this.cache[moduleId] = module;
 
-        initializer(module, module.exports, this.require.bind(this));
+        await initializer(module, module.exports, this.require.bind(this));
 
         module.initialized = true;
 
@@ -103,7 +97,4 @@ globalThis.__acquire_farm_module_system__ =
     return function () {
       return moduleSystem;
     };
-  })(/*
-  globalThis.__farm_module_system_resources__,
-  globalThis.__farm_module_system_public_paths__
-*/);
+  })();

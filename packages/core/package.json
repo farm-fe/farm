@@ -16,6 +16,8 @@
     "@napi-rs/cli": "^2.10.0",
     "@types/jest": "^28.1.4",
     "@types/koa": "^2.13.5",
+    "@types/koa-static": "^4.0.2",
+    "@types/lodash.merge": "^4.6.7",
     "@types/node": "^18.0.1",
     "jest": "^28.1.2",
     "typescript": "^4.7.4"
@@ -40,6 +42,7 @@
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.0.0",
     "koa": "^2.13.4",
+    "koa-static": "^5.0.0",
     "lodash.merge": "^4.6.2"
   }
 }

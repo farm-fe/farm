@@ -33,4 +33,5 @@ pub use serde_json;
 pub use swc_common;
 pub use swc_css_ast;
 pub use swc_ecma_ast;
+pub use swc_ecma_parser;
 pub use swc_html_ast;
