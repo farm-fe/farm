@@ -50,10 +50,20 @@ impl Plugin for FarmPluginRuntime {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    // runtime package entry file
     config.input.insert(
       "runtime".to_string(),
       format!("{}{}", config.runtime.path, RUNTIME_SUFFIX),
     );
+    // runtime plugin entry file
+    for plugin in &config.runtime.plugins {
+      config.input.insert(
+        plugin.clone(),
+        format!("{}{}", plugin, RUNTIME_SUFFIX),
+      );
+    }
+
+    // TODO make sure all runtime modules are in the same ModuleBucket
     Ok(Some(()))
   }
 
@@ -147,6 +157,8 @@ impl Plugin for FarmPluginRuntime {
         "@swc/helpers/lib/_interop_require_default.js",
       ))),
     );
+
+    // TODO insert runtime plugin as runtime entry's dependency too.
 
     Ok(Some(()))
   }

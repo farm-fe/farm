@@ -1,5 +1,5 @@
 import { Module } from './module';
-import { Resource } from './resource-loader';
+import { Resource, ResourceLoader } from './resource-loader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ModuleInitialization = (
@@ -17,13 +17,16 @@ export class ModuleSystem {
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
   // dynamic module entry and resources map
-  dynamic_module_resources_map: Record<string, Resource[]>;
+  dynamicModuleResourcesMap: Record<string, Resource[]>;
+  // resources loader
+  resourceLoader: ResourceLoader;
 
   constructor() {
     this.modules = {};
     this.cache = {};
     this.publicPaths = [];
-    this.dynamic_module_resources_map = {};
+    this.dynamicModuleResourcesMap = {};
+    this.resourceLoader = new ResourceLoader(this.publicPaths);
   }
 
   // require should be async as we support `top level await`
@@ -50,20 +53,25 @@ export class ModuleSystem {
       this.require.bind(this),
       this.dynamicRequire.bind(this)
     );
-    module.initialized = true;
 
     // return the exports of the module
     return module.exports;
   }
 
   async dynamicRequire(moduleId: string): Promise<any> {
-    const resources = this.dynamic_module_resources_map[moduleId];
+    const resources = this.dynamicModuleResourcesMap[moduleId];
 
     if (!resources || resources.length === 0) {
       throw new Error(
         `Dynamic imported module "${module}" does not belong to any resource`
       );
     }
+
+    // loading all required resources, and return the exports of the entry module
+    await Promise.all(
+      resources.map((resource) => this.resourceLoader.load(resource))
+    );
+    return this.require(moduleId);
   }
 
   register(moduleId: string, initializer: ModuleInitialization): void {
@@ -76,26 +84,36 @@ export class ModuleSystem {
     this.modules[moduleId] = initializer;
   }
 
-  // update(moduleId: string, init: ModuleInitialization): void {
-  //   Promise.resolve().then(() => console.log(123));
-  //   // update
-  // }
+  update(moduleId: string, init: ModuleInitialization): void {
+    this.modules[moduleId] = init;
+  }
 
-  // delete(moduleId: string): boolean {
-  //   // delete
-  // }
+  delete(moduleId: string): boolean {
+    if (this.modules[moduleId]) {
+      delete this.modules[moduleId];
+      return true;
+    } else {
+      return false;
+    }
+  }
 
-  // clearCache(moduleId: string): boolean {
-  //   // clear cache
-  // }
+  clearCache(moduleId: string): boolean {
+    if (this.modules[moduleId]) {
+      delete this.cache[moduleId];
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   setDynamicModuleResourcesMap(
-    dynamic_module_resources_map: Record<string, Resource[]>
+    dynamicModuleResourcesMap: Record<string, Resource[]>
   ): void {
-    this.dynamic_module_resources_map = dynamic_module_resources_map;
+    this.dynamicModuleResourcesMap = dynamicModuleResourcesMap;
   }
 
   setPublicPaths(publicPaths: string[]): void {
     this.publicPaths = publicPaths;
+    this.resourceLoader.publicPaths = this.publicPaths;
   }
 }
