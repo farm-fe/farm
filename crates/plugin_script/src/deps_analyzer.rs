@@ -5,7 +5,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::{
-  script::source_replacer::is_commonjs_require,
+  script::is_commonjs_require,
   swc_ecma_visit::{Visit, VisitWith},
 };
 

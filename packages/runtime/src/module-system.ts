@@ -1,4 +1,5 @@
 import { Module } from './module';
+import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
 import { Resource, ResourceLoader } from './resource-loader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -20,6 +21,8 @@ export class ModuleSystem {
   dynamicModuleResourcesMap: Record<string, Resource[]>;
   // resources loader
   resourceLoader: ResourceLoader;
+  // runtime plugin container
+  pluginContainer: FarmRuntimePluginContainer;
 
   constructor() {
     this.modules = {};
@@ -27,6 +30,7 @@ export class ModuleSystem {
     this.publicPaths = [];
     this.dynamicModuleResourcesMap = {};
     this.resourceLoader = new ResourceLoader(this.publicPaths);
+    this.pluginContainer = new FarmRuntimePluginContainer([]);
   }
 
   // require should be async as we support `top level await`
@@ -34,7 +38,14 @@ export class ModuleSystem {
   async require(moduleId: string): Promise<any> {
     // return the cached exports if cache exists
     if (this.cache[moduleId]) {
-      return this.cache[moduleId].exports;
+      const shouldSkip = await this.pluginContainer.hookBail(
+        'readModuleCache',
+        this.cache[moduleId]
+      );
+
+      if (!shouldSkip) {
+        return this.cache[moduleId].exports;
+      }
     }
 
     const initializer = this.modules[moduleId];
@@ -45,6 +56,9 @@ export class ModuleSystem {
 
     // create a full new module instance and store it in cache to avoid cyclic initializing
     const module = new Module(moduleId);
+    // call the module created hook
+    await this.pluginContainer.hookSerial('moduleCreated', module);
+
     this.cache[moduleId] = module;
     // initialize the new module
     await initializer(
@@ -53,7 +67,8 @@ export class ModuleSystem {
       this.require.bind(this),
       this.dynamicRequire.bind(this)
     );
-
+    // call the module initialized hook
+    await this.pluginContainer.hookSerial('moduleInitialized', module);
     // return the exports of the module
     return module.exports;
   }
@@ -106,6 +121,7 @@ export class ModuleSystem {
     }
   }
 
+  // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
   setDynamicModuleResourcesMap(
     dynamicModuleResourcesMap: Record<string, Resource[]>
   ): void {
@@ -115,5 +131,15 @@ export class ModuleSystem {
   setPublicPaths(publicPaths: string[]): void {
     this.publicPaths = publicPaths;
     this.resourceLoader.publicPaths = this.publicPaths;
+  }
+
+  // The plugins are injected during compile time.
+  setPlugins(plugins: FarmRuntimePlugin[]): void {
+    this.pluginContainer.plugins = plugins;
+  }
+
+  // bootstrap should be called after all three methods above are called
+  bootstrap(): void {
+    this.pluginContainer.hookSerial('bootstrap', this);
   }
 }

@@ -87,6 +87,7 @@ impl Plugin for FarmPluginScript {
           param.module_type.is_typescript(),
         ));
 
+        // TODO reorganize Hybrid ModuleSystem
         let module_system = if swc_module
           .body
           .iter()

@@ -8,27 +8,11 @@ use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax, TsCon
 
 use farmfe_core::{
   config::ScriptParserConfig,
-  context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, ModuleSystem, ModuleType},
-  resource::resource_pot::ResourcePot,
-  swc_common::{comments::SingleThreadedComments, FileName, Mark, SourceMap, DUMMY_SP, GLOBALS},
-  swc_ecma_ast::{
-    BlockStmt, EsVersion, Expr, FnExpr, Function, Ident, KeyValueProp, Module as SwcModule,
-    ModuleItem, ObjectLit, Param, Pat, Prop, PropName, PropOrSpread, Stmt, Str,
-  },
+  module::ModuleType,
+  swc_common::{FileName, SourceMap, Mark},
+  swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt, CallExpr, Callee, Expr, Ident},
 };
-use swc_ecma_transforms::{
-  feature::enable_available_feature_from_es_version,
-  fixer,
-  helpers::{inject_helpers, Helpers, HELPERS},
-  modules::{common_js, import_analysis::import_analyzer, util::ImportInterop},
-};
-use swc_ecma_visit::VisitMutWith;
-
-use self::source_replacer::SourceReplacer;
-
-pub mod source_replacer;
 
 /// parse the content of a module to [SwcModule] ast.
 pub fn parse_module(
@@ -152,143 +136,15 @@ pub fn syntax_from_module_type(
   }
 }
 
-/// Wrap the module ast to follow Farm's commonjs-style module system spec.
-/// Note: this function won't render the esm to commonjs, if you want to render esm to commonjs, see [esm_to_commonjs].
-///
-/// For example:
-/// ```js
-/// const b = require('./b');
-/// console.log(b);
-/// exports.b = b;
-/// ```
-/// will be rendered to
-/// ```js
-/// async function(module, exports, require) {
-///   const b = require('./b');
-///   console.log(b);
-///   exports.b = b;
-/// }
-/// ```
-pub fn wrap_module_ast(ast: SwcModule) -> Function {
-  let params = vec!["module", "exports", "require"]
-    .into_iter()
-    .map(|ident| Param {
-      span: DUMMY_SP,
-      decorators: vec![],
-      pat: Pat::Ident(
-        Ident {
-          span: DUMMY_SP,
-          sym: ident.into(),
-          optional: false,
-        }
-        .into(),
-      ),
-    })
-    .collect();
-
-  let body = Some(BlockStmt {
-    span: DUMMY_SP,
-    stmts: ast
-      .body
-      .to_vec()
-      .into_iter()
-      .map(|item| match item {
-        ModuleItem::ModuleDecl(decl) => {
-          panic!(
-            "should transform all esm module item to commonjs first! {:?}",
-            decl
-          )
-        }
-        ModuleItem::Stmt(stmt) => stmt,
-      })
-      .collect(),
-  });
-
-  Function {
-    params,
-    decorators: vec![],
-    span: DUMMY_SP,
-    body,
-    is_generator: false,
-    // TODO, make the module async to support top level await
-    is_async: false,
-    type_params: None,
-    return_type: None,
+/// Whether the call expr is commonjs require.
+/// A call expr is commonjs require if:
+/// * callee is an identifier named `require`
+/// * arguments is a single string literal
+/// * require is a global variable
+pub fn is_commonjs_require(unresolved_mark: Mark, call_expr: &CallExpr) -> bool {
+  if let Callee::Expr(box Expr::Ident(Ident { span, sym, .. })) = &call_expr.callee {
+    sym == "require" && span.ctxt.outer() == unresolved_mark
+  } else {
+    false
   }
-}
-
-/// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit].
-/// 1.
-pub fn merge_module_asts_of_resource_pot(
-  resource_pot: &mut ResourcePot,
-  module_graph: &ModuleGraph,
-  context: &Arc<CompilationContext>,
-) -> ObjectLit {
-  let mut rendered_resource_ast = ObjectLit {
-    span: DUMMY_SP,
-    props: vec![],
-  };
-
-  // TODO parallelize here
-  for m_id in resource_pot.modules() {
-    let module = module_graph.module(m_id).unwrap();
-    let mut cloned_module = SwcModule {
-      shebang: None,
-      span: DUMMY_SP,
-      body: module.meta.as_script().ast.body.to_vec(),
-    };
-
-    GLOBALS.set(&context.meta.script.globals, || {
-      HELPERS.set(&Helpers::new(true), || {
-        // transform esm to commonjs
-        let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-
-        // ESM to commonjs, then commonjs to farm's runtime module systems
-        if matches!(
-          module.meta.as_script().module_system,
-          ModuleSystem::EsModule
-        ) {
-          cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
-          cloned_module.visit_mut_with(&mut inject_helpers());
-          cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
-            unresolved_mark,
-            Default::default(),
-            enable_available_feature_from_es_version(EsVersion::Es2017), // TODO using configured target version
-            None,
-          ));
-        }
-
-        // replace import source with module id
-        let mut source_replacer = SourceReplacer::new(
-          unresolved_mark,
-          module_graph,
-          m_id.clone(),
-          context.config.mode.clone(),
-        );
-        cloned_module.visit_mut_with(&mut source_replacer);
-        // TODO support comments
-        cloned_module.visit_mut_with(&mut fixer(None));
-      });
-    });
-
-    // wrap module function
-    let wrapped_module = wrap_module_ast(cloned_module);
-    // TODO transform async function for legacy browser
-
-    rendered_resource_ast
-      .props
-      .push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-        key: PropName::Str(Str {
-          span: DUMMY_SP,
-          value: module.id.id(context.config.mode.clone()).into(),
-          raw: None,
-        }),
-        value: Box::new(Expr::Fn(FnExpr {
-          ident: None,
-          function: wrapped_module,
-        })),
-      }))))
-  }
-
-  rendered_resource_ast
 }

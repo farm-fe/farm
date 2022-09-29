@@ -31,13 +31,25 @@ export interface UserConfig {
  * @returns resolved config that parsed to rust compiler
  */
 export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
-  const config: Config['config'] = merge({}, userConfig);
+  const config: Config['config'] = merge(
+    {
+      input: {
+        index: './index.html',
+      },
+      output: {
+        path: './dist',
+      },
+    },
+    userConfig
+  );
 
   if (!config.runtime) {
     config.runtime = {
       path: require.resolve('@farmfe/runtime'),
       plugins: [],
     };
+  } else if (!config.runtime.path) {
+    config.runtime.path = require.resolve('@farmfe/runtime');
   }
 
   if (!config.root) {
