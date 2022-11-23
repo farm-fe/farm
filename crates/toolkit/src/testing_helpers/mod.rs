@@ -84,13 +84,13 @@ pub fn construct_test_module_graph() -> ModuleGraph {
 
 pub fn fixture<F>(pattern: &str, mut op: F)
 where
-  F: FnMut(PathBuf),
+  F: FnMut(PathBuf, PathBuf),
 {
   let base_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-  let abs_pattern = RelativePath::new(pattern).to_path(base_dir);
+  let abs_pattern = RelativePath::new(pattern).to_path(base_dir.clone());
   let paths = glob(&abs_pattern.to_string_lossy()).unwrap();
 
   for path in paths {
-    op(path.unwrap());
+    op(path.unwrap(), base_dir.clone());
   }
 }

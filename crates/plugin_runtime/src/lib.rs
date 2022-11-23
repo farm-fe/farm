@@ -20,7 +20,8 @@ use farmfe_core::{
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleItem, Stmt, Str,
+    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
+    Str,
   },
 };
 use farmfe_toolkit::{
@@ -179,33 +180,37 @@ impl Plugin for FarmPluginRuntime {
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if let ModuleMetaData::Script(script) = &param.module.meta {
-      if !matches!(script.module_system, ModuleSystem::EsModule) {
-        return Ok(None);
+      // insert swc cjs module helper as soon as it has esm import
+      if script
+        .ast
+        .body
+        .iter()
+        .any(|item| matches!(item, ModuleItem::ModuleDecl(ModuleDecl::Import(_))))
+      {
+        if !param
+          .deps
+          .iter()
+          .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_wildcard.js")
+        {
+          param.deps.push(PluginAnalyzeDepsHookResultEntry {
+            kind: ResolveKind::Import,
+            source: "@swc/helpers/lib/_interop_require_wildcard.js".to_string(),
+          });
+        }
+
+        if !param
+          .deps
+          .iter()
+          .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_default.js")
+        {
+          param.deps.push(PluginAnalyzeDepsHookResultEntry {
+            kind: ResolveKind::Import,
+            source: "@swc/helpers/lib/_interop_require_default.js".to_string(),
+          });
+        }
       }
     } else {
       return Ok(None);
-    }
-
-    if !param
-      .deps
-      .iter()
-      .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_wildcard.js")
-    {
-      param.deps.push(PluginAnalyzeDepsHookResultEntry {
-        kind: ResolveKind::Import,
-        source: "@swc/helpers/lib/_interop_require_wildcard.js".to_string(),
-      });
-    }
-
-    if !param
-      .deps
-      .iter()
-      .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_default.js")
-    {
-      param.deps.push(PluginAnalyzeDepsHookResultEntry {
-        kind: ResolveKind::Import,
-        source: "@swc/helpers/lib/_interop_require_default.js".to_string(),
-      });
     }
 
     Ok(Some(()))
@@ -221,7 +226,7 @@ impl Plugin for FarmPluginRuntime {
     for resource_pot in resource_pot_graph.resource_pots_mut() {
       if resource_pot.id.to_string().ends_with(RUNTIME_SUFFIX) {
         let rendered_resource_pot_ast =
-          render_resource_pot(resource_pot, &mut *module_graph, context);
+          resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context);
 
         #[cfg(not(windows))]
         let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
@@ -278,7 +283,8 @@ impl Plugin for FarmPluginRuntime {
     // the runtime module and its plugins should be in the same resource pot
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
-      let rendered_resource_pot_ast = render_resource_pot(resource_pot, &*module_graph, context);
+      let rendered_resource_pot_ast =
+        resource_pot_to_runtime_object_lit(resource_pot, &*module_graph, context);
 
       #[cfg(not(windows))]
       let wrapper = include_str!("./js-runtime/resource-wrapper.js");

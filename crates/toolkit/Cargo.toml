@@ -30,3 +30,4 @@ swc_html_visit = { version = "0.24.4" }
 swc_html_codegen = { version = "0.32.5" }
 glob = "0.3"
 lazy_static = "1.4.0"
+regex = "1.4.3"

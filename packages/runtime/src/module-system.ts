@@ -33,16 +33,17 @@ export class ModuleSystem {
     this.pluginContainer = new FarmRuntimePluginContainer([]);
   }
 
-  // require should be async as we support `top level await`
-  // This feature requires Node 16 and higher
-  async require(moduleId: string): Promise<any> {
+  // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
+  require(moduleId: string): any {
     // return the cached exports if cache exists
+    console.log(`[Farm] require module "${moduleId}" from cache`);
     if (this.cache[moduleId]) {
-      const shouldSkip = await this.pluginContainer.hookBail(
+      const shouldSkip = this.pluginContainer.hookBail(
         'readModuleCache',
         this.cache[moduleId]
       );
 
+      console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
       if (!shouldSkip) {
         return this.cache[moduleId].exports;
       }
@@ -57,18 +58,18 @@ export class ModuleSystem {
     // create a full new module instance and store it in cache to avoid cyclic initializing
     const module = new Module(moduleId);
     // call the module created hook
-    await this.pluginContainer.hookSerial('moduleCreated', module);
+    this.pluginContainer.hookSerial('moduleCreated', module);
 
     this.cache[moduleId] = module;
     // initialize the new module
-    await initializer(
+    initializer(
       module,
       module.exports,
       this.require.bind(this),
       this.dynamicRequire.bind(this)
     );
     // call the module initialized hook
-    await this.pluginContainer.hookSerial('moduleInitialized', module);
+    this.pluginContainer.hookSerial('moduleInitialized', module);
     // return the exports of the module
     return module.exports;
   }

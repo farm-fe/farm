@@ -23,3 +23,4 @@ pub use swc_html_parser;
 pub use swc_html_visit;
 
 pub use lazy_static;
+pub use regex;

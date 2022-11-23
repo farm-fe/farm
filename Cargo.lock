@@ -456,6 +456,7 @@ dependencies = [
  "farmfe_utils",
  "glob",
  "lazy_static",
+ "regex",
  "swc_css_codegen",
  "swc_css_parser",
  "swc_css_visit",

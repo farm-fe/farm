@@ -14,6 +14,7 @@ export interface FarmRuntimePlugin {
   readModuleCache?: (module: Module) => boolean | Promise<boolean>;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export class FarmRuntimePluginContainer {
   plugins: FarmRuntimePlugin[] = [];
 
@@ -21,29 +22,36 @@ export class FarmRuntimePluginContainer {
     this.plugins = plugins;
   }
 
-  async hookSerial(
+  // TODO support async later
+  // async hookSerial(
+  hookSerial(
     hookName: Exclude<keyof FarmRuntimePlugin, 'name'>,
     ...args: any[]
-  ): Promise<void> {
+  ): // ): Promise<void> {
+  void {
     for (const plugin of this.plugins) {
       const hook = plugin[hookName];
 
       if (hook) {
-        await hook.apply(plugin, args);
+        // await hook.apply(plugin, args);
+        hook.apply(plugin, args);
       }
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async hookBail(
+  // TODO support async later
+  // async hookBail<T = any>(
+  hookBail<T = any>(
     hookName: Exclude<keyof FarmRuntimePlugin, 'name'>,
     ...args: any[]
-  ): Promise<any> {
+  ): // ): Promise<T> {
+  T {
     for (const plugin of this.plugins) {
       const hook = plugin[hookName];
 
       if (hook) {
-        const result = await hook.apply(plugin, args);
+        // const result = await hook.apply(plugin, args);
+        const result = hook.apply(plugin, args);
 
         if (result) {
           return result;

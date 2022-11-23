@@ -172,12 +172,13 @@ pub struct ScriptModuleMetaData {
 }
 
 #[cache_item]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ModuleSystem {
   EsModule,
   CommonJs,
   // Hybrid of comonjs and esmodule
   Hybrid,
+  Custom(String),
 }
 
 #[cache_item]

@@ -22,8 +22,8 @@ use farmfe_toolkit::{
 
 use self::source_replacer::SourceReplacer;
 
+// mod farm_module_system; // TODO: replace with farm_module_system later, as soon as it's ready
 mod source_replacer;
-mod tla_transformer;
 
 /// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
 /// ```js
@@ -45,7 +45,7 @@ mod tla_transformer;
 ///    }
 /// }
 /// ```
-pub fn render_resource_pot(
+pub fn resource_pot_to_runtime_object_lit(
   resource_pot: &mut ResourcePot,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
@@ -179,7 +179,7 @@ fn wrap_module_ast(ast: SwcModule) -> Function {
     span: DUMMY_SP,
     body,
     is_generator: false,
-    is_async: true,
+    is_async: false, // TODO support async module when we implement top level await
     type_params: None,
     return_type: None,
   }

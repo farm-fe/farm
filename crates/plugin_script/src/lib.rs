@@ -7,17 +7,16 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{Module, ModuleId, ModuleMetaData, ModuleSystem, ScriptModuleMetaData},
+  module::{ModuleId, ModuleMetaData, ModuleSystem, ScriptModuleMetaData},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam, ResolveKind,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
   swc_common::{comments::NoopComments, Mark, GLOBALS},
-  swc_ecma_ast::ModuleItem,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -87,51 +86,15 @@ impl Plugin for FarmPluginScript {
           param.module_type.is_typescript(),
         ));
 
-        // TODO reorganize Hybrid ModuleSystem
-        let module_system = if swc_module
-          .body
-          .iter()
-          .any(|item| matches!(item, ModuleItem::ModuleDecl(_)))
-        {
-          ModuleSystem::EsModule
-        } else {
-          ModuleSystem::CommonJs
-        };
-
         let meta = ScriptModuleMetaData {
           ast: swc_module,
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
-          module_system,
+          module_system: ModuleSystem::Custom(String::from("unknown")),
         };
 
         Ok(Some(ModuleMetaData::Script(meta)))
       })
-    } else {
-      Ok(None)
-    }
-  }
-
-  fn analyze_deps(
-    &self,
-    param: &mut PluginAnalyzeDepsHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
-    let module = param.module;
-
-    if module.module_type.is_script() {
-      let module_ast = &module.meta.as_script().ast;
-      let mut analyzer = DepsAnalyzer::new(
-        module_ast,
-        Mark::from_u32(module.meta.as_script().unresolved_mark),
-      );
-
-      GLOBALS.set(&context.meta.script.globals, || {
-        let deps = analyzer.analyze_deps();
-        param.deps.extend(deps);
-      });
-
-      Ok(Some(()))
     } else {
       Ok(None)
     }
@@ -184,6 +147,63 @@ impl Plugin for FarmPluginScript {
     Ok(Some(()))
   }
 
+  fn analyze_deps(
+    &self,
+    param: &mut PluginAnalyzeDepsHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    let module = param.module;
+
+    if module.module_type.is_script() {
+      let module_ast = &module.meta.as_script().ast;
+      let mut analyzer = DepsAnalyzer::new(
+        module_ast,
+        Mark::from_u32(module.meta.as_script().unresolved_mark),
+      );
+
+      GLOBALS.set(&context.meta.script.globals, || {
+        let deps = analyzer.analyze_deps();
+        param.deps.extend(deps);
+      });
+
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind]
+  fn finalize_module(
+    &self,
+    module_id: &ModuleId,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    let mut module_graph = context.module_graph.write();
+
+    if !module_graph
+      .module(module_id)
+      .unwrap()
+      .module_type
+      .is_script()
+    {
+      return Ok(None);
+    }
+
+    let deps = module_graph.dependencies(module_id);
+
+    if deps.len() > 0 {
+      let module = module_graph.module_mut(module_id).unwrap();
+      let module_system = self.module_system_from_deps(deps.into_iter().map(|d| d.1).collect());
+      module.meta.as_script_mut().module_system = module_system;
+    } else {
+      // default to es module
+      let module = module_graph.module_mut(module_id).unwrap();
+      module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+    }
+
+    Ok(None)
+  }
+
   fn generate_resources(
     &self,
     resource_pot: &mut ResourcePot,
@@ -219,5 +239,35 @@ impl Plugin for FarmPluginScript {
 impl FarmPluginScript {
   pub fn new(_config: &Config) -> Self {
     Self {}
+  }
+
+  pub fn module_system_from_deps(&self, deps: Vec<ResolveKind>) -> ModuleSystem {
+    let mut module_system = ModuleSystem::Custom(String::from("unknown"));
+
+    for resolve_kind in deps {
+      if matches!(resolve_kind, ResolveKind::Import)
+        || matches!(resolve_kind, ResolveKind::DynamicImport)
+      {
+        match module_system {
+          ModuleSystem::EsModule => continue,
+          ModuleSystem::CommonJs => {
+            module_system = ModuleSystem::Hybrid;
+            break;
+          }
+          _ => module_system = ModuleSystem::EsModule,
+        }
+      } else if matches!(resolve_kind, ResolveKind::Require) {
+        match module_system {
+          ModuleSystem::CommonJs => continue,
+          ModuleSystem::EsModule => {
+            module_system = ModuleSystem::Hybrid;
+            break;
+          }
+          _ => module_system = ModuleSystem::CommonJs,
+        }
+      }
+    }
+
+    module_system
   }
 }
