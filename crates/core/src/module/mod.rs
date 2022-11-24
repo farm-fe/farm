@@ -176,7 +176,7 @@ pub struct ScriptModuleMetaData {
 pub enum ModuleSystem {
   EsModule,
   CommonJs,
-  // Hybrid of comonjs and esmodule
+  // Hybrid of commonjs and es-module
   Hybrid,
   Custom(String),
 }

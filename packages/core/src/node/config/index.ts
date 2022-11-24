@@ -40,7 +40,7 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
         path: './dist',
       },
     },
-    userConfig
+    userConfig.compilation
   );
 
   if (!config.runtime) {
