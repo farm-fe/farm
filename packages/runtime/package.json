@@ -6,12 +6,15 @@
     "name": "bright wu",
     "email": "1611331@mail.nankai.edu.cn"
   },
-  "main": "src/module-system.ts",
+  "main": "src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^18.0.1",
     "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@swc/helpers": "^0.4.9"
   }
 }

@@ -352,6 +352,7 @@ dependencies = [
  "swc_common",
  "swc_css_ast",
  "swc_ecma_ast",
+ "swc_ecma_parser",
  "swc_html_ast",
  "thiserror",
 ]
@@ -455,6 +456,7 @@ dependencies = [
  "farmfe_utils",
  "glob",
  "lazy_static",
+ "regex",
  "swc_css_codegen",
  "swc_css_parser",
  "swc_css_visit",

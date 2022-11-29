@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use swc_ecma_ast::EsVersion;
+use swc_ecma_parser::{EsConfig, TsConfig};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "camelCase", default)]
@@ -12,12 +14,13 @@ pub struct Config {
   pub resolve: ResolveConfig,
   pub external: Vec<String>,
   pub runtime: RuntimeConfig,
+  pub script: ScriptConfig,
 }
 
 impl Default for Config {
   fn default() -> Self {
     Self {
-      input: HashMap::new(),
+      input: HashMap::from([("index".to_string(), "./index.html".to_string())]),
       root: std::env::current_dir()
         .unwrap()
         .to_string_lossy()
@@ -27,6 +30,7 @@ impl Default for Config {
       resolve: ResolveConfig::default(),
       external: vec![],
       runtime: Default::default(),
+      script: Default::default(),
     }
   }
 }
@@ -61,6 +65,18 @@ impl Default for Mode {
   fn default() -> Self {
     Self::Development
   }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct ScriptConfig {
+  pub target: EsVersion,
+  pub parser: ScriptParserConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct ScriptParserConfig {
+  pub es_config: EsConfig,
+  pub ts_config: TsConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

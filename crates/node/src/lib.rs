@@ -120,7 +120,10 @@ impl JsCompiler {
     let mut result = HashMap::new();
 
     for resource in resources.values() {
-      result.insert(resource.name.clone(), resource.bytes.clone());
+      // only write expose non-emitted resource
+      if !resource.emitted {
+        result.insert(resource.name.clone(), resource.bytes.clone());
+      }
     }
 
     result

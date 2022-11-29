@@ -12,7 +12,9 @@ use crate::{
   config::Config,
   context::CompilationContext,
   error::Result,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap, ModuleMetaData, ModuleType},
+  module::{
+    module_graph::ModuleGraph, module_group::ModuleGroupMap, ModuleId, ModuleMetaData, ModuleType,
+  },
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
 };
@@ -138,6 +140,8 @@ impl PluginDriver {
   hook_serial!(process_module, &mut PluginProcessModuleHookParam);
 
   hook_serial!(analyze_deps, &mut PluginAnalyzeDepsHookParam);
+
+  hook_serial!(finalize_module, &ModuleId);
 
   hook_parallel!(build_end);
 

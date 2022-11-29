@@ -5,7 +5,7 @@ use farmfe_toolkit::{
 
 #[test]
 fn load_package_json() {
-  fixture("tests/fixtures/resolve/**/index.*", |file| {
+  fixture("tests/fixtures/resolve/**/index.*", |file, _| {
     let dir = file.parent().unwrap();
     let main = dir.join("src").join("main.ts");
 

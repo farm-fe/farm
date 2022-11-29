@@ -61,7 +61,7 @@ impl Compiler {
   }
 
   pub fn update(&self, paths: Vec<String>) -> Result<UpdateOutput> {
-    Ok(UpdateOutput {})
+    Ok(UpdateOutput::default())
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {

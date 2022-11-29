@@ -1,16 +1,18 @@
 import {
   Compiler as BindingCompiler,
+  Config,
   JsUpdateResult,
 } from '../../../binding/index';
 import { normalizeUserCompilationConfig, UserConfig } from '../config';
 
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
+  config: Config;
 
   constructor(config: UserConfig) {
-    this._bindingCompiler = new BindingCompiler(
-      normalizeUserCompilationConfig(config)
-    );
+    this.config = normalizeUserCompilationConfig(config);
+
+    this._bindingCompiler = new BindingCompiler(this.config);
   }
 
   async compile() {

@@ -10,7 +10,7 @@ interface CompilationContext {
 type Callback<P, R> = (param: P, context: CompilationContext) => Promise<R> | R;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
-export interface Plugin {
+export interface JsPlugin {
   resolve: JsPluginHook<
     {
       importers: string[];
@@ -22,3 +22,5 @@ export interface Plugin {
 
   // load: JsPluginHook<{ filters: { ids: string[] }}>;
 }
+
+export { rustPluginResolver } from './rustPluginResolver';

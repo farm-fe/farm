@@ -6,7 +6,7 @@ use farmfe_toolkit::testing_helpers::fixture;
 fn resolve_relative_specifier() {
   fixture(
     "tests/fixtures/resolve-relative-specifier/**/index.*",
-    |file| {
+    |file, _| {
       let resolver = Resolver::new(ResolveConfig::default());
       let cwd = file.parent().unwrap().to_path_buf();
 
@@ -25,7 +25,7 @@ fn resolve_relative_specifier() {
 fn resolve_node_modules_normal() {
   fixture(
     "tests/fixtures/resolve-node-modules/normal/index.ts",
-    |file| {
+    |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
 

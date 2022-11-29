@@ -9,8 +9,9 @@ use farmfe_core::{
   module::{ModuleId, ModuleMetaData, ModuleSystem},
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
+    Plugin, PluginAnalyzeDepsHookResultEntry, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginProcessModuleHookParam, PluginResolveHookParam,
+    PluginResolveHookResult, ResolveKind,
   },
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -19,17 +20,21 @@ use farmfe_core::{
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    CallExpr, Expr, ExprOrSpread, ExprStmt, ImportDecl, ImportSpecifier, Lit, Module as SwcModule,
-    ModuleDecl, ModuleItem, Stmt, Str,
+    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
+    Str,
   },
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
-  script::{codegen_module, merge_module_asts_of_resource_pot, module_type_from_id, parse_module},
-  swc_ecma_parser::{EsConfig, Syntax},
+  script::{codegen_module, module_type_from_id, parse_module},
+  swc_ecma_parser::Syntax,
 };
 
+use render_resource_pot::*;
+
 const RUNTIME_SUFFIX: &str = ".farm-runtime";
+
+mod render_resource_pot;
 
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.
@@ -50,10 +55,19 @@ impl Plugin for FarmPluginRuntime {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    // runtime package entry file
     config.input.insert(
       "runtime".to_string(),
       format!("{}{}", config.runtime.path, RUNTIME_SUFFIX),
     );
+    // runtime plugin entry file
+    for plugin in &config.runtime.plugins {
+      config
+        .input
+        .insert(plugin.clone(), format!("{}{}", plugin, RUNTIME_SUFFIX));
+    }
+
+    // TODO make sure all runtime modules are in the same ModuleBucket
     Ok(Some(()))
   }
 
@@ -66,7 +80,15 @@ impl Plugin for FarmPluginRuntime {
     // avoid cyclic resolve
     if matches!(&hook_context.caller, Some(c) if c == "FarmPluginRuntime") {
       Ok(None)
-    } else if param.source.ends_with(RUNTIME_SUFFIX) {
+    } else if param.source.ends_with(RUNTIME_SUFFIX) // if the source is a runtime module or its importer is a runtime module, then resolve it to the runtime module
+      || (param.importer.is_some()
+        && param
+          .importer
+          .as_ref()
+          .unwrap()
+          .relative_path()
+          .ends_with(RUNTIME_SUFFIX))
+    {
       let ori_source = param.source.replace(RUNTIME_SUFFIX, "");
       let resolve_result = context.plugin_driver.resolve(
         &PluginResolveHookParam {
@@ -122,31 +144,74 @@ impl Plugin for FarmPluginRuntime {
     } else {
       return Ok(None);
     }
+    // TODO insert runtime plugin as runtime entry's dependency too.
 
-    let ast = &mut param.meta.as_script_mut().ast;
-    let create_import_decl = |src: &str| ImportDecl {
-      span: DUMMY_SP,
-      specifiers: vec![],
-      src: Str {
-        span: DUMMY_SP,
-        value: src.into(),
-        raw: None,
-      },
-      type_only: false,
-      asserts: None,
-    };
-    ast.body.insert(
-      0,
-      ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
-        "@swc/helpers/lib/_interop_require_wildcard.js",
-      ))),
-    );
-    ast.body.insert(
-      1,
-      ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
-        "@swc/helpers/lib/_interop_require_default.js",
-      ))),
-    );
+    // let ast = &mut param.meta.as_script_mut().ast;
+    // let create_import_decl = |src: &str| ImportDecl {
+    //   span: DUMMY_SP,
+    //   specifiers: vec![],
+    //   src: Str {
+    //     span: DUMMY_SP,
+    //     value: src.into(),
+    //     raw: None,
+    //   },
+    //   type_only: false,
+    //   asserts: None,
+    // };
+    // ast.body.insert(
+    //   0,
+    //   ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
+    //     "@swc/helpers/lib/_interop_require_wildcard.js",
+    //   ))),
+    // );
+    // ast.body.insert(
+    //   1,
+    //   ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
+    //     "@swc/helpers/lib/_interop_require_default.js",
+    //   ))),
+    // );
+
+    Ok(Some(()))
+  }
+
+  fn analyze_deps(
+    &self,
+    param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if let ModuleMetaData::Script(script) = &param.module.meta {
+      // insert swc cjs module helper as soon as it has esm import
+      if script
+        .ast
+        .body
+        .iter()
+        .any(|item| matches!(item, ModuleItem::ModuleDecl(ModuleDecl::Import(_))))
+      {
+        if !param
+          .deps
+          .iter()
+          .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_wildcard.js")
+        {
+          param.deps.push(PluginAnalyzeDepsHookResultEntry {
+            kind: ResolveKind::Import,
+            source: "@swc/helpers/lib/_interop_require_wildcard.js".to_string(),
+          });
+        }
+
+        if !param
+          .deps
+          .iter()
+          .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_default.js")
+        {
+          param.deps.push(PluginAnalyzeDepsHookResultEntry {
+            kind: ResolveKind::Import,
+            source: "@swc/helpers/lib/_interop_require_default.js".to_string(),
+          });
+        }
+      }
+    } else {
+      return Ok(None);
+    }
 
     Ok(Some(()))
   }
@@ -161,7 +226,7 @@ impl Plugin for FarmPluginRuntime {
     for resource_pot in resource_pot_graph.resource_pots_mut() {
       if resource_pot.id.to_string().ends_with(RUNTIME_SUFFIX) {
         let rendered_resource_pot_ast =
-          merge_module_asts_of_resource_pot(resource_pot, &mut *module_graph, context);
+          resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context);
 
         #[cfg(not(windows))]
         let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
@@ -171,7 +236,8 @@ impl Plugin for FarmPluginRuntime {
         let mut runtime_ast = parse_module(
           "farm-internal-minimal-runtime",
           minimal_runtime,
-          Syntax::Es(EsConfig::default()),
+          Syntax::Es(context.config.script.parser.es_config.clone()),
+          context.config.script.target.clone(),
           context.meta.script.cm.clone(),
         )?;
 
@@ -198,6 +264,9 @@ impl Plugin for FarmPluginRuntime {
 
         resource_pot.resource_pot_type = ResourcePotType::Runtime;
 
+        // TODO transform async function if target is lower than es2017, should not externalize swc helpers
+        // This may cause async generator duplicated but it's ok for now. We can fix it later.
+
         self.runtime_ast.lock().replace(runtime_ast);
         break;
       }
@@ -215,7 +284,7 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
       let rendered_resource_pot_ast =
-        merge_module_asts_of_resource_pot(resource_pot, &*module_graph, context);
+        resource_pot_to_runtime_object_lit(resource_pot, &*module_graph, context);
 
       #[cfg(not(windows))]
       let wrapper = include_str!("./js-runtime/resource-wrapper.js");
@@ -225,7 +294,8 @@ impl Plugin for FarmPluginRuntime {
       let mut wrapper_ast = parse_module(
         "farm-internal-resource-wrapper",
         wrapper,
-        Syntax::Es(EsConfig::default()),
+        Syntax::Es(context.config.script.parser.es_config.clone()),
+        context.config.script.target.clone(),
         context.meta.script.cm.clone(),
       )?;
 
@@ -262,12 +332,15 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
       let runtime_ast = self.runtime_ast.lock();
       let runtime_ast = runtime_ast.as_ref().unwrap();
-      let bytes = codegen_module(runtime_ast, context.meta.script.cm.clone()).map_err(|e| {
-        CompilationError::GenerateResourcesError {
-          name: resource_pot.id.to_string(),
-          ty: resource_pot.resource_pot_type.clone(),
-          source: Some(Box::new(e)),
-        }
+      let bytes = codegen_module(
+        runtime_ast,
+        context.config.script.target.clone(),
+        context.meta.script.cm.clone(),
+      )
+      .map_err(|e| CompilationError::GenerateResourcesError {
+        name: resource_pot.id.to_string(),
+        ty: resource_pot.resource_pot_type.clone(),
+        source: Some(Box::new(e)),
       })?;
       // set emitted property of Runtime to true by default, as it will be generated and injected when generating entry resources,
       // other plugins wants to modify this behavior in write_resources hook.
@@ -304,7 +377,8 @@ impl Plugin for FarmPluginRuntime {
               r#"const entry = globalThis.__acquire_farm_module_system__().require("{}").default;export default entry;"#,
               entry_module_id.id(context.config.mode.clone())
             ),
-            Syntax::Es(Default::default()),
+            Syntax::Es(context.config.script.parser.es_config.clone()),
+            context.config.script.target.clone(),
             context.meta.script.cm.clone(),
           )?;
 

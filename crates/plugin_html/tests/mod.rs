@@ -13,7 +13,7 @@ use farmfe_toolkit::testing_helpers::fixture;
 
 #[test]
 fn html_build_stage() {
-  fixture("tests/fixtures/**/*.html", |file| {
+  fixture("tests/fixtures/**/*.html", |file, _| {
     let context = Arc::new(CompilationContext::new(Default::default(), vec![]).unwrap());
     let hook_context = PluginHookContext {
       caller: None,

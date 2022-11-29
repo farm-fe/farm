@@ -27,8 +27,13 @@ impl SymlinksAnalyzer {
 
     while current.parent().is_some() {
       if current.is_symlink() {
-        real_path = RelativePath::new(current.read_link().unwrap().to_str().unwrap())
-          .to_logical_path(current.parent().unwrap());
+        if cfg!(windows) {
+          real_path = current.read_link().unwrap();
+        } else {
+          real_path = RelativePath::new(current.read_link().unwrap().to_str().unwrap())
+            .to_logical_path(current.parent().unwrap());
+        }
+
         break;
       }
 

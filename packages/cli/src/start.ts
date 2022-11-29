@@ -9,7 +9,9 @@ export async function start(): Promise<void> {
     },
   });
 
-  const devServer = new DevServer(compiler, {});
+  const devServer = new DevServer(compiler, {
+    writeToDisk: true,
+  });
   devServer.listen();
 
   // compiler.compile();

@@ -9,6 +9,11 @@
   "bin": {
     "farm": "./bin/farm.mjs"
   },
+  "files": [
+    "dist",
+    "bin",
+    "templates"
+  ],
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
     "build": "tsc",
@@ -20,6 +25,8 @@
   },
   "dependencies": {
     "@farmfe/core": "workspace:^0.0.0",
-    "cac": "^6.7.14"
+    "cac": "^6.7.14",
+    "enquirer": "^2.3.6",
+    "walkdir": "^0.4.1"
   }
 }

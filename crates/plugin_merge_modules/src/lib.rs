@@ -78,6 +78,11 @@ impl Plugin for FarmPluginMergeModules {
       for module_id in g.modules() {
         let module = module_graph.module_mut(module_id).unwrap();
 
+        // TODO remove this after the partial bundle is implemented
+        if module.module_type.is_script() {
+          module.module_type = ModuleType::Js;
+        }
+
         let resource_pot = if module_type_resource_pot_map.contains_key(&module.module_type) {
           let resource_pot = module_type_resource_pot_map
             .get_mut(&module.module_type)

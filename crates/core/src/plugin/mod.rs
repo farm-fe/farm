@@ -3,7 +3,6 @@ use std::{any::Any, collections::HashMap, sync::Arc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  common::PackageJsonInfo,
   config::Config,
   context::CompilationContext,
   error::Result,
@@ -80,6 +79,14 @@ pub trait Plugin: Any + Send + Sync {
   fn analyze_deps(
     &self,
     _param: &mut PluginAnalyzeDepsHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn finalize_module(
+    &self,
+    _module_id: &ModuleId,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)

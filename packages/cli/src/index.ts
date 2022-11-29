@@ -3,6 +3,7 @@ import path from 'path';
 import cac from 'cac';
 
 import { start } from './start';
+import { COMMANDS } from './plugin';
 
 const cli = cac();
 
@@ -16,4 +17,24 @@ cli
     start();
   });
 
-cli.parse();
+const pluginCmd = cli.command(
+  'plugin <command>',
+  'Commands for manage plugins',
+  {
+    allowUnknownOptions: true,
+  }
+);
+pluginCmd.action((command: 'build' | 'create', args: any) => {
+  COMMANDS[command](args);
+});
+
+pluginCmd.cli.help();
+
+cli.help();
+
+try {
+  cli.parse();
+} catch (e) {
+  // TODO error handling
+  console.log(e);
+}

@@ -22,12 +22,14 @@ use farmfe_core::{
 
 use crate::{
   build::{
-    analyze_deps::analyze_deps, load::load, parse::parse, resolve::resolve, transform::transform,
+    analyze_deps::analyze_deps, finalize_module::finalize_module, load::load, parse::parse,
+    resolve::resolve, transform::transform,
   },
   Compiler,
 };
 
 mod analyze_deps;
+mod finalize_module;
 mod load;
 mod parse;
 mod resolve;
@@ -211,6 +213,10 @@ impl Compiler {
         "analyzed deps {} -> {:?}",
         resolve_result.resolved_path, analyze_deps_result
       );
+
+      // ================ Finalize Module Start ===============
+      call_and_catch_error!(finalize_module, &module_id, &context);
+      // ================ Finalize Module End ===============
 
       // resolving dependencies recursively in the thread pool
       for (order, dep) in analyze_deps_result.into_iter().enumerate() {

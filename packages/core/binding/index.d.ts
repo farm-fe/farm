@@ -94,7 +94,7 @@ export interface Config {
     resolve?: {
       extensions?: string[];
       alias?: Record<string, string>;
-      main_fields?: string[];
+      mainFields?: string[];
       conditions?: string[];
       symlinks: boolean;
     };
@@ -105,7 +105,49 @@ export interface Config {
       path: string;
       plugins?: string[];
     };
+    script?: {
+      // specify target es version
+      target?:
+        | 'es3'
+        | 'es5'
+        | 'es2015'
+        | 'es2016'
+        | 'es2017'
+        | 'es2018'
+        | 'es2019'
+        | 'es2020'
+        | 'es2021'
+        | 'es2022';
+      // config swc parser
+      parser?: {
+        esConfig?: {
+          jsx?: boolean;
+          fnBind: boolean;
+          // Enable decorators.
+          decorators: boolean;
+
+          // babel: `decorators.decoratorsBeforeExport`
+          //
+          // Effective only if `decorator` is true.
+          decoratorsBeforeExport: boolean;
+          exportDefaultFrom: boolean;
+          // Stage 3.
+          importAssertions: boolean;
+          privateInObject: boolean;
+          allowSuperOutsideMethod: boolean;
+          allowReturnOutsideFunction: boolean;
+        };
+        tsConfig?: {
+          tsx: boolean;
+          decorators: boolean;
+          /// `.d.ts`
+          dts: boolean;
+          noEarlyErrors: boolean;
+        };
+      };
+    };
   };
   jsPlugins?: object[];
-  rustPlugins?: string[];
+  // [rustPluginFilePath, jsonStringifiedOptions]
+  rustPlugins?: [string, string][];
 }
