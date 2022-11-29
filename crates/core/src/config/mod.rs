@@ -20,7 +20,7 @@ pub struct Config {
 impl Default for Config {
   fn default() -> Self {
     Self {
-      input: HashMap::new(),
+      input: HashMap::from([("index".to_string(), "./index.html".to_string())]),
       root: std::env::current_dir()
         .unwrap()
         .to_string_lossy()
