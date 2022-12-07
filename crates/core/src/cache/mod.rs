@@ -24,6 +24,11 @@ impl CacheManager {
     let hm = self.handled_modules.lock();
     hm.contains(id)
   }
+
+  pub fn clear_handled_module(&self, id: &str) {
+    let mut hm = self.handled_modules.lock();
+    hm.remove(id);
+  }
 }
 
 impl Default for CacheManager {

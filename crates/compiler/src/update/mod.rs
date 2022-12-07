@@ -1,14 +1,11 @@
 use std::sync::{mpsc::Sender, Arc};
 
 use farmfe_core::{
-  context::CompilationContext,
-  error::CompilationError,
-  module::ModuleId,
-  plugin::{PluginHookContext, PluginResolveHookParam},
-  rayon::ThreadPool,
+  context::CompilationContext, error::CompilationError, module::ModuleId,
+  plugin::PluginResolveHookParam, rayon::ThreadPool,
 };
 
-use crate::{build::resolve::resolve, Compiler};
+use crate::{build::BuildModuleResult, Compiler};
 use farmfe_core::error::Result;
 
 /// The output after the updating process
@@ -32,6 +29,9 @@ pub enum UpdateType {
 impl Compiler {
   pub fn update(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateOutput> {
     for (path, update_type) in paths {
+      // clear cache first
+      self.context.cache_manager.clear_handled_module(&path);
+
       match update_type {
         UpdateType::Added => {
           return Err(farmfe_core::error::CompilationError::GenericError(
@@ -61,9 +61,28 @@ impl Compiler {
     resolve_param: PluginResolveHookParam,
     context: Arc<CompilationContext>,
     err_sender: Sender<CompilationError>,
+    order: Option<usize>,
   ) {
     thread_pool.spawn(move || {
-      // let (module, deps) = Self::build_module(&resolve_param, &context, err_sender);
+      let build_status = Self::build_module(&resolve_param, &context, err_sender.clone());
+
+      match build_status {
+        crate::build::BuildModuleStatus::Cached(_) => { /* ignore cached module, if this module should be updated, remember to clean cache first */ },
+        crate::build::BuildModuleStatus::Error => { /* error is already send to main thread, ignore it */ },
+        crate::build::BuildModuleStatus::Success(box BuildModuleResult { module, deps }) => {
+          let module_id = module.id.clone();
+          Self::add_or_update_module(module, &resolve_param.kind, &context);
+
+          // if order is exist, means this is an new edge, add this edge to module graph
+          if let Some(order) = order {
+            Self::add_edge(&resolve_param, module_id, order, err_sender.clone(), &context);
+          }
+
+          for dep in deps {
+            // if 
+          }
+        },
+    }
     });
   }
 }

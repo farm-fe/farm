@@ -139,10 +139,21 @@ impl ModuleGraph {
         to.relative_path()
       ))
     })?;
-
-    self.g.add_edge(*from, *to, edge_info);
+    // using update_edge instead of add_edge to avoid duplicated edges, see https://docs.rs/petgraph/latest/petgraph/graph/struct.Graph.html#method.update_edge
+    self.g.update_edge(*from, *to, edge_info);
 
     Ok(())
+  }
+
+  pub fn edge_info(&self, from: &ModuleId, to: &ModuleId) -> Option<&ModuleGraphEdge> {
+    let from = self.id_index_map.get(from).unwrap();
+    let to = self.id_index_map.get(to).unwrap();
+
+    if let Some(edge_index) = self.g.find_edge(*from, *to) {
+      self.g.edge_weight(edge_index)
+    } else {
+      None
+    }
   }
 
   /// get dependencies of the specific module, sorted by the order of the edge.

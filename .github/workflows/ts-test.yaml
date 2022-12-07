@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - "packages/**"
+      - "crates/**"
 
 jobs:
   call-rust-build:

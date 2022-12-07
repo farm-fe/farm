@@ -38,9 +38,9 @@ pub(crate) const FARM_EMPTY_MODULE: &str = "farmfe_empty_module";
 
 pub(crate) struct BuildModuleResult {
   /// The built module
-  module: Module,
+  pub module: Module,
   /// The dependencies of the built module
-  deps: Vec<PluginAnalyzeDepsHookResultEntry>,
+  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
 pub(crate) enum BuildModuleStatus {
@@ -276,7 +276,7 @@ impl Compiler {
     });
   }
 
-  fn add_edge(
+  pub(crate) fn add_edge(
     resolve_param: &PluginResolveHookParam,
     module_id: ModuleId,
     order: usize,
@@ -301,7 +301,11 @@ impl Compiler {
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  fn add_or_update_module(module: Module, kind: &ResolveKind, context: &CompilationContext) {
+  pub(crate) fn add_or_update_module(
+    module: Module,
+    kind: &ResolveKind,
+    context: &CompilationContext,
+  ) {
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
