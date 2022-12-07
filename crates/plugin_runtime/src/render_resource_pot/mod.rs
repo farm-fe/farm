@@ -179,7 +179,7 @@ fn wrap_module_ast(ast: SwcModule) -> Function {
     span: DUMMY_SP,
     body,
     is_generator: false,
-    is_async: false, // TODO support async module when we implement top level await
+    is_async: false,
     type_params: None,
     return_type: None,
   }

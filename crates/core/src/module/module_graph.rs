@@ -99,10 +99,25 @@ impl ModuleGraph {
     self.g.node_weights_mut().into_iter().collect()
   }
 
+  pub fn has_module(&self, module_id: &ModuleId) -> bool {
+    self.id_index_map.contains_key(module_id)
+  }
+
+  pub fn update_module(&mut self, module: Module) {
+    let id = module.id.clone();
+    let index = self.id_index_map.get(&id).unwrap();
+    self.g[*index] = module;
+  }
+
   pub fn add_module(&mut self, module: Module) {
     let id = module.id.clone();
     let index = self.g.add_node(module);
     self.id_index_map.insert(id, index);
+  }
+
+  pub fn remove_module(&mut self, module_id: &ModuleId) -> Module {
+    let index = self.id_index_map.get(module_id).unwrap();
+    self.g.remove_node(*index).unwrap()
   }
 
   pub fn add_edge(
@@ -277,7 +292,7 @@ mod tests {
   use hashbrown::HashSet;
 
   use crate::{
-    module::{Module, ModuleId, ModuleType},
+    module::{Module, ModuleId},
     plugin::ResolveKind,
   };
 

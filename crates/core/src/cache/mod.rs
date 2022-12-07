@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 
-use hashbrown::HashMap;
 use parking_lot::Mutex;
-use serde_json::Value;
 
 /// All cache related operation are charged by [CacheManager]
 pub struct CacheManager {

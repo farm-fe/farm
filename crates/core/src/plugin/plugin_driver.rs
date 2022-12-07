@@ -4,16 +4,17 @@ use hashbrown::HashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-  PluginParseHookParam, PluginProcessModuleHookParam, PluginResolveHookParam,
-  PluginResolveHookResult, PluginTransformHookParam,
+  Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
+  PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+  PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
 };
 use crate::{
   config::Config,
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph, module_group::ModuleGroupMap, ModuleId, ModuleMetaData, ModuleType,
+    module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleId, ModuleMetaData,
+    ModuleType,
   },
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
@@ -141,7 +142,7 @@ impl PluginDriver {
 
   hook_serial!(analyze_deps, &mut PluginAnalyzeDepsHookParam);
 
-  hook_serial!(finalize_module, &ModuleId);
+  hook_serial!(finalize_module, &mut PluginFinalizeModuleHookParam);
 
   hook_parallel!(build_end);
 

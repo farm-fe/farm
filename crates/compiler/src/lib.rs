@@ -1,11 +1,12 @@
 #![deny(clippy::all)]
+#![feature(box_patterns)]
 
 use std::sync::Arc;
 
 use farmfe_core::{
   config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
 };
-use update::UpdateOutput;
+use update::{UpdateOutput, UpdateType};
 
 pub mod build;
 pub mod generate;
@@ -39,28 +40,18 @@ impl Compiler {
     })
   }
 
+  /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
     // triggering build stage
     self.build()?;
-
-    let module_graph = self.context.module_graph.read();
-    let modules = module_graph.modules();
-    println!("module graph nodes length: {}", modules.len());
-
-    // for m in modules {
-    //   if m.id.path().contains("index.ts") {
-    //     let dep = module_graph.get_dep_by_source(&m.id, "./src/main");
-    //     println!("dep: {:?}", dep);
-    //   }
-    // }
-    drop(module_graph);
 
     self.generate()?;
 
     self.context.plugin_driver.finish(&Stats {}, &self.context)
   }
 
-  pub fn update(&self, paths: Vec<String>) -> Result<UpdateOutput> {
+  /// Recompile the project based on the changed files
+  pub fn re_compile(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateOutput> {
     Ok(UpdateOutput::default())
   }
 

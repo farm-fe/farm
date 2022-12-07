@@ -86,7 +86,7 @@ pub trait Plugin: Any + Send + Sync {
 
   fn finalize_module(
     &self,
-    _module_id: &ModuleId,
+    _param: &mut PluginFinalizeModuleHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -212,7 +212,7 @@ pub enum ResolveKind {
 }
 
 impl ResolveKind {
-  /// dynamic if self is [ResolveKind::DynamicImport] or [ResolveKind::Custom("dynamic:xxx")]
+  /// dynamic if self is [ResolveKind::DynamicImport] or [ResolveKind::Custom("dynamic:xxx")] (dynamic means the module is loaded dynamically, for example, fetch from network)
   /// used when analyzing module groups
   pub fn is_dynamic(&self) -> bool {
     matches!(self, ResolveKind::DynamicImport)
@@ -221,7 +221,7 @@ impl ResolveKind {
 }
 
 /// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PluginHookContext {
   /// if this hook is called by the compiler, its value is [None]
   /// if this hook is called by other plugins, its value is set by the caller plugins.
@@ -329,4 +329,9 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
 pub struct PluginAnalyzeDepsHookResultEntry {
   pub source: String,
   pub kind: ResolveKind,
+}
+
+pub struct PluginFinalizeModuleHookParam<'a> {
+  pub module: &'a mut Module,
+  pub deps: &'a Vec<PluginAnalyzeDepsHookResultEntry>,
 }
