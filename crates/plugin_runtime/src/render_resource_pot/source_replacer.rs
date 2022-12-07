@@ -11,9 +11,12 @@ use farmfe_core::{
   config::Mode,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str, AwaitExpr, ArrayLit, MemberExpr, MemberProp},
+  swc_ecma_ast::{AwaitExpr, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
-use farmfe_toolkit::{swc_ecma_visit::{VisitMut, VisitMutWith}, script::is_commonjs_require};
+use farmfe_toolkit::{
+  script::is_commonjs_require,
+  swc_ecma_visit::{VisitMut, VisitMutWith},
+};
 
 /// replace all `require('./xxx')` to the actual id and transform require('./xxx') to async. for example:
 /// ```js
@@ -51,17 +54,7 @@ impl<'a> SourceReplacer<'a> {
 impl<'a> VisitMut for SourceReplacer<'a> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     if let Expr::Call(call_expr) = expr {
-      let is_replaced = self.replace_source_with_id(call_expr);
-
-      if matches!(is_replaced, SourceReplaceResult::Replaced) {
-        // if this module is a commonjs module, transform require('xxx') to `await require('xxx')`.
-        if matches!(self.module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid) {
-          *expr = Expr::Await(AwaitExpr {
-            span: DUMMY_SP,
-            arg: Box::new(expr.clone()),
-          });
-        }
-      }
+      self.replace_source_with_id(call_expr);
     } else {
       expr.visit_mut_children_with(self);
     }

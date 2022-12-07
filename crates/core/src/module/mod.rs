@@ -61,13 +61,6 @@ impl Module {
   }
 }
 
-pub struct ModuleBasicInfo {
-  pub module_type: ModuleType,
-  pub side_effects: bool,
-  pub source_map_chain: Vec<String>,
-  pub external: bool,
-}
-
 /// Module meta data shared by core plugins through the compilation
 /// Meta data which is not shared by core plugins should be stored in [ModuleMetaData::Custom]
 #[cache_item]

@@ -7,10 +7,11 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{ModuleId, ModuleMetaData, ModuleSystem, ScriptModuleMetaData},
+  module::{ModuleMetaData, ModuleSystem, ScriptModuleMetaData},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam, ResolveKind,
+    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+    ResolveKind,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -175,30 +176,20 @@ impl Plugin for FarmPluginScript {
   /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind]
   fn finalize_module(
     &self,
-    module_id: &ModuleId,
-    context: &Arc<CompilationContext>,
+    param: &mut PluginFinalizeModuleHookParam,
+    _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    let mut module_graph = context.module_graph.write();
-
-    if !module_graph
-      .module(module_id)
-      .unwrap()
-      .module_type
-      .is_script()
-    {
+    if !param.module.module_type.is_script() {
       return Ok(None);
     }
 
-    let deps = module_graph.dependencies(module_id);
-
-    if deps.len() > 0 {
-      let module = module_graph.module_mut(module_id).unwrap();
-      let module_system = self.module_system_from_deps(deps.into_iter().map(|d| d.1).collect());
-      module.meta.as_script_mut().module_system = module_system;
+    if param.deps.len() > 0 {
+      let module_system =
+        self.module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
+      param.module.meta.as_script_mut().module_system = module_system;
     } else {
       // default to es module
-      let module = module_graph.module_mut(module_id).unwrap();
-      module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+      param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
     }
 
     Ok(None)

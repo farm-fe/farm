@@ -10,8 +10,8 @@ use farmfe_core::{
   config::ScriptParserConfig,
   error::{CompilationError, Result},
   module::ModuleType,
-  swc_common::{FileName, SourceMap, Mark},
-  swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt, CallExpr, Callee, Expr, Ident},
+  swc_common::{FileName, Mark, SourceMap},
+  swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Module as SwcModule, Stmt},
 };
 
 /// parse the content of a module to [SwcModule] ast.
