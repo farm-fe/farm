@@ -12,3 +12,4 @@ farmfe_plugin_runtime = { path = "../plugin_runtime" }
 farmfe_plugin_html = { path = "../plugin_html" }
 farmfe_plugin_css = { path = "../plugin_css" }
 farmfe_toolkit = { path = "../toolkit" }
+farmfe_utils = { path = "../utils" }

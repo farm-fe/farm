@@ -52,7 +52,9 @@ impl Compiler {
 
   /// Recompile the project based on the changed files
   pub fn re_compile(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateOutput> {
-    Ok(UpdateOutput::default())
+    // self.context.plugin_driver.update_start(&self.context)?;
+    self.update(paths)
+    // self.context.plugin_driver.update_end(&self.context)?;
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {

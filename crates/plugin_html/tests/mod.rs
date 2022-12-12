@@ -33,11 +33,7 @@ fn html_build_stage() {
       .unwrap()
       .unwrap();
 
-    let module_id = ModuleId::new(
-      file.to_str().unwrap(),
-      &HashMap::new(),
-      &context.config.root,
-    );
+    let module_id = ModuleId::new(file.to_str().unwrap(), &context.config.root);
     let html_module_meta_data = html_plugin
       .parse(
         &PluginParseHookParam {

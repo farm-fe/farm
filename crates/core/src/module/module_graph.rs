@@ -163,7 +163,7 @@ impl ModuleGraph {
   /// import b from './b';
   /// ```
   /// return `['module c', 'module b']`, ensure the order of original imports.
-  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind)> {
+  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind, String)> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -180,11 +180,12 @@ impl ModuleGraph {
         self.g[edge_index].order,
         self.g[node_index].id.clone(),
         self.g[edge_index].kind.clone(),
+        self.g[edge_index].source.clone(),
       ));
     }
 
     deps.sort_by_key(|dep| dep.0);
-    deps.into_iter().map(|dep| (dep.1, dep.2)).collect()
+    deps.into_iter().map(|dep| (dep.1, dep.2, dep.3)).collect()
   }
 
   /// get dependent of the specific module.
@@ -237,7 +238,7 @@ impl ModuleGraph {
       let mut deps = graph.dependencies(entry);
       deps.reverse(); // reverse it as we use post order traverse
 
-      for (dep, _) in &deps {
+      for (dep, _, _s) in &deps {
         dfs(dep, graph, stack, visited, result, cyclic)
       }
 

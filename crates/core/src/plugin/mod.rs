@@ -207,6 +207,8 @@ pub enum ResolveKind {
   ScriptSrc,
   /// `<link href="index.css" />` of html
   LinkHref,
+  /// Hmr update
+  HmrUpdate,
   /// Custom ResolveKind, e.g. `const worker = new Worker(new Url("worker.js"))` of a web worker
   Custom(String),
 }

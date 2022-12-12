@@ -36,7 +36,7 @@ pub enum CompilationError {
   },
 
   #[error("Hook `module_parsed` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}.")]
-  ModuleParsedError {
+  ProcessModuleError {
     resolved_path: String,
     #[source]
     source: Option<Box<dyn Error + Send + Sync>>,
