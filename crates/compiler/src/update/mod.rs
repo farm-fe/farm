@@ -19,9 +19,12 @@ mod update_context;
 
 /// The output after the updating process
 #[derive(Debug, Default)]
-pub struct UpdateOutput {
-  pub added_or_updated_module_ids: Vec<ModuleId>,
+pub struct UpdateResult {
+  pub added_module_ids: Vec<ModuleId>,
+  pub updated_module_ids: Vec<ModuleId>,
   pub removed_module_ids: Vec<ModuleId>,
+  /// Javascript module map string, the key is the module id, the value is the module function
+  /// This code string should be returned to the client side as MIME type `application/javascript`
   pub resources: String,
 }
 
@@ -44,7 +47,7 @@ enum ResolveModuleResult {
 }
 
 impl Compiler {
-  pub fn update(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateOutput> {
+  pub fn update(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateResult> {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
     let update_context = Arc::new(UpdateContext::new());
 
@@ -59,7 +62,7 @@ impl Compiler {
         UpdateType::Updated => {
           let mut source = relative(&self.context.config.root, &path).to_string();
           // if the source is not a relative path, we need to add a `./` prefix
-          if !source.starts_with(".") {
+          if !source.starts_with("./") || !source.starts_with("../") {
             source = format!("./{}", source);
           }
 
@@ -92,7 +95,7 @@ impl Compiler {
       return Err(err);
     }
 
-    Ok(UpdateOutput::default())
+    Ok(UpdateResult::default())
   }
 
   /// Resolving, loading, transforming and parsing a module in a separate thread.

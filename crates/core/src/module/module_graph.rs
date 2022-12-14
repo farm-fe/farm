@@ -3,6 +3,7 @@ use hashbrown::{HashMap, HashSet};
 use petgraph::{
   graph::{DefaultIx, NodeIndex},
   stable_graph::StableDiGraph,
+  visit::{Bfs, Dfs},
   EdgeDirection,
 };
 
@@ -188,6 +189,15 @@ impl ModuleGraph {
     deps.into_iter().map(|dep| (dep.1, dep.2, dep.3)).collect()
   }
 
+  /// Same as `dependencies`, but only return the module id.
+  pub fn dependencies_ids(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+    self
+      .dependencies(module_id)
+      .into_iter()
+      .map(|(id, _, _)| id)
+      .collect()
+  }
+
   /// get dependent of the specific module.
   /// don't ensure the result's order.
   pub fn dependents(&self, module_id: &ModuleId) -> Vec<ModuleId> {
@@ -223,8 +233,7 @@ impl ModuleGraph {
       cyclic: &mut Vec<Vec<ModuleId>>,
     ) {
       // cycle detected
-      if stack.contains(entry) {
-        let pos = stack.iter().position(|m| m == entry).unwrap();
+      if let Some(pos) = stack.iter().position(|m| m == entry) {
         cyclic.push(stack.clone()[pos..].to_vec());
         return;
       } else if visited.contains(entry) {
@@ -235,8 +244,7 @@ impl ModuleGraph {
       visited.insert(entry.clone());
       stack.push(entry.clone());
 
-      let mut deps = graph.dependencies(entry);
-      deps.reverse(); // reverse it as we use post order traverse
+      let deps = graph.dependencies(entry);
 
       for (dep, _, _s) in &deps {
         dfs(dep, graph, stack, visited, result, cyclic)
@@ -254,41 +262,37 @@ impl ModuleGraph {
     let mut entries = self.entries.iter().collect::<Vec<_>>();
     entries.sort();
 
+    let mut visited = HashSet::new();
+
     for entry in entries {
       let mut res = vec![];
-      let mut visited = HashSet::new();
-
       dfs(entry, self, &mut stack, &mut visited, &mut res, &mut cyclic);
-      res.reverse();
 
-      // merge the topo sort result of the entries.
-      if result.is_empty() {
-        result.extend(res);
-      } else {
-        self.merge_topo_sorted_vec(&mut result, &res);
-      }
+      result.extend(res);
     }
+
+    result.reverse();
 
     (result, cyclic)
   }
 
-  fn merge_topo_sorted_vec(&self, base: &mut Vec<ModuleId>, new: &[ModuleId]) {
-    if new.is_empty() {
-      return;
+  pub fn internal_graph(&self) -> &StableDiGraph<Module, ModuleGraphEdge> {
+    &self.g
+  }
+
+  pub fn dfs(&self, entry: &ModuleId, op: &mut dyn FnMut(&ModuleId)) {
+    let mut dfs = Dfs::new(&self.g, *self.id_index_map.get(entry).unwrap());
+
+    while let Some(node_index) = dfs.next(&self.g) {
+      op(&self.g[node_index].id);
     }
+  }
 
-    if let Some(pos) = new.iter().position(|nm| base.contains(nm)) {
-      if pos > 0 {
-        let nm = &new[pos];
-        let base_pos = base.iter().position(|bm| bm == nm).unwrap();
-        base.splice(base_pos..(base_pos + 1), new[0..(pos + 1)].to_vec());
+  pub fn bfs(&self, entry: &ModuleId, op: &mut dyn FnMut(&ModuleId)) {
+    let mut bfs = Bfs::new(&self.g, *self.id_index_map.get(entry).unwrap());
 
-        self.merge_topo_sorted_vec(base, &new[(pos + 1)..]);
-      } else {
-        self.merge_topo_sorted_vec(base, &new[(pos + 1)..]);
-      }
-    } else {
-      base.extend(new.to_vec());
+    while let Some(node_index) = bfs.next(&self.g) {
+      op(&self.g[node_index].id);
     }
   }
 }
@@ -386,22 +390,36 @@ mod tests {
     let graph = construct_test_module_graph();
 
     let (sorted, cycle) = graph.toposort();
-    println!("{:?} \n\n {:?}", sorted, cycle);
-    assert_eq!(
-      cycle,
-      vec![
-        vec!["A".into(), "D".into(), "F".into()],
-        // vec!["A".into(), "C".into(), "F".into()],
-        vec!["D".into(), "F".into(), "A".into()],
-        vec!["F".into(), "A".into(), "C".into()]
-      ]
-    );
+    // println!("{:?} \n\n {:?}", sorted, cycle);
+    assert_eq!(cycle, vec![vec!["A".into(), "C".into(), "F".into()],]);
     assert_eq!(
       sorted,
-      vec!["A", "C", "B", "D", "F", "E", "G"]
+      vec!["B", "E", "G", "A", "D", "C", "F"]
         .into_iter()
         .map(|m| m.into())
         .collect::<Vec<ModuleId>>()
     );
+  }
+
+  #[test]
+  fn dependencies() {
+    let graph = construct_test_module_graph();
+
+    let deps = graph.dependencies(&"A".into());
+    assert_eq!(
+      deps,
+      vec![
+        ("C".into(), ResolveKind::Import, "./C".to_string(),),
+        ("D".into(), ResolveKind::DynamicImport, "./D".to_string(),),
+      ]
+    );
+  }
+
+  #[test]
+  fn dependents() {
+    let graph = construct_test_module_graph();
+
+    let deps = graph.dependents(&"F".into());
+    assert_eq!(deps, vec!["D".into(), "C".into(),]);
   }
 }

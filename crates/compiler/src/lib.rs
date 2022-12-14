@@ -6,7 +6,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
 };
-use update::{UpdateOutput, UpdateType};
+use update::{UpdateResult, UpdateType};
 
 pub mod build;
 pub mod generate;
@@ -51,7 +51,7 @@ impl Compiler {
   }
 
   /// Recompile the project based on the changed files
-  pub fn re_compile(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateOutput> {
+  pub fn re_compile(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateResult> {
     // self.context.plugin_driver.update_start(&self.context)?;
     self.update(paths)
     // self.context.plugin_driver.update_end(&self.context)?;
