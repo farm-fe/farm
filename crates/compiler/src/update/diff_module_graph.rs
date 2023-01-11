@@ -49,11 +49,14 @@ pub fn patch_module_graph(
   update_module_graph: &ModuleGraph,
 ) -> PatchModuleGraphResult {
   let mut res = PatchModuleGraphResult::default();
+  let mut children_to_remove = vec![];
 
   for (module_id, diff_result) in diff_result {
     res.updated.push(module_id.clone());
 
-    for removed in &diff_result.removed {}
+    for removed_dep in &diff_result.removed {
+      module_graph.remove_edge(module_id, removed_dep).unwrap();
+    }
   }
 
   res

@@ -146,6 +146,34 @@ impl ModuleGraph {
     Ok(())
   }
 
+  pub fn remove_edge(&mut self, from: &ModuleId, to: &ModuleId) -> Result<()> {
+    let from_index = self.id_index_map.get(from).ok_or_else(|| {
+      CompilationError::GenericError(format!(
+        r#"from node "{}" does not exist in the module graph when remove edge"#,
+        from.relative_path()
+      ))
+    })?;
+
+    let to_index = self.id_index_map.get(to).ok_or_else(|| {
+      CompilationError::GenericError(format!(
+        r#"to node "{}" does not exist in the module graph when remove edge"#,
+        to.relative_path()
+      ))
+    })?;
+
+    let edge = self.g.find_edge(*from_index, *to_index).ok_or_else(|| {
+      CompilationError::GenericError(format!(
+        r#"edge "{}" -> "{}" does not exist in the module graph when remove edge"#,
+        from.relative_path(),
+        to.relative_path()
+      ))
+    })?;
+
+    self.g.remove_edge(edge);
+
+    Ok(())
+  }
+
   pub fn edge_info(&self, from: &ModuleId, to: &ModuleId) -> Option<&ModuleGraphEdge> {
     let from = self.id_index_map.get(from).unwrap();
     let to = self.id_index_map.get(to).unwrap();
