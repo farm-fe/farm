@@ -4,9 +4,11 @@
     "noImplicitAny": true,
     "noUnusedParameters": true,
     "sourceMap": true,
+    "target": "es2017",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
     // "noUnusedParameters": true,
     // "noUnusedLocals": true
   }

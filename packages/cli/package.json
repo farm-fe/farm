@@ -2,6 +2,7 @@
   "name": "@farmfe/cli",
   "version": "0.0.0",
   "description": "CLI of Farm",
+  "type": "module",
   "author": {
     "name": "bright wu",
     "email": "1611331@mail.nankai.edu.cn"

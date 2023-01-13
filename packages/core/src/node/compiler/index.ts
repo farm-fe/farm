@@ -1,3 +1,7 @@
+import { existsSync, mkdirSync } from 'fs';
+import fs from 'fs/promises';
+import path from 'path';
+
 import {
   Compiler as BindingCompiler,
   Config,
@@ -34,5 +38,22 @@ export class Compiler {
 
   resources(): Record<string, number[]> {
     return this._bindingCompiler.resources();
+  }
+
+  async writeResourcesToDisk(): Promise<void> {
+    const resources = this.resources();
+    const promises = [];
+
+    for (const [name, resource] of Object.entries(resources)) {
+      const filePath = path.join(this.config.config.output.path, name);
+
+      if (!existsSync(path.dirname(filePath))) {
+        mkdirSync(path.dirname(filePath), { recursive: true });
+      }
+
+      promises.push(fs.writeFile(filePath, Buffer.from(resource)));
+    }
+
+    await Promise.all(promises);
   }
 }

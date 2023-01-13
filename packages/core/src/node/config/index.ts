@@ -1,16 +1,25 @@
+import fs from 'fs';
+import path from 'path';
 import merge from 'lodash.merge';
 
 import { Config } from '../../../binding';
 import { JsPlugin } from '../plugin';
 import { RustPlugin, rustPluginResolver } from '../plugin/rustPluginResolver';
 
+export const DEFAULT_CONFIG_NAMES = [
+  'farm.config.ts',
+  'farm.config.js',
+  'farm.config.mjs',
+];
+
 export interface UserServerConfig {
   port: number;
+  hmr: boolean | UserHmrConfig;
 }
 
-export interface UserWatcherConfig {
-  /** ignored watch paths of the module graph, entry of this option is a string regexp  */
-  ignores: string[];
+export interface UserHmrConfig {
+  /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
+  ignores?: string[];
 }
 
 export interface UserConfig {
@@ -22,7 +31,6 @@ export interface UserConfig {
   compilation?: Config['config'];
   /** config related to dev server */
   server?: UserServerConfig;
-  watcher?: UserWatcherConfig;
 }
 
 /**
@@ -82,7 +90,25 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
  * Resolve and load user config from the specified path
  * @param configPath
  */
-export function resolveUserConfig(_configPath: string): UserConfig {
+export async function resolveUserConfig(
+  configPath: string
+): Promise<UserConfig> {
+  // if configPath points to a directory, try to find a config file in it using default config
+  if (fs.statSync(configPath).isDirectory()) {
+    for (const name of DEFAULT_CONFIG_NAMES) {
+      const resolvedPath = path.join(configPath, name);
+
+      if (fs.existsSync(resolvedPath)) {
+        // if config is written in typescript, we need to compile it to javascript using farm first
+        if (name.endsWith('.ts')) {
+          // TODO
+        } else {
+          const config = (await import(resolvedPath)).default;
+          return config;
+        }
+      }
+    }
+  }
   return {};
 }
 
