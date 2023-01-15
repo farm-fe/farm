@@ -1,9 +1,9 @@
 import chokidar, { FSWatcher } from 'chokidar';
 import merge from 'lodash.merge';
-import { Compiler } from '../compiler';
+import { Compiler } from '../compiler/index.js';
 
-import { UserHmrConfig } from '../config';
-import { DevServer } from '../server';
+import { UserHmrConfig } from '../config/index.js';
+import { DevServer } from '../server/index.js';
 
 const DEFAULT_WATCHER_CONFIG: Required<UserHmrConfig> = {
   ignores: [],
@@ -18,8 +18,8 @@ export class FileWatcher {
     this._config = merge(DEFAULT_WATCHER_CONFIG, config);
     this._root = root;
 
-    this._watcher = chokidar.watch(root, {
-      ignored: config.ignores,
+    this._watcher = chokidar.watch(this._root, {
+      ignored: this._config.ignores,
     });
   }
 

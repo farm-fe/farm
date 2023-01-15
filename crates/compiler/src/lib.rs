@@ -35,8 +35,10 @@ impl Compiler {
     // sort plugins by priority
     plugins.sort_by_key(|a| a.priority());
 
+    let mut context = CompilationContext::new(config, plugins)?;
+    context.plugin_driver.config(&mut context.config)?;
     Ok(Self {
-      context: Arc::new(CompilationContext::new(config, plugins)?),
+      context: Arc::new(context),
     })
   }
 

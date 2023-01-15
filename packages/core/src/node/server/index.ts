@@ -1,17 +1,15 @@
 import { existsSync, mkdirSync } from 'fs';
-import fs from 'fs/promises';
 
 import Koa from 'koa';
 import serve from 'koa-static';
-import path from 'path';
 
-import { Compiler } from '../compiler';
-import { resources } from './middlewares/resources';
+import { Compiler } from '../compiler/index.js';
+import { resources } from './middlewares/resources.js';
 import {
   DevServerOptions,
   NormalizedDevServerOptions,
   normalizeDevServerOptions,
-} from './normalizeDevServerOptions';
+} from './normalizeDevServerOptions.js';
 
 /**
  * Farm Dev Server, responsible of:

@@ -10,6 +10,9 @@
   "bin": {
     "farm": "./bin/farm.mjs"
   },
+  "exports": {
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist",
     "bin",
@@ -20,9 +23,8 @@
     "build": "tsc",
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
-  "devDependencies": {
-    "@types/node": "^18.0.1",
-    "typescript": "^4.7.4"
+  "engines": {
+    "node": ">= 16"
   },
   "dependencies": {
     "@farmfe/core": "workspace:^0.0.0",

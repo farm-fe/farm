@@ -5,7 +5,7 @@ use farmfe_core::{
 };
 
 fn main() {
-  let relative_root = RelativePath::new("examples/react");
+  let relative_root = RelativePath::new("examples/script_entry");
   let cwd = std::env::current_dir().unwrap();
   let react_examples_root = relative_root.to_logical_path(cwd.clone());
 

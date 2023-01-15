@@ -46,10 +46,11 @@ pub fn diff_module_graph(
 pub fn patch_module_graph(
   diff_result: &DiffResult,
   module_graph: &mut ModuleGraph,
-  update_module_graph: &ModuleGraph,
+  _update_module_graph: &ModuleGraph,
 ) -> PatchModuleGraphResult {
   let mut res = PatchModuleGraphResult::default();
-  let mut children_to_remove = vec![];
+
+  // let mut children_to_remove = vec![];
 
   for (module_id, diff_result) in diff_result {
     res.updated.push(module_id.clone());

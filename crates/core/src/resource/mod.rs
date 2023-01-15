@@ -23,9 +23,9 @@ pub enum ResourceType {
 pub struct Resource {
   pub name: String,
   pub bytes: Vec<u8>,
-  // whether this resource emitted, if true, it won't be emitted again by the default strategy.
+  /// whether this resource emitted, true means this resource will not present in the final production
   pub emitted: bool,
   pub resource_type: ResourceType,
-  // the resource pot this [Resource] generated from
+  /// the resource pot this [Resource] generated from
   pub resource_pot: ResourcePotId,
 }

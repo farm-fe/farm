@@ -1,11 +1,11 @@
-export * from './compiler';
-export * from './config';
-export * from './server';
+export * from './compiler/index.js';
+export * from './config/index.js';
+export * from './server/index.js';
 
-import { Compiler } from './compiler';
-import { resolveUserConfig, UserConfig } from './config';
-import { DevServer } from './server';
-import { FileWatcher } from './watcher';
+import { Compiler } from './compiler/index.js';
+import { resolveUserConfig, UserConfig } from './config/index.js';
+import { DevServer } from './server/index.js';
+import { FileWatcher } from './watcher/index.js';
 
 export async function start(options: { configPath?: string }): Promise<void> {
   const userConfig: UserConfig = await resolveUserConfig(options.configPath);

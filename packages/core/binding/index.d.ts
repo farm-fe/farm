@@ -19,7 +19,10 @@ export type ResolveKind =
   | 'linkHref'
   | string;
 
-export * from './binding';
+export * from './binding.js';
+import { Compiler } from './binding.js';
+
+export default Compiler;
 
 /// Parameter of the resolve hook
 export interface PluginResolveHookParam {
@@ -104,6 +107,7 @@ export interface Config {
     runtime?: {
       path: string;
       plugins?: string[];
+      swcHelpersPath?: string;
     };
     script?: {
       // specify target es version

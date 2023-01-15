@@ -1,6 +1,6 @@
 import { start, build } from '@farmfe/core';
-import cac from 'cac';
-import { COMMANDS } from './plugin/index';
+import { cac } from 'cac';
+import { COMMANDS } from './plugin/index.js';
 
 const cli = cac();
 
@@ -34,7 +34,7 @@ const pluginCmd = cli.command(
     allowUnknownOptions: true,
   }
 );
-pluginCmd.action((command: 'build' | 'create', args: any) => {
+pluginCmd.action((command: keyof typeof COMMANDS, args: any[]) => {
   COMMANDS[command](args);
 });
 

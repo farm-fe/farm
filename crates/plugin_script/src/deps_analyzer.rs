@@ -1,7 +1,7 @@
 use farmfe_core::{
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
   swc_common::Mark,
-  swc_ecma_ast::{CallExpr, Expr, Lit, Module, ModuleDecl, ModuleItem},
+  swc_ecma_ast::{CallExpr, ExportAll, Expr, Lit, Module, ModuleDecl, ModuleItem, NamedExport},
 };
 
 use farmfe_toolkit::{
@@ -49,7 +49,21 @@ impl<'a> Visit for DepsAnalyzer<'a> {
               kind: ResolveKind::Import,
             });
           }
-          _ => { /* export decl may be handled later */ }
+          ModuleDecl::ExportAll(ExportAll { src, .. }) => {
+            self.insert_dep(PluginAnalyzeDepsHookResultEntry {
+              source: src.value.to_string(),
+              kind: ResolveKind::ExportFrom,
+            });
+          }
+          ModuleDecl::ExportNamed(NamedExport { src, .. }) => {
+            if let Some(src) = src {
+              self.insert_dep(PluginAnalyzeDepsHookResultEntry {
+                source: src.value.to_string(),
+                kind: ResolveKind::ExportFrom,
+              });
+            }
+          }
+          _ => { /* others are ignored */ }
         }
       }
       _ => {

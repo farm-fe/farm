@@ -4,8 +4,7 @@
   "type": "module",
   "dependencies": {
     "@farmfe/cli": "../../packages/cli",
-    "@farmfe/core": "../../packages/core",
-    "@farmfe/runtime": "../../packages/runtime"
+    "@farmfe/core": "../../packages/core"
   },
   "scripts": {
     "build": "farm build"

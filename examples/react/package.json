@@ -4,8 +4,6 @@
   "dependencies": {
     "@farmfe/cli": "../../packages/cli",
     "@farmfe/core": "../../packages/core",
-    "@farmfe/runtime": "../../packages/runtime",
-    "@swc/helpers": "^0.4.9",
     "react": "18",
     "react-dom": "18"
   },

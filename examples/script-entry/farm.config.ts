@@ -4,14 +4,10 @@ import { defineFarmConfig } from '@farmfe/core/dist/node/config';
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
-    },
-    resolve: {
-      symlinks: true,
-      mainFields: ['module', 'main', 'customMain'],
+      index: './index.ts',
     },
     output: {
-      path: './build',
+      path: 'dist',
     },
   },
 });

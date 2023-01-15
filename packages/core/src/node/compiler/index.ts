@@ -2,12 +2,9 @@ import { existsSync, mkdirSync } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
 
-import {
-  Compiler as BindingCompiler,
-  Config,
-  JsUpdateResult,
-} from '../../../binding/index';
-import { normalizeUserCompilationConfig, UserConfig } from '../config';
+import type { Config, JsUpdateResult } from '../../../binding/index.js';
+import { Compiler as BindingCompiler } from '../../../binding/index.js';
+import { normalizeUserCompilationConfig, UserConfig } from '../config/index.js';
 
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
@@ -15,7 +12,6 @@ export class Compiler {
 
   constructor(config: UserConfig) {
     this.config = normalizeUserCompilationConfig(config);
-
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 

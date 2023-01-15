@@ -21,6 +21,16 @@ fn main() {
           .to_string_lossy()
           .to_string(),
         plugins: vec![],
+        swc_helpers_path: cwd
+          .join("packages")
+          .join("core")
+          .join("node_modules")
+          .join("@swc")
+          .join("helpers")
+          .read_link()
+          .unwrap()
+          .to_string_lossy()
+          .to_string(),
       },
       ..Default::default()
     },

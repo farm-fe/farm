@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
-    "lib": ["DOM", "ES2015"],
+    "lib": ["DOM", "ES2020"],
     "noImplicitAny": true,
     "noUnusedParameters": true,
     "sourceMap": true,
-    "target": "es2017",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "target": "es2020",
+    "module": "node16",
+    "moduleResolution": "node16",
     "declaration": true,
     "esModuleInterop": true,
-    // "noUnusedParameters": true,
-    // "noUnusedLocals": true
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": true,
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true
   }
 }

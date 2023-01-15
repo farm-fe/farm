@@ -6,5 +6,9 @@ export default defineConfig({
     coverage: {
       reporter: ['json'],
     },
+    environment: 'node',
+    deps: {
+      interopDefault: false,
+    },
   },
 });
