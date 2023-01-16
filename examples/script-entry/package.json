@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/example-react",
+  "name": "@farmfe-examples/script-entry",
   "version": "0.0.0",
   "type": "module",
   "dependencies": {

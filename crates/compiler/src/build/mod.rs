@@ -187,7 +187,7 @@ impl Compiler {
     module.meta = module_meta;
 
     // ================ Analyze Deps Start ===============
-    let analyze_deps_result = call_and_catch_error!(analyze_deps, &module, context);
+    let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
     // ================ Analyze Deps End ===============
     println!(
       "analyzed deps {} -> {:?}",
@@ -354,7 +354,7 @@ fn resolve_module(
   Ok(
     if module_graph.has_module(&resolve_module_id_result.module_id) {
       // the module has already been handled and it should not be handled twice
-      ResolveModuleResult::Built(resolve_module_id_result.module_id.clone())
+      ResolveModuleResult::Built(resolve_module_id_result.module_id)
     } else {
       ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
         module: Compiler::create_module(

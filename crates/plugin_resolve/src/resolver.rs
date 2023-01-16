@@ -136,7 +136,8 @@ impl Resolver {
       if alias.ends_with("$") && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind);
       } else if !alias.ends_with("$") && source.starts_with(alias) {
-        let new_source = source.replace(alias, replaced);
+        let source_left = RelativePath::new(source.trim_start_matches(alias));
+        let new_source = source_left.to_logical_path(replaced).to_string_lossy().to_string();
         return self.resolve(&new_source, base_dir, kind);
       }
     }

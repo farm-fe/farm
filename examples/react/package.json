@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/example-react",
+  "name": "@farmfe-examples/react",
   "version": "0.0.0",
   "dependencies": {
     "@farmfe/cli": "../../packages/cli",

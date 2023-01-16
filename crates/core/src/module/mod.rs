@@ -301,7 +301,7 @@ impl From<String> for ModuleId {
 
 impl ToString for ModuleId {
   fn to_string(&self) -> String {
-    format!("{}", self.relative_path)
+    self.relative_path.to_string()
   }
 }
 

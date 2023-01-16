@@ -91,7 +91,7 @@ impl Compiler {
 
     drop(err_sender);
 
-    for err in err_receiver {
+    if let Ok(err) = err_receiver.recv() {
       return Err(err);
     }
 
@@ -169,7 +169,6 @@ impl Compiler {
             }
             Err(e) => {
               err_sender.send(e).unwrap();
-              return;
             }
           }
         }
