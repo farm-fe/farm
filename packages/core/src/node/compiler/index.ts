@@ -1,9 +1,10 @@
-import {
-  Compiler as BindingCompiler,
-  Config,
-  JsUpdateResult,
-} from '../../../binding/index';
-import { normalizeUserCompilationConfig, UserConfig } from '../config';
+import { existsSync, mkdirSync } from 'fs';
+import fs from 'fs/promises';
+import path from 'path';
+
+import type { Config, JsUpdateResult } from '../../../binding/index.js';
+import { Compiler as BindingCompiler } from '../../../binding/index.js';
+import { normalizeUserCompilationConfig, UserConfig } from '../config/index.js';
 
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
@@ -11,7 +12,6 @@ export class Compiler {
 
   constructor(config: UserConfig) {
     this.config = normalizeUserCompilationConfig(config);
-
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 
@@ -34,5 +34,22 @@ export class Compiler {
 
   resources(): Record<string, number[]> {
     return this._bindingCompiler.resources();
+  }
+
+  async writeResourcesToDisk(): Promise<void> {
+    const resources = this.resources();
+    const promises = [];
+
+    for (const [name, resource] of Object.entries(resources)) {
+      const filePath = path.join(this.config.config.output.path, name);
+
+      if (!existsSync(path.dirname(filePath))) {
+        mkdirSync(path.dirname(filePath), { recursive: true });
+      }
+
+      promises.push(fs.writeFile(filePath, Buffer.from(resource)));
+    }
+
+    await Promise.all(promises);
   }
 }

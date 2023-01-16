@@ -1,28 +1,22 @@
-use std::collections::HashSet;
-
+use hashbrown::HashMap;
 use parking_lot::Mutex;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ResolveResultCacheKey {
+  pub source: String,
+  pub importer: Option<String>,
+}
 
 /// All cache related operation are charged by [CacheManager]
 pub struct CacheManager {
-  /// the modules which are already handled, a module(the resolved id is same) won't be processed twice
-  handled_modules: Mutex<HashSet<String>>,
+  pub resolve_result_cache: Mutex<HashMap<ResolveResultCacheKey, String>>,
 }
 
 impl CacheManager {
   pub fn new() -> Self {
     Self {
-      handled_modules: Mutex::new(HashSet::new()),
+      resolve_result_cache: Mutex::new(HashMap::new()),
     }
-  }
-
-  pub fn mark_module_handled(&self, id: &str) {
-    let mut hm = self.handled_modules.lock();
-    hm.insert(id.to_string());
-  }
-
-  pub fn is_module_handled(&self, id: &str) -> bool {
-    let hm = self.handled_modules.lock();
-    hm.contains(id)
   }
 }
 

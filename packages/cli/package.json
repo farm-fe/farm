@@ -2,12 +2,16 @@
   "name": "@farmfe/cli",
   "version": "0.0.0",
   "description": "CLI of Farm",
+  "type": "module",
   "author": {
     "name": "bright wu",
     "email": "1611331@mail.nankai.edu.cn"
   },
   "bin": {
     "farm": "./bin/farm.mjs"
+  },
+  "exports": {
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -19,9 +23,8 @@
     "build": "tsc",
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
-  "devDependencies": {
-    "@types/node": "^18.0.1",
-    "typescript": "^4.7.4"
+  "engines": {
+    "node": ">= 16"
   },
   "dependencies": {
     "@farmfe/core": "workspace:^0.0.0",

@@ -12,14 +12,12 @@ pub mod resolver;
 
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx files to js chunks
 pub struct FarmPluginResolve {
-  resolver: Resolver,
   root: String,
 }
 
 impl FarmPluginResolve {
   pub fn new(config: &Config) -> Self {
     Self {
-      resolver: Resolver::new(config.resolve.clone()),
       root: config.root.clone(),
     }
   }
@@ -57,8 +55,8 @@ impl Plugin for FarmPluginResolve {
       }));
     }
 
-    self
-      .resolver
+    let resolver = Resolver::new(context.config.resolve.clone());
+    resolver
       .resolve(source, basedir, &param.kind)
       .map(|r| Some(r))
   }

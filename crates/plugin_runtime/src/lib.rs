@@ -9,9 +9,9 @@ use farmfe_core::{
   module::{ModuleId, ModuleMetaData, ModuleSystem},
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginAnalyzeDepsHookResultEntry, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginProcessModuleHookParam, PluginResolveHookParam,
-    PluginResolveHookResult, ResolveKind,
+    Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
+    PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
   },
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -20,8 +20,8 @@ use farmfe_core::{
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    CallExpr, Expr, ExprOrSpread, ExprStmt, Lit, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
-    Str,
+    CallExpr, ExportAll, Expr, ExprOrSpread, ExprStmt, ImportDecl, ImportSpecifier, Lit,
+    Module as SwcModule, ModuleDecl, ModuleItem, Stmt, Str,
   },
 };
 use farmfe_toolkit::{
@@ -60,6 +60,11 @@ impl Plugin for FarmPluginRuntime {
       "runtime".to_string(),
       format!("{}{}", config.runtime.path, RUNTIME_SUFFIX),
     );
+    config.resolve.alias.insert(
+      "@swc/helpers".to_string(),
+      config.runtime.swc_helpers_path.clone(),
+    );
+
     // runtime plugin entry file
     for plugin in &config.runtime.plugins {
       config
@@ -145,69 +150,65 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
     // TODO insert runtime plugin as runtime entry's dependency too.
-
-    // let ast = &mut param.meta.as_script_mut().ast;
-    // let create_import_decl = |src: &str| ImportDecl {
-    //   span: DUMMY_SP,
-    //   specifiers: vec![],
-    //   src: Str {
-    //     span: DUMMY_SP,
-    //     value: src.into(),
-    //     raw: None,
-    //   },
-    //   type_only: false,
-    //   asserts: None,
-    // };
-    // ast.body.insert(
-    //   0,
-    //   ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
-    //     "@swc/helpers/lib/_interop_require_wildcard.js",
-    //   ))),
-    // );
-    // ast.body.insert(
-    //   1,
-    //   ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
-    //     "@swc/helpers/lib/_interop_require_default.js",
-    //   ))),
-    // );
-
     Ok(Some(()))
   }
 
   fn analyze_deps(
     &self,
-    param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
+    param: &mut PluginAnalyzeDepsHookParam,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if let ModuleMetaData::Script(script) = &param.module.meta {
-      // insert swc cjs module helper as soon as it has esm import
-      if script
-        .ast
-        .body
-        .iter()
-        .any(|item| matches!(item, ModuleItem::ModuleDecl(ModuleDecl::Import(_))))
-      {
-        if !param
-          .deps
-          .iter()
-          .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_wildcard.js")
-        {
-          param.deps.push(PluginAnalyzeDepsHookResultEntry {
-            kind: ResolveKind::Import,
-            source: "@swc/helpers/lib/_interop_require_wildcard.js".to_string(),
-          });
-        }
+      let mut has_import_star = false;
+      let mut has_import_default = false;
+      let mut has_export_star = false;
 
-        if !param
-          .deps
-          .iter()
-          .any(|dep| dep.source == "@swc/helpers/lib/_interop_require_default.js")
-        {
-          param.deps.push(PluginAnalyzeDepsHookResultEntry {
-            kind: ResolveKind::Import,
-            source: "@swc/helpers/lib/_interop_require_default.js".to_string(),
-          });
+      // insert swc cjs module helper as soon as it has esm import
+      for stmt in &script.ast.body {
+        if let ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl { specifiers, .. })) = stmt {
+          has_import_star = true;
+          has_import_default = has_import_default
+            || specifiers
+              .iter()
+              .any(|specifier| matches!(specifier, ImportSpecifier::Default(_)));
+        } else if let ModuleItem::ModuleDecl(ModuleDecl::ExportAll(ExportAll { .. })) = stmt {
+          has_export_star = true;
         }
+      }
+
+      let exists = |source: &str, param: &mut PluginAnalyzeDepsHookParam| {
+        param.deps.iter().any(|dep| dep.source == source)
+      };
+      let insert_import =
+        |source: &str, kind: ResolveKind, param: &mut PluginAnalyzeDepsHookParam| {
+          param.deps.push(PluginAnalyzeDepsHookResultEntry {
+            kind,
+            source: source.to_string(),
+          });
+        };
+
+      if has_import_star && !exists("@swc/helpers/lib/_interop_require_wildcard.js", param) {
+        insert_import(
+          "@swc/helpers/lib/_interop_require_wildcard.js",
+          ResolveKind::Import,
+          param,
+        );
+      }
+
+      if has_import_default && !exists("@swc/helpers/lib/_interop_require_default.js", param) {
+        insert_import(
+          "@swc/helpers/lib/_interop_require_default.js",
+          ResolveKind::Import,
+          param,
+        );
+      }
+
+      if has_export_star && !exists("@swc/helpers/lib/_export_star.js", param) {
+        insert_import(
+          "@swc/helpers/lib/_export_star.js",
+          ResolveKind::ExportFrom,
+          param,
+        );
       }
     } else {
       return Ok(None);

@@ -1,17 +1,15 @@
 import { existsSync, mkdirSync } from 'fs';
-import fs from 'fs/promises';
 
 import Koa from 'koa';
 import serve from 'koa-static';
-import path from 'path';
 
-import { Compiler } from '../compiler';
-import { resources } from './middlewares/resources';
+import { Compiler } from '../compiler/index.js';
+import { resources } from './middlewares/resources.js';
 import {
   DevServerOptions,
   NormalizedDevServerOptions,
   normalizeDevServerOptions,
-} from './normalizeDevServerOptions';
+} from './normalizeDevServerOptions.js';
 
 /**
  * Farm Dev Server, responsible of:
@@ -45,20 +43,7 @@ export class DevServer {
     await this._compiler.compile();
 
     if (this._options.writeToDisk) {
-      const resources = this._compiler.resources();
-      const promises = [];
-
-      for (const [name, resource] of Object.entries(resources)) {
-        const filePath = path.join(this._dist, name);
-
-        if (!existsSync(path.dirname(filePath))) {
-          mkdirSync(path.dirname(filePath), { recursive: true });
-        }
-
-        promises.push(fs.writeFile(filePath, Buffer.from(resource)));
-      }
-
-      await Promise.all(promises);
+      this._compiler.writeResourcesToDisk();
     }
 
     this._app.listen(this._options.port);

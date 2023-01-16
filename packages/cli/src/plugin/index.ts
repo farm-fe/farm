@@ -4,10 +4,10 @@
  * * build: build a new farm plugin, support cross compilation natively
  */
 
-import { build } from './build';
-import { create } from './create';
+import { build } from './build.js';
+// import { create } from './create.js';
 
 export const COMMANDS = {
   build,
-  create,
+  // create,
 };

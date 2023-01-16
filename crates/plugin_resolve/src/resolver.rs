@@ -25,7 +25,7 @@ impl Resolver {
   /// * **Absolute Path**: '/root/xxx' or 'c:\\root\\xxx'
   /// * **Configured Alias**: '@/pages/xxx'
   /// * **Package**:
-  ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports)
+  ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports), if source is end with '.js', also try to find '.ts' file
   ///   * **browser**: refer to [package-browser-field-spec](https://github.com/defunctzombie/package-browser-field-spec)
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
   pub fn resolve(
@@ -42,10 +42,17 @@ impl Resolver {
     };
 
     if is_source_absolute {
-      Ok(PluginResolveHookResult {
-        resolved_path: source.to_string(),
-        ..Default::default()
-      })
+      if let Some(resolved_path) = self.try_file(&PathBuf::from_str(source).unwrap()) {
+        return Ok(PluginResolveHookResult {
+          resolved_path,
+          ..Default::default()
+        });
+      } else {
+        return Err(CompilationError::GenericError(format!(
+          "File `{:?}` does not exist",
+          source
+        )));
+      }
     } else if source.starts_with(".") {
       // if it starts with '.', it is a relative path
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
@@ -102,13 +109,17 @@ impl Resolver {
     if file.exists() && file.is_file() {
       Some(file.to_string_lossy().to_string())
     } else {
+      let append_extension = |file: &PathBuf, ext: &str| {
+        let file_name = file.file_name().unwrap().to_string_lossy().to_string();
+        file.with_file_name(format!("{}.{}", file_name, ext))
+      };
       let ext = self.config.extensions.iter().find(|&ext| {
-        let file = file.with_extension(ext);
-        file.exists()
+        let new_file = append_extension(file, ext);
+        new_file.exists() && new_file.is_file()
       });
 
       if let Some(ext) = ext {
-        Some(file.with_extension(ext).to_string_lossy().to_string())
+        Some(append_extension(file, ext).to_string_lossy().to_string())
       } else {
         None
       }
@@ -122,10 +133,11 @@ impl Resolver {
     kind: &ResolveKind,
   ) -> Result<PluginResolveHookResult> {
     for (alias, replaced) in &self.config.alias {
-      if alias.ends_with("$") && source == alias {
+      if alias.ends_with("$") && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind);
       } else if !alias.ends_with("$") && source.starts_with(alias) {
-        let new_source = source.replace(alias, replaced);
+        let source_left = RelativePath::new(source.trim_start_matches(alias));
+        let new_source = source_left.to_logical_path(replaced).to_string_lossy().to_string();
         return self.resolve(&new_source, base_dir, kind);
       }
     }

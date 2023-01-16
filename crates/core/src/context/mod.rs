@@ -28,16 +28,13 @@ pub struct CompilationContext {
 
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
-    let plugin_driver = PluginDriver::new(plugins);
-    plugin_driver.config(&mut config)?;
-
     Ok(Self {
       module_graph: RwLock::new(ModuleGraph::new()),
       module_group_map: RwLock::new(ModuleGroupMap::new()),
       resource_pot_graph: RwLock::new(ResourcePotGraph::new()),
       resources_map: Mutex::new(HashMap::new()),
       config,
-      plugin_driver,
+      plugin_driver: PluginDriver::new(plugins),
       cache_manager: CacheManager::new(),
       meta: ContextMetaData::new(),
     })

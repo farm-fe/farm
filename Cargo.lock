@@ -325,6 +325,7 @@ dependencies = [
  "farmfe_plugin_runtime",
  "farmfe_plugin_script",
  "farmfe_toolkit",
+ "farmfe_utils",
 ]
 
 [[package]]

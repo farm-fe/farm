@@ -1,12 +1,12 @@
 {
-  "name": "@farmfe/example-react",
+  "name": "@farmfe-examples/script-entry",
   "version": "0.0.0",
+  "type": "module",
   "dependencies": {
     "@farmfe/cli": "../../packages/cli",
-    "@farmfe/core": "../../packages/core",
-    "@farmfe/runtime": "../../packages/runtime"
+    "@farmfe/core": "../../packages/core"
   },
   "scripts": {
-    "start": "farm"
+    "build": "farm build"
   }
 }

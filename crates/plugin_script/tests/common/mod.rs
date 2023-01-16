@@ -34,11 +34,7 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
   let parse_result = script_plugin
     .parse(
       &PluginParseHookParam {
-        module_id: ModuleId::new(
-          &path.to_string_lossy().to_string(),
-          &HashMap::new(),
-          base.to_str().unwrap(),
-        ),
+        module_id: ModuleId::new(&path.to_string_lossy().to_string(), base.to_str().unwrap()),
         resolved_path: path.to_string_lossy().to_string(),
         query: HashMap::new(),
         module_type: load_result.module_type.clone(),
@@ -52,7 +48,6 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
 
   let mut module = Module::new(ModuleId::new(
     &path.to_string_lossy().to_string(),
-    &HashMap::new(),
     base.to_str().unwrap(),
   ));
 

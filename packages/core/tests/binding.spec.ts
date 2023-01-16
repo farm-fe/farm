@@ -1,7 +1,8 @@
 import path from 'path';
 import { test } from 'vitest';
-import { Compiler } from '../src/index';
+import { Compiler } from '../src/index.js';
 
+// just make sure the binding works
 test('Binding - should parse config to rust correctly', async () => {
   const compiler = new Compiler({
     compilation: {

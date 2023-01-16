@@ -6,7 +6,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
 };
-use update::{UpdateOutput, UpdateType};
+use update::{UpdateResult, UpdateType};
 
 pub mod build;
 pub mod generate;
@@ -35,8 +35,10 @@ impl Compiler {
     // sort plugins by priority
     plugins.sort_by_key(|a| a.priority());
 
+    let mut context = CompilationContext::new(config, plugins)?;
+    context.plugin_driver.config(&mut context.config)?;
     Ok(Self {
-      context: Arc::new(CompilationContext::new(config, plugins)?),
+      context: Arc::new(context),
     })
   }
 
@@ -51,8 +53,10 @@ impl Compiler {
   }
 
   /// Recompile the project based on the changed files
-  pub fn re_compile(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateOutput> {
-    Ok(UpdateOutput::default())
+  pub fn re_compile(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateResult> {
+    // self.context.plugin_driver.update_start(&self.context)?;
+    self.update(paths)
+    // self.context.plugin_driver.update_end(&self.context)?;
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {

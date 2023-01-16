@@ -146,7 +146,7 @@ fn module_group_from_entry(
 
   visited.insert(entry.clone());
 
-  for (dep, kind) in graph.dependencies(entry) {
+  for (dep, kind, _) in graph.dependencies(entry) {
     if kind.is_dynamic() {
       dynamic_entries.push(dep);
     } else {
@@ -169,7 +169,7 @@ fn module_group_from_entry(
           .module_groups
           .insert(entry.clone());
 
-        for (dep, kind) in graph.dependencies(&head) {
+        for (dep, kind, _) in graph.dependencies(&head) {
           if kind.is_dynamic() {
             dynamic_entries.push(dep);
           } else {

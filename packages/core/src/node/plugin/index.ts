@@ -1,7 +1,7 @@
 import {
   PluginResolveHookParam,
   PluginResolveHookResult,
-} from '../../../binding';
+} from '../../../binding/index.js';
 
 interface CompilationContext {
   resolve(param: PluginResolveHookParam): Promise<PluginResolveHookResult>;
@@ -23,4 +23,4 @@ export interface JsPlugin {
   // load: JsPluginHook<{ filters: { ids: string[] }}>;
 }
 
-export { rustPluginResolver } from './rustPluginResolver';
+export { rustPluginResolver } from './rustPluginResolver.js';

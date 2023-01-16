@@ -5,7 +5,7 @@ use swc_ecma_ast::EsVersion;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename = "camelCase", default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct Config {
   pub input: HashMap<String, String>,
   pub output: OutputConfig,
@@ -36,7 +36,7 @@ impl Default for Config {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename = "camelCase", default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct OutputConfig {
   path: String,
   public_path: String,
@@ -80,7 +80,7 @@ pub struct ScriptParserConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename = "camelCase", default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct ResolveConfig {
   pub alias: HashMap<String, String>,
   pub main_fields: Vec<String>,
@@ -124,10 +124,12 @@ impl Default for ResolveConfig {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename = "camelCase", default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct RuntimeConfig {
   /// the compiled runtime file path, a runtime is required for script module loading, executing and hot module updating.
   pub path: String,
   /// the runtime plugins
   pub plugins: Vec<String>,
+  /// swc helpers path
+  pub swc_helpers_path: String,
 }

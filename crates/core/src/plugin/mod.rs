@@ -189,12 +189,14 @@ pub trait Plugin: Any + Send + Sync {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
   Entry,
   /// static import, e.g. `import a from './a'`
   Import,
+  /// static export, e.g. `export * from './a'`
+  ExportFrom,
   /// dynamic import, e.g. `import('./a').then(module => console.log(module))`
   DynamicImport,
   /// cjs require, e.g. `require('./a')`
@@ -207,6 +209,8 @@ pub enum ResolveKind {
   ScriptSrc,
   /// `<link href="index.css" />` of html
   LinkHref,
+  /// Hmr update
+  HmrUpdate,
   /// Custom ResolveKind, e.g. `const worker = new Worker(new Url("worker.js"))` of a web worker
   Custom(String),
 }
@@ -232,7 +236,7 @@ pub struct PluginHookContext {
 
 /// Parameter of the resolve hook
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub struct PluginResolveHookParam {
   /// the source would like to resolve, for example, './index'
   pub source: String,
@@ -243,7 +247,7 @@ pub struct PluginResolveHookParam {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename = "camelCase", default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct PluginResolveHookResult {
   /// resolved path, normally a resolved path.
   pub resolved_path: String,
@@ -258,7 +262,7 @@ pub struct PluginResolveHookResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub struct PluginLoadHookParam<'a> {
   /// the resolved path from resolve hook
   pub resolved_path: &'a str,
@@ -267,7 +271,7 @@ pub struct PluginLoadHookParam<'a> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub struct PluginLoadHookResult {
   /// the source content of the module
   pub content: String,
@@ -277,7 +281,7 @@ pub struct PluginLoadHookResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub struct PluginTransformHookParam<'a> {
   /// source content after load or transformed result of previous plugin
   pub content: String,

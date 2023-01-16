@@ -8,4 +8,4 @@ Note:
 - **This project is still under development. Contributions are welcome**.
 - A executable react demo is available under `examples/react`; see [RoadMap](https://github.com/farm-fe/farm/issues/7) for our goals.
 
-This project is built on SWC Project, using swc for html/css/js/tsx/ts/jsx parsing, optimizing and codegen.
+This project is built on SWC Project, using swc for html/css/js/tsx/ts/jsx parsing, transforming, optimizing and codegen.

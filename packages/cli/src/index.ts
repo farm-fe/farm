@@ -1,9 +1,6 @@
-import path from 'path';
-
-import cac from 'cac';
-
-import { start } from './start';
-import { COMMANDS } from './plugin';
+import { start, build } from '@farmfe/core';
+import { cac } from 'cac';
+import { COMMANDS } from './plugin/index.js';
 
 const cli = cac();
 
@@ -14,7 +11,20 @@ cli
   )
   .action((...args) => {
     console.log(args);
-    start();
+    // TODO set config path
+    start({
+      configPath: process.cwd(),
+    });
+  });
+
+cli
+  .command('build', 'Compile the project in production mode')
+  .action((...args) => {
+    console.log(args);
+    // TODO set config path
+    build({
+      configPath: process.cwd(),
+    });
   });
 
 const pluginCmd = cli.command(
@@ -24,7 +34,7 @@ const pluginCmd = cli.command(
     allowUnknownOptions: true,
   }
 );
-pluginCmd.action((command: 'build' | 'create', args: any) => {
+pluginCmd.action((command: keyof typeof COMMANDS, args: any[]) => {
   COMMANDS[command](args);
 });
 

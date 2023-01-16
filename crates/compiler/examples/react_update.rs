@@ -1,4 +1,4 @@
-use farmfe_compiler::Compiler;
+use farmfe_compiler::{update::UpdateType, Compiler};
 use farmfe_core::{
   config::{Config, RuntimeConfig},
   relative_path::RelativePath,
@@ -38,5 +38,18 @@ fn main() {
   )
   .unwrap();
 
-  compiler.compile().unwrap();
+  // compiler.compile().unwrap();
+
+  compiler
+    .update(vec![(
+      cwd
+        .join("examples")
+        .join("react")
+        .join("src")
+        .join("index.tsx")
+        .to_string_lossy()
+        .to_string(),
+      UpdateType::Updated,
+    )])
+    .unwrap();
 }

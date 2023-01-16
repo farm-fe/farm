@@ -4,7 +4,7 @@
 
 import { Context, Next } from 'koa';
 import { extname } from 'path';
-import { Compiler } from '../../compiler';
+import { Compiler } from '../../compiler/index.js';
 
 export function resources(compiler: Compiler) {
   return async (ctx: Context, next: Next) => {

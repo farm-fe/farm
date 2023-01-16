@@ -1,7 +1,7 @@
 use std::{
   collections::HashMap,
   sync::{
-    mpsc::{channel, Sender},
+    mpsc::{channel, Receiver, Sender},
     Arc,
   },
 };
@@ -9,10 +9,11 @@ use std::{
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraphEdge, Module, ModuleId, ModuleType},
+  module::{module_graph::ModuleGraphEdge, Module, ModuleId},
   plugin::{
     PluginAnalyzeDepsHookResultEntry, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
-    PluginProcessModuleHookParam, PluginResolveHookParam, PluginTransformHookParam, ResolveKind,
+    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookParam, ResolveKind,
   },
   rayon,
   rayon::ThreadPool,
@@ -33,31 +34,30 @@ pub(crate) mod parse;
 pub(crate) mod resolve;
 pub(crate) mod transform;
 
-/// Preserved module type for the empty module, custom module type from plugins should not be this
-pub(crate) const FARM_EMPTY_MODULE: &str = "farmfe_empty_module";
-
-pub(crate) struct BuildModuleResult {
-  /// The built module
-  module: Module,
-  /// The dependencies of the built module
-  deps: Vec<PluginAnalyzeDepsHookResultEntry>,
+pub(crate) struct ResolveModuleIdResult {
+  pub module_id: ModuleId,
+  pub resolve_result: PluginResolveHookResult,
 }
 
-pub(crate) enum BuildModuleStatus {
-  /// The module is cached, no need to build
-  Cached(ModuleId),
-  /// Error occurred during the build process
-  Error,
-  /// The module is built successfully
-  Success(Box<BuildModuleResult>),
+pub(crate) struct ResolvedModuleInfo {
+  pub module: Module,
+  pub resolve_module_id_result: ResolveModuleIdResult,
+}
+
+enum ResolveModuleResult {
+  /// The module is already built
+  Built(ModuleId),
+  /// The module is cached
+  Cached(Box<ResolvedModuleInfo>),
+  /// A full new normal module resolved successfully
+  Success(Box<ResolvedModuleInfo>),
 }
 
 impl Compiler {
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
 
-    let thread_pool = Arc::new(rayon::ThreadPoolBuilder::new().build().unwrap());
-    let (err_sender, err_receiver) = channel::<CompilationError>();
+    let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
 
     for (order, source) in self.context.config.input.values().enumerate() {
       Self::build_module_graph_threaded(
@@ -82,12 +82,36 @@ impl Compiler {
     self.context.plugin_driver.build_end(&self.context)
   }
 
-  /// Resolving, loading, transforming and parsing a module, return the module and its dependencies if success
-  pub(crate) fn build_module(
+  pub(crate) fn resolve_module_id(
     resolve_param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
-    err_sender: Sender<CompilationError>,
-  ) -> BuildModuleStatus {
+  ) -> Result<ResolveModuleIdResult> {
+    let hook_context = PluginHookContext {
+      caller: None,
+      meta: HashMap::new(),
+    };
+
+    let resolve_result = match resolve(resolve_param, context, &hook_context) {
+      Ok(resolved) => resolved,
+      Err(e) => {
+        return Err(e);
+      }
+    };
+
+    let module_id = ModuleId::new(&resolve_result.resolved_path, &context.config.root);
+
+    Ok(ResolveModuleIdResult {
+      module_id,
+      resolve_result,
+    })
+  }
+
+  /// Resolving, loading, transforming and parsing a module, return the module and its dependencies if success
+  pub(crate) fn build_module(
+    resolve_result: PluginResolveHookResult,
+    module: &mut Module,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::new(),
@@ -98,51 +122,11 @@ impl Compiler {
         match $func($($args),+) {
           Ok(r) => r,
           Err(e) => {
-            err_sender.send(e).expect("send error to main thread failed");
-            return BuildModuleStatus::Error;
+            return Err(e);
           }
         }
       };
     }
-
-    // ================ Resolve Start ===============
-    let resolve_result = call_and_catch_error!(resolve, resolve_param, context, &hook_context);
-    let module_id = ModuleId::new(
-      &resolve_result.resolved_path,
-      &resolve_result.query,
-      &context.config.root,
-    );
-
-    let mut module = if context
-      .cache_manager
-      .is_module_handled(&module_id.to_string())
-    {
-      // the module has already been handled and it should not be handled twice
-      return BuildModuleStatus::Cached(module_id);
-    } else {
-      // first generate a module
-      let module = Module::new(module_id.clone());
-
-      context
-        .cache_manager
-        .mark_module_handled(&module_id.to_string());
-
-      module
-    };
-
-    // if the module is external, return a external module
-    if resolve_result.external {
-      // let mut module = Module::new(module_id.clone());
-      module.module_type = ModuleType::Custom("farm_external".to_string());
-      module.external = true;
-
-      return BuildModuleStatus::Success(Box::new(BuildModuleResult {
-        module,
-        deps: vec![],
-      }));
-    }
-
-    // ================ Resolve End ===============
 
     // ================ Load Start ===============
     let load_param = PluginLoadHookParam {
@@ -166,7 +150,7 @@ impl Compiler {
 
     // ================ Parse Start ===============
     let parse_param = PluginParseHookParam {
-      module_id,
+      module_id: module.id.clone(),
       resolved_path: resolve_result.resolved_path.clone(),
       query: resolve_result.query.clone(),
       module_type: transform_result
@@ -188,13 +172,10 @@ impl Compiler {
       },
       context,
     ) {
-      err_sender
-        .send(CompilationError::ModuleParsedError {
-          resolved_path: resolve_result.resolved_path.clone(),
-          source: Some(Box::new(e)),
-        })
-        .unwrap();
-      return BuildModuleStatus::Error;
+      return Err(CompilationError::ProcessModuleError {
+        resolved_path: resolve_result.resolved_path.clone(),
+        source: Some(Box::new(e)),
+      });
     }
     // ================ Process Module End ===============
     println!("processed module {}", resolve_result.resolved_path);
@@ -206,7 +187,7 @@ impl Compiler {
     module.meta = module_meta;
 
     // ================ Analyze Deps Start ===============
-    let analyze_deps_result = call_and_catch_error!(analyze_deps, &module, context);
+    let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
     // ================ Analyze Deps End ===============
     println!(
       "analyzed deps {} -> {:?}",
@@ -214,13 +195,10 @@ impl Compiler {
     );
 
     // ================ Finalize Module Start ===============
-    call_and_catch_error!(finalize_module, &mut module, &analyze_deps_result, context);
+    call_and_catch_error!(finalize_module, module, &analyze_deps_result, context);
     // ================ Finalize Module End ===============
 
-    BuildModuleStatus::Success(Box::new(BuildModuleResult {
-      module,
-      deps: analyze_deps_result,
-    }))
+    Ok(analyze_deps_result)
   }
 
   /// resolving, loading, transforming and parsing a module in a separate thread
@@ -233,60 +211,80 @@ impl Compiler {
   ) {
     let c_thread_pool = thread_pool.clone();
     thread_pool.spawn(move || {
-      match Self::build_module(&resolve_param, &context, err_sender.clone()) {
-        BuildModuleStatus::Cached(module_id) => {
-          // try add an empty module to the graph, if a module which has the same module_id is already in the graph, this empty module will be ignored
-          let mut empty_module = Module::new(module_id.clone());
-          empty_module.module_type = ModuleType::Custom(FARM_EMPTY_MODULE.to_string());
-          Self::add_or_update_module(empty_module, &resolve_param.kind, &context);
-          // dependencies relationship should be preserved
-          Self::add_edge(&resolve_param, module_id, order, err_sender, &context);
+      let resolve_module_result = match resolve_module(&resolve_param, &context) {
+        Ok(r) => r,
+        Err(e) => {
+          err_sender.send(e).unwrap();
+          return;
         }
-        BuildModuleStatus::Error => {
-          // error is already sent to the main thread, just do nothing
-        }
-        BuildModuleStatus::Success(box BuildModuleResult { module, deps }) => {
-          let module_id = module.id.clone();
-          // add module to the graph
-          Self::add_or_update_module(module, &resolve_param.kind, &context);
+      };
+
+      match resolve_module_result {
+        ResolveModuleResult::Built(module_id) => {
           // add edge to the graph
-          Self::add_edge(
-            &resolve_param,
-            module_id.clone(),
-            order,
-            err_sender.clone(),
+          Self::add_edge(&resolve_param, module_id, order, &context);
+        }
+        ResolveModuleResult::Cached(_) => unimplemented!("module cache is not implemented yet"),
+        ResolveModuleResult::Success(box ResolvedModuleInfo {
+          mut module,
+          resolve_module_id_result,
+        }) => {
+          if resolve_module_id_result.resolve_result.external {
+            // skip external modules
+            return;
+          }
+
+          match Self::build_module(
+            resolve_module_id_result.resolve_result,
+            &mut module,
             &context,
-          );
-          // resolving dependencies recursively in the thread pool
-          for (order, dep) in deps.into_iter().enumerate() {
-            Self::build_module_graph_threaded(
-              c_thread_pool.clone(),
-              PluginResolveHookParam {
-                source: dep.source,
-                importer: Some(module_id.clone()),
-                kind: dep.kind,
-              },
-              context.clone(),
-              err_sender.clone(),
-              order,
-            );
+          ) {
+            Err(e) => {
+              err_sender.send(e).unwrap();
+            }
+            Ok(deps) => {
+              let module_id = module.id.clone();
+              // add module to the graph
+              let status = Self::add_module(module, &resolve_param.kind, &context);
+              // add edge to the graph
+              Self::add_edge(&resolve_param, module_id.clone(), order, &context);
+              // if status is false, means the module is handled and is already in the graph, no need to resolve its dependencies again
+              if !status {
+                return;
+              }
+
+              // resolving dependencies recursively in the thread pool
+              for (order, dep) in deps.into_iter().enumerate() {
+                Self::build_module_graph_threaded(
+                  c_thread_pool.clone(),
+                  PluginResolveHookParam {
+                    source: dep.source,
+                    importer: Some(module_id.clone()),
+                    kind: dep.kind,
+                  },
+                  context.clone(),
+                  err_sender.clone(),
+                  order,
+                );
+              }
+            }
           }
         }
       }
     });
   }
 
-  fn add_edge(
+  pub(crate) fn add_edge(
     resolve_param: &PluginResolveHookParam,
     module_id: ModuleId,
     order: usize,
-    err_sender: Sender<CompilationError>,
     context: &CompilationContext,
   ) {
     let mut module_graph = context.module_graph.write();
 
+    // TODO check if the edge already exists
     if let Some(importer_id) = &resolve_param.importer {
-      if let Err(e) = module_graph.add_edge(
+      module_graph.add_edge(
         importer_id,
         &module_id,
         ModuleGraphEdge {
@@ -294,30 +292,77 @@ impl Compiler {
           kind: resolve_param.kind.clone(),
           order,
         },
-      ) {
-        err_sender.send(e).expect("send error failed!");
-      };
+      ).expect("failed to add edge to the module graph, the endpoint modules of the edge should be in the graph")
     }
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  fn add_or_update_module(module: Module, kind: &ResolveKind, context: &CompilationContext) {
+  /// if the module is already in the graph, return false
+  pub(crate) fn add_module(
+    module: Module,
+    kind: &ResolveKind,
+    context: &CompilationContext,
+  ) -> bool {
     let mut module_graph = context.module_graph.write();
+
+    // check if the module already exists
+    if module_graph.has_module(&module.id) {
+      return false;
+    }
 
     // mark entry module
     if matches!(kind, ResolveKind::Entry) {
       module_graph.entries.insert(module.id.clone());
     }
 
-    if module_graph.has_module(&module.id) {
-      // if current module is a empty module, we should not update it
-      if module.module_type == ModuleType::Custom(FARM_EMPTY_MODULE.to_string()) {
-        return;
-      }
-
-      module_graph.update_module(module);
-    } else {
-      module_graph.add_module(module);
-    }
+    module_graph.add_module(module);
+    true
   }
+
+  pub(crate) fn create_thread_pool() -> (
+    Arc<ThreadPool>,
+    Sender<CompilationError>,
+    Receiver<CompilationError>,
+  ) {
+    let thread_pool = Arc::new(rayon::ThreadPoolBuilder::new().build().unwrap());
+    let (err_sender, err_receiver) = channel::<CompilationError>();
+
+    (thread_pool, err_sender, err_receiver)
+  }
+
+  pub(crate) fn create_module(module_id: ModuleId, external: bool) -> Module {
+    let mut module = Module::new(module_id);
+
+    // if the module is external, return a external module
+    if external {
+      module.external = true;
+    }
+
+    module
+  }
+}
+
+fn resolve_module(
+  resolve_param: &PluginResolveHookParam,
+  context: &Arc<CompilationContext>,
+) -> Result<ResolveModuleResult> {
+  let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
+
+  // be care of dead lock, see https://github.com/Amanieu/parking_lot/issues/212
+  let module_graph = context.module_graph.read();
+
+  Ok(
+    if module_graph.has_module(&resolve_module_id_result.module_id) {
+      // the module has already been handled and it should not be handled twice
+      ResolveModuleResult::Built(resolve_module_id_result.module_id)
+    } else {
+      ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
+        module: Compiler::create_module(
+          resolve_module_id_result.module_id.clone(),
+          resolve_module_id_result.resolve_result.external,
+        ),
+        resolve_module_id_result,
+      }))
+    },
+  )
 }

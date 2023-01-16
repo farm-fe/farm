@@ -50,6 +50,9 @@ fn load_parse_and_analyze_deps() {
           "import a from './a';",
           "import b from './b';",
           "",
+          "export * from './c';",
+          "export { d } from './d';",
+          "",
           "console.log(a, b);"
         ]
       );
@@ -83,7 +86,7 @@ fn load_parse_and_analyze_deps() {
       module.meta = module_meta;
       module.module_type = loaded.module_type;
 
-      assert_eq!(module.meta.as_script().ast.body.len(), 3);
+      assert_eq!(module.meta.as_script().ast.body.len(), 5);
 
       let mut deps = PluginAnalyzeDepsHookParam {
         module: &module,
@@ -103,6 +106,14 @@ fn load_parse_and_analyze_deps() {
           PluginAnalyzeDepsHookResultEntry {
             source: String::from("./b"),
             kind: ResolveKind::Import
+          },
+          PluginAnalyzeDepsHookResultEntry {
+            source: String::from("./c"),
+            kind: ResolveKind::ExportFrom
+          },
+          PluginAnalyzeDepsHookResultEntry {
+            source: String::from("./d"),
+            kind: ResolveKind::ExportFrom
           }
         ]
       );
@@ -135,6 +146,8 @@ fn load_parse_and_analyze_deps() {
         vec![
           "import a from \"./a\";",
           "import b from \"./b\";",
+          "export * from \"./c\";",
+          "export { d } from \"./d\";",
           "console.log(a, b);"
         ]
       );

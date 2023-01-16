@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, hash::Hash, path::Path};
+use std::{any::Any, hash::Hash, path::Path};
 
 use blake2::{
   digest::{Update, VariableOutput},
@@ -6,7 +6,7 @@ use blake2::{
 };
 use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
-use farmfe_utils::{relative, stringify_query};
+use farmfe_utils::relative;
 use hashbrown::HashSet;
 use relative_path::RelativePath;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
@@ -50,7 +50,7 @@ impl Module {
   pub fn new(id: ModuleId) -> Self {
     Self {
       id,
-      module_type: ModuleType::Custom("unknown".to_string()),
+      module_type: ModuleType::Custom("__farm_unknown".to_string()),
       meta: ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _),
       module_groups: HashSet::new(),
       resource_pot: None,
@@ -237,14 +237,13 @@ impl ModuleType {
 #[archive_attr(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
   relative_path: String,
-  query_string: String,
 }
 
 const LEN: usize = 4;
 
 impl ModuleId {
   /// the resolved_path and query determine a module
-  pub fn new(resolved_path: &str, query: &HashMap<String, String>, cwd: &str) -> Self {
+  pub fn new(resolved_path: &str, cwd: &str) -> Self {
     let rp = Path::new(resolved_path);
     let relative_path = if rp.is_absolute() {
       relative(cwd, resolved_path)
@@ -252,12 +251,7 @@ impl ModuleId {
       resolved_path.to_string()
     };
 
-    let query_string = stringify_query(query);
-
-    Self {
-      relative_path,
-      query_string,
-    }
+    Self { relative_path }
   }
 
   /// return self.relative_path and self.query_string in dev,
@@ -293,19 +287,8 @@ impl ModuleId {
 
 impl From<&str> for ModuleId {
   fn from(rp: &str) -> Self {
-    let (relative_path, query_string) = if rp.contains('?') {
-      let mut sp = rp.split('?');
-      (
-        sp.next().unwrap().to_string(),
-        sp.next().unwrap().to_string(),
-      )
-    } else {
-      (rp.to_string(), String::new())
-    };
-
     Self {
-      relative_path,
-      query_string,
+      relative_path: rp.to_string(),
     }
   }
 }
@@ -318,13 +301,12 @@ impl From<String> for ModuleId {
 
 impl ToString for ModuleId {
   fn to_string(&self) -> String {
-    format!("{}{}", self.relative_path, self.query_string)
+    self.relative_path.to_string()
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
 
   use crate::config::Mode;
   use farmfe_macro_cache_item::cache_item;
@@ -343,14 +325,14 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     let resolved_path = "/root/module.html";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, &HashMap::new(), "/root");
+    let module_id = ModuleId::new(resolved_path, "/root");
     #[cfg(not(target_os = "windows"))]
     let root = "/root";
 
     #[cfg(target_os = "windows")]
     let resolved_path = "C:\\root\\module.html";
     #[cfg(target_os = "windows")]
-    let module_id = ModuleId::new(resolved_path, &HashMap::new(), "C:\\root");
+    let module_id = ModuleId::new(resolved_path, "C:\\root");
     #[cfg(target_os = "windows")]
     let root = "C:\\root";
 
@@ -363,19 +345,19 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     let resolved_path = "/root/packages/test/module.html";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, &HashMap::new(), "/root/packages/app");
+    let module_id = ModuleId::new(resolved_path, "/root/packages/app");
 
     #[cfg(target_os = "windows")]
     let resolved_path = "C:\\root\\packages\\test\\module.html";
     #[cfg(target_os = "windows")]
-    let module_id = ModuleId::new(resolved_path, &HashMap::new(), "C:\\root\\packages\\app");
+    let module_id = ModuleId::new(resolved_path, "C:\\root\\packages\\app");
 
     assert_eq!(module_id.id(Mode::Development), "../test/module.html");
   }
 
   #[test]
   fn module_serialization() {
-    let mut module = Module::new(ModuleId::new("/root/index.ts", &HashMap::new(), "/root"));
+    let mut module = Module::new(ModuleId::new("/root/index.ts", "/root"));
 
     #[cache_item(CustomModuleMetaData)]
     struct StructModuleData {
@@ -383,10 +365,7 @@ mod tests {
       imports: Vec<String>,
     }
 
-    module.module_groups = HashSet::from([
-      ModuleId::new("1", &HashMap::new(), ""),
-      ModuleId::new("2", &HashMap::new(), ""),
-    ]);
+    module.module_groups = HashSet::from([ModuleId::new("1", ""), ModuleId::new("2", "")]);
 
     module.meta = ModuleMetaData::Custom(Box::new(StructModuleData {
       ast: String::from("ast"),
@@ -423,9 +402,9 @@ mod tests {
 
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("1", &HashMap::new(), "")));
+      .contains(&ModuleId::new("1", "")));
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("2", &HashMap::new(), "")));
+      .contains(&ModuleId::new("2", "")));
   }
 }
