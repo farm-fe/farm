@@ -22,7 +22,7 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm && pnpm i --frozen-lockfile
       - name: Type Check With Tsc
-        run: pnpm run --filter "@farmfe*" build
+        run: pnpm run --filter "@farmfe/*" build
   ts-test:
     name: Typescript Test
     runs-on: ${{ matrix.settings.os }}

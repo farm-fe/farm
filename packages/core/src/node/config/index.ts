@@ -88,44 +88,62 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
 export async function resolveUserConfig(
   configPath: string
 ): Promise<UserConfig> {
+  if (!path.isAbsolute(configPath)) {
+    throw new Error('configPath must be an absolute path');
+  }
+
   // if configPath points to a directory, try to find a config file in it using default config
   if (fs.statSync(configPath).isDirectory()) {
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
+      const config = await resolveConfigFile(resolvedPath);
 
-      if (fs.existsSync(resolvedPath)) {
-        // if config is written in typescript, we need to compile it to javascript using farm first
-        if (name.endsWith('.ts')) {
-          const Compiler = (await import('../compiler/index.js')).Compiler;
-          const compiler = new Compiler({
-            compilation: {
-              input: {
-                config: resolvedPath,
-              },
-            },
-          });
-          await compiler.compile();
-          const resources = compiler.resources();
-          // should only emit one config file bundled with all dependencies
-          const configCode = Buffer.from(
-            Object.values(resources)[0]
-          ).toString();
-          // Change to vm.module of node or loaders as soon as it is stable
-          const filePath = path.join(
-            os.tmpdir(),
-            'farmfe',
-            `temp-config-${Date.now()}.mjs`
-          );
-          fs.mkdirSync(path.dirname(filePath), { recursive: true });
-          fs.writeFileSync(filePath, configCode);
-          const config = (await import(filePath)).default;
-          return config;
-        } else {
-          const config = (await import(resolvedPath)).default;
-          return config;
-        }
+      if (config) {
+        return config;
       }
     }
+  } else if (fs.statSync(configPath).isFile()) {
+    const config = await resolveConfigFile(configPath);
+
+    if (config) {
+      return config;
+    }
   }
+
   return {};
+}
+
+async function resolveConfigFile(
+  resolvedPath: string
+): Promise<UserConfig | undefined> {
+  if (fs.existsSync(resolvedPath)) {
+    // if config is written in typescript, we need to compile it to javascript using farm first
+    if (resolvedPath.endsWith('.ts')) {
+      const Compiler = (await import('../compiler/index.js')).Compiler;
+      const compiler = new Compiler({
+        compilation: {
+          input: {
+            config: resolvedPath,
+          },
+        },
+      });
+      await compiler.compile();
+      const resources = compiler.resources();
+      // should only emit one config file bundled with all dependencies
+      const configCode = Buffer.from(Object.values(resources)[0]).toString();
+      // Change to vm.module of node or loaders as soon as it is stable
+      const filePath = path.join(
+        os.tmpdir(),
+        'farmfe',
+        `temp-config-${Date.now()}.mjs`
+      );
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, configCode);
+      const config = (await import(filePath)).default;
+      return config;
+    } else {
+      const config = (await import(resolvedPath)).default;
+      return config;
+    }
+  }
 }

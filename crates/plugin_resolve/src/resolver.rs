@@ -25,7 +25,7 @@ impl Resolver {
   /// * **Absolute Path**: '/root/xxx' or 'c:\\root\\xxx'
   /// * **Configured Alias**: '@/pages/xxx'
   /// * **Package**:
-  ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports)
+  ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports), if source is end with '.js', also try to find '.ts' file
   ///   * **browser**: refer to [package-browser-field-spec](https://github.com/defunctzombie/package-browser-field-spec)
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
   pub fn resolve(
