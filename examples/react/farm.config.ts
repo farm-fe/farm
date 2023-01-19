@@ -14,4 +14,7 @@ export default defineFarmConfig({
       path: './build',
     },
   },
+  server: {
+    hmr: true
+  }
 });

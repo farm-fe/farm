@@ -16,7 +16,8 @@ export function resources(compiler: Compiler) {
     if (ctx.body || ctx.status !== 404) return;
 
     ctx.type = extname(ctx.path);
-    const resource = compiler.resources()[ctx.path.slice(1)];
+    const resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
+    const resource = compiler.resources()[resourcePath];
     ctx.body = Buffer.from(resource);
   };
 }

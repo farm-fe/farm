@@ -8,7 +8,12 @@ import merge from 'lodash.merge';
 import { Config } from '../../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
-import { UserConfig } from './types.js';
+import {
+  NormalizedServerConfig,
+  UserConfig,
+  UserHmrConfig,
+  UserServerConfig,
+} from './types.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -35,6 +40,7 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
     userConfig.compilation
   );
   const require = module.createRequire(import.meta.url);
+  const hmrClientPluginPath = require.resolve('../../client/index.js');
 
   if (!config.runtime) {
     config.runtime = {
@@ -42,13 +48,31 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
       plugins: [],
     };
   }
+
   if (!config.runtime.path) {
     config.runtime.path = require.resolve('@farmfe/runtime');
   }
+
   if (!config.runtime.swcHelpersPath) {
     config.runtime.swcHelpersPath = path.dirname(
       require.resolve('@swc/helpers/package.json')
     );
+  }
+
+  if (!config.runtime.plugins) {
+    config.runtime.plugins = [];
+  }
+
+  const normalizedDevServerConfig = normalizeDevServerOptions(
+    userConfig.server
+  );
+
+  if (
+    Array.isArray(config.runtime.plugins) &&
+    normalizedDevServerConfig.hmr &&
+    !config.runtime.plugins.includes(hmrClientPluginPath)
+  ) {
+    config.runtime.plugins.push(hmrClientPluginPath);
   }
 
   // we should not deep merge compilation.input
@@ -81,6 +105,34 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
   return normalizedConfig;
 }
 
+export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
+  ignores: [],
+  host: 'localhost',
+  port: 9801,
+};
+
+export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
+  port: 9000,
+  https: false,
+  // http2: false,
+  writeToDisk: false,
+  hmr: DEFAULT_HMR_OPTIONS,
+};
+
+export function normalizeDevServerOptions(
+  options?: UserServerConfig
+): NormalizedServerConfig {
+  if (!options) {
+    return DEFAULT_DEV_SERVER_OPTIONS;
+  }
+
+  if (options.hmr === true) {
+    options.hmr = DEFAULT_HMR_OPTIONS;
+  }
+
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options);
+}
+
 /**
  * Resolve and load user config from the specified path
  * @param configPath
@@ -92,28 +144,39 @@ export async function resolveUserConfig(
     throw new Error('configPath must be an absolute path');
   }
 
+  let userConfig: UserConfig = {};
+  let root: string = process.cwd();
+
   // if configPath points to a directory, try to find a config file in it using default config
   if (fs.statSync(configPath).isDirectory()) {
+    root = configPath;
+
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-      const config = await resolveConfigFile(resolvedPath);
+      const config = await readConfigFile(resolvedPath);
 
       if (config) {
-        return config;
+        userConfig = config;
       }
     }
   } else if (fs.statSync(configPath).isFile()) {
-    const config = await resolveConfigFile(configPath);
+    root = path.dirname(configPath);
+
+    const config = await readConfigFile(configPath);
 
     if (config) {
-      return config;
+      userConfig = config;
     }
   }
 
-  return {};
+  if (!userConfig.root) {
+    userConfig.root = root;
+  }
+
+  return userConfig;
 }
 
-async function resolveConfigFile(
+async function readConfigFile(
   resolvedPath: string
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(resolvedPath)) {
@@ -126,12 +189,15 @@ async function resolveConfigFile(
             config: resolvedPath,
           },
         },
+        server: {
+          hmr: false,
+        },
       });
       await compiler.compile();
       const resources = compiler.resources();
       // should only emit one config file bundled with all dependencies
       const configCode = Buffer.from(Object.values(resources)[0]).toString();
-      // Change to vm.module of node or loaders as soon as it is stable
+      // Change to vm.module of node or loaders as far as it is stable
       const filePath = path.join(
         os.tmpdir(),
         'farmfe',

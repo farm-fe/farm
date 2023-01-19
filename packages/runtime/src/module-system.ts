@@ -74,7 +74,7 @@ export class ModuleSystem {
     return module.exports;
   }
 
-  async dynamicRequire(moduleId: string): Promise<any> {
+  dynamicRequire(moduleId: string): Promise<any> {
     const resources = this.dynamicModuleResourcesMap[moduleId];
 
     if (!resources || resources.length === 0) {
@@ -84,10 +84,9 @@ export class ModuleSystem {
     }
 
     // loading all required resources, and return the exports of the entry module
-    await Promise.all(
+    return Promise.all(
       resources.map((resource) => this.resourceLoader.load(resource))
-    );
-    return this.require(moduleId);
+    ).then(() => this.require(moduleId));
   }
 
   register(moduleId: string, initializer: ModuleInitialization): void {
@@ -102,11 +101,13 @@ export class ModuleSystem {
 
   update(moduleId: string, init: ModuleInitialization): void {
     this.modules[moduleId] = init;
+    this.clearCache(moduleId);
   }
 
   delete(moduleId: string): boolean {
     if (this.modules[moduleId]) {
       delete this.modules[moduleId];
+      this.clearCache(moduleId);
       return true;
     } else {
       return false;
@@ -123,23 +124,28 @@ export class ModuleSystem {
   }
 
   // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
+  // This method can also be called during runtime to add new dynamic modules
   setDynamicModuleResourcesMap(
     dynamicModuleResourcesMap: Record<string, Resource[]>
   ): void {
     this.dynamicModuleResourcesMap = dynamicModuleResourcesMap;
   }
 
+  // The public paths are injected during compile time
+  // This method can also be called during runtime to add new public paths
   setPublicPaths(publicPaths: string[]): void {
     this.publicPaths = publicPaths;
     this.resourceLoader.publicPaths = this.publicPaths;
   }
 
   // The plugins are injected during compile time.
+  // This method can also be called during runtime to add new plugins
   setPlugins(plugins: FarmRuntimePlugin[]): void {
     this.pluginContainer.plugins = plugins;
   }
 
-  // bootstrap should be called after all three methods above are called
+  // bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
+  // This method should only be called once
   bootstrap(): void {
     this.pluginContainer.hookSerial('bootstrap', this);
   }

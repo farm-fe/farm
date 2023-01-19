@@ -1,4 +1,7 @@
-use farmfe_core::swc_html_ast::{Child, Document, Element};
+use farmfe_core::{
+  config::{FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  swc_html_ast::{Child, Document, Element},
+};
 use farmfe_toolkit::{
   html::{create_element_with_attrs, create_element_with_text},
   swc_html_visit::{VisitMut, VisitMutWith},
@@ -85,8 +88,11 @@ impl VisitMut for ResourcesInjector {
           .push(Child::Element(create_element_with_text(
             "script",
             &format!(
-              r#"globalThis.__acquire_farm_module_system__().require("{}")"#,
-              entry
+              r#"var {} = globalThis || window || self;
+              var __farm_module_system_local__ = {}.{};
+              __farm_module_system_local__.bootstrap();
+              __farm_module_system_local__.require("{}")"#,
+              FARM_GLOBAL_THIS, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, entry
             ),
           )));
       }

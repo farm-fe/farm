@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 use swc_ecma_ast::EsVersion;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
+pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
+pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {

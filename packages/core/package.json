@@ -28,7 +28,10 @@
     "@napi-rs/cli": "^2.10.0",
     "@types/koa": "^2.13.5",
     "@types/koa-static": "^4.0.2",
-    "@types/lodash.merge": "^4.6.7"
+    "@types/lodash": "4.14.185",
+    "@types/lodash.debounce": "^4.0.7",
+    "@types/lodash.merge": "^4.6.7",
+    "@types/ws": "^8.5.4"
   },
   "engines": {
     "node": ">= 16"
@@ -50,9 +53,11 @@
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.0.0",
     "@swc/helpers": "^0.4.9",
+    "chokidar": "^3.5.3",
     "koa": "^2.13.4",
     "koa-static": "^5.0.0",
+    "lodash.debounce": "^4.0.8",
     "lodash.merge": "^4.6.2",
-    "chokidar": "^3.5.3"
+    "ws": "^8.12.0"
   }
 }

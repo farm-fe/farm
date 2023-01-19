@@ -1,15 +1,26 @@
-import { Config } from '../../../binding/index.js';
-import { JsPlugin } from '../plugin/index.js';
-import { RustPlugin } from '../plugin/rustPluginResolver.js';
+import type { Config } from '../../../binding/index.js';
+import type { JsPlugin } from '../plugin/index.js';
+import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 
 export interface UserServerConfig {
-  port: number;
-  hmr: boolean | UserHmrConfig;
+  port?: number;
+  https?: boolean;
+  // http2?: boolean;
+  writeToDisk?: boolean;
+  hmr?: boolean | UserHmrConfig;
 }
+
+export type NormalizedServerConfig = Required<
+  Omit<UserServerConfig, 'hmr'> & {
+    hmr: Required<UserHmrConfig>;
+  }
+>;
 
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
   ignores?: string[];
+  host?: string;
+  port?: number;
 }
 
 export interface UserConfig {
