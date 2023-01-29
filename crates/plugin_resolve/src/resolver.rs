@@ -137,7 +137,10 @@ impl Resolver {
         return self.resolve(replaced, base_dir, kind);
       } else if !alias.ends_with("$") && source.starts_with(alias) {
         let source_left = RelativePath::new(source.trim_start_matches(alias));
-        let new_source = source_left.to_logical_path(replaced).to_string_lossy().to_string();
+        let new_source = source_left
+          .to_logical_path(replaced)
+          .to_string_lossy()
+          .to_string();
         return self.resolve(&new_source, base_dir, kind);
       }
     }
@@ -154,7 +157,7 @@ impl Resolver {
   ) -> Result<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
-
+    // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
 

@@ -4,14 +4,14 @@ use farmfe_core::{error::Result, plugin::PluginHookContext};
 
 use crate::{
   generate::{
-    merge_modules::merge_modules,
+    partial_bundling::partial_bundling,
     render_resource_pots::render_resource_pots_and_generate_resources,
     write_resources::write_resources,
   },
   Compiler,
 };
 
-mod merge_modules;
+mod partial_bundling;
 mod render_resource_pots;
 mod write_resources;
 
@@ -35,8 +35,8 @@ impl Compiler {
     }
     /* =============== Optimize Module Graph End ================ */
 
-    /* =============== Analyze Module Graph Start ================ */
-    merge_modules(&self.context, &hook_context)?;
+    /* =============== Merge Modules Start ================ */
+    partial_bundling(&self.context, &hook_context)?;
     /* =============== Merge Modules End ================ */
 
     /* =============== Process Resource Pot Graph Start ================ */

@@ -28,7 +28,7 @@
     "@napi-rs/cli": "^2.10.0",
     "@types/koa": "^2.13.5",
     "@types/koa-static": "^4.0.2",
-    "@types/lodash": "4.14.185",
+    "@types/lodash": "^4.14.191",
     "@types/lodash.debounce": "^4.0.7",
     "@types/lodash.merge": "^4.6.7",
     "@types/ws": "^8.5.4"

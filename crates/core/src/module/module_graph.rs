@@ -14,6 +14,7 @@ use crate::{
 
 use super::{Module, ModuleId};
 
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ModuleGraphEdge {
   /// the source of this edge, for example, `./index.css`
   pub source: String,
@@ -117,8 +118,11 @@ impl ModuleGraph {
   }
 
   pub fn remove_module(&mut self, module_id: &ModuleId) -> Module {
-    let index = self.id_index_map.get(module_id).unwrap();
-    self.g.remove_node(*index).unwrap()
+    let index = self
+      .id_index_map
+      .remove(module_id)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+    self.g.remove_node(index).unwrap()
   }
 
   pub fn add_edge(
@@ -174,15 +178,36 @@ impl ModuleGraph {
     Ok(())
   }
 
+  pub fn has_edge(&self, from: &ModuleId, to: &ModuleId) -> bool {
+    let from = self.id_index_map.get(from);
+    let to = self.id_index_map.get(to);
+
+    if from.is_none() || to.is_none() {
+      return false;
+    }
+
+    self.g.find_edge(*from.unwrap(), *to.unwrap()).is_some()
+  }
+
   pub fn edge_info(&self, from: &ModuleId, to: &ModuleId) -> Option<&ModuleGraphEdge> {
-    let from = self.id_index_map.get(from).unwrap();
-    let to = self.id_index_map.get(to).unwrap();
+    let from = self
+      .id_index_map
+      .get(from)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", from));
+    let to = self
+      .id_index_map
+      .get(to)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", to));
 
     if let Some(edge_index) = self.g.find_edge(*from, *to) {
       self.g.edge_weight(edge_index)
     } else {
       None
     }
+  }
+
+  pub fn edge_count(&self) -> usize {
+    self.g.edge_count()
   }
 
   /// get dependencies of the specific module, sorted by the order of the edge.
@@ -228,7 +253,7 @@ impl ModuleGraph {
 
   /// get dependent of the specific module.
   /// don't ensure the result's order.
-  pub fn dependents(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+  pub fn dependents(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind, String)> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -240,11 +265,23 @@ impl ModuleGraph {
 
     let mut deps = vec![];
 
-    while let Some(node_index) = edges.next_node(&self.g) {
-      deps.push(self.g[node_index].id.clone());
+    while let Some((edge_index, node_index)) = edges.next(&self.g) {
+      deps.push((
+        self.g[node_index].id.clone(),
+        self.g[edge_index].kind.clone(),
+        self.g[edge_index].source.clone(),
+      ));
     }
 
     deps
+  }
+
+  pub fn dependents_ids(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+    self
+      .dependents(module_id)
+      .into_iter()
+      .map(|(id, _, _)| id)
+      .collect()
   }
 
   /// sort the module graph topologically using post order dfs, note this topo sort also keeps the original import order.
@@ -322,6 +359,41 @@ impl ModuleGraph {
     while let Some(node_index) = bfs.next(&self.g) {
       op(&self.g[node_index].id);
     }
+  }
+
+  pub fn take_edge_and_module(
+    &mut self,
+    from: &ModuleId,
+    to: &ModuleId,
+  ) -> (ModuleGraphEdge, Module) {
+    let i = self
+      .id_index_map
+      .remove(to)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", to));
+    let edge_index = self
+      .g
+      .find_edge(*self.id_index_map.get(from).unwrap(), i)
+      .unwrap_or_else(|| panic!("edge {:?} -> {:?} should in the module graph", from, to));
+
+    let edge = self.g.remove_edge(edge_index).unwrap();
+    let module = self.g.remove_node(i).unwrap();
+    (edge, module)
+  }
+
+  pub fn take_module(&mut self, module_id: &ModuleId) -> Module {
+    let i = self
+      .id_index_map
+      .remove(module_id)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+    self.g.remove_node(i).unwrap()
+  }
+
+  pub fn replace_module(&mut self, module_id: &ModuleId, module: Module) {
+    let i = self
+      .id_index_map
+      .get(module_id)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+    self.g[*i] = module;
   }
 }
 
@@ -448,6 +520,26 @@ mod tests {
     let graph = construct_test_module_graph();
 
     let deps = graph.dependents(&"F".into());
-    assert_eq!(deps, vec!["D".into(), "C".into(),]);
+    assert_eq!(
+      deps.into_iter().map(|dep| dep.0).collect::<Vec<ModuleId>>(),
+      vec!["D".into(), "C".into(),]
+    );
+  }
+
+  #[test]
+  fn remove_module() {
+    let mut graph = construct_test_module_graph();
+
+    graph.remove_module(&"A".into());
+    assert!(!graph.has_module(&"A".into()));
+  }
+
+  #[test]
+  fn has_edge() {
+    let mut graph = construct_test_module_graph();
+
+    graph.remove_module(&"A".into());
+    assert!(!graph.has_edge(&"A".into(), &"D".into()));
+    assert!(graph.has_edge(&"B".into(), &"D".into()));
   }
 }

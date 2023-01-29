@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use farmfe_core::{config::ResolveConfig, plugin::ResolveKind};
 use farmfe_plugin_resolve::resolver::Resolver;
-use farmfe_toolkit::testing_helpers::fixture;
+use farmfe_testing_helpers::fixture;
 
 #[test]
 fn resolve_relative_specifier_without_extension() {

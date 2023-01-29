@@ -41,6 +41,12 @@ impl ResourcePotGraph {
     self.id_index_map.insert(name, index);
   }
 
+  pub fn add_edge(&mut self, from: &ResourcePotId, to: &ResourcePotId) {
+    let from = self.id_index_map.get(from).unwrap();
+    let to = self.id_index_map.get(to).unwrap();
+    self.g.add_edge(*from, *to, ResourcePotGraphEdge {});
+  }
+
   pub fn resource_pots(&self) -> Vec<&ResourcePot> {
     self.g.node_weights().into_iter().collect()
   }

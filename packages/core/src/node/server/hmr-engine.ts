@@ -17,8 +17,9 @@ export class HmrEngine {
   }
 
   recompileAndSendResult = debounce(async (): Promise<void> => {
-    const result = await this._compiler.update([...this._updateQueue]);
+    const queue = [...this._updateQueue];
     this._updateQueue = new Set();
+    const result = await this._compiler.update(queue);
 
     const id = Date.now().toString();
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment

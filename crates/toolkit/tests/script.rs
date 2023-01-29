@@ -4,8 +4,9 @@ use farmfe_core::swc_common::{FilePathMapping, SourceMap};
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{codegen_module, module_type_from_id, parse_module, syntax_from_module_type},
-  testing_helpers::fixture,
 };
+
+use farmfe_testing_helpers::fixture;
 
 #[test]
 fn parse_and_codegen_module() {

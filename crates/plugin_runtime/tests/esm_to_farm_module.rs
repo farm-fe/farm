@@ -1,4 +1,4 @@
-use farmfe_toolkit::testing_helpers::fixture;
+use farmfe_testing_helpers::fixture;
 
 #[test]
 fn test_esm_to_farm_module() {

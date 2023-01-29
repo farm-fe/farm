@@ -15,9 +15,13 @@ export function resources(compiler: Compiler) {
     // the response is already handled
     if (ctx.body || ctx.status !== 404) return;
 
-    ctx.type = extname(ctx.path);
     const resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
+    ctx.type = extname(resourcePath);
+    console.log('resourcePath', resourcePath, ctx.type);
     const resource = compiler.resources()[resourcePath];
+
+    if (!resource) return;
+
     ctx.body = Buffer.from(resource);
   };
 }

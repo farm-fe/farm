@@ -16,11 +16,11 @@ use farmfe_core::{
   },
 };
 
-pub struct FarmPluginMergeModules {}
+pub struct FarmPluginPartialBundling {}
 
-impl Plugin for FarmPluginMergeModules {
+impl Plugin for FarmPluginPartialBundling {
   fn name(&self) -> &str {
-    "FarmPluginMergeModules"
+    "FarmPluginPartialBundling"
   }
 
   fn analyze_module_graph(
@@ -29,103 +29,107 @@ impl Plugin for FarmPluginMergeModules {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleGroupMap>> {
-    let mut module_group_map = ModuleGroupMap::new();
-
-    // set the entry's module group
-    for entry in module_graph.entries.clone() {
-      let (group, dynamic_dependencies) = module_group_from_entry(&entry, module_graph);
-      module_group_map.add_module_group(group);
-
-      let mut visited = HashSet::new();
-      visited.insert(entry);
-      let mut queue = VecDeque::from(dynamic_dependencies);
-
-      while queue.len() > 0 {
-        let head = queue.pop_front().unwrap();
-
-        if visited.contains(&head) {
-          continue;
-        }
-
-        visited.insert(head.clone());
-
-        let (group, dynamic_dependencies) = module_group_from_entry(&head, module_graph);
-        module_group_map.add_module_group(group);
-        queue.extend(dynamic_dependencies);
-      }
-    }
+    let module_group_map = module_group_map_from_entries(
+      &module_graph.entries.clone().into_iter().collect(),
+      module_graph,
+    );
 
     Ok(Some(module_group_map))
   }
 
-  fn merge_modules(
+  fn partial_bundling(
     &self,
-    module_group_map: &mut ModuleGroupMap,
+    module_group: &mut ModuleGroup,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<ResourcePotGraph>> {
+  ) -> farmfe_core::error::Result<Option<Vec<ResourcePot>>> {
     let mut module_graph = context.module_graph.write();
-    let mut resource_pot_graph = ResourcePotGraph::new();
+    let mut resource_pots = vec![];
 
-    println!(
-      "module group map len: {} in merge modules",
-      module_group_map.len()
-    );
-    // merge all module groups into the same resource pot for now
-    for g in module_group_map.module_groups_mut() {
-      let mut module_type_resource_pot_map = HashMap::<ModuleType, ResourcePot>::new();
+    let mut module_type_resource_pot_map = HashMap::<ModuleType, ResourcePot>::new();
 
-      for module_id in g.modules() {
-        let module = module_graph.module_mut(module_id).unwrap();
+    for module_id in module_group.modules() {
+      let module = module_graph.module_mut(module_id).unwrap();
 
-        // TODO remove this after the partial bundle is implemented
-        if module.module_type.is_script() {
-          module.module_type = ModuleType::Js;
-        }
-
-        let resource_pot = if module_type_resource_pot_map.contains_key(&module.module_type) {
-          let resource_pot = module_type_resource_pot_map
-            .get_mut(&module.module_type)
-            .unwrap();
-          module.resource_pot = Some(resource_pot.id.clone());
-          resource_pot.add_module(module_id.clone());
-
-          resource_pot
-        } else {
-          let mut resource_pot = ResourcePot::new(
-            ResourcePotId::new(module_id.to_string()),
-            module.module_type.clone().into(),
-            g.id.clone(),
-          );
-          module.resource_pot = Some(resource_pot.id.clone());
-          resource_pot.add_module(module_id.clone());
-          module_type_resource_pot_map.insert(module.module_type.clone(), resource_pot);
-
-          module_type_resource_pot_map
-            .get_mut(&module.module_type)
-            .unwrap()
-        };
-
-        if module_graph.entries.contains(module_id) {
-          resource_pot.entry_module = Some(module_id.clone());
-        }
+      // TODO remove this after the partial bundle is implemented
+      if module.module_type.is_script() {
+        module.module_type = ModuleType::Js;
       }
 
-      for resource_pot in module_type_resource_pot_map.into_values() {
-        g.add_resource_pot(resource_pot.id.clone());
-        // TODO add dependency info of resource pot
-        resource_pot_graph.add_resource_pot(resource_pot)
+      let resource_pot = if module_type_resource_pot_map.contains_key(&module.module_type) {
+        let resource_pot = module_type_resource_pot_map
+          .get_mut(&module.module_type)
+          .unwrap();
+        module.resource_pot = Some(resource_pot.id.clone());
+        resource_pot.add_module(module_id.clone());
+
+        resource_pot
+      } else {
+        let mut resource_pot = ResourcePot::new(
+          ResourcePotId::new(module_id.to_string()),
+          module.module_type.clone().into(),
+          module_group.id.clone(),
+        );
+        module.resource_pot = Some(resource_pot.id.clone());
+        resource_pot.add_module(module_id.clone());
+        module_type_resource_pot_map.insert(module.module_type.clone(), resource_pot);
+
+        module_type_resource_pot_map
+          .get_mut(&module.module_type)
+          .unwrap()
+      };
+
+      if module_graph.entries.contains(module_id) {
+        resource_pot.entry_module = Some(module_id.clone());
       }
     }
 
-    Ok(Some(resource_pot_graph))
+    for resource_pot in module_type_resource_pot_map.into_values() {
+      module_group.add_resource_pot(resource_pot.id.clone());
+      // TODO add dependency info of resource pot
+      resource_pots.push(resource_pot);
+    }
+
+    Ok(Some(resource_pots))
   }
 }
 
-impl FarmPluginMergeModules {
+impl FarmPluginPartialBundling {
   pub fn new(_: &Config) -> Self {
     Self {}
   }
+}
+
+pub fn module_group_map_from_entries(
+  entries: &Vec<ModuleId>,
+  module_graph: &mut ModuleGraph,
+) -> ModuleGroupMap {
+  let mut module_group_map = ModuleGroupMap::new();
+
+  for entry in entries.clone() {
+    let (group, dynamic_dependencies) = module_group_from_entry(&entry, module_graph);
+    module_group_map.add_module_group(group);
+
+    let mut visited = HashSet::new();
+    visited.insert(entry);
+    let mut queue = VecDeque::from(dynamic_dependencies);
+
+    while queue.len() > 0 {
+      let head = queue.pop_front().unwrap();
+
+      if visited.contains(&head) {
+        continue;
+      }
+
+      visited.insert(head.clone());
+
+      let (group, dynamic_dependencies) = module_group_from_entry(&head, module_graph);
+      module_group_map.add_module_group(group);
+      queue.extend(dynamic_dependencies);
+    }
+  }
+
+  module_group_map
 }
 
 /// get module group start from a entry. return (module group, dynamic dependencies)
@@ -189,17 +193,18 @@ mod tests {
 
   use farmfe_core::{
     context::CompilationContext,
+    hashbrown::HashSet,
     parking_lot::RwLock,
     plugin::{Plugin, PluginHookContext},
   };
   #[cfg(test)]
-  use farmfe_toolkit::testing_helpers::construct_test_module_graph;
+  use farmfe_testing_helpers::construct_test_module_graph;
 
-  use crate::{module_group_from_entry as mgfe, FarmPluginMergeModules};
+  use crate::{module_group_from_entry as mgfe, FarmPluginPartialBundling};
 
   #[test]
   fn analyze_module_graph() {
-    let plugin = FarmPluginMergeModules {};
+    let plugin = FarmPluginPartialBundling {};
     let mut context = CompilationContext::new(Default::default(), vec![]).unwrap();
     let graph = construct_test_module_graph();
 
@@ -228,29 +233,32 @@ mod tests {
 
     let module_group_a = module_group_map.module_group(&"A".into()).unwrap();
     assert_eq!(module_group_a.id, "A".into());
-    assert_eq!(*module_group_a.modules(), vec!["A".into(), "C".into()]);
+    assert_eq!(
+      module_group_a.modules(),
+      &HashSet::from(["A".into(), "C".into()])
+    );
 
     let module_group_b = module_group_map.module_group(&"B".into()).unwrap();
     assert_eq!(module_group_b.id, "B".into());
     assert_eq!(
-      *module_group_b.modules(),
-      vec!["B".into(), "D".into(), "E".into()]
+      module_group_b.modules(),
+      &HashSet::from(["B".into(), "D".into(), "E".into()])
     );
 
     let module_group_d = module_group_map.module_group(&"D".into()).unwrap();
     assert_eq!(module_group_d.id, "D".into());
-    assert_eq!(*module_group_d.modules(), vec!["D".into()]);
+    assert_eq!(module_group_d.modules(), &HashSet::from(["D".into()]));
 
     let module_group_f = module_group_map.module_group(&"F".into()).unwrap();
     assert_eq!(module_group_f.id, "F".into());
     assert_eq!(
-      *module_group_f.modules(),
-      vec!["F".into(), "A".into(), "C".into()]
+      module_group_f.modules(),
+      &HashSet::from(["F".into(), "A".into(), "C".into()])
     );
 
     let module_group_g = module_group_map.module_group(&"G".into()).unwrap();
     assert_eq!(module_group_g.id, "G".into());
-    assert_eq!(*module_group_g.modules(), vec!["G".into()]);
+    assert_eq!(module_group_g.modules(), &HashSet::from(["G".into()]));
 
     let test_pairs = vec![(
       "A",
@@ -280,7 +288,10 @@ mod tests {
     let (module_group, de) = mgfe(&"A".into(), &mut graph);
     assert_eq!(de, vec!["F".into(), "D".into()]);
     assert_eq!(module_group.id, "A".into());
-    assert_eq!(*module_group.modules(), vec!["A".into(), "C".into()]);
+    assert_eq!(
+      module_group.modules(),
+      &HashSet::from(["A".into(), "C".into()])
+    );
     assert!(graph
       .module(&"A".into())
       .unwrap()

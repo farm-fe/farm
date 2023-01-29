@@ -1,6 +1,6 @@
 [package]
-name = "farmfe_plugin_html"
-version = "0.0.1"
+name = "farmfe_plugin_partial_bundling"
+version = "0.0.0"
 edition = "2021"
 
 [dependencies]

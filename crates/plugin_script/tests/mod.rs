@@ -14,7 +14,7 @@ use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::Module as SwcModule,
 };
-use farmfe_toolkit::testing_helpers::fixture;
+use farmfe_testing_helpers::fixture;
 
 #[test]
 fn load_parse_and_analyze_deps() {

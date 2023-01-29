@@ -7,8 +7,9 @@ use crate::{
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleId, ModuleMetaData,
-    ModuleType,
+    module_graph::ModuleGraph,
+    module_group::{ModuleGroup, ModuleGroupMap},
+    Module, ModuleId, ModuleMetaData, ModuleType,
   },
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
@@ -120,13 +121,13 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Merging modules of the module group map to [crate::resource::resource_graph::ResourceGraph]
-  fn merge_modules(
+  /// partial bundling modules of module group to [Vec<ResourcePot>]
+  fn partial_bundling(
     &self,
-    _module_group_map: &mut ModuleGroupMap,
+    _module_group: &mut ModuleGroup,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> Result<Option<ResourcePotGraph>> {
+  ) -> Result<Option<Vec<ResourcePot>>> {
     Ok(None)
   }
 
@@ -213,6 +214,12 @@ pub enum ResolveKind {
   HmrUpdate,
   /// Custom ResolveKind, e.g. `const worker = new Worker(new Url("worker.js"))` of a web worker
   Custom(String),
+}
+
+impl Default for ResolveKind {
+  fn default() -> Self {
+    ResolveKind::Import
+  }
 }
 
 impl ResolveKind {

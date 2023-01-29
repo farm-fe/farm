@@ -36,7 +36,7 @@ use render_resource_pot::*;
 const RUNTIME_SUFFIX: &str = ".farm-runtime";
 
 mod insert_runtime_plugins;
-mod render_resource_pot;
+pub mod render_resource_pot;
 
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.

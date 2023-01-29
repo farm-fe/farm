@@ -13,8 +13,9 @@ use crate::{
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph, module_group::ModuleGroupMap, Module, ModuleId, ModuleMetaData,
-    ModuleType,
+    module_graph::ModuleGraph,
+    module_group::{ModuleGroup, ModuleGroupMap},
+    ModuleMetaData, ModuleType,
   },
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
   stats::Stats,
@@ -159,9 +160,9 @@ impl PluginDriver {
   );
 
   hook_first!(
-    merge_modules,
-    Result<Option<ResourcePotGraph>>,
-    module_group_map: &mut ModuleGroupMap,
+    partial_bundling,
+    Result<Option<Vec<ResourcePot>>>,
+    module_group_map: &mut ModuleGroup,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
   );
