@@ -111,7 +111,9 @@ impl Compiler {
       &updated_module_ids,
       &self.context,
     )?;
-
+    // TODO1: only regenerate the resources for script modules.
+    // TODO2: should reload when html change
+    // TODO3: cover it with tests
     let resources =
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
 

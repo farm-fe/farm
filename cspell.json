@@ -47,7 +47,8 @@
     "stylesheet",
     "querystring",
     "querify",
-    "walkdir"
+    "walkdir",
+    "elems"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

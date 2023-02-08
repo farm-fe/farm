@@ -1,7 +1,7 @@
 import {
   PluginResolveHookParam,
   PluginResolveHookResult,
-} from '../../../binding/index.js';
+} from '../../binding/index.js';
 
 interface CompilationContext {
   resolve(param: PluginResolveHookParam): Promise<PluginResolveHookResult>;

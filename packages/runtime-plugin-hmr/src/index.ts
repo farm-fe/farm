@@ -1,9 +1,9 @@
 /**
  * HMR client as a Farm Runtime Plugin
  */
-import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin.js';
-import { applyHotUpdates, createHotContext } from './hot-module-state.js';
-import { HmrUpdatePacket, HmrUpdateResult } from './types.js';
+import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
+import { applyHotUpdates, createHotContext } from './hot-module-state';
+import { HmrUpdatePacket, HmrUpdateResult } from './types';
 
 // TODO using host and port from the config, default to use location.host
 const port = 9801;

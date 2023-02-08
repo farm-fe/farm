@@ -63,7 +63,7 @@ pub fn patch_module_group_map(
               module.module_groups.remove(removed_module_id);
               affected_module_groups.extend(module.module_groups.clone());
             });
-            drop(module_group);
+
             module_group_map.remove_module_group(removed_module_id);
           }
         } else {
@@ -91,7 +91,6 @@ pub fn patch_module_group_map(
                 module_group.remove_module(&current_module_id);
 
                 let modules_len = module_group.modules().len();
-                drop(module_group);
 
                 if modules_len == 0 {
                   module_group_map.remove_module_group(module_group_id);
@@ -122,7 +121,6 @@ pub fn patch_module_group_map(
             module_group.remove_module(removed_module_id);
             affected_module_groups.insert(removed_module_group_id.clone());
             let modules_len = module_group.modules().len();
-            drop(module_group);
 
             if modules_len == 0 {
               module_group_map.remove_module_group(removed_module_group_id);

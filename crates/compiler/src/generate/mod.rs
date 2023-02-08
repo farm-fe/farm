@@ -60,6 +60,6 @@ impl Compiler {
   fn render_and_generate_resources(&self, hook_context: &PluginHookContext) -> Result<()> {
     let mut resource_pot_graph = self.context.resource_pot_graph.write();
     let resource_pots = resource_pot_graph.resource_pots_mut();
-    render_resource_pots_and_generate_resources(resource_pots, &self.context, &hook_context)
+    render_resource_pots_and_generate_resources(resource_pots, &self.context, hook_context)
   }
 }

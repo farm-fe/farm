@@ -50,9 +50,8 @@ pub fn render_and_generate_update_resource(
     update_resource_pot.add_module(removed.clone());
   }
 
-  let mut module_graph = context.module_graph.write();
-  let ast =
-    resource_pot_to_runtime_object_lit(&mut update_resource_pot, &mut *module_graph, context);
+  let module_graph = context.module_graph.read();
+  let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &*module_graph, context);
   // The hmr result should alway be a js resource
   update_resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
     ast: SwcModule {
@@ -104,7 +103,7 @@ pub fn regenerate_resources_for_affected_module_groups(
         let previous_resource_pots = module_group.resource_pots().clone();
         // remove the old resource pots from the graph
         for resource_pot in &previous_resource_pots {
-          if !resource_pots_ids.contains(&resource_pot) {
+          if !resource_pots_ids.contains(resource_pot) {
             let resource_pot = resource_pot_graph
               .remove_resource_pot(resource_pot)
               .unwrap();
@@ -137,7 +136,7 @@ pub fn regenerate_resources_for_affected_module_groups(
           let module = module_graph.module(updated_module_id).unwrap();
           let resource_pot_id = module.resource_pot.as_ref().unwrap();
 
-          if !new_resource_pot_ids.contains(&resource_pot_id) {
+          if !new_resource_pot_ids.contains(resource_pot_id) {
             new_resource_pot_ids.push(resource_pot_id.clone());
           }
         }

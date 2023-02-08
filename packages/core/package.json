@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.0.0",
+    "@farmfe/runtime-plugin-hmr": "workspace:*",
     "@swc/helpers": "^0.4.9",
     "chokidar": "^3.5.3",
     "koa": "^2.13.4",

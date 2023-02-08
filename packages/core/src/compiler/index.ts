@@ -2,8 +2,8 @@ import { existsSync, mkdirSync } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
 
-import type { Config, JsUpdateResult } from '../../../binding/index.js';
-import { Compiler as BindingCompiler } from '../../../binding/index.js';
+import type { Config, JsUpdateResult } from '../../binding/index.js';
+import { Compiler as BindingCompiler } from '../../binding/index.js';
 import { normalizeUserCompilationConfig, UserConfig } from '../config/index.js';
 
 export class Compiler {

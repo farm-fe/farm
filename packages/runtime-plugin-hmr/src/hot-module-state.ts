@@ -1,5 +1,5 @@
-import { HmrUpdateResult } from './types.js';
-import type { ModuleSystem } from '@farmfe/runtime/src/module-system.js';
+import { HmrUpdateResult } from './types';
+import type { ModuleSystem } from '@farmfe/runtime/src/module-system';
 
 const REGISTERED_HOT_MODULES = new Map<string, HotModuleState>();
 

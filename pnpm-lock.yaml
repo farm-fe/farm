@@ -80,6 +80,7 @@ importers:
   packages/core:
     specifiers:
       '@farmfe/runtime': workspace:^0.0.0
+      '@farmfe/runtime-plugin-hmr': workspace:*
       '@napi-rs/cli': ^2.10.0
       '@swc/helpers': ^0.4.9
       '@types/koa': ^2.13.5
@@ -96,6 +97,7 @@ importers:
       ws: ^8.12.0
     dependencies:
       '@farmfe/runtime': link:../runtime
+      '@farmfe/runtime-plugin-hmr': link:../runtime-plugin-hmr
       '@swc/helpers': 0.4.9
       chokidar: 3.5.3
       koa: 2.13.4
@@ -119,6 +121,12 @@ importers:
     devDependencies:
       '@types/node': 18.0.1
       typescript: 4.7.4
+
+  packages/runtime-plugin-hmr:
+    specifiers:
+      '@farmfe/runtime': workspace:*
+    devDependencies:
+      '@farmfe/runtime': link:../runtime
 
 packages:
 

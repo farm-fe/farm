@@ -27,6 +27,7 @@ test('resolveUserConfig', async () => {
         main: './main.tsx',
       },
     },
+    root: path.join(filePath, 'fixtures', 'config'),
   });
 });
 

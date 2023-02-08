@@ -1,4 +1,4 @@
-import type { Config } from '../../../binding/index.js';
+import type { Config } from '../../binding/index.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 

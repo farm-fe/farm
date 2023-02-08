@@ -5,7 +5,7 @@ import os from 'node:os';
 
 import merge from 'lodash.merge';
 
-import { Config } from '../../../binding/index.js';
+import { Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import {
@@ -40,7 +40,7 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
     userConfig.compilation
   );
   const require = module.createRequire(import.meta.url);
-  const hmrClientPluginPath = require.resolve('../../client/index.js');
+  const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 
   if (!config.runtime) {
     config.runtime = {

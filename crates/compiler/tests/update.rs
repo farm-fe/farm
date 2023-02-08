@@ -12,11 +12,14 @@ fn update_without_dependencies_change() {
 
     compiler.compile().unwrap();
 
+    let update_file = file
+      .parent()
+      .unwrap()
+      .join("index.ts")
+      .to_string_lossy()
+      .to_string();
     let result = compiler
-      .update(vec![(
-        file.to_string_lossy().to_string(),
-        UpdateType::Updated,
-      )])
+      .update(vec![(update_file.clone(), UpdateType::Updated)])
       .unwrap();
 
     assert_eq!(result.added_module_ids.len(), 0);
@@ -25,7 +28,7 @@ fn update_without_dependencies_change() {
 
     assert_eq!(
       result.updated_module_ids[0].resolved_path(&compiler.context().config.root),
-      file.to_string_lossy().to_string()
+      update_file
     )
   });
 }
