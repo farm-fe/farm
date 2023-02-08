@@ -41,6 +41,16 @@ impl ResourcePotGraph {
     self.id_index_map.insert(name, index);
   }
 
+  pub fn remove_resource_pot(&mut self, id: &ResourcePotId) -> Option<ResourcePot> {
+    if let Some(ndx) = self.id_index_map.get(id) {
+      let resource = self.g.remove_node(*ndx);
+      self.id_index_map.remove(id);
+      resource
+    } else {
+      None
+    }
+  }
+
   pub fn add_edge(&mut self, from: &ResourcePotId, to: &ResourcePotId) {
     let from = self.id_index_map.get(from).unwrap();
     let to = self.id_index_map.get(to).unwrap();

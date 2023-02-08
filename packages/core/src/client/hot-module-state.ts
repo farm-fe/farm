@@ -29,6 +29,8 @@ export function applyHotUpdates(
   result: HmrUpdateResult,
   moduleSystem: ModuleSystem
 ) {
+  console.log(result);
+
   for (const id of result.removed) {
     moduleSystem.delete(id);
   }

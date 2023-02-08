@@ -3,19 +3,21 @@ use std::sync::{mpsc::Sender, Arc};
 use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
-  hashbrown::HashMap,
+  hashbrown::HashSet,
   module::{module_graph::ModuleGraphEdge, Module, ModuleId},
   plugin::{PluginResolveHookParam, ResolveKind},
   rayon::ThreadPool,
 };
 
-use crate::{build::ResolvedModuleInfo, Compiler};
+use crate::{build::ResolvedModuleInfo, generate::write_resources::write_resources, Compiler};
 use farmfe_core::error::Result;
 
 use self::{
   diff_and_patch_module_graph::{diff_module_graph, patch_module_graph, DiffResult},
   patch_module_group_map::patch_module_group_map,
-  regenerate_resources::regenerate_resources,
+  regenerate_resources::{
+    regenerate_resources_for_affected_module_groups, render_and_generate_update_resource,
+  },
   update_context::UpdateContext,
 };
 
@@ -99,28 +101,38 @@ impl Compiler {
       return Err(err);
     }
 
-    // we should optimize the module graph after the update, as tree shaking are called on this stage and may remove some modules
-    {
-      let mut update_module_graph = update_context.module_graph.write();
+    self.optimize_update_module_graph(&update_context)?;
 
-      self
-        .context
-        .plugin_driver
-        .optimize_module_graph(&mut *update_module_graph, &self.context)?;
-    }
-
-    let (updated_module_ids, diff_result, removed_modules) =
+    let (affected_module_groups, updated_module_ids, diff_result) =
       self.diff_and_patch_context(paths, &update_context);
 
+    regenerate_resources_for_affected_module_groups(
+      affected_module_groups,
+      &updated_module_ids,
+      &self.context,
+    )?;
+
     let resources =
-      self.regenerate_resources(updated_module_ids.clone(), removed_modules, &diff_result)?;
+      render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
+
+    write_resources(&self.context)?;
 
     Ok(UpdateResult {
       added_module_ids: diff_result.added_modules.into_iter().collect(),
       updated_module_ids,
       removed_module_ids: diff_result.removed_modules.into_iter().collect(),
-      resources, // TODO regenerate resources
+      resources,
     })
+  }
+
+  fn optimize_update_module_graph(&self, update_context: &Arc<UpdateContext>) -> Result<()> {
+    // we should optimize the module graph after the update, as tree shaking are called on this stage and may remove some modules
+    let mut update_module_graph = update_context.module_graph.write();
+
+    self
+      .context
+      .plugin_driver
+      .optimize_module_graph(&mut *update_module_graph, &self.context)
   }
 
   /// Resolving, loading, transforming and parsing a module in a separate thread.
@@ -240,7 +252,7 @@ impl Compiler {
     &self,
     paths: Vec<(String, UpdateType)>,
     update_context: &Arc<UpdateContext>,
-  ) -> (Vec<ModuleId>, DiffResult, HashMap<ModuleId, Module>) {
+  ) -> (HashSet<ModuleId>, Vec<ModuleId>, DiffResult) {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
       .map(|path| ModuleId::new(&path.0, &self.context.config.root))
@@ -259,7 +271,7 @@ impl Compiler {
 
     let mut module_group_map = self.context.module_group_map.write();
 
-    patch_module_group_map(
+    let affected_module_groups = patch_module_group_map(
       start_points.clone(),
       &diff_result,
       &removed_modules,
@@ -267,25 +279,7 @@ impl Compiler {
       &mut *module_group_map,
     );
 
-    (start_points, diff_result, removed_modules)
-  }
-
-  fn regenerate_resources(
-    &self,
-    updated_module_ids: Vec<ModuleId>,
-    removed_modules: HashMap<ModuleId, Module>,
-    diff_result: &DiffResult,
-  ) -> Result<String> {
-    let mut module_graph = self.context.module_graph.write();
-    let mut module_group_map = self.context.module_group_map.write();
-
-    regenerate_resources(
-      updated_module_ids,
-      removed_modules,
-      diff_result,
-      &mut module_graph,
-      &mut module_group_map,
-    )
+    (affected_module_groups, start_points, diff_result)
   }
 }
 

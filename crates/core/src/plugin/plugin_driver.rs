@@ -162,7 +162,7 @@ impl PluginDriver {
   hook_first!(
     partial_bundling,
     Result<Option<Vec<ResourcePot>>>,
-    module_group_map: &mut ModuleGroup,
+    module_group: &mut ModuleGroup,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
   );

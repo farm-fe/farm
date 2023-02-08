@@ -340,3 +340,41 @@ fn test_diff_module_deps_complex_2() {
     ])
   );
 }
+
+#[test]
+fn test_diff_module_deps_complex_3() {
+  let module_graph = construct_test_module_graph();
+  let mut update_module_graph = construct_test_module_graph();
+
+  update_module_graph
+    .remove_edge(&"F".into(), &"A".into())
+    .unwrap();
+  update_module_graph.add_module(Module::new("H".into()));
+  update_module_graph
+    .add_edge(&"B".into(), &"H".into(), Default::default())
+    .unwrap();
+  update_module_graph
+    .add_edge(&"H".into(), &"F".into(), Default::default())
+    .unwrap();
+
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&"F".into(), &module_graph, &update_module_graph);
+  assert!(added_modules.is_empty());
+  assert!(removed_modules.is_empty());
+  assert_eq!(
+    diff_result,
+    Vec::from([(
+      "F".into(),
+      ModuleDepsDiffResult {
+        added: vec![],
+        removed: vec![(
+          "A".into(),
+          ModuleGraphEdge {
+            source: "./A".to_string(),
+            ..Default::default()
+          }
+        )],
+      }
+    ),])
+  );
+}

@@ -8,7 +8,42 @@ use farmfe_testing_helpers::construct_test_module_graph;
 use crate::update::diff_and_patch_module_graph::ModuleDepsDiffResult;
 
 #[test]
-fn test_diff_module_deps_complex_2() {
+fn test_diff_module_graph_complex_1() {
+  let module_graph = construct_test_module_graph();
+  let mut update_module_graph = construct_test_module_graph();
+
+  update_module_graph
+    .remove_edge(&"A".into(), &"D".into())
+    .unwrap();
+
+  let diff_result = super::diff_module_graph(
+    vec!["A".into(), "B".into()],
+    &module_graph,
+    &update_module_graph,
+  );
+  assert!(diff_result.added_modules.is_empty());
+  assert!(diff_result.removed_modules.is_empty());
+  assert_eq!(
+    diff_result.deps_changes,
+    Vec::from([(
+      "A".into(),
+      ModuleDepsDiffResult {
+        added: vec![],
+        removed: vec![(
+          "D".into(),
+          ModuleGraphEdge {
+            order: 1,
+            kind: ResolveKind::DynamicImport,
+            source: "./D".to_string(),
+          }
+        )],
+      }
+    ),])
+  );
+}
+
+#[test]
+fn test_diff_module_graph_complex_2() {
   let module_graph = construct_test_module_graph();
   let mut update_module_graph = construct_test_module_graph();
 
@@ -115,6 +150,63 @@ fn test_diff_module_deps_complex_2() {
           )],
         }
       ),
+    ])
+  );
+}
+
+#[test]
+fn test_diff_module_graph_complex_3() {
+  let module_graph = construct_test_module_graph();
+  let mut update_module_graph = construct_test_module_graph();
+
+  update_module_graph
+    .remove_edge(&"F".into(), &"A".into())
+    .unwrap();
+  update_module_graph.add_module(Module::new("H".into()));
+  update_module_graph
+    .add_edge(&"B".into(), &"H".into(), Default::default())
+    .unwrap();
+  update_module_graph
+    .add_edge(&"H".into(), &"F".into(), Default::default())
+    .unwrap();
+
+  let diff_result = super::diff_module_graph(
+    vec!["F".into(), "B".into()],
+    &module_graph,
+    &update_module_graph,
+  );
+  assert_eq!(diff_result.added_modules, HashSet::from(["H".into()]));
+  assert!(diff_result.removed_modules.is_empty());
+  assert_eq!(
+    diff_result.deps_changes,
+    Vec::from([
+      (
+        "F".into(),
+        ModuleDepsDiffResult {
+          added: vec![],
+          removed: vec![(
+            "A".into(),
+            ModuleGraphEdge {
+              source: "./A".to_string(),
+              ..Default::default()
+            }
+          )],
+        }
+      ),
+      (
+        "B".into(),
+        ModuleDepsDiffResult {
+          added: vec![("H".into(), Default::default())],
+          removed: vec![]
+        }
+      ),
+      (
+        "H".into(),
+        ModuleDepsDiffResult {
+          added: vec![("F".into(), Default::default())],
+          removed: vec![]
+        }
+      )
     ])
   );
 }

@@ -188,8 +188,6 @@ impl Plugin for FarmPluginHtml {
       }
     }
 
-    println!("{:?}", resources_to_inject);
-
     for (html_resource_name, depend_resources) in resources_to_inject {
       let mut resource_pot_graph = context.resource_pot_graph.write();
       let mut script_resources: Vec<String> = vec![];

@@ -12,7 +12,7 @@ const host = 'localhost';
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-hmr-client-plugin',
   bootstrap(moduleSystem) {
-    console.log('hmr client bootstrap', moduleSystem);
+    console.log('[Farm HMR] connecting to the server...');
 
     // setup websocket connection
     const socket = new WebSocket(`ws://${host}:${port}`);
@@ -23,9 +23,15 @@ export default <FarmRuntimePlugin>{
     socket.addEventListener('message', (event) => {
       const data = JSON.parse(event.data) as HmrUpdatePacket;
 
-      import(`/__hmr?id=${data.id}`).then((result: HmrUpdateResult) => {
-        applyHotUpdates(result, moduleSystem);
-      });
+      import(`/__hmr?id=${data.id}`).then(
+        (result: { default: HmrUpdateResult }) => {
+          applyHotUpdates(result.default, moduleSystem);
+        }
+      );
+    });
+
+    socket.addEventListener('open', () => {
+      console.log('[Farm HMR] connected to the server');
     });
   },
   moduleCreated(module) {

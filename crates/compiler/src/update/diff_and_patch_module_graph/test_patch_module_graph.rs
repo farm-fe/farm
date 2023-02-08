@@ -109,6 +109,32 @@ fn test_patch_module_graph_complex_1() {
   let mut module_graph = construct_test_module_graph();
   let mut update_module_graph = construct_test_module_graph();
 
+  update_module_graph
+    .remove_edge(&"A".into(), &"D".into())
+    .unwrap();
+
+  let diff_result = super::diff_module_graph(
+    vec!["A".into(), "B".into()],
+    &module_graph,
+    &update_module_graph,
+  );
+  patch_module_graph(
+    vec!["A".into(), "B".into()],
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  assert_eq!(module_graph.modules().len(), 7);
+  assert_eq!(module_graph.edge_count(), 7);
+  assert!(!module_graph.has_edge(&"A".into(), &"D".into()));
+}
+
+#[test]
+fn test_patch_module_graph_complex_2() {
+  let mut module_graph = construct_test_module_graph();
+  let mut update_module_graph = construct_test_module_graph();
+
   update_module_graph.remove_module(&"D".into());
   update_module_graph.remove_module(&"E".into());
   update_module_graph.remove_module(&"G".into());
@@ -143,4 +169,46 @@ fn test_patch_module_graph_complex_1() {
   assert!(module_graph.has_edge(&"H".into(), &"F".into()));
   assert!(module_graph.has_edge(&"F".into(), &"A".into()));
   assert!(module_graph.has_edge(&"A".into(), &"C".into()));
+}
+
+#[test]
+fn test_patch_module_graph_complex_3() {
+  let mut module_graph = construct_test_module_graph();
+  let mut update_module_graph = construct_test_module_graph();
+
+  update_module_graph
+    .remove_edge(&"F".into(), &"A".into())
+    .unwrap();
+  update_module_graph.add_module(Module::new("H".into()));
+  update_module_graph
+    .add_edge(&"B".into(), &"H".into(), Default::default())
+    .unwrap();
+  update_module_graph
+    .add_edge(&"H".into(), &"F".into(), Default::default())
+    .unwrap();
+
+  let diff_result = super::diff_module_graph(
+    vec!["F".into(), "B".into()],
+    &module_graph,
+    &update_module_graph,
+  );
+
+  assert!(module_graph.has_edge(&"F".into(), &"A".into()));
+  assert_eq!(module_graph.modules().len(), 7);
+  assert_eq!(module_graph.edge_count(), 8);
+
+  patch_module_graph(
+    vec!["F".into(), "B".into()],
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  assert!(!module_graph.has_edge(&"F".into(), &"A".into()));
+  assert!(module_graph.has_module(&"H".into()));
+  assert!(module_graph.has_edge(&"H".into(), &"F".into()));
+  assert!(module_graph.has_edge(&"B".into(), &"H".into()));
+
+  assert_eq!(module_graph.modules().len(), 8);
+  assert_eq!(module_graph.edge_count(), 9);
 }

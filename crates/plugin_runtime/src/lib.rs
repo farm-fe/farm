@@ -255,7 +255,8 @@ impl Plugin for FarmPluginRuntime {
             spread: None,
             expr: Box::new(Expr::Lit(Lit::Str(Str {
               span: DUMMY_SP,
-              value: ModuleId::from(resource_pot.id.to_string().as_str())
+              value: resource_pot
+                .module_group
                 .id(context.config.mode.clone())
                 .into(),
               raw: None,

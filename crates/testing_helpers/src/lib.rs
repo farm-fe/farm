@@ -70,7 +70,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
       &"F".into(),
       &"A".into(),
       ModuleGraphEdge {
-        source: "./F".to_string(),
+        source: "./A".to_string(),
         kind: ResolveKind::Import,
         order: 0,
       },

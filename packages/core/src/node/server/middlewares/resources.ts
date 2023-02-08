@@ -18,6 +18,7 @@ export function resources(compiler: Compiler) {
     const resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
     ctx.type = extname(resourcePath);
     console.log('resourcePath', resourcePath, ctx.type);
+    console.log('resources', Object.keys(compiler.resources()));
     const resource = compiler.resources()[resourcePath];
 
     if (!resource) return;

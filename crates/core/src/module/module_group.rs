@@ -106,4 +106,8 @@ impl ModuleGroup {
   pub fn resource_pots(&self) -> &HashSet<ResourcePotId> {
     &self.resource_pots
   }
+
+  pub fn set_resource_pots(&mut self, resource_pots: HashSet<ResourcePotId>) {
+    self.resource_pots = resource_pots;
+  }
 }

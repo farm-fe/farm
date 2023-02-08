@@ -21,10 +21,23 @@ export class HmrEngine {
     this._updateQueue = new Set();
     const result = await this._compiler.update(queue);
 
+    // TODO auto detect the boundary
+    const resultStr = `export default {
+      added: [${result.added.map((r) => `'${r}'`).join(', ')}],
+      changed: [${result.changed.map((r) => `'${r}'`).join(', ')}],
+      removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
+      modules: ${result.modules.trim().slice(0, -1)},
+      boundaries: ${`{ ${result.changed
+        .map((r) => `'${r}': ['${r}']`)
+        .join(', ')} }`}
+    }`;
+
+    console.log(result, resultStr);
+
     const id = Date.now().toString();
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore TODO fix this
-    this._updateResults.set(id, result);
+    this._updateResults.set(id, resultStr);
 
     this._devServer.ws.clients.forEach((client) => {
       client.send(

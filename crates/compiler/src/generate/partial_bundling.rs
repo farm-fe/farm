@@ -4,9 +4,12 @@ use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
   hashbrown::HashMap,
-  module::module_group::ModuleGroupMap,
+  module::module_group::{ModuleGroup, ModuleGroupMap},
   plugin::PluginHookContext,
-  resource::{resource_pot::ResourcePotId, resource_pot_graph::ResourcePotGraph},
+  resource::{
+    resource_pot::{ResourcePot, ResourcePotId},
+    resource_pot_graph::ResourcePotGraph,
+  },
 };
 
 pub fn partial_bundling(
@@ -54,14 +57,9 @@ fn generate_resource_pot_graph(
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotGraph> {
   let mut resource_pot_graph = ResourcePotGraph::new();
-
+  // TODO: parallel generate resource pots
   for g in module_group_map.module_groups_mut() {
-    let resources_pots = context
-      .plugin_driver
-      .partial_bundling(g, context, hook_context)?
-      .ok_or(CompilationError::PluginHookResultCheckError {
-        hook_name: "partial_bundling".to_string(),
-      })?;
+    let resources_pots = call_partial_bundling_hook(g, context, hook_context)?;
 
     for resource_pot in resources_pots {
       resource_pot_graph.add_resource_pot(resource_pot);
@@ -103,4 +101,17 @@ fn generate_resource_pot_graph(
   }
 
   Ok(resource_pot_graph)
+}
+
+pub fn call_partial_bundling_hook(
+  g: &mut ModuleGroup,
+  context: &Arc<CompilationContext>,
+  hook_context: &PluginHookContext,
+) -> farmfe_core::error::Result<Vec<ResourcePot>> {
+  context
+    .plugin_driver
+    .partial_bundling(g, context, hook_context)?
+    .ok_or(CompilationError::PluginHookResultCheckError {
+      hook_name: "partial_bundling".to_string(),
+    })
 }

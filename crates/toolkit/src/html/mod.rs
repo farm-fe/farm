@@ -51,41 +51,37 @@ pub fn codegen_html_document(document: &Document) -> String {
 
 /// Create a <script> [Element]'s ast.
 /// Parameter [Vec(&str, &str)] means a set of (name, value) pairs.
-pub fn create_element_with_attrs(name: &str, attrs: Vec<(&str, &str)>) -> Element {
+pub fn create_element(name: &str, text: Option<&str>, attrs: Vec<(&str, &str)>) -> Element {
   Element {
     span: DUMMY_SP,
     tag_name: name.into(),
     namespace: Namespace::HTML,
     attributes: attrs
       .into_iter()
-      .map(|(name, value)| Attribute {
-        span: DUMMY_SP,
-        namespace: None,
-        prefix: None,
-        name: name.into(),
-        raw_name: None,
-        value: Some(value.into()),
-        raw_value: None,
-      })
+      .map(|(name, value)| create_attribute(name, Some(value)))
       .collect(),
-    children: vec![],
+    children: if text.is_some() {
+      vec![Child::Text(Text {
+        span: DUMMY_SP,
+        data: text.unwrap().into(),
+        raw: None,
+      })]
+    } else {
+      vec![]
+    },
     content: None,
     is_self_closing: false,
   }
 }
 
-pub fn create_element_with_text(name: &str, text: &str) -> Element {
-  Element {
+pub fn create_attribute(name: &str, value: Option<&str>) -> Attribute {
+  Attribute {
     span: DUMMY_SP,
-    tag_name: name.into(),
-    namespace: Namespace::HTML,
-    attributes: vec![],
-    children: vec![Child::Text(Text {
-      span: DUMMY_SP,
-      data: text.into(),
-      raw: None,
-    })],
-    content: None,
-    is_self_closing: false,
+    namespace: None,
+    prefix: None,
+    name: name.into(),
+    raw_name: None,
+    value: value.map(|v| v.into()),
+    raw_value: None,
   }
 }

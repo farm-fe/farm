@@ -99,7 +99,14 @@ pub fn patch_module_graph(
 
   // we must remove updated module at last, cause petgraph will remove edge when remove node
   for updated in start_points {
-    let module = update_module_graph.take_module(&updated);
+    let module = {
+      let mut m = update_module_graph.take_module(&updated);
+      let previous_module = module_graph.module(&updated).unwrap();
+      m.module_groups = previous_module.module_groups.clone();
+      m.resource_pot = previous_module.resource_pot.clone();
+      m
+    };
+
     module_graph.replace_module(&updated, module);
   }
 

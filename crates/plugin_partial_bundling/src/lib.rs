@@ -29,6 +29,8 @@ impl Plugin for FarmPluginPartialBundling {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleGroupMap>> {
+    println!("\n\nentries: {:?}\n\n", module_graph.entries);
+
     let module_group_map = module_group_map_from_entries(
       &module_graph.entries.clone().into_iter().collect(),
       module_graph,
@@ -37,6 +39,8 @@ impl Plugin for FarmPluginPartialBundling {
     Ok(Some(module_group_map))
   }
 
+  /// The partial bundling algorithm's result should not be related to the order of the module group.
+  /// Whatever the order of the module group is, the result should be the same.
   fn partial_bundling(
     &self,
     module_group: &mut ModuleGroup,
@@ -66,6 +70,7 @@ impl Plugin for FarmPluginPartialBundling {
         resource_pot
       } else {
         let mut resource_pot = ResourcePot::new(
+          // TODO design a better id for resource pot
           ResourcePotId::new(module_id.to_string()),
           module.module_type.clone().into(),
           module_group.id.clone(),
@@ -86,7 +91,6 @@ impl Plugin for FarmPluginPartialBundling {
 
     for resource_pot in module_type_resource_pot_map.into_values() {
       module_group.add_resource_pot(resource_pot.id.clone());
-      // TODO add dependency info of resource pot
       resource_pots.push(resource_pot);
     }
 
