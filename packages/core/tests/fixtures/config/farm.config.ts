@@ -1,4 +1,4 @@
-import { defineFarmConfig } from '../../../src/node/config';
+import { defineFarmConfig } from '../../../src/config';
 import input from './util';
 
 export default defineFarmConfig({

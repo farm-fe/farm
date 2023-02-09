@@ -1,6 +1,6 @@
 use common::build_module;
 use farmfe_core::module::ModuleSystem;
-use farmfe_toolkit::testing_helpers::fixture;
+use farmfe_testing_helpers::fixture;
 
 mod common;
 

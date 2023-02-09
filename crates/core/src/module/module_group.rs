@@ -1,10 +1,11 @@
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 
 use crate::resource::resource_pot::ResourcePotId;
 
 use super::ModuleId;
 
 /// A `entry_module_id -> ModuleGroup` map
+#[derive(Debug, PartialEq, Eq)]
 pub struct ModuleGroupMap {
   groups: HashMap<ModuleGroupId, ModuleGroup>,
 }
@@ -24,8 +25,16 @@ impl ModuleGroupMap {
     self.groups.insert(module_group.id.clone(), module_group);
   }
 
+  pub fn remove_module_group(&mut self, id: &ModuleGroupId) {
+    self.groups.remove(id);
+  }
+
   pub fn module_group(&self, id: &ModuleGroupId) -> Option<&ModuleGroup> {
     self.groups.get(id)
+  }
+
+  pub fn module_group_mut(&mut self, id: &ModuleGroupId) -> Option<&mut ModuleGroup> {
+    self.groups.get_mut(id)
   }
 
   /// get the topologically sorted module groups
@@ -59,37 +68,46 @@ impl Default for ModuleGroupMap {
 
 pub type ModuleGroupId = ModuleId;
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ModuleGroup {
   /// the module group's id is the same as its entry module's id.
   pub id: ModuleGroupId,
   /// the modules that this group has
-  modules: Vec<ModuleId>,
+  modules: HashSet<ModuleId>,
   /// the [ResourcePot]s this group merged to
-  resource_pots: Vec<ResourcePotId>,
+  resource_pots: HashSet<ResourcePotId>,
 }
 
 impl ModuleGroup {
   pub fn new(id: ModuleGroupId) -> Self {
     Self {
-      modules: vec![id.clone()],
+      modules: HashSet::from([id.clone()]),
       id,
-      resource_pots: vec![],
+      resource_pots: HashSet::new(),
     }
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
-    self.modules.push(module_id);
+    self.modules.insert(module_id);
   }
 
-  pub fn modules(&self) -> &Vec<ModuleId> {
+  pub fn remove_module(&mut self, module_id: &ModuleId) {
+    self.modules.retain(|id| id != module_id);
+  }
+
+  pub fn modules(&self) -> &HashSet<ModuleId> {
     &self.modules
   }
 
   pub fn add_resource_pot(&mut self, resource_pot_id: ResourcePotId) {
-    self.resource_pots.push(resource_pot_id);
+    self.resource_pots.insert(resource_pot_id);
   }
 
-  pub fn resource_pots(&self) -> &Vec<ResourcePotId> {
+  pub fn resource_pots(&self) -> &HashSet<ResourcePotId> {
     &self.resource_pots
+  }
+
+  pub fn set_resource_pots(&mut self, resource_pots: HashSet<ResourcePotId>) {
+    self.resource_pots = resource_pots;
   }
 }

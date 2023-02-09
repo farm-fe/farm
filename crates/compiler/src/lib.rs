@@ -24,9 +24,7 @@ impl Compiler {
       // register internal core plugins
       Arc::new(farmfe_plugin_resolve::FarmPluginResolve::new(&config)) as _,
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
-      Arc::new(farmfe_plugin_merge_modules::FarmPluginMergeModules::new(
-        &config,
-      )) as _,
+      Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
       Arc::new(farmfe_plugin_css::FarmPluginCss::new(&config)) as _,
     ];

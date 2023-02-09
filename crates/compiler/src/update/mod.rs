@@ -3,18 +3,27 @@ use std::sync::{mpsc::Sender, Arc};
 use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
+  hashbrown::HashSet,
   module::{module_graph::ModuleGraphEdge, Module, ModuleId},
   plugin::{PluginResolveHookParam, ResolveKind},
   rayon::ThreadPool,
 };
-use farmfe_utils::relative;
 
-use crate::{build::ResolvedModuleInfo, Compiler};
+use crate::{build::ResolvedModuleInfo, generate::write_resources::write_resources, Compiler};
 use farmfe_core::error::Result;
 
-use self::update_context::UpdateContext;
+use self::{
+  diff_and_patch_module_graph::{diff_module_graph, patch_module_graph, DiffResult},
+  patch_module_group_map::patch_module_group_map,
+  regenerate_resources::{
+    regenerate_resources_for_affected_module_groups, render_and_generate_update_resource,
+  },
+  update_context::UpdateContext,
+};
 
-mod diff_module_graph;
+mod diff_and_patch_module_graph;
+mod patch_module_group_map;
+mod regenerate_resources;
 mod update_context;
 
 /// The output after the updating process
@@ -28,6 +37,7 @@ pub struct UpdateResult {
   pub resources: String,
 }
 
+#[derive(Debug, Clone)]
 pub enum UpdateType {
   // added a new module
   Added,
@@ -42,7 +52,9 @@ enum ResolveModuleResult {
   ExistingBeforeUpdate(ModuleId),
   /// This module is added during the update, and we met it again when resolving dependencies
   ExistingWhenUpdate(ModuleId),
+  /// Resolve Cache hit
   Cached(Box<ResolvedModuleInfo>),
+  /// This module is a full new resolved module, and we need to do the full building process
   Success(Box<ResolvedModuleInfo>),
 }
 
@@ -51,7 +63,7 @@ impl Compiler {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
     let update_context = Arc::new(UpdateContext::new());
 
-    for (path, update_type) in paths {
+    for (path, update_type) in paths.clone() {
       match update_type {
         UpdateType::Added => {
           return Err(farmfe_core::error::CompilationError::GenericError(
@@ -60,15 +72,9 @@ impl Compiler {
         }
 
         UpdateType::Updated => {
-          let mut source = relative(&self.context.config.root, &path).to_string();
-          // if the source is not a relative path, we need to add a `./` prefix
-          if !source.starts_with("./") || !source.starts_with("../") {
-            source = format!("./{}", source);
-          }
-
           let resolve_param = PluginResolveHookParam {
             kind: ResolveKind::HmrUpdate,
-            source,
+            source: path,
             importer: None,
           };
 
@@ -95,7 +101,40 @@ impl Compiler {
       return Err(err);
     }
 
-    Ok(UpdateResult::default())
+    self.optimize_update_module_graph(&update_context)?;
+
+    let (affected_module_groups, updated_module_ids, diff_result) =
+      self.diff_and_patch_context(paths, &update_context);
+
+    regenerate_resources_for_affected_module_groups(
+      affected_module_groups,
+      &updated_module_ids,
+      &self.context,
+    )?;
+    // TODO1: only regenerate the resources for script modules.
+    // TODO2: should reload when html change
+    // TODO3: cover it with tests
+    let resources =
+      render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
+
+    write_resources(&self.context)?;
+
+    Ok(UpdateResult {
+      added_module_ids: diff_result.added_modules.into_iter().collect(),
+      updated_module_ids,
+      removed_module_ids: diff_result.removed_modules.into_iter().collect(),
+      resources,
+    })
+  }
+
+  fn optimize_update_module_graph(&self, update_context: &Arc<UpdateContext>) -> Result<()> {
+    // we should optimize the module graph after the update, as tree shaking are called on this stage and may remove some modules
+    let mut update_module_graph = update_context.module_graph.write();
+
+    self
+      .context
+      .plugin_driver
+      .optimize_module_graph(&mut *update_module_graph, &self.context)
   }
 
   /// Resolving, loading, transforming and parsing a module in a separate thread.
@@ -210,9 +249,43 @@ impl Compiler {
         .expect("Both the importer and the module should be in the update module graph");
     }
   }
+
+  fn diff_and_patch_context(
+    &self,
+    paths: Vec<(String, UpdateType)>,
+    update_context: &Arc<UpdateContext>,
+  ) -> (HashSet<ModuleId>, Vec<ModuleId>, DiffResult) {
+    let start_points: Vec<ModuleId> = paths
+      .into_iter()
+      .map(|path| ModuleId::new(&path.0, &self.context.config.root))
+      .collect();
+    let mut module_graph = self.context.module_graph.write();
+    let mut update_module_graph = update_context.module_graph.write();
+    let diff_result =
+      diff_module_graph(start_points.clone(), &*module_graph, &*update_module_graph);
+
+    let removed_modules = patch_module_graph(
+      start_points.clone(),
+      &diff_result,
+      &mut *module_graph,
+      &mut *update_module_graph,
+    );
+
+    let mut module_group_map = self.context.module_group_map.write();
+
+    let affected_module_groups = patch_module_group_map(
+      start_points.clone(),
+      &diff_result,
+      &removed_modules,
+      &mut *module_graph,
+      &mut *module_group_map,
+    );
+
+    (affected_module_groups, start_points, diff_result)
+  }
 }
 
-/// Similar to [crate::build::resolve_module], but the resolved module may be existing in both context and update_context
+/// Similar to [crate::build::resolve_module], but the resolved module may be existed in both context and update_context
 fn resolve_module(
   resolve_param: &PluginResolveHookParam,
   context: &Arc<CompilationContext>,

@@ -14,7 +14,12 @@ export interface JsPluginLoadHookFilters {
 export interface JsPluginTransformHookFilters {
   ids: Array<string>;
 }
-export interface JsUpdateResult {}
+export interface JsUpdateResult {
+  added: Array<string>;
+  changed: Array<string>;
+  removed: Array<string>;
+  modules: string;
+}
 export type JsCompiler = Compiler;
 export class Compiler {
   constructor(config: object);

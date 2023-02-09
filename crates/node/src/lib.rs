@@ -2,11 +2,11 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use farmfe_compiler::Compiler;
+use farmfe_compiler::{update::UpdateType, Compiler};
 
 pub mod plugin_adapters;
 
-use farmfe_core::config::Config;
+use farmfe_core::config::{Config, Mode};
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, NapiRaw, Status};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
@@ -14,7 +14,12 @@ use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::R
 extern crate napi_derive;
 
 #[napi(object)]
-pub struct JsUpdateResult {}
+pub struct JsUpdateResult {
+  pub added: Vec<String>,
+  pub changed: Vec<String>,
+  pub removed: Vec<String>,
+  pub modules: String,
+}
 
 #[napi(js_name = "Compiler")]
 pub struct JsCompiler {
@@ -103,13 +108,41 @@ impl JsCompiler {
   /// TODO: usage example
   #[napi]
   pub async fn update(&self, paths: Vec<String>) -> napi::Result<JsUpdateResult> {
-    Ok(JsUpdateResult {})
+    // TODO transform UpdateType
+    let res = self
+      .compiler
+      .update(
+        paths
+          .into_iter()
+          .map(|p| (p, UpdateType::Updated))
+          .collect(),
+      )
+      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+    Ok(JsUpdateResult {
+      added: res
+        .added_module_ids
+        .into_iter()
+        .map(|id| id.id(Mode::Development))
+        .collect(),
+      changed: res
+        .updated_module_ids
+        .into_iter()
+        .map(|id| id.id(Mode::Development))
+        .collect(),
+      removed: res
+        .removed_module_ids
+        .into_iter()
+        .map(|id| id.id(Mode::Development))
+        .collect(),
+      modules: res.resources,
+    })
   }
 
   /// sync update
   #[napi]
   pub fn update_sync(&self, paths: Vec<String>) -> napi::Result<JsUpdateResult> {
-    Ok(JsUpdateResult {})
+    unimplemented!("sync update");
   }
 
   #[napi]

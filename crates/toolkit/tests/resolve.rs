@@ -1,7 +1,5 @@
-use farmfe_toolkit::{
-  resolve::{self, PACKAGE_JSON_LOADER},
-  testing_helpers::fixture,
-};
+use farmfe_testing_helpers::fixture;
+use farmfe_toolkit::resolve::{self, PACKAGE_JSON_LOADER};
 
 #[test]
 fn load_package_json() {

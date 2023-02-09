@@ -15,7 +15,11 @@ use farmfe_toolkit::{
     feature::enable_available_feature_from_es_version,
     fixer,
     helpers::{inject_helpers, Helpers, HELPERS},
-    modules::{common_js, import_analysis::import_analyzer, util::ImportInterop},
+    modules::{
+      common_js,
+      import_analysis::import_analyzer,
+      util::{Config, ImportInterop},
+    },
   },
   swc_ecma_visit::VisitMutWith,
 };
@@ -78,7 +82,11 @@ pub fn resource_pot_to_runtime_object_lit(
           cloned_module.visit_mut_with(&mut inject_helpers());
           cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
             unresolved_mark,
-            Default::default(),
+            Config {
+              // TODO process dynamic import by ourselves later
+              ignore_dynamic: true,
+              ..Default::default()
+            },
             enable_available_feature_from_es_version(context.config.script.target.clone()),
             None,
           ));

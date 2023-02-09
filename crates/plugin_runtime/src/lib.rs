@@ -3,10 +3,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::Config,
+  config::{Config, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   error::CompilationError,
-  module::{ModuleId, ModuleMetaData, ModuleSystem},
+  module::{ModuleId, ModuleMetaData},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
@@ -30,11 +30,13 @@ use farmfe_toolkit::{
   swc_ecma_parser::Syntax,
 };
 
+use insert_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::*;
 
 const RUNTIME_SUFFIX: &str = ".farm-runtime";
 
-mod render_resource_pot;
+mod insert_runtime_plugins;
+pub mod render_resource_pot;
 
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.
@@ -64,13 +66,6 @@ impl Plugin for FarmPluginRuntime {
       "@swc/helpers".to_string(),
       config.runtime.swc_helpers_path.clone(),
     );
-
-    // runtime plugin entry file
-    for plugin in &config.runtime.plugins {
-      config
-        .input
-        .insert(plugin.clone(), format!("{}{}", plugin, RUNTIME_SUFFIX));
-    }
 
     // TODO make sure all runtime modules are in the same ModuleBucket
     Ok(Some(()))
@@ -140,11 +135,16 @@ impl Plugin for FarmPluginRuntime {
   fn process_module(
     &self,
     param: &mut PluginProcessModuleHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if let ModuleMetaData::Script(script) = &param.meta {
-      if !matches!(script.module_system, ModuleSystem::EsModule) {
-        return Ok(None);
+    if let ModuleMetaData::Script(script) = &mut param.meta {
+      // context.config.runtime.path should be a absolute path without symlink
+      let farm_runtime_module_id = format!("{}{}", context.config.runtime.path, RUNTIME_SUFFIX);
+      let module_id = param.module_id.resolved_path(context.config.root.as_str());
+
+      if farm_runtime_module_id == module_id {
+        insert_runtime_plugins(&mut script.ast, context);
+        return Ok(Some(()));
       }
     } else {
       return Ok(None);
@@ -255,7 +255,8 @@ impl Plugin for FarmPluginRuntime {
             spread: None,
             expr: Box::new(Expr::Lit(Lit::Str(Str {
               span: DUMMY_SP,
-              value: ModuleId::from(resource_pot.id.to_string().as_str())
+              value: resource_pot
+                .module_group
                 .id(context.config.mode.clone())
                 .into(),
               raw: None,
@@ -375,7 +376,14 @@ impl Plugin for FarmPluginRuntime {
           let call_entry = parse_module(
             "farm-internal-call-entry-module",
             &format!(
-              r#"const entry = globalThis.__acquire_farm_module_system__().require("{}").default;export default entry;"#,
+              r#"const {} = globalThis || window || global || self;
+              const farmModuleSystem = {}.{};
+              farmModuleSystem.bootstrap();
+              const entry = farmModuleSystem.require("{}").default;
+              export default entry;"#,
+              FARM_GLOBAL_THIS,
+              FARM_GLOBAL_THIS,
+              FARM_MODULE_SYSTEM,
               entry_module_id.id(context.config.mode.clone())
             ),
             Syntax::Es(context.config.script.parser.es_config.clone()),

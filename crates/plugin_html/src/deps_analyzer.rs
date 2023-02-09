@@ -8,6 +8,8 @@ pub struct DepsAnalyzer {
   pub deps: Option<Vec<PluginAnalyzeDepsHookResultEntry>>,
 }
 
+pub const FARM_ENTRY: &str = "data-farm-entry-script";
+
 impl DepsAnalyzer {
   pub fn new() -> Self {
     Self { deps: None }
@@ -89,9 +91,38 @@ pub fn get_href_link_value(element: &Element) -> Option<String> {
 }
 
 pub fn is_script_src(element: &Element) -> bool {
-  get_script_src_value(element).is_some()
+  if let Some(v) = get_script_src_value(element) {
+    if !v.starts_with("http") {
+      true
+    } else {
+      false
+    }
+  } else {
+    false
+  }
+}
+
+pub fn is_script_entry(element: &Element) -> bool {
+  if element.tag_name.to_string() == "script" {
+    let src_attr = element
+      .attributes
+      .iter()
+      .find(|&attr| attr.name.to_string() == FARM_ENTRY);
+
+    return src_attr.is_some();
+  }
+
+  false
 }
 
 pub fn is_link_href(element: &Element) -> bool {
-  get_href_link_value(element).is_some()
+  if let Some(v) = get_href_link_value(element) {
+    if !v.starts_with("http") {
+      true
+    } else {
+      false
+    }
+  } else {
+    false
+  }
 }

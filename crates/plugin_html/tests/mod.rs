@@ -9,7 +9,7 @@ use farmfe_core::{
   },
 };
 use farmfe_plugin_html::FarmPluginHtml;
-use farmfe_toolkit::testing_helpers::fixture;
+use farmfe_testing_helpers::fixture;
 
 #[test]
 fn html_build_stage() {
