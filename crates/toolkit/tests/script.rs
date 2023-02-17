@@ -14,7 +14,7 @@ fn parse_and_codegen_module() {
     let id = file.to_string_lossy().to_string();
     let content = read_file_utf8(&id).unwrap();
 
-    let module_type = module_type_from_id(&id);
+    let module_type = module_type_from_id(&id).unwrap();
     let syntax = syntax_from_module_type(&module_type, Default::default()).unwrap();
     let cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
     let ast = parse_module(&id, &content, syntax, Default::default(), cm.clone()).unwrap();

@@ -27,12 +27,8 @@ export class HmrEngine {
       changed: [${result.changed.map((r) => `'${r}'`).join(', ')}],
       removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
       modules: ${result.modules.trim().slice(0, -1)},
-      boundaries: ${`{ ${result.changed
-        .map((r) => `'${r}': ['${r}']`)
-        .join(', ')} }`}
+      boundaries: ${JSON.stringify(result.boundaries)},
     }`;
-
-    console.log(result, resultStr);
 
     const id = Date.now().toString();
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -49,8 +45,10 @@ export class HmrEngine {
   }, 200);
 
   async hmrUpdate(path: string) {
-    this._updateQueue.add(path);
-    return this.recompileAndSendResult();
+    if (!this._compiler.compiling) {
+      this._updateQueue.add(path);
+      await this.recompileAndSendResult();
+    }
   }
 
   getUpdateResult(id: string) {

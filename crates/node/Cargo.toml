@@ -11,11 +11,12 @@ crate-type = ["cdylib"]
 napi = { version = "2.5.0", default-features = false, features = [
   "napi4",
   "async",
-  "serde-json"
+  "serde-json",
 ] }
 napi-derive = "2.5.0"
 farmfe_compiler = { path = "../compiler" }
 farmfe_core = { path = "../core" }
+farmfe_toolkit = { path = "../toolkit" }
 regex = "1"
 libloading = "0.7"
 

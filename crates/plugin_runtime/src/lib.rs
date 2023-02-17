@@ -123,10 +123,14 @@ impl Plugin for FarmPluginRuntime {
       let real_file_path = param.resolved_path.replace(RUNTIME_SUFFIX, "");
       let content = read_file_utf8(&real_file_path)?;
 
-      Ok(Some(PluginLoadHookResult {
-        content,
-        module_type: module_type_from_id(&real_file_path),
-      }))
+      if let Some(module_type) = module_type_from_id(&real_file_path) {
+        Ok(Some(PluginLoadHookResult {
+          content,
+          module_type,
+        }))
+      } else {
+        panic!("unknown module type for {}", real_file_path);
+      }
     } else {
       Ok(None)
     }

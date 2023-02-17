@@ -29,9 +29,9 @@ pub struct RustPluginAdapter {
 }
 
 impl RustPluginAdapter {
-  pub fn new(plugin_path: &String, config: &Config) -> Result<Self> {
+  pub fn new(plugin_path: &String, config: &Config, options: String) -> Result<Self> {
     let (plugin, _lib) = unsafe {
-      load_rust_plugin(plugin_path, config).map_err(|e| {
+      load_rust_plugin(plugin_path, config, options).map_err(|e| {
         CompilationError::GenericError(format!("Load rust plugin {} failed. {:?}", plugin_path, e))
       })?
     };

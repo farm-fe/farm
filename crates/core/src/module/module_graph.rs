@@ -488,9 +488,8 @@ mod tests {
   #[test]
   fn toposort() {
     let graph = construct_test_module_graph();
-
     let (sorted, cycle) = graph.toposort();
-    // println!("{:?} \n\n {:?}", sorted, cycle);
+
     assert_eq!(cycle, vec![vec!["A".into(), "C".into(), "F".into()],]);
     assert_eq!(
       sorted,

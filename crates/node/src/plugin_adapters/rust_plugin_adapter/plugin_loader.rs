@@ -12,8 +12,9 @@ use libloading::{Error, Library, Symbol};
 pub unsafe fn load_rust_plugin<P: AsRef<OsStr>>(
   filename: P,
   config: &Config,
+  options: String,
 ) -> Result<(Arc<dyn Plugin>, Library), Error> {
-  type PluginCreate = unsafe fn(config: &Config) -> Arc<dyn Plugin>;
+  type PluginCreate = unsafe fn(config: &Config, options: String) -> Arc<dyn Plugin>;
 
   let lib = Library::new(filename.as_ref())?;
 
@@ -28,7 +29,7 @@ pub unsafe fn load_rust_plugin<P: AsRef<OsStr>>(
   }
 
   let constructor: Symbol<PluginCreate> = lib.get(b"_plugin_create")?;
-  let plugin = constructor(config);
+  let plugin = constructor(config, options);
 
   Ok((plugin, lib))
 }

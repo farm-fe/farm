@@ -132,7 +132,14 @@ where
   let abs_pattern = RelativePath::new(pattern).to_path(base_dir.clone());
   let paths = glob(&abs_pattern.to_string_lossy()).unwrap();
 
+  let mut exists = false;
+
   for path in paths {
+    exists = true;
     op(path.unwrap(), base_dir.clone());
+  }
+
+  if !exists {
+    panic!("no fixtures found under {}", pattern);
   }
 }

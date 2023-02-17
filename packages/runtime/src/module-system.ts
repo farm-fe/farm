@@ -36,14 +36,14 @@ export class ModuleSystem {
   // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
   require(moduleId: string): any {
     // return the cached exports if cache exists
-    console.log(`[Farm] require module "${moduleId}" from cache`);
+    // console.log(`[Farm] require module "${moduleId}" from cache`);
     if (this.cache[moduleId]) {
       const shouldSkip = this.pluginContainer.hookBail(
         'readModuleCache',
         this.cache[moduleId]
       );
 
-      console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
+      // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
       if (!shouldSkip) {
         return this.cache[moduleId].exports;
       }

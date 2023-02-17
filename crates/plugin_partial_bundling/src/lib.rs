@@ -29,8 +29,6 @@ impl Plugin for FarmPluginPartialBundling {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleGroupMap>> {
-    println!("\n\nentries: {:?}\n\n", module_graph.entries);
-
     let module_group_map = module_group_map_from_entries(
       &module_graph.entries.clone().into_iter().collect(),
       module_graph,

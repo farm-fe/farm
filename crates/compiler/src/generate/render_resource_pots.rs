@@ -6,33 +6,23 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::PluginHookContext,
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{
-    resource_pot::{ResourcePot, ResourcePotId},
-    Resource,
-  },
+  resource::{resource_pot::ResourcePot, Resource},
 };
+use farmfe_toolkit::tracing;
 
+#[tracing::instrument(skip_all)]
 pub fn render_resource_pots_and_generate_resources(
   resource_pots: Vec<&mut ResourcePot>,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<()> {
-  let resources = Mutex::new(vec![]);
+  tracing::debug!("Starting render_resource_pots_and_generate_resources");
 
-  println!(
-    "resource pots len: {}, {:?}",
-    resource_pots.len(),
-    resource_pots
-      .iter()
-      .map(|r| r.id.clone())
-      .collect::<Vec<ResourcePotId>>()
-  );
+  let resources = Mutex::new(vec![]);
 
   // Note: Plugins should not using context.resource_pot_graph, as it may cause deadlock
   resource_pots.into_par_iter().try_for_each(|resource_pot| {
     let res = render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
-
-    println!("set generated resources for {:?}", resource_pot.id);
 
     let mut resources = resources.lock();
 
@@ -49,41 +39,49 @@ pub fn render_resource_pots_and_generate_resources(
   // resources_map.clear();
 
   for resource in resources.lock().drain(..) {
-    println!(
-      "insert resource {:?} {:?}",
-      resource.name, resource.resource_type
-    );
-
     resources_map.insert(resource.name.clone(), resource);
   }
 
+  tracing::debug!("render_resource_pots_and_generate_resources finished");
   Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub fn render_resource_pot_generate_resources(
   resource_pot: &mut ResourcePot,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
   skip_render: bool,
 ) -> Result<Vec<Resource>> {
+  tracing::debug!("Starting render_resource_pot_generate_resources");
+
   if !skip_render {
-    println!("render resource pot start");
+    tracing::debug!("Starting render_resource_pot_generate_resources: render_resource_pot");
+
     context
       .plugin_driver
       .render_resource_pot(resource_pot, context)?;
+
+    tracing::debug!("render_resource_pot_generate_resources: optimize_resource_pot finished");
   }
 
-  println!("optimize resource pot start");
+  tracing::debug!("Starting render_resource_pot_generate_resources: optimize_resource_pot");
   context
     .plugin_driver
     .optimize_resource_pot(resource_pot, context)?;
-  println!("generate resource pot start");
-  context
+  tracing::debug!("render_resource_pot_generate_resources: optimize_resource_pot finished");
+
+  tracing::debug!("Starting render_resource_pot_generate_resources: generate_resources");
+  let res = context
     .plugin_driver
     .generate_resources(resource_pot, context, hook_context)?
     .ok_or(CompilationError::GenerateResourcesError {
       name: resource_pot.id.to_string(),
       ty: resource_pot.resource_pot_type.clone(),
       source: None,
-    })
+    });
+  tracing::debug!("render_resource_pot_generate_resources: generate_resources finished");
+
+  tracing::debug!("render_resource_pot_generate_resources finished");
+  res
 }

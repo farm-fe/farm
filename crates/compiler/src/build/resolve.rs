@@ -5,12 +5,20 @@ use farmfe_core::{
   error::{CompilationError, Result},
   plugin::{PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
 };
+use farmfe_toolkit::tracing;
 
+#[tracing::instrument(skip_all)]
 pub fn resolve(
   resolve_param: &PluginResolveHookParam,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<PluginResolveHookResult> {
+  tracing::debug!(
+    "resolve: {}, importer: {:?}",
+    resolve_param.source,
+    resolve_param.importer
+  );
+
   let importer = resolve_param
     .importer
     .clone()
@@ -40,9 +48,11 @@ pub fn resolve(
     }
   };
 
-  println!(
-    "resolved {:?} from {:?}, result: {:?}",
-    resolve_param.source, importer, resolved
+  tracing::debug!(
+    "resolved: {}, importer: {:?}, source {}",
+    resolved.resolved_path,
+    resolve_param.importer,
+    resolve_param.source
   );
   Ok(resolved)
 }

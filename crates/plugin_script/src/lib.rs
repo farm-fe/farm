@@ -17,7 +17,11 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::{comments::NoopComments, Mark, GLOBALS},
+  swc_common::{comments::NoopComments, Mark, DUMMY_SP, GLOBALS},
+  swc_ecma_ast::{
+    CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
+    ModuleItem, Stmt,
+  },
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -48,13 +52,17 @@ impl Plugin for FarmPluginScript {
   ) -> Result<Option<PluginLoadHookResult>> {
     let module_type = module_type_from_id(param.resolved_path);
 
-    if module_type.is_script() {
-      let content = read_file_utf8(param.resolved_path)?;
+    if let Some(module_type) = module_type {
+      if module_type.is_script() {
+        let content = read_file_utf8(param.resolved_path)?;
 
-      Ok(Some(PluginLoadHookResult {
-        content,
-        module_type,
-      }))
+        Ok(Some(PluginLoadHookResult {
+          content,
+          module_type,
+        }))
+      } else {
+        Ok(None)
+      }
     } else {
       Ok(None)
     }
@@ -91,7 +99,10 @@ impl Plugin for FarmPluginScript {
           ast: swc_module,
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
+          // set module_system to unknown, it will be detected in `finalize_module`
           module_system: ModuleSystem::Custom(String::from("unknown")),
+          // set module_type to unknown, it will be detected in `finalize_module`
+          hmr_accepted: false,
         };
 
         Ok(Some(ModuleMetaData::Script(meta)))
@@ -116,12 +127,7 @@ impl Plugin for FarmPluginScript {
             // TODO downgrade syntax
           }
           farmfe_core::module::ModuleType::Jsx => {
-            ast.visit_mut_with(&mut react(
-              context.meta.script.cm.clone(),
-              Some(NoopComments), // TODO parse comments
-              Options::default(),
-              top_level_mark,
-            ));
+            // Do nothing, jsx should be handled by other plugins
           }
           farmfe_core::module::ModuleType::Ts => {
             ast.visit_mut_with(&mut strip(top_level_mark));
@@ -131,12 +137,6 @@ impl Plugin for FarmPluginScript {
               context.meta.script.cm.clone(),
               Default::default(),
               NoopComments, // TODO parse comments
-              top_level_mark,
-            ));
-            ast.visit_mut_with(&mut react(
-              context.meta.script.cm.clone(),
-              Some(NoopComments), // TODO parse comments
-              Options::default(),
               top_level_mark,
             ));
           }
@@ -174,7 +174,7 @@ impl Plugin for FarmPluginScript {
     }
   }
 
-  /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind]
+  /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind] and detect hmr_accepted
   fn finalize_module(
     &self,
     param: &mut PluginFinalizeModuleHookParam,
@@ -191,6 +191,44 @@ impl Plugin for FarmPluginScript {
     } else {
       // default to es module
       param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+    }
+
+    let ast = &param.module.meta.as_script().ast;
+    // detect hmr based on `module.meta.hot.accept()`
+    for item in ast.body.iter() {
+      if let ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+        expr:
+          box Expr::Call(CallExpr {
+            callee:
+              Callee::Expr(box Expr::Member(MemberExpr {
+                obj:
+                  box Expr::Member(MemberExpr {
+                    obj:
+                      box Expr::Member(MemberExpr {
+                        obj: box Expr::Ident(Ident { sym: module, .. }),
+                        prop: MemberProp::Ident(Ident { sym: meta, .. }),
+                        ..
+                      }),
+                    prop: MemberProp::Ident(Ident { sym: hot, .. }),
+                    ..
+                  }),
+                prop: MemberProp::Ident(Ident { sym: accept, .. }),
+                ..
+              })),
+            ..
+          }),
+        ..
+      })) = item
+      {
+        if &module.to_string() == "module"
+          && &meta.to_string() == "meta"
+          && &hot.to_string() == "hot"
+          && &accept.to_string() == "accept"
+        {
+          param.module.meta.as_script_mut().hmr_accepted = true;
+          break;
+        }
+      }
     }
 
     Ok(None)

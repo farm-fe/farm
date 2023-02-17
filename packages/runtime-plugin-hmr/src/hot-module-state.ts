@@ -41,16 +41,26 @@ export function applyHotUpdates(
 
   for (const id of result.changed) {
     moduleSystem.update(id, result.modules[id]);
-  }
-  // TODO support accept dependencies change
-  for (const boundary of Object.keys(result.boundaries)) {
-    const chains = result.boundaries[boundary];
 
-    for (const id of chains) {
-      moduleSystem.clearCache(id);
+    if (!result.boundaries[id]) {
+      // do not found boundary module, reload the window
+      window.location.reload();
+    }
+  }
+
+  // TODO support accept dependencies change
+  for (const updated_id of Object.keys(result.boundaries)) {
+    const chains = result.boundaries[updated_id];
+
+    for (const chain of chains) {
+      for (const id of chain) {
+        moduleSystem.clearCache(id);
+      }
     }
 
-    // re-execute the boundary module
-    moduleSystem.require(boundary);
+    for (const chain of chains) {
+      // require the boundary module
+      moduleSystem.require(chain[chain.length - 1]);
+    }
   }
 }

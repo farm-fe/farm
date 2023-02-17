@@ -1,4 +1,7 @@
-use std::sync::{mpsc::Sender, Arc};
+use std::{
+  collections::HashMap,
+  sync::{mpsc::Sender, Arc},
+};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -22,6 +25,7 @@ use self::{
 };
 
 mod diff_and_patch_module_graph;
+mod find_hmr_boundaries;
 mod patch_module_group_map;
 mod regenerate_resources;
 mod update_context;
@@ -35,6 +39,7 @@ pub struct UpdateResult {
   /// Javascript module map string, the key is the module id, the value is the module function
   /// This code string should be returned to the client side as MIME type `application/javascript`
   pub resources: String,
+  pub boundaries: HashMap<String, Vec<Vec<String>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -119,11 +124,14 @@ impl Compiler {
 
     write_resources(&self.context)?;
 
+    let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
+    // find the boundaries
     Ok(UpdateResult {
       added_module_ids: diff_result.added_modules.into_iter().collect(),
       updated_module_ids,
       removed_module_ids: diff_result.removed_modules.into_iter().collect(),
       resources,
+      boundaries,
     })
   }
 

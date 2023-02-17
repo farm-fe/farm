@@ -19,6 +19,7 @@ export interface JsUpdateResult {
   changed: Array<string>;
   removed: Array<string>;
   modules: string;
+  boundaries: Record<string, Array<Array<string>>>;
 }
 export type JsCompiler = Compiler;
 export class Compiler {

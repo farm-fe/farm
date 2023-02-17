@@ -23,3 +23,5 @@ pub use swc_html_visit;
 
 pub use lazy_static;
 pub use regex;
+pub use tracing;
+pub use tracing_subscriber;

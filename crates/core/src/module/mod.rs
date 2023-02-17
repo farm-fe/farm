@@ -162,6 +162,24 @@ pub struct ScriptModuleMetaData {
   pub top_level_mark: u32,
   pub unresolved_mark: u32,
   pub module_system: ModuleSystem,
+  /// true if this module calls `import.meta.hot.accept`
+  pub hmr_accepted: bool,
+}
+
+impl Default for ScriptModuleMetaData {
+  fn default() -> Self {
+    Self {
+      ast: SwcModule {
+        span: Default::default(),
+        body: Default::default(),
+        shebang: None,
+      },
+      top_level_mark: 0,
+      unresolved_mark: 0,
+      module_system: ModuleSystem::EsModule,
+      hmr_accepted: false,
+    }
+  }
 }
 
 #[cache_item]

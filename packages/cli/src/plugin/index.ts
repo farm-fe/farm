@@ -5,9 +5,9 @@
  */
 
 import { build } from './build.js';
-// import { create } from './create.js';
+import { create } from './create.js';
 
 export const COMMANDS = {
   build,
-  // create,
+  create,
 };

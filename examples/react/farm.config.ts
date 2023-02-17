@@ -15,6 +15,7 @@ export default defineFarmConfig({
     },
   },
   server: {
-    hmr: true
-  }
+    hmr: true,
+  },
+  plugins: ['@farmfe/plugin-react'],
 });

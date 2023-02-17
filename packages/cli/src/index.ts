@@ -9,23 +9,23 @@ cli
     'start',
     'Compile the project in dev mode and serve it with farm dev server'
   )
-  .action((...args) => {
-    console.log(args);
+  .action(() => {
     // TODO set config path
     start({
       configPath: process.cwd(),
     });
   });
 
-cli
-  .command('build', 'Compile the project in production mode')
-  .action((...args) => {
-    console.log(args);
-    // TODO set config path
-    build({
-      configPath: process.cwd(),
-    });
+cli.command('build', 'Compile the project in production mode').action(() => {
+  // TODO set config path
+  build({
+    configPath: process.cwd(),
   });
+});
+
+cli.command('').action(() => {
+  cli.outputHelp();
+});
 
 const pluginCmd = cli.command(
   'plugin <command>',

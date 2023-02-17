@@ -8,7 +8,7 @@ export interface HmrUpdateResult {
   removed: string[];
 
   // closest boundary modules which are related to added or changed
-  boundaries: Record<string, string[]>;
+  boundaries: Record<string, string[][]>;
   // modules which are added or changed
   modules: Record<
     string,

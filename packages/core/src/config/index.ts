@@ -27,7 +27,9 @@ export const DEFAULT_CONFIG_NAMES = [
  * @param config
  * @returns resolved config that parsed to rust compiler
  */
-export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
+export async function normalizeUserCompilationConfig(
+  userConfig: UserConfig
+): Promise<Config> {
   const config: Config['config'] = merge(
     {
       input: {
@@ -90,7 +92,7 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
 
   for (const plugin of plugins) {
     if (typeof plugin === 'string' || Array.isArray(plugin)) {
-      rustPlugins.push(rustPluginResolver(plugin, config.root as string));
+      rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
     } else if (typeof plugin === 'object') {
       jsPlugins.push(plugin as JsPlugin);
     }
@@ -183,7 +185,7 @@ async function readConfigFile(
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (resolvedPath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
-      const compiler = new Compiler({
+      const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
             config: resolvedPath,
@@ -193,6 +195,7 @@ async function readConfigFile(
           hmr: false,
         },
       });
+      const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
       const resources = compiler.resources();
       // should only emit one config file bundled with all dependencies
@@ -211,5 +214,7 @@ async function readConfigFile(
       const config = (await import(resolvedPath)).default;
       return config;
     }
+  } else {
+    throw new Error(`Config file ${resolvedPath} does not exist`);
   }
 }

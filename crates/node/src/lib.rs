@@ -7,6 +7,7 @@ use farmfe_compiler::{update::UpdateType, Compiler};
 pub mod plugin_adapters;
 
 use farmfe_core::config::{Config, Mode};
+use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, NapiRaw, Status};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
@@ -19,6 +20,7 @@ pub struct JsUpdateResult {
   pub changed: Vec<String>,
   pub removed: Vec<String>,
   pub modules: String,
+  pub boundaries: HashMap<String, Vec<Vec<String>>>,
 }
 
 #[napi(js_name = "Compiler")]
@@ -42,7 +44,7 @@ impl JsCompiler {
     };
 
     let rust_plugins = unsafe {
-      Vec::<String>::from_napi_value(
+      Vec::<Vec<String>>::from_napi_value(
         env.raw(),
         config
           .get_named_property::<JsObject>("rustPlugins")
@@ -69,13 +71,27 @@ impl JsCompiler {
       plugins_adapters.push(js_plugin);
     }
 
-    for rust_plugin_path in rust_plugins {
+    for rust_plugin in rust_plugins {
+      let rust_plugin_path = rust_plugin[0].clone();
+      let rust_plugin_options = rust_plugin[1].clone();
+
       let rust_plugin = Arc::new(
-        RustPluginAdapter::new(&rust_plugin_path, &config)
+        RustPluginAdapter::new(&rust_plugin_path, &config, rust_plugin_options)
           .unwrap_or_else(|e| panic!("load rust plugin error: {:?}", e)),
       ) as _;
       plugins_adapters.push(rust_plugin);
     }
+
+    let fmt_layer = fmt::layer().with_target(false);
+    let filter_layer = EnvFilter::try_from_default_env()
+      .or_else(|_| EnvFilter::try_new("info"))
+      .unwrap();
+
+    tracing_subscriber::registry()
+      .with(filter_layer)
+      .with(fmt_layer)
+      .try_init()
+      .err();
 
     Ok(Self {
       compiler: Compiler::new(config, plugins_adapters)
@@ -136,6 +152,7 @@ impl JsCompiler {
         .map(|id| id.id(Mode::Development))
         .collect(),
       modules: res.resources,
+      boundaries: res.boundaries,
     })
   }
 

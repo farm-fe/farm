@@ -41,11 +41,15 @@ impl Plugin for FarmPluginHtml {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     let module_type = module_type_from_id(param.resolved_path);
 
-    if matches!(module_type, ModuleType::Html) {
-      Ok(Some(PluginLoadHookResult {
-        content: read_file_utf8(param.resolved_path)?,
-        module_type,
-      }))
+    if let Some(module_type) = module_type {
+      if matches!(module_type, ModuleType::Html) {
+        Ok(Some(PluginLoadHookResult {
+          content: read_file_utf8(param.resolved_path)?,
+          module_type,
+        }))
+      } else {
+        Ok(None)
+      }
     } else {
       Ok(None)
     }

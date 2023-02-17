@@ -6,13 +6,17 @@ use farmfe_core::{
   module::ModuleMetaData,
   plugin::{PluginHookContext, PluginParseHookParam},
 };
+use farmfe_toolkit::tracing;
 
+#[tracing::instrument(skip_all)]
 pub fn parse(
   parse_param: &PluginParseHookParam,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<ModuleMetaData> {
-  match context
+  tracing::debug!("parse: {}", parse_param.resolved_path);
+
+  let res = match context
     .plugin_driver
     .parse(parse_param, context, hook_context)
   {
@@ -27,5 +31,8 @@ pub fn parse(
       resolved_path: parse_param.resolved_path.clone(),
       source: Some(Box::new(e)),
     }),
-  }
+  };
+
+  tracing::debug!("parsed: {}", parse_param.resolved_path);
+  res
 }

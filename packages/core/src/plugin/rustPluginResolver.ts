@@ -13,17 +13,16 @@ export type RustPlugin =
  * Resolve the binary plugin file, return [filePath, jsonStringifiedOptions]
  * @param plugin rust plugin config
  */
-export function rustPluginResolver(
+export async function rustPluginResolver(
   plugin: RustPlugin,
   root: string
-): [string, string] {
+): Promise<[string, string]> {
   let pluginPath: string, options: string;
 
   if (typeof plugin === 'string') {
     pluginPath = plugin;
     options = '{}';
-  }
-  if (Array.isArray(plugin) && plugin.length === 2) {
+  } else if (Array.isArray(plugin) && plugin.length === 2) {
     pluginPath = plugin[0];
     options = JSON.stringify(plugin[1]);
   } else {
@@ -33,9 +32,11 @@ export function rustPluginResolver(
   }
 
   // not relative path, treat it as a package
-  if (!path.isAbsolute(pluginPath) && !pluginPath.startsWith('.')) {
-    const require = createRequire(root);
+  if (!path.isAbsolute(pluginPath)) {
+    const require = createRequire(path.join(root, 'package.json'));
     pluginPath = require.resolve(pluginPath);
+    // rust plugin should export a default string representing the path to the binary
+    pluginPath = await import(pluginPath).then((m) => m.default);
   }
 
   return [pluginPath, options];

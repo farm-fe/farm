@@ -1,12 +1,20 @@
-use farmfe_core::{plugin::{Plugin}}
+#![deny(clippy::all)]
+
+use farmfe_core::{config::Config, plugin::Plugin};
 
 use farmfe_macro_plugin::farm_plugin;
 
 #[farm_plugin]
-pub struct <FARM-RUST-PLUGIN-NAME-STRUCT> {};
+pub struct <FARM-RUST-PLUGIN-STRUCT-NAME> {}
 
-impl <FARM-RUST-PLUGIN-NAME-STRUCT> {
-  pub fn name() -> String {
-    "<FARM-RUST-PLUGIN-NAME-STRUCT>".to_string()
+impl <FARM-RUST-PLUGIN-STRUCT-NAME> {
+  fn new(config: &Config, options: String) -> Self {
+    Self {}
+  }
+}
+
+impl Plugin for <FARM-RUST-PLUGIN-STRUCT-NAME> {
+  fn name(&self) -> &str {
+    "<FARM-RUST-PLUGIN-STRUCT-NAME>"
   }
 }
