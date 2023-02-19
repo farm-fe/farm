@@ -64,9 +64,7 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<PluginResolveHookResult>> {
     if let Some(js_resolve_hook) = &self.js_resolve_hook {
       let cp = param.clone();
-      let ret = js_resolve_hook.call(cp, context.clone(), hook_context.clone());
-
-      ret
+      js_resolve_hook.call(cp, context.clone(), hook_context.clone())
     } else {
       Ok(None)
     }

@@ -7,6 +7,9 @@
     "email": "1611331@mail.nankai.edu.cn"
   },
   "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
   "devDependencies": {
     "@farmfe/runtime": "workspace:*"
   },

@@ -28,6 +28,7 @@ pub fn create_compiler(cwd: PathBuf, crate_path: PathBuf) -> Compiler {
         plugins: vec![],
         swc_helpers_path,
       },
+      external: vec!["react-refresh".to_string(), "@swc/helpers".to_string()],
       ..Default::default()
     },
     vec![],

@@ -21,7 +21,8 @@
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
     "build": "tsc",
-    "type-check": "tsc -p tsconfig.json --noEmit"
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "engines": {
     "node": ">= 16"

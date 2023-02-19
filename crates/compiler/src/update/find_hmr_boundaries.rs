@@ -18,7 +18,7 @@ pub fn find_hmr_boundaries(
     let mut visited = HashSet::new();
     let mut res = vec![];
     let all_path_accepted =
-      find_hmr_accepted_recursively(&id, &module_graph, &mut stack, &mut visited, &mut res);
+      find_hmr_accepted_recursively(id, &module_graph, &mut stack, &mut visited, &mut res);
 
     if !all_path_accepted {
       continue;
@@ -47,9 +47,9 @@ fn find_hmr_accepted_recursively(
   visited: &mut HashSet<ModuleId>,
   res: &mut Vec<Vec<ModuleId>>,
 ) -> bool {
-  let module = module_graph.module(&id).unwrap();
+  let module = module_graph.module(id).unwrap();
   // There is a path from the module to the root that does not have HMR accepted
-  if module_graph.entries.contains(&id) {
+  if module_graph.entries.contains(id) {
     return false;
   } else if module.module_type.is_script() {
     let hmr_accepted = module.meta.as_script().hmr_accepted;
@@ -88,7 +88,6 @@ mod tests {
   use farmfe_core::{
     config::{Config, Mode},
     context::CompilationContext,
-    hashbrown::HashSet,
     module::{module_graph::ModuleGraph, ModuleMetaData, ModuleType, ScriptModuleMetaData},
     parking_lot::RwLock,
   };

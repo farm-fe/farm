@@ -44,7 +44,13 @@ fn main() {
 
   compiler
     .update(vec![(
-      String::from("/home/brightwu/桌面/open-source/farm/examples/react/src/main.tsx"),
+      cwd
+        .join("examples")
+        .join("react")
+        .join("src")
+        .join("main.tsx")
+        .to_string_lossy()
+        .to_string(),
       UpdateType::Updated,
     )])
     .unwrap();
