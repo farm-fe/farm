@@ -26,7 +26,12 @@ impl ResourcePotGraph {
   }
 
   pub fn resource_pot(&self, id: &ResourcePotId) -> Option<&ResourcePot> {
-    let id = self.id_index_map.get(id).unwrap();
+    let id = self.id_index_map.get(id).unwrap_or_else(|| {
+      panic!(
+        "ResourcePotGraph::resource_pot: id not found: {}",
+        id.to_string()
+      )
+    });
     self.g.node_weight(*id)
   }
 

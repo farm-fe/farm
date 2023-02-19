@@ -46,11 +46,11 @@ pub fn insert_runtime_plugins(ast: &mut SwcModule, context: &Arc<CompilationCont
               DUMMY_SP,
             ),
           })],
-          src: Str {
+          src: Box::new(Str {
             span: DUMMY_SP,
             value: plugin_path.as_str().into(),
             raw: None,
-          },
+          }),
           type_only: false,
           asserts: None,
         }))

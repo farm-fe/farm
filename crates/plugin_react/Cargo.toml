@@ -3,9 +3,6 @@ edition = "2021"
 name = "farmfe_plugin_react"
 version = "0.0.0"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 farmfe_core = { path = "../core", version = "*" }
 farmfe_toolkit = { path = "../toolkit", version = "*" }

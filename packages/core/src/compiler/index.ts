@@ -4,10 +4,10 @@ import path from 'path';
 
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
-// import { normalizeUserCompilationConfig } from '../config/index.js';
 
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
+
   config: Config;
   compiling = false;
 
@@ -50,6 +50,10 @@ export class Compiler {
 
   resources(): Record<string, number[]> {
     return this._bindingCompiler.resources();
+  }
+
+  hasModule(resolvedPath: string): boolean {
+    return this._bindingCompiler.hasModule(resolvedPath);
   }
 
   async writeResourcesToDisk(): Promise<void> {

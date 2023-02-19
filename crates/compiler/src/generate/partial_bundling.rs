@@ -70,6 +70,7 @@ fn generate_resource_pot_graph(
     let resources_pots = call_partial_bundling_hook(g, context, hook_context)?;
 
     for resource_pot in resources_pots {
+      g.add_resource_pot(resource_pot.id.clone());
       resource_pot_graph.add_resource_pot(resource_pot);
     }
   }

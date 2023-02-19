@@ -10,15 +10,13 @@ export class FileWatcher {
   constructor(root: string, config?: { ignores?: string[] }) {
     this._root = root;
 
-    this._watcher = chokidar.watch(this._root, {
+    this._watcher = chokidar.watch(`${this._root.replace('\\', '/')}/**`, {
       ignored: config?.ignores ?? [],
     });
   }
 
   watch(serverOrCompiler: DevServer | Compiler) {
     this._watcher.on('change', (path) => {
-      console.log(path);
-
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {

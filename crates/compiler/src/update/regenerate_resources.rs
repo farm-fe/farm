@@ -46,10 +46,6 @@ pub fn render_and_generate_update_resource(
     update_resource_pot.add_module(updated.clone());
   }
 
-  for removed in &diff_result.removed_modules {
-    update_resource_pot.add_module(removed.clone());
-  }
-
   let module_graph = context.module_graph.read();
   let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &*module_graph, context);
   // The hmr result should alway be a js resource
@@ -101,6 +97,7 @@ pub fn regenerate_resources_for_affected_module_groups(
 
         let mut resource_pot_graph = context.resource_pot_graph.write();
         let previous_resource_pots = module_group.resource_pots().clone();
+
         // remove the old resource pots from the graph
         for resource_pot in &previous_resource_pots {
           if !resource_pots_ids.contains(resource_pot) {

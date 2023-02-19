@@ -22,6 +22,7 @@ pub struct ModuleDepsDiffResult {
 pub type ModuleDepsDiffResultMap = Vec<(ModuleId, ModuleDepsDiffResult)>;
 /// the diff result of a module, this records all related changes of the module graph
 /// for example, deeply added or removed dependencies also be recorded here
+#[derive(Debug)]
 pub struct DiffResult {
   pub deps_changes: ModuleDepsDiffResultMap,
   pub added_modules: HashSet<ModuleId>,

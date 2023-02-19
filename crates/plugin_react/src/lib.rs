@@ -6,7 +6,6 @@ use farmfe_core::{
   swc_common::{comments::NoopComments, Mark, GLOBALS},
 };
 
-use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{
   swc_ecma_transforms::react::{react, Options, RefreshOptions},
   swc_ecma_visit::VisitMutWith,
@@ -17,11 +16,10 @@ mod react_refresh;
 
 const GLOBAL_INJECT_MODULE_ID: &str = "farmfe_plugin_react_global_inject";
 
-#[farm_plugin]
 pub struct FarmPluginReact {}
 
 impl FarmPluginReact {
-  fn new(config: &Config, options: String) -> Self {
+  pub fn new(_config: &Config) -> Self {
     Self {}
   }
 }

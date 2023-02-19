@@ -17,17 +17,15 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::{comments::NoopComments, Mark, DUMMY_SP, GLOBALS},
+  swc_common::{comments::NoopComments, Mark, GLOBALS},
   swc_ecma_ast::{
-    CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
-    ModuleItem, Stmt,
+    CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleItem, Stmt,
   },
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{codegen_module, module_type_from_id, parse_module, syntax_from_module_type},
   swc_ecma_transforms::{
-    react::{react, Options},
     resolver,
     typescript::{strip, strip_with_jsx},
   },

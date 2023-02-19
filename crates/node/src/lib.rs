@@ -6,7 +6,10 @@ use farmfe_compiler::{update::UpdateType, Compiler};
 
 pub mod plugin_adapters;
 
-use farmfe_core::config::{Config, Mode};
+use farmfe_core::{
+  config::{Config, Mode},
+  module::ModuleId,
+};
 use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, NapiRaw, Status};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
@@ -177,5 +180,14 @@ impl JsCompiler {
     }
 
     result
+  }
+
+  #[napi]
+  pub fn has_module(&self, resolved_path: String) -> bool {
+    let context = self.compiler.context();
+    let module_graph = context.module_graph.read();
+    let module_id = ModuleId::new(&resolved_path, &context.config.root);
+
+    module_graph.has_module(&module_id)
   }
 }

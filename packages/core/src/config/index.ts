@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 import merge from 'lodash.merge';
+import chalk from 'chalk';
 
 import { Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
@@ -14,6 +15,7 @@ import {
   UserHmrConfig,
   UserServerConfig,
 } from './types.js';
+import { Logger } from '../logger.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -140,7 +142,8 @@ export function normalizeDevServerOptions(
  * @param configPath
  */
 export async function resolveUserConfig(
-  configPath: string
+  configPath: string,
+  logger: Logger
 ): Promise<UserConfig> {
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -155,16 +158,18 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-      const config = await readConfigFile(resolvedPath);
+      const config = await readConfigFile(resolvedPath, logger);
 
       if (config) {
         userConfig = config;
+        // if we found a config file, stop searching
+        break;
       }
     }
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
 
-    const config = await readConfigFile(configPath);
+    const config = await readConfigFile(configPath, logger);
 
     if (config) {
       userConfig = config;
@@ -179,9 +184,11 @@ export async function resolveUserConfig(
 }
 
 async function readConfigFile(
-  resolvedPath: string
+  resolvedPath: string,
+  logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(resolvedPath)) {
+    logger.info(`Using config file at ${chalk.green(resolvedPath)}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (resolvedPath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
@@ -214,7 +221,5 @@ async function readConfigFile(
       const config = (await import(resolvedPath)).default;
       return config;
     }
-  } else {
-    throw new Error(`Config file ${resolvedPath} does not exist`);
   }
 }

@@ -53,5 +53,5 @@ export function CounterButton() {
 
     setText(`${COUNT_DOWN}`);
     setTimer(t);
-  }}>{text}222</button>
+  }}>{text}123</button>
 }

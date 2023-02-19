@@ -11,6 +11,7 @@ use farmfe_core::{
   plugin::{PluginResolveHookParam, ResolveKind},
   rayon::ThreadPool,
 };
+use farmfe_toolkit::tracing;
 
 use crate::{build::ResolvedModuleInfo, generate::write_resources::write_resources, Compiler};
 use farmfe_core::error::Result;
@@ -106,23 +107,29 @@ impl Compiler {
       return Err(err);
     }
 
-    self.optimize_update_module_graph(&update_context)?;
+    self.optimize_update_module_graph(&update_context).unwrap();
 
     let (affected_module_groups, updated_module_ids, diff_result) =
       self.diff_and_patch_context(paths, &update_context);
+    let cloned_updated_module_ids = updated_module_ids.clone();
 
-    regenerate_resources_for_affected_module_groups(
-      affected_module_groups,
-      &updated_module_ids,
-      &self.context,
-    )?;
+    let cloned_context = self.context.clone();
+    std::thread::spawn(move || {
+      regenerate_resources_for_affected_module_groups(
+        affected_module_groups,
+        &cloned_updated_module_ids,
+        &cloned_context,
+      )
+      .unwrap();
+
+      write_resources(&cloned_context).unwrap();
+    });
+
     // TODO1: only regenerate the resources for script modules.
     // TODO2: should reload when html change
     // TODO3: cover it with tests
     let resources =
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
-
-    write_resources(&self.context)?;
 
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
     // find the boundaries
@@ -258,6 +265,7 @@ impl Compiler {
     }
   }
 
+  #[tracing::instrument(skip_all)]
   fn diff_and_patch_context(
     &self,
     paths: Vec<(String, UpdateType)>,
@@ -269,24 +277,40 @@ impl Compiler {
       .collect();
     let mut module_graph = self.context.module_graph.write();
     let mut update_module_graph = update_context.module_graph.write();
+
+    tracing::debug!("Diffing module graph start from {:?}...", start_points);
     let diff_result =
       diff_module_graph(start_points.clone(), &*module_graph, &*update_module_graph);
+    tracing::debug!("Diff result: {:?}", diff_result);
 
+    tracing::debug!("Patching module graph start from {:?}...", start_points);
     let removed_modules = patch_module_graph(
       start_points.clone(),
       &diff_result,
       &mut *module_graph,
       &mut *update_module_graph,
     );
+    tracing::debug!(
+      "Patched module graph, removed modules: {:?}",
+      removed_modules
+        .iter()
+        .map(|(id, _)| id.clone())
+        .collect::<Vec<_>>()
+    );
 
     let mut module_group_map = self.context.module_group_map.write();
 
+    tracing::debug!("Patching module group map start from {:?}...", start_points);
     let affected_module_groups = patch_module_group_map(
       start_points.clone(),
       &diff_result,
       &removed_modules,
       &mut *module_graph,
       &mut *module_group_map,
+    );
+    tracing::debug!(
+      "Patched module group map, affected module groups: {:?}",
+      affected_module_groups
     );
 
     (affected_module_groups, start_points, diff_result)

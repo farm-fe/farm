@@ -168,6 +168,7 @@ impl Compiler {
     // ================ Parse End ===============
 
     // ================ Process Module Start ===============
+    tracing::debug!("Process module: {:?}", module.id);
     if let Err(e) = context.plugin_driver.process_module(
       &mut PluginProcessModuleHookParam {
         module_id: &parse_param.module_id,
@@ -181,6 +182,7 @@ impl Compiler {
         source: Some(Box::new(e)),
       });
     }
+    tracing::debug!("Process module finished: {:?}", module.id);
     // ================ Process Module End ===============
 
     module.module_type = parse_param.module_type.clone();

@@ -41,4 +41,5 @@ export class Compiler {
   /** sync update */
   updateSync(paths: Array<string>): JsUpdateResult;
   resources(): Record<string, Array<number>>;
+  hasModule(resolvedPath: string): boolean;
 }

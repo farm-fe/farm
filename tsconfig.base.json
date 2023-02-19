@@ -12,6 +12,7 @@
     "allowSyntheticDefaultImports": true,
     "noUnusedLocals": true,
     "skipDefaultLibCheck": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   }
 }

@@ -77,6 +77,8 @@ pub fn codegen_module(
         target,
         ascii_only: false,
         minify: false,
+        // TODO using omit_last_semi and remove split semicolon logic from the js side
+        ..Default::default()
       },
       comments: None,
       cm,
