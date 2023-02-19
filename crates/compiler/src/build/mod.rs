@@ -18,6 +18,7 @@ use farmfe_core::{
   rayon,
   rayon::ThreadPool,
 };
+use farmfe_toolkit::tracing::{self, debug, info};
 
 use crate::{
   build::{
@@ -54,7 +55,10 @@ enum ResolveModuleResult {
 }
 
 impl Compiler {
+  #[tracing::instrument(skip(self))]
   pub(crate) fn build(&self) -> Result<()> {
+    debug!("Start building");
+
     self.context.plugin_driver.build_start(&self.context)?;
 
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
@@ -79,6 +83,7 @@ impl Compiler {
       return Err(err);
     }
 
+    debug!("Building finished");
     self.context.plugin_driver.build_end(&self.context)
   }
 
@@ -161,9 +166,9 @@ impl Compiler {
 
     let mut module_meta = call_and_catch_error!(parse, &parse_param, context, &hook_context);
     // ================ Parse End ===============
-    println!("parsed {}", resolve_result.resolved_path);
 
     // ================ Process Module Start ===============
+    tracing::debug!("Process module: {:?}", module.id);
     if let Err(e) = context.plugin_driver.process_module(
       &mut PluginProcessModuleHookParam {
         module_id: &parse_param.module_id,
@@ -177,8 +182,8 @@ impl Compiler {
         source: Some(Box::new(e)),
       });
     }
+    tracing::debug!("Process module finished: {:?}", module.id);
     // ================ Process Module End ===============
-    println!("processed module {}", resolve_result.resolved_path);
 
     module.module_type = parse_param.module_type.clone();
     module.side_effects = resolve_result.side_effects;
@@ -189,10 +194,6 @@ impl Compiler {
     // ================ Analyze Deps Start ===============
     let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
     // ================ Analyze Deps End ===============
-    println!(
-      "analyzed deps {} -> {:?}",
-      resolve_result.resolved_path, analyze_deps_result
-    );
 
     // ================ Finalize Module Start ===============
     call_and_catch_error!(finalize_module, module, &analyze_deps_result, context);
@@ -274,12 +275,19 @@ impl Compiler {
     });
   }
 
+  #[tracing::instrument(skip_all)]
   pub(crate) fn add_edge(
     resolve_param: &PluginResolveHookParam,
     module_id: ModuleId,
     order: usize,
     context: &CompilationContext,
   ) {
+    tracing::debug!(
+      "adding edge to the graph: {:?} -> {:?}",
+      resolve_param.importer,
+      module_id
+    );
+
     let mut module_graph = context.module_graph.write();
 
     // TODO check if the edge already exists
@@ -294,15 +302,24 @@ impl Compiler {
         },
       ).expect("failed to add edge to the module graph, the endpoint modules of the edge should be in the graph")
     }
+
+    tracing::debug!(
+      "added edge to the graph: {:?} -> {:?}",
+      resolve_param.importer,
+      module_id
+    );
   }
 
   /// add a module to the module graph, if the module already exists, update it
   /// if the module is already in the graph, return false
+  #[tracing::instrument(skip_all)]
   pub(crate) fn add_module(
     module: Module,
     kind: &ResolveKind,
     context: &CompilationContext,
   ) -> bool {
+    tracing::debug!("adding module to the graph: {:?}", module.id);
+
     let mut module_graph = context.module_graph.write();
 
     // check if the module already exists
@@ -315,7 +332,10 @@ impl Compiler {
       module_graph.entries.insert(module.id.clone());
     }
 
+    tracing::debug!("added module to the graph: {:?}", module.id);
+
     module_graph.add_module(module);
+
     true
   }
 
@@ -342,27 +362,32 @@ impl Compiler {
   }
 }
 
+#[tracing::instrument(skip_all)]
 fn resolve_module(
   resolve_param: &PluginResolveHookParam,
   context: &Arc<CompilationContext>,
 ) -> Result<ResolveModuleResult> {
+  tracing::debug!("resolving module: {:?}", resolve_param);
+
   let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
 
   // be care of dead lock, see https://github.com/Amanieu/parking_lot/issues/212
   let module_graph = context.module_graph.read();
 
-  Ok(
-    if module_graph.has_module(&resolve_module_id_result.module_id) {
-      // the module has already been handled and it should not be handled twice
-      ResolveModuleResult::Built(resolve_module_id_result.module_id)
-    } else {
-      ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
-        module: Compiler::create_module(
-          resolve_module_id_result.module_id.clone(),
-          resolve_module_id_result.resolve_result.external,
-        ),
-        resolve_module_id_result,
-      }))
-    },
-  )
+  let res = if module_graph.has_module(&resolve_module_id_result.module_id) {
+    // the module has already been handled and it should not be handled twice
+    ResolveModuleResult::Built(resolve_module_id_result.module_id)
+  } else {
+    ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
+      module: Compiler::create_module(
+        resolve_module_id_result.module_id.clone(),
+        resolve_module_id_result.resolve_result.external,
+      ),
+      resolve_module_id_result,
+    }))
+  };
+
+  tracing::debug!("resolved module finished: {:?}", resolve_param);
+
+  Ok(res)
 }

@@ -2,14 +2,15 @@
   "name": "@farmfe-examples/react",
   "version": "0.0.0",
   "dependencies": {
-    "@farmfe/cli": "../../packages/cli",
-    "@farmfe/core": "../../packages/core",
     "react": "18",
     "react-dom": "18"
   },
   "devDependencies": {
+    "@farmfe/cli": "../../packages/cli",
+    "@farmfe/core": "../../packages/core",
     "@types/react": "18",
-    "@types/react-dom": "18"
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0"
   },
   "scripts": {
     "start": "farm start"

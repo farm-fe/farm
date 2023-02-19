@@ -10,10 +10,7 @@ use farmfe_core::{
     ModuleId, ModuleType,
   },
   plugin::{Plugin, PluginHookContext},
-  resource::{
-    resource_pot::{ResourcePot, ResourcePotId},
-    resource_pot_graph::ResourcePotGraph,
-  },
+  resource::resource_pot::{ResourcePot, ResourcePotId},
 };
 
 pub struct FarmPluginPartialBundling {}
@@ -29,8 +26,6 @@ impl Plugin for FarmPluginPartialBundling {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleGroupMap>> {
-    println!("\n\nentries: {:?}\n\n", module_graph.entries);
-
     let module_group_map = module_group_map_from_entries(
       &module_graph.entries.clone().into_iter().collect(),
       module_graph,
@@ -69,9 +64,23 @@ impl Plugin for FarmPluginPartialBundling {
 
         resource_pot
       } else {
+        let id = if module_id.to_string().ends_with(".html") {
+          module.id.to_string()
+        } else {
+          let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+          format!(
+            "{}_{:?}_{}",
+            now,
+            module.module_type,
+            module_group.id.to_string()
+          )
+        };
         let mut resource_pot = ResourcePot::new(
           // TODO design a better id for resource pot
-          ResourcePotId::new(module_id.to_string()),
+          ResourcePotId::new(id),
           module.module_type.clone().into(),
           module_group.id.clone(),
         );
@@ -90,7 +99,7 @@ impl Plugin for FarmPluginPartialBundling {
     }
 
     for resource_pot in module_type_resource_pot_map.into_values() {
-      module_group.add_resource_pot(resource_pot.id.clone());
+      // module_group.add_resource_pot(resource_pot.id.clone());
       resource_pots.push(resource_pot);
     }
 

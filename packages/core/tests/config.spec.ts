@@ -7,6 +7,7 @@ import {
   normalizeDevServerOptions,
   resolveUserConfig,
 } from '../src/index.js';
+import { DefaultLogger } from '../src/logger.js';
 
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
@@ -18,7 +19,8 @@ test('resolveUserConfig', async () => {
     '\n\n\n\n\n'
   );
   const config = await resolveUserConfig(
-    path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
+    path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+    new DefaultLogger()
   );
 
   expect(config).toEqual({

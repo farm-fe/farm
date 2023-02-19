@@ -276,6 +276,11 @@ mod tests {
       affected_groups,
       HashSet::from(["A".into(), "B".into(), "F".into()])
     );
+    let module_group_b = module_group_map.module_group(&"B".into()).unwrap();
+    assert_eq!(
+      module_group_b.modules(),
+      &HashSet::from(["B".into(), "H".into(), "F".into(), "C".into(), "A".into()])
+    );
 
     let update_module_group_map = module_group_map_from_entries(&start_points, &mut module_graph);
 

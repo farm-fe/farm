@@ -11,11 +11,15 @@ use farmfe_core::{
     resource_pot_graph::ResourcePotGraph,
   },
 };
+use farmfe_toolkit::tracing;
 
+#[tracing::instrument(skip_all)]
 pub fn partial_bundling(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<()> {
+  tracing::debug!("partial_bundling");
+
   let module_group_map = analyze_module_graph(context, hook_context)?;
   // insert the module group map into the context
   let mut context_module_group_map = context.module_group_map.write();
@@ -27,41 +31,46 @@ pub fn partial_bundling(
   let mut g = context.resource_pot_graph.write();
   g.replace(resource_pot_graph);
 
+  tracing::debug!("partial_bundling finished");
+
   Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 fn analyze_module_graph(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ModuleGroupMap> {
+  tracing::debug!("Starting analyze_module_graph");
+
   let mut module_graph = context.module_graph.write();
 
-  println!("analyze module graph start");
-
-  let mut module_group_map = context
+  let module_group_map = context
     .plugin_driver
     .analyze_module_graph(&mut *module_graph, context, hook_context)?
     .ok_or(CompilationError::PluginHookResultCheckError {
       hook_name: "analyze_module_graph".to_string(),
     })?;
 
-  drop(module_graph);
-
-  println!("module group map len: {}", module_group_map.len());
+  tracing::debug!("analyze_module_graph finished");
   Ok(module_group_map)
 }
 
+#[tracing::instrument(skip_all)]
 fn generate_resource_pot_graph(
   module_group_map: &mut ModuleGroupMap,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotGraph> {
+  tracing::debug!("Starting generate_resource_pot_graph");
+
   let mut resource_pot_graph = ResourcePotGraph::new();
   // TODO: parallel generate resource pots
   for g in module_group_map.module_groups_mut() {
     let resources_pots = call_partial_bundling_hook(g, context, hook_context)?;
 
     for resource_pot in resources_pots {
+      g.add_resource_pot(resource_pot.id.clone());
       resource_pot_graph.add_resource_pot(resource_pot);
     }
   }
@@ -100,18 +109,26 @@ fn generate_resource_pot_graph(
     }
   }
 
+  tracing::debug!("generate_resource_pot_graph finished");
   Ok(resource_pot_graph)
 }
 
+#[tracing::instrument(skip_all)]
 pub fn call_partial_bundling_hook(
   g: &mut ModuleGroup,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<Vec<ResourcePot>> {
-  context
+  tracing::debug!("Starting call_partial_bundling_hook");
+
+  let res = context
     .plugin_driver
     .partial_bundling(g, context, hook_context)?
     .ok_or(CompilationError::PluginHookResultCheckError {
       hook_name: "partial_bundling".to_string(),
-    })
+    })?;
+
+  tracing::debug!("call_partial_bundling_hook finished");
+
+  Ok(res)
 }

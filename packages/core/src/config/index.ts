@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 import merge from 'lodash.merge';
+import chalk from 'chalk';
 
 import { Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
@@ -14,6 +15,7 @@ import {
   UserHmrConfig,
   UserServerConfig,
 } from './types.js';
+import { Logger } from '../logger.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -27,7 +29,9 @@ export const DEFAULT_CONFIG_NAMES = [
  * @param config
  * @returns resolved config that parsed to rust compiler
  */
-export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
+export async function normalizeUserCompilationConfig(
+  userConfig: UserConfig
+): Promise<Config> {
   const config: Config['config'] = merge(
     {
       input: {
@@ -90,7 +94,7 @@ export function normalizeUserCompilationConfig(userConfig: UserConfig): Config {
 
   for (const plugin of plugins) {
     if (typeof plugin === 'string' || Array.isArray(plugin)) {
-      rustPlugins.push(rustPluginResolver(plugin, config.root as string));
+      rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
     } else if (typeof plugin === 'object') {
       jsPlugins.push(plugin as JsPlugin);
     }
@@ -138,7 +142,8 @@ export function normalizeDevServerOptions(
  * @param configPath
  */
 export async function resolveUserConfig(
-  configPath: string
+  configPath: string,
+  logger: Logger
 ): Promise<UserConfig> {
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -153,16 +158,18 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-      const config = await readConfigFile(resolvedPath);
+      const config = await readConfigFile(resolvedPath, logger);
 
       if (config) {
         userConfig = config;
+        // if we found a config file, stop searching
+        break;
       }
     }
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
 
-    const config = await readConfigFile(configPath);
+    const config = await readConfigFile(configPath, logger);
 
     if (config) {
       userConfig = config;
@@ -177,13 +184,15 @@ export async function resolveUserConfig(
 }
 
 async function readConfigFile(
-  resolvedPath: string
+  resolvedPath: string,
+  logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(resolvedPath)) {
+    logger.info(`Using config file at ${chalk.green(resolvedPath)}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (resolvedPath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
-      const compiler = new Compiler({
+      const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
             config: resolvedPath,
@@ -193,6 +202,7 @@ async function readConfigFile(
           hmr: false,
         },
       });
+      const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
       const resources = compiler.resources();
       // should only emit one config file bundled with all dependencies

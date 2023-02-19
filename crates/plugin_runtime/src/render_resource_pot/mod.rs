@@ -61,7 +61,9 @@ pub fn resource_pot_to_runtime_object_lit(
 
   // TODO parallelize here
   for m_id in resource_pot.modules() {
-    let module = module_graph.module(m_id).unwrap();
+    let module = module_graph
+      .module(m_id)
+      .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
     let mut cloned_module = SwcModule {
       shebang: None,
       span: DUMMY_SP,
@@ -79,7 +81,7 @@ pub fn resource_pot_to_runtime_object_lit(
           ModuleSystem::EsModule
         ) {
           cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
-          cloned_module.visit_mut_with(&mut inject_helpers());
+          cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
           cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
             unresolved_mark,
             Config {
@@ -119,7 +121,7 @@ pub fn resource_pot_to_runtime_object_lit(
         }),
         value: Box::new(Expr::Fn(FnExpr {
           ident: None,
-          function: wrapped_module,
+          function: Box::new(wrapped_module),
         })),
       }))))
   }

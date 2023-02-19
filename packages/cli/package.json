@@ -21,7 +21,8 @@
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
     "build": "tsc",
-    "type-check": "tsc -p tsconfig.json --noEmit"
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "engines": {
     "node": ">= 16"
@@ -29,7 +30,12 @@
   "dependencies": {
     "@farmfe/core": "workspace:^0.0.0",
     "cac": "^6.7.14",
+    "chalk": "^5.2.0",
     "enquirer": "^2.3.6",
+    "inquirer": "^9.1.4",
     "walkdir": "^0.4.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.3"
   }
 }

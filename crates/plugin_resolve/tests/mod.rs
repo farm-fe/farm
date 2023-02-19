@@ -14,7 +14,7 @@ fn resolve_relative_specifier_without_extension() {
 
       let resolved = resolver.resolve("./index", cwd.clone(), &ResolveKind::Entry);
       assert!(resolved.is_ok());
-      let resolved = resolved.unwrap();
+      let resolved = resolved.unwrap().unwrap();
       assert_eq!(
         resolved.resolved_path,
         cwd.join("index.ts").to_string_lossy().to_string()
@@ -35,7 +35,7 @@ fn resolve_relative_specifier_with_extension() {
       assert!(resolved.is_err());
 
       let resolved = resolver.resolve("./index.ts", cwd.clone(), &ResolveKind::Entry);
-      let resolved = resolved.unwrap();
+      let resolved = resolved.unwrap().unwrap();
       assert_eq!(
         resolved.resolved_path,
         cwd.join("index.ts").to_string_lossy().to_string()
@@ -54,7 +54,7 @@ fn resolve_node_modules_normal() {
 
       let resolved = resolver.resolve("pkg-a", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_ok());
-      let resolved = resolved.unwrap();
+      let resolved = resolved.unwrap().unwrap();
 
       assert_eq!(
         resolved.resolved_path,
@@ -68,7 +68,7 @@ fn resolve_node_modules_normal() {
 
       let resolved = resolver.resolve("pkg-b", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_ok());
-      let resolved = resolved.unwrap();
+      let resolved = resolved.unwrap().unwrap();
 
       assert_eq!(
         resolved.resolved_path,
@@ -95,7 +95,7 @@ fn resolve_alias() {
 
     let resolved = resolver.resolve("@/pages/a", cwd.clone(), &ResolveKind::Import);
     assert!(resolved.is_ok());
-    let resolved = resolved.unwrap();
+    let resolved = resolved.unwrap().unwrap();
 
     assert_eq!(
       resolved.resolved_path,

@@ -48,7 +48,8 @@
     "querystring",
     "querify",
     "walkdir",
-    "elems"
+    "elems",
+    "loglevel"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

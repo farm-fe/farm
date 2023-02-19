@@ -36,12 +36,6 @@ impl JsPluginAdapter {
     let transform_hook_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "transform").ok();
 
-    println!(
-      "resolve {}\nload {}\ntransform {}\n",
-      resolve_hook_obj.is_some(),
-      load_hook_obj.is_some(),
-      transform_hook_obj.is_some()
-    );
     // TODO calculating hooks should execute
     Ok(Self {
       name,
@@ -70,9 +64,7 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<PluginResolveHookResult>> {
     if let Some(js_resolve_hook) = &self.js_resolve_hook {
       let cp = param.clone();
-      let ret = js_resolve_hook.call(cp, context.clone(), hook_context.clone());
-      println!("js plugin: {:?}", ret);
-      ret
+      js_resolve_hook.call(cp, context.clone(), hook_context.clone())
     } else {
       Ok(None)
     }

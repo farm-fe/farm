@@ -15,6 +15,6 @@ export default defineFarmConfig({
     },
   },
   server: {
-    hmr: true
-  }
+    hmr: true,
+  },
 });

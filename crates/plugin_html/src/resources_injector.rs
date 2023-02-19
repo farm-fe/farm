@@ -81,13 +81,23 @@ impl VisitMut for ResourcesInjector {
         )));
       }
 
+      element.children.push(Child::Element(create_element(
+        "script",
+        Some(&format!(
+          r#"var {} = globalThis || window || self;
+            var __farm_module_system_local__ = {}.{};
+            __farm_module_system_local__.bootstrap();"#,
+          FARM_GLOBAL_THIS, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM
+        )),
+        vec![(FARM_ENTRY, "true")],
+      )));
+
       for entry in &self.script_entries {
         element.children.push(Child::Element(create_element(
           "script",
           Some(&format!(
             r#"var {} = globalThis || window || self;
               var __farm_module_system_local__ = {}.{};
-              __farm_module_system_local__.bootstrap();
               __farm_module_system_local__.require("{}")"#,
             FARM_GLOBAL_THIS, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, entry
           )),

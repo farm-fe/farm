@@ -71,7 +71,7 @@ pub trait Plugin: Any + Send + Sync {
 
   fn process_module(
     &self,
-    _module: &mut PluginProcessModuleHookParam,
+    _param: &mut PluginProcessModuleHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)

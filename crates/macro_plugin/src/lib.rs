@@ -9,8 +9,8 @@ pub fn farm_plugin(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
   let ts = quote! {
     #[no_mangle]
-    pub fn _plugin_create(config: &farmfe_core::config::Config) -> std::sync::Arc<dyn farmfe_core::plugin::Plugin> {
-      std::sync::Arc::new(#struct_name::new(config))
+    pub fn _plugin_create(config: &farmfe_core::config::Config, options: String) -> std::sync::Arc<dyn farmfe_core::plugin::Plugin> {
+      std::sync::Arc::new(#struct_name::new(config, options))
     }
 
     #[no_mangle]

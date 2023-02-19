@@ -77,6 +77,8 @@ pub fn codegen_module(
         target,
         ascii_only: false,
         minify: false,
+        // TODO using omit_last_semi and remove split semicolon logic from the js side
+        ..Default::default()
       },
       comments: None,
       cm,
@@ -91,22 +93,21 @@ pub fn codegen_module(
 
 /// Get [ModuleType] from the resolved id's extension, return [ModuleType::Custom(ext)] if the extension is not internally supported.
 /// Panic if the id do not has a extension.
-pub fn module_type_from_id(id: &str) -> ModuleType {
+pub fn module_type_from_id(id: &str) -> Option<ModuleType> {
   let path = PathBuf::from(id);
 
-  match path
-    .extension()
-    .unwrap_or_else(|| panic!("extension of {} is None", id))
-    .to_str()
-    .unwrap()
-  {
-    "ts" => ModuleType::Ts,
-    "tsx" => ModuleType::Tsx,
-    "js" | "mjs" | "cjs" => ModuleType::Js,
-    "jsx" => ModuleType::Jsx,
-    "css" => ModuleType::Css,
-    "html" => ModuleType::Html,
-    ext => ModuleType::Custom(ext.to_string()),
+  if let Some(ext) = path.extension() {
+    Some(match ext.to_str().unwrap() {
+      "ts" => ModuleType::Ts,
+      "tsx" => ModuleType::Tsx,
+      "js" | "mjs" | "cjs" => ModuleType::Js,
+      "jsx" => ModuleType::Jsx,
+      "css" => ModuleType::Css,
+      "html" => ModuleType::Html,
+      ext => ModuleType::Custom(ext.to_string()),
+    })
+  } else {
+    None
   }
 }
 

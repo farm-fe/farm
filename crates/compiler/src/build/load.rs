@@ -5,12 +5,16 @@ use farmfe_core::{
   error::{CompilationError, Result},
   plugin::{PluginHookContext, PluginLoadHookParam, PluginLoadHookResult},
 };
+use farmfe_toolkit::tracing;
 
+#[tracing::instrument(skip_all)]
 pub fn load(
   load_param: &PluginLoadHookParam,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<PluginLoadHookResult> {
+  tracing::debug!("load: {}", load_param.resolved_path);
+
   let loaded = match context
     .plugin_driver
     .load(load_param, context, hook_context)
@@ -31,7 +35,7 @@ pub fn load(
       });
     }
   };
+  tracing::debug!("loaded: {}", load_param.resolved_path);
 
-  // println!("loaded {:?}", loaded);
   Ok(loaded)
 }

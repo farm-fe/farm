@@ -9,12 +9,10 @@ import { Context } from 'koa';
 import { DevServer } from '../index.js';
 
 export function hmr(server: DevServer) {
-  console.log('middleware hmr');
   return async (ctx: Context, next: () => Promise<any>) => {
     await next();
 
     if (ctx.path === '/__hmr') {
-      console.log('hmr request', ctx.query.id);
       const result = server.hmrEngine?.getUpdateResult?.(
         ctx.query.id as string
       );

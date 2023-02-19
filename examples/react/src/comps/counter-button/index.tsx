@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import './index.css'
 
 const COUNT_DOWN = 60;
-const BUTTON_TEXT = 'Send';
-
+const BUTTON_TEXT = 'Send1';
+console.log(BUTTON_TEXT)
 export function CounterButton() {
   const [count, setCount] = useState(COUNT_DOWN);
   const [text, setText] = useState(BUTTON_TEXT);
@@ -53,5 +53,5 @@ export function CounterButton() {
 
     setText(`${COUNT_DOWN}`);
     setTimer(t);
-  }}>{text}</button>
+  }}>{text}123</button>
 }
