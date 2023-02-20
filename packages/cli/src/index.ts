@@ -1,5 +1,6 @@
 import { start, build } from '@farmfe/core';
 import { cac } from 'cac';
+import { create } from './create/index.js';
 import { COMMANDS } from './plugin/index.js';
 
 const cli = cac();
@@ -21,6 +22,10 @@ cli.command('build', 'Compile the project in production mode').action(() => {
   build({
     configPath: process.cwd(),
   });
+});
+
+cli.command('create', 'Create a new project').action(() => {
+  create();
 });
 
 cli.command('').action(() => {
