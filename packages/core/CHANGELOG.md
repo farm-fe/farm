@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.1.4
+
+### Patch Changes
+
+- Fix windows config resolve error
+
 ## 0.1.3
 
 ### Patch Changes

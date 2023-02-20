@@ -16,6 +16,7 @@ import {
   UserServerConfig,
 } from './types.js';
 import { Logger } from '../logger.js';
+import { pathToFileURL } from 'node:url';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -215,8 +216,12 @@ async function readConfigFile(
       );
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
       fs.writeFileSync(filePath, configCode);
-      const config = (await import(filePath)).default;
-      return config;
+
+      if (process.platform === 'win32') {
+        return (await import(pathToFileURL(filePath).toString())).default;
+      } else {
+        return (await import(filePath)).default;
+      }
     } else {
       const config = (await import(resolvedPath)).default;
       return config;

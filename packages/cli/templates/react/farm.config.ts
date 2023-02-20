@@ -1,4 +1,4 @@
-import { defineFarmConfig } from '@farmfe/core/dist/node/config';
+import { defineFarmConfig } from '@farmfe/core/dist/config';
 
 export default defineFarmConfig({
   compilation: {
