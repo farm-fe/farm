@@ -1,6 +1,7 @@
 {
   "name": "@farmfe-examples/react",
   "version": "0.0.0",
+  "private": true,
   "dependencies": {
     "react": "18",
     "react-dom": "18"
