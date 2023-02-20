@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.1.1
+
+### Patch Changes
+
+- Publish native optional dependencies
+
 ## 0.1.0
 
 ### Minor Changes
