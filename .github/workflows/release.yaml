@@ -35,9 +35,11 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/npm/${{ matrix.settings.abi }}
+      - name: List Files
+        run: ls -l ./packages/core/npm/${{ matrix.settings.abi }}
 
   copy-artifacts-arm64:
-    name: Build and Upload Artifacts - darwin-arm64
+    name: Copy Artifacts - darwin-arm64
     runs-on: ubuntu-latest
     needs: call-rust-build
     steps:
@@ -51,6 +53,8 @@ jobs:
         with:
           name: ${{ github.sha }}-darwin-arm64
           path: ./packages/core/npm/darwin-arm64
+      - name: List Files
+        run: ls -l ./packages/core/npm/darwin-arm64
 
   release:
     name: Release
