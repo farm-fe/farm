@@ -73,7 +73,7 @@ jobs:
         uses: changesets/action@v1
         with:
           version: npx changeset version && pnpm i
-          publish: npx changeset publish
+          publish: cd packages/cli && npm run build -- -b && cd ../../ && npx changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
