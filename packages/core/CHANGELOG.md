@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.1.2
+
+### Patch Changes
+
+- Bump versin
+
 ## 0.1.1
 
 ### Patch Changes
