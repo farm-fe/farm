@@ -1,9 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
-import walk from 'walkdir';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { fileURLToPath } from 'url';
+import { copyFiles, TEMPLATES_DIR } from '../utils.js';
 
 export interface CreateArgs {
   npmName?: string;
@@ -11,10 +9,7 @@ export interface CreateArgs {
   dir?: string;
 }
 
-const TEMPLATES_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../templates/rust-plugin'
-);
+const TEMPLATE_PLUGIN = path.join(TEMPLATES_DIR, 'rust-plugin');
 const TEMPLATE_NPM_NAME = '<FARM-RUST-PLUGIN-NPM-NAME>';
 const TEMPLATE_STRUCT_NAME = '<FARM-RUST-PLUGIN-STRUCT-NAME>';
 
@@ -56,22 +51,10 @@ export async function create(args: CreateArgs): Promise<void> {
 
   const dest = path.join(process.cwd(), dir);
 
-  walk(TEMPLATES_DIR, { sync: true }, (p, stat) => {
-    if (stat.isFile()) {
-      const content = readFileSync(p).toString();
-      const newContent = content
-        .replace(new RegExp(TEMPLATE_NPM_NAME, 'g'), npmName)
-        .replace(new RegExp(TEMPLATE_STRUCT_NAME, 'g'), structName);
-
-      const relativePath = path.relative(TEMPLATES_DIR, p);
-      const destPath = path.join(dest, relativePath);
-
-      if (!existsSync(path.dirname(destPath))) {
-        mkdirSync(path.dirname(destPath), { recursive: true });
-      }
-
-      writeFileSync(destPath, newContent);
-    }
+  copyFiles(TEMPLATE_PLUGIN, dest, (content) => {
+    return content
+      .replace(new RegExp(TEMPLATE_NPM_NAME, 'g'), npmName)
+      .replace(new RegExp(TEMPLATE_STRUCT_NAME, 'g'), structName);
   });
 
   console.log(chalk.green(`Plugin created successfully in ${dest}`));
