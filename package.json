@@ -29,7 +29,10 @@
   "scripts": {
     "prepare": "husky install",
     "test": "vitest run",
-    "start": "cd packages/cli && pnpm run start"
+    "start": "cd packages/cli && pnpm run start",
+    "build": "cd packages/cli && pnpm run build -b",
+    "release": "node scripts/release.mjs",
+    "bump": "node scripts/bump.mjs"
   },
   "lint-staged": {
     "packages/**/*.ts": [
