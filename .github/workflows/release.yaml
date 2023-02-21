@@ -24,7 +24,7 @@ jobs:
           node-version: 16.x
 
       - uses: actions/download-artifact@v3
-        id: download
+        id: download-linux-x64-gnu
         with:
           name: ${{ github.sha }}-linux-x64-gnu
           path: ./packages/core/npm/linux-x64-gnu
@@ -32,7 +32,7 @@ jobs:
         run: ls -l ./packages/core/npm/linux-x64-gnu
 
       - uses: actions/download-artifact@v3
-        id: download
+        id: download-darwin-x64
         with:
           name: ${{ github.sha }}-darwin-x64
           path: ./packages/core/npm/darwin-x64
@@ -40,7 +40,7 @@ jobs:
         run: ls -l ./packages/core/npm/darwin-x64
 
       - uses: actions/download-artifact@v3
-        id: download
+        id: download-win32-x64-msvc
         with:
           name: ${{ github.sha }}-win32-x64-msvc
           path: ./packages/core/npm/win32-x64-msvc
@@ -48,7 +48,7 @@ jobs:
         run: ls -l ./packages/core/npm/win32-x64-msvc
 
       - uses: actions/download-artifact@v3
-        id: download
+        id: download-darwin-arm64
         with:
           name: ${{ github.sha }}-darwin-arm64
           path: ./packages/core/npm/darwin-arm64
