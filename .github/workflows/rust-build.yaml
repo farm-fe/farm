@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             abi: linux-x64-gnu
           - os: macos-10.15
             abi: darwin-x64
