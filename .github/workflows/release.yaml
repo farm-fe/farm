@@ -10,56 +10,10 @@ jobs:
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
 
-  copy-artifacts:
-    name: Copy Artifacts
-    runs-on: ubuntu-latest
-    needs: call-rust-build
-    strategy:
-      fail-fast: true
-      matrix:
-        settings:
-          - os: ubuntu-latest
-            abi: linux-x64-gnu
-          - os: macos-10.15
-            abi: darwin-x64
-          - os: windows-latest
-            abi: win32-x64-msvc
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-
-      - uses: actions/download-artifact@v3
-        id: download
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ./packages/core/npm/${{ matrix.settings.abi }}
-      - name: List Files
-        run: ls -l ./packages/core/npm/${{ matrix.settings.abi }}
-
-  copy-artifacts-arm64:
-    name: Copy Artifacts - darwin-arm64
-    runs-on: ubuntu-latest
-    needs: call-rust-build
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-
-      - uses: actions/download-artifact@v3
-        id: download
-        with:
-          name: ${{ github.sha }}-darwin-arm64
-          path: ./packages/core/npm/darwin-arm64
-      - name: List Files
-        run: ls -l ./packages/core/npm/darwin-arm64
-
   release:
     name: Release
+    needs: call-rust-build
     runs-on: ubuntu-latest
-    needs: [copy-artifacts, copy-artifacts-arm64]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -68,6 +22,38 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
+
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: ${{ github.sha }}-linux-x64-gnu
+          path: ./packages/core/npm/linux-x64-gnu
+      - name: List Files
+        run: ls -l ./packages/core/npm/linux-x64-gnu
+
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: ${{ github.sha }}-darwin-x64
+          path: ./packages/core/npm/darwin-x64
+      - name: List Files
+        run: ls -l ./packages/core/npm/darwin-x64
+
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: ${{ github.sha }}-win32-x64-msvc
+          path: ./packages/core/npm/win32-x64-msvc
+      - name: List Files
+        run: ls -l ./packages/core/npm/win32-x64-msvc
+
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: ${{ github.sha }}-darwin-arm64
+          path: ./packages/core/npm/darwin-arm64
+      - name: List Files
+        run: ls -l ./packages/core/npm/darwin-arm64
 
       - name: Install Dependencies
         run: npm install -g pnpm && pnpm i --frozen-lockfile
