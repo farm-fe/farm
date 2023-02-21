@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.1.5
+
+### Patch Changes
+
+- Fix GLIBC_2.32 not found on linux
+
 ## 0.1.4
 
 ### Patch Changes
