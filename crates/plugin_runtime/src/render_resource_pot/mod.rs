@@ -149,7 +149,7 @@ pub fn resource_pot_to_runtime_object_lit(
 /// }
 /// ```
 fn wrap_module_ast(ast: SwcModule) -> Function {
-  let params = vec!["module", "exports", "require"]
+  let params = vec!["module", "exports", "require", "dynamicRequire"]
     .into_iter()
     .map(|ident| Param {
       span: DUMMY_SP,

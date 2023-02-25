@@ -14,7 +14,7 @@ use crate::{
   error::Result,
   module::{
     module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupMap},
+    module_group::{ModuleGroup, ModuleGroupGraph},
     ModuleMetaData, ModuleType,
   },
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
@@ -153,7 +153,7 @@ impl PluginDriver {
 
   hook_first!(
     analyze_module_graph,
-    Result<Option<ModuleGroupMap>>,
+    Result<Option<ModuleGroupGraph>>,
     param: &mut ModuleGraph,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
@@ -181,7 +181,7 @@ impl PluginDriver {
     _hook_context: &PluginHookContext
   );
 
-  hook_serial!(write_resources, &mut HashMap<String, Resource>);
+  hook_serial!(finalize_resources, &mut HashMap<String, Resource>);
 
   hook_parallel!(generate_end);
 

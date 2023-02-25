@@ -79,8 +79,17 @@ impl Compiler {
 
     drop(err_sender);
 
-    if let Ok(err) = err_receiver.recv() {
-      return Err(err);
+    let mut errors = vec![];
+
+    for err in err_receiver {
+      errors.push(err);
+    }
+
+    if !errors.is_empty() {
+      return Err(CompilationError::GenericError(format!(
+        "Build failed due to errors: {:?}",
+        errors
+      )));
     }
 
     debug!("Building finished");

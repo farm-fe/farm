@@ -13,12 +13,12 @@ use farmfe_core::{
 };
 use farmfe_toolkit::tracing;
 
-use crate::{build::ResolvedModuleInfo, generate::write_resources::write_resources, Compiler};
+use crate::{build::ResolvedModuleInfo, generate::write_resources::finalize_resources, Compiler};
 use farmfe_core::error::Result;
 
 use self::{
   diff_and_patch_module_graph::{diff_module_graph, patch_module_graph, DiffResult},
-  patch_module_group_map::patch_module_group_map,
+  patch_module_group_graph::patch_module_group_graph,
   regenerate_resources::{
     regenerate_resources_for_affected_module_groups, render_and_generate_update_resource,
   },
@@ -27,7 +27,7 @@ use self::{
 
 mod diff_and_patch_module_graph;
 mod find_hmr_boundaries;
-mod patch_module_group_map;
+mod patch_module_group_graph;
 mod regenerate_resources;
 mod update_context;
 
@@ -122,7 +122,7 @@ impl Compiler {
       )
       .unwrap();
 
-      write_resources(&cloned_context).unwrap();
+      finalize_resources(&cloned_context).unwrap();
     });
 
     // TODO1: only regenerate the resources for script modules.
@@ -298,15 +298,15 @@ impl Compiler {
         .collect::<Vec<_>>()
     );
 
-    let mut module_group_map = self.context.module_group_map.write();
+    let mut module_group_graph = self.context.module_group_graph.write();
 
     tracing::debug!("Patching module group map start from {:?}...", start_points);
-    let affected_module_groups = patch_module_group_map(
+    let affected_module_groups = patch_module_group_graph(
       start_points.clone(),
       &diff_result,
       &removed_modules,
       &mut *module_graph,
-      &mut *module_group_map,
+      &mut *module_group_graph,
     );
     tracing::debug!(
       "Patched module group map, affected module groups: {:?}",

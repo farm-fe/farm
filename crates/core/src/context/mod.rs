@@ -9,7 +9,7 @@ use crate::{
   cache::CacheManager,
   config::Config,
   error::Result,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupMap},
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph},
   plugin::{plugin_driver::PluginDriver, Plugin},
   resource::{resource_pot_graph::ResourcePotGraph, Resource},
 };
@@ -18,7 +18,7 @@ use crate::{
 pub struct CompilationContext {
   pub config: Config,
   pub module_graph: RwLock<ModuleGraph>,
-  pub module_group_map: RwLock<ModuleGroupMap>,
+  pub module_group_graph: RwLock<ModuleGroupGraph>,
   pub plugin_driver: PluginDriver,
   pub resource_pot_graph: RwLock<ResourcePotGraph>,
   pub resources_map: Mutex<HashMap<String, Resource>>,
@@ -30,7 +30,7 @@ impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     Ok(Self {
       module_graph: RwLock::new(ModuleGraph::new()),
-      module_group_map: RwLock::new(ModuleGroupMap::new()),
+      module_group_graph: RwLock::new(ModuleGroupGraph::new()),
       resource_pot_graph: RwLock::new(ResourcePotGraph::new()),
       resources_map: Mutex::new(HashMap::new()),
       config,

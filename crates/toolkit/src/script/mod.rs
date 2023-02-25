@@ -11,7 +11,7 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::ModuleType,
   swc_common::{FileName, Mark, SourceMap},
-  swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Module as SwcModule, Stmt},
+  swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
 };
 
 /// parse the content of a module to [SwcModule] ast.
@@ -148,4 +148,9 @@ pub fn is_commonjs_require(unresolved_mark: Mark, call_expr: &CallExpr) -> bool 
   } else {
     false
   }
+}
+
+/// Whether the call expr is dynamic import.
+pub fn is_dynamic_import(call_expr: &CallExpr) -> bool {
+  matches!(&call_expr.callee, Callee::Import(Import { .. }))
 }

@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
   hashbrown::HashMap,
-  module::module_group::{ModuleGroup, ModuleGroupMap},
+  module::module_group::{ModuleGroup, ModuleGroupGraph},
   plugin::PluginHookContext,
   resource::{
     resource_pot::{ResourcePot, ResourcePotId},
@@ -20,13 +20,13 @@ pub fn partial_bundling(
 ) -> farmfe_core::error::Result<()> {
   tracing::debug!("partial_bundling");
 
-  let module_group_map = analyze_module_graph(context, hook_context)?;
+  let module_group_graph = analyze_module_graph(context, hook_context)?;
   // insert the module group map into the context
-  let mut context_module_group_map = context.module_group_map.write();
-  context_module_group_map.replace(module_group_map);
+  let mut context_module_group_graph = context.module_group_graph.write();
+  context_module_group_graph.replace(module_group_graph);
 
   let resource_pot_graph =
-    generate_resource_pot_graph(&mut *context_module_group_map, context, hook_context)?;
+    generate_resource_pot_graph(&mut *context_module_group_graph, context, hook_context)?;
   // insert the resource pot graph into the context
   let mut g = context.resource_pot_graph.write();
   g.replace(resource_pot_graph);
@@ -40,12 +40,12 @@ pub fn partial_bundling(
 fn analyze_module_graph(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
-) -> farmfe_core::error::Result<ModuleGroupMap> {
+) -> farmfe_core::error::Result<ModuleGroupGraph> {
   tracing::debug!("Starting analyze_module_graph");
 
   let mut module_graph = context.module_graph.write();
 
-  let module_group_map = context
+  let module_group_graph = context
     .plugin_driver
     .analyze_module_graph(&mut *module_graph, context, hook_context)?
     .ok_or(CompilationError::PluginHookResultCheckError {
@@ -53,12 +53,12 @@ fn analyze_module_graph(
     })?;
 
   tracing::debug!("analyze_module_graph finished");
-  Ok(module_group_map)
+  Ok(module_group_graph)
 }
 
 #[tracing::instrument(skip_all)]
 fn generate_resource_pot_graph(
-  module_group_map: &mut ModuleGroupMap,
+  module_group_graph: &mut ModuleGroupGraph,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotGraph> {
@@ -66,7 +66,7 @@ fn generate_resource_pot_graph(
 
   let mut resource_pot_graph = ResourcePotGraph::new();
   // TODO: parallel generate resource pots
-  for g in module_group_map.module_groups_mut() {
+  for g in module_group_graph.module_groups_mut() {
     let resources_pots = call_partial_bundling_hook(g, context, hook_context)?;
 
     for resource_pot in resources_pots {

@@ -146,11 +146,15 @@ impl Plugin for FarmPluginHtml {
     }
   }
 
-  fn write_resources(
+  fn finalize_resources(
     &self,
     resources_map: &mut HashMap<String, Resource>,
     context: &std::sync::Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    // 1. inject runtime as inline <script>
+    // 2. inject script and css link in topo order
+    // 3. execute direct script module dependency
+
     let mut runtime_code = String::new();
 
     for resource in resources_map.values() {
@@ -160,44 +164,89 @@ impl Plugin for FarmPluginHtml {
       }
     }
 
+    let module_graph = context.module_graph.read();
+    let html_entries_ids = module_graph
+      .entries
+      .clone()
+      .into_iter()
+      .filter(|m| {
+        let module = module_graph.module(m).unwrap();
+        matches!(module.module_type, ModuleType::Html)
+      })
+      .collect::<Vec<_>>();
+
     let mut resources_to_inject = HashMap::new();
 
-    for resource in resources_map.values_mut() {
-      if matches!(resource.resource_type, ResourceType::Html) {
-        let mut resource_pot_graph = context.resource_pot_graph.write();
+    for html_entry_id in &html_entries_ids {
+      let module_group_id = html_entry_id.clone();
+      let resource_pot_graph = context.resource_pot_graph.read();
+      let module_group_graph = context.module_group_graph.read();
+      let module_group = module_group_graph.module_group(&module_group_id).unwrap();
 
-        // 1. inject runtime as inline <script>
-        // 2. inject script and css link in topo order
-        // 3. execute direct script module dependency
-        let module_group_id = {
-          let resource_pot_id = &resource.resource_pot;
-          let resource_pot = resource_pot_graph
-            .resource_pot_mut(&resource_pot_id)
-            .unwrap();
+      // Found all resources in this entry html module group
+      let mut dep_resources = vec![];
+      let mut html_entry_resource = None;
 
-          resource_pot.module_group.clone()
-        };
+      for rp_id in module_group.resource_pots() {
+        let rp = resource_pot_graph.resource_pot(rp_id).unwrap();
 
-        let module_group_map = context.module_group_map.read();
-        let module_group = module_group_map.module_group(&module_group_id).unwrap();
-
-        let mut depend_resources = vec![];
-
-        for rp_id in module_group.resource_pots() {
-          let rp = resource_pot_graph.resource_pot(rp_id).unwrap();
-          depend_resources.extend(rp.resources().into_iter().map(|r| r.to_string()));
+        for resource in rp.resources() {
+          if rp.modules().contains(&html_entry_id) {
+            html_entry_resource = Some(resource.clone());
+          }
         }
 
-        resources_to_inject.insert(resource.name.clone(), depend_resources);
+        dep_resources.extend(rp.resources().into_iter().map(|r| r.to_string()));
       }
+
+      let mut dep_module_groups = vec![];
+
+      module_group_graph.bfs(&module_group_id, &mut |mg_id| {
+        if mg_id != &module_group_id {
+          dep_module_groups.push(mg_id.clone());
+        }
+      });
+
+      let mut dynamic_resources_map = HashMap::<ModuleId, Vec<(String, ResourceType)>>::new();
+
+      for mg_id in dep_module_groups {
+        let mg = module_group_graph.module_group(&mg_id).unwrap();
+
+        for rp_id in mg.resource_pots() {
+          let rp = resource_pot_graph.resource_pot(rp_id).unwrap();
+
+          if dynamic_resources_map.contains_key(&mg_id) {
+            let resources = dynamic_resources_map.get_mut(&mg_id).unwrap();
+
+            for r in rp.resources() {
+              let resource = resources_map.get(r).unwrap();
+              resources.push((resource.name.clone(), resource.resource_type.clone()));
+            }
+          } else {
+            let mut resources = vec![];
+
+            for r in rp.resources() {
+              let resource = resources_map.get(r).unwrap();
+              resources.push((resource.name.clone(), resource.resource_type.clone()));
+            }
+
+            dynamic_resources_map.insert(mg_id.clone(), resources);
+          }
+        }
+      }
+
+      resources_to_inject.insert(
+        html_entry_resource.unwrap(),
+        (dep_resources, dynamic_resources_map),
+      );
     }
 
-    for (html_resource_name, depend_resources) in resources_to_inject {
+    for (html_resource_name, (dep_resources, dynamic_resources_map)) in resources_to_inject {
       let mut resource_pot_graph = context.resource_pot_graph.write();
       let mut script_resources: Vec<String> = vec![];
       let mut css_resources: Vec<String> = vec![];
 
-      for res_id in depend_resources {
+      for res_id in dep_resources {
         let res = resources_map.get(&res_id).unwrap();
 
         if matches!(res.resource_type, ResourceType::Js) {
@@ -234,6 +283,9 @@ impl Plugin for FarmPluginHtml {
         script_resources,
         css_resources,
         script_entries,
+        dynamic_resources_map,
+        context.config.mode.clone(),
+        context.config.output.public_path.clone(),
       );
 
       let resource_pot = resource_pot_graph

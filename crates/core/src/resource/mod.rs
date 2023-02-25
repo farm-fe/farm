@@ -8,7 +8,7 @@ pub mod resource_pot;
 pub mod resource_pot_graph;
 
 #[cache_item]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ResourceType {
   Runtime,
   Js,

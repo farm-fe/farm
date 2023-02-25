@@ -2,9 +2,11 @@
   background-color: whitesmoke;
   font-size: 24px;
   /* color: red; */
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: center;
-  align-items: center;
+  /* display: flex; */
+  /* flex-flow: row wrap; */
+  /* justify-content: center; */
+  /* align-items: center; */
   height: 300px;
+  padding: 100px;
+  text-align: center;
 }

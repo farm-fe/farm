@@ -5,7 +5,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::{
-  script::is_commonjs_require,
+  script::{is_commonjs_require, is_dynamic_import},
   swc_ecma_visit::{Visit, VisitWith},
 };
 
@@ -73,11 +73,23 @@ impl<'a> Visit for DepsAnalyzer<'a> {
   }
 
   fn visit_call_expr(&mut self, call_expr: &CallExpr) {
-    if call_expr.args.len() == 1 && is_commonjs_require(self.unresolved_mark, call_expr) {
+    if call_expr.args.len() != 1 {
+      call_expr.visit_children_with(self);
+      return;
+    }
+
+    if is_commonjs_require(self.unresolved_mark, call_expr) {
       if let box Expr::Lit(Lit::Str(str)) = &call_expr.args[0].expr {
         self.insert_dep(PluginAnalyzeDepsHookResultEntry {
           source: str.value.to_string(),
           kind: ResolveKind::Require,
+        })
+      }
+    } else if is_dynamic_import(call_expr) {
+      if let box Expr::Lit(Lit::Str(str)) = &call_expr.args[0].expr {
+        self.insert_dep(PluginAnalyzeDepsHookResultEntry {
+          source: str.value.to_string(),
+          kind: ResolveKind::DynamicImport,
         })
       }
     }

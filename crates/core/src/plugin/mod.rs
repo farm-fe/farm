@@ -8,7 +8,7 @@ use crate::{
   error::Result,
   module::{
     module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupMap},
+    module_group::{ModuleGroup, ModuleGroupGraph},
     Module, ModuleId, ModuleMetaData, ModuleType,
   },
   resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
@@ -117,7 +117,7 @@ pub trait Plugin: Any + Send + Sync {
     _module_graph: &mut ModuleGraph,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> Result<Option<ModuleGroupMap>> {
+  ) -> Result<Option<ModuleGroupGraph>> {
     Ok(None)
   }
 
@@ -170,9 +170,9 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Write the final output [Resource]s to disk or others.
-  /// By default the resource will write to disk or memory, if you want to override this behavior, set [Resource.emitted] to true.
-  fn write_resources(
+  /// Do some finalization work on the generated resources, for example, add hash to the file name,
+  /// or insert the generated resources into html
+  fn finalize_resources(
     &self,
     _resources: &mut hashbrown::HashMap<String, Resource>,
     _context: &Arc<CompilationContext>,

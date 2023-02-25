@@ -41,9 +41,9 @@ impl Default for Config {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct OutputConfig {
-  path: String,
-  public_path: String,
-  filename: String,
+  pub path: String,
+  pub public_path: String,
+  pub filename: String,
 }
 
 impl Default for OutputConfig {

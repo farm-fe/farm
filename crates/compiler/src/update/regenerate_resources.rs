@@ -86,8 +86,10 @@ pub fn regenerate_resources_for_affected_module_groups(
     .par_iter()
     .try_for_each(|module_group_id| -> farmfe_core::error::Result<()> {
       let resource_pots_ids = {
-        let mut module_group_map = context.module_group_map.write();
-        let module_group = module_group_map.module_group_mut(module_group_id).unwrap();
+        let mut module_group_graph = context.module_group_graph.write();
+        let module_group = module_group_graph
+          .module_group_mut(module_group_id)
+          .unwrap();
         let resource_pots =
           call_partial_bundling_hook(module_group, context, &PluginHookContext::default())?;
         let resource_pots_ids = resource_pots

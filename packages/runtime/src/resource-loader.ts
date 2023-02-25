@@ -18,10 +18,9 @@ export class ResourceLoader {
 
   async load(resource: Resource): Promise<void> {
     let index = 0;
-
     while (index < this.publicPaths.length) {
       const publicPath = this.publicPaths[index];
-      const url = `${publicPath}/${resource.path}`;
+      const url = `${publicPath === '/' ? '' : publicPath}/${resource.path}`;
 
       try {
         if (resource.type === 'script') {
@@ -32,14 +31,15 @@ export class ResourceLoader {
 
         return;
       } catch (e) {
+        console.error(`[Farm] Failed to load resource "${url}"`, e);
         index++;
       }
     }
   }
 
-  private async _loadScript(path: string): Promise<void> {
+  private _loadScript(path: string): Promise<void> {
     if (__FARM_TARGET_ENV__ === 'node') {
-      await import(path);
+      return import(path);
     } else {
       return new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -56,8 +56,9 @@ export class ResourceLoader {
     }
   }
 
-  private async _loadLink(path: string): Promise<void> {
+  private _loadLink(path: string): Promise<void> {
     if (__FARM_TARGET_ENV__ === 'node') {
+      return Promise.reject(new Error('Not support loading css in SSR'));
       // await import(path);
       // TODO investigate how to load css in SSR
     } else {
