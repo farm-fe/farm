@@ -32,7 +32,7 @@ pub struct Module {
   pub id: ModuleId,
   /// the type of this module, for example [ModuleType::Js]
   pub module_type: ModuleType,
-  /// the module groups this module belongs to, used to construct [crate::module::module_group::ModuleGroupMap]
+  /// the module groups this module belongs to, used to construct [crate::module::module_group::ModuleGroupGraph]
   pub module_groups: HashSet<ModuleGroupId>,
   /// the resource pot this module belongs to
   pub resource_pot: Option<ResourcePotId>,

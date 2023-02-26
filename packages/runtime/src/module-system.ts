@@ -75,6 +75,10 @@ export class ModuleSystem {
   }
 
   dynamicRequire(moduleId: string): Promise<any> {
+    if (this.modules[moduleId]) {
+      return Promise.resolve(this.require(moduleId));
+    }
+
     const resources = this.dynamicModuleResourcesMap[moduleId];
 
     if (!resources || resources.length === 0) {
@@ -91,9 +95,13 @@ export class ModuleSystem {
 
   register(moduleId: string, initializer: ModuleInitialization): void {
     if (this.modules[moduleId]) {
-      throw new Error(
+      // throw new Error(
+      //   `Module "${moduleId}" has registered! It should not be registered twice`
+      // );
+      console.warn(
         `Module "${moduleId}" has registered! It should not be registered twice`
       );
+      return;
     }
 
     this.modules[moduleId] = initializer;

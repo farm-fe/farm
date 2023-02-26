@@ -4,6 +4,7 @@ use farmfe_core::{
   hashbrown::HashSet,
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdge},
+    module_group::{ModuleGroup, ModuleGroupGraph},
     Module,
   },
   plugin::ResolveKind,
@@ -80,6 +81,62 @@ pub fn construct_test_module_graph() -> ModuleGraph {
   graph.entries = HashSet::from(["A".into(), "B".into()]);
 
   graph
+}
+
+/// construct a test module group graph using module graph like below:
+/// ```plain
+///           A   B
+///          / \ / \
+///         C   D   E
+///          \ /    |
+///           F     G
+/// ```
+/// * **dynamic dependencies**: `A -> D`, `C -> F`, `D -> F`, `E -> G`
+/// * **cyclic dependencies**: `F -> A`
+/// * others are static dependencies
+pub fn construct_test_module_group_graph() -> ModuleGroupGraph {
+  let mut module_group_graph = ModuleGroupGraph::new();
+
+  let mut module_group_a = ModuleGroup::new("A".into());
+  module_group_a.add_module("A".into());
+  module_group_a.add_module("C".into());
+  module_group_graph.add_module_group(module_group_a);
+
+  let mut module_group_b = ModuleGroup::new("B".into());
+  module_group_b.add_module("B".into());
+  module_group_b.add_module("D".into());
+  module_group_b.add_module("E".into());
+  module_group_graph.add_module_group(module_group_b);
+
+  let mut module_group_d = ModuleGroup::new("D".into());
+  module_group_d.add_module("D".into());
+  module_group_graph.add_module_group(module_group_d);
+
+  let mut module_group_c = ModuleGroup::new("F".into());
+  module_group_c.add_module("F".into());
+  module_group_c.add_module("A".into());
+  module_group_c.add_module("C".into());
+  module_group_graph.add_module_group(module_group_c);
+
+  let mut module_group_e = ModuleGroup::new("G".into());
+  module_group_e.add_module("G".into());
+  module_group_graph.add_module_group(module_group_e);
+
+  let edges = vec![
+    ("A", "D"),
+    ("A", "F"),
+    ("D", "F"),
+    ("B", "F"),
+    ("B", "G"),
+    ("F", "D"),
+    ("F", "F"),
+  ];
+
+  for (from, to) in edges {
+    module_group_graph.add_edge(&from.into(), &to.into());
+  }
+
+  module_group_graph
 }
 
 /// @deprecated using macro fixture instead

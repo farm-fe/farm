@@ -126,7 +126,7 @@ impl Plugin for RustPluginAdapter {
     module_graph: &mut ModuleGraph,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
-  ) -> Result<Option<farmfe_core::module::module_group::ModuleGroupMap>> {
+  ) -> Result<Option<farmfe_core::module::module_group::ModuleGroupGraph>> {
     self
       .plugin
       .analyze_module_graph(module_graph, context, hook_context)
@@ -180,12 +180,12 @@ impl Plugin for RustPluginAdapter {
       .generate_resources(resource_pot, context, hook_context)
   }
 
-  fn write_resources(
+  fn finalize_resources(
     &self,
     resources: &mut HashMap<String, farmfe_core::resource::Resource>,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.write_resources(resources, context)
+    self.plugin.finalize_resources(resources, context)
   }
 
   fn generate_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {

@@ -7,7 +7,7 @@ use crate::{
   generate::{
     partial_bundling::partial_bundling,
     render_resource_pots::render_resource_pots_and_generate_resources,
-    write_resources::write_resources,
+    write_resources::finalize_resources,
   },
   Compiler,
 };
@@ -36,7 +36,7 @@ impl Compiler {
 
     self.render_and_generate_resources(&hook_context)?;
 
-    write_resources(&self.context)?;
+    finalize_resources(&self.context)?;
 
     tracing::debug!("Generating finished.");
     self.context.plugin_driver.generate_end(&self.context)

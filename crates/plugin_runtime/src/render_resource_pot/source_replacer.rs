@@ -11,19 +11,19 @@ use farmfe_core::{
   config::Mode,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{AwaitExpr, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
+  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
 use farmfe_toolkit::{
-  script::is_commonjs_require,
+  script::{is_commonjs_require, is_dynamic_import},
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 
-/// replace all `require('./xxx')` to the actual id and transform require('./xxx') to async. for example:
+/// replace all `require('./xxx')` to the actual id and transform require('./xxx'). for example:
 /// ```js
 /// // a.js is originally a commonjs module
 /// const { b } = require('./b');
 /// // after transform
-/// const { b } = await require("xxx"); // xxx is b's id.
+/// const { b } = require("xxx"); // xxx is b's id.
 /// ```
 pub struct SourceReplacer<'a> {
   unresolved_mark: Mark,
@@ -70,7 +70,12 @@ enum SourceReplaceResult {
 
 impl SourceReplacer<'_> {
   fn replace_source_with_id(&mut self, call_expr: &mut CallExpr) -> SourceReplaceResult {
-    if call_expr.args.len() == 1 && is_commonjs_require(self.unresolved_mark, &*call_expr) {
+    if call_expr.args.len() != 1 {
+      call_expr.visit_mut_children_with(self);
+      return SourceReplaceResult::NotReplaced;
+    }
+
+    if is_commonjs_require(self.unresolved_mark, &*call_expr) {
       if let ExprOrSpread {
         spread: None,
         expr: box Expr::Lit(Lit::Str(Str { value, .. })),
@@ -102,6 +107,24 @@ impl SourceReplacer<'_> {
           call_expr.visit_mut_children_with(self);
           return SourceReplaceResult::NotScriptModule;
         }
+      }
+    } else if is_dynamic_import(&*call_expr) {
+      if let ExprOrSpread {
+        spread: None,
+        expr: box Expr::Lit(Lit::Str(Str { value, .. })),
+      } = &mut call_expr.args[0]
+      {
+        call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: "dynamicRequire".into(),
+          optional: false,
+        })));
+
+        let source = value.to_string();
+        let id = self
+          .module_graph
+          .get_dep_by_source(&self.module_id, &source);
+        *value = id.id(self.mode.clone()).into();
       }
     }
 

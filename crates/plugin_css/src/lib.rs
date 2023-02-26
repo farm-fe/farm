@@ -6,7 +6,7 @@ use farmfe_core::{
   module::{CssModuleMetaData, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
   },
   resource::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -48,6 +48,41 @@ impl Plugin for FarmPluginCss {
       } else {
         Ok(None)
       }
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn transform(
+    &self,
+    param: &farmfe_core::plugin::PluginTransformHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+    if matches!(param.module_type, ModuleType::Css)
+      && matches!(context.config.mode, farmfe_core::config::Mode::Development)
+    {
+      let css_js_code = format!(
+        r#"
+const cssCode = `{}`;
+const farmId = '{}';
+const previousStyle = document.querySelector(`style[data-farm-id="${{farmId}}"]`);
+const style = document.createElement('style');
+style.setAttribute('data-farm-id', farmId);
+style.innerHTML = cssCode;
+if (previousStyle) {{
+  previousStyle.replaceWith(style);
+}} else {{
+  document.head.appendChild(style);
+}}
+"#,
+        param.content, param.resolved_path
+      );
+
+      Ok(Some(PluginTransformHookResult {
+        content: css_js_code,
+        module_type: Some(ModuleType::Js),
+        source_map: None,
+      }))
     } else {
       Ok(None)
     }

@@ -253,7 +253,7 @@ fn diff_module_deps(
     let mut children_added = vec![];
 
     if module_graph.has_module(&dep) {
-      panic!("This module({:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues", dep);
+      panic!("The module({:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues", dep);
     }
 
     for child in children {

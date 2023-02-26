@@ -24,6 +24,14 @@
     }
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe"
+  },
+  "author": {
+    "name": "bright wu",
+    "email": "1521488775@qq.com"
+  },
   "devDependencies": {
     "@napi-rs/cli": "^2.10.0",
     "@types/figlet": "^1.5.5",

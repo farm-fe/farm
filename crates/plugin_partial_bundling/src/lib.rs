@@ -6,7 +6,7 @@ use farmfe_core::{
   hashbrown::{HashMap, HashSet},
   module::{
     module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupMap},
+    module_group::{ModuleGroup, ModuleGroupGraph},
     ModuleId, ModuleType,
   },
   plugin::{Plugin, PluginHookContext},
@@ -25,13 +25,13 @@ impl Plugin for FarmPluginPartialBundling {
     module_graph: &mut ModuleGraph,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<ModuleGroupMap>> {
-    let module_group_map = module_group_map_from_entries(
+  ) -> farmfe_core::error::Result<Option<ModuleGroupGraph>> {
+    let module_group_graph = module_group_graph_from_entries(
       &module_graph.entries.clone().into_iter().collect(),
       module_graph,
     );
 
-    Ok(Some(module_group_map))
+    Ok(Some(module_group_graph))
   }
 
   /// The partial bundling algorithm's result should not be related to the order of the module group.
@@ -113,17 +113,25 @@ impl FarmPluginPartialBundling {
   }
 }
 
-pub fn module_group_map_from_entries(
+pub fn module_group_graph_from_entries(
   entries: &Vec<ModuleId>,
   module_graph: &mut ModuleGraph,
-) -> ModuleGroupMap {
-  let mut module_group_map = ModuleGroupMap::new();
+) -> ModuleGroupGraph {
+  let mut module_group_graph = ModuleGroupGraph::new();
+  let mut edges = vec![];
+  let mut visited = HashSet::new();
 
   for entry in entries.clone() {
     let (group, dynamic_dependencies) = module_group_from_entry(&entry, module_graph);
-    module_group_map.add_module_group(group);
+    edges.extend(
+      dynamic_dependencies
+        .clone()
+        .into_iter()
+        .map(|dep| (group.id.clone(), dep)),
+    );
 
-    let mut visited = HashSet::new();
+    module_group_graph.add_module_group(group);
+
     visited.insert(entry);
     let mut queue = VecDeque::from(dynamic_dependencies);
 
@@ -137,12 +145,23 @@ pub fn module_group_map_from_entries(
       visited.insert(head.clone());
 
       let (group, dynamic_dependencies) = module_group_from_entry(&head, module_graph);
-      module_group_map.add_module_group(group);
+      edges.extend(
+        dynamic_dependencies
+          .clone()
+          .into_iter()
+          .map(|dep| (group.id.clone(), dep)),
+      );
+
+      module_group_graph.add_module_group(group);
       queue.extend(dynamic_dependencies);
     }
   }
 
-  module_group_map
+  for (from, to) in &edges {
+    module_group_graph.add_edge(from, to);
+  }
+
+  module_group_graph
 }
 
 /// get module group start from a entry. return (module group, dynamic dependencies)
@@ -212,6 +231,7 @@ mod tests {
   };
   #[cfg(test)]
   use farmfe_testing_helpers::construct_test_module_graph;
+  use farmfe_testing_helpers::construct_test_module_group_graph;
 
   use crate::{module_group_from_entry as mgfe, FarmPluginPartialBundling};
 
@@ -225,7 +245,7 @@ mod tests {
     let context = Arc::new(context);
     let mut module_graph = context.module_graph.write();
 
-    let module_group_map = plugin
+    let module_group_graph = plugin
       .analyze_module_graph(
         &mut *module_graph,
         &context,
@@ -237,39 +257,39 @@ mod tests {
       .unwrap()
       .unwrap();
 
-    assert_eq!(module_group_map.len(), 5);
-    assert!(module_group_map.has(&"A".into()));
-    assert!(module_group_map.has(&"B".into()));
-    assert!(module_group_map.has(&"D".into()));
-    assert!(module_group_map.has(&"F".into()));
-    assert!(module_group_map.has(&"G".into()));
+    assert_eq!(module_group_graph.len(), 5);
+    assert!(module_group_graph.has(&"A".into()));
+    assert!(module_group_graph.has(&"B".into()));
+    assert!(module_group_graph.has(&"D".into()));
+    assert!(module_group_graph.has(&"F".into()));
+    assert!(module_group_graph.has(&"G".into()));
 
-    let module_group_a = module_group_map.module_group(&"A".into()).unwrap();
+    let module_group_a = module_group_graph.module_group(&"A".into()).unwrap();
     assert_eq!(module_group_a.id, "A".into());
     assert_eq!(
       module_group_a.modules(),
       &HashSet::from(["A".into(), "C".into()])
     );
 
-    let module_group_b = module_group_map.module_group(&"B".into()).unwrap();
+    let module_group_b = module_group_graph.module_group(&"B".into()).unwrap();
     assert_eq!(module_group_b.id, "B".into());
     assert_eq!(
       module_group_b.modules(),
       &HashSet::from(["B".into(), "D".into(), "E".into()])
     );
 
-    let module_group_d = module_group_map.module_group(&"D".into()).unwrap();
+    let module_group_d = module_group_graph.module_group(&"D".into()).unwrap();
     assert_eq!(module_group_d.id, "D".into());
     assert_eq!(module_group_d.modules(), &HashSet::from(["D".into()]));
 
-    let module_group_f = module_group_map.module_group(&"F".into()).unwrap();
+    let module_group_f = module_group_graph.module_group(&"F".into()).unwrap();
     assert_eq!(module_group_f.id, "F".into());
     assert_eq!(
       module_group_f.modules(),
       &HashSet::from(["F".into(), "A".into(), "C".into()])
     );
 
-    let module_group_g = module_group_map.module_group(&"G".into()).unwrap();
+    let module_group_g = module_group_graph.module_group(&"G".into()).unwrap();
     assert_eq!(module_group_g.id, "G".into());
     assert_eq!(module_group_g.modules(), &HashSet::from(["G".into()]));
 
@@ -315,5 +335,16 @@ mod tests {
       .unwrap()
       .module_groups
       .contains(&"A".into()));
+  }
+
+  #[test]
+  fn module_group_graph_from_entries() {
+    let mut graph = construct_test_module_graph();
+
+    let entries = vec!["A".into(), "B".into()];
+    let module_group_graph = crate::module_group_graph_from_entries(&entries, &mut graph);
+    let final_module_group_graph = construct_test_module_group_graph();
+
+    assert_eq!(module_group_graph, final_module_group_graph);
   }
 }

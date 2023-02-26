@@ -22,7 +22,7 @@
 
 ### Patch Changes
 
-- Bump versin
+- Bump version
 
 ## 0.1.1
 
