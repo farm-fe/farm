@@ -1,5 +1,16 @@
 # @farmfe/cli
 
+## 0.2.0
+
+### Minor Changes
+
+- e826221: Support css HMR and dynamic resource compiling and loading for dynamic import
+
+### Patch Changes
+
+- Updated dependencies [e826221]
+  - @farmfe/core@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes
