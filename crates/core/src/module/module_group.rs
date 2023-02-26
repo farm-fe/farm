@@ -1,7 +1,7 @@
 use hashbrown::{HashMap, HashSet};
 use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
-  visit::{Bfs, Dfs},
+  visit::{Bfs, Dfs, EdgeRef, IntoEdgeReferences},
 };
 
 use crate::resource::resource_pot::ResourcePotId;
@@ -32,21 +32,39 @@ impl ModuleGroupGraph {
 
   pub fn add_module_group(&mut self, module_group: ModuleGroup) {
     let module_group_id = module_group.id.clone();
+
+    if self.has(&module_group_id) {
+      panic!("module group already exists: {:?}", module_group_id);
+    }
+
     let node_index = self.g.add_node(module_group);
-    self
-      .id_index_map
-      .insert(module_group_id.clone(), node_index);
+    self.id_index_map.insert(module_group_id, node_index);
   }
 
   pub fn add_edge(&mut self, from: &ModuleId, to: &ModuleId) {
     let from_node_index = self.id_index_map.get(from).unwrap();
     let to_node_index = self.id_index_map.get(to).unwrap();
+
     self.g.add_edge(*from_node_index, *to_node_index, ());
   }
 
   pub fn remove_edge(&mut self, from: &ModuleId, to: &ModuleId) {
-    let from_node_index = self.id_index_map.get(from).unwrap();
-    let to_node_index = self.id_index_map.get(to).unwrap();
+    let from_node_index = self.id_index_map.get(from).unwrap_or_else(|| {
+      panic!(
+        "ModuleGroupGraph::remove_edge: from {} to {}. Not found: {}",
+        from.to_string(),
+        to.to_string(),
+        from.to_string()
+      )
+    });
+    let to_node_index = self.id_index_map.get(to).unwrap_or_else(|| {
+      panic!(
+        "ModuleGroupGraph::remove_edge: from {} to {}. Not found: {}",
+        from.to_string(),
+        to.to_string(),
+        to.to_string()
+      )
+    });
     let edge_index = self.g.find_edge(*from_node_index, *to_node_index).unwrap();
     self.g.remove_edge(edge_index);
   }
@@ -62,7 +80,8 @@ impl ModuleGroupGraph {
   }
 
   pub fn module_group_mut(&mut self, id: &ModuleGroupId) -> Option<&mut ModuleGroup> {
-    let node_index = self.id_index_map.get(id).unwrap();
+    let node_index = self.id_index_map.get(id)?;
+
     self.g.node_weight_mut(*node_index)
   }
 
@@ -78,6 +97,20 @@ impl ModuleGroupGraph {
 
   pub fn has(&self, id: &ModuleGroupId) -> bool {
     self.id_index_map.contains_key(id)
+  }
+
+  pub fn has_edge(&self, from: &ModuleId, to: &ModuleId) -> bool {
+    let from_node_index = self.id_index_map.get(from);
+    let to_node_index = self.id_index_map.get(to);
+
+    if from_node_index.is_none() || to_node_index.is_none() {
+      return false;
+    }
+
+    self
+      .g
+      .find_edge(*from_node_index.unwrap(), *to_node_index.unwrap())
+      .is_some()
   }
 
   pub fn len(&self) -> usize {
@@ -103,6 +136,60 @@ impl ModuleGroupGraph {
       op(&self.g[node_index].id);
     }
   }
+
+  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<&ModuleGroup> {
+    let node_index = self.id_index_map.get(module_id).unwrap();
+    let mut dependencies = Vec::new();
+
+    for edge in self.g.edges(*node_index) {
+      dependencies.push(&self.g[edge.target()]);
+    }
+
+    dependencies
+  }
+
+  pub fn dependencies_ids(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+    let node_index = self.id_index_map.get(module_id).unwrap();
+    let mut dependencies = Vec::new();
+
+    for edge in self.g.edges(*node_index) {
+      dependencies.push(self.g[edge.target()].id.clone());
+    }
+
+    dependencies
+  }
+
+  pub fn dependents(&self, module_id: &ModuleId) -> Vec<&ModuleGroup> {
+    let node_index = self.id_index_map.get(module_id).unwrap();
+    let mut dependents = Vec::new();
+
+    for edge in self
+      .g
+      .edges_directed(*node_index, petgraph::Direction::Incoming)
+    {
+      dependents.push(&self.g[edge.source()]);
+    }
+
+    dependents
+  }
+
+  pub fn print_graph(&self) {
+    println!("digraph {{\n nodes:");
+
+    for node in self.g.node_weights() {
+      println!("  \"{}\";", node.id.to_string());
+    }
+
+    println!("\nedges:");
+
+    for edge in self.g.edge_references() {
+      let source = self.g[edge.source()].id.to_string();
+      let target = self.g[edge.target()].id.to_string();
+      println!("  \"{}\" -> \"{}\";", source, target);
+    }
+
+    println!("}}");
+  }
 }
 
 impl Default for ModuleGroupGraph {
@@ -113,14 +200,37 @@ impl Default for ModuleGroupGraph {
 
 impl PartialEq for ModuleGroupGraph {
   fn eq(&self, other: &Self) -> bool {
-    self
-      .module_groups()
-      .iter()
-      .all(|module_group| other.module_groups().contains(module_group))
-      && other
-        .module_groups()
-        .iter()
-        .all(|module_group| self.module_groups().contains(module_group))
+    let mut self_module_groups = self.module_groups();
+    self_module_groups.sort_by_key(|g| g.id.clone());
+
+    let mut other_module_groups = other.module_groups();
+    other_module_groups.sort_by_key(|g| g.id.clone());
+
+    let mut self_edges = self
+      .g
+      .edge_references()
+      .map(|e| {
+        let source = self.g[e.source()].id.clone();
+        let target = self.g[e.target()].id.clone();
+
+        (source, target)
+      })
+      .collect::<Vec<_>>();
+    self_edges.sort();
+
+    let mut other_edges = other
+      .g
+      .edge_references()
+      .map(|e| {
+        let source = other.g[e.source()].id.clone();
+        let target = other.g[e.target()].id.clone();
+
+        (source, target)
+      })
+      .collect::<Vec<_>>();
+    other_edges.sort();
+
+    self_module_groups == other_module_groups && self_edges == other_edges
   }
 }
 

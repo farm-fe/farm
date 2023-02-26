@@ -1,15 +1,20 @@
 // using native ability to load resources if target env is node.
-declare const __FARM_TARGET_ENV__: 'node' | 'browser';
 
 export interface Resource {
   path: string;
   type: 'script' | 'link';
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore do not check type here
+const targetEnv = (globalThis || global || window || self).__FARM_TARGET_ENV__;
+
 /**
  * Loading resources according to their type and target env.
  */
 export class ResourceLoader {
+  private _loadedResources: Record<string, boolean> = {};
+
   publicPaths: string[];
 
   constructor(publicPaths: string[]) {
@@ -22,13 +27,17 @@ export class ResourceLoader {
       const publicPath = this.publicPaths[index];
       const url = `${publicPath === '/' ? '' : publicPath}/${resource.path}`;
 
+      if (this._loadedResources[url]) {
+        return;
+      }
+
       try {
         if (resource.type === 'script') {
           await this._loadScript(url);
         } else if (resource.type === 'link') {
           await this._loadLink(url);
         }
-
+        this._loadedResources[url] = true;
         return;
       } catch (e) {
         console.error(`[Farm] Failed to load resource "${url}"`, e);
@@ -38,7 +47,7 @@ export class ResourceLoader {
   }
 
   private _loadScript(path: string): Promise<void> {
-    if (__FARM_TARGET_ENV__ === 'node') {
+    if (targetEnv === 'node') {
       return import(path);
     } else {
       return new Promise((resolve, reject) => {
@@ -57,7 +66,7 @@ export class ResourceLoader {
   }
 
   private _loadLink(path: string): Promise<void> {
-    if (__FARM_TARGET_ENV__ === 'node') {
+    if (targetEnv === 'node') {
       return Promise.reject(new Error('Not support loading css in SSR'));
       // await import(path);
       // TODO investigate how to load css in SSR

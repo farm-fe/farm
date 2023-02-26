@@ -63,8 +63,39 @@ pub fn patch_module_group_graph(
               module.module_groups.remove(removed_module_id);
               affected_module_groups.extend(module.module_groups.clone());
             });
-
+            // do not need to remove the edge cause it will be removed automatically when the module is removed
             module_group_graph.remove_module_group(removed_module_id);
+          } else {
+            let module_group_ids = {
+              if removed_modules.contains_key(module_id) {
+                let removed_module = removed_modules.get(module_id).unwrap();
+                removed_module.module_groups.clone()
+              } else {
+                let module = module_graph
+                  .module(module_id)
+                  .unwrap_or_else(|| panic!("module {:?} not found", module_id));
+                module.module_groups.clone()
+              }
+            };
+            // remove the edge
+            for module_group_id in &module_group_ids {
+              if current_parents
+                .iter()
+                .filter(|(p, kind, _)| {
+                  if kind == &ResolveKind::DynamicImport {
+                    let parent = module_graph.module(p).unwrap();
+                    return parent.module_groups.contains(module_group_id);
+                  }
+
+                  false
+                })
+                .count()
+                == 0
+                && module_group_graph.has_edge(module_group_id, removed_module_id)
+              {
+                module_group_graph.remove_edge(module_group_id, removed_module_id);
+              }
+            }
           }
         } else {
           let mut queue = VecDeque::from([removed_module_id.clone()]);
@@ -91,16 +122,40 @@ pub fn patch_module_group_graph(
                   .unwrap();
 
                 module_group.remove_module(&current_module_id);
+                let current_module = module_graph.module_mut(&current_module_id).unwrap();
+                affected_module_groups.extend(current_module.module_groups.clone());
+                current_module.module_groups.remove(module_group_id);
 
                 let modules_len = module_group.modules().len();
 
                 if modules_len == 0 {
                   module_group_graph.remove_module_group(module_group_id);
-                }
+                } else {
+                  // determine if there are edges that should be removed
+                  let children = module_graph.dependencies(&current_module_id);
 
-                let current_module = module_graph.module_mut(&current_module_id).unwrap();
-                affected_module_groups.extend(current_module.module_groups.clone());
-                current_module.module_groups.remove(module_group_id);
+                  for (child, kind, _) in children {
+                    if kind == ResolveKind::DynamicImport
+                      && module_group_graph
+                        .dependencies_ids(module_group_id)
+                        .contains(&child)
+                    {
+                      let parents = module_graph
+                        .dependents(&child)
+                        .into_iter()
+                        .filter(|(_, kind, _)| kind == &ResolveKind::DynamicImport)
+                        .collect::<Vec<_>>();
+                      let parents_in_module_group = parents.iter().any(|(id, _, _)| {
+                        let parent = module_graph.module(id).unwrap();
+                        parent.module_groups.contains(module_group_id)
+                      });
+
+                      if !parents_in_module_group {
+                        module_group_graph.remove_edge(module_group_id, &child);
+                      }
+                    }
+                  }
+                }
               }
             }
 
@@ -116,6 +171,7 @@ pub fn patch_module_group_graph(
       } else {
         // this module is removed, all module groups that contains this module should remove this module
         let removed_module = removed_modules.get(removed_module_id).unwrap();
+
         for removed_module_group_id in &removed_module.module_groups {
           let module_group = module_group_graph.module_group_mut(removed_module_group_id);
 
@@ -142,6 +198,20 @@ pub fn patch_module_group_graph(
         let module_group_id = added_module_id.clone();
         let module_group = ModuleGroup::new(module_group_id.clone());
         module_group_graph.add_module_group(module_group);
+
+        let module_group_ids = {
+          let module = module_graph
+            .module(module_id)
+            .unwrap_or_else(|| panic!("module {:?} not found", module_id));
+          module.module_groups.clone()
+        };
+
+        for module_group_id in &module_group_ids {
+          if !module_group_graph.has_edge(module_group_id, added_module_id) {
+            module_group_graph.add_edge(module_group_id, added_module_id);
+          }
+        }
+
         let module = module_graph.module_mut(added_module_id).unwrap();
         module.module_groups.insert(module_group_id);
       } else {
@@ -164,24 +234,40 @@ pub fn patch_module_group_graph(
 
           while !queue.is_empty() {
             let current_module_id = queue.pop_front().unwrap();
+            let mut current_module_group_change = false;
 
             for module_group_id in &previous_parent_groups {
+              let current_module = module_graph.module(&current_module_id).unwrap();
+
+              if current_module.module_groups.contains(module_group_id) {
+                continue;
+              }
+
+              current_module_group_change = true;
+
               let module_group = module_group_graph
                 .module_group_mut(module_group_id)
                 .unwrap();
 
               module_group.add_module(current_module_id.clone());
+              let current_module = module_graph.module_mut(&current_module_id).unwrap();
+              current_module.module_groups.insert(module_group_id.clone());
               affected_module_groups.insert(module_group_id.clone());
+
+              for (child, kind, _) in module_graph.dependencies(&current_module_id) {
+                if kind == ResolveKind::DynamicImport
+                  && !module_group_graph.has_edge(module_group_id, &child)
+                {
+                  module_group_graph.add_edge(module_group_id, &child);
+                }
+              }
             }
 
-            let current_module = module_graph.module_mut(&current_module_id).unwrap();
-            current_module
-              .module_groups
-              .extend(previous_parent_groups.clone());
-
-            for (child_id, kind, _) in module_graph.dependencies(&current_module_id) {
-              if kind != ResolveKind::DynamicImport {
-                queue.push_back(child_id.clone());
+            if current_module_group_change {
+              for (child, kind, _) in module_graph.dependencies(&current_module_id) {
+                if kind != ResolveKind::DynamicImport {
+                  queue.push_back(child);
+                }
               }
             }
           }

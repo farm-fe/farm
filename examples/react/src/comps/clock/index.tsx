@@ -10,7 +10,7 @@ export default function Clock() {
 
   return (
     <div>
-      <h1>React Clock 1</h1>
+      <h1>React Clock</h1>
       <p>It is {now.toLocaleTimeString()}.</p>
     </div>
   );

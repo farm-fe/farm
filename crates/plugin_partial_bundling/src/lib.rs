@@ -119,6 +119,7 @@ pub fn module_group_graph_from_entries(
 ) -> ModuleGroupGraph {
   let mut module_group_graph = ModuleGroupGraph::new();
   let mut edges = vec![];
+  let mut visited = HashSet::new();
 
   for entry in entries.clone() {
     let (group, dynamic_dependencies) = module_group_from_entry(&entry, module_graph);
@@ -131,7 +132,6 @@ pub fn module_group_graph_from_entries(
 
     module_group_graph.add_module_group(group);
 
-    let mut visited = HashSet::new();
     visited.insert(entry);
     let mut queue = VecDeque::from(dynamic_dependencies);
 
@@ -231,6 +231,7 @@ mod tests {
   };
   #[cfg(test)]
   use farmfe_testing_helpers::construct_test_module_graph;
+  use farmfe_testing_helpers::construct_test_module_group_graph;
 
   use crate::{module_group_from_entry as mgfe, FarmPluginPartialBundling};
 
@@ -334,5 +335,16 @@ mod tests {
       .unwrap()
       .module_groups
       .contains(&"A".into()));
+  }
+
+  #[test]
+  fn module_group_graph_from_entries() {
+    let mut graph = construct_test_module_graph();
+
+    let entries = vec!["A".into(), "B".into()];
+    let module_group_graph = crate::module_group_graph_from_entries(&entries, &mut graph);
+    let final_module_group_graph = construct_test_module_group_graph();
+
+    assert_eq!(module_group_graph, final_module_group_graph);
   }
 }

@@ -6,6 +6,7 @@ use super::resource_pot::{ResourcePot, ResourcePotId};
 
 pub struct ResourcePotGraphEdge {}
 
+// TODO: Change Graph to Map, as the resource pot should be related to module group, and we already have resource group graph
 pub struct ResourcePotGraph {
   g: StableDiGraph<ResourcePot, ResourcePotGraphEdge>,
   id_index_map: HashMap<ResourcePotId, NodeIndex>,
