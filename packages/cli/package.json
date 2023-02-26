@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/cli",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "CLI of Farm",
   "type": "module",
   "author": {
@@ -41,7 +41,7 @@
     "node": ">= 16"
   },
   "dependencies": {
-    "@farmfe/core": "workspace:^0.1.4",
+    "@farmfe/core": "workspace:^0.2.0",
     "cac": "^6.7.14",
     "chalk": "^5.2.0",
     "enquirer": "^2.3.6",

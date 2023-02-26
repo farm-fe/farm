@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 0.2.0
+
+### Minor Changes
+
+- e826221: Support css HMR and dynamic resource compiling and loading for dynamic import
+
+### Patch Changes
+
+- Updated dependencies [e826221]
+  - @farmfe/runtime@0.2.0
+  - @farmfe/runtime-plugin-hmr@2.0.0
+
 ## 0.1.5
 
 ### Patch Changes
