@@ -8,6 +8,7 @@ use farmfe_core::{
     PluginParseHookParam, ResolveKind,
   },
 };
+use farmfe_toolkit::script::module_system_from_deps;
 
 pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
   let config = Default::default();
@@ -68,7 +69,7 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
     .into_iter()
     .map(|dep| dep.kind)
     .collect::<Vec<ResolveKind>>();
-  let module_system = script_plugin.module_system_from_deps(deps);
+  let module_system = module_system_from_deps(deps);
 
   module.meta.as_script_mut().module_system = module_system;
 

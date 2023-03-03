@@ -13,7 +13,7 @@ pub fn analyze_deps(
   module: &Module,
   context: &Arc<CompilationContext>,
 ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
-  tracing::debug!("analyze_deps: {:?}", module.id);
+  tracing::trace!("analyze_deps: {:?}", module.id);
 
   let mut analyze_deps_param = PluginAnalyzeDepsHookParam {
     module,
@@ -29,6 +29,6 @@ pub fn analyze_deps(
     });
   };
 
-  tracing::debug!("analyzed_deps: {:?}", module.id);
+  tracing::trace!("analyzed_deps: {:?}", module.id);
   Ok(analyze_deps_param.deps)
 }

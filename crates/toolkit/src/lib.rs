@@ -2,6 +2,7 @@
 
 pub mod css;
 pub mod fs;
+pub mod hash;
 pub mod html;
 pub mod resolve;
 pub mod rkyv;

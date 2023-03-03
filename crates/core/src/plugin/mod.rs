@@ -11,7 +11,7 @@ use crate::{
     module_group::{ModuleGroup, ModuleGroupGraph},
     Module, ModuleId, ModuleMetaData, ModuleType,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph, Resource},
+  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource},
   stats::Stats,
 };
 
@@ -132,15 +132,15 @@ pub trait Plugin: Any + Send + Sync {
   }
 
   /// process resource graph before render and generating each resource
-  fn process_resource_pot_graph(
+  fn process_resource_pot_map(
     &self,
-    _resource_pot_graph: &mut ResourcePotGraph,
+    _resource_pot_map: &mut ResourcePotMap,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  /// Render the [ResourcePot] in [ResourcePotGraph].
+  /// Render the [ResourcePot] in [ResourcePotMap].
   /// May merge the module's ast in the same resource to a single ast and transform the output format to custom module system and ESM
   fn render_resource_pot(
     &self,
@@ -256,7 +256,7 @@ pub struct PluginResolveHookParam {
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginResolveHookResult {
-  /// resolved path, normally a resolved path.
+  /// resolved path, normally a absolute file path.
   pub resolved_path: String,
   /// whether this module should be external, if true, the module won't present in the final result
   pub external: bool,

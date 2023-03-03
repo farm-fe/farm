@@ -19,6 +19,7 @@ import { HmrEngine } from './hmr-engine.js';
 import { brandColor, Logger } from '../logger.js';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
+import { lazyCompilation } from './middlewares/lazy-compilation.js';
 
 /**
  * Farm Dev Server, responsible of:
@@ -64,6 +65,12 @@ export class DevServer {
       this._app.use(hmr(this));
       this.hmrEngine = new HmrEngine(this._compiler, this, this._logger);
     }
+    // TODO: make this configurable
+    this._app.use(lazyCompilation(this));
+  }
+
+  getCompiler(): Compiler {
+    return this._compiler;
   }
 
   async listen(): Promise<void> {

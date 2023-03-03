@@ -9,7 +9,7 @@
 
 use farmfe_core::{
   config::Mode,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem, ModuleType},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
@@ -88,7 +88,7 @@ impl SourceReplacer<'_> {
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
 
-        if dep_module.module_type.is_script() {
+        if dep_module.module_type.is_script() || dep_module.module_type == ModuleType::Runtime {
           *value = id.id(self.mode.clone()).into();
           call_expr.visit_mut_children_with(self);
           return SourceReplaceResult::Replaced;

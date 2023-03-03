@@ -14,7 +14,7 @@ pub fn transform(
   context: &Arc<CompilationContext>,
 ) -> Result<PluginDriverTransformHookResult> {
   let resolved_path = transform_param.resolved_path.to_string();
-  tracing::debug!("transform: {}", resolved_path);
+  tracing::trace!("transform: {}", resolved_path);
 
   let resolved_path = transform_param.resolved_path.to_string();
   let transformed = match context.plugin_driver.transform(transform_param, context) {
@@ -27,6 +27,6 @@ pub fn transform(
     }
   };
 
-  tracing::debug!("transformed: {}", resolved_path);
+  tracing::trace!("transformed: {}", resolved_path);
   Ok(transformed)
 }

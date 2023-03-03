@@ -13,7 +13,7 @@ pub fn resolve(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<PluginResolveHookResult> {
-  tracing::debug!(
+  tracing::trace!(
     "resolve: {}, importer: {:?}",
     resolve_param.source,
     resolve_param.importer
@@ -48,7 +48,7 @@ pub fn resolve(
     }
   };
 
-  tracing::debug!(
+  tracing::trace!(
     "resolved: {}, importer: {:?}, source {}",
     resolved.resolved_path,
     resolve_param.importer,

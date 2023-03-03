@@ -159,11 +159,12 @@ if (previousStyle) {{
       let css_code = codegen_css_stylesheet(&stylesheet);
 
       Ok(Some(vec![Resource {
-        name: resource_pot.id.to_string() + ".css",
+        name: resource_pot.id.to_string(),
         bytes: css_code.as_bytes().to_vec(),
         emitted: false,
         resource_type: ResourceType::Css,
         resource_pot: resource_pot.id.clone(),
+        preserve_name: false,
       }]))
     } else {
       Ok(None)

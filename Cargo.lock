@@ -353,6 +353,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_plugin_css",
  "farmfe_plugin_html",
+ "farmfe_plugin_lazy_compilation",
  "farmfe_plugin_partial_bundling",
  "farmfe_plugin_react",
  "farmfe_plugin_resolve",
@@ -447,6 +448,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_lazy_compilation"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+]
+
+[[package]]
 name = "farmfe_plugin_partial_bundling"
 version = "0.0.0"
 dependencies = [
@@ -509,6 +519,7 @@ dependencies = [
  "farmfe_utils",
  "lazy_static",
  "regex",
+ "sha2",
  "swc_css_codegen",
  "swc_css_parser",
  "swc_css_visit",
@@ -1478,6 +1489,17 @@ name = "sha-1"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "028f48d513f9678cda28f6e4064755b3fbb2af6acd672f2c209b62323f7aea0f"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "digest",
+]
+
+[[package]]
+name = "sha2"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf9db03534dff993187064c4e0c05a5708d2a9728ace9a8959b77bedf415dac5"
 dependencies = [
  "cfg-if",
  "cpufeatures",

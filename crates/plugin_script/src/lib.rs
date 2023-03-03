@@ -7,7 +7,7 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{ModuleMetaData, ModuleSystem, ScriptModuleMetaData},
+  module::{ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
@@ -24,7 +24,10 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
-  script::{codegen_module, module_type_from_id, parse_module, syntax_from_module_type},
+  script::{
+    codegen_module, module_system_from_deps, module_type_from_id, parse_module,
+    syntax_from_module_type,
+  },
   swc_ecma_transforms::{
     resolver,
     typescript::{strip, strip_with_jsx},
@@ -182,9 +185,11 @@ impl Plugin for FarmPluginScript {
       return Ok(None);
     }
 
+    param.module.module_type = ModuleType::Js;
+
     if param.deps.len() > 0 {
       let module_system =
-        self.module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
+        module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
       param.module.meta.as_script_mut().module_system = module_system;
     } else {
       // default to es module
@@ -253,10 +258,11 @@ impl Plugin for FarmPluginScript {
 
       Ok(Some(vec![Resource {
         bytes: buf,
-        name: resource_pot.id.to_string().replace("../", "") + ".js", // TODO generate file name based on config
+        name: resource_pot.id.to_string(),
         emitted: false,
         resource_type: ResourceType::Js,
         resource_pot: resource_pot.id.clone(),
+        preserve_name: false,
       }]))
     } else {
       Ok(None)
@@ -267,35 +273,5 @@ impl Plugin for FarmPluginScript {
 impl FarmPluginScript {
   pub fn new(_config: &Config) -> Self {
     Self {}
-  }
-
-  pub fn module_system_from_deps(&self, deps: Vec<ResolveKind>) -> ModuleSystem {
-    let mut module_system = ModuleSystem::Custom(String::from("unknown"));
-
-    for resolve_kind in deps {
-      if matches!(resolve_kind, ResolveKind::Import)
-        || matches!(resolve_kind, ResolveKind::DynamicImport)
-      {
-        match module_system {
-          ModuleSystem::EsModule => continue,
-          ModuleSystem::CommonJs => {
-            module_system = ModuleSystem::Hybrid;
-            break;
-          }
-          _ => module_system = ModuleSystem::EsModule,
-        }
-      } else if matches!(resolve_kind, ResolveKind::Require) {
-        match module_system {
-          ModuleSystem::CommonJs => continue,
-          ModuleSystem::EsModule => {
-            module_system = ModuleSystem::Hybrid;
-            break;
-          }
-          _ => module_system = ModuleSystem::CommonJs,
-        }
-      }
-    }
-
-    module_system
   }
 }

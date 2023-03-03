@@ -198,6 +198,15 @@ async function readConfigFile(
           input: {
             config: resolvedPath,
           },
+          partialBundling: {
+            moduleBuckets: [
+              {
+                name: 'farm.config.bundle.js',
+                test: ['.+'],
+                isolate: true,
+              },
+            ],
+          },
         },
         server: {
           hmr: false,

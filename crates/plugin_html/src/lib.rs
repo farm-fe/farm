@@ -134,12 +134,17 @@ impl Plugin for FarmPluginHtml {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
+      // The name of html resource should not contain hash
+      let module_id = resource_pot.modules()[0];
+      let resource_name = module_id.to_string();
+
       Ok(Some(vec![Resource {
-        name: resource_pot.id.to_string(),
+        name: resource_name,
         bytes: vec![],
         emitted: false,
         resource_type: ResourceType::Html,
         resource_pot: resource_pot.id.clone(),
+        preserve_name: true,
       }]))
     } else {
       Ok(None)
@@ -179,7 +184,7 @@ impl Plugin for FarmPluginHtml {
 
     for html_entry_id in &html_entries_ids {
       let module_group_id = html_entry_id.clone();
-      let resource_pot_graph = context.resource_pot_graph.read();
+      let resource_pot_map = context.resource_pot_map.read();
       let module_group_graph = context.module_group_graph.read();
       let module_group = module_group_graph.module_group(&module_group_id).unwrap();
 
@@ -188,7 +193,7 @@ impl Plugin for FarmPluginHtml {
       let mut html_entry_resource = None;
 
       for rp_id in module_group.resource_pots() {
-        let rp = resource_pot_graph.resource_pot(rp_id).unwrap();
+        let rp = resource_pot_map.resource_pot(rp_id).unwrap();
 
         for resource in rp.resources() {
           if rp.modules().contains(&html_entry_id) {
@@ -213,7 +218,7 @@ impl Plugin for FarmPluginHtml {
         let mg = module_group_graph.module_group(&mg_id).unwrap();
 
         for rp_id in mg.resource_pots() {
-          let rp = resource_pot_graph.resource_pot(rp_id).unwrap();
+          let rp = resource_pot_map.resource_pot(rp_id).unwrap();
 
           if dynamic_resources_map.contains_key(&mg_id) {
             let resources = dynamic_resources_map.get_mut(&mg_id).unwrap();
@@ -226,7 +231,9 @@ impl Plugin for FarmPluginHtml {
             let mut resources = vec![];
 
             for r in rp.resources() {
-              let resource = resources_map.get(r).unwrap();
+              let resource = resources_map
+                .get(r)
+                .unwrap_or_else(|| panic!("{} not found", r));
               resources.push((resource.name.clone(), resource.resource_type.clone()));
             }
 
@@ -242,7 +249,7 @@ impl Plugin for FarmPluginHtml {
     }
 
     for (html_resource_name, (dep_resources, dynamic_resources_map)) in resources_to_inject {
-      let mut resource_pot_graph = context.resource_pot_graph.write();
+      let mut resource_pot_map = context.resource_pot_map.write();
       let mut script_resources: Vec<String> = vec![];
       let mut css_resources: Vec<String> = vec![];
 
@@ -261,7 +268,7 @@ impl Plugin for FarmPluginHtml {
       let module_graph = context.module_graph.read();
       let script_entries = module_graph
         .dependencies(
-          resource_pot_graph
+          resource_pot_map
             .resource_pot(&html_resource.resource_pot)
             .unwrap()
             .modules()[0],
@@ -288,7 +295,7 @@ impl Plugin for FarmPluginHtml {
         context.config.output.public_path.clone(),
       );
 
-      let resource_pot = resource_pot_graph
+      let resource_pot = resource_pot_map
         .resource_pot_mut(&html_resource.resource_pot)
         .unwrap();
       let html_ast = &mut resource_pot.meta.as_html_mut().ast;

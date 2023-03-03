@@ -8,7 +8,7 @@ import { relative } from 'path';
 import chalk from 'chalk';
 
 export class HmrEngine {
-  private _updateQueue = new Set<string>();
+  private _updateQueue: string[] = [];
   private _updateResults: Map<string, string> = new Map();
 
   private _compiler: Compiler;
@@ -25,7 +25,7 @@ export class HmrEngine {
 
   recompileAndSendResult = debounce(async (): Promise<void> => {
     const queue = [...this._updateQueue];
-    this._updateQueue = new Set();
+    this._updateQueue = [];
     let updatedFilesStr = queue
       .map((item) => relative(this._compiler.config.config.root, item))
       .join(', ');
@@ -42,7 +42,6 @@ export class HmrEngine {
       )}`
     );
 
-    // TODO auto detect the boundary
     const resultStr = `export default {
       added: [${result.added.map((r) => `'${r}'`).join(', ')}],
       changed: [${result.changed.map((r) => `'${r}'`).join(', ')}],
@@ -66,8 +65,11 @@ export class HmrEngine {
   }, 200);
 
   async hmrUpdate(path: string) {
+    if (!this._updateQueue.includes(path)) {
+      this._updateQueue.push(path);
+    }
+
     if (!this._compiler.compiling && this._compiler.hasModule(path)) {
-      this._updateQueue.add(path);
       await this.recompileAndSendResult();
     }
   }

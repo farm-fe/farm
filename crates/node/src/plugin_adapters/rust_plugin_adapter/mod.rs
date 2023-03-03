@@ -12,7 +12,7 @@ use farmfe_core::{
     PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_graph::ResourcePotGraph},
+  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap},
 };
 
 use libloading::Library;
@@ -143,14 +143,14 @@ impl Plugin for RustPluginAdapter {
       .partial_bundling(module_group, context, hook_context)
   }
 
-  fn process_resource_pot_graph(
+  fn process_resource_pot_map(
     &self,
-    resource_graph: &mut ResourcePotGraph,
+    resource_graph: &mut ResourcePotMap,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self
       .plugin
-      .process_resource_pot_graph(resource_graph, context)
+      .process_resource_pot_map(resource_graph, context)
   }
 
   fn render_resource_pot(

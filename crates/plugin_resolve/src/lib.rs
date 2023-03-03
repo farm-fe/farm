@@ -56,6 +56,6 @@ impl Plugin for FarmPluginResolve {
     }
 
     let resolver = Resolver::new(context.config.resolve.clone());
-    resolver.resolve(source, basedir, &param.kind)
+    Ok(resolver.resolve(source, basedir, &param.kind))
   }
 }

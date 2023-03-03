@@ -20,7 +20,6 @@ use crate::{config::Mode, resource::resource_pot::ResourcePotId};
 
 use self::module_group::ModuleGroupId;
 
-pub mod module_bucket;
 pub mod module_graph;
 pub mod module_group;
 
@@ -44,6 +43,9 @@ pub struct Module {
   pub source_map_chain: Vec<String>,
   /// whether this module marked as external
   pub external: bool,
+  /// whether this module is immutable, for example, the module is immutable if it is from node_modules.
+  /// This field will be set according to partialBunlding.immutable of the user config, default to the module whose resolved_path contains ["/node_modules/"].
+  pub immutable: bool,
 }
 
 impl Module {
@@ -57,6 +59,7 @@ impl Module {
       side_effects: false,
       source_map_chain: vec![],
       external: false,
+      immutable: false,
     }
   }
 }
@@ -215,6 +218,7 @@ pub enum ModuleType {
   Css,
   Html,
   Asset,
+  Runtime,
   // custom module type from using by custom plugins
   Custom(String),
 }
@@ -244,6 +248,12 @@ impl ModuleType {
       "html" => Self::Html,
       custom => Self::Custom(custom.to_string()),
     }
+  }
+}
+
+impl ToString for ModuleType {
+  fn to_string(&self) -> String {
+    format!("{:?}", self)
   }
 }
 
