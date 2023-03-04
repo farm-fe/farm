@@ -1,5 +1,22 @@
 # @farmfe/core
 
+## 0.3.0
+
+### Minor Changes
+
+- f915a35: Support lazy compilation and partial bundling
+
+  - remove resource pot graph to optimize the compilation speed
+  - implement partial bundling algorithm
+  - optimize @farmfe/cli, remove @farmfe/core from its dependencies
+  - optimize plugin react to skip duplicate module building based on process.env.NODE_ENV
+
+### Patch Changes
+
+- Updated dependencies [f915a35]
+  - @farmfe/runtime@0.3.0
+  - @farmfe/runtime-plugin-hmr@3.0.0
+
 ## 0.2.0
 
 ### Minor Changes
