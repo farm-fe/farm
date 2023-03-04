@@ -85,21 +85,18 @@ impl Plugin for FarmPluginReact {
       .into_iter()
       .any(|p| param.resolved_path.ends_with(p))
     {
-      if param
-        .content
-        .contains(&format!("if (process.env.NODE_ENV === 'production') {{"))
-      {
-        let if_str = "if (process.env.NODE_ENV === 'production') {";
-        let index = param.content.find(&format!("{}", if_str)).unwrap();
+      let if_str = "if (process.env.NODE_ENV === 'production') {";
+
+      if param.content.contains(if_str) {
+        let index = param.content.find(if_str).unwrap();
         let rest = param.content[index..].to_string();
 
         if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
           let else_str = "} else {";
           let else_index = rest.find(else_str).unwrap();
           let else_rest = rest[else_index + else_str.len()..].to_string();
-          let end_index = else_rest.find("}").unwrap();
+          let end_index = else_rest.find('}').unwrap();
           let dev_content = else_rest[..end_index].to_string();
-          println!("dev_content: {}", dev_content);
 
           return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
             content: param.content.replace(rest.as_str(), dev_content.as_str()),
@@ -107,7 +104,7 @@ impl Plugin for FarmPluginReact {
             source_map: None,
           }));
         } else {
-          let end_index = rest.find("}").unwrap();
+          let end_index = rest.find('}').unwrap();
           let prod_content = rest[if_str.len()..end_index].to_string();
 
           return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
