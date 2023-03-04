@@ -157,6 +157,7 @@ export interface Config {
         isolate?: boolean;
       }[];
     };
+    lazyCompilation?: boolean;
   };
   jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]

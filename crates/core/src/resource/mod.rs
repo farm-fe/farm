@@ -22,13 +22,13 @@ pub enum ResourceType {
 impl ResourceType {
   pub fn to_ext(&self) -> String {
     match self {
-      ResourceType::Asset(str) => format!("{}", str),
-      ResourceType::Custom(str) => format!("{}", str),
-      ResourceType::Runtime => format!("js"),
-      ResourceType::Js => format!("js"),
-      ResourceType::Css => format!("css"),
-      ResourceType::Html => format!("html"),
-      ResourceType::SourceMap => format!("map"),
+      ResourceType::Asset(str) => str.to_string(),
+      ResourceType::Custom(str) => str.to_string(),
+      ResourceType::Runtime => "js".to_string(),
+      ResourceType::Js => "js".to_string(),
+      ResourceType::Css => "css".to_string(),
+      ResourceType::Html => "html".to_string(),
+      ResourceType::SourceMap => "map".to_string(),
     }
   }
 }

@@ -74,7 +74,7 @@ macro_rules! hook_parallel {
 
 impl PluginDriver {
   pub fn new(mut plugins: Vec<Arc<dyn Plugin>>) -> Self {
-    plugins.sort_by(|a, b| b.priority().cmp(&a.priority()));
+    plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
 
     Self { plugins }
   }

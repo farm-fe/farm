@@ -25,13 +25,18 @@ export class HmrEngine {
 
   recompileAndSendResult = debounce(async (): Promise<void> => {
     const queue = [...this._updateQueue];
+
+    if (queue.length === 0) {
+      return;
+    }
+
     this._updateQueue = [];
     let updatedFilesStr = queue
       .map((item) => relative(this._compiler.config.config.root, item))
       .join(', ');
     if (updatedFilesStr.length >= 100) {
       updatedFilesStr =
-        updatedFilesStr.slice(0, 100) + `(${queue.length} files})`;
+        updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
     const start = Date.now();
@@ -62,15 +67,40 @@ export class HmrEngine {
         })
       );
     });
+
+    // if there are more updates, recompile again
+    if (this._updateQueue.length > 0) {
+      await this.recompileAndSendResult();
+    }
   }, 200);
 
   async hmrUpdate(path: string) {
-    if (!this._updateQueue.includes(path)) {
-      this._updateQueue.push(path);
-    }
+    // if lazy compilation is enabled, we need to update the virtual module
+    if (this._compiler.config.config.lazyCompilation) {
+      const lazyCompiledModule = `virtual:FARMFE_DYNAMIC_IMPORT:${path}`;
 
-    if (!this._compiler.compiling && this._compiler.hasModule(path)) {
-      await this.recompileAndSendResult();
+      if (
+        this._compiler.hasModule(lazyCompiledModule) &&
+        !this._updateQueue.includes(lazyCompiledModule)
+      ) {
+        this._updateQueue.push(lazyCompiledModule);
+      }
+
+      if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
+        this._updateQueue.push(path);
+      }
+
+      if (!this._compiler.compiling) {
+        await this.recompileAndSendResult();
+      }
+    } else if (this._compiler.hasModule(path)) {
+      if (!this._updateQueue.includes(path)) {
+        this._updateQueue.push(path);
+      }
+
+      if (!this._compiler.compiling) {
+        await this.recompileAndSendResult();
+      }
     }
   }
 

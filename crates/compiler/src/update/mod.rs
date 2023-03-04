@@ -117,6 +117,7 @@ impl Compiler {
 
     let cloned_context = self.context.clone();
     std::thread::spawn(move || {
+      // TODO: manage a task queue, and run the tasks in sequence
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
         &cloned_updated_module_ids,

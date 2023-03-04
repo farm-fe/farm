@@ -44,7 +44,7 @@ pub struct Module {
   /// whether this module marked as external
   pub external: bool,
   /// whether this module is immutable, for example, the module is immutable if it is from node_modules.
-  /// This field will be set according to partialBunlding.immutable of the user config, default to the module whose resolved_path contains ["/node_modules/"].
+  /// This field will be set according to partialBundling.immutable of the user config, default to the module whose resolved_path contains ["/node_modules/"].
   pub immutable: bool,
 }
 

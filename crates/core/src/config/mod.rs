@@ -19,6 +19,7 @@ pub struct Config {
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub partial_bundling: PartialBundlingConfig,
+  pub lazy_compilation: bool,
 }
 
 impl Default for Config {
@@ -36,6 +37,7 @@ impl Default for Config {
       runtime: Default::default(),
       script: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
+      lazy_compilation: true,
     }
   }
 }

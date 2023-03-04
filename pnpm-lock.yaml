@@ -79,13 +79,13 @@ importers:
       inquirer: ^9.1.4
       walkdir: ^0.4.1
     dependencies:
-      '@farmfe/core': link:../core
       cac: 6.7.14
       chalk: 5.2.0
       enquirer: 2.3.6
       inquirer: 9.1.4
       walkdir: 0.4.1
     devDependencies:
+      '@farmfe/core': link:../core
       '@types/inquirer': 9.0.3
 
   packages/core:

@@ -22,7 +22,10 @@ export async function start(options: {
     options.configPath,
     logger
   );
-  const normalizedConfig = await normalizeUserCompilationConfig(userConfig);
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'development'
+  );
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, userConfig.server);
 
@@ -47,8 +50,13 @@ export async function build(options: {
     options.configPath,
     logger
   );
-  const normalizedConfig = await normalizeUserCompilationConfig(userConfig);
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
+  );
+  const start = Date.now();
   const compiler = new Compiler(normalizedConfig);
   await compiler.compile();
+  logger.info(`Build completed in ${chalk.green(`${Date.now() - start}ms`)}!`);
   compiler.writeResourcesToDisk();
 }

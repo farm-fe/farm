@@ -6,7 +6,6 @@ interface LazyCompileResult {
 }
 
 const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
-const realModuleId = 'REAL_MODULE_ID';
 const moduleId = 'MODULE_ID';
 const modulePath = 'MODULE_PATH';
 
@@ -23,85 +22,75 @@ const compilingModules = FarmModuleSystem.compilingModules;
 
 let promise = Promise.resolve();
 
-if (FarmModuleSystem.modules[realModuleId]) {
-  promise = promise.then(() => FarmModuleSystem.require(realModuleId));
+if (compilingModules.has(modulePath)) {
+  promise = promise.then(() => compilingModules.get(modulePath));
 } else {
-  if (compilingModules.has(modulePath)) {
-    promise = promise.then(() => compilingModules.get(modulePath));
-  } else {
-    if (FarmModuleSystem.lazyCompiling) {
-      const queueItem = FarmModuleSystem.lazyCompilingQueue.find(
-        (m) => m[0] === modulePath
-      );
-  
-      if (!queueItem) {
-        let resolve: () => void = () => {
-          throw new Error('Lazy compiling queue resolve not set');
-        };
-        promise = new Promise((r) => (resolve = r));
-        compilingModules.set(modulePath, promise);
-        FarmModuleSystem.lazyCompilingQueue.push([
-          modulePath,
-          moduleId,
-          resolve,
-          promise,
-        ]);
-      } else {
-        promise = queueItem[2];
-      }
-    } else {
-      const compileModules = (paths: string[]) => {
-        FarmModuleSystem.lazyCompiling = true;
-        const queue = [...FarmModuleSystem.lazyCompilingQueue];
-        FarmModuleSystem.lazyCompilingQueue = [];
-  
-        const url = '/__lazy_compile?paths=' + paths.join(',');
-  
-        promise = import(url).then((module: any) => {
-          const result: LazyCompileResult = module.default;
-  
-          for (const moduleId in result.modules) {
-            FarmModuleSystem.update(moduleId, result.modules[moduleId]);
-          }
-  
-          FarmModuleSystem.lazyCompiling = false;
-  
-          for (const path of paths) {
-            compilingModules.delete(path);
-            const queueItem = queue.find((item) => item[0] === path);
-  
-            if (queueItem) {
-              const [, itemId, resolve] = queueItem;
-              resolve(FarmModuleSystem.require(itemId));
-            }
-          }
-  
-          if (FarmModuleSystem.lazyCompilingQueue.length > 0) {
-            compileModules(
-              FarmModuleSystem.lazyCompilingQueue.map((m) => m[0])
-            );
-          }
-  
-          const exports = FarmModuleSystem.require(moduleId);
-          // also treat the read module as executed to avoid re-execution
-          if (!FarmModuleSystem.cache[realModuleId]) {
-            FarmModuleSystem.cache[realModuleId] = FarmModuleSystem.cache[moduleId];
-          }
+  if (FarmModuleSystem.lazyCompiling) {
+    const queueItem = FarmModuleSystem.lazyCompilingQueue.find(
+      (m) => m[0] === modulePath
+    );
 
-          return exports;
-        });
-  
-        for (const path of paths) {
-          compilingModules.set(path, promise);
-        }
+    if (!queueItem) {
+      let resolve: () => void = () => {
+        throw new Error('Lazy compiling queue resolve not set');
       };
-  
-      const paths = [modulePath];
-      compileModules(paths);
+      promise = new Promise((r) => (resolve = r));
+      compilingModules.set(modulePath, promise);
+      FarmModuleSystem.lazyCompilingQueue.push([
+        modulePath,
+        moduleId,
+        resolve,
+        promise,
+      ]);
+    } else {
+      promise = queueItem[2];
     }
+  } else {
+    const compileModules = (paths: string[]) => {
+      FarmModuleSystem.lazyCompiling = true;
+      const queue = [...FarmModuleSystem.lazyCompilingQueue];
+      FarmModuleSystem.lazyCompilingQueue = [];
+
+      const url = '/__lazy_compile?paths=' + paths.join(',');
+
+      promise = import(url).then((module: any) => {
+        const result: LazyCompileResult = module.default;
+
+        for (const moduleId in result.modules) {
+          FarmModuleSystem.update(moduleId, result.modules[moduleId]);
+        }
+
+        FarmModuleSystem.lazyCompiling = false;
+
+        for (const path of paths) {
+          compilingModules.delete(path);
+          const queueItem = queue.find((item) => item[0] === path);
+
+          if (queueItem) {
+            const [, itemId, resolve] = queueItem;
+            resolve(FarmModuleSystem.require(itemId));
+          }
+        }
+
+        if (FarmModuleSystem.lazyCompilingQueue.length > 0) {
+          compileModules(FarmModuleSystem.lazyCompilingQueue.map((m) => m[0]));
+        }
+
+        // The lazy compiled module should not contains side effects, as it may be executed twice
+        const exports = FarmModuleSystem.require(moduleId);
+
+        return exports;
+      });
+
+      for (const path of paths) {
+        compilingModules.set(path, promise);
+      }
+    };
+
+    const paths = [modulePath];
+    compileModules(paths);
   }
 }
-
 
 export const __farm_async = true;
 export default promise;

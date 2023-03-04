@@ -3,6 +3,8 @@
  */
 
 import { Context } from 'koa';
+import chalk from 'chalk';
+
 import { DevServer } from '../index.js';
 
 export function lazyCompilation(server: DevServer) {
@@ -14,7 +16,14 @@ export function lazyCompilation(server: DevServer) {
     if (ctx.path === '/__lazy_compile') {
       const paths = (ctx.query.paths as string).split(',');
 
+      server.logger.info(`Lazy compiling ${chalk.cyan(paths.join(', '))}...`);
+      const start = Date.now();
       const result = await compiler.update(paths);
+      server.logger.info(
+        `Lazy compilation done for ${chalk.cyan(
+          paths.join(', ')
+        )} in ${chalk.green(`${Date.now() - start}ms`)}.`
+      );
 
       if (result) {
         const code = `export default {

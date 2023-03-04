@@ -50,7 +50,7 @@ impl Plugin for FarmPluginLazyCompilation {
     }
 
     if matches!(param.kind, ResolveKind::DynamicImport) {
-      let resovle_result = context.plugin_driver.resolve(
+      let resolve_result = context.plugin_driver.resolve(
         param,
         context,
         &PluginHookContext {
@@ -59,15 +59,12 @@ impl Plugin for FarmPluginLazyCompilation {
         },
       )?;
 
-      if let Some(resovle_result) = resovle_result {
+      if let Some(resolve_result) = resolve_result {
         Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
-          resolved_path: format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resovle_result.resolved_path),
+          resolved_path: format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resolve_result.resolved_path),
           external: false,
           side_effects: false,
-          query: HashMap::from([(
-            "real_resolved_path".to_string(),
-            resovle_result.resolved_path,
-          )]),
+          query: HashMap::new(),
         }))
       } else {
         Ok(None)
@@ -92,7 +89,6 @@ impl Plugin for FarmPluginLazyCompilation {
     if param.resolved_path.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
       if param.query.get("original").is_none() {
         let resolved_path = param.resolved_path;
-        let real_resolved_path = param.query.get("real_resolved_path").unwrap();
         let dynamic_code = include_str!("dynamic_module.ts")
           .replace("MODULE_PATH", resolved_path)
           .replace(
@@ -102,11 +98,6 @@ impl Plugin for FarmPluginLazyCompilation {
           .replace(
             "'FARM_MODULE_SYSTEM'",
             &format!("window.{}", FARM_MODULE_SYSTEM),
-          )
-          .replace(
-            "REAL_MODULE_ID",
-            &ModuleId::new(real_resolved_path, &context.config.root)
-              .id(context.config.mode.clone()),
           );
 
         Ok(Some(farmfe_core::plugin::PluginLoadHookResult {

@@ -31,7 +31,8 @@ export const DEFAULT_CONFIG_NAMES = [
  * @returns resolved config that parsed to rust compiler
  */
 export async function normalizeUserCompilationConfig(
-  userConfig: UserConfig
+  userConfig: UserConfig,
+  mode: 'development' | 'production' = 'production'
 ): Promise<Config> {
   const config: Config['config'] = merge(
     {
@@ -66,6 +67,18 @@ export async function normalizeUserCompilationConfig(
 
   if (!config.runtime.plugins) {
     config.runtime.plugins = [];
+  }
+
+  if (config.lazyCompilation === undefined) {
+    if (mode === 'development') {
+      config.lazyCompilation = true;
+    } else {
+      config.lazyCompilation = false;
+    }
+  }
+
+  if (config.mode === undefined) {
+    config.mode = mode;
   }
 
   const normalizedDevServerConfig = normalizeDevServerOptions(

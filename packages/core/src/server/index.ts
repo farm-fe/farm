@@ -31,7 +31,6 @@ import { lazyCompilation } from './middlewares/lazy-compilation.js';
 export class DevServer {
   private _app: Koa;
   private _dist: string;
-  private _logger: Logger;
 
   ws: WebSocketServer;
   config: NormalizedServerConfig;
@@ -39,13 +38,12 @@ export class DevServer {
 
   constructor(
     private _compiler: Compiler,
-    logger: Logger,
+    public logger: Logger,
     options?: UserServerConfig
   ) {
     this.config = normalizeDevServerOptions(options);
     this._app = new Koa();
     this._dist = this._compiler.config.config.output.path as string;
-    this._logger = logger;
 
     if (!existsSync(this._dist)) {
       mkdirSync(this._dist, { recursive: true });
@@ -63,10 +61,12 @@ export class DevServer {
         host: this.config.hmr.host,
       });
       this._app.use(hmr(this));
-      this.hmrEngine = new HmrEngine(this._compiler, this, this._logger);
+      this.hmrEngine = new HmrEngine(this._compiler, this, this.logger);
     }
-    // TODO: make this configurable
-    this._app.use(lazyCompilation(this));
+
+    if (this._compiler.config.config.lazyCompilation) {
+      this._app.use(lazyCompilation(this));
+    }
   }
 
   getCompiler(): Compiler {
@@ -90,7 +90,7 @@ export class DevServer {
         'utf-8'
       )
     ).version;
-    this._logger.info(
+    this.logger.info(
       boxen(
         `${brandColor(
           figlet.textSync('FARM', {
