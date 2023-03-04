@@ -30,6 +30,12 @@ impl Compiler {
       Arc::new(farmfe_plugin_react::FarmPluginReact::new(&config)) as _,
     ];
 
+    if config.lazy_compilation {
+      plugins.push(
+        Arc::new(farmfe_plugin_lazy_compilation::FarmPluginLazyCompilation::new(&config)) as _,
+      );
+    }
+
     plugins.append(&mut plugin_adapters);
     // sort plugins by priority
     plugins.sort_by_key(|a| a.priority());

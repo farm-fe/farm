@@ -173,6 +173,22 @@ impl ModuleGroupGraph {
     dependents
   }
 
+  pub fn toposort(&self, entries: Vec<ModuleGroupId>) -> Vec<ModuleGroupId> {
+    let mut sorted = Vec::new();
+    let mut visited = HashSet::new();
+
+    for entry in entries {
+      self.dfs(&entry, &mut |id| {
+        if !visited.contains(id) {
+          sorted.push(id.clone());
+          visited.insert(id.clone());
+        }
+      });
+    }
+
+    sorted
+  }
+
   pub fn print_graph(&self) {
     println!("digraph {{\n nodes:");
 

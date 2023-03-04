@@ -3,10 +3,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Config, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  config::{Config, PartialBundlingModuleBucketsConfig, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   error::CompilationError,
-  module::{ModuleId, ModuleMetaData},
+  module::{ModuleMetaData, ModuleSystem, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
@@ -15,7 +15,7 @@ use farmfe_core::{
   },
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
-    resource_pot_graph::ResourcePotGraph,
+    resource_pot_map::ResourcePotMap,
     Resource, ResourceType,
   },
   swc_common::DUMMY_SP,
@@ -26,7 +26,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
-  script::{codegen_module, module_type_from_id, parse_module},
+  script::{codegen_module, module_system_from_deps, module_type_from_id, parse_module},
   swc_ecma_parser::Syntax,
 };
 
@@ -65,6 +65,14 @@ impl Plugin for FarmPluginRuntime {
     config.resolve.alias.insert(
       "@swc/helpers".to_string(),
       config.runtime.swc_helpers_path.clone(),
+    );
+    config.partial_bundling.module_buckets.insert(
+      0,
+      PartialBundlingModuleBucketsConfig {
+        name: "FARM_RUNTIME".to_string(),
+        test: vec![format!(".+{}", RUNTIME_SUFFIX)],
+        isolate: true,
+      },
     );
 
     // TODO make sure all runtime modules are in the same ModuleBucket
@@ -221,15 +229,38 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(()))
   }
 
-  fn process_resource_pot_graph(
+  fn finalize_module(
     &self,
-    resource_pot_graph: &mut ResourcePotGraph,
+    param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if param.module.id.to_string().ends_with(RUNTIME_SUFFIX) {
+      param.module.module_type = ModuleType::Runtime;
+
+      if param.deps.len() > 0 {
+        let module_system =
+          module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
+        param.module.meta.as_script_mut().module_system = module_system;
+      } else {
+        // default to es module
+        param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+      }
+
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn process_resource_pot_map(
+    &self,
+    resource_pot_map: &mut ResourcePotMap,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let mut module_graph = context.module_graph.write();
 
-    for resource_pot in resource_pot_graph.resource_pots_mut() {
-      if resource_pot.id.to_string().ends_with(RUNTIME_SUFFIX) {
+    for resource_pot in resource_pot_map.resource_pots_mut() {
+      if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
         let rendered_resource_pot_ast =
           resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context);
 
@@ -267,8 +298,6 @@ impl Plugin for FarmPluginRuntime {
             }))),
           };
         }
-
-        resource_pot.resource_pot_type = ResourcePotType::Runtime;
 
         // TODO transform async function if target is lower than es2017, should not externalize swc helpers
         // This may cause async generator duplicated but it's ok for now. We can fix it later.
@@ -356,6 +385,7 @@ impl Plugin for FarmPluginRuntime {
         emitted: true, // do not emit runtime resource by default
         resource_type: ResourceType::Runtime,
         resource_pot: resource_pot.id.clone(),
+        preserve_name: false,
       }]))
     } else if let Some(entry_module_id) = &resource_pot.entry_module {
       // modify the ast according to the type,

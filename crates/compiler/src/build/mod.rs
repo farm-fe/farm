@@ -177,7 +177,7 @@ impl Compiler {
     // ================ Parse End ===============
 
     // ================ Process Module Start ===============
-    tracing::debug!("Process module: {:?}", module.id);
+    tracing::trace!("Process module: {:?}", module.id);
     if let Err(e) = context.plugin_driver.process_module(
       &mut PluginProcessModuleHookParam {
         module_id: &parse_param.module_id,
@@ -191,7 +191,7 @@ impl Compiler {
         source: Some(Box::new(e)),
       });
     }
-    tracing::debug!("Process module finished: {:?}", module.id);
+    tracing::trace!("Process module finished: {:?}", module.id);
     // ================ Process Module End ===============
 
     module.module_type = parse_param.module_type.clone();
@@ -291,7 +291,7 @@ impl Compiler {
     order: usize,
     context: &CompilationContext,
   ) {
-    tracing::debug!(
+    tracing::trace!(
       "adding edge to the graph: {:?} -> {:?}",
       resolve_param.importer,
       module_id
@@ -312,7 +312,7 @@ impl Compiler {
       ).expect("failed to add edge to the module graph, the endpoint modules of the edge should be in the graph")
     }
 
-    tracing::debug!(
+    tracing::trace!(
       "added edge to the graph: {:?} -> {:?}",
       resolve_param.importer,
       module_id
@@ -327,7 +327,7 @@ impl Compiler {
     kind: &ResolveKind,
     context: &CompilationContext,
   ) -> bool {
-    tracing::debug!("adding module to the graph: {:?}", module.id);
+    tracing::trace!("adding module to the graph: {:?}", module.id);
 
     let mut module_graph = context.module_graph.write();
 
@@ -341,7 +341,7 @@ impl Compiler {
       module_graph.entries.insert(module.id.clone());
     }
 
-    tracing::debug!("added module to the graph: {:?}", module.id);
+    tracing::trace!("added module to the graph: {:?}", module.id);
 
     module_graph.add_module(module);
 
@@ -359,12 +359,16 @@ impl Compiler {
     (thread_pool, err_sender, err_receiver)
   }
 
-  pub(crate) fn create_module(module_id: ModuleId, external: bool) -> Module {
+  pub(crate) fn create_module(module_id: ModuleId, external: bool, immutable: bool) -> Module {
     let mut module = Module::new(module_id);
 
     // if the module is external, return a external module
     if external {
       module.external = true;
+    }
+
+    if immutable {
+      module.immutable = true;
     }
 
     module
@@ -376,7 +380,7 @@ fn resolve_module(
   resolve_param: &PluginResolveHookParam,
   context: &Arc<CompilationContext>,
 ) -> Result<ResolveModuleResult> {
-  tracing::debug!("resolving module: {:?}", resolve_param);
+  tracing::trace!("resolving module: {:?}", resolve_param);
 
   let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
 
@@ -391,12 +395,17 @@ fn resolve_module(
       module: Compiler::create_module(
         resolve_module_id_result.module_id.clone(),
         resolve_module_id_result.resolve_result.external,
+        // TODO: make it configurable
+        resolve_module_id_result
+          .module_id
+          .to_string()
+          .contains("/node_modules/"),
       ),
       resolve_module_id_result,
     }))
   };
 
-  tracing::debug!("resolved module finished: {:?}", resolve_param);
+  tracing::trace!("resolved module finished: {:?}", resolve_param);
 
   Ok(res)
 }

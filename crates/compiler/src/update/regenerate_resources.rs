@@ -5,7 +5,6 @@ use farmfe_core::{
   hashbrown::HashSet,
   module::{module_group::ModuleGroupId, ModuleId},
   plugin::PluginHookContext,
-  rayon::prelude::{IntoParallelRefIterator, ParallelIterator},
   resource::{
     resource_pot::{
       JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
@@ -80,78 +79,105 @@ pub fn regenerate_resources_for_affected_module_groups(
   updated_module_ids: &Vec<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
-  affected_module_groups
+  let mut affected_resource_pots_ids = vec![];
+
+  for module_group_id in &affected_module_groups {
+    let resource_pots_ids =
+      generate_and_diff_resource_pots(module_group_id, context)?;
+
+    affected_resource_pots_ids.extend(resource_pots_ids);
+  }
+
+  let mut resource_pot_map = context.resource_pot_map.write();
+  // always rerender the updated module's resource pot
+  let module_graph = context.module_graph.read();
+
+  for updated_module_id in updated_module_ids {
+    let module = module_graph.module(updated_module_id).unwrap();
+    let resource_pot_id = module.resource_pot.as_ref().unwrap();
+
+    if !affected_resource_pots_ids.contains(resource_pot_id) {
+      affected_resource_pots_ids.push(resource_pot_id.clone());
+    }
+
+    // also remove the related resources, the resources will be regenerated later
+    let mut resource_maps = context.resources_map.lock();
+    let resource_pot = resource_pot_map.resource_pot_mut(resource_pot_id).unwrap();
+    resource_pot.clear_resources();
+
+    for resource in resource_pot.resources() {
+      resource_maps.remove(resource);
+    }
+  }
+
+  let resource_pots = resource_pot_map
+    .resource_pots_mut()
     .into_iter()
-    .collect::<Vec<ModuleGroupId>>()
-    .par_iter()
-    .try_for_each(|module_group_id| -> farmfe_core::error::Result<()> {
-      let resource_pots_ids = {
-        let mut module_group_graph = context.module_group_graph.write();
-        let module_group = module_group_graph
-          .module_group_mut(module_group_id)
-          .unwrap();
-        let resource_pots =
-          call_partial_bundling_hook(module_group, context, &PluginHookContext::default())?;
-        let resource_pots_ids = resource_pots
-          .iter()
-          .map(|r| r.id.clone())
-          .collect::<Vec<ResourcePotId>>();
+    .filter(|rp| affected_resource_pots_ids.contains(&rp.id))
+    .collect::<Vec<&mut ResourcePot>>();
 
-        let mut resource_pot_graph = context.resource_pot_graph.write();
-        let previous_resource_pots = module_group.resource_pots().clone();
+  render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())
+}
 
-        // remove the old resource pots from the graph
-        for resource_pot in &previous_resource_pots {
-          if !resource_pots_ids.contains(resource_pot) {
-            let resource_pot = resource_pot_graph
-              .remove_resource_pot(resource_pot)
-              .unwrap();
+fn generate_and_diff_resource_pots(
+  module_group_id: &ModuleGroupId,
+  context: &Arc<CompilationContext>,
+) -> farmfe_core::error::Result<Vec<ResourcePotId>> {
+  clear_resource_pot_of_modules_in_module_group(module_group_id, context);
 
-            // also remove the related resource
-            let mut resource_maps = context.resources_map.lock();
+  let mut module_group_graph = context.module_group_graph.write();
+  let module_group = module_group_graph
+    .module_group_mut(module_group_id)
+    .unwrap();
+  let resource_pots =
+    call_partial_bundling_hook(module_group, context, &PluginHookContext::default())?;
+  let resource_pots_ids = resource_pots
+    .iter()
+    .map(|r| r.id.clone())
+    .collect::<Vec<ResourcePotId>>();
 
-            for resource in resource_pot.resources() {
-              resource_maps.remove(resource);
-            }
-          }
-        }
+  let mut resource_pot_map = context.resource_pot_map.write();
+  let previous_resource_pots = module_group.resource_pots().clone();
 
-        let mut new_resource_pot_ids = vec![];
+  // remove the old resource pots from the graph
+  for resource_pot in &previous_resource_pots {
+    if !resource_pots_ids.contains(resource_pot) {
+      let resource_pot = resource_pot_map.remove_resource_pot(resource_pot).unwrap();
 
-        // add the new resource pots to the graph
-        for resource_pot in resource_pots {
-          if !previous_resource_pots.contains(&resource_pot.id) {
-            new_resource_pot_ids.push(resource_pot.id.clone());
-            resource_pot_graph.add_resource_pot(resource_pot);
-          }
-        }
+      // also remove the related resource
+      let mut resource_maps = context.resources_map.lock();
 
-        module_group.set_resource_pots(HashSet::from_iter(resource_pots_ids));
+      for resource in resource_pot.resources() {
+        resource_maps.remove(resource);
+      }
+    }
+  }
 
-        // always rerender the updated module's resource pot
-        let module_graph = context.module_graph.read();
+  let mut new_resource_pot_ids = vec![];
 
-        for updated_module_id in updated_module_ids {
-          let module = module_graph.module(updated_module_id).unwrap();
-          let resource_pot_id = module.resource_pot.as_ref().unwrap();
+  // add the new resource pots to the graph
+  for resource_pot in resource_pots {
+    if !previous_resource_pots.contains(&resource_pot.id) {
+      new_resource_pot_ids.push(resource_pot.id.clone());
+      resource_pot_map.add_resource_pot(resource_pot);
+    }
+  }
 
-          if !new_resource_pot_ids.contains(resource_pot_id) {
-            new_resource_pot_ids.push(resource_pot_id.clone());
-          }
-        }
+  module_group.set_resource_pots(HashSet::from_iter(resource_pots_ids));
 
-        new_resource_pot_ids
-      };
+  Ok(new_resource_pot_ids)
+}
 
-      let mut resource_pot_graph = context.resource_pot_graph.write();
-      let resource_pots = resource_pot_graph
-        .resource_pots_mut()
-        .into_iter()
-        .filter(|rp| resource_pots_ids.contains(&rp.id))
-        .collect::<Vec<&mut ResourcePot>>();
+fn clear_resource_pot_of_modules_in_module_group(
+  module_group_id: &ModuleGroupId,
+  context: &Arc<CompilationContext>,
+) {
+  let mut module_graph = context.module_graph.write();
+  let module_group_graph = context.module_group_graph.read();
+  let module_group = module_group_graph.module_group(module_group_id).unwrap();
 
-      render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())?;
-
-      Ok(())
-    })
+  for module_id in module_group.modules() {
+    let module = module_graph.module_mut(module_id).unwrap();
+    module.resource_pot = None;
+  }
 }

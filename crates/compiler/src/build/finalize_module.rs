@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   error::Result,
-  module::Module,
+  module::{Module, ModuleType},
   plugin::{PluginAnalyzeDepsHookResultEntry, PluginFinalizeModuleHookParam},
 };
 use farmfe_toolkit::tracing;
@@ -14,12 +14,12 @@ pub fn finalize_module(
   deps: &Vec<PluginAnalyzeDepsHookResultEntry>,
   context: &Arc<CompilationContext>,
 ) -> Result<()> {
-  tracing::debug!("finalize_module: {:?}", module.id);
+  tracing::trace!("finalize_module: {:?}", module.id);
 
   let mut param = PluginFinalizeModuleHookParam { module, deps };
   context.plugin_driver.finalize_module(&mut param, context)?;
 
-  tracing::debug!("finalized_module: {:?}", module.id);
+  tracing::trace!("finalized_module: {:?}", module.id);
 
   Ok(())
 }

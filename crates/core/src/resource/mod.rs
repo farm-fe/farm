@@ -5,7 +5,7 @@ use farmfe_macro_cache_item::cache_item;
 use self::resource_pot::ResourcePotId;
 
 pub mod resource_pot;
-pub mod resource_pot_graph;
+pub mod resource_pot_map;
 
 #[cache_item]
 #[derive(Debug, Clone)]
@@ -15,8 +15,22 @@ pub enum ResourceType {
   Css,
   Html,
   SourceMap,
-  Asset,
+  Asset(String),
   Custom(String),
+}
+
+impl ResourceType {
+  pub fn to_ext(&self) -> String {
+    match self {
+      ResourceType::Asset(str) => str.to_string(),
+      ResourceType::Custom(str) => str.to_string(),
+      ResourceType::Runtime => "js".to_string(),
+      ResourceType::Js => "js".to_string(),
+      ResourceType::Css => "css".to_string(),
+      ResourceType::Html => "html".to_string(),
+      ResourceType::SourceMap => "map".to_string(),
+    }
+  }
 }
 
 #[cache_item]
@@ -28,4 +42,6 @@ pub struct Resource {
   pub resource_type: ResourceType,
   /// the resource pot this [Resource] generated from
   pub resource_pot: ResourcePotId,
+  /// true means this resource's name should not be changed according to the [Config].
+  pub preserve_name: bool,
 }

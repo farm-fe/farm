@@ -18,6 +18,8 @@ pub struct Config {
   pub external: Vec<String>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
+  pub partial_bundling: PartialBundlingConfig,
+  pub lazy_compilation: bool,
 }
 
 impl Default for Config {
@@ -34,6 +36,8 @@ impl Default for Config {
       external: vec![],
       runtime: Default::default(),
       script: Default::default(),
+      partial_bundling: PartialBundlingConfig::default(),
+      lazy_compilation: true,
     }
   }
 }
@@ -49,7 +53,7 @@ pub struct OutputConfig {
 impl Default for OutputConfig {
   fn default() -> Self {
     Self {
-      filename: "[name].[contenthash].[ext]".to_string(),
+      filename: "[resourceName].[contentHash].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),
     }
@@ -135,4 +139,32 @@ pub struct RuntimeConfig {
   pub plugins: Vec<String>,
   /// swc helpers path
   pub swc_helpers_path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PartialBundlingModuleBucketsConfig {
+  pub name: String,
+  /// Regex vec to match the modules in the module bucket
+  pub test: Vec<String>,
+  /// If true, this bucket will always contains all modules matches by the test field, this may bring duplicate modules when you have multiple entries and use dynamic import.
+  /// be careful to use it
+  pub isolate: bool,
+}
+
+impl Default for PartialBundlingModuleBucketsConfig {
+  fn default() -> Self {
+    Self {
+      name: "".to_string(),
+      test: vec![],
+      isolate: false,
+    }
+  }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PartialBundlingConfig {
+  /// custom module buckets
+  pub module_buckets: Vec<PartialBundlingModuleBucketsConfig>,
 }

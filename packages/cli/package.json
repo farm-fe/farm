@@ -41,7 +41,6 @@
     "node": ">= 16"
   },
   "dependencies": {
-    "@farmfe/core": "workspace:^0.2.0",
     "cac": "^6.7.14",
     "chalk": "^5.2.0",
     "enquirer": "^2.3.6",
@@ -49,6 +48,7 @@
     "walkdir": "^0.4.1"
   },
   "devDependencies": {
-    "@types/inquirer": "^9.0.3"
+    "@types/inquirer": "^9.0.3",
+    "@farmfe/core": "workspace:^0.2.0"
   }
 }

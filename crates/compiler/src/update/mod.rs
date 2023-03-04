@@ -13,7 +13,9 @@ use farmfe_core::{
 };
 use farmfe_toolkit::tracing;
 
-use crate::{build::ResolvedModuleInfo, generate::write_resources::finalize_resources, Compiler};
+use crate::{
+  build::ResolvedModuleInfo, generate::finalize_resources::finalize_resources, Compiler,
+};
 use farmfe_core::error::Result;
 
 use self::{
@@ -115,6 +117,7 @@ impl Compiler {
 
     let cloned_context = self.context.clone();
     std::thread::spawn(move || {
+      // TODO: manage a task queue, and run the tasks in sequence
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
         &cloned_updated_module_ids,
@@ -278,19 +281,19 @@ impl Compiler {
     let mut module_graph = self.context.module_graph.write();
     let mut update_module_graph = update_context.module_graph.write();
 
-    tracing::debug!("Diffing module graph start from {:?}...", start_points);
+    tracing::trace!("Diffing module graph start from {:?}...", start_points);
     let diff_result =
       diff_module_graph(start_points.clone(), &*module_graph, &*update_module_graph);
-    tracing::debug!("Diff result: {:?}", diff_result);
+    tracing::trace!("Diff result: {:?}", diff_result);
 
-    tracing::debug!("Patching module graph start from {:?}...", start_points);
+    tracing::trace!("Patching module graph start from {:?}...", start_points);
     let removed_modules = patch_module_graph(
       start_points.clone(),
       &diff_result,
       &mut *module_graph,
       &mut *update_module_graph,
     );
-    tracing::debug!(
+    tracing::trace!(
       "Patched module graph, removed modules: {:?}",
       removed_modules
         .iter()
@@ -300,7 +303,7 @@ impl Compiler {
 
     let mut module_group_graph = self.context.module_group_graph.write();
 
-    tracing::debug!("Patching module group map start from {:?}...", start_points);
+    tracing::trace!("Patching module group map start from {:?}...", start_points);
     let affected_module_groups = patch_module_group_graph(
       start_points.clone(),
       &diff_result,
@@ -308,7 +311,7 @@ impl Compiler {
       &mut *module_graph,
       &mut *module_group_graph,
     );
-    tracing::debug!(
+    tracing::trace!(
       "Patched module group map, affected module groups: {:?}",
       affected_module_groups
     );
@@ -325,13 +328,15 @@ fn resolve_module(
   is_root: bool,
 ) -> Result<ResolveModuleResult> {
   let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
-
+  let module_id = &resolve_module_id_result.module_id;
   // if this is the root module, we should always rebuild it
   if is_root {
     return Ok(ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
       module: Compiler::create_module(
         resolve_module_id_result.module_id.clone(),
         resolve_module_id_result.resolve_result.external,
+        // TODO: make it configurable
+        module_id.to_string().contains("/node_modules/"),
       ),
       resolve_module_id_result,
     })));
@@ -355,6 +360,8 @@ fn resolve_module(
     module: Compiler::create_module(
       resolve_module_id_result.module_id.clone(),
       resolve_module_id_result.resolve_result.external,
+      // TODO: make it configurable
+      module_id.to_string().contains("/node_modules/"),
     ),
     resolve_module_id_result,
   })))

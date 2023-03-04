@@ -13,7 +13,7 @@ pub fn load(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<PluginLoadHookResult> {
-  tracing::debug!("load: {}", load_param.resolved_path);
+  tracing::trace!("load: {}", load_param.resolved_path);
 
   let loaded = match context
     .plugin_driver
@@ -35,7 +35,7 @@ pub fn load(
       });
     }
   };
-  tracing::debug!("loaded: {}", load_param.resolved_path);
+  tracing::trace!("loaded: {}", load_param.resolved_path);
 
   Ok(loaded)
 }

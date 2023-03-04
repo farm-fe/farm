@@ -9,7 +9,8 @@ use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax, TsCon
 use farmfe_core::{
   config::ScriptParserConfig,
   error::{CompilationError, Result},
-  module::ModuleType,
+  module::{ModuleSystem, ModuleType},
+  plugin::ResolveKind,
   swc_common::{FileName, Mark, SourceMap},
   swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
 };
@@ -153,4 +154,34 @@ pub fn is_commonjs_require(unresolved_mark: Mark, call_expr: &CallExpr) -> bool 
 /// Whether the call expr is dynamic import.
 pub fn is_dynamic_import(call_expr: &CallExpr) -> bool {
   matches!(&call_expr.callee, Callee::Import(Import { .. }))
+}
+
+pub fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
+  let mut module_system = ModuleSystem::Custom(String::from("unknown"));
+
+  for resolve_kind in deps {
+    if matches!(resolve_kind, ResolveKind::Import)
+      || matches!(resolve_kind, ResolveKind::DynamicImport)
+    {
+      match module_system {
+        ModuleSystem::EsModule => continue,
+        ModuleSystem::CommonJs => {
+          module_system = ModuleSystem::Hybrid;
+          break;
+        }
+        _ => module_system = ModuleSystem::EsModule,
+      }
+    } else if matches!(resolve_kind, ResolveKind::Require) {
+      match module_system {
+        ModuleSystem::CommonJs => continue,
+        ModuleSystem::EsModule => {
+          module_system = ModuleSystem::Hybrid;
+          break;
+        }
+        _ => module_system = ModuleSystem::CommonJs,
+      }
+    }
+  }
+
+  module_system
 }

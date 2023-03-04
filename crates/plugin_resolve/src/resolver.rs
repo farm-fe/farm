@@ -33,7 +33,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
-  ) -> Result<Option<PluginResolveHookResult>> {
+  ) -> Option<PluginResolveHookResult> {
     // TODO: try load package.json first, the relative resolve may also need to use browser/exports field in package.json
     let is_source_absolute = if let Ok(sp) = PathBuf::from_str(source) {
       sp.is_absolute()
@@ -43,15 +43,12 @@ impl Resolver {
 
     if is_source_absolute {
       if let Some(resolved_path) = self.try_file(&PathBuf::from_str(source).unwrap()) {
-        return Ok(Some(PluginResolveHookResult {
+        return Some(PluginResolveHookResult {
           resolved_path,
           ..Default::default()
-        }));
+        });
       } else {
-        return Err(CompilationError::GenericError(format!(
-          "File `{:?}` does not exist",
-          source
-        )));
+        return None;
       }
     } else if source.starts_with(".") {
       // if it starts with '.', it is a relative path
@@ -71,17 +68,21 @@ impl Resolver {
         .ok_or(CompilationError::GenericError(format!(
           "File `{:?}` does not exist",
           normalized_path
-        )))?;
+        )));
 
-      Ok(Some(PluginResolveHookResult {
-        resolved_path,
-        ..Default::default()
-      }))
+      if let Some(resolved_path) = resolved_path.ok() {
+        Some(PluginResolveHookResult {
+          resolved_path,
+          ..Default::default()
+        })
+      } else {
+        None
+      }
     } else {
       // try alias first
       self
         .try_alias(source, base_dir.clone(), kind)
-        .or_else(|_| self.try_node_modules(source, base_dir, kind))
+        .or_else(|| self.try_node_modules(source, base_dir, kind))
     }
   }
 
@@ -131,7 +132,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
-  ) -> Result<Option<PluginResolveHookResult>> {
+  ) -> Option<PluginResolveHookResult> {
     for (alias, replaced) in &self.config.alias {
       if alias.ends_with("$") && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind);
@@ -145,7 +146,7 @@ impl Resolver {
       }
     }
 
-    Err(CompilationError::GenericError(String::new()))
+    None
   }
 
   /// Resolve the source as a package
@@ -154,7 +155,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
-  ) -> Result<Option<PluginResolveHookResult>> {
+  ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
@@ -174,12 +175,12 @@ impl Resolver {
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
           {
-            return Ok(Some(PluginResolveHookResult {
+            return Some(PluginResolveHookResult {
               resolved_path,
               external: false,       // TODO read this from browser
               side_effects: false,   // TODO read this from side_effects in package.json
               query: HashMap::new(), // TODO parse this from the source
-            }));
+            });
           }
         } else if package_path.exists() && package_path.is_dir() {
           let package_json_info = load_package_json(
@@ -188,7 +189,13 @@ impl Resolver {
               follow_symlinks: self.config.symlinks,
               resolve_ancestor_dir: false, // only look for current directory
             },
-          )?;
+          );
+
+          if let Err(err) = package_json_info {
+            return None;
+          }
+
+          let package_json_info = package_json_info.unwrap();
           // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
 
           // search normal entry, based on self.config.main_fields, e.g. module/main
@@ -202,12 +209,12 @@ impl Resolver {
                 let full_path = RelativePath::new(str).to_logical_path(dir);
 
                 if full_path.exists() {
-                  return Ok(Some(PluginResolveHookResult {
+                  return Some(PluginResolveHookResult {
                     resolved_path: full_path.to_string_lossy().to_string(),
                     external: false,       // TODO read this from browser
                     side_effects: false,   // TODO read this from side_effects in package.json
                     query: HashMap::new(), // TODO parse this from the source
-                  }));
+                  });
                 }
               }
             }
@@ -219,6 +226,6 @@ impl Resolver {
     }
 
     // unsupported node_modules resolving type
-    Ok(None)
+    None
   }
 }

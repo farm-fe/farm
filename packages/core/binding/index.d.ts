@@ -150,6 +150,14 @@ export interface Config {
         };
       };
     };
+    partialBundling?: {
+      moduleBuckets?: {
+        name: string;
+        test: string[];
+        isolate?: boolean;
+      }[];
+    };
+    lazyCompilation?: boolean;
   };
   jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]

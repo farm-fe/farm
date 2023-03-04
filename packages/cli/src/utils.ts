@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import Module from 'node:module';
 import { fileURLToPath } from 'node:url';
 import walkdir from 'walkdir';
+import type { start, build } from '@farmfe/core';
 
 export const TEMPLATES_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -29,4 +31,13 @@ export function copyFiles(
       writeFileSync(destPath, newContent);
     }
   });
+}
+
+export function resolveCore(cwd: string): Promise<{
+  start: typeof start;
+  build: typeof build;
+}> {
+  const require = Module.createRequire(path.join(cwd, 'package.json'));
+  const farmCorePath = require.resolve('@farmfe/core');
+  return import(farmCorePath);
 }

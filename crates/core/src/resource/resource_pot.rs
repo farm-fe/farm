@@ -25,19 +25,20 @@ pub struct ResourcePot {
   resources: HashSet<String>,
   // the [ModuleGroup] this [ResourcePot] belongs to
   pub module_group: ModuleGroupId,
+  pub immutable: bool,
 }
 
 impl ResourcePot {
   pub fn new(id: ResourcePotId, ty: ResourcePotType, group_id: ModuleGroupId) -> Self {
     Self {
       id,
-      // TODO, set resource type
       resource_pot_type: ty,
       modules: HashSet::new(),
       meta: ResourcePotMetaData::Custom(Box::new(EmptyResourcePotMetaData) as _),
       entry_module: None,
       resources: HashSet::new(),
       module_group: group_id,
+      immutable: false,
     }
   }
 
@@ -59,6 +60,14 @@ impl ResourcePot {
 
   pub fn resources(&self) -> Vec<&String> {
     self.resources.iter().collect()
+  }
+
+  pub fn remove_resource(&mut self, name: &String) {
+    self.resources.remove(name);
+  }
+
+  pub fn clear_resources(&mut self) {
+    self.resources.clear();
   }
 }
 
@@ -106,6 +115,7 @@ impl From<ModuleType> for ResourcePotType {
       ModuleType::Css => Self::Css,
       ModuleType::Html => Self::Html,
       ModuleType::Asset => Self::Asset,
+      ModuleType::Runtime => Self::Runtime,
       ModuleType::Custom(c) => Self::Custom(c),
     }
   }

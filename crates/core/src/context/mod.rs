@@ -11,7 +11,7 @@ use crate::{
   error::Result,
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph},
   plugin::{plugin_driver::PluginDriver, Plugin},
-  resource::{resource_pot_graph::ResourcePotGraph, Resource},
+  resource::{resource_pot_map::ResourcePotMap, Resource},
 };
 
 /// Shared context through the whole compilation.
@@ -20,7 +20,7 @@ pub struct CompilationContext {
   pub module_graph: RwLock<ModuleGraph>,
   pub module_group_graph: RwLock<ModuleGroupGraph>,
   pub plugin_driver: PluginDriver,
-  pub resource_pot_graph: RwLock<ResourcePotGraph>,
+  pub resource_pot_map: RwLock<ResourcePotMap>,
   pub resources_map: Mutex<HashMap<String, Resource>>,
   pub cache_manager: CacheManager,
   pub meta: ContextMetaData,
@@ -31,7 +31,7 @@ impl CompilationContext {
     Ok(Self {
       module_graph: RwLock::new(ModuleGraph::new()),
       module_group_graph: RwLock::new(ModuleGroupGraph::new()),
-      resource_pot_graph: RwLock::new(ResourcePotGraph::new()),
+      resource_pot_map: RwLock::new(ResourcePotMap::new()),
       resources_map: Mutex::new(HashMap::new()),
       config,
       plugin_driver: PluginDriver::new(plugins),

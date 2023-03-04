@@ -14,7 +14,7 @@ pub fn parse(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<ModuleMetaData> {
-  tracing::debug!("parse: {}", parse_param.resolved_path);
+  tracing::trace!("parse: {}", parse_param.resolved_path);
 
   let res = match context
     .plugin_driver
@@ -33,6 +33,6 @@ pub fn parse(
     }),
   };
 
-  tracing::debug!("parsed: {}", parse_param.resolved_path);
+  tracing::trace!("parsed: {}", parse_param.resolved_path);
   res
 }

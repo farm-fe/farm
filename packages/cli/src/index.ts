@@ -1,7 +1,7 @@
-import { start, build } from '@farmfe/core';
 import { cac } from 'cac';
 import { create } from './create/index.js';
 import { COMMANDS } from './plugin/index.js';
+import { resolveCore } from './utils.js';
 
 const cli = cac();
 
@@ -10,19 +10,25 @@ cli
     'start',
     'Compile the project in dev mode and serve it with farm dev server'
   )
-  .action(() => {
+  .action(async () => {
+    const cwd = process.cwd();
+    const { start } = await resolveCore(cwd);
     // TODO set config path
     start({
-      configPath: process.cwd(),
+      configPath: cwd,
     });
   });
 
-cli.command('build', 'Compile the project in production mode').action(() => {
-  // TODO set config path
-  build({
-    configPath: process.cwd(),
+cli
+  .command('build', 'Compile the project in production mode')
+  .action(async () => {
+    const cwd = process.cwd();
+    const { build } = await resolveCore(cwd);
+    // TODO set config path
+    build({
+      configPath: cwd,
+    });
   });
-});
 
 cli.command('create', 'Create a new project').action(() => {
   create();
