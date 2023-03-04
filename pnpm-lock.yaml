@@ -91,7 +91,7 @@ importers:
   packages/core:
     specifiers:
       '@farmfe/runtime': workspace:^0.3.0
-      '@farmfe/runtime-plugin-hmr': workspace:*
+      '@farmfe/runtime-plugin-hmr': workspace:^3.0.0
       '@napi-rs/cli': ^2.10.0
       '@swc/helpers': ^0.4.9
       '@types/figlet': ^1.5.5
@@ -145,7 +145,7 @@ importers:
 
   packages/runtime-plugin-hmr:
     specifiers:
-      '@farmfe/runtime': workspace:*
+      '@farmfe/runtime': workspace:^0.3.0
     devDependencies:
       '@farmfe/runtime': link:../runtime
 

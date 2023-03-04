@@ -62,7 +62,7 @@
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.3.0",
-    "@farmfe/runtime-plugin-hmr": "workspace:*",
+    "@farmfe/runtime-plugin-hmr": "workspace:^3.0.0",
     "@swc/helpers": "^0.4.9",
     "boxen": "^7.0.1",
     "chalk": "^5.2.0",

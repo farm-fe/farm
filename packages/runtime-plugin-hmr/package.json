@@ -11,9 +11,9 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:*"
+    "@farmfe/runtime": "workspace:^0.3.0"
   },
   "peerDependencies": {
-    "@farmfe/runtime": "workspace:*"
+    "@farmfe/runtime": "workspace:^0.3.0"
   }
 }
