@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.3.2
+
+### Patch Changes
+
+- write resources to disk to optimize resources loading time
+
 ## 0.3.1
 
 ### Patch Changes

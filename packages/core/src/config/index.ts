@@ -133,7 +133,6 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
-  writeToDisk: false,
   hmr: DEFAULT_HMR_OPTIONS,
 };
 
@@ -206,15 +205,21 @@ async function readConfigFile(
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (resolvedPath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
+      const outputPath = path.join(os.tmpdir(), 'farmfe');
+      const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
             config: resolvedPath,
           },
+          output: {
+            filename: fileName,
+            path: outputPath,
+          },
           partialBundling: {
             moduleBuckets: [
               {
-                name: 'farm.config.bundle.js',
+                name: fileName,
                 test: ['.+'],
               },
             ],
@@ -226,18 +231,9 @@ async function readConfigFile(
       });
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
-      const resources = compiler.resources();
-      // should only emit one config file bundled with all dependencies
-      const configCode = Buffer.from(Object.values(resources)[0]).toString();
-      // Change to vm.module of node or loaders as far as it is stable
-      const filePath = path.join(
-        os.tmpdir(),
-        'farmfe',
-        `temp-config-${Date.now()}.mjs`
-      );
-      fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      fs.writeFileSync(filePath, configCode);
 
+      const filePath = path.join(outputPath, fileName);
+      // Change to vm.module of node or loaders as far as it is stable
       if (process.platform === 'win32') {
         return (await import(pathToFileURL(filePath).toString())).default;
       } else {

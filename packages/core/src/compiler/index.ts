@@ -1,7 +1,3 @@
-import { existsSync, mkdirSync } from 'fs';
-import fs from 'fs/promises';
-import path from 'path';
-
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
@@ -48,28 +44,7 @@ export class Compiler {
     return res;
   }
 
-  resources(): Record<string, number[]> {
-    return this._bindingCompiler.resources();
-  }
-
   hasModule(resolvedPath: string): boolean {
     return this._bindingCompiler.hasModule(resolvedPath);
-  }
-
-  async writeResourcesToDisk(): Promise<void> {
-    const resources = this.resources();
-    const promises = [];
-
-    for (const [name, resource] of Object.entries(resources)) {
-      const filePath = path.join(this.config.config.output.path, name);
-
-      if (!existsSync(path.dirname(filePath))) {
-        mkdirSync(path.dirname(filePath), { recursive: true });
-      }
-
-      promises.push(fs.writeFile(filePath, Buffer.from(resource)));
-    }
-
-    await Promise.all(promises);
   }
 }

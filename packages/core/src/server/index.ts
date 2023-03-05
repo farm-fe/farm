@@ -13,7 +13,6 @@ import {
   NormalizedServerConfig,
   normalizeDevServerOptions,
 } from '../config/index.js';
-import { resources } from './middlewares/resources.js';
 import { hmr } from './middlewares/hmr.js';
 import { HmrEngine } from './hmr-engine.js';
 import { brandColor, Logger } from '../logger.js';
@@ -49,11 +48,7 @@ export class DevServer {
       mkdirSync(this._dist, { recursive: true });
     }
 
-    if (this.config.writeToDisk) {
-      this._app.use(serve(this._dist));
-    } else {
-      this._app.use(resources(this._compiler));
-    }
+    this._app.use(serve(this._dist));
 
     if (this.config.hmr) {
       this.ws = new WebSocketServer({
@@ -78,10 +73,6 @@ export class DevServer {
     // compile the project and start the dev server
     await this._compiler.compile();
     const end = Date.now();
-
-    if (this.config.writeToDisk) {
-      this._compiler.writeResourcesToDisk();
-    }
 
     this._app.listen(this.config.port);
     const version = JSON.parse(

@@ -37,10 +37,8 @@ test('normalize-dev-server-options', () => {
   let options = normalizeDevServerOptions({});
   expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
   expect(options.port).toBe(DEFAULT_DEV_SERVER_OPTIONS.port);
-  expect(options.writeToDisk).toBe(DEFAULT_DEV_SERVER_OPTIONS.writeToDisk);
 
-  options = normalizeDevServerOptions({ writeToDisk: true });
+  options = normalizeDevServerOptions({ port: 8080 });
   expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
-  expect(options.port).toBe(DEFAULT_DEV_SERVER_OPTIONS.port);
-  expect(options.writeToDisk).toBe(true);
+  expect(options.port).toBe(8080);
 });
