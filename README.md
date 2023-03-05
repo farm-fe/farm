@@ -58,8 +58,6 @@ farm create && cd farm-react && npm i && npm start
 
 ## Configuring
 
-> Official docs site is on the way...
-
 Farm load configuration file from `farm.config.ts`. The available config as below:
 
 ```ts
