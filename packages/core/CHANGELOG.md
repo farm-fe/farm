@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.3.1
+
+### Patch Changes
+
+- Fix lazy compilation and partial bundling bugs
+- Updated dependencies
+  - @farmfe/runtime-plugin-hmr@3.0.1
+  - @farmfe/runtime@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

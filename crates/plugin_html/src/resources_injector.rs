@@ -1,5 +1,5 @@
 use farmfe_core::{
-  config::{Mode, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  config::{Mode, FARM_MODULE_SYSTEM},
   hashbrown::HashMap,
   module::ModuleId,
   resource::ResourceType,
@@ -47,6 +47,71 @@ impl ResourcesInjector {
   pub fn inject(&mut self, ast: &mut Document) {
     ast.visit_mut_with(self);
   }
+
+  fn inject_initial_loaded_resources(&self, element: &mut Element) {
+    let mut initial_resources = vec![];
+    initial_resources.extend(self.script_resources.clone());
+    initial_resources.extend(self.css_resources.clone());
+
+    let initial_resources_code = initial_resources
+      .into_iter()
+      .map(|path| format!("'{}'", path))
+      .collect::<Vec<_>>()
+      .join(",");
+
+    element.children.push(Child::Element(create_element(
+      "script",
+      Some(&format!(
+        r#"{}.setInitialLoadedResources({});"#,
+        FARM_MODULE_SYSTEM,
+        format!("[{}]", initial_resources_code)
+      )),
+      vec![(FARM_ENTRY, "true")],
+    )));
+  }
+
+  fn inject_dynamic_resources_map(&self, element: &mut Element) {
+    let mut dynamic_resources_code = String::new();
+
+    // inject dynamic resources
+    for (module_id, resources) in &self.dynamic_resources_map {
+      let mut resources_code = String::new();
+
+      for (resource_name, resource_type) in resources {
+        match resource_type {
+          ResourceType::Js => {
+            resources_code += &format!(r#"{{ path: '{}', type: 'script' }},"#, resource_name)
+          }
+          ResourceType::Css => {
+            resources_code += &format!(r#"{{ path: '{}', type: 'link' }},"#, resource_name)
+          }
+          _ => {
+            panic!(
+              "unknown supported type ({:?}) when injecting dynamic resources",
+              resource_type
+            )
+          }
+        }
+      }
+
+      dynamic_resources_code += &format!(
+        r#"'{}': [{}],"#,
+        module_id.id(self.mode.clone()),
+        resources_code
+      );
+    }
+
+    dynamic_resources_code = format!("{{ {} }}", dynamic_resources_code);
+
+    element.children.push(Child::Element(create_element(
+      "script",
+      Some(&format!(
+        r#"{}.setDynamicModuleResourcesMap({});"#,
+        FARM_MODULE_SYSTEM, dynamic_resources_code
+      )),
+      vec![(FARM_ENTRY, "true")],
+    )));
+  }
 }
 
 impl VisitMut for ResourcesInjector {
@@ -93,79 +158,28 @@ impl VisitMut for ResourcesInjector {
         )));
       }
 
-      let mut dynamic_resources_code = String::new();
-
-      // inject dynamic resources
-      for (module_id, resources) in &self.dynamic_resources_map {
-        let mut resources_code = String::new();
-
-        for (resource_name, resource_type) in resources {
-          match resource_type {
-            ResourceType::Js => {
-              resources_code += &format!(r#"{{ path: '{}', type: 'script' }},"#, resource_name)
-            }
-            ResourceType::Css => {
-              resources_code += &format!(r#"{{ path: '{}', type: 'link' }},"#, resource_name)
-            }
-            _ => {
-              panic!(
-                "unknown supported type ({:?}) when injecting dynamic resources",
-                resource_type
-              )
-            }
-          }
-        }
-
-        dynamic_resources_code += &format!(
-          r#"'{}': [{}],"#,
-          module_id.id(self.mode.clone()),
-          resources_code
-        );
-      }
-
-      dynamic_resources_code = format!("{{ {} }}", dynamic_resources_code);
+      self.inject_initial_loaded_resources(element);
+      self.inject_dynamic_resources_map(element);
 
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"var {} = globalThis || window || self;
-            var __farm_module_system_local__ = {}.{};
-            __farm_module_system_local__.setDynamicModuleResourcesMap({});"#,
-          FARM_GLOBAL_THIS, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, dynamic_resources_code
-        )),
-        vec![(FARM_ENTRY, "true")],
-      )));
-      element.children.push(Child::Element(create_element(
-        "script",
-        Some(&format!(
-          r#"var {} = globalThis || window || self;
-            var __farm_module_system_local__ = {}.{};
-            __farm_module_system_local__.setPublicPaths(['{}']);"#,
-          FARM_GLOBAL_THIS, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, self.public_path
+          r#"{}.setPublicPaths(['{}']);"#,
+          FARM_MODULE_SYSTEM, self.public_path
         )),
         vec![(FARM_ENTRY, "true")],
       )));
 
       element.children.push(Child::Element(create_element(
         "script",
-        Some(&format!(
-          r#"var {} = globalThis || window || self;
-            var __farm_module_system_local__ = {}.{};
-            __farm_module_system_local__.bootstrap();"#,
-          FARM_GLOBAL_THIS, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM
-        )),
+        Some(&format!(r#"{}.bootstrap();"#, FARM_MODULE_SYSTEM)),
         vec![(FARM_ENTRY, "true")],
       )));
 
       for entry in &self.script_entries {
         element.children.push(Child::Element(create_element(
           "script",
-          Some(&format!(
-            r#"var {} = globalThis || window || self;
-              var __farm_module_system_local__ = {}.{};
-              __farm_module_system_local__.require("{}")"#,
-            FARM_GLOBAL_THIS, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, entry
-          )),
+          Some(&format!(r#"{}.require("{}")"#, FARM_MODULE_SYSTEM, entry)),
           vec![(FARM_ENTRY, "true")],
         )));
       }

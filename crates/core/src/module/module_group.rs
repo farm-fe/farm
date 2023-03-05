@@ -289,11 +289,19 @@ impl ModuleGroup {
     self.resource_pots.insert(resource_pot_id);
   }
 
+  pub fn remove_resource_pot(&mut self, resource_pot_id: &ResourcePotId) {
+    self.resource_pots.retain(|id| id != resource_pot_id);
+  }
+
   pub fn resource_pots(&self) -> &HashSet<ResourcePotId> {
     &self.resource_pots
   }
 
   pub fn set_resource_pots(&mut self, resource_pots: HashSet<ResourcePotId>) {
     self.resource_pots = resource_pots;
+  }
+
+  pub fn has_resource_pot(&self, resource_pot_id: &ResourcePotId) -> bool {
+    self.resource_pots.contains(resource_pot_id)
   }
 }

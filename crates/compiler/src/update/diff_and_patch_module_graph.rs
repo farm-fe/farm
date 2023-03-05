@@ -108,7 +108,7 @@ pub fn patch_module_graph(
       m
     };
 
-    module_graph.replace_module(&updated, module);
+    module_graph.replace_module(module);
   }
 
   removed_modules

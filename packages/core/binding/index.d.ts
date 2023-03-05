@@ -154,7 +154,6 @@ export interface Config {
       moduleBuckets?: {
         name: string;
         test: string[];
-        isolate?: boolean;
       }[];
     };
     lazyCompilation?: boolean;

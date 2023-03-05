@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   hashbrown::HashMap,
-  module::{module_graph::ModuleGraph, ModuleMetaData},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   parking_lot::RwLock,
   plugin::{
     Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
@@ -134,13 +134,11 @@ impl Plugin for RustPluginAdapter {
 
   fn partial_bundling(
     &self,
-    module_group: &mut farmfe_core::module::module_group::ModuleGroup,
+    modules: &Vec<ModuleId>,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<ResourcePot>>> {
-    self
-      .plugin
-      .partial_bundling(module_group, context, hook_context)
+    self.plugin.partial_bundling(modules, context, hook_context)
   }
 
   fn process_resource_pot_map(

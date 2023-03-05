@@ -71,7 +71,6 @@ impl Plugin for FarmPluginRuntime {
       PartialBundlingModuleBucketsConfig {
         name: "FARM_RUNTIME".to_string(),
         test: vec![format!(".+{}", RUNTIME_SUFFIX)],
-        isolate: true,
       },
     );
 
@@ -291,7 +290,9 @@ impl Plugin for FarmPluginRuntime {
             expr: Box::new(Expr::Lit(Lit::Str(Str {
               span: DUMMY_SP,
               value: resource_pot
-                .module_group
+                .entry_module
+                .as_ref()
+                .unwrap()
                 .id(context.config.mode.clone())
                 .into(),
               raw: None,

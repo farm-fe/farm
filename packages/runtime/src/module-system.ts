@@ -83,7 +83,7 @@ export class ModuleSystem {
 
     if (!resources || resources.length === 0) {
       throw new Error(
-        `Dynamic imported module "${module}" does not belong to any resource`
+        `Dynamic imported module "${moduleId}" does not belong to any resource`
       );
     }
 
@@ -136,6 +136,12 @@ export class ModuleSystem {
       return true;
     } else {
       return false;
+    }
+  }
+
+  setInitialLoadedResources(resources: string[]) {
+    for (const resource of resources) {
+      this.resourceLoader.setLoadedResource(resource);
     }
   }
 

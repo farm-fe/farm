@@ -42,7 +42,7 @@ impl Plugin for FarmPluginPartialBundling {
   /// Whatever the order of the module group is, the result should be the same.
   fn partial_bundling(
     &self,
-    module_group: &mut ModuleGroup,
+    modules: &Vec<ModuleId>,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<Vec<ResourcePot>>> {
@@ -52,18 +52,26 @@ impl Plugin for FarmPluginPartialBundling {
     // First, generate ModuleBucket
     let mut module_bucket_map = HashMap::<ModuleBucketId, ModuleBucket>::new();
 
-    for module_id in module_group.modules() {
+    for module_id in modules {
       let module = module_graph.module(module_id).unwrap();
+
+      if module.resource_pot.is_some() {
+        panic!(
+          "Module {:?} has already been assigned to a resource pot: {:?}.",
+          module_id,
+          module.resource_pot.as_ref().unwrap()
+        );
+      }
 
       let add_module = |module_bucket_id: ModuleBucketId,
                         module_bucket_map: &mut HashMap<ModuleBucketId, ModuleBucket>,
-                        isolate: bool| {
+                        customized_by_user: bool| {
         if module_bucket_map.contains_key(&module_bucket_id) {
           let module_bucket = module_bucket_map.get_mut(&module_bucket_id).unwrap();
           module_bucket.add_module(module_id.clone());
         } else {
-          let mut module_bucket = ModuleBucket::new(module_bucket_id.clone(), HashSet::new());
-          module_bucket.isolate = isolate;
+          let mut module_bucket =
+            ModuleBucket::new(module_bucket_id.clone(), HashSet::new(), customized_by_user);
           module_bucket.add_module(module_id.clone());
           module_bucket_map.insert(module_bucket_id, module_bucket);
         }
@@ -82,18 +90,14 @@ impl Plugin for FarmPluginPartialBundling {
 
         if regex.iter().any(|r| r.is_match(&module_id.to_string())) {
           module_in_custom_buckets = true;
-          // This module is already in other resource pot, and we do not set isolate to true, skip it
-          if !bucket_config.isolate && module.resource_pot.is_some() {
-            continue;
-          }
 
           let bucket_id: ModuleBucketId = bucket_name.clone().into();
-          add_module(bucket_id, &mut module_bucket_map, bucket_config.isolate);
+          add_module(bucket_id, &mut module_bucket_map, true);
         }
       }
 
       // The module is already in a resource pot, skip it.
-      if module_in_custom_buckets || module.resource_pot.is_some() {
+      if module_in_custom_buckets {
         continue;
       }
 
@@ -116,7 +120,7 @@ impl Plugin for FarmPluginPartialBundling {
       for module_id in module_bucket.modules() {
         let module = module_graph.module(module_id).unwrap();
 
-        let rule = if module_bucket.isolate {
+        let rule = if module_bucket.customized_by_user {
           (module.module_type.clone(), false)
         } else {
           (module.module_type.clone(), module.immutable)
@@ -134,23 +138,33 @@ impl Plugin for FarmPluginPartialBundling {
 
       for (rule, module_ids) in rules_map.into_iter() {
         let (module_type, immutable) = rule;
+        let mut sorted_module_ids = module_ids.iter().map(|m| m.to_string()).collect::<Vec<_>>();
+        sorted_module_ids.sort();
+
         let id = sha256(
           format!(
-            "{}-{}-{}-{}-{}",
-            module_group.id.to_string(),
+            "{}-{}-{}-{}",
             module_bucket.id.to_string(),
             module_type.to_string(),
-            module_ids.iter().map(|m| m.to_string()).collect::<Vec<_>>().join("_"),
+            sorted_module_ids.join("_"),
             immutable
           )
           .as_bytes(),
           8,
         );
-        let mut resource_pot = ResourcePot::new(
-          ResourcePotId::new(id),
-          module_type.into(),
-          module_group.id.clone(),
-        );
+        // let id = format!(
+        //   "{}-{}-{}-{}",
+        //   module_bucket.id.to_string(),
+        //   module_type.to_string(),
+        //   module_ids
+        //     .iter()
+        //     .map(|m| m.to_string())
+        //     .collect::<Vec<_>>()
+        //     .join("_"),
+        //   immutable
+        // )
+        // .replace("/", "+");
+        let mut resource_pot = ResourcePot::new(ResourcePotId::new(id), module_type.into());
 
         resource_pot.immutable = immutable;
 

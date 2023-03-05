@@ -3,7 +3,11 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
-  module::module_group::{ModuleGroup, ModuleGroupGraph},
+  hashbrown::HashSet,
+  module::{
+    module_group::{ModuleGroup, ModuleGroupGraph},
+    ModuleId,
+  },
   parking_lot::Mutex,
   plugin::PluginHookContext,
   resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap},
@@ -61,27 +65,46 @@ fn generate_resource_pot_map(
 ) -> farmfe_core::error::Result<ResourcePotMap> {
   tracing::trace!("Starting generate_resource_pot_map");
 
-  let resource_pot_map = Mutex::new(ResourcePotMap::new());
+  let mut modules = HashSet::new();
 
   for g in module_group_graph.module_groups_mut() {
-    let resources_pots = call_partial_bundling_hook(g, context, hook_context)?;
+    modules.extend(g.modules().clone());
+  }
 
-    let mut resource_pot_map = resource_pot_map.lock();
+  let resources_pots =
+    call_partial_bundling_hook(&modules.into_iter().collect(), context, hook_context)?;
 
-    for resource_pot in resources_pots {
-      g.add_resource_pot(resource_pot.id.clone());
-      resource_pot_map.add_resource_pot(resource_pot);
+  let mut resource_pot_map = ResourcePotMap::new();
+  let module_graph = context.module_graph.read();
+
+  for mut resource_pot in resources_pots {
+    let mut module_groups = HashSet::new();
+
+    for module_id in resource_pot.modules() {
+      let module = module_graph.module(module_id).unwrap();
+      module_groups.extend(module.module_groups.clone());
     }
+
+    resource_pot.module_groups = module_groups.clone();
+
+    for module_group_id in module_groups {
+      let module_group = module_group_graph
+        .module_group_mut(&module_group_id)
+        .unwrap();
+      module_group.add_resource_pot(resource_pot.id.clone());
+    }
+
+    resource_pot_map.add_resource_pot(resource_pot);
   }
 
   tracing::trace!("generate_resource_pot_map finished");
 
-  Ok(resource_pot_map.into_inner())
+  Ok(resource_pot_map)
 }
 
 #[tracing::instrument(skip_all)]
 pub fn call_partial_bundling_hook(
-  g: &mut ModuleGroup,
+  modules: &Vec<ModuleId>,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<Vec<ResourcePot>> {
@@ -89,7 +112,7 @@ pub fn call_partial_bundling_hook(
 
   let res = context
     .plugin_driver
-    .partial_bundling(g, context, hook_context)?
+    .partial_bundling(modules, context, hook_context)?
     .ok_or(CompilationError::PluginHookResultCheckError {
       hook_name: "partial_bundling".to_string(),
     })?;

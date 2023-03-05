@@ -388,11 +388,11 @@ impl ModuleGraph {
     self.g.remove_node(i).unwrap()
   }
 
-  pub fn replace_module(&mut self, module_id: &ModuleId, module: Module) {
+  pub fn replace_module(&mut self, module: Module) {
     let i = self
       .id_index_map
-      .get(module_id)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+      .get(&module.id)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module.id));
     self.g[*i] = module;
   }
 }

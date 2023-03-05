@@ -4,7 +4,7 @@ import './index.css'
 
 const COUNT_DOWN = 60;
 const BUTTON_TEXT = 'Send';
-console.log(BUTTON_TEXT)
+
 export function CounterButton() {
   const [count, setCount] = useState(COUNT_DOWN);
   const [text, setText] = useState(BUTTON_TEXT);

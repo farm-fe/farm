@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.3.1
+
+### Patch Changes
+
+- Fix lazy compilation and partial bundling bugs
+
 ## 0.3.0
 
 ### Minor Changes

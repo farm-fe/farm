@@ -331,11 +331,6 @@ impl Compiler {
 
     let mut module_graph = context.module_graph.write();
 
-    // check if the module already exists
-    if module_graph.has_module(&module.id) {
-      return false;
-    }
-
     // mark entry module
     if matches!(kind, ResolveKind::Entry) {
       module_graph.entries.insert(module.id.clone());
@@ -343,7 +338,12 @@ impl Compiler {
 
     tracing::trace!("added module to the graph: {:?}", module.id);
 
-    module_graph.add_module(module);
+    // check if the module already exists
+    if module_graph.has_module(&module.id) {
+      module_graph.replace_module(module);
+    } else {
+      module_graph.add_module(module);
+    }
 
     true
   }
@@ -383,14 +383,18 @@ fn resolve_module(
   tracing::trace!("resolving module: {:?}", resolve_param);
 
   let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
-
-  // be care of dead lock, see https://github.com/Amanieu/parking_lot/issues/212
-  let module_graph = context.module_graph.read();
+  let mut module_graph = context.module_graph.write();
 
   let res = if module_graph.has_module(&resolve_module_id_result.module_id) {
     // the module has already been handled and it should not be handled twice
     ResolveModuleResult::Built(resolve_module_id_result.module_id)
   } else {
+    // insert a dummy module to the graph to prevent the module from being handled twice
+    module_graph.add_module(Compiler::create_module(
+      resolve_module_id_result.module_id.clone(),
+      false,
+      false,
+    ));
     ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
       module: Compiler::create_module(
         resolve_module_id_result.module_id.clone(),

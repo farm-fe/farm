@@ -27,7 +27,7 @@ pub struct CompilationContext {
 }
 
 impl CompilationContext {
-  pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+  pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     Ok(Self {
       module_graph: RwLock::new(ModuleGraph::new()),
       module_group_graph: RwLock::new(ModuleGroupGraph::new()),

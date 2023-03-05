@@ -20,6 +20,7 @@ export interface JsUpdateResult {
   removed: Array<string>;
   modules: string;
   boundaries: Record<string, Array<Array<string>>>;
+  dynamicResourcesMap?: Record<string, Array<Array<string>>>;
 }
 export type JsCompiler = Compiler;
 export class Compiler {

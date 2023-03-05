@@ -1,3 +1,5 @@
+import type { Resource } from '@farmfe/runtime/src/resource-loader';
+
 export interface HmrUpdatePacket {
   id: string;
 }
@@ -14,4 +16,5 @@ export interface HmrUpdateResult {
     string,
     (module: any, exports: any, require: (id: string) => any) => void
   >;
+  dynamicResourcesMap: Record<string, Resource[]> | null;
 }

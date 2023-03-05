@@ -11,16 +11,16 @@ use farmfe_core::{
 #[derive(Debug)]
 pub struct ModuleBucket {
   pub id: ModuleBucketId,
-  pub isolate: bool,
+  pub customized_by_user: bool,
   modules: HashSet<ModuleId>,
 }
 
 impl ModuleBucket {
-  pub fn new(id: ModuleBucketId, modules: HashSet<ModuleId>) -> Self {
+  pub fn new(id: ModuleBucketId, modules: HashSet<ModuleId>, customized_by_user: bool) -> Self {
     Self {
       id,
+      customized_by_user,
       modules,
-      isolate: false,
     }
   }
 
