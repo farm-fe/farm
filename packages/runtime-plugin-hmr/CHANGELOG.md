@@ -1,5 +1,13 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.0.1
+
+### Patch Changes
+
+- Fix lazy compilation and partial bundling bugs
+- Updated dependencies
+  - @farmfe/runtime@0.3.1
+
 ## 3.0.0
 
 ### Patch Changes

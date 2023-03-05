@@ -4,13 +4,17 @@ use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
   hashbrown::HashMap,
-  module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
+  module::{
+    module_group::{ModuleGroupGraph, ModuleGroupId},
+    HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType,
+  },
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam,
   },
   resource::{
     resource_pot::{HtmlResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
+    resource_pot_map::ResourcePotMap,
     Resource, ResourceType,
   },
   swc_html_ast::Document,
@@ -193,7 +197,12 @@ impl Plugin for FarmPluginHtml {
       let mut html_entry_resource = None;
 
       for rp_id in module_group.resource_pots() {
-        let rp = resource_pot_map.resource_pot(rp_id).unwrap();
+        let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
+          panic!(
+            "Resource pot {} not found in resource pot map",
+            rp_id.to_string()
+          )
+        });
 
         for resource in rp.resources() {
           if rp.modules().contains(&html_entry_id) {
@@ -204,43 +213,12 @@ impl Plugin for FarmPluginHtml {
         dep_resources.extend(rp.resources().into_iter().map(|r| r.to_string()));
       }
 
-      let mut dep_module_groups = vec![];
-
-      module_group_graph.bfs(&module_group_id, &mut |mg_id| {
-        if mg_id != &module_group_id {
-          dep_module_groups.push(mg_id.clone());
-        }
-      });
-
-      let mut dynamic_resources_map = HashMap::<ModuleId, Vec<(String, ResourceType)>>::new();
-
-      for mg_id in dep_module_groups {
-        let mg = module_group_graph.module_group(&mg_id).unwrap();
-
-        for rp_id in mg.resource_pots() {
-          let rp = resource_pot_map.resource_pot(rp_id).unwrap();
-
-          if dynamic_resources_map.contains_key(&mg_id) {
-            let resources = dynamic_resources_map.get_mut(&mg_id).unwrap();
-
-            for r in rp.resources() {
-              let resource = resources_map.get(r).unwrap();
-              resources.push((resource.name.clone(), resource.resource_type.clone()));
-            }
-          } else {
-            let mut resources = vec![];
-
-            for r in rp.resources() {
-              let resource = resources_map
-                .get(r)
-                .unwrap_or_else(|| panic!("{} not found", r));
-              resources.push((resource.name.clone(), resource.resource_type.clone()));
-            }
-
-            dynamic_resources_map.insert(mg_id.clone(), resources);
-          }
-        }
-      }
+      let dynamic_resources_map = get_dynamic_resources_map(
+        &*module_group_graph,
+        &module_group_id,
+        &*resource_pot_map,
+        resources_map,
+      );
 
       resources_to_inject.insert(
         html_entry_resource.unwrap(),
@@ -313,4 +291,56 @@ impl FarmPluginHtml {
   pub fn new(_: &Config) -> Self {
     Self {}
   }
+}
+
+pub fn get_dynamic_resources_map(
+  module_group_graph: &ModuleGroupGraph,
+  module_group_id: &ModuleGroupId,
+  resource_pot_map: &ResourcePotMap,
+  resources_map: &HashMap<String, Resource>,
+) -> HashMap<ModuleId, Vec<(String, ResourceType)>> {
+  let mut dep_module_groups = vec![];
+
+  module_group_graph.bfs(&module_group_id, &mut |mg_id| {
+    if mg_id != module_group_id {
+      dep_module_groups.push(mg_id.clone());
+    }
+  });
+
+  let mut dynamic_resources_map = HashMap::<ModuleId, Vec<(String, ResourceType)>>::new();
+
+  for mg_id in dep_module_groups {
+    let mg = module_group_graph.module_group(&mg_id).unwrap();
+
+    for rp_id in mg.resource_pots() {
+      let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
+        panic!(
+          "Resource pot {} not found in resource pot map",
+          rp_id.to_string()
+        )
+      });
+
+      if dynamic_resources_map.contains_key(&mg_id) {
+        let resources = dynamic_resources_map.get_mut(&mg_id).unwrap();
+
+        for r in rp.resources() {
+          let resource = resources_map.get(r).unwrap();
+          resources.push((resource.name.clone(), resource.resource_type.clone()));
+        }
+      } else {
+        let mut resources = vec![];
+
+        for r in rp.resources() {
+          let resource = resources_map
+            .get(r)
+            .unwrap_or_else(|| panic!("{} not found", r));
+          resources.push((resource.name.clone(), resource.resource_type.clone()));
+        }
+
+        dynamic_resources_map.insert(mg_id.clone(), resources);
+      }
+    }
+  }
+
+  dynamic_resources_map
 }

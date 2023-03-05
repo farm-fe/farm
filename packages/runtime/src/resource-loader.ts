@@ -21,29 +21,36 @@ export class ResourceLoader {
     this.publicPaths = publicPaths;
   }
 
-  async load(resource: Resource): Promise<void> {
+  load(resource: Resource): Promise<void> {
     let index = 0;
     while (index < this.publicPaths.length) {
       const publicPath = this.publicPaths[index];
       const url = `${publicPath === '/' ? '' : publicPath}/${resource.path}`;
 
-      if (this._loadedResources[url]) {
+      if (this._loadedResources[resource.path]) {
         return;
       }
-
+      let promise = Promise.resolve();
       try {
         if (resource.type === 'script') {
-          await this._loadScript(url);
+          promise = this._loadScript(url);
         } else if (resource.type === 'link') {
-          await this._loadLink(url);
+          promise = this._loadLink(url);
         }
-        this._loadedResources[url] = true;
-        return;
+
+        promise.then(() => {
+          this._loadedResources[resource.path] = true;
+        });
+        return promise;
       } catch (e) {
         console.error(`[Farm] Failed to load resource "${url}"`, e);
         index++;
       }
     }
+  }
+
+  setLoadedResource(path: string) {
+    this._loadedResources[path] = true;
   }
 
   private _loadScript(path: string): Promise<void> {

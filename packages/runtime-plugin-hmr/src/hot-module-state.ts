@@ -29,8 +29,6 @@ export function applyHotUpdates(
   result: HmrUpdateResult,
   moduleSystem: ModuleSystem
 ) {
-  console.log(result);
-
   for (const id of result.removed) {
     moduleSystem.delete(id);
   }
@@ -46,6 +44,10 @@ export function applyHotUpdates(
       // do not found boundary module, reload the window
       window.location.reload();
     }
+  }
+
+  if (result.dynamicResourcesMap) {
+    moduleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
   }
 
   // TODO support accept dependencies change

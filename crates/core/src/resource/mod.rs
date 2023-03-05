@@ -31,6 +31,18 @@ impl ResourceType {
       ResourceType::SourceMap => "map".to_string(),
     }
   }
+
+  pub fn to_html_tag(&self) -> String {
+    match self {
+      ResourceType::Asset(str) => str.to_string(),
+      ResourceType::Custom(str) => str.to_string(),
+      ResourceType::Runtime => "script".to_string(),
+      ResourceType::Js => "script".to_string(),
+      ResourceType::Css => "link".to_string(),
+      ResourceType::Html => "html".to_string(),
+      ResourceType::SourceMap => "map".to_string(),
+    }
+  }
 }
 
 #[cache_item]

@@ -198,6 +198,7 @@ pub fn patch_module_group_graph(
         let module_group_id = added_module_id.clone();
         let module_group = ModuleGroup::new(module_group_id.clone());
         module_group_graph.add_module_group(module_group);
+        affected_module_groups.insert(module_group_id.clone());
 
         let module_group_ids = {
           let module = module_graph
@@ -276,10 +277,26 @@ pub fn patch_module_group_graph(
     }
   }
 
-  affected_module_groups
+  let affected_module_groups = affected_module_groups
     .into_iter()
     .filter(|g_id| module_group_graph.has(g_id))
-    .collect()
+    .collect::<HashSet<_>>();
+
+  let mut final_affected_module_groups = HashSet::new();
+
+  for module_group_id in affected_module_groups {
+    let module_group = module_group_graph.module_group(&module_group_id).unwrap();
+
+    for module_id in module_group.modules() {
+      let module = module_graph.module(module_id).unwrap();
+
+      for module_group_id in &module.module_groups {
+        final_affected_module_groups.insert(module_group_id.clone());
+      }
+    }
+  }
+
+  final_affected_module_groups
 }
 
 #[cfg(test)]
@@ -420,7 +437,7 @@ mod tests {
     );
     assert_eq!(
       affected_groups,
-      HashSet::from(["A".into(), "B".into(), "F".into()])
+      HashSet::from(["A".into(), "B".into(), "F".into(), "D".into()])
     );
 
     let update_module_group_graph = module_group_graph_from_entries(

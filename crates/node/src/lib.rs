@@ -24,6 +24,7 @@ pub struct JsUpdateResult {
   pub removed: Vec<String>,
   pub modules: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
+  pub dynamic_resources_map: Option<HashMap<String, Vec<Vec<String>>>>,
 }
 
 #[napi(js_name = "Compiler")]
@@ -156,6 +157,19 @@ impl JsCompiler {
         .collect(),
       modules: res.resources,
       boundaries: res.boundaries,
+      dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
+        dynamic_resources_map
+          .into_iter()
+          .map(|(k, v)| {
+            (
+              k.id(self.compiler.context().config.mode.clone()),
+              v.into_iter()
+                .map(|(path, ty)| vec![path, ty.to_html_tag()])
+                .collect(),
+            )
+          })
+          .collect()
+      }),
     })
   }
 

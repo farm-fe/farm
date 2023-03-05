@@ -44,6 +44,10 @@ impl ResourcePotMap {
   pub fn resource_pots_mut(&mut self) -> Vec<&mut ResourcePot> {
     self.map.values_mut().collect()
   }
+
+  pub fn has_resource_pot(&self, id: &ResourcePotId) -> bool {
+    self.map.contains_key(id)
+  }
 }
 
 impl Default for ResourcePotMap {

@@ -6,6 +6,7 @@ import { Context } from 'koa';
 import chalk from 'chalk';
 
 import { DevServer } from '../index.js';
+import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
 export function lazyCompilation(server: DevServer) {
   const compiler = server.getCompiler();
@@ -26,8 +27,26 @@ export function lazyCompilation(server: DevServer) {
       );
 
       if (result) {
+        let dynamicResourcesMap: Record<string, Resource[]> = null;
+
+        if (result.dynamicResourcesMap) {
+          for (const [key, value] of Object.entries(
+            result.dynamicResourcesMap
+          )) {
+            if (!dynamicResourcesMap) {
+              dynamicResourcesMap = {} as Record<string, Resource[]>;
+            }
+
+            dynamicResourcesMap[key] = value.map((r) => ({
+              path: r[0],
+              type: r[1] as 'script' | 'link',
+            }));
+          }
+        }
+
         const code = `export default {
           modules: ${result.modules.trim().slice(0, -1)},
+          dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
         }`;
         ctx.type = 'application/javascript';
         ctx.body = code;

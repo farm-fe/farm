@@ -147,9 +147,6 @@ pub struct PartialBundlingModuleBucketsConfig {
   pub name: String,
   /// Regex vec to match the modules in the module bucket
   pub test: Vec<String>,
-  /// If true, this bucket will always contains all modules matches by the test field, this may bring duplicate modules when you have multiple entries and use dynamic import.
-  /// be careful to use it
-  pub isolate: bool,
 }
 
 impl Default for PartialBundlingModuleBucketsConfig {
@@ -157,7 +154,6 @@ impl Default for PartialBundlingModuleBucketsConfig {
     Self {
       name: "".to_string(),
       test: vec![],
-      isolate: false,
     }
   }
 }

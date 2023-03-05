@@ -121,10 +121,10 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// partial bundling modules of module group to [Vec<ResourcePot>]
+  /// partial bundling modules to [Vec<ResourcePot>]
   fn partial_bundling(
     &self,
-    _module_group: &mut ModuleGroup,
+    _modules: &Vec<ModuleId>,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<ResourcePot>>> {

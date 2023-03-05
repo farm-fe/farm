@@ -6,6 +6,7 @@ import debounce from 'lodash.debounce';
 import { Logger } from '../logger.js';
 import { relative } from 'path';
 import chalk from 'chalk';
+import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
@@ -46,6 +47,19 @@ export class HmrEngine {
         `${Date.now() - start}ms`
       )}`
     );
+    let dynamicResourcesMap: Record<string, Resource[]> = null;
+
+    if (result.dynamicResourcesMap) {
+      for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
+        if (!dynamicResourcesMap) {
+          dynamicResourcesMap = {} as Record<string, Resource[]>;
+        }
+        dynamicResourcesMap[key] = value.map((r) => ({
+          path: r[0],
+          type: r[1] as 'script' | 'link',
+        }));
+      }
+    }
 
     const resultStr = `export default {
       added: [${result.added.map((r) => `'${r}'`).join(', ')}],
@@ -53,6 +67,7 @@ export class HmrEngine {
       removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
       modules: ${result.modules.trim().slice(0, -1)},
       boundaries: ${JSON.stringify(result.boundaries)},
+      dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;
 
     const id = Date.now().toString();

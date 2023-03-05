@@ -7,10 +7,14 @@ use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
   hashbrown::HashSet,
-  module::{module_graph::ModuleGraphEdge, Module, ModuleId},
+  module::{
+    module_graph::ModuleGraphEdge, module_group::ModuleGroupId, Module, ModuleId, ModuleType,
+  },
   plugin::{PluginResolveHookParam, ResolveKind},
   rayon::ThreadPool,
+  resource::ResourceType,
 };
+use farmfe_plugin_html::get_dynamic_resources_map;
 use farmfe_toolkit::tracing;
 
 use crate::{
@@ -43,6 +47,7 @@ pub struct UpdateResult {
   /// This code string should be returned to the client side as MIME type `application/javascript`
   pub resources: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
+  pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -111,23 +116,23 @@ impl Compiler {
 
     self.optimize_update_module_graph(&update_context).unwrap();
 
+    let previous_module_groups = {
+      let module_group_graph = self.context.module_group_graph.read();
+      module_group_graph
+        .module_groups()
+        .into_iter()
+        .map(|m| m.id.clone())
+        .collect::<HashSet<_>>()
+    };
+
     let (affected_module_groups, updated_module_ids, diff_result) =
       self.diff_and_patch_context(paths, &update_context);
-    let cloned_updated_module_ids = updated_module_ids.clone();
 
-    let cloned_context = self.context.clone();
-    std::thread::spawn(move || {
-      // TODO: manage a task queue, and run the tasks in sequence
-      regenerate_resources_for_affected_module_groups(
-        affected_module_groups,
-        &cloned_updated_module_ids,
-        &cloned_context,
-      )
-      .unwrap();
-
-      finalize_resources(&cloned_context).unwrap();
-    });
-
+    let dynamic_resources_map = self.regenerate_resources(
+      affected_module_groups,
+      previous_module_groups,
+      &updated_module_ids,
+    );
     // TODO1: only regenerate the resources for script modules.
     // TODO2: should reload when html change
     // TODO3: cover it with tests
@@ -142,6 +147,7 @@ impl Compiler {
       removed_module_ids: diff_result.removed_modules.into_iter().collect(),
       resources,
       boundaries,
+      dynamic_resources_map,
     })
   }
 
@@ -237,10 +243,10 @@ impl Compiler {
     let mut update_module_graph = update_context.module_graph.write();
 
     if update_module_graph.has_module(&module.id) {
-      return;
+      update_module_graph.replace_module(module);
+    } else {
+      update_module_graph.add_module(module);
     }
-
-    update_module_graph.add_module(module);
   }
 
   fn add_edge_to_update_module_graph(
@@ -318,6 +324,72 @@ impl Compiler {
 
     (affected_module_groups, start_points, diff_result)
   }
+
+  fn regenerate_resources(
+    &self,
+    affected_module_groups: HashSet<ModuleGroupId>,
+    previous_module_groups: HashSet<ModuleGroupId>,
+    updated_module_ids: &Vec<ModuleId>,
+  ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>> {
+    let mut dynamic_resources_map = None;
+    let cloned_updated_module_ids = updated_module_ids.clone();
+
+    let cloned_context = self.context.clone();
+
+    // if there are new module groups, we should run the tasks synchronously
+    if affected_module_groups
+      .iter()
+      .any(|ag| !previous_module_groups.contains(ag))
+    {
+      regenerate_resources_for_affected_module_groups(
+        affected_module_groups,
+        &cloned_updated_module_ids,
+        &cloned_context,
+      )
+      .unwrap();
+
+      finalize_resources(&cloned_context).unwrap();
+      let module_group_graph = self.context.module_group_graph.read();
+      let resource_pot_map = self.context.resource_pot_map.read();
+      let resources_map = self.context.resources_map.lock();
+      let module_graph = self.context.module_graph.read();
+      let html_entries_ids = module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .filter(|m| {
+          let module = module_graph.module(m).unwrap();
+          matches!(module.module_type, ModuleType::Html)
+        })
+        .collect::<Vec<_>>();
+      let mut dynamic_resources = HashMap::new();
+
+      for html_entry_id in html_entries_ids {
+        dynamic_resources.extend(get_dynamic_resources_map(
+          &*module_group_graph,
+          &html_entry_id,
+          &*resource_pot_map,
+          &*resources_map,
+        ));
+      }
+
+      dynamic_resources_map = Some(dynamic_resources);
+    } else {
+      std::thread::spawn(move || {
+        // TODO: manage a task queue, and run the tasks in sequence
+        regenerate_resources_for_affected_module_groups(
+          affected_module_groups,
+          &cloned_updated_module_ids,
+          &cloned_context,
+        )
+        .unwrap();
+
+        finalize_resources(&cloned_context).unwrap();
+      });
+    }
+
+    dynamic_resources_map
+  }
 }
 
 /// Similar to [crate::build::resolve_module], but the resolved module may be existed in both context and update_context
@@ -349,12 +421,18 @@ fn resolve_module(
     ));
   }
 
-  let update_module_graph = update_context.module_graph.read();
+  let mut update_module_graph = update_context.module_graph.write();
   if update_module_graph.has_module(&resolve_module_id_result.module_id) {
     return Ok(ResolveModuleResult::ExistingWhenUpdate(
       resolve_module_id_result.module_id,
     ));
   }
+  // just a placeholder module, it will be replaced by the real module later
+  update_module_graph.add_module(Compiler::create_module(
+    resolve_module_id_result.module_id.clone(),
+    false,
+    false,
+  ));
 
   Ok(ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
     module: Compiler::create_module(

@@ -216,7 +216,6 @@ async function readConfigFile(
               {
                 name: 'farm.config.bundle.js',
                 test: ['.+'],
-                isolate: true,
               },
             ],
           },

@@ -23,13 +23,12 @@ pub struct ResourcePot {
   pub entry_module: Option<ModuleId>,
   /// the resources generated in this [ResourcePot]
   resources: HashSet<String>,
-  // the [ModuleGroup] this [ResourcePot] belongs to
-  pub module_group: ModuleGroupId,
+  pub module_groups: HashSet<ModuleGroupId>,
   pub immutable: bool,
 }
 
 impl ResourcePot {
-  pub fn new(id: ResourcePotId, ty: ResourcePotType, group_id: ModuleGroupId) -> Self {
+  pub fn new(id: ResourcePotId, ty: ResourcePotType) -> Self {
     Self {
       id,
       resource_pot_type: ty,
@@ -37,7 +36,7 @@ impl ResourcePot {
       meta: ResourcePotMetaData::Custom(Box::new(EmptyResourcePotMetaData) as _),
       entry_module: None,
       resources: HashSet::new(),
-      module_group: group_id,
+      module_groups: HashSet::new(),
       immutable: false,
     }
   }
