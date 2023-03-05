@@ -39,6 +39,7 @@ pub fn write_resources(context: &Arc<CompilationContext>) {
   }
 
   // Remove useless resources
+  // TODO support sub dir scene
   let existing_resources = read_dir(output_dir.clone())
     .unwrap()
     .map(|entry| {

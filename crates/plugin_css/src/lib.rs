@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  module::{CssModuleMetaData, ModuleMetaData, ModuleType},
+  module::{CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
@@ -27,6 +27,10 @@ pub struct FarmPluginCss {}
 impl Plugin for FarmPluginCss {
   fn name(&self) -> &str {
     "FarmPluginCss"
+  }
+  /// This plugin should be executed at last
+  fn priority(&self) -> i32 {
+    0
   }
 
   fn load(
@@ -61,6 +65,8 @@ impl Plugin for FarmPluginCss {
     if matches!(param.module_type, ModuleType::Css)
       && matches!(context.config.mode, farmfe_core::config::Mode::Development)
     {
+      let module_id = ModuleId::new(param.resolved_path, &context.config.root);
+
       let css_js_code = format!(
         r#"
 const cssCode = `{}`;
@@ -75,7 +81,8 @@ if (previousStyle) {{
   document.head.appendChild(style);
 }}
 "#,
-        param.content, param.resolved_path
+        param.content,
+        module_id.to_string()
       );
 
       Ok(Some(PluginTransformHookResult {

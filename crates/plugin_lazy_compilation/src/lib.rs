@@ -90,10 +90,12 @@ impl Plugin for FarmPluginLazyCompilation {
       if param.query.get("original").is_none() {
         let resolved_path = param.resolved_path;
         let dynamic_code = include_str!("dynamic_module.ts")
-          .replace("MODULE_PATH", resolved_path)
+          .replace("MODULE_PATH", &resolved_path.replace(r"\", r"\\"))
           .replace(
             "MODULE_ID",
-            &ModuleId::new(resolved_path, &context.config.root).id(context.config.mode.clone()),
+            &ModuleId::new(resolved_path, &context.config.root)
+              .id(context.config.mode.clone())
+              .replace(r"\", r"\\"),
           )
           .replace(
             "'FARM_MODULE_SYSTEM'",

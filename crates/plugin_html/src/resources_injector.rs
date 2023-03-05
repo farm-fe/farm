@@ -94,11 +94,8 @@ impl ResourcesInjector {
         }
       }
 
-      dynamic_resources_code += &format!(
-        r#"'{}': [{}],"#,
-        module_id.id(self.mode.clone()),
-        resources_code
-      );
+      let id = module_id.id(self.mode.clone()).replace(r"\", r"\\");
+      dynamic_resources_code += &format!(r#"'{}': [{}],"#, id, resources_code);
     }
 
     dynamic_resources_code = format!("{{ {} }}", dynamic_resources_code);
