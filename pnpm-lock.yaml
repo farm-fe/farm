@@ -71,7 +71,7 @@ importers:
 
   packages/cli:
     specifiers:
-      '@farmfe/core': workspace:^0.3.0
+      '@farmfe/core': workspace:^0.3.3
       '@types/inquirer': ^9.0.3
       cac: ^6.7.14
       chalk: ^5.2.0

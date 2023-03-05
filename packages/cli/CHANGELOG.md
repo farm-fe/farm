@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.3.1
+
+### Patch Changes
+
+- Optimize disk usage
+
 ## 0.3.0
 
 ### Minor Changes

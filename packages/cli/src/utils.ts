@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import Module from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import walkdir from 'walkdir';
 import type { start, build } from '@farmfe/core';
 
@@ -39,5 +39,10 @@ export function resolveCore(cwd: string): Promise<{
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
   const farmCorePath = require.resolve('@farmfe/core');
+
+  if (process.platform === 'win32') {
+    return import(pathToFileURL(farmCorePath).toString());
+  }
+
   return import(farmCorePath);
 }

@@ -6,8 +6,8 @@ interface LazyCompileResult {
 }
 
 const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
-const moduleId = 'MODULE_ID';
-const modulePath = 'MODULE_PATH';
+const moduleId = `MODULE_ID`;
+const modulePath = `MODULE_PATH`;
 
 FarmModuleSystem.lazyCompiling = false;
 FarmModuleSystem.compilingModules = new Map<string, Promise<any>>();

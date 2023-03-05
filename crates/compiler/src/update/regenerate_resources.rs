@@ -98,11 +98,12 @@ pub fn regenerate_resources_for_affected_module_groups(
     // also remove the related resources, the resources will be regenerated later
     let mut resource_maps = context.resources_map.lock();
     let resource_pot = resource_pot_map.resource_pot_mut(resource_pot_id).unwrap();
-    resource_pot.clear_resources();
 
     for resource in resource_pot.resources() {
       resource_maps.remove(resource);
     }
+
+    resource_pot.clear_resources();
   }
 
   let resource_pots = resource_pot_map
