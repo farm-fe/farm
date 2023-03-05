@@ -152,18 +152,6 @@ impl Plugin for FarmPluginPartialBundling {
           .as_bytes(),
           8,
         );
-        // let id = format!(
-        //   "{}-{}-{}-{}",
-        //   module_bucket.id.to_string(),
-        //   module_type.to_string(),
-        //   module_ids
-        //     .iter()
-        //     .map(|m| m.to_string())
-        //     .collect::<Vec<_>>()
-        //     .join("_"),
-        //   immutable
-        // )
-        // .replace("/", "+");
         let mut resource_pot = ResourcePot::new(ResourcePotId::new(id), module_type.into());
 
         resource_pot.immutable = immutable;

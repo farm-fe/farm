@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.3.2
+
+### Patch Changes
+
+- write resources to disk to optimize resources loading time
+- Updated dependencies
+  - @farmfe/runtime-plugin-hmr@3.0.2
+  - @farmfe/runtime@0.3.2
+
 ## 0.3.1
 
 ### Patch Changes

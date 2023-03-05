@@ -1,6 +1,11 @@
 #![deny(clippy::all)]
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+  collections::HashMap,
+  fs::remove_dir_all,
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use farmfe_compiler::{update::UpdateType, Compiler};
 
@@ -9,6 +14,7 @@ pub mod plugin_adapters;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
+  relative_path::RelativePath,
 };
 use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, NapiRaw, Status};
@@ -108,19 +114,34 @@ impl JsCompiler {
   /// TODO: usage example
   #[napi]
   pub async fn compile(&self) -> napi::Result<()> {
+    let context = self.compiler.context();
+    let output_dir = if Path::new(&context.config.output.path).is_absolute() {
+      PathBuf::from(&context.config.output.path)
+    } else {
+      RelativePath::new(&context.config.output.path).to_logical_path(&context.config.root)
+    };
+
+    if output_dir.exists() {
+      remove_dir_all(&output_dir).map_err(|e| {
+        napi::Error::new(
+          Status::GenericFailure,
+          format!("remove output dir error: {}", e),
+        )
+      })?;
+    }
+
     self
       .compiler
       .compile()
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+    Ok(())
   }
 
   /// sync compile
   #[napi]
   pub fn compile_sync(&self) -> napi::Result<()> {
-    self
-      .compiler
-      .compile()
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+    unimplemented!("sync compile is not supported yet")
   }
 
   /// async update, return promise
@@ -177,23 +198,6 @@ impl JsCompiler {
   #[napi]
   pub fn update_sync(&self, paths: Vec<String>) -> napi::Result<JsUpdateResult> {
     unimplemented!("sync update");
-  }
-
-  #[napi]
-  pub fn resources(&self) -> HashMap<String, Vec<u8>> {
-    let context = self.compiler.context();
-    let resources = context.resources_map.lock();
-
-    let mut result = HashMap::new();
-
-    for resource in resources.values() {
-      // only write expose non-emitted resource
-      if !resource.emitted {
-        result.insert(resource.name.clone(), resource.bytes.clone());
-      }
-    }
-
-    result
   }
 
   #[napi]

@@ -6,7 +6,6 @@ export interface UserServerConfig {
   port?: number;
   https?: boolean;
   // http2?: boolean;
-  writeToDisk?: boolean;
   hmr?: boolean | UserHmrConfig;
 }
 
