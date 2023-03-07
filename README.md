@@ -7,7 +7,7 @@
 
 # Farm
 
-> Super fast web build engine written in rust. yet another performant alternative besides webpack/vite
+> Super fast web build tool written in rust. yet another performant alternative besides webpack/vite
 
 |                     | Webpack | Vite  | Farm  | Compare                                       |
 | ------------------- | ------- | ----- | ----- | --------------------------------------------- |
@@ -24,10 +24,13 @@
 
 **Features**:
 
-- 🔥 **Super Fast**: Start a react / vue(incoming) project in milliseconds.
-- ⚡ **"1ms" HMR**: Finish a HMR within 10ms for the most situations.
-- 🧰 **Fully Pluggable**: Support both rust plugins and js plugins.
-- ⚙️ **Native Web Assets Compiling Supported**: Support support compiling JS/TS/JSX/TSX, css, html natively.
+- 🔥 **Super Fast**: Written in Rust, start a react / vue(incoming) project in milliseconds, perform a HMR update within 10ms for the most situations.
+- 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Support both rust plugins and js plugins.
+- ⚙️ **Native Web Assets Compiling Supported**: Support compiling JS/TS/JSX/TSX, css, html natively.
+- **Lazy Compilation**: Dynamic imported resources are compiled only when they are requested.
+- **Partial Bundling**: Bundle your project into a few reasonable bundles, speed up the resources loading without losing the caching granularity.
+- **Consistency**: What you see in development will be exactly the same as what you've got in production.
+- **Compatibility**: Support both legacy(es5) and modern browsers.
 
 <br/>
 
@@ -36,7 +39,7 @@
 > - See [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation) for design motivation and principle.
 > - **This project is still under development. Contributions are welcome**.
 >
-> This project is built on SWC Project, using swc for html/css/js/tsx/ts/jsx parsing, transforming, optimizing and codegen.
+> This project is built on the SWC Project, using swc for html/css/js/tsx/ts/jsx parsing, transforming, optimizing and codegen.
 
 <br/>
 
@@ -54,110 +57,17 @@ Start the project:
 cd farm-react && npm i && npm start
 ```
 
-## Configuring
+Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
-Farm load configuration file from `farm.config.ts`. The available config as below:
+## Contribution
+Farm is divided into two parts: the `js side` and the `rust side`:
+* **the js side**: see code in `packages` dir, contains core(dev server, file watcher and compiler wrapper), cli， runtime and runtime plugins(module system, hmr)
+* **the rust side**: see code in `crates` dir, contains core(compilation context, plugin drivers...), compiler(compile process, HMR update...) and plugins.
 
-```ts
-export interface UserConfig {
-  /** current root of this project, default to current working directory */
-  root?: string;
-  /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
-  plugins?: (RustPlugin | JsPlugin)[];
-  /** config related to compilation */
-  compilation?: {
-    input?: Record<string, string>;
-    output?: {
-      filename?: string;
-      path?: string;
-      publicPath?: string;
-    };
-    resolve?: {
-      extensions?: string[];
-      alias?: Record<string, string>;
-      mainFields?: string[];
-      conditions?: string[];
-      symlinks: boolean;
-    };
-    external?: string[];
-    mode?: 'development' | 'production';
-    root?: string;
-    runtime?: {
-      path: string;
-      plugins?: string[];
-      swcHelpersPath?: string;
-    };
-    script?: {
-      // specify target es version
-      target?:
-        | 'es3'
-        | 'es5'
-        | 'es2015'
-        | 'es2016'
-        | 'es2017'
-        | 'es2018'
-        | 'es2019'
-        | 'es2020'
-        | 'es2021'
-        | 'es2022';
-      // config swc parser
-      parser?: {
-        esConfig?: {
-          jsx?: boolean;
-          fnBind: boolean;
-          // Enable decorators.
-          decorators: boolean;
-
-          // babel: `decorators.decoratorsBeforeExport`
-          //
-          // Effective only if `decorator` is true.
-          decoratorsBeforeExport: boolean;
-          exportDefaultFrom: boolean;
-          // Stage 3.
-          importAssertions: boolean;
-          privateInObject: boolean;
-          allowSuperOutsideMethod: boolean;
-          allowReturnOutsideFunction: boolean;
-        };
-        tsConfig?: {
-          tsx: boolean;
-          decorators: boolean;
-          /// `.d.ts`
-          dts: boolean;
-          noEarlyErrors: boolean;
-        };
-      };
-    };
-    partialBundling?: {
-      moduleBuckets?: {
-        name: string;
-        test: string[];
-      }[];
-    };
-    lazyCompilation?: boolean;
-  };
-  /** config related to dev server */
-  server?: UserServerConfig;
-}
-
-export type RustPlugin =
-  | string
-  | [
-      string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Record<string, any>
-    ];
-
-export interface JsPlugin {
-  resolve: JsPluginHook<
-    {
-      importers: string[];
-      specifiers: string[];
-    },
-    PluginResolveHookParam,
-    PluginResolveHookResult
-  >;
-
-  // load: JsPluginHook<{ filters: { ids: string[] }}>;
-}
-```
+Steps to deveplop Farm:
+1. Install Rust Toolchain(If you are new to Rust, search `Rustup Book`) and node 16 or above.
+2. Install dependencies with `pnpm i`.
+3. Build the compiler binary: `cd packages/core && npm run build:rs`
+4. Build packages(open a new terminal): `cd packages/cli && npm start`
+5. Work with examples(open a new terminal): `cd examples/react && npm start`, report an issue if the example do not start normally.
+6. If you changed Rust code, run `npm run build:rs` under `packages/core` again to get the newest binary.
