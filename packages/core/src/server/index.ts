@@ -21,7 +21,7 @@ import { fileURLToPath } from 'url';
 import { lazyCompilation } from './middlewares/lazy-compilation.js';
 
 /**
- * Farm Dev Server, responsible of:
+ * Farm Dev Server, responsible for:
  * * parse and normalize dev server options
  * * launch http server based on options
  * * compile the project in dev mode and serve the production
