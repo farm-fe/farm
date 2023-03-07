@@ -5,7 +5,8 @@ import path from 'node:path';
 /**
  * Farm plugin build command, build a rust farm plugin
  */
-export function build(_args: any[]): void {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function build(_args?: unknown[]): void {
   // TODO, should automatically install Rust environment automatically
   execSync(`cargo build --release`, {
     stdio: 'inherit',
