@@ -1,7 +1,17 @@
 import { ModuleSystem } from './module-system';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const __farm_global_this__: any = globalThis || window || global || self;
+type FarmGlobalThis = (Window &
+  typeof globalThis &
+  typeof global &
+  typeof self) & {
+  noop: () => void;
+  __farm_module_system__: ModuleSystem;
+};
+
+const __farm_global_this__ = (globalThis ||
+  window ||
+  global ||
+  self) as FarmGlobalThis;
 
 __farm_global_this__.noop = function () {
   /* do nothing */
