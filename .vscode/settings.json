@@ -1,6 +1,3 @@
 {
-  "editor.formatOnSave": true,
-  "editor.tabSize": 2,
-  "editor.fontFamily": "Fira Code",
-  "editor.fontLigatures": true
+  "editor.tabSize": 2
 }
