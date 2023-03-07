@@ -110,7 +110,7 @@ export interface UserConfig {
 
           // babel: `decorators.decoratorsBeforeExport`
           //
-          // Effective only if `decorator` is true.
+          // Effective only if `decorators` is true.
           decoratorsBeforeExport: boolean;
           exportDefaultFrom: boolean;
           // Stage 3.
@@ -159,5 +159,12 @@ export interface JsPlugin {
   >;
 
   // load: JsPluginHook<{ filters: { ids: string[] }}>;
+}
+
+export interface UserServerConfig {
+  port?: number;
+  https?: boolean;
+  // http2?: boolean;
+  hmr?: boolean | UserHmrConfig;
 }
 ```
