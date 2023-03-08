@@ -71,7 +71,7 @@ test('Js Plugin Execution - resolve', async () => {
 
   if (process.platform === 'win32') {
     const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.a).toBe(2);
+    expect(result.default).toBe(2);
   } else {
     const result = await import(outputFilePath);
     expect(result.default).toBe(2);
@@ -105,7 +105,7 @@ test('Js Plugin Execution - load', async () => {
 
   if (process.platform === 'win32') {
     const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.a).toBe(33);
+    expect(result.default).toBe(33);
   } else {
     const result = await import(outputFilePath);
     expect(result.default).toBe(33);
@@ -138,7 +138,7 @@ test('Js Plugin Execution - transform', async () => {
 
   if (process.platform === 'win32') {
     const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.a).toBe(44);
+    expect(result.default).toBe(44);
   } else {
     const result = await import(outputFilePath);
     expect(result.default).toBe(44);
