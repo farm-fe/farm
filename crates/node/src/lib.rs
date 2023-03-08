@@ -114,22 +114,6 @@ impl JsCompiler {
   /// TODO: usage example
   #[napi]
   pub async fn compile(&self) -> napi::Result<()> {
-    let context = self.compiler.context();
-    let output_dir = if Path::new(&context.config.output.path).is_absolute() {
-      PathBuf::from(&context.config.output.path)
-    } else {
-      RelativePath::new(&context.config.output.path).to_logical_path(&context.config.root)
-    };
-
-    if output_dir.exists() {
-      remove_dir_all(&output_dir).map_err(|e| {
-        napi::Error::new(
-          Status::GenericFailure,
-          format!("remove output dir error: {}", e),
-        )
-      })?;
-    }
-
     self
       .compiler
       .compile()

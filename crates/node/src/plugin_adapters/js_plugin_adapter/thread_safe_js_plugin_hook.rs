@@ -233,9 +233,9 @@ impl JsPluginResolveHook {
       if let Some(importer) = &param.importer {
         i.is_match(&importer.resolved_path(&ctx.config.root))
       } else {
-        false
+        i.is_match("None")
       }
-    }) || self
+    }) && self
       .filters
       .sources
       .iter()

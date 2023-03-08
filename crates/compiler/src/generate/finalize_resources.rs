@@ -5,7 +5,7 @@ use std::{
   sync::Arc,
 };
 
-use farmfe_core::{context::CompilationContext, relative_path::RelativePath};
+use farmfe_core::{context::CompilationContext, relative_path::RelativePath, rayon::prelude::{IntoParallelIterator, ParallelIterator}};
 use farmfe_toolkit::tracing;
 
 #[tracing::instrument(skip_all)]
@@ -65,13 +65,15 @@ pub fn write_resources(context: &Arc<CompilationContext>) {
   }
 
   // add new resources
-  for resource in resources.values() {
+  let resources_vec = resources.values().collect::<Vec<&farmfe_core::resource::Resource>>();
+  resources_vec.into_par_iter().for_each(|resource| {
     let file_path = RelativePath::new(&resource.name).to_logical_path(&output_dir);
     // only write expose non-emitted resource
     if !resource.emitted && !file_path.exists() {
       let mut file = File::create(file_path).unwrap();
 
       file.write_all(&resource.bytes).unwrap();
+      file.sync_data().unwrap();
     }
-  }
+  });
 }

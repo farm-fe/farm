@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
@@ -17,6 +19,7 @@ export class Compiler {
       throw new Error('Already compiling');
     }
     this.compiling = true;
+    this._removeOutputPath();
     await this._bindingCompiler.compile();
     this.compiling = false;
   }
@@ -26,6 +29,7 @@ export class Compiler {
       throw new Error('Already compiling');
     }
     this.compiling = true;
+    this._removeOutputPath();
     this._bindingCompiler.compileSync();
     this.compiling = false;
   }
@@ -46,5 +50,15 @@ export class Compiler {
 
   hasModule(resolvedPath: string): boolean {
     return this._bindingCompiler.hasModule(resolvedPath);
+  }
+
+  private _removeOutputPath() {
+    const outputPath = path.join(
+      this.config.config.root,
+      this.config.config.output.path
+    );
+    if (fs.existsSync(outputPath)) {
+      fs.rmSync(outputPath, { recursive: true });
+    }
   }
 }

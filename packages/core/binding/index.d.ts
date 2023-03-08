@@ -32,20 +32,15 @@ export interface PluginResolveHookParam {
   importer: String | null;
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   kind: ResolveKind;
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  caller: String | null;
 }
 
 export interface PluginResolveHookResult {
-  /// resolved id, normally a resolved path.
-  id: String;
+  /// resolved path, normally a absolute path. you can also return a virtual path, and use [PluginLoadHookResult] to provide the content of the virtual path
+  resolvedPath: String;
   /// whether this module should be external, if true, the module won't present in the final result
   external: boolean;
   /// whether this module has side effects, affects tree shaking
-  side_effects: boolean;
-  /// the package.json of the resolved id, if [None], using root package.json(where farm.config placed) by default
-  package_json_info: Record<string, string> | null;
+  sideEffects: boolean;
   /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [crate::utils::parse_query] is for you
@@ -53,37 +48,34 @@ export interface PluginResolveHookResult {
 }
 
 export interface PluginLoadHookParam {
-  id: string;
+  resolvedPath: string;
   query: Record<string, string>;
-  /// if this hook is called by the compiler, its value is [None]
-  /// if this hook is called by other plugins, its value is set by the caller plugins.
-  caller: string | null;
 }
 
 export interface PluginLoadHookResult {
-  /// the source content of the module
-  source: string;
+  /// the content of the module
+  content: string;
   /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
   /// usually end with `.js` extension
-  module_type: ModuleType;
+  moduleType: ModuleType;
 }
 
 export interface PluginTransformHookParam {
   /// source content after load or transformed result of previous plugin
-  source: string;
+  content: string;
   /// module type after load
-  module_type: ModuleType;
-  id: string;
+  moduleType: ModuleType;
+  resolvedPath: string;
   query: Record<string, string>;
 }
 
 export interface PluginTransformHookResult {
   /// transformed source content, will be passed to next plugin.
-  source: string;
+  content: string;
   /// you can change the module type after transform.
-  module_type: ModuleType | null;
+  moduleType?: ModuleType;
   /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
-  source_map: String | null;
+  sourceMap?: String | null;
 }
 
 export interface Config {
