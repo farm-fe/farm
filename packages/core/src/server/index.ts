@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 
 import Koa from 'koa';
-import serve from 'koa-static';
+// import serve from 'koa-static';
 import { WebSocketServer } from 'ws';
 import chalk from 'chalk';
 import boxen from 'boxen';
@@ -19,6 +19,7 @@ import { brandColor, Logger } from '../logger.js';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { lazyCompilation } from './middlewares/lazy-compilation.js';
+import { resources } from './middlewares/resources.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -48,7 +49,8 @@ export class DevServer {
       mkdirSync(this._dist, { recursive: true });
     }
 
-    this._app.use(serve(this._dist));
+    // this._app.use(serve(this._dist));
+    this._app.use(resources(this._compiler));
 
     if (this.config.hmr) {
       this.ws = new WebSocketServer({

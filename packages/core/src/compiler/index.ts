@@ -1,4 +1,5 @@
-import fs from 'node:fs';
+import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
@@ -19,7 +20,6 @@ export class Compiler {
       throw new Error('Already compiling');
     }
     this.compiling = true;
-    this._removeOutputPath();
     await this._bindingCompiler.compile();
     this.compiling = false;
   }
@@ -29,7 +29,6 @@ export class Compiler {
       throw new Error('Already compiling');
     }
     this.compiling = true;
-    this._removeOutputPath();
     this._bindingCompiler.compileSync();
     this.compiling = false;
   }
@@ -52,13 +51,42 @@ export class Compiler {
     return this._bindingCompiler.hasModule(resolvedPath);
   }
 
-  private _removeOutputPath() {
+  resources(): Record<string, string> {
+    return this._bindingCompiler.resources();
+  }
+
+  resource(path: string): string {
+    return this._bindingCompiler.resource(path);
+  }
+
+  async writeResourcesToDisk(): Promise<void> {
+    const resources = this.resources();
+    const promises = [];
+    const configOutputPath = this.config.config.output.path;
+    const outputPath = path.isAbsolute(configOutputPath)
+      ? configOutputPath
+      : path.join(this.config.config.root, configOutputPath);
+
+    for (const [name, resource] of Object.entries(resources)) {
+      const filePath = path.join(outputPath, name);
+
+      if (!existsSync(path.dirname(filePath))) {
+        mkdirSync(path.dirname(filePath), { recursive: true });
+      }
+
+      promises.push(writeFile(filePath, resource));
+    }
+
+    await Promise.all(promises);
+  }
+
+  removeOutputPathDir() {
     const outputPath = path.join(
       this.config.config.root,
       this.config.config.output.path
     );
-    if (fs.existsSync(outputPath)) {
-      fs.rmSync(outputPath, { recursive: true });
+    if (existsSync(outputPath)) {
+      rmSync(outputPath, { recursive: true });
     }
   }
 }

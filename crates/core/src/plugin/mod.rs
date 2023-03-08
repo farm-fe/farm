@@ -301,7 +301,7 @@ pub struct PluginTransformHookParam<'a> {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename = "camelCase", default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct PluginTransformHookResult {
   /// transformed source content, will be passed to next plugin.
   pub content: String,

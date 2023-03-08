@@ -42,4 +42,6 @@ export class Compiler {
   /** sync update */
   updateSync(paths: Array<string>): JsUpdateResult;
   hasModule(resolvedPath: string): boolean;
+  resources(): Record<string, string>;
+  resource(name: string): string | null;
 }

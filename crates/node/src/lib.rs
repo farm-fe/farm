@@ -192,4 +192,34 @@ impl JsCompiler {
 
     module_graph.has_module(&module_id)
   }
+
+  #[napi]
+  pub fn resources(&self) -> HashMap<String, String> {
+    let context = self.compiler.context();
+    let resources = context.resources_map.lock();
+
+    let mut result = HashMap::new();
+
+    for resource in resources.values() {
+      // only write expose non-emitted resource
+      if !resource.emitted {
+        result.insert(
+          resource.name.clone(),
+          String::from_utf8(resource.bytes.clone()).unwrap(),
+        );
+      }
+    }
+
+    result
+  }
+
+  #[napi]
+  pub fn resource(&self, name: String) -> Option<String> {
+    let context = self.compiler.context();
+    let resources = context.resources_map.lock();
+
+    resources
+      .get(&name)
+      .map(|r| String::from_utf8(r.bytes.clone()).unwrap())
+  }
 }

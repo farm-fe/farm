@@ -1,11 +1,11 @@
 export type ModuleType =
-  | 'js'
-  | 'ts'
-  | 'jsx'
-  | 'tsx'
-  | 'css'
-  | 'html'
-  | 'asset'
+  | 'Ts'
+  | 'Js'
+  | 'Jsx'
+  | 'Tsx'
+  | 'Css'
+  | 'Html'
+  | 'Asset'
   | string;
 
 export type ResolveKind =
