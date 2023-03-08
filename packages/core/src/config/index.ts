@@ -235,7 +235,7 @@ async function readConfigFile(
       });
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
-      compiler.writeResourcesToDisk();
+      await compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);
       // Change to vm.module of node or loaders as far as it is stable
