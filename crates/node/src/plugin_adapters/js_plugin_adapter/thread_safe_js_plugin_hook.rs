@@ -274,7 +274,7 @@ impl JsPluginLoadHook {
       .filters
       .resolved_paths
       .iter()
-      .any(|f| f.is_match(&param.resolved_path))
+      .any(|f| f.is_match(param.resolved_path))
     {
       self.tsfn.call::<PluginLoadHookParam, PluginLoadHookResult>(
         param.clone(),
@@ -309,7 +309,7 @@ impl JsPluginTransformHook {
       .filters
       .resolved_paths
       .iter()
-      .any(|f| f.is_match(&param.resolved_path))
+      .any(|f| f.is_match(param.resolved_path))
     {
       self
         .tsfn
