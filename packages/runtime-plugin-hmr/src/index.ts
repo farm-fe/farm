@@ -14,25 +14,34 @@ export default <FarmRuntimePlugin>{
   bootstrap(moduleSystem) {
     console.log('[Farm HMR] connecting to the server...');
 
-    // setup websocket connection
-    const socket = new WebSocket(`ws://${host}:${port}`);
-    // listen for the message from the server
-    // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
-    // after the file is recompiled, the server will generated a update resource and send its id to the client
-    // the client will use the id to fetch the update resource and apply the update
-    socket.addEventListener('message', (event) => {
-      const data = JSON.parse(event.data) as HmrUpdatePacket;
+    function connect() {
+      // setup websocket connection
+      const socket = new WebSocket(`ws://${host}:${port}`);
 
-      import(`/__hmr?id=${data.id}`).then(
-        (result: { default: HmrUpdateResult }) => {
-          applyHotUpdates(result.default, moduleSystem);
-        }
-      );
-    });
+      // listen for the message from the server
+      // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
+      // after the file is recompiled, the server will generated a update resource and send its id to the client
+      // the client will use the id to fetch the update resource and apply the update
+      socket.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data) as HmrUpdatePacket;
 
-    socket.addEventListener('open', () => {
-      console.log('[Farm HMR] connected to the server');
-    });
+        import(`/__hmr?id=${data.id}`).then(
+          (result: { default: HmrUpdateResult }) => {
+            applyHotUpdates(result.default, moduleSystem);
+          }
+        );
+      });
+
+      socket.addEventListener('open', () => {
+        console.log('[Farm HMR] connected to the server');
+      });
+
+      socket.addEventListener('close', () => setTimeout(connect, 3000));
+
+      return socket;
+    }
+
+    connect();
   },
   moduleCreated(module) {
     // create a hot context for each module
