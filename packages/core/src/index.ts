@@ -54,8 +54,11 @@ export async function build(options: {
     userConfig,
     'production'
   );
+
   const start = Date.now();
   const compiler = new Compiler(normalizedConfig);
+  compiler.removeOutputPathDir();
   await compiler.compile();
+  compiler.writeResourcesToDisk();
   logger.info(`Build completed in ${chalk.green(`${Date.now() - start}ms`)}!`);
 }

@@ -1,3 +1,5 @@
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
@@ -46,5 +48,41 @@ export class Compiler {
 
   hasModule(resolvedPath: string): boolean {
     return this._bindingCompiler.hasModule(resolvedPath);
+  }
+
+  resources(): Record<string, string> {
+    return this._bindingCompiler.resources();
+  }
+
+  resource(path: string): string {
+    return this._bindingCompiler.resource(path);
+  }
+
+  writeResourcesToDisk(): void {
+    const resources = this.resources();
+    const configOutputPath = this.config.config.output.path;
+    const outputPath = path.isAbsolute(configOutputPath)
+      ? configOutputPath
+      : path.join(this.config.config.root, configOutputPath);
+
+    for (const [name, resource] of Object.entries(resources)) {
+      const filePath = path.join(outputPath, name);
+
+      if (!existsSync(path.dirname(filePath))) {
+        mkdirSync(path.dirname(filePath), { recursive: true });
+      }
+
+      writeFileSync(filePath, resource);
+    }
+  }
+
+  removeOutputPathDir() {
+    const outputPath = path.join(
+      this.config.config.root,
+      this.config.config.output.path
+    );
+    if (existsSync(outputPath)) {
+      rmSync(outputPath, { recursive: true });
+    }
   }
 }

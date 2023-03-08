@@ -60,11 +60,14 @@ cd farm-react && npm i && npm start
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## Contribution
-Farm is divided into two parts: the `js side` and the `rust side`:
-* **the js side**: see code in `packages` dir, contains core(dev server, file watcher and compiler wrapper), cli， runtime and runtime plugins(module system, hmr)
-* **the rust side**: see code in `crates` dir, contains core(compilation context, plugin drivers...), compiler(compile process, HMR update...) and plugins.
 
-Steps to deveplop Farm:
+Farm is divided into two parts: the `js side` and the `rust side`:
+
+- **the js side**: see code in `packages` dir, contains core(dev server, file watcher and compiler wrapper), cli， runtime and runtime plugins(module system, hmr)
+- **the rust side**: see code in `crates` dir, contains core(compilation context, plugin drivers...), compiler(compile process, HMR update...) and plugins.
+
+Steps to develop Farm:
+
 1. Install Rust Toolchain(If you are new to Rust, search `Rustup Book`) and node 16 or above.
 2. Install dependencies with `pnpm i`.
 3. Build the compiler binary: `cd packages/core && npm run build:rs`

@@ -2,7 +2,7 @@
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from './index.js';
-import debounce from 'lodash.debounce';
+// import debounce from 'lodash.debounce';
 import { Logger } from '../logger.js';
 import { relative } from 'path';
 import chalk from 'chalk';
@@ -24,7 +24,7 @@ export class HmrEngine {
     this._devServer = devServer;
   }
 
-  recompileAndSendResult = debounce(async (): Promise<void> => {
+  recompileAndSendResult = async (): Promise<void> => {
     const queue = [...this._updateQueue];
 
     if (queue.length === 0) {
@@ -84,10 +84,10 @@ export class HmrEngine {
     });
 
     // if there are more updates, recompile again
-    if (this._updateQueue.length > 0) {
+    if (this._updateQueue.length > 0 && !this._compiler.compiling) {
       await this.recompileAndSendResult();
     }
-  }, 200);
+  };
 
   async hmrUpdate(path: string) {
     // if lazy compilation is enabled, we need to update the virtual module

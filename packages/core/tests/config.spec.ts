@@ -12,12 +12,6 @@ import { DefaultLogger } from '../src/logger.js';
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
-  console.log(
-    '\n\n\n\n',
-    filePath,
-    path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
-    '\n\n\n\n\n'
-  );
   const config = await resolveUserConfig(
     path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     new DefaultLogger()

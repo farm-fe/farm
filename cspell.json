@@ -50,7 +50,8 @@
     "walkdir",
     "elems",
     "loglevel",
-    "Pluggable"
+    "Pluggable",
+    "Rustup"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

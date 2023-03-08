@@ -205,8 +205,12 @@ async function readConfigFile(
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (resolvedPath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
-      const outputPath = path.join(os.tmpdir(), 'farmfe');
-      const fileName = `${Date.now()}-farm.config.bundle.mjs`;
+      const outputPath = path.join(
+        os.tmpdir(),
+        'farmfe',
+        Date.now().toString()
+      );
+      const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
@@ -231,6 +235,7 @@ async function readConfigFile(
       });
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
+      await compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);
       // Change to vm.module of node or loaders as far as it is stable
