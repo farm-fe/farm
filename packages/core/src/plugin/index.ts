@@ -1,6 +1,10 @@
 import {
+  PluginLoadHookParam,
+  PluginLoadHookResult,
   PluginResolveHookParam,
   PluginResolveHookResult,
+  PluginTransformHookParam,
+  PluginTransformHookResult,
 } from '../../binding/index.js';
 
 interface CompilationContext {
@@ -20,7 +24,17 @@ export interface JsPlugin {
     PluginResolveHookResult
   >;
 
-  // load: JsPluginHook<{ filters: { ids: string[] }}>;
+  load: JsPluginHook<
+    { resolved_paths: string[] },
+    PluginLoadHookParam,
+    PluginLoadHookResult
+  >;
+
+  transform: JsPluginHook<
+    { resolved_paths: string[] },
+    PluginTransformHookParam,
+    PluginTransformHookResult
+  >;
 }
 
 export { rustPluginResolver } from './rustPluginResolver.js';

@@ -72,19 +72,29 @@ impl Plugin for JsPluginAdapter {
 
   fn load(
     &self,
-    _param: &PluginLoadHookParam,
-    _context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
+    param: &PluginLoadHookParam,
+    context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
-    Ok(None)
+    if let Some(js_load_hook) = &self.js_load_hook {
+      let cp = param.clone();
+      js_load_hook.call(cp, context.clone(), hook_context.clone())
+    } else {
+      Ok(None)
+    }
   }
 
   fn transform(
     &self,
-    _param: &PluginTransformHookParam,
-    _context: &Arc<CompilationContext>,
+    param: &PluginTransformHookParam,
+    context: &Arc<CompilationContext>,
   ) -> Result<Option<PluginTransformHookResult>> {
-    Ok(None)
+    if let Some(js_transform_hook) = &self.js_transform_hook {
+      let cp = param.clone();
+      js_transform_hook.call(cp, context.clone())
+    } else {
+      Ok(None)
+    }
   }
 }
 

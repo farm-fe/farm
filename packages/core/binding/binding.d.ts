@@ -9,10 +9,10 @@ export interface JsPluginResolveHookFilters {
   sources: Array<string>;
 }
 export interface JsPluginLoadHookFilters {
-  ids: Array<string>;
+  resolvedPaths: Array<string>;
 }
 export interface JsPluginTransformHookFilters {
-  ids: Array<string>;
+  resolvedPaths: Array<string>;
 }
 export interface JsUpdateResult {
   added: Array<string>;
