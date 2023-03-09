@@ -9,10 +9,10 @@ export interface JsPluginResolveHookFilters {
   sources: Array<string>;
 }
 export interface JsPluginLoadHookFilters {
-  ids: Array<string>;
+  resolvedPaths: Array<string>;
 }
 export interface JsPluginTransformHookFilters {
-  ids: Array<string>;
+  resolvedPaths: Array<string>;
 }
 export interface JsUpdateResult {
   added: Array<string>;
@@ -42,4 +42,6 @@ export class Compiler {
   /** sync update */
   updateSync(paths: Array<string>): JsUpdateResult;
   hasModule(resolvedPath: string): boolean;
+  resources(): Record<string, string>;
+  resource(name: string): string | null;
 }

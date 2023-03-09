@@ -79,7 +79,7 @@ impl ThreadSafeJsPluginHook {
     &self,
     param: P,
     ctx: Arc<CompilationContext>,
-    hook_context: PluginHookContext,
+    hook_context: Option<PluginHookContext>,
   ) -> Result<Option<T>> {
     let (sender, receiver) = channel::<Result<Option<T>>>();
 
@@ -126,7 +126,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
   let data: Box<(
     P,
     Arc<CompilationContext>,
-    PluginHookContext,
+    Option<PluginHookContext>,
     Sender<Result<Option<T>>>,
   )> = Box::from_raw(data.cast());
   let (param, ctx, hook_context, sender) = *data;
@@ -136,11 +136,11 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
     Env::from_raw(raw_env).to_js_value(&arg).unwrap().raw()
   }
 
-  let args: Vec<napi_value> = vec![
-    to_napi_value(param, raw_env),
-    js_context.raw(),
-    to_napi_value(hook_context, raw_env),
-  ];
+  let mut args: Vec<napi_value> = vec![to_napi_value(param, raw_env), js_context.raw()];
+
+  if let Some(hook_context) = hook_context {
+    args.push(to_napi_value(hook_context, raw_env));
+  }
 
   let mut result = ptr::null_mut();
   napi_call_function(raw_env, recv, func, args.len(), args.as_ptr(), &mut result);
@@ -229,22 +229,22 @@ impl JsPluginResolveHook {
     ctx: Arc<CompilationContext>,
     hook_context: PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
-    let skip = self.filters.importers.iter().any(|i| {
+    let filtered = self.filters.importers.iter().any(|i| {
       if let Some(importer) = &param.importer {
         i.is_match(&importer.resolved_path(&ctx.config.root))
       } else {
-        false
+        i.is_match("None")
       }
-    }) || self
+    }) && self
       .filters
       .sources
       .iter()
       .any(|f| f.is_match(&param.source));
 
-    if !skip {
+    if filtered {
       self
         .tsfn
-        .call::<PluginResolveHookParam, PluginResolveHookResult>(param, ctx, hook_context)
+        .call::<PluginResolveHookParam, PluginResolveHookResult>(param, ctx, Some(hook_context))
     } else {
       Ok(None)
     }
@@ -264,8 +264,26 @@ impl JsPluginLoadHook {
     PluginLoadHookResult
   );
 
-  pub fn call(&self, param: &PluginLoadHookParam) -> Result<Option<PluginResolveHookResult>> {
-    Ok(None)
+  pub fn call(
+    &self,
+    param: PluginLoadHookParam,
+    ctx: Arc<CompilationContext>,
+    hook_context: PluginHookContext,
+  ) -> Result<Option<PluginLoadHookResult>> {
+    if self
+      .filters
+      .resolved_paths
+      .iter()
+      .any(|f| f.is_match(param.resolved_path))
+    {
+      self.tsfn.call::<PluginLoadHookParam, PluginLoadHookResult>(
+        param.clone(),
+        ctx,
+        Some(hook_context),
+      )
+    } else {
+      Ok(None)
+    }
   }
 }
 
@@ -282,8 +300,23 @@ impl JsPluginTransformHook {
     PluginTransformHookResult
   );
 
-  pub fn call(&self, param: &PluginTransformHookParam) -> Result<Option<PluginResolveHookResult>> {
-    Ok(None)
+  pub fn call(
+    &self,
+    param: PluginTransformHookParam,
+    ctx: Arc<CompilationContext>,
+  ) -> Result<Option<PluginTransformHookResult>> {
+    if self
+      .filters
+      .resolved_paths
+      .iter()
+      .any(|f| f.is_match(param.resolved_path))
+    {
+      self
+        .tsfn
+        .call::<PluginTransformHookParam, PluginTransformHookResult>(param, ctx, None)
+    } else {
+      Ok(None)
+    }
   }
 }
 
@@ -319,36 +352,44 @@ impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
 
 #[napi(object)]
 pub struct JsPluginLoadHookFilters {
-  pub ids: Vec<String>,
+  pub resolved_paths: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct PluginLoadHookFilters {
-  pub ids: Vec<Regex>,
+  pub resolved_paths: Vec<Regex>,
 }
 
 impl From<JsPluginLoadHookFilters> for PluginLoadHookFilters {
   fn from(f: JsPluginLoadHookFilters) -> Self {
     Self {
-      ids: f.ids.into_iter().map(|f| Regex::new(&f).unwrap()).collect(),
+      resolved_paths: f
+        .resolved_paths
+        .into_iter()
+        .map(|f| Regex::new(&f).unwrap())
+        .collect(),
     }
   }
 }
 
 #[napi(object)]
 pub struct JsPluginTransformHookFilters {
-  pub ids: Vec<String>,
+  pub resolved_paths: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct PluginTransformHookFilters {
-  pub ids: Vec<Regex>,
+  pub resolved_paths: Vec<Regex>,
 }
 
 impl From<JsPluginTransformHookFilters> for PluginTransformHookFilters {
   fn from(f: JsPluginTransformHookFilters) -> Self {
     Self {
-      ids: f.ids.into_iter().map(|f| Regex::new(&f).unwrap()).collect(),
+      resolved_paths: f
+        .resolved_paths
+        .into_iter()
+        .map(|f| Regex::new(&f).unwrap())
+        .collect(),
     }
   }
 }
