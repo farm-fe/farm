@@ -102,6 +102,9 @@ export interface Config {
       plugins?: string[];
       swcHelpersPath?: string;
     };
+    assets?: {
+      include?: string[];
+    };
     script?: {
       // specify target es version
       target?:
