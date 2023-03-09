@@ -198,7 +198,10 @@ impl JsCompiler {
     let mut result = HashMap::new();
 
     for resource in resources.values() {
-      println!("\n\nresource: {:?}\n\n", resource.name);
+      println!(
+        "\n\n{}: resource: {:?} {}\n\n",
+        context.config.root, resource.name, resource.emitted
+      );
       // only write expose non-emitted resource
       if !resource.emitted {
         result.insert(resource.name.clone(), resource.bytes.clone().into());
