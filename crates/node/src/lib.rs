@@ -1,9 +1,6 @@
 #![deny(clippy::all)]
 
-use std::{
-  collections::HashMap,
-  sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_compiler::{update::UpdateType, Compiler};
 
@@ -14,7 +11,10 @@ use farmfe_core::{
   module::ModuleId,
 };
 use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
-use napi::{bindgen_prelude::{FromNapiValue, Buffer}, Env, JsObject, NapiRaw, Status};
+use napi::{
+  bindgen_prelude::{Buffer, FromNapiValue},
+  Env, JsObject, NapiRaw, Status,
+};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 #[macro_use]
@@ -198,12 +198,10 @@ impl JsCompiler {
     let mut result = HashMap::new();
 
     for resource in resources.values() {
+      println!("\n\nresource: {:?}\n\n", resource.name);
       // only write expose non-emitted resource
       if !resource.emitted {
-        result.insert(
-          resource.name.clone(),
-          resource.bytes.clone().into(),
-        );
+        result.insert(resource.name.clone(), resource.bytes.clone().into());
       }
     }
 
@@ -215,8 +213,6 @@ impl JsCompiler {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
-    resources
-      .get(&name)
-      .map(|r| r.bytes.clone().into())
+    resources.get(&name).map(|r| r.bytes.clone().into())
   }
 }

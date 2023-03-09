@@ -74,11 +74,9 @@ impl PackageJsonInfo {
             // TODO throw a graceful error
             let paths = glob::glob(abs_path.to_str().unwrap()).unwrap();
 
-            for p in paths {
-              if let Ok(path) = p {
-                let path = path.to_str().unwrap().to_string();
-                res.push(path);
-              }
+            for p in paths.flatten() {
+              let path = p.to_str().unwrap().to_string();
+              res.push(path);
             }
           }
         }
