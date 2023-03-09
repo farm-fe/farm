@@ -16,6 +16,7 @@ pub struct Config {
   pub mode: Mode,
   pub resolve: ResolveConfig,
   pub external: Vec<String>,
+  pub define: HashMap<String, String>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
@@ -34,6 +35,7 @@ impl Default for Config {
       output: OutputConfig::default(),
       mode: Mode::Development,
       resolve: ResolveConfig::default(),
+      define: HashMap::new(),
       external: vec![],
       runtime: Default::default(),
       script: Default::default(),
@@ -137,7 +139,7 @@ impl Default for ResolveConfig {
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RuntimeConfig {
-  /// the compiled runtime file path, a runtime is required for script module loading, executing and hot module updating.
+  /// the absolute path of the runtime entry, a runtime is required for script module loading, executing and hot module updating.
   pub path: String,
   /// the runtime plugins
   pub plugins: Vec<String>,
@@ -169,13 +171,7 @@ pub struct PartialBundlingConfig {
   pub module_buckets: Vec<PartialBundlingModuleBucketsConfig>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AssetsConfig {
   pub include: Vec<String>,
-}
-
-impl Default for AssetsConfig {
-  fn default() -> Self {
-    Self { include: vec![] }
-  }
 }
