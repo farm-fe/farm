@@ -30,6 +30,7 @@ impl Compiler {
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
       Arc::new(farmfe_plugin_css::FarmPluginCss::new(&config)) as _,
       Arc::new(farmfe_plugin_react::FarmPluginReact::new(&config)) as _,
+      Arc::new(farmfe_plugin_static_assets::FarmPluginStaticAssets::new(&config)) as _,
     ];
 
     if config.lazy_compilation {

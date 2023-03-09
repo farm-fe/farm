@@ -365,6 +365,7 @@ dependencies = [
  "farmfe_plugin_resolve",
  "farmfe_plugin_runtime",
  "farmfe_plugin_script",
+ "farmfe_plugin_static_assets",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils",
@@ -433,10 +434,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "farmfe_plugin_assets"
-version = "0.0.1"
-
-[[package]]
 name = "farmfe_plugin_css"
 version = "0.0.1"
 dependencies = [
@@ -488,6 +485,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "farmfe_utils",
 ]
 
 [[package]]
