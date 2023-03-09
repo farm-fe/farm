@@ -119,6 +119,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
+name = "base64"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
+
+[[package]]
 name = "better_scoped_tls"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -497,6 +503,16 @@ dependencies = [
 name = "farmfe_plugin_script"
 version = "0.0.1"
 dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+]
+
+[[package]]
+name = "farmfe_plugin_static_assets"
+version = "0.0.1"
+dependencies = [
+ "base64 0.21.0",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",

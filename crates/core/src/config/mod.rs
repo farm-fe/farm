@@ -18,6 +18,7 @@ pub struct Config {
   pub external: Vec<String>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
+  pub assets: AssetsConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
 }
@@ -36,6 +37,7 @@ impl Default for Config {
       external: vec![],
       runtime: Default::default(),
       script: Default::default(),
+      assets: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
       lazy_compilation: true,
     }
@@ -48,12 +50,14 @@ pub struct OutputConfig {
   pub path: String,
   pub public_path: String,
   pub filename: String,
+  pub assets_filename: String,
 }
 
 impl Default for OutputConfig {
   fn default() -> Self {
     Self {
       filename: "[resourceName].[contentHash].[ext]".to_string(),
+      assets_filename: "[resourceName].[contentHash].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),
     }
@@ -163,4 +167,15 @@ impl Default for PartialBundlingModuleBucketsConfig {
 pub struct PartialBundlingConfig {
   /// custom module buckets
   pub module_buckets: Vec<PartialBundlingModuleBucketsConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AssetsConfig {
+  pub include: Vec<String>,
+}
+
+impl Default for AssetsConfig {
+  fn default() -> Self {
+    Self { include: vec![] }
+  }
 }
