@@ -10,6 +10,9 @@ export default defineFarmConfig({
       symlinks: true,
       mainFields: ['module', 'main', 'customMain'],
     },
+    define: {
+      'BTN': 'Click me'
+    },
     output: {
       path: './build',
     },

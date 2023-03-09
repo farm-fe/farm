@@ -8,7 +8,7 @@ use farmfe_core::{
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
   resource::{resource_pot::ResourcePot, Resource},
 };
-use farmfe_toolkit::{hash::sha256, tracing};
+use farmfe_toolkit::{fs::transform_output_filename, hash::sha256, tracing};
 
 #[tracing::instrument(skip_all)]
 pub fn render_resource_pots_and_generate_resources(
@@ -29,18 +29,12 @@ pub fn render_resource_pots_and_generate_resources(
       let mut filename_config = context.config.output.filename.clone();
 
       if !r.preserve_name {
-        if filename_config.contains("[resourceName]") {
-          filename_config = filename_config.replace("[resourceName]", &r.name);
-        }
-
-        if filename_config.contains("[contentHash]") {
-          let content_hash = sha256(&r.bytes, 8);
-          filename_config = filename_config.replace("[contentHash]", &content_hash);
-        }
-
-        if filename_config.contains("[ext]") {
-          filename_config = filename_config.replace("[ext]", &r.resource_type.to_ext());
-        }
+        filename_config = transform_output_filename(
+          filename_config,
+          &r.name,
+          &r.bytes,
+          &r.resource_type.to_ext(),
+        );
       } else {
         filename_config = r.name.clone();
       }

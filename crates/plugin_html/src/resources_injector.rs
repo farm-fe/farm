@@ -12,6 +12,12 @@ use farmfe_toolkit::{
 
 use crate::deps_analyzer::{is_link_href, is_script_entry, is_script_src, FARM_ENTRY};
 
+pub struct ResourcesInjectorOptions {
+  pub mode: Mode,
+  pub public_path: String,
+  pub define: std::collections::HashMap<String, String>,
+}
+
 /// inject resources into the html ast
 pub struct ResourcesInjector {
   runtime_code: String,
@@ -19,8 +25,7 @@ pub struct ResourcesInjector {
   css_resources: Vec<String>,
   script_entries: Vec<String>,
   dynamic_resources_map: HashMap<ModuleId, Vec<(String, ResourceType)>>,
-  mode: Mode,
-  public_path: String,
+  options: ResourcesInjectorOptions,
 }
 
 impl ResourcesInjector {
@@ -30,8 +35,7 @@ impl ResourcesInjector {
     css_resources: Vec<String>,
     script_entries: Vec<String>,
     dynamic_resources_map: HashMap<ModuleId, Vec<(String, ResourceType)>>,
-    mode: Mode,
-    public_path: String,
+    options: ResourcesInjectorOptions,
   ) -> Self {
     Self {
       runtime_code,
@@ -39,8 +43,7 @@ impl ResourcesInjector {
       script_resources,
       script_entries,
       dynamic_resources_map,
-      mode,
-      public_path,
+      options,
     }
   }
 
@@ -94,7 +97,7 @@ impl ResourcesInjector {
         }
       }
 
-      let id = module_id.id(self.mode.clone()).replace(r"\", r"\\");
+      let id = module_id.id(self.options.mode.clone()).replace(r"\", r"\\");
       dynamic_resources_code += &format!(r#"'{}': [{}],"#, id, resources_code);
     }
 
@@ -106,6 +109,39 @@ impl ResourcesInjector {
         r#"{}.setDynamicModuleResourcesMap({});"#,
         FARM_MODULE_SYSTEM, dynamic_resources_code
       )),
+      vec![(FARM_ENTRY, "true")],
+    )));
+  }
+
+  fn inject_global_define(&self, element: &mut Element) {
+    let node_env = match self.options.mode {
+      Mode::Development => "development",
+      Mode::Production => "production",
+    };
+    let define_code = self
+      .options
+      .define
+      .iter()
+      .fold(String::new(), |mut acc, (key, value)| {
+        acc += &format!(r#"window.{} = '{}';"#, key, value);
+        acc
+      });
+
+    let code = format!(
+      r#"
+window.process = {{
+  env: {{
+    NODE_ENV: '{}',
+  }},
+}};
+window.__FARM_TARGET_ENV__ = '{}';
+{}"#,
+      node_env, "browser", define_code
+    );
+
+    element.children.push(Child::Element(create_element(
+      "script",
+      Some(&code),
       vec![(FARM_ENTRY, "true")],
     )));
   }
@@ -147,6 +183,8 @@ impl VisitMut for ResourcesInjector {
       );
       element.children.push(Child::Element(script_element));
     } else if element.tag_name.to_string() == "body" {
+      self.inject_global_define(element);
+
       for script in &self.script_resources {
         element.children.push(Child::Element(create_element(
           "script",
@@ -162,7 +200,7 @@ impl VisitMut for ResourcesInjector {
         "script",
         Some(&format!(
           r#"{}.setPublicPaths(['{}']);"#,
-          FARM_MODULE_SYSTEM, self.public_path
+          FARM_MODULE_SYSTEM, self.options.public_path
         )),
         vec![(FARM_ENTRY, "true")],
       )));

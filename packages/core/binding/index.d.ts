@@ -93,6 +93,7 @@ export interface Config {
       conditions?: string[];
       symlinks: boolean;
     };
+    define?: Record<string, string>;
     external?: string[];
     mode?: 'development' | 'production';
     root?: string;
