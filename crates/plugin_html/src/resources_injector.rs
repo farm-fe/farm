@@ -113,7 +113,7 @@ impl ResourcesInjector {
     )));
   }
 
-  fn inejct_global_define(&self, element: &mut Element) {
+  fn inject_global_define(&self, element: &mut Element) {
     let node_env = match self.options.mode {
       Mode::Development => "development",
       Mode::Production => "production",
@@ -183,7 +183,7 @@ impl VisitMut for ResourcesInjector {
       );
       element.children.push(Child::Element(script_element));
     } else if element.tag_name.to_string() == "body" {
-      self.inejct_global_define(element);
+      self.inject_global_define(element);
 
       for script in &self.script_resources {
         element.children.push(Child::Element(create_element(
