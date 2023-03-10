@@ -71,7 +71,7 @@ importers:
 
   packages/cli:
     specifiers:
-      '@farmfe/core': workspace:^0.3.3
+      '@farmfe/core': workspace:^0.4.0
       '@types/inquirer': ^9.0.3
       cac: ^6.7.14
       chalk: ^5.2.0
@@ -91,7 +91,7 @@ importers:
   packages/core:
     specifiers:
       '@farmfe/runtime': workspace:^0.3.2
-      '@farmfe/runtime-plugin-hmr': workspace:^3.0.2
+      '@farmfe/runtime-plugin-hmr': workspace:^3.0.3
       '@napi-rs/cli': ^2.10.0
       '@swc/helpers': ^0.4.9
       '@types/figlet': ^1.5.5

@@ -49,6 +49,6 @@
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.3",
-    "@farmfe/core": "workspace:^0.3.3"
+    "@farmfe/core": "workspace:^0.4.0"
   }
 }

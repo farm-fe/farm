@@ -1,5 +1,18 @@
 # @farmfe/core
 
+## 0.4.0
+
+### Minor Changes
+
+- 4ee1260: Support resolve `browser` field in package.json
+- 835e06b: Support resolve, load and transform hook for js plugins
+- 9d07b4d: Support static assets and define
+
+### Patch Changes
+
+- Updated dependencies [98d662f]
+  - @farmfe/runtime-plugin-hmr@3.0.3
+
 ## 0.3.3
 
 ### Patch Changes
