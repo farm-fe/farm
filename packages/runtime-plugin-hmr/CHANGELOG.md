@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.0.3
+
+### Patch Changes
+
+- 98d662f: feat: reconnect hmr server
+
 ## 3.0.2
 
 ### Patch Changes
