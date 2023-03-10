@@ -1,23 +1,10 @@
 #root {
-  background-color: whitesmoke;
   font-size: 24px;
-  height: 300px;
-}
-
-.button-wrapper {
-  padding-top: 100px;
   /* color: red; */
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: center;
-  align-items: center;
-}
-
-.description {
-  margin-top: 10px;
-  color: #333;
-  font-size: 16px;
-  margin: 0;
-  padding: 0;
+  /* display: flex; */
+  /* flex-flow: row wrap; */
+  /* justify-content: center; */
+  /* align-items: center; */
+  height: 300px;
   text-align: center;
 }

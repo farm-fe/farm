@@ -15,6 +15,8 @@ use farmfe_core::{
   swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
 };
 
+pub mod swc_try_with;
+
 /// parse the content of a module to [SwcModule] ast.
 pub fn parse_module(
   id: &str,

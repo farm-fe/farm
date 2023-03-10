@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.4.1
+
+### Patch Changes
+
+- Fix swc helper inject issue and optimize CLI
+- Updated dependencies
+  - @farmfe/runtime-plugin-hmr@3.0.4
+
 ## 0.4.0
 
 ### Minor Changes

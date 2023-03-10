@@ -51,7 +51,8 @@
     "elems",
     "loglevel",
     "Pluggable",
-    "Rustup"
+    "Rustup",
+    "clsx"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

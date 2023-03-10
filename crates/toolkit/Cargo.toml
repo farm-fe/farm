@@ -31,6 +31,7 @@ swc_css_codegen = { version = "0.144.4" }
 swc_html_parser = { version = "0.34.34" }
 swc_html_visit = { version = "0.28.23" }
 swc_html_codegen = { version = "0.37.35" }
+swc_error_reporters = { version = "0.13.36" }
 lazy_static = "1.4.0"
 regex = "1.4.3"
 tracing = "0.1.37"

@@ -1,13 +1,15 @@
 <p align="center">
+  <img src="./assets/banner.png" />
+</p>
+
+<p align="center">
   <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg" alt="npm package"></a>
   <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg" alt="node compatibility"></a>
   <a href="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml"><img src="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml/badge.svg" alt="build status"></a>
 </p>
 <br/>
 
-# Farm
-
-> Super fast web build tool written in rust. yet another performant alternative besides webpack/vite
+Farm is a supper fast, light-weight web building tool written in Rust. Farm is much faster than existing tools, for a React project, the performance compare as below:
 
 |                     | Webpack | Vite  | Farm  | Compare                                       |
 | ------------------- | ------- | ----- | ----- | --------------------------------------------- |
@@ -22,15 +24,15 @@
 
 <br />
 
-**Features**:
+## Features
 
-- 🔥 **Super Fast**: Written in Rust, start a react / vue(incoming) project in milliseconds, perform a HMR update within 10ms for the most situations.
+- ⚡ **Super Fast**: Written in Rust, start a react / vue(incoming) project in milliseconds, perform a HMR update within 10ms for the most situations.
 - 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Support both rust plugins and js plugins.
-- ⚙️ **Native Web Assets Compiling Supported**: Support compiling JS/TS/JSX/TSX, css, html natively.
-- **Lazy Compilation**: Dynamic imported resources are compiled only when they are requested.
-- **Partial Bundling**: Bundle your project into a few reasonable bundles, speed up the resources loading without losing the caching granularity.
-- **Consistency**: What you see in development will be exactly the same as what you've got in production.
-- **Compatibility**: Support both legacy(es5) and modern browsers.
+- ⚙️ **Powerful**: Support compiling JS/TS/JSX/TSX, css, html and static assets out of box.
+- ⏱️ **Lazy Compilation**: Dynamic imported resources are compiled only when they are requested.
+- 📦 **Partial Bundling**: Bundle your project into a few reasonable bundles, speed up the resources loading without losing the caching granularity.
+- 🔒 **Consistency**: What you see in development will be exactly the same as what you've got in production.
+- 🌳 **Compatibility**: Support both legacy(es5) and modern browsers.
 
 <br/>
 
@@ -58,6 +60,28 @@ cd farm-react && npm i && npm start
 ```
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
+
+## RoadMap
+
+Farm has implemented all basic features for a web building tool：
+
+- Resolving, loading, transforming and resource generating for web assets(html, css, js/jsx/ts/tsx, static asset and so on).
+- Lazy Compilation
+- Dev Server and HMR(support react fast fresh)
+- Partial Bundling
+- Both Rust and Js Plugin System
+
+Next Farm will provide:
+
+- Production Optimization like Minimize and Tree Shake
+- Css modules
+- Source Map
+- Official Plugins Like Sass
+- Persistent Cache
+
+See milestones: https://github.com/farm-fe/farm/milestones
+
+Looking forward to more contributions. Our goal is to provide a real high quality and performant web build tool for the community.
 
 ## Contribution
 

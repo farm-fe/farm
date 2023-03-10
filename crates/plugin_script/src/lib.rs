@@ -26,7 +26,7 @@ use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
     codegen_module, module_system_from_deps, module_type_from_id, parse_module,
-    syntax_from_module_type,
+    swc_try_with::try_with, syntax_from_module_type,
   },
   swc_ecma_transforms::{
     resolver,
@@ -119,34 +119,40 @@ impl Plugin for FarmPluginScript {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if param.module_type.is_typescript() {
-      GLOBALS.set(&context.meta.script.globals, || {
-        let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
-        let ast = &mut param.meta.as_script_mut().ast;
+      try_with(
+        context.meta.script.cm.clone(),
+        &context.meta.script.globals,
+        || {
+          let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
+          let ast = &mut param.meta.as_script_mut().ast;
 
-        match param.module_type {
-          farmfe_core::module::ModuleType::Js => {
-            // TODO downgrade syntax
+          match param.module_type {
+            farmfe_core::module::ModuleType::Js => {
+              // TODO downgrade syntax
+            }
+            farmfe_core::module::ModuleType::Jsx => {
+              // Do nothing, jsx should be handled by other plugins
+            }
+            farmfe_core::module::ModuleType::Ts => {
+              ast.visit_mut_with(&mut strip(top_level_mark));
+            }
+            farmfe_core::module::ModuleType::Tsx => {
+              ast.visit_mut_with(&mut strip_with_jsx(
+                context.meta.script.cm.clone(),
+                Default::default(),
+                NoopComments, // TODO parse comments
+                top_level_mark,
+              ));
+            }
+            _ => {}
           }
-          farmfe_core::module::ModuleType::Jsx => {
-            // Do nothing, jsx should be handled by other plugins
-          }
-          farmfe_core::module::ModuleType::Ts => {
-            ast.visit_mut_with(&mut strip(top_level_mark));
-          }
-          farmfe_core::module::ModuleType::Tsx => {
-            ast.visit_mut_with(&mut strip_with_jsx(
-              context.meta.script.cm.clone(),
-              Default::default(),
-              NoopComments, // TODO parse comments
-              top_level_mark,
-            ));
-          }
-          _ => {}
-        }
-      });
+        },
+      )?;
+
+      return Ok(Some(()));
     }
 
-    Ok(Some(()))
+    Ok(None)
   }
 
   fn analyze_deps(
