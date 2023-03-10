@@ -59,6 +59,7 @@
     "**/package.json",
     ".github/**",
     "**/*.toml",
-    "**/*.node"
+    "**/*.node",
+    "**/*.svg"
   ]
 }
