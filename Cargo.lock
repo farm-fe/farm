@@ -381,6 +381,7 @@ dependencies = [
  "downcast-rs",
  "farmfe_macro_cache_item",
  "farmfe_utils",
+ "glob",
  "hashbrown",
  "hex",
  "parking_lot",
@@ -521,7 +522,6 @@ name = "farmfe_testing_helpers"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
- "glob",
 ]
 
 [[package]]

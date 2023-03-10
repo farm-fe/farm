@@ -1,3 +1,4 @@
+use farmfe_core::common::ParsedSideEffects;
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::resolve::{self, PACKAGE_JSON_LOADER};
 
@@ -13,15 +14,28 @@ fn load_package_json() {
 
     assert_eq!(result.name, "fixture-package-json".to_string());
     assert_eq!(result.version, "1.0.0".to_string());
+    assert!(matches!(
+      result.side_effects(),
+      ParsedSideEffects::Bool(false)
+    ));
 
     let sub = dir.join("sub");
 
-    let result = resolve::load_package_json(sub, Default::default());
+    let result = resolve::load_package_json(sub.clone(), Default::default());
     assert!(result.is_ok());
     let result = result.unwrap();
 
     assert_eq!(result.name, "sub-fixture".to_string());
     assert_eq!(result.version, "1.0.0".to_string());
+
+    assert!(matches!(result.side_effects(), ParsedSideEffects::Array(_)));
+
+    if let ParsedSideEffects::Array(arr) = result.side_effects() {
+      assert_eq!(
+        *arr,
+        vec![sub.join("main.css").to_string_lossy().to_string()]
+      );
+    }
 
     // make sure cache works
     let cache = PACKAGE_JSON_LOADER.cache();

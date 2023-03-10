@@ -386,7 +386,7 @@ impl Plugin for FarmPluginRuntime {
         emitted: true, // do not emit runtime resource by default
         resource_type: ResourceType::Runtime,
         resource_pot: resource_pot.id.clone(),
-        preserve_name: false,
+        preserve_name: true,
       }]))
     } else if let Some(entry_module_id) = &resource_pot.entry_module {
       // modify the ast according to the type,

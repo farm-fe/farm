@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use farmfe_core::{
+  glob::glob,
   hashbrown::HashSet,
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdge},
@@ -10,7 +11,6 @@ use farmfe_core::{
   plugin::ResolveKind,
   relative_path::RelativePath,
 };
-use glob::glob;
 
 /// construct a test module graph like below:
 /// ```plain
