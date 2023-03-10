@@ -8,6 +8,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
 };
+use farmfe_toolkit::tracing;
 use update::{UpdateResult, UpdateType};
 
 pub mod build;
@@ -51,6 +52,7 @@ impl Compiler {
   }
 
   /// Compile the project using the configuration
+  #[tracing::instrument(skip_all)]
   pub fn compile(&self) -> Result<()> {
     // triggering build stage
     self.build()?;

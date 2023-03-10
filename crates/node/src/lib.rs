@@ -10,11 +10,12 @@ use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
 };
-use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
+use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter, Registry};
 use napi::{
   bindgen_prelude::{Buffer, FromNapiValue},
   Env, JsObject, NapiRaw, Status,
 };
+use opentelemetry::global;
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 #[macro_use]
@@ -89,16 +90,24 @@ impl JsCompiler {
       plugins_adapters.push(rust_plugin);
     }
 
-    let fmt_layer = fmt::layer().with_target(false);
-    let filter_layer = EnvFilter::try_from_default_env()
-      .or_else(|_| EnvFilter::try_new("info"))
-      .unwrap();
+    // let fmt_layer = fmt::layer().with_target(false);
+    // let filter_layer = EnvFilter::try_from_default_env()
+    //   .or_else(|_| EnvFilter::try_new("info"))
+    //   .unwrap();
 
+    // tracing_subscriber::registry()
+    //   .with(filter_layer)
+    //   .with(fmt_layer)
+    //   .try_init()
+    //   .err();
+
+    let tracer = opentelemetry_jaeger::new_agent_pipeline()
+        .with_service_name("farm_profile_pnpm")
+        .install_simple().unwrap();
+    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
     tracing_subscriber::registry()
-      .with(filter_layer)
-      .with(fmt_layer)
-      .try_init()
-      .err();
+        .with(opentelemetry)
+        .try_init().err();
 
     Ok(Self {
       compiler: Compiler::new(config, plugins_adapters)
