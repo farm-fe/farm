@@ -16,8 +16,10 @@ pub struct Config {
   pub mode: Mode,
   pub resolve: ResolveConfig,
   pub external: Vec<String>,
+  pub define: HashMap<String, String>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
+  pub assets: AssetsConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
 }
@@ -33,9 +35,11 @@ impl Default for Config {
       output: OutputConfig::default(),
       mode: Mode::Development,
       resolve: ResolveConfig::default(),
+      define: HashMap::new(),
       external: vec![],
       runtime: Default::default(),
       script: Default::default(),
+      assets: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
       lazy_compilation: true,
     }
@@ -48,12 +52,14 @@ pub struct OutputConfig {
   pub path: String,
   pub public_path: String,
   pub filename: String,
+  pub assets_filename: String,
 }
 
 impl Default for OutputConfig {
   fn default() -> Self {
     Self {
       filename: "[resourceName].[contentHash].[ext]".to_string(),
+      assets_filename: "[resourceName].[contentHash].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),
     }
@@ -102,6 +108,7 @@ impl Default for ResolveConfig {
     Self {
       alias: HashMap::new(),
       main_fields: vec![
+        String::from("exports"),
         String::from("browser"),
         String::from("module"),
         String::from("main"),
@@ -133,7 +140,7 @@ impl Default for ResolveConfig {
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RuntimeConfig {
-  /// the compiled runtime file path, a runtime is required for script module loading, executing and hot module updating.
+  /// the absolute path of the runtime entry, a runtime is required for script module loading, executing and hot module updating.
   pub path: String,
   /// the runtime plugins
   pub plugins: Vec<String>,
@@ -163,4 +170,9 @@ impl Default for PartialBundlingModuleBucketsConfig {
 pub struct PartialBundlingConfig {
   /// custom module buckets
   pub module_buckets: Vec<PartialBundlingModuleBucketsConfig>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct AssetsConfig {
+  pub include: Vec<String>,
 }

@@ -104,6 +104,7 @@ impl PackageJsonLoader {
             .to_string_lossy()
             .to_string(),
         );
+        result.parse();
 
         for visited in visited_stack {
           self

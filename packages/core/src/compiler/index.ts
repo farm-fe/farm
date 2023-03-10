@@ -50,11 +50,11 @@ export class Compiler {
     return this._bindingCompiler.hasModule(resolvedPath);
   }
 
-  resources(): Record<string, string> {
+  resources(): Record<string, Buffer> {
     return this._bindingCompiler.resources();
   }
 
-  resource(path: string): string {
+  resource(path: string): Buffer {
     return this._bindingCompiler.resource(path);
   }
 

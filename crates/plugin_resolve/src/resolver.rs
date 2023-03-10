@@ -1,6 +1,11 @@
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{
+  collections::HashMap,
+  path::{Path, PathBuf},
+  str::FromStr,
+};
 
 use farmfe_core::{
+  common::PackageJsonInfo,
   config::ResolveConfig,
   error::{CompilationError, Result},
   plugin::{PluginResolveHookResult, ResolveKind},
@@ -34,23 +39,51 @@ impl Resolver {
     base_dir: PathBuf,
     kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
-    // TODO: try load package.json first, the relative resolve may also need to use browser/exports field in package.json
-    let is_source_absolute = if let Ok(sp) = PathBuf::from_str(source) {
-      sp.is_absolute()
-    } else {
-      false
-    };
+    let package_json_info = load_package_json(
+      base_dir.clone(),
+      Options {
+        follow_symlinks: self.config.symlinks,
+        resolve_ancestor_dir: true, // only look for current directory
+      },
+    );
 
-    if is_source_absolute {
-      if let Some(resolved_path) = self.try_file(&PathBuf::from_str(source).unwrap()) {
+    // check if module is external
+    if let Ok(package_json_info) = &package_json_info {
+      if !self.is_source_absolute(source)
+        && !self.is_source_relative(source)
+        && self.is_module_external(package_json_info, source)
+      {
+        // this is an external module
         return Some(PluginResolveHookResult {
-          resolved_path,
+          resolved_path: String::from(source),
+          external: true,
           ..Default::default()
         });
+      }
+
+      // check browser replace
+      if !self.is_source_absolute(source) && !self.is_source_relative(source) {
+        if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
+          let external = self.is_module_external(package_json_info, &resolved_path);
+          let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
+
+          return Some(PluginResolveHookResult {
+            resolved_path,
+            external,
+            side_effects,
+            ..Default::default()
+          });
+        }
+      }
+    }
+
+    if self.is_source_absolute(source) {
+      if let Some(resolved_path) = self.try_file(&PathBuf::from_str(source).unwrap()) {
+        return Some(self.get_resolve_result(&package_json_info, resolved_path));
       } else {
         return None;
       }
-    } else if source.starts_with(".") {
+    } else if self.is_source_relative(source) {
       // if it starts with '.', it is a relative path
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
       let normalized_path = normalized_path.as_path();
@@ -71,10 +104,7 @@ impl Resolver {
         )));
 
       if let Some(resolved_path) = resolved_path.ok() {
-        Some(PluginResolveHookResult {
-          resolved_path,
-          ..Default::default()
-        })
+        return Some(self.get_resolve_result(&package_json_info, resolved_path));
       } else {
         None
       }
@@ -158,6 +188,7 @@ impl Resolver {
   ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
+
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
@@ -169,29 +200,23 @@ impl Resolver {
           RelativePath::new(source).to_logical_path(maybe_node_modules_path)
         };
 
-        // TODO cover it with tests
+        let package_json_info = load_package_json(
+          package_path.clone(),
+          Options {
+            follow_symlinks: self.config.symlinks,
+            resolve_ancestor_dir: false, // only look for current directory
+          },
+        );
+
         if !package_path.join("package.json").exists() {
           if let Some(resolved_path) = self
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
           {
-            return Some(PluginResolveHookResult {
-              resolved_path,
-              external: false,       // TODO read this from browser
-              side_effects: false,   // TODO read this from side_effects in package.json
-              query: HashMap::new(), // TODO parse this from the source
-            });
+            return Some(self.get_resolve_result(&package_json_info, resolved_path));
           }
         } else if package_path.exists() && package_path.is_dir() {
-          let package_json_info = load_package_json(
-            package_path.clone(),
-            Options {
-              follow_symlinks: self.config.symlinks,
-              resolve_ancestor_dir: false, // only look for current directory
-            },
-          );
-
-          if let Err(err) = package_json_info {
+          if let Err(_) = package_json_info {
             return None;
           }
 
@@ -208,14 +233,9 @@ impl Resolver {
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
 
-                if full_path.exists() {
-                  return Some(PluginResolveHookResult {
-                    resolved_path: full_path.to_string_lossy().to_string(),
-                    external: false,       // TODO read this from browser
-                    side_effects: false,   // TODO read this from side_effects in package.json
-                    query: HashMap::new(), // TODO parse this from the source
-                  });
-                }
+                return self.try_file(&full_path).map(|resolved_path| {
+                  self.get_resolve_result(&Ok(package_json_info), resolved_path)
+                });
               }
             }
           }
@@ -226,6 +246,152 @@ impl Resolver {
     }
 
     // unsupported node_modules resolving type
+    None
+  }
+
+  fn get_resolve_result(
+    &self,
+    package_json_info: &Result<PackageJsonInfo>,
+    resolved_path: String,
+  ) -> PluginResolveHookResult {
+    if let Ok(package_json_info) = package_json_info {
+      let external = self.is_module_external(&package_json_info, &resolved_path);
+      let side_effects = self.is_module_side_effects(&package_json_info, &resolved_path);
+
+      let resolved_path = self
+        .try_browser_replace(package_json_info, &resolved_path)
+        .unwrap_or(resolved_path);
+
+      return PluginResolveHookResult {
+        resolved_path,
+        external,
+        side_effects,
+        ..Default::default()
+      };
+    } else {
+      return PluginResolveHookResult {
+        resolved_path,
+        ..Default::default()
+      };
+    }
+  }
+
+  fn get_field_value_from_package_json_info(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    field: &str,
+  ) -> Option<Value> {
+    let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
+
+    if let Some(field_value) = raw_package_json_info.get(field) {
+      return Some(field_value.clone());
+    }
+
+    None
+  }
+
+  fn is_module_side_effects(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    resolved_path: &str,
+  ) -> bool {
+    match package_json_info.side_effects() {
+      farmfe_core::common::ParsedSideEffects::Bool(b) => *b,
+      farmfe_core::common::ParsedSideEffects::Array(arr) => {
+        if arr.iter().any(|s| s == resolved_path) {
+          true
+        } else {
+          false
+        }
+      }
+    }
+  }
+
+  fn is_module_external(&self, package_json_info: &PackageJsonInfo, resolved_path: &str) -> bool {
+    let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
+
+    if let Some(browser_field) = browser_field {
+      if let Value::Object(obj) = browser_field {
+        for (key, value) in obj {
+          let path = Path::new(resolved_path);
+
+          if matches!(value, Value::Bool(false)) {
+            // resolved path
+            if path.is_absolute() {
+              let key_path = RelativePath::new(&key)
+                .to_logical_path(package_json_info.dir())
+                .to_string_lossy()
+                .to_string();
+
+              return &key_path == resolved_path;
+            } else {
+              // source, e.g. 'foo' in require('foo')
+              return &key == resolved_path;
+            }
+          }
+        }
+      }
+    }
+
+    false
+  }
+
+  fn is_source_relative(&self, source: &str) -> bool {
+    source.starts_with("./") || source.starts_with("../")
+  }
+
+  fn is_source_absolute(&self, source: &str) -> bool {
+    if let Ok(sp) = PathBuf::from_str(source) {
+      sp.is_absolute()
+    } else {
+      false
+    }
+  }
+
+  fn try_browser_replace(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    resolved_path: &str,
+  ) -> Option<String> {
+    let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
+
+    if let Some(browser_field) = browser_field {
+      if let Value::Object(obj) = browser_field {
+        for (key, value) in obj {
+          let path = Path::new(resolved_path);
+
+          // resolved path
+          if path.is_absolute() {
+            let key_path = RelativePath::new(&key)
+              .to_logical_path(package_json_info.dir())
+              .to_string_lossy()
+              .to_string();
+
+            if &key_path == resolved_path {
+              if let Value::String(str) = value {
+                let value_path = RelativePath::new(&str)
+                  .to_logical_path(package_json_info.dir())
+                  .to_string_lossy()
+                  .to_string();
+                return Some(value_path);
+              }
+            }
+          } else {
+            // source, e.g. 'foo' in require('foo')
+            if &key == resolved_path {
+              if let Value::String(str) = value {
+                let value_path = RelativePath::new(&str)
+                  .to_logical_path(package_json_info.dir())
+                  .to_string_lossy()
+                  .to_string();
+                return Some(value_path);
+              }
+            }
+          }
+        }
+      }
+    }
+
     None
   }
 }

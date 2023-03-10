@@ -24,7 +24,7 @@ use farmfe_toolkit::{
   html::{codegen_html_document, parse_html_document},
   script::module_type_from_id,
 };
-use resources_injector::ResourcesInjector;
+use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
 
 mod deps_analyzer;
 mod resources_injector;
@@ -269,8 +269,11 @@ impl Plugin for FarmPluginHtml {
         css_resources,
         script_entries,
         dynamic_resources_map,
-        context.config.mode.clone(),
-        context.config.output.public_path.clone(),
+        ResourcesInjectorOptions {
+          mode: context.config.mode.clone(),
+          public_path: context.config.output.public_path.clone(),
+          define: context.config.define.clone(),
+        }
       );
 
       let resource_pot = resource_pot_map

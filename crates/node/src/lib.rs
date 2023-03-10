@@ -1,11 +1,6 @@
 #![deny(clippy::all)]
 
-use std::{
-  collections::HashMap,
-  fs::remove_dir_all,
-  path::{Path, PathBuf},
-  sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_compiler::{update::UpdateType, Compiler};
 
@@ -14,10 +9,12 @@ pub mod plugin_adapters;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
-  relative_path::RelativePath,
 };
 use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
-use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, NapiRaw, Status};
+use napi::{
+  bindgen_prelude::{Buffer, FromNapiValue},
+  Env, JsObject, NapiRaw, Status,
+};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 #[macro_use]
@@ -194,7 +191,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn resources(&self) -> HashMap<String, String> {
+  pub fn resources(&self) -> HashMap<String, Buffer> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
@@ -203,10 +200,7 @@ impl JsCompiler {
     for resource in resources.values() {
       // only write expose non-emitted resource
       if !resource.emitted {
-        result.insert(
-          resource.name.clone(),
-          String::from_utf8(resource.bytes.clone()).unwrap(),
-        );
+        result.insert(resource.name.clone(), resource.bytes.clone().into());
       }
     }
 
@@ -214,12 +208,10 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn resource(&self, name: String) -> Option<String> {
+  pub fn resource(&self, name: String) -> Option<Buffer> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
-    resources
-      .get(&name)
-      .map(|r| String::from_utf8(r.bytes.clone()).unwrap())
+    resources.get(&name).map(|r| r.bytes.clone().into())
   }
 }

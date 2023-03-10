@@ -93,6 +93,7 @@ export interface Config {
       conditions?: string[];
       symlinks: boolean;
     };
+    define?: Record<string, string>;
     external?: string[];
     mode?: 'development' | 'production';
     root?: string;
@@ -100,6 +101,9 @@ export interface Config {
       path: string;
       plugins?: string[];
       swcHelpersPath?: string;
+    };
+    assets?: {
+      include?: string[];
     };
     script?: {
       // specify target es version

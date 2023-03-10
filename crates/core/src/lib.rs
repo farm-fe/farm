@@ -22,6 +22,7 @@ pub const VERSION: &str = "0.1.0";
 
 // re-export common external crates
 pub use dashmap;
+pub use glob;
 pub use hashbrown;
 pub use parking_lot;
 pub use rayon;
