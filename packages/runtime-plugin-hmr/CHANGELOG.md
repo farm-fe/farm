@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.0.4
+
+### Patch Changes
+
+- Fix swc helper inject issue and optimize CLI
+
 ## 3.0.3
 
 ### Patch Changes

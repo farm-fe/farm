@@ -51,13 +51,15 @@
     "elems",
     "loglevel",
     "Pluggable",
-    "Rustup"
+    "Rustup",
+    "clsx"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
     "**/package.json",
     ".github/**",
     "**/*.toml",
-    "**/*.node"
+    "**/*.node",
+    "**/*.svg"
   ]
 }

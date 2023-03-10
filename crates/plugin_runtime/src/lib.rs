@@ -261,7 +261,7 @@ impl Plugin for FarmPluginRuntime {
     for resource_pot in resource_pot_map.resource_pots_mut() {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
         let rendered_resource_pot_ast =
-          resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context);
+          resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context)?;
 
         #[cfg(not(windows))]
         let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
@@ -320,7 +320,7 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
       let rendered_resource_pot_ast =
-        resource_pot_to_runtime_object_lit(resource_pot, &*module_graph, context);
+        resource_pot_to_runtime_object_lit(resource_pot, &*module_graph, context)?;
 
       #[cfg(not(windows))]
       let wrapper = include_str!("./js-runtime/resource-wrapper.js");

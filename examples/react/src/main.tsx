@@ -1,9 +1,15 @@
-
-import React, { Suspense } from 'react';
-import { CounterButton } from './comps/counter-button';
+import React from 'react';
 import { Description } from './comps/description';
 import './main.css';
 
+import { Title } from './comps/title';
+
 export function Main() {
-  return <><CounterButton /><Description /><div></div></>
+  return (
+    <>
+      <Title />
+      <Description />
+      <div></div>
+    </>
+  );
 }
