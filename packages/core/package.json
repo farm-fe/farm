@@ -7,11 +7,12 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./config": {
-      "import": "./dist/node/config.js",
-      "types": "./dist/node/config.d.ts"
+      "import": "./dist/config.js",
+      "types": "./dist/config.d.ts"
     },
     "./package.json": "./package.json"
   },
