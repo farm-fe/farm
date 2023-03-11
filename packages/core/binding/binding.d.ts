@@ -43,5 +43,6 @@ export class Compiler {
   updateSync(paths: Array<string>): JsUpdateResult;
   hasModule(resolvedPath: string): boolean;
   resources(): Record<string, Buffer>;
+  relativeModulePaths(): Array<string>;
   resource(name: string): Buffer | null;
 }

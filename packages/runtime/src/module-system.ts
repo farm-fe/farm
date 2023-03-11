@@ -76,7 +76,13 @@ export class ModuleSystem {
 
   dynamicRequire(moduleId: string): Promise<any> {
     if (this.modules[moduleId]) {
-      return Promise.resolve(this.require(moduleId));
+      const exports = this.require(moduleId);
+
+      if (exports.__farm_async) {
+        return exports.default;
+      } else {
+        return Promise.resolve(exports);
+      }
     }
 
     const resources = this.dynamicModuleResourcesMap[moduleId];

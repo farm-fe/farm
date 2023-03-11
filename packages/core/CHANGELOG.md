@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.4.2
+
+### Patch Changes
+
+- limit the watched files to optimize cold start speed and fix lazy compilation issue"
+- Updated dependencies
+  - @farmfe/runtime-plugin-hmr@3.0.5
+  - @farmfe/runtime@0.3.3
+
 ## 0.4.1
 
 ### Patch Changes

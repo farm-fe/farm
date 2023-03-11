@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime-plugin-hmr",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "Runtime hmr plugin of Farm",
   "author": {
     "name": "bright wu",
@@ -11,6 +11,6 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:^0.3.2"
+    "@farmfe/runtime": "workspace:^0.3.3"
   }
 }

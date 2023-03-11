@@ -19,9 +19,18 @@ farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 regex = "1"
 libloading = "0.7"
-opentelemetry = { version = "0.18.0", default-features = false, features = ["trace"] }
-tracing-opentelemetry = "0.18.0"
-opentelemetry-jaeger = "0.17.0"
+opentelemetry = { version = "0.18.0", default-features = false, features = [
+  "trace",
+], optional = true }
+tracing-opentelemetry = { version = "0.18.0", optional = true }
+opentelemetry-jaeger = { version = "0.17.0", optional = true }
+
+[features]
+profiler = [
+  "dep:opentelemetry",
+  "dep:tracing-opentelemetry",
+  "dep:opentelemetry-jaeger",
+]
 
 [build-dependencies]
 napi-build = "2.0.1"

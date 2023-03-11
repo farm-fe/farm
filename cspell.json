@@ -52,7 +52,8 @@
     "loglevel",
     "Pluggable",
     "Rustup",
-    "clsx"
+    "clsx",
+    "opentelemetry"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

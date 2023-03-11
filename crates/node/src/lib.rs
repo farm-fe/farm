@@ -10,12 +10,11 @@ use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
 };
-use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter, Registry};
+use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
 use napi::{
   bindgen_prelude::{Buffer, FromNapiValue},
   Env, JsObject, NapiRaw, Status,
 };
-use opentelemetry::global;
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 #[macro_use]
@@ -90,24 +89,32 @@ impl JsCompiler {
       plugins_adapters.push(rust_plugin);
     }
 
-    // let fmt_layer = fmt::layer().with_target(false);
-    // let filter_layer = EnvFilter::try_from_default_env()
-    //   .or_else(|_| EnvFilter::try_new("info"))
-    //   .unwrap();
+    #[cfg(not(feature = "profile"))]
+    {
+      let fmt_layer = fmt::layer().with_target(false);
+      let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
 
-    // tracing_subscriber::registry()
-    //   .with(filter_layer)
-    //   .with(fmt_layer)
-    //   .try_init()
-    //   .err();
+      tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .try_init()
+        .err();
+    }
 
-    let tracer = opentelemetry_jaeger::new_agent_pipeline()
+    #[cfg(feature = "profile")]
+    {
+      let tracer = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name("farm_profile_pnpm")
-        .install_simple().unwrap();
-    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    tracing_subscriber::registry()
+        .install_simple()
+        .unwrap();
+      let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+      tracing_subscriber::registry()
         .with(opentelemetry)
-        .try_init().err();
+        .try_init()
+        .err();
+    }
 
     Ok(Self {
       compiler: Compiler::new(config, plugins_adapters)
@@ -124,6 +131,9 @@ impl JsCompiler {
       .compiler
       .compile()
       .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+    #[cfg(feature = "profile")]
+    opentelemetry::global::shutdown_tracer_provider();
 
     Ok(())
   }
@@ -214,6 +224,18 @@ impl JsCompiler {
     }
 
     result
+  }
+
+  #[napi]
+  pub fn relative_module_paths(&self) -> Vec<String> {
+    let context = self.compiler.context();
+    let module_graph = context.module_graph.read();
+
+    module_graph
+      .modules()
+      .into_iter()
+      .map(|m| m.id.relative_path().to_string())
+      .collect()
   }
 
   #[napi]
