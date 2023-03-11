@@ -7,6 +7,7 @@ import chalk from 'chalk';
 
 import { DevServer } from '../index.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import { relative } from 'path';
 
 export function lazyCompilation(server: DevServer) {
   const compiler = server.getCompiler();
@@ -16,14 +17,22 @@ export function lazyCompilation(server: DevServer) {
 
     if (ctx.path === '/__lazy_compile') {
       const paths = (ctx.query.paths as string).split(',');
-
-      server.logger.info(`Lazy compiling ${chalk.cyan(paths.join(', '))}...`);
+      const pathsStr = paths
+        .map((p) => {
+          const resolvedPath = compiler.transformModulePath(
+            compiler.config.config.root,
+            p
+          );
+          return relative(compiler.config.config.root, resolvedPath);
+        })
+        .join(', ');
+      server.logger.info(`Lazy compiling ${chalk.cyan(pathsStr)}...`);
       const start = Date.now();
       const result = await compiler.update(paths);
       server.logger.info(
-        `Lazy compilation done for ${chalk.cyan(
-          paths.join(', ')
-        )} in ${chalk.green(`${Date.now() - start}ms`)}.`
+        `Lazy compilation done for ${chalk.cyan(pathsStr)} in ${chalk.green(
+          `${Date.now() - start}ms`
+        )}.`
       );
 
       if (result) {

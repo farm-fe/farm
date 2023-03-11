@@ -29,6 +29,6 @@ export class DefaultLogger implements Logger {
   }
 
   error(message: string): void {
-    log.error(message);
+    log.error(chalk.red(message));
   }
 }

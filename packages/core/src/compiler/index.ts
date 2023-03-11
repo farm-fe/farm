@@ -3,6 +3,9 @@ import path from 'node:path';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
+export const VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX =
+  'virtual:FARMFE_DYNAMIC_IMPORT:';
+
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
 
@@ -84,5 +87,19 @@ export class Compiler {
     if (existsSync(outputPath)) {
       rmSync(outputPath, { recursive: true });
     }
+  }
+
+  resolvedModulePaths(root: string): string[] {
+    return this._bindingCompiler
+      .relativeModulePaths()
+      .map((p) => this.transformModulePath(root, p));
+  }
+
+  transformModulePath(root: string, p: string): string {
+    if (p.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX)) {
+      return p.slice(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX.length);
+    }
+
+    return path.join(root, p);
   }
 }

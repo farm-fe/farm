@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   path::{Path, PathBuf},
   str::FromStr,
 };
@@ -12,7 +11,10 @@ use farmfe_core::{
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
-use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
+use farmfe_toolkit::{
+  resolve::{follow_symlinks, load_package_json, package_json_loader::Options},
+  tracing,
+};
 
 pub struct Resolver {
   config: ResolveConfig,
@@ -33,6 +35,7 @@ impl Resolver {
   ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports), if source is end with '.js', also try to find '.ts' file
   ///   * **browser**: refer to [package-browser-field-spec](https://github.com/defunctzombie/package-browser-field-spec)
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
+  #[tracing::instrument(skip_all)]
   pub fn resolve(
     &self,
     source: &str,
@@ -116,7 +119,8 @@ impl Resolver {
     }
   }
 
-  /// Try resolve as a file with the configured main fields.  
+  /// Try resolve as a file with the configured main fields.
+  #[tracing::instrument(skip_all)]
   fn try_directory(&self, dir: &PathBuf) -> Option<String> {
     if !dir.is_dir() {
       return None;
@@ -135,6 +139,7 @@ impl Resolver {
 
   /// Try resolve as a file with the configured extensions.
   /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
+  #[tracing::instrument(skip_all)]
   fn try_file(&self, file: &PathBuf) -> Option<String> {
     // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
     if file.exists() && file.is_file() {
@@ -157,6 +162,7 @@ impl Resolver {
     }
   }
 
+  #[tracing::instrument(skip_all)]
   fn try_alias(
     &self,
     source: &str,
@@ -180,6 +186,7 @@ impl Resolver {
   }
 
   /// Resolve the source as a package
+  #[tracing::instrument(skip_all)]
   fn try_node_modules(
     &self,
     source: &str,

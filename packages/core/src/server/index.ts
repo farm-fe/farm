@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 
 import Koa from 'koa';
 // import serve from 'koa-static';
@@ -30,7 +30,6 @@ import { resources } from './middlewares/resources.js';
  */
 export class DevServer {
   private _app: Koa;
-  private _dist: string;
 
   ws: WebSocketServer;
   config: NormalizedServerConfig;
@@ -43,11 +42,6 @@ export class DevServer {
   ) {
     this.config = normalizeDevServerOptions(options);
     this._app = new Koa();
-    this._dist = this._compiler.config.config.output.path as string;
-
-    if (!existsSync(this._dist)) {
-      mkdirSync(this._dist, { recursive: true });
-    }
 
     // this._app.use(serve(this._dist));
     this._app.use(resources(this._compiler));
