@@ -55,7 +55,10 @@
     "clsx",
     "opentelemetry",
     "Turbopack",
-    "Rspack"
+    "Rspack",
+    "brightwu",
+    "Bytedance",
+    "Tencent"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

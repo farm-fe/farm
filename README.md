@@ -9,16 +9,9 @@
 </p>
 <br/>
 
-Farm is a Super fast, light-weight web building tool written in Rust. Farm is much faster than existing tools, benchmark(Using Turbo pack's benchmark, 1000 React components) as below:
-| | **Startup** | **HMR (Root)** | **HMR (Leaf)** |
-| ------------------- | ------- | ----- | --- |
-| Webpack | 7694ms | 334ms | 267ms |
-| Vite | 4625ms | 32ms | 27ms |
-| Turbopack | 2444ms | 9ms | 11ms |
-| Rspack | 406ms | 311ms | 301ms |
-| Farm | 395ms ✅ | 7ms ✅ | 12ms ✅ |
+Farm is a super fast, light-weight web building tool written in Rust. Farm is much faster than existing tools, benchmark(Using Turbo pack's benchmark, 1000 React components) as below:
 
-![xx](./assets/statistics.png)
+![xx](./assets/benchmark.png)
 
 > Test Repo：https://github.com/farm-fe/performance-compare
 >
@@ -100,3 +93,7 @@ Steps to develop Farm:
 4. Build packages(open a new terminal): `cd packages/cli && npm start`
 5. Work with examples(open a new terminal): `cd examples/react && npm start`, report an issue if the example do not start normally.
 6. If you changed Rust code, run `npm run build:rs` under `packages/core` again to get the newest binary.
+
+## Author
+
+brightwu（吴明亮）, worked at Bytedance and Tencent, major in frontend architecture.
