@@ -85,6 +85,7 @@ export interface Config {
       filename?: string;
       path?: string;
       publicPath?: string;
+      assetsFilename?: string;
     };
     resolve?: {
       extensions?: string[];

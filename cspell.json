@@ -53,7 +53,9 @@
     "Pluggable",
     "Rustup",
     "clsx",
-    "opentelemetry"
+    "opentelemetry",
+    "Turbopack",
+    "Rspack"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

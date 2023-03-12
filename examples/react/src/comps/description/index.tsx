@@ -8,7 +8,7 @@ const Clock = React.lazy(() => import('../clock'));
 export function Description() {
   return (
     <div className="description">
-      <p>Supper fast web building tool written in Rust.</p>
+      <p>Super fast web building tool written in Rust.</p>
 
       <div
         style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}
