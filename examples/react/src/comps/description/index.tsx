@@ -21,7 +21,6 @@ export function Description() {
       <HomepageFeatures />
 
       <Suspense fallback={'loading...'}>
-        {' '}
         <Clock />
       </Suspense>
     </div>
