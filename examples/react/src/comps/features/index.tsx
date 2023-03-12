@@ -8,7 +8,7 @@ import plug from '../../../assets/plug.svg';
 
 const FeatureList = [
   {
-    title: 'Supper Fast',
+    title: 'Super Fast',
     Img: rocket,
     description: (
       <>

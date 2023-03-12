@@ -9,14 +9,16 @@
 </p>
 <br/>
 
-Farm is a supper fast, light-weight web building tool written in Rust. Farm is much faster than existing tools, for a React project, the performance compare as below:
+Farm is a Super fast, light-weight web building tool written in Rust. Farm is much faster than existing tools, benchmark(Using Turbo pack's benchmark, 1000 React components) as below:
+| | **Startup** | **HMR (Root)** | **HMR (Leaf)** |
+| ------------------- | ------- | ----- | --- |
+| Webpack | 7694ms | 334ms | 267ms |
+| Vite | 4625ms | 32ms | 27ms |
+| Turbopack | 2444ms | 9ms | 11ms |
+| Rspack | 406ms | 311ms | 301ms |
+| Farm | 395ms ✅ | 7ms ✅ | 12ms ✅ |
 
-|                     | Webpack | Vite  | Farm  | Compare                                       |
-| ------------------- | ------- | ----- | ----- | --------------------------------------------- |
-| **cold start**      | 853ms   | 276ms | 67ms  | Farm is faster: **12x webpack**，**4x vite**  |
-| **HMR**             | 43ms    | 23ms  | 2ms   | Farm is faster: **20x webpack**，**10x vite** |
-| **onload**          | 83ms    | 310ms | 57ms  | Farm is faster: **5x vite**                   |
-| **accessible time** | 936ms   | 586ms | 124ms | Farm is faster: **8x webpack**，**5x vite**   |
+![xx](./assets/statistics.png)
 
 > Test Repo：https://github.com/farm-fe/performance-compare
 >
