@@ -9,13 +9,15 @@
 </p>
 <br/>
 
-Farm is a super fast, light-weight web building tool written in Rust. Farm is much faster than existing tools, benchmark(Using Turbo pack's benchmark, 1000 React components) as below:
+Farm is a super fast, light-weight web building tool written in Rust. Benchmark against other tools(Using Turbo pack's benchmark, 1000 React components, sourcemap disabled) as below:
 
-![xx](./assets/benchmark.png)
+![xx](./assets/benchmark-new.png)
 
 > Test Repo：https://github.com/farm-fe/performance-compare
 >
 > Test Machine（Linux Mint 21.1 Cinnamon， 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6， 15.5 GiB）
+>
+> Note: As Turbopack and Vite do not support disable sourcemap, and Farm does not support sourcemap for now. We do not compare with Turbopack and Vite, we will do the benchmark later As soon as Farm support sourcemap.
 
 <br />
 
