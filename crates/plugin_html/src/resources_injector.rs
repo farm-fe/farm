@@ -90,7 +90,7 @@ impl ResourcesInjector {
           }
           _ => {
             panic!(
-              "unknown supported type ({:?}) when injecting dynamic resources",
+              "unsupported type ({:?}) when injecting dynamic resources",
               resource_type
             )
           }

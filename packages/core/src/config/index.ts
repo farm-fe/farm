@@ -228,6 +228,7 @@ async function readConfigFile(
               },
             ],
           },
+          sourcemap: false,
         },
         server: {
           hmr: false,

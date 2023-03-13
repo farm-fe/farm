@@ -78,7 +78,11 @@ export class HmrEngine {
       added: [${result.added.map((r) => `'${r}'`).join(', ')}],
       changed: [${result.changed.map((r) => `'${r}'`).join(', ')}],
       removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
-      modules: ${result.modules.trim().slice(0, -1)},
+      modules: ${
+        result.modules.trim().endsWith(';')
+          ? result.modules.trim().slice(0, -1)
+          : result.modules.trim()
+      },
       boundaries: ${JSON.stringify(result.boundaries)},
       dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;

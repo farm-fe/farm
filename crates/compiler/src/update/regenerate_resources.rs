@@ -70,6 +70,17 @@ pub fn render_and_generate_update_resource(
     .find(|r| matches!(r.resource_type, ResourceType::Js))
     .unwrap();
 
+  if context.config.sourcemap {
+    // find sourceMappingUrl= and remove it
+    let str = String::from_utf8(js_resource.bytes).unwrap();
+    let mut lines = str.lines();
+    // remove the last line
+    lines.next_back();
+    let new_str = lines.collect::<Vec<_>>().join("\n");
+    return Ok(new_str);
+  }
+
+  // TODO: also return sourcemap
   Ok(String::from_utf8(js_resource.bytes).unwrap())
 }
 

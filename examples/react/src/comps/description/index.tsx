@@ -6,6 +6,8 @@ import { Button } from '../button';
 const Clock = React.lazy(() => import('../clock'));
 
 export function Description() {
+  console.trace('In Description, the sourcemap should be correct');
+
   return (
     <div className="description">
       <p>Super fast web building tool written in Rust.</p>

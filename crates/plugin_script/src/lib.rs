@@ -11,7 +11,6 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
-    ResolveKind,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -23,11 +22,12 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::{
-  fs::read_file_utf8,
+  fs::{read_file_utf8, transform_output_filename},
   script::{
     codegen_module, module_system_from_deps, module_type_from_id, parse_module,
     swc_try_with::try_with, syntax_from_module_type,
   },
+  sourcemap::swc_gen::build_source_map,
   swc_ecma_transforms::{
     resolver,
     typescript::{strip, strip_with_jsx},
@@ -251,25 +251,54 @@ impl Plugin for FarmPluginScript {
   ) -> Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let ast = &resource_pot.meta.as_js().ast;
-      let buf = codegen_module(
+      let mut src_map_buf = vec![];
+
+      let mut buf = codegen_module(
         ast,
         context.config.script.target.clone(),
         context.meta.script.cm.clone(),
+        Some(&mut src_map_buf),
       )
       .map_err(|e| CompilationError::GenerateResourcesError {
         name: resource_pot.id.to_string(),
         ty: resource_pot.resource_pot_type.clone(),
         source: Some(Box::new(e)),
       })?;
+      let sourcemap_filename = transform_output_filename(
+        context.config.output.filename.clone(),
+        &resource_pot.id.to_string(),
+        &buf,
+        &ResourceType::SourceMap.to_ext(),
+      );
 
-      Ok(Some(vec![Resource {
+      if context.config.sourcemap {
+        let source_mapping_url = format!("\n//# sourceMappingURL={}", sourcemap_filename);
+        buf.append(&mut source_mapping_url.as_bytes().to_vec());
+      }
+
+      let mut resources = vec![Resource {
         bytes: buf,
         name: resource_pot.id.to_string(),
         emitted: false,
         resource_type: ResourceType::Js,
         resource_pot: resource_pot.id.clone(),
         preserve_name: false,
-      }]))
+      }];
+
+      if context.config.sourcemap {
+        let src_map = build_source_map(&src_map_buf, context.meta.script.cm.clone(), ast);
+
+        resources.push(Resource {
+          bytes: src_map,
+          name: sourcemap_filename,
+          emitted: false,
+          resource_type: ResourceType::SourceMap,
+          resource_pot: resource_pot.id.clone(),
+          preserve_name: true,
+        });
+      }
+
+      Ok(Some(resources))
     } else {
       Ok(None)
     }

@@ -273,7 +273,7 @@ impl Plugin for FarmPluginHtml {
           mode: context.config.mode.clone(),
           public_path: context.config.output.public_path.clone(),
           define: context.config.define.clone(),
-        }
+        },
       );
 
       let resource_pot = resource_pot_map
@@ -328,6 +328,12 @@ pub fn get_dynamic_resources_map(
 
         for r in rp.resources() {
           let resource = resources_map.get(r).unwrap();
+
+          // Currently only support js and css
+          if !matches!(resource.resource_type, ResourceType::Js | ResourceType::Css) {
+            continue;
+          }
+
           resources.push((resource.name.clone(), resource.resource_type.clone()));
         }
       } else {
@@ -337,6 +343,12 @@ pub fn get_dynamic_resources_map(
           let resource = resources_map
             .get(r)
             .unwrap_or_else(|| panic!("{} not found", r));
+
+          // Currently only support js and css
+          if !matches!(resource.resource_type, ResourceType::Js | ResourceType::Css) {
+            continue;
+          }
+
           resources.push((resource.name.clone(), resource.resource_type.clone()));
         }
 

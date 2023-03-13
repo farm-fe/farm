@@ -20,6 +20,7 @@ pub struct Config {
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
+  pub sourcemap: bool,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
 }
@@ -40,6 +41,7 @@ impl Default for Config {
       runtime: Default::default(),
       script: Default::default(),
       assets: Default::default(),
+      sourcemap: true,
       partial_bundling: PartialBundlingConfig::default(),
       lazy_compilation: true,
     }

@@ -48,6 +48,7 @@ pub mod render_resource_pot;
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
 /// ```
 pub struct FarmPluginRuntime {
+  // TODO move the runtime ast to context.meta.script
   runtime_ast: Mutex<Option<SwcModule>>,
 }
 
@@ -372,6 +373,7 @@ impl Plugin for FarmPluginRuntime {
         runtime_ast,
         context.config.script.target.clone(),
         context.meta.script.cm.clone(),
+        None,
       )
       .map_err(|e| CompilationError::GenerateResourcesError {
         name: resource_pot.id.to_string(),
@@ -412,10 +414,10 @@ impl Plugin for FarmPluginRuntime {
           let call_entry = parse_module(
             "farm-internal-call-entry-module",
             &format!(
-              r#"const {} = globalThis || window || global || self;
-              const farmModuleSystem = {}.{};
+              r#"var {} = globalThis || window || global || self;
+              var farmModuleSystem = {}.{};
               farmModuleSystem.bootstrap();
-              const entry = farmModuleSystem.require("{}").default;
+              var entry = farmModuleSystem.require("{}").default;
               export default entry;"#,
               FARM_GLOBAL_THIS,
               FARM_GLOBAL_THIS,
