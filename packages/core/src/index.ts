@@ -1,6 +1,7 @@
 export * from './compiler/index.js';
 export * from './config/index.js';
 export * from './server/index.js';
+export * from './plugin/index.js';
 
 import chalk from 'chalk';
 import { Compiler } from './compiler/index.js';
