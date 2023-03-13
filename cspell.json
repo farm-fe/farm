@@ -58,7 +58,8 @@
     "Rspack",
     "brightwu",
     "Bytedance",
-    "Tencent"
+    "Tencent",
+    "bytepos"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
