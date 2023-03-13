@@ -1,5 +1,5 @@
 {
-  "name": "<FARM-RUST-PLUGIN-NPM-NAME>",
+  "name": "@farmfe/plugin-react",
   "version": "0.0.0",
   "main": "index.js",
   "types": "index.d.ts",

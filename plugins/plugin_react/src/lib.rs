@@ -6,24 +6,27 @@ use farmfe_core::{
   swc_common::{comments::NoopComments, Mark},
 };
 
-use farmfe_toolkit::{
-  script::swc_try_with::try_with,
-  swc_ecma_transforms::{
-    helpers::inject_helpers,
-    react::{react, Options, RefreshOptions},
-  },
-  swc_ecma_visit::VisitMutWith,
-};
-use react_refresh::inject_react_refresh;
+// use farmfe_toolkit::{
+//   script::swc_try_with::try_with,
+//   swc_ecma_transforms::{
+//     helpers::inject_helpers,
+//     react::{react, Options, RefreshOptions},
+//   },
+//   swc_ecma_visit::VisitMutWith,
+// };
 
-mod react_refresh;
+use farmfe_macro_plugin::farm_plugin;
+
+// mod react_refresh;
+// use react_refresh::inject_react_refresh;
 
 const GLOBAL_INJECT_MODULE_ID: &str = "farmfe_plugin_react_global_inject";
 
+#[farm_plugin]
 pub struct FarmPluginReact {}
 
 impl FarmPluginReact {
-  pub fn new(_config: &Config) -> Self {
+  fn new(config: &Config, options: String) -> Self {
     Self {}
   }
 }
@@ -132,37 +135,47 @@ impl Plugin for FarmPluginReact {
       param.module_type,
       farmfe_core::module::ModuleType::Jsx | farmfe_core::module::ModuleType::Tsx
     ) {
-      try_with(
-        context.meta.script.cm.clone(),
-        &context.meta.script.globals,
-        || {
-          let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
-          let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
-          let ast = &mut param.meta.as_script_mut().ast;
-          let is_dev = matches!(context.config.mode, farmfe_core::config::Mode::Development);
+      unsafe {
+        let lib = libloading::Library::new(
+          "/home/bright/桌面/opensource/farm/packages/core/binding/farm.linux-x64-gnu.node",
+        )
+        .unwrap();
 
-          ast.visit_mut_with(&mut react(
-            context.meta.script.cm.clone(),
-            Some(NoopComments), // TODO parse comments
-            Options {
-              refresh: if is_dev {
-                Some(RefreshOptions::default())
-              } else {
-                None
-              },
-              development: Some(is_dev),
-              // runtime: Some(Runtime::Automatic),
-              ..Default::default()
-            },
-            top_level_mark,
-          ));
-          ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+        let print_in_main: libloading::Symbol<fn() -> ()> = lib.get(b"print_in_main").unwrap();
+        print_in_main();
+      }
 
-          if is_dev {
-            inject_react_refresh(ast);
-          }
-        },
-      )?;
+      // try_with(
+      //   context.meta.script.cm.clone(),
+      //   &context.meta.script.globals,
+      //   || {
+      //     let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
+      //     let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
+      //     let ast = &mut param.meta.as_script_mut().ast;
+      //     let is_dev = matches!(context.config.mode, farmfe_core::config::Mode::Development);
+
+      //     ast.visit_mut_with(&mut react(
+      //       context.meta.script.cm.clone(),
+      //       Some(NoopComments), // TODO parse comments
+      //       Options {
+      //         refresh: if is_dev {
+      //           Some(RefreshOptions::default())
+      //         } else {
+      //           None
+      //         },
+      //         development: Some(is_dev),
+      //         // runtime: Some(Runtime::Automatic),
+      //         ..Default::default()
+      //       },
+      //       top_level_mark,
+      //     ));
+      //     ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+
+      //     if is_dev {
+      //       inject_react_refresh(ast);
+      //     }
+      //   },
+      // )?;
 
       return Ok(Some(()));
     }

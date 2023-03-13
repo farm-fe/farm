@@ -6,7 +6,7 @@ import os from 'node:os';
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 
-import { Config } from '../../binding/index.js';
+import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import {
@@ -45,6 +45,7 @@ export async function normalizeUserCompilationConfig(
     },
     userConfig.compilation
   );
+  // config.coreLibPath = bindingPath;
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 

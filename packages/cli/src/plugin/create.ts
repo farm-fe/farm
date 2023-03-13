@@ -53,8 +53,8 @@ export async function create(args: CreateArgs): Promise<void> {
 
   copyFiles(TEMPLATE_PLUGIN, dest, (content) => {
     return content
-      .replace(new RegExp(TEMPLATE_NPM_NAME, 'g'), npmName)
-      .replace(new RegExp(TEMPLATE_STRUCT_NAME, 'g'), structName);
+      .replaceAll(new RegExp(TEMPLATE_NPM_NAME, 'g'), npmName)
+      .replaceAll(new RegExp(TEMPLATE_STRUCT_NAME, 'g'), structName);
   });
 
   console.log(chalk.green(`Plugin created successfully in ${dest}`));

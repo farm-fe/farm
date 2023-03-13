@@ -395,7 +395,6 @@ dependencies = [
  "farmfe_plugin_html",
  "farmfe_plugin_lazy_compilation",
  "farmfe_plugin_partial_bundling",
- "farmfe_plugin_react",
  "farmfe_plugin_resolve",
  "farmfe_plugin_runtime",
  "farmfe_plugin_script",
@@ -461,6 +460,7 @@ dependencies = [
  "farmfe_compiler",
  "farmfe_core",
  "farmfe_toolkit",
+ "farmfe_toolkit_plugin",
  "libloading",
  "napi",
  "napi-build",
@@ -509,6 +509,15 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_react"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "libloading",
+]
+
+[[package]]
+name = "farmfe_plugin_react_old"
 version = "0.0.0"
 dependencies = [
  "farmfe_core",
@@ -587,6 +596,23 @@ dependencies = [
  "swc_html_visit",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "farmfe_toolkit_plugin"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
+]
+
+[[package]]
+name = "farmfe_toolkit_plugin_types"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "lazy_static",
 ]
 
 [[package]]

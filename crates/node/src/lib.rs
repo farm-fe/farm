@@ -17,6 +17,8 @@ use napi::{
 };
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
+// pub use farmfe_toolkit_plugin;
+
 #[macro_use]
 extern crate napi_derive;
 
@@ -245,4 +247,9 @@ impl JsCompiler {
 
     resources.get(&name).map(|r| r.bytes.clone().into())
   }
+}
+
+#[no_mangle]
+extern "C" fn print_in_main() {
+  println!("\n\n\n Print in main, Hello from Rust!\n\n\n");
 }

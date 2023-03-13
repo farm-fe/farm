@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "farmfe_plugin_react"
+name = "farmfe_plugin_react_old"
 version = "0.0.0"
 
 [dependencies]

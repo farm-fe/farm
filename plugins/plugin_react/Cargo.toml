@@ -1,0 +1,12 @@
+[package]
+edition = "2021"
+name = "farmfe_plugin_react"
+version = "0.0.1"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+farmfe_core = { version = "*", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
+libloading = "0.7"
