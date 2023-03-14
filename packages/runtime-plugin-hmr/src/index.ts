@@ -24,7 +24,6 @@ export default <FarmRuntimePlugin>{
       // the client will use the id to fetch the update resource and apply the update
       socket.addEventListener('message', (event) => {
         const data = JSON.parse(event.data) as HmrUpdatePacket;
-
         import(`/__hmr?id=${data.id}`).then(
           (result: { default: HmrUpdateResult }) => {
             applyHotUpdates(result.default, moduleSystem);
@@ -35,8 +34,8 @@ export default <FarmRuntimePlugin>{
       socket.addEventListener('open', () => {
         console.log('[Farm HMR] connected to the server');
       });
-
-      socket.addEventListener('close', () => setTimeout(connect, 3000));
+      // TODO use ping/pong to detect the connection is closed, and if the server is online again, reload the page
+      // socket.addEventListener('close', () => setTimeout(connect, 3000));
 
       return socket;
     }

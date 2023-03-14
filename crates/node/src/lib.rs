@@ -1,9 +1,6 @@
 #![deny(clippy::all)]
 
-use std::{
-  collections::HashMap,
-  sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_compiler::{update::UpdateType, Compiler};
 
@@ -14,7 +11,10 @@ use farmfe_core::{
   module::ModuleId,
 };
 use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
-use napi::{bindgen_prelude::{FromNapiValue, Buffer}, Env, JsObject, NapiRaw, Status};
+use napi::{
+  bindgen_prelude::{Buffer, FromNapiValue},
+  Env, JsObject, NapiRaw, Status,
+};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 #[macro_use]
@@ -89,16 +89,32 @@ impl JsCompiler {
       plugins_adapters.push(rust_plugin);
     }
 
-    let fmt_layer = fmt::layer().with_target(false);
-    let filter_layer = EnvFilter::try_from_default_env()
-      .or_else(|_| EnvFilter::try_new("info"))
-      .unwrap();
+    #[cfg(not(feature = "profile"))]
+    {
+      let fmt_layer = fmt::layer().with_target(false);
+      let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
 
-    tracing_subscriber::registry()
-      .with(filter_layer)
-      .with(fmt_layer)
-      .try_init()
-      .err();
+      tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .try_init()
+        .err();
+    }
+
+    #[cfg(feature = "profile")]
+    {
+      let tracer = opentelemetry_jaeger::new_agent_pipeline()
+        .with_service_name("farm_profile_pnpm")
+        .install_simple()
+        .unwrap();
+      let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+      tracing_subscriber::registry()
+        .with(opentelemetry)
+        .try_init()
+        .err();
+    }
 
     Ok(Self {
       compiler: Compiler::new(config, plugins_adapters)
@@ -115,6 +131,9 @@ impl JsCompiler {
       .compiler
       .compile()
       .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+    #[cfg(feature = "profile")]
+    opentelemetry::global::shutdown_tracer_provider();
 
     Ok(())
   }
@@ -200,10 +219,7 @@ impl JsCompiler {
     for resource in resources.values() {
       // only write expose non-emitted resource
       if !resource.emitted {
-        result.insert(
-          resource.name.clone(),
-          resource.bytes.clone().into(),
-        );
+        result.insert(resource.name.clone(), resource.bytes.clone().into());
       }
     }
 
@@ -211,12 +227,22 @@ impl JsCompiler {
   }
 
   #[napi]
+  pub fn relative_module_paths(&self) -> Vec<String> {
+    let context = self.compiler.context();
+    let module_graph = context.module_graph.read();
+
+    module_graph
+      .modules()
+      .into_iter()
+      .map(|m| m.id.relative_path().to_string())
+      .collect()
+  }
+
+  #[napi]
   pub fn resource(&self, name: String) -> Option<Buffer> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
-    resources
-      .get(&name)
-      .map(|r| r.bytes.clone().into())
+    resources.get(&name).map(|r| r.bytes.clone().into())
   }
 }

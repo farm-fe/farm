@@ -11,9 +11,11 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{ModuleSystem, ModuleType},
   plugin::ResolveKind,
-  swc_common::{FileName, Mark, SourceMap},
+  swc_common::{BytePos, FileName, LineCol, Mark, SourceMap},
   swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
 };
+
+pub mod swc_try_with;
 
 /// parse the content of a module to [SwcModule] ast.
 pub fn parse_module(
@@ -66,21 +68,23 @@ pub fn codegen_module(
   ast: &SwcModule,
   target: EsVersion,
   cm: Arc<SourceMap>,
+  src_map: Option<&mut Vec<(BytePos, LineCol)>>,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
 
   {
     // TODO support source map
-    let wr = Box::new(JsWriter::new(cm.clone(), "\n", &mut buf, None)) as Box<dyn WriteJs>;
+    let wr = Box::new(JsWriter::new(cm.clone(), "\n", &mut buf, src_map)) as Box<dyn WriteJs>;
 
     let mut emitter = Emitter {
       cfg: swc_ecma_codegen::Config {
         target,
         ascii_only: false,
         minify: false,
-        // TODO using omit_last_semi and remove split semicolon logic from the js side
+        omit_last_semi: true,
         ..Default::default()
       },
+      // TODO preserve comments
       comments: None,
       cm,
       wr,

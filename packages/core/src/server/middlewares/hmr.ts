@@ -9,7 +9,7 @@ import { Context } from 'koa';
 import { DevServer } from '../index.js';
 
 export function hmr(server: DevServer) {
-  return async (ctx: Context, next: () => Promise<any>) => {
+  return async (ctx: Context, next: () => Promise<void>) => {
     await next();
 
     if (ctx.path === '/__hmr') {

@@ -48,10 +48,12 @@ importers:
       '@farmfe/core': ../../packages/core
       '@types/react': '18'
       '@types/react-dom': '18'
+      clsx: ^1.2.1
       react: '18'
       react-dom: '18'
       react-refresh: ^0.14.0
     dependencies:
+      clsx: 1.2.1
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
     devDependencies:
@@ -71,7 +73,7 @@ importers:
 
   packages/cli:
     specifiers:
-      '@farmfe/core': workspace:^0.3.3
+      '@farmfe/core': workspace:^0.4.1
       '@types/inquirer': ^9.0.3
       cac: ^6.7.14
       chalk: ^5.2.0
@@ -90,8 +92,8 @@ importers:
 
   packages/core:
     specifiers:
-      '@farmfe/runtime': workspace:^0.3.2
-      '@farmfe/runtime-plugin-hmr': workspace:^3.0.2
+      '@farmfe/runtime': workspace:^0.3.3
+      '@farmfe/runtime-plugin-hmr': workspace:^3.0.5
       '@napi-rs/cli': ^2.10.0
       '@swc/helpers': ^0.4.9
       '@types/figlet': ^1.5.5
@@ -147,7 +149,7 @@ importers:
 
   packages/runtime-plugin-hmr:
     specifiers:
-      '@farmfe/runtime': workspace:^0.3.2
+      '@farmfe/runtime': workspace:^0.3.3
     devDependencies:
       '@farmfe/runtime': link:../runtime
 
@@ -1764,6 +1766,11 @@ packages:
   /clone/1.0.4:
     resolution: {integrity: sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==}
     engines: {node: '>=0.8'}
+
+  /clsx/1.2.1:
+    resolution: {integrity: sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==}
+    engines: {node: '>=6'}
+    dev: false
 
   /co/4.6.0:
     resolution: {integrity: sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==}

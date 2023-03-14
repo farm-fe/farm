@@ -1,19 +1,25 @@
 // queue all updates and compile them one by one
 
-import { Compiler } from '../compiler/index.js';
+import {
+  Compiler,
+  VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX,
+} from '../compiler/index.js';
 import { DevServer } from './index.js';
 // import debounce from 'lodash.debounce';
 import { Logger } from '../logger.js';
 import { relative } from 'path';
 import chalk from 'chalk';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import { JsUpdateResult } from '../../binding/binding.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  private _updateResults: Map<string, string> = new Map();
+  private _updateResults: Map<string, { result: string; count: number }> =
+    new Map();
 
   private _compiler: Compiler;
   private _devServer: DevServer;
+  private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   constructor(
     compiler: Compiler,
@@ -24,7 +30,14 @@ export class HmrEngine {
     this._devServer = devServer;
   }
 
-  recompileAndSendResult = async (): Promise<void> => {
+  onUpdate(cb: (result: JsUpdateResult) => void) {
+    if (!this._onUpdates) {
+      this._onUpdates = [];
+    }
+    this._onUpdates.push(cb);
+  }
+
+  recompileAndSendResult = async (): Promise<JsUpdateResult> => {
     const queue = [...this._updateQueue];
 
     if (queue.length === 0) {
@@ -33,7 +46,13 @@ export class HmrEngine {
 
     this._updateQueue = [];
     let updatedFilesStr = queue
-      .map((item) => relative(this._compiler.config.config.root, item))
+      .map((item) => {
+        const resolvedPath = this._compiler.transformModulePath(
+          this._compiler.config.config.root,
+          item
+        );
+        return relative(this._compiler.config.config.root, resolvedPath);
+      })
       .join(', ');
     if (updatedFilesStr.length >= 100) {
       updatedFilesStr =
@@ -65,15 +84,25 @@ export class HmrEngine {
       added: [${result.added.map((r) => `'${r}'`).join(', ')}],
       changed: [${result.changed.map((r) => `'${r}'`).join(', ')}],
       removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
-      modules: ${result.modules.trim().slice(0, -1)},
+      modules: ${
+        result.modules.trim().endsWith(';')
+          ? result.modules.trim().slice(0, -1)
+          : result.modules.trim()
+      },
       boundaries: ${JSON.stringify(result.boundaries)},
       dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;
 
+    this._onUpdates?.forEach((cb) => cb(result));
+
     const id = Date.now().toString();
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore TODO fix this
-    this._updateResults.set(id, resultStr);
+    this._updateResults.set(id, {
+      result: resultStr,
+      count: this._devServer.ws.clients.size,
+    });
+    // console.log(this._updateResults);
 
     this._devServer.ws.clients.forEach((client) => {
       client.send(
@@ -92,7 +121,7 @@ export class HmrEngine {
   async hmrUpdate(path: string) {
     // if lazy compilation is enabled, we need to update the virtual module
     if (this._compiler.config.config.lazyCompilation) {
-      const lazyCompiledModule = `virtual:FARMFE_DYNAMIC_IMPORT:${path}`;
+      const lazyCompiledModule = `${VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX}${path}`;
 
       if (
         this._compiler.hasModule(lazyCompiledModule) &&
@@ -121,7 +150,15 @@ export class HmrEngine {
 
   getUpdateResult(id: string) {
     const result = this._updateResults.get(id);
-    this._updateResults.delete(id);
-    return result;
+
+    if (result) {
+      result.count--;
+      // there are no more clients waiting for this update
+      if (result.count <= 0) {
+        this._updateResults.delete(id);
+      }
+    }
+
+    return result?.result;
   }
 }

@@ -2,19 +2,21 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
+  error::Result,
   module::{module_graph::ModuleGraph, ModuleSystem},
   resource::resource_pot::ResourcePot,
-  swc_common::{comments::SingleThreadedComments, Mark, DUMMY_SP, GLOBALS},
+  swc_common::{comments::SingleThreadedComments, Mark, DUMMY_SP},
   swc_ecma_ast::{
     BlockStmt, Expr, FnExpr, Function, Ident, KeyValueProp, Module as SwcModule, ModuleItem,
     ObjectLit, Param, Pat, Prop, PropName, PropOrSpread, Str,
   },
 };
 use farmfe_toolkit::{
+  script::swc_try_with::try_with,
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
     fixer,
-    helpers::{inject_helpers, Helpers, HELPERS},
+    helpers::inject_helpers,
     modules::{
       common_js,
       import_analysis::import_analyzer,
@@ -53,7 +55,7 @@ pub fn resource_pot_to_runtime_object_lit(
   resource_pot: &mut ResourcePot,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
-) -> ObjectLit {
+) -> Result<ObjectLit> {
   let mut rendered_resource_ast = ObjectLit {
     span: DUMMY_SP,
     props: vec![],
@@ -70,8 +72,10 @@ pub fn resource_pot_to_runtime_object_lit(
       body: module.meta.as_script().ast.body.to_vec(),
     };
 
-    GLOBALS.set(&context.meta.script.globals, || {
-      HELPERS.set(&Helpers::new(true), || {
+    try_with(
+      context.meta.script.cm.clone(),
+      &context.meta.script.globals,
+      || {
         // transform esm to commonjs
         let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
 
@@ -105,8 +109,8 @@ pub fn resource_pot_to_runtime_object_lit(
         cloned_module.visit_mut_with(&mut source_replacer);
         // TODO support comments
         cloned_module.visit_mut_with(&mut fixer(None));
-      });
-    });
+      },
+    )?;
 
     // wrap module function
     let wrapped_module = wrap_module_ast(cloned_module);
@@ -128,7 +132,7 @@ pub fn resource_pot_to_runtime_object_lit(
 
   // TODO transform async function if target is lower than es2017
 
-  rendered_resource_ast
+  Ok(rendered_resource_ast)
 }
 
 /// Wrap the module ast to follow Farm's commonjs-style module system spec.

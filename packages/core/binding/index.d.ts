@@ -85,6 +85,7 @@ export interface Config {
       filename?: string;
       path?: string;
       publicPath?: string;
+      assetsFilename?: string;
     };
     resolve?: {
       extensions?: string[];
@@ -101,6 +102,9 @@ export interface Config {
       path: string;
       plugins?: string[];
       swcHelpersPath?: string;
+    };
+    assets?: {
+      include?: string[];
     };
     script?: {
       // specify target es version
@@ -143,6 +147,7 @@ export interface Config {
         };
       };
     };
+    sourcemap?: boolean | 'all';
     partialBundling?: {
       moduleBuckets?: {
         name: string;

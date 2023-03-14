@@ -35,6 +35,7 @@ pub fn render_and_generate_update_resource(
     ResourcePotId::new(String::from("__UPDATE_RESOURCE_POT__")),
     ResourcePotType::Js,
   );
+  update_resource_pot.immutable = true;
 
   for added in &diff_result.added_modules {
     update_resource_pot.add_module(added.clone());
@@ -45,7 +46,7 @@ pub fn render_and_generate_update_resource(
   }
 
   let module_graph = context.module_graph.read();
-  let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &*module_graph, context);
+  let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &*module_graph, context)?;
   // The hmr result should alway be a js resource
   update_resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
     ast: SwcModule {
@@ -70,6 +71,17 @@ pub fn render_and_generate_update_resource(
     .find(|r| matches!(r.resource_type, ResourceType::Js))
     .unwrap();
 
+  if context.config.sourcemap.is_all() {
+    // find sourceMappingUrl= and remove it
+    let str = String::from_utf8(js_resource.bytes).unwrap();
+    let mut lines = str.lines();
+    // remove the last line
+    lines.next_back();
+    let new_str = lines.collect::<Vec<_>>().join("\n");
+    return Ok(new_str);
+  }
+
+  // TODO: also return sourcemap
   Ok(String::from_utf8(js_resource.bytes).unwrap())
 }
 

@@ -51,13 +51,23 @@
     "elems",
     "loglevel",
     "Pluggable",
-    "Rustup"
+    "Rustup",
+    "clsx",
+    "opentelemetry",
+    "Turbopack",
+    "Rspack",
+    "brightwu",
+    "Bytedance",
+    "Tencent",
+    "bytepos"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
     "**/package.json",
     ".github/**",
     "**/*.toml",
-    "**/*.node"
+    "**/*.node",
+    "**/*.svg",
+    "**/tests/**"
   ]
 }

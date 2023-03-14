@@ -1,3 +1,4 @@
+// change to @farmfe/core/config when resolve support conditional exports
 import { defineFarmConfig } from '@farmfe/core/dist/config';
 
 export default defineFarmConfig({
@@ -8,6 +9,9 @@ export default defineFarmConfig({
     resolve: {
       symlinks: true,
       mainFields: ['module', 'main', 'customMain'],
+    },
+    define: {
+      BTN: 'Click me',
     },
     output: {
       path: './build',

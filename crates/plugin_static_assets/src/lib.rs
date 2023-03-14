@@ -3,13 +3,16 @@
 use std::path::Path;
 
 use base64::engine::{general_purpose, Engine};
-use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin, resource::{Resource, ResourceType}};
+use farmfe_core::{
+  config::Config,
+  module::ModuleType,
+  plugin::Plugin,
+  resource::{Resource, ResourceType},
+};
 use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
   lazy_static::lazy_static,
 };
-
-const VIRTUAL_ASSET_PREFIX: &str = "virtual:FARM_ASSETS:";
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
@@ -126,14 +129,17 @@ impl Plugin for FarmPluginStaticAssets {
         let content = format!("export default \"/{}\"", resource_name);
 
         let mut resources_map = context.resources_map.lock();
-        resources_map.insert(resource_name.clone(), Resource {
+        resources_map.insert(
+          resource_name.clone(),
+          Resource {
             name: resource_name,
             bytes,
             emitted: false,
             resource_type: ResourceType::Asset(ext.to_string()),
             resource_pot: "STATIC_ASSETS".into(),
             preserve_name: false,
-        });
+          },
+        );
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,

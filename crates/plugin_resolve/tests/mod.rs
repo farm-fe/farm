@@ -46,7 +46,7 @@ fn resolve_relative_specifier_with_extension() {
 
 #[test]
 fn resolve_node_modules_normal() {
-  fixture(
+  farmfe_testing_helpers::fixture!(
     "tests/fixtures/resolve-node-modules/normal/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
@@ -65,6 +65,41 @@ fn resolve_node_modules_normal() {
           .to_string_lossy()
           .to_string()
       );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+
+      let resolved = resolver.resolve("pkg-a/index.js", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("pkg-a")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+
+      let resolved = resolver.resolve("pkg-a/lib", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("pkg-a")
+          .join("lib")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
 
       let resolved = resolver.resolve("pkg-b", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -79,8 +114,10 @@ fn resolve_node_modules_normal() {
           .join("index.js")
           .to_string_lossy()
           .to_string()
-      )
-    },
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+    }
   );
 }
 

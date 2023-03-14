@@ -1,4 +1,7 @@
 {
   "name": "sub-fixture",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "sideEffects": [
+    "*.css"
+  ]
 }

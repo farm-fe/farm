@@ -1,0 +1,30 @@
+.features {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+}
+
+.featureSvg {
+  height: 100px;
+  width: 100px;
+}
+
+.row {
+  display: flex;
+}
+
+.col {
+  flex: 1;
+  padding: 1rem 2rem;
+  margin: 0 1rem;
+}
+
+.col p {
+  color: #333;
+}
+
+.background {
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}

@@ -2,6 +2,7 @@
   "name": "@farmfe-examples/react",
   "version": "0.0.0",
   "dependencies": {
+    "clsx": "^1.2.1",
     "react": "18",
     "react-dom": "18"
   },

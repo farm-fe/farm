@@ -29,7 +29,15 @@ impl<'a> DepsAnalyzer<'a> {
     self.deps.take().unwrap_or(vec![])
   }
 
-  fn insert_dep(&mut self, dep: PluginAnalyzeDepsHookResultEntry) {
+  fn insert_dep(&mut self, mut dep: PluginAnalyzeDepsHookResultEntry) {
+    // we needs to transform mjs swc helper to commonjs here
+    // see https://github.com/swc-project/swc/blob/d4ebb5e6efbed0758f25e46e8f74d7c47ec6cb8f/crates/swc_ecma_transforms_module/src/path.rs#L38
+    if let Some(suffix) = dep.source.strip_prefix("@swc/helpers/src/") {
+      if let Some(prefix) = suffix.strip_suffix(".mjs") {
+        dep.source = format!("@swc/helpers/lib/{}.js", prefix).into();
+      }
+    }
+
     if let Some(deps) = &mut self.deps {
       deps.push(dep);
     } else {

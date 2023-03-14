@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
+    "clsx": "^1.2.1",
     "react": "18",
     "react-dom": "18"
   },
@@ -14,6 +15,7 @@
     "react-refresh": "^0.14.0"
   },
   "scripts": {
-    "start": "farm start"
+    "start": "farm start",
+    "build": "farm build"
   }
 }
