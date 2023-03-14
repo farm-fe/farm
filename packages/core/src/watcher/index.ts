@@ -1,5 +1,4 @@
 import chokidar, { FSWatcher } from 'chokidar';
-import path from 'path';
 import { Compiler } from '../compiler/index.js';
 
 import { DevServer } from '../server/index.js';
@@ -35,14 +34,14 @@ export class FileWatcher {
             this._root,
             addedModule
           );
-          this._watcher.add(path.join(this._root, resolvedPath));
+          this._watcher.add(resolvedPath);
         });
         updateResult.removed.forEach((removedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
             removedModule
           );
-          this._watcher.unwatch(path.join(this._root, resolvedPath));
+          this._watcher.unwatch(resolvedPath);
         });
       });
     }
