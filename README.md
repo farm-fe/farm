@@ -9,26 +9,24 @@
 </p>
 <br/>
 
-Farm is a super fast, light-weight web building tool written in Rust. Benchmark against other tools(Using Turbo pack's benchmark, 1000 React components, sourcemap disabled) as below:
+Farm is a super fast, light-weight web building tool written in Rust. Benchmark against other tools(Using Turbopack's benchmark, 1000 React components) as below:
 
-![xx](./assets/benchmark-new.png)
+![xx](./assets/benchmark.png)
 
 > Test Repo：https://github.com/farm-fe/performance-compare
 >
 > Test Machine（Linux Mint 21.1 Cinnamon， 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6， 15.5 GiB）
->
-> Note: As Turbopack and Vite do not support disable sourcemap, and Farm does not support sourcemap for now. We do not compare with Turbopack and Vite, we will do the benchmark later As soon as Farm support sourcemap.
 
 <br />
 
 ## Features
 
-- ⚡ **Super Fast**: Written in Rust, start a react / vue(incoming) project in milliseconds, perform a HMR update within 10ms for the most situations.
-- 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Support both rust plugins and js plugins.
-- ⚙️ **Powerful**: Support compiling JS/TS/JSX/TSX, css, html and static assets out of box.
+- ⚡ **Super Fast**: Written in Rust, start a react / vue(incoming) project in milliseconds, perform a HMR update within 10ms for situations.
+- 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Support both Rust and Js plugins.
+- ⚙️ **Powerful**: Compiling JS/TS/JSX/TSX, css, html and static assets out of box.
 - ⏱️ **Lazy Compilation**: Dynamic imported resources are compiled only when they are requested.
 - 📦 **Partial Bundling**: Bundle your project into a few reasonable bundles, speed up the resources loading without losing the caching granularity.
-- 🔒 **Consistency**: What you see in development will be exactly the same as what you've got in production.
+- 🔒 **Consistency**: What you see in development will be exactly the same as what you get in production.
 - 🌳 **Compatibility**: Support both legacy(es5) and modern browsers.
 
 <br/>
@@ -36,7 +34,7 @@ Farm is a super fast, light-weight web building tool written in Rust. Benchmark 
 > **Note**:
 >
 > - See [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation) for design motivation and principle.
-> - **This project is still under development. Contributions are welcome**.
+> - **This project is still under development and not production ready. Contributions are welcome**.
 >
 > This project is built on the SWC Project, using swc for html/css/js/tsx/ts/jsx parsing, transforming, optimizing and codegen.
 
@@ -44,7 +42,7 @@ Farm is a super fast, light-weight web building tool written in Rust. Benchmark 
 
 ## Getting Started
 
-Create a new Farm Project
+Create a new Farm project
 
 ```sh
 npx @farmfe/cli@latest create
@@ -60,25 +58,23 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## RoadMap
 
-Farm has implemented all basic features for a web building tool：
+Farm has implemented all basic features for a web building tool. But we still have many works to mark Farm production ready.
 
-- Resolving, loading, transforming and resource generating for web assets(html, css, js/jsx/ts/tsx, static asset and so on).
-- Lazy Compilation
-- Dev Server and HMR(support react fast fresh)
-- Partial Bundling
-- Both Rust and Js Plugin System
-
-Next Farm will provide:
-
-- Production Optimization like Minimize and Tree Shake
-- Css modules
-- Source Map
-- Official Plugins Like Sass
-- Persistent Cache
+- [x] Resolving, loading, transforming and resource generating for web assets(html, css, js/jsx/ts/tsx, static asset and so on).
+- [x] Lazy Compilation
+- [x] Dev Server and HMR(support react fast fresh)
+- [x] Partial Bundling
+- [x] Both Rust and Js Plugin System
+- [x] Source Map
+- [ ] Resources Minimize
+- [ ] Tree Shake
+- [ ] Css modules
+- [ ] Official Plugins Like Sass
+- [ ] Persistent Cache
 
 See milestones: https://github.com/farm-fe/farm/milestones
 
-Looking forward to more contributions. Our goal is to provide a real high quality and performant web build tool for the community.
+Looking forward to more contributions. Our goal is to provide a high quality and performant web build tool for the community.
 
 ## Contribution
 
@@ -98,4 +94,4 @@ Steps to develop Farm:
 
 ## Author
 
-brightwu（吴明亮）, worked at Bytedance and Tencent, major in frontend architecture.
+brightwu（吴明亮）, worked at Bytedance and Tencent, technology enthusiast.
