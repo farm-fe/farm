@@ -20,6 +20,7 @@ pub struct Config {
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
+  pub sourcemap: SourcemapConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
 }
@@ -40,6 +41,7 @@ impl Default for Config {
       runtime: Default::default(),
       script: Default::default(),
       assets: Default::default(),
+      sourcemap: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
       lazy_compilation: true,
     }
@@ -58,8 +60,10 @@ pub struct OutputConfig {
 impl Default for OutputConfig {
   fn default() -> Self {
     Self {
-      filename: "[resourceName].[contentHash].[ext]".to_string(),
-      assets_filename: "[resourceName].[contentHash].[ext]".to_string(),
+      /// [resourceName].[contentHash].[ext]
+      filename: "[resourceName].[ext]".to_string(),
+      /// [resourceName].[contentHash].[ext]
+      assets_filename: "[resourceName].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),
     }
@@ -175,4 +179,52 @@ pub struct PartialBundlingConfig {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AssetsConfig {
   pub include: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SourcemapConfig {
+  Bool(bool),
+  /// Generate inline sourcemap instead of a separate file for mutable resources.
+  #[serde(rename = "inline")]
+  Inline,
+  /// Generate sourcemap for all resources.
+  /// By default, sourcemap is generated only for resources that are mutable.
+  #[serde(rename = "all")]
+  All,
+  #[serde(rename = "all-inline")]
+  AllInline,
+}
+
+impl Default for SourcemapConfig {
+  fn default() -> Self {
+    Self::Bool(true)
+  }
+}
+
+impl SourcemapConfig {
+  pub fn enabled(&self) -> bool {
+    match self {
+      Self::Bool(b) => *b,
+      _ => true,
+    }
+  }
+  pub fn is_inline(&self) -> bool {
+    match self {
+      Self::Bool(b) if *b => true,
+      Self::Inline => true,
+      Self::All => false,
+      Self::AllInline => true,
+      _ => false,
+    }
+  }
+
+  pub fn is_all(&self) -> bool {
+    match self {
+      Self::Bool(_) => false,
+      Self::Inline => false,
+      Self::All => true,
+      Self::AllInline => true,
+    }
+  }
 }

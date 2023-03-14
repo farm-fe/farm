@@ -58,7 +58,8 @@
     "Rspack",
     "brightwu",
     "Bytedance",
-    "Tencent"
+    "Tencent",
+    "bytepos"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
@@ -66,6 +67,7 @@
     ".github/**",
     "**/*.toml",
     "**/*.node",
-    "**/*.svg"
+    "**/*.svg",
+    "**/tests/**"
   ]
 }

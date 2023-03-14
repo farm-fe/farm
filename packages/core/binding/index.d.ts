@@ -147,6 +147,7 @@ export interface Config {
         };
       };
     };
+    sourcemap?: boolean | 'all';
     partialBundling?: {
       moduleBuckets?: {
         name: string;

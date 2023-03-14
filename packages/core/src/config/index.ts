@@ -81,6 +81,15 @@ export async function normalizeUserCompilationConfig(
     config.mode = mode;
   }
 
+  if (config.mode === 'production') {
+    if (!config.output?.filename) {
+      config.output.filename = '[resourceName].[contentHash].[ext]';
+    }
+    if (!config.output?.assetsFilename) {
+      config.output.assetsFilename = '[resourceName].[contentHash].[ext]';
+    }
+  }
+
   const normalizedDevServerConfig = normalizeDevServerOptions(
     userConfig.server
   );
@@ -228,6 +237,7 @@ async function readConfigFile(
               },
             ],
           },
+          sourcemap: false,
         },
         server: {
           hmr: false,

@@ -28,6 +28,7 @@ async function getCompiler(p: string, plugins: JsPlugin[]): Promise<Compiler> {
           filename: 'index.mjs',
         },
         lazyCompilation: false,
+        sourcemap: false,
       },
       server: {
         hmr: false,

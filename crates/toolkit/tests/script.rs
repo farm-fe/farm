@@ -21,7 +21,7 @@ fn parse_and_codegen_module() {
 
     assert_eq!(ast.body.len(), 3);
 
-    let bytes = codegen_module(&ast, Default::default(), cm).unwrap();
+    let bytes = codegen_module(&ast, Default::default(), cm, None).unwrap();
 
     let code = String::from_utf8(bytes).unwrap();
     assert_eq!(
