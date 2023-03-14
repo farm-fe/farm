@@ -46,7 +46,13 @@ export class HmrEngine {
 
     this._updateQueue = [];
     let updatedFilesStr = queue
-      .map((item) => relative(this._compiler.config.config.root, item))
+      .map((item) => {
+        const resolvedPath = this._compiler.transformModulePath(
+          this._compiler.config.config.root,
+          item
+        );
+        return relative(this._compiler.config.config.root, resolvedPath);
+      })
       .join(', ');
     if (updatedFilesStr.length >= 100) {
       updatedFilesStr =

@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.4.4
+
+### Patch Changes
+
+- Fix that file watcher does not work properly when add or remove dependencies
+
 ## 0.4.3
 
 ### Patch Changes
