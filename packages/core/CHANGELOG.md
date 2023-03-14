@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.4.3
+
+### Patch Changes
+
+- 61f5fbe: Support sourcemap for source files
+
 ## 0.4.2
 
 ### Patch Changes

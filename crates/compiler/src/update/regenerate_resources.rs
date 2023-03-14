@@ -35,6 +35,7 @@ pub fn render_and_generate_update_resource(
     ResourcePotId::new(String::from("__UPDATE_RESOURCE_POT__")),
     ResourcePotType::Js,
   );
+  update_resource_pot.immutable = true;
 
   for added in &diff_result.added_modules {
     update_resource_pot.add_module(added.clone());
@@ -70,7 +71,7 @@ pub fn render_and_generate_update_resource(
     .find(|r| matches!(r.resource_type, ResourceType::Js))
     .unwrap();
 
-  if context.config.sourcemap {
+  if context.config.sourcemap.is_all() {
     // find sourceMappingUrl= and remove it
     let str = String::from_utf8(js_resource.bytes).unwrap();
     let mut lines = str.lines();

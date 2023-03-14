@@ -271,7 +271,10 @@ impl Plugin for FarmPluginScript {
         &ResourceType::SourceMap.to_ext(),
       );
 
-      if context.config.sourcemap {
+      if context.config.sourcemap.enabled()
+        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
+      {
+        // TODO: support inline sourcemap
         let source_mapping_url = format!("\n//# sourceMappingURL={}", sourcemap_filename);
         buf.append(&mut source_mapping_url.as_bytes().to_vec());
       }
@@ -285,7 +288,9 @@ impl Plugin for FarmPluginScript {
         preserve_name: false,
       }];
 
-      if context.config.sourcemap {
+      if context.config.sourcemap.enabled()
+        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
+      {
         let src_map = build_source_map(&src_map_buf, context.meta.script.cm.clone(), ast);
 
         resources.push(Resource {
