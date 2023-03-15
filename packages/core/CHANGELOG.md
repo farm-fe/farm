@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.4.6
+
+### Patch Changes
+
+- Fix update log
+
 ## 0.4.5
 
 ### Patch Changes
