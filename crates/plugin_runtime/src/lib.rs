@@ -408,8 +408,9 @@ impl Plugin for FarmPluginRuntime {
             .body
             .insert(0, runtime_ast.body.to_vec().remove(0));
 
+          // TODO move this logic to the entry module plugin, and should do this work in the finalize_resources hook
+          // TODO should collect the exports of the entry module, and only export the exports of the entry module
           // TODO support top level await, and only support reexport default export now, should support more export type in the future
-          // TODO inject global define
           // call the entry module
           let call_entry = parse_module(
             "farm-internal-call-entry-module",
@@ -428,7 +429,17 @@ impl Plugin for FarmPluginRuntime {
             context.config.script.target.clone(),
             context.meta.script.cm.clone(),
           )?;
-
+          // temporary solutions, move this logic to separate plugin when support configuring target env.
+          let global_var = parse_module(
+            "farm-global-var",
+            r#"import module from 'node:module';
+            global.__farmNodeRequire = module.createRequire(import.meta.url);
+            global.__farmNodeBuiltinModules = module.builtinModules;"#,
+            Syntax::Es(context.config.script.parser.es_config.clone()),
+            context.config.script.target.clone(),
+            context.meta.script.cm.clone(),
+          )?;
+          resource_pot_ast.body.splice(0..0, global_var.body);
           resource_pot_ast.body.extend(call_entry.body);
         }
         _ => { /* only inject entry execution for script, html entry will be injected after all resources generated */

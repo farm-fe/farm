@@ -21,7 +21,7 @@ Farm is a super fast, light-weight web building tool written in Rust. Benchmark 
 
 ## Features
 
-- ⚡ **Super Fast**: Written in Rust, start a react / vue(incoming) project in milliseconds, perform a HMR update within 10ms for situations.
+- ⚡ **Super Fast**: Written in Rust, start a react / vue(incoming) project in milliseconds, perform a HMR update within 10ms for most situations.
 - 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Support both Rust and Js plugins.
 - ⚙️ **Powerful**: Compiling JS/TS/JSX/TSX, css, html and static assets out of box.
 - ⏱️ **Lazy Compilation**: Dynamic imported resources are compiled only when they are requested.

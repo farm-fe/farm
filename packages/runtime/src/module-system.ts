@@ -1,6 +1,6 @@
 import { Module } from './module';
 import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
-import { Resource, ResourceLoader } from './resource-loader';
+import { Resource, ResourceLoader, targetEnv } from './resource-loader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ModuleInitialization = (
@@ -46,6 +46,23 @@ export class ModuleSystem {
       // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
       if (!shouldSkip) {
         return this.cache[moduleId].exports;
+      }
+    }
+
+    // if running on node, using native require to load node built-in modules
+    if (targetEnv === 'node') {
+      const { __farmNodeRequire, __farmNodeBuiltinModules } =
+        // TODO: polyfill globalThis
+        globalThis as unknown as {
+          __farmNodeRequire: (id: string) => any;
+          __farmNodeBuiltinModules: string[];
+        };
+
+      if (moduleId.startsWith('node:')) {
+        const nodeModuleId = moduleId.slice(5);
+        return __farmNodeRequire(nodeModuleId);
+      } else if (__farmNodeBuiltinModules.includes(moduleId)) {
+        return __farmNodeRequire(moduleId);
       }
     }
 

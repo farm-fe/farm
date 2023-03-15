@@ -54,6 +54,10 @@ impl Plugin for FarmPluginPartialBundling {
 
     for module_id in modules {
       let module = module_graph.module(module_id).unwrap();
+      // Skip the external modules
+      if module.external {
+        continue;
+      }
 
       if module.resource_pot.is_some() {
         panic!(
