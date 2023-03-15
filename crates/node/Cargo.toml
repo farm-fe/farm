@@ -19,7 +19,7 @@ farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 regex = "1"
 libloading = "0.7"
-farmfe_toolkit_plugin = { path = "../toolkit_plugin" }
+farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }
 opentelemetry = { version = "0.18.0", default-features = false, features = [
   "trace",
 ], optional = true }

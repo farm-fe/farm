@@ -5,6 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 use farmfe_compiler::{update::UpdateType, Compiler};
 
 pub mod plugin_adapters;
+pub mod plugin_toolkit;
 
 use farmfe_core::{
   config::{Config, Mode},
@@ -247,9 +248,4 @@ impl JsCompiler {
 
     resources.get(&name).map(|r| r.bytes.clone().into())
   }
-}
-
-#[no_mangle]
-extern "C" fn print_in_main() {
-  println!("\n\n\n Print in main, Hello from Rust!\n\n\n");
 }

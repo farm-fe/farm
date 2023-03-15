@@ -460,7 +460,7 @@ dependencies = [
  "farmfe_compiler",
  "farmfe_core",
  "farmfe_toolkit",
- "farmfe_toolkit_plugin",
+ "farmfe_toolkit_plugin_types",
  "libloading",
  "napi",
  "napi-build",
@@ -513,17 +513,7 @@ version = "0.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_plugin",
- "libloading",
-]
-
-[[package]]
-name = "farmfe_plugin_react_old"
-version = "0.0.0"
-dependencies = [
- "farmfe_core",
- "farmfe_macro_plugin",
- "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_toolkit_plugin_types",
 ]
 
 [[package]]
@@ -599,20 +589,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "farmfe_toolkit_plugin"
-version = "0.0.1"
-dependencies = [
- "farmfe_core",
- "farmfe_toolkit",
- "farmfe_toolkit_plugin_types",
-]
-
-[[package]]
 name = "farmfe_toolkit_plugin_types"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
  "lazy_static",
+ "libloading",
 ]
 
 [[package]]

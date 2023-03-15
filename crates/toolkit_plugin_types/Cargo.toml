@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 farmfe_core = { path = "../core" }
 lazy_static = "1.4.0"
+libloading = "0.7.0"

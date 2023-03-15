@@ -1,9 +1,0 @@
-[package]
-name = "farmfe_toolkit_plugin"
-version = "0.0.1"
-edition = "2021"
-
-[dependencies]
-farmfe_core = { path = "../core" }
-farmfe_toolkit = { path = "../toolkit" }
-farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }

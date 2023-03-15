@@ -45,7 +45,7 @@ export async function normalizeUserCompilationConfig(
     },
     userConfig.compilation
   );
-  // config.coreLibPath = bindingPath;
+  config.coreLibPath = bindingPath;
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 

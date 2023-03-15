@@ -3,6 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Mode,
   context::CompilationContext,
+  error::Result,
   swc_common::{comments::NoopComments, Mark},
   swc_ecma_ast,
 };
@@ -17,11 +18,11 @@ use farmfe_toolkit::{
 use farmfe_toolkit_plugin_types::swc_transforms::FarmSwcTransformReactOptions;
 
 #[no_mangle]
-extern "C" fn farm_swc_transform_react(
+pub fn farm_swc_transform_react(
   context: &Arc<CompilationContext>,
   ast: &mut swc_ecma_ast::Module,
   options: FarmSwcTransformReactOptions,
-) {
+) -> Result<()> {
   let is_dev = matches!(context.config.mode, Mode::Development);
   let top_level_mark = Mark::from_u32(options.top_level_mark);
   let unresolved_mark = Mark::from_u32(options.unresolved_mark);
@@ -51,5 +52,4 @@ extern "C" fn farm_swc_transform_react(
       }
     },
   )
-  .unwrap();
 }
