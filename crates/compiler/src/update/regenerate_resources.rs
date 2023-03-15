@@ -132,7 +132,7 @@ fn generate_and_diff_resource_pots(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Vec<ResourcePotId>> {
   let mut module_group_graph = context.module_group_graph.write();
-
+  // TODO: Make swc helpers for commonjs module like default and wildcard exports embedded in the module system to optimize the HMR time, as these two modules may be imported by most modules
   let modules = module_groups
     .iter()
     .fold(HashSet::new(), |mut acc, module_group_id| {

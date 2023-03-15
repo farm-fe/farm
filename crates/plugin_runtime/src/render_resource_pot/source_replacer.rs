@@ -88,8 +88,13 @@ impl SourceReplacer<'_> {
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
 
+        if dep_module.external {
+          return SourceReplaceResult::NotReplaced;
+        }
+
         if dep_module.module_type.is_script() || dep_module.module_type == ModuleType::Runtime {
           *value = id.id(self.mode.clone()).into();
+
           call_expr.visit_mut_children_with(self);
           return SourceReplaceResult::Replaced;
         } else {

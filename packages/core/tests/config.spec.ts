@@ -1,3 +1,4 @@
+import { builtinModules } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { test, expect } from 'vitest';
@@ -22,6 +23,7 @@ test('resolveUserConfig', async () => {
       input: {
         main: './main.tsx',
       },
+      external: builtinModules,
     },
     root: path.join(filePath, 'fixtures', 'config'),
   });

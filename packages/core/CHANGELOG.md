@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.4.5
+
+### Patch Changes
+
+- Auto external node native module when reading farm.config.ts
+- Updated dependencies
+  - @farmfe/runtime@0.3.4
+
 ## 0.4.4
 
 ### Patch Changes

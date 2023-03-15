@@ -6,9 +6,9 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::PluginHookContext,
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{resource_pot::ResourcePot, Resource},
+  resource::{resource_pot::ResourcePot, Resource, ResourceType},
 };
-use farmfe_toolkit::{fs::transform_output_filename, hash::sha256, tracing};
+use farmfe_toolkit::{fs::transform_output_filename, tracing};
 
 #[tracing::instrument(skip_all)]
 pub fn render_resource_pots_and_generate_resources(

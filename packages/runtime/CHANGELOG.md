@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.3.4
+
+### Patch Changes
+
+- Auto external node native module when reading farm.config.ts
+
 ## 0.3.3
 
 ### Patch Changes

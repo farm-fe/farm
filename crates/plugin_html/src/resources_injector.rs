@@ -175,6 +175,9 @@ impl VisitMut for ResourcesInjector {
         )));
       }
 
+      // inject global define
+      self.inject_global_define(element);
+
       // inject runtime <script>
       let script_element = create_element(
         "script",
@@ -183,8 +186,6 @@ impl VisitMut for ResourcesInjector {
       );
       element.children.push(Child::Element(script_element));
     } else if element.tag_name.to_string() == "body" {
-      self.inject_global_define(element);
-
       for script in &self.script_resources {
         element.children.push(Child::Element(create_element(
           "script",

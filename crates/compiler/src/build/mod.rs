@@ -18,7 +18,7 @@ use farmfe_core::{
   rayon,
   rayon::ThreadPool,
 };
-use farmfe_toolkit::tracing::{self, debug, info};
+use farmfe_toolkit::tracing::{self, debug};
 
 use crate::{
   build::{
@@ -240,7 +240,13 @@ impl Compiler {
           resolve_module_id_result,
         }) => {
           if resolve_module_id_result.resolve_result.external {
-            // skip external modules
+            // insert external module to the graph
+            let module_id: ModuleId = resolve_param.source.as_str().into();
+            let mut module = Module::new(module_id.clone());
+            module.external = true;
+
+            Self::add_module(module, &resolve_param.kind, &context);
+            Self::add_edge(&resolve_param, module_id, order, &context);
             return;
           }
 
