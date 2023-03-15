@@ -10,6 +10,7 @@
     "@farmfe/core": "../../packages/core"
   },
   "scripts": {
-    "start": "farm start"
+    "start": "farm start",
+    "build":"farm build"
   }
 }
