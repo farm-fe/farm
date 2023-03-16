@@ -26,12 +26,13 @@ export default Compiler;
 
 /// Parameter of the resolve hook
 export interface PluginResolveHookParam {
-  /// the specifier would like to resolve, for example, './index'
-  specifier: String;
   /// the start location to resolve `specifier`, being [None] if resolving a entry or resolving a hmr update.
   importer: String | null;
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   kind: ResolveKind;
+  /// resolvedPath. for example in index.ts (import App from "./App.vue")
+  /// source should be "path.resolve(process.cwd(),'./App.vue')"
+  source:String;
 }
 
 export interface PluginResolveHookResult {
