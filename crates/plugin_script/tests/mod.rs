@@ -33,6 +33,7 @@ fn load_parse_and_analyze_deps() {
         &PluginLoadHookParam {
           resolved_path: &id,
           query: HashMap::new(),
+          meta: HashMap::new(),
         },
         &context,
         &hook_context,

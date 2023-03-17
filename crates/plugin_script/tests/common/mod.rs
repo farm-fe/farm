@@ -25,6 +25,7 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
       &PluginLoadHookParam {
         resolved_path: &path.to_string_lossy().to_string(),
         query: HashMap::new(),
+        meta: HashMap::new(),
       },
       &context,
       &hook_context,

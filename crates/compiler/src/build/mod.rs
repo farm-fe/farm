@@ -19,6 +19,7 @@ use farmfe_core::{
   rayon::ThreadPool,
 };
 use farmfe_toolkit::tracing::{self, debug};
+use farmfe_utils::stringify_query;
 
 use crate::{
   build::{
@@ -112,7 +113,10 @@ impl Compiler {
       }
     };
 
-    let module_id = ModuleId::new(&resolve_result.resolved_path, &context.config.root);
+    // make query part of module id
+    let rp = resolve_result.resolved_path.clone() + &stringify_query(&resolve_result.query);
+
+    let module_id = ModuleId::new(&rp, &context.config.root);
 
     Ok(ResolveModuleIdResult {
       module_id,
@@ -146,6 +150,7 @@ impl Compiler {
     let load_param = PluginLoadHookParam {
       resolved_path: &resolve_result.resolved_path,
       query: resolve_result.query.clone(),
+      meta: resolve_result.meta.clone(),
     };
 
     let load_result = call_and_catch_error!(load, &load_param, context, &hook_context);
@@ -157,6 +162,7 @@ impl Compiler {
       resolved_path: &resolve_result.resolved_path,
       module_type: load_result.module_type.clone(),
       query: resolve_result.query.clone(),
+      meta: resolve_result.meta.clone(),
     };
 
     let transform_result = call_and_catch_error!(transform, transform_param, context);

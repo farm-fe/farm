@@ -1,11 +1,11 @@
 export type ModuleType =
-  | 'Ts'
-  | 'Js'
-  | 'Jsx'
-  | 'Tsx'
-  | 'Css'
-  | 'Html'
-  | 'Asset'
+  | 'ts'
+  | 'js'
+  | 'jsx'
+  | 'tsx'
+  | 'css'
+  | 'html'
+  | 'asset'
   | string;
 
 export type ResolveKind =
@@ -26,13 +26,13 @@ export default Compiler;
 
 /// Parameter of the resolve hook
 export interface PluginResolveHookParam {
-  /// the start location to resolve `specifier`, being [None] if resolving a entry or resolving a hmr update.
-  importer: String | null;
+  /// the start location to resolve `source`, being [None] if resolving a entry or resolving a hmr update.
+  importer: { relativePath: string; queryString?: string } | null;
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   kind: ResolveKind;
   /// resolvedPath. for example in index.ts (import App from "./App.vue")
   /// source should be "path.resolve(process.cwd(),'./App.vue')"
-  source:String;
+  source: String;
 }
 
 export interface PluginResolveHookResult {
@@ -46,11 +46,14 @@ export interface PluginResolveHookResult {
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [crate::utils::parse_query] is for you
   query: Record<string, string> | null;
+  /// meta data of the module, will be passed to [PluginLoadHookParam] and [PluginTransformHookParam]
+  meta: Record<string, string> | null;
 }
 
 export interface PluginLoadHookParam {
   resolvedPath: string;
   query: Record<string, string>;
+  meta: Record<string, string> | null;
 }
 
 export interface PluginLoadHookResult {
@@ -68,6 +71,7 @@ export interface PluginTransformHookParam {
   moduleType: ModuleType;
   resolvedPath: string;
   query: Record<string, string>;
+  meta: Record<string, string> | null;
 }
 
 export interface PluginTransformHookResult {

@@ -266,6 +266,8 @@ pub struct PluginResolveHookResult {
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [farmfe_toolkit::resolve::parse_query] should be helpful
   pub query: HashMap<String, String>,
+  /// the meta data passed between plugins and hooks
+  pub meta: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -275,6 +277,8 @@ pub struct PluginLoadHookParam<'a> {
   pub resolved_path: &'a str,
   /// the query map
   pub query: HashMap<String, String>,
+  /// the meta data passed between plugins and hooks
+  pub meta: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -298,6 +302,8 @@ pub struct PluginTransformHookParam<'a> {
   pub resolved_path: &'a str,
   /// query from resolve hook
   pub query: HashMap<String, String>,
+  /// the meta data passed between plugins and hooks
+  pub meta: HashMap<String, String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

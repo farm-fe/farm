@@ -54,12 +54,16 @@ test('Js Plugin Execution - resolve', async () => {
         },
         executor: async (param) => {
           console.log(param);
+          expect(param.source).toBe('./index.ts');
+          expect(param.importer).toBe(null);
+          expect(param.kind).toBe('entry');
 
           return {
             resolvedPath,
             query: {},
             sideEffects: false,
             external: false,
+            meta: {},
           };
         },
       },
@@ -93,7 +97,7 @@ test('Js Plugin Execution - load', async () => {
           console.log(param);
           return {
             content: 'export default 33;',
-            moduleType: 'Ts',
+            moduleType: 'ts',
           };
         },
       },
@@ -125,6 +129,7 @@ test('Js Plugin Execution - transform', async () => {
         },
         executor: async (param) => {
           console.log(param);
+          expect(param.moduleType).toBe('ts');
           return {
             content: 'export default 44;',
           };
