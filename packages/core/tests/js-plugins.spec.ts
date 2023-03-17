@@ -14,14 +14,18 @@ function getOutputFilePath(p: string) {
   return path.join(root, 'dist', p, 'index.mjs');
 }
 
-async function getCompiler(p: string, plugins: JsPlugin[]): Promise<Compiler> {
+async function getCompiler(
+  p: string,
+  plugins: JsPlugin[],
+  input?: Record<string, string>
+): Promise<Compiler> {
   const root = getJsPluginsFixturesDir();
   const config = await normalizeUserCompilationConfig(
     {
       root,
       compilation: {
-        input: {
-          index: './index.ts',
+        input: input ?? {
+          index: './index.ts?foo=bar',
         },
         output: {
           path: path.join('dist', p),
@@ -54,13 +58,13 @@ test('Js Plugin Execution - resolve', async () => {
         },
         executor: async (param) => {
           console.log(param);
-          expect(param.source).toBe('./index.ts');
+          expect(param.source).toBe('./index.ts?foo=bar');
           expect(param.importer).toBe(null);
           expect(param.kind).toBe('entry');
 
           return {
             resolvedPath,
-            query: {},
+            query: [['foo', 'bar']],
             sideEffects: false,
             external: false,
             meta: {},
@@ -148,5 +152,69 @@ test('Js Plugin Execution - transform', async () => {
   } else {
     const result = await import(outputFilePath);
     expect(result.default).toBe(44);
+  }
+});
+
+test('Js Plugin Execution - full', async () => {
+  const root = getJsPluginsFixturesDir();
+  const resolvedPath = path.join(root, 'resolved.ts');
+  const compiler = await getCompiler('resolve', [
+    {
+      name: 'test-full',
+      priority: 1000,
+      resolve: {
+        filters: {
+          sources: ['.*'],
+          importers: ['.ts$'],
+        },
+        executor: async (param) => {
+          console.log(param);
+
+          if (param.source === './resolved?lang=ts&index=1') {
+            return {
+              resolvedPath,
+              query: [
+                ['lang', 'ts'],
+                ['index', '1'],
+              ],
+              sideEffects: false,
+              external: false,
+              meta: {},
+            };
+          } else {
+            return {
+              resolvedPath,
+              query: [],
+              sideEffects: false,
+              external: false,
+              meta: {},
+            };
+          }
+        },
+      },
+      load: {
+        filters: {
+          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
+        },
+        executor: async (param) => {
+          return {
+            content: 'import "./resolved?lang=ts&index=1"; export default 2;',
+            moduleType: 'ts',
+          };
+        },
+      },
+    },
+  ]);
+
+  await compiler.compile();
+  await compiler.writeResourcesToDisk();
+  const outputFilePath = getOutputFilePath('resolve');
+
+  if (process.platform === 'win32') {
+    const result = await import(pathToFileURL(outputFilePath).toString());
+    expect(result.default).toBe(2);
+  } else {
+    const result = await import(outputFilePath);
+    expect(result.default).toBe(2);
   }
 });

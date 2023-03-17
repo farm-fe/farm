@@ -66,6 +66,7 @@ impl Plugin for FarmPluginHtml {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::module::ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Html) {
+      // Ignore query string when parsing html. HTML should not be affected by query string.
       let module_id = ModuleId::new(&param.resolved_path, &context.config.root);
       let html_document = parse_html_document(
         module_id.to_string().as_str(),

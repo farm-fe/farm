@@ -1,16 +1,14 @@
 //! This crate provides shared utilities that is not related to any core compilation flow or data structures.
 //! If you are a plugin author and look for internal helpers, [farmfe_toolkit] crate should be your first choice.
 
-use std::collections::HashMap;
-
 pub use pathdiff::diff_paths;
 
 pub const PARSE_QUERY_TRUE: &str = "true";
 
 /// parse `?a=b` to `HashMap { a: b }`, `?a` to `HashMap { a: "true" }`
-pub fn parse_query(path: &str) -> HashMap<String, String> {
+pub fn parse_query(path: &str) -> Vec<(String, String)> {
   if !path.contains("?") {
-    return HashMap::new();
+    return vec![];
   }
 
   let query_str = path.split('?').last().unwrap();
@@ -32,15 +30,14 @@ pub fn parse_query(path: &str) -> HashMap<String, String> {
     }
   }
 
-  HashMap::from_iter(
-    query
-      .into_iter()
-      .map(|(k, v)| (k.to_string(), v.to_string())),
-  )
+  query
+    .into_iter()
+    .map(|(k, v)| (k.to_string(), v.to_string()))
+    .collect()
 }
 
 /// stringify `HashMap { a: b }` to `?a=b`
-pub fn stringify_query(query: &HashMap<String, String>) -> String {
+pub fn stringify_query(query: &Vec<(String, String)>) -> String {
   if query.is_empty() {
     return String::new();
   }
@@ -102,8 +99,6 @@ pub fn relative(from: &str, to: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
-
   use crate::{stringify_query, PARSE_QUERY_TRUE};
 
   use super::parse_query;
@@ -114,28 +109,25 @@ mod tests {
     let parsed_query = parse_query(str);
     assert_eq!(
       parsed_query,
-      HashMap::from_iter([("inline".to_string(), "true".to_string())])
+      vec![("inline".to_string(), "true".to_string())]
     );
 
     let str = "?a=b";
     let parsed_query = parse_query(str);
-    assert_eq!(
-      parsed_query,
-      HashMap::from_iter([("a".to_string(), "b".to_string())])
-    );
+    assert_eq!(parsed_query, vec![("a".to_string(), "b".to_string())]);
 
     let str = "./a";
     let parsed_query = parse_query(str);
-    assert_eq!(parsed_query, HashMap::new());
+    assert_eq!(parsed_query, vec![]);
   }
 
   #[test]
   fn stringify_query_t() {
-    let query = HashMap::from_iter([("inline".to_string(), PARSE_QUERY_TRUE.to_string())]);
+    let query = vec![("inline".to_string(), PARSE_QUERY_TRUE.to_string())];
     let str = stringify_query(&query);
     assert_eq!(str, "?inline");
 
-    let query = HashMap::from_iter([("a".to_string(), "b".to_string())]);
+    let query = vec![("a".to_string(), "b".to_string())];
     let str = stringify_query(&query);
     assert_eq!(str, "?a=b".to_string());
   }

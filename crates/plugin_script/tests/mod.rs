@@ -32,7 +32,7 @@ fn load_parse_and_analyze_deps() {
       let loaded = plugin_script.load(
         &PluginLoadHookParam {
           resolved_path: &id,
-          query: HashMap::new(),
+          query: vec![],
           meta: HashMap::new(),
         },
         &context,
@@ -73,7 +73,7 @@ fn load_parse_and_analyze_deps() {
           &PluginParseHookParam {
             module_id: "any".into(),
             resolved_path: id,
-            query: HashMap::new(),
+            query: vec![],
             module_type: loaded.module_type.clone(),
             content: loaded.content,
           },

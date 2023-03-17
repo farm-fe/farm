@@ -20,6 +20,7 @@ use farmfe_toolkit::{
   fs::read_file_utf8,
   script::module_type_from_id,
 };
+use farmfe_utils::stringify_query;
 
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx files to js chunks
 pub struct FarmPluginCss {}
@@ -65,7 +66,8 @@ impl Plugin for FarmPluginCss {
     if matches!(param.module_type, ModuleType::Css)
       && matches!(context.config.mode, farmfe_core::config::Mode::Development)
     {
-      let module_id = ModuleId::new(param.resolved_path, &context.config.root);
+      let rp = param.resolved_path.to_string() + &stringify_query(&param.query);
+      let module_id = ModuleId::new(&rp, &context.config.root);
 
       let css_js_code = format!(
         r#"

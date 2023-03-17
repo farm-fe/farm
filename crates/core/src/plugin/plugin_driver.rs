@@ -231,7 +231,7 @@ mod tests {
               resolved_path: stringify!($plugin_name).to_string(),
               external: false,
               side_effects: false,
-              query: HashMap::new(),
+              query: vec![],
               meta: HashMap::new(),
             }))
           } else {

@@ -42,7 +42,7 @@ impl Plugin for FarmPluginLazyCompilation {
         resolved_path: param.source.to_string(),
         external: false,
         side_effects: false,
-        query: HashMap::new(),
+        query: vec![],
         meta: HashMap::from([(
           "original".to_string(),
           param.source.replace(DYNAMIC_VIRTUAL_PREFIX, ""),
@@ -65,7 +65,7 @@ impl Plugin for FarmPluginLazyCompilation {
           resolved_path: format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resolve_result.resolved_path),
           external: false,
           side_effects: false,
-          query: HashMap::new(),
+          query: vec![],
           meta: HashMap::new(),
         }))
       } else {
@@ -114,7 +114,7 @@ impl Plugin for FarmPluginLazyCompilation {
         context.plugin_driver.load(
           &farmfe_core::plugin::PluginLoadHookParam {
             resolved_path,
-            query: HashMap::new(),
+            query: vec![],
             meta: HashMap::new(),
           },
           context,
