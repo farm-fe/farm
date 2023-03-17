@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.4.7
+
+### Patch Changes
+
+- f137492: Make query part of ModuleId
+
 ## 0.4.6
 
 ### Patch Changes
