@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use farmfe_core::{
   config::Config,
@@ -60,6 +60,7 @@ impl Plugin for FarmPluginResolve {
         external: true,
         side_effects: false,
         query,
+        meta: HashMap::new(),
       }));
     }
 

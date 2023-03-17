@@ -26,6 +26,7 @@ fn html_build_stage() {
         &PluginLoadHookParam {
           resolved_path: file.to_str().unwrap(),
           query: HashMap::new(),
+          meta: HashMap::new(),
         },
         &context,
         &hook_context,

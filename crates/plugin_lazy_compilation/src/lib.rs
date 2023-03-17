@@ -42,7 +42,8 @@ impl Plugin for FarmPluginLazyCompilation {
         resolved_path: param.source.to_string(),
         external: false,
         side_effects: false,
-        query: HashMap::from([(
+        query: HashMap::new(),
+        meta: HashMap::from([(
           "original".to_string(),
           param.source.replace(DYNAMIC_VIRTUAL_PREFIX, ""),
         )]),
@@ -65,6 +66,7 @@ impl Plugin for FarmPluginLazyCompilation {
           external: false,
           side_effects: false,
           query: HashMap::new(),
+          meta: HashMap::new(),
         }))
       } else {
         Ok(None)
@@ -87,7 +89,7 @@ impl Plugin for FarmPluginLazyCompilation {
     }
 
     if param.resolved_path.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
-      if param.query.get("original").is_none() {
+      if param.meta.get("original").is_none() {
         let resolved_path = param.resolved_path;
         let dynamic_code = include_str!("dynamic_module.ts")
           .replace("MODULE_PATH", &resolved_path.replace(r"\", r"\\"))
@@ -107,12 +109,13 @@ impl Plugin for FarmPluginLazyCompilation {
           module_type: farmfe_core::module::ModuleType::Ts,
         }))
       } else {
-        let resolved_path = param.query.get("original").unwrap();
+        let resolved_path = param.meta.get("original").unwrap();
 
         context.plugin_driver.load(
           &farmfe_core::plugin::PluginLoadHookParam {
             resolved_path,
             query: HashMap::new(),
+            meta: HashMap::new(),
           },
           context,
           &farmfe_core::plugin::PluginHookContext {

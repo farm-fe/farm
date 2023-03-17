@@ -209,6 +209,7 @@ pub struct HtmlModuleMetaData {
 /// other [ModuleType] will be set after the load hook, but can be change in transform hook too.
 #[cache_item]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ModuleType {
   // native supported module type by the core plugins
   Js,
@@ -263,8 +264,10 @@ impl ToString for ModuleType {
   PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
 )]
 #[archive_attr(derive(Hash, Eq, PartialEq))]
+#[serde(rename_all = "camelCase")]
 pub struct ModuleId {
   relative_path: String,
+  query_string: Option<String>,
 }
 
 const LEN: usize = 4;
@@ -272,14 +275,19 @@ const LEN: usize = 4;
 impl ModuleId {
   /// the resolved_path and query determine a module
   pub fn new(resolved_path: &str, cwd: &str) -> Self {
-    let rp = Path::new(resolved_path);
+    let (resolved_path, qs) = Self::split_query(resolved_path);
+
+    let rp = Path::new(resolved_path.as_str());
     let relative_path = if rp.is_absolute() {
-      relative(cwd, resolved_path)
+      relative(cwd, resolved_path.as_str())
     } else {
       resolved_path.to_string()
     };
 
-    Self { relative_path }
+    Self {
+      relative_path,
+      query_string: qs,
+    }
   }
 
   /// return self.relative_path and self.query_string in dev,
@@ -311,12 +319,25 @@ impl ModuleId {
     hasher.finalize_variable(&mut buf).unwrap();
     hex::encode(buf)
   }
+
+  fn split_query(p: &str) -> (String, Option<String>) {
+    let comps = p.split('?').collect::<Vec<&str>>();
+
+    if comps.len() == 2 {
+      return (comps[0].to_string(), Some(format!("?{}", comps[1])));
+    }
+
+    (p.to_string(), None)
+  }
 }
 
 impl From<&str> for ModuleId {
   fn from(rp: &str) -> Self {
+    let (rp, qs) = Self::split_query(rp);
+
     Self {
-      relative_path: rp.to_string(),
+      relative_path: rp,
+      query_string: qs,
     }
   }
 }
@@ -329,7 +350,7 @@ impl From<String> for ModuleId {
 
 impl ToString for ModuleId {
   fn to_string(&self) -> String {
-    self.relative_path.to_string()
+    self.relative_path.to_string() + self.query_string.as_deref().unwrap_or("")
   }
 }
 
@@ -381,6 +402,32 @@ mod tests {
     let module_id = ModuleId::new(resolved_path, "C:\\root\\packages\\app");
 
     assert_eq!(module_id.id(Mode::Development), "../test/module.html");
+  }
+
+  #[test]
+  fn module_id_with_query() {
+    #[cfg(not(target_os = "windows"))]
+    let resolved_path = "/root/logo.png?inline";
+    #[cfg(not(target_os = "windows"))]
+    let module_id = ModuleId::new(resolved_path, "/root");
+    #[cfg(not(target_os = "windows"))]
+    let root = "/root";
+
+    #[cfg(target_os = "windows")]
+    let resolved_path = "C:\\root\\logo.png?inline";
+    #[cfg(target_os = "windows")]
+    let module_id = ModuleId::new(resolved_path, "C:\\root");
+    #[cfg(target_os = "windows")]
+    let root = "C:\\root";
+
+    assert_eq!(module_id.id(Mode::Development), "logo.png?inline");
+    assert_eq!(module_id.id(Mode::Production), "f75a7043");
+    assert_eq!(module_id.relative_path(), "logo.png");
+    assert_eq!(
+      module_id.resolved_path(root),
+      resolved_path.split("?").next().unwrap()
+    );
+    assert_eq!(module_id.hash(), "f75a7043");
   }
 
   #[test]
