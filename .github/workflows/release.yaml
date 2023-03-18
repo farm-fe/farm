@@ -10,9 +10,12 @@ jobs:
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
 
+  call-rust-plugin-react-build:
+    uses: ./.github/workflows/rust-plugin-react-build.yaml
+
   release:
     name: Release
-    needs: call-rust-build
+    needs: [call-rust-build, call-rust-plugin-react-build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -23,6 +26,7 @@ jobs:
         with:
           node-version: 16.x
 
+      # download rust core artifacts
       - uses: actions/download-artifact@v3
         id: download-linux-x64-gnu
         with:
@@ -54,6 +58,39 @@ jobs:
           path: ./packages/core/npm/darwin-arm64
       - name: List Files
         run: ls -l ./packages/core/npm/darwin-arm64
+
+      # download rust plugin react artifacts
+      - uses: actions/download-artifact@v3
+        id: download-plugin-react-linux-x64-gnu
+        with:
+          name: ${{ github.sha }}-linux-x64-gnu
+          path: ./rust-plugins/react/npm/linux-x64-gnu
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/linux-x64-gnu
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-x64
+        with:
+          name: ${{ github.sha }}-darwin-x64
+          path: ./rust-plugins/react/npm/darwin-x64
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/darwin-x64
+
+      - uses: actions/download-artifact@v3
+        id: download-win32-x64-msvc
+        with:
+          name: ${{ github.sha }}-win32-x64-msvc
+          path: ./rust-plugins/react/npm/win32-x64-msvc
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/win32-x64-msvc
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-arm64
+        with:
+          name: ${{ github.sha }}-darwin-arm64
+          path: ./rust-plugins/react/npm/darwin-arm64
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/darwin-arm64
 
       - name: Install Dependencies
         run: npm install -g pnpm && pnpm i --frozen-lockfile

@@ -66,8 +66,11 @@ impl Plugin for FarmPluginCss {
     if matches!(param.module_type, ModuleType::Css)
       && matches!(context.config.mode, farmfe_core::config::Mode::Development)
     {
-      let rp = param.resolved_path.to_string() + &stringify_query(&param.query);
-      let module_id = ModuleId::new(&rp, &context.config.root);
+      let module_id = ModuleId::new(
+        param.resolved_path,
+        &stringify_query(&param.query),
+        &context.config.root,
+      );
 
       let css_js_code = format!(
         r#"

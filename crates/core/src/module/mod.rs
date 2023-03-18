@@ -267,26 +267,24 @@ impl ToString for ModuleType {
 #[serde(rename_all = "camelCase")]
 pub struct ModuleId {
   relative_path: String,
-  query_string: Option<String>,
+  query_string: String,
 }
 
 const LEN: usize = 4;
 
 impl ModuleId {
   /// the resolved_path and query determine a module
-  pub fn new(resolved_path: &str, cwd: &str) -> Self {
-    let (resolved_path, qs) = Self::split_query(resolved_path);
-
-    let rp = Path::new(resolved_path.as_str());
+  pub fn new(resolved_path: &str, query_string: &str, cwd: &str) -> Self {
+    let rp = Path::new(resolved_path);
     let relative_path = if rp.is_absolute() {
-      relative(cwd, resolved_path.as_str())
+      relative(cwd, resolved_path)
     } else {
       resolved_path.to_string()
     };
 
     Self {
       relative_path,
-      query_string: qs,
+      query_string: query_string.to_string(),
     }
   }
 
@@ -320,14 +318,14 @@ impl ModuleId {
     hex::encode(buf)
   }
 
-  fn split_query(p: &str) -> (String, Option<String>) {
+  fn split_query(p: &str) -> (String, String) {
     let comps = p.split('?').collect::<Vec<&str>>();
 
     if comps.len() == 2 {
-      return (comps[0].to_string(), Some(format!("?{}", comps[1])));
+      return (comps[0].to_string(), format!("?{}", comps[1]));
     }
 
-    (p.to_string(), None)
+    (p.to_string(), "".to_string())
   }
 }
 
@@ -350,7 +348,7 @@ impl From<String> for ModuleId {
 
 impl ToString for ModuleId {
   fn to_string(&self) -> String {
-    self.relative_path.to_string() + self.query_string.as_deref().unwrap_or("")
+    self.relative_path.to_string() + self.query_string.as_str()
   }
 }
 
@@ -374,7 +372,7 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     let resolved_path = "/root/module.html";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, "/root");
+    let module_id = ModuleId::new(resolved_path, "", "/root");
     #[cfg(not(target_os = "windows"))]
     let root = "/root";
 
@@ -394,7 +392,7 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     let resolved_path = "/root/packages/test/module.html";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, "/root/packages/app");
+    let module_id = ModuleId::new(resolved_path, "", "/root/packages/app");
 
     #[cfg(target_os = "windows")]
     let resolved_path = "C:\\root\\packages\\test\\module.html";
@@ -409,7 +407,7 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     let resolved_path = "/root/logo.png?inline";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, "/root");
+    let module_id = ModuleId::new(resolved_path, "", "/root");
     #[cfg(not(target_os = "windows"))]
     let root = "/root";
 
@@ -432,7 +430,7 @@ mod tests {
 
   #[test]
   fn module_serialization() {
-    let mut module = Module::new(ModuleId::new("/root/index.ts", "/root"));
+    let mut module = Module::new(ModuleId::new("/root/index.ts", "", "/root"));
 
     #[cache_item(CustomModuleMetaData)]
     struct StructModuleData {
@@ -440,7 +438,7 @@ mod tests {
       imports: Vec<String>,
     }
 
-    module.module_groups = HashSet::from([ModuleId::new("1", ""), ModuleId::new("2", "")]);
+    module.module_groups = HashSet::from([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
 
     module.meta = ModuleMetaData::Custom(Box::new(StructModuleData {
       ast: String::from("ast"),
@@ -477,9 +475,9 @@ mod tests {
 
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("1", "")));
+      .contains(&ModuleId::new("1", "", "")));
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("2", "")));
+      .contains(&ModuleId::new("2", "", "")));
   }
 }

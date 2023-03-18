@@ -496,6 +496,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "farmfe_utils",
 ]
 
 [[package]]

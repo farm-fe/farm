@@ -2,4 +2,4 @@ packages:
   - packages/*
   - examples/*
   - crates/*
-  - plugins/*
+  - rust-plugins/*

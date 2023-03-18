@@ -5,9 +5,11 @@ import path from 'node:path';
 /**
  * Farm plugin build command, build a rust farm plugin
  */
-export function build(_args: any[]): void {
+export function build(args: { '--': string[] }): void {
+  const passThroughArgs = args['--'];
+
   // TODO, should automatically install Rust environment automatically
-  execSync(`cargo build --release`, {
+  execSync(`cargo build --release ${passThroughArgs.join(' ')}`, {
     stdio: 'inherit',
   });
   const cwd = process.cwd();
@@ -64,7 +66,11 @@ export function build(_args: any[]): void {
     'release',
     `${artifactName}${libExt}`
   );
-  const platformArch = `${process.platform}_${process.arch}`;
+  let platformArch = `${process.platform}_${process.arch}`;
+
+  if (passThroughArgs.join(' ').includes('--target aarch64-apple-darwin')) {
+    platformArch = 'darwin_arm64';
+  }
 
   if (!npmDirMap[platformArch]) {
     throw new Error(`Unsupported platform: ${platformArch}`);

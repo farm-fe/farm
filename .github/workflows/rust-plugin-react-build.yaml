@@ -1,0 +1,9 @@
+name: Plugin React - Building Rust Binding And Upload Artifacts
+on: workflow_call
+
+env:
+  root: rust-plugins/react
+
+jobs:
+  call-rust-plugin-build:
+    uses: ./.github/workflows/rust-plugin-build.yaml

@@ -207,7 +207,7 @@ impl JsCompiler {
   pub fn has_module(&self, resolved_path: String) -> bool {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
-    let module_id = ModuleId::new(&resolved_path, &context.config.root);
+    let module_id = ModuleId::new(&resolved_path, "", &context.config.root);
 
     module_graph.has_module(&module_id)
   }
