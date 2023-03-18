@@ -6,6 +6,10 @@ on:
         type: string
         required: true
         description: the path of the plugin, for example, rust-plugins/react
+      name:
+        type: string
+        required: true
+        description: the name of the uploaded artifacts
 
 jobs:
   # cross compile arm64 macos cause github runners does not native support it
@@ -33,7 +37,7 @@ jobs:
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.sha }}-darwin-arm64
+          name: ${{ github.sha }}-darwin-arm64-${{ inputs.name }}
           path: ${{ inputs.root }}/npm/darwin-arm64/index.farm
   build:
     name: Build and Upload Artifacts
@@ -59,7 +63,7 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm && pnpm i --frozen-lockfile
 
-      - name: Build - ${{ matrix.settings.abi }}
+      - name: Build - ${{ matrix.settings.abi }}-${{ inputs.name }}
         run: cd ${{ inputs.root }} && npm run build
       - name: Upload - ${{ matrix.settings.abi }}
         uses: actions/upload-artifact@v3
