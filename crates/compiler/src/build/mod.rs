@@ -115,7 +115,7 @@ impl Compiler {
 
     // make query part of module id
     let module_id = ModuleId::new(
-      &rp,
+      &resolve_result.resolved_path,
       &stringify_query(&resolve_result.query),
       &context.config.root,
     );
