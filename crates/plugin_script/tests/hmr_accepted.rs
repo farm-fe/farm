@@ -28,7 +28,8 @@ fn hmr_accepted() {
       .load(
         &PluginLoadHookParam {
           resolved_path: &id,
-          query: HashMap::new(),
+          query: vec![],
+          meta: HashMap::new(),
         },
         &context,
         &hook_context,
@@ -41,7 +42,7 @@ fn hmr_accepted() {
         &PluginParseHookParam {
           module_id: "any".into(),
           resolved_path: id,
-          query: HashMap::new(),
+          query: vec![],
           module_type: loaded.module_type.clone(),
           content: loaded.content,
         },

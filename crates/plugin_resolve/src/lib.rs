@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use farmfe_core::{
   config::Config,
@@ -28,6 +28,11 @@ impl FarmPluginResolve {
 impl Plugin for FarmPluginResolve {
   fn name(&self) -> &str {
     "FarmPluginResolve"
+  }
+
+  // Internal Resolve Plugin has the lower priority, so it will be executed at last
+  fn priority(&self) -> i32 {
+    return 99;
   }
 
   #[tracing::instrument(skip_all)]
@@ -60,6 +65,7 @@ impl Plugin for FarmPluginResolve {
         external: true,
         side_effects: false,
         query,
+        meta: HashMap::new(),
       }));
     }
 

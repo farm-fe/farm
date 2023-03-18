@@ -7,7 +7,7 @@ import {
 import { DevServer } from './index.js';
 // import debounce from 'lodash.debounce';
 import { Logger } from '../logger.js';
-import { relative } from 'path';
+import { isAbsolute, relative } from 'path';
 import chalk from 'chalk';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { JsUpdateResult } from '../../binding/binding.js';
@@ -47,11 +47,15 @@ export class HmrEngine {
     this._updateQueue = [];
     let updatedFilesStr = queue
       .map((item) => {
-        const resolvedPath = this._compiler.transformModulePath(
-          this._compiler.config.config.root,
-          item
-        );
-        return relative(this._compiler.config.config.root, resolvedPath);
+        if (isAbsolute(item)) {
+          return relative(this._compiler.config.config.root, item);
+        } else {
+          const resolvedPath = this._compiler.transformModulePath(
+            this._compiler.config.config.root,
+            item
+          );
+          return relative(this._compiler.config.config.root, resolvedPath);
+        }
       })
       .join(', ');
     if (updatedFilesStr.length >= 100) {

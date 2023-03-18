@@ -1,5 +1,25 @@
 # @farmfe/core
 
+## 0.4.7
+
+### Patch Changes
+
+- f137492: Make query part of ModuleId
+
+## 0.4.6
+
+### Patch Changes
+
+- Fix update log
+
+## 0.4.5
+
+### Patch Changes
+
+- Auto external node native module when reading farm.config.ts
+- Updated dependencies
+  - @farmfe/runtime@0.3.4
+
 ## 0.4.4
 
 ### Patch Changes

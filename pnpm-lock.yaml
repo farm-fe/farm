@@ -103,7 +103,7 @@ importers:
 
   packages/core:
     specifiers:
-      '@farmfe/runtime': workspace:^0.3.3
+      '@farmfe/runtime': workspace:^0.3.4
       '@farmfe/runtime-plugin-hmr': workspace:^3.0.5
       '@napi-rs/cli': ^2.10.0
       '@swc/helpers': ^0.4.9
