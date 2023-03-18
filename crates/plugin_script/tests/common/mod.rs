@@ -24,7 +24,7 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
     .load(
       &PluginLoadHookParam {
         resolved_path: &path.to_string_lossy().to_string(),
-        query: HashMap::new(),
+        query: vec![],
         meta: HashMap::new(),
       },
       &context,
@@ -38,7 +38,7 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
       &PluginParseHookParam {
         module_id: ModuleId::new(&path.to_string_lossy().to_string(), base.to_str().unwrap()),
         resolved_path: path.to_string_lossy().to_string(),
-        query: HashMap::new(),
+        query: vec![],
         module_type: load_result.module_type.clone(),
         content: load_result.content,
       },

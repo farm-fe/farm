@@ -7,9 +7,8 @@ use crate::{
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupGraph},
-    Module, ModuleId, ModuleMetaData, ModuleType,
+    module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
+    ModuleType,
   },
   resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource},
   stats::Stats,
@@ -265,7 +264,7 @@ pub struct PluginResolveHookResult {
   /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [farmfe_toolkit::resolve::parse_query] should be helpful
-  pub query: HashMap<String, String>,
+  pub query: Vec<(String, String)>,
   /// the meta data passed between plugins and hooks
   pub meta: HashMap<String, String>,
 }
@@ -276,7 +275,7 @@ pub struct PluginLoadHookParam<'a> {
   /// the resolved path from resolve hook
   pub resolved_path: &'a str,
   /// the query map
-  pub query: HashMap<String, String>,
+  pub query: Vec<(String, String)>,
   /// the meta data passed between plugins and hooks
   pub meta: HashMap<String, String>,
 }
@@ -301,7 +300,7 @@ pub struct PluginTransformHookParam<'a> {
   /// resolved path from resolve hook
   pub resolved_path: &'a str,
   /// query from resolve hook
-  pub query: HashMap<String, String>,
+  pub query: Vec<(String, String)>,
   /// the meta data passed between plugins and hooks
   pub meta: HashMap<String, String>,
 }
@@ -324,7 +323,7 @@ pub struct PluginParseHookParam {
   /// resolved path
   pub resolved_path: String,
   /// resolved query
-  pub query: HashMap<String, String>,
+  pub query: Vec<(String, String)>,
   pub module_type: ModuleType,
   /// source content(after transform)
   pub content: String,

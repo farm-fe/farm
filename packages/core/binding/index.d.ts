@@ -27,7 +27,7 @@ export default Compiler;
 /// Parameter of the resolve hook
 export interface PluginResolveHookParam {
   /// the start location to resolve `source`, being [None] if resolving a entry or resolving a hmr update.
-  importer: { relativePath: string; queryString?: string } | null;
+  importer: { relativePath: string; queryString: string | null } | null;
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   kind: ResolveKind;
   /// resolvedPath. for example in index.ts (import App from "./App.vue")
@@ -45,14 +45,14 @@ export interface PluginResolveHookResult {
   /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [crate::utils::parse_query] is for you
-  query: Record<string, string> | null;
+  query: [string, string][] | null;
   /// meta data of the module, will be passed to [PluginLoadHookParam] and [PluginTransformHookParam]
   meta: Record<string, string> | null;
 }
 
 export interface PluginLoadHookParam {
   resolvedPath: string;
-  query: Record<string, string>;
+  query: [string, string][];
   meta: Record<string, string> | null;
 }
 
@@ -70,7 +70,7 @@ export interface PluginTransformHookParam {
   /// module type after load
   moduleType: ModuleType;
   resolvedPath: string;
-  query: Record<string, string>;
+  query: [string, string][];
   meta: Record<string, string> | null;
 }
 
@@ -97,7 +97,7 @@ export interface Config {
       alias?: Record<string, string>;
       mainFields?: string[];
       conditions?: string[];
-      symlinks: boolean;
+      symlinks?: boolean;
     };
     define?: Record<string, string>;
     external?: string[];

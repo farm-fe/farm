@@ -45,6 +45,10 @@ impl Plugin for FarmPluginScript {
     "FarmPluginScript"
   }
 
+  fn priority(&self) -> i32 {
+    99
+  }
+
   fn load(
     &self,
     param: &PluginLoadHookParam,

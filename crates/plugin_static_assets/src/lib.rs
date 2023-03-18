@@ -36,7 +36,7 @@ impl Plugin for FarmPluginStaticAssets {
   }
   /// Make sure this plugin is executed last
   fn priority(&self) -> i32 {
-    0
+    99
   }
 
   fn resolve(
@@ -84,7 +84,7 @@ impl Plugin for FarmPluginStaticAssets {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Asset) {
-      if param.query.contains_key("inline") {
+      if param.query.iter().find(|(k, _)| k == "inline").is_some() {
         let file_raw = read_file_raw(param.resolved_path)?;
         let file_base64 = general_purpose::STANDARD.encode(&file_raw);
         let path = Path::new(param.resolved_path);
@@ -100,7 +100,7 @@ impl Plugin for FarmPluginStaticAssets {
           module_type: Some(ModuleType::Js),
           source_map: None,
         }));
-      } else if param.query.contains_key("raw") {
+      } else if param.query.iter().find(|(k, _)| k == "raw").is_some() {
         let file_utf8 = read_file_utf8(param.resolved_path)?;
         let content = format!("export default \"{}\"", file_utf8);
 

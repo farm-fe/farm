@@ -25,7 +25,7 @@ fn html_build_stage() {
       .load(
         &PluginLoadHookParam {
           resolved_path: file.to_str().unwrap(),
-          query: HashMap::new(),
+          query: vec![],
           meta: HashMap::new(),
         },
         &context,
@@ -42,7 +42,7 @@ fn html_build_stage() {
           resolved_path: file.to_string_lossy().to_string(),
           content: file_content.content,
           module_type: file_content.module_type.clone(),
-          query: HashMap::new(),
+          query: vec![],
         },
         &context,
         &hook_context,

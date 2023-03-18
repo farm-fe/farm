@@ -30,6 +30,11 @@ impl Plugin for FarmPluginResolve {
     "FarmPluginResolve"
   }
 
+  // Internal Resolve Plugin has the lower priority, so it will be executed at last
+  fn priority(&self) -> i32 {
+    return 99;
+  }
+
   #[tracing::instrument(skip_all)]
   fn resolve(
     &self,

@@ -284,6 +284,7 @@ impl Compiler {
   ) -> (HashSet<ModuleId>, Vec<ModuleId>, DiffResult) {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
+      // Note: HMR does not support the module with query
       .map(|path| ModuleId::new(&path.0, &self.context.config.root))
       .collect();
     let mut module_graph = self.context.module_graph.write();
