@@ -11,7 +11,9 @@ jobs:
     uses: ./.github/workflows/rust-build.yaml
 
   call-rust-plugin-react-build:
-    uses: ./.github/workflows/rust-plugin-react-build.yaml
+    uses: ./.github/workflows/rust-plugin-build.yaml
+    with:
+      root: rust-plugins/react
 
   release:
     name: Release

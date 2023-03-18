@@ -23,12 +23,12 @@ jobs:
       - run: ln -s ~/zig-linux-x86_64-0.9.1/zig /usr/local/bin
 
       - name: Build - Arm64
-        run: cd ${{ env.root }} && npm run build -- -- --target aarch64-apple-darwin --zig
+        run: cd ${{ inputs.root }} && npm run build -- -- --target aarch64-apple-darwin --zig
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-darwin-arm64
-          path: ${{ env.root }}/npm/darwin-arm64/index.farm
+          path: ${{ inputs.root }}/npm/darwin-arm64/index.farm
   build:
     name: Build and Upload Artifacts
     runs-on: ${{ matrix.settings.os }}
@@ -54,9 +54,9 @@ jobs:
         run: npm install -g pnpm && pnpm i --frozen-lockfile
 
       - name: Build - ${{ matrix.settings.abi }}
-        run: cd ${{ env.root }} && npm run build
+        run: cd ${{ inputs.root }} && npm run build
       - name: Upload - ${{ matrix.settings.abi }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ${{ env.root }}/npm/${{ matrix.settings.abi }}/index.farm
+          path: ${{ inputs.root }}/npm/${{ matrix.settings.abi }}/index.farm
