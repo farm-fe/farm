@@ -1,10 +1,11 @@
 name: Plugin - Building Rust Binding And Upload Artifacts
-on: workflow_call
-
-inputs:
-  root:
-    required: true
-    description: the path of the plugin, for example, rust-plugins/react
+on:
+  workflow_call:
+    inputs:
+      root:
+        type: string
+        required: true
+        description: the path of the plugin, for example, rust-plugins/react
 
 jobs:
   # cross compile arm64 macos cause github runners does not native support it
