@@ -1,5 +1,67 @@
 # @farmfe/core
 
+## 0.4.7
+
+### Patch Changes
+
+- f137492: Make query part of ModuleId
+
+## 0.4.6
+
+### Patch Changes
+
+- Fix update log
+
+## 0.4.5
+
+### Patch Changes
+
+- Auto external node native module when reading farm.config.ts
+- Updated dependencies
+  - @farmfe/runtime@0.3.4
+
+## 0.4.4
+
+### Patch Changes
+
+- Fix that file watcher does not work properly when add or remove dependencies
+
+## 0.4.3
+
+### Patch Changes
+
+- 61f5fbe: Support sourcemap for source files
+
+## 0.4.2
+
+### Patch Changes
+
+- limit the watched files to optimize cold start speed and fix lazy compilation issue"
+- Updated dependencies
+  - @farmfe/runtime-plugin-hmr@3.0.5
+  - @farmfe/runtime@0.3.3
+
+## 0.4.1
+
+### Patch Changes
+
+- Fix swc helper inject issue and optimize CLI
+- Updated dependencies
+  - @farmfe/runtime-plugin-hmr@3.0.4
+
+## 0.4.0
+
+### Minor Changes
+
+- 4ee1260: Support resolve `browser` field in package.json
+- 835e06b: Support resolve, load and transform hook for js plugins
+- 9d07b4d: Support static assets and define
+
+### Patch Changes
+
+- Updated dependencies [98d662f]
+  - @farmfe/runtime-plugin-hmr@3.0.3
+
 ## 0.3.3
 
 ### Patch Changes

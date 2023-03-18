@@ -13,9 +13,7 @@ use crate::{
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupGraph},
-    ModuleId, ModuleMetaData, ModuleType,
+    module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
   },
   resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource},
   stats::Stats,
@@ -233,7 +231,8 @@ mod tests {
               resolved_path: stringify!($plugin_name).to_string(),
               external: false,
               side_effects: false,
-              query: HashMap::new(),
+              query: vec![],
+              meta: HashMap::new(),
             }))
           } else {
             Ok(None)

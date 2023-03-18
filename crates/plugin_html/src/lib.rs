@@ -37,6 +37,10 @@ impl Plugin for FarmPluginHtml {
     "FarmPluginHtml"
   }
 
+  fn priority(&self) -> i32 {
+    99
+  }
+
   fn load(
     &self,
     param: &PluginLoadHookParam,
@@ -66,6 +70,7 @@ impl Plugin for FarmPluginHtml {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::module::ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Html) {
+      // Ignore query string when parsing html. HTML should not be affected by query string.
       let module_id = ModuleId::new(&param.resolved_path, &context.config.root);
       let html_document = parse_html_document(
         module_id.to_string().as_str(),
@@ -273,7 +278,7 @@ impl Plugin for FarmPluginHtml {
           mode: context.config.mode.clone(),
           public_path: context.config.output.public_path.clone(),
           define: context.config.define.clone(),
-        }
+        },
       );
 
       let resource_pot = resource_pot_map
@@ -328,6 +333,12 @@ pub fn get_dynamic_resources_map(
 
         for r in rp.resources() {
           let resource = resources_map.get(r).unwrap();
+
+          // Currently only support js and css
+          if !matches!(resource.resource_type, ResourceType::Js | ResourceType::Css) {
+            continue;
+          }
+
           resources.push((resource.name.clone(), resource.resource_type.clone()));
         }
       } else {
@@ -337,6 +348,12 @@ pub fn get_dynamic_resources_map(
           let resource = resources_map
             .get(r)
             .unwrap_or_else(|| panic!("{} not found", r));
+
+          // Currently only support js and css
+          if !matches!(resource.resource_type, ResourceType::Js | ResourceType::Css) {
+            continue;
+          }
+
           resources.push((resource.name.clone(), resource.resource_type.clone()));
         }
 

@@ -48,6 +48,7 @@ pub mod render_resource_pot;
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
 /// ```
 pub struct FarmPluginRuntime {
+  // TODO move the runtime ast to context.meta.script
   runtime_ast: Mutex<Option<SwcModule>>,
 }
 
@@ -261,7 +262,7 @@ impl Plugin for FarmPluginRuntime {
     for resource_pot in resource_pot_map.resource_pots_mut() {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
         let rendered_resource_pot_ast =
-          resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context);
+          resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context)?;
 
         #[cfg(not(windows))]
         let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
@@ -320,7 +321,7 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
       let rendered_resource_pot_ast =
-        resource_pot_to_runtime_object_lit(resource_pot, &*module_graph, context);
+        resource_pot_to_runtime_object_lit(resource_pot, &*module_graph, context)?;
 
       #[cfg(not(windows))]
       let wrapper = include_str!("./js-runtime/resource-wrapper.js");
@@ -372,6 +373,7 @@ impl Plugin for FarmPluginRuntime {
         runtime_ast,
         context.config.script.target.clone(),
         context.meta.script.cm.clone(),
+        None,
       )
       .map_err(|e| CompilationError::GenerateResourcesError {
         name: resource_pot.id.to_string(),
@@ -406,16 +408,17 @@ impl Plugin for FarmPluginRuntime {
             .body
             .insert(0, runtime_ast.body.to_vec().remove(0));
 
+          // TODO move this logic to the entry module plugin, and should do this work in the finalize_resources hook
+          // TODO should collect the exports of the entry module, and only export the exports of the entry module
           // TODO support top level await, and only support reexport default export now, should support more export type in the future
-          // TODO inject global define
           // call the entry module
           let call_entry = parse_module(
             "farm-internal-call-entry-module",
             &format!(
-              r#"const {} = globalThis || window || global || self;
-              const farmModuleSystem = {}.{};
+              r#"var {} = globalThis || window || global || self;
+              var farmModuleSystem = {}.{};
               farmModuleSystem.bootstrap();
-              const entry = farmModuleSystem.require("{}").default;
+              var entry = farmModuleSystem.require("{}").default;
               export default entry;"#,
               FARM_GLOBAL_THIS,
               FARM_GLOBAL_THIS,
@@ -426,7 +429,17 @@ impl Plugin for FarmPluginRuntime {
             context.config.script.target.clone(),
             context.meta.script.cm.clone(),
           )?;
-
+          // temporary solutions, move this logic to separate plugin when support configuring target env.
+          let global_var = parse_module(
+            "farm-global-var",
+            r#"import module from 'node:module';
+            global.__farmNodeRequire = module.createRequire(import.meta.url);
+            global.__farmNodeBuiltinModules = module.builtinModules;"#,
+            Syntax::Es(context.config.script.parser.es_config.clone()),
+            context.config.script.target.clone(),
+            context.meta.script.cm.clone(),
+          )?;
+          resource_pot_ast.body.splice(0..0, global_var.body);
           resource_pot_ast.body.extend(call_entry.body);
         }
         _ => { /* only inject entry execution for script, html entry will be injected after all resources generated */

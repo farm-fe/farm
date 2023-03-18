@@ -6,6 +6,7 @@ use farmfe_core::{
   error::Result,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
 };
+use farmfe_toolkit::tracing;
 use farmfe_utils::parse_query;
 use resolver::Resolver;
 
@@ -29,6 +30,12 @@ impl Plugin for FarmPluginResolve {
     "FarmPluginResolve"
   }
 
+  // Internal Resolve Plugin has the lower priority, so it will be executed at last
+  fn priority(&self) -> i32 {
+    return 99;
+  }
+
+  #[tracing::instrument(skip_all)]
   fn resolve(
     &self,
     param: &PluginResolveHookParam,
@@ -40,7 +47,7 @@ impl Plugin for FarmPluginResolve {
     // split query from source
     let splits: Vec<&str> = source.split('?').collect();
     let source = splits[0];
-    
+
     let basedir = if let Some(importer) = &param.importer {
       if let Some(p) = Path::new(&importer.resolved_path(&context.config.root)).parent() {
         p.to_path_buf()
@@ -58,14 +65,15 @@ impl Plugin for FarmPluginResolve {
         external: true,
         side_effects: false,
         query,
+        meta: HashMap::new(),
       }));
     }
 
     let resolver = Resolver::new(context.config.resolve.clone());
-    Ok(resolver.resolve(source, basedir, &param.kind).map(|result| {
-      PluginResolveHookResult {
-        query,
-        ..result
-      }}))
+    Ok(
+      resolver
+        .resolve(source, basedir.clone(), &param.kind)
+        .map(|result| PluginResolveHookResult { query, ..result }),
+    )
   }
 }

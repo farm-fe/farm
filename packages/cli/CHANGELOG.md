@@ -1,5 +1,17 @@
 # @farmfe/cli
 
+## 0.3.3
+
+### Patch Changes
+
+- Add clsx dependency for react template
+
+## 0.3.2
+
+### Patch Changes
+
+- Fix swc helper inject issue and optimize CLI
+
 ## 0.3.1
 
 ### Patch Changes

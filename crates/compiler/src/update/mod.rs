@@ -139,8 +139,10 @@ impl Compiler {
     let resources =
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
 
-    let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
     // find the boundaries
+    let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
+
+    // TODO: support sourcemap for hmr. and should generate the hmr update response body in rust side.
     Ok(UpdateResult {
       added_module_ids: diff_result.added_modules.into_iter().collect(),
       updated_module_ids,
@@ -282,6 +284,7 @@ impl Compiler {
   ) -> (HashSet<ModuleId>, Vec<ModuleId>, DiffResult) {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
+      // Note: HMR does not support the module with query
       .map(|path| ModuleId::new(&path.0, &self.context.config.root))
       .collect();
     let mut module_graph = self.context.module_graph.write();

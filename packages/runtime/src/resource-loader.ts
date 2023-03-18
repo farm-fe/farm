@@ -5,9 +5,10 @@ export interface Resource {
   type: 'script' | 'link';
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore do not check type here
-const targetEnv = (globalThis || global || window || self).__FARM_TARGET_ENV__;
+export const targetEnv =
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore do not check type here
+  (globalThis || global || window || self).__FARM_TARGET_ENV__ || 'node';
 
 /**
  * Loading resources according to their type and target env.

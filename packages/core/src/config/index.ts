@@ -81,6 +81,15 @@ export async function normalizeUserCompilationConfig(
     config.mode = mode;
   }
 
+  if (config.mode === 'production') {
+    if (!config.output?.filename) {
+      config.output.filename = '[resourceName].[contentHash].[ext]';
+    }
+    if (!config.output?.assetsFilename) {
+      config.output.assetsFilename = '[resourceName].[contentHash].[ext]';
+    }
+  }
+
   const normalizedDevServerConfig = normalizeDevServerOptions(
     userConfig.server
   );
@@ -220,6 +229,10 @@ async function readConfigFile(
             filename: fileName,
             path: outputPath,
           },
+          external: [
+            ...module.builtinModules,
+            ...module.builtinModules.map((m) => `node:${m}`),
+          ],
           partialBundling: {
             moduleBuckets: [
               {
@@ -228,6 +241,7 @@ async function readConfigFile(
               },
             ],
           },
+          sourcemap: false,
         },
         server: {
           hmr: false,
@@ -235,7 +249,7 @@ async function readConfigFile(
       });
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
-      await compiler.writeResourcesToDisk();
+      compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);
       // Change to vm.module of node or loaders as far as it is stable
@@ -245,8 +259,12 @@ async function readConfigFile(
         return (await import(filePath)).default;
       }
     } else {
-      const config = (await import(resolvedPath)).default;
-      return config;
+      // Change to vm.module of node or loaders as far as it is stable
+      if (process.platform === 'win32') {
+        return (await import(pathToFileURL(resolvedPath).toString())).default;
+      } else {
+        return (await import(resolvedPath)).default;
+      }
     }
   }
 }

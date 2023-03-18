@@ -1,6 +1,6 @@
 import { Module } from './module';
 import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
-import { Resource, ResourceLoader } from './resource-loader';
+import { Resource, ResourceLoader, targetEnv } from './resource-loader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ModuleInitialization = (
@@ -49,6 +49,23 @@ export class ModuleSystem {
       }
     }
 
+    // if running on node, using native require to load node built-in modules
+    if (targetEnv === 'node') {
+      const { __farmNodeRequire, __farmNodeBuiltinModules } =
+        // TODO: polyfill globalThis
+        globalThis as unknown as {
+          __farmNodeRequire: (id: string) => any;
+          __farmNodeBuiltinModules: string[];
+        };
+
+      if (moduleId.startsWith('node:')) {
+        const nodeModuleId = moduleId.slice(5);
+        return __farmNodeRequire(nodeModuleId);
+      } else if (__farmNodeBuiltinModules.includes(moduleId)) {
+        return __farmNodeRequire(moduleId);
+      }
+    }
+
     const initializer = this.modules[moduleId];
 
     if (!initializer) {
@@ -76,7 +93,13 @@ export class ModuleSystem {
 
   dynamicRequire(moduleId: string): Promise<any> {
     if (this.modules[moduleId]) {
-      return Promise.resolve(this.require(moduleId));
+      const exports = this.require(moduleId);
+
+      if (exports.__farm_async) {
+        return exports.default;
+      } else {
+        return Promise.resolve(exports);
+      }
     }
 
     const resources = this.dynamicModuleResourcesMap[moduleId];

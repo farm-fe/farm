@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/cli",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "CLI of Farm",
   "type": "module",
   "author": {
@@ -49,6 +49,6 @@
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.3",
-    "@farmfe/core": "workspace:^0.3.3"
+    "@farmfe/core": "workspace:^0.4.1"
   }
 }

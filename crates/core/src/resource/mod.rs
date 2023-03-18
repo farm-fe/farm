@@ -28,7 +28,7 @@ impl ResourceType {
       ResourceType::Js => "js".to_string(),
       ResourceType::Css => "css".to_string(),
       ResourceType::Html => "html".to_string(),
-      ResourceType::SourceMap => "map".to_string(),
+      ResourceType::SourceMap => "js.map".to_string(),
     }
   }
 
@@ -40,7 +40,7 @@ impl ResourceType {
       ResourceType::Js => "script".to_string(),
       ResourceType::Css => "link".to_string(),
       ResourceType::Html => "html".to_string(),
-      ResourceType::SourceMap => "map".to_string(),
+      ResourceType::SourceMap => unreachable!(),
     }
   }
 }

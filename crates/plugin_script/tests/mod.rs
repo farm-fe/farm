@@ -32,7 +32,8 @@ fn load_parse_and_analyze_deps() {
       let loaded = plugin_script.load(
         &PluginLoadHookParam {
           resolved_path: &id,
-          query: HashMap::new(),
+          query: vec![],
+          meta: HashMap::new(),
         },
         &context,
         &hook_context,
@@ -72,7 +73,7 @@ fn load_parse_and_analyze_deps() {
           &PluginParseHookParam {
             module_id: "any".into(),
             resolved_path: id,
-            query: HashMap::new(),
+            query: vec![],
             module_type: loaded.module_type.clone(),
             content: loaded.content,
           },
@@ -134,9 +135,10 @@ fn load_parse_and_analyze_deps() {
         .generate_resources(&mut resource_pot, &context, &hook_context)
         .unwrap()
         .unwrap();
-      assert_eq!(resources.len(), 1);
+      assert_eq!(resources.len(), 2);
 
       let code = String::from_utf8(resources[0].bytes.clone()).unwrap();
+
       let lines: Vec<&str> = code.lines().collect();
       assert_eq!(
         lines,
@@ -145,9 +147,16 @@ fn load_parse_and_analyze_deps() {
           "import b from \"./b\";",
           "export * from \"./c\";",
           "export { d } from \"./d\";",
-          "console.log(a, b);"
+          "console.log(a, b);",
+          "",
+          "//# sourceMappingURL=index.js.map"
         ]
       );
+
+      // assert_eq!(
+      //   &resources[1].bytes,
+      //   "{\"version\":3,\"sources\":[\"any\"],\"sourcesContent\":[\"import a from './a';\\nimport b from './b';\\n\\nexport * from './c';\\nexport { d } from './d';\\n\\nconsole.log(a, b);\\n\"],\"names\":[\"a\",\"b\",\"d\",\"console\",\"log\"],\"mappings\":\"AAAA,OAAOA,OAAO,MAAM;AACpB,OAAOC,OAAO,MAAM;AAEpB,cAAc,MAAM;AACpB,SAASC,CAAC,QAAQ,MAAM;AAExBC,QAAQC,GAAG,CAACJ,GAAGC\"}".as_bytes()
+      // )
     },
   );
 }
