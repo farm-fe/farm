@@ -9,6 +9,7 @@ jobs:
     uses: ./.github/workflows/rust-plugin-build.yaml
     with:
       root: rust-plugins/react
+      name: plugin-react
 
   check-plugin-artifacts:
     name: Check Plugin Artifacts
