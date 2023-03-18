@@ -405,9 +405,9 @@ mod tests {
   #[test]
   fn module_id_with_query() {
     #[cfg(not(target_os = "windows"))]
-    let resolved_path = "/root/logo.png?inline";
+    let resolved_path = "/root/logo.png";
     #[cfg(not(target_os = "windows"))]
-    let module_id = ModuleId::new(resolved_path, "", "/root");
+    let module_id = ModuleId::new(resolved_path, "?inline", "/root");
     #[cfg(not(target_os = "windows"))]
     let root = "/root";
 
