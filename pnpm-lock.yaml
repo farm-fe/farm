@@ -60,7 +60,7 @@ importers:
     devDependencies:
       '@farmfe/cli': link:../../packages/cli
       '@farmfe/core': link:../../packages/core
-      '@farmfe/plugin-react': link:../../plugins/plugin_react
+      '@farmfe/plugin-react': link:../../rust-plugins/react
       '@types/react': 18.0.17
       '@types/react-dom': 18.0.6
       react-refresh: 0.14.0
@@ -155,7 +155,7 @@ importers:
     devDependencies:
       '@farmfe/runtime': link:../runtime
 
-  plugins/plugin_react:
+  rust-plugins/react:
     specifiers:
       '@farmfe/cli': '*'
     devDependencies:
