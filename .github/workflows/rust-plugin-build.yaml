@@ -32,6 +32,8 @@ jobs:
       - run: mv zig-linux-x86_64-0.9.1 ~/
       - run: ln -s ~/zig-linux-x86_64-0.9.1/zig /usr/local/bin
 
+      - name: Build Farm cli
+        run: cd packages/cli && npm run build -- -b
       - name: Build - Arm64
         run: cd ${{ inputs.root }} && npm run build -- -- --target aarch64-apple-darwin --zig
       - name: Upload - Arm64
