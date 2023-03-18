@@ -63,7 +63,7 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm && pnpm i --frozen-lockfile
       - name: Build Farm cli
-        run: cd packages/cli && npm run build
+        run: cd packages/cli && npm run build -- -b
 
       - name: Build - ${{ matrix.settings.abi }}-${{ inputs.name }}
         run: cd ${{ inputs.root }} && npm run build
