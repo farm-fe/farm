@@ -1,6 +1,6 @@
-import { Module } from "./module";
-import { FarmRuntimePlugin, FarmRuntimePluginContainer } from "./plugin";
-import { Resource, ResourceLoader, targetEnv } from "./resource-loader";
+import { Module } from './module';
+import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
+import { Resource, ResourceLoader, targetEnv } from './resource-loader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ModuleInitialization = (
@@ -23,13 +23,10 @@ export class ModuleSystem {
   resourceLoader: ResourceLoader;
   // runtime plugin container
   pluginContainer: FarmRuntimePluginContainer;
-  //cache may clear In applyHotUpdates. We need another constructor to cache module in temporary
-  //after `module.meta.hot.tap`, clear hmrCache
-  hmrCacheTemporary: Map<string, Module>;
+
   constructor() {
     this.modules = {};
     this.cache = {};
-    this.hmrCacheTemporary = new Map();
     this.publicPaths = [];
     this.dynamicModuleResourcesMap = {};
     this.resourceLoader = new ResourceLoader(this.publicPaths);
@@ -42,7 +39,7 @@ export class ModuleSystem {
     // console.log(`[Farm] require module "${moduleId}" from cache`);
     if (this.cache[moduleId]) {
       const shouldSkip = this.pluginContainer.hookBail(
-        "readModuleCache",
+        'readModuleCache',
         this.cache[moduleId]
       );
 
@@ -53,7 +50,7 @@ export class ModuleSystem {
     }
 
     // if running on node, using native require to load node built-in modules
-    if (targetEnv === "node") {
+    if (targetEnv === 'node') {
       const { __farmNodeRequire, __farmNodeBuiltinModules } =
         // TODO: polyfill globalThis
         globalThis as unknown as {
@@ -61,7 +58,7 @@ export class ModuleSystem {
           __farmNodeBuiltinModules: string[];
         };
 
-      if (moduleId.startsWith("node:")) {
+      if (moduleId.startsWith('node:')) {
         const nodeModuleId = moduleId.slice(5);
         return __farmNodeRequire(nodeModuleId);
       } else if (__farmNodeBuiltinModules.includes(moduleId)) {
@@ -78,7 +75,7 @@ export class ModuleSystem {
     // create a full new module instance and store it in cache to avoid cyclic initializing
     const module = new Module(moduleId);
     // call the module created hook
-    this.pluginContainer.hookSerial("moduleCreated", module);
+    this.pluginContainer.hookSerial('moduleCreated', module);
 
     this.cache[moduleId] = module;
     // initialize the new module
@@ -89,7 +86,7 @@ export class ModuleSystem {
       this.dynamicRequire.bind(this)
     );
     // call the module initialized hook
-    this.pluginContainer.hookSerial("moduleInitialized", module);
+    this.pluginContainer.hookSerial('moduleInitialized', module);
     // return the exports of the module
     return module.exports;
   }
@@ -140,17 +137,6 @@ export class ModuleSystem {
 
     this.modules[moduleId] = initializer;
   }
-  
-  setHmrCacheTemporary(moduleId: string) {
-    if (!this.hmrCacheTemporary.has(moduleId) && this.cache[moduleId]) {
-      return this.hmrCacheTemporary.set(moduleId, this.cache[moduleId]);
-    }
-    return null;
-  }
-
-  clearHmrCacheTemporary() {
-    this.hmrCacheTemporary.clear();
-  }
 
   update(moduleId: string, init: ModuleInitialization): void {
     this.modules[moduleId] = init;
@@ -169,7 +155,6 @@ export class ModuleSystem {
 
   clearCache(moduleId: string): boolean {
     if (this.modules[moduleId]) {
-      this.setHmrCacheTemporary(moduleId);
       delete this.cache[moduleId];
       return true;
     } else {
@@ -207,6 +192,6 @@ export class ModuleSystem {
   // bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
   // This method should only be called once
   bootstrap(): void {
-    this.pluginContainer.hookSerial("bootstrap", this);
+    this.pluginContainer.hookSerial('bootstrap', this);
   }
 }

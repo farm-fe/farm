@@ -1,9 +1,5 @@
-import { HmrUpdateResult } from "./types";
-import type {
-  ModuleSystem,
-  ModuleInitialization,
-} from "@farmfe/runtime/src/module-system";
-import { handleErrorSync } from "./utils";
+import { HmrUpdateResult } from './types';
+import type { ModuleSystem } from '@farmfe/runtime/src/module-system';
 
 const REGISTERED_HOT_MODULES = new Map<string, HotModuleState>();
 
@@ -21,14 +17,6 @@ export class HotModuleState {
       this.acceptCallbacks.push(callback);
     }
   }
-
-  tap = (changeModule: ModuleInitialization) => {
-    this.acceptCallbacks.map((cb) => {
-      handleErrorSync(cb, [changeModule], (err: any) => {
-        console.error(err);
-      });
-    });
-  };
 }
 
 export function createHotContext(id: string) {
@@ -74,17 +62,7 @@ export function applyHotUpdates(
 
     for (const chain of chains) {
       // require the boundary module
-      const boundary = chain[chain.length - 1];
-      const changeModuleResult = moduleSystem.require(chain[0]);
-      const changeModule = result.modules[chain[0]];
-      const boundaryModule =
-        moduleSystem.cache[boundary] ||
-        moduleSystem.hmrCacheTemporary.get(boundary);
-      if (boundaryModule && changeModule) {
-        boundaryModule.meta.hot.tap(changeModuleResult);
-      }
-      moduleSystem.clearHmrCacheTemporary();
-      moduleSystem.require(boundary);
+      moduleSystem.require(chain[chain.length - 1]);
     }
   }
 }
