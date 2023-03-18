@@ -18,7 +18,7 @@ export function copyFiles(
 ): void {
   walkdir(source, { sync: true }, (p, stat) => {
     if (stat.isFile()) {
-      const content = readFileSync(p).toString();
+      const content = readFileSync(p).toString('utf-8');
       const newContent = callback?.(content) ?? content;
 
       const relativePath = path.relative(source, p);

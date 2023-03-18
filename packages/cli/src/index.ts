@@ -1,5 +1,6 @@
 import { cac } from 'cac';
 import { create } from './create/index.js';
+import { CreateArgs } from './plugin/create.js';
 import { COMMANDS } from './plugin/index.js';
 import { resolveCore } from './utils.js';
 
@@ -45,9 +46,11 @@ const pluginCmd = cli.command(
     allowUnknownOptions: true,
   }
 );
-pluginCmd.action((command: keyof typeof COMMANDS, args: any[]) => {
-  COMMANDS[command](args);
-});
+pluginCmd.action(
+  (command: keyof typeof COMMANDS, args: CreateArgs[] | unknown[]) => {
+    COMMANDS[command](args);
+  }
+);
 
 pluginCmd.cli.help();
 
