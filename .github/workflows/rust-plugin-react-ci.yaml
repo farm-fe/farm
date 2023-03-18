@@ -1,4 +1,4 @@
-name: CI
+name: Plugin React CI
 on:
   pull_request:
     paths:
