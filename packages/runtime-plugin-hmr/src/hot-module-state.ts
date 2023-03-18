@@ -1,9 +1,9 @@
-import { HmrUpdateResult } from "./types";
+import { HmrUpdateResult } from './types';
 import type {
   ModuleSystem,
   ModuleInitialization,
-} from "@farmfe/runtime/src/module-system";
-import { handleErrorSync } from "./utils";
+} from '@farmfe/runtime/src/module-system';
+import { handleErrorSync } from './utils';
 
 const REGISTERED_HOT_MODULES = new Map<string, HotModuleState>();
 
@@ -24,7 +24,7 @@ export class HotModuleState {
 
   tap = (changeModule: ModuleInitialization) => {
     this.acceptCallbacks.map((cb) => {
-      handleErrorSync(cb, [changeModule], (err: any) => {
+      handleErrorSync(cb, [changeModule], (err) => {
         console.error(err);
       });
     });

@@ -1,7 +1,7 @@
 export function handleErrorSync(
-  fun: Function,
+  fun: (...args: any[]) => void,
   args: any[],
-  cb: Function = noop
+  cb: (err: Error) => void = noop
 ) {
   try {
     fun(...args);
@@ -10,4 +10,5 @@ export function handleErrorSync(
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
