@@ -379,7 +379,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     let resolved_path = "C:\\root\\module.html";
     #[cfg(target_os = "windows")]
-    let module_id = ModuleId::new(resolved_path, "C:\\root");
+    let module_id = ModuleId::new(resolved_path, "", "C:\\root");
     #[cfg(target_os = "windows")]
     let root = "C:\\root";
 
@@ -397,7 +397,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     let resolved_path = "C:\\root\\packages\\test\\module.html";
     #[cfg(target_os = "windows")]
-    let module_id = ModuleId::new(resolved_path, "C:\\root\\packages\\app");
+    let module_id = ModuleId::new(resolved_path, "", "C:\\root\\packages\\app");
 
     assert_eq!(module_id.id(Mode::Development), "../test/module.html");
   }

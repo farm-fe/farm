@@ -139,7 +139,7 @@ impl Compiler {
     let resources =
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
 
-    // find the boundaries
+    // find the boundaries. TODO: detect the boundaries in the client side.
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
 
     // TODO: support sourcemap for hmr. and should generate the hmr update response body in rust side.
