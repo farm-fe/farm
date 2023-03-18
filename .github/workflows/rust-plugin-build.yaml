@@ -28,7 +28,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-darwin-arm64
-          path: ${{ root }}/npm/darwin-arm64/index.farm
+          path: ${{ env.root }}/npm/darwin-arm64/index.farm
   build:
     name: Build and Upload Artifacts
     runs-on: ${{ matrix.settings.os }}
@@ -59,4 +59,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ${{ root }}/npm/${{ matrix.settings.abi }}/index.farm
+          path: ${{ env.root }}/npm/${{ matrix.settings.abi }}/index.farm
