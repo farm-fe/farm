@@ -24,6 +24,10 @@ impl Plugin for FarmPluginPartialBundling {
     "FarmPluginPartialBundling"
   }
 
+  fn priority(&self) -> i32 {
+    99
+  }
+
   fn analyze_module_graph(
     &self,
     module_graph: &mut ModuleGraph,

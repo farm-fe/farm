@@ -97,7 +97,7 @@ export interface Config {
       alias?: Record<string, string>;
       mainFields?: string[];
       conditions?: string[];
-      symlinks: boolean;
+      symlinks?: boolean;
     };
     define?: Record<string, string>;
     external?: string[];

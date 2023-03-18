@@ -36,7 +36,7 @@ impl Plugin for FarmPluginStaticAssets {
   }
   /// Make sure this plugin is executed last
   fn priority(&self) -> i32 {
-    0
+    99
   }
 
   fn resolve(

@@ -37,6 +37,10 @@ impl Plugin for FarmPluginHtml {
     "FarmPluginHtml"
   }
 
+  fn priority(&self) -> i32 {
+    99
+  }
+
   fn load(
     &self,
     param: &PluginLoadHookParam,

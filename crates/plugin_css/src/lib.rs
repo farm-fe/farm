@@ -31,7 +31,7 @@ impl Plugin for FarmPluginCss {
   }
   /// This plugin should be executed at last
   fn priority(&self) -> i32 {
-    0
+    99
   }
 
   fn load(
