@@ -412,19 +412,16 @@ mod tests {
     let root = "/root";
 
     #[cfg(target_os = "windows")]
-    let resolved_path = "C:\\root\\logo.png?inline";
+    let resolved_path = "C:\\root\\logo.png";
     #[cfg(target_os = "windows")]
-    let module_id = ModuleId::new(resolved_path, "C:\\root");
+    let module_id = ModuleId::new(resolved_path, "?inline", "C:\\root");
     #[cfg(target_os = "windows")]
     let root = "C:\\root";
 
     assert_eq!(module_id.id(Mode::Development), "logo.png?inline");
     assert_eq!(module_id.id(Mode::Production), "f75a7043");
     assert_eq!(module_id.relative_path(), "logo.png");
-    assert_eq!(
-      module_id.resolved_path(root),
-      resolved_path.split("?").next().unwrap()
-    );
+    assert_eq!(module_id.resolved_path(root), resolved_path);
     assert_eq!(module_id.hash(), "f75a7043");
   }
 
