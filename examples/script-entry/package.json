@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@farmfe/cli": "../../packages/cli",
-    "@farmfe/core": "../../packages/core"
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
   },
   "scripts": {
     "build": "farm build"

@@ -44,8 +44,8 @@ importers:
 
   examples/react:
     specifiers:
-      '@farmfe/cli': ../../packages/cli
-      '@farmfe/core': ../../packages/core
+      '@farmfe/cli': workspace:*
+      '@farmfe/core': workspace:*
       '@farmfe/plugin-react': workspace:^0.0.0
       '@types/react': '18'
       '@types/react-dom': '18'
@@ -67,8 +67,8 @@ importers:
 
   examples/script-entry:
     specifiers:
-      '@farmfe/cli': ../../packages/cli
-      '@farmfe/core': ../../packages/core
+      '@farmfe/cli': workspace:*
+      '@farmfe/core': workspace:*
     dependencies:
       '@farmfe/cli': link:../../packages/cli
       '@farmfe/core': link:../../packages/core
