@@ -6,7 +6,16 @@
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "*"
+    "@farmfe/cli": "*",
+    "@napi-rs/cli": "^2.10.0"
+  },
+  "napi": {
+    "name": "farm-plugin-react",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin"
+      ]
+    }
   },
   "exports": {
     ".": {
@@ -17,9 +26,10 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "farm plugin build",
+    "build": "napi build --platform --cargo-name farmfe_plugin_react -p farmfe_plugin_react --release",
+    "copy-artifacts": "node scripts/copy-artifacts.mjs",
     "type-check": "echo \"No type-checking configured.\"",
-    "prepublishOnly": "farm plugin prepublish"
+    "prepublishOnly": "napi prepublish -t npm"
   },
   "files": [
     "index.js",

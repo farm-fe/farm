@@ -231,8 +231,8 @@ async function readConfigFile(
             path: outputPath,
           },
           external: [
-            ...module.builtinModules,
-            ...module.builtinModules.map((m) => `node:${m}`),
+            ...module.builtinModules.map((m) => `^${m}$`),
+            ...module.builtinModules.map((m) => `^node:${m}$`),
           ],
           partialBundling: {
             moduleBuckets: [

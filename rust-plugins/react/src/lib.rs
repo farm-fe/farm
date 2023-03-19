@@ -23,7 +23,7 @@ pub struct FarmPluginReact {
 }
 
 impl FarmPluginReact {
-  fn new(config: &Config, _options: String) -> Self {
+  pub fn new(config: &Config, _options: String) -> Self {
     Self {
       core_lib: load_core_lib(config.core_lib_path.as_ref().unwrap()),
     }

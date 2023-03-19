@@ -35,7 +35,9 @@ jobs:
       - name: Build Farm cli
         run: cd packages/cli && npm run build -- -b
       - name: Build - Arm64
-        run: cd ${{ inputs.root }} && npm run build -- -- --target aarch64-apple-darwin --zig
+        run: cd ${{ inputs.root }} && npm run build -- --target aarch64-apple-darwin --zig
+      - name: Copy Artifacts
+        run: cd ${{ inputs.root }} && npm run copy-artifacts -- --target aarch64-apple-darwin
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
         with:
@@ -69,8 +71,10 @@ jobs:
 
       - name: Build - ${{ matrix.settings.abi }}-${{ inputs.name }}
         run: cd ${{ inputs.root }} && npm run build
+      - name: Copy Artifacts
+        run: cd ${{ inputs.root }} && npm run copy-artifacts
       - name: Upload - ${{ matrix.settings.abi }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-${{ inputs.name }}
           path: ${{ inputs.root }}/npm/${{ matrix.settings.abi }}/index.farm

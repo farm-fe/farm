@@ -158,8 +158,10 @@ importers:
   rust-plugins/react:
     specifiers:
       '@farmfe/cli': '*'
+      '@napi-rs/cli': ^2.10.0
     devDependencies:
       '@farmfe/cli': link:../../packages/cli
+      '@napi-rs/cli': 2.10.0
 
 packages:
 

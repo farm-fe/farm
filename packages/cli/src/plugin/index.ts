@@ -4,12 +4,12 @@
  * * build: build a new farm plugin, support cross compilation natively
  */
 
-import { build } from './build.js';
+// import { build } from './build.js';
 import { create } from './create.js';
-import { prepublish } from './prepublish.js';
+// import { prepublish } from './prepublish.js';
 
 export const COMMANDS = {
-  build,
+  // build,
   create,
-  prepublish,
+  // prepublish,
 };

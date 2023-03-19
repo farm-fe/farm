@@ -512,8 +512,11 @@ dependencies = [
 name = "farmfe_plugin_react"
 version = "0.0.1"
 dependencies = [
+ "farmfe_compiler",
  "farmfe_core",
  "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
 ]
 

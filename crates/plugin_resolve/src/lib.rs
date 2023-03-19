@@ -6,7 +6,7 @@ use farmfe_core::{
   error::Result,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
 };
-use farmfe_toolkit::tracing;
+use farmfe_toolkit::{regex::Regex, tracing};
 use farmfe_utils::parse_query;
 use resolver::Resolver;
 
@@ -59,7 +59,10 @@ impl Plugin for FarmPluginResolve {
     };
 
     // check external first, if the source is set as external, return it immediately
-    if context.config.external.iter().any(|e| &param.source == e) {
+    if context.config.external.iter().any(|e| {
+      let reg = Regex::new(e).unwrap();
+      reg.is_match(source)
+    }) {
       return Ok(Some(PluginResolveHookResult {
         resolved_path: param.source.clone(),
         external: true,
