@@ -1,5 +1,5 @@
 {
-  "name": "farmfe_plugin_react-darwin-x64",
+  "name": "@farmfe/plugin-react-darwin-x64",
   "version": "0.0.0",
   "os": [
     "darwin"

@@ -1,5 +1,5 @@
 {
-  "name": "farmfe_plugin_react-linux-x64-gnu",
+  "name": "@farmfe/plugin-react-linux-x64-gnu",
   "version": "0.0.0",
   "os": [
     "linux"
