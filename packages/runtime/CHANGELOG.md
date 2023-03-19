@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.4.0
+
+### Minor Changes
+
+- a5364b5: Extract plugin react into a single plugin
+
 ## 0.3.4
 
 ### Patch Changes

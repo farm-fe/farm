@@ -1,5 +1,19 @@
 # @farmfe/core
 
+## 0.5.0
+
+### Minor Changes
+
+- 9987627: Queue async update and wait for compiling to finish when refresh
+- bd8c762: Change query from HashMap to Vec<(String, String)> to make it's order stable
+- a5364b5: Extract plugin react into a single plugin
+
+### Patch Changes
+
+- Updated dependencies [a5364b5]
+  - @farmfe/runtime-plugin-hmr@3.1.0
+  - @farmfe/runtime@0.4.0
+
 ## 0.4.7
 
 ### Patch Changes
