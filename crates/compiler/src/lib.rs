@@ -9,7 +9,6 @@ use farmfe_core::{
   config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
 };
 use farmfe_toolkit::tracing;
-use update::{UpdateResult, UpdateType};
 
 pub mod build;
 pub mod generate;
@@ -62,13 +61,6 @@ impl Compiler {
     self.generate()?;
 
     self.context.plugin_driver.finish(&Stats {}, &self.context)
-  }
-
-  /// Recompile the project based on the changed files
-  pub fn re_compile(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateResult> {
-    // self.context.plugin_driver.update_start(&self.context)?;
-    self.update(paths)
-    // self.context.plugin_driver.update_end(&self.context)?;
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {

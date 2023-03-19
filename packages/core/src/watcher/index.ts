@@ -28,7 +28,7 @@ export class FileWatcher {
     });
 
     if (serverOrCompiler instanceof DevServer) {
-      serverOrCompiler.hmrEngine?.onUpdate((updateResult) => {
+      serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
         updateResult.added.forEach((addedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
@@ -46,12 +46,12 @@ export class FileWatcher {
       });
     }
 
-    this._watcher.on('change', (path) => {
+    this._watcher.on('change', async (path) => {
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
         // TODO update and emit the result
-        compiler.updateSync([path]);
+        await compiler.update([path]);
         compiler.writeResourcesToDisk();
       }
     });

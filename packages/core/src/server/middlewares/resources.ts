@@ -14,6 +14,13 @@ export function resources(compiler: Compiler) {
     // the response is already handled
     if (ctx.body || ctx.status !== 404) return;
 
+    // if compiler is compiling, wait for it to finish
+    if (compiler.compiling) {
+      await new Promise((resolve) => {
+        compiler.onUpdateFinish(() => resolve(undefined));
+      });
+    }
+
     const resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
     ctx.type = extname(resourcePath);
     const resource = compiler.resources()[resourcePath];
