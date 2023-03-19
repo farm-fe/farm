@@ -36,7 +36,7 @@ pub fn parse_query(path: &str) -> Vec<(String, String)> {
     .collect()
 }
 
-/// stringify `HashMap { a: b }` to `?a=b`
+/// stringify `Vec<(a, b)>` to `?a=b`
 pub fn stringify_query(query: &Vec<(String, String)>) -> String {
   if query.is_empty() {
     return String::new();

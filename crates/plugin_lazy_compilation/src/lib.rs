@@ -5,6 +5,7 @@ use farmfe_core::{
   module::ModuleId,
   plugin::{Plugin, PluginHookContext, ResolveKind},
 };
+use farmfe_utils::stringify_query;
 
 const DYNAMIC_VIRTUAL_PREFIX: &str = "virtual:FARMFE_DYNAMIC_IMPORT:";
 
@@ -95,9 +96,13 @@ impl Plugin for FarmPluginLazyCompilation {
           .replace("MODULE_PATH", &resolved_path.replace(r"\", r"\\"))
           .replace(
             "MODULE_ID",
-            &ModuleId::new(resolved_path, &context.config.root)
-              .id(context.config.mode.clone())
-              .replace(r"\", r"\\"),
+            &ModuleId::new(
+              resolved_path,
+              &stringify_query(&param.query),
+              &context.config.root,
+            )
+            .id(context.config.mode.clone())
+            .replace(r"\", r"\\"),
           )
           .replace(
             "'FARM_MODULE_SYSTEM'",

@@ -3,6 +3,8 @@
  * If you want to modify the binding, please modify the Rust code or manually wrap the generated code in index.js or index.d.ts.
  */
 import binding from './binding.cjs';
+import bindingPath from './resolve-binding.cjs';
+process.env.FARM_LIB_CORE_PATH = bindingPath;
 
 const Compiler = binding.Compiler;
-export { Compiler };
+export { Compiler, bindingPath };

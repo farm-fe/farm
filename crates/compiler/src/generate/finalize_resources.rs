@@ -12,7 +12,7 @@ pub fn finalize_resources(context: &Arc<CompilationContext>) -> farmfe_core::err
 
     context
       .plugin_driver
-      .finalize_resources(&mut *resources_map, context)?;
+      .finalize_resources(&mut resources_map, context)?;
   }
 
   // write_resources(context);

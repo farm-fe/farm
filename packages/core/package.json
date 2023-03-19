@@ -59,7 +59,7 @@
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",
-    "type-check": "tsc -p tsconfig.build.json --noEmit"
+    "type-check": "npm run build"
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.3.4",
