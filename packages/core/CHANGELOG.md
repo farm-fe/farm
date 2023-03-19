@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.5.1
+
+### Patch Changes
+
+- Fix rustPluginResolver error on windows
+
 ## 0.5.0
 
 ### Minor Changes

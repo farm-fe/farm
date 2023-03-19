@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import { pathToFileURL } from 'node:url';
 import path from 'path';
 
 export type RustPlugin =
@@ -31,12 +32,17 @@ export async function rustPluginResolver(
     );
   }
 
-  // not relative path, treat it as a package
+  // not absolute path, treat it as a package
   if (!path.isAbsolute(pluginPath)) {
     const require = createRequire(path.join(root, 'package.json'));
     pluginPath = require.resolve(pluginPath);
+
     // rust plugin should export a default string representing the path to the binary
-    pluginPath = await import(pluginPath).then((m) => m.default);
+    if (process.platform === 'win32') {
+      pluginPath = (await import(pathToFileURL(pluginPath).toString())).default;
+    } else {
+      pluginPath = await import(pluginPath).then((m) => m.default);
+    }
   }
 
   return [pluginPath, options];
