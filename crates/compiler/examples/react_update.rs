@@ -43,15 +43,18 @@ fn main() {
   compiler.compile().unwrap();
 
   compiler
-    .update(vec![(
-      cwd
-        .join("examples")
-        .join("react")
-        .join("src")
-        .join("main.tsx")
-        .to_string_lossy()
-        .to_string(),
-      UpdateType::Updated,
-    )])
+    .update(
+      vec![(
+        cwd
+          .join("examples")
+          .join("react")
+          .join("src")
+          .join("main.tsx")
+          .to_string_lossy()
+          .to_string(),
+        UpdateType::Updated,
+      )],
+      || {},
+    )
     .unwrap();
 }

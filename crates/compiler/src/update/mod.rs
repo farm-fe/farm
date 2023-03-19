@@ -72,7 +72,10 @@ enum ResolveModuleResult {
 }
 
 impl Compiler {
-  pub fn update(&self, paths: Vec<(String, UpdateType)>) -> Result<UpdateResult> {
+  pub fn update<F>(&self, paths: Vec<(String, UpdateType)>, callback: F) -> Result<UpdateResult>
+  where
+    F: FnOnce() + Send + Sync + 'static,
+  {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
     let update_context = Arc::new(UpdateContext::new());
 
@@ -132,6 +135,7 @@ impl Compiler {
       affected_module_groups,
       previous_module_groups,
       &updated_module_ids,
+      callback,
     );
     // TODO1: only regenerate the resources for script modules.
     // TODO2: should reload when html change
@@ -327,12 +331,16 @@ impl Compiler {
     (affected_module_groups, start_points, diff_result)
   }
 
-  fn regenerate_resources(
+  fn regenerate_resources<F>(
     &self,
     affected_module_groups: HashSet<ModuleGroupId>,
     previous_module_groups: HashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
-  ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>> {
+    callback: F,
+  ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
+  where
+    F: FnOnce() + Send + Sync + 'static,
+  {
     let mut dynamic_resources_map = None;
     let cloned_updated_module_ids = updated_module_ids.clone();
 
@@ -376,6 +384,7 @@ impl Compiler {
       }
 
       dynamic_resources_map = Some(dynamic_resources);
+      callback();
     } else {
       std::thread::spawn(move || {
         // TODO: manage a task queue, and run the tasks in sequence
@@ -387,6 +396,7 @@ impl Compiler {
         .unwrap();
 
         finalize_resources(&cloned_context).unwrap();
+        callback();
       });
     }
 

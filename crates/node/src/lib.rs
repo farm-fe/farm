@@ -14,7 +14,8 @@ use farmfe_core::{
 use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
 use napi::{
   bindgen_prelude::{Buffer, FromNapiValue},
-  Env, JsObject, NapiRaw, Status,
+  threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode},
+  Env, JsFunction, JsObject, NapiRaw, Status,
 };
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
@@ -35,7 +36,7 @@ pub struct JsUpdateResult {
 
 #[napi(js_name = "Compiler")]
 pub struct JsCompiler {
-  compiler: Compiler,
+  compiler: Arc<Compiler>,
 }
 
 #[napi]
@@ -120,8 +121,10 @@ impl JsCompiler {
     }
 
     Ok(Self {
-      compiler: Compiler::new(config, plugins_adapters)
-        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?,
+      compiler: Arc::new(
+        Compiler::new(config, plugins_adapters)
+          .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?,
+      ),
     })
   }
 
@@ -147,60 +150,63 @@ impl JsCompiler {
     unimplemented!("sync compile is not supported yet")
   }
 
-  /// async update, return promise
-  ///
   /// TODO: usage example
   #[napi]
-  pub async fn update(&self, paths: Vec<String>) -> napi::Result<JsUpdateResult> {
-    // TODO transform UpdateType
-    let res = self
-      .compiler
-      .update(
-        paths
-          .into_iter()
-          .map(|p| (p, UpdateType::Updated))
-          .collect(),
-      )
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+  pub fn update(&self, e: Env, paths: Vec<String>, callback: JsFunction) -> napi::Result<JsObject> {
+    let context = self.compiler.context().clone();
+    let compiler = self.compiler.clone();
+    let thread_safe_callback: ThreadsafeFunction<(), ErrorStrategy::Fatal> =
+      callback.create_threadsafe_function(0, |ctx| ctx.env.get_undefined().map(|v| vec![v]))?;
 
-    Ok(JsUpdateResult {
-      added: res
-        .added_module_ids
-        .into_iter()
-        .map(|id| id.id(Mode::Development))
-        .collect(),
-      changed: res
-        .updated_module_ids
-        .into_iter()
-        .map(|id| id.id(Mode::Development))
-        .collect(),
-      removed: res
-        .removed_module_ids
-        .into_iter()
-        .map(|id| id.id(Mode::Development))
-        .collect(),
-      modules: res.resources,
-      boundaries: res.boundaries,
-      dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
-        dynamic_resources_map
-          .into_iter()
-          .map(|(k, v)| {
-            (
-              k.id(self.compiler.context().config.mode.clone()),
-              v.into_iter()
-                .map(|(path, ty)| vec![path, ty.to_html_tag()])
-                .collect(),
-            )
-          })
-          .collect()
-      }),
-    })
-  }
-
-  /// sync update
-  #[napi]
-  pub fn update_sync(&self, paths: Vec<String>) -> napi::Result<JsUpdateResult> {
-    unimplemented!("sync update");
+    e.execute_tokio_future(
+      async move {
+        compiler
+          .update(
+            paths
+              .into_iter()
+              .map(|p| (p, UpdateType::Updated))
+              .collect(),
+            move || {
+              thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
+            },
+          )
+          .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+      },
+      move |&mut _, res| {
+        Ok(JsUpdateResult {
+          added: res
+            .added_module_ids
+            .into_iter()
+            .map(|id| id.id(Mode::Development))
+            .collect(),
+          changed: res
+            .updated_module_ids
+            .into_iter()
+            .map(|id| id.id(Mode::Development))
+            .collect(),
+          removed: res
+            .removed_module_ids
+            .into_iter()
+            .map(|id| id.id(Mode::Development))
+            .collect(),
+          modules: res.resources,
+          boundaries: res.boundaries,
+          dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
+            dynamic_resources_map
+              .into_iter()
+              .map(|(k, v)| {
+                (
+                  k.id(context.config.mode.clone()),
+                  v.into_iter()
+                    .map(|(path, ty)| vec![path, ty.to_html_tag()])
+                    .collect(),
+                )
+              })
+              .collect()
+          }),
+        })
+      },
+    )
   }
 
   #[napi]

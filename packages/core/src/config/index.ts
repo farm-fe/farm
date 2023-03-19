@@ -124,8 +124,14 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  let finalConfig = config;
+  // call user config hooks
+  for (const jsPlugin of jsPlugins) {
+    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
+  }
+
   const normalizedConfig: Config = {
-    config,
+    config: finalConfig,
     rustPlugins,
     jsPlugins,
   };

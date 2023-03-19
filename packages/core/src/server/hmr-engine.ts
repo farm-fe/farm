@@ -30,7 +30,7 @@ export class HmrEngine {
     this._devServer = devServer;
   }
 
-  onUpdate(cb: (result: JsUpdateResult) => void) {
+  onUpdateFinish(cb: (result: JsUpdateResult) => void) {
     if (!this._onUpdates) {
       this._onUpdates = [];
     }
@@ -117,7 +117,7 @@ export class HmrEngine {
     });
 
     // if there are more updates, recompile again
-    if (this._updateQueue.length > 0 && !this._compiler.compiling) {
+    if (this._updateQueue.length > 0) {
       await this.recompileAndSendResult();
     }
   };

@@ -33,14 +33,8 @@ export class Compiler {
   compile(): Promise<void>;
   /** sync compile */
   compileSync(): void;
-  /**
-   * async update, return promise
-   *
-   * TODO: usage example
-   */
-  update(paths: Array<string>): Promise<JsUpdateResult>;
-  /** sync update */
-  updateSync(paths: Array<string>): JsUpdateResult;
+  /** TODO: usage example */
+  update(paths: Array<string>, callback: (...args: any[]) => any): object;
   hasModule(resolvedPath: string): boolean;
   resources(): Record<string, Buffer>;
   relativeModulePaths(): Array<string>;

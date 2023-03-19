@@ -6,8 +6,19 @@ import { Compiler as BindingCompiler } from '../../binding/index.js';
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX =
   'virtual:FARMFE_DYNAMIC_IMPORT:';
 
+/**
+ * Cause the update process is async, we need to keep the update queue to make sure the update process is executed in order.
+ * So the latter update process will not override the previous one if they are updating at the same time.
+ */
+export interface UpdateQueueItem {
+  paths: string[];
+  resolve: (res: JsUpdateResult) => void;
+}
+
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
+  private _updateQueue: UpdateQueueItem[] = [];
+  private _onUpdateFinishQueue: (() => void)[] = [];
 
   config: Config;
   compiling = false;
@@ -35,18 +46,37 @@ export class Compiler {
     this.compiling = false;
   }
 
-  async update(paths: string[]): Promise<JsUpdateResult> {
-    this.compiling = true;
-    const res = await this._bindingCompiler.update(paths);
-    this.compiling = false;
-    return res;
-  }
+  async update(
+    paths: string[],
+    ignoreCompilingCheck = false
+  ): Promise<JsUpdateResult> {
+    let resolve: (res: JsUpdateResult) => void;
 
-  updateSync(paths: string[]): JsUpdateResult {
+    const promise = new Promise<JsUpdateResult>((r) => {
+      resolve = r;
+    });
+
+    // if there is already a update process, we need to wait for it to finish
+    if (this.compiling && !ignoreCompilingCheck) {
+      this._updateQueue.push({ paths, resolve });
+      return promise;
+    }
+
     this.compiling = true;
-    const res = this._bindingCompiler.updateSync(paths);
-    this.compiling = false;
-    return res;
+    const res = this._bindingCompiler.update(paths, async () => {
+      const next = this._updateQueue.shift();
+
+      if (next) {
+        await this.update(next.paths, true).then(next.resolve);
+      } else {
+        this.compiling = false;
+        this._onUpdateFinishQueue.forEach((cb) => cb());
+        // clear update finish queue
+        this._onUpdateFinishQueue = [];
+      }
+    });
+
+    return res as JsUpdateResult;
   }
 
   hasModule(resolvedPath: string): boolean {
@@ -101,5 +131,9 @@ export class Compiler {
     }
 
     return path.join(root, p);
+  }
+
+  onUpdateFinish(cb: () => void) {
+    this._onUpdateFinishQueue.push(cb);
   }
 }

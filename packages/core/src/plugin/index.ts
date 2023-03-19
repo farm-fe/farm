@@ -1,4 +1,5 @@
 import {
+  Config,
   PluginLoadHookParam,
   PluginLoadHookResult,
   PluginResolveHookParam,
@@ -13,14 +14,16 @@ interface CompilationContext {
 
 type Callback<P, R> = (
   param: P,
-  context: CompilationContext,
-  hookContext: { caller?: string; meta: Record<string, unknown> }
+  context?: CompilationContext,
+  hookContext?: { caller?: string; meta: Record<string, unknown> }
 ) => Promise<R> | R;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
 export interface JsPlugin {
   name: string;
   priority?: number;
+
+  config?: Callback<Config['config'], Config['config']>;
 
   resolve?: JsPluginHook<
     {
