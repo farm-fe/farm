@@ -610,6 +610,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_tree_shake"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+]
+
+[[package]]
 name = "farmfe_testing_helpers"
 version = "0.0.1"
 dependencies = [

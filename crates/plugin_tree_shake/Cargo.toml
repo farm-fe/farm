@@ -1,0 +1,10 @@
+[package]
+name = "farmfe_plugin_tree_shake"
+version = "0.0.1"
+edition = "2021"
+authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
+description = "tree shake plugin for farmfe"
+license = "MIT"
+
+[dependencies]
+farmfe_core = { path = "../core" }

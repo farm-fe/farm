@@ -25,6 +25,7 @@ pub use dashmap;
 pub use glob;
 pub use hashbrown;
 pub use parking_lot;
+pub use petgraph;
 pub use rayon;
 pub use relative_path;
 pub use rkyv;
