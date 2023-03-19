@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- a5364b5: Extract plugin react into a single plugin
+
 ## 0.3.3
 
 ### Patch Changes

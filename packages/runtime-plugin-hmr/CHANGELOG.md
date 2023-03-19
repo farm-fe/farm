@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.1.0
+
+### Minor Changes
+
+- a5364b5: Extract plugin react into a single plugin
+
 ## 3.0.5
 
 ### Patch Changes

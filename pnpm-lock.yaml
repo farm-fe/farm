@@ -46,7 +46,7 @@ importers:
     specifiers:
       '@farmfe/cli': workspace:*
       '@farmfe/core': workspace:*
-      '@farmfe/plugin-react': workspace:^0.0.0
+      '@farmfe/plugin-react': workspace:^0.1.0
       '@types/react': '18'
       '@types/react-dom': '18'
       clsx: ^1.2.1
@@ -75,7 +75,7 @@ importers:
 
   packages/cli:
     specifiers:
-      '@farmfe/core': workspace:^0.4.1
+      '@farmfe/core': workspace:^0.5.0
       '@types/inquirer': ^9.0.3
       cac: ^6.7.14
       chalk: ^5.2.0
@@ -94,8 +94,8 @@ importers:
 
   packages/core:
     specifiers:
-      '@farmfe/runtime': workspace:^0.3.4
-      '@farmfe/runtime-plugin-hmr': workspace:^3.0.5
+      '@farmfe/runtime': workspace:^0.4.0
+      '@farmfe/runtime-plugin-hmr': workspace:^3.1.0
       '@napi-rs/cli': ^2.10.0
       '@swc/helpers': ^0.4.9
       '@types/figlet': ^1.5.5
@@ -151,7 +151,7 @@ importers:
 
   packages/runtime-plugin-hmr:
     specifiers:
-      '@farmfe/runtime': workspace:^0.3.3
+      '@farmfe/runtime': workspace:^0.4.0
     devDependencies:
       '@farmfe/runtime': link:../runtime
 
