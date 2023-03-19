@@ -71,6 +71,8 @@ export class Compiler {
       } else {
         this.compiling = false;
         this._onUpdateFinishQueue.forEach((cb) => cb());
+        // clear update finish queue
+        this._onUpdateFinishQueue = [];
       }
     });
 
