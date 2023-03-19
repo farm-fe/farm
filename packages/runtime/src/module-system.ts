@@ -3,7 +3,7 @@ import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
 import { Resource, ResourceLoader, targetEnv } from './resource-loader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type ModuleInitialization = (
+export type ModuleInitialization = (
   module: Module,
   exports: any,
   __farm_require__: (moduleId: string) => any,
@@ -23,10 +23,13 @@ export class ModuleSystem {
   resourceLoader: ResourceLoader;
   // runtime plugin container
   pluginContainer: FarmRuntimePluginContainer;
-
+  //cache may clear In applyHotUpdates. We need another constructor to cache module in temporary
+  //after `module.meta.hot.tap`, clear hmrCache
+  hmrCacheTemporary: Map<string, Module>;
   constructor() {
     this.modules = {};
     this.cache = {};
+    this.hmrCacheTemporary = new Map();
     this.publicPaths = [];
     this.dynamicModuleResourcesMap = {};
     this.resourceLoader = new ResourceLoader(this.publicPaths);
@@ -138,6 +141,17 @@ export class ModuleSystem {
     this.modules[moduleId] = initializer;
   }
 
+  setHmrCacheTemporary(moduleId: string) {
+    if (!this.hmrCacheTemporary.has(moduleId) && this.cache[moduleId]) {
+      return this.hmrCacheTemporary.set(moduleId, this.cache[moduleId]);
+    }
+    return null;
+  }
+
+  clearHmrCacheTemporary() {
+    this.hmrCacheTemporary.clear();
+  }
+
   update(moduleId: string, init: ModuleInitialization): void {
     this.modules[moduleId] = init;
     this.clearCache(moduleId);
@@ -155,6 +169,7 @@ export class ModuleSystem {
 
   clearCache(moduleId: string): boolean {
     if (this.modules[moduleId]) {
+      this.setHmrCacheTemporary(moduleId);
       delete this.cache[moduleId];
       return true;
     } else {
