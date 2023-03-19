@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -29,7 +29,7 @@
     "build": "napi build --platform --cargo-name farmfe_plugin_react -p farmfe_plugin_react --release",
     "copy-artifacts": "node scripts/copy-artifacts.mjs",
     "type-check": "echo \"No type-checking configured.\"",
-    "prepublishOnly": "napi prepublish -t npm"
+    "prepublishOnly": "farm plugin prepublish"
   },
   "files": [
     "index.js",

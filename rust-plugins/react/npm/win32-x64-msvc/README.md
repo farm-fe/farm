@@ -1,3 +1,3 @@
-# `farmfe_plugin_react-win32-x64-msvc`
+# `@farmfe/plugin-react-win32-x64-msvc`
 
-This is the **x86_64-pc-windows-msvc** binary for `farmfe_plugin_react`
+This is the **x86_64-pc-windows-msvc** binary for `@farmfe/plugin-react`

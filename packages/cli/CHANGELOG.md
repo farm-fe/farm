@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.4.1
+
+### Patch Changes
+
+- Add farm plugin prepublish command
+
 ## 0.4.0
 
 ### Minor Changes

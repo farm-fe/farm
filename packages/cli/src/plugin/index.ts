@@ -6,10 +6,10 @@
 
 // import { build } from './build.js';
 import { create } from './create.js';
-// import { prepublish } from './prepublish.js';
+import { prepublish } from './prepublish.js';
 
 export const COMMANDS = {
   // build,
   create,
-  // prepublish,
+  prepublish,
 };
