@@ -46,7 +46,7 @@ importers:
     specifiers:
       '@farmfe/cli': workspace:*
       '@farmfe/core': workspace:*
-      '@farmfe/plugin-react': workspace:^0.1.0
+      '@farmfe/plugin-react': workspace:^0.1.1
       '@types/react': '18'
       '@types/react-dom': '18'
       clsx: ^1.2.1
