@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.4.2
+
+### Patch Changes
+
+- Republish @farmfe/plugin-react as it misses optionalDependencies field
+
 ## 0.4.1
 
 ### Patch Changes
