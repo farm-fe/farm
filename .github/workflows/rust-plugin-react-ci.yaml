@@ -1,0 +1,50 @@
+name: Plugin React CI
+on:
+  pull_request:
+    paths:
+      - 'rust-plugins/**'
+
+jobs:
+  call-rust-plugin-react-build:
+    uses: ./.github/workflows/rust-plugin-build.yaml
+    with:
+      root: rust-plugins/react
+      name: plugin-react
+
+  check-plugin-artifacts:
+    name: Check Plugin Artifacts
+    runs-on: ubuntu-latest
+    needs: call-rust-plugin-react-build
+    steps:
+      # download rust plugin react artifacts
+      - uses: actions/download-artifact@v3
+        id: download-plugin-react-linux-x64-gnu
+        with:
+          name: ${{ github.sha }}-linux-x64-gnu-plugin-react
+          path: ./rust-plugins/react/npm/linux-x64-gnu
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/linux-x64-gnu/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-x64
+        with:
+          name: ${{ github.sha }}-darwin-x64-plugin-react
+          path: ./rust-plugins/react/npm/darwin-x64
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/darwin-x64/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-win32-x64-msvc
+        with:
+          name: ${{ github.sha }}-win32-x64-msvc-plugin-react
+          path: ./rust-plugins/react/npm/win32-x64-msvc
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/win32-x64-msvc/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-arm64
+        with:
+          name: ${{ github.sha }}-darwin-arm64-plugin-react
+          path: ./rust-plugins/react/npm/darwin-arm64
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/darwin-arm64/index.farm

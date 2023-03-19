@@ -46,6 +46,7 @@ importers:
     specifiers:
       '@farmfe/cli': ../../packages/cli
       '@farmfe/core': ../../packages/core
+      '@farmfe/plugin-react': workspace:^0.0.0
       '@types/react': '18'
       '@types/react-dom': '18'
       clsx: ^1.2.1
@@ -59,6 +60,7 @@ importers:
     devDependencies:
       '@farmfe/cli': link:../../packages/cli
       '@farmfe/core': link:../../packages/core
+      '@farmfe/plugin-react': link:../../rust-plugins/react
       '@types/react': 18.0.17
       '@types/react-dom': 18.0.6
       react-refresh: 0.14.0
@@ -152,6 +154,14 @@ importers:
       '@farmfe/runtime': workspace:^0.3.3
     devDependencies:
       '@farmfe/runtime': link:../runtime
+
+  rust-plugins/react:
+    specifiers:
+      '@farmfe/cli': '*'
+      '@napi-rs/cli': ^2.10.0
+    devDependencies:
+      '@farmfe/cli': link:../../packages/cli
+      '@napi-rs/cli': 2.10.0
 
 packages:
 

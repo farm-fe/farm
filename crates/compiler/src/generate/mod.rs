@@ -49,7 +49,7 @@ impl Compiler {
     self
       .context
       .plugin_driver
-      .optimize_module_graph(&mut *module_graph, &self.context)?;
+      .optimize_module_graph(&mut module_graph, &self.context)?;
 
     tracing::trace!("Optimized module graph.");
     Ok(())
@@ -63,7 +63,7 @@ impl Compiler {
     self
       .context
       .plugin_driver
-      .process_resource_pot_map(&mut *resource_pot_map, &self.context)?;
+      .process_resource_pot_map(&mut resource_pot_map, &self.context)?;
 
     tracing::trace!("Processed resource pot graph.");
 

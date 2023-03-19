@@ -139,7 +139,7 @@ impl Compiler {
     let resources =
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
 
-    // find the boundaries
+    // find the boundaries. TODO: detect the boundaries in the client side.
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
 
     // TODO: support sourcemap for hmr. and should generate the hmr update response body in rust side.
@@ -160,7 +160,7 @@ impl Compiler {
     self
       .context
       .plugin_driver
-      .optimize_module_graph(&mut *update_module_graph, &self.context)
+      .optimize_module_graph(&mut update_module_graph, &self.context)
   }
 
   /// Resolving, loading, transforming and parsing a module in a separate thread.
@@ -285,22 +285,21 @@ impl Compiler {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
       // Note: HMR does not support the module with query
-      .map(|path| ModuleId::new(&path.0, &self.context.config.root))
+      .map(|path| ModuleId::new(&path.0, "", &self.context.config.root))
       .collect();
     let mut module_graph = self.context.module_graph.write();
     let mut update_module_graph = update_context.module_graph.write();
 
     tracing::trace!("Diffing module graph start from {:?}...", start_points);
-    let diff_result =
-      diff_module_graph(start_points.clone(), &*module_graph, &*update_module_graph);
+    let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
     tracing::trace!("Diff result: {:?}", diff_result);
 
     tracing::trace!("Patching module graph start from {:?}...", start_points);
     let removed_modules = patch_module_graph(
       start_points.clone(),
       &diff_result,
-      &mut *module_graph,
-      &mut *update_module_graph,
+      &mut module_graph,
+      &mut update_module_graph,
     );
     tracing::trace!(
       "Patched module graph, removed modules: {:?}",
@@ -317,8 +316,8 @@ impl Compiler {
       start_points.clone(),
       &diff_result,
       &removed_modules,
-      &mut *module_graph,
-      &mut *module_group_graph,
+      &mut module_graph,
+      &mut module_group_graph,
     );
     tracing::trace!(
       "Patched module group map, affected module groups: {:?}",
@@ -369,10 +368,10 @@ impl Compiler {
 
       for html_entry_id in html_entries_ids {
         dynamic_resources.extend(get_dynamic_resources_map(
-          &*module_group_graph,
+          &module_group_graph,
           &html_entry_id,
-          &*resource_pot_map,
-          &*resources_map,
+          &resource_pot_map,
+          &resources_map,
         ));
       }
 

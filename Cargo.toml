@@ -1,2 +1,2 @@
 [workspace]
-members = ["crates/*"]
+members = ["crates/*", "rust-plugins/*"]

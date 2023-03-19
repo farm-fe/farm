@@ -23,6 +23,7 @@ export * from './binding.js';
 import { Compiler } from './binding.js';
 
 export default Compiler;
+export const bindingPath: string;
 
 /// Parameter of the resolve hook
 export interface PluginResolveHookParam {
@@ -85,6 +86,7 @@ export interface PluginTransformHookResult {
 
 export interface Config {
   config?: {
+    coreLibPath?: string;
     input?: Record<string, string>;
     output?: {
       filename?: string;

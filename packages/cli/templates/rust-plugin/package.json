@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "^0.0.0"
+    "@farmfe/cli": "*"
   },
   "exports": {
     ".": {

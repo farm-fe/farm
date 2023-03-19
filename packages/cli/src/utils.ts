@@ -31,6 +31,15 @@ export function copyFiles(
       writeFileSync(destPath, newContent);
     }
   });
+
+  if (!existsSync(path.join(dest, '.gitignore'))) {
+    writeFileSync(
+      path.join(dest, '.gitignore'),
+      `
+node_modules
+*.farm`
+    );
+  }
 }
 
 export function resolveCore(cwd: string): Promise<{

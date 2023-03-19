@@ -23,6 +23,7 @@ pub struct Config {
   pub sourcemap: SourcemapConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
+  pub core_lib_path: Option<String>,
 }
 
 impl Default for Config {
@@ -44,6 +45,7 @@ impl Default for Config {
       sourcemap: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
       lazy_compilation: true,
+      core_lib_path: None,
     }
   }
 }

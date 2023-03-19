@@ -5,6 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 use farmfe_compiler::{update::UpdateType, Compiler};
 
 pub mod plugin_adapters;
+pub mod plugin_toolkit;
 
 use farmfe_core::{
   config::{Config, Mode},
@@ -16,6 +17,8 @@ use napi::{
   Env, JsObject, NapiRaw, Status,
 };
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
+
+// pub use farmfe_toolkit_plugin;
 
 #[macro_use]
 extern crate napi_derive;
@@ -204,7 +207,7 @@ impl JsCompiler {
   pub fn has_module(&self, resolved_path: String) -> bool {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
-    let module_id = ModuleId::new(&resolved_path, &context.config.root);
+    let module_id = ModuleId::new(&resolved_path, "", &context.config.root);
 
     module_graph.has_module(&module_id)
   }

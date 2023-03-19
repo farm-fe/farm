@@ -27,7 +27,7 @@ pub fn partial_bundling(
   context_module_group_graph.replace(module_group_graph);
 
   let resource_pot_map =
-    generate_resource_pot_map(&mut *context_module_group_graph, context, hook_context)?;
+    generate_resource_pot_map(&mut context_module_group_graph, context, hook_context)?;
   // insert the resource pot graph into the context
   let mut g = context.resource_pot_map.write();
   g.replace(resource_pot_map);
@@ -48,7 +48,7 @@ fn analyze_module_graph(
 
   let module_group_graph = context
     .plugin_driver
-    .analyze_module_graph(&mut *module_graph, context, hook_context)?
+    .analyze_module_graph(&mut module_graph, context, hook_context)?
     .ok_or(CompilationError::PluginHookResultCheckError {
       hook_name: "analyze_module_graph".to_string(),
     })?;

@@ -2,7 +2,8 @@ name: CI
 on:
   pull_request:
     paths:
-      - "crates/**"
+      - 'crates/**'
+      - 'rust-plugins/**'
 
 jobs:
   cargo-check:
@@ -47,8 +48,8 @@ jobs:
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
         with:
-          version: "0.20.1"
-          args: "--workspace --exclude farmfe_node"
+          version: '0.20.1'
+          args: '--workspace --exclude farmfe_node'
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1.0.2

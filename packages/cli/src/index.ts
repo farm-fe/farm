@@ -45,7 +45,7 @@ const pluginCmd = cli.command(
     allowUnknownOptions: true,
   }
 );
-pluginCmd.action((command: keyof typeof COMMANDS, args: any[]) => {
+pluginCmd.action((command: keyof typeof COMMANDS, args: any) => {
   COMMANDS[command](args);
 });
 
