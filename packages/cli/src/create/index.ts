@@ -4,7 +4,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 
 const TEMPLATE_REACT = path.join(TEMPLATES_DIR, 'react');
-// const TEMPLATE_VUE = path.join(TEMPLATES_DIR, 'vue');
+const TEMPLATE_VUE = path.join(TEMPLATES_DIR, 'vue');
 const REACT = 'React';
 const VUE = 'Vue';
 
@@ -36,9 +36,8 @@ export async function create(): Promise<void> {
     copyFiles(TEMPLATE_REACT, dest);
     logger(dest, projectName);
   } else if (framework === VUE) {
-    //TODO copy vue template
-    //copyFiles(TEMPLATE_VUE, dest);
-    //logger(dest, projectName);
+    copyFiles(TEMPLATE_VUE, dest);
+    logger(dest, projectName);
   } else {
     throw new Error(`Please choose legal template!`);
   }
