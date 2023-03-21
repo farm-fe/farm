@@ -83,6 +83,24 @@ export class HmrEngine {
         }));
       }
     }
+    const removedCodeArr: string[] = [];
+    if (result.removed.length) {
+      for (let i = 0; i < result.removed.length; i++) {
+        const removedModuleName = result.removed[i].split('?')[0];
+
+        if (/.(css|less|sass)$/.test(removedModuleName)) {
+          removedCodeArr.push(
+            `"${removedModuleName}":function(module,exports,require,dynamicRequire){
+                const farmId = "${result.removed[i]}";
+                const style = document.querySelector(\`style[data-farm-id="\${farmId}"]\`)
+                if(style){
+                  document.head.removeChild(style);
+                }
+            }`
+          );
+        }
+      }
+    }
 
     const resultStr = `export default {
       added: [${result.added.map((r) => `'${r}'`).join(', ')}],
@@ -90,9 +108,10 @@ export class HmrEngine {
       removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
       modules: ${
         result.modules.trim().endsWith(';')
-          ? result.modules.trim().slice(0, -1)
-          : result.modules.trim()
-      },
+          ? result.modules.trim().slice(0, -2)
+          : result.modules.trim().slice(0, -1)
+      } 
+      ${',\r\n' + removedCodeArr.join(',\r\n') + '},'}
       boundaries: ${JSON.stringify(result.boundaries)},
       dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;

@@ -42,6 +42,10 @@ export function applyHotUpdates(
   moduleSystem: ModuleSystem
 ) {
   for (const id of result.removed) {
+    if (/\.(css|less|sass)$/.test(id.split('?')[0])) {
+      moduleSystem.update(id, result.modules[id]);
+      moduleSystem.require(id);
+    }
     moduleSystem.delete(id);
   }
 

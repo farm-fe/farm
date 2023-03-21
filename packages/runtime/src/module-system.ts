@@ -159,8 +159,11 @@ export class ModuleSystem {
 
   delete(moduleId: string): boolean {
     if (this.modules[moduleId]) {
-      delete this.modules[moduleId];
+      //there need to clearCache first,because if
+      //delete modules[id] first,the cache wouldn't
+      //be clear.
       this.clearCache(moduleId);
+      delete this.modules[moduleId];
       return true;
     } else {
       return false;
