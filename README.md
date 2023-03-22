@@ -89,7 +89,7 @@ Steps to develop Farm:
 2. Install dependencies with `pnpm i`.
 3. Build the compiler binary: `cd packages/core && npm run build:rs`
 4. Build packages (open a new terminal): `cd packages/cli && npm start`
-5. Build plugin-react (open a new terminal): `cd rust-plugins/react && npm run dev`
+5. Build plugin-react (open a new terminal): `cd rust-plugins/react && npm run build && npm run copy-artifacts`
 6. Work with examples (open a new terminal): `cd examples/react && npm start`, report an issue if the example does not start normally.
 7. If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
 
