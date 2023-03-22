@@ -85,6 +85,10 @@ if (previousStyle) {{
 }} else {{
   document.head.appendChild(style);
 }}
+
+module.onDispose(() => {{
+  style.remove();
+}});
 "#,
         param.content,
         module_id.to_string()

@@ -78,7 +78,7 @@ export function applyHotUpdates(
       const changeModuleResult = moduleSystem.require(chain[0]);
       const changeModule = result.modules[chain[0]];
       const boundaryModule =
-        moduleSystem.cache[boundary] ||
+        moduleSystem.getCache(boundary) ||
         moduleSystem.hmrCacheTemporary.get(boundary);
       if (boundaryModule && changeModule) {
         boundaryModule.meta.hot.tap(changeModuleResult);
