@@ -1,5 +1,5 @@
 <template>
-    <a class="farm-button" href={{props.to}} target="_blank">
+    <a class="farm-button" :href="props.to" target="_blank">
         <slot></slot>
     </a>
 </template>
