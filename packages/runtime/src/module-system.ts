@@ -170,6 +170,10 @@ export class ModuleSystem {
     }
   }
 
+  getCache(moduleId: string): Module | undefined {
+    return this.cache[moduleId];
+  }
+
   clearCache(moduleId: string): boolean {
     if (this.cache[moduleId]) {
       this.setHmrCacheTemporary(moduleId);
