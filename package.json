@@ -18,8 +18,10 @@
     "cspell": "^6.2.2",
     "eslint": "^8.19.0",
     "eslint-config-prettier": "^8.5.0",
+    "execa": "^7.1.1",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
+    "nanospinner": "^1.1.0",
     "prettier": "^2.7.1",
     "rimraf": "^3.0.2",
     "typescript": "^4.9.4",
@@ -28,6 +30,7 @@
   },
   "scripts": {
     "prepare": "husky install",
+    "bootstrap": "pnpm install && node scripts/bootstrap.mjs && pnpm start",
     "test": "vitest run",
     "start": "cd packages/cli && pnpm run start",
     "build": "cd packages/cli && pnpm run build -b",
