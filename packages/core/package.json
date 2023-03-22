@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -62,8 +62,8 @@
     "type-check": "npm run build"
   },
   "dependencies": {
-    "@farmfe/runtime": "workspace:^0.4.0",
-    "@farmfe/runtime-plugin-hmr": "workspace:^3.1.0",
+    "@farmfe/runtime": "workspace:^0.4.1",
+    "@farmfe/runtime-plugin-hmr": "workspace:^3.1.1",
     "@swc/helpers": "^0.4.9",
     "boxen": "^7.0.1",
     "chalk": "^5.2.0",

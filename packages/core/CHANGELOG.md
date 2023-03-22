@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.5.2
+
+### Patch Changes
+
+- 2ed0047: Fix that HMR does not remove css style
+- Updated dependencies [2ed0047]
+  - @farmfe/runtime-plugin-hmr@3.1.1
+  - @farmfe/runtime@0.4.1
+
 ## 0.5.1
 
 ### Patch Changes

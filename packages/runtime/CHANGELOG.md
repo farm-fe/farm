@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.4.1
+
+### Patch Changes
+
+- 2ed0047: Fix that HMR does not remove css style
+
 ## 0.4.0
 
 ### Minor Changes
