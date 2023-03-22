@@ -10,6 +10,9 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue';
+import rocket from "../../assets/rocket.svg"
+import toolbox from "../../assets/toolbox.svg"
+import plug from "../../assets/plug.svg"
 import Feature from './Feature.vue';
 export default defineComponent({
     components: {
@@ -19,7 +22,7 @@ export default defineComponent({
         const FeatureList = [
             {
                 title: 'Supper Fast',
-                Img: "../assets/rocket.svg",
+                Img: rocket,
                 description: (
                     `Farm's compiler is written in Rust, with multi-threading,
         lazy/asynchronous compilation and persist caching, Farm can start a
@@ -28,7 +31,7 @@ export default defineComponent({
             },
             {
                 title: 'Rich Features',
-                Img: "../assets/toolbox.svg",
+                Img: toolbox,
                 description: (
                     `Farm support compiling Html, Css, Js/Jsx/Ts/Tsx, Static Assets natively,
         support lazy compiling, partial bundling and more.`
@@ -36,7 +39,7 @@ export default defineComponent({
             },
             {
                 title: 'Fully Pluggable',
-                Img: "../assets/plug.svg",
+                Img: plug,
                 description: (
                     `Everything inside Farm is powered by plugins, you can achieve anything
         you want by writing a plugin. Support both Rust and Js plugins.`

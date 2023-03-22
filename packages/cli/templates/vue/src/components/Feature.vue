@@ -1,7 +1,7 @@
 <template>
     <div class='col background'>
         <div class="text--center">
-            <img src={{props.Img}} class="featureSvg" />
+            <img :src="props.Img" class="featureSvg" />
         </div>
         <div class="text--center">
             <h3>{{ props.title }}</h3>
@@ -20,7 +20,6 @@ export default defineComponent({
         Img: String
     },
     setup(props) {
-        console.log(props)
         return {
             props
         }

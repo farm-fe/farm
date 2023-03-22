@@ -22,7 +22,7 @@ export default defineComponent({
 
 
 
-<style>
+<style >
 #app {
     font-size: 24px;
     /* color: red; */
@@ -34,3 +34,4 @@ export default defineComponent({
     text-align: center;
 }
 </style>
+

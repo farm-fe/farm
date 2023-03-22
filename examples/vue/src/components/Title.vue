@@ -1,14 +1,19 @@
 <template>
     <div class="farm-title-wrapper">
-        <img src="../../assets/logo.svg" class="farm-logo" alt="Farm Logo" />
+        <img :src="logo" class="farm-logo" alt="Farm Logo" />
         <h1 class="farm-title">Farm</h1>
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
+import logo from "../../assets/logo.svg"
 export default defineComponent({
+    setup() {
+        return {
+            logo
+        }
+    }
 })
 </script>
 

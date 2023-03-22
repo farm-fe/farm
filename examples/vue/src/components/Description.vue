@@ -1,6 +1,6 @@
 <template>
     <div class="description">
-        <p>Supper fast web building tool written in Rust.</p>
+        <p>Supper fast web building tool written in Rust</p>
         <div style="display:flex;justifyContent:center;marginTop:40px">
             <Button to="https://farm-fe.github.io/docs/quick-start">
                 Quick Start ⏱️
@@ -18,7 +18,7 @@ import HomepageFeatures from './HomepageFeatures.vue';
 export default defineComponent({
     components: {
         Button,
-        HomepageFeatures
+        HomepageFeatures,
     },
     setup() {
 
