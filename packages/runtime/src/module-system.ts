@@ -12,9 +12,9 @@ export type ModuleInitialization = (
 
 export class ModuleSystem {
   // all modules registered
-  modules: Record<string, ModuleInitialization>;
+  private modules: Record<string, ModuleInitialization>;
   // module cache after module initialized
-  cache: Record<string, Module>;
+  private cache: Record<string, Module>;
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
   // dynamic module entry and resources map
@@ -23,6 +23,7 @@ export class ModuleSystem {
   resourceLoader: ResourceLoader;
   // runtime plugin container
   pluginContainer: FarmRuntimePluginContainer;
+  // TODO remove this after HMR implement refactored, hmr should be implemented in plugin
   //cache may clear In applyHotUpdates. We need another constructor to cache module in temporary
   //after `module.meta.hot.tap`, clear hmrCache
   hmrCacheTemporary: Map<string, Module>;
@@ -159,8 +160,10 @@ export class ModuleSystem {
 
   delete(moduleId: string): boolean {
     if (this.modules[moduleId]) {
-      delete this.modules[moduleId];
+      this.cache[moduleId] && this.cache[moduleId].dispose?.();
+
       this.clearCache(moduleId);
+      delete this.modules[moduleId];
       return true;
     } else {
       return false;
@@ -168,7 +171,7 @@ export class ModuleSystem {
   }
 
   clearCache(moduleId: string): boolean {
-    if (this.modules[moduleId]) {
+    if (this.cache[moduleId]) {
       this.setHmrCacheTemporary(moduleId);
       delete this.cache[moduleId];
       return true;
