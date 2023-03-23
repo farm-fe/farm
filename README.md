@@ -9,6 +9,9 @@
     <a href="https://github.com/farm-fe/farm/blob/main/README.zh-CN.md">简体中文</a>  
   </p>
   <p align="center">
+    <a href="https://discord.gg/mDErq9aFnF">
+    <img src="https://img.shields.io/discord/977448667919286283?logo=discord&label=discord&colorB=blueviolet" alt="discord channel" />
+  </a>
     <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg" alt="npm package"></a>
     <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg" alt="node compatibility"></a>
     <a href="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml"><img src="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml/badge.svg" alt="build status"></a>

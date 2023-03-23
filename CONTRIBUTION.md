@@ -3,7 +3,7 @@
 Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
 
 - **the JavaScript side**: see code in the `packages` directory, contains core (dev server, file watcher, and compiler wrapper), CLI, runtime, and runtime plugins (module system, HMR).
-- **the Rust side**: see code in the `crates` directory, contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
+- **the Rust side**: see code in the `crates` and `rust-plugins` directory, contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
 
 Steps to develop Farm:
 
