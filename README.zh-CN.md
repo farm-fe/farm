@@ -75,7 +75,7 @@ See [RoadMap](https://github.com/ErKeLost/farm/tree/feat/readme/ROADMAP.zh-CN.md
 
 ## 贡献
 
-See [Contributing Guide](https://github.com/ErKeLost/farm/tree/feat/readme/CONTRIBUTING.zh-CN.md).
+See [Contributing Guide](https://github.com/ErKeLost/farm/blob/feat/readme/CONTRIBUTING.zh-CN.md).
 
 ## Author
 
