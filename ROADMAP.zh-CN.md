@@ -1,6 +1,6 @@
-# RoadMap
+# 计划
 
-Farm has implemented all basic features for a web building tool. However, there is still work to be done to make Farm production-ready.
+Farm 目前已经实现了 Web 构建工具的所有基本功能。然而, 离生产应用还有一些工作要做
 
 - [x] Resolving, loading, transforming, and resource generating for web assets (HTML, CSS, JS/JSX/TS/TSX, static assets, and so on).
 - [x] Lazy Compilation
@@ -14,6 +14,6 @@ Farm has implemented all basic features for a web building tool. However, there 
 - [ ] Official Plugins like Sass
 - [ ] Persistent Cache
 
-See milestones: https://github.com/farm-fe/farm/milestones
+请参阅里程碑: https://github.com/farm-fe/farm/milestones
 
-We look forward to more contributions. Our goal is to provide a high-quality and performant web build tool for the community.
+我们期待着更多的贡献。我们的目标是为社区提供高质量和高性能的 Web 构建工具。

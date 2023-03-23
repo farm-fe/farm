@@ -70,13 +70,13 @@ cd farm-react && npm i && npm start
 请参考[文档](https://farm-fe.github.io)以了解有关 Farm 的更多信息
 ## 计划
 
-See [RoadMap](https://github.com/ErKeLost/farm/tree/feat/readme/ROADMAP.zh-CN.md).
+See [计划](https://github.com/ErKeLost/farm/tree/feat/readme/ROADMAP.zh-CN.md).
 
 
 ## 贡献
 
-See [Contributing Guide](https://github.com/ErKeLost/farm/blob/feat/readme/CONTRIBUTING.zh-CN.md).
+See [贡献指南](https://github.com/ErKeLost/farm/blob/feat/readme/CONTRIBUTING.zh-CN.md).
 
-## Author
+## 作者
 
 brightwu（吴明亮）, 曾就职于字节跳动和腾讯, 技术爱好者.
