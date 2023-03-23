@@ -1,13 +1,27 @@
-<p align="center">
-  <img src="./assets/banner.png" />
-</p>
+<div align="center">
+  <a href="https://github.com/farm-fe/farm">
+  <img src="./assets/logo.png" width="550" />
+  </a>
+  <h1>Farm</h1>
+  <p>Super fast web building tool written in Rust</p>
+  <p>
+    <span>English</span> |
+    <a href="https://github.com/farm-fe/farm/blob/main/README.zh-CN.md">简体中文</a>  
+  </p>
+  <p align="center">
+    <a href="https://discord.gg/mDErq9aFnF">
+      <img src="https://img.shields.io/badge/chat-discord-blueviolet?style=flat&logo=discord" alt="discord chat" />
+    </a>
+    <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg" alt="npm package"></a>
+    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg" alt="node compatibility"></a>
+    <a href="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml"><img src="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml/badge.svg" alt="build status"></a>
+  </p>
+  <br/>
+</div>
 
-<p align="center">
-  <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg" alt="npm package"></a>
-  <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg" alt="node compatibility"></a>
-  <a href="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml"><img src="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml/badge.svg" alt="build status"></a>
-</p>
-<br/>
+---
+
+## Intro
 
 Farm is a super-fast, lightweight web building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
@@ -58,40 +72,12 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## RoadMap
 
-Farm has implemented all basic features for a web building tool. However, there is still work to be done to make Farm production-ready.
+See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
-- [x] Resolving, loading, transforming, and resource generating for web assets (HTML, CSS, JS/JSX/TS/TSX, static assets, and so on).
-- [x] Lazy Compilation
-- [x] Dev Server and HMR (support React Fast Refresh)
-- [x] Partial Bundling
-- [x] Both Rust and JavaScript Plugin System
-- [x] Source Map
-- [ ] Resource Minimization
-- [ ] Tree Shaking
-- [ ] CSS Modules
-- [ ] Official Plugins like Sass
-- [ ] Persistent Cache
-
-See milestones: https://github.com/farm-fe/farm/milestones
-
-We look forward to more contributions. Our goal is to provide a high-quality and performant web build tool for the community.
 
 ## Contribution
 
-Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
-
-- **the JavaScript side**: see code in the `packages` directory, contains core (dev server, file watcher, and compiler wrapper), CLI, runtime, and runtime plugins (module system, HMR).
-- **the Rust side**: see code in the `crates` directory, contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
-
-Steps to develop Farm:
-
-1. Install Rust Toolchain (If you are new to Rust, search for "Rustup Book") and Node.js 16 or above.
-2. Install dependencies with `pnpm i`.
-3. Build the compiler binary: `cd packages/core && npm run build:rs`
-4. Build packages (open a new terminal): `cd packages/cli && npm start`
-5. Build plugin-react (open a new terminal): `cd rust-plugins/react && npm run build && npm run copy-artifacts`
-6. Work with examples (open a new terminal): `cd examples/react && npm start`, report an issue if the example does not start normally.
-7. If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
+See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).
 
 ## Author
 
