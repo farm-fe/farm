@@ -1,11 +1,11 @@
 <div align="center">
-  <a href="">
+  <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
   <h1>Farm</h1>
   <p>用 Rust 编写超快的 Web 构建工具</p>
   <p>
-    <a href="https://github.com/farm-fe/farm/blob/main/README.md">English</a> | 
+    <a href="https://github.com/farm-fe/farm/README.md">English</a> | 
     <span>简体中文</span>
   </p>
   <p align="center">
@@ -39,7 +39,7 @@ Farm 是一个使用 Rust 编写的超级快、轻量级的 Web 构建工具, �
 - ⚙️ **强大**: 开箱即用, Farm 内置了 JS/TS/JSX/TSX、CSS、HTML 和静态资源的编译。
 - ⏱️ **惰性编译**: 仅仅在请求时才编译动态导入的资源。
 - 📦 **智能构建**: 自动根据依赖关系 资源大小，将整个项目打包成若干个小文件，通过 bundle 提升资源加载性能，同时自动 bundle 的时候会考虑缓存，关系相近的文件打包到一起。
-- 🔒 **一致性**: 在开发中您所看到的内容将和在生产环境中完全相同。
+- 🔒 **一致性**: 开发环境和生产环境的表现一致。
 - 🌳 **兼容性**: 同时支持传统(ES5)和现代浏览器。
 
 <br/>
@@ -49,7 +49,7 @@ Farm 是一个使用 Rust 编写的超级快、轻量级的 Web 构建工具, �
 > - 关于设计动机和原则请看 [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation)。
 > - **项目仍在开发中，尚未准备好用于生产环境。欢迎贡献**。
 >
-> Farm 基于 SWC 项目构建，使用 SWC 进行 HTML/CSS/JS/TSX/TS/JSX 解析、转换、优化和代码生成。
+> Farm 基于 SWC 项目构建，使用 SWC 进行 HTML/CSS/JS/TSX/TS/JSX 解析、转换、优化和生成代码。
 
 <br/>
 
@@ -71,11 +71,11 @@ cd farm-react && npm i && npm start
 
 ## 计划
 
-查看 [计划](https://github.com/ErKeLost/farm/tree/feat/readme/ROADMAP.zh-CN.md)
+查看 [计划](https://github.com/farm-fe/farm/ROADMAP.zh-CN.md)
 
 ## 贡献
 
-查看 [贡献指南](https://github.com/ErKeLost/farm/tree/feat/readme/CONTRIBUTING.zh-CN.md)
+查看 [贡献指南](https://github.com/farm-fe/farm/CONTRIBUTING.zh-CN.md)
 
 ## 作者
 
