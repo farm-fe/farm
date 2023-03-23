@@ -1,6 +1,6 @@
 <div align="center">
   <a href="">
-  <img src="./assets/banner.png" />
+  <img src="./assets/banner1.png" />
   </a>
   <h1>Farm</h1>
   <p>Super fast web building tool written in Rust</p>
@@ -97,10 +97,11 @@ Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
 Steps to develop Farm:
 
 1. Install Rust Toolchain (If you are new to Rust, search for "Rustup Book") and Node.js 16 or above.
+1. 安装 Rust 开发环境
 2. Install dependencies and build core packages with `pnpm bootstrap`.
 6. Work with examples (open a new terminal): `cd examples/react && npm start`, report an issue if the example does not start normally.
-7. If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
+7. 如果你修改了在 `crates` 包中的 Rust 代码, 请在 `packages/core` 包中执行 `pnpm run build:rs` 来编译最新的代码
 
 ## Author
 
-brightwu（吴明亮）, worked at Bytedance and Tencent, technology enthusiast.
+brightwu（吴明亮）, 曾就职于字节跳动和腾讯, 技术爱好者.
