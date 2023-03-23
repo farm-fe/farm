@@ -6,7 +6,7 @@
   <p>Super fast web building tool written in Rust</p>
   <p>
     <span>English</span> |
-    <a href="https://github.com/farm-fe/farm/README.zh-CN.md">简体中文</a>  
+    <a href="https://github.com/farm-fe/farm/blob/main/README.zh-CN.md">简体中文</a>  
   </p>
   <p align="center">
     <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg" alt="npm package"></a>
@@ -69,12 +69,12 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## RoadMap
 
-See [RoadMap](https://github.com/farm-fe/farm/ROADMAP.md).
+See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 
 ## Contribution
 
-See [Contributing Guide](https://github.com/farm-fe/farm/CONTRIBUTING.md).
+See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).
 
 ## Author
 

@@ -5,7 +5,7 @@
   <h1>Farm</h1>
   <p>用 Rust 编写超快的 Web 构建工具</p>
   <p>
-    <a href="https://github.com/farm-fe/farm/README.md">English</a> | 
+    <a href="https://github.com/farm-fe/farm/blob/main/README.md">English</a> | 
     <span>简体中文</span>
   </p>
   <p align="center">
@@ -71,11 +71,11 @@ cd farm-react && npm i && npm start
 
 ## 计划
 
-查看 [计划](https://github.com/farm-fe/farm/ROADMAP.zh-CN.md)
+查看 [计划](https://github.com/farm-fe/farm/blob/main/ROADMAP.zh-CN.md)
 
 ## 贡献
 
-查看 [贡献指南](https://github.com/farm-fe/farm/CONTRIBUTING.zh-CN.md)
+查看 [贡献指南](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.zh-CN.md)
 
 ## 作者
 
