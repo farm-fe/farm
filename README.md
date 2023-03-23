@@ -1,6 +1,6 @@
 <div align="center">
   <a href="">
-  <img src="./assets/banner1.png" />
+  <img src="./assets/banner1.png" width="450" />
   </a>
   <h1>Farm</h1>
   <p>Super fast web building tool written in Rust</p>
