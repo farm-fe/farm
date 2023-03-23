@@ -46,7 +46,7 @@ Farm 是一个使用 Rust 编写的超级快、轻量级的 Web 构建工具, �
 
 > **注意**:
 >
-> - 关于设计动机和原则请看 [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation) 。
+> - 关于设计动机和原则请看 [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation)。
 > - **项目仍在开发中，尚未准备好用于生产环境。欢迎贡献**。
 >
 > Farm 基于 SWC 项目构建，使用 SWC 进行 HTML/CSS/JS/TSX/TS/JSX 解析、转换、优化和代码生成。
@@ -68,40 +68,14 @@ cd farm-react && npm i && npm start
 ```
 
 请参考[文档](https://farm-fe.github.io)以了解有关 Farm 的更多信息
-## 开发路线图
+## 计划
 
-Farm 已经实现了 Web 构建工具的所有基本功能。然而, 距离生产实际应用还有一些工作要做.
+See [RoadMap](https://github.com/ErKeLost/farm/tree/feat/readme/ROADMAP.zh-CN.md).
 
-- [x] Resolving, loading, transforming, and resource generating for web assets (HTML, CSS, JS/JSX/TS/TSX, static assets, and so on).
-- [x] Lazy Compilation
-- [x] Dev Server and HMR (support React Fast Refresh)
-- [x] Partial Bundling
-- [x] Both Rust and JavaScript Plugin System
-- [x] Source Map
-- [ ] Resource Minimization
-- [ ] Tree Shaking
-- [ ] CSS Modules
-- [ ] Official Plugins like Sass
-- [ ] Persistent Cache
 
-See milestones: https://github.com/farm-fe/farm/milestones
+## 贡献
 
-We look forward to more contributions. Our goal is to provide a high-quality and performant web build tool for the community.
-
-## Contribution
-
-Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
-
-- **the JavaScript side**: see code in the `packages` directory, contains core (dev server, file watcher, and compiler wrapper), CLI, runtime, and runtime plugins (module system, HMR).
-- **the Rust side**: see code in the `crates` directory, contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
-
-Steps to develop Farm:
-
-1. Install Rust Toolchain (If you are new to Rust, search for "Rustup Book") and Node.js 16 or above.
-1. 安装 Rust 开发环境
-1. Install dependencies and build core packages with `pnpm bootstrap`.
-1. Work with examples (open a new terminal): `cd examples/react && npm start`, report an issue if the example does not start normally.
-1. 如果你修改了在 `crates` 包中的 Rust 代码, 请在 `packages/core` 包中执行 `pnpm run build:rs` 来编译最新的代码
+See [Contributing Guide](https://github.com/ErKeLost/farm/tree/feat/readme/CONTRIBUTING.zh-CN.md).
 
 ## Author
 
