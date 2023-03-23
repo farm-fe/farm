@@ -69,37 +69,12 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## RoadMap
 
-Farm has implemented all basic features for a web building tool. However, there is still work to be done to make Farm production-ready.
+See [RoadMap](https://github.com/varletjs/varlet/blob/dev/.github/CONTRIBUTING.md).
 
-- [x] Resolving, loading, transforming, and resource generating for web assets (HTML, CSS, JS/JSX/TS/TSX, static assets, and so on).
-- [x] Lazy Compilation
-- [x] Dev Server and HMR (support React Fast Refresh)
-- [x] Partial Bundling
-- [x] Both Rust and JavaScript Plugin System
-- [x] Source Map
-- [ ] Resource Minimization
-- [ ] Tree Shaking
-- [ ] CSS Modules
-- [ ] Official Plugins like Sass
-- [ ] Persistent Cache
-
-See milestones: https://github.com/farm-fe/farm/milestones
-
-We look forward to more contributions. Our goal is to provide a high-quality and performant web build tool for the community.
 
 ## Contribution
 
-Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
-
-- **the JavaScript side**: see code in the `packages` directory, contains core (dev server, file watcher, and compiler wrapper), CLI, runtime, and runtime plugins (module system, HMR).
-- **the Rust side**: see code in the `crates` directory, contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
-
-Steps to develop Farm:
-
-1. Install Rust Toolchain (If you are new to Rust, search for "Rustup Book") and Node.js 16 or above.
-2. Install dependencies and build core packages with `pnpm bootstrap`.
-6. Work with examples (open a new terminal): `cd examples/react && npm start`, report an issue if the example does not start normally.
-7. If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
+See [Contributing Guide](https://github.com/varletjs/varlet/blob/dev/.github/CONTRIBUTING.md).
 
 ## Author
 
