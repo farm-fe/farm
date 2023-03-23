@@ -5,8 +5,8 @@
   <h1>Farm</h1>
   <p>Super fast web building tool written in Rust</p>
   <p>
-    <span>English</span> |
-    <a href="https://github.com/farm-fe/farm/blob/main/README.md">简体中文</a>  
+    <a href="https://github.com/farm-fe/farm/blob/main/README.md">English</a> | 
+    <span>简体中文</span>
   </p>
   <p align="center">
     <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg" alt="npm package"></a>
