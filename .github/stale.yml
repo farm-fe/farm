@@ -1,0 +1,17 @@
+daysUntilStale: 180
+daysUntilClose: 180
+exemptLabels:
+  - pinned
+  - bug
+  - enhancement
+  - question
+  - RFC
+  - roadmap
+staleLabel: stale
+exemptMilestones: "Backlog" # Milestone
+markComment: >
+  This issue has been automatically marked as stale because it has not had
+  recent activity. It will be closed if no further activity occurs. Thank you
+  for your contributions.
+closeComment: false
+deleteBranch: false
