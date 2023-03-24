@@ -2,7 +2,6 @@
   <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
-
   <p>Super fast web building tool written in Rust</p>
   <p>
     <span>English</span> |
@@ -77,7 +76,7 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 ## Contribution
 
-See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).
+See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTION.md).
 
 ## Author
 
