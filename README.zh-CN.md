@@ -2,7 +2,6 @@
   <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
-  <h1>Farm</h1>
   <p>基于 Rust 的极速构建引擎</p>
   <p>
     <a href="https://github.com/farm-fe/farm/blob/main/README.md">English</a> | 
