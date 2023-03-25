@@ -13,7 +13,7 @@ export async function create(): Promise<void> {
     type: 'input',
     name: 'name',
     message: 'please input project name',
-    default: 'farm-project',
+    default: 'my-farm-project',
   });
 
   const { framework } = await inquirer.prompt({
@@ -22,11 +22,11 @@ export async function create(): Promise<void> {
     message: 'please choose a framework',
     choices: [
       {
-        name: chalk.red('1) React'),
+        name: '1) React',
         value: REACT,
       },
       {
-        name: chalk.green('2) Vue'),
+        name: '2) Vue',
         value: VUE,
       },
     ],

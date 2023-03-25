@@ -1,20 +1,15 @@
 // change to @farmfe/core/config when resolve support conditional exports
 import { defineFarmConfig } from '@farmfe/core/dist/config';
+import farmJsPluginVue from '@farmfe/js-plugin-vue';
 
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
-    },
-    resolve: {
-      symlinks: true,
-      mainFields: ['module', 'main', 'customMain'],
+      index: './index.html'
     },
     output: {
-      path: './build',
-    },
+      path: './build'
+    }
   },
-  server: {
-    hmr: true,
-  },
+  plugins: [farmJsPluginVue()]
 });

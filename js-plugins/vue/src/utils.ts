@@ -1,6 +1,6 @@
 import path from "path";
 import crypto from "crypto";
-import { outputData } from "./farm-vue-types";
+import { outputData } from "./farm-vue-types.js";
 export function warn({ id, message }: outputData) {
   console.warn(`[${id}:warn]:"${message}"`);
 }

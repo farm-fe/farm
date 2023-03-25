@@ -1,5 +1,5 @@
 ---
-'@farmfe/cli': patch
+'@farmfe/cli': minor
 ---
 
-update cli
+Add vue template

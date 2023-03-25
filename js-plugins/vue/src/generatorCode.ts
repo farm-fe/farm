@@ -9,10 +9,11 @@ import {
   BindingMetadata,
   rewriteDefault,
   SFCStyleBlock,
+  SFCTemplateCompileResults,
 } from "@vue/compiler-sfc";
-import { error, warn, getHash, parsePath } from "./utils";
-import { QueryObj, StylesCodeCache } from "./farm-vue-types";
-import { cacheScript } from "./farm-vue-hmr";
+import { error, warn, getHash, parsePath } from "./utils.js";
+import { QueryObj, StylesCodeCache } from "./farm-vue-types.js";
+import { cacheScript } from "./farm-vue-hmr.js";
 
 const assignFilenameCode = genFileNameCode("App.vue");
 const assignRenderCode = `_sfc_main.render = typeof render === "function" ? render : undefined`;
@@ -39,7 +40,7 @@ export function genTemplateCode(
   bindings: BindingMetadata,
   hasScoped: boolean,
   hash: string
-) {
+): { code: string; map?: any } & Partial<SFCTemplateCompileResults> {
   if (template) {
     const result = compileTemplate({
       source: template.content,
@@ -72,16 +73,17 @@ export function genTemplateCode(
       code: code.replace(/\nexport (function|const)/, "\n$1"),
     };
   }
-  return {
-    code: "",
-    map: "",
-  };
+  
+  throw new Error("template is null");
 }
 
-export function genScriptCode(descriptor: SFCDescriptor, filename: string) {
+export function genScriptCode(descriptor: SFCDescriptor, filename: string): {
+  moduleType: string;
+  code: string;
+} & Partial<SFCScriptBlock> {
   let moduleType = "js";
   let code = "";
-  let result: SFCScriptBlock | object = {};
+  let result: Partial<SFCScriptBlock> = {};
   const script = descriptor.script || descriptor.scriptSetup;
   // if script exist,add transformed code
   if (script) {

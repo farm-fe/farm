@@ -7,10 +7,11 @@
   },
   "devDependencies": {
     "@farmfe/cli": "../../packages/cli",
-    "@farmfe/core": "../../packages/core"
+    "@farmfe/core": "../../packages/core",
+    "@farmfe/js-plugin-vue": "workspace:^0.1.0"
   },
   "scripts": {
     "start": "farm start",
-    "build":"farm build"
+    "build": "farm build"
   }
 }
