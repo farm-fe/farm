@@ -1,15 +1,15 @@
 name: "\U0001F41E Bug report"
 description: Create a report to help us improve
 body:
-  - type: markdown
-    attributes:
+  - type: 
+    attributes:markdown
       value: |
         **Before You Start...**
 
         This form is only for submitting bug reports. If you have a usage question
         or are unsure if this is really a bug, make sure to:
 
-        - You have a local rust environment
+        - You must have GLIBC >= 2.32 when using Farm on linux
         - Node version greater than or equal to 16
 
         Also try to search for your issue - it may have already been answered or even fixed in the development branch.
