@@ -23,6 +23,7 @@ const plugins = [
   execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: PKG_PLUGIN_REACT }),
   execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: PKG_PLUGIN_VUE }),
 ];
+
 export const buildPlugins = () => Promise.all(plugins);
 
 export const copyArtifacts = () => {
