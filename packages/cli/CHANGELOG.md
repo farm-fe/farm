@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.0
+
+### Minor Changes
+
+- c100560: Add vue template
+
 ## 0.4.2
 
 ### Patch Changes
