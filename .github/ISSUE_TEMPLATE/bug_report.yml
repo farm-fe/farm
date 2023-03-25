@@ -1,8 +1,8 @@
 name: "\U0001F41E Bug report"
 description: Create a report to help us improve
 body:
-  - type: 
-    attributes:markdown
+  - type: markdown
+    attributes:
       value: |
         **Before You Start...**
 
@@ -11,7 +11,7 @@ body:
 
         - You must have GLIBC >= 2.32 when using Farm on linux
         - Node version greater than or equal to 16
-
+        
         Also try to search for your issue - it may have already been answered or even fixed in the development branch.
         However, if you find that an old, closed issue still persists in the latest version,
         you should open a new issue using the form below instead of commenting on the old issue.
