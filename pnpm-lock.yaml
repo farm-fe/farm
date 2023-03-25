@@ -81,7 +81,7 @@ importers:
     specifiers:
       '@farmfe/cli': workspace:*
       '@farmfe/core': workspace:*
-      '@farmfe/js-plugin-vue': workspace:^0.0.0
+      '@farmfe/js-plugin-vue': workspace:^0.1.0
       vue: ^3.2.45
     dependencies:
       vue: 3.2.47
