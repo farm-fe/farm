@@ -10,14 +10,21 @@ const CWD = process.cwd();
 // Build the compiler binary
 const PKG_CORE = resolve(CWD, './packages/core');
 
-// Build plugin-react
+// Build rust-plugin-react
 const PKG_PLUGIN_REACT = resolve(CWD, './rust-plugins/react');
+
+// Build js-plugin-vue
+const PKG_PLUGIN_VUE = resolve(CWD, './js-plugins/vue');
 
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], { cwd: PKG_CORE });
 
-export const buildPluginReact = () =>
-  execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: PKG_PLUGIN_REACT });
+const plugins = [
+  execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: PKG_PLUGIN_REACT }),
+  execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: PKG_PLUGIN_VUE }),
+];
+
+export const buildPlugins = () => Promise.all(plugins);
 
 export const copyArtifacts = () => {
   execa(DEFAULT_PACKAGE_MANAGER, ['copy-artifacts'], { cwd: PKG_PLUGIN_REACT });
@@ -29,13 +36,13 @@ export async function runTask(taskName, task) {
     await task();
     s.success({ text: `${taskName} completed!` });
   } catch (e) {
-    s.error({ text: `Build ${taskName} failed!` });
+    s.error({ text: `${taskName} failed!` });
     console.error(e.toString());
   }
 }
 
 export async function runTaskQueue() {
-  await runTask('Building core', buildCore);
-  await runTask('Building plugins', buildPluginReact);
+  await runTask('Build core', buildCore);
+  await runTask('Build plugins', buildPlugins);
   await runTask('Copy Artifacts', copyArtifacts);
 }
