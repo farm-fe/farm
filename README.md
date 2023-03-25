@@ -76,7 +76,7 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 ## Contribution
 
-See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTION.md).
+See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).
 
 ## Author
 

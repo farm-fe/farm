@@ -77,7 +77,7 @@ cd farm-react && npm i && npm start
 
 ## 贡献
 
-查看 [贡献指南](https://github.com/farm-fe/farm/blob/main/CONTRIBUTION.zh-CN.md)
+查看 [贡献指南](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.zh-CN.md)
 
 ## 作者
 
