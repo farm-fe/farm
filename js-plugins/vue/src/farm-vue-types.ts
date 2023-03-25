@@ -18,7 +18,7 @@ export declare namespace Less {
     rewriteUrls?: boolean | undefined;
     filename: string;
     relativeUrls: boolean;
-    rootpath: string;
+    rootPath: string;
     currentDirectory: string;
     entryPath: string;
     rootFilename: string;
@@ -121,7 +121,7 @@ export declare namespace Less {
   interface SourceMapOption {
     sourceMapURL?: string | undefined;
     sourceMapBasepath?: string | undefined;
-    sourceMapRootpath?: string | undefined;
+    sourceMapRootPath?: string | undefined;
     outputSourceFiles?: boolean | undefined;
     sourceMapFileInline?: boolean | undefined;
   }
@@ -162,7 +162,7 @@ export declare namespace Less {
     /** Whether output file information and line numbers in compiled CSS code. */
     dumpLineNumbers?: 'comment' | string | undefined;
     /** Add a path to every generated import and url in output css files. */
-    rootpath?: string | undefined;
+    rootPath?: string | undefined;
     /** Math mode options for avoiding symbol conflicts on math expressions. */
     math?:
       | 'always'
