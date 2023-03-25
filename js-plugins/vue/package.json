@@ -1,0 +1,42 @@
+{
+  "name": "@farmfe/js-plugin-vue",
+  "version": "0.0.0",
+  "description": "support vue sfc for farm.",
+  "main": "./dist/farm-vue-plugin.js",
+  "types": "./dist/farm-vue-plugin.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/farm-vue-plugin.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "js-plugins/vue"
+  },
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  },
+  "homepage": "https://github.com/farm-fe/farm/tree/main/js-plugins/vue",
+  "author": "ysy945",
+  "license": "MIT",
+  "devDependencies": {
+    "@farmfe/core": "workspace:^0.5.2",
+    "@types/node": "^18.15.3"
+  },
+  "dependencies": {
+    "@vue/compiler-sfc": "^3.2.47"
+  },
+  "peerDependencies": {
+    "@farmfe/core": "^0.5.2"
+  }
+}

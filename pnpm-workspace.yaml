@@ -3,3 +3,4 @@ packages:
   - examples/*
   - crates/*
   - rust-plugins/*
+  - js-plugins/*
