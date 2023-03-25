@@ -6,8 +6,8 @@
     "vue": "^3.2.45"
   },
   "devDependencies": {
-    "@farmfe/cli": "../../packages/cli",
-    "@farmfe/core": "../../packages/core",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "pwrkspace:*",
     "@farmfe/js-plugin-vue": "workspace:^0.0.0"
   },
   "scripts": {
