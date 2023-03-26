@@ -99,6 +99,7 @@ impl Resolver {
       } else {
         normalized_path.to_path_buf()
       };
+      println!("normalized_path: {:?}", normalized_path);
 
       // TODO try read symlink from the resolved path step by step to its parent util the root
       let resolved_path = self
@@ -108,7 +109,7 @@ impl Resolver {
           "File `{:?}` does not exist",
           normalized_path
         )));
-
+      println!("resolved_path: {:?}", resolved_path);
       if let Some(resolved_path) = resolved_path.ok() {
         return Some(self.get_resolve_result(&package_json_info, resolved_path));
       } else {
@@ -242,13 +243,8 @@ impl Resolver {
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               if let Value::String(str) = field_value {
-                println!("这是匹配到了字符串");
                 let dir = package_json_info.dir();
-                println!("dir: {:?}", dir);
-                println!("str: {:?}", str);
                 let full_path = RelativePath::new(str).to_logical_path(dir);
-                println!("relativePath: {:?}", RelativePath::new(str));
-                println!("full_path: {:?}", full_path);
                 return self.try_file(&full_path).map(|resolved_path| {
                   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 });
@@ -258,6 +254,7 @@ impl Resolver {
 
                 if let Some(exports_field) = exports_field {
                   if let Value::Object(obj) = exports_field {
+                    println!("obj: {:?}", obj);
                     for (key, value) in obj {
                       println!("key: {:?} value {:?}", key, value);
                       if key == "." {
@@ -267,6 +264,11 @@ impl Resolver {
                         return self.try_file(&full_path).map(|resolved_path| {
                           self.get_resolve_result(&Ok(package_json_info), resolved_path)
                         });
+                      } else {
+                        // TODO support other exports
+                        let path = Path::new(&key);
+                        println!("path: {:?}", path);
+                        // TODO support resolve node_modules deps path
                       }
                     }
                   }
