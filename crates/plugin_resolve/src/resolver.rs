@@ -42,6 +42,7 @@ impl Resolver {
     base_dir: PathBuf,
     kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
+    println!("resolve source: {}, base_dir: {:?}", source, base_dir);
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -49,7 +50,7 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
-
+    // println!("package_json_info: {:?}", package_json_info);
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       if !self.is_source_absolute(source)
@@ -81,12 +82,14 @@ impl Resolver {
     }
 
     if self.is_source_absolute(source) {
+      println!("这是绝对路径哈");
       if let Some(resolved_path) = self.try_file(&PathBuf::from_str(source).unwrap()) {
         return Some(self.get_resolve_result(&package_json_info, resolved_path));
       } else {
         return None;
       }
     } else if self.is_source_relative(source) {
+      println!("这是相对路径哈");
       // if it starts with '.', it is a relative path
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
       let normalized_path = normalized_path.as_path();
@@ -112,6 +115,7 @@ impl Resolver {
         None
       }
     } else {
+      println!("难道这是第三方模块");
       // try alias first
       self
         .try_alias(source, base_dir.clone(), kind)
@@ -195,18 +199,19 @@ impl Resolver {
   ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
-
+    println!("解析node_modules中的包");
+    println!("kind: {:?}", kind);
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
-
+      println!("maybe_node_modules_path: {:?}", maybe_node_modules_path);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if self.config.symlinks {
           follow_symlinks(RelativePath::new(source).to_logical_path(maybe_node_modules_path))
         } else {
           RelativePath::new(source).to_logical_path(maybe_node_modules_path)
         };
-
+        println!("package_path: {:?}", package_path);
         let package_json_info = load_package_json(
           package_path.clone(),
           Options {
@@ -214,8 +219,8 @@ impl Resolver {
             resolve_ancestor_dir: false, // only look for current directory
           },
         );
-
         if !package_path.join("package.json").exists() {
+          println!("package.json not exists 不存在哦");
           if let Some(resolved_path) = self
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
@@ -233,16 +238,35 @@ impl Resolver {
           // search normal entry, based on self.config.main_fields, e.g. module/main
           let raw_package_json_info: Map<String, Value> =
             from_str(package_json_info.raw()).unwrap();
+          println!("raw_package_json_info: {:?}", raw_package_json_info);
 
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
+              println!("get main field: {:?}", field_value);
               if let Value::String(str) = field_value {
+                println!("这是匹配到了字符串");
                 let dir = package_json_info.dir();
+                println!("dir: {:?}", dir);
+                println!("str: {:?}", str);
                 let full_path = RelativePath::new(str).to_logical_path(dir);
-
+                println!("relativePath: {:?}", RelativePath::new(str));
+                println!("full_path: {:?}", full_path);
                 return self.try_file(&full_path).map(|resolved_path| {
                   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 });
+              } else if let Value::Object(obj) = field_value {
+                println!("这是匹配到了对象");
+                break;
+                // match field_value {
+                //   Value::String(obj) => {
+                //     println!("这是匹配到了对象");
+                //     println!("found string: {:?}", obj);
+                //   }
+                //   _ => {
+                //     // do nothing
+                //     println!("found unsupported type: {:?}", field_value);
+                //   }
+                // }
               }
             }
           }
