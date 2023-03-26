@@ -238,11 +238,9 @@ impl Resolver {
           // search normal entry, based on self.config.main_fields, e.g. module/main
           let raw_package_json_info: Map<String, Value> =
             from_str(package_json_info.raw()).unwrap();
-          println!("raw_package_json_info: {:?}", raw_package_json_info);
 
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
-              println!("get main field: {:?}", field_value);
               if let Value::String(str) = field_value {
                 println!("这是匹配到了字符串");
                 let dir = package_json_info.dir();
@@ -254,19 +252,25 @@ impl Resolver {
                 return self.try_file(&full_path).map(|resolved_path| {
                   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 });
-              } else if let Value::Object(obj) = field_value {
-                println!("这是匹配到了对象");
-                break;
-                // match field_value {
-                //   Value::String(obj) => {
-                //     println!("这是匹配到了对象");
-                //     println!("found string: {:?}", obj);
-                //   }
-                //   _ => {
-                //     // do nothing
-                //     println!("found unsupported type: {:?}", field_value);
-                //   }
-                // }
+              } else {
+                let exports_field =
+                  self.get_field_value_from_package_json_info(&package_json_info, "exports");
+
+                if let Some(exports_field) = exports_field {
+                  if let Value::Object(obj) = exports_field {
+                    for (key, value) in obj {
+                      println!("key: {:?} value {:?}", key, value);
+                      if key == "." {
+                        let dir = package_json_info.dir();
+                        let value_str = value.as_str().to_owned().unwrap();
+                        let full_path = RelativePath::new(value_str).to_logical_path(dir);
+                        return self.try_file(&full_path).map(|resolved_path| {
+                          self.get_resolve_result(&Ok(package_json_info), resolved_path)
+                        });
+                      }
+                    }
+                  }
+                }
               }
             }
           }

@@ -13,18 +13,19 @@ fn resolve_exports_basic() {
       // println!("cwd: {:?}", cwd.clone());
       // Parsing packages in node_modules
       let resolved = resolver.resolve("basic", cwd.clone(), &ResolveKind::Entry);
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // println!("resolve path, {}", resolved.resolved_path);
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("basic")
-      //     .join("browser.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      println!("resolve path, {:?}", resolved);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      println!("resolve path, {}", resolved.resolved_path);
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("basic")
+          .join("basic-exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
