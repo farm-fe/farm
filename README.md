@@ -34,7 +34,7 @@ Farm is a super-fast, lightweight web building tool written in Rust. Benchmark a
 
 ## Features
 
-- ⚡ **Super Fast**: Written in Rust, start a React / Vue (incoming) project in milliseconds, perform an HMR update within 10ms for most situations.
+- ⚡ **Super Fast**: Written in Rust, start a React / Vue project in milliseconds, perform an HMR update within 10ms for most situations.
 - 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Supports both Rust and JavaScript plugins.
 - ⚙️ **Powerful**: Compiles JS/TS/JSX/TSX, CSS, HTML, and static assets out of the box.
 - ⏱️ **Lazy Compilation**: Dynamically imported resources are compiled only when requested.
@@ -55,16 +55,20 @@ Farm is a super-fast, lightweight web building tool written in Rust. Benchmark a
 
 ## Getting Started
 
-Create a new Farm project
+Create a new Farm(support both react and vue) project.
 
 ```sh
 npx @farmfe/cli@latest create
+? please input project name my-farm-project
+? please choose a framework (Use arrow keys)
+❯ 1) React 
+  2) Vue
 ```
 
 Start the project:
 
 ```sh
-cd farm-react && npm i && npm start
+cd my-farm-project && npm i && npm start
 ```
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
