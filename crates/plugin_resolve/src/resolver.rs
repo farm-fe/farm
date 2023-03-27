@@ -287,6 +287,7 @@ impl Resolver {
       let resolved_path = self
         .try_main_fields_replace(package_json_info, &resolved_path, "exports")
         .unwrap_or(resolved_path);
+
       return PluginResolveHookResult {
         resolved_path,
         external,
