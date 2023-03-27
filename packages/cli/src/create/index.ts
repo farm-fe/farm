@@ -120,7 +120,7 @@ function logger(dest: string, projectName: string, pkgManager: string) {
   );
   console.log(
     `Run  \n ${chalk.cyan.bold(
-      `cd ${projectName} \n${pkgManager} start`
+      `cd ${projectName}\n ${pkgManager} start`
     )} \n to get started.`
   );
 }
