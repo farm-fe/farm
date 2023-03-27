@@ -42,7 +42,6 @@ impl Resolver {
     base_dir: PathBuf,
     kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
-    println!("resolve source: {}, base_dir: {:?}", source, base_dir);
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -50,7 +49,6 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
-    // println!("package_json_info: {:?}", package_json_info);
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       if !self.is_source_absolute(source)
@@ -64,10 +62,12 @@ impl Resolver {
           ..Default::default()
         });
       }
-
+      // TODO exports source not absolute && not relative
       // check browser replace
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
-        if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
+        if let Some(resolved_path) =
+          self.try_main_fields_replace(package_json_info, source, "browser")
+        {
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
 
@@ -82,14 +82,12 @@ impl Resolver {
     }
 
     if self.is_source_absolute(source) {
-      println!("这是绝对路径哈");
       if let Some(resolved_path) = self.try_file(&PathBuf::from_str(source).unwrap()) {
         return Some(self.get_resolve_result(&package_json_info, resolved_path));
       } else {
         return None;
       }
     } else if self.is_source_relative(source) {
-      println!("这是相对路径哈");
       // if it starts with '.', it is a relative path
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
       let normalized_path = normalized_path.as_path();
@@ -99,7 +97,6 @@ impl Resolver {
       } else {
         normalized_path.to_path_buf()
       };
-      println!("normalized_path: {:?}", normalized_path);
 
       // TODO try read symlink from the resolved path step by step to its parent util the root
       let resolved_path = self
@@ -109,14 +106,12 @@ impl Resolver {
           "File `{:?}` does not exist",
           normalized_path
         )));
-      println!("resolved_path: {:?}", resolved_path);
       if let Some(resolved_path) = resolved_path.ok() {
         return Some(self.get_resolve_result(&package_json_info, resolved_path));
       } else {
         None
       }
     } else {
-      println!("难道这是第三方模块");
       // try alias first
       self
         .try_alias(source, base_dir.clone(), kind)
@@ -200,19 +195,15 @@ impl Resolver {
   ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
-    println!("解析node_modules中的包");
-    println!("kind: {:?}", kind);
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
-      println!("maybe_node_modules_path: {:?}", maybe_node_modules_path);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if self.config.symlinks {
           follow_symlinks(RelativePath::new(source).to_logical_path(maybe_node_modules_path))
         } else {
           RelativePath::new(source).to_logical_path(maybe_node_modules_path)
         };
-        println!("package_path: {:?}", package_path);
         let package_json_info = load_package_json(
           package_path.clone(),
           Options {
@@ -221,7 +212,6 @@ impl Resolver {
           },
         );
         if !package_path.join("package.json").exists() {
-          println!("package.json not exists 不存在哦");
           if let Some(resolved_path) = self
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
@@ -253,23 +243,18 @@ impl Resolver {
                   self.get_field_value_from_package_json_info(&package_json_info, "exports");
 
                 if let Some(exports_field) = exports_field {
-                  if let Value::Object(obj) = exports_field {
-                    println!("obj: {:?}", obj);
-                    for (key, value) in obj {
-                      println!("key: {:?} value {:?}", key, value);
-                      if key == "." {
+                  if let Value::Object(exports_field_map) = exports_field {
+                    match exports_field_map.get(".") {
+                      Some(value) => {
+                        // TODO value as Object type
                         let dir = package_json_info.dir();
                         let value_str = value.as_str().to_owned().unwrap();
                         let full_path = RelativePath::new(value_str).to_logical_path(dir);
                         return self.try_file(&full_path).map(|resolved_path| {
                           self.get_resolve_result(&Ok(package_json_info), resolved_path)
                         });
-                      } else {
-                        // TODO support other exports
-                        let path = Path::new(&key);
-                        println!("path: {:?}", path);
-                        // TODO support resolve node_modules deps path
                       }
+                      None => {}
                     }
                   }
                 }
@@ -296,9 +281,12 @@ impl Resolver {
       let side_effects = self.is_module_side_effects(&package_json_info, &resolved_path);
 
       let resolved_path = self
-        .try_browser_replace(package_json_info, &resolved_path)
+        .try_main_fields_replace(package_json_info, &resolved_path, "browser")
         .unwrap_or(resolved_path);
 
+      let resolved_path = self
+        .try_main_fields_replace(package_json_info, &resolved_path, "exports")
+        .unwrap_or(resolved_path);
       return PluginResolveHookResult {
         resolved_path,
         external,
@@ -385,15 +373,16 @@ impl Resolver {
     }
   }
 
-  fn try_browser_replace(
+  fn try_main_fields_replace(
     &self,
     package_json_info: &PackageJsonInfo,
     resolved_path: &str,
+    field: &str,
   ) -> Option<String> {
-    let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
+    let resolve_field = self.get_field_value_from_package_json_info(package_json_info, &field);
 
-    if let Some(browser_field) = browser_field {
-      if let Value::Object(obj) = browser_field {
+    if let Some(resolve_field) = resolve_field {
+      if let Value::Object(obj) = resolve_field {
         for (key, value) in obj {
           let path = Path::new(resolved_path);
 

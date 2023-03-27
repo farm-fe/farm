@@ -8,15 +8,11 @@ fn resolve_exports_basic() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      println!("解析的config {:?}", ResolveConfig::default());
       let resolver = Resolver::new(ResolveConfig::default());
-      println!("cwd: {:?}", cwd.clone());
       // Parsing packages in node_modules
       let resolved = resolver.resolve("basic", cwd.clone(), &ResolveKind::Import);
-      // println!("resolve path, {:?}", resolved);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
-      // println!("resolve path, {}", resolved.resolved_path);
       assert_eq!(
         resolved.resolved_path,
         cwd
@@ -34,20 +30,24 @@ fn resolve_exports_basic() {
 #[test]
 fn resolve_exports_replace() {
   fixture!(
-    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    "tests/fixtures/resolve-node-modules/exports/node_modules/basic/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      println!("解析的config {:?}", ResolveConfig::default());
       let resolver = Resolver::new(ResolveConfig::default());
-      println!("cwd: {:?}", cwd.clone());
       // Parsing packages in node_modules
-      let resolved = resolver.resolve("basic", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve("./submodule.js", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      println!("resolved {}", resolved.resolved_path);
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("lib")
+          .join("submodule.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
 
-#[test]
-fn it_works() {
-  println!("Hello, world!, {}", 2 + 2);
-  assert_eq!(2 + 2, 4);
-}
