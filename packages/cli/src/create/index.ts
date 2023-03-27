@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { copyFiles, TEMPLATES_DIR } from '../utils.js';
+import { copyFiles, TEMPLATES_DIR, getPkgManager } from '../utils.js';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
@@ -7,6 +7,9 @@ const TEMPLATE_REACT = path.join(TEMPLATES_DIR, 'react');
 const TEMPLATE_VUE = path.join(TEMPLATES_DIR, 'vue');
 const REACT = 'React';
 const VUE = 'Vue';
+const NPM = 'npm';
+const PNPM = 'pnpm';
+const YARN = 'yarn';
 
 export async function create(): Promise<void> {
   const { name: projectName } = await inquirer.prompt({
@@ -31,19 +34,38 @@ export async function create(): Promise<void> {
       },
     ],
   });
+  const { pkgManager } = await inquirer.prompt({
+    type: 'list',
+    name: 'pkgManager',
+    message: 'please choose your package Manager',
+    choices: [
+      {
+        name: '1) npm',
+        value: NPM,
+      },
+      {
+        name: '2) pnpm',
+        value: PNPM,
+      },
+      {
+        name: '3) yarn',
+        value: YARN,
+      },
+    ],
+  });
   const dest = path.join(process.cwd(), projectName);
   if (framework === REACT) {
     copyFiles(TEMPLATE_REACT, dest);
-    logger(dest, projectName);
+    logger(dest, projectName, pkgManager);
   } else if (framework === VUE) {
     copyFiles(TEMPLATE_VUE, dest);
-    logger(dest, projectName);
+    logger(dest, projectName, pkgManager);
   } else {
     throw new Error(`Please choose legal template!`);
   }
 }
 
-function logger(dest: string, projectName: string) {
+function logger(dest: string, projectName: string, pkgManager: string) {
   console.log(
     chalk.green('Created a new Farm app in ') +
       chalk.bold(dest) +
@@ -51,7 +73,7 @@ function logger(dest: string, projectName: string) {
   );
   console.log(
     `Run ${chalk.cyan.bold(
-      `cd ${projectName} && npm i && npm start`
+      `cd ${projectName} && ${pkgManager} i && ${pkgManager} start`
     )} to get started.`
   );
 }
