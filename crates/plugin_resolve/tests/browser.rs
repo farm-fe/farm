@@ -63,7 +63,7 @@ fn resolve_browser_replace() {
           .to_string()
       );
 
-      normal resolve
+      // normal resolve
       let resolved = resolver.resolve("./module-a.js", cwd.join("shims"), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
