@@ -49,6 +49,7 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
+
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       if !self.is_source_absolute(source)
@@ -62,6 +63,7 @@ impl Resolver {
           ..Default::default()
         });
       }
+
       // TODO exports source not absolute && not relative
       // check browser replace
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
@@ -106,6 +108,7 @@ impl Resolver {
           "File `{:?}` does not exist",
           normalized_path
         )));
+
       if let Some(resolved_path) = resolved_path.ok() {
         return Some(self.get_resolve_result(&package_json_info, resolved_path));
       } else {
@@ -195,6 +198,7 @@ impl Resolver {
   ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
+
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
@@ -204,6 +208,7 @@ impl Resolver {
         } else {
           RelativePath::new(source).to_logical_path(maybe_node_modules_path)
         };
+
         let package_json_info = load_package_json(
           package_path.clone(),
           Options {
@@ -211,6 +216,7 @@ impl Resolver {
             resolve_ancestor_dir: false, // only look for current directory
           },
         );
+
         if !package_path.join("package.json").exists() {
           if let Some(resolved_path) = self
             .try_file(&package_path)
@@ -235,6 +241,7 @@ impl Resolver {
               if let Value::String(str) = field_value {
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
+
                 return self.try_file(&full_path).map(|resolved_path| {
                   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 });
