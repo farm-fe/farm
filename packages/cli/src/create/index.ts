@@ -72,8 +72,8 @@ function logger(dest: string, projectName: string, pkgManager: string) {
       chalk.green('.')
   );
   console.log(
-    `Run ${chalk.cyan.bold(
-      `cd ${projectName} && ${pkgManager} i && ${pkgManager} start`
-    )} to get started.`
+    `Run  \n ${chalk.cyan.bold(
+      `cd ${projectName} \n ${pkgManager} install \n ${pkgManager} start`
+    )} \n to get started.`
   );
 }
