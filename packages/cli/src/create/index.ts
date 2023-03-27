@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { copyFiles, TEMPLATES_DIR, getPkgManager } from '../utils.js';
+import { copyFiles, TEMPLATES_DIR } from '../utils.js';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
