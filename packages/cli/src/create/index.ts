@@ -12,8 +12,8 @@ const NPM = 'npm';
 const PNPM = 'pnpm';
 const YARN = 'yarn';
 
-export async function create(defaultprojectName: string): Promise<void> {
-  let projectName = defaultprojectName;
+export async function create(defaultProjectName: string): Promise<void> {
+  let projectName = defaultProjectName;
   if (!projectName) {
     await inquirer
       .prompt({
