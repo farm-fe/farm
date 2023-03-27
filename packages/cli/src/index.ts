@@ -30,8 +30,8 @@ cli
     });
   });
 
-cli.command('create', 'Create a new project').action(() => {
-  create();
+cli.command('create [name]', 'Create a new project').action((name: string) => {
+  create(name);
 });
 
 cli.command('').action(() => {

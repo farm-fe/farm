@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { copyFiles, TEMPLATES_DIR } from '../utils.js';
+import fs from 'node:fs';
+import { copyFiles, install, TEMPLATES_DIR } from '../utils.js';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
@@ -11,14 +12,52 @@ const NPM = 'npm';
 const PNPM = 'pnpm';
 const YARN = 'yarn';
 
-export async function create(): Promise<void> {
-  const { name: projectName } = await inquirer.prompt({
-    type: 'input',
-    name: 'name',
-    message: 'please input project name',
-    default: 'my-farm-project',
-  });
-
+export async function create(defaultprojectName: string): Promise<void> {
+  let projectName = defaultprojectName;
+  if (!projectName) {
+    await inquirer
+      .prompt({
+        type: 'input',
+        name: 'name',
+        message: 'please input project name',
+        default: 'my-farm-project',
+      })
+      .then(async (answer) => {
+        projectName = answer.name;
+      });
+  }
+  let root = path.resolve(process.cwd(), projectName);
+  while (fs.existsSync(root)) {
+    console.log(
+      chalk.redBright.bold(
+        `${projectName} is not empty, please choose another project name`
+      )
+    );
+    await inquirer
+      .prompt({
+        type: 'input',
+        name: 'name',
+        message: 'please input project name',
+        default: 'my-farm-project',
+      })
+      .then(async (answer) => {
+        projectName = answer.name;
+        root = path.resolve(process.cwd(), projectName);
+      });
+  }
+  //   while(fs.existsSync(root)) {
+  //
+  //     inquirer.prompt({
+  //     type: 'input',
+  //     name: 'name',
+  //     message: 'please input project name',
+  //     default: 'my-farm-project',
+  //   }).then((answer) => {
+  //       projectName = answer.name;
+  //       root = path.resolve(process.cwd(), projectName);
+  //   });
+  // }
+  // });
   const { framework } = await inquirer.prompt({
     type: 'list',
     name: 'framework',
@@ -56,9 +95,17 @@ export async function create(): Promise<void> {
   const dest = path.join(process.cwd(), projectName);
   if (framework === REACT) {
     copyFiles(TEMPLATE_REACT, dest);
+    await install({
+      cwd: root,
+      package: pkgManager,
+    });
     logger(dest, projectName, pkgManager);
   } else if (framework === VUE) {
     copyFiles(TEMPLATE_VUE, dest);
+    await install({
+      cwd: root,
+      package: pkgManager,
+    });
     logger(dest, projectName, pkgManager);
   } else {
     throw new Error(`Please choose legal template!`);
@@ -73,7 +120,7 @@ function logger(dest: string, projectName: string, pkgManager: string) {
   );
   console.log(
     `Run  \n ${chalk.cyan.bold(
-      `cd ${projectName} \n ${pkgManager} install \n ${pkgManager} start`
+      `cd ${projectName} \n${pkgManager} start`
     )} \n to get started.`
   );
 }
