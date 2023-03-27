@@ -1,4 +1,4 @@
-import { SFCDescriptor } from '@vue/compiler-sfc';
+import { SFCDescriptor } from "@vue/compiler-sfc";
 
 export interface outputData {
   id: string;
@@ -18,7 +18,7 @@ export declare namespace Less {
     rewriteUrls?: boolean | undefined;
     filename: string;
     relativeUrls: boolean;
-    rootPath: string;
+    rootpath: string;
     currentDirectory: string;
     entryPath: string;
     rootFilename: string;
@@ -121,7 +121,7 @@ export declare namespace Less {
   interface SourceMapOption {
     sourceMapURL?: string | undefined;
     sourceMapBasepath?: string | undefined;
-    sourceMapRootPath?: string | undefined;
+    sourceMapRootpath?: string | undefined;
     outputSourceFiles?: boolean | undefined;
     sourceMapFileInline?: boolean | undefined;
   }
@@ -160,16 +160,16 @@ export declare namespace Less {
     /** @deprecated If true, enable evaluation of JavaScript inline in `.less` files. */
     javascriptEnabled?: boolean | undefined;
     /** Whether output file information and line numbers in compiled CSS code. */
-    dumpLineNumbers?: 'comment' | string | undefined;
+    dumpLineNumbers?: "comment" | string | undefined;
     /** Add a path to every generated import and url in output css files. */
-    rootPath?: string | undefined;
-    /** Math mode options for avoiding symbol conflicts on math expressions. */
+    rootpath?: string | undefined;
+    /** Math mode options for avoiding symbol conficts on math expressions. */
     math?:
-      | 'always'
-      | 'strict'
-      | 'parens-division'
-      | 'parens'
-      | 'strict-legacy'
+      | "always"
+      | "strict"
+      | "parens-division"
+      | "parens"
+      | "strict-legacy"
       | number
       | undefined;
     /** If true, stops any warnings from being shown. */

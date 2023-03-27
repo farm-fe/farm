@@ -9,11 +9,20 @@ import {
   BindingMetadata,
   rewriteDefault,
   SFCStyleBlock,
-  SFCTemplateCompileResults,
 } from "@vue/compiler-sfc";
-import { error, warn, getHash, parsePath } from "./utils.js";
-import { QueryObj, StylesCodeCache } from "./farm-vue-types.js";
-import { cacheScript } from "./farm-vue-hmr.js";
+import { error, warn, getHash, parsePath } from "./utils";
+import { QueryObj, StylesCodeCache } from "./farm-vue-types";
+import { cacheScript } from "./farm-vue-hmr";
+import {
+  fromMap,
+  toEncodedMap,
+  addMapping,
+  EncodedSourceMap,
+} from "@jridgewell/gen-mapping";
+import { eachMapping, TraceMap } from "@jridgewell/trace-mapping";
+import { RawSourceMap } from "source-map";
+
+type SourceMap = Omit<RawSourceMap, "version"> & { version: 3 };
 
 const assignFilenameCode = genFileNameCode("App.vue");
 const assignRenderCode = `_sfc_main.render = typeof render === "function" ? render : undefined`;
@@ -40,7 +49,7 @@ export function genTemplateCode(
   bindings: BindingMetadata,
   hasScoped: boolean,
   hash: string
-): { code: string; map?: any } & Partial<SFCTemplateCompileResults> {
+) {
   if (template) {
     const result = compileTemplate({
       source: template.content,
@@ -73,17 +82,16 @@ export function genTemplateCode(
       code: code.replace(/\nexport (function|const)/, "\n$1"),
     };
   }
-  
-  throw new Error("template is null");
+  return {
+    code: "",
+    map: {} as RawSourceMap,
+  };
 }
 
-export function genScriptCode(descriptor: SFCDescriptor, filename: string): {
-  moduleType: string;
-  code: string;
-} & Partial<SFCScriptBlock> {
+export function genScriptCode(descriptor: SFCDescriptor, filename: string) {
   let moduleType = "js";
   let code = "";
-  let result: Partial<SFCScriptBlock> = {};
+  let result: SFCScriptBlock | object = {};
   const script = descriptor.script || descriptor.scriptSetup;
   // if script exist,add transformed code
   if (script) {
@@ -259,6 +267,15 @@ export function genMainCode(
     hasScoped,
     hash
   );
+  let resolvedMap: EncodedSourceMap | string = "";
+  if (templateMap && scriptMap) {
+    resolvedMap = genSourceMap(
+      scriptMap as unknown as SourceMap,
+      templateMap as unknown as SourceMap,
+      templateCode
+    );
+  }
+
   const stylesCode = genStylesCode(
     descriptor,
     stylesCodeCache,
@@ -271,12 +288,45 @@ export function genMainCode(
   );
   const otherCode = genOtherCode(hasScoped, hash, isHmr, rerenderOnly);
 
-  output.push(templateCode, scriptCode, stylesCode, otherCode);
+  output.push(scriptCode, templateCode, stylesCode, otherCode);
   return {
     source: output.join("\r\n"),
     moduleType,
-    map: "",
+    map:
+      typeof resolvedMap === "string"
+        ? resolvedMap
+        : JSON.stringify(resolvedMap),
   };
+}
+
+function genSourceMap(
+  scriptMap: SourceMap,
+  templateMap: SourceMap,
+  scriptCode: string
+) {
+  //gen sourceMap
+  let resolvedMap: EncodedSourceMap | undefined = void 0;
+  if (scriptMap && templateMap) {
+    const gen = fromMap(scriptMap);
+    const tracer = new TraceMap(templateMap);
+    const offset = (scriptCode.match(/\r?\n/g)?.length ?? 0) + 1;
+    eachMapping(tracer, (m) => {
+      if (m.source == null) return;
+      addMapping(gen, {
+        source: m.source,
+        original: { line: m.originalLine, column: m.originalColumn },
+        generated: {
+          line: m.generatedLine + offset,
+          column: m.generatedColumn,
+        },
+      });
+    });
+    resolvedMap = toEncodedMap(gen);
+    resolvedMap.sourcesContent = templateMap.sourcesContent;
+  } else {
+    resolvedMap = scriptMap ?? templateMap;
+  }
+  return resolvedMap;
 }
 
 export function genFileNameCode(resolvedPath: string) {
