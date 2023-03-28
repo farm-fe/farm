@@ -1,3 +1,4 @@
-import { runTaskQueue } from './build.mjs';
+import { runTaskQueue, resolveNodeVersion } from './build.mjs';
 
+resolveNodeVersion();
 await runTaskQueue();
