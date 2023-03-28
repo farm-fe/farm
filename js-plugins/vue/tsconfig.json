@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "outDir": "dist"
+    "outDir": "dist",
+    "moduleResolution":"node"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
