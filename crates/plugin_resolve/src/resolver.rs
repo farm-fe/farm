@@ -67,9 +67,7 @@ impl Resolver {
       // TODO exports source not absolute && not relative
       // check browser replace
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
-        if let Some(resolved_path) =
-          self.try_main_fields_replace(package_json_info, source, "browser")
-        {
+        if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
 
@@ -261,7 +259,17 @@ impl Resolver {
                           self.get_resolve_result(&Ok(package_json_info), resolved_path)
                         });
                       }
-                      None => {}
+                      _ => {}
+                    }
+                    // TODO mjs type
+                    match exports_field_map.get("import") {
+                      Some(value) => {}
+                      _ => {}
+                    }
+                    // TODO cjs type
+                    match exports_field_map.get("require") {
+                      Some(value) => {}
+                      _ => {}
                     }
                   }
                 }
@@ -288,11 +296,11 @@ impl Resolver {
       let side_effects = self.is_module_side_effects(&package_json_info, &resolved_path);
 
       let resolved_path = self
-        .try_main_fields_replace(package_json_info, &resolved_path, "browser")
+        .try_browser_replace(package_json_info, &resolved_path)
         .unwrap_or(resolved_path);
 
       let resolved_path = self
-        .try_main_fields_replace(package_json_info, &resolved_path, "exports")
+        .try_exports_replace(package_json_info, &resolved_path)
         .unwrap_or(resolved_path);
 
       return PluginResolveHookResult {
@@ -381,13 +389,12 @@ impl Resolver {
     }
   }
 
-  fn try_main_fields_replace(
+  fn try_browser_replace(
     &self,
     package_json_info: &PackageJsonInfo,
     resolved_path: &str,
-    field: &str,
   ) -> Option<String> {
-    let resolve_field = self.get_field_value_from_package_json_info(package_json_info, &field);
+    let resolve_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
 
     if let Some(resolve_field) = resolve_field {
       if let Value::Object(obj) = resolve_field {
@@ -419,6 +426,56 @@ impl Resolver {
                   .to_string_lossy()
                   .to_string();
                 return Some(value_path);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    None
+  }
+
+  fn try_exports_replace(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    resolved_path: &str,
+  ) -> Option<String> {
+    let resolve_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
+
+    if let Some(resolve_field) = resolve_field {
+      if let Value::Object(resolve_field_map) = resolve_field {
+        for (key, value) in resolve_field_map {
+          let path = Path::new(resolved_path);
+          if let Value::Object(value) = value {
+            // TODO support value for object {import : "", require: ""}
+          } else {
+            // resolved path
+            if path.is_absolute() {
+              let key_path = RelativePath::new(&key)
+                .to_logical_path(package_json_info.dir())
+                .to_string_lossy()
+                .to_string();
+
+              if &key_path == resolved_path {
+                if let Value::String(str) = value {
+                  let value_path = RelativePath::new(&str)
+                    .to_logical_path(package_json_info.dir())
+                    .to_string_lossy()
+                    .to_string();
+                  return Some(value_path);
+                }
+              }
+            } else {
+              // source, e.g. 'foo' in require('foo')
+              if &key == resolved_path {
+                if let Value::String(str) = value {
+                  let value_path = RelativePath::new(&str)
+                    .to_logical_path(package_json_info.dir())
+                    .to_string_lossy()
+                    .to_string();
+                  return Some(value_path);
+                }
               }
             }
           }

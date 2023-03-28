@@ -38,7 +38,6 @@ fn resolve_exports_replace() {
       let resolved = resolver.resolve("./submodule.js", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
-      println!("resolved {}", resolved.resolved_path);
       assert_eq!(
         resolved.resolved_path,
         cwd
