@@ -30,11 +30,10 @@ fn resolve_exports_basic() {
 #[test]
 fn resolve_exports_replace() {
   fixture!(
-    "tests/fixtures/resolve-node-modules/exports/node_modules/basic/package.json",
+    "tests/fixtures/resolve-node-modules/exports/node_modules/replace/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
-      // Parsing packages in node_modules
       let resolved = resolver.resolve(".", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -46,7 +45,21 @@ fn resolve_exports_replace() {
           .to_string_lossy()
           .to_string()
       );
+
+      let resolved = resolver.resolve("./submodule.js", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("lib")
+          .join("submodule.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
 
+#[test]
+fn resolve_exports_import_require() {}
