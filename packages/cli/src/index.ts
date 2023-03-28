@@ -30,8 +30,8 @@ cli
     });
   });
 
-cli.command('create', 'Create a new project').action(() => {
-  create();
+cli.command('create [name]', 'Create a new project').action((name: string) => {
+  create(name);
 });
 
 cli.command('').action(() => {
@@ -45,7 +45,7 @@ const pluginCmd = cli.command(
     allowUnknownOptions: true,
   }
 );
-pluginCmd.action((command: keyof typeof COMMANDS, args: any) => {
+pluginCmd.action((command: keyof typeof COMMANDS, args: unknown) => {
   COMMANDS[command](args);
 });
 
