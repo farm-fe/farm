@@ -201,7 +201,7 @@ impl Resolver {
     &self,
     source: &str,
     base_dir: PathBuf,
-    kind: &ResolveKind,
+    _kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
@@ -431,7 +431,7 @@ impl Resolver {
               .to_logical_path(package_json_info.dir())
               .to_string_lossy()
               .to_string();
-            if let Value::Object(obj) = value {
+            if let Value::Object(_obj) = value {
               // TODO support import require
             } else {
               if &key_path == resolved_path {
@@ -445,7 +445,7 @@ impl Resolver {
               }
             }
           } else {
-            if let Value::Object(obj) = value {
+            if let Value::Object(_obj) = value {
               // TODO support import require
             } else {
               // source, e.g. 'foo' in require('foo')
