@@ -84,3 +84,11 @@ export async function install(options: installProps): Promise<void> {
     child.once('error', reject);
   });
 }
+/**
+ * 用于规范化目标路径
+ * @param {string |undefined} targetDir
+ * @returns
+ */
+export function formatTargetDir(targetDir: string | undefined) {
+  return targetDir?.trim().replace(/\/+$/g, '');
+}

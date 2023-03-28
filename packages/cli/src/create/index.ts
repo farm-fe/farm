@@ -1,6 +1,11 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { copyFiles, install, TEMPLATES_DIR } from '../utils.js';
+import {
+  copyFiles,
+  formatTargetDir,
+  install,
+  TEMPLATES_DIR,
+} from '../utils.js';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
@@ -13,7 +18,7 @@ const PNPM = 'pnpm';
 const YARN = 'yarn';
 
 export async function create(defaultProjectName: string): Promise<void> {
-  let projectName = defaultProjectName;
+  let projectName = formatTargetDir(defaultProjectName);
   if (!projectName) {
     await inquirer
       .prompt({
@@ -23,7 +28,7 @@ export async function create(defaultProjectName: string): Promise<void> {
         default: 'my-farm-project',
       })
       .then(async (answer) => {
-        projectName = answer.name;
+        projectName = formatTargetDir(answer.name);
       });
   }
   let root = path.resolve(process.cwd(), projectName);
