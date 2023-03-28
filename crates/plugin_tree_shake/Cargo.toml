@@ -8,3 +8,5 @@ license = "MIT"
 
 [dependencies]
 farmfe_core = { path = "../core" }
+farmfe_testing_helpers = { path = "../testing_helpers" }
+farmfe_toolkit = { path = "../toolkit" }
