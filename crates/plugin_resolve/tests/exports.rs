@@ -62,4 +62,6 @@ fn resolve_exports_replace() {
 }
 
 #[test]
-fn resolve_exports_import_require() {}
+fn resolve_exports_import_require() {
+  // TODO - this should be value with object type
+}
