@@ -1,32 +1,32 @@
-import fs from "fs";
-import { parse } from "@vue/compiler-sfc";
-import { JsPlugin } from "@farmfe/core";
-import { handleHmr } from "./farm-vue-hmr";
-import { StylesCodeCache, CacheDescriptor, LessStatic } from "./farm-vue-types";
-import { genMainCode } from "./generatorCode";
-import { callWithErrorHandle, error } from "./utils";
+import fs from 'fs';
+import { parse } from '@vue/compiler-sfc';
+import { JsPlugin } from '@farmfe/core';
+import { handleHmr } from './farm-vue-hmr';
+import { StylesCodeCache, CacheDescriptor, LessStatic } from './farm-vue-types';
+import { genMainCode } from './generatorCode';
+import { callWithErrorHandle, error } from './utils';
 
 //apply style langs
-type ApplyStyleLangs = ["less"];
+type ApplyStyleLangs = ['less'];
 
 const stylesCodeCache: StylesCodeCache = {};
-const applyStyleLangs = ["less"];
+const applyStyleLangs = ['less'];
 const cacheDescriptor: CacheDescriptor = {};
 
 export default function farmVuePlugin(options: object = {}): JsPlugin {
   //options hooks to get farmConfig
   let farmConfig = null;
   return {
-    name: "farm-vue-plugin",
+    name: 'farm-vue-plugin',
     load: {
       filters: {
-        resolvedPaths: [".vue$"],
+        resolvedPaths: ['.vue$'],
       },
       async executor(params, ctx) {
         const { resolvedPath } = params;
-        let source = "";
+        let source = '';
         try {
-          source = await fs.promises.readFile(resolvedPath, "utf-8");
+          source = await fs.promises.readFile(resolvedPath, 'utf-8');
         } catch (err) {
           error({
             id: resolvedPath,
@@ -35,14 +35,14 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
         }
         return {
           content: source,
-          moduleType: "ts",
+          moduleType: 'ts',
         };
       },
     },
     // add hmr code In root file
     transform: {
       filters: {
-        resolvedPaths: [".vue$"],
+        resolvedPaths: ['.vue$'],
       },
       async executor(params, ctx) {
         const query: Record<string, string> = {};
@@ -52,7 +52,7 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
         const { vue, lang, hash } = query;
         const { resolvedPath, content: source } = params;
         //handle .vue file
-        if (vue === "true" && hash) {
+        if (vue === 'true' && hash) {
           let styleCode = stylesCodeCache[hash];
           //if lang is not "css",use preProcessor to handle
           if (applyStyleLangs.includes(lang)) {
@@ -60,8 +60,8 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
             styleCode = css;
           }
           return {
-            content: typeof styleCode === "string" ? styleCode : "",
-            moduleType: "css",
+            content: typeof styleCode === 'string' ? styleCode : '',
+            moduleType: 'css',
           };
         }
 
@@ -106,8 +106,8 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
           );
           return {
             content:
-              "console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)",
-            moduleType: "js",
+              'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
+            moduleType: 'js',
           };
         }
         return {
@@ -120,10 +120,10 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
 }
 
 async function preProcession(styleCode: string, moduleType: string) {
-  const __default = { css: styleCode, map: "" };
+  const __default = { css: styleCode, map: '' };
   try {
     switch (moduleType) {
-      case "less":
+      case 'less':
         let lessProcessor = (await import(moduleType)) || {};
         if (lessProcessor.default) {
           lessProcessor = lessProcessor.default;
@@ -133,7 +133,7 @@ async function preProcession(styleCode: string, moduleType: string) {
         return __default;
     }
   } catch (err) {
-    error({ id: "less", message: err });
+    error({ id: 'less', message: err });
   }
   return __default;
 }
