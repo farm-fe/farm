@@ -35,14 +35,14 @@ fn resolve_exports_replace() {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
       // Parsing packages in node_modules
-      let resolved = resolver.resolve("./submodule.js", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(".", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
         resolved.resolved_path,
         cwd
           .join("lib")
-          .join("submodule.js")
+          .join("basic-exports.js")
           .to_string_lossy()
           .to_string()
       );

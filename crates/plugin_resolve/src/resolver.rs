@@ -67,7 +67,20 @@ impl Resolver {
       // TODO exports source not absolute && not relative
       // check browser replace
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
+        println!("不是绝对路径，也不是相对路径 {}", source);
         if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
+          let external = self.is_module_external(package_json_info, &resolved_path);
+          let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
+
+          return Some(PluginResolveHookResult {
+            resolved_path,
+            external,
+            side_effects,
+            ..Default::default()
+          });
+        }
+
+        if let Some(resolved_path) = self.try_exports_replace(package_json_info, source) {
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
 
@@ -233,7 +246,6 @@ impl Resolver {
           // search normal entry, based on self.config.main_fields, e.g. module/main
           let raw_package_json_info: Map<String, Value> =
             from_str(package_json_info.raw()).unwrap();
-
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               if let Value::String(str) = field_value {
@@ -243,37 +255,40 @@ impl Resolver {
                 return self.try_file(&full_path).map(|resolved_path| {
                   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 });
-              } else {
-                let exports_field =
-                  self.get_field_value_from_package_json_info(&package_json_info, "exports");
-
-                if let Some(exports_field) = exports_field {
-                  if let Value::Object(exports_field_map) = exports_field {
-                    match exports_field_map.get(".") {
-                      Some(value) => {
-                        // TODO value as Object type
-                        let dir = package_json_info.dir();
-                        let value_str = value.as_str().to_owned().unwrap();
-                        let full_path = RelativePath::new(value_str).to_logical_path(dir);
-                        return self.try_file(&full_path).map(|resolved_path| {
-                          self.get_resolve_result(&Ok(package_json_info), resolved_path)
-                        });
-                      }
-                      _ => {}
-                    }
-                    // TODO mjs type
-                    match exports_field_map.get("import") {
-                      Some(value) => {}
-                      _ => {}
-                    }
-                    // TODO cjs type
-                    match exports_field_map.get("require") {
-                      Some(value) => {}
-                      _ => {}
-                    }
-                  }
-                }
               }
+              // Judged as object type
+              // if let Value::Object(object_map) = field_value {
+              //   println!("object_map {:#?}", object_map);
+              //   let exports_field =
+              //     self.get_field_value_from_package_json_info(&package_json_info, "exports");
+
+              //   if let Some(exports_field) = exports_field {
+              //     if let Value::Object(exports_field_map) = exports_field {
+              //       match exports_field_map.get(".") {
+              //         Some(value) => {
+              //           // TODO value as Object type
+              //           let dir = package_json_info.dir();
+              //           let value_str = value.as_str().to_owned().unwrap();
+              //           let full_path = RelativePath::new(value_str).to_logical_path(dir);
+              //           return self.try_file(&full_path).map(|resolved_path| {
+              //             self.get_resolve_result(&Ok(package_json_info), resolved_path)
+              //           });
+              //         }
+              //         _ => {}
+              //       }
+              //       // TODO mjs type
+              //       match exports_field_map.get("import") {
+              //         Some(value) => {}
+              //         _ => {}
+              //       }
+              //       // TODO cjs type
+              //       match exports_field_map.get("require") {
+              //         Some(value) => {}
+              //         _ => {}
+              //       }
+              //     }
+              //   }
+              // }
             }
           }
         }
@@ -442,9 +457,10 @@ impl Resolver {
     resolved_path: &str,
   ) -> Option<String> {
     let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
-
+    println!("exports_field {:#?}", exports_field);
     if let Some(exports_field) = exports_field {
       if let Value::Object(exports_field_map) = exports_field {
+        println!("exports_field_map {:#?}", exports_field_map);
         for (key, value) in exports_field_map {
           let path = Path::new(resolved_path);
           if let Value::Object(value) = value {
