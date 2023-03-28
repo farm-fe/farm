@@ -394,10 +394,10 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     resolved_path: &str,
   ) -> Option<String> {
-    let resolve_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
+    let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
 
-    if let Some(resolve_field) = resolve_field {
-      if let Value::Object(obj) = resolve_field {
+    if let Some(browser_field) = browser_field {
+      if let Value::Object(obj) = browser_field {
         for (key, value) in obj {
           let path = Path::new(resolved_path);
 
@@ -441,11 +441,11 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     resolved_path: &str,
   ) -> Option<String> {
-    let resolve_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
+    let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
 
-    if let Some(resolve_field) = resolve_field {
-      if let Value::Object(resolve_field_map) = resolve_field {
-        for (key, value) in resolve_field_map {
+    if let Some(exports_field) = exports_field {
+      if let Value::Object(exports_field_map) = exports_field {
+        for (key, value) in exports_field_map {
           let path = Path::new(resolved_path);
           if let Value::Object(value) = value {
             // TODO support value for object {import : "", require: ""}
