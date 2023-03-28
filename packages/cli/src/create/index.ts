@@ -50,19 +50,6 @@ export async function create(defaultProjectName: string): Promise<void> {
         root = path.resolve(process.cwd(), projectName);
       });
   }
-  //   while(fs.existsSync(root)) {
-  //
-  //     inquirer.prompt({
-  //     type: 'input',
-  //     name: 'name',
-  //     message: 'please input project name',
-  //     default: 'my-farm-project',
-  //   }).then((answer) => {
-  //       projectName = answer.name;
-  //       root = path.resolve(process.cwd(), projectName);
-  //   });
-  // }
-  // });
   const { framework } = await inquirer.prompt({
     type: 'list',
     name: 'framework',
