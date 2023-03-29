@@ -1,0 +1,17 @@
+{
+  "name": "@farmfe-examples/vue",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "vue": "^3.2.45"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "*",
+    "@farmfe/core": "*",
+    "@farmfe/js-plugin-vue": "*"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build":"farm build"
+  }
+}

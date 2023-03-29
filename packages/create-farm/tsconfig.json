@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "declaration": false,
+    "moduleResolution": "node",
+    "target": "ES2021",
+    "module": "ES2022"
+  },
+  "exclude": ["node_modules"],
+  "include": ["index.ts", "utils/**/*"],
+  "references": [
+    {
+      "path": "../core/tsconfig.build.json"
+    }
+  ]
+}

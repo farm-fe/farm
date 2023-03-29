@@ -58,6 +58,7 @@
     "topo",
     "toposort",
     "tsfn",
+    "tsup",
     "Turbopack",
     "unref",
     "unsize",
