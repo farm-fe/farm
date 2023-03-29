@@ -3,9 +3,14 @@
   "compilerOptions": {
     "outDir": "dist",
     "declaration": false,
-    "moduleResolution": "node",
-    "target": "ES2021",
-    "module": "ES2022"
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "Node",
+    "strict": true,
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "noUnusedLocals": true,
+    "esModuleInterop": true
   },
   "exclude": ["node_modules"],
   "include": ["index.ts", "utils/**/*"],

@@ -49,13 +49,29 @@ async function createFarm() {
           ` is not empty. Remove existing files and continue?`,
       },
       {
-        type: (_, { overwrite }: { overwrite?: boolean }) => {
+        type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
           if (overwrite === false) {
             throw new Error(chalk.red('❌') + ' Operation cancelled');
           }
           return null;
         },
         name: 'overwriteChecker',
+      },
+      {
+        type: framework && TEMPLATES.includes(framework) ? null : 'select',
+        name: 'framework',
+        message:
+          typeof framework === 'string' && !TEMPLATES.includes(framework)
+            ? `"${framework}" isn't a valid template. Please choose from below: `
+            : 'Select a framework:',
+        initial: 0,
+        choices: [
+          { title: chalk.magenta('Vue'), value: 'vue' },
+          {
+            title: chalk.blue('React'),
+            value: 'react',
+          },
+        ],
       },
     ]);
   } catch (cancelled: any) {
