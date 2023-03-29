@@ -11,7 +11,7 @@ use analyze_imports_and_exports::analyze_imports_and_exports;
 
 pub type StatementId = usize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImportSpecifierInfo {
   Namespace(Ident),
   Named {
@@ -44,20 +44,21 @@ pub struct ExportInfo {
 
 pub struct Statement {
   pub id: StatementId,
-  pub imports: Option<ImportInfo>,
-  pub exports: Option<ExportInfo>,
+  pub import_info: Option<ImportInfo>,
+  pub export_info: Option<ExportInfo>,
   pub defined_idents: Vec<Ident>,
   pub used_idents: Vec<Ident>,
 }
 
 impl Statement {
   pub fn new(id: StatementId, stmt: &ModuleItem) -> Self {
-    let (imports, exports, defined_idents, used_idents) = analyze_imports_and_exports(&id, stmt);
+    let (import_info, export_info, defined_idents, used_idents) =
+      analyze_imports_and_exports(&id, stmt);
 
     Self {
       id,
-      imports,
-      exports,
+      import_info,
+      export_info,
       defined_idents,
       used_idents,
     }

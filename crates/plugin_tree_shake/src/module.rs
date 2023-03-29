@@ -63,7 +63,7 @@ impl TreeShakeModule {
     let mut imports = vec![];
 
     for stmt in self.stmt_graph.stmts() {
-      if let Some(import) = &stmt.imports {
+      if let Some(import) = &stmt.import_info {
         imports.push(import.clone());
       }
     }
