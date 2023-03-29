@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: npm install -g pnpm && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
       - run: rustup target add aarch64-apple-darwin
       - run: wget --quiet https://ziglang.org/download/0.9.1/zig-linux-x86_64-0.9.1.tar.xz
       - run: tar -xf zig-linux-x86_64-0.9.1.tar.xz
@@ -51,7 +51,7 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: npm install -g pnpm && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
 
       - name: Build - ${{ matrix.settings.abi }}
         run: cd packages/core && npm run build:rs

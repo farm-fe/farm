@@ -96,7 +96,7 @@ jobs:
         run: ls -l ./rust-plugins/react/npm/darwin-arm64
 
       - name: Install Dependencies
-        run: npm install -g pnpm && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
