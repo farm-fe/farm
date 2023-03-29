@@ -1,10 +1,14 @@
 import fs from 'fs';
 import { parse } from '@vue/compiler-sfc';
 import { JsPlugin } from '@farmfe/core';
-import { handleHmr } from './farm-vue-hmr';
-import { StylesCodeCache, CacheDescriptor, LessStatic } from './farm-vue-types';
-import { genMainCode } from './generatorCode';
-import { callWithErrorHandle, error } from './utils';
+import { handleHmr } from './farm-vue-hmr.js';
+import {
+  StylesCodeCache,
+  CacheDescriptor,
+  LessStatic,
+} from './farm-vue-types.js';
+import { genMainCode } from './generatorCode.js';
+import { callWithErrorHandle, error } from './utils.js';
 
 //apply style langs
 type ApplyStyleLangs = ['less'];

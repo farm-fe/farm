@@ -4,8 +4,12 @@ import {
   SFCTemplateBlock,
   SFCStyleBlock,
 } from '@vue/compiler-sfc';
-import { CacheDescriptor, QueryObj, StylesCodeCache } from './farm-vue-types';
-import { genMainCode } from './generatorCode';
+import {
+  CacheDescriptor,
+  QueryObj,
+  StylesCodeCache,
+} from './farm-vue-types.js';
+import { genMainCode } from './generatorCode.js';
 
 export const cacheScript = new WeakMap();
 

@@ -10,9 +10,9 @@ import {
   rewriteDefault,
   SFCStyleBlock,
 } from '@vue/compiler-sfc';
-import { error, warn, getHash, parsePath } from './utils';
-import { QueryObj, StylesCodeCache } from './farm-vue-types';
-import { cacheScript } from './farm-vue-hmr';
+import { error, warn, getHash, parsePath } from './utils.js';
+import { QueryObj, StylesCodeCache } from './farm-vue-types.js';
+import { cacheScript } from './farm-vue-hmr.js';
 import {
   fromMap,
   toEncodedMap,
