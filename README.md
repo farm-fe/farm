@@ -72,7 +72,9 @@ npx @farmfe/cli@latest create
 Start the project:
 
 ```sh
-cd my-farm-project && npm(the pkg you choose) start
+cd my-farm-project
+# Here you can use your package manager of choice instead of npm
+npm start
 ```
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.

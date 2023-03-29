@@ -66,7 +66,9 @@ npx @farmfe/cli@latest create
 启动项目:
 
 ```sh
-cd farm-react && npm i && npm start
+cd farm-react
+# 这里可以使用你所选的包管理器来代替npm
+npm start
 ```
 
 请参考[文档](https://farm-fe.github.io)以了解有关 Farm 的更多信息。
