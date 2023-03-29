@@ -1,7 +1,5 @@
 import { execa } from 'execa';
-
 import { createSpinner } from 'nanospinner';
-
 import { resolve } from 'path';
 
 const DEFAULT_PACKAGE_MANAGER = 'pnpm';
@@ -31,18 +29,30 @@ export const copyArtifacts = () => {
 };
 
 export async function runTask(taskName, task) {
-  const s = createSpinner(`${taskName}`).start();
+  const spinner = createSpinner(`Building ${taskName}`).start();
   try {
     await task();
-    s.success({ text: `${taskName} completed!` });
+    spinner.success({ text: `Build ${taskName} completed!` });
   } catch (e) {
-    s.error({ text: `${taskName} failed!` });
+    spinner.error({ text: `Build ${taskName} failed!` });
     console.error(e.toString());
   }
 }
 
 export async function runTaskQueue() {
-  await runTask('Build core', buildCore);
-  await runTask('Build plugins', buildPlugins);
-  await runTask('Copy Artifacts', copyArtifacts);
+  await runTask('Core', buildCore);
+  await runTask('Plugins', buildPlugins);
+  await runTask('Artifacts', copyArtifacts);
+}
+
+export function resolveNodeVersion() {
+  const currentVersion = process.versions.node;
+  const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
+  const minimumMajorVersion = 16;
+
+  if (requiredMajorVersion < minimumMajorVersion) {
+    console.error(`Farm does not support using Node.js v${currentVersion}!`);
+    console.error(`Please use Node.js v${minimumMajorVersion} or higher.`);
+    process.exit(1);
+  }
 }

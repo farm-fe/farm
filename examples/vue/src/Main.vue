@@ -1,6 +1,8 @@
 <template>
-    <Title></Title>
-    <Description></Description>
+    <div>
+        <Title></Title>
+        <Description></Description>
+    </div>
 </template>
 
 
