@@ -258,3 +258,5 @@ export interface LessStatic {
   FileManager: typeof Less.FileManager;
   PluginManager: typeof Less.PluginManager;
 }
+
+export type Union<A, B> = A & B;

@@ -9,9 +9,10 @@ import {
   BindingMetadata,
   rewriteDefault,
   SFCStyleBlock,
+  SFCTemplateCompileResults,
 } from '@vue/compiler-sfc';
 import { error, warn, getHash, parsePath } from './utils.js';
-import { QueryObj, StylesCodeCache } from './farm-vue-types.js';
+import { QueryObj, StylesCodeCache, Union } from './farm-vue-types.js';
 import { cacheScript } from './farm-vue-hmr.js';
 import {
   fromMap,
@@ -49,7 +50,9 @@ export function genTemplateCode(
   bindings: BindingMetadata,
   hasScoped: boolean,
   hash: string
-) {
+):
+  | Union<SFCTemplateCompileResults, { code: string }>
+  | { code: string; map: RawSourceMap } {
   if (template) {
     const result = compileTemplate({
       source: template.content,
@@ -88,10 +91,13 @@ export function genTemplateCode(
   };
 }
 
-export function genScriptCode(descriptor: SFCDescriptor, filename: string) {
+export function genScriptCode(
+  descriptor: SFCDescriptor,
+  filename: string
+): Union<SFCScriptBlock, { code: string; moduleType: string }> {
   let moduleType = 'js';
   let code = '';
-  let result: SFCScriptBlock | object = {};
+  let result: SFCScriptBlock = {} as SFCScriptBlock;
   const script = descriptor.script || descriptor.scriptSetup;
   // if script exist,add transformed code
   if (script) {
