@@ -63,12 +63,18 @@ npx @farmfe/cli@latest create
 ? please choose a framework (Use arrow keys)
 ❯ 1) React 
   2) Vue
+  ? please choose your package Manager (Use arrow keys)
+❯ 1) npm 
+  2) pnpm
+  3) yarn
 ```
 
 Start the project:
 
 ```sh
-cd my-farm-project && npm i && npm start
+cd my-farm-project
+# Here you can use your package manager of choice instead of npm
+npm start
 ```
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
