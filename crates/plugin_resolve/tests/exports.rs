@@ -30,11 +30,11 @@ fn resolve_exports_basic() {
 #[test]
 fn resolve_exports_replace() {
   fixture!(
-    "tests/fixtures/resolve-node-modules/exports/node_modules/replace/package.json",
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
-      let resolved = resolver.resolve(".", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve("replace", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -46,7 +46,7 @@ fn resolve_exports_replace() {
           .to_string()
       );
 
-      let resolved = resolver.resolve("./submodule.js", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve("replace/submodule.js", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -54,6 +54,30 @@ fn resolve_exports_replace() {
         cwd
           .join("lib")
           .join("submodule.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("lib")
+          .join("browser-feature.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Require);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("lib")
+          .join("node-feature.js")
           .to_string_lossy()
           .to_string()
       );
