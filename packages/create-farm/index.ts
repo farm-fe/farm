@@ -1,18 +1,20 @@
 #!/usr/bin/env node
 
-import chalk from 'chalk';
-import prompts from 'prompts';
-import minimist from 'minimist';
-import path from 'node:path';
-import fs from 'node:fs';
+import chalk from "chalk";
+import prompts from "prompts";
+import minimist from "minimist";
+import path from "node:path";
+import fs from "node:fs";
 
-import { loadWithRocketGradient } from './utils/gradient';
-import createSpawnCmd from './utils/createSpawnCmd';
+import { loadWithRocketGradient } from "./utils/gradient";
+import createSpawnCmd from "./utils/createSpawnCmd";
+import { shouldUseYarn, shouldUsePnpm } from "./utils/packageManager";
 
 interface IResultType {
   packageName?: string;
   framework?: string;
   autoInstall?: boolean;
+  packageManager?: string;
 }
 
 // judge node version
@@ -26,12 +28,13 @@ console.log();
 const argv = minimist<{
   t?: string;
   template?: string;
-}>(process.argv.slice(2), { string: ['_'] });
+}>(process.argv.slice(2), { string: ["_"] });
 
 const cwd = process.cwd();
-
-const DEFAULT_TARGET_NAME = 'farm-project';
-
+const isYarnInstalled = shouldUseYarn();
+const isPnpmInstalled = shouldUsePnpm();
+const DEFAULT_TARGET_NAME = "farm-project";
+const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent);
 async function createFarm() {
   const argProjectName = formatTargetDir(argv._[0]);
   const argFramework = argv.template || argv.t;
@@ -41,9 +44,9 @@ async function createFarm() {
     result = await prompts(
       [
         {
-          type: argProjectName ? null : 'text',
-          name: 'projectName',
-          message: 'Project name:',
+          type: argProjectName ? null : "text",
+          name: "projectName",
+          message: "Project name:",
           initial: DEFAULT_TARGET_NAME,
           onState: (state: any) => {
             targetDir = formatTargetDir(state.value) || DEFAULT_TARGET_NAME;
@@ -51,45 +54,63 @@ async function createFarm() {
         },
         {
           type: () =>
-            !fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm',
-          name: 'overwrite',
+            !fs.existsSync(targetDir) || isEmpty(targetDir) ? null : "confirm",
+          name: "overwrite",
           message: () =>
-            (targetDir === '.'
-              ? '🚨 Current directory'
+            (targetDir === "."
+              ? "🚨 Current directory"
               : `🚨 Target directory "${targetDir}"`) +
             ` is not empty. Overwrite existing files and continue?`,
         },
         {
           type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
             if (overwrite === false) {
-              throw new Error(chalk.red('❌') + ' Operation cancelled');
+              throw new Error(chalk.red("❌") + " Operation cancelled");
             }
             return null;
           },
-          name: 'overwriteChecker',
+          name: "overwriteChecker",
         },
         {
-          type: argFramework ? null : 'select',
-          name: 'framework',
-          message: 'Select a framework:',
+          type: argFramework ? null : "select",
+          name: "framework",
+          message: "Select a framework:",
           initial: 0,
           choices: [
-            { title: chalk.green('Vue'), value: 'vue' },
+            { title: chalk.green("Vue"), value: "vue" },
             {
-              title: chalk.blue('React'),
-              value: 'react',
+              title: chalk.blue("React"),
+              value: "react",
             },
           ],
         },
         {
-          type: 'confirm',
-          name: 'autoInstall',
-          message: 'Whether you need to install dependencies automatically ?',
+          type: "confirm",
+          name: "autoInstall",
+          message: "Whether you need to install dependencies automatically ?",
+        },
+        {
+          type: pkgInfo ? null : "select",
+          name: "packageManager",
+          message: "Which package manager do you want to use?",
+          choices: [
+            { title: "npm", value: "npm" },
+            {
+              title: isYarnInstalled ? "Yarn" : "Yarn (yarn not install)",
+              value: "yarn",
+              disabled: !isYarnInstalled,
+            },
+            {
+              title: isPnpmInstalled ? "Pnpm" : "Pnpm (pnpm not install)",
+              value: "pnpm",
+              disabled: !isPnpmInstalled,
+            },
+          ],
         },
       ],
       {
         onCancel: () => {
-          throw new Error(chalk.red('❌') + ' Operation cancelled');
+          throw new Error(chalk.red("❌") + " Operation cancelled");
         },
       }
     );
@@ -97,40 +118,48 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { framework = argFramework, autoInstall } = result;
+  const { framework = argFramework, autoInstall, packageManager } = result;
 
   await copyTemplate(targetDir, framework);
-  await installationDeps(targetDir, autoInstall!);
+  await installationDeps(targetDir, autoInstall!, packageManager!);
 }
 
 function formatTargetDir(targetDir: string | undefined) {
-  return targetDir?.trim().replace(/\/+$/g, '');
+  return targetDir?.trim().replace(/\/+$/g, "");
 }
 
 function isEmpty(path: string) {
   const files = fs.readdirSync(path);
-  return files.length === 0 || (files.length === 1 && files[0] === '.git');
+  return files.length === 0 || (files.length === 1 && files[0] === ".git");
 }
 
 async function copyTemplate(targetDir: string, framework: string) {
-  const spinner = await loadWithRocketGradient('copy template');
+  const spinner = await loadWithRocketGradient("copy template");
   const dest = path.join(cwd, targetDir);
   const templatePath = path.join(__dirname, `../templates/${framework}`);
   copy(templatePath, dest);
-  spinner.text = 'Template copied!';
+  spinner.text = "Template copied!";
   spinner.succeed();
 }
 
-async function installationDeps(targetDir: string, autoInstall: boolean) {
-  const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent);
-  const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
+async function installationDeps(
+  targetDir: string,
+  autoInstall: boolean,
+  packageManager: string
+) {
+  const pkgManager = pkgInfo ? pkgInfo.name : "npm";
+  const currentPkgManager = pkgInfo ? pkgManager : packageManager;
   if (autoInstall) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir));
-    await cmdInherit(pkgManager, ['install']);
+    await cmdInherit(currentPkgManager, ["install"]);
   }
-  logger('> Initial Farm Project created successfully ✨ ✨');
+  logger("> Initial Farm Project created successfully ✨ ✨");
   logger(`  cd ${targetDir}`);
-  logger(`  ${pkgManager} ${pkgManager === 'npm' ? 'run' : null} start`);
+  logger(
+    `  ${currentPkgManager} ${
+      currentPkgManager === "npm" ? "run start" : "start"
+    } `
+  );
 }
 
 function logger(info: string) {
@@ -140,8 +169,8 @@ function logger(info: string) {
 
 function pkgFromUserAgent(userAgent: string | undefined) {
   if (!userAgent) return undefined;
-  const pkgSpec = userAgent.split(' ')[0];
-  const pkgSpecArr = pkgSpec.split('/');
+  const pkgSpec = userAgent.split(" ")[0];
+  const pkgSpecArr = pkgSpec.split("/");
   return {
     name: pkgSpecArr[0],
     version: pkgSpecArr[1],
@@ -150,7 +179,7 @@ function pkgFromUserAgent(userAgent: string | undefined) {
 
 function judgeNodeVersion() {
   const currentVersion = process.versions.node;
-  const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
+  const requiredMajorVersion = parseInt(currentVersion.split(".")[0], 10);
   const minimumMajorVersion = 16;
 
   if (requiredMajorVersion < minimumMajorVersion) {
