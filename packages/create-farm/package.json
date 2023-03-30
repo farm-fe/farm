@@ -10,7 +10,9 @@
     "create-farm": "dist/index.js"
   },
   "scripts": {
-    "build": "tsup"
+    "start": "rimraf dist && tsup --watch",
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
   },
   "author": "",
   "license": "MIT",
