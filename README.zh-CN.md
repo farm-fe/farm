@@ -59,14 +59,22 @@ Farm 是一个使用 Rust 编写的超级快、轻量级的 Web 构建工具, �
 
 创建一个 Farm 项目 :
 
-```sh
-npx @farmfe/cli@latest create
+使用 npm:
+
+```bash
+$ npm create farm@latest
 ```
 
-启动项目:
+使用 yarn:
 
-```sh
-cd farm-react && npm i && npm start
+```bash
+$ yarn create farm
+```
+
+使用 pnpm:
+
+```bash
+$ pnpm create farm
 ```
 
 请参考[文档](https://farm-fe.github.io)以了解有关 Farm 的更多信息。
