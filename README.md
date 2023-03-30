@@ -57,24 +57,22 @@ Farm is a super-fast web building tool written in Rust. Benchmark against other 
 
 Create a new Farm(support both react and vue) project.
 
-```sh
-npx @farmfe/cli@latest create
-? please input project name my-farm-project
-? please choose a framework (Use arrow keys)
-❯ 1) React 
-  2) Vue
-  ? please choose your package Manager (Use arrow keys)
-❯ 1) npm 
-  2) pnpm
-  3) yarn
+With NPM:
+
+```bash
+$ npm create farm@latest
 ```
 
-Start the project:
+With Yarn:
 
-```sh
-cd my-farm-project
-# Here you can use your package manager of choice instead of npm
-npm start
+```bash
+$ yarn create farm
+```
+
+With PNPM:
+
+```bash
+$ pnpm create farm
 ```
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
