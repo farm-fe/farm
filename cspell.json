@@ -57,6 +57,7 @@
     "threadsafe",
     "topo",
     "toposort",
+    "treeshake",
     "tsfn",
     "tsup",
     "Turbopack",

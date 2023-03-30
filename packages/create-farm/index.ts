@@ -95,7 +95,7 @@ async function createFarm() {
     );
   } catch (cancelled: any) {
     console.log(cancelled.message);
-    process.exit(1);
+    return;
   }
   const { framework = argFramework, autoInstall } = result;
 
@@ -130,7 +130,7 @@ async function installationDeps(targetDir: string, autoInstall: boolean) {
   }
   logger('> Initial Farm Project created successfully');
   logger(`  cd ${targetDir}`);
-  logger(`  ${pkgManager} ${pkgManager === 'npm' ? 'run' : ''} start`);
+  logger(`  ${pkgManager} ${pkgManager === 'npm' ? 'run' : null} start`);
 }
 
 function logger(info: string) {
