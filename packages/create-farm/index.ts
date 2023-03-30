@@ -57,7 +57,7 @@ async function createFarm() {
             (targetDir === '.'
               ? '🚨 Current directory'
               : `🚨 Target directory "${targetDir}"`) +
-            ` is not empty. Remove existing files and continue?`,
+            ` is not empty. Overwrite existing files and continue?`,
         },
         {
           type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
