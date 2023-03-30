@@ -9,90 +9,98 @@ import fs from 'node:fs';
 import { loadWithRocketGradient } from './utils/gradient';
 import createSpawnCmd from './utils/createSpawnCmd';
 
+interface IResultType {
+  packageName?: string;
+  framework?: string;
+  autoInstall?: boolean;
+}
+
 // judge node version
 judgeNodeVersion();
 
 // command
 console.log(chalk.magenta(`\n⚡ Welcome To Create Farm Project!`));
 console.log();
+
+// argv
 const argv = minimist<{
   t?: string;
   template?: string;
 }>(process.argv.slice(2), { string: ['_'] });
+
 const cwd = process.cwd();
 
 const DEFAULT_TARGET_NAME = 'farm-project';
 
 async function createFarm() {
-  const projectName = formatTargetDir(argv._[0]);
-  const framework = argv.template || argv.t;
-  let targetDir = projectName || DEFAULT_TARGET_NAME;
-  const getProjectName = () =>
-    targetDir === '.' ? path.basename(path.resolve()) : targetDir;
-  let result = null;
-  let frameworkName = null;
-  let installFlag = false;
+  const argProjectName = formatTargetDir(argv._[0]);
+  const argFramework = argv.template || argv.t;
+  let targetDir = argProjectName || DEFAULT_TARGET_NAME;
+  let result: IResultType = {};
   try {
-    result = await prompts([
-      {
-        type: projectName ? null : 'text',
-        name: 'projectName',
-        message: 'Project name:',
-        initial: DEFAULT_TARGET_NAME,
-        onState: (state: any) => {
-          targetDir = formatTargetDir(state.value) || DEFAULT_TARGET_NAME;
-        },
-      },
-      {
-        type: () =>
-          !fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm',
-        name: 'overwrite',
-        message: () =>
-          (targetDir === '.'
-            ? '🚨 Current directory'
-            : `🚨 Target directory "${targetDir}"`) +
-          ` is not empty. Remove existing files and continue?`,
-      },
-      {
-        type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
-          if (overwrite === false) {
-            throw new Error(chalk.red('❌') + ' Operation cancelled');
-          }
-          return null;
-        },
-        name: 'overwriteChecker',
-      },
-      {
-        type: framework ? null : 'select',
-        name: 'framework',
-        message: 'Select a framework:',
-        initial: 0,
-        choices: [
-          { title: chalk.green('Vue'), value: 'vue' },
-          {
-            title: chalk.blue('React'),
-            value: 'react',
+    result = await prompts(
+      [
+        {
+          type: argProjectName ? null : 'text',
+          name: 'projectName',
+          message: 'Project name:',
+          initial: DEFAULT_TARGET_NAME,
+          onState: (state: any) => {
+            targetDir = formatTargetDir(state.value) || DEFAULT_TARGET_NAME;
           },
-        ],
-        onState: (state: any) => {
-          frameworkName = state.value;
         },
-      },
+        {
+          type: () =>
+            !fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm',
+          name: 'overwrite',
+          message: () =>
+            (targetDir === '.'
+              ? '🚨 Current directory'
+              : `🚨 Target directory "${targetDir}"`) +
+            ` is not empty. Remove existing files and continue?`,
+        },
+        {
+          type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
+            if (overwrite === false) {
+              throw new Error(chalk.red('❌') + ' Operation cancelled');
+            }
+            return null;
+          },
+          name: 'overwriteChecker',
+        },
+        {
+          type: argFramework ? null : 'select',
+          name: 'framework',
+          message: 'Select a framework:',
+          initial: 0,
+          choices: [
+            { title: chalk.green('Vue'), value: 'vue' },
+            {
+              title: chalk.blue('React'),
+              value: 'react',
+            },
+          ],
+        },
+        {
+          type: 'confirm',
+          name: 'autoInstall',
+          message: 'Whether you need to install dependencies automatically ?',
+        },
+      ],
       {
-        type: 'confirm',
-        name: 'install',
-        message: 'Whether you need to install dependencies automatically ?',
-        onState: (state: any) => {
-          installFlag = state.value;
+        onCancel: () => {
+          throw new Error(chalk.red('❌') + ' Operation cancelled');
         },
-      },
-    ]);
-    await copyTemplate(targetDir, frameworkName ?? framework);
-    installFlag && (await installationDeps(targetDir));
+      }
+    );
   } catch (cancelled: any) {
     console.log(cancelled.message);
-    return;
+    process.exit(1);
   }
+  const { framework = argFramework, autoInstall } = result;
+
+  await copyTemplate(targetDir, framework);
+  await installationDeps(targetDir, autoInstall!);
 }
 
 function formatTargetDir(targetDir: string | undefined) {
@@ -104,18 +112,6 @@ function isEmpty(path: string) {
   return files.length === 0 || (files.length === 1 && files[0] === '.git');
 }
 
-function emptyDir(dir: string) {
-  if (!fs.existsSync(dir)) {
-    return;
-  }
-  for (const file of fs.readdirSync(dir)) {
-    if (file === '.git') {
-      continue;
-    }
-    fs.rmSync(path.resolve(dir, file), { recursive: true, force: true });
-  }
-}
-
 async function copyTemplate(targetDir: string, framework: string) {
   const spinner = await loadWithRocketGradient('copy template');
   const dest = path.join(cwd, targetDir);
@@ -125,18 +121,14 @@ async function copyTemplate(targetDir: string, framework: string) {
   spinner.succeed();
 }
 
-async function installationDeps(targetDir: string) {
-  const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir));
-  const startTime: number = new Date().getTime();
+async function installationDeps(targetDir: string, autoInstall: boolean) {
   const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent);
   const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
-  await cmdInherit(pkgManager, ['install']);
-  const endTime: number = new Date().getTime();
-  const usageTime: number = (endTime - startTime) / 1000;
+  if (autoInstall) {
+    const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir));
+    await cmdInherit(pkgManager, ['install']);
+  }
   logger('> Initial Farm Project created successfully');
-  logger(
-    `> Usage time ${usageTime}s , Please enter the following command to continue...`
-  );
   logger(`  cd ${targetDir}`);
   logger(`  ${pkgManager} ${pkgManager === 'npm' ? 'run' : ''} start`);
 }
@@ -144,14 +136,6 @@ async function installationDeps(targetDir: string) {
 function logger(info: string) {
   console.log();
   console.log(chalk.magenta(info));
-}
-
-function sleep(num: number) {
-  return new Promise((resolve) =>
-    setTimeout(() => {
-      resolve(123);
-    }, num)
-  );
 }
 
 function pkgFromUserAgent(userAgent: string | undefined) {
