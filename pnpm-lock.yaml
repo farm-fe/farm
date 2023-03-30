@@ -118,7 +118,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-vue':
-        specifier: workspace:^0.1.0
+        specifier: workspace:^0.1.1
         version: link:../../js-plugins/vue
 
   js-plugins/vue:
@@ -134,7 +134,7 @@ importers:
         version: 3.2.47
     devDependencies:
       '@farmfe/core':
-        specifier: workspace:^0.5.2
+        specifier: workspace:^0.5.3
         version: link:../../packages/core
       '@types/node':
         specifier: ^18.15.3
@@ -162,7 +162,7 @@ importers:
         version: 0.4.1
     devDependencies:
       '@farmfe/core':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.3
         version: link:../core
       '@types/cross-spawn':
         specifier: ^6.0.2
@@ -174,10 +174,10 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.4.1
+        specifier: workspace:^0.4.2
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.1.1
+        specifier: workspace:^3.1.2
         version: link:../runtime-plugin-hmr
       '@swc/helpers':
         specifier: ^0.4.9
@@ -274,7 +274,7 @@ importers:
   packages/runtime-plugin-hmr:
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.4.1
+        specifier: workspace:^0.4.2
         version: link:../runtime
 
   rust-plugins/react:
