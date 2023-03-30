@@ -32,6 +32,10 @@ export class HotModuleState {
 }
 
 export function createHotContext(id: string) {
+  if (REGISTERED_HOT_MODULES.has(id)) {
+    return REGISTERED_HOT_MODULES.get(id);
+  }
+
   const state = new HotModuleState(id);
   REGISTERED_HOT_MODULES.set(id, state);
   return state;
@@ -43,6 +47,7 @@ export function applyHotUpdates(
 ) {
   for (const id of result.removed) {
     moduleSystem.delete(id);
+    REGISTERED_HOT_MODULES.delete(id);
   }
 
   for (const id of result.added) {
@@ -70,21 +75,12 @@ export function applyHotUpdates(
       for (const id of chain) {
         moduleSystem.clearCache(id);
       }
-    }
 
-    for (const chain of chains) {
       // require the boundary module
       const boundary = chain[chain.length - 1];
-      const changeModuleResult = moduleSystem.require(chain[0]);
-      const changeModule = result.modules[chain[0]];
-      const boundaryModule =
-        moduleSystem.getCache(boundary) ||
-        moduleSystem.hmrCacheTemporary.get(boundary);
-      if (boundaryModule && changeModule) {
-        boundaryModule.meta.hot.tap(changeModuleResult);
-      }
-      moduleSystem.clearHmrCacheTemporary();
-      moduleSystem.require(boundary);
+      const boundaryExports = moduleSystem.require(boundary);
+      const hotContext = REGISTERED_HOT_MODULES.get(boundary);
+      hotContext.tap(boundaryExports);
     }
   }
 }

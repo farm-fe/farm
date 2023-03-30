@@ -1,19 +1,20 @@
 import fs from 'fs';
-import path from 'path';
 import { parse } from '@vue/compiler-sfc';
 import { JsPlugin } from '@farmfe/core';
 import { handleHmr } from './farm-vue-hmr.js';
-import { StylesCodeCache, CacheDescriptor, LessStatic } from './farm-vue-types.js';
+import {
+  StylesCodeCache,
+  CacheDescriptor,
+  LessStatic,
+} from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
-import { error } from './utils.js';
+import { callWithErrorHandle, error } from './utils.js';
 
 //apply style langs
 type ApplyStyleLangs = ['less'];
 
 const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less'];
-const VueRegExp = /.vue$/;
-const JsOrTsExp = /.(ts|js)$/;
 const cacheDescriptor: CacheDescriptor = {};
 
 export default function farmVuePlugin(options: object = {}): JsPlugin {
@@ -26,43 +27,56 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
         resolvedPaths: ['.vue$'],
       },
       async executor(params, ctx) {
+        const { resolvedPath } = params;
+        let source = '';
+        try {
+          source = await fs.promises.readFile(resolvedPath, 'utf-8');
+        } catch (err) {
+          error({
+            id: resolvedPath,
+            message: "path is not right,can't readFile",
+          });
+        }
+        return {
+          content: source,
+          moduleType: 'ts',
+        };
+      },
+    },
+    // add hmr code In root file
+    transform: {
+      filters: {
+        resolvedPaths: ['.vue$'],
+      },
+      async executor(params, ctx) {
         const query: Record<string, string> = {};
         params.query.forEach(([key, value]) => {
           query[key] = value;
         });
         const { vue, lang, hash } = query;
-        const { resolvedPath } = params;
-        const extname = path.extname(resolvedPath);
+        const { resolvedPath, content: source } = params;
         //handle .vue file
-        if (VueRegExp.test(extname)) {
-          if (vue === 'true' && hash) {
-            let styleCode = stylesCodeCache[hash];
-            //if lang is not "css",use preProcessor to handle
-            if (applyStyleLangs.includes(lang)) {
-              const { css } = await preProcession(styleCode, lang);
-              styleCode = css;
-            }
-            return {
-              content: typeof styleCode === 'string' ? styleCode : '',
-              moduleType: 'css',
-            };
+        if (vue === 'true' && hash) {
+          let styleCode = stylesCodeCache[hash];
+          //if lang is not "css",use preProcessor to handle
+          if (applyStyleLangs.includes(lang)) {
+            const { css } = await preProcession(styleCode, lang);
+            styleCode = css;
           }
-          let source = '';
-          try {
-            source = await fs.promises.readFile(resolvedPath, 'utf-8');
-          } catch (err) {
-            error({
-              id: resolvedPath,
-              message: "path is not right,can't readFile",
-            });
-          }
-          try {
-            parse(source);
-          } catch (e) {
-            console.log(e);
-          }
-          const { descriptor } = parse(source);
+          return {
+            content: typeof styleCode === 'string' ? styleCode : '',
+            moduleType: 'css',
+          };
+        }
 
+        //transform vue
+        const result = callWithErrorHandle<null, typeof parse, [string]>(
+          this,
+          parse,
+          [source]
+        );
+        if (result) {
+          const { descriptor } = result;
           const isHmr = handleHmr(
             cacheDescriptor,
             descriptor,
@@ -71,19 +85,24 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
             resolvedPath
           );
           if (isHmr)
-            return { content: isHmr.source, moduleType: isHmr.moduleType };
+            return {
+              content: isHmr.source,
+              moduleType: isHmr.moduleType,
+              sourceMap: isHmr.map,
+            };
 
-          const { source: mainCode, moduleType } = genMainCode(
-            descriptor,
-            stylesCodeCache,
-            resolvedPath
-          );
-
+          const {
+            source: mainCode,
+            moduleType,
+            map,
+          } = genMainCode(descriptor, stylesCodeCache, resolvedPath);
           return {
             content: mainCode,
             moduleType,
+            sourceMap: map,
           };
         }
+
         //default
         else {
           console.error(
@@ -95,14 +114,6 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
             moduleType: 'js',
           };
         }
-      },
-    },
-    // add hmr code In root file
-    transform: {
-      filters: {
-        resolvedPaths: ['.html$'],
-      },
-      executor(params, ctx) {
         return {
           content: params.content,
           moduleType: params.moduleType,

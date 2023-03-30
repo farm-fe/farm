@@ -1,6 +1,6 @@
-import path from "path";
-import crypto from "crypto";
-import { outputData } from "./farm-vue-types.js";
+import path from 'path';
+import crypto from 'crypto';
+import { outputData } from './farm-vue-types.js';
 export function warn({ id, message }: outputData) {
   console.warn(`[${id}:warn]:"${message}"`);
 }
@@ -11,11 +11,11 @@ export function error({ id, message }: outputData) {
 
 export function parsePath(resolvedPath: string) {
   const { dir, base } = path.parse(resolvedPath);
-  const [filename, query] = base.split("?");
+  const [filename, query] = base.split('?');
   const queryObj: Record<string, string> = {};
   if (query) {
-    query.split("&").forEach((keyValue) => {
-      const [key, value] = keyValue.split("=");
+    query.split('&').forEach((keyValue) => {
+      const [key, value] = keyValue.split('=');
       queryObj[key] = value;
     });
   }
@@ -28,9 +28,22 @@ export function parsePath(resolvedPath: string) {
 
 export function getHash(text: string, start: number = 0, end: number = 8) {
   return crypto
-    .createHash("sha256")
+    .createHash('sha256')
     .update(text)
-    .digest("hex")
+    .digest('hex')
     .substring(start, end)
     .toLocaleLowerCase();
+}
+
+export function callWithErrorHandle<
+  T,
+  U extends (...args: any[]) => any,
+  M extends any[]
+>(_this: T, fn: U, args: M) {
+  try {
+    const result = fn.call(_this, ...args) as ReturnType<U>;
+    return result;
+  } catch (e) {
+    console.error(e);
+  }
 }

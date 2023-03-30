@@ -23,14 +23,10 @@ export class ModuleSystem {
   resourceLoader: ResourceLoader;
   // runtime plugin container
   pluginContainer: FarmRuntimePluginContainer;
-  // TODO remove this after HMR implement refactored, hmr should be implemented in plugin
-  //cache may clear In applyHotUpdates. We need another constructor to cache module in temporary
-  //after `module.meta.hot.tap`, clear hmrCache
-  hmrCacheTemporary: Map<string, Module>;
+
   constructor() {
     this.modules = {};
     this.cache = {};
-    this.hmrCacheTemporary = new Map();
     this.publicPaths = [];
     this.dynamicModuleResourcesMap = {};
     this.resourceLoader = new ResourceLoader(this.publicPaths);
@@ -142,17 +138,6 @@ export class ModuleSystem {
     this.modules[moduleId] = initializer;
   }
 
-  setHmrCacheTemporary(moduleId: string) {
-    if (!this.hmrCacheTemporary.has(moduleId) && this.cache[moduleId]) {
-      return this.hmrCacheTemporary.set(moduleId, this.cache[moduleId]);
-    }
-    return null;
-  }
-
-  clearHmrCacheTemporary() {
-    this.hmrCacheTemporary.clear();
-  }
-
   update(moduleId: string, init: ModuleInitialization): void {
     this.modules[moduleId] = init;
     this.clearCache(moduleId);
@@ -176,7 +161,6 @@ export class ModuleSystem {
 
   clearCache(moduleId: string): boolean {
     if (this.cache[moduleId]) {
-      this.setHmrCacheTemporary(moduleId);
       delete this.cache[moduleId];
       return true;
     } else {
