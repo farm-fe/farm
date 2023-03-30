@@ -128,7 +128,7 @@ async function installationDeps(targetDir: string, autoInstall: boolean) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir));
     await cmdInherit(pkgManager, ['install']);
   }
-  logger('> Initial Farm Project created successfully');
+  logger('> Initial Farm Project created successfully ✨ ✨');
   logger(`  cd ${targetDir}`);
   logger(`  ${pkgManager} ${pkgManager === 'npm' ? 'run' : null} start`);
 }
