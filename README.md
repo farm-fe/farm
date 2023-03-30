@@ -70,6 +70,9 @@ $ yarn create farm
 ```
 
 With PNPM:
+
+```bash
+$ pnpm create farm
 ```
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
