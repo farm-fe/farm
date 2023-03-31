@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.5.3
+
+### Patch Changes
+
+- 3dfc64f: 1. Fix hmr does not update lazy compiled module 2. Support sourcemap for Vue SFC
+- Updated dependencies [3dfc64f]
+  - @farmfe/runtime-plugin-hmr@3.1.2
+  - @farmfe/runtime@0.4.2
+
 ## 0.5.2
 
 ### Patch Changes
