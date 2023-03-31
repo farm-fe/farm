@@ -1,5 +1,12 @@
 # create-farm
 
+<div align="center">
+  <a href="https://github.com/farm-fe/farm">
+  <img src="../../assets/logo.png" width="550" />
+  </a>
+  <p>Super fast web building tool written in Rust</p>
+</div>
+
 ## Scaffolding Your First Farm Project
 
 > **Compatibility Note:**
