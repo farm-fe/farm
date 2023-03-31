@@ -260,8 +260,8 @@ impl Resolver {
                 //   println!("解析出来的最后路径 {:?}", resolved_path);
                 //   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 // });
-                println!("获取到了source {:?}", source);
-                self.try_exports_replace(&package_json_info, source);
+                println!("获取到了source {:?}", package_path.to_str().unwrap());
+                self.try_exports_replace(&package_json_info, package_path.to_str().unwrap());
               }
               if let Value::String(str) = field_value {
                 println!("当前字段进入字符串field {}", str);
