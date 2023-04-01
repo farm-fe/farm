@@ -270,7 +270,7 @@ impl Resolver {
                 // println!("当前字段进入字符串field {}", str);
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
-                // println!("完整路径 {:?}", full_path);
+                println!("完整路径 replace exports {:?}", full_path);
                 return self.try_file(&full_path).map(|resolved_path| {
                   // println!("解析出来的最后路径 {:?}", resolved_path);
                   self.get_resolve_result(&Ok(package_json_info), resolved_path)

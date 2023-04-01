@@ -49,14 +49,14 @@ fn resolve_exports_replace() {
       //     .to_string()
       // );
 
-      let resolved = resolver.resolve("replace/submodule.js", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve("react/submodule.js", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
         resolved.resolved_path,
         cwd
           .join("node_modules")
-          .join("replace")
+          .join("react")
           .join("lib")
           .join("submodule.js")
           .to_string_lossy()
