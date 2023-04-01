@@ -197,7 +197,7 @@ impl Resolver {
     &self,
     source: &str,
     base_dir: PathBuf,
-    kind: &ResolveKind,
+    _kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
     let mut current = base_dir.clone();
@@ -252,24 +252,27 @@ impl Resolver {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               if let Value::Object(obj) = field_value {
                 println!("当前字段进入对象field {:?}", obj);
-                let dir = package_json_info.dir();
-                println!("文件地址 {:?}", dir);
+                // let dir = package_json_info.dir();
+                // println!("文件地址 {:?}", dir);
                 // let full_path = RelativePath::new(str).to_logical_path(dir);
                 // println!("完整路径 {:?}", full_path);
                 // return self.try_file(&full_path).map(|resolved_path| {
                 //   println!("解析出来的最后路径 {:?}", resolved_path);
-                //   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 // });
-                println!("获取到了source {:?}", package_path.to_str().unwrap());
-                self.try_exports_replace(&package_json_info, package_path.to_str().unwrap());
+                // println!("获取到了source {:?}", package_path.to_str().unwrap());
+                // self.try_exports_replace(&package_json_info, package_path.to_str().unwrap());
+                return Some(self.get_resolve_result(
+                  &Ok(package_json_info.clone()),
+                  package_path.to_str().unwrap().to_string(),
+                ));
               }
               if let Value::String(str) = field_value {
-                println!("当前字段进入字符串field {}", str);
+                // println!("当前字段进入字符串field {}", str);
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
-                println!("完整路径 {:?}", full_path);
+                // println!("完整路径 {:?}", full_path);
                 return self.try_file(&full_path).map(|resolved_path| {
-                  println!("解析出来的最后路径 {:?}", resolved_path);
+                  // println!("解析出来的最后路径 {:?}", resolved_path);
                   self.get_resolve_result(&Ok(package_json_info), resolved_path)
                 });
               }
@@ -298,6 +301,10 @@ impl Resolver {
       println!("side_effects {:?}", side_effects);
       let resolved_path = self
         .try_browser_replace(package_json_info, &resolved_path)
+        .unwrap_or(resolved_path);
+
+      let resolved_path = self
+        .try_exports_replace(package_json_info, &resolved_path)
         .unwrap_or(resolved_path);
 
       println!(
@@ -406,14 +413,22 @@ impl Resolver {
           match value {
             Value::String(current_field_value) => {
               let dir = package_json_info.dir();
-              let full_path = RelativePath::new(&current_field_value).to_logical_path(dir);
-              println!("string类型的完整路径 {:?}", full_path);
-              println!("RelativePath {:?}", RelativePath::new(&key));
-              let key_path = RelativePath::new(&key)
-                .to_logical_path(package_json_info.dir())
-                .to_string_lossy()
-                .to_string();
-              println!("string类型的key路径 {:?} {:?}", key_path, resolved_path);
+              // println!("string类型的key路径 {:?} {:?}", key_path, resolved_path);
+              let path = Path::new(resolved_path);
+              if path.is_absolute() {
+                let key_path = RelativePath::new(&key)
+                  .to_logical_path(package_json_info.dir())
+                  .to_string_lossy()
+                  .to_string();
+                if &key_path == resolved_path {
+                  let value_path = RelativePath::new(&current_field_value)
+                    .to_logical_path(dir)
+                    .to_string_lossy()
+                    .to_string();
+                  println!("我拿的是 string 类型的 {:?}", value_path);
+                  return Some(value_path);
+                }
+              }
             }
             Value::Object(current_field_obj) => {
               // TODO resolve import require type
