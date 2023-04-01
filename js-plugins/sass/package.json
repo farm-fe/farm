@@ -1,0 +1,24 @@
+{
+  "name": "@farmfe/js-plugin-sass",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc -w",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@farmfe/core": "workspace:^0.5.3"
+  },
+  "peerDependencies": {
+    "@farmfe/core": "workspace:^0.5.3"
+  },
+  "dependencies": {
+    "sass": "^1.60.0"
+  }
+}
