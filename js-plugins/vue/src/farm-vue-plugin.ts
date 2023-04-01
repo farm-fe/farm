@@ -21,10 +21,10 @@ import {
 } from './utils.js';
 
 //apply style langs
-type ApplyStyleLangs = ['less', 'sass', 'scss', 'styl', 'stylus'];
+type ApplyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 
 const stylesCodeCache: StylesCodeCache = {};
-const applyStyleLangs = ['less', 'sass', 'scss', 'styl', 'stylus'];
+const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
 
 export default function farmVuePlugin(options: object = {}): JsPlugin {
@@ -149,7 +149,6 @@ async function preProcession(styleCode: string, moduleType: string) {
       case 'scss':
         processor = await loadPreProcessor(PreProcessorsType.sass);
         return await compilePreProcessorCodeToCss(styleCode, processor);
-      case 'styl':
       case 'stylus':
         processor = await loadPreProcessor(PreProcessorsType.stylus);
         return await compilePreProcessorCodeToCss(styleCode, processor);
