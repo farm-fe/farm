@@ -1,10 +1,10 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import fs from 'fs';
 import sass, { StringOptions } from 'sass';
-import { URL } from 'node:url';
-import { getAdditionContext } from './options';
+import { getAdditionContext, pluginName, tryRead } from './options';
+import { pathToFileURL } from 'url';
 
 export interface SassOptions {
+  match?: string[];
   sassOption?: StringOptions<'async'>;
   /**
    * - relative or absolute path
@@ -18,19 +18,7 @@ export interface SassOptions {
   sourceMap?: boolean;
 }
 
-const pluginName = 'farm-sass-plugin';
-
-function throwError(type: string, error: Error) {
-  console.error(`[${pluginName} ${type} Error] ${error}`);
-}
-
-async function tryRead(filename: string) {
-  try {
-    return fs.promises.readFile(filename, 'utf-8');
-  } catch (e) {
-    throwError('read', e);
-  }
-}
+const defaultMatch = ['\\.scss$'];
 
 export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
   let farmConfig!: UserConfig;
@@ -38,11 +26,13 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
 
   const cwd = () => farmConfig.root ?? process.cwd();
 
+  const match = (options.match ?? defaultMatch).map((item) => item.toString());
+
   return {
     name: pluginName,
     config: (param, context, hookContext) => (farmConfig = param),
     load: {
-      filters: { resolvedPaths: ['.scss$'] },
+      filters: { resolvedPaths: match },
       async executor(param, context, hookContext) {
         const data = await tryRead(param.resolvedPath);
         return {
@@ -54,7 +44,7 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
 
     transform: {
       filters: {
-        resolvedPaths: ['.scss$'],
+        resolvedPaths: match,
       },
       async executor(param, context, hookContext) {
         try {
@@ -68,7 +58,7 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
               sourceMap: Boolean(
                 options.sourceMap ?? farmConfig?.compilation?.sourcemap
               ),
-              url: new URL(`file://${param.resolvedPath}}`),
+              url: pathToFileURL(param.resolvedPath),
             }
           );
 
@@ -80,6 +70,7 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
         } catch (error) {
           console.error(error);
         }
+
         return {
           content: '',
           moduleType: 'css',
