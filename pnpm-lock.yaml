@@ -132,6 +132,9 @@ importers:
       '@vue/compiler-sfc':
         specifier: ^3.2.47
         version: 3.2.47
+      source-map:
+        specifier: 0.6.1
+        version: 0.6.1
     devDependencies:
       '@farmfe/core':
         specifier: workspace:^0.5.3

@@ -34,9 +34,10 @@
     "@types/node": "^18.15.3"
   },
   "dependencies": {
-    "@vue/compiler-sfc": "^3.2.47",
     "@jridgewell/gen-mapping": "^0.3.2",
-    "@jridgewell/trace-mapping": "^0.3.17"
+    "@jridgewell/trace-mapping": "^0.3.17",
+    "@vue/compiler-sfc": "^3.2.47",
+    "source-map": "0.6.1"
   },
   "peerDependencies": {
     "@farmfe/core": "^0.5.3"
