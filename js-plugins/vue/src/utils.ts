@@ -1,5 +1,6 @@
 import path from 'path';
 import crypto from 'crypto';
+import { createRequire } from 'module';
 import {
   PreProcessors,
   PreProcessorsType,
@@ -55,7 +56,10 @@ export function callWithErrorHandle<
 
 export async function dynamicImportFromESM(moduleName: string) {
   try {
-    const module = (await import(moduleName)) ?? {};
+    // @ts-ignore
+    // TODO: use dynamic import
+    const _require = createRequire(import.meta.url);
+    const module = _require(moduleName) ?? {};
     return module.default ?? module;
   } catch (error) {
     throw error;
@@ -87,22 +91,22 @@ export function isLess(
   preProcessor: unknown
 ): preProcessor is PreProcessors[PreProcessorsType.less] {
   return (
-    'modifyVars' in (preProcessor as PreProcessors[PreProcessorsType.less])
+    typeof preProcessor !== 'function' &&
+    'version' in (preProcessor as PreProcessors[PreProcessorsType.less])
   );
 }
 
 export function isSass(
   preProcessor: unknown
 ): preProcessor is PreProcessors[PreProcessorsType.sass] {
-  return (
-    'renderSync' in (preProcessor as PreProcessors[PreProcessorsType.sass])
-  );
+  return 'info' in (preProcessor as PreProcessors[PreProcessorsType.sass]);
 }
 
 export function isStyl(
   preProcessor: unknown
 ): preProcessor is PreProcessors[PreProcessorsType.stylus] {
   return (
-    'convertCSS' in (preProcessor as PreProcessors[PreProcessorsType.stylus])
+    typeof preProcessor === 'function' &&
+    'version' in (preProcessor as PreProcessors[PreProcessorsType.stylus])
   );
 }

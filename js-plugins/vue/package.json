@@ -6,6 +6,7 @@
   "types": "./dist/farm-vue-plugin.d.ts",
   "type": "module",
   "scripts": {
+    "start": "tsc -w",
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"

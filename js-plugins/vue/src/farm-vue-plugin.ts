@@ -170,7 +170,15 @@ export async function compilePreProcessorCodeToCss<
   options?: PreProcessorsOptions<T>
 ): Promise<{ css: string }> {
   if (isLess(preProcessor)) {
-    return await preProcessor.render(styleCode, {});
+    return await new Promise((resolve, reject) => {
+      preProcessor.render(styleCode, {}, (error, { css }) => {
+        if (error) {
+          reject(error);
+        }
+
+        resolve({ css });
+      });
+    });
   }
 
   if (isSass(preProcessor)) {
@@ -182,12 +190,12 @@ export async function compilePreProcessorCodeToCss<
             PreProcessors[PreProcessorsType.sass]
           >),
         },
-        (exception, result) => {
+        (exception, { css }) => {
           if (exception) {
             reject(exception);
           }
 
-          resolve({ css: result.css.toString() });
+          resolve({ css: css.toString() });
         }
       );
     });
