@@ -185,9 +185,9 @@ export async function compilePreProcessorCodeToCss<
       preProcessor.render(
         {
           data: styleCode,
-          ...(options as PreProcessorsOptions<
+          ...((options as PreProcessorsOptions<
             PreProcessors[PreProcessorsType.sass]
-          >),
+          >) ?? {}),
         },
         (exception, { css }) => {
           if (exception) {
