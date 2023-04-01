@@ -1,5 +1,7 @@
 body {
-  &:hover {
-    color: blue;
+  .description {
+    &:hover {
+      color: blue;
+    }
   }
 }
