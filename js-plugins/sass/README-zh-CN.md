@@ -38,42 +38,42 @@ export default defineFarmConfig({
 
 ### match
 
-Type: `string[]`
+类型: `string[]`
 
-Default: `["\\.scss$"]`
+默认值: `["\\.scss$"]`
 
-Specifies the matching files.
+指定匹配的文件
 
 ### globals
 
-Type: `string[]`
+类型: `string[]`
 
-Default: `undefined`
+默认值: `undefined`
 
-Reads the contents from a file and injects them into each sass/scss file. It is typically used to inject some global variables
+将读取文件中的内容并注入到每个 sass/scss 文件中, 它通常用来注入一些全局变量
 
-> Note that normal css should not be written in this file, otherwise it will inject them repeatedly into each compiled css file
+> 注意，该文件中不要写入正常的 css, 否则它会将它们重复的注入到各个编译后的 css 文件中
 
 ### content
 
-Type: `string`
+类型: `string`
 
-Default: `undefined`
+默认值: `undefined`
 
-It has the same function as globals, but it can be conveniently used to inject some simple sass/scss content
+它与 `globals` 的作用一致, 但它可以很方便的使用, 通常注入一些简单的 sass/scss 内容
 
 ### sourceMap
 
-Type: `boolean`
+类型: `boolean`
 
-Default: `false`
+默认值: `false`
 
-Whether to generate sourceMap
+是否生成 sourceMap
 
-> If not set, it will read the compilation.sourcemap configuration in the farm configuration
+> 在没有设置的情况下, 它会去读取 farm 配置中 `compilation.sourcemap` 的配置
 
 ### sassOption
 
-Type: `StringOptions<'async'>`
+类型: `StringOptions<'async'>`
 
-Default: `{}`
+默认值: `{}`
