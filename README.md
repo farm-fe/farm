@@ -74,4 +74,4 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 ## Author
 
-brightwu（吴明亮）, worked at Bytedance and Tencent, technology enthusiast.
+brightwu（吴明亮）, worked at Bytedance and Tencent.
