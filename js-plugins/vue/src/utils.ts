@@ -1,6 +1,11 @@
 import path from 'path';
 import crypto from 'crypto';
-import { outputData } from './farm-vue-types.js';
+import {
+  PreProcessors,
+  PreProcessorsType,
+  outputData,
+} from './farm-vue-types.js';
+
 export function warn({ id, message }: outputData) {
   console.warn(`[${id}:warn]:"${message}"`);
 }
@@ -46,4 +51,58 @@ export function callWithErrorHandle<
   } catch (e) {
     console.error(e);
   }
+}
+
+export async function dynamicImportFromESM(moduleName: string) {
+  try {
+    const module = (await import(moduleName)) ?? {};
+    return module.default ?? module;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function loadPreProcessor<T extends PreProcessorsType>(
+  lang: T
+): Promise<PreProcessors[T]> {
+  try {
+    const preProcessor = await dynamicImportFromESM(lang);
+    return preProcessor;
+  } catch (error) {
+    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+      throw new Error(
+        `Preprocessor dependency "${lang}" not found. Did you install it?`
+      );
+    } else {
+      const message = new Error(
+        `Preprocessor dependency "${lang}" failed to load:\n${error.message}`
+      );
+      message.stack = error.stack + '\n' + message.stack;
+      throw message;
+    }
+  }
+}
+
+export function isLess(
+  preProcessor: unknown
+): preProcessor is PreProcessors[PreProcessorsType.less] {
+  return (
+    'modifyVars' in (preProcessor as PreProcessors[PreProcessorsType.less])
+  );
+}
+
+export function isSass(
+  preProcessor: unknown
+): preProcessor is PreProcessors[PreProcessorsType.sass] {
+  return (
+    'renderSync' in (preProcessor as PreProcessors[PreProcessorsType.sass])
+  );
+}
+
+export function isStyl(
+  preProcessor: unknown
+): preProcessor is PreProcessors[PreProcessorsType.stylus] {
+  return (
+    'convertCSS' in (preProcessor as PreProcessors[PreProcessorsType.stylus])
+  );
 }

@@ -5,16 +5,26 @@ import { handleHmr } from './farm-vue-hmr.js';
 import {
   StylesCodeCache,
   CacheDescriptor,
-  LessStatic,
+  PreProcessors,
+  PreProcessorsType,
+  PreProcessorsOptions,
+  ValueOf,
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
-import { callWithErrorHandle, error } from './utils.js';
+import {
+  callWithErrorHandle,
+  error,
+  isLess,
+  isSass,
+  isStyl,
+  loadPreProcessor,
+} from './utils.js';
 
 //apply style langs
 type ApplyStyleLangs = ['less'];
 
 const stylesCodeCache: StylesCodeCache = {};
-const applyStyleLangs = ['less'];
+const applyStyleLangs = ['less', 'sass', 'scss', 'styl', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
 
 export default function farmVuePlugin(options: object = {}): JsPlugin {
@@ -125,23 +135,73 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
 
 async function preProcession(styleCode: string, moduleType: string) {
   const __default = { css: styleCode, map: '' };
+  let processor: ValueOf<PreProcessors>;
   try {
     switch (moduleType) {
       case 'less':
-        let lessProcessor = (await import(moduleType)) || {};
-        if (lessProcessor.default) {
-          lessProcessor = lessProcessor.default;
-        }
-        return await transformLessToCss(styleCode, lessProcessor as LessStatic);
+        processor = await loadPreProcessor(PreProcessorsType.less);
+        return await compilePreProcessorCodeToCss(styleCode, processor);
+      case 'sass':
+        processor = await loadPreProcessor(PreProcessorsType.sass);
+        return await compilePreProcessorCodeToCss(styleCode, processor, {
+          indentedSyntax: true,
+        });
+      case 'scss':
+        processor = await loadPreProcessor(PreProcessorsType.sass);
+        return await compilePreProcessorCodeToCss(styleCode, processor);
+      case 'styl':
+      case 'stylus':
+        processor = await loadPreProcessor(PreProcessorsType.stylus);
+        return await compilePreProcessorCodeToCss(styleCode, processor);
       default:
         return __default;
     }
   } catch (err) {
-    error({ id: 'less', message: err });
+    error({ id: moduleType, message: err });
   }
   return __default;
 }
 
-async function transformLessToCss(lessCode: string, lessProcessor: LessStatic) {
-  return await lessProcessor.render(lessCode, {});
+export async function compilePreProcessorCodeToCss<
+  T extends ValueOf<PreProcessors>
+>(
+  styleCode: string,
+  preProcessor: T,
+  options?: PreProcessorsOptions<T>
+): Promise<{ css: string }> {
+  if (isLess(preProcessor)) {
+    return await preProcessor.render(styleCode, {});
+  }
+
+  if (isSass(preProcessor)) {
+    return await new Promise((resolve, reject) => {
+      preProcessor.render(
+        {
+          data: styleCode,
+          ...(options as PreProcessorsOptions<
+            PreProcessors[PreProcessorsType.sass]
+          >),
+        },
+        (exception, result) => {
+          if (exception) {
+            reject(exception);
+          }
+
+          resolve({ css: result.css.toString() });
+        }
+      );
+    });
+  }
+
+  if (isStyl(preProcessor)) {
+    return await new Promise((resolve, reject) => {
+      preProcessor.render(styleCode, {}, (err, css) => {
+        if (err) {
+          reject(err);
+        }
+
+        resolve({ css });
+      });
+    });
+  }
 }
