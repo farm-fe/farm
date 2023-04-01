@@ -21,7 +21,7 @@ import {
 } from './utils.js';
 
 //apply style langs
-type ApplyStyleLangs = ['less'];
+type ApplyStyleLangs = ['less', 'sass', 'scss', 'styl', 'stylus'];
 
 const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'styl', 'stylus'];
