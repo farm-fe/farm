@@ -1,7 +1,7 @@
 {
   "name": "@farmfe/js-plugin-sass",
   "version": "0.0.1",
-  "description": "",
+  "description": "support scss compile for farm.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -9,9 +9,11 @@
     "start": "tsc -w",
     "prepublishOnly": "npm run build"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@farmfe/core": "workspace:^0.5.3"
   },
