@@ -49,21 +49,7 @@ fn resolve_exports_replace() {
       //     .to_string()
       // );
 
-      let resolved = resolver.resolve("react/submodule.js", cwd.clone(), &ResolveKind::Import);
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("react")
-          .join("lib")
-          .join("submodule.js")
-          .to_string_lossy()
-          .to_string()
-      );
-
-      // let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Import);
+      // let resolved = resolver.resolve("replace/submodule.js", cwd.clone(), &ResolveKind::Import);
       // assert!(resolved.is_some());
       // let resolved = resolved.unwrap();
       // assert_eq!(
@@ -72,10 +58,24 @@ fn resolve_exports_replace() {
       //     .join("node_modules")
       //     .join("replace")
       //     .join("lib")
-      //     .join("browser-feature.js")
+      //     .join("submodule.js")
       //     .to_string_lossy()
       //     .to_string()
       // );
+
+      let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("browser-feature.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
       // let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Require);
       // assert!(resolved.is_some());
