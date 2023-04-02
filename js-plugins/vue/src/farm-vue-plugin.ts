@@ -142,13 +142,11 @@ async function preProcession(styleCode: string, moduleType: string) {
         processor = await loadPreProcessor(PreProcessorsType.less);
         return await compilePreProcessorCodeToCss(styleCode, processor);
       case 'sass':
-        processor = await loadPreProcessor(PreProcessorsType.sass);
-        return await compilePreProcessorCodeToCss(styleCode, processor, {
-          indentedSyntax: true,
-        });
       case 'scss':
         processor = await loadPreProcessor(PreProcessorsType.sass);
-        return await compilePreProcessorCodeToCss(styleCode, processor);
+        return await compilePreProcessorCodeToCss(styleCode, processor, {
+          indentedSyntax: moduleType === 'sass',
+        });
       case 'stylus':
         processor = await loadPreProcessor(PreProcessorsType.stylus);
         return await compilePreProcessorCodeToCss(styleCode, processor);
