@@ -99,7 +99,7 @@ export function genScriptCode(
   let code = '';
   let result: SFCScriptBlock = {} as SFCScriptBlock;
   const script = descriptor.script || descriptor.scriptSetup;
-  // if script exist,add transformed code
+  // if script exist, add transformed code
   if (script) {
     const { content } = (result = compileScript(descriptor, {
       id: filename,

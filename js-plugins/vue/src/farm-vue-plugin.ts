@@ -20,7 +20,7 @@ import {
   loadPreProcessor,
 } from './utils.js';
 
-//apply style langs
+// apply style langs
 type ApplyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 
 const stylesCodeCache: StylesCodeCache = {};
@@ -28,7 +28,7 @@ const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
 
 export default function farmVuePlugin(options: object = {}): JsPlugin {
-  //options hooks to get farmConfig
+  // options hooks to get farmConfig
   let farmConfig = null;
   return {
     name: 'farm-vue-plugin',
@@ -65,10 +65,10 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
         });
         const { vue, lang, hash } = query;
         const { resolvedPath, content: source } = params;
-        //handle .vue file
+        // handle .vue file
         if (vue === 'true' && hash) {
           let styleCode = stylesCodeCache[hash];
-          //if lang is not "css",use preProcessor to handle
+          // if lang is not "css", use preProcessor to handle
           if (applyStyleLangs.includes(lang)) {
             const { css } = await preProcession(styleCode, lang);
             styleCode = css;
@@ -79,7 +79,7 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
           };
         }
 
-        //transform vue
+        // transform vue
         const result = callWithErrorHandle<null, typeof parse, [string]>(
           this,
           parse,
@@ -113,7 +113,7 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
           };
         }
 
-        //default
+        // default
         else {
           console.error(
             `[farm-vue-plugin]:there is no path can be match,please check!`
@@ -137,6 +137,8 @@ async function preProcession(styleCode: string, moduleType: string) {
   const __default = { css: styleCode, map: '' };
   let processor: ValueOf<PreProcessors>;
   try {
+    // load less/sass/stylus preprocessor
+    // compile style code to css
     switch (moduleType) {
       case 'less':
         processor = await loadPreProcessor(PreProcessorsType.less);

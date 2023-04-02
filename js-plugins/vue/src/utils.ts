@@ -73,7 +73,7 @@ export async function loadPreProcessor<T extends PreProcessorsType>(
     const preProcessor = await dynamicImportFromESM(lang);
     return preProcessor;
   } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+    if (error.code === 'MODULE_NOT_FOUND') {
       throw new Error(
         `Preprocessor dependency "${lang}" not found. Did you install it?`
       );
