@@ -1,6 +1,6 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import sass, { StringOptions } from 'sass';
-import { getAdditionContext, pluginName, tryRead } from './options';
+import { getAdditionContext, pluginName, tryRead } from './options.js';
 import { pathToFileURL } from 'url';
 
 export interface SassOptions {
@@ -30,10 +30,10 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
 
   return {
     name: pluginName,
-    config: (param, context, hookContext) => (farmConfig = param),
+    config: (param) => (farmConfig = param),
     load: {
       filters: { resolvedPaths: match },
-      async executor(param, context, hookContext) {
+      async executor(param) {
         const data = await tryRead(param.resolvedPath);
         return {
           content: data,
@@ -46,7 +46,7 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
       filters: {
         resolvedPaths: match,
       },
-      async executor(param, context, hookContext) {
+      async executor(param) {
         try {
           const additionContext =
             cacheAdditionContext ??

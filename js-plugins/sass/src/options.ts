@@ -1,5 +1,5 @@
 import { isAbsolute, join } from 'path';
-import type { SassOptions } from '.';
+import type { SassOptions } from './index.js';
 import fs from 'fs';
 
 export const pluginName = 'farm-sass-plugin';
