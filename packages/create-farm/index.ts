@@ -120,7 +120,7 @@ async function createFarm() {
   }
   const { framework = argFramework, autoInstall, packageManager } = result;
 
-  await copyTemplate(targetDir, framework);
+  await copyTemplate(targetDir, framework!);
   await installationDeps(targetDir, autoInstall!, packageManager!);
 }
 

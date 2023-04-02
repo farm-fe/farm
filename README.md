@@ -57,8 +57,22 @@ Farm is a super-fast web building tool written in Rust. Benchmark against other 
 
 Create a new Farm(support both react and vue) project.
 
-```sh
-npx @farmfe/cli@latest create
+With npm:
+
+```bash
+$ npm create farm@latest
+```
+
+With yarn:
+
+```bash
+$ yarn create farm
+```
+
+With pnpm:
+
+```bash
+$ pnpm create farm
 ```
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
@@ -74,4 +88,4 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 ## Author
 
-brightwu（吴明亮）, worked at Bytedance and Tencent, technology enthusiast.
+brightwu（吴明亮）, worked at Bytedance and Tencent.

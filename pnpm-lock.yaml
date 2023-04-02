@@ -145,6 +145,9 @@ importers:
       '@vue/compiler-sfc':
         specifier: ^3.2.47
         version: 3.2.47
+      source-map:
+        specifier: 0.6.1
+        version: 0.6.1
     devDependencies:
       '@farmfe/core':
         specifier: workspace:^0.5.3
@@ -256,6 +259,12 @@ importers:
 
   packages/create-farm:
     devDependencies:
+      '@types/minimist':
+        specifier: ^1.2.2
+        version: 1.2.2
+      '@types/prompts':
+        specifier: ^2.4.4
+        version: 2.4.4
       chalk:
         specifier: ^5.2.0
         version: 5.2.0
@@ -1475,6 +1484,13 @@ packages:
 
   /@types/parse-json@4.0.0:
     resolution: {integrity: sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==}
+    dev: true
+
+  /@types/prompts@2.4.4:
+    resolution: {integrity: sha512-p5N9uoTH76lLvSAaYSZtBCdEXzpOOufsRjnhjVSrZGXikVGHX9+cc9ERtHRV4hvBKHyZb1bg4K+56Bd2TqUn4A==}
+    dependencies:
+      '@types/node': 18.15.8
+      kleur: 3.0.3
     dev: true
 
   /@types/prop-types@15.7.5:
