@@ -114,4 +114,29 @@ fn resolve_exports_replace() {
 #[test]
 fn resolve_exports_import_require() {
   // TODO - this should be value with object type
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new(ResolveConfig::default());
+
+      let resolved = resolver.resolve(
+        "replace/lib/basic-exports.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("basic-exports.js")
+          .to_string_lossy()
+          .to_string()
+      )
+    }
+  )
 }
