@@ -10,7 +10,10 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./config": "./dist/config.js",
+    "./config": {
+      "import": "./dist/config.js",
+      "types": "./dist/config.d.ts"
+    },
     "./package.json": "./package.json"
   },
   "napi": {
