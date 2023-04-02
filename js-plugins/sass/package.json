@@ -1,0 +1,48 @@
+{
+  "name": "@farmfe/js-plugin-sass",
+  "version": "0.0.1",
+  "description": "support scss compile for farm.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "js-plugins/sass/",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  },
+  "author": {
+    "name": "shulandmimi",
+    "email": "shulandmimi@gmail.com"
+  },
+  "scripts": {
+    "build": "tsc -p ./tsconfig.build.json",
+    "start": "pnpm run build -w",
+    "prepublishOnly": "npm run build",
+    "type-check": "pnpm run build --noEmit"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [],
+  "license": "MIT",
+  "devDependencies": {
+    "@farmfe/core": "workspace:^0.5.3"
+  },
+  "peerDependencies": {
+    "@farmfe/core": "workspace:^0.5.3"
+  },
+  "dependencies": {
+    "sass": "^1.60.0"
+  }
+}

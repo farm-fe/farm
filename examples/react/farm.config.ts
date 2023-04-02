@@ -1,24 +1,25 @@
 // change to @farmfe/core/config when resolve support conditional exports
 import { defineFarmConfig } from '@farmfe/core/dist/config';
+import Sass from '@farmfe/js-plugin-sass';
 
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: './index.html',
     },
     resolve: {
       symlinks: true,
-      mainFields: ['module', 'main', 'customMain']
+      mainFields: ['module', 'main', 'customMain'],
     },
     define: {
-      BTN: 'Click me'
+      BTN: 'Click me',
     },
     output: {
-      path: './build'
-    }
+      path: './build',
+    },
   },
   server: {
-    hmr: true
+    hmr: true,
   },
-  plugins: ['@farmfe/plugin-react']
+  plugins: ['@farmfe/plugin-react', Sass()],
 });

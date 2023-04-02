@@ -83,6 +83,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@farmfe/js-plugin-sass':
+        specifier: workspace:^0.0.1
+        version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
         specifier: workspace:^0.1.2
         version: link:../../rust-plugins/react
@@ -120,6 +123,16 @@ importers:
       '@farmfe/js-plugin-vue':
         specifier: workspace:^0.1.1
         version: link:../../js-plugins/vue
+
+  js-plugins/sass:
+    dependencies:
+      sass:
+        specifier: ^1.60.0
+        version: 1.60.0
+    devDependencies:
+      '@farmfe/core':
+        specifier: workspace:^0.5.3
+        version: link:../../packages/core
 
   js-plugins/vue:
     dependencies:
@@ -3930,6 +3943,10 @@ packages:
     engines: {node: '>= 4'}
     dev: true
 
+  /immutable@4.3.0:
+    resolution: {integrity: sha512-0AOCmOip+xgJwEVTQj1EfiDDOkPmuyllDuTuEX+DDXUgapLAsBIfkg3sxCYyCEA8mQqZrrxPUGjcOQ2JS3WLkg==}
+    dev: false
+
   /import-fresh@3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
     engines: {node: '>=6'}
@@ -5340,6 +5357,16 @@ packages:
 
   /safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
+
+  /sass@1.60.0:
+    resolution: {integrity: sha512-updbwW6fNb5gGm8qMXzVO7V4sWf7LMXnMly/JEyfbfERbVH46Fn6q02BX7/eHTdKpE7d+oTkMMQpFWNUMfFbgQ==}
+    engines: {node: '>=12.0.0'}
+    hasBin: true
+    dependencies:
+      chokidar: 3.5.3
+      immutable: 4.3.0
+      source-map-js: 1.0.2
+    dev: false
 
   /scheduler@0.23.0:
     resolution: {integrity: sha512-CtuThmgHNg7zIZWAXi3AsyIzA3n4xx7aNyjwC2VJldO2LMVDhFK+63xGqq6CsJH4rTAt6/M+N4GhZiDYPx9eUw==}
