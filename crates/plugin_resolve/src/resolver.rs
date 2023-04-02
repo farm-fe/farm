@@ -222,8 +222,14 @@ impl Resolver {
           },
         );
         if !package_path.join("package.json").exists() {
-          if package_path.exists() && package_path.is_dir() {
+          if package_path.exists() {
             println!("这是当前目录的");
+            if let Some(resolved_path) = self
+              .try_file(&package_path)
+              .or_else(|| self.try_directory(&package_path))
+            {
+              return Some(self.get_resolve_result(&package_json_info, resolved_path));
+            }
           }
           println!("不存在package json");
           // println!("try_directory package_path {:?}", package_path);

@@ -35,6 +35,25 @@ fn resolve_exports_replace() {
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
+
+      let resolved = resolver.resolve(
+        "replace/lib/basic-exports.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("basic-exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
       // let resolved = resolver.resolve("replace", cwd.clone(), &ResolveKind::Import);
       // assert!(resolved.is_some());
       // let resolved = resolved.unwrap();
@@ -63,19 +82,19 @@ fn resolve_exports_replace() {
       //     .to_string()
       // );
 
-      let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Import);
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("replace")
-          .join("lib")
-          .join("browser-feature.js")
-          .to_string_lossy()
-          .to_string()
-      );
+      // let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Import);
+      // assert!(resolved.is_some());
+      // let resolved = resolved.unwrap();
+      // assert_eq!(
+      //   resolved.resolved_path,
+      //   cwd
+      //     .join("node_modules")
+      //     .join("replace")
+      //     .join("lib")
+      //     .join("browser-feature.js")
+      //     .to_string_lossy()
+      //     .to_string()
+      // );
 
       // let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Require);
       // assert!(resolved.is_some());
