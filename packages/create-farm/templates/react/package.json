@@ -1,0 +1,21 @@
+{
+  "name": "@farmfe-examples/react",
+  "version": "0.0.0",
+  "dependencies": {
+    "clsx": "^1.2.1",
+    "react": "18",
+    "react-dom": "18"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "*",
+    "@farmfe/core": "*",
+    "@farmfe/plugin-react": "*",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build":"farm build"
+  }
+}

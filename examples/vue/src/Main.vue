@@ -24,9 +24,10 @@ export default defineComponent({
 
 
 
-<style >
+<style lang="scss">
+$font-size: 24px;
 #app {
-    font-size: 24px;
+    font-size: $font-size;
     /* color: red; */
     /* display: flex; */
     /* flex-flow: row wrap; */

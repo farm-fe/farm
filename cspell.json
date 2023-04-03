@@ -29,6 +29,7 @@
     "gnueabihf",
     "hashbrown",
     "hasher",
+    "jridgewell",
     "libfarmfe",
     "libloading",
     "loglevel",
@@ -48,6 +49,7 @@
     "querystring",
     "repr",
     "rkyv",
+    "rootpath",
     "Rspack",
     "Rustup",
     "sabi",
@@ -58,12 +60,15 @@
     "threadsafe",
     "topo",
     "toposort",
+    "treeshake",
     "tsfn",
+    "tsup",
     "Turbopack",
     "unref",
     "unsize",
     "upcasting",
-    "walkdir"
+    "walkdir",
+    "styl"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

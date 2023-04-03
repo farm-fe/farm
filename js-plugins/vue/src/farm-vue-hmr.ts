@@ -3,9 +3,13 @@ import {
   SFCScriptBlock,
   SFCTemplateBlock,
   SFCStyleBlock,
-} from "@vue/compiler-sfc";
-import { CacheDescriptor, QueryObj, StylesCodeCache } from "./farm-vue-types.js";
-import { genMainCode } from "./generatorCode.js";
+} from '@vue/compiler-sfc';
+import {
+  CacheDescriptor,
+  QueryObj,
+  StylesCodeCache,
+} from './farm-vue-types.js';
+import { genMainCode } from './generatorCode.js';
 
 export const cacheScript = new WeakMap();
 
@@ -17,13 +21,13 @@ export function handleHmr(
   resolvedPath: string
 ) {
   const beforeDescriptor = cacheDescriptor[resolvedPath];
-  //set descriptors cache to hmr
+  // set descriptors cache to hmr
   if (!beforeDescriptor) {
     if (Object.keys(query).length === 0)
       cacheDescriptor[resolvedPath] = descriptor;
     return null;
   }
-  //diff beforeDescriptor and currentDescriptor
+  // diff beforeDescriptor and currentDescriptor
   else {
     return diffDescriptor(
       beforeDescriptor,
@@ -41,14 +45,14 @@ function diffDescriptor(
   resolvedPath: string
 ) {
   let _rerender_only = false;
-  //If script changed, rerender from root.
+  // if script changed, rerender from root.
   const scriptChanged = hasScriptChanged(prevDescriptor, descriptor);
-  //If only template changed,rerender from current node.
+  // if only template changed, rerender from current node.
   const templateChanged = hasTemplateChanged(
     prevDescriptor.template!,
     descriptor.template!
   );
-  //If style changed,insert new style.
+  // if style changed, insert new style.
   const [deleteStyles, addStyles] = hasStyleChanged(
     prevDescriptor.styles || [],
     descriptor.styles || []
@@ -58,7 +62,7 @@ function diffDescriptor(
     _rerender_only = true;
   }
 
-  const { source, moduleType } = genMainCode(
+  const { source, moduleType, map } = genMainCode(
     descriptor,
     stylesCodeCache,
     resolvedPath,
@@ -68,7 +72,7 @@ function diffDescriptor(
     addStyles
   );
 
-  return { source, moduleType };
+  return { source, moduleType, map };
 }
 
 function hasStyleChanged(prev: SFCStyleBlock[], next: SFCStyleBlock[]) {
@@ -86,13 +90,13 @@ function hasStyleChanged(prev: SFCStyleBlock[], next: SFCStyleBlock[]) {
       addStyles.push(nextStyle);
     }
   }
-  //prev should be delete
+  // prev should be delete
   if (prev[p] && !next[q]) {
     while (prev[p]) {
       deleteStyles.push(prev[p++]);
     }
   }
-  //next has more new styles
+  // next has more new styles
   else if (!prev[p] && next[q]) {
     while (next[q]) {
       addStyles.push(next[q++]);
@@ -113,8 +117,8 @@ function hasScriptChanged(prev: SFCDescriptor, next: SFCDescriptor) {
   if (!isEqualBlock(prev.scriptSetup!, next.scriptSetup!)) {
     return true;
   }
-  //If cssVars changed,it means that script changed
-  if (prev.cssVars.join("") !== next.cssVars.join("")) {
+  // if cssVars changed, it means that script changed
+  if (prev.cssVars.join('') !== next.cssVars.join('')) {
     return true;
   }
   const prevResolvedScript = cacheScript.get(prev);

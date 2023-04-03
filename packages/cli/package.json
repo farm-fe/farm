@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/cli",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "CLI of Farm",
   "type": "module",
   "author": {
@@ -49,7 +49,7 @@
     "walkdir": "^0.4.1"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:^0.5.0",
+    "@farmfe/core": "workspace:^0.5.3",
     "@types/cross-spawn": "^6.0.2",
     "@types/inquirer": "^9.0.3"
   }

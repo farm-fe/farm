@@ -51,7 +51,7 @@ if (compilingModules.has(modulePath)) {
       const queue = [...FarmModuleSystem.lazyCompilingQueue];
       FarmModuleSystem.lazyCompilingQueue = [];
 
-      const url = '/__lazy_compile?paths=' + paths.join(',');
+      const url = '/__lazy_compile?paths=' + paths.join(',') + `&t=${Date.now()}`;
 
       promise = import(url).then((module: any) => {
         const result: LazyCompileResult = module.default;

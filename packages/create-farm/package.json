@@ -1,0 +1,38 @@
+{
+  "name": "create-farm",
+  "version": "1.0.0",
+  "description": "use create-farm to create farm project",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "create-farm": "dist/index.js"
+  },
+  "scripts": {
+    "start": "rimraf dist && tsup --watch",
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "author": "",
+  "license": "MIT",
+  "keywords": [],
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe"
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.2",
+    "@types/prompts": "^2.4.4",
+    "chalk": "^5.2.0",
+    "gradient-string": "^2.0.2",
+    "minimist": "^1.2.8",
+    "ora": "^6.3.0",
+    "prompts": "^2.4.2",
+    "tsup": "^6.7.0"
+  }
+}
