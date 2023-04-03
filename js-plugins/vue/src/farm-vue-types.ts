@@ -1,7 +1,12 @@
 import Less from 'less';
 import Sass from 'sass';
 import Stylus from 'stylus';
-import { SFCDescriptor } from '@vue/compiler-sfc';
+import {
+  SFCDescriptor,
+  SFCScriptCompileOptions,
+  SFCTemplateCompileOptions,
+  SFCStyleCompileOptions,
+} from '@vue/compiler-sfc';
 
 export interface outputData {
   id: string;
@@ -39,3 +44,41 @@ export type PreProcessorsOptions<T> = T extends typeof Less
   : T extends typeof Stylus
   ? Stylus.RenderOptions
   : never;
+
+export interface FarmVuePluginOptions {
+  include?: string | RegExp | (string | RegExp)[];
+  exclude?: string | RegExp | (string | RegExp)[];
+  isProduction?: boolean;
+  sourceMap?: boolean;
+  script?: Partial<Pick<SFCScriptCompileOptions, 'babelParserPlugins'>>;
+  template?: Partial<
+    Pick<
+      SFCTemplateCompileOptions,
+      | 'compiler'
+      | 'compilerOptions'
+      | 'preprocessOptions'
+      | 'preprocessCustomRequire'
+      | 'transformAssetUrls'
+    >
+  >;
+  style?: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+}
+
+export interface ResolvedOptions {
+  include: (string | RegExp)[];
+  exclude: (string | RegExp)[];
+  isProduction: boolean;
+  sourceMap: boolean;
+  script: Partial<Pick<SFCScriptCompileOptions, 'babelParserPlugins'>>;
+  template: Partial<
+    Pick<
+      SFCTemplateCompileOptions,
+      | 'compiler'
+      | 'compilerOptions'
+      | 'preprocessOptions'
+      | 'preprocessCustomRequire'
+      | 'transformAssetUrls'
+    >
+  >;
+  style: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+}

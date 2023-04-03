@@ -12,7 +12,12 @@ import {
   SFCTemplateCompileResults,
 } from '@vue/compiler-sfc';
 import { error, warn, getHash, parsePath } from './utils.js';
-import { QueryObj, StylesCodeCache, Union } from './farm-vue-types.js';
+import {
+  QueryObj,
+  StylesCodeCache,
+  Union,
+  ResolvedOptions,
+} from './farm-vue-types.js';
 import { cacheScript } from './farm-vue-hmr.js';
 import {
   fromMap,
@@ -44,6 +49,7 @@ module.meta.hot.accept((mod) => {
 `;
 
 export function genTemplateCode(
+  templateCompilerOptions: ResolvedOptions['template'],
   descriptor: SFCDescriptor,
   template: SFCTemplateBlock | null,
   filename: string,
@@ -66,6 +72,7 @@ export function genTemplateCode(
       slotted: descriptor.slotted,
       preprocessLang: template.lang,
       scoped: hasScoped,
+      ...templateCompilerOptions,
     });
     const { code, map, errors, tips } = result;
 
@@ -92,6 +99,7 @@ export function genTemplateCode(
 }
 
 export function genScriptCode(
+  scriptCompilerOptions: ResolvedOptions['script'],
   descriptor: SFCDescriptor,
   filename: string
 ): Union<SFCScriptBlock, { code: string; moduleType: string }> {
@@ -103,6 +111,7 @@ export function genScriptCode(
   if (script) {
     const { content } = (result = compileScript(descriptor, {
       id: filename,
+      ...scriptCompilerOptions,
     }));
     cacheScript.set(descriptor, result);
     code += rewriteDefault(content, '_sfc_main');
@@ -120,6 +129,7 @@ export function genScriptCode(
 }
 
 function genStyleCode(
+  styleCompilerOptions: ResolvedOptions['style'],
   style: SFCStyleBlock,
   stylesCodeCache: StylesCodeCache,
   stylesCodeArr: string[],
@@ -137,6 +147,7 @@ function genStyleCode(
     id: `data-v-${hash}`,
     scoped: Boolean(scoped),
     filename,
+    ...styleCompilerOptions,
   });
   if (errors.length) {
     errors.forEach((err) => {
@@ -164,6 +175,7 @@ function genStyleCode(
 }
 
 export function genStylesCode(
+  styleCompilerOptions: ResolvedOptions['style'],
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
@@ -178,6 +190,7 @@ export function genStylesCode(
   if (styles.length) {
     for (let i = 0; i < styles.length; i++) {
       genStyleCode(
+        styleCompilerOptions,
         styles[i],
         stylesCodeCache,
         stylesCodeArr,
@@ -193,6 +206,7 @@ export function genStylesCode(
   if (isHmr && addStyles.length) {
     for (let i = 0; i < addStyles.length; i++) {
       genStyleCode(
+        styleCompilerOptions,
         styles[i],
         stylesCodeCache,
         stylesCodeArr,
@@ -244,6 +258,7 @@ export function genAssignScopedCode(hash: string) {
 }
 
 export function genMainCode(
+  resolvedOptions: ResolvedOptions,
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
@@ -252,6 +267,12 @@ export function genMainCode(
   deleteStyles: SFCStyleBlock[] = [],
   addStyles: SFCStyleBlock[] = []
 ) {
+  const {
+    template: templateCompilerOptions,
+    script: scriptCompilerOptions,
+    style: styleCompilerOptions,
+    sourceMap,
+  } = resolvedOptions;
   const output: string[] = [];
   const { template, scriptSetup, script, styles } = descriptor;
   const hasScoped = styles.some((style) => style.scoped);
@@ -263,9 +284,10 @@ export function genMainCode(
     map: scriptMap,
     moduleType,
     bindings,
-  } = genScriptCode(descriptor, filename);
+  } = genScriptCode(scriptCompilerOptions, descriptor, filename);
 
   const { code: templateCode, map: templateMap } = genTemplateCode(
+    templateCompilerOptions,
     descriptor,
     template,
     filename,
@@ -274,7 +296,8 @@ export function genMainCode(
     hash
   );
   let resolvedMap: EncodedSourceMap | string = '';
-  if (templateMap && scriptMap) {
+  //only "sourceMap === true" should generator source-map
+  if ((templateMap || scriptMap) && sourceMap) {
     resolvedMap = genSourceMap(
       scriptMap as unknown as SourceMap,
       templateMap as unknown as SourceMap,
@@ -283,6 +306,7 @@ export function genMainCode(
   }
 
   const stylesCode = genStylesCode(
+    styleCompilerOptions,
     descriptor,
     stylesCodeCache,
     resolvedPath,
