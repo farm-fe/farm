@@ -259,7 +259,9 @@ impl Resolver {
             } else {
               RelativePath::new(item).to_logical_path(maybe_node_modules_path)
             };
-            // println!("item {:?}", item);
+            println!("item {:?}", item);
+            println!("package_path_dir {:?}", package_path_dir);
+            println!("sad {}", package_path_dir.exists());
             if package_path_dir.exists() && package_path_dir.is_dir() {
               println!("循环出来的 path 获取到了包的路径 {:?}", package_path);
               package_json_info = load_package_json(

@@ -36,51 +36,51 @@ fn resolve_exports_replace() {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
 
-      // let resolved = resolver.resolve(
-      //   "replace/lib/basic-exports.js",
-      //   cwd.clone(),
-      //   &ResolveKind::Import,
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("replace")
-      //     .join("lib")
-      //     .join("basic-exports.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve(
+        "replace/lib/basic-exports.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("basic-exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
-      // let resolved = resolver.resolve("replace", cwd.clone(), &ResolveKind::Import);
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("replace")
-      //     .join("lib")
-      //     .join("basic-exports.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve("replace", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("basic-exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
-      // let resolved = resolver.resolve("replace/submodule.js", cwd.clone(), &ResolveKind::Import);
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("replace")
-      //     .join("lib")
-      //     .join("submodule.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve("replace/submodule.js", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("submodule.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
       let resolved = resolver.resolve("replace/feature", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -108,21 +108,7 @@ fn resolve_exports_import_require() {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
 
-      let resolved = resolver.resolve("require-import/config", cwd.clone(), &ResolveKind::Import);
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("require-import")
-          .join("lib")
-          .join("base-import.js")
-          .to_string_lossy()
-          .to_string()
-      );
-
-      // let resolved = resolver.resolve("replace-import/config", cwd.clone(), &ResolveKind::Require);
+      // let resolved = resolver.resolve("require-import/config", cwd.clone(), &ResolveKind::Import);
       // assert!(resolved.is_some());
       // let resolved = resolved.unwrap();
       // assert_eq!(
@@ -131,10 +117,24 @@ fn resolve_exports_import_require() {
       //     .join("node_modules")
       //     .join("require-import")
       //     .join("lib")
-      //     .join("base-require.cjs")
+      //     .join("base-import.js")
       //     .to_string_lossy()
       //     .to_string()
       // );
+
+      let resolved = resolver.resolve("require-import/config", cwd.clone(), &ResolveKind::Require);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("require-import")
+          .join("lib")
+          .join("base-require.cjs")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
