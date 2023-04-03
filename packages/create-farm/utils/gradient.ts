@@ -18,14 +18,8 @@ const gradientColors = [
 // export const rocketAscii = '■■▶'
 export const rocketAscii = '▶';
 
-// get a reference to scroll through while loading
-// visual representation of what this generates:
-// gradientColors: "..xxXX"
-// referenceGradient: "..xxXXXXxx....xxXX"
 const referenceGradient = [
   ...gradientColors,
-  // draw the reverse of the gradient without
-  // accidentally mutating the gradient (ugh, reverse())
   ...[...gradientColors].reverse(),
   ...gradientColors,
 ];
