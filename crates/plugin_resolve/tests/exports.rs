@@ -107,19 +107,19 @@ fn resolve_exports_import_require() {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
 
-      // let resolved = resolver.resolve("require-import/config", cwd.clone(), &ResolveKind::Import);
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("require-import")
-      //     .join("lib")
-      //     .join("base-import.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve("require-import/config", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("require-import")
+          .join("lib")
+          .join("base-import.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
       let resolved = resolver.resolve("require-import/config", cwd.clone(), &ResolveKind::Require);
       assert!(resolved.is_some());

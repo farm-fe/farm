@@ -560,6 +560,7 @@ impl Resolver {
                     ResolveKind::Require => {
                       if key_word.to_lowercase() == "require" {
                         let path = Path::new(resolved_path);
+                        println!("path {:?}", path);
                         let string_value =
                           &key_value.to_string()[1..key_value.to_string().len() - 1];
                         if path.is_absolute() {
