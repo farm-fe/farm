@@ -523,18 +523,35 @@ impl Resolver {
                         match key_value {
                           Value::String(import_value) => {
                             println!("path {:?}", path);
+                            println!("import_value {:?}", import_value);
                             let string_value =
                               &import_value.to_string()[1..import_value.to_string().len() - 1];
+                            println!("string_value {:?}", string_value);
                             if path.is_absolute() {
-                              let value_path = RelativePath::new(&string_value)
+                              let value_path = RelativePath::new(&import_value)
                                 .to_logical_path(dir)
                                 .to_string_lossy()
                                 .to_string();
+                              println!("Some(value_path) {:?}", value_path);
                               return Some(value_path);
                             }
                           }
-                          Value::String(import_value) => {
-                            println!("我是 import 里面 对象字段的value {:#?}", import_value);
+                          Value::Object(import_value) => {
+                            for (key_word, key_value) in import_value {
+                              println!("import 对象类型 {} {:?}", key_word, key_value);
+                              if key_word == "default" {
+                                if path.is_absolute() {
+                                  let string_value =
+                                    &key_value.to_string()[1..key_value.to_string().len() - 1];
+                                  let value_path = RelativePath::new(string_value)
+                                    .to_logical_path(dir)
+                                    .to_string_lossy()
+                                    .to_string();
+                                  println!("Some(value_path) {:?}", value_path);
+                                  return Some(value_path);
+                                }
+                              }
+                            }
                           }
                           _ => {}
                         }
