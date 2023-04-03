@@ -1,6 +1,7 @@
 import { execa } from 'execa';
 import { createSpinner } from 'nanospinner';
-import { resolve } from 'path';
+import { resolve, join } from 'node:path';
+import fs from 'node:fs';
 
 const DEFAULT_PACKAGE_MANAGER = 'pnpm';
 const CWD = process.cwd();
@@ -9,20 +10,42 @@ const CWD = process.cwd();
 const PKG_CORE = resolve(CWD, './packages/core');
 
 // Build rust-plugin-react
-const PKG_PLUGIN_REACT = resolve(CWD, './rust-plugins/react');
+const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 
 // Build js-plugin-vue
-const PKG_PLUGIN_VUE = resolve(CWD, './js-plugins/vue');
+const PKG_JS_PLUGIN = resolve(CWD, './js-plugins');
+
+const jsPathMap = fs
+  .readdirSync(PKG_JS_PLUGIN)
+  .filter((file) => fs.statSync(join(PKG_JS_PLUGIN, file)).isDirectory());
+
+const rustPathMap = fs
+  .readdirSync(PKG_RUST_PLUGIN)
+  .filter((file) => fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory());
+const rustPlugin = rustPathMap.map((subDir) =>
+  resolve(PKG_RUST_PLUGIN, subDir)
+);
 
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], { cwd: PKG_CORE });
 
-const plugins = [
-  execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: PKG_PLUGIN_REACT }),
-  execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: PKG_PLUGIN_VUE }),
-];
+const rustPlugins = () => {
+  return rustPlugin.map((item) => {
+    return execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: item });
+  });
+};
 
-export const buildPlugins = () => Promise.all(plugins);
+const jsPlugin = jsPathMap.map((subDir) => resolve(PKG_JS_PLUGIN, subDir));
+
+const jsPlugins = () => {
+  return jsPlugin.map((item) => {
+    return execa(DEFAULT_PACKAGE_MANAGER, ['build'], { cwd: item });
+  });
+};
+
+export const buildJsPlugins = () => Promise.all(jsPlugins());
+
+export const buildRustPlugins = () => Promise.all(rustPlugins());
 
 export const copyArtifacts = () => {
   execa(DEFAULT_PACKAGE_MANAGER, ['copy-artifacts'], { cwd: PKG_PLUGIN_REACT });
@@ -40,9 +63,10 @@ export async function runTask(taskName, task) {
 }
 
 export async function runTaskQueue() {
-  await runTask('Core', buildCore);
-  await runTask('Plugins', buildPlugins);
-  await runTask('Artifacts', copyArtifacts);
+  // await runTask('Core', buildCore);
+  await runTask('rustPlugins', buildRustPlugins);
+  await runTask('jsPlugins', buildJsPlugins);
+  // await runTask('Artifacts', copyArtifacts);
 }
 
 export function resolveNodeVersion() {
@@ -56,3 +80,5 @@ export function resolveNodeVersion() {
     process.exit(1);
   }
 }
+
+function dynamicPlugin(baseDir)
