@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { parse } from '@vue/compiler-sfc';
-import { JsPlugin } from '@farmfe/core';
+import { JsPlugin, UserConfig } from '@farmfe/core';
 import { handleHmr } from './farm-vue-hmr.js';
 import {
   StylesCodeCache,
@@ -9,11 +9,15 @@ import {
   PreProcessorsType,
   PreProcessorsOptions,
   ValueOf,
+  FarmVuePluginOptions,
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 import {
   callWithErrorHandle,
   error,
+  getResolvedOptions,
+  handleExclude,
+  handleInclude,
   isLess,
   isSass,
   isStyl,
@@ -27,11 +31,21 @@ const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
 
-export default function farmVuePlugin(options: object = {}): JsPlugin {
+export default function farmVuePlugin(
+  farmVuePluginOptions: FarmVuePluginOptions = {}
+): JsPlugin {
   // options hooks to get farmConfig
-  let farmConfig = null;
+  let farmConfig: UserConfig['compilation'];
+  const resolvedOptions = getResolvedOptions(farmVuePluginOptions);
+
+  const exclude = handleExclude(resolvedOptions);
+  const include = handleInclude(resolvedOptions);
   return {
     name: 'farm-vue-plugin',
+    config(config) {
+      farmConfig = config || {};
+      return config;
+    },
     load: {
       filters: {
         resolvedPaths: ['.vue$'],
@@ -56,9 +70,14 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
     // add hmr code In root file
     transform: {
       filters: {
-        resolvedPaths: ['.vue$'],
+        resolvedPaths: ['.vue$', ...include],
       },
       async executor(params, ctx) {
+        //If path in exclude,skip transform.
+        for (let reg of exclude) {
+          if (reg.test(params.resolvedPath))
+            return { content: params.content, moduleType: params.moduleType };
+        }
         const query: Record<string, string> = {};
         params.query.forEach(([key, value]) => {
           query[key] = value;
@@ -88,6 +107,7 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
         if (result) {
           const { descriptor } = result;
           const isHmr = handleHmr(
+            resolvedOptions,
             cacheDescriptor,
             descriptor,
             stylesCodeCache,
@@ -105,7 +125,12 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
             source: mainCode,
             moduleType,
             map,
-          } = genMainCode(descriptor, stylesCodeCache, resolvedPath);
+          } = genMainCode(
+            resolvedOptions,
+            descriptor,
+            stylesCodeCache,
+            resolvedPath
+          );
           return {
             content: mainCode,
             moduleType,
@@ -124,10 +149,6 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
             moduleType: 'js',
           };
         }
-        return {
-          content: params.content,
-          moduleType: params.moduleType,
-        };
       },
     },
   };
