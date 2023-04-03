@@ -1,27 +1,44 @@
 import fs from 'fs';
 import { parse } from '@vue/compiler-sfc';
-import { JsPlugin } from '@farmfe/core';
-import { handleHmr } from './farm-vue-hmr.js';
+import { JsPlugin, UserConfig } from '@farmfe/core';
+import { handleHmr } from './farm-vue-hmr';
 import {
   StylesCodeCache,
   CacheDescriptor,
   LessStatic,
-} from './farm-vue-types.js';
-import { genMainCode } from './generatorCode.js';
-import { callWithErrorHandle, error } from './utils.js';
+  QueryVue,
+  FarmVuePluginOptions,
+} from './farm-vue-types';
+import { genMainCode } from './generatorCode';
+import {
+  callWithErrorHandle,
+  error,
+  getResolvedOptions,
+  handleExclude,
+  handleInclude,
+} from './utils';
 
 //apply style langs
 type ApplyStyleLangs = ['less'];
-
 const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less'];
 const cacheDescriptor: CacheDescriptor = {};
 
-export default function farmVuePlugin(options: object = {}): JsPlugin {
-  //options hooks to get farmConfig
-  let farmConfig = null;
+export default function farmVuePlugin(
+  farmVuePluginOptions: FarmVuePluginOptions = {}
+): JsPlugin {
+  //configHook to get farmConfig
+  let farmConfig: UserConfig['compilation'];
+  const resolvedOptions = getResolvedOptions(farmVuePluginOptions);
+
+  const exclude = handleExclude(resolvedOptions);
+  const include = handleInclude(resolvedOptions);
   return {
     name: 'farm-vue-plugin',
+    config(config) {
+      farmConfig = config || {};
+      return config;
+    },
     load: {
       filters: {
         resolvedPaths: ['.vue$'],
@@ -46,20 +63,25 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
     // add hmr code In root file
     transform: {
       filters: {
-        resolvedPaths: ['.vue$'],
+        resolvedPaths: ['.vue$', ...include],
       },
       async executor(params, ctx) {
-        const query: Record<string, string> = {};
+        //If path in exclude,skip transform.
+        for (let reg of exclude) {
+          if (reg.test(params.resolvedPath))
+            return { content: params.content, moduleType: params.moduleType };
+        }
+        const query: QueryVue = {};
         params.query.forEach(([key, value]) => {
           query[key] = value;
         });
         const { vue, lang, hash } = query;
         const { resolvedPath, content: source } = params;
-        //handle .vue file
+        //handle .vue file with style
         if (vue === 'true' && hash) {
           let styleCode = stylesCodeCache[hash];
           //if lang is not "css",use preProcessor to handle
-          if (applyStyleLangs.includes(lang)) {
+          if (lang && applyStyleLangs.includes(lang)) {
             const { css } = await preProcession(styleCode, lang);
             styleCode = css;
           }
@@ -78,6 +100,7 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
         if (result) {
           const { descriptor } = result;
           const isHmr = handleHmr(
+            resolvedOptions,
             cacheDescriptor,
             descriptor,
             stylesCodeCache,
@@ -95,7 +118,12 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
             source: mainCode,
             moduleType,
             map,
-          } = genMainCode(descriptor, stylesCodeCache, resolvedPath);
+          } = genMainCode(
+            resolvedOptions,
+            descriptor,
+            stylesCodeCache,
+            resolvedPath
+          );
           return {
             content: mainCode,
             moduleType,
@@ -114,10 +142,6 @@ export default function farmVuePlugin(options: object = {}): JsPlugin {
             moduleType: 'js',
           };
         }
-        return {
-          content: params.content,
-          moduleType: params.moduleType,
-        };
       },
     },
   };

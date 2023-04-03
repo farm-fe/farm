@@ -1,4 +1,9 @@
-import { SFCDescriptor } from '@vue/compiler-sfc';
+import {
+  SFCDescriptor,
+  SFCScriptCompileOptions,
+  SFCTemplateCompileOptions,
+  SFCStyleCompileOptions,
+} from '@vue/compiler-sfc';
 
 export interface outputData {
   id: string;
@@ -163,7 +168,7 @@ export declare namespace Less {
     dumpLineNumbers?: 'comment' | string | undefined;
     /** Add a path to every generated import and url in output css files. */
     rootpath?: string | undefined;
-    /** Math mode options for avoiding symbol confects on math expressions. */
+    /** Math mode options for avoiding symbol conficts on math expressions. */
     math?:
       | 'always'
       | 'strict'
@@ -258,5 +263,53 @@ export interface LessStatic {
   FileManager: typeof Less.FileManager;
   PluginManager: typeof Less.PluginManager;
 }
+
+export interface FarmVuePluginOptions {
+  include?: string | RegExp | (string | RegExp)[];
+  exclude?: string | RegExp | (string | RegExp)[];
+  isProduction?: boolean;
+  sourceMap?: boolean;
+  script?: Partial<Pick<SFCScriptCompileOptions, 'babelParserPlugins'>>;
+  template?: Partial<
+    Pick<
+      SFCTemplateCompileOptions,
+      | 'compiler'
+      | 'compilerOptions'
+      | 'preprocessOptions'
+      | 'preprocessCustomRequire'
+      | 'transformAssetUrls'
+    >
+  >;
+  style?: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+}
+
+export interface ResolvedOptions {
+  include: (string | RegExp)[];
+  exclude: (string | RegExp)[];
+  isProduction: boolean;
+  sourceMap: boolean;
+  script: Partial<Pick<SFCScriptCompileOptions, 'babelParserPlugins'>>;
+  template: Partial<
+    Pick<
+      SFCTemplateCompileOptions,
+      | 'compiler'
+      | 'compilerOptions'
+      | 'preprocessOptions'
+      | 'preprocessCustomRequire'
+      | 'transformAssetUrls'
+    >
+  >;
+  style: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+}
+
+export type QueryVue = {
+  vue?: 'true';
+  lang?: 'less' | 'css';
+  t?: number;
+  index?: number;
+  scoped?: string;
+  hash?: string;
+  [key: string]: any;
+};
 
 export type Union<A, B> = A & B;

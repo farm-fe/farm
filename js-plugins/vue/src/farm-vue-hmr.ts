@@ -7,13 +7,15 @@ import {
 import {
   CacheDescriptor,
   QueryObj,
+  ResolvedOptions,
   StylesCodeCache,
-} from './farm-vue-types.js';
-import { genMainCode } from './generatorCode.js';
+} from './farm-vue-types';
+import { genMainCode } from './generatorCode';
 
 export const cacheScript = new WeakMap();
 
 export function handleHmr(
+  resolvedOptions: ResolvedOptions,
   cacheDescriptor: CacheDescriptor,
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
@@ -30,6 +32,7 @@ export function handleHmr(
   //diff beforeDescriptor and currentDescriptor
   else {
     return diffDescriptor(
+      resolvedOptions,
       beforeDescriptor,
       descriptor,
       stylesCodeCache,
@@ -39,6 +42,7 @@ export function handleHmr(
 }
 
 function diffDescriptor(
+  resolvedOptions: ResolvedOptions,
   prevDescriptor: SFCDescriptor,
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
@@ -63,6 +67,7 @@ function diffDescriptor(
   }
 
   const { source, moduleType, map } = genMainCode(
+    resolvedOptions,
     descriptor,
     stylesCodeCache,
     resolvedPath,
