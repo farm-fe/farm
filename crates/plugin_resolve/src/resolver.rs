@@ -462,13 +462,15 @@ impl Resolver {
       let dir = package_json_info.dir();
       let path = Path::new(resolved_path);
       if let Value::Object(obj) = exports_field {
+        println!("exports 字段是对象类型");
         for (key, value) in obj {
           let key_path = RelativePath::new(&key)
             .to_logical_path(&dir)
             .to_string_lossy()
             .to_string();
+          println!("key {}", key);
           println!("key_path {:?}", key_path);
-          if key_path == resolved_path {
+          if are_paths_equal(key_path, resolved_path) {
             match value {
               Value::String(current_field_value) => {
                 let dir = package_json_info.dir();
@@ -498,44 +500,56 @@ impl Resolver {
                 // TODO resolve import require type
                 // println!("我拿的是 object 类型的 {:?}", current_field_obj);
                 // println!("判断当前是什么类型的引入 {:?}", kind);
-                for (key_word, value) in current_field_obj {
+                for (key_word, key_value) in current_field_obj {
                   match kind {
-                    ResolveKind::Import => {
-                      if key_word.to_lowercase() == "import" {
+                    ResolveKind::Default => {
+                      if key_word.to_lowercase() == "default" {
                         println!("path {:?}", path);
-                        let string_value = &value.to_string()[1..value.to_string().len() - 1];
-                        // println!("我拿的value {:?}", string_value);
-                        // println!("DIR {:?}", dir);
-                        // println!(
-                        // "我拿的是 import 类型的 key {:?}",
-                        // RelativePath::new(&value.to_string())
-                        // );
+                        let string_value =
+                          &key_value.to_string()[1..key_value.to_string().len() - 1];
                         if path.is_absolute() {
                           let value_path = RelativePath::new(&string_value)
                             .to_logical_path(dir)
                             .to_string_lossy()
                             .to_string();
-                          // println!("Some(value_path) {:?}", &value_path);
                           return Some(value_path);
+                        }
+                      }
+                    }
+                    // import with node default
+                    ResolveKind::Import => {
+                      if key_word.to_lowercase() == "import" {
+                        println!("我拿到 imports 字段了 {:?}", key_value);
+                        match key_value {
+                          Value::String(import_value) => {
+                            println!("path {:?}", path);
+                            let string_value =
+                              &import_value.to_string()[1..import_value.to_string().len() - 1];
+                            if path.is_absolute() {
+                              let value_path = RelativePath::new(&string_value)
+                                .to_logical_path(dir)
+                                .to_string_lossy()
+                                .to_string();
+                              return Some(value_path);
+                            }
+                          }
+                          Value::String(import_value) => {
+                            println!("我是 import 里面 对象字段的value {:#?}", import_value);
+                          }
+                          _ => {}
                         }
                       }
                     }
                     ResolveKind::Require => {
                       if key_word.to_lowercase() == "require" {
                         let path = Path::new(resolved_path);
-                        let string_value = &value.to_string()[1..value.to_string().len() - 1];
-                        // println!("我拿的value {:?}", string_value);
-                        // println!("DIR {:?}", dir);
-                        // println!(
-                        //   "我拿的是 import 类型的 key {:?}",
-                        //   RelativePath::new(&value.to_string())
-                        // );
+                        let string_value =
+                          &key_value.to_string()[1..key_value.to_string().len() - 1];
                         if path.is_absolute() {
                           let value_path = RelativePath::new(&string_value)
                             .to_logical_path(dir)
                             .to_string_lossy()
                             .to_string();
-                          // println!("Some(value_path) {:?}", &value_path);
                           return Some(value_path);
                         }
                       }
@@ -604,4 +618,10 @@ impl Resolver {
 
     None
   }
+}
+
+fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(path1: P1, path2: P2) -> bool {
+  let canon1 = PathBuf::from(path1.as_ref()).canonicalize().ok();
+  let canon2 = PathBuf::from(path2.as_ref()).canonicalize().ok();
+  canon1 == canon2
 }

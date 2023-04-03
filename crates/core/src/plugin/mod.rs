@@ -195,6 +195,10 @@ pub enum ResolveKind {
   Entry,
   /// static import, e.g. `import a from './a'`
   Import,
+  /// static exports default
+  Default,
+  /// static exports node
+  Node,
   /// static export, e.g. `export * from './a'`
   ExportFrom,
   /// dynamic import, e.g. `import('./a').then(module => console.log(module))`
