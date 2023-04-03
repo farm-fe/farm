@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-vue
 
+## 0.2.0
+
+### Minor Changes
+
+- e09991f: Support `less/sass/scss/stylus` for style's `lang` attribute in Vue SFC
+
 ## 0.1.1
 
 ### Patch Changes
