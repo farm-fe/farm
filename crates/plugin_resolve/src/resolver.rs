@@ -271,6 +271,8 @@ impl Resolver {
             return Some(self.get_resolve_result(&package_json_info, resolved_path, kind));
           }
         } else if package_path.exists() && package_path.is_dir() {
+          println!("存在package json {:?}", package_path);
+          println!("package_json_info {:?}", package_json_info);
           if let Err(_) = package_json_info {
             return None;
           }
@@ -281,17 +283,21 @@ impl Resolver {
           // search normal entry, based on self.config.main_fields, e.g. module/main
           let raw_package_json_info: Map<String, Value> =
             from_str(package_json_info.raw()).unwrap();
+          println!("fields {:?}", &self.config.main_fields);
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
+              // 现在逻辑有问题 如果是对象走一套逻辑 如果是字符串走一套逻辑
               if let Value::Object(_) = field_value {
-                println!("存在package json {:?}", package_path);
-                return Some(self.get_resolve_result(
+                // println!("存在package json {:?}", package_path);
+                let res = Some(self.get_resolve_result(
                   &Ok(package_json_info.clone()),
                   package_path.to_str().unwrap().to_string(),
                   kind,
                 ));
-              }
-              if let Value::String(str) = field_value {
+                println!("判断我拿到的是不是 res {:?}", res);
+                return res
+              } else if let Value::String(str) = field_value {
+                println!("走到这里来了 解析字符串");
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
                 return self.try_file(&full_path).map(|resolved_path| {
@@ -322,11 +328,11 @@ impl Resolver {
       let resolved_path = self
         .try_browser_replace(package_json_info, &resolved_path)
         .unwrap_or(resolved_path);
-
+      println!("resolved_path 这是browser的 {:?}", resolved_path);
       let resolved_path = self
         .try_exports_replace(package_json_info, &resolved_path, &kind)
         .unwrap_or(resolved_path);
-
+      println!("resolved_path 这是exports的 {:?}", resolved_path);
       return PluginResolveHookResult {
         resolved_path,
         external,
@@ -437,10 +443,16 @@ impl Resolver {
                   }
                 }
               }
-              _ => {}
+              _ => {
+                // self.try_node_modules();
+                println!("现在是一个解析不了的类型");
+                return None;
+              }
             }
           }
         }
+      } else {
+        println!("exports 字段不是对象啊 {:?}", exports_field);
       }
     }
 

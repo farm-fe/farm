@@ -159,20 +159,31 @@ fn resolve_exports_nesting() {
           .to_string_lossy()
           .to_string()
       );
+    }
+  );
+}
 
-      // let resolved = resolver.resolve("nesting/config", cwd.clone(), &ResolveKind::Import);
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("nesting")
-      //     .join("dist")
-      //     .join("esm-bundler.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+#[test]
+fn resolve_exports_degrade() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new(ResolveConfig::default());
+
+      let resolved = resolver.resolve("degrade", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("degrade")
+          .join("dist")
+          .join("index.mjs")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
