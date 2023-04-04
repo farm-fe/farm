@@ -28,18 +28,27 @@ pub struct ImportInfo {
   pub stmt_id: StatementId,
 }
 
+// collect all exports and gathering them into a simpler structure
+#[derive(Debug, Clone)]
 pub enum ExportSpecifierInfo {
+  // export * from 'foo';
   All,
+  // export { foo, bar, default as zoo } from 'foo';
   Named {
     local: Ident,
     exported: Option<Ident>,
   },
+  // export default xxx;
   Default,
+  // export * as foo from 'foo';
+  Namespace(Ident),
 }
 
+#[derive(Debug, Clone)]
 pub struct ExportInfo {
   pub source: Option<String>,
   pub specifiers: Vec<ExportSpecifierInfo>,
+  pub stmt_id: StatementId,
 }
 
 pub struct Statement {
@@ -65,8 +74,12 @@ impl Statement {
   }
 }
 
+pub struct StatementGraphEdge {
+  idents: Vec<Ident>,
+}
+
 pub struct StatementGraph {
-  g: petgraph::graph::Graph<Statement, ()>,
+  g: petgraph::graph::Graph<Statement, StatementGraphEdge>,
   id_index_map: HashMap<StatementId, NodeIndex>,
 }
 
@@ -83,15 +96,30 @@ impl StatementGraph {
     Self { g, id_index_map }
   }
 
-  pub fn add_edge(&mut self, from: StatementId, to: StatementId) {
+  pub fn add_edge(&mut self, from: StatementId, to: StatementId, idents: Vec<Ident>) {
     let from_node = self.id_index_map.get(&from).unwrap();
     let to_node = self.id_index_map.get(&to).unwrap();
-    self.g.add_edge(*from_node, *to_node, ());
+
+    // if self.g contains edge, insert idents into edge
+    if let Some(edge) = self.g.find_edge(*from_node, *to_node) {
+      let edge = self.g.edge_weight_mut(edge).unwrap();
+      edge.idents.extend(idents);
+      return;
+    }
+
+    self
+      .g
+      .add_edge(*from_node, *to_node, StatementGraphEdge { idents });
   }
 
-  pub fn get_node(&self, id: StatementId) -> &Statement {
-    let node = self.id_index_map.get(&id).unwrap();
+  pub fn stmt(&self, id: &StatementId) -> &Statement {
+    let node = self.id_index_map.get(id).unwrap();
     &self.g[*node]
+  }
+
+  pub fn stmt_mut(&mut self, id: &StatementId) -> &mut Statement {
+    let node = self.id_index_map.get(id).unwrap();
+    &mut self.g[*node]
   }
 
   pub fn stmts(&self) -> Vec<&Statement> {
