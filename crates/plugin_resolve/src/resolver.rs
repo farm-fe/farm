@@ -384,24 +384,18 @@ impl Resolver {
                 println!("当前请求路径是对象 {:?}", current_field_obj);
                 for (key_word, key_value) in current_field_obj {
                   match kind {
-                    ResolveKind::Default => {
-                      if self.are_paths_equal(key_word, "default") {
-                        let string_value =
-                          &key_value.to_string()[1..key_value.to_string().len() - 1];
+                    // import with node default
+                    ResolveKind::Import => {
+                      if self.are_paths_equal(&key_word, "default") {
                         if path.is_absolute() {
                           let value_path =
-                            self.get_key_path(&string_value, package_json_info.dir());
+                            self.get_key_path(&key_value.to_string(), package_json_info.dir());
                           return Some(value_path);
                         }
                       }
-                    }
-                    // import with node default
-                    ResolveKind::Import => {
-                      if self.are_paths_equal(key_word, "import") {
+                      if self.are_paths_equal(&key_word, "import") {
                         match key_value {
                           Value::String(import_value) => {
-                            let string_value =
-                              &import_value.to_string()[1..import_value.to_string().len() - 1];
                             if path.is_absolute() {
                               let value_path =
                                 self.get_key_path(&import_value, package_json_info.dir());
@@ -411,14 +405,18 @@ impl Resolver {
                           Value::Object(import_value) => {
                             for (key_word, key_value) in import_value {
                               if self.are_paths_equal(key_word, "default") {
+                                println!("我现在进来的是import 的 default 字段");
                                 if path.is_absolute() {
-                                  let string_value =
-                                    &key_value.to_string()[1..key_value.to_string().len() - 1];
-                                  let value_path =
-                                    self.get_key_path(&string_value, package_json_info.dir());
+                                  println!("查询key value{:?}", key_value);
+                                  let value_path = self.get_key_path(
+                                    &key_value.as_str().unwrap(),
+                                    package_json_info.dir(),
+                                  );
                                   return Some(value_path);
                                 }
                               }
+
+                              // TODO node value with node environment
                             }
                           }
                           _ => {}
@@ -428,11 +426,9 @@ impl Resolver {
                     ResolveKind::Require => {
                       if key_word.to_lowercase() == "require" {
                         let path = Path::new(resolved_path);
-                        let string_value =
-                          &key_value.to_string()[1..key_value.to_string().len() - 1];
                         if path.is_absolute() {
-                          let value_path =
-                            self.get_key_path(&string_value, package_json_info.dir());
+                          let value_path = self
+                            .get_key_path(&key_value.as_str().unwrap(), package_json_info.dir());
                           return Some(value_path);
                         }
                       }
@@ -559,12 +555,6 @@ impl Resolver {
    * check if two paths are equal
    * Prevent path carrying / cause path resolution to fail
    */
-
-  // fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(&self, path1: P1, path2: P2) -> bool {
-  //   let canon1 = PathBuf::from(path1.as_ref()).canonicalize().ok();
-  //   let canon2 = PathBuf::from(path2.as_ref()).canonicalize().ok();
-  //   canon1 == canon2
-  // }
 
   fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(&self, path1: P1, path2: P2) -> bool {
     let path1 = PathBuf::from(path1.as_ref());

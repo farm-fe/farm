@@ -146,7 +146,7 @@ fn resolve_exports_nesting() {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default());
 
-      let resolved = resolver.resolve("nesting", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve("nesting/config", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -155,7 +155,7 @@ fn resolve_exports_nesting() {
           .join("node_modules")
           .join("nesting")
           .join("dist")
-          .join("index.mjs")
+          .join("esm-bundler.js")
           .to_string_lossy()
           .to_string()
       );
