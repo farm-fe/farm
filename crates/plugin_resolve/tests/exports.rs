@@ -155,10 +155,24 @@ fn resolve_exports_nesting() {
           .join("node_modules")
           .join("nesting")
           .join("dist")
-          .join("esm-bundler.js")
+          .join("index.mjs")
           .to_string_lossy()
           .to_string()
       );
+
+      // let resolved = resolver.resolve("nesting/config", cwd.clone(), &ResolveKind::Import);
+      // assert!(resolved.is_some());
+      // let resolved = resolved.unwrap();
+      // assert_eq!(
+      //   resolved.resolved_path,
+      //   cwd
+      //     .join("node_modules")
+      //     .join("nesting")
+      //     .join("dist")
+      //     .join("esm-bundler.js")
+      //     .to_string_lossy()
+      //     .to_string()
+      // );
     }
   );
 }

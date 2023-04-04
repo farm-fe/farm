@@ -42,6 +42,7 @@ impl Resolver {
     base_dir: PathBuf,
     kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
+    println!("resolve: {} from {}", source, base_dir.to_string_lossy());
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -192,6 +193,7 @@ impl Resolver {
     kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
     // find node_modules until root
+    println!("进来解析 node_modules 模块了 {:?}", source);
     let mut current = base_dir.clone();
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
@@ -210,6 +212,10 @@ impl Resolver {
           },
         );
         if !package_path.join("package.json").exists() {
+          println!(
+            "package.json 不存在 {:?}",
+            package_path.join("package.json")
+          );
           if package_path.exists() {
             if let Some(resolved_path) = self
               .try_file(&package_path)
@@ -278,6 +284,7 @@ impl Resolver {
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               if let Value::Object(_) = field_value {
+                println!("存在package json {:?}", package_path);
                 return Some(self.get_resolve_result(
                   &Ok(package_json_info.clone()),
                   package_path.to_str().unwrap().to_string(),
@@ -334,6 +341,151 @@ impl Resolver {
     }
   }
 
+  fn try_exports_replace(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    resolved_path: &str,
+    kind: &ResolveKind,
+  ) -> Option<String> {
+    let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
+    if let Some(exports_field) = exports_field {
+      println!("存在 exports 字段啦 {:?}", exports_field);
+      let dir = package_json_info.dir();
+      let path = Path::new(resolved_path);
+      if let Value::Object(obj) = exports_field {
+        for (key, value) in obj {
+          let key_path = self.get_key_path(&key, &dir);
+          println!("--------");
+          println!("开始解析 exports 路径啦 {:?}", resolved_path);
+          println!("当前请求路径是{:?}", key_path);
+          println!("--------");
+          if key_path == resolved_path {
+            println!("现在这两个逻辑相等了啊")
+          }
+          if self.are_paths_equal(key_path, resolved_path) {
+            match value {
+              Value::String(current_field_value) => {
+                println!("我现在进来解析字符串的逻辑了");
+                let dir = package_json_info.dir();
+                let path = Path::new(resolved_path);
+                if path.is_absolute() {
+                  let key_path = self.get_key_path(&key, &dir);
+
+                  if self.are_paths_equal(&key_path, resolved_path) {
+                    let value_path =
+                      self.get_key_path(&current_field_value, package_json_info.dir());
+                    println!("我在这算sass 路径呢 {:?}", value_path);
+                    return Some(value_path);
+                  }
+                }
+                println!("这怎么还能走到我这里来啊")
+              }
+              Value::Object(current_field_obj) => {
+                println!("当前请求路径是对象 {:?}", current_field_obj);
+                for (key_word, key_value) in current_field_obj {
+                  match kind {
+                    ResolveKind::Default => {
+                      if self.are_paths_equal(key_word, "default") {
+                        let string_value =
+                          &key_value.to_string()[1..key_value.to_string().len() - 1];
+                        if path.is_absolute() {
+                          let value_path =
+                            self.get_key_path(&string_value, package_json_info.dir());
+                          return Some(value_path);
+                        }
+                      }
+                    }
+                    // import with node default
+                    ResolveKind::Import => {
+                      if self.are_paths_equal(key_word, "import") {
+                        match key_value {
+                          Value::String(import_value) => {
+                            let string_value =
+                              &import_value.to_string()[1..import_value.to_string().len() - 1];
+                            if path.is_absolute() {
+                              let value_path =
+                                self.get_key_path(&import_value, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                          }
+                          Value::Object(import_value) => {
+                            for (key_word, key_value) in import_value {
+                              if self.are_paths_equal(key_word, "default") {
+                                if path.is_absolute() {
+                                  let string_value =
+                                    &key_value.to_string()[1..key_value.to_string().len() - 1];
+                                  let value_path =
+                                    self.get_key_path(&string_value, package_json_info.dir());
+                                  return Some(value_path);
+                                }
+                              }
+                            }
+                          }
+                          _ => {}
+                        }
+                      }
+                    }
+                    ResolveKind::Require => {
+                      if key_word.to_lowercase() == "require" {
+                        let path = Path::new(resolved_path);
+                        let string_value =
+                          &key_value.to_string()[1..key_value.to_string().len() - 1];
+                        if path.is_absolute() {
+                          let value_path =
+                            self.get_key_path(&string_value, package_json_info.dir());
+                          return Some(value_path);
+                        }
+                      }
+                    }
+                    _ => {}
+                  }
+                }
+              }
+              _ => {}
+            }
+          }
+        }
+      }
+    }
+
+    None
+  }
+
+  fn try_browser_replace(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    resolved_path: &str,
+  ) -> Option<String> {
+    let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
+    if let Some(browser_field) = browser_field {
+      if let Value::Object(obj) = browser_field {
+        for (key, value) in obj {
+          let path = Path::new(resolved_path);
+          // resolved path
+          if path.is_absolute() {
+            let key_path = self.get_key_path(&key, package_json_info.dir());
+            if self.are_paths_equal(key_path, resolved_path) {
+              if let Value::String(str) = value {
+                let value_path = self.get_key_path(&str, package_json_info.dir());
+                return Some(value_path);
+              }
+            }
+          } else {
+            // source, e.g. 'foo' in require('foo')
+            if self.are_paths_equal(&key, resolved_path) {
+              if let Value::String(str) = value {
+                let value_path = self.get_key_path(&str, package_json_info.dir());
+                return Some(value_path);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    None
+  }
+
   fn get_field_value_from_package_json_info(
     &self,
     package_json_info: &PackageJsonInfo,
@@ -376,10 +528,7 @@ impl Resolver {
           if matches!(value, Value::Bool(false)) {
             // resolved path
             if path.is_absolute() {
-              let key_path = RelativePath::new(&key)
-                .to_logical_path(package_json_info.dir())
-                .to_string_lossy()
-                .to_string();
+              let key_path = self.get_key_path(&key, package_json_info.dir());
 
               return &key_path == resolved_path;
             } else {
@@ -406,167 +555,35 @@ impl Resolver {
     }
   }
 
-  fn try_exports_replace(
-    &self,
-    package_json_info: &PackageJsonInfo,
-    resolved_path: &str,
-    kind: &ResolveKind,
-  ) -> Option<String> {
-    let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
-    if let Some(exports_field) = exports_field {
-      let dir = package_json_info.dir();
-      let path = Path::new(resolved_path);
-      if let Value::Object(obj) = exports_field {
-        for (key, value) in obj {
-          let key_path = RelativePath::new(&key)
-            .to_logical_path(&dir)
-            .to_string_lossy()
-            .to_string();
-          if key_path == resolved_path {
-            match value {
-              Value::String(current_field_value) => {
-                let dir = package_json_info.dir();
-                let path = Path::new(resolved_path);
-                if path.is_absolute() {
-                  let key_path = RelativePath::new(&key)
-                    .to_logical_path(package_json_info.dir())
-                    .to_string_lossy()
-                    .to_string();
+  /**
+   * check if two paths are equal
+   * Prevent path carrying / cause path resolution to fail
+   */
 
-                  if are_paths_equal(&key_path, resolved_path) {
-                    let value_path = RelativePath::new(&current_field_value)
-                      .to_logical_path(dir)
-                      .to_string_lossy()
-                      .to_string();
-                    return Some(value_path);
-                  }
-                }
-              }
-              Value::Object(current_field_obj) => {
-                for (key_word, key_value) in current_field_obj {
-                  match kind {
-                    ResolveKind::Default => {
-                      if are_paths_equal(key_word, "default") {
-                        let string_value =
-                          &key_value.to_string()[1..key_value.to_string().len() - 1];
-                        if path.is_absolute() {
-                          let value_path = RelativePath::new(&string_value)
-                            .to_logical_path(dir)
-                            .to_string_lossy()
-                            .to_string();
-                          return Some(value_path);
-                        }
-                      }
-                    }
-                    // import with node default
-                    ResolveKind::Import => {
-                      if are_paths_equal(key_word, "import") {
-                        match key_value {
-                          Value::String(import_value) => {
-                            let string_value =
-                              &import_value.to_string()[1..import_value.to_string().len() - 1];
-                            if path.is_absolute() {
-                              let value_path = RelativePath::new(&import_value)
-                                .to_logical_path(dir)
-                                .to_string_lossy()
-                                .to_string();
-                              return Some(value_path);
-                            }
-                          }
-                          Value::Object(import_value) => {
-                            for (key_word, key_value) in import_value {
-                              if are_paths_equal(key_word, "default") {
-                                if path.is_absolute() {
-                                  let string_value =
-                                    &key_value.to_string()[1..key_value.to_string().len() - 1];
-                                  let value_path = RelativePath::new(string_value)
-                                    .to_logical_path(dir)
-                                    .to_string_lossy()
-                                    .to_string();
-                                  return Some(value_path);
-                                }
-                              }
-                            }
-                          }
-                          _ => {}
-                        }
-                      }
-                    }
-                    ResolveKind::Require => {
-                      if key_word.to_lowercase() == "require" {
-                        let path = Path::new(resolved_path);
-                        let string_value =
-                          &key_value.to_string()[1..key_value.to_string().len() - 1];
-                        if path.is_absolute() {
-                          let value_path = RelativePath::new(&string_value)
-                            .to_logical_path(dir)
-                            .to_string_lossy()
-                            .to_string();
-                          return Some(value_path);
-                        }
-                      }
-                    }
-                    _ => {}
-                  }
-                }
-              }
-              _ => {}
-            }
-          }
-        }
-      }
-    }
+  // fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(&self, path1: P1, path2: P2) -> bool {
+  //   let canon1 = PathBuf::from(path1.as_ref()).canonicalize().ok();
+  //   let canon2 = PathBuf::from(path2.as_ref()).canonicalize().ok();
+  //   canon1 == canon2
+  // }
 
-    None
+  fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(&self, path1: P1, path2: P2) -> bool {
+    let path1 = PathBuf::from(path1.as_ref());
+    let path2 = PathBuf::from(path2.as_ref());
+    let path1_suffix = path1.strip_prefix("/").unwrap_or(&path1);
+    let path2_suffix = path2.strip_prefix("/").unwrap_or(&path2);
+    path1_suffix == path2_suffix
   }
 
-  fn try_browser_replace(
-    &self,
-    package_json_info: &PackageJsonInfo,
-    resolved_path: &str,
-  ) -> Option<String> {
-    let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
-    if let Some(browser_field) = browser_field {
-      if let Value::Object(obj) = browser_field {
-        for (key, value) in obj {
-          let path = Path::new(resolved_path);
-          // resolved path
-          if path.is_absolute() {
-            let key_path = RelativePath::new(&key)
-              .to_logical_path(package_json_info.dir())
-              .to_string_lossy()
-              .to_string();
-            if are_paths_equal(key_path, resolved_path) {
-              if let Value::String(str) = value {
-                let value_path = RelativePath::new(&str)
-                  .to_logical_path(package_json_info.dir())
-                  .to_string_lossy()
-                  .to_string();
-                return Some(value_path);
-              }
-            }
-          } else {
-            // source, e.g. 'foo' in require('foo')
-            if are_paths_equal(&key, resolved_path) {
-              if let Value::String(str) = value {
-                let value_path = RelativePath::new(&str)
-                  .to_logical_path(package_json_info.dir())
-                  .to_string_lossy()
-                  .to_string();
-                return Some(value_path);
-              }
-            }
-          }
-        }
-      }
-    }
+  /**
+   * get key path with other different key
+   * TODO need add a argument (default | node) to determine the key
+   */
 
-    None
+  fn get_key_path(&self, key: &str, dir: &String) -> String {
+    let key_path = match key {
+      "default" => RelativePath::new("").to_logical_path(dir),
+      _ => RelativePath::new(key).to_logical_path(dir),
+    };
+    key_path.to_string_lossy().to_string()
   }
-}
-
-fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(path1: P1, path2: P2) -> bool {
-  let canon1 = PathBuf::from(path1.as_ref()).canonicalize().ok();
-  let canon2 = PathBuf::from(path2.as_ref()).canonicalize().ok();
-  canon1 == canon2
 }
