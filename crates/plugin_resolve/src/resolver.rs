@@ -285,6 +285,7 @@ impl Resolver {
             from_str(package_json_info.raw()).unwrap();
           println!("fields {:?}", &self.config.main_fields);
           for main_field in &self.config.main_fields {
+            println!("走进来了多少次");
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               // 现在逻辑有问题 如果是对象走一套逻辑 如果是字符串走一套逻辑
               if let Value::Object(_) = field_value {
@@ -294,8 +295,15 @@ impl Resolver {
                   package_path.to_str().unwrap().to_string(),
                   kind,
                 ));
-                println!("判断我拿到的是不是 res {:?}", res);
-                return res
+                let result = res.as_ref().unwrap();
+                let path = Path::new(result.resolved_path.as_str());
+                println!("判断我拿到的是不是 res {:?}", path);
+                if let Some(extension) = path.extension() {
+                  println!("Path has extension: {}", extension.to_string_lossy());
+                  return res;
+                } else {
+                  println!("Path has no extension");
+                }
               } else if let Value::String(str) = field_value {
                 println!("走到这里来了 解析字符串");
                 let dir = package_json_info.dir();
