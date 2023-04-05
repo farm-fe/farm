@@ -209,22 +209,22 @@ fn resolve_exports_direct_analysis() {
           .to_string()
       );
 
-      // let resolved = resolver.resolve(
-      //   "direct-analysis/direct-analysis.js",
-      //   cwd.clone(),
-      //   &ResolveKind::Import,
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("direct-analysis")
-      //     .join("direct-analysis.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve(
+        "direct-analysis/direct-analysis.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("direct-analysis")
+          .join("direct-analysis.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }

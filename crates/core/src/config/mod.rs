@@ -107,6 +107,7 @@ pub struct ResolveConfig {
   pub extensions: Vec<String>,
   pub conditions: Vec<String>,
   pub symlinks: bool,
+  pub strict_exports: bool,
 }
 
 impl Default for ResolveConfig {
@@ -139,6 +140,7 @@ impl Default for ResolveConfig {
         String::from("default"),
       ],
       symlinks: true,
+      strict_exports: false
     }
   }
 }

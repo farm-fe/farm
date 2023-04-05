@@ -43,6 +43,7 @@ impl Resolver {
     kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
     // println!("resolve: {} from {}", source, base_dir.to_string_lossy());
+    println!("resolve config: {:?}", self.config);
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -196,6 +197,7 @@ impl Resolver {
     // find node_modules until root
     // println!("进来解析 node_modules 模块了 {:?}", source);
     let mut current = base_dir.clone();
+    println!("当前路径 {:?}", current);
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
@@ -293,19 +295,16 @@ impl Resolver {
               // 现在逻辑有问题 如果是对象走一套逻辑 如果是字符串走一套逻辑
               if let Value::Object(_) = field_value {
                 // println!("存在package json {:?}", package_path);
-                let res = Some(self.get_resolve_result(
+                let resolved_path = Some(self.get_resolve_result(
                   &Ok(package_json_info.clone()),
                   package_path.to_str().unwrap().to_string(),
                   kind,
                 ));
-                let result = res.as_ref().unwrap();
+                let result = resolved_path.as_ref().unwrap();
                 let path = Path::new(result.resolved_path.as_str());
                 // println!("判断我拿到的是不是 res {:?}", path);
-                if let Some(extension) = path.extension() {
-                  // println!("Path has extension: {}", extension.to_string_lossy());
-                  return res;
-                } else {
-                  // println!("Path has no extension");
+                if let Some(_extension) = path.extension() {
+                  return resolved_path;
                 }
               } else if let Value::String(str) = field_value {
                 // println!("走到这里来了 解析字符串");
