@@ -4,11 +4,17 @@ use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex};
 use sass_embedded::{Options, Sass};
+use std::env::consts::OS;
 
 fn exe_path() -> std::path::PathBuf {
+  let file_name = if OS == "windows" {
+    "dart-sass-embedded.bat"
+  } else {
+    "dart-sass-embedded"
+  };
   std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR")))
     .join("ext/sass/sass-embedded")
-    .join("dart-sass-embedded")
+    .join(file_name)
 }
 
 #[farm_plugin]

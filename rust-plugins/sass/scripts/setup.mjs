@@ -83,25 +83,9 @@ async function getDartSassEmbedded(outPath, dirName) {
   await fs.rename(p.join(outPath, 'sass_embedded'), p.join(outPath, dirName));
 }
 
-async function getEmbeddedProtocol(outPath, dirName) {
-  const { stdout } = spawnSync(
-    p.join(
-      `./ext/sass/${dirName}/dart-sass-embedded${
-        OS === 'windows' ? '.bat' : ''
-      }`
-    ),
-    ['--version']
-  );
-  const { protocolVersion } = JSON.parse(stdout.toString());
-  const assetUrl = `https://github.com/sass/embedded-protocol/raw/${protocolVersion}/embedded_sass.proto`;
-  const asset = await download(assetUrl);
-  await fs.writeFile(p.join(outPath, `${dirName}.proto`), Buffer.from(asset));
-}
-
 (async () => {
   try {
     await getDartSassEmbedded('./ext/sass', 'sass-embedded');
-    await getEmbeddedProtocol('./ext/sass', 'sass-embedded');
   } catch (error) {
     console.error(error);
     process.exitCode = 1;
