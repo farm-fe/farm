@@ -1,0 +1,11 @@
+[package]
+name = "farmfe_plugin_json"
+version = "0.0.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+farmfe_core = { path = "../core" }
+farmfe_toolkit = { path = "../toolkit" }
+farmfe_testing_helpers = { path = "../testing_helpers" }
