@@ -1,4 +1,5 @@
 use farmfe_core::{
+  hashbrown::HashMap,
   module::{Module, ModuleId, ModuleSystem},
   swc_ecma_ast::Ident,
 };
@@ -6,9 +7,6 @@ use farmfe_core::{
 use crate::statement_graph::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,
 };
-
-#[cfg(test)]
-mod test;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UsedIdent {
@@ -109,17 +107,25 @@ impl TreeShakeModule {
     return exports;
   }
 
-  pub fn used_statements(&mut self) -> Vec<StatementId> {
+  pub fn used_statements(&self) -> Vec<(StatementId, Vec<String>)> {
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
-    let mut used_statements = vec![];
+    let mut stmt_used_idents_map = HashMap::new();
+
+    for (used_ident, stmt_id) in used_exports_idents {
+      let used_idents = stmt_used_idents_map.entry(stmt_id).or_insert(vec![]);
+      used_idents.push(used_ident);
+    }
 
     // 2. analyze used statements starting from used exports
+    let used_statements = self
+      .stmt_graph
+      .analyze_used_statements_and_idents(stmt_used_idents_map);
 
     return used_statements;
   }
 
-  pub fn used_exports_idents(&mut self) -> Vec<(UsedIdent, StatementId)> {
+  pub fn used_exports_idents(&self) -> Vec<(UsedIdent, StatementId)> {
     match &self.used_exports {
       UsedExports::All => {
         // all exported identifiers are used
@@ -219,46 +225,46 @@ impl TreeShakeModule {
           }
         }
 
-        // remove unused export specifiers in export info
-        for export_info in self.exports() {
-          let stmt = self.stmt_graph.stmt_mut(&export_info.stmt_id);
-          // remove unused export specifiers in export info
-          let mut new_specifiers = vec![];
-          let original_export_info = stmt.export_info.as_mut().unwrap();
+        // // remove unused export specifiers in export info
+        // for export_info in self.exports() {
+        //   let stmt = self.stmt_graph.stmt_mut(&export_info.stmt_id);
+        //   // remove unused export specifiers in export info
+        //   let mut new_specifiers = vec![];
+        //   let original_export_info = stmt.export_info.as_mut().unwrap();
 
-          for sp in &original_export_info.specifiers {
-            match sp {
-              ExportSpecifierInfo::Default => {
-                if idents.contains(&"default".to_string()) {
-                  new_specifiers.push(ExportSpecifierInfo::Default);
-                }
-              }
-              ExportSpecifierInfo::Named { local, exported } => {
-                if let Some(exported) = exported {
-                  if idents.contains(&exported.sym.to_string()) {
-                    new_specifiers.push(ExportSpecifierInfo::Named {
-                      local: local.clone(),
-                      exported: Some(exported.clone()),
-                    });
-                  }
-                } else if idents.contains(&local.sym.to_string()) {
-                  new_specifiers.push(ExportSpecifierInfo::Named {
-                    local: local.clone(),
-                    exported: None,
-                  });
-                }
-              }
-              ExportSpecifierInfo::All => {
-                new_specifiers.push(ExportSpecifierInfo::All);
-              }
-              ExportSpecifierInfo::Namespace(ns) => {
-                new_specifiers.push(ExportSpecifierInfo::Namespace(ns.clone()));
-              }
-            }
-          }
+        //   for sp in &original_export_info.specifiers {
+        //     match sp {
+        //       ExportSpecifierInfo::Default => {
+        //         if idents.contains(&"default".to_string()) {
+        //           new_specifiers.push(ExportSpecifierInfo::Default);
+        //         }
+        //       }
+        //       ExportSpecifierInfo::Named { local, exported } => {
+        //         if let Some(exported) = exported {
+        //           if idents.contains(&exported.sym.to_string()) {
+        //             new_specifiers.push(ExportSpecifierInfo::Named {
+        //               local: local.clone(),
+        //               exported: Some(exported.clone()),
+        //             });
+        //           }
+        //         } else if idents.contains(&local.sym.to_string()) {
+        //           new_specifiers.push(ExportSpecifierInfo::Named {
+        //             local: local.clone(),
+        //             exported: None,
+        //           });
+        //         }
+        //       }
+        //       ExportSpecifierInfo::All => {
+        //         new_specifiers.push(ExportSpecifierInfo::All);
+        //       }
+        //       ExportSpecifierInfo::Namespace(ns) => {
+        //         new_specifiers.push(ExportSpecifierInfo::Namespace(ns.clone()));
+        //       }
+        //     }
+        //   }
 
-          original_export_info.specifiers = new_specifiers;
-        }
+        //   original_export_info.specifiers = new_specifiers;
+        // }
 
         used_idents
       }

@@ -10,9 +10,16 @@ pub fn remove_useless_stmts(
   swc_module: &mut SwcModule,
 ) -> (Vec<ImportInfo>, Vec<ExportInfo>) {
   // analyze the statement graph start from the used statements
-  let used_stmts = tree_shake_module.used_statements().clone();
+  let used_stmts = tree_shake_module
+    .used_statements()
+    .clone()
+    .into_iter()
+    .map(|i| i.0)
+    .collect::<Vec<_>>();
 
   // TODO remove unused specifiers in export statement
+
+  // TODO recognize the self-executed statements and preserve all the related statements
 
   // remove the unused statements from the module
   let mut stmts_to_remove = swc_module

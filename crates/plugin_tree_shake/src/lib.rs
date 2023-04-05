@@ -83,7 +83,6 @@ impl Plugin for FarmPluginTreeShake {
         if tree_shake_module.side_effects {
           let imports = tree_shake_module.imports();
           let exports = tree_shake_module.exports();
-          drop(tree_shake_module);
 
           for import_info in &imports {
             add_used_exports_by_import_info(
@@ -103,7 +102,6 @@ impl Plugin for FarmPluginTreeShake {
             );
           }
         } else {
-          drop(tree_shake_module);
           let tree_shake_module = tree_shake_modules_map
             .get_mut(&tree_shake_module_id)
             .unwrap();
