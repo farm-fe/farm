@@ -4,6 +4,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "outDir": "dist",
+    "module": "esnext",
     "moduleResolution": "node"
   },
   "include": ["src/**/*"],

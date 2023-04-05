@@ -1,0 +1,17 @@
+{
+  "name": "@farmfe-examples/solid",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "solid-js": "^1.7.2"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:^*",
+    "@farmfe/js-plugin-solid": "workspace:*"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build"
+  }
+}
