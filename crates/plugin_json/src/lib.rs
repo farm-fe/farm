@@ -3,6 +3,7 @@ use farmfe_core::{
   error::CompilationError,
   module::ModuleType,
   plugin::{Plugin, PluginLoadHookResult},
+  serde_json,
 };
 use farmfe_toolkit::fs;
 
@@ -48,7 +49,7 @@ impl Plugin for FarmPluginJson {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if param.resolved_path.ends_with(".json") {
+    if matches!(param.module_type, ModuleType::Custom(ref suffix) if suffix == "json") {
       let json = serde_json::from_str::<serde_json::Value>(&param.content).map_err(|e| {
         CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),

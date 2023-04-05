@@ -1,0 +1,14 @@
+{
+  "hello": "word",
+  "person": {
+    "name": "shulan",
+    "age": 18,
+    "address": "earth",
+    "phone": 1234567890,
+    "hobby": [
+      "coding",
+      "reading",
+      "swimming"
+    ]
+  }
+}
