@@ -63,6 +63,7 @@ impl Resolver {
           ..Default::default()
         });
       }
+
       // check browser replace
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
         if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
@@ -216,7 +217,8 @@ impl Resolver {
         //   package_path.join("package.json")
         // );
         if !package_path.join("package.json").exists() {
-          if package_path.exists() {
+          // check if the source is a directory or file can be resolved
+          if matches!(&package_path, package_path if package_path.exists()) {
             if let Some(resolved_path) = self
               .try_file(&package_path)
               .or_else(|| self.try_directory(&package_path))
@@ -224,6 +226,7 @@ impl Resolver {
               return Some(self.get_resolve_result(&package_json_info, resolved_path, kind));
             }
           }
+          println!("获取当前source {:?}", source);
           let parts: Vec<&str> = source.split('/').filter(|s| !s.is_empty()).collect();
           let mut prev_path = String::new();
           let mut result = Vec::new();
