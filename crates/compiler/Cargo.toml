@@ -17,3 +17,4 @@ farmfe_plugin_static_assets = { path = "../plugin_static_assets" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_utils = { path = "../utils" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
+farmfe_plugin_json = { path = "../plugin_json" }
