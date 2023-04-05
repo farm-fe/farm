@@ -108,9 +108,7 @@ export function handleInclude(resolvedOptions: ResolvedOptions) {
   return [
     ...new Set(
       resolvedOptions.include.map((match) => {
-        return isRegExp(match)
-          ? match.toString().slice(1, -1)
-          : (match as string);
+        return isRegExp(match) ? match.toString().slice(1, -1) : match;
       })
     ),
   ];
@@ -118,7 +116,7 @@ export function handleInclude(resolvedOptions: ResolvedOptions) {
 
 export function handleExclude(resolvedOptions: ResolvedOptions) {
   return resolvedOptions.exclude.map((match) => {
-    return isRegExp(match) ? (match as RegExp) : new RegExp(match);
+    return isRegExp(match) ? match : new RegExp(match);
   });
 }
 
