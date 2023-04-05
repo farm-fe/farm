@@ -43,7 +43,6 @@ impl Resolver {
     kind: &ResolveKind,
   ) -> Option<PluginResolveHookResult> {
     // println!("resolve: {} from {}", source, base_dir.to_string_lossy());
-    println!("resolve config: {:?}", self.config);
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -197,7 +196,7 @@ impl Resolver {
     // find node_modules until root
     // println!("进来解析 node_modules 模块了 {:?}", source);
     let mut current = base_dir.clone();
-    println!("当前路径 {:?}", current);
+    // println!("当前路径 {:?}", current);
     // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     while current.parent().is_some() {
       let maybe_node_modules_path = current.join(NODE_MODULES);
@@ -302,7 +301,6 @@ impl Resolver {
                 ));
                 let result = resolved_path.as_ref().unwrap();
                 let path = Path::new(result.resolved_path.as_str());
-                // println!("判断我拿到的是不是 res {:?}", path);
                 if let Some(_extension) = path.extension() {
                   return resolved_path;
                 }
@@ -454,9 +452,17 @@ impl Resolver {
                 }
               }
               _ => {
-                // self.try_node_modules();
-                // println!("现在是一个解析不了的类型");
-                return None;
+                if self.config.strict_exports {
+                  panic!(
+                    "exports 字段不是字符串或者对象啊 打一个 error {:?}",
+                    self.config.strict_exports
+                  );
+                } else {
+                  CompilationError::GenericError(format!(
+                    "File `{:?}` does not exist",
+                    self.config.strict_exports
+                  ));
+                }
               }
             }
           }
