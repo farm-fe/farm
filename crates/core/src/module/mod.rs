@@ -8,6 +8,7 @@ use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::relative;
 use hashbrown::HashSet;
+use heck::AsLowerCamelCase;
 use relative_path::RelativePath;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
@@ -208,8 +209,7 @@ pub struct HtmlModuleMetaData {
 /// Internal support module types by the core plugins,
 /// other [ModuleType] will be set after the load hook, but can be change in transform hook too.
 #[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ModuleType {
   // native supported module type by the core plugins
   Js,
@@ -222,6 +222,25 @@ pub enum ModuleType {
   Runtime,
   // custom module type from using by custom plugins
   Custom(String),
+}
+
+impl serde::Serialize for ModuleType {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.serialize_str(self.to_string().as_str())
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for ModuleType {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    let s = <std::string::String as serde::Deserialize>::deserialize(deserializer)?;
+    Ok(s.into())
+  }
 }
 
 impl ModuleType {
@@ -240,7 +259,13 @@ impl ModuleType {
 impl ModuleType {
   /// transform native supported file type to [ModuleType]
   pub fn from_ext(ext: &str) -> Self {
-    match ext {
+    ext.into()
+  }
+}
+
+impl<T: AsRef<str>> From<T> for ModuleType {
+  fn from(s: T) -> Self {
+    match s.as_ref() {
       "js" => Self::Js,
       "jsx" => Self::Jsx,
       "ts" => Self::Ts,
@@ -254,7 +279,10 @@ impl ModuleType {
 
 impl ToString for ModuleType {
   fn to_string(&self) -> String {
-    format!("{:?}", self)
+    match *self {
+      Self::Custom(ref s) => s.to_string(),
+      _ => AsLowerCamelCase(format!("{:?}", self)).to_string(),
+    }
   }
 }
 
@@ -364,8 +392,29 @@ mod tests {
 
   use super::{
     CustomModuleMetaData, DeserializeCustomModuleMetaData, Module, ModuleId, ModuleMetaData,
-    SerializeCustomModuleMetaData,
+    ModuleType, SerializeCustomModuleMetaData,
   };
+
+  #[test]
+  fn module_type() {
+    let suffix_vec = vec![
+      ("js", ModuleType::Js),
+      ("jsx", ModuleType::Jsx),
+      ("ts", ModuleType::Ts),
+      ("tsx", ModuleType::Tsx),
+      ("css", ModuleType::Css),
+      ("html", ModuleType::Html),
+      ("scss", ModuleType::Custom("scss".to_string())),
+      ("some", ModuleType::Custom("some".to_string())),
+      ("Some", ModuleType::Custom("Some".to_string())),
+      ("None", ModuleType::Custom("None".to_string())),
+      ("SomeNone", ModuleType::Custom("SomeNone".to_string())),
+    ];
+
+    suffix_vec
+      .into_iter()
+      .for_each(|(suffix, t)| assert_eq!(suffix, t.to_string()));
+  }
 
   #[test]
   fn module_id() {

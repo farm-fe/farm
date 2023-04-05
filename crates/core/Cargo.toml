@@ -32,3 +32,4 @@ swc_ecma_parser = { version = "0.130.2" }
 swc_common = { version = "0.29.37", features = ["concurrent", "sourcemap"] }
 swc_css_ast = { version = "0.134.11", features = ["rkyv-impl"] }
 swc_html_ast = { version = "0.28.30", features = ["rkyv-impl"] }
+heck = "0.4.1"
