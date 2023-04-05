@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import './index.css';
 
 import rocket from '../../../assets/rocket.svg';
-import toolbox from '../../../assets/toolbox.svg';
+import toolbox from '../../../assets/toolbox.jpg';
 import plug from '../../../assets/plug.svg';
 
 const FeatureList = [
