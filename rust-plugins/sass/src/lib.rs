@@ -33,6 +33,7 @@ impl Plugin for FarmPluginSass {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let reg = Regex::new(r#"\.scss$"#).unwrap();
     if reg.is_match(param.resolved_path) {
+      println!("【 exe_path() 】==> {:?}", exe_path());
       let mut sass = Sass::new(exe_path()).unwrap();
       let res = sass
         .compile(&param.resolved_path, Options::default())

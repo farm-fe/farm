@@ -7,7 +7,10 @@
   "license": "MIT",
   "devDependencies": {
     "@farmfe/cli": "*",
-    "@napi-rs/cli": "^2.10.0"
+    "@napi-rs/cli": "^2.10.0",
+    "extract-zip": "^2.0.1",
+    "node-fetch": "^3.2.10",
+    "tar": "^6.1.11"
   },
   "napi": {
     "name": "farm-plugin-sass",
@@ -29,7 +32,8 @@
     "build": "napi build --platform --cargo-name farmfe_plugin_sass -p farmfe_plugin_sass --release && node scripts/copy-artifacts.mjs",
     "copy-artifacts": "node scripts/copy-artifacts.mjs",
     "type-check": "echo \"No type-checking configured.\"",
-    "prepublishOnly": "farm plugin prepublish"
+    "prepublishOnly": "farm plugin prepublish",
+    "postinstall": "node scripts/setup.mjs"
   },
   "files": [
     "index.js",
