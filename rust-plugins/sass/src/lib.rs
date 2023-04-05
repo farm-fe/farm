@@ -1,8 +1,8 @@
 #![deny(clippy::all)]
 
-use farmfe_core::{config::Config, plugin::Plugin};
+use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::regex::Regex;
+use farmfe_toolkit::{fs, regex::Regex};
 use sass_embedded::{Options, Sass};
 
 fn exe_path() -> std::path::PathBuf {
@@ -22,7 +22,7 @@ impl FarmPluginSass {
 
 impl Plugin for FarmPluginSass {
   fn name(&self) -> &str {
-    "FarmPluginReact"
+    "FarmPluginSass"
   }
 
   fn load(
@@ -33,14 +33,29 @@ impl Plugin for FarmPluginSass {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let reg = Regex::new(r#"\.scss$"#).unwrap();
     if reg.is_match(param.resolved_path) {
-      println!("【 exe_path() 】==> {:?}", exe_path());
+      let content = fs::read_file_utf8(param.resolved_path).unwrap();
+      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+        content,
+        module_type: ModuleType::Custom(String::from("sass")),
+      }));
+    }
+    Ok(None)
+  }
+
+  fn transform(
+    &self,
+    param: &farmfe_core::plugin::PluginTransformHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+    if param.module_type == ModuleType::Custom(String::from("sass")) {
       let mut sass = Sass::new(exe_path()).unwrap();
       let res = sass
         .compile(&param.resolved_path, Options::default())
         .unwrap();
-      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+      return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: res.css,
-        module_type: farmfe_core::module::ModuleType::Css,
+        source_map: None,
+        module_type: Some(farmfe_core::module::ModuleType::Css),
       }));
     }
     Ok(None)
