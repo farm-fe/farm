@@ -1,0 +1,38 @@
+{
+  "name": "@farmfe/js-plugin-solid",
+  "version": "0.2.0",
+  "description": "support SolidJS for farm.",
+  "main": "./dist/farm-solid-plugin.js",
+  "types": "./dist/farm-solid-plugin.d.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsc -w",
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/farm-solid-plugin.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "js-plugins/solid"
+  },
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  },
+  "homepage": "https://github.com/farm-fe/farm/tree/main/js-plugins/solid",
+  "author": "wjq990112 <1163585385@qq.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@farmfe/core": "workspace:^0.5.3"
+  },
+  "peerDependencies": {
+    "@farmfe/core": "^0.5.3"
+  }
+}

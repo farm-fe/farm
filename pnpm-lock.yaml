@@ -180,6 +180,12 @@ importers:
         specifier: workspace:^0.6.0
         version: link:../../packages/core
 
+  js-plugins/solid:
+    devDependencies:
+      '@farmfe/core':
+        specifier: workspace:^0.5.3
+        version: link:../../packages/core
+
   js-plugins/vue:
     dependencies:
       '@jridgewell/gen-mapping':
