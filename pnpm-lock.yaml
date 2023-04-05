@@ -211,7 +211,7 @@ importers:
         version: 0.5.2
     devDependencies:
       '@farmfe/core':
-        specifier: workspace:^0.5.3
+        specifier: workspace:*
         version: link:../../packages/core
       '@types/babel__core':
         specifier: ^7.20.0
