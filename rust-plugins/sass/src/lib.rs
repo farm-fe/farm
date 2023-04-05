@@ -21,7 +21,7 @@ fn exe_path() -> std::path::PathBuf {
 pub struct FarmPluginSass {}
 
 impl FarmPluginSass {
-  fn new(_config: &Config, _options: String) -> Self {
+  pub fn new(_config: &Config, _options: String) -> Self {
     Self {}
   }
 }
