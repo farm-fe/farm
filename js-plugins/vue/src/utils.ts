@@ -45,8 +45,8 @@ export function getHash(text: string, start: number = 0, end: number = 8) {
 
 export function callWithErrorHandle<
   T,
-  U extends (...args: any[]) => any,
-  M extends any[]
+  U extends (...args: unknown[]) => unknown,
+  M extends unknown[]
 >(_this: T, fn: U, args: M) {
   try {
     const result = fn.call(_this, ...args) as ReturnType<U>;
@@ -56,11 +56,11 @@ export function callWithErrorHandle<
   }
 }
 
-export function isArray(val: any) {
+export function isArray(val: unknown): val is unknown[] {
   return Array.isArray(val);
 }
 
-export function isRegExp(reg: any) {
+export function isRegExp(reg: unknown): reg is RegExp {
   return Object.prototype.toString.call(reg) === '[object RegExp]';
 }
 
