@@ -3,7 +3,7 @@
 use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex};
-use sass_embedded::{Options, Sass};
+use sass_embedded::{Sass, StringOptions};
 use std::env::consts::OS;
 
 fn exe_path() -> std::path::PathBuf {
@@ -56,7 +56,7 @@ impl Plugin for FarmPluginSass {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
       let mut sass = Sass::new(exe_path()).unwrap();
       let res = sass
-        .compile(&param.resolved_path, Options::default())
+        .compile_string(&param.content, StringOptions::default())
         .unwrap();
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: res.css,

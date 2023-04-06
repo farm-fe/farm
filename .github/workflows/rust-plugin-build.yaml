@@ -24,6 +24,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
+      - uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Dependencies
         run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
       - run: rustup target add aarch64-apple-darwin
@@ -64,6 +67,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
+      - uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Dependencies
         run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
       - name: Build Farm cli

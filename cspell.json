@@ -67,7 +67,9 @@
     "unsize",
     "upcasting",
     "walkdir",
-    "styl"
+    "styl",
+    "Architecure",
+    "consts"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
