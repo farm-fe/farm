@@ -179,7 +179,6 @@ fn resolve_exports_degrade() {
         cwd
           .join("node_modules")
           .join("degrade")
-          .join("dist")
           .join("index.mjs")
           .to_string_lossy()
           .to_string()
