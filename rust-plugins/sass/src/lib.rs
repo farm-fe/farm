@@ -4,17 +4,50 @@ use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex};
 use sass_embedded::{Sass, StringOptions};
-use std::env::consts::OS;
+use std::env;
+use std::env::consts::{ARCH, OS};
+use std::path::PathBuf;
 
-fn exe_path() -> std::path::PathBuf {
-  let file_name = if OS == "windows" {
-    "dart-sass-embedded.bat"
+const PKG_NAME: &str = "@farmfe/plugin-sass";
+
+fn get_os() -> &'static str {
+  match OS {
+    "linux" => "linux",
+    "macos" => "darwin",
+    "windows" => "win32",
+    os => panic!("dart-sass-embed is not supported OS: {}", os),
+  }
+}
+
+fn get_arch() -> &'static str {
+  match ARCH {
+    "x86" => "ia32",
+    "x86_64" => "x64",
+    "aarch64" => "arm64",
+    arch => panic!("dart-sass-embed is not supported arch: {}", arch),
+  }
+}
+
+fn get_exe_path() -> PathBuf {
+  let os = get_os();
+  let arch = get_arch();
+  let cur_dir = env::current_dir().unwrap().to_string_lossy().to_string();
+  // user manually installs related dependencies
+  let manual_installation_path = PathBuf::from(&cur_dir)
+    .join(format!("node_modules/sass-embedded-{os}-{arch}"))
+    .join("dart-sass-embedded/dart-sass-embedded");
+
+  let default_path = PathBuf::from(&cur_dir)
+    .join(format!(
+      "node_modules/{PKG_NAME}/node_modules/sass-embedded-{os}-{arch}"
+    ))
+    .join("dart-sass-embedded/dart-sass-embedded");
+
+  if manual_installation_path.exists() {
+    manual_installation_path
   } else {
-    "dart-sass-embedded"
-  };
-  std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR")))
-    .join("ext/sass/sass-embedded")
-    .join(file_name)
+    default_path
+  }
 }
 
 #[farm_plugin]
@@ -54,7 +87,15 @@ impl Plugin for FarmPluginSass {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
-      let mut sass = Sass::new(exe_path()).unwrap();
+      let exe_path = get_exe_path();
+      let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
+        panic!(
+          "\n sass-embedded init error: {},\n Please try to install manually. eg: {} \n ",
+          e.message(),
+          format!("pnpm install sass-embedded-{}-{}", get_os(), get_arch())
+        )
+      });
+
       let res = sass
         .compile_string(&param.content, StringOptions::default())
         .unwrap();

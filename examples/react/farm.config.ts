@@ -21,5 +21,5 @@ export default defineFarmConfig({
   server: {
     hmr: true,
   },
-  plugins: ['@farmfe/plugin-react', Sass()],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
 });
