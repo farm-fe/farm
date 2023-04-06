@@ -1,6 +1,6 @@
 // change to @farmfe/core/config when resolve support conditional exports
 import { defineFarmConfig } from '@farmfe/core/dist/config';
-// import Sass from '@farmfe/js-plugin-sass';
+import Sass from '@farmfe/js-plugin-sass';
 
 export default defineFarmConfig({
   compilation: {
@@ -21,5 +21,5 @@ export default defineFarmConfig({
   server: {
     hmr: true,
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
+  plugins: ['@farmfe/plugin-react', Sass()],
 });

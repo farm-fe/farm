@@ -78,6 +78,7 @@
     "**/*.toml",
     "**/*.node",
     "**/*.svg",
-    "**/tests/**"
+    "**/tests/**",
+    "rust-plugins/sass/ext/sass/**"
   ]
 }
