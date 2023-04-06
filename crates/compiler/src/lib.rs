@@ -33,6 +33,7 @@ impl Compiler {
       Arc::new(farmfe_plugin_static_assets::FarmPluginStaticAssets::new(
         &config,
       )) as _,
+      Arc::new(farmfe_plugin_json::FarmPluginJson::new(&config)) as _,
     ];
 
     if config.lazy_compilation {
