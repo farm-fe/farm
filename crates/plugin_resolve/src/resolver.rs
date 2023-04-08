@@ -302,6 +302,8 @@ impl Resolver {
                 return self.try_file(&full_path).map(|resolved_path| {
                   self.get_resolve_result(&Ok(package_json_info), resolved_path, kind)
                 });
+              } else {
+                println!("{} is not a valid value for {}", field_value, main_field);
               }
             }
           }
