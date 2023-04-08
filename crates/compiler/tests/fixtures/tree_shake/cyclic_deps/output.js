@@ -5,7 +5,7 @@ global.__farmNodeBuiltinModules = module.builtinModules;
 (function(modules, entryModule) {
     var cache = {};
     function require(id) {
-        if (cache[id]) return cache[id];
+        if (cache[id]) return cache[id].exports;
         var module = {
             id: id,
             exports: {}

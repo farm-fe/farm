@@ -9,7 +9,7 @@
   var cache = {};
 
   function require(id) {
-    if (cache[id]) return cache[id];
+    if (cache[id]) return cache[id].exports;
 
     var module = {
       id: id,

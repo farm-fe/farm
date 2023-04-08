@@ -9,7 +9,10 @@ import {
 } from '../../binding/index.js';
 
 interface CompilationContext {
-  resolve(param: PluginResolveHookParam): Promise<PluginResolveHookResult>;
+  resolve(
+    param: PluginResolveHookParam,
+    hookContext: { meta: Record<string, string>; caller: string }
+  ): Promise<PluginResolveHookResult>;
 }
 
 type Callback<P, R> = (

@@ -11,9 +11,13 @@ import interopRequireWildcard from '@swc/helpers/lib/_interop_require_wildcard.j
 import exportStar from '@swc/helpers/lib/_export_star.js';
 
 const INTERNAL_MODULE_MAP: Record<string, any> = {
-  '@swc/helpers/lib/_interop_require_default.js': interopRequireDefault,
-  '@swc/helpers/lib/_interop_require_wildcard.js': interopRequireWildcard,
-  '@swc/helpers/lib/_export_star.js': exportStar,
+  '@swc/helpers/lib/_interop_require_default.js': {
+    default: interopRequireDefault,
+  },
+  '@swc/helpers/lib/_interop_require_wildcard.js': {
+    default: interopRequireWildcard,
+  },
+  '@swc/helpers/lib/_export_star.js': { default: exportStar },
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -49,8 +53,6 @@ export class ModuleSystem {
 
   // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
   require(moduleId: string): any {
-    console.log(moduleId, INTERNAL_MODULE_MAP[moduleId], INTERNAL_MODULE_MAP);
-
     if (INTERNAL_MODULE_MAP[moduleId]) {
       return INTERNAL_MODULE_MAP[moduleId];
     }

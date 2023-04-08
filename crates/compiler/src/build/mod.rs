@@ -406,8 +406,13 @@ fn resolve_module(
 
   let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
   let mut module_graph = context.module_graph.write();
+  let module_id = if resolve_module_id_result.resolve_result.external {
+    resolve_param.source.as_str().into()
+  } else {
+    resolve_module_id_result.module_id.clone()
+  };
 
-  let res = if module_graph.has_module(&resolve_module_id_result.module_id) {
+  let res = if module_graph.has_module(&module_id) {
     // the module has already been handled and it should not be handled twice
     ResolveModuleResult::Built(resolve_module_id_result.module_id)
   } else {
