@@ -1,8 +1,14 @@
-use farmfe_core::swc_ecma_ast::Module as SwcModule;
+use farmfe_core::swc_ecma_ast::{
+  ImportDecl, ImportSpecifier, Module as SwcModule, ModuleExportName,
+};
+use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
 use crate::{
   module::TreeShakeModule,
-  statement_graph::{ExportInfo, ImportInfo},
+  statement_graph::{
+    analyze_imports_and_exports::analyze_imports_and_exports, ExportInfo, ExportSpecifierInfo,
+    ImportInfo, ImportSpecifierInfo,
+  },
 };
 
 pub fn remove_useless_stmts(
@@ -10,30 +16,65 @@ pub fn remove_useless_stmts(
   swc_module: &mut SwcModule,
 ) -> (Vec<ImportInfo>, Vec<ExportInfo>) {
   // analyze the statement graph start from the used statements
-  let used_stmts = tree_shake_module
-    .used_statements()
-    .clone()
-    .into_iter()
-    .map(|i| i.0)
-    .collect::<Vec<_>>();
+  let mut used_stmts = tree_shake_module.used_statements();
+  // sort used_stmts
+  used_stmts.sort_by_key(|a| a.0);
 
-  // TODO remove unused specifiers in export statement
+  let mut used_import_infos = vec![];
+  let mut used_export_from_infos = vec![];
 
+  // remove unused specifiers in export statement and import statement
+  for (stmt_id, used_defined_idents) in &used_stmts {
+    let module_item = &mut swc_module.body[*stmt_id];
+
+    let (import_info, export_info, ..) =
+      analyze_imports_and_exports(&stmt_id, module_item, Some(used_defined_idents.clone()));
+
+    if let Some(import_info) = import_info {
+      used_import_infos.push(import_info.clone());
+
+      let mut remover = UselessImportStmtsRemover { import_info };
+
+      module_item.visit_mut_with(&mut remover);
+    }
+
+    if let Some(mut export_info) = export_info {
+      if export_info.source.is_none() || export_info.specifiers.is_empty() {
+        continue;
+      }
+
+      // if this export statement is export * from 'xxx'
+      if matches!(export_info.specifiers[0], ExportSpecifierInfo::All(_)) {
+        export_info.specifiers[0] = ExportSpecifierInfo::All(Some(used_defined_idents.clone()));
+        used_export_from_infos.push(export_info.clone());
+      } else {
+        let export_from_info = export_info;
+        used_export_from_infos.push(export_from_info.clone());
+
+        let mut remover = UselessExportStmtRemover {
+          export_info: export_from_info,
+        };
+
+        module_item.visit_mut_with(&mut remover);
+      }
+    }
+  }
+
+  let mut stmts_to_remove = vec![];
   // TODO recognize the self-executed statements and preserve all the related statements
 
-  // remove the unused statements from the module
-  let mut stmts_to_remove = swc_module
-    .body
+  let used_stmts_indexes = used_stmts
     .iter()
-    .enumerate()
-    .filter_map(|(index, _)| {
-      if !used_stmts.contains(&index) {
-        Some(index)
-      } else {
-        None
-      }
-    })
+    .map(|(index, _)| index)
     .collect::<Vec<_>>();
+
+  // remove the unused statements from the module
+  for (index, _) in swc_module.body.iter().enumerate() {
+    if !used_stmts_indexes.contains(&&index) {
+      stmts_to_remove.push(index);
+    }
+  }
+
   // remove from the end to the start
   stmts_to_remove.reverse();
 
@@ -41,35 +82,118 @@ pub fn remove_useless_stmts(
     swc_module.body.remove(stmt);
   }
 
-  // get used indents from the used statements
-  let used_imports = tree_shake_module
-    .imports()
-    .into_iter()
-    .filter_map(|import_info| {
-      // if the import statement is used(contains at least one used specifier)
-      if used_stmts.contains(&import_info.stmt_id) && !import_info.specifiers.is_empty() {
-        Some(import_info)
-      } else {
-        None
-      }
-    })
-    .collect::<Vec<_>>();
+  (used_import_infos, used_export_from_infos)
+}
 
-  let used_exports = tree_shake_module
-    .exports()
-    .into_iter()
-    .filter_map(|export_info| {
-      // if the export statement is used(contains at least one used specifier)
-      if export_info.source.is_some()
-        && used_stmts.contains(&export_info.stmt_id)
-        && !export_info.specifiers.is_empty()
+pub struct UselessImportStmtsRemover {
+  import_info: ImportInfo,
+}
+
+impl VisitMut for UselessImportStmtsRemover {
+  fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
+    let mut specifiers_to_remove = vec![];
+
+    for (index, specifier) in import_decl.specifiers.iter().enumerate() {
+      match specifier {
+        ImportSpecifier::Named(named_specifier) => {
+          if !self
+            .import_info
+            .specifiers
+            .iter()
+            .any(|specifier| match specifier {
+              ImportSpecifierInfo::Named { local, .. } => {
+                named_specifier.local.to_string() == local.to_string()
+              }
+              _ => false,
+            })
+          {
+            specifiers_to_remove.push(index);
+          }
+        }
+        _ => {}
+      }
+    }
+
+    specifiers_to_remove.reverse();
+
+    for index in specifiers_to_remove {
+      import_decl.specifiers.remove(index);
+    }
+  }
+}
+
+pub struct UselessExportStmtRemover {
+  export_info: ExportInfo,
+}
+
+impl VisitMut for UselessExportStmtRemover {
+  fn visit_mut_export_decl(&mut self, export_decl: &mut farmfe_core::swc_ecma_ast::ExportDecl) {
+    match &mut export_decl.decl {
+      farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
+        let mut decls_to_remove = vec![];
+
+        for (index, decl) in var_decl.decls.iter().enumerate() {
+          if !self
+            .export_info
+            .specifiers
+            .iter()
+            .any(|export_specifier| match export_specifier {
+              ExportSpecifierInfo::Named { local, .. } => match &decl.name {
+                farmfe_core::swc_ecma_ast::Pat::Ident(ident) => {
+                  ident.to_string() == local.to_string()
+                }
+                // TODO support other patterns
+                _ => false,
+              },
+              _ => false,
+            })
+          {
+            decls_to_remove.push(index);
+          }
+        }
+
+        decls_to_remove.reverse();
+
+        for index in decls_to_remove {
+          var_decl.decls.remove(index);
+        }
+      }
+      _ => {}
+    }
+  }
+
+  fn visit_mut_export_specifiers(
+    &mut self,
+    specifiers: &mut Vec<farmfe_core::swc_ecma_ast::ExportSpecifier>,
+  ) {
+    let mut specifiers_to_remove = vec![];
+
+    for (index, specifier) in specifiers.iter().enumerate() {
+      if !self
+        .export_info
+        .specifiers
+        .iter()
+        .any(|export_specifier| match export_specifier {
+          ExportSpecifierInfo::Named { local, .. } => match specifier {
+            farmfe_core::swc_ecma_ast::ExportSpecifier::Named(named_specifier) => {
+              match &named_specifier.orig {
+                ModuleExportName::Ident(ident) => ident.to_string() == local.to_string(),
+                _ => false,
+              }
+            }
+            _ => false,
+          },
+          _ => false,
+        })
       {
-        Some(export_info)
-      } else {
-        None
+        specifiers_to_remove.push(index);
       }
-    })
-    .collect::<Vec<_>>();
+    }
 
-  (used_imports, used_exports)
+    specifiers_to_remove.reverse();
+
+    for index in specifiers_to_remove {
+      specifiers.remove(index);
+    }
+  }
 }

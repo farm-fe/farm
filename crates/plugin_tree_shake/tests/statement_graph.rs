@@ -30,7 +30,7 @@ class f {
 export { a, b, c as d };"#;
 
   GLOBALS.set(&Globals::new(), || {
-    let ast = parse_module(code);
+    let (ast, _) = parse_module(code);
 
     let stmt_graph = StatementGraph::new(&ast);
     assert_eq!(stmt_graph.stmts().len(), 7);

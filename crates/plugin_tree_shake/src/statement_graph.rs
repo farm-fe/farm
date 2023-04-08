@@ -4,8 +4,8 @@ use farmfe_core::{
   swc_ecma_ast::{Ident, Module as SwcModule, ModuleItem},
 };
 
-mod analyze_imports_and_exports;
-mod used_idents_collector;
+pub(crate) mod analyze_imports_and_exports;
+pub(crate) mod used_idents_collector;
 
 use analyze_imports_and_exports::analyze_imports_and_exports;
 
@@ -34,7 +34,7 @@ pub struct ImportInfo {
 #[derive(Debug, Clone)]
 pub enum ExportSpecifierInfo {
   // export * from 'foo';
-  All,
+  All(Option<Vec<String>>),
   // export { foo, bar, default as zoo } from 'foo';
   Named {
     local: Ident,
@@ -68,7 +68,7 @@ pub struct Statement {
 impl Statement {
   pub fn new(id: StatementId, stmt: &ModuleItem) -> Self {
     let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
-      analyze_imports_and_exports(&id, stmt);
+      analyze_imports_and_exports(&id, stmt, None);
 
     // transform defined_idents_map from HashMap<Ident, Vec<Ident>> to HashMap<String, Ident> using ToString
     let defined_idents_map = defined_idents_map
@@ -110,15 +110,6 @@ impl StatementGraph {
     let mut edges_to_add = Vec::new();
 
     for stmt in graph.stmts() {
-      // for di in &stmt.defined_idents {
-      //   println!(
-      //     "defined ident: {} -> {:?} in {}",
-      //     di.sym,
-      //     di.span.ctxt(),
-      //     stmt.id
-      //   );
-      // }
-
       for ident in &stmt.used_idents {
         // find the statement that defines the ident
         let all_stmts = graph.stmts();
@@ -131,13 +122,7 @@ impl StatementGraph {
 
           false
         });
-        // println!(
-        //   "used ident: {} -> {:?}, def_stmt: {:?} in {}",
-        //   ident.sym,
-        //   ident.span.ctxt(),
-        //   def_stmt,
-        //   stmt.id
-        // );
+
         if let Some(def_stmt) = def_stmt {
           edges_to_add.push((stmt.id, def_stmt.id, vec![ident.clone()]));
         }
@@ -210,7 +195,7 @@ impl StatementGraph {
     &self,
     used_exports: HashMap<StatementId, Vec<UsedIdent>>,
   ) -> Vec<(StatementId, Vec<String>)> {
-    let mut used_statements = vec![];
+    let mut used_statements: Vec<(usize, Vec<String>)> = vec![];
 
     // sort used_exports by statement id
     let mut used_exports: Vec<_> = used_exports.into_iter().collect();
@@ -222,10 +207,6 @@ impl StatementGraph {
       let mut skip = false;
 
       for ident in used_export_idents {
-        if skip == true {
-          panic!("should not happen");
-        }
-
         match ident {
           UsedIdent::SwcIdent(i) => {
             used_defined_idents.insert(i.to_string());
@@ -240,9 +221,14 @@ impl StatementGraph {
             used_dep_idents.extend(stmt.used_idents.iter().map(|i| i.to_string()));
           }
           UsedIdent::InExportAll(specifier) => {
-            used_statements.push((stmt_id, vec![specifier]));
+            // if used_statements already contains this statement, add specifier to it
+            if let Some((_, specifiers)) = used_statements.iter_mut().find(|(id, _)| *id == stmt_id)
+            {
+              specifiers.push(specifier);
+            } else {
+              used_statements.push((stmt_id, vec![specifier]));
+            }
             skip = true;
-            break;
           }
         }
       }
@@ -268,11 +254,6 @@ impl StatementGraph {
         let deps = self.dependencies(&stmt_id);
 
         for (dep_stmt, dep_idents) in deps {
-          println!(
-            "dep_stmt: {} -> {:?} used idents {:?}",
-            dep_stmt.id, dep_idents, used_dep_idents
-          );
-
           let mut used = false;
 
           for ident in dep_idents {
@@ -293,6 +274,16 @@ impl StatementGraph {
               if let Some(dep_idents) = dep_stmt.defined_idents_map.get(&ident.to_string()) {
                 dep_used_defined_idents.push(ident.to_string());
                 dep_stmt_idents.extend(dep_idents.clone());
+              } else {
+                // if dep_stmt.defined_idents contains ident, push it to dep_used_defined_idents
+                let find_defined_ident = dep_stmt
+                  .defined_idents
+                  .iter()
+                  .find(|i| i.to_string() == ident.to_string());
+
+                if let Some(find_defined_ident) = find_defined_ident {
+                  dep_used_defined_idents.push(find_defined_ident.to_string());
+                }
               }
             }
 

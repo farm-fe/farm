@@ -170,6 +170,10 @@ impl Plugin for FarmPluginRuntime {
     param: &mut PluginAnalyzeDepsHookParam,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    if !param.module.id.relative_path().ends_with(RUNTIME_SUFFIX) {
+      return Ok(None);
+    }
+
     if let ModuleMetaData::Script(script) = &param.module.meta {
       let mut has_import_star = false;
       let mut has_import_default = false;
@@ -178,7 +182,10 @@ impl Plugin for FarmPluginRuntime {
       // insert swc cjs module helper as soon as it has esm import
       for stmt in &script.ast.body {
         if let ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl { specifiers, .. })) = stmt {
-          has_import_star = true;
+          has_import_star = has_export_star
+            || specifiers
+              .iter()
+              .any(|sp| matches!(sp, ImportSpecifier::Namespace(_)));
           has_import_default = has_import_default
             || specifiers
               .iter()
@@ -218,7 +225,7 @@ impl Plugin for FarmPluginRuntime {
       if has_export_star && !exists("@swc/helpers/lib/_export_star.js", param) {
         insert_import(
           "@swc/helpers/lib/_export_star.js",
-          ResolveKind::ExportFrom,
+          ResolveKind::Import,
           param,
         );
       }
@@ -234,7 +241,7 @@ impl Plugin for FarmPluginRuntime {
     param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if param.module.id.to_string().ends_with(RUNTIME_SUFFIX) {
+    if param.module.id.relative_path().ends_with(RUNTIME_SUFFIX) {
       param.module.module_type = ModuleType::Runtime;
 
       if param.deps.len() > 0 {

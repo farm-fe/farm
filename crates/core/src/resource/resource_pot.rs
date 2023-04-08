@@ -46,7 +46,11 @@ impl ResourcePot {
   }
 
   pub fn modules(&self) -> Vec<&ModuleId> {
-    self.modules.iter().collect()
+    let mut modules: _ = self.modules.iter().collect::<Vec<&ModuleId>>();
+    // sort by module id
+    modules.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+
+    modules
   }
 
   pub fn remove_module(&mut self, module_id: &ModuleId) {

@@ -90,11 +90,53 @@ export const b = 2;"#;
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::Partial(vec!["a".to_string()]);
+  tree_shake_module.used_exports =
+    UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
   let result = tree_shake_module.used_exports_idents();
-  assert_eq!(result.len(), 1);
+  assert_eq!(result.len(), 3);
   assert!(matches!(result[0].0, UsedIdent::InExportAll(_)));
   assert_eq!(result[0].0.to_string(), "a".to_string());
+  assert!(matches!(result[1].0, UsedIdent::SwcIdent(_)));
+  assert_eq!(result[1].0.to_string(), "b".to_string());
+  assert!(matches!(result[2].0, UsedIdent::InExportAll(_)));
+  assert_eq!(result[2].0.to_string(), "c".to_string());
+}
+
+#[test]
+fn used_exports_idents_export_all_multiple() {
+  let code = r#"
+export * from './foo';
+export * from './bar';
+export const b = 2;"#;
+  let module = create_module_with_globals(code);
+
+  let mut tree_shake_module = TreeShakeModule::new(&module);
+  tree_shake_module.used_exports =
+    UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+  let result = tree_shake_module.used_exports_idents();
+  println!("{:?}", result);
+
+  assert_eq!(result.len(), 5);
+
+  assert!(matches!(result[0].0, UsedIdent::InExportAll(_)));
+  assert_eq!(result[0].0.to_string(), "a".to_string());
+  assert!(matches!(result[0].1, 0));
+
+  assert!(matches!(result[1].0, UsedIdent::InExportAll(_)));
+  assert_eq!(result[1].0.to_string(), "a".to_string());
+  assert!(matches!(result[1].1, 1));
+
+  assert!(matches!(result[2].0, UsedIdent::SwcIdent(_)));
+  assert_eq!(result[2].0.to_string(), "b".to_string());
+  assert!(matches!(result[2].1, 2));
+
+  assert!(matches!(result[3].0, UsedIdent::InExportAll(_)));
+  assert_eq!(result[3].0.to_string(), "c".to_string());
+  assert!(matches!(result[3].1, 0));
+
+  assert!(matches!(result[4].0, UsedIdent::InExportAll(_)));
+  assert_eq!(result[4].0.to_string(), "c".to_string());
+  assert!(matches!(result[4].1, 1));
 }
 
 #[test]
@@ -119,7 +161,7 @@ export default 'default';
   "#;
 
   GLOBALS.set(&Globals::new(), || {
-    let module = create_module(code);
+    let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
     tree_shake_module.used_exports = UsedExports::Partial(vec![
       "default".to_string(),
@@ -154,5 +196,99 @@ export default 'default';
     assert_eq!(result[5].1[0].to_string(), "h#1".to_string());
     assert_eq!(result[6].0, 9);
     assert_eq!(result[6].1.len(), 0);
+  });
+}
+
+#[test]
+fn used_statements_with_import() {
+  let code = r#"
+import { foo, zoo } from './foo';
+const a = foo;
+export { a };
+  "#;
+
+  GLOBALS.set(&Globals::new(), || {
+    let (module, _) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&module);
+    tree_shake_module.used_exports = UsedExports::Partial(vec!["a".to_string()]);
+
+    let result = tree_shake_module.used_statements();
+
+    println!("{:?}", result);
+
+    assert_eq!(result.len(), 3);
+    // result should be the same as [(2, ["a#2"]), (1, ["a#2"]), (0, ["foo#1"])]
+    assert_eq!(result[0].0, 2);
+    assert_eq!(result[0].1.len(), 1);
+    assert_eq!(result[0].1[0].to_string(), "a#2".to_string());
+    assert_eq!(result[1].0, 1);
+    assert_eq!(result[1].1.len(), 1);
+    assert_eq!(result[1].1[0].to_string(), "a#2".to_string());
+    assert_eq!(result[2].0, 0);
+    assert_eq!(result[2].1.len(), 1);
+    assert_eq!(result[2].1[0].to_string(), "foo#1".to_string());
+  });
+}
+
+#[test]
+fn used_statements_with_export_all() {
+  let code = r#"
+export * from './foo';
+export const b = 2;
+  "#;
+
+  GLOBALS.set(&Globals::new(), || {
+    let (module, _) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&module);
+    tree_shake_module.used_exports =
+      UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+
+    let result = tree_shake_module.used_statements();
+
+    println!("{:?}", result);
+
+    assert_eq!(result.len(), 2);
+    // result should be the same as [(0, ["a", "c"]), (1, ["b#1"])]
+    assert_eq!(result[0].0, 0);
+    assert_eq!(result[0].1.len(), 2);
+    assert_eq!(result[0].1[0].to_string(), "a".to_string());
+    assert_eq!(result[0].1[1].to_string(), "c".to_string());
+    assert_eq!(result[1].0, 1);
+    assert_eq!(result[1].1.len(), 1);
+    assert_eq!(result[1].1[0].to_string(), "b#1".to_string());
+  });
+}
+
+#[test]
+fn used_exports_idents_export_all_mutiple() {
+  let code = r#"
+export * from './foo';
+export const a = 1;
+export * from './bar';
+  "#;
+
+  GLOBALS.set(&Globals::new(), || {
+    let (module, _) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&module);
+    tree_shake_module.used_exports =
+      UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+
+    let result = tree_shake_module.used_statements();
+
+    println!("{:?}", result);
+
+    assert_eq!(result.len(), 3);
+    // result should be the same as [(0, ["b", "c"]), (1, ["b#1"]), (2, ["b", "c"])]
+    assert_eq!(result[0].0, 0);
+    assert_eq!(result[0].1.len(), 2);
+    assert_eq!(result[0].1[0].to_string(), "b".to_string());
+    assert_eq!(result[0].1[1].to_string(), "c".to_string());
+    assert_eq!(result[1].0, 1);
+    assert_eq!(result[1].1.len(), 1);
+    assert_eq!(result[1].1[0].to_string(), "a#1".to_string());
+    assert_eq!(result[2].0, 2);
+    assert_eq!(result[2].1.len(), 2);
+    assert_eq!(result[2].1[0].to_string(), "b".to_string());
+    assert_eq!(result[2].1[1].to_string(), "c".to_string());
   });
 }

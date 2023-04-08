@@ -35,7 +35,7 @@ pub enum UsedExports {
 }
 
 impl UsedExports {
-  pub fn add_used_export(&mut self, used_export: UsedIdent) {
+  pub fn add_used_export(&mut self, used_export: &dyn ToString) {
     match self {
       UsedExports::All => {
         *self = UsedExports::All;
@@ -142,7 +142,7 @@ impl TreeShakeModule {
                 ExportSpecifierInfo::Named { local, .. } => {
                   used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
                 }
-                ExportSpecifierInfo::All | ExportSpecifierInfo::Namespace(_) => unreachable!(),
+                ExportSpecifierInfo::All(_) | ExportSpecifierInfo::Namespace(_) => unreachable!(),
               }
             }
           }
@@ -166,7 +166,7 @@ impl TreeShakeModule {
                 }
               }
               ExportSpecifierInfo::Namespace(ns) => ident == &ns.sym.to_string(),
-              ExportSpecifierInfo::All => {
+              ExportSpecifierInfo::All(_) => {
                 /* Deal with All later */
                 false
               }
@@ -197,26 +197,26 @@ impl TreeShakeModule {
                     used_idents.push((UsedIdent::SwcIdent(ns.clone()), export_info.stmt_id));
                   }
                 }
-                ExportSpecifierInfo::All => unreachable!(),
+                ExportSpecifierInfo::All(_) => unreachable!(),
               }
             }
           } else {
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
             // otherwise, the ident is not exported and we should throw a warning
-            let export_all_stmt_id = self
-              .exports()
-              .into_iter()
-              .find(|export_info| {
-                export_info.specifiers.iter().any(|sp| match sp {
-                  ExportSpecifierInfo::All => true,
-                  _ => false,
-                })
-              })
-              .map(|export_info| export_info.stmt_id);
+            let mut found = false;
 
-            if let Some(stmt_id) = export_all_stmt_id {
-              used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
-            } else {
+            for export_info in self.exports() {
+              if export_info.specifiers.iter().any(|sp| match sp {
+                ExportSpecifierInfo::All(_) => true,
+                _ => false,
+              }) {
+                found = true;
+                let stmt_id = export_info.stmt_id;
+                used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
+              }
+            }
+
+            if !found {
               println!(
                 "[Farm Tree Shake] Warning: {} is not exported by {:?}",
                 ident, self.module_id

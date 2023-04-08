@@ -58,6 +58,12 @@ impl Plugin for FarmPluginTreeShake {
 
     for module_id in topo_sorted_modules {
       let module = module_graph.module(&module_id).unwrap();
+
+      // skip non script modules
+      if !module.module_type.is_script() {
+        continue;
+      }
+
       let tree_shake_module = module::TreeShakeModule::new(module);
       tree_shake_modules_ids.push(tree_shake_module.module_id.clone());
       tree_shake_modules_map.insert(tree_shake_module.module_id.clone(), tree_shake_module);
@@ -172,22 +178,22 @@ fn add_used_exports_by_import_info(
           if ident.to_string() == "default" {
             imported_tree_shake_module
               .used_exports
-              .add_used_export(module::UsedIdent::Default);
+              .add_used_export(&module::UsedIdent::Default);
           } else {
             imported_tree_shake_module
               .used_exports
-              .add_used_export(module::UsedIdent::SwcIdent(ident.clone()));
+              .add_used_export(&module::UsedIdent::SwcIdent(ident.clone()));
           }
         } else {
           imported_tree_shake_module
             .used_exports
-            .add_used_export(module::UsedIdent::SwcIdent(local.clone()));
+            .add_used_export(&module::UsedIdent::SwcIdent(local.clone()));
         }
       }
       statement_graph::ImportSpecifierInfo::Default(_) => {
         imported_tree_shake_module
           .used_exports
-          .add_used_export(module::UsedIdent::Default);
+          .add_used_export(&module::UsedIdent::Default);
       }
     }
   }
@@ -213,20 +219,28 @@ fn add_used_exports_by_export_info(
           if local.sym.to_string() == "default".to_string() {
             exported_tree_shake_module
               .used_exports
-              .add_used_export(module::UsedIdent::Default);
+              .add_used_export(&module::UsedIdent::Default);
           } else {
             exported_tree_shake_module
               .used_exports
-              .add_used_export(module::UsedIdent::SwcIdent(local.clone()));
+              .add_used_export(&module::UsedIdent::SwcIdent(local.clone()));
           }
         }
         statement_graph::ExportSpecifierInfo::Default => {
           exported_tree_shake_module
             .used_exports
-            .add_used_export(module::UsedIdent::Default);
+            .add_used_export(&module::UsedIdent::Default);
         }
-        statement_graph::ExportSpecifierInfo::All => {
-          exported_tree_shake_module.used_exports = module::UsedExports::All;
+        statement_graph::ExportSpecifierInfo::All(used_idents) => {
+          if let Some(used_idents) = used_idents {
+            for ident in used_idents {
+              exported_tree_shake_module
+                .used_exports
+                .add_used_export(ident);
+            }
+          } else {
+            exported_tree_shake_module.used_exports = module::UsedExports::All;
+          }
         }
       }
     }

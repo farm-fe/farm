@@ -29,7 +29,7 @@ impl Compiler {
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
       Arc::new(farmfe_plugin_css::FarmPluginCss::new(&config)) as _,
-      Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _,
+      // Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _,
       Arc::new(farmfe_plugin_static_assets::FarmPluginStaticAssets::new(
         &config,
       )) as _,
