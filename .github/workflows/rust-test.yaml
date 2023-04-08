@@ -35,6 +35,11 @@ jobs:
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
       - uses: Swatinem/rust-cache@v1
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install Dependencies
+        run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
