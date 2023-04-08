@@ -283,6 +283,7 @@ impl Resolver {
           // search normal entry, based on self.config.main_fields, e.g. module/main
           let raw_package_json_info: Map<String, Value> =
             from_str(package_json_info.raw()).unwrap();
+
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               if let Value::Object(_) = field_value {
@@ -307,6 +308,11 @@ impl Resolver {
               }
             }
           }
+
+          // no main field found, try to resolve index file
+          return self.try_directory(&package_path).map(|resolved_path| {
+            self.get_resolve_result(&Ok(package_json_info), resolved_path, kind)
+          });
         }
       }
 
