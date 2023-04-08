@@ -76,7 +76,8 @@
     "styl",
     "Architecure",
     "consts",
-    "idents"
+    "idents",
+    "esbuild"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

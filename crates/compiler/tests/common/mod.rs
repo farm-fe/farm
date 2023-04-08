@@ -63,8 +63,6 @@ pub fn get_compiler_result(compiler: &Compiler) -> String {
     ));
   }
 
-  println!("result: {}", result);
-
   result
 }
 
@@ -77,13 +75,21 @@ pub fn assert_compiler_result(compiler: &Compiler) {
   let expected_result = load_expected_result(PathBuf::from(compiler.context().config.root.clone()));
   let result = get_compiler_result(compiler);
 
-  // assert lines are the same
-  let expected_lines: Vec<&str> = expected_result.trim().lines().collect();
-  let lines: Vec<&str> = result.trim().lines().collect();
+  if std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() {
+    std::fs::write(
+      PathBuf::from(compiler.context().config.root.clone()).join("output.js"),
+      result,
+    )
+    .unwrap();
+  } else {
+    // assert lines are the same
+    let expected_lines: Vec<&str> = expected_result.trim().lines().collect();
+    let lines: Vec<&str> = result.trim().lines().collect();
 
-  assert_eq!(lines.len(), expected_lines.len());
+    assert_eq!(lines.len(), expected_lines.len());
 
-  for (line, expected_line) in lines.iter().zip(expected_lines.iter()) {
-    assert_eq!(line.trim(), expected_line.trim());
+    for (line, expected_line) in lines.iter().zip(expected_lines.iter()) {
+      assert_eq!(line.trim(), expected_line.trim());
+    }
   }
 }

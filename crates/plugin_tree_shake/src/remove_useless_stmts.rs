@@ -39,21 +39,22 @@ pub fn remove_useless_stmts(
     }
 
     if let Some(mut export_info) = export_info {
-      if export_info.source.is_none() || export_info.specifiers.is_empty() {
+      if export_info.specifiers.is_empty() {
         continue;
       }
 
       // if this export statement is export * from 'xxx'
-      if matches!(export_info.specifiers[0], ExportSpecifierInfo::All(_)) {
+      if export_info.source.is_some()
+        && matches!(export_info.specifiers[0], ExportSpecifierInfo::All(_))
+      {
         export_info.specifiers[0] = ExportSpecifierInfo::All(Some(used_defined_idents.clone()));
         used_export_from_infos.push(export_info.clone());
       } else {
-        let export_from_info = export_info;
-        used_export_from_infos.push(export_from_info.clone());
+        if export_info.source.is_some() {
+          used_export_from_infos.push(export_info.clone());
+        }
 
-        let mut remover = UselessExportStmtRemover {
-          export_info: export_from_info,
-        };
+        let mut remover = UselessExportStmtRemover { export_info };
 
         module_item.visit_mut_with(&mut remover);
       }

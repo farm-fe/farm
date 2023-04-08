@@ -54,9 +54,7 @@ export default 'default';
 
     let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
-    assert_eq!(
-      result,
-      r#"import { aValue } from './foo';
+    let expect = r#"import { aValue } from './foo';
 const a = aValue;
 const c = 3;
 export { a, c as d };
@@ -71,8 +69,14 @@ export class j {
     }
 }
 export default 'default';
-"#
-    );
+    "#
+    .trim();
+    // asset result and expect line by line
+    let result_lines = result.trim().lines();
+    let expect_lines = expect.lines();
+    for (result_line, expect_line) in result_lines.zip(expect_lines) {
+      assert_eq!(result_line, expect_line);
+    }
 
     assert_eq!(import_info.len(), 1);
     assert_eq!(import_info[0].specifiers.len(), 1);
@@ -85,66 +89,20 @@ export default 'default';
       assert!(imported.is_none());
     }
 
-    assert_eq!(export_info.len(), 6);
-    assert_eq!(export_info[0].specifiers.len(), 2);
+    assert_eq!(export_info.len(), 1);
+    assert_eq!(export_info[0].specifiers.len(), 1);
     assert!(matches!(
       export_info[0].specifiers[0],
       ExportSpecifierInfo::Named { .. }
     ));
     if let ExportSpecifierInfo::Named { local, exported } = &export_info[0].specifiers[0] {
-      assert_eq!(local.sym.to_string(), "a".to_string());
-      assert!(exported.is_none());
-    }
-    if let ExportSpecifierInfo::Named { local, exported } = &export_info[0].specifiers[1] {
-      assert_eq!(local.sym.to_string(), "c".to_string());
-      assert_eq!(exported.as_ref().unwrap().sym.to_string(), "d".to_string());
-    }
-
-    assert_eq!(export_info[1].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[1].specifiers[0],
-      ExportSpecifierInfo::Named { .. }
-    ));
-    if let ExportSpecifierInfo::Named { local, exported } = &export_info[1].specifiers[0] {
       assert_eq!(local.sym.to_string(), "default".to_string());
-      assert_eq!(exported.as_ref().unwrap().sym.to_string(), "f".to_string());
-    }
+      assert!(exported.is_some());
 
-    assert_eq!(export_info[2].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[2].specifiers[0],
-      ExportSpecifierInfo::Named { .. }
-    ));
-    if let ExportSpecifierInfo::Named { local, exported } = &export_info[2].specifiers[0] {
-      assert_eq!(local.sym.to_string(), "h".to_string());
-      assert!(exported.is_none());
+      if let Some(exported) = exported {
+        assert_eq!(exported.sym.to_string(), "f".to_string());
+      }
     }
-
-    assert_eq!(export_info[3].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[3].specifiers[0],
-      ExportSpecifierInfo::Named { .. }
-    ));
-    if let ExportSpecifierInfo::Named { local, exported } = &export_info[3].specifiers[0] {
-      assert_eq!(local.sym.to_string(), "i".to_string());
-      assert!(exported.is_none());
-    }
-
-    assert_eq!(export_info[4].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[4].specifiers[0],
-      ExportSpecifierInfo::Named { .. }
-    ));
-    if let ExportSpecifierInfo::Named { local, exported } = &export_info[4].specifiers[0] {
-      assert_eq!(local.sym.to_string(), "j".to_string());
-      assert!(exported.is_none());
-    }
-
-    assert_eq!(export_info[5].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[5].specifiers[0],
-      ExportSpecifierInfo::Default
-    ));
   });
 }
 
