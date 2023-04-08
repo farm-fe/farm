@@ -440,9 +440,7 @@ impl Resolver {
                 }
               }
               _ => {
-                if self.config.strict_exports {
-                } else {
-                }
+                // TODO strict_exports config with error
               }
             }
           }
