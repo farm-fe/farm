@@ -95,9 +95,10 @@ impl Plugin for FarmPluginSass {
       let exe_path = get_exe_path();
       let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
         panic!(
-          "\n sass-embedded init error: {},\n Please try to install manually. eg: {} \n ",
+          "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{}",
           e.message(),
-          format!("pnpm install sass-embedded-{}-{}", get_os(), get_arch())
+          get_os(),
+          get_arch()
         )
       });
 
