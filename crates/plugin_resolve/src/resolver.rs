@@ -110,6 +110,10 @@ impl Resolver {
       } else {
         None
       }
+    } else if self.is_source_dot(source) {
+      return self
+        .try_directory(&base_dir)
+        .map(|resolved_path| self.get_resolve_result(&package_json_info, resolved_path, kind));
     } else {
       // try alias first
       self
@@ -551,6 +555,10 @@ impl Resolver {
     } else {
       false
     }
+  }
+
+  fn is_source_dot(&self, source: &str) -> bool {
+    source == "."
   }
 
   /**
