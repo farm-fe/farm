@@ -31,17 +31,22 @@ fn get_arch() -> &'static str {
 fn get_exe_path() -> PathBuf {
   let os = get_os();
   let arch = get_arch();
+  let entry_file = if let "win32" = os {
+    "dart-sass-embedded.bat"
+  } else {
+    "dart-sass-embedded"
+  };
   let cur_dir = env::current_dir().unwrap().to_string_lossy().to_string();
   // user manually installs related dependencies
   let manual_installation_path = PathBuf::from(&cur_dir)
     .join(format!("node_modules/sass-embedded-{os}-{arch}"))
-    .join("dart-sass-embedded/dart-sass-embedded");
+    .join(format!("dart-sass-embedded/{entry_file}"));
 
   let default_path = PathBuf::from(&cur_dir)
     .join(format!(
       "node_modules/{PKG_NAME}/node_modules/sass-embedded-{os}-{arch}"
     ))
-    .join("dart-sass-embedded/dart-sass-embedded");
+    .join(format!("dart-sass-embedded/{entry_file}"));
 
   if manual_installation_path.exists() {
     manual_installation_path
