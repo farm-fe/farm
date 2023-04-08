@@ -7,7 +7,7 @@ mod common;
 #[test]
 fn update_without_dependencies_change() {
   fixture!("tests/fixtures/update/index.html", |file, crate_path| {
-    // let cwd = file.parent().unwrap().to_path_buf();
+    let cwd = file.parent().unwrap().to_path_buf();
     // let compiler = create_compiler(cwd.clone(), crate_path);
 
     // compiler.compile().unwrap();

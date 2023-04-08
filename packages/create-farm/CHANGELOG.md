@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.1
+
+### Patch Changes
+
+- 3e3e875: Temporarily reduce packet size
+
 ## 1.1.0
 
 ### Minor Changes

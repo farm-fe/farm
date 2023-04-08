@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.5.4
+
+### Patch Changes
+
+- 6371e96: fix ModuleType serialization
+- c4d9c95: support .json file compile
+
 ## 0.5.3
 
 ### Patch Changes
