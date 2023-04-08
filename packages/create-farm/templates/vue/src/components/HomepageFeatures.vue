@@ -11,7 +11,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import rocket from "../../assets/rocket.svg"
-import toolbox from "../../assets/toolbox.svg"
+import toolbox from "../../assets/toolbox.jpg"
 import plug from "../../assets/plug.svg"
 import Feature from './Feature.vue';
 export default defineComponent({

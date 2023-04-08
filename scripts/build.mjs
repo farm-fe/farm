@@ -3,6 +3,8 @@ import { createSpinner } from 'nanospinner';
 import { resolve, join } from 'node:path';
 import fs from 'node:fs';
 
+import { logger } from './logger.mjs'
+
 const DEFAULT_PACKAGE_MANAGER = 'pnpm';
 const CWD = process.cwd();
 
@@ -56,13 +58,17 @@ export function resolveNodeVersion() {
   const minimumMajorVersion = 16;
 
   if (requiredMajorVersion < minimumMajorVersion) {
-    console.error(`Farm does not support using Node.js v${currentVersion}!`);
-    console.error(`Please use Node.js v${minimumMajorVersion} or higher.`);
+    logger(`Farm does not support using Node.js v${currentVersion}!`);
+    logger(`Please use Node.js v${minimumMajorVersion} or higher.`);
     process.exit(1);
   }
 }
 
-function dynamicPlugin(baseDir, command = 'build', packageManager = 'pnpm') {
+export function dynamicPlugin(
+  baseDir,
+  command = 'build',
+  packageManager = 'pnpm'
+) {
   const pluginNameMap = fs
     .readdirSync(baseDir)
     .filter((file) => fs.statSync(join(baseDir, file)).isDirectory());
@@ -71,3 +77,4 @@ function dynamicPlugin(baseDir, command = 'build', packageManager = 'pnpm') {
     return execa(packageManager, [command], { cwd: item });
   });
 }
+

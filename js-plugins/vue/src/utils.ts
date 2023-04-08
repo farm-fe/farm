@@ -45,8 +45,8 @@ export function getHash(text: string, start: number = 0, end: number = 8) {
 
 export function callWithErrorHandle<
   T,
-  U extends (...args: any[]) => any,
-  M extends any[]
+  U extends (...args: unknown[]) => unknown,
+  M extends unknown[]
 >(_this: T, fn: U, args: M) {
   try {
     const result = fn.call(_this, ...args) as ReturnType<U>;
@@ -56,11 +56,11 @@ export function callWithErrorHandle<
   }
 }
 
-export function isArray(val: any) {
+export function isArray(val: unknown): val is unknown[] {
   return Array.isArray(val);
 }
 
-export function isRegExp(reg: any) {
+export function isRegExp(reg: unknown): reg is RegExp {
   return Object.prototype.toString.call(reg) === '[object RegExp]';
 }
 
@@ -108,9 +108,7 @@ export function handleInclude(resolvedOptions: ResolvedOptions) {
   return [
     ...new Set(
       resolvedOptions.include.map((match) => {
-        return isRegExp(match)
-          ? match.toString().slice(1, -1)
-          : (match as string);
+        return isRegExp(match) ? match.toString().slice(1, -1) : match;
       })
     ),
   ];
@@ -118,7 +116,7 @@ export function handleInclude(resolvedOptions: ResolvedOptions) {
 
 export function handleExclude(resolvedOptions: ResolvedOptions) {
   return resolvedOptions.exclude.map((match) => {
-    return isRegExp(match) ? (match as RegExp) : new RegExp(match);
+    return isRegExp(match) ? match : new RegExp(match);
   });
 }
 
