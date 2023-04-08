@@ -444,6 +444,7 @@ dependencies = [
  "farmfe_utils",
  "glob",
  "hashbrown",
+ "heck",
  "hex",
  "parking_lot",
  "petgraph",
