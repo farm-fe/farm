@@ -87,10 +87,18 @@ impl Compiler {
     }
 
     if !errors.is_empty() {
-      return Err(CompilationError::GenericError(format!(
-        "Build failed due to errors: {:?}",
-        errors
-      )));
+      let mut error_messages = vec![];
+      for error in errors {
+        error_messages.push(error.to_string());
+      }
+      let error_message = format!(
+        "\n Build failed due to errors: \n\n {}",
+        error_messages.join("\n")
+      );
+      println!("{}", error_message);
+      // TODO Temporarily exit the process with exit
+      std::process::exit(1);
+      // return Err(CompilationError::GenericError(error_messages.join(", ")));
     }
 
     debug!("Building finished");

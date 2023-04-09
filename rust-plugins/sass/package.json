@@ -1,0 +1,52 @@
+{
+  "name": "@farmfe/plugin-sass",
+  "version": "0.0.1",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "*",
+    "@napi-rs/cli": "^2.10.0",
+    "extract-zip": "^2.0.1",
+    "node-fetch": "^3.2.10",
+    "tar": "^6.1.11"
+  },
+  "optionalDependencies": {
+    "sass-embedded-darwin-arm64": "1.60.0",
+    "sass-embedded-darwin-x64": "1.60.0",
+    "sass-embedded-linux-arm64": "1.60.0",
+    "sass-embedded-linux-ia32": "1.60.0",
+    "sass-embedded-linux-x64": "1.60.0",
+    "sass-embedded-win32-ia32": "1.60.0",
+    "sass-embedded-win32-x64": "1.60.0"
+  },
+  "napi": {
+    "name": "farm-plugin-sass",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js",
+      "types": "./index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "napi build --platform --cargo-name farmfe_plugin_sass -p farmfe_plugin_sass --release",
+    "copy-artifacts": "node scripts/copy-artifacts.mjs",
+    "type-check": "echo \"No type-checking configured.\""
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ]
+}

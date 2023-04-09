@@ -68,7 +68,9 @@
     "unsize",
     "upcasting",
     "walkdir",
-    "styl"
+    "styl",
+    "Architecure",
+    "consts"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
@@ -77,6 +79,7 @@
     "**/*.toml",
     "**/*.node",
     "**/*.svg",
-    "**/tests/**"
+    "**/tests/**",
+    "rust-plugins/sass/ext/sass/**"
   ]
 }

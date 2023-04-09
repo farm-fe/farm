@@ -1,7 +1,8 @@
+$hoverColor: #f10215;
 body {
   .description {
     &:hover {
-      color: blue;
+      color: $hoverColor;
     }
   }
 }
