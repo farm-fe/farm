@@ -100,6 +100,7 @@ export interface Config {
       mainFields?: string[];
       conditions?: string[];
       symlinks?: boolean;
+      strictExports?: boolean;
     };
     define?: Record<string, string>;
     external?: string[];

@@ -1,6 +1,5 @@
 // change to @farmfe/core/config when resolve support conditional exports
-import { defineFarmConfig } from '@farmfe/core/dist/config';
-import Sass from '@farmfe/js-plugin-sass';
+import { defineFarmConfig } from '@farmfe/core/config';
 
 export default defineFarmConfig({
   compilation: {
