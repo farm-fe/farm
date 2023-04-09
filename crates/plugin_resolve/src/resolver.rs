@@ -68,7 +68,6 @@ impl Resolver {
         if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
-
           return Some(PluginResolveHookResult {
             resolved_path,
             external,
@@ -221,7 +220,7 @@ impl Resolver {
               .try_file(&package_path)
               .or_else(|| self.try_directory(&package_path))
             {
-              return Some(self.get_resolve_result(&package_json_info, resolved_path, kind));
+              return Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind));
             }
           }
           // split source loop find package.json
@@ -262,7 +261,7 @@ impl Resolver {
                 },
               );
               if let Ok(_) = package_json_info {
-                return Some(self.get_resolve_result(
+                return Some(self.get_resolve_node_modules_result(
                   &package_json_info,
                   package_path.to_str().unwrap().to_string(),
                   kind,
@@ -274,7 +273,7 @@ impl Resolver {
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
           {
-            return Some(self.get_resolve_result(&package_json_info, resolved_path, kind));
+            return Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind));
           }
         } else if package_path.exists() && package_path.is_dir() {
           if let Err(_) = package_json_info {
@@ -291,7 +290,7 @@ impl Resolver {
           for main_field in &self.config.main_fields {
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               if let Value::Object(_) = field_value {
-                let resolved_path = Some(self.get_resolve_result(
+                let resolved_path = Some(self.get_resolve_node_modules_result(
                   &Ok(package_json_info.clone()),
                   package_path.to_str().unwrap().to_string(),
                   kind,
@@ -305,7 +304,7 @@ impl Resolver {
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
                 return self.try_file(&full_path).map(|resolved_path| {
-                  self.get_resolve_result(&Ok(package_json_info), resolved_path, kind)
+                  self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
                 });
               }
             }
@@ -313,7 +312,7 @@ impl Resolver {
 
           // no main field found, try to resolve index file
           return self.try_directory(&package_path).map(|resolved_path| {
-            self.get_resolve_result(&Ok(package_json_info), resolved_path, kind)
+            self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
           });
         }
       }
@@ -329,7 +328,7 @@ impl Resolver {
     &self,
     package_json_info: &Result<PackageJsonInfo>,
     resolved_path: String,
-    kind: &ResolveKind,
+    _kind: &ResolveKind,
   ) -> PluginResolveHookResult {
     if let Ok(package_json_info) = package_json_info {
       let external = self.is_module_external(&package_json_info, &resolved_path);
@@ -337,12 +336,33 @@ impl Resolver {
       let resolved_path = self
         .try_browser_replace(package_json_info, &resolved_path)
         .unwrap_or(resolved_path);
+      return PluginResolveHookResult {
+        resolved_path,
+        external,
+        side_effects,
+        ..Default::default()
+      };
+    } else {
+      return PluginResolveHookResult {
+        resolved_path,
+        ..Default::default()
+      };
+    }
+  }
+
+  fn get_resolve_node_modules_result(
+    &self,
+    package_json_info: &Result<PackageJsonInfo>,
+    resolved_path: String,
+    kind: &ResolveKind,
+  ) -> PluginResolveHookResult {
+    if let Ok(package_json_info) = package_json_info {
+      let side_effects = self.is_module_side_effects(&package_json_info, &resolved_path);
       let resolved_path = self
         .try_exports_replace(package_json_info, &resolved_path, &kind)
         .unwrap_or(resolved_path);
       return PluginResolveHookResult {
         resolved_path,
-        external,
         side_effects,
         ..Default::default()
       };
