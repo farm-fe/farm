@@ -36,7 +36,7 @@ pub fn create_compiler(
         plugins: vec![],
         swc_helpers_path,
       },
-      external: vec!["react-refresh".to_string()],
+      external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       ..Default::default()
     },

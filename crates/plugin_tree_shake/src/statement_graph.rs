@@ -230,6 +230,10 @@ impl StatementGraph {
             }
             skip = true;
           }
+          UsedIdent::ExportAll => {
+            used_statements.push((stmt_id, vec!["*".to_string()]));
+            skip = true;
+          }
         }
       }
 

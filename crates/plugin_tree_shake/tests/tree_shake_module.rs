@@ -103,6 +103,48 @@ export const b = 2;"#;
 }
 
 #[test]
+fn used_exports_idents_used_all() {
+  let code = r#"
+const a = 1;
+const b = 2;
+const c = 3;
+export { a, b, c as d };
+export { e, default as f, g } from './src/foo';
+export * as any from './src/bar';
+export const h = 1;
+export function i() {}
+export class j {}
+export default 'default';
+  "#;
+  let module = create_module_with_globals(code);
+
+  let mut tree_shake_module = TreeShakeModule::new(&module);
+  tree_shake_module.used_exports = UsedExports::All;
+  let result = tree_shake_module.used_exports_idents();
+
+  assert_eq!(result.len(), 11);
+  assert_eq!(
+    result
+      .iter()
+      .map(|item| item.0.to_string())
+      .collect::<Vec<_>>(),
+    vec![
+      "a".to_string(),
+      "b".to_string(),
+      "c".to_string(),
+      "e".to_string(),
+      "default".to_string(),
+      "g".to_string(),
+      "any".to_string(),
+      "h".to_string(),
+      "i".to_string(),
+      "j".to_string(),
+      "default".to_string(),
+    ]
+  );
+}
+
+#[test]
 fn used_exports_idents_export_all_multiple() {
   let code = r#"
 export * from './foo';

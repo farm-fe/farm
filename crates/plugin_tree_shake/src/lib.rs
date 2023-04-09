@@ -59,8 +59,8 @@ impl Plugin for FarmPluginTreeShake {
     for module_id in topo_sorted_modules {
       let module = module_graph.module(&module_id).unwrap();
 
-      // skip non script modules
-      if !module.module_type.is_script() {
+      // skip non script modules and external modules
+      if !module.module_type.is_script() || module.external {
         continue;
       }
 
@@ -166,7 +166,23 @@ fn add_used_exports_by_import_info(
 ) {
   let imported_module_id =
     module_graph.get_dep_by_source(tree_shake_module_id, &import_info.source);
-  let imported_tree_shake_module = tree_shake_modules_map.get_mut(&imported_module_id).unwrap();
+  let imported_module = module_graph.module(&imported_module_id).unwrap();
+
+  if imported_module.external {
+    return;
+  }
+
+  let imported_tree_shake_module = tree_shake_modules_map
+    .get_mut(&imported_module_id)
+    .unwrap_or_else(|| {
+      panic!("imported module not found: {:?}", imported_module_id);
+    });
+
+  if import_info.specifiers.is_empty() {
+    imported_tree_shake_module.used_exports = module::UsedExports::All;
+    imported_tree_shake_module.side_effects = true;
+    return;
+  }
 
   for sp in &import_info.specifiers {
     match sp {
@@ -208,6 +224,12 @@ fn add_used_exports_by_export_info(
 ) {
   if let Some(source) = &export_info.source {
     let exported_module_id = module_graph.get_dep_by_source(tree_shake_module_id, source);
+    let exported_module = module_graph.module(&exported_module_id).unwrap();
+
+    if exported_module.external {
+      return;
+    }
+
     let exported_tree_shake_module = tree_shake_modules_map.get_mut(&exported_module_id).unwrap();
 
     for sp in &export_info.specifiers {
@@ -234,9 +256,13 @@ fn add_used_exports_by_export_info(
         statement_graph::ExportSpecifierInfo::All(used_idents) => {
           if let Some(used_idents) = used_idents {
             for ident in used_idents {
-              exported_tree_shake_module
-                .used_exports
-                .add_used_export(ident);
+              if ident == "*" {
+                exported_tree_shake_module.used_exports = module::UsedExports::All;
+              } else {
+                exported_tree_shake_module
+                  .used_exports
+                  .add_used_export(ident);
+              }
             }
           } else {
             exported_tree_shake_module.used_exports = module::UsedExports::All;
