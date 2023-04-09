@@ -2,6 +2,21 @@ use farmfe_core::{config::ResolveConfig, plugin::ResolveKind};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
 
+// imports node fields can be import node_modules if use node need replace package name
+
+// package.json
+// {
+//   "imports": {
+//     "#dep": {
+//       "node": "dep-node-native",
+//       "default": "./dep-polyfill.js"
+//     }
+//   },
+//   "dependencies": {
+//     "dep-node-native": "^1.0.0"
+//   }
+// }
+
 #[test]
 fn resolve_imports_basic() {
   fixture!(
