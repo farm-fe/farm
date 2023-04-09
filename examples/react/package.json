@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "antd": "^5.4.0",
     "clsx": "^1.2.1",
     "react": "18",
     "react-dom": "18"

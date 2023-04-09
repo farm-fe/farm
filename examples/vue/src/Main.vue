@@ -1,13 +1,11 @@
 <template>
   <div>
-    <el-button>我是 ElButton</el-button>
     <Title></Title>
     <Description></Description>
   </div>
 </template>
 
 <script lang="ts">
-import { ElButton } from 'element-plus';
 import { defineComponent } from 'vue';
 import Title from './components/Title.vue';
 import Description from './components/Description.vue';
@@ -17,7 +15,6 @@ export default defineComponent({
   components: {
     Title,
     Description,
-    ElButton
   },
 });
 </script>
