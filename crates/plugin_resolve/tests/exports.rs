@@ -251,3 +251,28 @@ fn resolve_no_fields() {
     }
   );
 }
+
+// test priority
+#[test]
+fn resolve_priority() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new(ResolveConfig::default());
+
+      let resolved = resolver.resolve("priority", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("priority")
+          .join("index.umd.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}

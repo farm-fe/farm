@@ -307,8 +307,6 @@ impl Resolver {
                 return self.try_file(&full_path).map(|resolved_path| {
                   self.get_resolve_result(&Ok(package_json_info), resolved_path, kind)
                 });
-              } else {
-                println!("{} is not a valid value for {}", field_value, main_field);
               }
             }
           }
@@ -580,7 +578,11 @@ impl Resolver {
   fn get_key_path(&self, key: &str, dir: &String) -> String {
     let key_path = match key {
       "default" => RelativePath::new("").to_logical_path(dir),
-      _ => RelativePath::new(key).to_logical_path(dir),
+      _ => {
+        let resolve_key = &key.trim_matches('\"');
+        let full_path = RelativePath::new(resolve_key).to_logical_path(dir);
+        full_path
+      }
     };
     key_path.to_string_lossy().to_string()
   }
