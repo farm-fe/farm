@@ -580,8 +580,7 @@ impl Resolver {
       "default" => RelativePath::new("").to_logical_path(dir),
       _ => {
         let resolve_key = &key.trim_matches('\"');
-        let full_path = RelativePath::new(resolve_key).to_logical_path(dir);
-        full_path
+        RelativePath::new(resolve_key).to_logical_path(dir)
       }
     };
     key_path.to_string_lossy().to_string()
