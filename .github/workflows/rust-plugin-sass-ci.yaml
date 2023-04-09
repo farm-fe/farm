@@ -1,0 +1,50 @@
+name: Plugin Sass CI
+on:
+  pull_request:
+    paths:
+      - 'rust-plugins/**'
+
+jobs:
+  call-rust-plugin-sass-build:
+    uses: ./.github/workflows/rust-plugin-build.yaml
+    with:
+      root: rust-plugins/sass
+      name: plugin-sass
+
+  check-plugin-artifacts:
+    name: Check Plugin Artifacts
+    runs-on: ubuntu-latest
+    needs: call-rust-plugin-sass-build
+    steps:
+      # download rust plugin sass artifacts
+      - uses: actions/download-artifact@v3
+        id: download-plugin-sass-linux-x64-gnu
+        with:
+          name: ${{ github.sha }}-linux-x64-gnu-plugin-sass
+          path: ./rust-plugins/sass/npm/linux-x64-gnu
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/linux-x64-gnu/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-x64
+        with:
+          name: ${{ github.sha }}-darwin-x64-plugin-sass
+          path: ./rust-plugins/sass/npm/darwin-x64
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/darwin-x64/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-win32-x64-msvc
+        with:
+          name: ${{ github.sha }}-win32-x64-msvc-plugin-sass
+          path: ./rust-plugins/sass/npm/win32-x64-msvc
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/win32-x64-msvc/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-arm64
+        with:
+          name: ${{ github.sha }}-darwin-arm64-plugin-sass
+          path: ./rust-plugins/sass/npm/darwin-arm64
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/darwin-arm64/index.farm

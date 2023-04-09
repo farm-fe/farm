@@ -16,9 +16,20 @@ jobs:
       root: rust-plugins/react
       name: plugin-react
 
+  call-rust-plugin-sass-build:
+    uses: ./.github/workflows/rust-plugin-build.yaml
+    with:
+      root: rust-plugins/sass
+      name: plugin-sass
+
   release:
     name: Release
-    needs: [call-rust-build, call-rust-plugin-react-build]
+    needs:
+      [
+        call-rust-build,
+        call-rust-plugin-react-build,
+        call-rust-plugin-sass-build,
+      ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -94,6 +105,39 @@ jobs:
           path: ./rust-plugins/react/npm/darwin-arm64
       - name: List Files
         run: ls -l ./rust-plugins/react/npm/darwin-arm64
+
+      # download rust plugin sass artifacts
+      - uses: actions/download-artifact@v3
+        id: download-plugin-sass-linux-x64-gnu
+        with:
+          name: ${{ github.sha }}-linux-x64-gnu-plugin-sass
+          path: ./rust-plugins/sass/npm/linux-x64-gnu
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/linux-x64-gnu
+
+      - uses: actions/download-artifact@v3
+        id: download-plugin-sass-darwin-x64
+        with:
+          name: ${{ github.sha }}-darwin-x64-plugin-sass
+          path: ./rust-plugins/sass/npm/darwin-x64
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/darwin-x64
+
+      - uses: actions/download-artifact@v3
+        id: download-plugin-sass-win32-x64-msvc
+        with:
+          name: ${{ github.sha }}-win32-x64-msvc-plugin-sass
+          path: ./rust-plugins/sass/npm/win32-x64-msvc
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/win32-x64-msvc
+
+      - uses: actions/download-artifact@v3
+        id: download-plugin-sass-darwin-arm64
+        with:
+          name: ${{ github.sha }}-darwin-arm64-plugin-sass
+          path: ./rust-plugins/sass/npm/darwin-arm64
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/darwin-arm64
 
       - name: Install Dependencies
         run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
