@@ -63,11 +63,24 @@ impl Resolver {
         });
       }
 
-      // check browser replace
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
+        // check browser replace
         if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
+          return Some(PluginResolveHookResult {
+            resolved_path,
+            external,
+            side_effects,
+            ..Default::default()
+          });
+        }
+
+        // check imports replace
+        if let Some(resolved_path) = self.try_imports_replace(package_json_info, source) {
+          let external = self.is_module_external(package_json_info, &resolved_path);
+          let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
+          println!("imports replace: {}", resolved_path);
           return Some(PluginResolveHookResult {
             resolved_path,
             external,
@@ -220,7 +233,11 @@ impl Resolver {
               .try_file(&package_path)
               .or_else(|| self.try_directory(&package_path))
             {
-              return Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind));
+              return Some(self.get_resolve_node_modules_result(
+                &package_json_info,
+                resolved_path,
+                kind,
+              ));
             }
           }
           // split source loop find package.json
@@ -273,7 +290,11 @@ impl Resolver {
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
           {
-            return Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind));
+            return Some(self.get_resolve_node_modules_result(
+              &package_json_info,
+              resolved_path,
+              kind,
+            ));
           }
         } else if package_path.exists() && package_path.is_dir() {
           if let Err(_) = package_json_info {
@@ -494,6 +515,57 @@ impl Resolver {
               if let Value::String(str) = value {
                 let value_path = self.get_key_path(&str, package_json_info.dir());
                 return Some(value_path);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    None
+  }
+
+  fn try_imports_replace(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    resolved_path: &str,
+  ) -> Option<String> {
+    if resolved_path.starts_with('#') {
+      println!("进来replace imports了");
+      let imports_field = self.get_field_value_from_package_json_info(package_json_info, "imports");
+      if let Some(imports_field) = imports_field {
+        if let Value::Object(obj) = imports_field {
+          for (key, value) in obj {
+            let path = Path::new(resolved_path);
+            // resolved path
+            // if path.is_absolute() {
+            //   let key_path = self.get_key_path(&key, package_json_info.dir());
+            //   if self.are_paths_equal(key_path, resolved_path) {
+            //     if let Value::String(str) = value {
+            //       let value_path = self.get_key_path(&str, package_json_info.dir());
+            //       return Some(value_path);
+            //     }
+            //   }
+            // } else {
+            // source, e.g. 'foo' in require('foo')
+            if self.are_paths_equal(&key, resolved_path) {
+              if let Value::String(str) = value {
+                let value_path = self.get_key_path(&str, package_json_info.dir());
+                println!("value_path: {}", value_path);
+                return Some(value_path);
+              }
+
+              if let Value::Object(str) = value {
+                for (key, value) in str {
+                  // TODO node environment
+                  if self.are_paths_equal(&key, "default") {
+                    if let Value::String(str) = value {
+                      let value_path = self.get_key_path(&str, package_json_info.dir());
+                      println!("value_path: {}", value_path);
+                      return Some(value_path);
+                    }
+                  }
+                }
               }
             }
           }
