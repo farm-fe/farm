@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.2
+
+### Patch Changes
+
+- 7e71c7e: Modify the version of farm from \* to latest to temporarily prevent errors in versions above pnpm8
+
 ## 1.1.1
 
 ### Patch Changes
