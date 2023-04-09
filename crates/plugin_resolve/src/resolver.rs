@@ -80,7 +80,6 @@ impl Resolver {
         if let Some(resolved_path) = self.try_imports_replace(package_json_info, source) {
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
-          println!("imports replace: {}", resolved_path);
           return Some(PluginResolveHookResult {
             resolved_path,
             external,
@@ -531,41 +530,39 @@ impl Resolver {
     resolved_path: &str,
   ) -> Option<String> {
     if resolved_path.starts_with('#') {
-      println!("进来replace imports了");
       let imports_field = self.get_field_value_from_package_json_info(package_json_info, "imports");
       if let Some(imports_field) = imports_field {
         if let Value::Object(obj) = imports_field {
           for (key, value) in obj {
-            let path = Path::new(resolved_path);
-            // resolved path
+            // let path = Path::new(value.as_str().unwrap());
             // if path.is_absolute() {
-            //   let key_path = self.get_key_path(&key, package_json_info.dir());
-            //   if self.are_paths_equal(key_path, resolved_path) {
-            //     if let Value::String(str) = value {
-            //       let value_path = self.get_key_path(&str, package_json_info.dir());
-            //       return Some(value_path);
-            //     }
-            //   }
-            // } else {
-            // source, e.g. 'foo' in require('foo')
             if self.are_paths_equal(&key, resolved_path) {
-              if let Value::String(str) = value {
-                let value_path = self.get_key_path(&str, package_json_info.dir());
-                println!("value_path: {}", value_path);
-                return Some(value_path);
+              if let Value::String(str) = &value {
+                let path = Path::new(&str);
+                if path.is_absolute() {
+                  // TODO imports resolve value is other dependencies
+                } else {
+                  let value_path = self.get_key_path(&str, package_json_info.dir());
+                  return Some(value_path);
+                }
               }
 
-              if let Value::Object(str) = value {
+              if let Value::Object(str) = &value {
                 for (key, value) in str {
                   // TODO node environment
                   if self.are_paths_equal(&key, "default") {
                     if let Value::String(str) = value {
-                      let value_path = self.get_key_path(&str, package_json_info.dir());
-                      println!("value_path: {}", value_path);
-                      return Some(value_path);
+                      let path = Path::new(&str);
+                      if path.is_absolute() {
+                        // TODO imports resolve value is other dependencies
+                      } else {
+                        let value_path = self.get_key_path(&str, package_json_info.dir());
+                        return Some(value_path);
+                      }
                     }
                   }
                 }
+                // }
               }
             }
           }
