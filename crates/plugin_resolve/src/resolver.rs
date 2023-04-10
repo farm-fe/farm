@@ -323,9 +323,22 @@ impl Resolver {
               } else if let Value::String(str) = field_value {
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
-                return self.try_file(&full_path).map(|resolved_path| {
-                  self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
-                });
+                // the main fields can be a file or directory
+                return match self.try_file(&full_path) {
+                  Some(resolved_path) => self
+                    .get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
+                    .into(),
+                  None => self
+                    .try_directory(&full_path)
+                    .map(|resolved_path| {
+                      self.get_resolve_node_modules_result(
+                        &Ok(package_json_info),
+                        resolved_path,
+                        kind,
+                      )
+                    })
+                    .into(),
+                };
               }
             }
           }
@@ -381,11 +394,18 @@ impl Resolver {
       let resolved_path = self
         .try_exports_replace(package_json_info, &resolved_path, &kind)
         .unwrap_or(resolved_path);
-      return PluginResolveHookResult {
+      // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
+      let resolved_path_buf = PathBuf::from(&resolved_path);
+      let resolved_path = self
+        .try_file(&resolved_path_buf)
+        .or_else(|| self.try_directory(&resolved_path_buf))
+        .unwrap_or_else(|| resolved_path);
+
+      PluginResolveHookResult {
         resolved_path,
         side_effects,
         ..Default::default()
-      };
+      }
     } else {
       return PluginResolveHookResult {
         resolved_path,
@@ -631,7 +651,8 @@ impl Resolver {
   }
 
   fn is_source_relative(&self, source: &str) -> bool {
-    source.starts_with("./") || source.starts_with("../")
+    // fix: relative path start with .. or ../
+    source.starts_with("./") || source.starts_with("..")
   }
 
   fn is_source_absolute(&self, source: &str) -> bool {
