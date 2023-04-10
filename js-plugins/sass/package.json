@@ -43,6 +43,7 @@
     "@farmfe/core": "workspace:^0.5.3"
   },
   "dependencies": {
-    "sass": "^1.60.0"
+    "sass": "^1.60.0",
+    "sass-embedded": "^1.61.0"
   }
 }

@@ -1,11 +1,12 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import sass, { StringOptions } from 'sass';
+import  { StringOptions } from 'sass';
 import { getAdditionContext, pluginName, tryRead } from './options.js';
 import { pathToFileURL } from 'url';
+import { getSassImplementation } from './utils.js';
 
-export interface SassOptions {
+export type SassPluginOptions = StringOptions<'sync'> & {
   match?: string[];
-  sassOption?: StringOptions<'async'>;
+  // The next step is to specifically process each field of sassoption
   /**
    * - relative or absolute path
    * - globals file will be added to the top of the sass file
@@ -13,17 +14,19 @@ export interface SassOptions {
    *
    * relative to project root or cwd
    */
+  implementation?:string;
   globals?: string[];
   content?: string;
   sourceMap?: boolean;
 }
 
-const defaultMatch = ['\\.scss$'];
+const defaultMatch = ['\\.(s[ac]ss|css)$'];
 
-export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
+export default function farmSassPlugin(options: SassPluginOptions = {}): JsPlugin {
   let farmConfig!: UserConfig;
   let cacheAdditionContext: string | null;
-
+  const implementation = getSassImplementation(options.implementation);
+  console.log(implementation);
   const cwd = () => farmConfig.root ?? process.cwd();
 
   const match = (options.match ?? defaultMatch).map((item) => item.toString());
@@ -37,11 +40,10 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
         const data = await tryRead(param.resolvedPath);
         return {
           content: data,
-          moduleType: 'css',
+          moduleType: 'sass',
         };
       },
     },
-
     transform: {
       filters: {
         resolvedPaths: match,
@@ -52,7 +54,7 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
             cacheAdditionContext ??
             (cacheAdditionContext = getAdditionContext(cwd(), options));
 
-          const { css, sourceMap } = await sass.compileStringAsync(
+          const { css, sourceMap } = await implementation.compileStringAsync(
             `${additionContext}\n${param.content}`,
             {
               sourceMap: Boolean(
