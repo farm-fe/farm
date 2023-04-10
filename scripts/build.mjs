@@ -132,12 +132,12 @@ export function isWindows() {
   return platform === 'win32';
 }
 
-export function checkProtobuf() {
+export async function checkProtobuf() {
   try {
     if (isWindows()) {
-      execSync('where protoc');
+      await execa('where', ['protoc']);
     } else if (isMac() || isLinux()) {
-      execSync('which protoc');
+      await execa('which', ['protoc']);
     }
     return true;
   } catch (error) {
