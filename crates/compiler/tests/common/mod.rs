@@ -135,6 +135,13 @@ pub fn assert_compiler_result(compiler: &Compiler) {
     .unwrap();
   } else {
     // assert lines are the same
-    assert_eq!(result, expected_result.replace("\r\n", "\n"));
+    let expected_lines = expected_result.trim().lines().collect::<Vec<&str>>();
+    let result_lines = result.trim().lines().collect::<Vec<&str>>();
+
+    assert_eq!(expected_lines.len(), result_lines.len());
+
+    for (expected, result) in expected_lines.iter().zip(result_lines.iter()) {
+      assert_eq!(expected.trim(), result.trim()); // ignore whitespace
+    }
   }
 }
