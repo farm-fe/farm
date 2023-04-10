@@ -4,21 +4,22 @@ import { defineFarmConfig } from '@farmfe/core/config';
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: './index.html'
     },
     resolve: {
       symlinks: true,
-      mainFields: ['module', 'main', 'customMain'],
+      mainFields: ['module', 'main', 'customMain']
     },
     define: {
-      BTN: 'Click me',
+      BTN: 'Click me'
     },
     output: {
-      path: './build',
+      path: './build'
     },
+    sourcemap: false
   },
   server: {
-    hmr: true,
+    hmr: true
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 });

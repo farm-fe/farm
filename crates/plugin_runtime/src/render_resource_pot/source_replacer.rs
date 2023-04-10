@@ -82,6 +82,26 @@ impl SourceReplacer<'_> {
       } = &mut call_expr.args[0]
       {
         let source = value.to_string();
+        let module_type = self
+          .module_graph
+          .module(&self.module_id)
+          .as_ref()
+          .unwrap()
+          .module_type
+          .clone();
+        // leave source @swc/helpers/lib/_interop_require_default.js, @swc/helpers/lib/_interop_require_wildcard.js, @swc/helpers/lib/_export_star.js unchanged
+        if !matches!(module_type, ModuleType::Runtime)
+          && [
+            "@swc/helpers/lib/_interop_require_default.js",
+            "@swc/helpers/lib/_interop_require_wildcard.js",
+            "@swc/helpers/lib/_export_star.js",
+          ]
+          .iter()
+          .any(|s| source == *s)
+        {
+          return SourceReplaceResult::NotReplaced;
+        }
+
         let id = self
           .module_graph
           .get_dep_by_source(&self.module_id, &source);
@@ -95,7 +115,6 @@ impl SourceReplacer<'_> {
         if dep_module.module_type.is_script() || dep_module.module_type == ModuleType::Runtime {
           *value = id.id(self.mode.clone()).into();
 
-          call_expr.visit_mut_children_with(self);
           return SourceReplaceResult::Replaced;
         } else {
           // replace require('./index.css') with an noop()
@@ -109,7 +128,7 @@ impl SourceReplacer<'_> {
             args: vec![],
             type_args: None,
           };
-          call_expr.visit_mut_children_with(self);
+
           return SourceReplaceResult::NotScriptModule;
         }
       }
@@ -130,6 +149,7 @@ impl SourceReplacer<'_> {
           .module_graph
           .get_dep_by_source(&self.module_id, &source);
         *value = id.id(self.mode.clone()).into();
+        return SourceReplaceResult::Replaced;
       }
     }
 

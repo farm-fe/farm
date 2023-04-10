@@ -17,6 +17,7 @@ import {
 } from './types.js';
 import { Logger } from '../logger.js';
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -110,6 +111,14 @@ export async function normalizeUserCompilationConfig(
 
   if (!config.root) {
     config.root = userConfig.root ?? process.cwd();
+  }
+
+  if (config.treeShaking === undefined) {
+    if (mode === 'production') {
+      config.treeShaking = true;
+    } else {
+      config.treeShaking = false;
+    }
   }
 
   const plugins = userConfig.plugins ?? [];
@@ -221,10 +230,11 @@ async function readConfigFile(
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (resolvedPath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
+      const hash = createHash('md5');
       const outputPath = path.join(
         os.tmpdir(),
         'farmfe',
-        Date.now().toString()
+        hash.update(resolvedPath).digest('hex')
       );
       const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig({
@@ -253,6 +263,36 @@ async function readConfigFile(
         server: {
           hmr: false,
         },
+        // plugins: [
+        //   {
+        //     name: 'farm-plugin-external',
+        //     resolve: {
+        //       filters: {
+        //         importers: ['.+'],
+        //         sources: ['.+']
+        //       },
+        //       executor: (param) => {
+        //         // external all non-relative and non-absolute imports
+        //         if (
+        //           path.isAbsolute(param.source) ||
+        //           param.source.startsWith('.') ||
+        //           param.source.startsWith('@swc/helpers')
+        //         ) {
+        //           return null;
+        //         } else {
+        //           console.log('external', param.source);
+        //           return {
+        //             resolvedPath: 'external-path',
+        //             external: true,
+        //             sideEffects: false,
+        //             query: [],
+        //             meta: {}
+        //           };
+        //         }
+        //       }
+        //     }
+        //   }
+        // ]
       });
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();

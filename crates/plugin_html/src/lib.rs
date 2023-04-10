@@ -29,7 +29,6 @@ use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
 mod deps_analyzer;
 mod resources_injector;
 
-/// ScriptPlugin is used to support compiling js/ts/jsx/tsx files to js chunks
 pub struct FarmPluginHtml {}
 
 impl Plugin for FarmPluginHtml {

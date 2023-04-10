@@ -72,7 +72,12 @@
     "unref",
     "unsize",
     "upcasting",
-    "walkdir"
+    "walkdir",
+    "styl",
+    "Architecure",
+    "consts",
+    "idents",
+    "esbuild"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

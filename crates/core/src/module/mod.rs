@@ -249,10 +249,18 @@ impl ModuleType {
   }
 
   pub fn is_script(&self) -> bool {
-    matches!(
+    let mut m = matches!(
       self,
       ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx
-    )
+    );
+
+    if !m {
+      if let ModuleType::Custom(s) = self {
+        m = s.starts_with("farm_script:");
+      }
+    }
+
+    m
   }
 }
 

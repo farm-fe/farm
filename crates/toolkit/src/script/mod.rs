@@ -166,6 +166,7 @@ pub fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
   for resolve_kind in deps {
     if matches!(resolve_kind, ResolveKind::Import)
       || matches!(resolve_kind, ResolveKind::DynamicImport)
+      || matches!(resolve_kind, ResolveKind::ExportFrom)
     {
       match module_system {
         ModuleSystem::EsModule => continue,

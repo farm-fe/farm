@@ -158,7 +158,7 @@ test('Js Plugin Execution - transform', async () => {
 test('Js Plugin Execution - full', async () => {
   const root = getJsPluginsFixturesDir();
   const resolvedPath = path.join(root, 'resolved.ts');
-  const compiler = await getCompiler('resolve', [
+  const compiler = await getCompiler('full', [
     {
       name: 'test-full',
       priority: 1000,
@@ -208,7 +208,7 @@ test('Js Plugin Execution - full', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
-  const outputFilePath = getOutputFilePath('resolve');
+  const outputFilePath = getOutputFilePath('full');
 
   if (process.platform === 'win32') {
     const result = await import(pathToFileURL(outputFilePath).toString());

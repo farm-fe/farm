@@ -427,6 +427,7 @@ dependencies = [
  "farmfe_plugin_runtime",
  "farmfe_plugin_script",
  "farmfe_plugin_static_assets",
+ "farmfe_plugin_tree_shake",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils",
@@ -604,6 +605,15 @@ name = "farmfe_plugin_static_assets"
 version = "0.0.1"
 dependencies = [
  "base64 0.21.0",
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+]
+
+[[package]]
+name = "farmfe_plugin_tree_shake"
+version = "0.0.1"
+dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",

@@ -33,7 +33,7 @@ export interface PluginResolveHookParam {
   kind: ResolveKind;
   /// resolvedPath. for example in index.ts (import App from "./App.vue")
   /// source should be "path.resolve(process.cwd(),'./App.vue')"
-  source: String;
+  source: string;
 }
 
 export interface PluginResolveHookResult {
@@ -163,6 +163,7 @@ export interface Config {
       }[];
     };
     lazyCompilation?: boolean;
+    treeShaking?: boolean;
   };
   jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]
