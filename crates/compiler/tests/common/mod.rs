@@ -135,6 +135,6 @@ pub fn assert_compiler_result(compiler: &Compiler) {
     .unwrap();
   } else {
     // assert lines are the same
-    assert_eq!(result, expected_result);
+    assert_eq!(result, expected_result.replace("\r\n", "\n"));
   }
 }
