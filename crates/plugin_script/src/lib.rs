@@ -15,7 +15,7 @@ use farmfe_core::{
   },
   relative_path::RelativePath,
   resource::{
-    resource_pot::{ResourcePot, ResourcePotType},
+    resource_pot::{self, ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
   swc_common::{comments::NoopComments, Mark, GLOBALS},
@@ -258,6 +258,24 @@ impl Plugin for FarmPluginScript {
     }
 
     Ok(None)
+  }
+
+  fn optimize_resource_pot(
+    &self,
+    _resource: &mut ResourcePot,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+      // let ast = &resource_pot.meta.as_js().ast;
+      // let unresolved_mark = Mark::new();
+      // let top_level_mark = Mark::new();
+
+      // ast.fold_with(&mut resolver(unresolved_mark, top_level_mark, ast));
+
+      Ok(None)
+    } else {
+      Ok(None)
+    }
   }
 
   fn generate_resources(
