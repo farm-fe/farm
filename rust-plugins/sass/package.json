@@ -43,7 +43,8 @@
   "scripts": {
     "build": "napi build --platform --cargo-name farmfe_plugin_sass -p farmfe_plugin_sass --release",
     "copy-artifacts": "node scripts/copy-artifacts.mjs",
-    "type-check": "echo \"No type-checking configured.\""
+    "type-check": "echo \"No type-checking configured.\"",
+    "prepublishOnly": "farm plugin prepublish"
   },
   "files": [
     "index.js",
