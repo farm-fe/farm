@@ -3,10 +3,9 @@ import  { StringOptions } from 'sass';
 import { getAdditionContext, pluginName, tryRead } from './options.js';
 import { pathToFileURL } from 'url';
 import { getSassImplementation } from './utils.js';
-
+ // The next step is to specifically process each field of sassoption
 export type SassPluginOptions = StringOptions<'sync'> & {
   match?: string[];
-  // The next step is to specifically process each field of sassoption
   /**
    * - relative or absolute path
    * - globals file will be added to the top of the sass file
@@ -26,7 +25,6 @@ export default function farmSassPlugin(options: SassPluginOptions = {}): JsPlugi
   let farmConfig!: UserConfig;
   let cacheAdditionContext: string | null;
   const implementation = getSassImplementation(options.implementation);
-  console.log(implementation);
   const cwd = () => farmConfig.root ?? process.cwd();
 
   const match = (options.match ?? defaultMatch).map((item) => item.toString());
