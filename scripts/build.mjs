@@ -1,5 +1,6 @@
 import { execa } from 'execa';
 import { createSpinner } from 'nanospinner';
+import { execSync } from 'child_process'
 import { resolve, join } from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
