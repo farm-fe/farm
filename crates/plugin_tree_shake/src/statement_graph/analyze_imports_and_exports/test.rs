@@ -27,7 +27,7 @@ fn parse_module_item(stmt: &str) -> ModuleItem {
 fn import_default() {
   let stmt = parse_module_item(r#"import a from 'a'"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_some());
@@ -47,13 +47,14 @@ fn import_default() {
   assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn import_named() {
   let stmt = parse_module_item(r#"import { a, b, c as nc } from 'a'"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_some());
@@ -97,13 +98,14 @@ fn import_named() {
   assert_eq!(defined_idents[2].sym.to_string(), "nc".to_string());
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn import_named_with_used_defined_idents() {
   let stmt = parse_module_item(r#"import { a, b, c as nc } from 'a'"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, Some(vec!["a#0".to_string()]));
 
   assert!(import_info.is_some());
@@ -124,13 +126,14 @@ fn import_named_with_used_defined_idents() {
   assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn import_namespace() {
   let stmt = parse_module_item(r#"import * as a from 'a'"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_some());
@@ -150,13 +153,14 @@ fn import_namespace() {
   assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_default_expr() {
   let stmt = parse_module_item(r#"export default a"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -173,13 +177,14 @@ fn export_default_expr() {
   assert_eq!(used_idents.len(), 1);
   assert_eq!(used_idents[0].sym.to_string(), "a".to_string());
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_default_decl() {
   let stmt = parse_module_item(r#"export default function a() { return b; }"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -203,13 +208,14 @@ fn export_default_decl() {
   assert_eq!(values.len(), 1);
   assert_eq!(values[0].len(), 1);
   assert_eq!(values[0][0].sym.to_string(), "b".to_string());
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_decl() {
   let stmt = parse_module_item(r#"export function a() { return b; }"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -238,13 +244,14 @@ fn export_decl() {
   assert_eq!(values.len(), 1);
   assert_eq!(values[0].len(), 1);
   assert_eq!(values[0][0].sym.to_string(), "b".to_string());
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_all() {
   let stmt = parse_module_item(r#"export * from 'a'"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -262,13 +269,14 @@ fn export_all() {
   assert_eq!(used_idents.len(), 0);
 
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_named_from() {
   let stmt = parse_module_item(r#"export { a, b as c, default as d } from 'a';"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -311,13 +319,14 @@ fn export_named_from() {
   assert_eq!(used_idents.len(), 0);
 
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_named() {
   let stmt = parse_module_item(r#"export { a, b as c, any as d };"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -363,13 +372,14 @@ fn export_named() {
   assert_eq!(used_idents[2].sym.to_string(), "any".to_string());
 
   assert_eq!(defined_idents_map.len(), 3);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_named_with_used_defined_idents() {
   let stmt = parse_module_item(r#"export { a, b as c, any as d };"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, Some(vec!["a#0".to_string()]));
 
   assert!(import_info.is_none());
@@ -393,13 +403,14 @@ fn export_named_with_used_defined_idents() {
   assert_eq!(used_idents[0].sym.to_string(), "a".to_string());
 
   assert_eq!(defined_idents_map.len(), 1);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn export_namespace() {
   let stmt = parse_module_item(r#"export * as a from 'a';"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -421,13 +432,14 @@ fn export_namespace() {
   assert_eq!(used_idents.len(), 0);
 
   assert_eq!(defined_idents_map.len(), 0);
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn func_decl() {
   let stmt = parse_module_item(r#"function a() { b(); return c; }"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -448,13 +460,15 @@ fn func_decl() {
   assert_eq!(values[0].len(), 2);
   assert_eq!(values[0][0].sym.to_string(), "b".to_string());
   assert_eq!(values[0][1].sym.to_string(), "c".to_string());
+
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn bar_decl() {
   let stmt = parse_module_item(r#"var a = b;"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -473,13 +487,15 @@ fn bar_decl() {
   assert_eq!(values.len(), 1);
   assert_eq!(values[0].len(), 1);
   assert_eq!(values[0][0].sym.to_string(), "b".to_string());
+
+  assert_eq!(is_self_executed, false);
 }
 
 #[test]
 fn for_stmt() {
   let stmt = parse_module_item(r#"for (var a = b; c; d) { e; }"#);
 
-  let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
     analyze_imports_and_exports(&0, &stmt, None);
 
   assert!(import_info.is_none());
@@ -495,4 +511,28 @@ fn for_stmt() {
   assert_eq!(used_idents[4].sym.to_string(), "e".to_string());
 
   assert_eq!(defined_idents_map.len(), 0);
+
+  assert_eq!(is_self_executed, true);
+}
+
+#[test]
+fn empty_specifier_import() {
+  let stmt = parse_module_item(r#"import 'index.css';"#);
+
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
+    analyze_imports_and_exports(&0, &stmt, None);
+
+  assert!(import_info.is_some());
+  let import_info = import_info.unwrap();
+  assert_eq!(import_info.source, "index.css".to_string());
+  assert_eq!(import_info.specifiers.len(), 0);
+
+  assert!(export_info.is_none());
+
+  assert_eq!(defined_idents.len(), 0);
+  assert_eq!(used_idents.len(), 0);
+
+  assert_eq!(defined_idents_map.len(), 0);
+
+  assert_eq!(is_self_executed, true);
 }

@@ -1,8 +1,9 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{Config, RuntimeConfig, SourcemapConfig},
+  plugin::Plugin,
   resource::ResourceType,
 };
 
@@ -38,6 +39,7 @@ pub fn create_compiler(
       },
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
+      lazy_compilation: false,
       ..Default::default()
     },
     vec![],
@@ -47,27 +49,77 @@ pub fn create_compiler(
   compiler
 }
 
+pub fn create_compiler_with_plugins(
+  input: HashMap<String, String>,
+  cwd: PathBuf,
+  crate_path: PathBuf,
+  plugins: Vec<Arc<(dyn Plugin + 'static)>>,
+) -> Compiler {
+  let swc_helpers_path = crate_path
+    .join("tests")
+    .join("fixtures")
+    .join("_internal")
+    .join("swc_helpers")
+    .to_string_lossy()
+    .to_string();
+  let runtime_path = crate_path
+    .join("tests")
+    .join("fixtures")
+    .join("_internal")
+    .join("runtime")
+    .join("index.js")
+    .to_string_lossy()
+    .to_string();
+
+  let compiler = Compiler::new(
+    Config {
+      input,
+      root: cwd.to_string_lossy().to_string(),
+      runtime: RuntimeConfig {
+        path: runtime_path,
+        plugins: vec![],
+        swc_helpers_path,
+      },
+      external: vec!["react-refresh".to_string(), "module".to_string()],
+      sourcemap: SourcemapConfig::Bool(false),
+      lazy_compilation: false,
+      ..Default::default()
+    },
+    plugins,
+  )
+  .unwrap();
+
+  compiler
+}
+
 pub fn get_compiler_result(compiler: &Compiler) -> String {
   let resources_map = compiler.context().resources_map.lock();
-  let mut result = String::new();
+  let mut result = vec![];
 
   for (name, resource) in resources_map.iter() {
     if matches!(resource.resource_type, ResourceType::Runtime) {
       continue;
     }
 
-    result.push_str(&format!(
-      "//{}:\n {}\n\n",
-      name,
-      String::from_utf8_lossy(&resource.bytes)
+    result.push((
+      format!("//{}:\n ", name),
+      String::from_utf8_lossy(&resource.bytes),
     ));
   }
 
-  result
+  result.sort_by_key(|(name, _)| name.clone());
+
+  let result_file_str = result
+    .iter()
+    .map(|(name, content)| format!("{}{}", name, content))
+    .collect::<Vec<String>>()
+    .join("\n\n");
+
+  result_file_str
 }
 
 pub fn load_expected_result(cwd: PathBuf) -> String {
-  let expected_result = std::fs::read_to_string(cwd.join("output.js")).unwrap();
+  let expected_result = std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string());
   expected_result
 }
 
@@ -83,13 +135,6 @@ pub fn assert_compiler_result(compiler: &Compiler) {
     .unwrap();
   } else {
     // assert lines are the same
-    let expected_lines: Vec<&str> = expected_result.trim().lines().collect();
-    let lines: Vec<&str> = result.trim().lines().collect();
-
-    assert_eq!(lines.len(), expected_lines.len());
-
-    for (line, expected_line) in lines.iter().zip(expected_lines.iter()) {
-      assert_eq!(line.trim(), expected_line.trim());
-    }
+    assert_eq!(result, expected_result);
   }
 }

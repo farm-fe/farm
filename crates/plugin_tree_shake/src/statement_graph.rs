@@ -63,12 +63,19 @@ pub struct Statement {
   /// Use String to replace Ident as key, because Ident has position info and it will make hash map not work as expected,
   /// transform it to Ident.to_string() is exactly what we want
   pub defined_idents_map: HashMap<String, Vec<Ident>>,
+  pub is_self_executed: bool,
 }
 
 impl Statement {
   pub fn new(id: StatementId, stmt: &ModuleItem) -> Self {
-    let (import_info, export_info, defined_idents, used_idents, defined_idents_map) =
-      analyze_imports_and_exports(&id, stmt, None);
+    let (
+      import_info,
+      export_info,
+      defined_idents,
+      used_idents,
+      defined_idents_map,
+      is_self_executed,
+    ) = analyze_imports_and_exports(&id, stmt, None);
 
     // transform defined_idents_map from HashMap<Ident, Vec<Ident>> to HashMap<String, Ident> using ToString
     let defined_idents_map = defined_idents_map
@@ -83,6 +90,7 @@ impl Statement {
       defined_idents,
       used_idents,
       defined_idents_map,
+      is_self_executed,
     }
   }
 }
@@ -115,7 +123,7 @@ impl StatementGraph {
         let all_stmts = graph.stmts();
         let def_stmt = all_stmts.iter().find(|stmt| {
           for di in &stmt.defined_idents {
-            if di.sym == ident.sym && di.span.ctxt() == ident.span.ctxt() {
+            if di.to_string() == ident.to_string() {
               return true;
             }
           }
@@ -143,7 +151,17 @@ impl StatementGraph {
     // if self.g contains edge, insert idents into edge
     if let Some(edge) = self.g.find_edge(*from_node, *to_node) {
       let edge = self.g.edge_weight_mut(edge).unwrap();
-      edge.idents.extend(idents);
+
+      for ident in &idents {
+        if !edge
+          .idents
+          .iter()
+          .any(|i| i.to_string() == ident.to_string())
+        {
+          edge.idents.push(ident.clone());
+        }
+      }
+
       return;
     }
 
@@ -250,10 +268,19 @@ impl StatementGraph {
         }
 
         visited.insert(stmt_id);
-        used_statements.push((
-          stmt_id,
-          used_defined_idents.iter().map(|s| s.to_string()).collect(),
-        ));
+        // if stmt_id is already in used_statements, add used_defined_idents to it
+        if let Some((_, idents)) = used_statements.iter_mut().find(|(id, _)| *id == stmt_id) {
+          for ident in used_defined_idents {
+            if !idents.contains(&ident) {
+              idents.push(ident);
+            }
+          }
+        } else {
+          used_statements.push((
+            stmt_id,
+            used_defined_idents.iter().map(|s| s.to_string()).collect(),
+          ));
+        }
 
         let deps = self.dependencies(&stmt_id);
 
@@ -292,9 +319,10 @@ impl StatementGraph {
             }
 
             // if dep_stmt is already in stmts, merge dep_stmt_idents
-            if let Some((_, _, used_dep_idents)) =
+            if let Some((_, used_dep_defined_idents, used_dep_idents)) =
               stmts.iter_mut().find(|(id, _, _)| *id == dep_stmt.id)
             {
+              used_dep_defined_idents.extend(dep_used_defined_idents.iter().map(|i| i.to_string()));
               used_dep_idents.extend(dep_stmt_idents.iter().map(|i| i.to_string()));
             } else {
               stmts.push((

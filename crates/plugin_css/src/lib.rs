@@ -22,7 +22,6 @@ use farmfe_toolkit::{
 };
 use farmfe_utils::stringify_query;
 
-/// ScriptPlugin is used to support compiling js/ts/jsx/tsx files to js chunks
 pub struct FarmPluginCss {}
 
 impl Plugin for FarmPluginCss {

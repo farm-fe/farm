@@ -113,6 +113,14 @@ export async function normalizeUserCompilationConfig(
     config.root = userConfig.root ?? process.cwd();
   }
 
+  if (config.treeShaking === undefined) {
+    if (mode === 'production') {
+      config.treeShaking = true;
+    } else {
+      config.treeShaking = false;
+    }
+  }
+
   const plugins = userConfig.plugins ?? [];
   const rustPlugins = [];
   const jsPlugins = [];

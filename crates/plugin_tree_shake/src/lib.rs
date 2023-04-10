@@ -1,7 +1,7 @@
 use farmfe_core::{
   config::Config,
   module::{module_graph::ModuleGraph, ModuleId},
-  plugin::Plugin,
+  plugin::{Plugin, ResolveKind},
 };
 use module::{TreeShakeModule, UsedExports};
 use statement_graph::{ExportInfo, ImportInfo};
@@ -61,6 +61,19 @@ impl Plugin for FarmPluginTreeShake {
 
       // skip non script modules and external modules
       if !module.module_type.is_script() || module.external {
+        if !module.module_type.is_script() && !module.external {
+          // mark all non script modules' script dependencies as side_effects
+          for (dep_id, _, _) in module_graph.dependencies(&module_id) {
+            let mut dep_module = module_graph.module_mut(&dep_id).unwrap();
+
+            if !dep_module.module_type.is_script() {
+              continue;
+            }
+
+            dep_module.side_effects = true;
+          }
+        }
+
         continue;
       }
 
@@ -73,7 +86,9 @@ impl Plugin for FarmPluginTreeShake {
 
     // traverse the tree_shake_modules
     for tree_shake_module_id in tree_shake_modules_ids {
-      let tree_shake_module = tree_shake_modules_map.get(&tree_shake_module_id).unwrap();
+      let tree_shake_module = tree_shake_modules_map
+        .get_mut(&tree_shake_module_id)
+        .unwrap();
 
       // if module is not esm, mark all imported modules as [UsedExports::All]
       if !matches!(
@@ -144,6 +159,15 @@ impl Plugin for FarmPluginTreeShake {
               &export_info,
             );
           }
+        }
+      }
+
+      // add all dynamic imported dependencies as [UsedExports::All]
+      for (dep, kind, _) in module_graph.dependencies(&tree_shake_module_id) {
+        if matches!(kind, ResolveKind::DynamicImport) {
+          let tree_shake_module = tree_shake_modules_map.get_mut(&dep).unwrap();
+          tree_shake_module.side_effects = true;
+          tree_shake_module.used_exports = UsedExports::All;
         }
       }
     }

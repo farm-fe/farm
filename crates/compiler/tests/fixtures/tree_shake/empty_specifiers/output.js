@@ -1,4 +1,4 @@
-//5b7c213a.js:
+//2a2101a4.js:
  import module from "node:module";
 global.__farmNodeRequire = module.createRequire(import.meta.url);
 global.__farmNodeBuiltinModules = module.builtinModules;
@@ -28,6 +28,40 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
+    "comp.ts": function(module, exports, require, dynamicRequire) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        Object.defineProperty(exports, "default", {
+            enumerable: true,
+            get: function() {
+                return _default;
+            }
+        });
+        require("index.css");
+        var _default = "comp";
+    },
+    "index.css": function(module, exports, require, dynamicRequire) {
+        "use strict";
+        const cssCode = `.body {
+  color: red;
+}
+`;
+        const farmId = "index.css";
+        const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
+        const style = document.createElement("style");
+        style.setAttribute("data-farm-id", farmId);
+        style.innerHTML = cssCode;
+        if (previousStyle) {
+            previousStyle.replaceWith(style);
+        } else {
+            document.head.appendChild(style);
+        }
+        module.onDispose(()=>{
+            style.remove();
+        });
+    },
     "index.ts": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -39,7 +73,10 @@ global.__farmNodeBuiltinModules = module.builtinModules;
                 return _default;
             }
         });
+        var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
         require("resolved.ts");
+        var _comp = _interopRequireDefault(require("comp.ts"));
+        console.log(_comp.default);
         var _default = 2;
     },
     "resolved.ts": function(module, exports, require, dynamicRequire) {
@@ -52,5 +89,3 @@ var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("index.ts").default;
 export default entry;
-
-

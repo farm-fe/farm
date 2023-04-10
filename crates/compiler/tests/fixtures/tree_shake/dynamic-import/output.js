@@ -1,4 +1,4 @@
-//c1af9446.js:
+//8fbe243c.js:
  import module from "node:module";
 global.__farmNodeRequire = module.createRequire(import.meta.url);
 global.__farmNodeBuiltinModules = module.builtinModules;
@@ -28,15 +28,28 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "dep.ts": function(module, exports, require, dynamicRequire) {
+    "index.ts": function(module, exports, require, dynamicRequire) {
         "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
+        dynamicRequire("dep.ts").then((dep)=>{
+            console.log(dep);
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("dep1.ts"), exports);
-    },
-    "dep1.ts": function(module, exports, require, dynamicRequire) {
+    }
+});
+var __farm_global_this__ = globalThis || window || global || self;
+var farmModuleSystem = __farm_global_this__.__farm_module_system__;
+farmModuleSystem.bootstrap();
+var entry = farmModuleSystem.require("index.ts").default;
+export default entry;
+
+
+//e79a22cc.js:
+ (function(modules) {
+    for(var key in modules){
+        var __farm_global_this__ = globalThis || window || global || self;
+        __farm_global_this__.__farm_module_system__.register(key, modules[key]);
+    }
+})({
+    "dep.ts": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -48,18 +61,22 @@ global.__farmNodeBuiltinModules = module.builtinModules;
             });
         }
         _export(exports, {
-            a: function() {
-                return a;
+            dep: function() {
+                return dep;
             },
-            b: function() {
-                return b;
+            default: function() {
+                return _default;
             }
         });
-        const a = "1";
-        const b = "2";
-        console.log(a, b);
+        var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
+        var _dep1 = _interopRequireDefault(require("dep1.ts"));
+        const dep = "dep";
+        function _default() {
+            return (0, _dep1.default)();
+        }
+        console.log("side effect in dep.ts");
     },
-    "index.ts": function(module, exports, require, dynamicRequire) {
+    "dep1.ts": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -70,13 +87,8 @@ global.__farmNodeBuiltinModules = module.builtinModules;
                 return _default;
             }
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("dep.ts"), exports);
-        var _default = 2;
+        function _default() {
+            console.log("1111");
+        }
     }
 });
-var __farm_global_this__ = globalThis || window || global || self;
-var farmModuleSystem = __farm_global_this__.__farm_module_system__;
-farmModuleSystem.bootstrap();
-var entry = farmModuleSystem.require("index.ts").default;
-export default entry;

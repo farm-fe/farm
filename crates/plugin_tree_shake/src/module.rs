@@ -120,6 +120,33 @@ impl TreeShakeModule {
       used_idents.push(used_ident);
     }
 
+    for stmt in self.stmt_graph.stmts() {
+      if stmt.is_self_executed {
+        stmt_used_idents_map.entry(stmt.id).or_insert(vec![]);
+
+        stmt.used_idents.iter().for_each(|used_ident| {
+          // find the defined ident
+          for stmt_inner in self.stmt_graph.stmts() {
+            if stmt_inner.id == stmt.id {
+              continue;
+            }
+
+            if stmt_inner
+              .defined_idents_map
+              .contains_key(&used_ident.to_string())
+              || stmt_inner
+                .defined_idents
+                .iter()
+                .any(|ident| ident.to_string() == used_ident.to_string())
+            {
+              let used_idents = stmt_used_idents_map.entry(stmt_inner.id).or_insert(vec![]);
+              used_idents.push(UsedIdent::SwcIdent(used_ident.clone()));
+            }
+          }
+        });
+      }
+    }
+
     // 2. analyze used statements starting from used exports
     let used_statements = self
       .stmt_graph
@@ -207,25 +234,14 @@ impl TreeShakeModule {
             }
           } else {
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
-            // otherwise, the ident is not exported and we should throw a warning
-            let mut found = false;
-
             for export_info in self.exports() {
               if export_info.specifiers.iter().any(|sp| match sp {
                 ExportSpecifierInfo::All(_) => true,
                 _ => false,
               }) {
-                found = true;
                 let stmt_id = export_info.stmt_id;
                 used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
               }
-            }
-
-            if !found {
-              println!(
-                "[Farm Tree Shake] Warning: {} is not exported by {:?}",
-                ident, self.module_id
-              );
             }
           }
         }

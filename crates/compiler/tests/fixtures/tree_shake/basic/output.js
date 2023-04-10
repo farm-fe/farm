@@ -55,5 +55,3 @@ var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("index.ts").default;
 export default entry;
-
-

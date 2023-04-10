@@ -19,6 +19,7 @@ pub fn analyze_imports_and_exports(
   Vec<Ident>,
   Vec<Ident>,
   HashMap<Ident, Vec<Ident>>,
+  bool,
 ) {
   let mut defined_idents = vec![];
   let mut used_idents = vec![];
@@ -27,8 +28,15 @@ pub fn analyze_imports_and_exports(
   let mut imports = None;
   let mut exports = None;
 
+  let mut is_self_executed = false;
+
   let mut analyze_and_insert_used_idents =
     |stmt: &dyn VisitWith<UsedIdentsCollector>, ident: Option<Ident>| {
+      // skip if used_defined_idents is not None as it is only uses the imports and exports for now
+      if used_defined_idents.is_some() {
+        return;
+      }
+
       let mut used_idents_collector = used_idents_collector::UsedIdentsCollector::new();
       stmt.visit_with(&mut used_idents_collector);
 
@@ -86,6 +94,11 @@ pub fn analyze_imports_and_exports(
               defined_idents.push(default.local.clone());
             }
           }
+        }
+
+        // mark empty specifiers as self-executed so it will be preserved
+        if specifiers.is_empty() {
+          is_self_executed = true;
         }
 
         imports = Some(ImportInfo {
@@ -236,30 +249,65 @@ pub fn analyze_imports_and_exports(
     },
     ModuleItem::Stmt(stmt) => match stmt {
       swc_ecma_ast::Stmt::Block(block) => {
+        is_self_executed = true;
         analyze_and_insert_used_idents(block, None);
       }
       swc_ecma_ast::Stmt::Empty(_) => {}
       swc_ecma_ast::Stmt::Debugger(_) => {}
-      swc_ecma_ast::Stmt::With(with) => analyze_and_insert_used_idents(with, None),
+      swc_ecma_ast::Stmt::With(with) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(with, None)
+      }
       swc_ecma_ast::Stmt::Return(_) => {
         unreachable!("return statement should not be present in a module root")
       }
-      swc_ecma_ast::Stmt::Labeled(label) => analyze_and_insert_used_idents(label, None),
+      swc_ecma_ast::Stmt::Labeled(label) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(label, None)
+      }
       swc_ecma_ast::Stmt::Break(_) => {
         unreachable!("break statement should not be present in a module root")
       }
       swc_ecma_ast::Stmt::Continue(_) => {
         unreachable!("continue statement should not be present in a module root")
       }
-      swc_ecma_ast::Stmt::If(if_stmt) => analyze_and_insert_used_idents(if_stmt, None),
-      swc_ecma_ast::Stmt::Switch(switch_stmt) => analyze_and_insert_used_idents(switch_stmt, None),
-      swc_ecma_ast::Stmt::Throw(throw) => analyze_and_insert_used_idents(throw, None),
-      swc_ecma_ast::Stmt::Try(try_stmt) => analyze_and_insert_used_idents(try_stmt, None),
-      swc_ecma_ast::Stmt::While(while_stmt) => analyze_and_insert_used_idents(while_stmt, None),
-      swc_ecma_ast::Stmt::DoWhile(do_while) => analyze_and_insert_used_idents(do_while, None),
-      swc_ecma_ast::Stmt::For(for_stmt) => analyze_and_insert_used_idents(for_stmt, None),
-      swc_ecma_ast::Stmt::ForIn(for_in) => analyze_and_insert_used_idents(for_in, None),
-      swc_ecma_ast::Stmt::ForOf(for_of) => analyze_and_insert_used_idents(for_of, None),
+      swc_ecma_ast::Stmt::If(if_stmt) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(if_stmt, None)
+      }
+      swc_ecma_ast::Stmt::Switch(switch_stmt) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(switch_stmt, None)
+      }
+      swc_ecma_ast::Stmt::Throw(throw) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(throw, None)
+      }
+      swc_ecma_ast::Stmt::Try(try_stmt) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(try_stmt, None)
+      }
+      swc_ecma_ast::Stmt::While(while_stmt) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(while_stmt, None)
+      }
+      swc_ecma_ast::Stmt::DoWhile(do_while) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(do_while, None)
+      }
+      swc_ecma_ast::Stmt::For(for_stmt) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(for_stmt, None)
+      }
+
+      swc_ecma_ast::Stmt::ForIn(for_in) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(for_in, None)
+      }
+      swc_ecma_ast::Stmt::ForOf(for_of) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(for_of, None)
+      }
       swc_ecma_ast::Stmt::Decl(decl) => match decl {
         swc_ecma_ast::Decl::Class(class_decl) => {
           defined_idents.push(class_decl.ident.clone());
@@ -287,7 +335,10 @@ pub fn analyze_imports_and_exports(
           "decl should not be anything other than a class, function, or variable declaration"
         ),
       },
-      swc_ecma_ast::Stmt::Expr(expr) => analyze_and_insert_used_idents(expr, None),
+      swc_ecma_ast::Stmt::Expr(expr) => {
+        is_self_executed = true;
+        analyze_and_insert_used_idents(expr, None)
+      }
     },
   };
 
@@ -297,6 +348,7 @@ pub fn analyze_imports_and_exports(
     defined_idents,
     used_idents,
     defined_idents_map,
+    is_self_executed,
   )
 }
 

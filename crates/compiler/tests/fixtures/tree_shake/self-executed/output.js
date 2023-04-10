@@ -1,4 +1,4 @@
-//c1af9446.js:
+//f3827d38.js:
  import module from "node:module";
 global.__farmNodeRequire = module.createRequire(import.meta.url);
 global.__farmNodeBuiltinModules = module.builtinModules;
@@ -33,46 +33,30 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("dep1.ts"), exports);
-    },
-    "dep1.ts": function(module, exports, require, dynamicRequire) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        function _export(target, all) {
-            for(var name in all)Object.defineProperty(target, name, {
-                enumerable: true,
-                get: all[name]
-            });
-        }
-        _export(exports, {
-            a: function() {
-                return a;
-            },
-            b: function() {
-                return b;
-            }
-        });
-        const a = "1";
-        const b = "2";
-        console.log(a, b);
-    },
-    "index.ts": function(module, exports, require, dynamicRequire) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
         Object.defineProperty(exports, "default", {
             enumerable: true,
             get: function() {
                 return _default;
             }
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("dep.ts"), exports);
-        var _default = 2;
+        const aValue = "a";
+        var a = aValue;
+        var d;
+        console.log(a);
+        d = "d";
+        const b = "b";
+        function _default() {
+            return b;
+        }
+    },
+    "index.ts": function(module, exports, require, dynamicRequire) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
+        var _dep = _interopRequireDefault(require("dep.ts"));
+        (0, _dep.default)();
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;
