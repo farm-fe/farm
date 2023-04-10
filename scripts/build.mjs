@@ -1,11 +1,14 @@
 import { execa } from 'execa';
 import { createSpinner } from 'nanospinner';
 import { resolve, join } from 'node:path';
+import os from 'node:os';
 import fs from 'node:fs';
 
-import { logger } from './logger.mjs'
+import { logger } from './logger.mjs';
 
 const DEFAULT_PACKAGE_MANAGER = 'pnpm';
+const DEFAULT_HOMEBREW_PACKAGE_MANAGER = 'brew';
+const DEFAULT_LINUX_PACKAGE_MANAGER = 'apt';
 const CWD = process.cwd();
 
 // Build the compiler binary
@@ -17,39 +20,75 @@ const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 // Build js_plugin_path
 const PKG_JS_PLUGIN = resolve(CWD, './js-plugins');
 
+// install mac protobuf
+export const installMacProtobuf = () => {
+  execa(DEFAULT_HOMEBREW_PACKAGE_MANAGER, ['install', 'protobuf'], {
+    cwd: CWD,
+  });
+};
+
+// install linux protobuf
+export const installLinuxProtobuf = () =>
+  execa(DEFAULT_LINUX_PACKAGE_MANAGER, ['install', '-y', 'protobuf-compiler'], {
+    cwd: CWD,
+  });
+
 // build core command
 export const buildCore = () =>
-  execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], { cwd: PKG_CORE });
+  execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
+    cwd: PKG_CORE,
+  });
 
 // build rust plugins
-export const rustPlugins = () => dynamicPlugin(PKG_RUST_PLUGIN);
+export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
 // build js plugins
-export const jsPlugins = () => dynamicPlugin(PKG_JS_PLUGIN);
+export const jsPlugins = () => batchBuildPlugins(PKG_JS_PLUGIN);
 
 export const buildJsPlugins = () => Promise.all(jsPlugins());
 
 export const buildRustPlugins = () => Promise.all(rustPlugins());
 
 export const copyArtifacts = () =>
-  dynamicPlugin(PKG_RUST_PLUGIN, 'copy-artifacts');
-
-export async function runTask(taskName, task) {
-  const spinner = createSpinner(`Building ${taskName}`).start();
-  try {
-    await task();
-    spinner.success({ text: `Build ${taskName} completed!` });
-  } catch (e) {
-    spinner.error({ text: `Build ${taskName} failed!` });
-    console.error(e.toString());
-  }
-}
+  batchBuildPlugins(PKG_RUST_PLUGIN, 'copy-artifacts');
 
 export async function runTaskQueue() {
+  if (!checkProtobuf()) {
+    if (isMac()) {
+      await runTask('Protobuf', installMacProtobuf, 'Install', 'Install');
+    }
+    if (isLinux()) {
+      await runTask('Protobuf', installLinuxProtobuf, 'Install', 'Install');
+    }
+    if (isWindows()) {
+      logger(
+        'If you are using a windows system, you can install it in the following ways:\n 1. open https://github.com/protocolbuffers/protobuf \n If you are a 32-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win32.zip \n If you are a 64-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win64.zip \n 2. After installation, find the path you installed, and copy the current path, adding to the environment variable of windows \n\n Or you can directly check out the following article to install \n https://www.geeksforgeeks.org/how-to-install-protocol-buffers-on-windows/'
+      );
+      process.exit(1);
+    }
+  }
+
   await runTask('Core', buildCore);
   await runTask('RustPlugins', buildRustPlugins);
   await runTask('JsPlugins', buildJsPlugins);
   await runTask('Artifacts', copyArtifacts);
+}
+
+export async function runTask(
+  taskName,
+  task,
+  processText = 'Building',
+  finishedText = 'Build'
+) {
+  const spinner = createSpinner(`${processText} ${taskName}`).start();
+  try {
+    await task();
+    spinner.success({ text: `${finishedText} ${taskName} completed!` });
+  } catch (e) {
+    spinner.error({ text: `${finishedText} ${taskName} failed!` });
+    console.error(e.toString());
+    process.exit(1);
+  }
 }
 
 export function resolveNodeVersion() {
@@ -64,7 +103,7 @@ export function resolveNodeVersion() {
   }
 }
 
-export function dynamicPlugin(
+export function batchBuildPlugins(
   baseDir,
   command = 'build',
   packageManager = 'pnpm'
@@ -78,3 +117,30 @@ export function dynamicPlugin(
   });
 }
 
+export function isMac() {
+  const platform = os.platform();
+  return platform === 'darwin';
+}
+
+export function isLinux() {
+  const platform = os.platform();
+  return platform === 'linux';
+}
+
+export function isWindows() {
+  const platform = os.platform();
+  return platform === 'win32';
+}
+
+export function checkProtobuf() {
+  try {
+    if (isWindows()) {
+      execSync('where protoc');
+    } else if (isMac() || isLinux()) {
+      execSync('which protoc');
+    }
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
