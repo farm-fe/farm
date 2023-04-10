@@ -13,6 +13,7 @@
     "Bytedance",
     "bytepos",
     "cacheable",
+    "canonicalize",
     "clsx",
     "codegen",
     "commitlint",

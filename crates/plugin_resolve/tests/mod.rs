@@ -144,3 +144,20 @@ fn resolve_alias() {
     );
   });
 }
+
+#[test]
+fn resolve_dot() {
+  fixture!("tests/fixtures/resolve-dot/index.ts", |file, _| {
+    let cwd = file.parent().unwrap().to_path_buf();
+    let resolver = Resolver::new(ResolveConfig::default());
+
+    let resolved = resolver.resolve(".", cwd.clone(), &ResolveKind::Import);
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd.join("index.ts").to_string_lossy().to_string()
+    );
+  });
+}
