@@ -9,9 +9,9 @@ Farm has implemented all basic features for a web building tool. However, there 
 - [x] Both Rust and JavaScript Plugin System
 - [x] Source Map
 - [ ] Resource Minimization
-- [ ] Tree Shaking
+- [x] Tree Shaking
 - [ ] CSS Modules
-- [ ] Official Plugins like Sass
+- [x] Official Plugins like Sass
 - [ ] Persistent Cache
 
 See milestones: https://github.com/farm-fe/farm/milestones
