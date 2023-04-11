@@ -18,7 +18,10 @@ fn test() {
       input: HashMap::from([("button".to_string(), resolved_path.clone())]),
       ..Default::default()
     };
-    let plugin = Arc::new(FarmPluginSass::new(&config, "".to_string()));
+    let plugin = Arc::new(FarmPluginSass::new(
+      &config,
+      r#"{sassOptions:{alertAscii:true},sourceMap:true}"#.to_string(),
+    ));
     let context = CompilationContext::new(config, vec![plugin.clone()]).unwrap();
     let content = read_file_utf8(&resolved_path).unwrap();
     let transformed = plugin
