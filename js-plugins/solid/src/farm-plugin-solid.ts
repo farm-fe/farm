@@ -7,14 +7,15 @@ import babelPresetSolid from 'babel-preset-solid';
 // change to solid-js/web when resolve support conditional exports
 // TODO: HMR support with solid-refresh
 // import solidRefresh from 'solid-refresh/dist/babel';
-// TODO: remove extension name
-import { tryReadFile } from './utils.js';
+import { tryReadFile } from './utils';
 
 export interface PluginOptions {
   ssr?: boolean;
   solid?: {};
   typescript?: {};
 }
+
+const dynamicImportPrefix = 'virtual:FARMFE_DYNAMIC_IMPORT:';
 
 export default function solid(options: PluginOptions = {}): JsPlugin {
   let farmConfig: UserConfig['compilation'];
@@ -43,7 +44,14 @@ export default function solid(options: PluginOptions = {}): JsPlugin {
       },
       async executor(params, ctx) {
         const { resolvedPath } = params;
-        const content = await tryReadFile(resolvedPath);
+        let path = resolvedPath;
+
+        // TBD: replace virtual module prefix to avoid error when reading file
+        if (resolvedPath.startsWith(dynamicImportPrefix)) {
+          path = path.replace(dynamicImportPrefix, '');
+        }
+
+        const content = await tryReadFile(path);
         const solidOptions: { generate: 'ssr' | 'dom'; hydratable: boolean } = {
           generate: 'dom',
           hydratable: false,
@@ -58,8 +66,8 @@ export default function solid(options: PluginOptions = {}): JsPlugin {
           babelrc: false,
           configFile: false,
           root: farmConfig.root,
-          filename: params.resolvedPath,
-          sourceFileName: params.resolvedPath,
+          filename: path,
+          sourceFileName: path,
           presets: [[babelPresetSolid, solidOptions]],
           // HACK: should be removed when resolve support conditional exports
           plugins: [
@@ -78,7 +86,7 @@ export default function solid(options: PluginOptions = {}): JsPlugin {
 
         const tsOptions = options.typescript ?? {};
         const shouldBeProcessedWithTypescript =
-          /\.tsx?$/.test(resolvedPath) || options.typescript;
+          /\.tsx?$/.test(path) || options.typescript;
 
         if (shouldBeProcessedWithTypescript) {
           babelOptions.presets.push([babelPresetTs, tsOptions]);
@@ -86,7 +94,6 @@ export default function solid(options: PluginOptions = {}): JsPlugin {
 
         const { code, map } = await transformAsync(content, babelOptions);
         return {
-          // content,
           content: code,
           moduleType: 'js',
           // TODO: generate sourceMap with configuration
