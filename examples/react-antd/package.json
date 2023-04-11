@@ -1,0 +1,26 @@
+{
+  "name": "@farmfe-examples/react-antd",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@ant-design/icons": "^5.0.1",
+    "antd": "^5.4.2",
+    "clsx": "^1.2.1",
+    "react": "18",
+    "react-dom": "18"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-sass": "workspace:^0.0.2",
+    "@farmfe/plugin-react": "workspace:^0.1.2",
+    "@farmfe/plugin-sass": "workspace:^0.0.1",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build"
+  }
+}
