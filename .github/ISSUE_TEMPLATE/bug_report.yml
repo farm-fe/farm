@@ -40,8 +40,11 @@ body:
     id: system-info
     attributes:
       label: System Info
-      render: shell
+      description: Output of `npx envinfo --system --npmPackages @farmfe/core --binaries --browsers`
+      render: Shell
       placeholder: System, Binaries, Browsers
+    validations:
+      required: true
   - type: textarea
     id: additional-comments
     attributes:
