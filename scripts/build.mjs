@@ -34,10 +34,14 @@ export const installLinuxProtobuf = () =>
   });
 
 // build core command
-export const buildCore = () =>
+export const buildCore = () => {
   execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
     cwd: PKG_CORE,
   });
+  execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+    cwd: PKG_CORE,
+  });
+};
 
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
