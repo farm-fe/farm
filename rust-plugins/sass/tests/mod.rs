@@ -20,7 +20,13 @@ fn test() {
     };
     let plugin = Arc::new(FarmPluginSass::new(
       &config,
-      r#"{sassOptions:{alertAscii:true},sourceMap:true}"#.to_string(),
+      r#"
+      {
+        "sourceMap": true,
+        "style":"expanded"
+      }
+    "#
+      .to_string(),
     ));
     let context = CompilationContext::new(config, vec![plugin.clone()]).unwrap();
     let content = read_file_utf8(&resolved_path).unwrap();
