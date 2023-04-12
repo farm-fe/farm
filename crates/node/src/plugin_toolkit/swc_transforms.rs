@@ -45,6 +45,7 @@ pub fn farm_swc_transform_react(
           ..Default::default()
         },
         top_level_mark,
+        unresolved_mark
       ));
 
       if options.inject_helpers {

@@ -40,6 +40,4 @@ pub use swc_css_ast;
 pub use swc_ecma_ast;
 pub use swc_ecma_parser;
 pub use swc_html_ast;
-pub use swc_ecma_minifier;
-pub use swc_ecma_visit;
-pub use swc_ecma_transforms_base;
+
