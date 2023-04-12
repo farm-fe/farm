@@ -17,6 +17,7 @@ use farmfe_toolkit::{
     feature::enable_available_feature_from_es_version,
     fixer,
     helpers::inject_helpers,
+    hygiene::{hygiene_with_config, Config as HygieneConfig},
     modules::{
       common_js,
       import_analysis::import_analyzer,
@@ -78,6 +79,7 @@ pub fn resource_pot_to_runtime_object_lit(
       || {
         // transform esm to commonjs
         let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+        let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
 
         // ESM to commonjs, then commonjs to farm's runtime module systems
         if matches!(
@@ -107,6 +109,10 @@ pub fn resource_pot_to_runtime_object_lit(
           context.config.mode.clone(),
         );
         cloned_module.visit_mut_with(&mut source_replacer);
+        cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
+          top_level_mark,
+          ..Default::default()
+        }));
         // TODO support comments
         cloned_module.visit_mut_with(&mut fixer(None));
       },

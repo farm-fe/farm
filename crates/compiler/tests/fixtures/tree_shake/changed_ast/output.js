@@ -71,10 +71,10 @@ global.__farmNodeBuiltinModules = module.builtinModules;
                 __self: this
             }));
         }
-        _c = Description;
-        var _c, _c;
+        _c1 = Description;
+        var _c, _c1;
         $RefreshReg$(_c, "LazyComp");
-        $RefreshReg$(_c, "Description");
+        $RefreshReg$(_c1, "Description");
     },
     "dep.ts": function(module, exports, require, dynamicRequire) {
         "use strict";
