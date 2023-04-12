@@ -357,7 +357,7 @@ impl ModuleGraph {
     &self,
     entries: Vec<ModuleId>,
     op: &mut dyn FnMut(Option<&ModuleId>, &ModuleId) -> bool,
-  ) -> () {
+  ) {
     fn dfs(
       parent: Option<&ModuleId>,
       entry: &ModuleId,
@@ -368,7 +368,7 @@ impl ModuleGraph {
       if !op(parent, entry) || visited.contains(entry) {
         return;
       }
-      
+
       visited.insert(entry.clone());
 
       let deps = graph.dependencies(entry);

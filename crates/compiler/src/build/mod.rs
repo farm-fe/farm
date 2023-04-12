@@ -46,7 +46,7 @@ pub(crate) struct ResolvedModuleInfo {
   pub resolve_module_id_result: ResolveModuleIdResult,
 }
 
-pub(crate) enum ResolveModuleResult {
+enum ResolveModuleResult {
   /// The module is already built
   Built(ModuleId),
   /// The module is cached

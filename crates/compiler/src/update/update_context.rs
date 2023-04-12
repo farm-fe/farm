@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
-use farmfe_core::{module::module_graph::{ModuleGraph, ModuleGraphEdge}, parking_lot::RwLock, context::CompilationContext};
+use farmfe_core::{
+  context::CompilationContext,
+  module::module_graph::{ModuleGraph, ModuleGraphEdge},
+  parking_lot::RwLock,
+};
 
 use crate::Compiler;
 
@@ -16,22 +20,34 @@ impl UpdateContext {
     let existing_module_graph = context.module_graph.read();
     let mut module_graph = ModuleGraph::new();
 
-    existing_module_graph.dfs_breakable(existing_module_graph.entries.clone().into_iter().collect(),  &mut |parent_id, module_id| {
-      if paths.iter().any(|(path, _)| path == &module_id.resolved_path(&context.config.root)) {
-        return false;
-      }
+    existing_module_graph.dfs_breakable(
+      existing_module_graph.entries.clone().into_iter().collect(),
+      &mut |parent_id, module_id| {
+        if paths
+          .iter()
+          .any(|(path, _)| path == &module_id.resolved_path(&context.config.root))
+        {
+          return false;
+        }
 
-      let existing_module = existing_module_graph.module(&module_id).unwrap();
-      let module = Compiler::create_module(module_id.clone(), existing_module.external, existing_module.immutable);
+        let existing_module = existing_module_graph.module(&module_id).unwrap();
+        let module = Compiler::create_module(
+          module_id.clone(),
+          existing_module.external,
+          existing_module.immutable,
+        );
 
-      module_graph.add_module(module);
+        module_graph.add_module(module);
 
-      if let Some(parent_id) = parent_id {
-        module_graph.add_edge(parent_id, module_id, ModuleGraphEdge::default()).unwrap();
-      }
+        if let Some(parent_id) = parent_id {
+          module_graph
+            .add_edge(parent_id, module_id, ModuleGraphEdge::default())
+            .unwrap();
+        }
 
-      true
-    });
+        true
+      },
+    );
 
     Self {
       module_graph: RwLock::new(module_graph),

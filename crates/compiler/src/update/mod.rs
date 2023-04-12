@@ -18,7 +18,7 @@ use farmfe_plugin_html::get_dynamic_resources_map;
 use farmfe_toolkit::tracing;
 
 use crate::{
-  build::{ResolvedModuleInfo, ResolveModuleResult}, generate::finalize_resources::finalize_resources, Compiler,
+  build::ResolvedModuleInfo, generate::finalize_resources::finalize_resources, Compiler,
 };
 use farmfe_core::error::Result;
 
@@ -58,6 +58,17 @@ pub enum UpdateType {
   Updated,
   // removed a module
   Removed,
+}
+
+enum ResolveModuleResult {
+  /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
+  ExistingBeforeUpdate(ModuleId),
+  /// This module is added during the update, and we met it again when resolving dependencies
+  ExistingWhenUpdate(ModuleId),
+  /// Resolve Cache hit
+  Cached(Box<ResolvedModuleInfo>),
+  /// This module is a full new resolved module, and we need to do the full building process
+  Success(Box<ResolvedModuleInfo>),
 }
 
 impl Compiler {
@@ -107,7 +118,7 @@ impl Compiler {
     while let Ok(err) = err_receiver.recv() {
       errors.push(err.to_string());
     }
-    
+
     if !errors.is_empty() {
       return Err(CompilationError::GenericError(errors.join("\n")));
     }
@@ -175,7 +186,13 @@ impl Compiler {
         };
 
       match resolve_module_result {
-        ResolveModuleResult::Built(module_id) => {
+        ResolveModuleResult::ExistingBeforeUpdate(module_id) => {
+          // insert a placeholder module to the update module graph
+          let module = Module::new(module_id.clone());
+          Self::add_module_to_update_module_graph(&update_context, module);
+          Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
+        }
+        ResolveModuleResult::ExistingWhenUpdate(module_id) => {
           Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
         }
         ResolveModuleResult::Cached(_) => unimplemented!("Cached is not supported yet"),
@@ -324,7 +341,7 @@ impl Compiler {
     let cloned_context = self.context.clone();
 
     // TODO call optimize to support tree shaking in dev mode
-  
+
     // if there are new module groups, we should run the tasks synchronously
     if affected_module_groups
       .iter()
@@ -366,7 +383,6 @@ impl Compiler {
       callback();
     } else {
       std::thread::spawn(move || {
-        // TODO: manage a task queue, and run the tasks in sequence
         regenerate_resources_for_affected_module_groups(
           affected_module_groups,
           &cloned_updated_module_ids,
@@ -405,9 +421,16 @@ fn resolve_module(
     })));
   }
 
+  let module_graph = context.module_graph.read();
+  if module_graph.has_module(&resolve_module_id_result.module_id) {
+    return Ok(ResolveModuleResult::ExistingBeforeUpdate(
+      resolve_module_id_result.module_id,
+    ));
+  }
+
   let mut update_module_graph = update_context.module_graph.write();
   if update_module_graph.has_module(&resolve_module_id_result.module_id) {
-    return Ok(ResolveModuleResult::Built(
+    return Ok(ResolveModuleResult::ExistingWhenUpdate(
       resolve_module_id_result.module_id,
     ));
   }
