@@ -65,7 +65,7 @@ impl Resolver {
 
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
         // check browser replace
-        if let Some(resolved_path) = self.try_browser_replace(&package_json_info, source) {
+        if let Some(resolved_path) = self.try_browser_replace(package_json_info, source) {
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
           return Some(PluginResolveHookResult {
