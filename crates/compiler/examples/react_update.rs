@@ -34,6 +34,7 @@ fn main() {
         plugins: vec![],
         swc_helpers_path,
       },
+      tree_shaking: false,
       ..Default::default()
     },
     vec![],

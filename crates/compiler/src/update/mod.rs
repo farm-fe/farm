@@ -18,7 +18,7 @@ use farmfe_plugin_html::get_dynamic_resources_map;
 use farmfe_toolkit::tracing;
 
 use crate::{
-  build::ResolvedModuleInfo, generate::finalize_resources::finalize_resources, Compiler,
+  build::{ResolvedModuleInfo, ResolveModuleResult}, generate::finalize_resources::finalize_resources, Compiler,
 };
 use farmfe_core::error::Result;
 
@@ -60,24 +60,13 @@ pub enum UpdateType {
   Removed,
 }
 
-enum ResolveModuleResult {
-  /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
-  ExistingBeforeUpdate(ModuleId),
-  /// This module is added during the update, and we met it again when resolving dependencies
-  ExistingWhenUpdate(ModuleId),
-  /// Resolve Cache hit
-  Cached(Box<ResolvedModuleInfo>),
-  /// This module is a full new resolved module, and we need to do the full building process
-  Success(Box<ResolvedModuleInfo>),
-}
-
 impl Compiler {
   pub fn update<F>(&self, paths: Vec<(String, UpdateType)>, callback: F) -> Result<UpdateResult>
   where
     F: FnOnce() + Send + Sync + 'static,
   {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
-    let update_context = Arc::new(UpdateContext::new());
+    let update_context = Arc::new(UpdateContext::new(&self.context, &paths));
 
     for (path, update_type) in paths.clone() {
       match update_type {
@@ -113,11 +102,15 @@ impl Compiler {
 
     drop(err_sender);
 
-    if let Ok(err) = err_receiver.recv() {
-      return Err(err);
-    }
+    let mut errors = vec![];
 
-    self.optimize_update_module_graph(&update_context).unwrap();
+    while let Ok(err) = err_receiver.recv() {
+      errors.push(err.to_string());
+    }
+    
+    if !errors.is_empty() {
+      return Err(CompilationError::GenericError(errors.join("\n")));
+    }
 
     let previous_module_groups = {
       let module_group_graph = self.context.module_group_graph.read();
@@ -157,16 +150,6 @@ impl Compiler {
     })
   }
 
-  fn optimize_update_module_graph(&self, update_context: &Arc<UpdateContext>) -> Result<()> {
-    // we should optimize the module graph after the update, as tree shaking are called on this stage and may remove some modules
-    let mut update_module_graph = update_context.module_graph.write();
-
-    self
-      .context
-      .plugin_driver
-      .optimize_module_graph(&mut update_module_graph, &self.context)
-  }
-
   /// Resolving, loading, transforming and parsing a module in a separate thread.
   /// This method is similar to the build_module_graph_threaded method in the build/mod.rs file,
   /// the difference is that this method is used for updating the module graph, only handles the updated and added module, and ignores the existing unchanged module,
@@ -192,13 +175,7 @@ impl Compiler {
         };
 
       match resolve_module_result {
-        ResolveModuleResult::ExistingBeforeUpdate(module_id) => {
-          // insert a placeholder module to the update module graph
-          let module = Module::new(module_id.clone());
-          Self::add_module_to_update_module_graph(&update_context, module);
-          Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
-        }
-        ResolveModuleResult::ExistingWhenUpdate(module_id) => {
+        ResolveModuleResult::Built(module_id) => {
           Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
         }
         ResolveModuleResult::Cached(_) => unimplemented!("Cached is not supported yet"),
@@ -346,6 +323,8 @@ impl Compiler {
 
     let cloned_context = self.context.clone();
 
+    // TODO call optimize to support tree shaking in dev mode
+  
     // if there are new module groups, we should run the tasks synchronously
     if affected_module_groups
       .iter()
@@ -426,16 +405,9 @@ fn resolve_module(
     })));
   }
 
-  let module_graph = context.module_graph.read();
-  if module_graph.has_module(&resolve_module_id_result.module_id) {
-    return Ok(ResolveModuleResult::ExistingBeforeUpdate(
-      resolve_module_id_result.module_id,
-    ));
-  }
-
   let mut update_module_graph = update_context.module_graph.write();
   if update_module_graph.has_module(&resolve_module_id_result.module_id) {
-    return Ok(ResolveModuleResult::ExistingWhenUpdate(
+    return Ok(ResolveModuleResult::Built(
       resolve_module_id_result.module_id,
     ));
   }

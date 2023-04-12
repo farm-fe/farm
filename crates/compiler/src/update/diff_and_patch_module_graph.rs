@@ -40,7 +40,7 @@ pub fn diff_module_graph(
     added_modules: HashSet::new(),
     removed_modules: HashSet::new(),
   };
-
+  // TODO Optimize: support diff module deps by Vec to reduce redundant differing when there are many changed start_points
   for start_point in start_points {
     let (diff_result, added_modules, remove_modules) =
       diff_module_deps(&start_point, module_graph, update_module_graph);
@@ -65,11 +65,6 @@ pub fn patch_module_graph(
   module_graph: &mut ModuleGraph,
   update_module_graph: &mut ModuleGraph,
 ) -> HashMap<ModuleId, Module> {
-  println!(
-    "module_graph len before patching: {:#?}",
-    module_graph.modules().len()
-  );
-
   let mut removed_modules = HashMap::new();
   let mut added_edge_info = HashMap::<(ModuleId, ModuleId), ModuleGraphEdge>::new();
 
@@ -116,10 +111,6 @@ pub fn patch_module_graph(
     module_graph.replace_module(module);
   }
 
-  println!(
-    "module_graph len after patching: {:#?}",
-    module_graph.modules().len()
-  );
   removed_modules
 }
 
@@ -316,33 +307,11 @@ fn diff_module_deps(
 
     for child in children {
       let edge_info = module_graph.edge_info(&dep, &child).unwrap();
-
+      children_removed.push((child.clone(), edge_info.clone()));
+      
       if !update_module_graph.has_module(&child) {
-        children_removed.push((child.clone(), edge_info.clone()));
-        // mark the child as removed if all of its parents is in removed_modules
-        if module_graph
-          .dependents(&child)
-          .iter()
-          .all(|(p_id, _, _)| removed_modules.contains(p_id))
-        {
-          // if the children of the child is in removed_visited, then check the children of the child that whether all of its parents is in removed_modules
-          for child_of_child in module_graph.dependencies_ids(&child) {
-            if removed_visited.contains(&child_of_child) {
-              if module_graph
-                .dependents(&child_of_child)
-                .iter()
-                .all(|(p_id, _, _)| removed_modules.contains(p_id))
-              {
-                removed_modules.insert(child_of_child);
-              }
-            }
-          }
-
-          removed_queue.push_back(child.clone());
-          removed_modules.insert(child);
-        }
-      } else {
-        children_removed.push((child.clone(), edge_info.clone()));
+        removed_queue.push_back(child.clone());
+        removed_modules.insert(child);
       }
     }
 
