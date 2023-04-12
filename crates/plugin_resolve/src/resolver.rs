@@ -78,6 +78,13 @@ impl Resolver {
 
         // check imports replace
         if let Some(resolved_path) = self.try_imports_replace(package_json_info, source) {
+          if Path::new(&resolved_path).extension().is_none() {
+            let parent_path = Path::new(&package_json_info.dir())
+              .parent()
+              .unwrap()
+              .to_path_buf();
+            return self.resolve(&resolved_path, parent_path, kind);
+          }
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
           return Some(PluginResolveHookResult {
@@ -552,15 +559,14 @@ impl Resolver {
     if resolved_path.starts_with('#') {
       let imports_field = self.get_field_value_from_package_json_info(package_json_info, "imports");
       if let Some(imports_field) = imports_field {
-        if let Value::Object(obj) = imports_field {
-          for (key, value) in obj {
-            // let path = Path::new(value.as_str().unwrap());
-            // if path.is_absolute() {
+        if let Value::Object(imports_field_map) = imports_field {
+          for (key, value) in imports_field_map {
             if self.are_paths_equal(&key, resolved_path) {
               if let Value::String(str) = &value {
                 let path = Path::new(&str);
-                if path.is_absolute() {
-                  // TODO imports resolve value is other dependencies
+                if path.extension().is_none() {
+                  // resolve imports field import other deps. import can only use relative paths
+                  return Some(path.to_string_lossy().to_string());
                 } else {
                   let value_path = self.get_key_path(&str, package_json_info.dir());
                   return Some(value_path);
@@ -573,8 +579,8 @@ impl Resolver {
                   if self.are_paths_equal(&key, "default") {
                     if let Value::String(str) = value {
                       let path = Path::new(&str);
-                      if path.is_absolute() {
-                        // TODO imports resolve value is other dependencies
+                      if path.extension().is_none() {
+                        return Some(path.to_string_lossy().to_string());
                       } else {
                         let value_path = self.get_key_path(&str, package_json_info.dir());
                         return Some(value_path);
