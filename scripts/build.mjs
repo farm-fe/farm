@@ -20,6 +20,15 @@ const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 // Build js_plugin_path
 const PKG_JS_PLUGIN = resolve(CWD, './js-plugins');
 
+export async function runTaskQueue() {
+  // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
+  await installProtoBuf();
+  await runTask('Core', buildCore);
+  await runTask('RustPlugins', buildRustPlugins);
+  await runTask('JsPlugins', buildJsPlugins);
+  await runTask('Artifacts', copyArtifacts);
+}
+
 // install mac protobuf
 export const installMacProtobuf = () => {
   execa(DEFAULT_HOMEBREW_PACKAGE_MANAGER, ['install', 'protobuf'], {
@@ -35,12 +44,14 @@ export const installLinuxProtobuf = () =>
 
 // build core command
 export const buildCore = () => {
-  execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
-    cwd: PKG_CORE,
-  });
-  execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-    cwd: PKG_CORE,
-  });
+  return Promise.all([
+    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+      cwd: PKG_CORE,
+    }),
+    execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
+      cwd: PKG_CORE,
+    }),
+  ]);
 };
 
 // build rust plugins
@@ -55,28 +66,6 @@ export const buildRustPlugins = () => Promise.all(rustPlugins());
 
 export const copyArtifacts = () =>
   batchBuildPlugins(PKG_RUST_PLUGIN, 'copy-artifacts');
-
-export async function runTaskQueue() {
-  if (!checkProtobuf()) {
-    if (isMac()) {
-      await runTask('Protobuf', installMacProtobuf, 'Install', 'Install');
-    }
-    if (isLinux()) {
-      await runTask('Protobuf', installLinuxProtobuf, 'Install', 'Install');
-    }
-    if (isWindows()) {
-      logger(
-        'If you are using a windows system, you can install it in the following ways:\n 1. open https://github.com/protocolbuffers/protobuf \n If you are a 32-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win32.zip \n If you are a 64-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win64.zip \n 2. After installation, find the path you installed, and copy the current path, adding to the environment variable of windows \n\n Or you can directly check out the following article to install \n https://www.geeksforgeeks.org/how-to-install-protocol-buffers-on-windows/'
-      );
-      process.exit(1);
-    }
-  }
-
-  await runTask('Core', buildCore);
-  await runTask('RustPlugins', buildRustPlugins);
-  await runTask('JsPlugins', buildJsPlugins);
-  await runTask('Artifacts', copyArtifacts);
-}
 
 export async function runTask(
   taskName,
@@ -146,5 +135,26 @@ export async function checkProtobuf() {
     return true;
   } catch (error) {
     return false;
+  }
+}
+
+export async function installProtoBuf() {
+  if (!(await checkProtobuf())) {
+    logger(
+      'Due to the use of protoc in the project, we currently judge that you have not installed. we need to install protobuf locally to make the project start successfully. \n- For mac users, will be use your local `homebrew` tool for installation. \n- For linux users, we will use your local `apt` tool for installation. \n- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n',
+      { title: 'INFO' }
+    );
+    if (isMac()) {
+      await runTask('Protobuf', installMacProtobuf, 'Install', 'Install');
+    }
+    if (isLinux()) {
+      await runTask('Protobuf', installLinuxProtobuf, 'Install', 'Install');
+    }
+    if (isWindows()) {
+      logger(
+        'If you are using a windows system, you can install it in the following ways:\n 1. open https://github.com/protocolbuffers/protobuf \n If you are a 32-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win32.zip \n If you are a 64-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win64.zip \n 2. After installation, find the path you installed, and copy the current path, adding to the environment variable of windows \n\n Or you can directly check out the following article to install \n https://www.geeksforgeeks.org/how-to-install-protocol-buffers-on-windows/'
+      );
+      process.exit(1);
+    }
   }
 }

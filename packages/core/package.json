@@ -53,7 +53,7 @@
   ],
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding/binding.cjs --dts binding.d.ts",
     "prepublishOnly": "napi prepublish -t npm",
