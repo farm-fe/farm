@@ -579,8 +579,8 @@ impl Resolver {
                   if self.are_paths_equal(&key, "default") {
                     if let Value::String(str) = value {
                       let path = Path::new(&str);
-                      if path.is_absolute() {
-                        // TODO imports resolve value is other dependencies
+                      if path.extension().is_none() {
+                        return Some(path.to_string_lossy().to_string());
                       } else {
                         let value_path = self.get_key_path(&str, package_json_info.dir());
                         return Some(value_path);
