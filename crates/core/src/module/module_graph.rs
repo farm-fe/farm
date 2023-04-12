@@ -353,6 +353,38 @@ impl ModuleGraph {
     }
   }
 
+  pub fn dfs_breakable(
+    &self,
+    entries: Vec<ModuleId>,
+    op: &mut dyn FnMut(Option<&ModuleId>, &ModuleId) -> bool,
+  ) {
+    fn dfs(
+      parent: Option<&ModuleId>,
+      entry: &ModuleId,
+      op: &mut dyn FnMut(Option<&ModuleId>, &ModuleId) -> bool,
+      visited: &mut HashSet<ModuleId>,
+      graph: &ModuleGraph,
+    ) {
+      if !op(parent, entry) || visited.contains(entry) {
+        return;
+      }
+
+      visited.insert(entry.clone());
+
+      let deps = graph.dependencies(entry);
+
+      for (dep, _, _s) in &deps {
+        dfs(Some(entry), dep, op, visited, graph)
+      }
+    };
+
+    let mut visited = HashSet::new();
+
+    for entry in entries {
+      dfs(None, &entry, op, &mut visited, self);
+    }
+  }
+
   pub fn bfs(&self, entry: &ModuleId, op: &mut dyn FnMut(&ModuleId)) {
     let mut bfs = Bfs::new(&self.g, *self.id_index_map.get(entry).unwrap());
 

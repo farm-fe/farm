@@ -77,7 +77,7 @@ impl Compiler {
     F: FnOnce() + Send + Sync + 'static,
   {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
-    let update_context = Arc::new(UpdateContext::new());
+    let update_context = Arc::new(UpdateContext::new(&self.context, &paths));
 
     for (path, update_type) in paths.clone() {
       match update_type {
@@ -113,11 +113,15 @@ impl Compiler {
 
     drop(err_sender);
 
-    if let Ok(err) = err_receiver.recv() {
-      return Err(err);
+    let mut errors = vec![];
+
+    while let Ok(err) = err_receiver.recv() {
+      errors.push(err.to_string());
     }
 
-    self.optimize_update_module_graph(&update_context).unwrap();
+    if !errors.is_empty() {
+      return Err(CompilationError::GenericError(errors.join("\n")));
+    }
 
     let previous_module_groups = {
       let module_group_graph = self.context.module_group_graph.read();
@@ -155,16 +159,6 @@ impl Compiler {
       boundaries,
       dynamic_resources_map,
     })
-  }
-
-  fn optimize_update_module_graph(&self, update_context: &Arc<UpdateContext>) -> Result<()> {
-    // we should optimize the module graph after the update, as tree shaking are called on this stage and may remove some modules
-    let mut update_module_graph = update_context.module_graph.write();
-
-    self
-      .context
-      .plugin_driver
-      .optimize_module_graph(&mut update_module_graph, &self.context)
   }
 
   /// Resolving, loading, transforming and parsing a module in a separate thread.
@@ -346,6 +340,8 @@ impl Compiler {
 
     let cloned_context = self.context.clone();
 
+    // TODO call optimize to support tree shaking in dev mode
+
     // if there are new module groups, we should run the tasks synchronously
     if affected_module_groups
       .iter()
@@ -387,7 +383,6 @@ impl Compiler {
       callback();
     } else {
       std::thread::spawn(move || {
-        // TODO: manage a task queue, and run the tasks in sequence
         regenerate_resources_for_affected_module_groups(
           affected_module_groups,
           &cloned_updated_module_ids,
