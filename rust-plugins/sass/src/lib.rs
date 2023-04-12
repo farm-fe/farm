@@ -115,7 +115,7 @@ fn get_exe_path() -> PathBuf {
     .join(format!("node_modules/sass-embedded-{os}-{arch}"))
     .join(format!("dart-sass-embedded/{entry_file}"));
 
-  let default_path = follow_symlinks(PathBuf::from(cur_dir).join("node_modules").join(PKG_NAME))
+  let default_path = follow_symlinks(cur_dir.join("node_modules").join(PKG_NAME))
     .join("../..")
     .join(format!("sass-embedded-{os}-{arch}"))
     .join(format!("dart-sass-embedded/{entry_file}"));
