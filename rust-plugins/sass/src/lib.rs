@@ -124,10 +124,10 @@ fn get_exe_path() -> PathBuf {
   );
 
   // find closest node_modules start from pkg_dir
-  let mut cur_dir = pkg_dir.clone();
+  let mut cur_dir = pkg_dir;
 
   while !cur_dir.join("node_modules").exists() {
-    if !cur_dir.parent().is_some() {
+    if cur_dir.parent().is_none() {
       panic!("can not find node_modules in @farmfe/plugin-sass");
     }
 

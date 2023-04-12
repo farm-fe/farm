@@ -30,7 +30,7 @@ impl UpdateContext {
           return false;
         }
 
-        let existing_module = existing_module_graph.module(&module_id).unwrap();
+        let existing_module = existing_module_graph.module(module_id).unwrap();
         let module = Compiler::create_module(
           module_id.clone(),
           existing_module.external,
