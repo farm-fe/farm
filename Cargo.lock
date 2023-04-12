@@ -3017,7 +3017,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3238e9f24c08fe12d5bb762799b8a08940b9af225ff0f8303bced2ce33468fc0"
 dependencies = [
  "once_cell",
- "rkyv",
  "rustc-hash",
  "serde",
  "string_cache",
@@ -3243,7 +3242,6 @@ dependencies = [
  "bitflags 1.3.2",
  "is-macro",
  "num-bigint",
- "rkyv",
  "scoped-tls",
  "serde",
  "string_enum 0.3.4",

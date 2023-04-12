@@ -18,7 +18,7 @@ use farmfe_core::{
     resource_pot::{self, ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::{comments::NoopComments, Mark, GLOBALS},
+  swc_common::{comments::NoopComments, Mark, GLOBALS, FilePathMapping, SourceMap},
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleDecl, ModuleItem, Stmt,
   },
@@ -31,10 +31,13 @@ use farmfe_toolkit::{
     swc_try_with::try_with, syntax_from_module_type,
   },
   sourcemap::swc_gen::build_source_map,
+  swc_ecma_minifier::{optimize, option::{MinifyOptions, ExtraOptions}},
   swc_ecma_transforms::{
+    fixer::fixer,
     resolver,
     typescript::{strip, strip_with_jsx},
   },
+  swc_ecma_visit::FoldWith,
   swc_ecma_visit::VisitMutWith,
 };
 

@@ -42,6 +42,7 @@
     "loglevel",
     "mgfe",
     "middlewares",
+    "minifier",
     "msvc",
     "nanospinner",
     "napi",
