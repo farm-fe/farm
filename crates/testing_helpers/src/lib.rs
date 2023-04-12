@@ -44,7 +44,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
         &from.into(),
         &to.into(),
         ModuleGraphEdge {
-          source: format!("./{}", to),
+          sources: vec![format!("./{}", to)],
           kind: ResolveKind::Import,
           order,
         },
@@ -58,7 +58,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
         &from.into(),
         &to.into(),
         ModuleGraphEdge {
-          source: format!("./{}", to),
+          sources: vec![format!("./{}", to)],
           kind: ResolveKind::DynamicImport,
           order,
         },
@@ -71,7 +71,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
       &"F".into(),
       &"A".into(),
       ModuleGraphEdge {
-        source: "./A".to_string(),
+        sources: vec!["./A".to_string()],
         kind: ResolveKind::Import,
         order: 0,
       },

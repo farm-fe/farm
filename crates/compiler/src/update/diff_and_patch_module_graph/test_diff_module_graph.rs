@@ -34,7 +34,7 @@ fn test_diff_module_graph_complex_1() {
           ModuleGraphEdge {
             order: 1,
             kind: ResolveKind::DynamicImport,
-            source: "./D".to_string(),
+            sources: vec!["./D".to_string()],
           }
         )],
       }
@@ -86,14 +86,14 @@ fn test_diff_module_graph_complex_2() {
             (
               "D".into(),
               ModuleGraphEdge {
-                source: "./D".to_string(),
+                sources: vec!["./D".to_string()],
                 ..Default::default()
               }
             ),
             (
               "E".into(),
               ModuleGraphEdge {
-                source: "./E".to_string(),
+                sources: vec!["./E".to_string()],
                 order: 1,
                 ..Default::default()
               }
@@ -115,7 +115,7 @@ fn test_diff_module_graph_complex_2() {
           removed: vec![(
             "F".into(),
             ModuleGraphEdge {
-              source: "./F".to_string(),
+              sources: vec!["./F".to_string()],
               kind: ResolveKind::DynamicImport,
               ..Default::default()
             }
@@ -129,7 +129,7 @@ fn test_diff_module_graph_complex_2() {
           removed: vec![(
             "G".into(),
             ModuleGraphEdge {
-              source: "./G".to_string(),
+              sources: vec!["./G".to_string()],
               kind: ResolveKind::DynamicImport,
               ..Default::default()
             }
@@ -144,7 +144,7 @@ fn test_diff_module_graph_complex_2() {
             "D".into(),
             ModuleGraphEdge {
               kind: ResolveKind::DynamicImport,
-              source: "./D".to_string(),
+              sources: vec!["./D".to_string()],
               order: 1,
             }
           )],
@@ -187,7 +187,7 @@ fn test_diff_module_graph_complex_3() {
           removed: vec![(
             "A".into(),
             ModuleGraphEdge {
-              source: "./A".to_string(),
+              sources: vec!["./A".to_string()],
               ..Default::default()
             }
           )],

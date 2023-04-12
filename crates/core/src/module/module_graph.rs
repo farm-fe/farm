@@ -15,7 +15,7 @@ use crate::{
 use super::{Module, ModuleId};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct ModuleGraphEdge {
+pub struct ModuleGraphEdgeDataItem {
   /// the source of this edge, for example, `./index.css`
   pub source: String,
   pub kind: ResolveKind,
@@ -30,7 +30,7 @@ pub struct ModuleGraphEdge {
 
 pub struct ModuleGraph {
   /// internal graph
-  g: StableDiGraph<Module, ModuleGraphEdge>,
+  g: StableDiGraph<Module, Vec<ModuleGraphEdgeDataItem>>,
   /// to index module in the graph using [ModuleId]
   id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
   /// entry modules of this module graph
@@ -54,7 +54,7 @@ impl ModuleGraph {
   /// we can get `module b` by `(module a, "./b")`.
   ///
   /// Panic if the dep does not exist or the source is not correct
-  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &str) -> ModuleId {
+  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &String) -> ModuleId {
     let i = self
       .id_index_map
       .get(module_id)
@@ -65,7 +65,11 @@ impl ModuleGraph {
       .detach();
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
-      if self.g[edge_index].source == source {
+      if self.g[edge_index]
+        .iter()
+        .find(|e| e.source == *source)
+        .is_some()
+      {
         return self.g[node_index].id.clone();
       }
     }
@@ -129,7 +133,7 @@ impl ModuleGraph {
     &mut self,
     from: &ModuleId,
     to: &ModuleId,
-    edge_info: ModuleGraphEdge,
+    edge_info: ModuleGraphEdgeDataItem,
   ) -> Result<()> {
     let from = self.id_index_map.get(from).ok_or_else(|| {
       CompilationError::GenericError(format!(
@@ -144,8 +148,13 @@ impl ModuleGraph {
         to.relative_path()
       ))
     })?;
+    // if the edge already exists, we should update the edge info
+    if let Some(edge_index) = self.g.find_edge(*from, *to) {
+      self.g[edge_index].push(edge_info);
+      return Ok(());
+    }
     // using update_edge instead of add_edge to avoid duplicated edges, see https://docs.rs/petgraph/latest/petgraph/graph/struct.Graph.html#method.update_edge
-    self.g.update_edge(*from, *to, edge_info);
+    self.g.update_edge(*from, *to, vec![edge_info]);
 
     Ok(())
   }
@@ -189,7 +198,7 @@ impl ModuleGraph {
     self.g.find_edge(*from.unwrap(), *to.unwrap()).is_some()
   }
 
-  pub fn edge_info(&self, from: &ModuleId, to: &ModuleId) -> Option<&ModuleGraphEdge> {
+  pub fn edge_info(&self, from: &ModuleId, to: &ModuleId) -> Option<&Vec<ModuleGraphEdgeDataItem>> {
     let from = self
       .id_index_map
       .get(from)
@@ -217,7 +226,7 @@ impl ModuleGraph {
   /// import b from './b';
   /// ```
   /// return `['module c', 'module b']`, ensure the order of original imports.
-  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind, String)> {
+  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind, Vec<String>)> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -234,7 +243,7 @@ impl ModuleGraph {
         self.g[edge_index].order,
         self.g[node_index].id.clone(),
         self.g[edge_index].kind.clone(),
-        self.g[edge_index].source.clone(),
+        self.g[edge_index].sources.clone(),
       ));
     }
 
@@ -253,7 +262,7 @@ impl ModuleGraph {
 
   /// get dependent of the specific module.
   /// don't ensure the result's order.
-  pub fn dependents(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind, String)> {
+  pub fn dependents(&self, module_id: &ModuleId) -> Vec<(ModuleId, ResolveKind, Vec<String>)> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -269,7 +278,7 @@ impl ModuleGraph {
       deps.push((
         self.g[node_index].id.clone(),
         self.g[edge_index].kind.clone(),
-        self.g[edge_index].source.clone(),
+        self.g[edge_index].sources.clone(),
       ));
     }
 
@@ -478,7 +487,7 @@ mod tests {
           &from.into(),
           &to.into(),
           ModuleGraphEdge {
-            source: format!("./{}", to),
+            sources: vec![format!("./{}", to)],
             kind: ResolveKind::Import,
             order,
           },
@@ -492,7 +501,7 @@ mod tests {
           &from.into(),
           &to.into(),
           ModuleGraphEdge {
-            source: format!("./{}", to),
+            sources: vec![format!("./{}", to)],
             kind: ResolveKind::DynamicImport,
             order,
           },
@@ -505,7 +514,7 @@ mod tests {
         &"F".into(),
         &"A".into(),
         ModuleGraphEdge {
-          source: "./F".to_string(),
+          sources: vec!["./F".to_string()],
           kind: ResolveKind::Import,
           order: 0,
         },
@@ -540,8 +549,12 @@ mod tests {
     assert_eq!(
       deps,
       vec![
-        ("C".into(), ResolveKind::Import, "./C".to_string(),),
-        ("D".into(), ResolveKind::DynamicImport, "./D".to_string(),),
+        ("C".into(), ResolveKind::Import, vec!["./C".to_string()]),
+        (
+          "D".into(),
+          ResolveKind::DynamicImport,
+          vec!["./D".to_string()]
+        ),
       ]
     );
   }

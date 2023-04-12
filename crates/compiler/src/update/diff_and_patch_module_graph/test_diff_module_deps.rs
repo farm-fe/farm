@@ -244,7 +244,7 @@ fn test_diff_module_deps_complex_1() {
           ModuleGraphEdge {
             order: 1,
             kind: ResolveKind::DynamicImport,
-            source: "./D".to_string(),
+            sources: vec!["./D".to_string()],
           }
         )],
       }
@@ -287,14 +287,14 @@ fn test_diff_module_deps_complex_2() {
             (
               "D".into(),
               ModuleGraphEdge {
-                source: "./D".to_string(),
+                sources: vec!["./D".to_string()],
                 ..Default::default()
               }
             ),
             (
               "E".into(),
               ModuleGraphEdge {
-                source: "./E".to_string(),
+                sources: vec!["./E".to_string()],
                 order: 1,
                 ..Default::default()
               }
@@ -317,7 +317,7 @@ fn test_diff_module_deps_complex_2() {
             "F".into(),
             ModuleGraphEdge {
               kind: ResolveKind::DynamicImport,
-              source: "./F".to_string(),
+              sources: vec!["./F".to_string()],
               ..Default::default()
             }
           )],
@@ -331,7 +331,7 @@ fn test_diff_module_deps_complex_2() {
             "G".into(),
             ModuleGraphEdge {
               kind: ResolveKind::DynamicImport,
-              source: "./G".to_string(),
+              sources: vec!["./G".to_string()],
               ..Default::default()
             }
           )],
@@ -370,7 +370,7 @@ fn test_diff_module_deps_complex_3() {
         removed: vec![(
           "A".into(),
           ModuleGraphEdge {
-            source: "./A".to_string(),
+            sources: vec!["./A".to_string()],
             ..Default::default()
           }
         )],
