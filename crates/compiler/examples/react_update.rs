@@ -5,7 +5,7 @@ use farmfe_core::{
 };
 
 fn main() {
-  let relative_root = RelativePath::new("examples/react");
+  let relative_root = RelativePath::new("examples/react-antd");
   let cwd = std::env::current_dir().unwrap();
   let react_examples_root = relative_root.to_logical_path(cwd.clone());
   let linked_swc_helper_path = cwd
@@ -47,7 +47,7 @@ fn main() {
       vec![(
         cwd
           .join("examples")
-          .join("react")
+          .join("react-antd")
           .join("src")
           .join("main.tsx")
           .to_string_lossy()

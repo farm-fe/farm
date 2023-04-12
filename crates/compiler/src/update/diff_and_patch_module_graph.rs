@@ -65,6 +65,11 @@ pub fn patch_module_graph(
   module_graph: &mut ModuleGraph,
   update_module_graph: &mut ModuleGraph,
 ) -> HashMap<ModuleId, Module> {
+  println!(
+    "module_graph len before patching: {:#?}",
+    module_graph.modules().len()
+  );
+
   let mut removed_modules = HashMap::new();
   let mut added_edge_info = HashMap::<(ModuleId, ModuleId), ModuleGraphEdge>::new();
 
@@ -111,6 +116,10 @@ pub fn patch_module_graph(
     module_graph.replace_module(module);
   }
 
+  println!(
+    "module_graph len after patching: {:#?}",
+    module_graph.modules().len()
+  );
   removed_modules
 }
 
@@ -247,8 +256,15 @@ fn diff_module_deps(
 
   // Find all added and removed children deeply of added and removed dependencies
   let mut added_queue = VecDeque::from(added_modules_vec);
+  let mut added_visited = HashSet::new();
 
   while let Some(dep) = added_queue.pop_front() {
+    if added_visited.contains(&dep) {
+      continue;
+    }
+
+    added_visited.insert(dep.clone());
+
     let children = update_module_graph.dependencies_ids(&dep);
     let mut children_added = vec![];
 
@@ -257,11 +273,6 @@ fn diff_module_deps(
     }
 
     for child in children {
-      // remember to avoid cyclic dependencies
-      if diff_result.iter().any(|(id, _)| id == &child) {
-        continue;
-      }
-
       let edge_info = update_module_graph.edge_info(&dep, &child).unwrap();
 
       if !module_graph.has_module(&child) {
@@ -287,8 +298,15 @@ fn diff_module_deps(
   }
 
   let mut removed_queue = VecDeque::from(removed_modules_vec);
+  let mut removed_visited = HashSet::new();
 
   while let Some(dep) = removed_queue.pop_front() {
+    if removed_visited.contains(&dep) {
+      continue;
+    }
+
+    removed_visited.insert(dep.clone());
+
     let children = module_graph.dependencies_ids(&dep);
     let mut children_removed = vec![];
 
@@ -297,17 +315,32 @@ fn diff_module_deps(
     }
 
     for child in children {
-      // remember to avoid cyclic dependencies
-      if diff_result.iter().any(|(id, _)| id == &child) {
-        continue;
-      }
-
       let edge_info = module_graph.edge_info(&dep, &child).unwrap();
 
       if !update_module_graph.has_module(&child) {
         children_removed.push((child.clone(), edge_info.clone()));
-        removed_queue.push_back(child.clone());
-        removed_modules.insert(child);
+        // mark the child as removed if all of its parents is in removed_modules
+        if module_graph
+          .dependents(&child)
+          .iter()
+          .all(|(p_id, _, _)| removed_modules.contains(p_id))
+        {
+          // if the children of the child is in removed_visited, then check the children of the child that whether all of its parents is in removed_modules
+          for child_of_child in module_graph.dependencies_ids(&child) {
+            if removed_visited.contains(&child_of_child) {
+              if module_graph
+                .dependents(&child_of_child)
+                .iter()
+                .all(|(p_id, _, _)| removed_modules.contains(p_id))
+              {
+                removed_modules.insert(child_of_child);
+              }
+            }
+          }
+
+          removed_queue.push_back(child.clone());
+          removed_modules.insert(child);
+        }
       } else {
         children_removed.push((child.clone(), edge_info.clone()));
       }
