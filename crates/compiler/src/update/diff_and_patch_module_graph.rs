@@ -40,7 +40,7 @@ pub fn diff_module_graph(
     added_modules: HashSet::new(),
     removed_modules: HashSet::new(),
   };
-
+  // TODO Optimize: support diff module deps by Vec to reduce redundant differing when there are many changed start_points
   for start_point in start_points {
     let (diff_result, added_modules, remove_modules) =
       diff_module_deps(&start_point, module_graph, update_module_graph);
@@ -247,8 +247,15 @@ fn diff_module_deps(
 
   // Find all added and removed children deeply of added and removed dependencies
   let mut added_queue = VecDeque::from(added_modules_vec);
+  let mut added_visited = HashSet::new();
 
   while let Some(dep) = added_queue.pop_front() {
+    if added_visited.contains(&dep) {
+      continue;
+    }
+
+    added_visited.insert(dep.clone());
+
     let children = update_module_graph.dependencies_ids(&dep);
     let mut children_added = vec![];
 
@@ -257,11 +264,6 @@ fn diff_module_deps(
     }
 
     for child in children {
-      // remember to avoid cyclic dependencies
-      if diff_result.iter().any(|(id, _)| id == &child) {
-        continue;
-      }
-
       let edge_info = update_module_graph.edge_info(&dep, &child).unwrap();
 
       if !module_graph.has_module(&child) {
@@ -287,8 +289,15 @@ fn diff_module_deps(
   }
 
   let mut removed_queue = VecDeque::from(removed_modules_vec);
+  let mut removed_visited = HashSet::new();
 
   while let Some(dep) = removed_queue.pop_front() {
+    if removed_visited.contains(&dep) {
+      continue;
+    }
+
+    removed_visited.insert(dep.clone());
+
     let children = module_graph.dependencies_ids(&dep);
     let mut children_removed = vec![];
 
@@ -297,19 +306,12 @@ fn diff_module_deps(
     }
 
     for child in children {
-      // remember to avoid cyclic dependencies
-      if diff_result.iter().any(|(id, _)| id == &child) {
-        continue;
-      }
-
       let edge_info = module_graph.edge_info(&dep, &child).unwrap();
-
+      children_removed.push((child.clone(), edge_info.clone()));
+      
       if !update_module_graph.has_module(&child) {
-        children_removed.push((child.clone(), edge_info.clone()));
         removed_queue.push_back(child.clone());
         removed_modules.insert(child);
-      } else {
-        children_removed.push((child.clone(), edge_info.clone()));
       }
     }
 

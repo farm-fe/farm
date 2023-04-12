@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
 
+use farmfe_core::relative_path::RelativePath;
 use farmfe_core::serde_json::{self, Value};
 use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
@@ -111,14 +112,32 @@ fn get_exe_path() -> PathBuf {
   let cur_dir = env::current_dir().unwrap();
 
   // user manually installs related dependencies
-  let manual_installation_path = cur_dir
-    .join(format!("node_modules/sass-embedded-{os}-{arch}"))
-    .join(format!("dart-sass-embedded/{entry_file}"));
+  let manual_installation_path = RelativePath::new(&format!(
+    "node_modules/sass-embedded-{os}-{arch}/dart-sass-embedded/{entry_file}"
+  ))
+  .to_logical_path(&cur_dir);
 
-  let default_path = follow_symlinks(cur_dir.join("node_modules").join(PKG_NAME))
-    .join("../..")
+  let pkg_dir = follow_symlinks(
+    RelativePath::new("node_modules")
+      .join(PKG_NAME)
+      .to_logical_path(&cur_dir),
+  );
+
+  // find closest node_modules start from pkg_dir
+  let mut cur_dir = pkg_dir;
+
+  while !cur_dir.join("node_modules").exists() {
+    if cur_dir.parent().is_none() {
+      panic!("can not find node_modules in @farmfe/plugin-sass");
+    }
+
+    cur_dir = cur_dir.parent().unwrap().to_path_buf();
+  }
+
+  let default_path = RelativePath::new("node_modules")
     .join(format!("sass-embedded-{os}-{arch}"))
-    .join(format!("dart-sass-embedded/{entry_file}"));
+    .join(format!("dart-sass-embedded/{entry_file}"))
+    .to_logical_path(&cur_dir);
 
   if manual_installation_path.exists() {
     manual_installation_path
