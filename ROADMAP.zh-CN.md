@@ -9,9 +9,9 @@ Farm 目前已经实现了 Web 构建工具的所有基本功能。然而, 离�
 - [x] Both Rust and JavaScript Plugin System
 - [x] Source Map
 - [ ] Resource Minimization
-- [ ] Tree Shaking
+- [x] Tree Shaking
 - [ ] CSS Modules
-- [ ] Official Plugins like Sass
+- [x] Official Plugins like Sass
 - [ ] Persistent Cache
 
 请参阅里程碑: https://github.com/farm-fe/farm/milestones
