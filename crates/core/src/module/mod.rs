@@ -487,7 +487,7 @@ mod tests {
     let mut module = Module::new(ModuleId::new("/root/index.ts", "", "/root"));
 
     #[cache_item(CustomModuleMetaData)]
-    struct StructModuleData {
+    pub struct StructModuleData {
       ast: String,
       imports: Vec<String>,
     }

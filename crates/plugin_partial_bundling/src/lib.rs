@@ -257,8 +257,8 @@ fn module_group_from_entry(
 
   visited.insert(entry.clone());
 
-  for (dep, kind, _) in graph.dependencies(entry) {
-    if kind.is_dynamic() {
+  for (dep, edge_items) in graph.dependencies(entry) {
+    if edge_items.iter().any(|(kind, _)| kind.is_dynamic()) {
       dynamic_entries.push(dep);
     } else {
       // visited all dep and its dependencies using BFS
@@ -280,8 +280,8 @@ fn module_group_from_entry(
           .module_groups
           .insert(entry.clone());
 
-        for (dep, kind, _) in graph.dependencies(&head) {
-          if kind.is_dynamic() {
+        for (dep, edge_items) in graph.dependencies(&head) {
+          if edge_items.iter().any(|(kind, _)| kind.is_dynamic()) {
             dynamic_entries.push(dep);
           } else {
             queue.push_back(dep);

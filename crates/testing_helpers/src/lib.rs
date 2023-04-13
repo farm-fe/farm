@@ -4,7 +4,7 @@ use farmfe_core::{
   glob::glob,
   hashbrown::HashSet,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
+    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
     Module,
   },
@@ -43,8 +43,8 @@ pub fn construct_test_module_graph() -> ModuleGraph {
       .add_edge(
         &from.into(),
         &to.into(),
-        ModuleGraphEdge {
-          sources: vec![format!("./{}", to)],
+        ModuleGraphEdgeDataItem {
+          source: format!("./{}", to),
           kind: ResolveKind::Import,
           order,
         },
@@ -57,8 +57,8 @@ pub fn construct_test_module_graph() -> ModuleGraph {
       .add_edge(
         &from.into(),
         &to.into(),
-        ModuleGraphEdge {
-          sources: vec![format!("./{}", to)],
+        ModuleGraphEdgeDataItem {
+          source: format!("./{}", to),
           kind: ResolveKind::DynamicImport,
           order,
         },
@@ -70,8 +70,8 @@ pub fn construct_test_module_graph() -> ModuleGraph {
     .add_edge(
       &"F".into(),
       &"A".into(),
-      ModuleGraphEdge {
-        sources: vec!["./A".to_string()],
+      ModuleGraphEdgeDataItem {
+        source: "./A".to_string(),
         kind: ResolveKind::Import,
         order: 0,
       },

@@ -8,7 +8,9 @@ use farmfe_core::{
   error::CompilationError,
   hashbrown::HashSet,
   module::{
-    module_graph::ModuleGraphEdge, module_group::ModuleGroupId, Module, ModuleId, ModuleType,
+    module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
+    module_group::ModuleGroupId,
+    Module, ModuleId, ModuleType,
   },
   plugin::{PluginResolveHookParam, ResolveKind},
   rayon::ThreadPool,
@@ -263,7 +265,7 @@ impl Compiler {
         .add_edge(
           &importer,
           module_id,
-          ModuleGraphEdge {
+          ModuleGraphEdgeDataItem {
             kind: resolve_param.kind.clone(),
             source: resolve_param.source.clone(),
             order,
