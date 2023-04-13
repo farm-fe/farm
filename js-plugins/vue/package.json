@@ -2,8 +2,8 @@
   "name": "@farmfe/js-plugin-vue",
   "version": "0.2.0",
   "description": "support vue sfc for farm.",
-  "main": "./dist/farm-vue-plugin.js",
-  "types": "./dist/farm-vue-plugin.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
     "start": "tsc -w",
@@ -31,15 +31,20 @@
   "author": "ysy945",
   "license": "MIT",
   "devDependencies": {
+    "@babel/types": "^7.21.4",
     "@farmfe/core": "workspace:^0.5.3",
+    "@types/babel__core": "^7.20.0",
     "@types/less": "^3.0.3",
     "@types/node": "^18.15.3",
     "@types/sass": "~1.43.1",
-    "@types/stylus": "^0.48.38"
+    "@types/stylus": "^0.48.38",
+    "vue": "^3.2.45"
   },
   "dependencies": {
+    "@babel/core": "^7.21.4",
     "@jridgewell/gen-mapping": "^0.3.2",
     "@jridgewell/trace-mapping": "^0.3.17",
+    "@vue/babel-plugin-jsx": "^1.1.1",
     "@vue/compiler-sfc": "^3.2.47",
     "source-map": "^0.7.4"
   },
