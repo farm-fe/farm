@@ -941,6 +941,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "farm_plugin_vue_jsx"
+version = "0.1.0"
+
+[[package]]
 name = "farmfe_compiler"
 version = "0.0.1"
 dependencies = [

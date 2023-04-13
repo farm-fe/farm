@@ -5,6 +5,9 @@
   "types": "index.d.ts",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
   "devDependencies": {
     "@farmfe/cli": "*",
     "@napi-rs/cli": "^2.10.0"
@@ -26,8 +29,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "dev": "npm run build && npm run copy-artifacts",
-    "build": "napi build --platform --cargo-name farmfe_plugin_react -p farmfe_plugin_react --release",
+    "build": "napi build --platform --cargo-name farmfe_plugin_vue_jsx -p farmfe_plugin_vue_jsx --release",
     "copy-artifacts": "node scripts/copy-artifacts.mjs",
     "type-check": "echo \"No type-checking configured.\"",
     "prepublishOnly": "farm plugin prepublish"
