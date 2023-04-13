@@ -64,6 +64,18 @@ $ pnpm bootstrap # install the dependencies of the project
 - If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
 
 
+## Quickly create plugins through scaffold
+
+If you want to develop a plugin for farm, farm provides a scaffolding to help you quickly create a plugin, which you can create with the following command.
+You can go to the `cd packages/ cli` directory, run `npm link` or global installation `@ farmfe/ cli` to use this CLI, after the installation is complete, You can create a plugin through `farm plugin create`.
+Farm supports the creation of rust and js plugins.
+  
+  ```bash
+  $ farm plugin create <plugin-name> # create a plugin support js or rust
+  ```
+
+## 
+
 ## Pull Request Preface Tip
 
 Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
@@ -73,5 +85,3 @@ Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
 - **the Rust side**: 
   see code in the `crates` and `rust-plugins` directory. contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
 
-
-## 

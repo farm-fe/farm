@@ -1,11 +1,11 @@
-# 贡献
+# 贡献指南
 
-非常感谢您对 Farm 感兴趣, 在您提交 Pull Request 之前, 请先阅读以下指南.
+非常感谢您对 Farm 感兴趣, 在您提交 Pull Request 之前, 请先阅读以下指南。
 
 
 ## 行为规范准则
 
-所有贡献者都应该遵循 Rust [行为规范](https://www.rust-lang.org/policies/code-of-conduct).
+所有贡献者都应该遵循 Rust [行为规范](https://www.rust-lang.org/policies/code-of-conduct)。
 
 
 ## 错误报告
@@ -14,7 +14,7 @@
 
 ## 创建新特性
 
-如果要创建新的功能或者特性, 请在 issues 中添加 [feature request](https://github.com/farm-fe/farm/issues/new/choose).
+如果要创建新的功能或者特性, 请在 issues 中添加 [feature request](https://github.com/farm-fe/farm/issues/new/choose)。
 
 
 ## 提交代码指南
@@ -31,11 +31,11 @@
 
 ### 依赖
 
-- 安装 Rust 环境 [rustup](https://www.rust-lang.org/tools/install).
+- 安装 Rust 环境 [rustup](https://www.rust-lang.org/tools/install)。
 
-- 确保您的 [Node.js](https://nodejs.org) 版本在 **16** 以上 
+- 确保您的 [Node.js](https://nodejs.org) 版本在 **16** 以上。
 
-- 确保您的 [Pnpm](https://pnpm.io) 版本在 **7.28.0** 以上
+- 确保您的 [Pnpm](https://pnpm.io) 版本在 **7.28.0** 以上。
 
 ### 设置其他依赖
 
@@ -55,9 +55,19 @@ $ pnpm bootstrap # install the dependencies of the project with series of initia
 
 - 使用示例(打开新终端)：`cd Examples/Reaction&&pnpm start`，如果示例不能正常启动，则上报问题。
 
-- 如果`Examples/react`正常运行，则表明开发环境配置成功
+- 如果`Examples/react`正常运行，则表明开发环境配置成功。
 
 - 如果您更改了`crates`中的 `Rust` 代码，请再次运行 `Packages/core` 下的 `npm run build：rs` 以获取最新的二进制代码。
+
+## 通过脚手架快速创建插件
+
+Farm 提供了一个脚手架来帮助您快速创建一个插件, 您可以通过以下命令来创建一个插件。
+您可以 `cd packages/cli` 目录下, 运行 `npm link` 或者全局安装 `@farmfe/cli` 来使用,
+安装完成之后, 您可以通过 `farm plugin create` 来创建一个插件, 支持 `rust` 和 `js` 插件
+
+  ```bash
+  $ farm plugin create <plugin-name> # create a plugin support js or rust
+  ```
 
 
 ## 小提示
@@ -68,4 +78,3 @@ Farm 整个项目分为两个部分, JavaScript 和 Rust。
 - **Rust** 部分: 查看 crates 以及 rust-plugin 文件夹中的代码, 包含核心包 (编译上下文, 插件驱动等), 编译器 (编译进程、HMR 更新等), Rust 插件。
 
 
-## 
