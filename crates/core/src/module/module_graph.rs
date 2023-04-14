@@ -449,7 +449,7 @@ impl ModuleGraph {
 
       let deps = graph.dependencies(entry);
 
-      for (dep, _, _s) in &deps {
+      for (dep, _) in &deps {
         dfs(Some(entry), dep, op, visited, graph)
       }
     };
