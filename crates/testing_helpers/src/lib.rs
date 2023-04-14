@@ -40,7 +40,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
 
   for (from, to, order) in static_edges {
     graph
-      .add_edge(
+      .add_edge_item(
         &from.into(),
         &to.into(),
         ModuleGraphEdgeDataItem {
@@ -54,7 +54,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
 
   for (from, to, order) in dynamic_edges {
     graph
-      .add_edge(
+      .add_edge_item(
         &from.into(),
         &to.into(),
         ModuleGraphEdgeDataItem {
@@ -67,7 +67,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
   }
 
   graph
-    .add_edge(
+    .add_edge_item(
       &"F".into(),
       &"A".into(),
       ModuleGraphEdgeDataItem {

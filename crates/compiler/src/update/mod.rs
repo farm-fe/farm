@@ -262,7 +262,7 @@ impl Compiler {
       let importer = resolve_param.importer.as_ref().unwrap().clone();
 
       update_module_graph
-        .add_edge(
+        .add_edge_item(
           &importer,
           module_id,
           ModuleGraphEdgeDataItem {

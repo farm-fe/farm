@@ -1,5 +1,8 @@
 use farmfe_core::{
-  module::{module_graph::ModuleGraphEdge, Module, ModuleId, ModuleType},
+  module::{
+    module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
+    Module, ModuleId, ModuleType,
+  },
   plugin::ResolveKind,
 };
 use farmfe_testing_helpers::construct_test_module_graph;
@@ -51,10 +54,10 @@ fn test_patch_module_graph_2() {
     .remove_edge(&"a".into(), &"b".into())
     .unwrap();
   update_module_graph
-    .add_edge(
+    .add_edge_item(
       &"a".into(),
       &"b".into(),
-      ModuleGraphEdge {
+      ModuleGraphEdgeDataItem {
         kind: ResolveKind::DynamicImport,
         ..Default::default()
       },
@@ -89,10 +92,10 @@ fn test_patch_module_graph_2() {
     ModuleDepsDiffResult {
       added: vec![(
         "b".into(),
-        ModuleGraphEdge {
+        ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
           kind: ResolveKind::DynamicImport,
           ..Default::default()
-        }
+        }])
       )],
       removed: vec![("b".into(), ModuleGraphEdge::default())],
     }
@@ -101,7 +104,7 @@ fn test_patch_module_graph_2() {
   let edge_info = module_graph
     .edge_info(&changed_module_id, &"b".into())
     .unwrap();
-  assert_eq!(edge_info.kind, ResolveKind::DynamicImport);
+  assert!(edge_info.is_dynamic());
 }
 
 #[test]

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use hashbrown::{HashMap, HashSet};
 
 use petgraph::{
@@ -32,8 +34,8 @@ pub struct ModuleGraphEdgeDataItem {
 pub struct ModuleGraphEdge(pub(crate) Vec<ModuleGraphEdgeDataItem>);
 
 impl ModuleGraphEdge {
-  pub fn new() -> Self {
-    Self(Vec::new())
+  pub fn new(items: Vec<ModuleGraphEdgeDataItem>) -> Self {
+    Self(items)
   }
 
   pub fn items(&self) -> &[ModuleGraphEdgeDataItem] {
@@ -50,6 +52,19 @@ impl ModuleGraphEdge {
 
   pub fn push(&mut self, item: ModuleGraphEdgeDataItem) {
     self.0.push(item);
+  }
+
+  // true if all of the edge data items are dynamic
+  pub fn is_dynamic(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().all(|item| item.kind.is_dynamic())
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.0.is_empty()
   }
 }
 
@@ -90,11 +105,7 @@ impl ModuleGraph {
       .detach();
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
-      if self.g[edge_index]
-        .iter()
-        .find(|e| e.source == *source)
-        .is_some()
-      {
+      if self.g[edge_index].iter().any(|e| e.source == *source) {
         return self.g[node_index].id.clone();
       }
     }
@@ -154,7 +165,7 @@ impl ModuleGraph {
     self.g.remove_node(index).unwrap()
   }
 
-  pub fn add_edge(
+  pub fn add_edge_item(
     &mut self,
     from: &ModuleId,
     to: &ModuleId,
@@ -184,6 +195,32 @@ impl ModuleGraph {
     self
       .g
       .update_edge(*from, *to, ModuleGraphEdge(vec![edge_info]));
+
+    Ok(())
+  }
+
+  pub fn add_edge(
+    &mut self,
+    from: &ModuleId,
+    to: &ModuleId,
+    edge_info: ModuleGraphEdge,
+  ) -> Result<()> {
+    let from = self.id_index_map.get(from).ok_or_else(|| {
+      CompilationError::GenericError(format!(
+        r#"from node "{}" does not exist in the module graph when add edge"#,
+        from.relative_path()
+      ))
+    })?;
+
+    let to = self.id_index_map.get(to).ok_or_else(|| {
+      CompilationError::GenericError(format!(
+        r#"to node "{}" does not exist in the module graph when add edge"#,
+        to.relative_path()
+      ))
+    })?;
+
+    // using update_edge instead of add_edge to avoid duplicated edges, see https://docs.rs/petgraph/latest/petgraph/graph/struct.Graph.html#method.update_edge
+    self.g.update_edge(*from, *to, edge_info);
 
     Ok(())
   }
@@ -272,6 +309,10 @@ impl ModuleGraph {
     }
 
     deps.sort_by(|a, b| {
+      if a.1.is_empty() || b.1.is_empty() {
+        return Ordering::Equal;
+      }
+
       let a_minimum_order = a.1.iter().map(|item| item.order).min().unwrap();
       let b_minimum_order = b.1.iter().map(|item| item.order).min().unwrap();
 
@@ -509,7 +550,7 @@ mod tests {
 
     for (from, to, order) in static_edges {
       graph
-        .add_edge(
+        .add_edge_item(
           &from.into(),
           &to.into(),
           ModuleGraphEdgeDataItem {
@@ -523,7 +564,7 @@ mod tests {
 
     for (from, to, order) in dynamic_edges {
       graph
-        .add_edge(
+        .add_edge_item(
           &from.into(),
           &to.into(),
           ModuleGraphEdgeDataItem {
@@ -536,7 +577,7 @@ mod tests {
     }
 
     graph
-      .add_edge(
+      .add_edge_item(
         &"F".into(),
         &"A".into(),
         ModuleGraphEdgeDataItem {

@@ -40,16 +40,16 @@ pub fn patch_module_group_graph(
   };
 
   for (module_id, deps_diff_result) in deps_changes {
-    for (removed_module_id, edge_items) in &deps_diff_result.removed {
+    for (removed_module_id, edge_info) in &deps_diff_result.removed {
       if module_graph.has_module(removed_module_id) {
+        let previous_parent_groups = get_previous_module_groups(module_id, module_graph);
         // a edge is removed, so we need to remove the module from the module group if necessary
         let current_parents = module_graph.dependents(removed_module_id);
-        let previous_parent_groups = get_previous_module_groups(module_id, module_graph);
 
-        if edge_items.iter().any(|item| item.kind.is_dynamic()) {
+        if edge_info.is_dynamic() {
           if current_parents
             .iter()
-            .filter(|(_, items)| items.iter().any(|(kind, _)| kind.is_dynamic()))
+            .filter(|(_, edge_info)| edge_info.is_dynamic())
             .count()
             == 0
           {
@@ -81,8 +81,8 @@ pub fn patch_module_group_graph(
             for module_group_id in &module_group_ids {
               if current_parents
                 .iter()
-                .filter(|(p, items)| {
-                  if items.iter().any(|(kind, _)| kind.is_dynamic()) {
+                .filter(|(p, edge_info)| {
+                  if edge_info.is_dynamic() {
                     let parent = module_graph.module(p).unwrap();
                     return parent.module_groups.contains(module_group_id);
                   }
@@ -102,7 +102,11 @@ pub fn patch_module_group_graph(
 
           while !queue.is_empty() {
             let current_module_id = queue.pop_front().unwrap();
-            let current_parents = module_graph.dependents(&current_module_id);
+            let current_parents = module_graph
+              .dependents(&current_module_id)
+              .into_iter()
+              .map(|(id, edge_info)| (id, edge_info.is_dynamic()))
+              .collect::<Vec<_>>();
             let mut current_module_group_change = false;
 
             for module_group_id in &previous_parent_groups {
@@ -110,7 +114,7 @@ pub fn patch_module_group_graph(
               // Note: current_parents don't contain module_id because the edge is removed
               if current_parents
                 .iter()
-                .filter(|(_, items)| items.iter().all(|(kind, _)| !kind.is_dynamic()))
+                .filter(|(_, is_dynamic)| !is_dynamic)
                 .all(|(id, _)| {
                   let parent = module_graph.module(id).unwrap();
                   !parent.module_groups.contains(module_group_id)
@@ -134,8 +138,8 @@ pub fn patch_module_group_graph(
                   // determine if there are edges that should be removed
                   let children = module_graph.dependencies(&current_module_id);
 
-                  for (child, edge_items) in children {
-                    if edge_items.iter().any(|(kind, _)| kind.is_dynamic())
+                  for (child, edge_info) in children {
+                    if edge_info.is_dynamic()
                       && module_group_graph
                         .dependencies_ids(module_group_id)
                         .contains(&child)
@@ -143,9 +147,7 @@ pub fn patch_module_group_graph(
                       let parents = module_graph
                         .dependents(&child)
                         .into_iter()
-                        .filter(|(_, edge_items)| {
-                          edge_items.iter().any(|(kind, _)| kind.is_dynamic())
-                        })
+                        .filter(|(_, edge_info)| edge_info.is_dynamic())
                         .collect::<Vec<_>>();
                       let parents_in_module_group = parents.iter().any(|(id, _)| {
                         let parent = module_graph.module(id).unwrap();
@@ -162,8 +164,8 @@ pub fn patch_module_group_graph(
             }
 
             if current_module_group_change {
-              for (child, edge_items) in module_graph.dependencies(&current_module_id) {
-                if edge_items.iter().all(|(kind, _)| !kind.is_dynamic()) {
+              for (child, edge_info) in module_graph.dependencies(&current_module_id) {
+                if !edge_info.is_dynamic() {
                   queue.push_back(child);
                 }
               }
@@ -257,18 +259,16 @@ pub fn patch_module_group_graph(
               current_module.module_groups.insert(module_group_id.clone());
               affected_module_groups.insert(module_group_id.clone());
 
-              for (child, edge_items) in module_graph.dependencies(&current_module_id) {
-                if edge_items.iter().any(|(kind, _)| kind.is_dynamic())
-                  && !module_group_graph.has_edge(module_group_id, &child)
-                {
+              for (child, edge_info) in module_graph.dependencies(&current_module_id) {
+                if edge_info.is_dynamic() && !module_group_graph.has_edge(module_group_id, &child) {
                   module_group_graph.add_edge(module_group_id, &child);
                 }
               }
             }
 
             if current_module_group_change {
-              for (child, edge_items) in module_graph.dependencies(&current_module_id) {
-                if kind != ResolveKind::DynamicImport {
+              for (child, edge_info) in module_graph.dependencies(&current_module_id) {
+                if !edge_info.is_dynamic() {
                   queue.push_back(child);
                 }
               }

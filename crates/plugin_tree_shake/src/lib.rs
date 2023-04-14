@@ -63,7 +63,7 @@ impl Plugin for FarmPluginTreeShake {
       if !module.module_type.is_script() || module.external {
         if !module.module_type.is_script() && !module.external {
           // mark all non script modules' script dependencies as side_effects
-          for (dep_id, _) in module_graph.dependencies(&module_id) {
+          for dep_id in module_graph.dependencies_ids(&module_id) {
             let mut dep_module = module_graph.module_mut(&dep_id).unwrap();
 
             if !dep_module.module_type.is_script() {
@@ -166,8 +166,8 @@ impl Plugin for FarmPluginTreeShake {
       }
 
       // add all dynamic imported dependencies as [UsedExports::All]
-      for (dep, edge_items) in module_graph.dependencies(&tree_shake_module_id) {
-        if edge_items.iter().any(|(kind, _)| kind.is_dynamic()) {
+      for (dep, edge) in module_graph.dependencies(&tree_shake_module_id) {
+        if edge.is_dynamic() {
           let tree_shake_module = tree_shake_modules_map.get_mut(&dep).unwrap();
           tree_shake_module.side_effects = true;
           tree_shake_module.used_exports = UsedExports::All;
