@@ -5,14 +5,15 @@ import farmJsPluginVue from '@farmfe/js-plugin-vue';
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: './index.html'
     },
     output: {
-      path: './build',
+      path: './build'
     },
     resolve: {
-      strictExports: true,
+      strictExports: true
     },
+    treeShaking: true
   },
-  plugins: [farmJsPluginVue()],
+  plugins: [farmJsPluginVue()]
 });

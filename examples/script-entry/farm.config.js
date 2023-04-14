@@ -1,4 +1,3 @@
-// change to @farmfe/core/config when resolve support conditional exports
 import { builtinModules } from 'module';
 
 /**
@@ -13,15 +12,18 @@ export default {
       path: 'dist',
       filename: 'index.[ext]'
     },
-    external: builtinModules,
-    partialBundling: {
-      moduleBuckets: [
-        {
-          name: 'node.bundle.js',
-          test: ['.+']
-        }
-      ]
-    }
+    external: [
+      ...builtinModules.map((m) => `^node:${m}$`),
+      ...builtinModules.map((m) => `^${m}$`)
+    ]
+    // partialBundling: {
+    //   moduleBuckets: [
+    //     {
+    //       name: 'node.bundle.js',
+    //       test: ['.+']
+    //     }
+    //   ]
+    // }
   },
   server: {
     hmr: false

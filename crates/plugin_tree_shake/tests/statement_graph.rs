@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use farmfe_core::swc_common::{Globals, GLOBALS};
 
 mod common;
@@ -34,7 +36,16 @@ export { a, b, c as d };"#;
 
     let stmt_graph = StatementGraph::new(&ast);
     assert_eq!(stmt_graph.stmts().len(), 7);
-    let edges = stmt_graph.edges();
+    let mut edges = stmt_graph.edges();
+    edges.sort_by(|a, b| {
+      let result = a.0.id.cmp(&b.0.id);
+
+      if result == Ordering::Equal {
+        a.1.id.cmp(&b.1.id)
+      } else {
+        result
+      }
+    });
 
     assert_eq!(edges.len(), 8);
     // statement 1 -> statement 0

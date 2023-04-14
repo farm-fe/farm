@@ -1,5 +1,5 @@
 use farmfe_core::{
-  hashbrown::HashMap,
+  hashbrown::{HashMap, HashSet},
   module::{Module, ModuleId, ModuleSystem},
   swc_ecma_ast::Ident,
 };
@@ -8,7 +8,7 @@ use crate::statement_graph::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UsedIdent {
   /// Local ident
   SwcIdent(Ident),
@@ -110,19 +110,23 @@ impl TreeShakeModule {
     return exports;
   }
 
-  pub fn used_statements(&self) -> Vec<(StatementId, Vec<String>)> {
+  pub fn used_statements(&self) -> Vec<(StatementId, HashSet<String>)> {
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
     let mut stmt_used_idents_map = HashMap::new();
 
     for (used_ident, stmt_id) in used_exports_idents {
-      let used_idents = stmt_used_idents_map.entry(stmt_id).or_insert(vec![]);
-      used_idents.push(used_ident);
+      let used_idents = stmt_used_idents_map
+        .entry(stmt_id)
+        .or_insert(HashSet::new());
+      used_idents.insert(used_ident);
     }
 
     for stmt in self.stmt_graph.stmts() {
       if stmt.is_self_executed {
-        stmt_used_idents_map.entry(stmt.id).or_insert(vec![]);
+        stmt_used_idents_map
+          .entry(stmt.id)
+          .or_insert(HashSet::new());
 
         stmt.used_idents.iter().for_each(|used_ident| {
           // find the defined ident
@@ -139,8 +143,10 @@ impl TreeShakeModule {
                 .iter()
                 .any(|ident| ident.to_string() == used_ident.to_string())
             {
-              let used_idents = stmt_used_idents_map.entry(stmt_inner.id).or_insert(vec![]);
-              used_idents.push(UsedIdent::SwcIdent(used_ident.clone()));
+              let used_idents = stmt_used_idents_map
+                .entry(stmt_inner.id)
+                .or_insert(HashSet::new());
+              used_idents.insert(UsedIdent::SwcIdent(used_ident.clone()));
             }
           }
         });

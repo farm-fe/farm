@@ -5,6 +5,7 @@ use farmfe_core::{
 };
 
 pub(crate) mod analyze_imports_and_exports;
+pub(crate) mod defined_idents_collector;
 pub(crate) mod used_idents_collector;
 
 use analyze_imports_and_exports::analyze_imports_and_exports;
@@ -58,11 +59,11 @@ pub struct Statement {
   pub id: StatementId,
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
-  pub defined_idents: Vec<Ident>,
-  pub used_idents: Vec<Ident>,
+  pub defined_idents: HashSet<Ident>,
+  pub used_idents: HashSet<Ident>,
   /// Use String to replace Ident as key, because Ident has position info and it will make hash map not work as expected,
   /// transform it to Ident.to_string() is exactly what we want
-  pub defined_idents_map: HashMap<String, Vec<Ident>>,
+  pub defined_idents_map: HashMap<String, HashSet<Ident>>,
   pub is_self_executed: bool,
 }
 
@@ -211,9 +212,9 @@ impl StatementGraph {
 
   pub fn analyze_used_statements_and_idents(
     &self,
-    used_exports: HashMap<StatementId, Vec<UsedIdent>>,
-  ) -> Vec<(StatementId, Vec<String>)> {
-    let mut used_statements: Vec<(usize, Vec<String>)> = vec![];
+    used_exports: HashMap<StatementId, HashSet<UsedIdent>>,
+  ) -> Vec<(StatementId, HashSet<String>)> {
+    let mut used_statements: Vec<(usize, HashSet<String>)> = vec![];
 
     // sort used_exports by statement id
     let mut used_exports: Vec<_> = used_exports.into_iter().collect();
@@ -242,14 +243,14 @@ impl StatementGraph {
             // if used_statements already contains this statement, add specifier to it
             if let Some((_, specifiers)) = used_statements.iter_mut().find(|(id, _)| *id == stmt_id)
             {
-              specifiers.push(specifier);
+              specifiers.insert(specifier);
             } else {
-              used_statements.push((stmt_id, vec![specifier]));
+              used_statements.push((stmt_id, [specifier].into()));
             }
             skip = true;
           }
           UsedIdent::ExportAll => {
-            used_statements.push((stmt_id, vec!["*".to_string()]));
+            used_statements.push((stmt_id, ["*".to_string()].into()));
             skip = true;
           }
         }
@@ -272,7 +273,7 @@ impl StatementGraph {
         if let Some((_, idents)) = used_statements.iter_mut().find(|(id, _)| *id == stmt_id) {
           for ident in used_defined_idents {
             if !idents.contains(&ident) {
-              idents.push(ident);
+              idents.insert(ident);
             }
           }
         } else {

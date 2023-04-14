@@ -96,8 +96,11 @@ impl Plugin for FarmPluginTreeShake {
         farmfe_core::module::ModuleSystem::EsModule
       ) {
         for (dep_id, _, _) in module_graph.dependencies(&tree_shake_module_id) {
-          let dep_tree_shake_module = tree_shake_modules_map.get_mut(&dep_id).unwrap();
-          dep_tree_shake_module.used_exports = UsedExports::All;
+          let dep_tree_shake_module = tree_shake_modules_map.get_mut(&dep_id);
+
+          if let Some(dep_tree_shake_module) = dep_tree_shake_module {
+            dep_tree_shake_module.used_exports = UsedExports::All;
+          }
         }
       } else {
         // if module is esm and the module has side effects, add imported identifiers to [UsedExports::Partial] of the imported modules

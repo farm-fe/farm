@@ -47,7 +47,8 @@ pub fn remove_useless_stmts(
       if export_info.source.is_some()
         && matches!(export_info.specifiers[0], ExportSpecifierInfo::All(_))
       {
-        export_info.specifiers[0] = ExportSpecifierInfo::All(Some(used_defined_idents.clone()));
+        export_info.specifiers[0] =
+          ExportSpecifierInfo::All(Some(used_defined_idents.clone().into_iter().collect()));
         used_export_from_infos.push(export_info.clone());
       } else {
         if export_info.source.is_some() {

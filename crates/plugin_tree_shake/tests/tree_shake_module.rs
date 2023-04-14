@@ -220,22 +220,22 @@ export default 'default';
     // result should be the same as [(3, ["c#1"]), (2, ["c#1"]), (4, ["default#2"]), (8, ["j#1"]), (7, ["i#0"]), (6, ["h#1"]), (9, [])]
     assert_eq!(result[0].0, 3);
     assert_eq!(result[0].1.len(), 1);
-    assert_eq!(result[0].1[0].to_string(), "c#1".to_string());
+    assert!(result[0].1.contains("c#1"));
     assert_eq!(result[1].0, 2);
     assert_eq!(result[1].1.len(), 1);
-    assert_eq!(result[1].1[0].to_string(), "c#1".to_string());
+    assert!(result[1].1.contains("c#1"));
     assert_eq!(result[2].0, 4);
     assert_eq!(result[2].1.len(), 1);
-    assert_eq!(result[2].1[0].to_string(), "default#2".to_string());
+    assert!(result[2].1.contains("default#2"));
     assert_eq!(result[3].0, 8);
     assert_eq!(result[3].1.len(), 1);
-    assert_eq!(result[3].1[0].to_string(), "j#1".to_string());
+    assert!(result[3].1.contains("j#1"));
     assert_eq!(result[4].0, 7);
     assert_eq!(result[4].1.len(), 1);
-    assert_eq!(result[4].1[0].to_string(), "i#0".to_string());
+    assert!(result[4].1.contains("i#0"));
     assert_eq!(result[5].0, 6);
     assert_eq!(result[5].1.len(), 1);
-    assert_eq!(result[5].1[0].to_string(), "h#1".to_string());
+    assert!(result[5].1.contains("h#1"));
     assert_eq!(result[6].0, 9);
     assert_eq!(result[6].1.len(), 0);
   });
@@ -262,13 +262,13 @@ export { a };
     // result should be the same as [(2, ["a#2"]), (1, ["a#2"]), (0, ["foo#1"])]
     assert_eq!(result[0].0, 2);
     assert_eq!(result[0].1.len(), 1);
-    assert_eq!(result[0].1[0].to_string(), "a#2".to_string());
+    assert!(result[0].1.contains("a#2"));
     assert_eq!(result[1].0, 1);
     assert_eq!(result[1].1.len(), 1);
-    assert_eq!(result[1].1[0].to_string(), "a#2".to_string());
+    assert!(result[1].1.contains("a#2"));
     assert_eq!(result[2].0, 0);
     assert_eq!(result[2].1.len(), 1);
-    assert_eq!(result[2].1[0].to_string(), "foo#1".to_string());
+    assert!(result[2].1.contains("foo#1"));
   });
 }
 
@@ -293,11 +293,11 @@ export const b = 2;
     // result should be the same as [(0, ["a", "c"]), (1, ["b#1"])]
     assert_eq!(result[0].0, 0);
     assert_eq!(result[0].1.len(), 2);
-    assert_eq!(result[0].1[0].to_string(), "a".to_string());
-    assert_eq!(result[0].1[1].to_string(), "c".to_string());
+    assert!(result[0].1.contains("a"));
+    assert!(result[0].1.contains("c"));
     assert_eq!(result[1].0, 1);
     assert_eq!(result[1].1.len(), 1);
-    assert_eq!(result[1].1[0].to_string(), "b#1".to_string());
+    assert!(result[1].1.contains("b#1"));
   });
 }
 
@@ -323,14 +323,14 @@ export * from './bar';
     // result should be the same as [(0, ["b", "c"]), (1, ["b#1"]), (2, ["b", "c"])]
     assert_eq!(result[0].0, 0);
     assert_eq!(result[0].1.len(), 2);
-    assert_eq!(result[0].1[0].to_string(), "b".to_string());
-    assert_eq!(result[0].1[1].to_string(), "c".to_string());
+    assert!(result[0].1.contains("b"));
+    assert!(result[0].1.contains("c"));
     assert_eq!(result[1].0, 1);
     assert_eq!(result[1].1.len(), 1);
-    assert_eq!(result[1].1[0].to_string(), "a#1".to_string());
+    assert!(result[1].1.contains("a#1"));
     assert_eq!(result[2].0, 2);
     assert_eq!(result[2].1.len(), 2);
-    assert_eq!(result[2].1[0].to_string(), "b".to_string());
-    assert_eq!(result[2].1[1].to_string(), "c".to_string());
+    assert!(result[2].1.contains("b"));
+    assert!(result[2].1.contains("c"));
   });
 }
