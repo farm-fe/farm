@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  hashbrown::HashSet,
   swc_common::{FilePathMapping, SourceMap},
   swc_ecma_ast::ModuleItem,
   swc_ecma_parser::Syntax,
@@ -39,12 +40,18 @@ fn import_default() {
   ));
 
   if let ImportSpecifierInfo::Default(ident) = &import_info.specifiers[0] {
-    assert_eq!(ident.sym.to_string(), "a".to_string());
+    assert_eq!(ident, &"a#0".to_string());
   }
 
   assert!(export_info.is_none());
   assert_eq!(defined_idents.len(), 1);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
+  assert_eq!(
+    defined_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "a#0".to_string()
+  );
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
   assert_eq!(is_self_executed, false);
@@ -66,7 +73,7 @@ fn import_named() {
   ));
 
   if let ImportSpecifierInfo::Named { local, imported } = &import_info.specifiers[0] {
-    assert_eq!(local.sym.to_string(), "a".to_string());
+    assert_eq!(local.to_string(), "a#0".to_string());
     assert!(imported.is_none());
   }
 
@@ -76,7 +83,7 @@ fn import_named() {
   ));
 
   if let ImportSpecifierInfo::Named { local, imported } = &import_info.specifiers[1] {
-    assert_eq!(local.sym.to_string(), "b".to_string());
+    assert_eq!(local.to_string(), "b#0".to_string());
     assert!(imported.is_none());
   }
 
@@ -86,16 +93,21 @@ fn import_named() {
   ));
 
   if let ImportSpecifierInfo::Named { local, imported } = &import_info.specifiers[2] {
-    assert_eq!(local.sym.to_string(), "nc".to_string());
+    assert_eq!(local.to_string(), "nc#0".to_string());
     assert!(imported.is_some());
-    assert_eq!(imported.as_ref().unwrap().sym.to_string(), "c".to_string());
+    assert_eq!(imported.as_ref().unwrap().to_string(), "c#0".to_string());
   }
 
   assert!(export_info.is_none());
   assert_eq!(defined_idents.len(), 3);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
-  assert_eq!(defined_idents[1].sym.to_string(), "b".to_string());
-  assert_eq!(defined_idents[2].sym.to_string(), "nc".to_string());
+  let defined_idents_str = defined_idents
+    .into_iter()
+    .map(|ident| ident.to_string())
+    .collect::<HashSet<_>>();
+  assert!(defined_idents_str.contains(&"a#0".to_string()));
+  assert!(defined_idents_str.contains(&"b#0".to_string()));
+  assert!(defined_idents_str.contains(&"nc#0".to_string()));
+
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
   assert_eq!(is_self_executed, false);
@@ -106,7 +118,7 @@ fn import_named_with_used_defined_idents() {
   let stmt = parse_module_item(r#"import { a, b, c as nc } from 'a'"#);
 
   let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
-    analyze_imports_and_exports(&0, &stmt, Some(vec!["a#0".to_string()]));
+    analyze_imports_and_exports(&0, &stmt, Some(["a#0".to_string()].into()));
 
   assert!(import_info.is_some());
   let import_info = import_info.unwrap();
@@ -117,13 +129,20 @@ fn import_named_with_used_defined_idents() {
   ));
 
   if let ImportSpecifierInfo::Named { local, imported } = &import_info.specifiers[0] {
-    assert_eq!(local.sym.to_string(), "a".to_string());
+    assert_eq!(local.to_string(), "a#0".to_string());
     assert!(imported.is_none());
   }
 
   assert!(export_info.is_none());
   assert_eq!(defined_idents.len(), 1);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
+  assert_eq!(
+    defined_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "a#0".to_string()
+  );
+
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
   assert_eq!(is_self_executed, false);
@@ -145,12 +164,19 @@ fn import_namespace() {
   ));
 
   if let ImportSpecifierInfo::Namespace(ident) = &import_info.specifiers[0] {
-    assert_eq!(ident.sym.to_string(), "a".to_string());
+    assert_eq!(ident.to_string(), "a#0".to_string());
   }
 
   assert!(export_info.is_none());
   assert_eq!(defined_idents.len(), 1);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
+  assert_eq!(
+    defined_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "a#0".to_string()
+  );
+
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
   assert_eq!(is_self_executed, false);
@@ -175,7 +201,14 @@ fn export_default_expr() {
 
   assert_eq!(defined_idents.len(), 0);
   assert_eq!(used_idents.len(), 1);
-  assert_eq!(used_idents[0].sym.to_string(), "a".to_string());
+  assert_eq!(
+    used_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "a#0".to_string()
+  );
+
   assert_eq!(defined_idents_map.len(), 0);
   assert_eq!(is_self_executed, false);
 }
@@ -198,16 +231,29 @@ fn export_default_decl() {
   ));
 
   assert_eq!(defined_idents.len(), 1);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
+  assert_eq!(
+    defined_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "a#0".to_string()
+  );
   assert_eq!(used_idents.len(), 1);
-  assert_eq!(used_idents[0].sym.to_string(), "b".to_string());
+  assert_eq!(
+    used_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "b#0".to_string()
+  );
   assert_eq!(defined_idents_map.len(), 1);
   let keys = defined_idents_map.keys().collect::<Vec<_>>();
-  assert_eq!(keys[0].sym.to_string(), "a".to_string());
+  assert_eq!(keys[0].to_string(), "a#0".to_string());
   let values = defined_idents_map.values().collect::<Vec<_>>();
   assert_eq!(values.len(), 1);
   assert_eq!(values[0].len(), 1);
-  assert_eq!(values[0][0].sym.to_string(), "b".to_string());
+  let values_0 = values[0].iter().collect::<Vec<_>>();
+  assert_eq!(values_0[0].to_string(), "b#0".to_string());
   assert_eq!(is_self_executed, false);
 }
 
@@ -229,21 +275,34 @@ fn export_decl() {
   ));
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[0] {
-    assert_eq!(local.sym.to_string(), "a".to_string());
+    assert_eq!(local.to_string(), "a#0".to_string());
     assert!(exported.is_none());
   }
 
   assert_eq!(defined_idents.len(), 1);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
+  assert_eq!(
+    defined_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "a#0".to_string()
+  );
   assert_eq!(used_idents.len(), 1);
-  assert_eq!(used_idents[0].sym.to_string(), "b".to_string());
+  assert_eq!(
+    used_idents
+      .iter()
+      .map(|ident| ident.to_string())
+      .collect::<Vec<_>>()[0],
+    "b#0".to_string()
+  );
   assert_eq!(defined_idents_map.len(), 1);
   let keys = defined_idents_map.keys().collect::<Vec<_>>();
-  assert_eq!(keys[0].sym.to_string(), "a".to_string());
+  assert_eq!(keys[0].to_string(), "a#0".to_string());
   let values = defined_idents_map.values().collect::<Vec<_>>();
   assert_eq!(values.len(), 1);
   assert_eq!(values[0].len(), 1);
-  assert_eq!(values[0][0].sym.to_string(), "b".to_string());
+  let values_0 = values[0].iter().collect::<Vec<_>>();
+  assert_eq!(values_0[0].to_string(), "b#0".to_string());
   assert_eq!(is_self_executed, false);
 }
 
@@ -299,20 +358,20 @@ fn export_named_from() {
   ));
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[0] {
-    assert_eq!(local.sym.to_string(), "a".to_string());
+    assert_eq!(local.to_string(), "a#0".to_string());
     assert!(exported.is_none());
   }
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[1] {
-    assert_eq!(local.sym.to_string(), "b".to_string());
+    assert_eq!(local.to_string(), "b#0".to_string());
     assert!(exported.is_some());
-    assert_eq!(exported.as_ref().unwrap().sym.to_string(), "c".to_string());
+    assert_eq!(exported.as_ref().unwrap().to_string(), "c#0".to_string());
   }
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[2] {
-    assert_eq!(local.sym.to_string(), "default".to_string());
+    assert_eq!(local.to_string(), "default#0".to_string());
     assert!(exported.is_some());
-    assert_eq!(exported.as_ref().unwrap().sym.to_string(), "d".to_string());
+    assert_eq!(exported.as_ref().unwrap().to_string(), "d#0".to_string());
   }
 
   assert_eq!(defined_idents.len(), 0);
@@ -349,27 +408,31 @@ fn export_named() {
   ));
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[0] {
-    assert_eq!(local.sym.to_string(), "a".to_string());
+    assert_eq!(local.to_string(), "a#0".to_string());
     assert!(exported.is_none());
   }
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[1] {
-    assert_eq!(local.sym.to_string(), "b".to_string());
+    assert_eq!(local.to_string(), "b#0".to_string());
     assert!(exported.is_some());
-    assert_eq!(exported.as_ref().unwrap().sym.to_string(), "c".to_string());
+    assert_eq!(exported.as_ref().unwrap().to_string(), "c#0".to_string());
   }
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[2] {
-    assert_eq!(local.sym.to_string(), "any".to_string());
+    assert_eq!(local.to_string(), "any#0".to_string());
     assert!(exported.is_some());
-    assert_eq!(exported.as_ref().unwrap().sym.to_string(), "d".to_string());
+    assert_eq!(exported.as_ref().unwrap().to_string(), "d#0".to_string());
   }
 
   assert_eq!(defined_idents.len(), 0);
   assert_eq!(used_idents.len(), 3);
-  assert_eq!(used_idents[0].sym.to_string(), "a".to_string());
-  assert_eq!(used_idents[1].sym.to_string(), "b".to_string());
-  assert_eq!(used_idents[2].sym.to_string(), "any".to_string());
+  let used_idents_str = used_idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<HashSet<String>>();
+  assert!(used_idents_str.contains(&"a#0".to_string()));
+  assert!(used_idents_str.contains(&"b#0".to_string()));
+  assert!(used_idents_str.contains(&"any#0".to_string()));
 
   assert_eq!(defined_idents_map.len(), 3);
   assert_eq!(is_self_executed, false);
@@ -380,7 +443,7 @@ fn export_named_with_used_defined_idents() {
   let stmt = parse_module_item(r#"export { a, b as c, any as d };"#);
 
   let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
-    analyze_imports_and_exports(&0, &stmt, Some(vec!["a#0".to_string()]));
+    analyze_imports_and_exports(&0, &stmt, Some(["a#0".to_string()].into()));
 
   assert!(import_info.is_none());
   assert!(export_info.is_some());
@@ -394,13 +457,17 @@ fn export_named_with_used_defined_idents() {
   ));
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[0] {
-    assert_eq!(local.sym.to_string(), "a".to_string());
+    assert_eq!(local.to_string(), "a#0".to_string());
     assert!(exported.is_none());
   }
 
   assert_eq!(defined_idents.len(), 0);
   assert_eq!(used_idents.len(), 1);
-  assert_eq!(used_idents[0].sym.to_string(), "a".to_string());
+  let used_idents_str = used_idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<HashSet<String>>();
+  assert!(used_idents_str.contains(&"a#0".to_string()));
 
   assert_eq!(defined_idents_map.len(), 1);
   assert_eq!(is_self_executed, false);
@@ -425,7 +492,7 @@ fn export_namespace() {
   ));
 
   if let ExportSpecifierInfo::Namespace(local) = &export_info.specifiers[0] {
-    assert_eq!(local.sym.to_string(), "a".to_string());
+    assert_eq!(local.to_string(), "a#0".to_string());
   }
 
   assert_eq!(defined_idents.len(), 0);
@@ -446,20 +513,31 @@ fn func_decl() {
   assert!(export_info.is_none());
 
   assert_eq!(defined_idents.len(), 1);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
+  let defined_idents_str = defined_idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<HashSet<String>>();
+  assert!(defined_idents_str.contains(&"a#0".to_string()));
+
   assert_eq!(used_idents.len(), 2);
-  assert_eq!(used_idents[0].sym.to_string(), "b".to_string());
-  assert_eq!(used_idents[1].sym.to_string(), "c".to_string());
+  let used_idents_str = used_idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<HashSet<String>>();
+  assert!(used_idents_str.contains(&"b#0".to_string()));
+  assert!(used_idents_str.contains(&"c#0".to_string()));
 
   assert_eq!(defined_idents_map.len(), 1);
   let keys = defined_idents_map.keys().collect::<Vec<_>>();
   assert_eq!(keys.len(), 1);
-  assert_eq!(keys[0].sym.to_string(), "a".to_string());
+  assert_eq!(keys[0].to_string(), "a#0".to_string());
   let values = defined_idents_map.values().collect::<Vec<_>>();
   assert_eq!(values.len(), 1);
-  assert_eq!(values[0].len(), 2);
-  assert_eq!(values[0][0].sym.to_string(), "b".to_string());
-  assert_eq!(values[0][1].sym.to_string(), "c".to_string());
+
+  let values_0 = values[0].iter().map(|v| v.to_string()).collect::<Vec<_>>();
+  assert_eq!(values_0.len(), 2);
+  assert!(values_0.contains(&"b#0".to_string()));
+  assert!(values_0.contains(&"c#0".to_string()));
 
   assert_eq!(is_self_executed, false);
 }
@@ -475,18 +553,28 @@ fn bar_decl() {
   assert!(export_info.is_none());
 
   assert_eq!(defined_idents.len(), 1);
-  assert_eq!(defined_idents[0].sym.to_string(), "a".to_string());
+  let defined_idents_str = defined_idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<HashSet<String>>();
+  assert!(defined_idents_str.contains(&"a#0".to_string()));
+
   assert_eq!(used_idents.len(), 1);
-  assert_eq!(used_idents[0].sym.to_string(), "b".to_string());
+  let used_idents_str = used_idents
+    .iter()
+    .map(|ident| ident.to_string())
+    .collect::<HashSet<String>>();
+  assert!(used_idents_str.contains(&"b#0".to_string()));
 
   assert_eq!(defined_idents_map.len(), 1);
   let keys = defined_idents_map.keys().collect::<Vec<_>>();
   assert_eq!(keys.len(), 1);
-  assert_eq!(keys[0].sym.to_string(), "a".to_string());
+  assert_eq!(keys[0].to_string(), "a#0".to_string());
   let values = defined_idents_map.values().collect::<Vec<_>>();
   assert_eq!(values.len(), 1);
-  assert_eq!(values[0].len(), 1);
-  assert_eq!(values[0][0].sym.to_string(), "b".to_string());
+  let values_0 = values[0].iter().collect::<Vec<_>>();
+  assert_eq!(values_0.len(), 1);
+  assert_eq!(values_0[0].to_string(), "b#0".to_string());
 
   assert_eq!(is_self_executed, false);
 }
@@ -503,12 +591,17 @@ fn for_stmt() {
 
   assert_eq!(defined_idents.len(), 0);
   assert_eq!(used_idents.len(), 5);
+  let mut used_idents = used_idents
+    .into_iter()
+    .map(|item| item.to_string())
+    .collect::<Vec<_>>();
+  used_idents.sort();
   // treat a as used for now as it does not affect the result.
-  assert_eq!(used_idents[0].sym.to_string(), "a".to_string());
-  assert_eq!(used_idents[1].sym.to_string(), "b".to_string());
-  assert_eq!(used_idents[2].sym.to_string(), "c".to_string());
-  assert_eq!(used_idents[3].sym.to_string(), "d".to_string());
-  assert_eq!(used_idents[4].sym.to_string(), "e".to_string());
+  assert_eq!(used_idents[0], "a#0".to_string());
+  assert_eq!(used_idents[1], "b#0".to_string());
+  assert_eq!(used_idents[2], "c#0".to_string());
+  assert_eq!(used_idents[3], "d#0".to_string());
+  assert_eq!(used_idents[4], "e#0".to_string());
 
   assert_eq!(defined_idents_map.len(), 0);
 
@@ -535,4 +628,190 @@ fn empty_specifier_import() {
   assert_eq!(defined_idents_map.len(), 0);
 
   assert_eq!(is_self_executed, true);
+}
+
+#[test]
+fn var_decl_pat() {
+  let stmt = parse_module_item(r#"var { a, b: c, e: [f], h = i, ...g } = d;"#);
+
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
+    analyze_imports_and_exports(&0, &stmt, None);
+
+  assert!(import_info.is_none());
+  assert!(export_info.is_none());
+
+  let mut defined_idents = defined_idents
+    .into_iter()
+    .map(|item| item.to_string())
+    .collect::<Vec<_>>();
+  defined_idents.sort();
+
+  assert_eq!(defined_idents.len(), 5);
+  assert_eq!(defined_idents[0], "a#0".to_string());
+  assert_eq!(defined_idents[1], "c#0".to_string());
+  assert_eq!(defined_idents[2], "f#0".to_string());
+  assert_eq!(defined_idents[3], "g#0".to_string());
+  assert_eq!(defined_idents[4], "h#0".to_string());
+
+  let mut used_idents = used_idents
+    .into_iter()
+    .map(|item| item.to_string())
+    .collect::<Vec<_>>();
+  used_idents.sort();
+  assert_eq!(used_idents.len(), 2);
+  assert_eq!(used_idents[0], "d#0".to_string());
+  assert_eq!(used_idents[1], "i#0".to_string());
+
+  assert_eq!(defined_idents_map.len(), 5);
+  let mut keys = defined_idents_map.keys().collect::<Vec<_>>();
+  keys.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  assert_eq!(keys.len(), 5);
+  assert_eq!(keys[0].to_string(), "a#0".to_string());
+  assert_eq!(keys[1].to_string(), "c#0".to_string());
+  assert_eq!(keys[2].to_string(), "f#0".to_string());
+  assert_eq!(keys[3].to_string(), "g#0".to_string());
+  assert_eq!(keys[4].to_string(), "h#0".to_string());
+
+  let values = defined_idents_map
+    .values()
+    .into_iter()
+    .map(|idents| {
+      let mut idents = idents.iter().collect::<Vec<_>>();
+      idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+      idents
+    })
+    .collect::<Vec<_>>();
+  assert_eq!(values.len(), 5);
+  assert_eq!(values[0].len(), 2);
+  assert_eq!(values[0][0].to_string(), "d#0".to_string());
+  assert_eq!(values[0][1].to_string(), "i#0".to_string());
+  assert_eq!(values[1].len(), 2);
+  assert_eq!(values[1][0].to_string(), "d#0".to_string());
+  assert_eq!(values[1][1].to_string(), "i#0".to_string());
+  assert_eq!(values[2].len(), 2);
+  assert_eq!(values[2][0].to_string(), "d#0".to_string());
+  assert_eq!(values[2][1].to_string(), "i#0".to_string());
+  assert_eq!(values[3].len(), 2);
+  assert_eq!(values[3][0].to_string(), "d#0".to_string());
+  assert_eq!(values[3][1].to_string(), "i#0".to_string());
+  assert_eq!(values[4].len(), 2);
+  assert_eq!(values[4][0].to_string(), "d#0".to_string());
+  assert_eq!(values[4][1].to_string(), "i#0".to_string());
+
+  assert_eq!(is_self_executed, false);
+}
+
+#[test]
+fn export_var_decl_pat() {
+  let stmt = parse_module_item(r#"export const { a, b: c, e: [f], h = i, ...g } = d;"#);
+
+  let (import_info, export_info, defined_idents, used_idents, defined_idents_map, is_self_executed) =
+    analyze_imports_and_exports(&0, &stmt, None);
+
+  assert!(import_info.is_none());
+  assert!(export_info.is_some());
+  let mut export_info = export_info.unwrap();
+  export_info.specifiers.sort_by(|a, b| {
+    if let ExportSpecifierInfo::Named { local: a, .. } = a {
+      if let ExportSpecifierInfo::Named { local: b, .. } = b {
+        return a.to_string().cmp(&b.to_string());
+      }
+    }
+    unreachable!();
+  });
+  assert_eq!(export_info.specifiers.len(), 5);
+  assert!(matches!(
+    export_info.specifiers[0],
+    ExportSpecifierInfo::Named { .. }
+  ));
+  if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[0] {
+    assert_eq!(local.to_string(), "a#0".to_string());
+    assert!(exported.is_none());
+  }
+  assert!(matches!(
+    export_info.specifiers[1],
+    ExportSpecifierInfo::Named { .. }
+  ));
+  if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[1] {
+    assert_eq!(local.to_string(), "c#0".to_string());
+    assert!(exported.is_none());
+  }
+  assert!(matches!(
+    export_info.specifiers[2],
+    ExportSpecifierInfo::Named { .. }
+  ));
+  if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[2] {
+    assert_eq!(local.to_string(), "f#0".to_string());
+    assert!(exported.is_none());
+  }
+  assert!(matches!(
+    export_info.specifiers[3],
+    ExportSpecifierInfo::Named { .. }
+  ));
+  if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[3] {
+    assert_eq!(local.to_string(), "g#0".to_string());
+    assert!(exported.is_none());
+  }
+  assert!(matches!(
+    export_info.specifiers[4],
+    ExportSpecifierInfo::Named { .. }
+  ));
+  if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[4] {
+    assert_eq!(local.to_string(), "h#0".to_string());
+    assert!(exported.is_none());
+  }
+
+  let mut defined_idents = defined_idents.iter().collect::<Vec<_>>();
+  defined_idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+
+  assert_eq!(defined_idents.len(), 5);
+  assert_eq!(defined_idents[0].to_string(), "a#0".to_string());
+  assert_eq!(defined_idents[1].to_string(), "c#0".to_string());
+  assert_eq!(defined_idents[2].to_string(), "f#0".to_string());
+  assert_eq!(defined_idents[3].to_string(), "g#0".to_string());
+  assert_eq!(defined_idents[4].to_string(), "h#0".to_string());
+
+  let mut used_idents = used_idents.iter().collect::<Vec<_>>();
+  used_idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  assert_eq!(used_idents.len(), 2);
+  assert_eq!(used_idents[0].to_string(), "d#0".to_string());
+  assert_eq!(used_idents[1].to_string(), "i#0".to_string());
+
+  assert_eq!(defined_idents_map.len(), 5);
+  let mut keys = defined_idents_map.keys().collect::<Vec<_>>();
+  keys.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  assert_eq!(keys.len(), 5);
+  assert_eq!(keys[0].to_string(), "a#0".to_string());
+  assert_eq!(keys[1].to_string(), "c#0".to_string());
+  assert_eq!(keys[2].to_string(), "f#0".to_string());
+  assert_eq!(keys[3].to_string(), "g#0".to_string());
+  assert_eq!(keys[4].to_string(), "h#0".to_string());
+
+  let values = defined_idents_map
+    .values()
+    .into_iter()
+    .map(|idents| {
+      let mut idents = idents.iter().collect::<Vec<_>>();
+      idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+      idents
+    })
+    .collect::<Vec<_>>();
+  assert_eq!(values.len(), 5);
+  assert_eq!(values[0].len(), 2);
+  assert_eq!(values[0][0].to_string(), "d#0".to_string());
+  assert_eq!(values[0][1].to_string(), "i#0".to_string());
+  assert_eq!(values[1].len(), 2);
+  assert_eq!(values[1][0].to_string(), "d#0".to_string());
+  assert_eq!(values[1][1].to_string(), "i#0".to_string());
+  assert_eq!(values[2].len(), 2);
+  assert_eq!(values[2][0].to_string(), "d#0".to_string());
+  assert_eq!(values[2][1].to_string(), "i#0".to_string());
+  assert_eq!(values[3].len(), 2);
+  assert_eq!(values[3][0].to_string(), "d#0".to_string());
+  assert_eq!(values[3][1].to_string(), "i#0".to_string());
+  assert_eq!(values[4].len(), 2);
+  assert_eq!(values[4][0].to_string(), "d#0".to_string());
+  assert_eq!(values[4][1].to_string(), "i#0".to_string());
+
+  assert_eq!(is_self_executed, false);
 }

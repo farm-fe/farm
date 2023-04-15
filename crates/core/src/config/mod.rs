@@ -142,7 +142,7 @@ impl Default for ResolveConfig {
         String::from("default"),
       ],
       symlinks: true,
-      strict_exports: false
+      strict_exports: false,
     }
   }
 }

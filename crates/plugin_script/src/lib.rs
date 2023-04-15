@@ -202,8 +202,18 @@ impl Plugin for FarmPluginScript {
         module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
       param.module.meta.as_script_mut().module_system = module_system;
     } else {
-      // default to es module
-      param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+      // default to commonjs
+      param.module.meta.as_script_mut().module_system = ModuleSystem::CommonJs;
+
+      let ast = &param.module.meta.as_script().ast;
+
+      // if the ast contains ModuleDecl, it's a esm module
+      for item in ast.body.iter() {
+        if let ModuleItem::ModuleDecl(_) = item {
+          param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+          break;
+        }
+      }
     }
 
     let ast = &param.module.meta.as_script().ast;
