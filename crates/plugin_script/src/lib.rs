@@ -1,6 +1,7 @@
 #![feature(box_patterns)]
+#![feature(path_file_prefix)]
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -19,7 +20,7 @@ use farmfe_core::{
   swc_common::{comments::NoopComments, Mark, GLOBALS},
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleItem, Stmt,
-  },
+  }, relative_path::RelativePath,
 };
 use farmfe_toolkit::{
   fs::{read_file_utf8, transform_output_filename},
@@ -278,9 +279,27 @@ impl Plugin for FarmPluginScript {
         ty: resource_pot.resource_pot_type.clone(),
         source: Some(Box::new(e)),
       })?;
+
+      let filename = resource_pot
+        .entry_module
+        .as_ref()
+        .map(|module_id| {
+          let entry_filename = RelativePath::new(&module_id.relative_path().to_string()).normalize();
+          let entry_name = context.config.input.iter().find(|(_, val)| {
+            RelativePath::new(val).normalize() == entry_filename
+          });
+
+          if let Some((entry_name, _)) = entry_name {
+            entry_name.to_string()
+          } else {
+            resource_pot.id.to_string()
+          }
+        })
+        .unwrap_or(resource_pot.id.to_string());
+
       let sourcemap_filename = transform_output_filename(
         context.config.output.filename.clone(),
-        &resource_pot.id.to_string(),
+        &filename,
         &buf,
         &ResourceType::SourceMap.to_ext(),
       );
@@ -295,7 +314,7 @@ impl Plugin for FarmPluginScript {
 
       let mut resources = vec![Resource {
         bytes: buf,
-        name: resource_pot.id.to_string(),
+        name: filename,
         emitted: false,
         resource_type: ResourceType::Js,
         resource_pot: resource_pot.id.clone(),
