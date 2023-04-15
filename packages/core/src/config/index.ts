@@ -259,7 +259,7 @@ async function readConfigFile(
             ],
           },
           sourcemap: false,
-          treeShaking: true,
+          treeShaking: false,
         },
         server: {
           hmr: false,

@@ -45,14 +45,14 @@ export default 'default';
       .map(|item| item.0.to_string())
       .collect::<Vec<_>>(),
     vec![
-      "a".to_string(),
-      "c".to_string(),
-      "e".to_string(),
-      "default".to_string(),
-      "any".to_string(),
-      "h".to_string(),
-      "i".to_string(),
-      "j".to_string(),
+      "a#1".to_string(),
+      "c#1".to_string(),
+      "e#2".to_string(),
+      "default#2".to_string(),
+      "any#2".to_string(),
+      "h#1".to_string(),
+      "i#0".to_string(),
+      "j#1".to_string(),
       "default".to_string(),
     ]
   );
@@ -82,7 +82,7 @@ fn used_exports_idents_export_all() {
   let result = tree_shake_module.used_exports_idents();
   assert_eq!(result.len(), 1);
   assert!(matches!(result[0].0, UsedIdent::SwcIdent(_)));
-  assert_eq!(result[0].0.to_string(), "a".to_string());
+  assert_eq!(result[0].0.to_string(), "a#1".to_string());
 
   let code = r#"
 export * from './foo';
@@ -97,7 +97,7 @@ export const b = 2;"#;
   assert!(matches!(result[0].0, UsedIdent::InExportAll(_)));
   assert_eq!(result[0].0.to_string(), "a".to_string());
   assert!(matches!(result[1].0, UsedIdent::SwcIdent(_)));
-  assert_eq!(result[1].0.to_string(), "b".to_string());
+  assert_eq!(result[1].0.to_string(), "b#1".to_string());
   assert!(matches!(result[2].0, UsedIdent::InExportAll(_)));
   assert_eq!(result[2].0.to_string(), "c".to_string());
 }
@@ -129,16 +129,16 @@ export default 'default';
       .map(|item| item.0.to_string())
       .collect::<Vec<_>>(),
     vec![
-      "a".to_string(),
-      "b".to_string(),
-      "c".to_string(),
-      "e".to_string(),
-      "default".to_string(),
-      "g".to_string(),
-      "any".to_string(),
-      "h".to_string(),
-      "i".to_string(),
-      "j".to_string(),
+      "a#1".to_string(),
+      "b#1".to_string(),
+      "c#1".to_string(),
+      "e#2".to_string(),
+      "default#2".to_string(),
+      "g#2".to_string(),
+      "any#2".to_string(),
+      "h#1".to_string(),
+      "i#0".to_string(),
+      "j#1".to_string(),
       "default".to_string(),
     ]
   );
@@ -169,7 +169,7 @@ export const b = 2;"#;
   assert!(matches!(result[1].1, 1));
 
   assert!(matches!(result[2].0, UsedIdent::SwcIdent(_)));
-  assert_eq!(result[2].0.to_string(), "b".to_string());
+  assert_eq!(result[2].0.to_string(), "b#1".to_string());
   assert!(matches!(result[2].1, 2));
 
   assert!(matches!(result[3].0, UsedIdent::InExportAll(_)));
@@ -212,30 +212,40 @@ export default 'default';
       "f".to_string(),
     ]);
 
-    let result = tree_shake_module.used_statements();
+    let mut result = tree_shake_module
+      .used_statements()
+      .into_iter()
+      .collect::<Vec<_>>();
+    result.sort_by_key(|item| item.0);
 
     println!("{:?}", result);
 
     assert_eq!(result.len(), 7);
-    // result should be the same as [(3, ["c#1"]), (2, ["c#1"]), (4, ["default#2"]), (8, ["j#1"]), (7, ["i#0"]), (6, ["h#1"]), (9, [])]
-    assert_eq!(result[0].0, 3);
+    // result should be the same as [(2, ["c#1"]), (3, ["c#1"]), (4, ["default#2"]), (6, ["h#1"]), (7, ["i#0"]), (8, ["j#1"]), (9, [])]
+    assert_eq!(result[0].0, 2);
     assert_eq!(result[0].1.len(), 1);
-    assert!(result[0].1.contains("c#1"));
-    assert_eq!(result[1].0, 2);
+    assert!(result[0].1.contains(&"c#1".to_string()));
+
+    assert_eq!(result[1].0, 3);
     assert_eq!(result[1].1.len(), 1);
-    assert!(result[1].1.contains("c#1"));
+    assert!(result[1].1.contains(&"c#1".to_string()));
+
     assert_eq!(result[2].0, 4);
     assert_eq!(result[2].1.len(), 1);
-    assert!(result[2].1.contains("default#2"));
-    assert_eq!(result[3].0, 8);
+    assert!(result[2].1.contains(&"default#2".to_string()));
+
+    assert_eq!(result[3].0, 6);
     assert_eq!(result[3].1.len(), 1);
-    assert!(result[3].1.contains("j#1"));
+    assert!(result[3].1.contains(&"h#1".to_string()));
+
     assert_eq!(result[4].0, 7);
     assert_eq!(result[4].1.len(), 1);
-    assert!(result[4].1.contains("i#0"));
-    assert_eq!(result[5].0, 6);
+    assert!(result[4].1.contains(&"i#0".to_string()));
+
+    assert_eq!(result[5].0, 8);
     assert_eq!(result[5].1.len(), 1);
-    assert!(result[5].1.contains("h#1"));
+    assert!(result[5].1.contains(&"j#1".to_string()));
+
     assert_eq!(result[6].0, 9);
     assert_eq!(result[6].1.len(), 0);
   });
@@ -254,21 +264,26 @@ export { a };
     let mut tree_shake_module = TreeShakeModule::new(&module);
     tree_shake_module.used_exports = UsedExports::Partial(vec!["a".to_string()]);
 
-    let result = tree_shake_module.used_statements();
-
+    let mut result = tree_shake_module
+      .used_statements()
+      .into_iter()
+      .collect::<Vec<_>>();
+    result.sort_by_key(|item| item.0);
     println!("{:?}", result);
 
     assert_eq!(result.len(), 3);
-    // result should be the same as [(2, ["a#2"]), (1, ["a#2"]), (0, ["foo#1"])]
-    assert_eq!(result[0].0, 2);
+    // result should be the same as [(0, ["foo#1"]), (1, ["a#2"]), (2, ["a#2"])]
+    assert_eq!(result[0].0, 0);
     assert_eq!(result[0].1.len(), 1);
-    assert!(result[0].1.contains("a#2"));
+    assert!(result[0].1.contains(&"foo#1".to_string()));
+
     assert_eq!(result[1].0, 1);
     assert_eq!(result[1].1.len(), 1);
-    assert!(result[1].1.contains("a#2"));
-    assert_eq!(result[2].0, 0);
+    assert!(result[1].1.contains(&"a#2".to_string()));
+
+    assert_eq!(result[2].0, 2);
     assert_eq!(result[2].1.len(), 1);
-    assert!(result[2].1.contains("foo#1"));
+    assert!(result[2].1.contains(&"a#2".to_string()));
   });
 }
 
@@ -285,7 +300,11 @@ export const b = 2;
     tree_shake_module.used_exports =
       UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
 
-    let result = tree_shake_module.used_statements();
+    let mut result = tree_shake_module
+      .used_statements()
+      .into_iter()
+      .collect::<Vec<_>>();
+    result.sort_by_key(|item| item.0);
 
     println!("{:?}", result);
 
@@ -315,7 +334,11 @@ export * from './bar';
     tree_shake_module.used_exports =
       UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
 
-    let result = tree_shake_module.used_statements();
+    let mut result = tree_shake_module
+      .used_statements()
+      .into_iter()
+      .collect::<Vec<_>>();
+    result.sort_by_key(|item| item.0);
 
     println!("{:?}", result);
 

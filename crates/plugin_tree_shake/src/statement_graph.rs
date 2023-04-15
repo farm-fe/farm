@@ -1,7 +1,9 @@
+use std::collections::VecDeque;
+
 use farmfe_core::{
   hashbrown::{HashMap, HashSet},
   petgraph::{self, stable_graph::NodeIndex},
-  swc_ecma_ast::{Ident, Module as SwcModule, ModuleItem},
+  swc_ecma_ast::{Module as SwcModule, ModuleItem},
 };
 
 pub(crate) mod analyze_imports_and_exports;
@@ -16,12 +18,12 @@ pub type StatementId = usize;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImportSpecifierInfo {
-  Namespace(Ident),
+  Namespace(String),
   Named {
-    local: Ident,
-    imported: Option<Ident>,
+    local: String,
+    imported: Option<String>,
   },
-  Default(Ident),
+  Default(String),
 }
 
 #[derive(Debug, Clone)]
@@ -38,13 +40,13 @@ pub enum ExportSpecifierInfo {
   All(Option<Vec<String>>),
   // export { foo, bar, default as zoo } from 'foo';
   Named {
-    local: Ident,
-    exported: Option<Ident>,
+    local: String,
+    exported: Option<String>,
   },
   // export default xxx;
   Default,
   // export * as foo from 'foo';
-  Namespace(Ident),
+  Namespace(String),
 }
 
 #[derive(Debug, Clone)]
@@ -59,11 +61,11 @@ pub struct Statement {
   pub id: StatementId,
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
-  pub defined_idents: HashSet<Ident>,
-  pub used_idents: HashSet<Ident>,
+  pub defined_idents: HashSet<String>,
+  pub used_idents: HashSet<String>,
   /// Use String to replace Ident as key, because Ident has position info and it will make hash map not work as expected,
   /// transform it to Ident.to_string() is exactly what we want
-  pub defined_idents_map: HashMap<String, HashSet<Ident>>,
+  pub defined_idents_map: HashMap<String, HashSet<String>>,
   pub is_self_executed: bool,
 }
 
@@ -97,7 +99,7 @@ impl Statement {
 }
 
 pub struct StatementGraphEdge {
-  pub idents: Vec<Ident>,
+  pub idents: HashSet<String>,
 }
 
 pub struct StatementGraph {
@@ -119,21 +121,18 @@ impl StatementGraph {
     let mut edges_to_add = Vec::new();
 
     for stmt in graph.stmts() {
-      for ident in &stmt.used_idents {
-        // find the statement that defines the ident
-        let all_stmts = graph.stmts();
-        let def_stmt = all_stmts.iter().find(|stmt| {
-          for di in &stmt.defined_idents {
-            if di.to_string() == ident.to_string() {
-              return true;
-            }
+      // find the statement that defines the ident
+      for def_stmt in graph.stmts() {
+        let mut deps_idents = HashSet::new();
+
+        for di in &def_stmt.defined_idents {
+          if stmt.used_idents.contains(di) {
+            deps_idents.insert(di.clone());
           }
+        }
 
-          false
-        });
-
-        if let Some(def_stmt) = def_stmt {
-          edges_to_add.push((stmt.id, def_stmt.id, vec![ident.clone()]));
+        if deps_idents.len() > 0 {
+          edges_to_add.push((stmt.id, def_stmt.id, deps_idents));
         }
       }
     }
@@ -145,7 +144,14 @@ impl StatementGraph {
     graph
   }
 
-  pub fn add_edge(&mut self, from: StatementId, to: StatementId, idents: Vec<Ident>) {
+  pub fn empty() -> Self {
+    Self {
+      g: petgraph::graph::Graph::new(),
+      id_index_map: HashMap::new(),
+    }
+  }
+
+  pub fn add_edge(&mut self, from: StatementId, to: StatementId, idents: HashSet<String>) {
     let from_node = self.id_index_map.get(&from).unwrap();
     let to_node = self.id_index_map.get(&to).unwrap();
 
@@ -153,16 +159,7 @@ impl StatementGraph {
     if let Some(edge) = self.g.find_edge(*from_node, *to_node) {
       let edge = self.g.edge_weight_mut(edge).unwrap();
 
-      for ident in &idents {
-        if !edge
-          .idents
-          .iter()
-          .any(|i| i.to_string() == ident.to_string())
-        {
-          edge.idents.push(ident.clone());
-        }
-      }
-
+      edge.idents.extend(idents);
       return;
     }
 
@@ -181,7 +178,7 @@ impl StatementGraph {
     &mut self.g[*node]
   }
 
-  pub fn dependencies(&self, id: &StatementId) -> Vec<(&Statement, Vec<Ident>)> {
+  pub fn dependencies(&self, id: &StatementId) -> Vec<(&Statement, HashSet<String>)> {
     let node = self.id_index_map.get(id).unwrap();
     self
       .g
@@ -213,8 +210,8 @@ impl StatementGraph {
   pub fn analyze_used_statements_and_idents(
     &self,
     used_exports: HashMap<StatementId, HashSet<UsedIdent>>,
-  ) -> Vec<(StatementId, HashSet<String>)> {
-    let mut used_statements: Vec<(usize, HashSet<String>)> = vec![];
+  ) -> HashMap<StatementId, HashSet<String>> {
+    let mut used_statements: HashMap<usize, HashSet<String>> = HashMap::new();
 
     // sort used_exports by statement id
     let mut used_exports: Vec<_> = used_exports.into_iter().collect();
@@ -241,16 +238,15 @@ impl StatementGraph {
           }
           UsedIdent::InExportAll(specifier) => {
             // if used_statements already contains this statement, add specifier to it
-            if let Some((_, specifiers)) = used_statements.iter_mut().find(|(id, _)| *id == stmt_id)
-            {
+            if let Some(specifiers) = used_statements.get_mut(&stmt_id) {
               specifiers.insert(specifier);
             } else {
-              used_statements.push((stmt_id, [specifier].into()));
+              used_statements.insert(stmt_id, [specifier].into());
             }
             skip = true;
           }
           UsedIdent::ExportAll => {
-            used_statements.push((stmt_id, ["*".to_string()].into()));
+            used_statements.insert(stmt_id, ["*".to_string()].into());
             skip = true;
           }
         }
@@ -260,61 +256,38 @@ impl StatementGraph {
         continue;
       }
 
-      let mut stmts = vec![(stmt_id, used_defined_idents, used_dep_idents)];
+      let mut stmts = VecDeque::from([(stmt_id, used_defined_idents, used_dep_idents)]);
       let mut visited = HashSet::new();
 
-      while let Some((stmt_id, used_defined_idents, used_dep_idents)) = stmts.pop() {
+      while let Some((stmt_id, used_defined_idents, used_dep_idents)) = stmts.pop_front() {
+        // if stmt_id is already in used_statements, add used_defined_idents to it
+        if let Some(idents) = used_statements.get_mut(&stmt_id) {
+          idents.extend(used_defined_idents);
+        } else {
+          used_statements.insert(stmt_id, used_defined_idents);
+        }
+
         if visited.contains(&stmt_id) {
           continue;
         }
 
         visited.insert(stmt_id);
-        // if stmt_id is already in used_statements, add used_defined_idents to it
-        if let Some((_, idents)) = used_statements.iter_mut().find(|(id, _)| *id == stmt_id) {
-          for ident in used_defined_idents {
-            if !idents.contains(&ident) {
-              idents.insert(ident);
-            }
-          }
-        } else {
-          used_statements.push((
-            stmt_id,
-            used_defined_idents.iter().map(|s| s.to_string()).collect(),
-          ));
-        }
 
         let deps = self.dependencies(&stmt_id);
 
         for (dep_stmt, dep_idents) in deps {
-          let mut used = false;
-
-          for ident in dep_idents {
-            if used_dep_idents
-              .iter()
-              .any(|i| i.to_string() == ident.to_string())
-            {
-              used = true;
-              break;
-            }
-          }
-
-          if used {
-            let mut dep_stmt_idents = vec![];
-            let mut dep_used_defined_idents = vec![];
+          if dep_idents.iter().any(|di| used_dep_idents.contains(di)) {
+            let mut dep_stmt_idents = HashSet::new();
+            let mut dep_used_defined_idents = HashSet::new();
 
             for ident in &used_dep_idents {
               if let Some(dep_idents) = dep_stmt.defined_idents_map.get(&ident.to_string()) {
-                dep_used_defined_idents.push(ident.to_string());
+                dep_used_defined_idents.insert(ident.to_string());
                 dep_stmt_idents.extend(dep_idents.clone());
               } else {
                 // if dep_stmt.defined_idents contains ident, push it to dep_used_defined_idents
-                let find_defined_ident = dep_stmt
-                  .defined_idents
-                  .iter()
-                  .find(|i| i.to_string() == ident.to_string());
-
-                if let Some(find_defined_ident) = find_defined_ident {
-                  dep_used_defined_idents.push(find_defined_ident.to_string());
+                if let Some(find_defined_ident) = dep_stmt.defined_idents.get(ident) {
+                  dep_used_defined_idents.insert(find_defined_ident.to_string());
                 }
               }
             }
@@ -323,17 +296,10 @@ impl StatementGraph {
             if let Some((_, used_dep_defined_idents, used_dep_idents)) =
               stmts.iter_mut().find(|(id, _, _)| *id == dep_stmt.id)
             {
-              used_dep_defined_idents.extend(dep_used_defined_idents.iter().map(|i| i.to_string()));
-              used_dep_idents.extend(dep_stmt_idents.iter().map(|i| i.to_string()));
+              used_dep_defined_idents.extend(dep_used_defined_idents);
+              used_dep_idents.extend(dep_stmt_idents);
             } else {
-              stmts.push((
-                dep_stmt.id,
-                dep_used_defined_idents
-                  .iter()
-                  .map(|i| i.to_string())
-                  .collect(),
-                dep_stmt_idents.iter().map(|i| i.to_string()).collect(),
-              ));
+              stmts.push_back((dep_stmt.id, dep_used_defined_idents, dep_stmt_idents));
             }
           }
         }

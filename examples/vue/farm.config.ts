@@ -12,8 +12,7 @@ export default defineFarmConfig({
     },
     resolve: {
       strictExports: true
-    },
-    treeShaking: true
+    }
   },
   plugins: [farmJsPluginVue()]
 });

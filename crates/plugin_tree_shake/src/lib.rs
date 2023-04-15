@@ -225,12 +225,12 @@ fn add_used_exports_by_import_info(
           } else {
             imported_tree_shake_module
               .used_exports
-              .add_used_export(&module::UsedIdent::SwcIdent(ident.clone()));
+              .add_used_export(&module::UsedIdent::SwcIdent(strip_context(ident)));
           }
         } else {
           imported_tree_shake_module
             .used_exports
-            .add_used_export(&module::UsedIdent::SwcIdent(local.clone()));
+            .add_used_export(&module::UsedIdent::SwcIdent(strip_context(local)));
         }
       }
       statement_graph::ImportSpecifierInfo::Default(_) => {
@@ -265,14 +265,14 @@ fn add_used_exports_by_export_info(
           exported_tree_shake_module.used_exports = module::UsedExports::All;
         }
         statement_graph::ExportSpecifierInfo::Named { local, .. } => {
-          if local.sym.to_string() == "default".to_string() {
+          if local == &"default".to_string() {
             exported_tree_shake_module
               .used_exports
               .add_used_export(&module::UsedIdent::Default);
           } else {
             exported_tree_shake_module
               .used_exports
-              .add_used_export(&module::UsedIdent::SwcIdent(local.clone()));
+              .add_used_export(&module::UsedIdent::SwcIdent(strip_context(local)));
           }
         }
         statement_graph::ExportSpecifierInfo::Default => {
@@ -288,7 +288,7 @@ fn add_used_exports_by_export_info(
               } else {
                 exported_tree_shake_module
                   .used_exports
-                  .add_used_export(ident);
+                  .add_used_export(&strip_context(ident));
               }
             }
           } else {
@@ -298,4 +298,9 @@ fn add_used_exports_by_export_info(
       }
     }
   }
+}
+
+fn strip_context(ident: &String) -> String {
+  let ident_split = ident.split("#").into_iter().collect::<Vec<_>>();
+  ident_split[0].to_string()
 }

@@ -1,14 +1,14 @@
 use farmfe_core::{
   hashbrown::HashSet,
-  swc_ecma_ast::{Ident, ObjectPatProp, Pat},
+  swc_ecma_ast::{ObjectPatProp, Pat},
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
 use super::used_idents_collector::UsedIdentsCollector;
 
 pub struct DefinedIdentsCollector {
-  pub defined_idents: HashSet<Ident>,
-  pub used_idents: HashSet<Ident>,
+  pub defined_idents: HashSet<String>,
+  pub used_idents: HashSet<String>,
 }
 
 impl DefinedIdentsCollector {
@@ -24,7 +24,7 @@ impl Visit for DefinedIdentsCollector {
   fn visit_pat(&mut self, pat: &Pat) {
     match pat {
       Pat::Ident(bi) => {
-        self.defined_idents.insert(bi.id.clone());
+        self.defined_idents.insert(bi.id.to_string());
       }
       Pat::Array(array_pat) => {
         for elem in &array_pat.elems {
@@ -43,7 +43,7 @@ impl Visit for DefinedIdentsCollector {
               self.visit_pat(&kv_prop.value);
             }
             ObjectPatProp::Assign(assign_prop) => {
-              self.defined_idents.insert(assign_prop.key.clone());
+              self.defined_idents.insert(assign_prop.key.to_string());
 
               let mut used_idents_collector = UsedIdentsCollector::new();
               assign_prop.value.visit_with(&mut used_idents_collector);

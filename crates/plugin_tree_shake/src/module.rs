@@ -1,7 +1,6 @@
 use farmfe_core::{
   hashbrown::{HashMap, HashSet},
   module::{Module, ModuleId, ModuleSystem},
-  swc_ecma_ast::Ident,
 };
 
 use crate::statement_graph::{
@@ -11,7 +10,7 @@ use crate::statement_graph::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UsedIdent {
   /// Local ident
-  SwcIdent(Ident),
+  SwcIdent(String),
   /// Default ident
   Default,
   /// This ident is used and may be exported from other module
@@ -23,7 +22,7 @@ pub enum UsedIdent {
 impl ToString for UsedIdent {
   fn to_string(&self) -> String {
     match self {
-      UsedIdent::SwcIdent(ident) => ident.sym.to_string(),
+      UsedIdent::SwcIdent(ident) => ident.to_string(),
       UsedIdent::Default => "default".to_string(),
       UsedIdent::InExportAll(ident) => ident.to_string(),
       UsedIdent::ExportAll => "*".to_string(),
@@ -66,9 +65,15 @@ pub struct TreeShakeModule {
 
 impl TreeShakeModule {
   pub fn new(module: &Module) -> Self {
+    let module_system = module.meta.as_script().module_system.clone();
+
     // 1. generate statement graph
     let ast = &module.meta.as_script().ast;
-    let stmt_graph = StatementGraph::new(ast);
+    let stmt_graph = if module_system == ModuleSystem::EsModule {
+      StatementGraph::new(ast)
+    } else {
+      StatementGraph::empty()
+    };
 
     // 2. set default used exports
     let used_exports = if module.side_effects {
@@ -82,7 +87,7 @@ impl TreeShakeModule {
       stmt_graph,
       used_exports,
       side_effects: module.side_effects,
-      module_system: module.meta.as_script().module_system.clone(),
+      module_system,
     }
   }
 
@@ -110,7 +115,7 @@ impl TreeShakeModule {
     return exports;
   }
 
-  pub fn used_statements(&self) -> Vec<(StatementId, HashSet<String>)> {
+  pub fn used_statements(&self) -> HashMap<StatementId, HashSet<String>> {
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
     let mut stmt_used_idents_map = HashMap::new();
@@ -197,13 +202,15 @@ impl TreeShakeModule {
             export_info.specifiers.iter().any(|sp| match sp {
               ExportSpecifierInfo::Default => ident == "default",
               ExportSpecifierInfo::Named { local, exported } => {
-                if let Some(exported) = exported {
-                  ident == &exported.sym.to_string()
+                let exported_ident = if let Some(exported) = exported {
+                  exported
                 } else {
-                  ident == &local.sym.to_string()
-                }
+                  local
+                };
+
+                is_ident_equal(ident, exported_ident)
               }
-              ExportSpecifierInfo::Namespace(ns) => ident == &ns.sym.to_string(),
+              ExportSpecifierInfo::Namespace(ns) => is_ident_equal(ident, ns),
               ExportSpecifierInfo::All(_) => {
                 /* Deal with All later */
                 false
@@ -221,17 +228,17 @@ impl TreeShakeModule {
                 }
                 ExportSpecifierInfo::Named { local, exported } => {
                   if let Some(exported) = exported {
-                    if ident == &exported.sym.to_string() {
+                    if is_ident_equal(ident, &exported) {
                       used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
                     }
                   } else {
-                    if ident == &local.sym.to_string() {
+                    if is_ident_equal(ident, &local) {
                       used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
                     }
                   }
                 }
                 ExportSpecifierInfo::Namespace(ns) => {
-                  if ident == &ns.sym.to_string() {
+                  if is_ident_equal(ident, &ns) {
                     used_idents.push((UsedIdent::SwcIdent(ns.clone()), export_info.stmt_id));
                   }
                 }
@@ -255,5 +262,16 @@ impl TreeShakeModule {
         used_idents
       }
     }
+  }
+}
+
+fn is_ident_equal(ident1: &String, ident2: &String) -> bool {
+  let split1 = ident1.split('#').collect::<Vec<_>>();
+  let split2 = ident2.split('#').collect::<Vec<_>>();
+
+  if split1.len() == 2 && split2.len() == 2 {
+    return split1[0] == split2[0] && split1[1] == split2[1];
+  } else {
+    return split1[0] == split2[0];
   }
 }
