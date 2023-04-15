@@ -10,7 +10,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/js-plugin-sass": "workspace:^1.0.0",
+    "@farmfe/js-plugin-sass": "workspace:^0.1.0",
     "@farmfe/plugin-react": "workspace:^0.1.2",
     "@farmfe/plugin-sass": "workspace:^0.0.2",
     "@types/react": "18",
