@@ -99,7 +99,7 @@ pub fn relative(from: &str, to: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-  use crate::{stringify_query, PARSE_QUERY_TRUE};
+  use crate::{relative, stringify_query, PARSE_QUERY_TRUE};
 
   use super::parse_query;
 
@@ -130,5 +130,12 @@ mod tests {
     let query = vec![("a".to_string(), "b".to_string())];
     let str = stringify_query(&query);
     assert_eq!(str, "?a=b".to_string());
+  }
+
+  #[test]
+  fn test_relative() {
+    let from = "/desktop/farm/projects";
+    let to = "/desktop/farm/documents/report.txt";
+    assert_eq!(relative(from, to), "../documents/report.txt");
   }
 }
