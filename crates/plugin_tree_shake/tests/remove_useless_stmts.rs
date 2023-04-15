@@ -85,7 +85,7 @@ export default 'default';
       ImportSpecifierInfo::Named { .. }
     ));
     if let ImportSpecifierInfo::Named { local, imported } = &import_info[0].specifiers[0] {
-      assert_eq!(local.sym.to_string(), "aValue".to_string());
+      assert_eq!(local.to_string(), "aValue#1".to_string());
       assert!(imported.is_none());
     }
 
@@ -96,11 +96,11 @@ export default 'default';
       ExportSpecifierInfo::Named { .. }
     ));
     if let ExportSpecifierInfo::Named { local, exported } = &export_info[0].specifiers[0] {
-      assert_eq!(local.sym.to_string(), "default".to_string());
+      assert_eq!(local.to_string(), "default#1".to_string());
       assert!(exported.is_some());
 
       if let Some(exported) = exported {
-        assert_eq!(exported.sym.to_string(), "f".to_string());
+        assert_eq!(exported.to_string(), "f#1".to_string());
       }
     }
   });
@@ -145,7 +145,7 @@ export * from './src/foo';
       ImportSpecifierInfo::Named { .. }
     ));
     if let ImportSpecifierInfo::Named { local, imported } = &import_info[0].specifiers[0] {
-      assert_eq!(local.sym.to_string(), "aValue".to_string());
+      assert_eq!(local.to_string(), "aValue#1".to_string());
       assert!(imported.is_none());
     }
 

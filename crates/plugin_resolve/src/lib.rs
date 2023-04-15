@@ -72,6 +72,19 @@ impl Plugin for FarmPluginResolve {
     }
 
     let resolver = Resolver::new(context.config.resolve.clone());
+    let result = resolver.resolve(source, basedir.clone(), &param.kind);
+
+    // remove the .js if the result is not found to support using native esm with typescript
+    if result.is_none() && source.ends_with(".js") {
+      let source = source.replace(".js", "");
+
+      return Ok(
+        resolver
+          .resolve(&source, basedir.clone(), &param.kind)
+          .map(|result| PluginResolveHookResult { query, ..result }),
+      );
+    }
+
     Ok(
       resolver
         .resolve(source, basedir.clone(), &param.kind)

@@ -6,7 +6,6 @@
     }
 })({
     "main.ts": function(module, exports, require, dynamicRequire) {
-        "use strict";
         console.log("1111");
     }
 });

@@ -43,7 +43,6 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         var _default = "comp";
     },
     "index.css": function(module, exports, require, dynamicRequire) {
-        "use strict";
         const cssCode = `.body {
   color: red;
 }
@@ -80,7 +79,6 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         var _default = 2;
     },
     "resolved.ts": function(module, exports, require, dynamicRequire) {
-        "use strict";
         console.log("resolved.ts");
     }
 });

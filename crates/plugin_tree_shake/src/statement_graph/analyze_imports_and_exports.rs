@@ -1,10 +1,11 @@
 use farmfe_core::{
-  hashbrown::HashMap,
-  swc_ecma_ast::{self, Ident, ModuleExportName, ModuleItem},
+  hashbrown::{HashMap, HashSet},
+  swc_ecma_ast::{self, ModuleExportName, ModuleItem},
 };
 use farmfe_toolkit::swc_ecma_visit::VisitWith;
 
 use super::{
+  defined_idents_collector::DefinedIdentsCollector,
   used_idents_collector::{self, UsedIdentsCollector},
   ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId,
 };
@@ -12,17 +13,17 @@ use super::{
 pub fn analyze_imports_and_exports(
   id: &StatementId,
   stmt: &ModuleItem,
-  used_defined_idents: Option<Vec<String>>,
+  used_defined_idents: Option<HashSet<String>>,
 ) -> (
   Option<ImportInfo>,
   Option<ExportInfo>,
-  Vec<Ident>,
-  Vec<Ident>,
-  HashMap<Ident, Vec<Ident>>,
+  HashSet<String>,
+  HashSet<String>,
+  HashMap<String, HashSet<String>>,
   bool,
 ) {
-  let mut defined_idents = vec![];
-  let mut used_idents = vec![];
+  let mut defined_idents = HashSet::new();
+  let mut used_idents = HashSet::new();
   let mut defined_idents_map = HashMap::new();
 
   let mut imports = None;
@@ -31,7 +32,7 @@ pub fn analyze_imports_and_exports(
   let mut is_self_executed = false;
 
   let mut analyze_and_insert_used_idents =
-    |stmt: &dyn VisitWith<UsedIdentsCollector>, ident: Option<Ident>| {
+    |stmt: &dyn VisitWith<UsedIdentsCollector>, ident: Option<String>| {
       // skip if used_defined_idents is not None as it is only uses the imports and exports for now
       if used_defined_idents.is_some() {
         return;
@@ -47,9 +48,9 @@ pub fn analyze_imports_and_exports(
       used_idents.extend(used_idents_collector.used_idents);
     };
 
-  let is_ident_used = |ident: &Ident| {
+  let is_ident_used = |ident: &String| {
     if let Some(used_defined_idents) = &used_defined_idents {
-      return used_defined_idents.contains(&ident.to_string());
+      return used_defined_idents.contains(ident);
     }
 
     return true;
@@ -64,34 +65,34 @@ pub fn analyze_imports_and_exports(
         for specifier in &import_decl.specifiers {
           match specifier {
             swc_ecma_ast::ImportSpecifier::Namespace(ns) => {
-              if !is_ident_used(&ns.local) {
+              if !is_ident_used(&ns.local.to_string()) {
                 continue;
               }
 
-              specifiers.push(ImportSpecifierInfo::Namespace(ns.local.clone()));
-              defined_idents.push(ns.local.clone());
+              specifiers.push(ImportSpecifierInfo::Namespace(ns.local.to_string()));
+              defined_idents.insert(ns.local.to_string());
             }
             swc_ecma_ast::ImportSpecifier::Named(named) => {
-              if !is_ident_used(&named.local) {
+              if !is_ident_used(&named.local.to_string()) {
                 continue;
               }
 
               specifiers.push(ImportSpecifierInfo::Named {
-                local: named.local.clone(),
+                local: named.local.to_string(),
                 imported: named.imported.as_ref().map(|i| match i {
-                  ModuleExportName::Ident(i) => i.clone(),
+                  ModuleExportName::Ident(i) => i.to_string(),
                   _ => panic!("non-ident imported is not supported when tree shaking"),
                 }),
               });
-              defined_idents.push(named.local.clone());
+              defined_idents.insert(named.local.to_string());
             }
             swc_ecma_ast::ImportSpecifier::Default(default) => {
-              if !is_ident_used(&default.local) {
+              if !is_ident_used(&default.local.to_string()) {
                 continue;
               }
 
-              specifiers.push(ImportSpecifierInfo::Default(default.local.clone()));
-              defined_idents.push(default.local.clone());
+              specifiers.push(ImportSpecifierInfo::Default(default.local.to_string()));
+              defined_idents.insert(default.local.to_string());
             }
           }
         }
@@ -119,40 +120,47 @@ pub fn analyze_imports_and_exports(
           swc_ecma_ast::Decl::Class(class_decl) => {
             exports = Some(ExportInfo {
               source: None,
-              specifiers: vec![ExportSpecifierInfo::Named { local: class_decl.ident.clone(), exported: None }],
+              specifiers: vec![ExportSpecifierInfo::Named { local: class_decl.ident.to_string(), exported: None }],
               stmt_id: id.clone(),
             });
-            defined_idents.push(class_decl.ident.clone());
-            analyze_and_insert_used_idents(&class_decl.class, Some(class_decl.ident.clone()));
+            defined_idents.insert(class_decl.ident.to_string());
+            analyze_and_insert_used_idents(&class_decl.class, Some(class_decl.ident.to_string()));
           },
           swc_ecma_ast::Decl::Fn(fn_decl) => {
             exports = Some(ExportInfo {
               source: None,
-              specifiers: vec![ExportSpecifierInfo::Named { local: fn_decl.ident.clone(), exported: None }],
+              specifiers: vec![ExportSpecifierInfo::Named { local: fn_decl.ident.to_string(), exported: None }],
               stmt_id: id.clone(),
             });
-            defined_idents.push(fn_decl.ident.clone());
-            analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.clone()));
+            defined_idents.insert(fn_decl.ident.to_string());
+            analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.to_string()));
           },
           swc_ecma_ast::Decl::Var(var_decl) => {
             let mut specifiers = vec![];
 
             for v_decl in &var_decl.decls {
-              match &v_decl.name {
-                swc_ecma_ast::Pat::Ident(ident) => {
-                  if !is_ident_used(&ident.id) {
-                    continue;
-                  }
 
-                  specifiers.push(ExportSpecifierInfo::Named { local: ident.id.clone(), exported: None });
-                  defined_idents.push(ident.id.clone());
+              let mut defined_idents_collector = DefinedIdentsCollector::new();
+              v_decl.name.visit_with(&mut defined_idents_collector);
+              let mut used_idents_collector = UsedIdentsCollector::new();
 
-                  if let Some(init) = &v_decl.init {
-                    analyze_and_insert_used_idents(init, Some(ident.id.clone()));
-                  }
+              if let Some(init) = &v_decl.init {
+                init.visit_with(&mut used_idents_collector);
+              }
+
+              let mut local_used_idents = HashSet::new();
+              local_used_idents.extend(used_idents_collector.used_idents);
+              local_used_idents.extend(defined_idents_collector.used_idents);
+              used_idents.extend(local_used_idents.clone());
+
+              for defined_ident in defined_idents_collector.defined_idents {
+                if !is_ident_used(&defined_ident.to_string()) {
+                  continue;
                 }
-                // TODO: support other patterns
-                _ => unreachable!("non-ident export_decl.decl is not supported when tree shaking"),
+
+                specifiers.push(ExportSpecifierInfo::Named { local: defined_ident.to_string(), exported: None });
+                defined_idents.insert(defined_ident.clone());
+                defined_idents_map.insert(defined_ident.clone(), local_used_idents.clone());
               }
             }
 
@@ -174,15 +182,15 @@ pub fn analyze_imports_and_exports(
         match &export_default_decl.decl {
           swc_ecma_ast::DefaultDecl::Class(class_expr) => {
             if let Some(ident) = &class_expr.ident {
-              defined_idents.push(ident.clone());
+              defined_idents.insert(ident.to_string());
             }
-            analyze_and_insert_used_idents(&class_expr.class, class_expr.ident.clone());
+            analyze_and_insert_used_idents(&class_expr.class, class_expr.ident.as_ref().map(|i| i.to_string()));
           }
           swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
             if let Some(ident) = &fn_decl.ident {
-              defined_idents.push(ident.clone());
+              defined_idents.insert(ident.to_string());
             }
-            analyze_and_insert_used_idents(&fn_decl.function, fn_decl.ident.clone());
+            analyze_and_insert_used_idents(&fn_decl.function, fn_decl.ident.as_ref().map(|i| i.to_string()));
           }
           _ => unreachable!(
             "export_default_decl.decl should not be anything other than a class, function"
@@ -208,19 +216,19 @@ pub fn analyze_imports_and_exports(
                 ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
               };
 
-              if !is_ident_used(&local) {
+              if !is_ident_used(&local.to_string()) {
                 continue;
               }
 
               if export_named.src.is_none() {
-                used_idents.push(local.clone());
-                defined_idents_map.insert(local.clone(), vec![local.clone()]);
+                used_idents.insert(local.to_string());
+                defined_idents_map.insert(local.to_string(), [local.to_string()].into());
               }
 
               specifiers.push(ExportSpecifierInfo::Named {
-                local,
+                local: local.to_string(),
                 exported: named.exported.as_ref().map(|i| match i {
-                  ModuleExportName::Ident(i) => i.clone(),
+                  ModuleExportName::Ident(i) => i.to_string(),
                   _ => panic!("non-ident exported is not supported when tree shaking"),
                 }),
               });
@@ -230,7 +238,7 @@ pub fn analyze_imports_and_exports(
             }
             swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
               let ident = match &ns.name {
-                ModuleExportName::Ident(ident) => ident.clone(),
+                ModuleExportName::Ident(ident) => ident.to_string(),
                 ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
               };
 
@@ -310,24 +318,31 @@ pub fn analyze_imports_and_exports(
       }
       swc_ecma_ast::Stmt::Decl(decl) => match decl {
         swc_ecma_ast::Decl::Class(class_decl) => {
-          defined_idents.push(class_decl.ident.clone());
-          analyze_and_insert_used_idents(&class_decl.class, Some(class_decl.ident.clone()));
+          defined_idents.insert(class_decl.ident.to_string());
+          analyze_and_insert_used_idents(&class_decl.class, Some(class_decl.ident.to_string()));
         }
         swc_ecma_ast::Decl::Fn(fn_decl) => {
-          defined_idents.push(fn_decl.ident.clone());
-          analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.clone()));
+          defined_idents.insert(fn_decl.ident.to_string());
+          analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.to_string()));
         }
         swc_ecma_ast::Decl::Var(var_decl) => {
           for v_decl in &var_decl.decls {
-            match &v_decl.name {
-              swc_ecma_ast::Pat::Ident(ident) => {
-                defined_idents.push(ident.id.clone());
+            let mut defined_idents_collector = DefinedIdentsCollector::new();
+            v_decl.name.visit_with(&mut defined_idents_collector);
+            let mut used_idents_collector = UsedIdentsCollector::new();
 
-                if let Some(init) = &v_decl.init {
-                  analyze_and_insert_used_idents(init, Some(ident.id.clone()));
-                }
-              }
-              _ => unreachable!("var_decl.decl should not be anything other than an ident"),
+            if let Some(init) = &v_decl.init {
+              init.visit_with(&mut used_idents_collector);
+            }
+
+            let mut local_used_idents = HashSet::new();
+            local_used_idents.extend(used_idents_collector.used_idents);
+            local_used_idents.extend(defined_idents_collector.used_idents);
+            used_idents.extend(local_used_idents.clone());
+
+            for defined_ident in defined_idents_collector.defined_idents {
+              defined_idents.insert(defined_ident.clone());
+              defined_idents_map.insert(defined_ident.clone(), local_used_idents.clone());
             }
           }
         }

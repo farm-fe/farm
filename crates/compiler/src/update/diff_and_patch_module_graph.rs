@@ -308,7 +308,7 @@ fn diff_module_deps(
     for child in children {
       let edge_info = module_graph.edge_info(&dep, &child).unwrap();
       children_removed.push((child.clone(), edge_info.clone()));
-      
+
       if !update_module_graph.has_module(&child) {
         removed_queue.push_back(child.clone());
         removed_modules.insert(child);
