@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use farmfe_core::{
   module::ModuleType,
   plugin::Plugin,
-  swc_common::{comments::NoopComments, Mark, GLOBALS},
+  swc_common::{comments::NoopComments, Mark},
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
@@ -28,14 +28,15 @@ fn tree_shake_test() {
       let cwd = file.parent().unwrap();
       println!("testing tree shake: {:?}", cwd);
 
+      let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+        HashMap::from([(entry_name.clone(), "./index.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
       );
       compiler.compile().unwrap();
 
-      assert_compiler_result(&compiler);
+      assert_compiler_result(&compiler, Some(&entry_name));
     }
   );
 }
@@ -48,14 +49,15 @@ fn tree_shake_html_entry() {
       let cwd = file.parent().unwrap();
       println!("testing tree shake: {:?}", cwd);
 
+      let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([("index".to_string(), "./index.html".to_string())]),
+        HashMap::from([(entry_name.clone(), "./index.html".to_string())]),
         cwd.to_path_buf(),
         crate_path,
       );
       compiler.compile().unwrap();
 
-      assert_compiler_result(&compiler);
+      assert_compiler_result(&compiler, None);
     }
   );
 }
@@ -124,15 +126,16 @@ fn tree_shake_changed_ast() {
       let cwd = file.parent().unwrap();
       println!("testing tree shake: {:?}", cwd);
 
+      let entry_name = "index".to_string();
       let compiler = create_compiler_with_plugins(
-        HashMap::from([("index".to_string(), "./entry.ts".to_string())]),
+        HashMap::from([(entry_name.clone(), "./entry.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         vec![Arc::new(ProcessAstPlugin) as Arc<dyn Plugin>],
       );
       compiler.compile().unwrap();
 
-      assert_compiler_result(&compiler);
+      assert_compiler_result(&compiler, Some(&entry_name));
     }
   );
 }

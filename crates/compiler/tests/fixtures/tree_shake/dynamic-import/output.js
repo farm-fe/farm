@@ -1,4 +1,4 @@
-//8fbe243c.js:
+//index.js:
  import module from "node:module";
 global.__farmNodeRequire = module.createRequire(import.meta.url);
 global.__farmNodeBuiltinModules = module.builtinModules;
@@ -42,7 +42,7 @@ var entry = farmModuleSystem.require("index.ts").default;
 export default entry;
 
 
-//e79a22cc.js:
+//index.js:
  (function(modules) {
     for(var key in modules){
         var __farm_global_this__ = globalThis || window || global || self;
