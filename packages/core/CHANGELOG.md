@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 0.6.0
+
+### Minor Changes
+
+- 9838407: Support tree shake
+
+### Patch Changes
+
+- cc94e33: support entry key as resource name
+
 ## 0.5.4
 
 ### Patch Changes
