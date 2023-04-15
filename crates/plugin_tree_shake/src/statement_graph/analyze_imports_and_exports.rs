@@ -157,7 +157,7 @@ pub fn analyze_imports_and_exports(
                 if !is_ident_used(&defined_ident.to_string()) {
                   continue;
                 }
-                
+
                 specifiers.push(ExportSpecifierInfo::Named { local: defined_ident.to_string(), exported: None });
                 defined_idents.insert(defined_ident.clone());
                 defined_idents_map.insert(defined_ident.clone(), local_used_idents.clone());
