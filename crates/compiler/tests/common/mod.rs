@@ -37,6 +37,10 @@ pub fn create_compiler(
         plugins: vec![],
         swc_helpers_path,
       },
+      output: farmfe_core::config::OutputConfig {
+        filename: "[resourceName].[ext]".to_string(),
+        ..Default::default()
+      },
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
@@ -92,7 +96,7 @@ pub fn create_compiler_with_plugins(
   compiler
 }
 
-pub fn get_compiler_result(compiler: &Compiler) -> String {
+pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> String {
   let resources_map = compiler.context().resources_map.lock();
   let mut result = vec![];
 
@@ -101,17 +105,25 @@ pub fn get_compiler_result(compiler: &Compiler) -> String {
       continue;
     }
 
-    result.push((
-      format!("//{}:\n ", name),
-      String::from_utf8_lossy(&resource.bytes),
-    ));
+    result.push(match entry_name {
+      Some(entry_name) if name.starts_with(entry_name) => (
+        "1".into(),
+        format!("//{}.{}:\n ", entry_name, resource.resource_type.to_ext()),
+        String::from_utf8_lossy(&resource.bytes),
+      ),
+      _ => (
+        format!("1{}", name),
+        format!("//{}:\n ", name),
+        String::from_utf8_lossy(&resource.bytes),
+      ),
+    })
   }
 
-  result.sort_by_key(|(name, _)| name.clone());
+  result.sort_by_key(|(raw_name, _, _)| raw_name.clone());
 
   let result_file_str = result
     .iter()
-    .map(|(name, content)| format!("{}{}", name, content))
+    .map(|(_, name, content)| format!("{}{}", name, content))
     .collect::<Vec<String>>()
     .join("\n\n");
 
@@ -123,9 +135,9 @@ pub fn load_expected_result(cwd: PathBuf) -> String {
   expected_result
 }
 
-pub fn assert_compiler_result(compiler: &Compiler) {
+pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) {
   let expected_result = load_expected_result(PathBuf::from(compiler.context().config.root.clone()));
-  let result = get_compiler_result(compiler);
+  let result = get_compiler_result(compiler, entry_name);
 
   if std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() {
     std::fs::write(
