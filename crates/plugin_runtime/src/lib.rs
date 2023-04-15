@@ -372,15 +372,6 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
 
-    if resource_pot.entry_module.is_some() {
-      println!(
-        "{} {} {:?}",
-        resource_pot.entry_module.as_ref().unwrap().relative_path().to_string(),
-        resource_pot.id.to_string(),
-        resource_pot.resource_pot_type
-      );
-    }
-
     // only handle runtime resource pot and entry resource pot
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
       let runtime_ast = self.runtime_ast.lock();

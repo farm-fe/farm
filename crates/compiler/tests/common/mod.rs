@@ -37,6 +37,10 @@ pub fn create_compiler(
         plugins: vec![],
         swc_helpers_path,
       },
+      output: farmfe_core::config::OutputConfig {
+        filename: "[resourceName].[ext]".to_string(),
+        ..Default::default()
+      },
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
@@ -100,25 +104,26 @@ pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> 
     if matches!(resource.resource_type, ResourceType::Runtime) {
       continue;
     }
-    result.push((
-      if entry_name.is_some() {
-        format!(
-          "//{}.{}:\n ",
-          entry_name.unwrap(),
-          resource.resource_type.to_ext()
-        )
-      } else {
-        format!("//{}:\n ", name)
-      },
-      String::from_utf8_lossy(&resource.bytes),
-    ));
+
+    result.push(match entry_name {
+      Some(entry_name) if name.starts_with(entry_name) => (
+        "1".into(),
+        format!("//{}.{}:\n ", entry_name, resource.resource_type.to_ext()),
+        String::from_utf8_lossy(&resource.bytes),
+      ),
+      _ => (
+        format!("1{}", name),
+        format!("//{}:\n ", name),
+        String::from_utf8_lossy(&resource.bytes),
+      ),
+    })
   }
 
-  result.sort_by_key(|(name, _)| name.clone());
+  result.sort_by_key(|(raw_name, _, _)| raw_name.clone());
 
   let result_file_str = result
     .iter()
-    .map(|(name, content)| format!("{}{}", name, content))
+    .map(|(_, name, content)| format!("{}{}", name, content))
     .collect::<Vec<String>>()
     .join("\n\n");
 
@@ -141,7 +146,6 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
     )
     .unwrap();
   } else {
-
     // assert lines are the same
     let expected_lines = expected_result.trim().lines().collect::<Vec<&str>>();
     let result_lines = result.trim().lines().collect::<Vec<&str>>();
