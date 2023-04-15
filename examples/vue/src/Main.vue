@@ -2,19 +2,28 @@
   <div>
     <Title></Title>
     <Description></Description>
+    <ElButton>123132</ElButton>
+    <el-date-picker v-model="value1" type="date" placeholder="Pick a day" />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { ElButton } from 'element-plus';
+import { defineComponent, ref } from 'vue';
 import Title from './components/Title.vue';
 import Description from './components/Description.vue';
 
 export default defineComponent({
-  setup() {},
+  setup() {
+    const value1 = ref('');
+    return {
+      value1,
+    };
+  },
   components: {
     Title,
     Description,
+    ElButton,
   },
 });
 </script>
