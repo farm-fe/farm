@@ -150,7 +150,7 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
     let expected_lines = expected_result.trim().lines().collect::<Vec<&str>>();
     let result_lines = result.trim().lines().collect::<Vec<&str>>();
 
-    // assert_eq!(expected_lines.len(), result_lines.len());
+    assert_eq!(expected_lines.len(), result_lines.len());
 
     for (expected, result) in expected_lines.iter().zip(result_lines.iter()) {
       assert_eq!(expected.trim(), result.trim()); // ignore whitespace
