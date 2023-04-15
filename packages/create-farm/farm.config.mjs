@@ -1,4 +1,3 @@
-// change to @farmfe/core/config when resolve support conditional exports
 import { builtinModules } from 'module';
 
 /**
@@ -13,7 +12,7 @@ export default {
       path: 'build',
       filename: 'index.[ext]'
     },
-    external: builtinModules,
+    external: builtinModules.map((m) => `^${m}$`),
     partialBundling: {
       moduleBuckets: [
         {
