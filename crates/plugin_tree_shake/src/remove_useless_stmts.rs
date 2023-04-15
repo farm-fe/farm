@@ -16,7 +16,10 @@ pub fn remove_useless_stmts(
   swc_module: &mut SwcModule,
 ) -> (Vec<ImportInfo>, Vec<ExportInfo>) {
   // analyze the statement graph start from the used statements
-  let mut used_stmts = tree_shake_module.used_statements();
+  let mut used_stmts = tree_shake_module
+    .used_statements()
+    .into_iter()
+    .collect::<Vec<_>>();
   // sort used_stmts
   used_stmts.sort_by_key(|a| a.0);
 
@@ -47,7 +50,8 @@ pub fn remove_useless_stmts(
       if export_info.source.is_some()
         && matches!(export_info.specifiers[0], ExportSpecifierInfo::All(_))
       {
-        export_info.specifiers[0] = ExportSpecifierInfo::All(Some(used_defined_idents.clone()));
+        export_info.specifiers[0] =
+          ExportSpecifierInfo::All(Some(used_defined_idents.clone().into_iter().collect()));
         used_export_from_infos.push(export_info.clone());
       } else {
         if export_info.source.is_some() {
