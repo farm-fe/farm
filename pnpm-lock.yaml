@@ -84,7 +84,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^0.1.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
         specifier: workspace:^0.1.2
@@ -127,7 +127,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^0.1.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
         specifier: workspace:^0.1.2
