@@ -254,7 +254,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.4.2
+        specifier: workspace:^0.5.0
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.1.2
@@ -363,7 +363,7 @@ importers:
   packages/runtime-plugin-hmr:
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.4.2
+        specifier: workspace:^0.5.0
         version: link:../runtime
 
   rust-plugins/react:
