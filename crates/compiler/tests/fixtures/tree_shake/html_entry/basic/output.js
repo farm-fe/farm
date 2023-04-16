@@ -5,7 +5,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "main.ts": function(module, exports, require, dynamicRequire) {
+    "7c4a34c2": function(module, exports, require, dynamicRequire) {
         console.log("1111");
     }
 });
@@ -22,7 +22,7 @@
 <script data-farm-entry-script="true">
 window.process = {
   env: {
-    NODE_ENV: 'development',
+    NODE_ENV: 'production',
   },
 };
 window.__FARM_TARGET_ENV__ = 'browser';
@@ -40,14 +40,14 @@ window.__FARM_TARGET_ENV__ = 'browser';
     }
     require(entryModule);
 })({
-    "../../../_internal/runtime/index.js.farm-runtime": function(module, exports, require, dynamicRequire) {
+    "ec853507": function(module, exports, require, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
     }
-}, "../../../_internal/runtime/index.js.farm-runtime");
+}, "ec853507");
 </script></head>
 <body>
   
 
-<script src="ac35b2ca.js"></script><script data-farm-entry-script="true">__farm_module_system__.setInitialLoadedResources(['ac35b2ca.js']);</script><script data-farm-entry-script="true">__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">__farm_module_system__.require("main.ts")</script></body></html>
+<script src="ac35b2ca.js"></script><script data-farm-entry-script="true">__farm_module_system__.setInitialLoadedResources(['ac35b2ca.js']);</script><script data-farm-entry-script="true">__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">__farm_module_system__.require("7c4a34c2")</script></body></html>

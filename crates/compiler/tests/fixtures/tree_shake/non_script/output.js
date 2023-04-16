@@ -28,34 +28,13 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "569704c1": function(module, exports, require, dynamicRequire) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("f380ea31"), exports);
-    },
-    "f380ea31": function(module, exports, require, dynamicRequire) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        Object.defineProperty(exports, "b", {
-            enumerable: true,
-            get: function() {
-                return b;
-            }
-        });
-        const b = "2";
-    },
     "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _a = require("569704c1");
-        console.log(_a.b);
+        noop();
+        console.log("Hello, world!");
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;
@@ -63,3 +42,9 @@ var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806").default;
 export default entry;
+
+
+//92a5e8c3.css:
+ body {
+  color: red;
+}
