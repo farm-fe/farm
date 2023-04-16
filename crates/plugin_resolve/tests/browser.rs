@@ -1,4 +1,7 @@
-use farmfe_core::{config::ResolveConfig, plugin::ResolveKind};
+use farmfe_core::{
+  config::{OutputConfig, ResolveConfig},
+  plugin::ResolveKind,
+};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
 
@@ -10,7 +13,7 @@ fn resolve_browser_basic() {
     "tests/fixtures/resolve-node-modules/browser/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("basic", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -35,7 +38,8 @@ fn resolve_browser_replace() {
     "tests/fixtures/resolve-node-modules/browser/node_modules/replace/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+
 
       let resolved = resolver.resolve("module-a", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -86,7 +90,7 @@ fn resolve_browser_ignore() {
     "tests/fixtures/resolve-node-modules/browser/node_modules/ignore/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("module-a", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
