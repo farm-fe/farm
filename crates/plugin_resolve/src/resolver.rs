@@ -98,13 +98,14 @@ impl Resolver {
     }
 
     if self.is_source_absolute(source) {
-      if let Some(resolved_path) = self.try_file(&PathBuf::from_str(source).unwrap()) {
-        return Some(self.get_resolve_result(&package_json_info, resolved_path, kind));
-      } else {
-        return None;
-      }
+      let path_buf = PathBuf::from_str(source).unwrap();
+
+      return self
+        .try_file(&path_buf)
+        .or_else(|| self.try_directory(&path_buf))
+        .map(|resolved_path| self.get_resolve_result(&package_json_info, resolved_path, kind));
     } else if self.is_source_relative(source) {
-      // if it starts with '.', it is a relative path
+      // if it starts with './' or '../, it is a relative path
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
       let normalized_path = normalized_path.as_path();
 
@@ -129,8 +130,15 @@ impl Resolver {
         None
       }
     } else if self.is_source_dot(source) {
+      // import xx from '.'
       return self
         .try_directory(&base_dir)
+        .map(|resolved_path| self.get_resolve_result(&package_json_info, resolved_path, kind));
+    } else if self.is_double_source_dot(source) {
+      // import xx from '..'
+      let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
+      return self
+        .try_directory(&parent_path)
         .map(|resolved_path| self.get_resolve_result(&package_json_info, resolved_path, kind));
     } else {
       // try alias first
@@ -658,7 +666,7 @@ impl Resolver {
 
   fn is_source_relative(&self, source: &str) -> bool {
     // fix: relative path start with .. or ../
-    source.starts_with("./") || source.starts_with("..")
+    source.starts_with("./") || source.starts_with("../")
   }
 
   fn is_source_absolute(&self, source: &str) -> bool {
@@ -671,6 +679,10 @@ impl Resolver {
 
   fn is_source_dot(&self, source: &str) -> bool {
     source == "."
+  }
+
+  fn is_double_source_dot(&self, source: &str) -> bool {
+    source == ".."
   }
 
   /**
