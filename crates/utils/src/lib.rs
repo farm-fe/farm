@@ -97,6 +97,10 @@ pub fn relative(from: &str, to: &str) -> String {
   result
 }
 
+pub fn transform_string_to_static_str(s: String) -> &'static str {
+  Box::leak(s.into_boxed_str())
+}
+
 #[cfg(test)]
 mod tests {
   use crate::{relative, stringify_query, PARSE_QUERY_TRUE};

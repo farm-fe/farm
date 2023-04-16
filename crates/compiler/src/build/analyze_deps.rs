@@ -6,14 +6,13 @@ use farmfe_core::{
   module::Module,
   plugin::{PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry},
 };
-use farmfe_toolkit::tracing;
 
-#[tracing::instrument(skip_all)]
 pub fn analyze_deps(
   module: &Module,
   context: &Arc<CompilationContext>,
 ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
-  tracing::trace!("analyze_deps: {:?}", module.id);
+  #[cfg(feature = "profile")]
+  farmfe_core::puffin::profile_function!();
 
   let mut analyze_deps_param = PluginAnalyzeDepsHookParam {
     module,
@@ -29,6 +28,5 @@ pub fn analyze_deps(
     });
   };
 
-  tracing::trace!("analyzed_deps: {:?}", module.id);
   Ok(analyze_deps_param.deps)
 }

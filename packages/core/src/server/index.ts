@@ -67,7 +67,12 @@ export class DevServer {
   async listen(): Promise<void> {
     const start = Date.now();
     // compile the project and start the dev server
-    await this._compiler.compile();
+    if (process.env.FARM_PROFILE) {
+      this._compiler.compileSync();
+    } else {
+      await this._compiler.compile();
+    }
+
     const end = Date.now();
 
     this._app.listen(this.config.port);

@@ -5,15 +5,14 @@ use farmfe_core::{
   error::{CompilationError, Result},
   plugin::{PluginHookContext, PluginLoadHookParam, PluginLoadHookResult},
 };
-use farmfe_toolkit::tracing;
 
-#[tracing::instrument(skip_all)]
 pub fn load(
   load_param: &PluginLoadHookParam,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<PluginLoadHookResult> {
-  tracing::trace!("load: {}", load_param.resolved_path);
+  #[cfg(feature = "profile")]
+  farmfe_core::puffin::profile_function!();
 
   let loaded = match context
     .plugin_driver
@@ -35,7 +34,6 @@ pub fn load(
       });
     }
   };
-  tracing::trace!("loaded: {}", load_param.resolved_path);
 
   Ok(loaded)
 }

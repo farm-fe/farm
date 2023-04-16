@@ -252,7 +252,7 @@ pub struct PluginResolveHookParam {
   pub kind: ResolveKind,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginResolveHookResult {
   /// resolved path, normally a absolute file path.

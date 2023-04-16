@@ -6,7 +6,7 @@ use farmfe_core::{
   error::Result,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
 };
-use farmfe_toolkit::{regex::Regex, tracing};
+use farmfe_toolkit::regex::Regex;
 use farmfe_utils::parse_query;
 use resolver::Resolver;
 
@@ -34,7 +34,6 @@ impl Plugin for FarmPluginResolve {
     return 99;
   }
 
-  #[tracing::instrument(skip_all)]
   fn resolve(
     &self,
     param: &PluginResolveHookParam,

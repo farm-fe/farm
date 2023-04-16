@@ -20,17 +20,19 @@ farmfe_toolkit = { path = "../toolkit" }
 regex = "1"
 libloading = "0.7"
 farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }
-opentelemetry = { version = "0.18.0", default-features = false, features = [
-  "trace",
+eframe = { version = "0.21.0", default-features = false, features = [
+  "persistence",
+  "glow",
+  "default_fonts",
 ], optional = true }
-tracing-opentelemetry = { version = "0.18.0", optional = true }
-opentelemetry-jaeger = { version = "0.17.0", optional = true }
+puffin_egui = { version = "0.20.0", optional = true }
 
 [features]
-profiler = [
-  "dep:opentelemetry",
-  "dep:tracing-opentelemetry",
-  "dep:opentelemetry-jaeger",
+profile = [
+  "dep:eframe",
+  "dep:puffin_egui",
+  "farmfe_core/profile",
+  "farmfe_compiler/profile",
 ]
 
 [build-dependencies]

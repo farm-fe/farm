@@ -18,7 +18,7 @@ use farmfe_core::{
   rayon,
   rayon::ThreadPool,
 };
-use farmfe_toolkit::tracing::{self, debug};
+
 use farmfe_utils::stringify_query;
 
 use crate::{
@@ -49,17 +49,12 @@ pub(crate) struct ResolvedModuleInfo {
 enum ResolveModuleResult {
   /// The module is already built
   Built(ModuleId),
-  /// The module is cached
-  Cached(Box<ResolvedModuleInfo>),
   /// A full new normal module resolved successfully
   Success(Box<ResolvedModuleInfo>),
 }
 
 impl Compiler {
-  #[tracing::instrument(skip(self))]
   pub(crate) fn build(&self) -> Result<()> {
-    debug!("Start building");
-
     self.context.plugin_driver.build_start(&self.context)?;
 
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
@@ -101,7 +96,6 @@ impl Compiler {
       // return Err(CompilationError::GenericError(error_messages.join(", ")));
     }
 
-    debug!("Building finished");
     self.context.plugin_driver.build_end(&self.context)
   }
 
@@ -193,7 +187,6 @@ impl Compiler {
     // ================ Parse End ===============
 
     // ================ Process Module Start ===============
-    tracing::trace!("Process module: {:?}", module.id);
     if let Err(e) = context.plugin_driver.process_module(
       &mut PluginProcessModuleHookParam {
         module_id: &parse_param.module_id,
@@ -207,7 +200,7 @@ impl Compiler {
         source: Some(Box::new(e)),
       });
     }
-    tracing::trace!("Process module finished: {:?}", module.id);
+
     // ================ Process Module End ===============
 
     module.module_type = parse_param.module_type.clone();
@@ -250,7 +243,6 @@ impl Compiler {
           // add edge to the graph
           Self::add_edge(&resolve_param, module_id, order, &context);
         }
-        ResolveModuleResult::Cached(_) => unimplemented!("module cache is not implemented yet"),
         ResolveModuleResult::Success(box ResolvedModuleInfo {
           mut module,
           resolve_module_id_result,
@@ -306,19 +298,12 @@ impl Compiler {
     });
   }
 
-  #[tracing::instrument(skip_all)]
   pub(crate) fn add_edge(
     resolve_param: &PluginResolveHookParam,
     module_id: ModuleId,
     order: usize,
     context: &CompilationContext,
   ) {
-    tracing::trace!(
-      "adding edge to the graph: {:?} -> {:?}",
-      resolve_param.importer,
-      module_id
-    );
-
     let mut module_graph = context.module_graph.write();
 
     // TODO check if the edge already exists
@@ -333,32 +318,21 @@ impl Compiler {
         },
       ).expect("failed to add edge to the module graph, the endpoint modules of the edge should be in the graph")
     }
-
-    tracing::trace!(
-      "added edge to the graph: {:?} -> {:?}",
-      resolve_param.importer,
-      module_id
-    );
   }
 
   /// add a module to the module graph, if the module already exists, update it
   /// if the module is already in the graph, return false
-  #[tracing::instrument(skip_all)]
   pub(crate) fn add_module(
     module: Module,
     kind: &ResolveKind,
     context: &CompilationContext,
   ) -> bool {
-    tracing::trace!("adding module to the graph: {:?}", module.id);
-
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
     if matches!(kind, ResolveKind::Entry) {
       module_graph.entries.insert(module.id.clone());
     }
-
-    tracing::trace!("added module to the graph: {:?}", module.id);
 
     // check if the module already exists
     if module_graph.has_module(&module.id) {
@@ -397,13 +371,10 @@ impl Compiler {
   }
 }
 
-#[tracing::instrument(skip_all)]
 fn resolve_module(
   resolve_param: &PluginResolveHookParam,
   context: &Arc<CompilationContext>,
 ) -> Result<ResolveModuleResult> {
-  tracing::trace!("resolving module: {:?}", resolve_param);
-
   let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
   let mut module_graph = context.module_graph.write();
   let module_id = if resolve_module_id_result.resolve_result.external {
@@ -435,8 +406,6 @@ fn resolve_module(
       resolve_module_id_result,
     }))
   };
-
-  tracing::trace!("resolved module finished: {:?}", resolve_param);
 
   Ok(res)
 }

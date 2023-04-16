@@ -7,25 +7,26 @@ use farmfe_core::{
   common::PackageJsonInfo,
   config::{OutputConfig, ResolveConfig, TargetEnv},
   error::{CompilationError, Result},
+  hashbrown::HashMap,
+  parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
-use farmfe_toolkit::{
-  resolve::{follow_symlinks, load_package_json, package_json_loader::Options},
-  tracing,
-};
+use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
 pub struct Resolver {
   config: ResolveConfig,
   output: OutputConfig,
+  /// the key is (source, base_dir) and the value is the resolved result
+  resolve_node_modules_cache: Mutex<HashMap<(String, PathBuf), Option<PluginResolveHookResult>>>,
 }
 
 const NODE_MODULES: &str = "node_modules";
 
 impl Resolver {
   pub fn new(config: ResolveConfig, output: OutputConfig) -> Self {
-    Self { config, output }
+    Self { config, output, resolve_node_modules_cache: Mutex::new(HashMap::new()) }
   }
 
   /// Specifier type supported by now:
@@ -36,7 +37,6 @@ impl Resolver {
   ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports), if source is end with '.js', also try to find '.ts' file
   ///   * **browser**: refer to [package-browser-field-spec](https://github.com/defunctzombie/package-browser-field-spec)
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
-  #[tracing::instrument(skip_all)]
   pub fn resolve(
     &self,
     source: &str,
@@ -143,14 +143,30 @@ impl Resolver {
         .map(|resolved_path| self.get_resolve_result(&package_json_info, resolved_path, kind));
     } else {
       // try alias first
-      self
-        .try_alias(source, base_dir.clone(), kind)
-        .or_else(|| self.try_node_modules(source, base_dir, kind))
+      self.try_alias(source, base_dir.clone(), kind).or_else(|| {
+        // check if the result is cached
+        if let Some(result) = self
+          .resolve_node_modules_cache
+          .lock()
+          .get(&(source.to_string(), base_dir.clone()))
+        {
+          return result.clone();
+        }
+
+        let result = self.try_node_modules(source, base_dir.clone(), kind);
+
+        // cache the result
+        self
+          .resolve_node_modules_cache
+          .lock()
+          .insert((source.to_string(), base_dir), result.clone());
+
+        result
+      })
     }
   }
 
   /// Try resolve as a file with the configured main fields.
-  #[tracing::instrument(skip_all)]
   fn try_directory(&self, dir: &PathBuf) -> Option<String> {
     if !dir.is_dir() {
       return None;
@@ -169,7 +185,6 @@ impl Resolver {
 
   /// Try resolve as a file with the configured extensions.
   /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
-  #[tracing::instrument(skip_all)]
   fn try_file(&self, file: &PathBuf) -> Option<String> {
     // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
     if file.exists() && file.is_file() {
@@ -192,7 +207,6 @@ impl Resolver {
     }
   }
 
-  #[tracing::instrument(skip_all)]
   fn try_alias(
     &self,
     source: &str,
@@ -216,7 +230,6 @@ impl Resolver {
   }
 
   /// Resolve the source as a package
-  #[tracing::instrument(skip_all)]
   fn try_node_modules(
     &self,
     source: &str,

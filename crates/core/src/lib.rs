@@ -26,6 +26,8 @@ pub use glob;
 pub use hashbrown;
 pub use parking_lot;
 pub use petgraph;
+#[cfg(feature = "profile")]
+pub use puffin;
 pub use rayon;
 pub use relative_path;
 pub use rkyv;

@@ -6,15 +6,14 @@ use farmfe_core::{
   module::ModuleMetaData,
   plugin::{PluginHookContext, PluginParseHookParam},
 };
-use farmfe_toolkit::tracing;
 
-#[tracing::instrument(skip_all)]
 pub fn parse(
   parse_param: &PluginParseHookParam,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> Result<ModuleMetaData> {
-  tracing::trace!("parse: {}", parse_param.resolved_path);
+  #[cfg(feature = "profile")]
+  farmfe_core::puffin::profile_function!();
 
   let res = match context
     .plugin_driver
@@ -33,6 +32,5 @@ pub fn parse(
     }),
   };
 
-  tracing::trace!("parsed: {}", parse_param.resolved_path);
   res
 }

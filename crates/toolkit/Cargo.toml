@@ -35,7 +35,5 @@ swc_error_reporters = { version = "0.13.38" }
 swc_atoms = { version = "0.4.39" }
 lazy_static = "1.4.0"
 regex = "1.4.3"
-tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.16", features = ['env-filter', 'fmt'] }
 sha2 = "0.10"
 sourcemap = "6.2.3"
