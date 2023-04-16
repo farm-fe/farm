@@ -12,6 +12,6 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:^0.4.2"
+    "@farmfe/runtime": "workspace:^0.5.0"
   }
 }
