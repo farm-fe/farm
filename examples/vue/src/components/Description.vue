@@ -13,7 +13,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import Button from './Button.vue';
+import Button from './Buttona.vue';
 import HomepageFeatures from './HomepageFeatures.vue';
 export default defineComponent({
     components: {
