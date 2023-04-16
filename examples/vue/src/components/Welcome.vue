@@ -4,7 +4,10 @@
     <h1>Welcome to <span class="title">Farm!</span></h1>
     <FarmCard>
       <div class="main-desc">
-        <h2 class="main-sub-title">Get started</h2>
+        <h2 class="main-sub-title">
+          Get started With
+          <span class="main-content">Vue + Farm</span>
+        </h2>
         <span class="main-content">
           Super fast web building tool written in Rust.
         </span>
