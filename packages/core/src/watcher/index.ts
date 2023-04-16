@@ -29,20 +29,24 @@ export class FileWatcher {
 
     if (serverOrCompiler instanceof DevServer) {
       serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
-        updateResult.added.forEach((addedModule) => {
+        const added = updateResult.added.map((addedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
             addedModule
           );
-          this._watcher.add(resolvedPath);
+          return resolvedPath;
         });
-        updateResult.removed.forEach((removedModule) => {
+        this._watcher.add(added);
+
+        const removed = updateResult.removed.map((removedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
             removedModule
           );
-          this._watcher.unwatch(resolvedPath);
+          return resolvedPath;
         });
+
+        this._watcher.unwatch(removed);
       });
     }
 
