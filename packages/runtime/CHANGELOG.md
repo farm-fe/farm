@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.5.0
+
+### Minor Changes
+
+- Treat swc helpers as builtin module within runtime
+
 ## 0.4.2
 
 ### Patch Changes
