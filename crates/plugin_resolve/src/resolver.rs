@@ -5,7 +5,7 @@ use std::{
 
 use farmfe_core::{
   common::PackageJsonInfo,
-  config::ResolveConfig,
+  config::{OutputConfig, ResolveConfig, TargetEnv},
   error::{CompilationError, Result},
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
@@ -18,13 +18,14 @@ use farmfe_toolkit::{
 
 pub struct Resolver {
   config: ResolveConfig,
+  output: OutputConfig,
 }
 
 const NODE_MODULES: &str = "node_modules";
 
 impl Resolver {
-  pub fn new(config: ResolveConfig) -> Self {
-    Self { config }
+  pub fn new(config: ResolveConfig, output: OutputConfig) -> Self {
+    Self { config, output }
   }
 
   /// Specifier type supported by now:
@@ -481,17 +482,30 @@ impl Resolver {
                           }
                           Value::Object(import_value) => {
                             for (key_word, key_value) in import_value {
-                              if self.are_paths_equal(key_word, "default") {
-                                if path.is_absolute() {
-                                  let value_path = self.get_key_path(
-                                    &key_value.as_str().unwrap(),
-                                    package_json_info.dir(),
-                                  );
-                                  return Some(value_path);
+                              match self.output.target_env {
+                                TargetEnv::Node => {
+                                  if self.are_paths_equal(&key_word, "node") {
+                                    if path.is_absolute() {
+                                      let value_path = self.get_key_path(
+                                        &key_value.as_str().unwrap(),
+                                        package_json_info.dir(),
+                                      );
+                                      return Some(value_path);
+                                    }
+                                  }
+                                }
+                                TargetEnv::Browser => {
+                                  if self.are_paths_equal(key_word, "default") {
+                                    if path.is_absolute() {
+                                      let value_path = self.get_key_path(
+                                        &key_value.as_str().unwrap(),
+                                        package_json_info.dir(),
+                                      );
+                                      return Some(value_path);
+                                    }
+                                  }
                                 }
                               }
-
-                              // TODO node value with node environment
                             }
                           }
                           _ => {}
@@ -571,27 +585,24 @@ impl Resolver {
           for (key, value) in imports_field_map {
             if self.are_paths_equal(&key, resolved_path) {
               if let Value::String(str) = &value {
-                let path = Path::new(&str);
-                if path.extension().is_none() {
-                  // resolve imports field import other deps. import can only use relative paths
-                  return Some(path.to_string_lossy().to_string());
-                } else {
-                  let value_path = self.get_key_path(&str, package_json_info.dir());
-                  return Some(value_path);
-                }
+                return self.get_string_value_path(&str, package_json_info);
               }
 
               if let Value::Object(str) = &value {
                 for (key, value) in str {
-                  // TODO node environment
-                  if self.are_paths_equal(&key, "default") {
-                    if let Value::String(str) = value {
-                      let path = Path::new(&str);
-                      if path.extension().is_none() {
-                        return Some(path.to_string_lossy().to_string());
-                      } else {
-                        let value_path = self.get_key_path(&str, package_json_info.dir());
-                        return Some(value_path);
+                  match self.output.target_env {
+                    TargetEnv::Browser => {
+                      if self.are_paths_equal(&key, "default") {
+                        if let Value::String(str) = value {
+                          return self.get_string_value_path(&str, package_json_info);
+                        }
+                      }
+                    }
+                    TargetEnv::Node => {
+                      if self.are_paths_equal(&key, "node") {
+                        if let Value::String(str) = value {
+                          return self.get_string_value_path(&str, package_json_info);
+                        }
                       }
                     }
                   }
@@ -704,13 +715,31 @@ impl Resolver {
    */
 
   fn get_key_path(&self, key: &str, dir: &String) -> String {
-    let key_path = match key {
-      "default" => RelativePath::new("").to_logical_path(dir),
-      _ => {
+    let key_path = match Path::new(&key).is_relative() {
+      true => {
         let resolve_key = &key.trim_matches('\"');
         RelativePath::new(resolve_key).to_logical_path(dir)
       }
+      false => RelativePath::new("").to_logical_path(dir),
     };
     key_path.to_string_lossy().to_string()
+  }
+
+  /**
+   * get normal path_value
+   */
+  fn get_string_value_path(
+    &self,
+    str: &str,
+    package_json_info: &PackageJsonInfo,
+  ) -> Option<String> {
+    let path = Path::new(&str);
+    if path.extension().is_none() {
+      // resolve imports field import other deps. import can only use relative paths
+      return Some(path.to_string_lossy().to_string());
+    } else {
+      let value_path = self.get_key_path(&str, package_json_info.dir());
+      return Some(value_path);
+    }
   }
 }

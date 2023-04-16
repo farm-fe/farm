@@ -1,4 +1,7 @@
-use farmfe_core::{config::ResolveConfig, plugin::ResolveKind};
+use farmfe_core::{
+  config::{OutputConfig, ResolveConfig},
+  plugin::ResolveKind,
+};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
 
@@ -8,12 +11,11 @@ fn resolve_exports_basic() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
       // Parsing packages in node_modules
       let resolved = resolver.resolve("basic", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
-      println!("resolved resolved_path: {:?}", resolved.resolved_path);
       assert_eq!(
         resolved.resolved_path,
         cwd
@@ -34,7 +36,7 @@ fn resolve_exports_replace() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("replace/submodule.js", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -105,7 +107,7 @@ fn resolve_exports_import_require() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("require-import/config", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -144,7 +146,7 @@ fn resolve_exports_nesting() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("nesting/config", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -169,7 +171,7 @@ fn resolve_exports_degrade() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("degrade", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -193,7 +195,7 @@ fn resolve_exports_direct_analysis() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("direct-analysis/module", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -234,7 +236,7 @@ fn resolve_no_fields() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("no-fields", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -259,7 +261,7 @@ fn resolve_priority() {
     "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("priority", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());

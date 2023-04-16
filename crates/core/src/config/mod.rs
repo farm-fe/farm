@@ -52,13 +52,14 @@ impl Default for Config {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct OutputConfig {
   pub path: String,
   pub public_path: String,
   pub filename: String,
   pub assets_filename: String,
+  pub target_env: TargetEnv,
 }
 
 impl Default for OutputConfig {
@@ -70,7 +71,23 @@ impl Default for OutputConfig {
       assets_filename: "[resourceName].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),
+      target_env: TargetEnv::Browser,
     }
+  }
+}
+
+// TODO: add more target options like BrowserTargetVersions, NodeTargetVersions.
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
+pub enum TargetEnv {
+  #[serde(rename = "browser")]
+  Browser,
+  #[serde(rename = "node")]
+  Node,
+}
+
+impl Default for TargetEnv {
+  fn default() -> Self {
+    TargetEnv::Browser
   }
 }
 
