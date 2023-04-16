@@ -76,7 +76,6 @@ impl Default for OutputConfig {
   }
 }
 
-// TODO: add more target options like BrowserTargetVersions, NodeTargetVersions.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum TargetEnv {
   #[serde(rename = "browser")]
