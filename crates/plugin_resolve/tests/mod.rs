@@ -189,7 +189,7 @@ fn resolve_double_dot() {
     "tests/fixtures/resolve-double-dot/lib/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("..", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -214,7 +214,7 @@ fn resolve_absolute_specifier() {
     "tests/fixtures/resolve-absolute-specifier/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve(file.to_str().unwrap(), cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
