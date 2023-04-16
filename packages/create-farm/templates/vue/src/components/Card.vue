@@ -37,7 +37,7 @@
   filter: blur(5px);
   width: calc(100% + 8px);
   height: calc(100% + 8px);
-  animation: RhyshaKachari-glowing 20s linear infinite;
+  animation: glowing 20s linear infinite;
   opacity: 1;
   transition: opacity 0.3s ease-in-out;
   border-radius: 10px;
@@ -61,7 +61,7 @@
   background: var(--accent-background-card-gradient);
 }
 
-@keyframes RhyshaKachari-glowing {
+@keyframes glowing {
   0% {
     background-position: 0 0;
   }
