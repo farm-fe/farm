@@ -16,19 +16,19 @@ global.__farmNodeBuiltinModules = module.builtinModules;
     }
     require(entryModule);
 })({
-    "../../_internal/runtime/index.js.farm-runtime": function(module, exports, require, dynamicRequire) {
+    "d2214aaa": function(module, exports, require, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
     }
-}, "../../_internal/runtime/index.js.farm-runtime");
+}, "d2214aaa");
 (function(modules) {
     for(var key in modules){
         var __farm_global_this__ = globalThis || window || global || self;
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "dep.ts": function(module, exports, require, dynamicRequire) {
+    "05ee5ec7": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -47,11 +47,11 @@ global.__farmNodeBuiltinModules = module.builtinModules;
                 return c;
             }
         });
-        var _index = require("index.ts");
+        var _index = require("b5d64806");
         const a = "1";
         const c = _index.b;
     },
-    "index.ts": function(module, exports, require, dynamicRequire) {
+    "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -62,7 +62,7 @@ global.__farmNodeBuiltinModules = module.builtinModules;
                 return b;
             }
         });
-        var _dep = require("dep.ts");
+        var _dep = require("05ee5ec7");
         console.log(_dep.a);
         const b = "2";
     }
@@ -70,5 +70,5 @@ global.__farmNodeBuiltinModules = module.builtinModules;
 var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
-var entry = farmModuleSystem.require("index.ts").default;
+var entry = farmModuleSystem.require("b5d64806").default;
 export default entry;

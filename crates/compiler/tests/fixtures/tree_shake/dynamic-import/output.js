@@ -16,21 +16,21 @@ global.__farmNodeBuiltinModules = module.builtinModules;
     }
     require(entryModule);
 })({
-    "../../_internal/runtime/index.js.farm-runtime": function(module, exports, require, dynamicRequire) {
+    "d2214aaa": function(module, exports, require, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
     }
-}, "../../_internal/runtime/index.js.farm-runtime");
+}, "d2214aaa");
 (function(modules) {
     for(var key in modules){
         var __farm_global_this__ = globalThis || window || global || self;
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "index.ts": function(module, exports, require, dynamicRequire) {
+    "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";
-        dynamicRequire("dep.ts").then((dep)=>{
+        dynamicRequire("05ee5ec7").then((dep)=>{
             console.log(dep);
         });
     }
@@ -38,7 +38,7 @@ global.__farmNodeBuiltinModules = module.builtinModules;
 var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
-var entry = farmModuleSystem.require("index.ts").default;
+var entry = farmModuleSystem.require("b5d64806").default;
 export default entry;
 
 
@@ -49,7 +49,7 @@ export default entry;
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "dep.ts": function(module, exports, require, dynamicRequire) {
+    "05ee5ec7": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -69,14 +69,14 @@ export default entry;
             }
         });
         var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
-        var _dep1 = _interopRequireDefault(require("dep1.ts"));
+        var _dep1 = _interopRequireDefault(require("ef0c4c9d"));
         const dep = "dep";
         function _default() {
             return (0, _dep1.default)();
         }
         console.log("side effect in dep.ts");
     },
-    "dep1.ts": function(module, exports, require, dynamicRequire) {
+    "ef0c4c9d": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true

@@ -195,7 +195,7 @@ fn add_used_exports_by_import_info(
     module_graph.get_dep_by_source(tree_shake_module_id, &import_info.source);
   let imported_module = module_graph.module(&imported_module_id).unwrap();
 
-  if imported_module.external {
+  if imported_module.external || !imported_module.module_type.is_script() {
     return;
   }
 
