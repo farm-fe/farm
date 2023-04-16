@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.6.1
+
+### Patch Changes
+
+- c45470e: Fix that tree shake does not ignore non-script modules when in production mode
+
 ## 0.6.0
 
 ### Minor Changes
