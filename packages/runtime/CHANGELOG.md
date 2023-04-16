@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- Treat swc helplers as builtin module within runtime
+- Treat swc helpers as builtin module within runtime
 
 ## 0.4.2
 
