@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.6.3
+
+### Patch Changes
+
+- Support resolve .. and absolute dir
+
 ## 0.6.2
 
 ### Patch Changes
