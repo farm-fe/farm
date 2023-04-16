@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{Config, RuntimeConfig, SourcemapConfig},
+  config::{Config, Mode, RuntimeConfig, SourcemapConfig},
   plugin::Plugin,
   resource::ResourceType,
 };
@@ -41,6 +41,7 @@ pub fn create_compiler(
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
       },
+      mode: Mode::Production,
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
