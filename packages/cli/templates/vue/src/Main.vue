@@ -1,24 +1,7 @@
 <template>
-  <Title></Title>
-  <Description></Description>
+  <Welcome />
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import Title from './components/Title.vue';
-import Description from './components/Description.vue';
-
-export default defineComponent({
-  setup() {},
-  components: {
-    Title,
-    Description,
-  },
-});
+<script lang="ts" setup>
+import Welcome from './components/Welcome.vue';
 </script>
-
-<style>
-#app {
-  font-size: 24px;
-}
-</style>

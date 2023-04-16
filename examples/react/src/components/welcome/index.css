@@ -1,0 +1,102 @@
+.main-content {
+  font-weight: bold;
+  font-size: 28px;
+  background: var(--accent-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  background-size: 400%;
+  background-position: 0%;
+}
+.action-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 62px;
+}
+.action {
+  display: flex;
+  gap: 40px;
+}
+.farm-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  max-width: 60vw;
+  width: 60vw;
+  align-items: center;
+  padding: 2rem 1rem;
+  gap: 1.7rem;
+}
+.farm-desc {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.container-box {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.container-box img {
+  width: 70px;
+  height: 70px;
+}
+.farm-desc-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.main-desc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.rich-desc,
+.fast-desc,
+.fully-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rich-content,
+.fast-content,
+.fully-content {
+  color: #666;
+}
+
+h2 {
+  margin: 15px;
+}
+.sub-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.logo {
+  width: 450px;
+}
+.title {
+  background: var(--accent-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  background-size: 400%;
+  background-position: 0%;
+}
+
+h1 {
+  margin: 0;
+}
+.img {
+  width: 100px;
+  height: 100px;
+}
