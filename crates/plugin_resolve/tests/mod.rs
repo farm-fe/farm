@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use farmfe_core::{config::ResolveConfig, plugin::ResolveKind};
+use farmfe_core::{
+  config::{OutputConfig, ResolveConfig},
+  plugin::ResolveKind,
+};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
 
@@ -9,7 +12,7 @@ fn resolve_relative_specifier_without_extension() {
   fixture(
     "tests/fixtures/resolve-relative-specifier/**/index.*",
     |file, _| {
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
       let cwd = file.parent().unwrap().to_path_buf();
 
       let resolved = resolver.resolve("./index", cwd.clone(), &ResolveKind::Entry);
@@ -28,7 +31,7 @@ fn resolve_relative_specifier_with_extension() {
   fixture(
     "tests/fixtures/resolve-relative-specifier/**/index.*",
     |file, _| {
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
       let cwd = file.parent().unwrap().to_path_buf();
 
       let resolved = resolver.resolve("./index.html", cwd.clone(), &ResolveKind::Entry);
@@ -50,7 +53,7 @@ fn resolve_node_modules_normal() {
     "tests/fixtures/resolve-node-modules/normal/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("pkg-a", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -140,10 +143,13 @@ fn resolve_node_modules_normal() {
 fn resolve_alias() {
   fixture("tests/fixtures/resolve-alias/index.ts", |file, _| {
     let cwd = file.parent().unwrap().to_path_buf();
-    let resolver = Resolver::new(ResolveConfig {
-      alias: HashMap::from([("@".to_string(), cwd.to_string_lossy().to_string())]),
-      ..Default::default()
-    });
+    let resolver = Resolver::new(
+      ResolveConfig {
+        alias: HashMap::from([("@".to_string(), cwd.to_string_lossy().to_string())]),
+        ..Default::default()
+      },
+      OutputConfig::default(),
+    );
 
     let resolved = resolver.resolve("@/pages/a", cwd.clone(), &ResolveKind::Import);
     assert!(resolved.is_some());
@@ -164,7 +170,7 @@ fn resolve_alias() {
 fn resolve_dot() {
   fixture!("tests/fixtures/resolve-dot/index.ts", |file, _| {
     let cwd = file.parent().unwrap().to_path_buf();
-    let resolver = Resolver::new(ResolveConfig::default());
+    let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
     let resolved = resolver.resolve(".", cwd.clone(), &ResolveKind::Import);
     assert!(resolved.is_some());
@@ -183,7 +189,7 @@ fn resolve_double_dot() {
     "tests/fixtures/resolve-double-dot/lib/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve("..", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -208,7 +214,7 @@ fn resolve_absolute_specifier() {
     "tests/fixtures/resolve-absolute-specifier/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default());
+      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
 
       let resolved = resolver.resolve(file.to_str().unwrap(), cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
