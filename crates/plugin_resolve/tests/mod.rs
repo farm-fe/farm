@@ -117,6 +117,21 @@ fn resolve_node_modules_normal() {
       );
       assert!(!resolved.external);
       assert!(!resolved.side_effects);
+
+      let resolved = resolver.resolve("dir-main", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("dir-main")
+          .join("lib")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
@@ -160,4 +175,64 @@ fn resolve_dot() {
       cwd.join("index.ts").to_string_lossy().to_string()
     );
   });
+}
+
+#[test]
+fn resolve_double_dot() {
+  fixture!(
+    "tests/fixtures/resolve-double-dot/lib/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new(ResolveConfig::default());
+
+      let resolved = resolver.resolve("..", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .parent()
+          .unwrap()
+          .join("index.ts")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_absolute_specifier() {
+  fixture!(
+    "tests/fixtures/resolve-absolute-specifier/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new(ResolveConfig::default());
+
+      let resolved = resolver.resolve(file.to_str().unwrap(), cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(resolved.resolved_path, file.to_string_lossy().to_string());
+
+      let resolved = resolver.resolve(
+        cwd.join("lib").to_str().unwrap(),
+        cwd.clone(),
+        &ResolveKind::Import,
+      );
+
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("lib")
+          .join("index.ts")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
 }

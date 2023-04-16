@@ -1,5 +1,25 @@
 # @farmfe/core
 
+## 0.6.3
+
+### Patch Changes
+
+- Support resolve .. and absolute dir
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/runtime@0.5.0
+  - @farmfe/runtime-plugin-hmr@3.1.2
+
+## 0.6.1
+
+### Patch Changes
+
+- c45470e: Fix that tree shake does not ignore non-script modules when in production mode
+
 ## 0.6.0
 
 ### Minor Changes
