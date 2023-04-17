@@ -19,6 +19,7 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 pub struct ResolveNodeModuleCacheKey {
   pub source: String,
   pub base_dir: String,
+  pub kind: ResolveKind,
 }
 
 pub struct Resolver {
@@ -163,6 +164,7 @@ impl Resolver {
             .get(&ResolveNodeModuleCacheKey {
               source: source.to_string(),
               base_dir: base_dir.to_string_lossy().to_string(),
+              kind: kind.clone(),
             })
         {
           return result.clone();
@@ -175,6 +177,7 @@ impl Resolver {
           let key = ResolveNodeModuleCacheKey {
             source: source.to_string(),
             base_dir: tried_path.to_string_lossy().to_string(),
+            kind: kind.clone(),
           };
 
           if !resolve_node_modules_cache.contains_key(&key) {
@@ -266,6 +269,7 @@ impl Resolver {
       let key = ResolveNodeModuleCacheKey {
         source: source.to_string(),
         base_dir: current.to_string_lossy().to_string(),
+        kind: kind.clone(),
       };
 
       if let Some(result) = self.resolve_node_modules_cache.lock().get(&key) {

@@ -36,6 +36,21 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
         _exportStar(require("ef0c4c9d"), exports);
     },
+    "b5d64806": function(module, exports, require, dynamicRequire) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        Object.defineProperty(exports, "default", {
+            enumerable: true,
+            get: function() {
+                return _default;
+            }
+        });
+        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
+        _exportStar(require("05ee5ec7"), exports);
+        var _default = 2;
+    },
     "ef0c4c9d": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -58,21 +73,6 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         const a = "1";
         const b = "2";
         console.log(a, b);
-    },
-    "b5d64806": function(module, exports, require, dynamicRequire) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        Object.defineProperty(exports, "default", {
-            enumerable: true,
-            get: function() {
-                return _default;
-            }
-        });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("05ee5ec7"), exports);
-        var _default = 2;
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;

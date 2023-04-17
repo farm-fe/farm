@@ -188,7 +188,7 @@ pub trait Plugin: Any + Send + Sync {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config

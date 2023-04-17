@@ -42,6 +42,9 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         noop();
         var _default = "comp";
     },
+    "b3d9bc98": function(module, exports, require, dynamicRequire) {
+        console.log("resolved.ts");
+    },
     "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -58,9 +61,6 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         var _comp = _interopRequireDefault(require("6f462555"));
         console.log(_comp.default);
         var _default = 2;
-    },
-    "b3d9bc98": function(module, exports, require, dynamicRequire) {
-        console.log("resolved.ts");
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;

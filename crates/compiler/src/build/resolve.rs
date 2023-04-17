@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  cache::ResolveResultCacheKey,
   context::CompilationContext,
   error::{CompilationError, Result},
   plugin::{PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
@@ -14,18 +13,6 @@ pub fn resolve(
 ) -> Result<PluginResolveHookResult> {
   #[cfg(feature = "profile")]
   farmfe_core::puffin::profile_function!();
-
-  let resolve_cache_key = ResolveResultCacheKey {
-    source: resolve_param.source.clone(),
-    importer: resolve_param.importer.clone(),
-  };
-
-  if let Some(resolved) = context
-    .cache_manager
-    .get_resolve_result_cache_by_key(&resolve_cache_key)
-  {
-    return Ok(resolved);
-  }
 
   let importer = resolve_param
     .importer
@@ -65,10 +52,6 @@ pub fn resolve(
       }
     }
   };
-
-  context
-    .cache_manager
-    .set_resolve_result_cache_by_key(resolve_cache_key, resolved.clone());
 
   Ok(resolved)
 }

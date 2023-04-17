@@ -36,6 +36,14 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
         _exportStar(require("f380ea31"), exports);
     },
+    "b5d64806": function(module, exports, require, dynamicRequire) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _a = require("569704c1");
+        console.log(_a.b);
+    },
     "f380ea31": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -48,14 +56,6 @@ global.__farmNodeBuiltinModules = module.builtinModules;
             }
         });
         const b = "2";
-    },
-    "b5d64806": function(module, exports, require, dynamicRequire) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _a = require("569704c1");
-        console.log(_a.b);
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;
