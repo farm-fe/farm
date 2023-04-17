@@ -35,7 +35,7 @@
 
 - 确保您的 [Node.js](https://nodejs.org) 版本在 **16** 以上。
 
-- 确保您的 [Pnpm](https://pnpm.io) 版本在 **7.28.0** 以上。
+- 确保您的 [Pnpm](https://pnpm.io) 版本在 **8** 以上。
 
 ### 设置其他依赖
 
