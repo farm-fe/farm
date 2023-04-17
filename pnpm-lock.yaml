@@ -192,16 +192,16 @@ importers:
         specifier: ^3.2.47
         version: 3.2.47
       less:
-        specifier: '*'
+        specifier: latest
         version: 4.1.3
       sass:
-        specifier: '*'
-        version: 1.60.0
+        specifier: latest
+        version: 1.62.0
       source-map:
         specifier: ^0.7.4
         version: 0.7.4
       stylus:
-        specifier: '*'
+        specifier: latest
         version: 0.59.0
     devDependencies:
       '@farmfe/core':
@@ -369,7 +369,7 @@ importers:
   rust-plugins/react:
     devDependencies:
       '@farmfe/cli':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../../packages/cli
       '@napi-rs/cli':
         specifier: ^2.10.0
@@ -400,7 +400,7 @@ importers:
         version: 1.60.0
     devDependencies:
       '@farmfe/cli':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../../packages/cli
       '@napi-rs/cli':
         specifier: ^2.10.0
@@ -6565,6 +6565,16 @@ packages:
   /sass@1.60.0:
     resolution: {integrity: sha512-updbwW6fNb5gGm8qMXzVO7V4sWf7LMXnMly/JEyfbfERbVH46Fn6q02BX7/eHTdKpE7d+oTkMMQpFWNUMfFbgQ==}
     engines: {node: '>=12.0.0'}
+    hasBin: true
+    dependencies:
+      chokidar: 3.5.3
+      immutable: 4.3.0
+      source-map-js: 1.0.2
+    dev: false
+
+  /sass@1.62.0:
+    resolution: {integrity: sha512-Q4USplo4pLYgCi+XlipZCWUQz5pkg/ruSSgJ0WRDSb/+3z9tXUOkQ7QPYn4XrhZKYAK4HlpaQecRwKLJX6+DBg==}
+    engines: {node: '>=14.0.0'}
     hasBin: true
     dependencies:
       chokidar: 3.5.3
