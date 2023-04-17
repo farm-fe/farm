@@ -4,7 +4,7 @@
   "description": "Farm is modern web building tool written in rust",
   "engines": {
     "node": ">=16",
-    "pnpm": "=7"
+    "pnpm": ">=8"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.0",
