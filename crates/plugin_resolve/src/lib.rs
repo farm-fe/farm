@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 
 use farmfe_core::{
   config::Config,
-  context::{CompilationContext},
+  context::CompilationContext,
   error::Result,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
 };
@@ -14,12 +14,14 @@ pub mod resolver;
 
 pub struct FarmPluginResolve {
   root: String,
+  resolver: Resolver,
 }
 
 impl FarmPluginResolve {
   pub fn new(config: &Config) -> Self {
     Self {
       root: config.root.clone(),
+      resolver: Resolver::new(config.resolve.clone(), config.output.clone()),
     }
   }
 }
@@ -70,7 +72,7 @@ impl Plugin for FarmPluginResolve {
       }));
     }
 
-    let resolver = Resolver::new(context.config.resolve.clone(), context.config.output.clone());
+    let resolver = &self.resolver;
     let result = resolver.resolve(source, basedir.clone(), &param.kind);
 
     // remove the .js if the result is not found to support using native esm with typescript

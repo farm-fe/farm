@@ -15,7 +15,7 @@ pub fn parse(
   #[cfg(feature = "profile")]
   farmfe_core::puffin::profile_function!();
 
-  let res = match context
+  match context
     .plugin_driver
     .parse(parse_param, context, hook_context)
   {
@@ -30,7 +30,5 @@ pub fn parse(
       resolved_path: parse_param.resolved_path.clone(),
       source: Some(Box::new(e)),
     }),
-  };
-
-  res
+  }
 }

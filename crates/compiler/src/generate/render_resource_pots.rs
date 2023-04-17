@@ -104,7 +104,7 @@ pub fn render_resource_pot_generate_resources(
       .optimize_resource_pot(resource_pot, context)?;
   }
 
-  let res = {
+  {
     #[cfg(feature = "profile")]
     let id = farmfe_utils::transform_string_to_static_str(format!(
       "Generate resources for {:?}",
@@ -121,7 +121,5 @@ pub fn render_resource_pot_generate_resources(
         ty: resource_pot.resource_pot_type.clone(),
         source: None,
       })
-  };
-
-  res
+  }
 }

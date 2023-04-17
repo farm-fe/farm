@@ -15,18 +15,29 @@ use farmfe_core::{
 };
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct ResolveNodeModuleCacheKey {
+  pub source: String,
+  pub base_dir: String,
+}
+
 pub struct Resolver {
   config: ResolveConfig,
   output: OutputConfig,
   /// the key is (source, base_dir) and the value is the resolved result
-  resolve_node_modules_cache: Mutex<HashMap<(String, PathBuf), Option<PluginResolveHookResult>>>,
+  resolve_node_modules_cache:
+    Mutex<HashMap<ResolveNodeModuleCacheKey, Option<PluginResolveHookResult>>>,
 }
 
 const NODE_MODULES: &str = "node_modules";
 
 impl Resolver {
   pub fn new(config: ResolveConfig, output: OutputConfig) -> Self {
-    Self { config, output, resolve_node_modules_cache: Mutex::new(HashMap::new()) }
+    Self {
+      config,
+      output,
+      resolve_node_modules_cache: Mutex::new(HashMap::new()),
+    }
   }
 
   /// Specifier type supported by now:
@@ -145,10 +156,14 @@ impl Resolver {
       // try alias first
       self.try_alias(source, base_dir.clone(), kind).or_else(|| {
         // check if the result is cached
-        if let Some(result) = self
-          .resolve_node_modules_cache
-          .lock()
-          .get(&(source.to_string(), base_dir.clone()))
+        if let Some(result) =
+          self
+            .resolve_node_modules_cache
+            .lock()
+            .get(&ResolveNodeModuleCacheKey {
+              source: source.to_string(),
+              base_dir: base_dir.to_string_lossy().to_string(),
+            })
         {
           return result.clone();
         }
@@ -156,10 +171,15 @@ impl Resolver {
         let (result, tried_paths) = self.try_node_modules(source, base_dir.clone(), kind);
         // cache the result
         for tried_path in tried_paths {
-          self
-            .resolve_node_modules_cache
-            .lock()
-            .insert((source.to_string(), tried_path), result.clone());
+          let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
+          let key = ResolveNodeModuleCacheKey {
+            source: source.to_string(),
+            base_dir: tried_path.to_string_lossy().to_string(),
+          };
+
+          if !resolve_node_modules_cache.contains_key(&key) {
+            resolve_node_modules_cache.insert(key, result.clone());
+          }
         }
 
         result
@@ -243,6 +263,15 @@ impl Resolver {
     let mut tried_paths = vec![];
 
     while current.parent().is_some() {
+      let key = ResolveNodeModuleCacheKey {
+        source: source.to_string(),
+        base_dir: current.to_string_lossy().to_string(),
+      };
+
+      if let Some(result) = self.resolve_node_modules_cache.lock().get(&key) {
+        return (result.clone(), tried_paths);
+      }
+
       tried_paths.push(current.clone());
 
       let maybe_node_modules_path = current.join(NODE_MODULES);
