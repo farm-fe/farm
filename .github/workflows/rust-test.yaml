@@ -39,7 +39,7 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm && pnpm i --frozen-lockfile
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -59,7 +59,7 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: npm install -g pnpm@7 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm && pnpm i --frozen-lockfile
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
