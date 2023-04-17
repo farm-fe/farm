@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.3
+
+### Patch Changes
+
+- 6f66a42: add new framework template
+
 ## 1.1.2
 
 ### Patch Changes
