@@ -1,6 +1,6 @@
 {
   "name": "@farmfe-examples/vue",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "dependencies": {
     "vue": "^3.2.45"
@@ -12,6 +12,6 @@
   },
   "scripts": {
     "start": "farm start",
-    "build":"farm build"
+    "build": "farm build"
   }
 }

@@ -1,4 +1,5 @@
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+// change to @farmfe/core/config when resolve support conditional exports
+import { defineFarmConfig } from '@farmfe/core/config';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
 
 export default defineFarmConfig({
@@ -8,6 +9,9 @@ export default defineFarmConfig({
     },
     output: {
       path: './build',
+    },
+    resolve: {
+      strictExports: true,
     },
   },
   plugins: [farmJsPluginVue()],
