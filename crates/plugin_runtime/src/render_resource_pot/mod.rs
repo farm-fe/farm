@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
-  error::Result,
+  error::{Result, CompilationError},
   module::{module_graph::ModuleGraph, ModuleSystem},
   resource::resource_pot::ResourcePot,
   swc_common::{comments::SingleThreadedComments, Mark, DUMMY_SP},
@@ -10,6 +10,7 @@ use farmfe_core::{
     BlockStmt, Expr, FnExpr, Function, Ident, KeyValueProp, Module as SwcModule, ModuleItem,
     ObjectLit, Param, Pat, Prop, PropName, PropOrSpread, Str,
   },
+  rayon::prelude::*, parking_lot::Mutex,
 };
 use farmfe_toolkit::{
   script::swc_try_with::try_with,
@@ -57,13 +58,12 @@ pub fn resource_pot_to_runtime_object_lit(
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> Result<ObjectLit> {
-  let mut rendered_resource_ast = ObjectLit {
+  let rendered_resource_ast = Mutex::new(ObjectLit {
     span: DUMMY_SP,
     props: vec![],
-  };
+  });
 
-  // TODO parallelize here
-  for m_id in resource_pot.modules() {
+  resource_pot.modules().into_par_iter().try_for_each(|m_id| {
     let module = module_graph
       .module(m_id)
       .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
@@ -122,6 +122,7 @@ pub fn resource_pot_to_runtime_object_lit(
     let wrapped_module = wrap_module_ast(cloned_module);
 
     rendered_resource_ast
+      .lock()
       .props
       .push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
         key: PropName::Str(Str {
@@ -133,16 +134,16 @@ pub fn resource_pot_to_runtime_object_lit(
           ident: None,
           function: Box::new(wrapped_module),
         })),
-      }))))
-  }
+      }))));
 
-  // TODO transform async function if target is lower than es2017
+    Ok::<(), CompilationError>(())
+  })?;
 
-  Ok(rendered_resource_ast)
+  Ok(rendered_resource_ast.into_inner())
 }
 
-/// Wrap the module ast to follow Farm's commonjs-style module system spec.
-/// Note: this function won't render the esm to commonjs, if you want to render esm to commonjs, see [esm_to_commonjs].
+/// Wrap the module ast to follow Farm's commonjs-style module system.
+/// Note: this function won't render the esm to commonjs, if you want to render esm to commonjs, see [common_js].
 ///
 /// For example:
 /// ```js
