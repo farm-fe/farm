@@ -153,13 +153,14 @@ impl Resolver {
           return result.clone();
         }
 
-        let result = self.try_node_modules(source, base_dir.clone(), kind);
-
+        let (result, tried_paths) = self.try_node_modules(source, base_dir.clone(), kind);
         // cache the result
-        self
-          .resolve_node_modules_cache
-          .lock()
-          .insert((source.to_string(), base_dir), result.clone());
+        for tried_path in tried_paths {
+          self
+            .resolve_node_modules_cache
+            .lock()
+            .insert((source.to_string(), tried_path), result.clone());
+        }
 
         result
       })
@@ -235,11 +236,15 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
-  ) -> Option<PluginResolveHookResult> {
+  ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     // find node_modules until root
     let mut current = base_dir.clone();
-    // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
+    // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
+    let mut tried_paths = vec![];
+
     while current.parent().is_some() {
+      tried_paths.push(current.clone());
+
       let maybe_node_modules_path = current.join(NODE_MODULES);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if self.config.symlinks {
@@ -261,11 +266,10 @@ impl Resolver {
               .try_file(&package_path)
               .or_else(|| self.try_directory(&package_path))
             {
-              return Some(self.get_resolve_node_modules_result(
-                &package_json_info,
-                resolved_path,
-                kind,
-              ));
+              return (
+                Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind)),
+                tried_paths,
+              );
             }
           }
           // split source loop find package.json
@@ -306,11 +310,14 @@ impl Resolver {
                 },
               );
               if let Ok(_) = package_json_info {
-                return Some(self.get_resolve_node_modules_result(
-                  &package_json_info,
-                  package_path.to_str().unwrap().to_string(),
-                  kind,
-                ));
+                return (
+                  Some(self.get_resolve_node_modules_result(
+                    &package_json_info,
+                    package_path.to_str().unwrap().to_string(),
+                    kind,
+                  )),
+                  tried_paths,
+                );
               }
             }
           }
@@ -318,15 +325,14 @@ impl Resolver {
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
           {
-            return Some(self.get_resolve_node_modules_result(
-              &package_json_info,
-              resolved_path,
-              kind,
-            ));
+            return (
+              Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind)),
+              tried_paths,
+            );
           }
         } else if package_path.exists() && package_path.is_dir() {
           if let Err(_) = package_json_info {
-            return None;
+            return (None, tried_paths);
           }
 
           let package_json_info = package_json_info.unwrap();
@@ -347,35 +353,43 @@ impl Resolver {
                 let result = resolved_path.as_ref().unwrap();
                 let path = Path::new(result.resolved_path.as_str());
                 if let Some(_extension) = path.extension() {
-                  return resolved_path;
+                  return (resolved_path, tried_paths);
                 }
               } else if let Value::String(str) = field_value {
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
                 // the main fields can be a file or directory
                 return match self.try_file(&full_path) {
-                  Some(resolved_path) => self
-                    .get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
-                    .into(),
-                  None => self
-                    .try_directory(&full_path)
-                    .map(|resolved_path| {
+                  Some(resolved_path) => (
+                    Some(self.get_resolve_node_modules_result(
+                      &Ok(package_json_info),
+                      resolved_path,
+                      kind,
+                    )),
+                    tried_paths,
+                  ),
+                  None => (
+                    self.try_directory(&full_path).map(|resolved_path| {
                       self.get_resolve_node_modules_result(
                         &Ok(package_json_info),
                         resolved_path,
                         kind,
                       )
-                    })
-                    .into(),
+                    }),
+                    tried_paths,
+                  ),
                 };
               }
             }
           }
 
           // no main field found, try to resolve index file
-          return self.try_directory(&package_path).map(|resolved_path| {
-            self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
-          });
+          return (
+            self.try_directory(&package_path).map(|resolved_path| {
+              self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
+            }),
+            tried_paths,
+          );
         }
       }
 
@@ -383,7 +397,7 @@ impl Resolver {
     }
 
     // unsupported node_modules resolving type
-    None
+    (None, tried_paths)
   }
 
   fn get_resolve_result(
