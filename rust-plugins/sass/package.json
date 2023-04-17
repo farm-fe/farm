@@ -9,7 +9,7 @@
     "node": ">=16"
   },
   "devDependencies": {
-    "@farmfe/cli": "*",
+    "@farmfe/cli": "workspace:*",
     "@napi-rs/cli": "^2.10.0",
     "extract-zip": "^2.0.1",
     "node-fetch": "^3.2.10",
