@@ -45,9 +45,9 @@
   },
   "peerDependencies": {
     "@farmfe/core": "^0.6.0",
-    "less": "latest",
-    "sass": "latest",
-    "stylus": "latest"
+    "less": "*",
+    "sass": "*",
+    "stylus": "*"
   },
   "peerDependenciesMeta": {
     "less": {

@@ -39,7 +39,7 @@ Please feel free to open an issue using the [feature request template](https://g
 
 - [Node.js](https://nodejs.org) **version 16+**
 
-- [Pnpm](https://pnpm.io) **version 7.28.0+**
+- [Pnpm](https://pnpm.io) **version 8+**
 
 ### Setup Other Dependencies
 
