@@ -9,10 +9,14 @@ export default {
       index: './index.ts'
     },
     output: {
-      path: 'build',
-      filename: 'index.[ext]'
+      path: 'dist',
+      filename: 'index.[ext]',
+      targetEnv: 'node'
     },
-    external: builtinModules.map((m) => `^${m}$`),
+    external: [
+      ...builtinModules.map((m) => `^${m}$`),
+      ...builtinModules.map((m) => `^node:${m}$`)
+    ],
     partialBundling: {
       moduleBuckets: [
         {
