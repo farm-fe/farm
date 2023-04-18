@@ -941,10 +941,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "farm_plugin_vue_jsx"
-version = "0.1.0"
-
-[[package]]
 name = "farmfe_compiler"
 version = "0.0.1"
 dependencies = [
@@ -1172,6 +1168,19 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+]
+
+[[package]]
+name = "farmfe_plugin_vue_jsx"
+version = "0.0.1"
+dependencies = [
+ "farmfe_compiler",
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
+ "serde",
 ]
 
 [[package]]
