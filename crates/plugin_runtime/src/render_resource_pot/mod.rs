@@ -100,6 +100,7 @@ pub fn resource_pot_to_runtime_object_lit(
               Config {
                 // TODO process dynamic import by ourselves later
                 ignore_dynamic: true,
+                preserve_import_meta: true,
                 ..Default::default()
               },
               enable_available_feature_from_es_version(context.config.script.target.clone()),

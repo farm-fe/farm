@@ -314,6 +314,12 @@ importers:
 
   packages/create-farm:
     devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../core
       '@types/minimist':
         specifier: ^1.2.2
         version: 1.2.2

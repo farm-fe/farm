@@ -9,7 +9,7 @@ use std::{
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraphEdge, Module, ModuleId},
+  module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId},
   plugin::{
     PluginAnalyzeDepsHookResultEntry, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
     PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
@@ -308,10 +308,10 @@ impl Compiler {
 
     // TODO check if the edge already exists
     if let Some(importer_id) = &resolve_param.importer {
-      module_graph.add_edge(
+      module_graph.add_edge_item(
         importer_id,
         &module_id,
-        ModuleGraphEdge {
+        ModuleGraphEdgeDataItem {
           source: resolve_param.source.clone(),
           kind: resolve_param.kind.clone(),
           order,

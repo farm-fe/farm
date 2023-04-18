@@ -93,6 +93,7 @@ export interface Config {
       path?: string;
       publicPath?: string;
       assetsFilename?: string;
+      targetEnv?: 'browser' | 'node';
     };
     resolve?: {
       extensions?: string[];

@@ -1,7 +1,7 @@
 use farmfe_core::{
   hashbrown::HashSet,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
+    module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,
   },
   plugin::ResolveKind,
@@ -241,11 +241,11 @@ fn test_diff_module_deps_complex_1() {
         added: vec![],
         removed: vec![(
           "D".into(),
-          ModuleGraphEdge {
+          ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
             order: 1,
             kind: ResolveKind::DynamicImport,
             source: "./D".to_string(),
-          }
+          }])
         )],
       }
     ),])
@@ -286,18 +286,18 @@ fn test_diff_module_deps_complex_2() {
           removed: vec![
             (
               "D".into(),
-              ModuleGraphEdge {
+              ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
                 source: "./D".to_string(),
                 ..Default::default()
-              }
+              }])
             ),
             (
               "E".into(),
-              ModuleGraphEdge {
+              ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
                 source: "./E".to_string(),
                 order: 1,
                 ..Default::default()
-              }
+              }])
             )
           ],
         }
@@ -315,11 +315,11 @@ fn test_diff_module_deps_complex_2() {
           added: vec![],
           removed: vec![(
             "F".into(),
-            ModuleGraphEdge {
+            ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
               kind: ResolveKind::DynamicImport,
               source: "./F".to_string(),
               ..Default::default()
-            }
+            }])
           )],
         }
       ),
@@ -329,11 +329,11 @@ fn test_diff_module_deps_complex_2() {
           added: vec![],
           removed: vec![(
             "G".into(),
-            ModuleGraphEdge {
+            ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
               kind: ResolveKind::DynamicImport,
               source: "./G".to_string(),
               ..Default::default()
-            }
+            }])
           )],
         }
       ),
@@ -369,10 +369,10 @@ fn test_diff_module_deps_complex_3() {
         added: vec![],
         removed: vec![(
           "A".into(),
-          ModuleGraphEdge {
+          ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
             source: "./A".to_string(),
             ..Default::default()
-          }
+          }])
         )],
       }
     ),])

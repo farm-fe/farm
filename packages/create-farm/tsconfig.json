@@ -1,10 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "moduleResolution": "Node",
-  },
   "exclude": ["node_modules"],
-  "include": ["index.ts", "utils/**/*"],
+  "include": ["index.ts", "utils/**/*", "farm.config.mjs"],
   "references": [
     {
       "path": "../core/tsconfig.build.json"

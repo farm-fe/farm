@@ -3,15 +3,17 @@
   "version": "1.1.3",
   "description": "use create-farm to create farm project",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./bin/create-farm.mjs"
   },
-  "main": "dist/index.js",
+  "main": "bin/create-farm.mjs",
+  "type": "module",
   "bin": {
-    "create-farm": "dist/index.js"
+    "create-farm": "bin/create-farm.mjs"
   },
   "scripts": {
     "start": "rimraf dist && tsup --watch",
-    "build": "tsup",
+    "build:tsup": "tsup",
+    "build": "farm build",
     "prepublishOnly": "npm run build"
   },
   "author": "",
@@ -26,6 +28,8 @@
     "url": "https://github.com/farm-fe"
   },
   "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@types/minimist": "^1.2.2",
     "@types/prompts": "^2.4.4",
     "chalk": "^5.2.0",

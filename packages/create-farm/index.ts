@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 
 import chalk from 'chalk';
+
 import prompts from 'prompts';
 import minimist from 'minimist';
 import path from 'node:path';
 import fs from 'node:fs';
 
-import { loadWithRocketGradient } from './utils/gradient';
-import createSpawnCmd from './utils/createSpawnCmd';
-import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager';
+import { loadWithRocketGradient } from './utils/gradient.js';
+import createSpawnCmd from './utils/createSpawnCmd.js';
+import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
+import { fileURLToPath } from 'node:url';
 
 interface IResultType {
   packageName?: string;
@@ -89,7 +91,7 @@ async function createFarm() {
           message: 'Whether you need to install dependencies automatically ?',
         },
         {
-          type: pkgInfo ? null : 'select',
+          type: pkgInfo && !result.autoInstall ? null : 'select',
           name: 'packageManager',
           message: 'Which package manager do you want to use?',
           choices: [
@@ -118,7 +120,6 @@ async function createFarm() {
     return;
   }
   const { framework = argFramework, autoInstall, packageManager } = result;
-
   await copyTemplate(targetDir, framework!);
   await installationDeps(targetDir, autoInstall!, packageManager!);
 }
@@ -135,9 +136,12 @@ function isEmpty(path: string) {
 async function copyTemplate(targetDir: string, framework: string) {
   const spinner = await loadWithRocketGradient('copy template');
   const dest = path.join(cwd, targetDir);
-  const templatePath = path.join(__dirname, `../templates/${framework}`);
+  const templatePath = path.join(
+    fileURLToPath(import.meta.url),
+    `../../templates/${framework}`
+  );
   copy(templatePath, dest);
-  spinner.text = 'Template copied!';
+  spinner.text = 'Template copied Successfully!';
   spinner.succeed();
 }
 
@@ -154,11 +158,13 @@ async function installationDeps(
   }
   logger('> Initial Farm Project created successfully ✨ ✨');
   logger(`  cd ${targetDir}`);
-  logger(
-    `  ${currentPkgManager} ${
-      currentPkgManager === 'npm' ? 'run start' : 'start'
-    } `
-  );
+  autoInstall
+    ? logger(
+        `  ${currentPkgManager} ${
+          currentPkgManager === 'npm' ? 'run start' : 'start'
+        } `
+      )
+    : logger(`  npm install \n\n  npm run start`);
 }
 
 function logger(info: string) {

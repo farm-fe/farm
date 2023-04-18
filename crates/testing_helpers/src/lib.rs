@@ -4,7 +4,7 @@ use farmfe_core::{
   glob::glob,
   hashbrown::HashSet,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
+    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
     Module,
   },
@@ -40,10 +40,10 @@ pub fn construct_test_module_graph() -> ModuleGraph {
 
   for (from, to, order) in static_edges {
     graph
-      .add_edge(
+      .add_edge_item(
         &from.into(),
         &to.into(),
-        ModuleGraphEdge {
+        ModuleGraphEdgeDataItem {
           source: format!("./{}", to),
           kind: ResolveKind::Import,
           order,
@@ -54,10 +54,10 @@ pub fn construct_test_module_graph() -> ModuleGraph {
 
   for (from, to, order) in dynamic_edges {
     graph
-      .add_edge(
+      .add_edge_item(
         &from.into(),
         &to.into(),
-        ModuleGraphEdge {
+        ModuleGraphEdgeDataItem {
           source: format!("./{}", to),
           kind: ResolveKind::DynamicImport,
           order,
@@ -67,10 +67,10 @@ pub fn construct_test_module_graph() -> ModuleGraph {
   }
 
   graph
-    .add_edge(
+    .add_edge_item(
       &"F".into(),
       &"A".into(),
-      ModuleGraphEdge {
+      ModuleGraphEdgeDataItem {
         source: "./A".to_string(),
         kind: ResolveKind::Import,
         order: 0,

@@ -63,7 +63,7 @@ impl Plugin for FarmPluginTreeShake {
       if !module.module_type.is_script() || module.external {
         if !module.module_type.is_script() && !module.external {
           // mark all non script modules' script dependencies as side_effects
-          for (dep_id, _, _) in module_graph.dependencies(&module_id) {
+          for dep_id in module_graph.dependencies_ids(&module_id) {
             let mut dep_module = module_graph.module_mut(&dep_id).unwrap();
 
             if !dep_module.module_type.is_script() {
@@ -95,7 +95,7 @@ impl Plugin for FarmPluginTreeShake {
         tree_shake_module.module_system,
         farmfe_core::module::ModuleSystem::EsModule
       ) {
-        for (dep_id, _, _) in module_graph.dependencies(&tree_shake_module_id) {
+        for (dep_id, _) in module_graph.dependencies(&tree_shake_module_id) {
           let dep_tree_shake_module = tree_shake_modules_map.get_mut(&dep_id);
 
           if let Some(dep_tree_shake_module) = dep_tree_shake_module {
@@ -166,8 +166,8 @@ impl Plugin for FarmPluginTreeShake {
       }
 
       // add all dynamic imported dependencies as [UsedExports::All]
-      for (dep, kind, _) in module_graph.dependencies(&tree_shake_module_id) {
-        if matches!(kind, ResolveKind::DynamicImport) {
+      for (dep, edge) in module_graph.dependencies(&tree_shake_module_id) {
+        if edge.is_dynamic() {
           let tree_shake_module = tree_shake_modules_map.get_mut(&dep).unwrap();
           tree_shake_module.side_effects = true;
           tree_shake_module.used_exports = UsedExports::All;

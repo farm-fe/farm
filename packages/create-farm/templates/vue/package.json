@@ -6,9 +6,9 @@
     "vue": "^3.2.45"
   },
   "devDependencies": {
-    "@farmfe/cli": "latest",
-    "@farmfe/core": "latest",
-    "@farmfe/js-plugin-vue": "latest"
+    "@farmfe/cli": "^0.5.0",
+    "@farmfe/core": "^0.6.0",
+    "@farmfe/js-plugin-vue": "^0.2.1"
   },
   "scripts": {
     "start": "farm start",
