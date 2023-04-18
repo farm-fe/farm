@@ -20,6 +20,7 @@ pub struct Config {
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
+  pub css: CssConfig,
   pub sourcemap: SourcemapConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
@@ -44,6 +45,7 @@ impl Default for Config {
       external: vec![],
       runtime: Default::default(),
       script: Default::default(),
+      css: Default::default(),
       assets: Default::default(),
       sourcemap: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
@@ -111,6 +113,22 @@ impl Default for Mode {
 pub struct ScriptConfig {
   pub target: EsVersion,
   pub parser: ScriptParserConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CssConfig {
+  pub module: bool,
+  pub indent_name: String,
+}
+
+impl Default for CssConfig {
+  fn default() -> Self {
+    Self {
+      module: false,
+      indent_name: String::from("farm_[name]"),
+    }
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
