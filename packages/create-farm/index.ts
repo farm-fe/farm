@@ -91,7 +91,7 @@ async function createFarm() {
           message: 'Whether you need to install dependencies automatically ?',
         },
         {
-          type: pkgInfo || !result.autoInstall ? null : 'select',
+          type: pkgInfo && !result.autoInstall ? null : 'select',
           name: 'packageManager',
           message: 'Which package manager do you want to use?',
           choices: [
@@ -120,7 +120,6 @@ async function createFarm() {
     return;
   }
   const { framework = argFramework, autoInstall, packageManager } = result;
-
   await copyTemplate(targetDir, framework!);
   await installationDeps(targetDir, autoInstall!, packageManager!);
 }
