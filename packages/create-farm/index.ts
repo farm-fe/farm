@@ -1,8 +1,7 @@
-// #!/usr/bin/env node
+#!/usr/bin/env node
 
 import chalk from 'chalk';
 
-// console.log(chalk.blue('Welcome to use Farm CLI!'));
 import prompts from 'prompts';
 import minimist from 'minimist';
 import path from 'node:path';
@@ -92,7 +91,7 @@ async function createFarm() {
           message: 'Whether you need to install dependencies automatically ?',
         },
         {
-          type: pkgInfo ? null : 'select',
+          type: pkgInfo || !result.autoInstall ? null : 'select',
           name: 'packageManager',
           message: 'Which package manager do you want to use?',
           choices: [
@@ -143,7 +142,7 @@ async function copyTemplate(targetDir: string, framework: string) {
     `../../templates/${framework}`
   );
   copy(templatePath, dest);
-  spinner.text = 'Template copied!';
+  spinner.text = 'Template copied Successfully!';
   spinner.succeed();
 }
 
@@ -160,11 +159,13 @@ async function installationDeps(
   }
   logger('> Initial Farm Project created successfully ✨ ✨');
   logger(`  cd ${targetDir}`);
-  logger(
-    `  ${currentPkgManager} ${
-      currentPkgManager === 'npm' ? 'run start' : 'start'
-    } `
-  );
+  autoInstall
+    ? logger(
+        `  ${currentPkgManager} ${
+          currentPkgManager === 'npm' ? 'run start' : 'start'
+        } `
+      )
+    : logger(`  npm install \n\n  npm run start`);
 }
 
 function logger(info: string) {
