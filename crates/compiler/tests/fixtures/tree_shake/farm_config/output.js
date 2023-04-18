@@ -28,20 +28,20 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "edceee38": function(module, exports, require, dynamicRequire) {
+    "052dab48": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        Object.defineProperty(exports, "defineFarmConfig", {
+        Object.defineProperty(exports, "default", {
             enumerable: true,
             get: function() {
-                return defineFarmConfig;
+                return _default;
             }
         });
-        function defineFarmConfig(userConfig) {
-            return userConfig;
-        }
+        var _default = {
+            main: "./main.tsx"
+        };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";
@@ -65,20 +65,20 @@ global.__farmNodeBuiltinModules = module.builtinModules;
             }
         });
     },
-    "052dab48": function(module, exports, require, dynamicRequire) {
+    "edceee38": function(module, exports, require, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        Object.defineProperty(exports, "default", {
+        Object.defineProperty(exports, "defineFarmConfig", {
             enumerable: true,
             get: function() {
-                return _default;
+                return defineFarmConfig;
             }
         });
-        var _default = {
-            main: "./main.tsx"
-        };
+        function defineFarmConfig(userConfig) {
+            return userConfig;
+        }
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;

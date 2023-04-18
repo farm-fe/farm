@@ -70,6 +70,8 @@
     "threadsafe",
     "topo",
     "toposort",
+    "eframe",
+    "egui",
     "treeshake",
     "tsfn",
     "tsup",

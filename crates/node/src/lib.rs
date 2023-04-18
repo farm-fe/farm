@@ -6,12 +6,14 @@ use farmfe_compiler::{update::UpdateType, Compiler};
 
 pub mod plugin_adapters;
 pub mod plugin_toolkit;
+#[cfg(feature = "profile")]
+pub mod profile_gui;
 
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
 };
-use farmfe_toolkit::tracing_subscriber::{self, fmt, prelude::*, EnvFilter};
+
 use napi::{
   bindgen_prelude::{Buffer, FromNapiValue},
   threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode},
@@ -93,33 +95,6 @@ impl JsCompiler {
       plugins_adapters.push(rust_plugin);
     }
 
-    #[cfg(not(feature = "profile"))]
-    {
-      let fmt_layer = fmt::layer().with_target(false);
-      let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
-
-      tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .try_init()
-        .err();
-    }
-
-    #[cfg(feature = "profile")]
-    {
-      let tracer = opentelemetry_jaeger::new_agent_pipeline()
-        .with_service_name("farm_profile_pnpm")
-        .install_simple()
-        .unwrap();
-      let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-      tracing_subscriber::registry()
-        .with(opentelemetry)
-        .try_init()
-        .err();
-    }
-
     Ok(Self {
       compiler: Arc::new(
         Compiler::new(config, plugins_adapters)
@@ -138,16 +113,32 @@ impl JsCompiler {
       .compile()
       .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
 
-    #[cfg(feature = "profile")]
-    opentelemetry::global::shutdown_tracer_provider();
-
     Ok(())
   }
 
   /// sync compile
   #[napi]
   pub fn compile_sync(&self) -> napi::Result<()> {
-    unimplemented!("sync compile is not supported yet")
+    #[cfg(feature = "profile")]
+    {
+      farmfe_core::puffin::set_scopes_on(true); // Remember to call this, or puffin will be disabled!
+
+      let native_options = Default::default();
+      let compiler = self.compiler.clone();
+      let _ = eframe::run_native(
+        "puffin egui eframe",
+        native_options,
+        Box::new(move |_cc| Box::new(profile_gui::ProfileApp::new(compiler))),
+      );
+    }
+
+    #[cfg(not(feature = "profile"))]
+    self
+      .compiler
+      .compile()
+      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+    Ok(())
   }
 
   /// TODO: usage example

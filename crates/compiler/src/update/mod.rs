@@ -15,7 +15,6 @@ use farmfe_core::{
   resource::ResourceType,
 };
 use farmfe_plugin_html::get_dynamic_resources_map;
-use farmfe_toolkit::tracing;
 
 use crate::{
   build::ResolvedModuleInfo, generate::finalize_resources::finalize_resources, Compiler,
@@ -274,7 +273,6 @@ impl Compiler {
     }
   }
 
-  #[tracing::instrument(skip_all)]
   fn diff_and_patch_context(
     &self,
     paths: Vec<(String, UpdateType)>,
@@ -288,38 +286,23 @@ impl Compiler {
     let mut module_graph = self.context.module_graph.write();
     let mut update_module_graph = update_context.module_graph.write();
 
-    tracing::trace!("Diffing module graph start from {:?}...", start_points);
     let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
-    tracing::trace!("Diff result: {:?}", diff_result);
 
-    tracing::trace!("Patching module graph start from {:?}...", start_points);
     let removed_modules = patch_module_graph(
       start_points.clone(),
       &diff_result,
       &mut module_graph,
       &mut update_module_graph,
     );
-    tracing::trace!(
-      "Patched module graph, removed modules: {:?}",
-      removed_modules
-        .iter()
-        .map(|(id, _)| id.clone())
-        .collect::<Vec<_>>()
-    );
 
     let mut module_group_graph = self.context.module_group_graph.write();
 
-    tracing::trace!("Patching module group map start from {:?}...", start_points);
     let affected_module_groups = patch_module_group_graph(
       start_points.clone(),
       &diff_result,
       &removed_modules,
       &mut module_graph,
       &mut module_group_graph,
-    );
-    tracing::trace!(
-      "Patched module group map, affected module groups: {:?}",
-      affected_module_groups
     );
 
     (affected_module_groups, start_points, diff_result)

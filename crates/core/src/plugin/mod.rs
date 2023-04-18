@@ -188,7 +188,7 @@ pub trait Plugin: Any + Send + Sync {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
@@ -252,7 +252,7 @@ pub struct PluginResolveHookParam {
   pub kind: ResolveKind,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginResolveHookResult {
   /// resolved path, normally a absolute file path.

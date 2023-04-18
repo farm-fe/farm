@@ -8,7 +8,6 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
 };
-use farmfe_toolkit::tracing;
 
 pub mod build;
 pub mod generate;
@@ -57,12 +56,19 @@ impl Compiler {
   }
 
   /// Compile the project using the configuration
-  #[tracing::instrument(skip_all)]
   pub fn compile(&self) -> Result<()> {
     // triggering build stage
-    self.build()?;
+    {
+      #[cfg(feature = "profile")]
+      farmfe_core::puffin::profile_scope!("Build Stage");
+      self.build()?;
+    }
 
-    self.generate()?;
+    {
+      #[cfg(feature = "profile")]
+      farmfe_core::puffin::profile_scope!("Generate Stage");
+      self.generate()?;
+    }
 
     self.context.plugin_driver.finish(&Stats {}, &self.context)
   }

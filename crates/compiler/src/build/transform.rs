@@ -6,15 +6,13 @@ use farmfe_core::{
   error::Result,
   plugin::{plugin_driver::PluginDriverTransformHookResult, PluginTransformHookParam},
 };
-use farmfe_toolkit::tracing;
 
-#[tracing::instrument(skip_all)]
 pub fn transform(
   transform_param: PluginTransformHookParam,
   context: &Arc<CompilationContext>,
 ) -> Result<PluginDriverTransformHookResult> {
-  let resolved_path = transform_param.resolved_path.to_string();
-  tracing::trace!("transform: {}", resolved_path);
+  #[cfg(feature = "profile")]
+  farmfe_core::puffin::profile_function!();
 
   let resolved_path = transform_param.resolved_path.to_string();
   let transformed = match context.plugin_driver.transform(transform_param, context) {
@@ -27,6 +25,5 @@ pub fn transform(
     }
   };
 
-  tracing::trace!("transformed: {}", resolved_path);
   Ok(transformed)
 }

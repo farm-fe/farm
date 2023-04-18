@@ -7,25 +7,38 @@ use farmfe_core::{
   common::PackageJsonInfo,
   config::{OutputConfig, ResolveConfig, TargetEnv},
   error::{CompilationError, Result},
+  hashbrown::HashMap,
+  parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
-use farmfe_toolkit::{
-  resolve::{follow_symlinks, load_package_json, package_json_loader::Options},
-  tracing,
-};
+use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct ResolveNodeModuleCacheKey {
+  pub source: String,
+  pub base_dir: String,
+  pub kind: ResolveKind,
+}
 
 pub struct Resolver {
   config: ResolveConfig,
   output: OutputConfig,
+  /// the key is (source, base_dir) and the value is the resolved result
+  resolve_node_modules_cache:
+    Mutex<HashMap<ResolveNodeModuleCacheKey, Option<PluginResolveHookResult>>>,
 }
 
 const NODE_MODULES: &str = "node_modules";
 
 impl Resolver {
   pub fn new(config: ResolveConfig, output: OutputConfig) -> Self {
-    Self { config, output }
+    Self {
+      config,
+      output,
+      resolve_node_modules_cache: Mutex::new(HashMap::new()),
+    }
   }
 
   /// Specifier type supported by now:
@@ -36,7 +49,6 @@ impl Resolver {
   ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports), if source is end with '.js', also try to find '.ts' file
   ///   * **browser**: refer to [package-browser-field-spec](https://github.com/defunctzombie/package-browser-field-spec)
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
-  #[tracing::instrument(skip_all)]
   pub fn resolve(
     &self,
     source: &str,
@@ -143,14 +155,42 @@ impl Resolver {
         .map(|resolved_path| self.get_resolve_result(&package_json_info, resolved_path, kind));
     } else {
       // try alias first
-      self
-        .try_alias(source, base_dir.clone(), kind)
-        .or_else(|| self.try_node_modules(source, base_dir, kind))
+      self.try_alias(source, base_dir.clone(), kind).or_else(|| {
+        // check if the result is cached
+        if let Some(result) =
+          self
+            .resolve_node_modules_cache
+            .lock()
+            .get(&ResolveNodeModuleCacheKey {
+              source: source.to_string(),
+              base_dir: base_dir.to_string_lossy().to_string(),
+              kind: kind.clone(),
+            })
+        {
+          return result.clone();
+        }
+
+        let (result, tried_paths) = self.try_node_modules(source, base_dir.clone(), kind);
+        // cache the result
+        for tried_path in tried_paths {
+          let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
+          let key = ResolveNodeModuleCacheKey {
+            source: source.to_string(),
+            base_dir: tried_path.to_string_lossy().to_string(),
+            kind: kind.clone(),
+          };
+
+          if !resolve_node_modules_cache.contains_key(&key) {
+            resolve_node_modules_cache.insert(key, result.clone());
+          }
+        }
+
+        result
+      })
     }
   }
 
   /// Try resolve as a file with the configured main fields.
-  #[tracing::instrument(skip_all)]
   fn try_directory(&self, dir: &PathBuf) -> Option<String> {
     if !dir.is_dir() {
       return None;
@@ -169,7 +209,6 @@ impl Resolver {
 
   /// Try resolve as a file with the configured extensions.
   /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
-  #[tracing::instrument(skip_all)]
   fn try_file(&self, file: &PathBuf) -> Option<String> {
     // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
     if file.exists() && file.is_file() {
@@ -192,7 +231,6 @@ impl Resolver {
     }
   }
 
-  #[tracing::instrument(skip_all)]
   fn try_alias(
     &self,
     source: &str,
@@ -216,17 +254,30 @@ impl Resolver {
   }
 
   /// Resolve the source as a package
-  #[tracing::instrument(skip_all)]
   fn try_node_modules(
     &self,
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
-  ) -> Option<PluginResolveHookResult> {
+  ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     // find node_modules until root
     let mut current = base_dir.clone();
-    // TODO if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
+    // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
+    let mut tried_paths = vec![];
+
     while current.parent().is_some() {
+      let key = ResolveNodeModuleCacheKey {
+        source: source.to_string(),
+        base_dir: current.to_string_lossy().to_string(),
+        kind: kind.clone(),
+      };
+
+      if let Some(result) = self.resolve_node_modules_cache.lock().get(&key) {
+        return (result.clone(), tried_paths);
+      }
+
+      tried_paths.push(current.clone());
+
       let maybe_node_modules_path = current.join(NODE_MODULES);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if self.config.symlinks {
@@ -248,11 +299,10 @@ impl Resolver {
               .try_file(&package_path)
               .or_else(|| self.try_directory(&package_path))
             {
-              return Some(self.get_resolve_node_modules_result(
-                &package_json_info,
-                resolved_path,
-                kind,
-              ));
+              return (
+                Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind)),
+                tried_paths,
+              );
             }
           }
           // split source loop find package.json
@@ -293,11 +343,14 @@ impl Resolver {
                 },
               );
               if let Ok(_) = package_json_info {
-                return Some(self.get_resolve_node_modules_result(
-                  &package_json_info,
-                  package_path.to_str().unwrap().to_string(),
-                  kind,
-                ));
+                return (
+                  Some(self.get_resolve_node_modules_result(
+                    &package_json_info,
+                    package_path.to_str().unwrap().to_string(),
+                    kind,
+                  )),
+                  tried_paths,
+                );
               }
             }
           }
@@ -305,15 +358,14 @@ impl Resolver {
             .try_file(&package_path)
             .or_else(|| self.try_directory(&package_path))
           {
-            return Some(self.get_resolve_node_modules_result(
-              &package_json_info,
-              resolved_path,
-              kind,
-            ));
+            return (
+              Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind)),
+              tried_paths,
+            );
           }
         } else if package_path.exists() && package_path.is_dir() {
           if let Err(_) = package_json_info {
-            return None;
+            return (None, tried_paths);
           }
 
           let package_json_info = package_json_info.unwrap();
@@ -334,35 +386,43 @@ impl Resolver {
                 let result = resolved_path.as_ref().unwrap();
                 let path = Path::new(result.resolved_path.as_str());
                 if let Some(_extension) = path.extension() {
-                  return resolved_path;
+                  return (resolved_path, tried_paths);
                 }
               } else if let Value::String(str) = field_value {
                 let dir = package_json_info.dir();
                 let full_path = RelativePath::new(str).to_logical_path(dir);
                 // the main fields can be a file or directory
                 return match self.try_file(&full_path) {
-                  Some(resolved_path) => self
-                    .get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
-                    .into(),
-                  None => self
-                    .try_directory(&full_path)
-                    .map(|resolved_path| {
+                  Some(resolved_path) => (
+                    Some(self.get_resolve_node_modules_result(
+                      &Ok(package_json_info),
+                      resolved_path,
+                      kind,
+                    )),
+                    tried_paths,
+                  ),
+                  None => (
+                    self.try_directory(&full_path).map(|resolved_path| {
                       self.get_resolve_node_modules_result(
                         &Ok(package_json_info),
                         resolved_path,
                         kind,
                       )
-                    })
-                    .into(),
+                    }),
+                    tried_paths,
+                  ),
                 };
               }
             }
           }
 
           // no main field found, try to resolve index file
-          return self.try_directory(&package_path).map(|resolved_path| {
-            self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
-          });
+          return (
+            self.try_directory(&package_path).map(|resolved_path| {
+              self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
+            }),
+            tried_paths,
+          );
         }
       }
 
@@ -370,7 +430,7 @@ impl Resolver {
     }
 
     // unsupported node_modules resolving type
-    None
+    (None, tried_paths)
   }
 
   fn get_resolve_result(

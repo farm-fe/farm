@@ -6,22 +6,30 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::PluginHookContext,
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{resource_pot::ResourcePot, Resource, ResourceType},
+  resource::{resource_pot::ResourcePot, Resource},
 };
-use farmfe_toolkit::{fs::transform_output_filename, tracing};
+use farmfe_toolkit::fs::transform_output_filename;
 
-#[tracing::instrument(skip_all)]
 pub fn render_resource_pots_and_generate_resources(
   resource_pots: Vec<&mut ResourcePot>,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<()> {
-  tracing::trace!("Starting render_resource_pots_and_generate_resources");
+  #[cfg(feature = "profile")]
+  farmfe_core::puffin::profile_function!();
 
   let resources = Mutex::new(vec![]);
 
   // Note: Plugins should not using context.resource_pot_map, as it may cause deadlock
   resource_pots.into_par_iter().try_for_each(|resource_pot| {
+    #[cfg(feature = "profile")]
+    let id = farmfe_utils::transform_string_to_static_str(format!(
+      "Render and generate resources for {:?}",
+      resource_pot.id
+    ));
+    #[cfg(feature = "profile")]
+    farmfe_core::puffin::profile_scope!(id);
+
     let mut res =
       render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
 
@@ -59,46 +67,59 @@ pub fn render_resource_pots_and_generate_resources(
     resources_map.insert(resource.name.clone(), resource);
   }
 
-  tracing::trace!("render_resource_pots_and_generate_resources finished");
   Ok(())
 }
 
-#[tracing::instrument(skip_all)]
 pub fn render_resource_pot_generate_resources(
   resource_pot: &mut ResourcePot,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
   skip_render: bool,
 ) -> Result<Vec<Resource>> {
-  tracing::trace!("Starting render_resource_pot_generate_resources");
-
   if !skip_render {
-    tracing::trace!("Starting render_resource_pot_generate_resources: render_resource_pot");
+    #[cfg(feature = "profile")]
+    let id = farmfe_utils::transform_string_to_static_str(format!(
+      "Render resource pot {:?}",
+      resource_pot.id
+    ));
+    #[cfg(feature = "profile")]
+    farmfe_core::puffin::profile_scope!(id);
 
     context
       .plugin_driver
       .render_resource_pot(resource_pot, context)?;
-
-    tracing::trace!("render_resource_pot_generate_resources: optimize_resource_pot finished");
   }
 
-  tracing::trace!("Starting render_resource_pot_generate_resources: optimize_resource_pot");
-  context
-    .plugin_driver
-    .optimize_resource_pot(resource_pot, context)?;
-  tracing::trace!("render_resource_pot_generate_resources: optimize_resource_pot finished");
+  {
+    #[cfg(feature = "profile")]
+    let id = farmfe_utils::transform_string_to_static_str(format!(
+      "Optimize resource pot {:?}",
+      resource_pot.id
+    ));
+    #[cfg(feature = "profile")]
+    farmfe_core::puffin::profile_scope!(id);
 
-  tracing::trace!("Starting render_resource_pot_generate_resources: generate_resources");
-  let res = context
-    .plugin_driver
-    .generate_resources(resource_pot, context, hook_context)?
-    .ok_or(CompilationError::GenerateResourcesError {
-      name: resource_pot.id.to_string(),
-      ty: resource_pot.resource_pot_type.clone(),
-      source: None,
-    });
-  tracing::trace!("render_resource_pot_generate_resources: generate_resources finished");
+    context
+      .plugin_driver
+      .optimize_resource_pot(resource_pot, context)?;
+  }
 
-  tracing::trace!("render_resource_pot_generate_resources finished");
-  res
+  {
+    #[cfg(feature = "profile")]
+    let id = farmfe_utils::transform_string_to_static_str(format!(
+      "Generate resources for {:?}",
+      resource_pot.id
+    ));
+    #[cfg(feature = "profile")]
+    farmfe_core::puffin::profile_scope!(id);
+
+    context
+      .plugin_driver
+      .generate_resources(resource_pot, context, hook_context)?
+      .ok_or(CompilationError::GenerateResourcesError {
+        name: resource_pot.id.to_string(),
+        ty: resource_pot.resource_pot_type.clone(),
+        source: None,
+      })
+  }
 }

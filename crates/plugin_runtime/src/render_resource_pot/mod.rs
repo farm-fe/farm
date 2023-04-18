@@ -2,8 +2,11 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
-  error::Result,
+  error::{CompilationError, Result},
+  hashbrown::HashMap,
   module::{module_graph::ModuleGraph, ModuleSystem},
+  parking_lot::Mutex,
+  rayon::prelude::*,
   resource::resource_pot::ResourcePot,
   swc_common::{comments::SingleThreadedComments, Mark, DUMMY_SP},
   swc_ecma_ast::{
@@ -62,87 +65,98 @@ pub fn resource_pot_to_runtime_object_lit(
     props: vec![],
   };
 
-  // TODO parallelize here
-  for m_id in resource_pot.modules() {
-    let module = module_graph
-      .module(m_id)
-      .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
-    let mut cloned_module = SwcModule {
-      shebang: None,
-      span: DUMMY_SP,
-      body: module.meta.as_script().ast.body.to_vec(),
-    };
+  let props = Mutex::new(HashMap::new());
 
-    try_with(
-      context.meta.script.cm.clone(),
-      &context.meta.script.globals,
-      || {
-        // transform esm to commonjs
-        let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-        let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+  resource_pot
+    .modules()
+    .into_par_iter()
+    .try_for_each(|m_id| {
+      let module = module_graph
+        .module(m_id)
+        .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
+      let mut cloned_module = SwcModule {
+        shebang: None,
+        span: DUMMY_SP,
+        body: module.meta.as_script().ast.body.to_vec(),
+      };
 
-        // ESM to commonjs, then commonjs to farm's runtime module systems
-        if matches!(
-          module.meta.as_script().module_system,
-          ModuleSystem::EsModule
-        ) {
-          cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
-          cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
-          cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
+      try_with(
+        context.meta.script.cm.clone(),
+        &context.meta.script.globals,
+        || {
+          // transform esm to commonjs
+          let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+          let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+
+          // ESM to commonjs, then commonjs to farm's runtime module systems
+          if matches!(
+            module.meta.as_script().module_system,
+            ModuleSystem::EsModule
+          ) {
+            cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
+            cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
+            cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
+              unresolved_mark,
+              Config {
+                // TODO process dynamic import by ourselves later
+                ignore_dynamic: true,
+                ..Default::default()
+              },
+              enable_available_feature_from_es_version(context.config.script.target.clone()),
+              None,
+            ));
+          }
+
+          // replace import source with module id
+          let mut source_replacer = SourceReplacer::new(
             unresolved_mark,
-            Config {
-              // TODO process dynamic import by ourselves later
-              ignore_dynamic: true,
-              ..Default::default()
-            },
-            enable_available_feature_from_es_version(context.config.script.target.clone()),
-            None,
-          ));
-        }
+            module_graph,
+            m_id.clone(),
+            module.meta.as_script().module_system.clone(),
+            context.config.mode.clone(),
+          );
+          cloned_module.visit_mut_with(&mut source_replacer);
+          cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
+            top_level_mark,
+            ..Default::default()
+          }));
+          // TODO support comments
+          cloned_module.visit_mut_with(&mut fixer(None));
+        },
+      )?;
 
-        // replace import source with module id
-        let mut source_replacer = SourceReplacer::new(
-          unresolved_mark,
-          module_graph,
-          m_id.clone(),
-          module.meta.as_script().module_system.clone(),
-          context.config.mode.clone(),
-        );
-        cloned_module.visit_mut_with(&mut source_replacer);
-        cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
-          top_level_mark,
-          ..Default::default()
-        }));
-        // TODO support comments
-        cloned_module.visit_mut_with(&mut fixer(None));
-      },
-    )?;
+      // wrap module function
+      let wrapped_module = wrap_module_ast(cloned_module);
 
-    // wrap module function
-    let wrapped_module = wrap_module_ast(cloned_module);
+      props.lock().insert(
+        module.id.id(context.config.mode.clone()),
+        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+          key: PropName::Str(Str {
+            span: DUMMY_SP,
+            value: module.id.id(context.config.mode.clone()).into(),
+            raw: None,
+          }),
+          value: Box::new(Expr::Fn(FnExpr {
+            ident: None,
+            function: Box::new(wrapped_module),
+          })),
+        }))),
+      );
+      Ok::<(), CompilationError>(())
+    })?;
 
-    rendered_resource_ast
-      .props
-      .push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-        key: PropName::Str(Str {
-          span: DUMMY_SP,
-          value: module.id.id(context.config.mode.clone()).into(),
-          raw: None,
-        }),
-        value: Box::new(Expr::Fn(FnExpr {
-          ident: None,
-          function: Box::new(wrapped_module),
-        })),
-      }))))
-  }
-
-  // TODO transform async function if target is lower than es2017
+  // sort props by module id to make sure the order is stable
+  let mut props = props.into_inner();
+  let mut props: Vec<_> = props.drain().collect();
+  props.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
+  // insert props to the object lit
+  rendered_resource_ast.props = props.into_iter().map(|(_, v)| v).collect();
 
   Ok(rendered_resource_ast)
 }
 
-/// Wrap the module ast to follow Farm's commonjs-style module system spec.
-/// Note: this function won't render the esm to commonjs, if you want to render esm to commonjs, see [esm_to_commonjs].
+/// Wrap the module ast to follow Farm's commonjs-style module system.
+/// Note: this function won't render the esm to commonjs, if you want to render esm to commonjs, see [common_js].
 ///
 /// For example:
 /// ```js
