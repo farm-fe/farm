@@ -32,7 +32,7 @@
   },
   "scripts": {
     "prepare": "husky install",
-    "bootstrap": "pnpm install && node scripts/bootstrap.mjs && pnpm start",
+    "bootstrap": "pnpm install && node scripts/bootstrap.mjs",
     "test": "vitest run",
     "start": "cd packages/cli && pnpm run start",
     "build": "cd packages/cli && pnpm run build -b",

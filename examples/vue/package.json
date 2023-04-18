@@ -9,7 +9,8 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/js-plugin-vue": "workspace:*"
+    "@farmfe/js-plugin-vue": "workspace:*",
+    "@farmfe/plugin-vue-jsx": "workspace:*"
   },
   "scripts": {
     "start": "farm start",

@@ -298,6 +298,9 @@ importers:
       '@farmfe/js-plugin-vue':
         specifier: workspace:*
         version: link:../../js-plugins/vue
+      '@farmfe/plugin-vue-jsx':
+        specifier: workspace:*
+        version: link:../../rust-plugins/vue-jsx
 
   examples/vue-antdv:
     dependencies:
