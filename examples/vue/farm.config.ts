@@ -24,5 +24,5 @@ export default defineFarmConfig({
       },
     },
   },
-  plugins: [farmJsPluginVue(), '@farmfe/plugin-vue-jsx'],
+  plugins: [farmJsPluginVue(),  ['@farmfe/plugin-vue-jsx', { name: 'erkelost' }],],
 });
