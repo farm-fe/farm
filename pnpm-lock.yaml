@@ -612,6 +612,15 @@ importers:
         specifier: ^6.1.11
         version: 6.1.11
 
+  rust-plugins/vue-jsx:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: '*'
+        version: link:../../packages/cli
+      '@napi-rs/cli':
+        specifier: ^2.10.0
+        version: 2.10.0
+
 packages:
 
   /@ant-design/colors@6.0.0:
