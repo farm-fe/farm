@@ -812,6 +812,7 @@ dependencies = [
  "farmfe_plugin_html",
  "farmfe_plugin_json",
  "farmfe_plugin_lazy_compilation",
+ "farmfe_plugin_minify",
  "farmfe_plugin_partial_bundling",
  "farmfe_plugin_resolve",
  "farmfe_plugin_runtime",
@@ -926,6 +927,15 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils",
+]
+
+[[package]]
+name = "farmfe_plugin_minify"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
 ]
 
 [[package]]
