@@ -202,28 +202,24 @@ impl Plugin for FarmPluginRuntime {
           });
         };
 
-      if has_import_star && !exists("@swc/helpers/lib/_interop_require_wildcard.js", param) {
+      if has_import_star && !exists("@swc/helpers/_/_interop_require_wildcard", param) {
         insert_import(
-          "@swc/helpers/lib/_interop_require_wildcard.js",
+          "@swc/helpers/_/_interop_require_wildcard",
           ResolveKind::Import,
           param,
         );
       }
 
-      if has_import_default && !exists("@swc/helpers/lib/_interop_require_default.js", param) {
+      if has_import_default && !exists("@swc/helpers/_/_interop_require_default", param) {
         insert_import(
-          "@swc/helpers/lib/_interop_require_default.js",
+          "@swc/helpers/_/_interop_require_default",
           ResolveKind::Import,
           param,
         );
       }
 
-      if has_export_star && !exists("@swc/helpers/lib/_export_star.js", param) {
-        insert_import(
-          "@swc/helpers/lib/_export_star.js",
-          ResolveKind::Import,
-          param,
-        );
+      if has_export_star && !exists("@swc/helpers/_/_export_star", param) {
+        insert_import("@swc/helpers/_/_export_star", ResolveKind::Import, param);
       }
     } else {
       return Ok(None);

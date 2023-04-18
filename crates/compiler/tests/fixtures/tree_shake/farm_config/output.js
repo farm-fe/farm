@@ -51,10 +51,10 @@
                 return _default;
             }
         });
-        var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
+        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
         var _module = require("module");
         var _config = require("edceee38");
-        var _util = _interopRequireDefault(require("052dab48"));
+        var _util = _interop_require_default._(require("052dab48"));
         var _default = (0, _config.defineFarmConfig)({
             compilation: {
                 input: _util.default,

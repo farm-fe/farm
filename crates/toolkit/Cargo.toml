@@ -16,26 +16,26 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
-swc_ecma_parser = { version = "0.133.3" }
-swc_ecma_visit = { version = "0.89.0" }
-swc_ecma_codegen = { version = "0.138.4" }
-swc_ecma_transforms = { version = "0.217.4", features = [
+swc_ecma_parser = { version = "0.133.8" }
+swc_ecma_visit = { version = "0.89.4" }
+swc_ecma_codegen = { version = "0.138.9" }
+swc_ecma_transforms = { version = "0.217.14", features = [
   "module",
   "typescript",
   "react",
   "concurrent",
 ] }
-swc_css_parser = { version = "0.146.0" }
-swc_css_visit = { version = "0.136.0" }
-swc_css_codegen = { version = "0.147.0" }
-swc_html_parser = { version = "0.37.0" }
-swc_html_visit = { version = "0.31.0" }
-swc_html_codegen = { version = "0.40.0" }
-swc_error_reporters = { version = "0.15.0" }
-swc_atoms = { version = "0.5.0" }
-swc_ecma_transforms_base = "0.126.4"
-swc_ecma_minifier = "0.180.5"
+swc_css_parser = { version = "0.146.4" }
+swc_css_visit = { version = "0.136.4" }
+swc_css_codegen = { version = "0.147.4" }
+swc_html_parser = { version = "0.37.4" }
+swc_html_visit = { version = "0.31.4" }
+swc_html_codegen = { version = "0.40.4" }
+swc_error_reporters = { version = "0.15.4" }
+swc_atoms = { version = "0.5.3" }
+swc_ecma_transforms_base = "0.126.10"
+swc_ecma_minifier = "0.180.16"
 lazy_static = "1.4.0"
-regex = "1.4.3"
-sha2 = "0.10"
+regex = "1.7.3"
+sha2 = "0.10.6"
 sourcemap = "6.2.3"

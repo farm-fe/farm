@@ -196,6 +196,21 @@ impl Resolver {
       return None;
     }
 
+    // TODO: if there is package.json, load the package.json and try to resolve the name
+    // if !skip_package {
+    //   let package_path = dir.join("package.json");
+
+    //   if package_path.exists() && package_path.is_file() {
+    //     let package_json_info = load_package_json(
+    //       package_path,
+    //       Options {
+    //         follow_symlinks: self.config.symlinks,
+    //         resolve_ancestor_dir: true, // only look for current directory
+    //       },
+    //     );
+    //   }
+    // }
+
     for main_file in &self.config.main_files {
       let file = dir.join(main_file);
 
@@ -292,6 +307,12 @@ impl Resolver {
             resolve_ancestor_dir: false, // only look for current directory
           },
         );
+        /*
+         * TODO: fix that exports and sub package.json exists at the same time. e.g. `@swc/helpers/_/_interop_require_default`.
+         * This may need to refactor the exports resolve logic.
+         * Refer to https://github.com/npm/validate-npm-package-name/blob/main/lib/index.js#L3 for the package name recognition and determine the sub path,
+         * instead of judging the existence of package.json.
+         */
         if !package_path.join("package.json").exists() {
           // check if the source is a directory or file can be resolved
           if matches!(&package_path, package_path if package_path.exists()) {
@@ -300,7 +321,11 @@ impl Resolver {
               .or_else(|| self.try_directory(&package_path))
             {
               return (
-                Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind)),
+                Some(self.get_resolve_node_modules_result(
+                  package_json_info.ok().as_ref(),
+                  resolved_path,
+                  kind,
+                )),
                 tried_paths,
               );
             }
@@ -345,7 +370,7 @@ impl Resolver {
               if let Ok(_) = package_json_info {
                 return (
                   Some(self.get_resolve_node_modules_result(
-                    &package_json_info,
+                    package_json_info.ok().as_ref(),
                     package_path.to_str().unwrap().to_string(),
                     kind,
                   )),
@@ -359,7 +384,11 @@ impl Resolver {
             .or_else(|| self.try_directory(&package_path))
           {
             return (
-              Some(self.get_resolve_node_modules_result(&package_json_info, resolved_path, kind)),
+              Some(self.get_resolve_node_modules_result(
+                package_json_info.ok().as_ref(),
+                resolved_path,
+                kind,
+              )),
               tried_paths,
             );
           }
@@ -367,65 +396,19 @@ impl Resolver {
           if let Err(_) = package_json_info {
             return (None, tried_paths);
           }
-
           let package_json_info = package_json_info.unwrap();
-          // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
 
-          // search normal entry, based on self.config.main_fields, e.g. module/main
-          let raw_package_json_info: Map<String, Value> =
-            from_str(package_json_info.raw()).unwrap();
+          let (result, tried_paths) = self.try_package(&package_json_info, kind, tried_paths);
 
-          for main_field in &self.config.main_fields {
-            if main_field == "browser" {
-              if self.output.target_env == TargetEnv::Node {
-                continue;
-              }
-            }
-
-            if let Some(field_value) = raw_package_json_info.get(main_field) {
-              if let Value::Object(_) = field_value {
-                let resolved_path = Some(self.get_resolve_node_modules_result(
-                  &Ok(package_json_info.clone()),
-                  package_path.to_str().unwrap().to_string(),
-                  kind,
-                ));
-                let result = resolved_path.as_ref().unwrap();
-                let path = Path::new(result.resolved_path.as_str());
-                if let Some(_extension) = path.extension() {
-                  return (resolved_path, tried_paths);
-                }
-              } else if let Value::String(str) = field_value {
-                let dir = package_json_info.dir();
-                let full_path = RelativePath::new(str).to_logical_path(dir);
-                // the main fields can be a file or directory
-                return match self.try_file(&full_path) {
-                  Some(resolved_path) => (
-                    Some(self.get_resolve_node_modules_result(
-                      &Ok(package_json_info),
-                      resolved_path,
-                      kind,
-                    )),
-                    tried_paths,
-                  ),
-                  None => (
-                    self.try_directory(&full_path).map(|resolved_path| {
-                      self.get_resolve_node_modules_result(
-                        &Ok(package_json_info),
-                        resolved_path,
-                        kind,
-                      )
-                    }),
-                    tried_paths,
-                  ),
-                };
-              }
-            }
+          if result.is_some() {
+            return (result, tried_paths);
           }
 
-          // no main field found, try to resolve index file
+          // no main field found, try to resolve index.js file
+          // TODO do not use try_directory here, just use try_file
           return (
             self.try_directory(&package_path).map(|resolved_path| {
-              self.get_resolve_node_modules_result(&Ok(package_json_info), resolved_path, kind)
+              self.get_resolve_node_modules_result(Some(&package_json_info), resolved_path, kind)
             }),
             tried_paths,
           );
@@ -436,6 +419,63 @@ impl Resolver {
     }
 
     // unsupported node_modules resolving type
+    (None, tried_paths)
+  }
+
+  fn try_package(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    kind: &ResolveKind,
+    tried_paths: Vec<PathBuf>,
+  ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
+    // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
+
+    // search normal entry, based on self.config.main_fields, e.g. module/main
+    let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
+
+    for main_field in &self.config.main_fields {
+      if main_field == "browser" {
+        if self.output.target_env == TargetEnv::Node {
+          continue;
+        }
+      }
+
+      if let Some(field_value) = raw_package_json_info.get(main_field) {
+        if let Value::Object(_) = field_value {
+          let resolved_path = Some(self.get_resolve_node_modules_result(
+            Some(package_json_info),
+            package_json_info.dir().to_string(),
+            kind,
+          ));
+          let result = resolved_path.as_ref().unwrap();
+          let path = Path::new(result.resolved_path.as_str());
+          if let Some(_extension) = path.extension() {
+            return (resolved_path, tried_paths);
+          }
+        } else if let Value::String(str) = field_value {
+          let dir = package_json_info.dir();
+          let full_path = RelativePath::new(str).to_logical_path(dir);
+          // the main fields can be a file or directory
+          return match self.try_file(&full_path) {
+            Some(resolved_path) => (
+              Some(self.get_resolve_node_modules_result(
+                Some(&package_json_info),
+                resolved_path,
+                kind,
+              )),
+              tried_paths,
+            ),
+            None => (
+              self.try_directory(&full_path).map(|resolved_path| {
+                self.get_resolve_node_modules_result(Some(&package_json_info), resolved_path, kind)
+              }),
+              tried_paths,
+            ),
+          };
+        }
+      }
+    }
+
     (None, tried_paths)
   }
 
@@ -467,11 +507,11 @@ impl Resolver {
 
   fn get_resolve_node_modules_result(
     &self,
-    package_json_info: &Result<PackageJsonInfo>,
+    package_json_info: Option<&PackageJsonInfo>,
     resolved_path: String,
     kind: &ResolveKind,
   ) -> PluginResolveHookResult {
-    if let Ok(package_json_info) = package_json_info {
+    if let Some(package_json_info) = package_json_info {
       let side_effects = self.is_module_side_effects(&package_json_info, &resolved_path);
       let resolved_path = self
         .try_exports_replace(package_json_info, &resolved_path, &kind)

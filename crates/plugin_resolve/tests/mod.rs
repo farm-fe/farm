@@ -242,3 +242,22 @@ fn resolve_absolute_specifier() {
     }
   );
 }
+
+// TODO pass this test
+// #[test]
+// fn resolve_package_dir() {
+//   fixture!(
+//     "tests/fixtures/resolve-node-modules/package_dir/entry.js",
+//     |file, _| {
+//       let cwd = file.parent().unwrap().to_path_buf();
+//       let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+
+//       let resolved = resolver.resolve(cwd.to_str().unwrap(), cwd.clone(), &ResolveKind::Import);
+//       assert!(resolved.is_some());
+
+//       let resolved = resolved.unwrap();
+
+//       assert_eq!(resolved.resolved_path, file.to_string_lossy().to_string());
+//     }
+//   );
+// }

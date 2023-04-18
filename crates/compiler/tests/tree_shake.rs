@@ -107,6 +107,7 @@ fn tree_shake_changed_ast() {
               ..Default::default()
             },
             top_level_mark,
+            unresolved_mark,
           ));
           ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
         },

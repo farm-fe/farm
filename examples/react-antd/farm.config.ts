@@ -14,7 +14,7 @@ export default <UserConfig>{
     output: {
       path: './build'
     },
-    sourcemap: true
+    sourcemap: false
   },
   server: {
     hmr: true
