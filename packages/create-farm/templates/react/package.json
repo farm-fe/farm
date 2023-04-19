@@ -12,7 +12,8 @@
     "@farmfe/plugin-react": "0.1.2",
     "@types/react": "18",
     "@types/react-dom": "18",
-    "react-refresh": "^0.14.0"
+    "react-refresh": "^0.14.0",
+    "typescript": "^4.5.2"
   },
   "scripts": {
     "start": "farm start",

@@ -1,13 +1,12 @@
-import { defineFarmConfig } from '@farmfe/core/config';
+import type { UserConfig } from '@farmfe/core';
 
-export default defineFarmConfig({
+export default <UserConfig>{
   compilation: {
     input: {
       index: './index.html',
     },
     resolve: {
       symlinks: true,
-      mainFields: ['module', 'main', 'customMain'],
     },
     define: {
       BTN: 'Click me',
@@ -20,4 +19,4 @@ export default defineFarmConfig({
     hmr: true,
   },
   plugins: ['@farmfe/plugin-react'],
-});
+};
