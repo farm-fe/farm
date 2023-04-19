@@ -27,7 +27,7 @@ impl FarmPluginVueJsx {
     }
   }
 
-  pub fn get_vue_jsx_options(&self) {
+  pub fn get_sass_options(&self) {
     let options = serde_json::from_str(&self.vue_jsx_options).unwrap_or_default();
     get_options(options)
   }
@@ -44,8 +44,7 @@ impl Plugin for FarmPluginVueJsx {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
-    println!("load 结构 param {:?}", param);
-    let reg = Regex::new(r#"\.(jsx|tsx)$"#).unwrap();
+    let reg = Regex::new(r#"\.(sass|scss)$"#).unwrap();
     if reg.is_match(param.resolved_path) {
       let content = fs::read_file_utf8(param.resolved_path).unwrap();
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
