@@ -1,4 +1,4 @@
-use farm_plugin_vue_jsx::add;
+use farmfe_plugin_vue_jsx::add;
 
 #[test]
 fn test_my_function() {

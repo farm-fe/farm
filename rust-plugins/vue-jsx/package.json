@@ -29,8 +29,9 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "napi build --platform --cargo-name farmfe_plugin_vue_jsx -p farmfe_plugin_vue_jsx --release",
+    "build:rs": "napi build --platform --cargo-name farmfe_plugin_vue_jsx -p farmfe_plugin_vue_jsx --release",
     "copy-artifacts": "node scripts/copy-artifacts.mjs",
+    "build": "pnpm build:rs && pnpm copy-artifacts",
     "type-check": "echo \"No type-checking configured.\"",
     "prepublishOnly": "farm plugin prepublish"
   },

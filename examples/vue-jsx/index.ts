@@ -1,3 +1,7 @@
-import { createApp } from 'vue';
+// import { createApp } from 'vue';
 // import Index from './src/index.tsx';
-// createApp(Index).mount('#app');
+// console.log(Index);
+
+// // createApp(Index).mount('#app');
+
+console.log('hello world');

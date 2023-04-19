@@ -2,5 +2,16 @@
 import { defineFarmConfig } from '@farmfe/core/config';
 
 export default defineFarmConfig({
-  plugins: [['@farmfe/plugin-vue-jsx', { name: 'erkelost' }]],
+  compilation: {
+    input: {
+      index: './index.html',
+    },
+    output: {
+      path: './build',
+    },
+    resolve: {
+      strictExports: true,
+    },
+  },
+  plugins: ['@farmfe/plugin-vue-jsx'],
 });
