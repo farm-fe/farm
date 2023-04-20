@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.4
+
+### Patch Changes
+
+- a55d551: Remove the use of defineFarmConfig from the templates' farm.config.ts
+
 ## 1.1.3
 
 ### Patch Changes
