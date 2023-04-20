@@ -51,6 +51,7 @@ node_modules
 export function resolveCore(cwd: string): Promise<{
   start: typeof start;
   build: typeof build;
+  watch: typeof start;
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
   const farmCorePath = require.resolve('@farmfe/core');

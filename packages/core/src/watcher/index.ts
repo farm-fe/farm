@@ -22,10 +22,16 @@ export class FileWatcher {
       serverOrCompiler instanceof DevServer
         ? serverOrCompiler.getCompiler()
         : serverOrCompiler;
+    console.log(serverOrCompiler, '编译器');
+    console.log(this._root);
+    console.log(compiler);
+
+    console.log(compiler.resolvedModulePaths(this._root));
 
     this._watcher = chokidar.watch(compiler.resolvedModulePaths(this._root), {
       ignored: this._options.ignores,
     });
+    console.log('开始监听了啊');
 
     if (serverOrCompiler instanceof DevServer) {
       serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
@@ -51,10 +57,13 @@ export class FileWatcher {
     }
 
     this._watcher.on('change', async (path) => {
+      console.log(66666);
+
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
         // TODO update and emit the result
+        console.log('编译', path);
         await compiler.update([path]);
         compiler.writeResourcesToDisk();
       }

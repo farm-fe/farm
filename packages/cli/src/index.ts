@@ -29,6 +29,16 @@ cli
       configPath: cwd,
     });
   });
+cli
+  .command('watch', 'Compile the project in production mode')
+  .action(async () => {
+    const cwd = process.cwd();
+    const { watch } = await resolveCore(cwd);
+    // TODO set config path
+    watch({
+      configPath: cwd,
+    });
+  });
 
 cli.command('create [name]', 'Create a new project').action((name: string) => {
   create(name);

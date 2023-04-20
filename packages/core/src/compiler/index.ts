@@ -120,6 +120,7 @@ export class Compiler {
   }
 
   resolvedModulePaths(root: string): string[] {
+    console.log(this._bindingCompiler.relativeModulePaths());
     return this._bindingCompiler
       .relativeModulePaths()
       .map((p) => this.transformModulePath(root, p));
