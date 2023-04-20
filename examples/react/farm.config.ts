@@ -3,21 +3,24 @@ import type { UserConfig } from '@farmfe/core';
 export default <UserConfig>{
   compilation: {
     input: {
-      index: './index.html'
+      index: './index.html',
     },
     resolve: {
-      symlinks: true
+      symlinks: true,
     },
     define: {
-      BTN: 'Click me'
+      BTN: 'Click me',
+      HMR_PORT: 3001,
     },
     output: {
-      path: './build'
+      path: './build',
     },
-    sourcemap: true
+    sourcemap: true,
   },
   server: {
-    hmr: true
+    hmr: {
+      port: 3001,
+    },
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
 };

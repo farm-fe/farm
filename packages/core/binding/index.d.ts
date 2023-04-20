@@ -103,7 +103,7 @@ export interface Config {
       symlinks?: boolean;
       strictExports?: boolean;
     };
-    define?: Record<string, string>;
+    define?: Record<string, string | number>;
     external?: string[];
     mode?: 'development' | 'production';
     root?: string;

@@ -6,13 +6,13 @@ import { applyHotUpdates, createHotContext } from './hot-module-state';
 import { HmrUpdatePacket, HmrUpdateResult } from './types';
 
 // TODO using host and port from the config, default to use location.host
-const port = 9801;
+const port = HMR_PORT;
 const host = 'localhost';
 
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-hmr-client-plugin',
   bootstrap(moduleSystem) {
-    console.log('[Farm HMR] connecting to the server...');
+    console.log(`[Farm HMR] connecting to the server...${port}`);
 
     function connect() {
       // setup websocket connection
@@ -32,7 +32,7 @@ export default <FarmRuntimePlugin>{
       });
 
       socket.addEventListener('open', () => {
-        console.log('[Farm HMR] connected to the server');
+        console.log(`[Farm HMR] connected to the server  PORT...${port} `);
       });
       // TODO use ping/pong to detect the connection is closed, and if the server is online again, reload the page
       // socket.addEventListener('close', () => setTimeout(connect, 3000));

@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use swc_ecma_ast::EsVersion;
 use swc_ecma_parser::{EsConfig, TsConfig};
-
 pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
+
 pub struct Config {
   pub input: HashMap<String, String>,
   pub output: OutputConfig,
@@ -16,7 +17,7 @@ pub struct Config {
   pub mode: Mode,
   pub resolve: ResolveConfig,
   pub external: Vec<String>,
-  pub define: HashMap<String, String>,
+  pub define: HashMap<String, Value>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,

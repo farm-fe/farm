@@ -1,3 +1,4 @@
+use farmfe_core::serde_json::Value;
 use farmfe_core::{
   config::{Mode, FARM_MODULE_SYSTEM},
   hashbrown::HashMap,
@@ -15,7 +16,7 @@ use crate::deps_analyzer::{is_link_href, is_script_entry, is_script_src, FARM_EN
 pub struct ResourcesInjectorOptions {
   pub mode: Mode,
   pub public_path: String,
-  pub define: std::collections::HashMap<String, String>,
+  pub define: std::collections::HashMap<String, Value>,
 }
 
 /// inject resources into the html ast
