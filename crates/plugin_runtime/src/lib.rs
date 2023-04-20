@@ -300,6 +300,8 @@ impl Plugin for FarmPluginRuntime {
           };
         }
 
+        // TODO: minify runtime when minify is enabled
+
         // TODO transform async function if target is lower than es2017, should not externalize swc helpers
         // This may cause async generator duplicated but it's ok for now. We can fix it later.
 

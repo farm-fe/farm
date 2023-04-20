@@ -80,7 +80,8 @@ pub fn codegen_module(
       cfg: swc_ecma_codegen::Config {
         target,
         ascii_only: false,
-        minify: false,
+        // TODO make this configurable
+        minify: true,
         omit_last_semi: true,
         ..Default::default()
       },

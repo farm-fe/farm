@@ -25,6 +25,8 @@ pub struct Config {
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
   pub tree_shaking: bool,
+  // TODO: support minify options
+  pub minify: bool,
 }
 
 impl Default for Config {
@@ -48,6 +50,7 @@ impl Default for Config {
       lazy_compilation: true,
       core_lib_path: None,
       tree_shaking: true,
+      minify: true,
     }
   }
 }

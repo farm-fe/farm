@@ -44,8 +44,9 @@ impl Compiler {
       plugins.push(Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _);
     }
 
-    // TODO: add minify config
-    plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
+    if config.minify {
+      plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
+    }
 
     plugins.append(&mut plugin_adapters);
     // sort plugins by priority
