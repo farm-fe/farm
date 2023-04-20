@@ -1,4 +1,8 @@
-use std::{borrow::BorrowMut, sync::Arc};
+use std::{
+  fmt::format,
+  sync::Arc,
+  time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use farmfe_core::{
   config::Config,
@@ -175,7 +179,7 @@ impl Plugin for FarmPluginCss {
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::new();
-        let mut result = String::new();
+        let mut export_names = Vec::new();
 
         for (name, classnames) in stylesheet.renamed.iter() {
           let mut after_transform_classnames = Vec::new();
@@ -184,7 +188,9 @@ impl Plugin for FarmPluginCss {
               CssClassName::Local { name } => {
                 after_transform_classnames.push(name.to_string());
               }
-              CssClassName::Global { name } => {}
+              CssClassName::Global { name } => {
+                after_transform_classnames.push(name.to_string());
+              }
               CssClassName::Import { name, from } => {
                 let v = dynamic_import_of_composes
                   .entry(from)
@@ -193,18 +199,19 @@ impl Plugin for FarmPluginCss {
               }
             }
           }
-          result.push_str(
-            format!("\"{}\": `{}`,", name, after_transform_classnames.join(" ")).as_str(),
-          );
+          export_names.push((name, after_transform_classnames));
         }
 
-        let result = format!(
+        let code = format!(
           r#"
-    import "{}?module=true&lang=css"
+    import "{}?module=true&lang=css&hash={}"
     {}
     export default {{{}}}
     "#,
           param.resolved_path,
+          Duration::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap())
+            .as_micros()
+            .to_string(),
           dynamic_import_of_composes
             .into_iter()
             .fold(Vec::new(), |mut acc, (from, name)| {
@@ -212,7 +219,11 @@ impl Plugin for FarmPluginCss {
               acc
             })
             .join(";\n"),
-          result
+          export_names
+            .iter()
+            .map(|(name, classnames)| format!("\"{}\": `{}`", name, classnames.join(" ").trim()))
+            .collect::<Vec<String>>()
+            .join(",")
         );
 
         self
@@ -221,7 +232,7 @@ impl Plugin for FarmPluginCss {
           .insert(module_id.to_string(), css_stylesheet);
 
         return Ok(Some(PluginTransformHookResult {
-          content: result,
+          content: code,
           module_type: Some(ModuleType::Js),
           source_map: None,
         }));
