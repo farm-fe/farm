@@ -54,6 +54,29 @@ pub struct FarmPluginCss {
   ast_map: Mutex<HashMap<String, Stylesheet>>,
 }
 
+fn wrapper_style_load(code: &String, id: String) -> String {
+  format!(
+    r#"
+const cssCode = `{}`;
+const farmId = '{}';
+const previousStyle = document.querySelector(`style[data-farm-id="${{farmId}}"]`);
+const style = document.createElement('style');
+style.setAttribute('data-farm-id', farmId);
+style.innerHTML = cssCode;
+if (previousStyle) {{
+previousStyle.replaceWith(style);
+}} else {{
+document.head.appendChild(style);
+}}
+
+module.onDispose(() => {{
+style.remove();
+}});
+"#,
+    code, id
+  )
+}
+
 impl Plugin for FarmPluginCss {
   fn name(&self) -> &str {
     "FarmPluginCss"
@@ -92,13 +115,8 @@ impl Plugin for FarmPluginCss {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    let is_module = context.config.css.module;
-
-    if matches!(param.module_type, ModuleType::Css) && is_module {
-      let query = param.query.iter().fold(HashMap::new(), |mut acc, (k, v)| {
-        acc.insert(k.to_string(), v.to_string());
-        acc
-      });
+    if matches!(param.module_type, ModuleType::Css) {
+      let is_modules = context.config.css.module;
 
       let module_id = ModuleId::new(
         param.resolved_path,
@@ -106,19 +124,42 @@ impl Plugin for FarmPluginCss {
         &context.config.root,
       );
 
-      if query
-        .get("module")
-        .and_then(|is_module| Some(is_module == "true"))
-        .is_some()
-        && matches!(context.config.mode, farmfe_core::config::Mode::Production)
-      {
-        // TODO: development mode support js insert to style tag
-        return Ok(Some(PluginTransformHookResult {
-          content: "".to_string(),
-          module_type: Some(ModuleType::Css),
-          source_map: None,
-        }));
-      } else {
+      if is_modules {
+        let query = param.query.iter().fold(HashMap::new(), |mut acc, (k, v)| {
+          acc.insert(k.to_string(), v.to_string());
+          acc
+        });
+
+        let is_modules_file = query
+          .get("module")
+          .and_then(|is_module| Some(is_module == "true"))
+          .is_some();
+
+        if is_modules_file {
+          if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+            let ast = self
+              .ast_map
+              .lock()
+              .remove(module_id.relative_path())
+              .expect("receive an valid css modules file");
+
+            let content = codegen_css_stylesheet(&ast);
+            let js_code = wrapper_style_load(&content, module_id.to_string());
+
+            return Ok(Some(PluginTransformHookResult {
+              content: js_code,
+              module_type: Some(ModuleType::Js),
+              source_map: None,
+            }));
+          } else {
+            return Ok(Some(PluginTransformHookResult {
+              content: "".to_string(),
+              module_type: Some(ModuleType::Css),
+              source_map: None,
+            }));
+          }
+        }
+
         let mut css_stylesheet = parse_css_stylesheet(
           &module_id.to_string(),
           &param.content,
@@ -159,10 +200,10 @@ impl Plugin for FarmPluginCss {
 
         let result = format!(
           r#"
-import "{}?module=true&lang=css"
-{}
-export default {{{}}}
-"#,
+    import "{}?module=true&lang=css"
+    {}
+    export default {{{}}}
+    "#,
           param.resolved_path,
           dynamic_import_of_composes
             .into_iter()
@@ -185,44 +226,18 @@ export default {{{}}}
           source_map: None,
         }));
       }
-    }
 
-    if matches!(param.module_type, ModuleType::Css)
-      && matches!(context.config.mode, farmfe_core::config::Mode::Development)
-    {
-      let module_id = ModuleId::new(
-        param.resolved_path,
-        &stringify_query(&param.query),
-        &context.config.root,
-      );
+      if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+        let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
 
-      let css_js_code = format!(
-        r#"
-const cssCode = `{}`;
-const farmId = '{}';
-const previousStyle = document.querySelector(`style[data-farm-id="${{farmId}}"]`);
-const style = document.createElement('style');
-style.setAttribute('data-farm-id', farmId);
-style.innerHTML = cssCode;
-if (previousStyle) {{
-  previousStyle.replaceWith(style);
-}} else {{
-  document.head.appendChild(style);
-}}
-
-module.onDispose(() => {{
-  style.remove();
-}});
-"#,
-        param.content,
-        module_id.to_string()
-      );
-
-      Ok(Some(PluginTransformHookResult {
-        content: css_js_code,
-        module_type: Some(ModuleType::Js),
-        source_map: None,
-      }))
+        Ok(Some(PluginTransformHookResult {
+          content: css_js_code,
+          module_type: Some(ModuleType::Js),
+          source_map: None,
+        }))
+      } else {
+        Ok(None)
+      }
     } else {
       Ok(None)
     }
