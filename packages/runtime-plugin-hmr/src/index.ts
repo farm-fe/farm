@@ -12,7 +12,7 @@ const host = 'localhost';
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-hmr-client-plugin',
   bootstrap(moduleSystem) {
-    console.log(`[Farm HMR] connecting to the server...${port}`);
+    console.log(`[Farm HMR] connecting to the server...`);
 
     function connect() {
       // setup websocket connection
@@ -32,7 +32,7 @@ export default <FarmRuntimePlugin>{
       });
 
       socket.addEventListener('open', () => {
-        console.log(`[Farm HMR] connected to the server  PORT...${port} `);
+        console.log(`[Farm HMR] connected to the server  PORT...`);
       });
       // TODO use ping/pong to detect the connection is closed, and if the server is online again, reload the page
       // socket.addEventListener('close', () => setTimeout(connect, 3000));

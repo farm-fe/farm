@@ -10,7 +10,7 @@ export default <UserConfig>{
     },
     define: {
       BTN: 'Click me',
-      HMR_PORT: 3001,
+      HMR_PORT: 8008,
     },
     output: {
       path: './build',
