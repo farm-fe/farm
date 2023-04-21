@@ -1,26 +1,28 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
-  config::Config,
+  config::{Config, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
+  module::{ModuleId, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
+  relative_path::RelativePath,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
   swc_common::{comments::NoopComments, Mark, GLOBALS},
   swc_ecma_ast::{
-    CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleItem, Stmt,
-  }, relative_path::RelativePath,
+    CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleDecl, ModuleItem, Stmt,
+  },
+  swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
   fs::{read_file_utf8, transform_output_filename},
@@ -265,6 +267,9 @@ impl Plugin for FarmPluginScript {
     _hook_context: &PluginHookContext,
   ) -> Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+      // handle js entry resource pot
+      self.handle_entry_resource_pot(resource_pot, context)?;
+
       let ast = &resource_pot.meta.as_js().ast;
       let mut src_map_buf = vec![];
 
@@ -284,10 +289,13 @@ impl Plugin for FarmPluginScript {
         .entry_module
         .as_ref()
         .map(|module_id| {
-          let entry_filename = RelativePath::new(&module_id.relative_path().to_string()).normalize();
-          let entry_name = context.config.input.iter().find(|(_, val)| {
-            RelativePath::new(val).normalize() == entry_filename
-          });
+          let entry_filename =
+            RelativePath::new(&module_id.relative_path().to_string()).normalize();
+          let entry_name = context
+            .config
+            .input
+            .iter()
+            .find(|(_, val)| RelativePath::new(val).normalize() == entry_filename);
 
           if let Some((entry_name, _)) = entry_name {
             entry_name.to_string()
@@ -346,5 +354,134 @@ impl Plugin for FarmPluginScript {
 impl FarmPluginScript {
   pub fn new(_config: &Config) -> Self {
     Self {}
+  }
+
+  pub fn get_export_info_of_entry_module(
+    &self,
+    entry_module_id: &ModuleId,
+    context: &Arc<CompilationContext>,
+  ) -> Vec<String> {
+    let module_graph = context.module_graph.read();
+    let entry_module = module_graph
+      .module(entry_module_id)
+      .expect("entry module is not found");
+
+    let ast = &entry_module.meta.as_script().ast;
+    let mut export_info = vec![];
+
+    for item in ast.body.iter() {
+      match item {
+        ModuleItem::ModuleDecl(module_decl) => match module_decl {
+          // TODO: support more export syntax
+
+          // ModuleDecl::ExportDecl(export_decl) => {
+          //   if let Decl::Class(class_decl) = &export_decl.decl {
+          //     export_info.push(class_decl.ident.sym.to_string());
+          //   }
+          // }
+          // ModuleDecl::ExportNamed(named_export) => {
+          //   for specifier in named_export.specifiers.iter() {
+          //     match specifier {
+          //       ExportSpecifier::Named(named_specifier) => {
+          //         export_info.push(named_specifier.orig.sym.to_string());
+          //       }
+          //       _ => {}
+          //     }
+          //   }
+          // }
+          ModuleDecl::ExportDefaultDecl(_) | ModuleDecl::ExportDefaultExpr(_) => {
+            export_info.push("default".to_string());
+          }
+          _ => {}
+        },
+        _ => {}
+      }
+    }
+
+    export_info
+  }
+
+  fn handle_entry_resource_pot(
+    &self,
+    resource_pot: &mut ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> Result<()> {
+    if let Some(entry_module_id) = &resource_pot.entry_module {
+      // modify the ast according to the type,
+      // if js, insert the runtime ast in the front
+      match resource_pot.resource_pot_type {
+        ResourcePotType::Js => {
+          let runtime_ast = context.meta.script.runtime_ast.read();
+          let runtime_ast = runtime_ast.as_ref().unwrap_or_else(|| {
+            panic!(
+              "runtime ast is not found when generating resources for {:?}",
+              resource_pot.id
+            )
+          });
+
+          let resource_pot_ast = &mut resource_pot.meta.as_js_mut().ast;
+          resource_pot_ast
+            .body
+            .insert(0, runtime_ast.body.to_vec().remove(0));
+
+          let export_info = self.get_export_info_of_entry_module(entry_module_id, context);
+          let export_str = if context.config.output.target_env == TargetEnv::Node {
+            export_info
+              .iter()
+              .map(|export| {
+                if export == "default" {
+                  "export default entry.default;".to_string()
+                } else {
+                  format!("export {{ {}: entry.{} }};", export, export)
+                }
+              })
+              .collect::<Vec<String>>()
+              .join("\n")
+          } else {
+            "".to_string()
+          };
+
+          // TODO support top level await, and only support reexport default export now, should support more export type in the future
+          // call the entry module
+          let call_entry = parse_module(
+            "farm-internal-call-entry-module",
+            &format!(
+              r#"var {} = globalThis || window || global || self;
+                var farmModuleSystem = {}.{};
+                farmModuleSystem.bootstrap();
+                var entry = farmModuleSystem.require("{}");
+                {}"#,
+              FARM_GLOBAL_THIS,
+              FARM_GLOBAL_THIS,
+              FARM_MODULE_SYSTEM,
+              entry_module_id.id(context.config.mode.clone()),
+              export_str
+            ),
+            Syntax::Es(context.config.script.parser.es_config.clone()),
+            context.config.script.target.clone(),
+            context.meta.script.cm.clone(),
+          )?;
+          // insert node specific code.
+          // TODO: support async module for node, using dynamic require to load external module instead of createRequire. createRequire does not support load ESM module.
+          if context.config.output.target_env == TargetEnv::Node {
+            let global_var = parse_module(
+              "farm-global-var",
+              r#"import module from 'node:module';
+                global.__farmNodeRequire = module.createRequire(import.meta.url);
+                global.__farmNodeBuiltinModules = module.builtinModules;"#,
+              Syntax::Es(context.config.script.parser.es_config.clone()),
+              context.config.script.target.clone(),
+              context.meta.script.cm.clone(),
+            )?;
+            resource_pot_ast.body.splice(0..0, global_var.body);
+          }
+
+          resource_pot_ast.body.extend(call_entry.body);
+        }
+        _ => unreachable!("Entry resource pot should be js type in FarmPluginScript"),
+      }
+    }
+
+    Ok(())
   }
 }

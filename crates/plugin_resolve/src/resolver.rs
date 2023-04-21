@@ -376,6 +376,12 @@ impl Resolver {
             from_str(package_json_info.raw()).unwrap();
 
           for main_field in &self.config.main_fields {
+            if main_field == "browser" {
+              if self.output.target_env == TargetEnv::Node {
+                continue;
+              }
+            }
+
             if let Some(field_value) = raw_package_json_info.get(main_field) {
               if let Value::Object(_) = field_value {
                 let resolved_path = Some(self.get_resolve_node_modules_result(
@@ -497,6 +503,7 @@ impl Resolver {
     kind: &ResolveKind,
   ) -> Option<String> {
     // resolve exports field
+    // TODO: add all cases from https://nodejs.org/api/packages.html
     let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
     if let Some(exports_field) = exports_field {
       let dir = package_json_info.dir();
@@ -603,6 +610,10 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     resolved_path: &str,
   ) -> Option<String> {
+    if self.output.target_env != TargetEnv::Browser {
+      return None;
+    }
+
     let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
     if let Some(browser_field) = browser_field {
       if let Value::Object(obj) = browser_field {

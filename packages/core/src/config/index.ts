@@ -245,6 +245,7 @@ async function readConfigFile(
           output: {
             filename: fileName,
             path: outputPath,
+            targetEnv: 'node',
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),

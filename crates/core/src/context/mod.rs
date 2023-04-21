@@ -73,6 +73,7 @@ impl Default for ContextMetaData {
 pub struct ScriptContextMetaData {
   pub cm: Arc<SourceMap>,
   pub globals: Globals,
+  pub runtime_ast: RwLock<Option<swc_ecma_ast::Module>>,
 }
 
 impl ScriptContextMetaData {
@@ -80,6 +81,7 @@ impl ScriptContextMetaData {
     Self {
       cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
       globals: Globals::new(),
+      runtime_ast: RwLock::new(None),
     }
   }
 }
