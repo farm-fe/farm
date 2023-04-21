@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.5
+
+### Patch Changes
+
+- 9f980d5: Optimize template style to support dark mode
+
 ## 1.1.4
 
 ### Patch Changes
