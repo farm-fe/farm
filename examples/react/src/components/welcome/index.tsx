@@ -11,9 +11,6 @@ export function Welcome() {
   return (
     <div className="farm-container">
       <img className="logo" src={logo} alt="" />
-      <h1>
-        Welcome to <span className="title">Farm!</span>
-      </h1>
       <FarmCard>
         <div className="main-desc">
           <h2 className="main-sub-title">

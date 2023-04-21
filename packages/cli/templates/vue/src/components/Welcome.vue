@@ -104,8 +104,6 @@ import ButtonAction from './Button.vue';
   flex-direction: column;
   justify-content: center;
   height: 100%;
-  max-width: 60vw;
-  width: 60vw;
   align-items: center;
   padding: 2rem 1rem;
   gap: 1.7rem;
