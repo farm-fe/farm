@@ -95,12 +95,3 @@ h2 {
 h1 {
   margin: 0;
 }
-
-#root {
-  font-size: 18px;
-  display: flex;
-  justify-content: center;
-  max-width: 1280px;
-  margin: 0 auto;
-  font-weight: normal;
-}

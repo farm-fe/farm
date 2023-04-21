@@ -217,8 +217,7 @@ function copyDir(srcDir: string, destDir: string) {
 }
 
 function welcome() {
-  console.log(chalk.magenta(`\n⚡ Welcome To Create Farm Project!`));
-  console.log();
+  console.log(chalk.magenta(`\n⚡ Welcome To Create Farm Project! \n`));
 }
 
 createFarm();

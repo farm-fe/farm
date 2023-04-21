@@ -23,9 +23,8 @@ export default defineComponent({
 .farm-button {
   background-color: #9f1a8f;
   color: #fff;
-  padding: 10px 40px;
-  border-radius: 5px;
-  margin-right: 20px;
+  padding: 10px 25px;
+  border-radius: 10px;
   text-decoration: none;
 }
 

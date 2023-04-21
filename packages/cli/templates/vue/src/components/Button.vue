@@ -25,7 +25,6 @@ export default defineComponent({
   color: #fff;
   padding: 10px 40px;
   border-radius: 5px;
-  margin-right: 20px;
   text-decoration: none;
 }
 

@@ -12,19 +12,17 @@
 .card {
   border: none;
   outline: none;
-  color: #000;
   cursor: pointer;
   position: relative;
   z-index: 0;
   border-radius: 10px;
   box-sizing: content-box;
   width: 100%;
+  color: var(--color-text);
+  background: var(--color-background) !important;
 }
 .card-content {
   padding: 1.25rem;
-}
-.card:before {
-  background: none;
 }
 .card:hover:before {
   content: '';
@@ -50,7 +48,6 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: white;
   left: 0;
   top: 0;
   border-radius: 10px;
