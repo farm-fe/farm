@@ -135,10 +135,11 @@ impl Plugin for FarmPluginCss {
         });
 
         let is_modules_file = query
-          .get("module")
+          .get("modules")
           .and_then(|is_module| Some(is_module == "true"))
           .is_some();
 
+        let is_production = matches!(context.config.mode, farmfe_core::config::Mode::Production);
         if is_modules_file {
           if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
             let ast = self
@@ -202,16 +203,24 @@ impl Plugin for FarmPluginCss {
           export_names.push((name, after_transform_classnames));
         }
 
+        let hash: String = if is_production {
+          "".into()
+        } else {
+          Duration::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap())
+            .as_micros()
+            .to_string()
+        };
+
+        let resolve_origin_source = if is_production { format!("./{}", module_id.relative_path()) } else { param.resolved_path.into() };
+
         let code = format!(
           r#"
-    import "{}?module=true&lang=css&hash={}"
+    import "{}?modules=true&lang=css&hash={}"
     {}
     export default {{{}}}
     "#,
-          param.resolved_path,
-          Duration::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap())
-            .as_micros()
-            .to_string(),
+          resolve_origin_source,
+          hash,
           dynamic_import_of_composes
             .into_iter()
             .fold(Vec::new(), |mut acc, (from, name)| {
@@ -264,7 +273,7 @@ impl Plugin for FarmPluginCss {
       let is_css_modules = param
         .query
         .iter()
-        .any(|(k, v)| k == "module" && v == "true")
+        .any(|(k, v)| k == "modules" && v == "true")
         && context.config.css.module;
 
       let css_stylesheet = if is_css_modules {
