@@ -1,5 +1,4 @@
 use std::{
-  fmt::format,
   sync::Arc,
   time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -14,6 +13,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
   },
+  relative_path::RelativePath,
   resource::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceType,
@@ -211,15 +211,13 @@ impl Plugin for FarmPluginCss {
             .to_string()
         };
 
-        let resolve_origin_source = if is_production { format!("./{}", module_id.relative_path()) } else { param.resolved_path.into() };
-
         let code = format!(
           r#"
-    import "{}?modules=true&lang=css&hash={}"
+    import "./{}?modules=true&lang=css&hash={}"
     {}
     export default {{{}}}
     "#,
-          resolve_origin_source,
+          RelativePath::new(param.resolved_path).file_name().unwrap(),
           hash,
           dynamic_import_of_composes
             .into_iter()
