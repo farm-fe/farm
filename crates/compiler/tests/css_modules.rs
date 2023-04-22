@@ -20,8 +20,6 @@ fn css_module() {
       Mode::Production,
     );
 
-    println!("{}", file.to_string_lossy());
-
     compiler.compile().unwrap();
 
     assert_compiler_result(&compiler, Some(&entry_name));

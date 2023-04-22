@@ -182,25 +182,25 @@ impl Plugin for FarmPluginCss {
         let mut dynamic_import_of_composes = HashMap::new();
         let mut export_names = Vec::new();
 
-        for (name, classnames) in stylesheet.renamed.iter() {
-          let mut after_transform_classnames = Vec::new();
-          for v in classnames {
+        for (name, classes) in stylesheet.renamed.iter() {
+          let mut after_transform_classes = Vec::new();
+          for v in classes {
             match v {
               CssClassName::Local { name } => {
-                after_transform_classnames.push(name.to_string());
+                after_transform_classes.push(name.to_string());
               }
               CssClassName::Global { name } => {
-                after_transform_classnames.push(name.to_string());
+                after_transform_classes.push(name.to_string());
               }
               CssClassName::Import { name, from } => {
                 let v = dynamic_import_of_composes
                   .entry(from)
                   .or_insert(format!("f_{}", hash::sha256(from.as_bytes(), 5)));
-                after_transform_classnames.push(format!("${{{}[\"{}\"]}}", v, name));
+                after_transform_classes.push(format!("${{{}[\"{}\"]}}", v, name));
               }
             }
           }
-          export_names.push((name, after_transform_classnames));
+          export_names.push((name, after_transform_classes));
         }
 
         let hash: String = if is_production {
@@ -230,7 +230,7 @@ impl Plugin for FarmPluginCss {
             .join(";\n"),
           export_names
             .iter()
-            .map(|(name, classnames)| format!("\"{}\": `{}`", name, classnames.join(" ").trim()))
+            .map(|(name, classes)| format!("\"{}\": `{}`", name, classes.join(" ").trim()))
             .collect::<Vec<String>>()
             .join(",")
         );
@@ -281,7 +281,7 @@ impl Plugin for FarmPluginCss {
           .ast_map
           .lock()
           .remove(param.module_id.relative_path())
-          .expect("ivalid css module")
+          .expect("invalid css module")
       } else {
         parse_css_stylesheet(
           &param.module_id.to_string(),
