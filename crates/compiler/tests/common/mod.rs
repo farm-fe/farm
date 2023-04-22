@@ -2,17 +2,12 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{Config, Mode, RuntimeConfig, SourcemapConfig},
+  config::{Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig},
   plugin::Plugin,
   resource::ResourceType,
 };
 
-pub fn create_compiler(
-  input: HashMap<String, String>,
-  cwd: PathBuf,
-  crate_path: PathBuf,
-  minify: bool,
-) -> Compiler {
+pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
   let swc_helpers_path = crate_path
     .join("tests")
     .join("fixtures")
@@ -29,15 +24,55 @@ pub fn create_compiler(
     .to_string_lossy()
     .to_string();
 
+  RuntimeConfig {
+    path: runtime_path,
+    plugins: vec![],
+    swc_helpers_path,
+  }
+}
+
+pub fn create_css_modules_compiler(
+  input: HashMap<String, String>,
+  cwd: PathBuf,
+  crate_path: PathBuf,
+  mode: Mode,
+) -> Compiler {
   let compiler = Compiler::new(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: RuntimeConfig {
-        path: runtime_path,
-        plugins: vec![],
-        swc_helpers_path,
+      runtime: generate_runtime(crate_path),
+      output: farmfe_core::config::OutputConfig {
+        filename: "[resourceName].[ext]".to_string(),
+        ..Default::default()
       },
+      mode,
+      external: vec!["react-refresh".to_string(), "module".to_string()],
+      sourcemap: SourcemapConfig::Bool(false),
+      css: CssConfig {
+        module: true,
+        ..Default::default()
+      },
+      lazy_compilation: false,
+      ..Default::default()
+    },
+    vec![],
+  )
+  .unwrap();
+
+  compiler
+}
+
+pub fn create_compiler(
+  input: HashMap<String, String>,
+  cwd: PathBuf,
+  crate_path: PathBuf,
+) -> Compiler {
+  let compiler = Compiler::new(
+    Config {
+      input,
+      root: cwd.to_string_lossy().to_string(),
+      runtime: generate_runtime(crate_path),
       output: farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
