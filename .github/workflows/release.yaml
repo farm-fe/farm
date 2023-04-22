@@ -48,6 +48,8 @@ jobs:
           path: ./packages/core/npm/linux-x64-gnu
       - name: List Files
         run: ls -l ./packages/core/npm/linux-x64-gnu
+        # copy the binary to core/binding
+        run: cp ./packages/core/npm/linux-x64-gnu/farm.linux-x64-gnu.node ./packages/core/binding
 
       - uses: actions/download-artifact@v3
         id: download-darwin-x64

@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.6.4
+
+### Patch Changes
+
+- 6fa3454: Do not resolve browser when targetEnv is node
+
 ## 0.6.3
 
 ### Patch Changes
