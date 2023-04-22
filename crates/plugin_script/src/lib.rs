@@ -284,6 +284,7 @@ impl Plugin for FarmPluginScript {
         context.config.script.target.clone(),
         context.meta.script.cm.clone(),
         Some(&mut src_map_buf),
+        context.config.minify,
       )
       .map_err(|e| CompilationError::GenerateResourcesError {
         name: resource_pot.id.to_string(),

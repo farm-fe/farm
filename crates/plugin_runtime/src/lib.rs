@@ -375,6 +375,7 @@ impl Plugin for FarmPluginRuntime {
         context.config.script.target.clone(),
         context.meta.script.cm.clone(),
         None,
+        context.config.minify
       )
       .map_err(|e| CompilationError::GenerateResourcesError {
         name: resource_pot.id.to_string(),

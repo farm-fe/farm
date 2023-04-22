@@ -69,6 +69,7 @@ pub fn codegen_module(
   target: EsVersion,
   cm: Arc<SourceMap>,
   src_map: Option<&mut Vec<(BytePos, LineCol)>>,
+  minify: bool,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
 
@@ -80,10 +81,8 @@ pub fn codegen_module(
       cfg: swc_ecma_codegen::Config {
         target,
         ascii_only: false,
-        // TODO make this configurable
-        minify: true,
+        minify,
         omit_last_semi: true,
-        ..Default::default()
       },
       // TODO preserve comments
       comments: None,

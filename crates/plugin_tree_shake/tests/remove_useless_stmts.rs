@@ -52,7 +52,7 @@ export default 'default';
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None).unwrap();
+    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     let expect = r#"import { aValue } from './foo';
 const a = aValue;
@@ -128,7 +128,7 @@ export * from './src/foo';
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None).unwrap();
+    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     assert_eq!(
       result,
@@ -187,7 +187,7 @@ export * from './src/bar';
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None).unwrap();
+    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     assert_eq!(
       result,

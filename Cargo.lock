@@ -1040,6 +1040,7 @@ dependencies = [
  "sourcemap",
  "swc_atoms 0.5.3",
  "swc_css_codegen",
+ "swc_css_minifier",
  "swc_css_parser",
  "swc_css_visit",
  "swc_ecma_codegen",
@@ -1050,6 +1051,7 @@ dependencies = [
  "swc_ecma_visit",
  "swc_error_reporters",
  "swc_html_codegen",
+ "swc_html_minifier",
  "swc_html_parser",
  "swc_html_visit",
 ]
@@ -3285,9 +3287,9 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_parser"
-version = "0.133.8"
+version = "0.133.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5341644ae5e8d143db12c43dcd06d31138c0dbda7db9db31ce751f0a46a58575"
+checksum = "8ce724a8fdc90548d882dec3b0288c0698059ce12a59bbfdeea0384f3d52f009"
 dependencies = [
  "either",
  "lexical",
