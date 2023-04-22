@@ -1,5 +1,5 @@
 use farmfe_core::{
-  config::{OutputConfig, ResolveConfig},
+  config::{OutputConfig, ResolveConfig, TargetEnv},
   plugin::ResolveKind,
 };
 use farmfe_plugin_resolve::resolver::Resolver;
@@ -28,6 +28,28 @@ fn resolve_browser_basic() {
           .to_string_lossy()
           .to_string()
       );
+
+      let resolver = Resolver::new(
+        ResolveConfig::default(),
+        OutputConfig {
+          target_env: TargetEnv::Node,
+          ..OutputConfig::default()
+        },
+      );
+
+      let resolved = resolver.resolve("basic", cwd.clone(), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("basic")
+          .join("main.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
@@ -39,7 +61,6 @@ fn resolve_browser_replace() {
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
-
 
       let resolved = resolver.resolve("module-a", cwd.clone(), &ResolveKind::Import);
       assert!(resolved.is_some());
@@ -113,6 +134,50 @@ fn resolve_browser_ignore() {
       );
       assert!(!resolved.external);
       assert!(!resolved.side_effects);
+    }
+  );
+}
+
+#[test]
+fn resolve_browser_target_env_node() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/browser/node_modules/replace/package.json",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new(
+        ResolveConfig::default(),
+        OutputConfig {
+          target_env: TargetEnv::Node,
+          ..Default::default()
+        },
+      );
+
+      let resolved = resolver.resolve("./only.js", cwd.join("server"), &ResolveKind::Import);
+      assert!(resolved.is_some());
+
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("server")
+          .join("only.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      // normal resolve
+      let resolved = resolver.resolve("./module-a.js", cwd.join("shims"), &ResolveKind::Import);
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("shims")
+          .join("module-a.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
