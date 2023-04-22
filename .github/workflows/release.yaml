@@ -49,6 +49,7 @@ jobs:
       - name: List Files
         run: ls -l ./packages/core/npm/linux-x64-gnu
         # copy the binary to core/binding
+      - name: Copy Core binary
         run: cp ./packages/core/npm/linux-x64-gnu/farm.linux-x64-gnu.node ./packages/core/binding
 
       - uses: actions/download-artifact@v3
