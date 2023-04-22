@@ -11,6 +11,7 @@ pub fn create_compiler(
   input: HashMap<String, String>,
   cwd: PathBuf,
   crate_path: PathBuf,
+  minify: bool,
 ) -> Compiler {
   let swc_helpers_path = crate_path
     .join("tests")
@@ -45,6 +46,7 @@ pub fn create_compiler(
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
+      minify,
       ..Default::default()
     },
     vec![],
@@ -58,6 +60,7 @@ pub fn create_compiler_with_plugins(
   input: HashMap<String, String>,
   cwd: PathBuf,
   crate_path: PathBuf,
+  minify: bool,
   plugins: Vec<Arc<(dyn Plugin + 'static)>>,
 ) -> Compiler {
   let swc_helpers_path = crate_path
@@ -88,6 +91,7 @@ pub fn create_compiler_with_plugins(
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
+      minify,
       ..Default::default()
     },
     plugins,

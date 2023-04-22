@@ -33,6 +33,7 @@ fn tree_shake_test() {
         HashMap::from([(entry_name.clone(), "./index.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
+        false,
       );
       compiler.compile().unwrap();
 
@@ -54,6 +55,7 @@ fn tree_shake_html_entry() {
         HashMap::from([(entry_name.clone(), "./index.html".to_string())]),
         cwd.to_path_buf(),
         crate_path,
+        false,
       );
       compiler.compile().unwrap();
 
@@ -132,6 +134,7 @@ fn tree_shake_changed_ast() {
         HashMap::from([(entry_name.clone(), "./entry.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
+        false,
         vec![Arc::new(ProcessAstPlugin) as Arc<dyn Plugin>],
       );
       compiler.compile().unwrap();

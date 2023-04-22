@@ -40,10 +40,10 @@ pub fn parse_css_stylesheet(
     })
 }
 
-pub fn codegen_css_stylesheet(stylesheet: &Stylesheet) -> String {
+pub fn codegen_css_stylesheet(stylesheet: &Stylesheet, minify: bool) -> String {
   let mut css_code = String::new();
   let css_writer = BasicCssWriter::new(&mut css_code, None, BasicCssWriterConfig::default());
-  let mut gen = CodeGenerator::new(css_writer, CodegenConfig { minify: false });
+  let mut gen = CodeGenerator::new(css_writer, CodegenConfig { minify });
 
   gen.emit(stylesheet).unwrap();
 

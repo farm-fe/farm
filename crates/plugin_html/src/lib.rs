@@ -286,7 +286,7 @@ impl Plugin for FarmPluginHtml {
       let html_ast = &mut resource_pot.meta.as_html_mut().ast;
       resources_injector.inject(html_ast);
 
-      let code = codegen_html_document(html_ast);
+      let code = codegen_html_document(html_ast, context.config.minify);
       html_resource.bytes = code.bytes().collect();
     }
 

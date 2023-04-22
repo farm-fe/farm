@@ -22,13 +22,13 @@ use napi::{
   bindgen_prelude::FromNapiValue,
   sys::{
     napi_call_function, napi_call_threadsafe_function, napi_callback_info, napi_create_function,
-    napi_create_reference, napi_create_string_utf8, napi_create_threadsafe_function, napi_env,
-    napi_get_cb_info, napi_get_named_property, napi_get_undefined,
-    napi_release_threadsafe_function, napi_threadsafe_function, napi_unref_threadsafe_function,
-    napi_value, ThreadsafeFunctionReleaseMode,
+    napi_create_string_utf8, napi_create_threadsafe_function, napi_env, napi_get_cb_info,
+    napi_get_named_property, napi_get_undefined, napi_release_threadsafe_function,
+    napi_threadsafe_function, napi_unref_threadsafe_function, napi_value,
+    ThreadsafeFunctionReleaseMode,
   },
   threadsafe_function::ThreadsafeFunctionCallMode,
-  Env, Error, JsFunction, JsObject, JsUnknown, NapiRaw, ValueType,
+  Env, Error, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
 };
 use regex::Regex;
 
@@ -521,10 +521,10 @@ unsafe extern "C" fn catch_cb<T: DeserializeOwned>(
   );
 
   let rejected_value = rejected_value[0];
-  let mut error_ref = ptr::null_mut();
-  napi_create_reference(env, rejected_value, 1, &mut error_ref);
-
-  let result = Err(Error::from(error_ref)).map_err(|e| {
+  let result = Err(Error::from(unsafe {
+    JsUnknown::from_raw_unchecked(env, rejected_value)
+  }))
+  .map_err(|e| {
     CompilationError::NAPIError(format!(
       "Can not transform the js hook result to js error object. {:?}",
       e
