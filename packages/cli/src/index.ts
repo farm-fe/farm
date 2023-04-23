@@ -6,13 +6,12 @@ import { logger } from "./utils.js";
 
 const cli = cac("farm");
 
-// help options
-
-// TODO add runtime command like mode, debug, filter logs
+// common command
 cli
   .option("-c, --config <file>", `use specified config file`)
   .option("-m, --mode <mode>", `set env mode`);
 
+// dev command
 cli
   .command(
     "",
@@ -44,6 +43,7 @@ cli
     }
   });
 
+// build command
 cli
   .command("build", "Compile the project in production mode")
   .option("--target <target>", "transpile target")
@@ -67,10 +67,10 @@ cli
     }
   });
 
-cli.command("help").action(() => {
-  cli.outputHelp();
-});
+// watch command
+cli.command("watch", "rebuilds when files have changed on disk");
 
+// create plugins command
 cli
   .command("plugin [command]", "Commands for manage plugins", {
     allowUnknownOptions: true,
