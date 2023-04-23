@@ -157,7 +157,7 @@ export interface Config {
       };
     };
     css?: {
-      module?: boolean;
+      modules?: boolean;
       indentName?: string;
     };
     sourcemap?: boolean | 'all';

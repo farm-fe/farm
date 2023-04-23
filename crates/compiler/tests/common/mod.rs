@@ -50,7 +50,7 @@ pub fn create_css_modules_compiler(
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       css: CssConfig {
-        module: true,
+        modules: true,
         ..Default::default()
       },
       lazy_compilation: false,

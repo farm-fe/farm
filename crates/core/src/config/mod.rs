@@ -118,14 +118,14 @@ pub struct ScriptConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct CssConfig {
-  pub module: bool,
+  pub modules: bool,
   pub indent_name: String,
 }
 
 impl Default for CssConfig {
   fn default() -> Self {
     Self {
-      module: false,
+      modules: false,
       indent_name: String::from("farm_[name]"),
     }
   }

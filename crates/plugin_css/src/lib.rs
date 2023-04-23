@@ -120,7 +120,7 @@ impl Plugin for FarmPluginCss {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let is_modules = context.config.css.module;
+      let is_modules = context.config.css.modules;
 
       let module_id = ModuleId::new(
         param.resolved_path,
@@ -272,7 +272,7 @@ impl Plugin for FarmPluginCss {
         .query
         .iter()
         .any(|(k, v)| k == "modules" && v == "true")
-        && context.config.css.module;
+        && context.config.css.modules;
 
       let css_stylesheet = if is_css_modules {
         self
