@@ -1,0 +1,5 @@
+//index.js:
+ (function(modules,entryModule){var cache={};function require(id){if(cache[id])return cache[id].exports;var module={id:id,exports:{}};modules[id](module,module.exports,require);cache[id]=module;return module.exports;}require(entryModule);})({"ec853507":function(module,exports,require,dynamicRequire){"use strict";console.log("runtime/index.js");__farm_global_this__.__farm_module_system__.setPlugins([]);}},"ec853507");!function(e){for(var o in e)(globalThis||window||global||self).__farm_module_system__.register(o,e[o]);}({b5d64806:function(e,o,i,l){"use strict";Object.defineProperty(o,"__esModule",{value:!0}),noop();}});var __farm_global_this__=globalThis||window||global||self;var farmModuleSystem=__farm_global_this__.__farm_module_system__;farmModuleSystem.bootstrap();var entry=farmModuleSystem.require("b5d64806");
+
+//92a5e8c3.css:
+ @import"./dep.css";.body{color:red}

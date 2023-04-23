@@ -30,8 +30,8 @@
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("ef0c4c9d"), exports);
+        var _export_star = require("@swc/helpers/_/_export_star");
+        _export_star._(require("ef0c4c9d"), exports);
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";
@@ -44,8 +44,8 @@
                 return _default;
             }
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("05ee5ec7"), exports);
+        var _export_star = require("@swc/helpers/_/_export_star");
+        _export_star._(require("05ee5ec7"), exports);
         var _default = 2;
     },
     "ef0c4c9d": function(module, exports, require, dynamicRequire) {

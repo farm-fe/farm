@@ -94,12 +94,14 @@ impl Default for ScriptContextMetaData {
 
 pub struct CssContextMetaData {
   pub cm: Arc<SourceMap>,
+  pub globals: Globals,
 }
 
 impl CssContextMetaData {
   pub fn new() -> Self {
     Self {
       cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
+      globals: Globals::new(),
     }
   }
 }
@@ -112,12 +114,14 @@ impl Default for CssContextMetaData {
 
 pub struct HtmlContextMetaData {
   pub cm: Arc<SourceMap>,
+  pub globals: Globals,
 }
 
 impl HtmlContextMetaData {
   pub fn new() -> Self {
     Self {
       cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
+      globals: Globals::new(),
     }
   }
 }

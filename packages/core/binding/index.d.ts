@@ -165,6 +165,7 @@ export interface Config {
     };
     lazyCompilation?: boolean;
     treeShaking?: boolean;
+    minify?: boolean;
   };
   jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]

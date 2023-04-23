@@ -165,13 +165,13 @@ module.onDispose(() => {{
   fn generate_resources(
     &self,
     resource_pot: &mut ResourcePot,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       let stylesheet = &resource_pot.meta.as_css().ast;
 
-      let css_code = codegen_css_stylesheet(&stylesheet);
+      let css_code = codegen_css_stylesheet(&stylesheet, context.config.minify);
 
       Ok(Some(vec![Resource {
         name: resource_pot.id.to_string(),

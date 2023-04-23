@@ -14,6 +14,7 @@ farmfe_plugin_tree_shake = { path = "../plugin_tree_shake" }
 farmfe_plugin_css = { path = "../plugin_css" }
 farmfe_plugin_lazy_compilation = { path = "../plugin_lazy_compilation" }
 farmfe_plugin_static_assets = { path = "../plugin_static_assets" }
+farmfe_plugin_minify = { path = "../plugin_minify" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_utils = { path = "../utils" }
 farmfe_testing_helpers = { path = "../testing_helpers" }

@@ -30,8 +30,8 @@
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("f380ea31"), exports);
+        var _export_star = require("@swc/helpers/_/_export_star");
+        _export_star._(require("f380ea31"), exports);
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";

@@ -39,12 +39,7 @@
   },
   "lint-staged": {
     "packages/**/*.ts": [
-      "eslint --fix",
-      "prettier --write --ignore-unknown"
+      "eslint --fix"
     ]
-  },
-  "prettier": {
-    "semi": true,
-    "singleQuote": true
   }
 }

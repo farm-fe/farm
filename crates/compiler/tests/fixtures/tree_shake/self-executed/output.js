@@ -51,8 +51,8 @@
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
-        var _dep = _interopRequireDefault(require("05ee5ec7"));
+        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
+        var _dep = _interop_require_default._(require("05ee5ec7"));
         (0, _dep.default)();
     }
 });

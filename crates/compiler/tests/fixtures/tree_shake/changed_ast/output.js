@@ -36,8 +36,8 @@
                 return Description;
             }
         });
-        var _interopRequireWildcard = require("@swc/helpers/lib/_interop_require_wildcard.js").default;
-        var _dep = _interopRequireWildcard(require("dep.ts"));
+        var _interop_require_wildcard = require("@swc/helpers/_/_interop_require_wildcard");
+        var _dep = _interop_require_wildcard._(require("dep.ts"));
         const LazyComp = _dep.default.lazy(()=>Promise.resolve({
                 default: ()=>_dep.default.createElement("div", {
                         __source: {

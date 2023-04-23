@@ -89,12 +89,12 @@ impl SourceReplacer<'_> {
           .unwrap()
           .module_type
           .clone();
-        // leave source @swc/helpers/lib/_interop_require_default.js, @swc/helpers/lib/_interop_require_wildcard.js, @swc/helpers/lib/_export_star.js unchanged
+        // leave source @swc/helpers/_/lib/_interop_require_default, @swc/helpers/_/lib/_interop_require_wildcard, @swc/helpers/_/lib/_export_star unchanged
         if !matches!(module_type, ModuleType::Runtime)
           && [
-            "@swc/helpers/lib/_interop_require_default.js",
-            "@swc/helpers/lib/_interop_require_wildcard.js",
-            "@swc/helpers/lib/_export_star.js",
+            "@swc/helpers/_/_interop_require_default",
+            "@swc/helpers/_/_interop_require_wildcard",
+            "@swc/helpers/_/_export_star",
           ]
           .iter()
           .any(|s| source == *s)

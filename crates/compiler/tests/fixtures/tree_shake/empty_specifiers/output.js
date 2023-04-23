@@ -53,9 +53,9 @@
                 return _default;
             }
         });
-        var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
+        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
         require("b3d9bc98");
-        var _comp = _interopRequireDefault(require("6f462555"));
+        var _comp = _interop_require_default._(require("6f462555"));
         console.log(_comp.default);
         var _default = 2;
     }
