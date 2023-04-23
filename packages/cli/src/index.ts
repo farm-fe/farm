@@ -40,6 +40,7 @@ cli
     } catch (e) {
       // TODO refactor Error
       logger(e.message, { title: "Farm Error", color: "red" });
+      process.exit(1);
     }
   });
 
@@ -62,6 +63,7 @@ cli
       });
     } catch (e) {
       logger(e.message, { title: "Farm Error", color: "red" });
+      process.exit(1);
     }
   });
 
@@ -69,7 +71,7 @@ cli.command("help").action(() => {
   cli.outputHelp();
 });
 
-const pluginCmd = cli
+cli
   .command("plugin [command]", "Commands for manage plugins", {
     allowUnknownOptions: true,
   })
@@ -78,13 +80,7 @@ const pluginCmd = cli
     COMMANDS[command](args);
   });
 
-pluginCmd.cli.help();
-
 cli.help();
 
-try {
-  cli.parse();
-} catch (e) {
-  console.log(e);
-  process.exit(1);
-}
+cli.version("5.0.0");
+cli.parse();
