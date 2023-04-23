@@ -1,4 +1,5 @@
 use std::{
+  path::PathBuf,
   sync::Arc,
   time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -217,7 +218,10 @@ impl Plugin for FarmPluginCss {
     {}
     export default {{{}}}
     "#,
-          RelativePath::new(param.resolved_path).file_name().unwrap(),
+          PathBuf::from(param.resolved_path)
+            .file_name()
+            .unwrap()
+            .to_string_lossy(),
           hash,
           dynamic_import_of_composes
             .into_iter()
