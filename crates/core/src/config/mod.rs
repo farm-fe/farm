@@ -110,6 +110,7 @@ impl Default for Mode {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfig {
   pub target: EsVersion,
   pub parser: ScriptParserConfig,
@@ -132,6 +133,7 @@ impl Default for CssConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct ScriptParserConfig {
   pub es_config: EsConfig,
   pub ts_config: TsConfig,

@@ -38,7 +38,7 @@ export interface PluginResolveHookParam {
 
 export interface PluginResolveHookResult {
   /// resolved path, normally a absolute path. you can also return a virtual path, and use [PluginLoadHookResult] to provide the content of the virtual path
-  resolvedPath: String;
+  resolvedPath: string;
   /// whether this module should be external, if true, the module won't present in the final result
   external: boolean;
   /// whether this module has side effects, affects tree shaking
@@ -81,7 +81,7 @@ export interface PluginTransformHookResult {
   /// you can change the module type after transform.
   moduleType?: ModuleType;
   /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
-  sourceMap?: String | null;
+  sourceMap?: string | null;
 }
 
 export interface Config {
