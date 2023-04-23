@@ -1,10 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import Module from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import walkdir from 'walkdir';
-import type { start, build } from '@farmfe/core';
-import spawn from 'cross-spawn';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import Module from "node:module";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import walkdir from "walkdir";
+import type { start, build } from "@farmfe/core";
+import spawn from "cross-spawn";
 
 interface installProps {
   cwd: string; // 项目路径
@@ -13,8 +13,8 @@ interface installProps {
 
 export const TEMPLATES_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'templates'
+  "..",
+  "templates"
 );
 
 export function copyFiles(
@@ -38,9 +38,9 @@ export function copyFiles(
     }
   });
 
-  if (!existsSync(path.join(dest, '.gitignore'))) {
+  if (!existsSync(path.join(dest, ".gitignore"))) {
     writeFileSync(
-      path.join(dest, '.gitignore'),
+      path.join(dest, ".gitignore"),
       `
 node_modules
 *.farm`
@@ -52,10 +52,10 @@ export function resolveCore(cwd: string): Promise<{
   start: typeof start;
   build: typeof build;
 }> {
-  const require = Module.createRequire(path.join(cwd, 'package.json'));
-  const farmCorePath = require.resolve('@farmfe/core');
+  const require = Module.createRequire(path.join(cwd, "package.json"));
+  const farmCorePath = require.resolve("@farmfe/core");
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     return import(pathToFileURL(farmCorePath).toString());
   }
 
@@ -65,23 +65,23 @@ export async function install(options: installProps): Promise<void> {
   const cwd = options.cwd;
   return new Promise((resolve, reject) => {
     const command = options.package;
-    const args = ['install'];
+    const args = ["install"];
 
     const child = spawn(command, args, {
       cwd,
-      stdio: 'inherit',
+      stdio: "inherit",
     });
 
-    child.once('close', (code: number) => {
+    child.once("close", (code: number) => {
       if (code !== 0) {
         reject({
-          command: `${command} ${args.join(' ')}`,
+          command: `${command} ${args.join(" ")}`,
         });
         return;
       }
       resolve();
     });
-    child.once('error', reject);
+    child.once("error", reject);
   });
 }
 /**
@@ -90,5 +90,35 @@ export async function install(options: installProps): Promise<void> {
  * @returns
  */
 export function formatTargetDir(targetDir: string | undefined) {
-  return targetDir?.trim().replace(/\/+$/g, '');
+  return targetDir?.trim().replace(/\/+$/g, "");
+}
+
+/**
+ * filter duplicate item in options
+ */
+export function filterDuplicateOptions<T>(options: T) {
+  for (const [key, value] of Object.entries(options)) {
+    if (Array.isArray(value)) {
+      options[key as keyof T] = value[value.length - 1];
+    }
+  }
+}
+
+export function logger(msg: any, { title = "WARN", color = "yellow" } = {}) {
+  const COLOR_CODE = [
+    "black",
+    "red",
+    "green",
+    "yellow",
+    "blue",
+    "magenta",
+    "cyan",
+    "white",
+  ].indexOf(color);
+  if (COLOR_CODE >= 0) {
+    const TITLE_STR = title ? `\x1b[4${COLOR_CODE};30m ${title} \x1b[0m ` : "";
+    console.log(`${TITLE_STR}\x1b[3${COLOR_CODE}m${msg}\x1b[;0m`);
+  } else {
+    console.log(title ? `${title} ${msg}` : msg);
+  }
 }
