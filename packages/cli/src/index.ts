@@ -3,6 +3,7 @@ import { COMMANDS } from "./plugin/index.js";
 import { filterDuplicateOptions, resolveCore } from "./utils.js";
 import { performance } from "node:perf_hooks";
 import { logger } from "./utils.js";
+import { VERSION } from "./constants.js";
 
 const cli = cac("farm");
 
@@ -82,6 +83,6 @@ cli
 
 cli.help();
 
-cli.version("5.0.0");
+cli.version(VERSION);
 
 cli.parse();
