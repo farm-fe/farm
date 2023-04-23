@@ -1,0 +1,11 @@
+:global .foo :local .hello {
+  color: red;
+}
+
+.bar {
+  color: red;
+}
+
+:local .main :global .description {
+  color: blue;
+}

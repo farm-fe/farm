@@ -156,6 +156,10 @@ export interface Config {
         };
       };
     };
+    css?: {
+      modules?: boolean;
+      indentName?: string;
+    };
     sourcemap?: boolean | 'all';
     partialBundling?: {
       moduleBuckets?: {
