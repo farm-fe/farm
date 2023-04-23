@@ -13,17 +13,18 @@ import {
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
-  UserServerConfig
+  UserServerConfig,
 } from "./types.js";
 import { Logger } from "../logger.js";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
+import { parseUserConfig } from "./schema.js";
 
 export * from "./types.js";
 export const DEFAULT_CONFIG_NAMES = [
   "farm.config.ts",
   "farm.config.js",
-  "farm.config.mjs"
+  "farm.config.mjs",
 ];
 
 /**
@@ -38,11 +39,11 @@ export async function normalizeUserCompilationConfig(
   const config: Config["config"] = merge(
     {
       input: {
-        index: "./index.html"
+        index: "./index.html",
       },
       output: {
-        path: "./dist"
-      }
+        path: "./dist",
+      },
     },
     userConfig.compilation
   );
@@ -53,7 +54,7 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime) {
     config.runtime = {
       path: require.resolve("@farmfe/runtime"),
-      plugins: []
+      plugins: [],
     };
   }
 
@@ -84,10 +85,13 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.mode === "production") {
-    if (!config.output?.filename) {
+    if (!config.output) {
+      config.output = {};
+    }
+    if (!config.output.filename) {
       config.output.filename = "[resourceName].[contentHash].[ext]";
     }
-    if (!config.output?.assetsFilename) {
+    if (!config.output.assetsFilename) {
       config.output.assetsFilename = "[resourceName].[contentHash].[ext]";
     }
   }
@@ -150,7 +154,7 @@ export async function normalizeUserCompilationConfig(
   const normalizedConfig: Config = {
     config: finalConfig,
     rustPlugins,
-    jsPlugins
+    jsPlugins,
   };
 
   return normalizedConfig;
@@ -159,14 +163,14 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: "localhost",
-  port: 9801
+  port: 9801,
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
-  hmr: DEFAULT_HMR_OPTIONS
+  hmr: DEFAULT_HMR_OPTIONS,
 };
 
 export function normalizeDevServerOptions(
@@ -207,7 +211,7 @@ export async function resolveUserConfig(
       const config = await readConfigFile(resolvedPath, logger);
 
       if (config) {
-        userConfig = config;
+        userConfig = parseUserConfig(config);
         // if we found a config file, stop searching
         break;
       }
@@ -218,7 +222,7 @@ export async function resolveUserConfig(
     const config = await readConfigFile(configPath, logger);
 
     if (config) {
-      userConfig = config;
+      userConfig = parseUserConfig(config);
     }
   }
 
@@ -248,32 +252,32 @@ async function readConfigFile(
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: resolvedPath
+            config: resolvedPath,
           },
           output: {
             filename: fileName,
             path: outputPath,
-            targetEnv: "node"
+            targetEnv: "node",
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`)
+            ...module.builtinModules.map((m) => `^node:${m}$`),
           ],
           partialBundling: {
             moduleBuckets: [
               {
                 name: fileName,
-                test: [".+"]
-              }
-            ]
+                test: [".+"],
+              },
+            ],
           },
           sourcemap: false,
           treeShaking: false,
-          minify: false
+          minify: false,
         },
         server: {
-          hmr: false
-        }
+          hmr: false,
+        },
         // plugins: [
         //   {
         //     name: 'farm-plugin-external',
