@@ -188,6 +188,7 @@ const UserConfigSchema = z
   .strict();
 
 export function parseUserConfig(config: unknown) {
-  const parsed: UserConfig = UserConfigSchema.parse(config);
-  return parsed;
+  const parsed = UserConfigSchema.parse(config);
+  // TODO: parse will only return correct types if tsconfig is set to strict
+  return parsed as UserConfig;
 }
