@@ -54,6 +54,7 @@ pub fn create_css_modules_compiler(
         ..Default::default()
       },
       lazy_compilation: false,
+      minify: false,
       ..Default::default()
     },
     vec![],
@@ -67,6 +68,7 @@ pub fn create_compiler(
   input: HashMap<String, String>,
   cwd: PathBuf,
   crate_path: PathBuf,
+  minify: bool,
 ) -> Compiler {
   let compiler = Compiler::new(
     Config {

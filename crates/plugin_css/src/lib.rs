@@ -148,7 +148,7 @@ impl Plugin for FarmPluginCss {
               .remove(module_id.relative_path())
               .expect("receive an valid css modules file");
 
-            let content = codegen_css_stylesheet(&ast);
+            let content = codegen_css_stylesheet(&ast, context.config.minify);
             let js_code = wrapper_style_load(&content, module_id.to_string());
 
             return Ok(Some(PluginTransformHookResult {
@@ -187,16 +187,16 @@ impl Plugin for FarmPluginCss {
           for v in classes {
             match v {
               CssClassName::Local { name } => {
-                after_transform_classes.push(name.to_string());
+                after_transform_classes.push(name.value.to_string());
               }
               CssClassName::Global { name } => {
-                after_transform_classes.push(name.to_string());
+                after_transform_classes.push(name.value.to_string());
               }
               CssClassName::Import { name, from } => {
                 let v = dynamic_import_of_composes
                   .entry(from)
                   .or_insert(format!("f_{}", hash::sha256(from.as_bytes(), 5)));
-                after_transform_classes.push(format!("${{{}[\"{}\"]}}", v, name));
+                after_transform_classes.push(format!("${{{}[\"{}\"]}}", v, name.value));
               }
             }
           }
