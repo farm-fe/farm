@@ -30,14 +30,24 @@ test("resolveUserConfig", async () => {
   });
 });
 
-test("normalize-dev-server-options", () => {
-  let options = normalizeDevServerOptions({});
-  expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
-  expect(options.port).toBe(DEFAULT_DEV_SERVER_OPTIONS.port);
+describe("normalize-dev-server-options", () => {
+  test("default", () => {
+    const options = normalizeDevServerOptions({}, "development");
+    expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
+    expect(options.port).toBe(DEFAULT_DEV_SERVER_OPTIONS.port);
+    expect(options.hmr).not.toBe(false);
+  });
 
-  options = normalizeDevServerOptions({ port: 8080 });
-  expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
-  expect(options.port).toBe(8080);
+  test("custom port", () => {
+    const options = normalizeDevServerOptions({ port: 8080 }, "development");
+    expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
+    expect(options.port).toBe(8080);
+  });
+
+  test("disable HMR in prod", () => {
+    const options = normalizeDevServerOptions({}, "production");
+    expect(options.hmr).toBe(false);
+  });
 });
 
 describe("parseUserConfig", () => {
