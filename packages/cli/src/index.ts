@@ -57,5 +57,8 @@ try {
 } catch (e) {
   // TODO error handling
   // console.log(e);
-  log('error', e);
+  log('error',e.message);
+  if(process.env.LOG_LEVEL === 'verbose'){
+      console.log(e);
+  }
 }
