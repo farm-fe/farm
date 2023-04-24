@@ -1,7 +1,7 @@
 import { cac } from 'cac';
 import { create } from './create/index.js';
 import { COMMANDS } from './plugin/index.js';
-import { resolveCore } from './utils.js';
+import { resolveCore, log } from './utils.js';
 
 const cli = cac();
 
@@ -57,5 +57,8 @@ try {
   cli.parse();
 } catch (e) {
   // TODO error handling
-  console.log(e);
+  log('error',e.message);
+  if(process.env.LOG_LEVEL === 'verbose'){
+      console.log(e);
+  }
 }

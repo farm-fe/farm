@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import walkdir from 'walkdir';
 import type { start, build } from '@farmfe/core';
 import spawn from 'cross-spawn';
+import npmlog from 'npmlog';
 
 interface installProps {
   cwd: string; // 项目路径
@@ -91,4 +92,15 @@ export async function install(options: installProps): Promise<void> {
  */
 export function formatTargetDir(targetDir: string | undefined) {
   return targetDir?.trim().replace(/\/+$/g, '');
+}
+
+
+/**
+ * log模块
+ * 基于npmlog第三方库
+ */
+export function log(level: string, message: string) {
+  npmlog.level = process.env.LOG_LEVEL || 'info';// 判断debug模式
+  npmlog.heading = 'farmfe-cli'; // 修改前缀
+  npmlog[level](message);
 }
