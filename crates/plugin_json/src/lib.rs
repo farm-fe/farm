@@ -57,7 +57,7 @@ impl Plugin for FarmPluginJson {
         }
       })?;
 
-      let js = format!("export default {}", json.to_string());
+      let js = format!("module.exports = {}", json.to_string());
 
       Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: js,

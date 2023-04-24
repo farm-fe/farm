@@ -1,12 +1,14 @@
 import path from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { pathToFileURL } from 'url';
 import { expect, test } from 'vitest';
-import { Compiler, normalizeUserCompilationConfig } from '../src/index.js';
-import { JsPlugin } from '../src/plugin/index.js';
+import {
+  getFixturesDir,
+  getCompiler as getInternalCompiler
+} from './common.js';
+import { JsPlugin } from '../src/index.js';
 
 function getJsPluginsFixturesDir() {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(currentDir, 'fixtures', 'js-plugins');
+  return path.resolve(getFixturesDir(), 'js-plugins');
 }
 
 function getOutputFilePath(p: string) {
@@ -14,35 +16,9 @@ function getOutputFilePath(p: string) {
   return path.join(root, 'dist', p, 'index.mjs');
 }
 
-async function getCompiler(
-  p: string,
-  plugins: JsPlugin[],
-  input?: Record<string, string>
-): Promise<Compiler> {
+function getCompiler(p: string, plugins: JsPlugin[]) {
   const root = getJsPluginsFixturesDir();
-  const config = await normalizeUserCompilationConfig(
-    {
-      root,
-      compilation: {
-        input: input ?? {
-          index: './index.ts?foo=bar',
-        },
-        output: {
-          path: path.join('dist', p),
-          filename: 'index.mjs',
-          targetEnv: 'node',
-        },
-        lazyCompilation: false,
-        sourcemap: false,
-      },
-      server: {
-        hmr: false,
-      },
-      plugins,
-    },
-    'production'
-  );
-  return new Compiler(config);
+  return getInternalCompiler(root, p, plugins);
 }
 
 test('Js Plugin Execution - resolve', async () => {
@@ -55,7 +31,7 @@ test('Js Plugin Execution - resolve', async () => {
       resolve: {
         filters: {
           sources: ['\\./index.ts'],
-          importers: ['None'],
+          importers: ['None']
         },
         executor: async (param) => {
           console.log(param);
@@ -68,11 +44,11 @@ test('Js Plugin Execution - resolve', async () => {
             query: [['foo', 'bar']],
             sideEffects: false,
             external: false,
-            meta: {},
+            meta: {}
           };
-        },
-      },
-    },
+        }
+      }
+    }
   ]);
 
   await compiler.compile();
@@ -96,17 +72,17 @@ test('Js Plugin Execution - load', async () => {
       priority: 1000,
       load: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
+          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
         },
         executor: async (param) => {
           console.log(param);
           return {
             content: 'export default 33;',
-            moduleType: 'ts',
+            moduleType: 'ts'
           };
-        },
-      },
-    },
+        }
+      }
+    }
   ]);
 
   await compiler.compile();
@@ -130,17 +106,17 @@ test('Js Plugin Execution - transform', async () => {
       priority: 1000,
       transform: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
+          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
         },
         executor: async (param) => {
           console.log(param);
           expect(param.moduleType).toBe('ts');
           return {
-            content: 'export default 44;',
+            content: 'export default 44;'
           };
-        },
-      },
-    },
+        }
+      }
+    }
   ]);
 
   await compiler.compile();
@@ -166,7 +142,7 @@ test('Js Plugin Execution - full', async () => {
       resolve: {
         filters: {
           sources: ['.*'],
-          importers: ['.ts$'],
+          importers: ['.ts$']
         },
         executor: async (param) => {
           console.log(param);
@@ -176,11 +152,11 @@ test('Js Plugin Execution - full', async () => {
               resolvedPath,
               query: [
                 ['lang', 'ts'],
-                ['index', '1'],
+                ['index', '1']
               ],
               sideEffects: false,
               external: false,
-              meta: {},
+              meta: {}
             };
           } else {
             return {
@@ -188,23 +164,23 @@ test('Js Plugin Execution - full', async () => {
               query: [],
               sideEffects: false,
               external: false,
-              meta: {},
+              meta: {}
             };
           }
-        },
+        }
       },
       load: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
+          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
         },
         executor: async (param) => {
           return {
             content: 'import "./resolved?lang=ts&index=1"; export default 2;',
-            moduleType: 'ts',
+            moduleType: 'ts'
           };
-        },
-      },
-    },
+        }
+      }
+    }
   ]);
 
   await compiler.compile();
