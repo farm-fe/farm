@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.6.0
+
+### Minor Changes
+
+- a04008f: Support script, css and html minification
+
 ## 0.5.0
 
 ### Minor Changes
