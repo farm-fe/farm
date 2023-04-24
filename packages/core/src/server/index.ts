@@ -40,7 +40,7 @@ export class DevServer {
     public logger: Logger,
     options?: UserServerConfig
   ) {
-    this.config = normalizeDevServerOptions(options, "development");
+    this.config = normalizeDevServerOptions(options, 'development');
     this._app = new Koa();
 
     // this._app.use(serve(this._dist));

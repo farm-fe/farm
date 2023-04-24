@@ -5,8 +5,8 @@ import { UserConfig } from '@farmfe/core';
 export default {
   compilation: {
     input: {
-      main: './main.tsx'
+      main: './main.tsx',
     },
-    external: module.builtinModules
-  }
+    external: module.builtinModules,
+  },
 } as UserConfig;

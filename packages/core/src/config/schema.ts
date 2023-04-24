@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { UserConfig } from "./types.js";
+import { z } from 'zod';
+import { UserConfig } from './types.js';
 
 const ConfigSchema = z
   .object({
@@ -11,7 +11,7 @@ const ConfigSchema = z
         path: z.string().optional(),
         publicPath: z.string().optional(),
         assetsFilename: z.string().optional(),
-        targetEnv: z.enum(["browser", "node"]).optional(),
+        targetEnv: z.enum(['browser', 'node']).optional(),
       })
       .strict()
       .optional(),
@@ -28,7 +28,7 @@ const ConfigSchema = z
       .optional(),
     define: z.record(z.string()).optional(),
     external: z.array(z.string()).optional(),
-    mode: z.enum(["development", "production"]).optional(),
+    mode: z.enum(['development', 'production']).optional(),
     root: z.string().optional(),
     runtime: z
       .object({
@@ -48,16 +48,16 @@ const ConfigSchema = z
       .object({
         target: z
           .enum([
-            "es3",
-            "es5",
-            "es2015",
-            "es2016",
-            "es2017",
-            "es2018",
-            "es2019",
-            "es2020",
-            "es2021",
-            "es2022",
+            'es3',
+            'es5',
+            'es2015',
+            'es2016',
+            'es2017',
+            'es2018',
+            'es2019',
+            'es2020',
+            'es2021',
+            'es2022',
           ])
           .optional(),
         parser: z.object({
@@ -88,7 +88,7 @@ const ConfigSchema = z
       })
       .strict()
       .optional(),
-    sourcemap: z.union([z.boolean(), z.literal("all")]).optional(),
+    sourcemap: z.union([z.boolean(), z.literal('all')]).optional(),
     partialBundling: z
       .object({
         moduleBuckets: z.array(

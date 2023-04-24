@@ -1,8 +1,8 @@
-import dep1 from "./dep1";
+import dep1 from './dep1';
 
-export const dep = "dep";
+export const dep = 'dep';
 
-export default function() {
+export default function () {
   return dep1();
 }
 
