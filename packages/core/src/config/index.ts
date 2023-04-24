@@ -18,6 +18,7 @@ import {
 import { Logger } from "../logger.js";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
+import { parseUserConfig } from "./schema.js";
 
 export * from "./types.js";
 export const DEFAULT_CONFIG_NAMES = [
@@ -26,6 +27,8 @@ export const DEFAULT_CONFIG_NAMES = [
   "farm.config.mjs",
 ];
 
+type CompilationMode = "development" | "production";
+
 /**
  * Normalize user config and transform it to rust compiler compatible config
  * @param config
@@ -33,7 +36,7 @@ export const DEFAULT_CONFIG_NAMES = [
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode: "development" | "production" = "production"
+  mode: CompilationMode = "production"
 ): Promise<Config> {
   const config: Config["config"] = merge(
     {
@@ -84,16 +87,20 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.mode === "production") {
-    if (!config.output?.filename) {
+    if (!config.output) {
+      config.output = {};
+    }
+    if (!config.output.filename) {
       config.output.filename = "[resourceName].[contentHash].[ext]";
     }
-    if (!config.output?.assetsFilename) {
+    if (!config.output.assetsFilename) {
       config.output.assetsFilename = "[resourceName].[contentHash].[ext]";
     }
   }
 
   const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server
+    userConfig.server,
+    mode
   );
 
   if (
@@ -170,17 +177,17 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
 };
 
 export function normalizeDevServerOptions(
-  options?: UserServerConfig
+  options: UserServerConfig | undefined,
+  mode: CompilationMode
 ): NormalizedServerConfig {
-  if (!options) {
-    return DEFAULT_DEV_SERVER_OPTIONS;
-  }
-
-  if (options.hmr === true) {
-    options.hmr = DEFAULT_HMR_OPTIONS;
-  }
-
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options);
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
+    hmr:
+      mode === "production"
+        ? false
+        : options?.hmr !== false
+        ? DEFAULT_HMR_OPTIONS
+        : options.hmr,
+  });
 }
 
 /**
@@ -208,7 +215,7 @@ export async function resolveUserConfig(
       const config = await readConfigFile(resolvedPath, logger);
 
       if (config) {
-        userConfig = config;
+        userConfig = parseUserConfig(config);
         // if we found a config file, stop searching
         break;
       }
@@ -219,7 +226,7 @@ export async function resolveUserConfig(
     const config = await readConfigFile(configPath, logger);
 
     if (config) {
-      userConfig = config;
+      userConfig = parseUserConfig(config);
     }
   }
 

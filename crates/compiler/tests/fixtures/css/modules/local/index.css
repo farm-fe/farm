@@ -1,0 +1,15 @@
+.base {
+  font-size: 20px;
+}
+
+.hide {
+  display: none;
+}
+
+.show {
+  display: block;
+}
+
+:local .hello {
+  color: blue;
+}
