@@ -27,6 +27,8 @@ export const DEFAULT_CONFIG_NAMES = [
   "farm.config.mjs",
 ];
 
+type CompilationMode = "development" | "production";
+
 /**
  * Normalize user config and transform it to rust compiler compatible config
  * @param config
@@ -34,7 +36,7 @@ export const DEFAULT_CONFIG_NAMES = [
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode: "development" | "production" = "production"
+  mode: CompilationMode = "production"
 ): Promise<Config> {
   const config: Config["config"] = merge(
     {
@@ -97,7 +99,8 @@ export async function normalizeUserCompilationConfig(
   }
 
   const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server
+    userConfig.server,
+    mode
   );
 
   if (
@@ -174,17 +177,17 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
 };
 
 export function normalizeDevServerOptions(
-  options?: UserServerConfig
+  options: UserServerConfig | undefined,
+  mode: CompilationMode
 ): NormalizedServerConfig {
-  if (!options) {
-    return DEFAULT_DEV_SERVER_OPTIONS;
-  }
-
-  if (options.hmr === true) {
-    options.hmr = DEFAULT_HMR_OPTIONS;
-  }
-
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options);
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
+    hmr:
+      mode === "production"
+        ? false
+        : options?.hmr !== false
+        ? DEFAULT_HMR_OPTIONS
+        : options.hmr,
+  });
 }
 
 /**

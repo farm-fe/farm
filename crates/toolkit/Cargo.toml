@@ -37,6 +37,7 @@ swc_error_reporters = { version = "0.15.4" }
 swc_atoms = { version = "0.5.3" }
 swc_ecma_transforms_base = "0.126.10"
 swc_ecma_minifier = "0.180.16"
+swc_css_modules = { version = "0.25.5" }
 lazy_static = "1.4.0"
 regex = "1.7.3"
 sha2 = "0.10.6"

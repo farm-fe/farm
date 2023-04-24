@@ -1,0 +1,8 @@
+.base {
+  font-size: 24px;
+  composes: action;
+}
+
+.action {
+  color: red;
+}
