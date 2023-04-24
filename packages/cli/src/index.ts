@@ -1,7 +1,6 @@
 import { cac, Command } from "cac";
 import { COMMANDS } from "./plugin/index.js";
 import { filterDuplicateOptions, resolveCore } from "./utils.js";
-import { performance } from "node:perf_hooks";
 import { logger } from "./utils.js";
 import { VERSION } from "./constants.js";
 import path from "node:path";
