@@ -27,14 +27,11 @@ cli
   .option("--https", "use https")
   .option("--strictPort", "specified port is already in use, exit with error")
   .action(async (options) => {
-    let root = process.cwd();
     filterDuplicateOptions(options);
+    const root = path.join(process.cwd(), options.config ?? "");
     // TODO add runtime command config path
     try {
       const { start } = await resolveCore(root);
-      if (options.config) {
-        root = path.join(root, options.config);
-      }
       await start({
         configPath: root,
         ...options,
@@ -56,13 +53,10 @@ cli
   .option("--minify", "code compression at build time")
   .option("-w, --watch", `rebuilds when files have changed on disk`)
   .action(async (options: any) => {
-    let root = process.cwd();
+    const root = path.join(process.cwd(), options.config ?? "");
     filterDuplicateOptions(options);
     try {
       const { build } = await resolveCore(root);
-      if (options.config) {
-        root = path.join(root, options.config);
-      }
       build({
         configPath: root,
         ...options,
