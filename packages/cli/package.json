@@ -46,6 +46,7 @@
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
     "inquirer": "^9.1.4",
+    "npmlog": "^7.0.1",
     "walkdir": "^0.4.1"
   },
   "devDependencies": {

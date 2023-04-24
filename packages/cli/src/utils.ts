@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import walkdir from 'walkdir';
 import type { start, build } from '@farmfe/core';
 import spawn from 'cross-spawn';
+import npmlog from 'npmlog';
 
 interface installProps {
   cwd: string; // 项目路径
