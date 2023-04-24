@@ -220,7 +220,7 @@ export async function resolveUserConfig(
       }
 
       if (command === "build") {
-        resolveBuildOptions(config, options);
+        // resolveBuildOptions(config, options);
       }
       if (config) {
         userConfig = parseUserConfig(config);
@@ -357,4 +357,6 @@ export function resolveServerOptions(config: any, userOptions: any) {
 }
 
 // TODO resolve build options
-export function resolveBuildOptions() {}
+export function resolveBuildOptions() {
+  //TODO resolve build options
+}
