@@ -5,7 +5,7 @@ import { performance } from "node:perf_hooks";
 import { logger } from "./utils.js";
 import { VERSION } from "./constants.js";
 import path from "node:path";
-import colors from 'colors';
+import chalk from 'chalk';
 
 const cli = cac("farm");
 
@@ -84,9 +84,9 @@ cli
 // 对未知命令监听
 cli.on('command:*', function(obj: { args: string[] }){
   const availableCommands = cli.commands.map((cmd: Command) => cmd.name);
-  console.log(colors.red(`未知的命令：${obj.args[0]}`));
+  console.log(chalk.red(`未知的命令：${obj.args[0]}`));
   if(availableCommands.length > 0){
-      console.log(colors.red(`可用命令：${availableCommands.join(',')}`));
+      console.log(chalk.red(`可用命令：${availableCommands.join(',')}`));
   }
 });
 
