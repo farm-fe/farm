@@ -18,13 +18,13 @@ export async function start(options: {
   configPath?: string;
   logger?: Logger;
 }): Promise<void> {
+  // TODO merger config options
   console.log(options);
 
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  console.log(userConfig);
+
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     "development"

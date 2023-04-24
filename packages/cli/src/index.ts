@@ -1,7 +1,6 @@
 import { cac } from "cac";
 import { COMMANDS } from "./plugin/index.js";
 import { filterDuplicateOptions, resolveCore } from "./utils.js";
-import { performance } from "node:perf_hooks";
 import { logger } from "./utils.js";
 import { VERSION } from "./constants.js";
 import path from "node:path";
@@ -37,7 +36,7 @@ cli
         ...options,
       });
     } catch (e) {
-      // TODO refactor Error
+      // TODO refactor logger
       logger(e.message, { title: "Farm Error", color: "red" });
       process.exit(1);
     }
@@ -45,7 +44,7 @@ cli
 
 // build command
 cli
-  .command("build", "Compile the project in production mode")
+  .command("build", "compile the project in production mode")
   .option("--target <target>", "transpile target")
   .option("--outDir <dir>", "output directory")
   // TODO sourcemap output config path

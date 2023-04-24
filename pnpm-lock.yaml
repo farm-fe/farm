@@ -244,6 +244,9 @@ importers:
       '@types/inquirer':
         specifier: ^9.0.3
         version: 9.0.3
+      '@types/npmlog':
+        specifier: ^4.1.4
+        version: 4.1.4
 
   packages/core:
     dependencies:
@@ -1742,6 +1745,10 @@ packages:
 
   /@types/normalize-package-data@2.4.1:
     resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
+    dev: true
+
+  /@types/npmlog@4.1.4:
+    resolution: {integrity: sha512-WKG4gTr8przEZBiJ5r3s8ZIAoMXNbOgQ+j/d5O4X3x6kZJRLNvyUJuUK/KoG3+8BaOHPhp2m7WC6JKKeovDSzQ==}
     dev: true
 
   /@types/parse-json@4.0.0:
