@@ -126,10 +126,9 @@ export function logger(msg: any, { title = "WARN", color = "yellow" } = {}) {
 }
 
 /**
- * log模块：基于npmlog第三方库封装
- * 使用方法：log('info', 'message')
- * 更多用法：参考npmlog官方用法
+ * log模块
  */
+
 export function log(level: string, message: string) {
   npmlog.level = process.env.LOG_LEVEL || 'info';// 判断debug模式
   npmlog.heading = 'farmfe-cli'; // 修改前缀
