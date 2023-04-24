@@ -18,7 +18,7 @@ export async function start(options: {
   configPath?: string;
   logger?: Logger;
 }): Promise<void> {
-  // TODO merger config options
+  // TODO merger config options Encapsulation universal
   console.log(options);
 
   const logger = options.logger ?? new DefaultLogger();
