@@ -19,11 +19,13 @@ export async function start(options: {
   logger?: Logger;
 }): Promise<void> {
   // TODO merger config options Encapsulation universal
-  console.log(options);
 
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
-  console.log(userConfig);
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    logger,
+    "start"
+  );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -57,10 +59,13 @@ export async function build(options: {
   logger?: Logger;
 }): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+
   const userConfig: UserConfig = await resolveUserConfig(
-    options.configPath,
-    logger
+    options,
+    logger,
+    "build"
   );
+
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     "production"

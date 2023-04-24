@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import walkdir from "walkdir";
 import type { start, build } from "@farmfe/core";
 import spawn from "cross-spawn";
-import npmlog from 'npmlog';
+import npmlog from "npmlog";
 
 interface installProps {
   cwd: string; // 项目路径
@@ -130,7 +130,16 @@ export function logger(msg: any, { title = "WARN", color = "yellow" } = {}) {
  */
 
 export function log(level: string, message: string) {
-  npmlog.level = process.env.LOG_LEVEL || 'info';// 判断debug模式
-  npmlog.heading = 'farmfe-cli'; // 修改前缀
+  npmlog.level = process.env.LOG_LEVEL || "info"; // 判断debug模式
+  npmlog.heading = "farmfe-cli"; // 修改前缀
   npmlog[level](message);
+}
+
+export function cleanOptions(options: any) {
+  const resolveOptions = { ...options };
+  delete resolveOptions["--"];
+  delete resolveOptions.m;
+  delete resolveOptions.c;
+  delete resolveOptions.w;
+  return resolveOptions;
 }

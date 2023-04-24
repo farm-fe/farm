@@ -1,6 +1,6 @@
 import { cac } from "cac";
 import { COMMANDS } from "./plugin/index.js";
-import { filterDuplicateOptions, resolveCore } from "./utils.js";
+import { cleanOptions, filterDuplicateOptions, resolveCore } from "./utils.js";
 import { logger } from "./utils.js";
 import { VERSION } from "./constants.js";
 import path from "node:path";
@@ -20,21 +20,21 @@ cli
   )
   .alias("start")
   .alias("dev")
-  .option("--host [host]", "specify host")
+  //TODO add host config
   .option("--port [port]", "specify port")
   .option("--open", "open browser on server start")
   .option("--https", "use https")
+  // TODO add strictPort open config
+  .option("--hmr", "enable hot module replacement")
   .option("--strictPort", "specified port is already in use, exit with error")
   .action(async (options) => {
     filterDuplicateOptions(options);
     const root = path.join(process.cwd(), options.config ?? "");
+    options.configPath = root;
     // TODO add runtime command config path
     try {
       const { start } = await resolveCore(root);
-      await start({
-        configPath: root,
-        ...options,
-      });
+      await start(cleanOptions(options));
     } catch (e) {
       // TODO refactor logger
       logger(e.message, { title: "Farm Error", color: "red" });
@@ -50,22 +50,22 @@ cli
   // TODO sourcemap output config path
   .option("--sourcemap", "output source maps for build")
   .option("--minify", "code compression at build time")
-  .option("-w, --watch", `rebuilds when files have changed on disk`)
   .action(async (options: any) => {
-    const root = path.join(process.cwd(), options.config ?? "");
     filterDuplicateOptions(options);
+    const root = path.join(process.cwd(), options.config ?? "");
+
+    options.configPath = root;
     try {
       const { build } = await resolveCore(root);
-      build({
-        configPath: root,
-        ...options,
-      });
+
+      build(cleanOptions(options));
     } catch (e) {
       logger(e.message, { title: "Farm Error", color: "red" });
       process.exit(1);
     }
   });
 
+// TODO add watch command
 // watch command
 cli.command("watch", "rebuilds when files have changed on disk");
 

@@ -196,7 +196,8 @@ export function normalizeDevServerOptions(
  */
 export async function resolveUserConfig(
   options: any,
-  logger: Logger
+  logger: Logger,
+  command: "start" | "build"
 ): Promise<UserConfig> {
   const { configPath } = options;
   if (!path.isAbsolute(configPath)) {
@@ -213,7 +214,14 @@ export async function resolveUserConfig(
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
       const config = await readConfigFile(resolvedPath, logger);
+      // merge options
+      if (command === "start") {
+        resolveServerOptions(config, options);
+      }
 
+      if (command === "build") {
+        resolveBuildOptions(config, options);
+      }
       if (config) {
         userConfig = parseUserConfig(config);
         // if we found a config file, stop searching
@@ -224,6 +232,7 @@ export async function resolveUserConfig(
     root = path.dirname(configPath);
 
     const config = await readConfigFile(configPath, logger);
+    resolveServerOptions(config, options);
 
     if (config) {
       userConfig = parseUserConfig(config);
@@ -334,3 +343,18 @@ async function readConfigFile(
     }
   }
 }
+
+export function cleanServerConfig(config: any): any {
+  delete config.configPath;
+  delete config.config;
+  delete config.strictPort;
+  delete config.open;
+  return config;
+}
+
+export function resolveServerOptions(config: any, userOptions: any) {
+  config.server = { ...config.server, ...cleanServerConfig(userOptions) };
+}
+
+// TODO resolve build options
+export function resolveBuildOptions() {}
