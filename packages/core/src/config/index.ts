@@ -13,7 +13,7 @@ import {
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
-  UserServerConfig
+  UserServerConfig,
 } from "./types.js";
 import { Logger } from "../logger.js";
 import { pathToFileURL } from "node:url";
@@ -23,7 +23,7 @@ export * from "./types.js";
 export const DEFAULT_CONFIG_NAMES = [
   "farm.config.ts",
   "farm.config.js",
-  "farm.config.mjs"
+  "farm.config.mjs",
 ];
 
 /**
@@ -38,11 +38,11 @@ export async function normalizeUserCompilationConfig(
   const config: Config["config"] = merge(
     {
       input: {
-        index: "./index.html"
+        index: "./index.html",
       },
       output: {
-        path: "./dist"
-      }
+        path: "./dist",
+      },
     },
     userConfig.compilation
   );
@@ -53,7 +53,7 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime) {
     config.runtime = {
       path: require.resolve("@farmfe/runtime"),
-      plugins: []
+      plugins: [],
     };
   }
 
@@ -150,7 +150,7 @@ export async function normalizeUserCompilationConfig(
   const normalizedConfig: Config = {
     config: finalConfig,
     rustPlugins,
-    jsPlugins
+    jsPlugins,
   };
 
   return normalizedConfig;
@@ -159,14 +159,14 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: "localhost",
-  port: 9801
+  port: 9801,
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
-  hmr: DEFAULT_HMR_OPTIONS
+  hmr: DEFAULT_HMR_OPTIONS,
 };
 
 export function normalizeDevServerOptions(
@@ -188,9 +188,10 @@ export function normalizeDevServerOptions(
  * @param configPath
  */
 export async function resolveUserConfig(
-  configPath: string,
+  options: any,
   logger: Logger
 ): Promise<UserConfig> {
+  const { configPath } = options;
   if (!path.isAbsolute(configPath)) {
     throw new Error("configPath must be an absolute path");
   }
@@ -248,32 +249,32 @@ async function readConfigFile(
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: resolvedPath
+            config: resolvedPath,
           },
           output: {
             filename: fileName,
             path: outputPath,
-            targetEnv: "node"
+            targetEnv: "node",
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`)
+            ...module.builtinModules.map((m) => `^node:${m}$`),
           ],
           partialBundling: {
             moduleBuckets: [
               {
                 name: fileName,
-                test: [".+"]
-              }
-            ]
+                test: [".+"],
+              },
+            ],
           },
           sourcemap: false,
           treeShaking: false,
-          minify: false
+          minify: false,
         },
         server: {
-          hmr: false
-        }
+          hmr: false,
+        },
         // plugins: [
         //   {
         //     name: 'farm-plugin-external',

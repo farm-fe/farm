@@ -53,6 +53,7 @@ export function resolveCore(cwd: string): Promise<{
   build: typeof build;
 }> {
   const require = Module.createRequire(path.join(cwd, "package.json"));
+
   const farmCorePath = require.resolve("@farmfe/core");
 
   if (process.platform === "win32") {

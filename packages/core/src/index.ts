@@ -1,31 +1,33 @@
-export * from './compiler/index.js';
-export * from './config/index.js';
-export * from './server/index.js';
-export * from './plugin/index.js';
+export * from "./compiler/index.js";
+export * from "./config/index.js";
+export * from "./server/index.js";
+export * from "./plugin/index.js";
 
-import chalk from 'chalk';
-import { Compiler } from './compiler/index.js';
+import chalk from "chalk";
+import { Compiler } from "./compiler/index.js";
 import {
   normalizeUserCompilationConfig,
   resolveUserConfig,
   UserConfig,
-} from './config/index.js';
-import { DefaultLogger, Logger } from './logger.js';
-import { DevServer } from './server/index.js';
-import { FileWatcher } from './watcher/index.js';
+} from "./config/index.js";
+import { DefaultLogger, Logger } from "./logger.js";
+import { DevServer } from "./server/index.js";
+import { FileWatcher } from "./watcher/index.js";
 
 export async function start(options: {
   configPath?: string;
   logger?: Logger;
 }): Promise<void> {
+  console.log(options);
+
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(
-    options.configPath,
+    options,
     logger
   );
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
-    'development'
+    "development"
   );
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, userConfig.server);
@@ -34,11 +36,11 @@ export async function start(options: {
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     logger.info(
-      'HMR enabled, watching for file changes under ' +
+      "HMR enabled, watching for file changes under " +
         chalk.green(userConfig.root)
     );
 
-    if (normalizedConfig.config.mode === 'production') {
+    if (normalizedConfig.config.mode === "production") {
       logger.error(
         'HMR can not be enabled in production mode. Please set the mode option to "development" in your config file.'
       );
@@ -61,7 +63,7 @@ export async function build(options: {
   );
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
-    'production'
+    "production"
   );
 
   const start = Date.now();

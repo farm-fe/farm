@@ -4,6 +4,7 @@ import { filterDuplicateOptions, resolveCore } from "./utils.js";
 import { performance } from "node:perf_hooks";
 import { logger } from "./utils.js";
 import { VERSION } from "./constants.js";
+import path from "node:path";
 
 const cli = cac("farm");
 
@@ -26,17 +27,18 @@ cli
   .option("--https", "use https")
   .option("--strictPort", "specified port is already in use, exit with error")
   .action(async (options) => {
-    const cwd = process.cwd();
+    let root = process.cwd();
     filterDuplicateOptions(options);
     // TODO add runtime command config path
     try {
-      const { start } = await resolveCore(cwd);
-      const res = performance.now();
+      const { start } = await resolveCore(root);
+      if (options.config) {
+        root = path.join(root, options.config);
+      }
       await start({
-        configPath: cwd,
+        configPath: root,
         ...options,
       });
-      console.log(Math.ceil(performance.now() - res) + "ms");
     } catch (e) {
       // TODO refactor Error
       logger(e.message, { title: "Farm Error", color: "red" });
@@ -54,12 +56,15 @@ cli
   .option("--minify", "code compression at build time")
   .option("-w, --watch", `rebuilds when files have changed on disk`)
   .action(async (options: any) => {
-    const cwd = process.cwd();
+    let root = process.cwd();
     filterDuplicateOptions(options);
     try {
-      const { build } = await resolveCore(cwd);
+      const { build } = await resolveCore(root);
+      if (options.config) {
+        root = path.join(root, options.config);
+      }
       build({
-        configPath: cwd,
+        configPath: root,
         ...options,
       });
     } catch (e) {
