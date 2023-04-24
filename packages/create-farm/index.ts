@@ -29,6 +29,8 @@ welcome();
 const argv = minimist<{
   t?: string;
   template?: string;
+  skipInstall: boolean;
+  'skip-install': boolean;
 }>(process.argv.slice(2), { string: ['_'] });
 
 const cwd = process.cwd();
@@ -41,6 +43,7 @@ async function createFarm() {
   const argFramework = argv.template || argv.t;
   let targetDir = argProjectName || DEFAULT_TARGET_NAME;
   let result: IResultType = {};
+  const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? false;
   try {
     result = await prompts(
       [
@@ -86,23 +89,18 @@ async function createFarm() {
           ],
         },
         {
-          type: 'confirm',
-          name: 'autoInstall',
-          message: 'Whether you need to install dependencies automatically ?',
-        },
-        {
-          type: pkgInfo && !result.autoInstall ? null : 'select',
+          type: pkgInfo || skipInstall ? null : 'select',
           name: 'packageManager',
           message: 'Which package manager do you want to use?',
           choices: [
             { title: 'npm', value: 'npm' },
             {
-              title: isYarnInstalled ? 'Yarn' : 'Yarn (yarn not install)',
+              title: isYarnInstalled ? 'Yarn' : 'Yarn (not installed)',
               value: 'yarn',
               disabled: !isYarnInstalled,
             },
             {
-              title: isPnpmInstalled ? 'Pnpm' : 'Pnpm (pnpm not install)',
+              title: isPnpmInstalled ? 'Pnpm' : 'Pnpm (not installed)',
               value: 'pnpm',
               disabled: !isPnpmInstalled,
             },
@@ -119,9 +117,9 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { framework = argFramework, autoInstall, packageManager } = result;
+  const { framework = argFramework, packageManager } = result;
   await copyTemplate(targetDir, framework!);
-  await installationDeps(targetDir, autoInstall!, packageManager!);
+  await installationDeps(targetDir, !skipInstall, packageManager!);
 }
 
 function formatTargetDir(targetDir: string | undefined) {
