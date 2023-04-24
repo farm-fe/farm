@@ -1,4 +1,5 @@
-import { cac } from 'cac';
+import { cac, Command } from 'cac';
+import colors from 'colors';
 import { create } from './create/index.js';
 import { COMMANDS } from './plugin/index.js';
 import { resolveCore, log } from './utils.js';
@@ -32,6 +33,15 @@ cli
 
 cli.command('create [name]', 'Create a new project').action((name: string) => {
   create(name);
+});
+
+// 对未知命令监听
+cli.on('command:*', function(obj: { args: string[] }){
+  const availableCommands = cli.commands.map((cmd: Command) => cmd.name);
+  console.log(colors.red(`未知的命令：${obj.args[0]}`));
+  if(availableCommands.length > 0){
+      console.log(colors.red(`可用命令：${availableCommands.join(',')}`));
+  }
 });
 
 cli.command('').action(() => {

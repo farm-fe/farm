@@ -43,6 +43,7 @@
   "dependencies": {
     "cac": "^6.7.14",
     "chalk": "^5.2.0",
+    "colors": "^1.4.0",
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
     "inquirer": "^9.1.4",
