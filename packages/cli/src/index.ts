@@ -81,12 +81,12 @@ cli
     COMMANDS[command](args);
   });
 
-// 对未知命令监听
+// Listening for unknown commands
 cli.on('command:*', function(obj: { args: string[] }){
   const availableCommands = cli.commands.map((cmd: Command) => cmd.name);
-  console.log(chalk.red(`未知的命令：${obj.args[0]}`));
+  console.log(chalk.red(`Unknown commands：${obj.args[0]}`));
   if(availableCommands.length > 0){
-      console.log(chalk.red(`可用命令：${availableCommands.join(',')}`));
+      console.log(chalk.red(`Available commands：${availableCommands.join(',')}`));
   }
 });
 
