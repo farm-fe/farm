@@ -1,7 +1,7 @@
 import { cac } from 'cac';
 import { create } from './create/index.js';
 import { COMMANDS } from './plugin/index.js';
-import { resolveCore } from './utils.js';
+import { resolveCore, log } from './utils.js';
 
 const cli = cac();
 
@@ -52,10 +52,10 @@ pluginCmd.action((command: keyof typeof COMMANDS, args: unknown) => {
 pluginCmd.cli.help();
 
 cli.help();
-
 try {
   cli.parse();
 } catch (e) {
   // TODO error handling
-  console.log(e);
+  // console.log(e);
+  log('error', e);
 }
