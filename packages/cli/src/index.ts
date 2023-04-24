@@ -80,7 +80,7 @@ cli
     COMMANDS[command](args);
   });
 
-// Listening for unknown commands.
+// Listening for unknown commands
 cli.on('command:*', function(obj: { args: string[] }){
   const availableCommands = cli.commands.map((cmd: Command) => cmd.name);
   console.log(chalk.red(`Unknown commands：${obj.args[0]}`));
