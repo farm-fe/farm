@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { start, build } from '@farmfe/core';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
+import type { GlobalFarmCLIOptions } from './type.js';
 
 interface installProps {
   cwd: string; // 项目路径
@@ -117,7 +118,7 @@ export function clearScreen() {
   readline.clearScreenDown(process.stdout);
 }
 
-export function cleanOptions(options: any) {
+export function cleanOptions(options: GlobalFarmCLIOptions) {
   const resolveOptions = { ...options };
   delete resolveOptions['--'];
   delete resolveOptions.m;
@@ -126,7 +127,9 @@ export function cleanOptions(options: any) {
   return resolveOptions;
 }
 
-export function resolveCommandOptions(options: any) {
+export function resolveCommandOptions(
+  options: GlobalFarmCLIOptions
+): GlobalFarmCLIOptions {
   filterDuplicateOptions(options);
   const root = path.join(process.cwd(), options.config ?? '');
   options.configPath = root;

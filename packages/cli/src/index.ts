@@ -1,31 +1,19 @@
 import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
-
 import { COMMANDS } from './plugin/index.js';
 import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
-import { logger } from './logger.js';
+import { createLogger } from './logger.js';
+import type {
+  FarmCLIBuildOptions,
+  FarmCLIServerOptions,
+  GlobalFarmCLIOptions
+} from './type.js';
 
-interface GlobalFarmCLIOptions {
-  '--'?: string[];
-  c?: boolean | string;
-  config?: string;
-  m?: string;
-  mode?: string;
-}
+const logger = createLogger();
 
-interface FarmCLIServerOptions {
-  port?: string;
-  open?: boolean;
-  https?: boolean;
-  hmr?: boolean;
-  strictPort?: boolean;
-}
-
-interface FarmCLIBuildOptions {
-  outDir?: string;
-  sourcemap?: boolean;
-  minify?: boolean;
-}
+const { version } = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url)).toString()
+);
 
 const cli = cac('farm');
 
@@ -37,15 +25,16 @@ cli
 // dev command
 cli
   .command(
-    '',
+    'start',
     'Compile the project in dev mode and serve it with farm dev server'
   )
-  .alias('start')
+  .alias('')
   //TODO add host config
   .option('--port [port]', 'specify port')
-  .option('--open', 'open browser on server start')
+  // TODO add open config with core
+  // .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
-  // TODO add https config with core
+  // TODO add https config
   // .option('--https', 'use https')
   // TODO add strictPort open config with core
   // .option('--strictPort', 'specified port is already in use, exit with error')
@@ -56,7 +45,7 @@ cli
 
       await start(cleanOptions(resolveOptions));
     } catch (e) {
-      logger(e.message);
+      logger.error(e.message);
       process.exit(1);
     }
   });
@@ -76,14 +65,11 @@ cli
       const { build } = await resolveCore(resolveOptions.configPath);
       build(cleanOptions(resolveOptions));
     } catch (e) {
-      logger(e.message);
+      logger.error(e.message);
       process.exit(1);
     }
   });
 
-const { version } = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url)).toString()
-);
 // watch command
 // TODO add watch command
 cli.command('watch', 'rebuilds when files have changed on disk');
@@ -98,7 +84,7 @@ cli
     try {
       COMMANDS[command](args);
     } catch (e) {
-      logger(
+      logger.error(
         'The command arg parameter is incorrect. Please check whether you entered the correct parameter. such as "farm create plugin"'
       );
       process.exit(1);
@@ -107,7 +93,9 @@ cli
 
 // Listening for unknown command
 cli.on('command:*', () => {
-  cli.outputHelp();
+  logger.error(
+    'Unknown command place Run "my-cli --help" to see available commands'
+  );
 });
 
 cli.help();
