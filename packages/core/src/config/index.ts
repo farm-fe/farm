@@ -284,7 +284,8 @@ async function readConfigFile(
           },
           sourcemap: false,
           treeShaking: false,
-          minify: false
+          minify: false,
+          presetEnv: false
         },
         server: {
           hmr: false
