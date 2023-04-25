@@ -8,7 +8,8 @@ use farmfe_toolkit::{
   script::swc_try_with::try_with,
   swc_ecma_preset_env::{self, preset_env, Mode, Targets, Version},
   swc_ecma_transforms::Assumptions,
-  swc_ecma_transforms_base::feature::FeatureFlag,
+  swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
+  swc_ecma_visit::{FoldWith, VisitMutWith},
 };
 
 pub struct FarmPluginPolyfill {}
@@ -43,12 +44,13 @@ impl Plugin for FarmPluginPolyfill {
       context.meta.script.cm.clone(),
       &context.meta.script.globals,
       || {
-        let unresolved_mark = param.meta.as_script().unresolved_mark;
+        let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
+        let mut ast = param.meta.as_script_mut().take_ast();
         // TODO: store feature flags in module meta and use them when transform the module system
         let mut feature_flag = FeatureFlag::empty();
 
-        preset_env(
-          Mark::from_u32(unresolved_mark),
+        ast = ast.fold_with(&mut preset_env(
+          unresolved_mark,
           // TODO: support comments
           None as Option<NoopComments>,
           // TODO: make this configurable
@@ -59,13 +61,18 @@ impl Plugin for FarmPluginPolyfill {
               minor: 30,
               patch: 1,
             }),
-            targets: Some(Targets::Query(Query::Single("defaults".to_string()))),
+            targets: Some(Targets::Query(Query::Single(
+              "> 0.25%, not dead".to_string(),
+            ))),
             ..Default::default()
           },
           // TODO: make this configurable
           Assumptions::default(),
           &mut feature_flag,
-        );
+        ));
+        ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+
+        param.meta.as_script_mut().set_ast(ast);
       },
     )?;
 
