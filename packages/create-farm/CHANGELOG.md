@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.6
+
+### Patch Changes
+
+- 36860f8: remove sourcemap reduce size
+
 ## 1.1.5
 
 ### Patch Changes

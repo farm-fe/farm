@@ -1,12 +1,14 @@
 import path from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { pathToFileURL } from 'url';
 import { expect, test } from 'vitest';
-import { Compiler, normalizeUserCompilationConfig } from '../src/index.js';
-import { JsPlugin } from '../src/plugin/index.js';
+import {
+  getFixturesDir,
+  getCompiler as getInternalCompiler
+} from './common.js';
+import { JsPlugin } from '../src/index.js';
 
 function getJsPluginsFixturesDir() {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(currentDir, 'fixtures', 'js-plugins');
+  return path.resolve(getFixturesDir(), 'js-plugins');
 }
 
 function getOutputFilePath(p: string) {
@@ -14,35 +16,9 @@ function getOutputFilePath(p: string) {
   return path.join(root, 'dist', p, 'index.mjs');
 }
 
-async function getCompiler(
-  p: string,
-  plugins: JsPlugin[],
-  input?: Record<string, string>
-): Promise<Compiler> {
+function getCompiler(p: string, plugins: JsPlugin[]) {
   const root = getJsPluginsFixturesDir();
-  const config = await normalizeUserCompilationConfig(
-    {
-      root,
-      compilation: {
-        input: input ?? {
-          index: './index.ts?foo=bar'
-        },
-        output: {
-          path: path.join('dist', p),
-          filename: 'index.mjs',
-          targetEnv: 'node'
-        },
-        lazyCompilation: false,
-        sourcemap: false
-      },
-      server: {
-        hmr: false
-      },
-      plugins
-    },
-    'production'
-  );
-  return new Compiler(config);
+  return getInternalCompiler(root, p, plugins);
 }
 
 test('Js Plugin Execution - resolve', async () => {

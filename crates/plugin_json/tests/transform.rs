@@ -48,7 +48,7 @@ fn transform_json() {
   fixture!("tests/fixtures/transform/transform.json", |file, _| {
     let result = generate_transform_fn(&file).unwrap().unwrap();
 
-    assert!(result.content.starts_with("export default"));
+    assert!(result.content.starts_with("module.exports ="));
     assert_eq!(result.module_type.unwrap(), ModuleType::Js);
   });
 

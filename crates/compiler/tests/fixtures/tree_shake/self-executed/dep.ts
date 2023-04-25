@@ -9,6 +9,6 @@ d = 'd';
 
 const b = 'b';
 
-export default function() {
+export default function () {
   return b;
 }

@@ -1,33 +1,33 @@
-import module from "node:module";
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
+import module from 'node:module';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 
-import merge from "lodash.merge";
-import chalk from "chalk";
+import merge from 'lodash.merge';
+import chalk from 'chalk';
 
-import { bindingPath, Config } from "../../binding/index.js";
-import { JsPlugin } from "../plugin/index.js";
-import { rustPluginResolver } from "../plugin/rustPluginResolver.js";
+import { bindingPath, Config } from '../../binding/index.js';
+import { JsPlugin } from '../plugin/index.js';
+import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import {
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
   UserServerConfig,
-} from "./types.js";
-import { Logger } from "../logger.js";
-import { pathToFileURL } from "node:url";
-import { createHash } from "node:crypto";
-import { parseUserConfig } from "./schema.js";
+} from './types.js';
+import { Logger } from '../logger.js';
+import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
+import { parseUserConfig } from './schema.js';
 
-export * from "./types.js";
+export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
-  "farm.config.ts",
-  "farm.config.js",
-  "farm.config.mjs",
+  'farm.config.ts',
+  'farm.config.js',
+  'farm.config.mjs',
 ];
 
-type CompilationMode = "development" | "production";
+type CompilationMode = 'development' | 'production';
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
@@ -36,37 +36,37 @@ type CompilationMode = "development" | "production";
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode: CompilationMode = "production"
+  mode: CompilationMode = 'production'
 ): Promise<Config> {
-  const config: Config["config"] = merge(
+  const config: Config['config'] = merge(
     {
       input: {
-        index: "./index.html",
+        index: './index.html',
       },
       output: {
-        path: "./dist",
+        path: './dist',
       },
     },
     userConfig.compilation
   );
   config.coreLibPath = bindingPath;
   const require = module.createRequire(import.meta.url);
-  const hmrClientPluginPath = require.resolve("@farmfe/runtime-plugin-hmr");
+  const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 
   if (!config.runtime) {
     config.runtime = {
-      path: require.resolve("@farmfe/runtime"),
+      path: require.resolve('@farmfe/runtime'),
       plugins: [],
     };
   }
 
   if (!config.runtime.path) {
-    config.runtime.path = require.resolve("@farmfe/runtime");
+    config.runtime.path = require.resolve('@farmfe/runtime');
   }
 
   if (!config.runtime.swcHelpersPath) {
     config.runtime.swcHelpersPath = path.dirname(
-      require.resolve("@swc/helpers/package.json")
+      require.resolve('@swc/helpers/package.json')
     );
   }
 
@@ -75,7 +75,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.lazyCompilation === undefined) {
-    if (mode === "development") {
+    if (mode === 'development') {
       config.lazyCompilation = true;
     } else {
       config.lazyCompilation = false;
@@ -86,15 +86,15 @@ export async function normalizeUserCompilationConfig(
     config.mode = mode;
   }
 
-  if (config.mode === "production") {
+  if (config.mode === 'production') {
     if (!config.output) {
       config.output = {};
     }
     if (!config.output.filename) {
-      config.output.filename = "[resourceName].[contentHash].[ext]";
+      config.output.filename = '[resourceName].[contentHash].[ext]';
     }
     if (!config.output.assetsFilename) {
-      config.output.assetsFilename = "[resourceName].[contentHash].[ext]";
+      config.output.assetsFilename = '[resourceName].[contentHash].[ext]';
     }
   }
 
@@ -121,7 +121,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.treeShaking === undefined) {
-    if (mode === "production") {
+    if (mode === 'production') {
       config.treeShaking = true;
     } else {
       config.treeShaking = false;
@@ -129,7 +129,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.minify === undefined) {
-    if (mode === "production") {
+    if (mode === 'production') {
       config.minify = true;
     } else {
       config.minify = false;
@@ -141,9 +141,9 @@ export async function normalizeUserCompilationConfig(
   const jsPlugins = [];
 
   for (const plugin of plugins) {
-    if (typeof plugin === "string" || Array.isArray(plugin)) {
+    if (typeof plugin === 'string' || Array.isArray(plugin)) {
       rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
-    } else if (typeof plugin === "object") {
+    } else if (typeof plugin === 'object') {
       jsPlugins.push(plugin as JsPlugin);
     }
   }
@@ -165,7 +165,7 @@ export async function normalizeUserCompilationConfig(
 
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
-  host: "localhost",
+  host: 'localhost',
   port: 9801,
 };
 
@@ -182,7 +182,7 @@ export function normalizeDevServerOptions(
 ): NormalizedServerConfig {
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
     hmr:
-      mode === "production"
+      mode === 'production'
         ? false
         : options?.hmr !== false
         ? DEFAULT_HMR_OPTIONS
@@ -201,7 +201,7 @@ export async function resolveUserConfig(
 ): Promise<UserConfig> {
   const { configPath } = options;
   if (!path.isAbsolute(configPath)) {
-    throw new Error("configPath must be an absolute path");
+    throw new Error('configPath must be an absolute path');
   }
 
   let userConfig: UserConfig = {};
@@ -253,15 +253,15 @@ async function readConfigFile(
   if (fs.existsSync(resolvedPath)) {
     logger.info(`Using config file at ${chalk.green(resolvedPath)}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
-    if (resolvedPath.endsWith(".ts")) {
-      const Compiler = (await import("../compiler/index.js")).Compiler;
-      const hash = createHash("md5");
+    if (resolvedPath.endsWith('.ts')) {
+      const Compiler = (await import('../compiler/index.js')).Compiler;
+      const hash = createHash('md5');
       const outputPath = path.join(
         os.tmpdir(),
-        "farmfe",
-        hash.update(resolvedPath).digest("hex")
+        'farmfe',
+        hash.update(resolvedPath).digest('hex')
       );
-      const fileName = "farm.config.bundle.mjs";
+      const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
@@ -270,7 +270,7 @@ async function readConfigFile(
           output: {
             filename: fileName,
             path: outputPath,
-            targetEnv: "node",
+            targetEnv: 'node',
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),
@@ -280,7 +280,7 @@ async function readConfigFile(
             moduleBuckets: [
               {
                 name: fileName,
-                test: [".+"],
+                test: ['.+'],
               },
             ],
           },
@@ -328,14 +328,14 @@ async function readConfigFile(
 
       const filePath = path.join(outputPath, fileName);
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === "win32") {
+      if (process.platform === 'win32') {
         return (await import(pathToFileURL(filePath).toString())).default;
       } else {
         return (await import(filePath)).default;
       }
     } else {
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === "win32") {
+      if (process.platform === 'win32') {
         return (await import(pathToFileURL(resolvedPath).toString())).default;
       } else {
         return (await import(resolvedPath)).default;

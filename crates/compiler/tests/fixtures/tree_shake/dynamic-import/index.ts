@@ -1,3 +1,3 @@
 import('./dep').then((dep) => {
-    console.log(dep);
+  console.log(dep);
 });

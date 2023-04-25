@@ -2,11 +2,9 @@
 
 Thank you for your interest in contributing to Farm!. Before submitting your contribution, please make sure to take a moment and read through the following guidelines:
 
-
 ## Code of Conduct
 
 All contributors are expected to follow our [Code of Conduct](https://www.rust-lang.org/policies/code-of-conduct).
-
 
 ## Bug reports
 
@@ -20,7 +18,6 @@ You can open a new issue by following [new-issues](https://github.com/farm-fe/fa
 
 Please feel free to open an issue using the [feature request template](https://github.com/farm-fe/farm/issues/new/choose).
 
-
 ## Pull Request Guidelines
 
 - Fork the Farm repository into your own GitHub account.
@@ -29,7 +26,6 @@ Please feel free to open an issue using the [feature request template](https://g
 - Checkout a topic branch from a base branch, e.g. `main`.
 - Run `cargo test` and make sure that it passes.
 - If you've changed some packages And prepare for an updated version, you should output `npx changset` in the root directory.
-
 
 ## Development Environment Setup
 
@@ -57,31 +53,29 @@ $ pnpm bootstrap # install the dependencies of the project
 
 - use `pnpm bootstrap` to install dependencies and build core packages with series of initialization operations.
 
-- Work with examples (open a new terminal): `cd examples/react && pnpm start`, report an issue if the example does not start normally.  
+- Work with examples (open a new terminal): `cd examples/react && pnpm start`, report an issue if the example does not start normally.
 
 - If `examples/react` project runs successfully, the development environment has been configured successfully
 
 - If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
-
 
 ## Quickly create plugins through scaffold
 
 If you want to develop a plugin for farm, farm provides a scaffolding to help you quickly create a plugin, which you can create with the following command.
 You can go to the `cd packages/ cli` directory, run `npm link` or global installation `@ farmfe/ cli` to use this CLI, after the installation is complete, You can create a plugin through `farm plugin create`.
 Farm supports the creation of rust and js plugins.
-  
-  ```bash
-  $ farm plugin create <plugin-name> # create a plugin support js or rust
-  ```
 
-## 
+```bash
+$ farm plugin create <plugin-name> # create a plugin support js or rust
+```
+
+##
 
 ## Pull Request Preface Tip
 
 Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
 
-- **the JavaScript side**: 
+- **the JavaScript side**:
   see code in the `packages` directory. contains core (dev server, file watcher, and compiler wrapper), CLI, runtime, and runtime plugins (module system, HMR).
-- **the Rust side**: 
+- **the Rust side**:
   see code in the `crates` and `rust-plugins` directory. contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
-

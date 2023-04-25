@@ -81,7 +81,6 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
-
 ## Contribution
 
 See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).

@@ -50,7 +50,7 @@
     "walkdir": "^0.4.1"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:^0.6.0",
+    "@farmfe/core": "workspace:^0.7.0",
     "@types/cross-spawn": "^6.0.2",
     "@types/inquirer": "^9.0.3",
     "@types/npmlog": "^4.1.4"
