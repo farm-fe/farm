@@ -1,8 +1,8 @@
 import { cac } from 'cac';
+import { readFileSync } from 'node:fs';
 
 import { COMMANDS } from './plugin/index.js';
 import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
-import { VERSION } from './constants.js';
 import { logger } from './logger.js';
 
 interface GlobalFarmCLIOptions {
@@ -81,6 +81,9 @@ cli
     }
   });
 
+const { version } = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url)).toString()
+);
 // watch command
 // TODO add watch command
 cli.command('watch', 'rebuilds when files have changed on disk');
@@ -92,7 +95,14 @@ cli
   })
   // TODO refactor plugin command
   .action((command: keyof typeof COMMANDS, args: unknown) => {
-    COMMANDS[command](args);
+    try {
+      COMMANDS[command](args);
+    } catch (e) {
+      logger(
+        'The command arg parameter is incorrect. Please check whether you entered the correct parameter. such as "farm create plugin"'
+      );
+      process.exit(1);
+    }
   });
 
 // Listening for unknown command
@@ -102,6 +112,6 @@ cli.on('command:*', () => {
 
 cli.help();
 
-cli.version(VERSION);
+cli.version(version);
 
 cli.parse();
