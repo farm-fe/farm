@@ -7,7 +7,7 @@ import type {
   FarmCLIBuildOptions,
   FarmCLIServerOptions,
   GlobalFarmCLIOptions
-} from './type.js';
+} from './types.js';
 
 const logger = createLogger();
 

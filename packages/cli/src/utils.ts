@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { start, build } from '@farmfe/core';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
-import type { GlobalFarmCLIOptions } from './type.js';
+import type { GlobalFarmCLIOptions } from './types.js';
 
 interface installProps {
   cwd: string; // 项目路径
