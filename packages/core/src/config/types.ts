@@ -61,5 +61,5 @@ export type FarmCLIOptions = FarmCLIServerOptions &
   FarmCLIBuildOptions & {
     logger?: Logger;
     config?: string;
-    configPath: string;
+    configPath?: string;
   };
