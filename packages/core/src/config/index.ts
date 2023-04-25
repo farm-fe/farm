@@ -2,6 +2,7 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import readline from 'node:readline';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
@@ -216,7 +217,11 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
+      if (command === 'start') {
+        clearScreen();
+      }
       const config = await readConfigFile(resolvedPath, logger);
+
       mergeConfig(config, options, command);
 
       if (config) {
@@ -227,7 +232,9 @@ export async function resolveUserConfig(
     }
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
-
+    if (command === 'start') {
+      clearScreen();
+    }
     const config = await readConfigFile(configPath, logger);
     mergeConfig(config, options, command);
 
@@ -370,15 +377,21 @@ export function mergeServerOptions(
   config: UserConfig,
   options: FarmCLIOptions
 ) {
-  config.server = { ...config.server, ...cleanConfig(options) };
+  const cliOptions = cleanConfig(options);
+  config.server = merge(config.server, cliOptions);
 }
 
 export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
   if (options.outDir) {
     config.compilation.output.path = options.outDir;
   }
-  config.compilation = {
-    ...config.compilation,
-    ...cleanConfig(options)
-  };
+  config.compilation = merge(config.compilation, cleanConfig(options));
+}
+
+export function clearScreen() {
+  const repeatCount = process.stdout.rows - 2;
+  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+  console.log(blank);
+  readline.cursorTo(process.stdout, 0, 0);
+  readline.clearScreenDown(process.stdout);
 }
