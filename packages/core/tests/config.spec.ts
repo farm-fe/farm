@@ -27,6 +27,7 @@ test('resolveUserConfig', async () => {
       },
       external: builtinModules
     },
+    server: {},
     root: path.join(filePath, 'fixtures', 'config')
   });
 });
