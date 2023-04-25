@@ -32,3 +32,25 @@ export interface UserConfig {
   /** config related to dev server */
   server?: UserServerConfig;
 }
+
+export interface GlobalFarmCLIOptions {
+  '--'?: string[];
+  c?: boolean | string;
+  config?: string;
+  m?: string;
+  mode?: string;
+}
+
+export interface FarmCLIServerOptions {
+  port?: string;
+  open?: boolean;
+  https?: boolean;
+  hmr?: boolean;
+  strictPort?: boolean;
+}
+
+export interface FarmCLIBuildOptions {
+  outDir?: string;
+  sourcemap?: boolean;
+  minify?: boolean;
+}

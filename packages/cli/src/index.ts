@@ -3,6 +3,29 @@ import { cac } from 'cac';
 import { COMMANDS } from './plugin/index.js';
 import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
 import { VERSION } from './constants.js';
+import { logger } from './logger.js';
+
+interface GlobalFarmCLIOptions {
+  '--'?: string[];
+  c?: boolean | string;
+  config?: string;
+  m?: string;
+  mode?: string;
+}
+
+interface FarmCLIServerOptions {
+  port?: string;
+  open?: boolean;
+  https?: boolean;
+  hmr?: boolean;
+  strictPort?: boolean;
+}
+
+interface FarmCLIBuildOptions {
+  outDir?: string;
+  sourcemap?: boolean;
+  minify?: boolean;
+}
 
 const cli = cac('farm');
 
@@ -14,11 +37,10 @@ cli
 // dev command
 cli
   .command(
-    'aa',
+    '',
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
-  .alias('dev')
   //TODO add host config
   .option('--port [port]', 'specify port')
   .option('--open', 'open browser on server start')
@@ -27,14 +49,14 @@ cli
   // TODO add strictPort open config with core
   .option('--hmr', 'enable hot module replacement')
   .option('--strictPort', 'specified port is already in use, exit with error')
-  .action(async (options) => {
+  .action(async (options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
     const resolveOptions = resolveCommandOptions(options);
     try {
       const { start } = await resolveCore(resolveOptions.configPath);
 
       await start(cleanOptions(resolveOptions));
     } catch (e) {
-      // TODO refactor logger
+      logger(e.message);
       process.exit(1);
     }
   });
@@ -47,12 +69,13 @@ cli
   // TODO sourcemap output config path
   .option('--sourcemap', 'output source maps for build')
   .option('--minify', 'code compression at build time')
-  .action(async (options: any) => {
+  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     const resolveOptions = resolveCommandOptions(options);
     try {
       const { build } = await resolveCore(resolveOptions.configPath);
       build(cleanOptions(resolveOptions));
     } catch (e) {
+      logger(e.message);
       process.exit(1);
     }
   });

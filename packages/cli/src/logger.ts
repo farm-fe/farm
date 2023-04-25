@@ -1,34 +1,21 @@
-import log from 'loglevel';
-import chalk from 'chalk';
-
-log.setDefaultLevel(log.levels.INFO);
-
-export const brandColor = chalk.rgb(113, 26, 95);
-
-export interface Logger {
-  trace(message: string): void;
-  debug(message: string): void;
-  info(message: string, banner?: boolean): void;
-  warn(message: string): void;
-  error(message: string): void;
+export function logger(
+  msg: string,
+  { title = 'FARM WARN', color = 'red' } = {}
+) {
+  const COLOR_CODE = [
+    'black',
+    'red',
+    'green',
+    'yellow',
+    'blue',
+    'magenta',
+    'cyan',
+    'white'
+  ].indexOf(color);
+  if (COLOR_CODE >= 0) {
+    const TITLE_STR = title ? `\x1b[4${COLOR_CODE};30m ${title} \x1b[0m ` : '';
+    console.log(`${TITLE_STR}\x1b[3${COLOR_CODE}m${msg}\x1b[;0m`);
+  } else {
+    console.log(title ? `${title} ${msg}` : msg);
+  }
 }
-
-// export class DefaultLogger implements Logger {
-//   trace(message: string): void {
-//     log.trace(message);
-//   }
-//   debug(message: string): void {
-//     log.debug(message);
-//   }
-//   info(message: string, banner = true): void {
-//     log.info(`${banner ? brandColor('[ Farm ] ') : ''}${message}`);
-//   }
-
-//   warn(message: string): void {
-//     log.warn(message);
-//   }
-
-//   error(message: string): void {
-//     log.error(chalk.red(message));
-//   }
-// }
