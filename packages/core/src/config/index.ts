@@ -202,6 +202,7 @@ export async function resolveUserConfig(
   command: 'start' | 'build'
 ): Promise<UserConfig> {
   const { configPath } = options;
+  console.log('configPath', configPath);
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
