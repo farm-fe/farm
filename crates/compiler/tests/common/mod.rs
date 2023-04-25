@@ -84,6 +84,7 @@ pub fn create_compiler(
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       minify,
+      preset_env: false,
       ..Default::default()
     },
     vec![],
