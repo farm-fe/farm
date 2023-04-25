@@ -50,10 +50,8 @@ cli
   .option('--minify', 'code compression at build time')
   .action(async (options: any) => {
     const resolveOptions = resolveCommandOptions(options);
-    log('info', '失败');
     try {
       const { build } = await resolveCore(resolveOptions.configPath);
-
       build(cleanOptions(resolveOptions));
     } catch (e) {
       // logger(e.message, { title: 'Farm Error', color: 'red' });
