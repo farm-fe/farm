@@ -25,10 +25,10 @@ cli
 // dev command
 cli
   .command(
-    'start',
+    '',
     'Compile the project in dev mode and serve it with farm dev server'
   )
-  .alias('')
+  .alias('start')
   //TODO add host config
   .option('--port [port]', 'specify port')
   // TODO add open config with core
