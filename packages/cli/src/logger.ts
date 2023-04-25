@@ -13,22 +13,22 @@ export interface Logger {
   error(message: string): void;
 }
 
-export class DefaultLogger implements Logger {
-  trace(message: string): void {
-    log.trace(message);
-  }
-  debug(message: string): void {
-    log.debug(message);
-  }
-  info(message: string, banner = true): void {
-    log.info(`${banner ? brandColor('[ Farm ] ') : ''}${message}`);
-  }
+// export class DefaultLogger implements Logger {
+//   trace(message: string): void {
+//     log.trace(message);
+//   }
+//   debug(message: string): void {
+//     log.debug(message);
+//   }
+//   info(message: string, banner = true): void {
+//     log.info(`${banner ? brandColor('[ Farm ] ') : ''}${message}`);
+//   }
 
-  warn(message: string): void {
-    log.warn(message);
-  }
+//   warn(message: string): void {
+//     log.warn(message);
+//   }
 
-  error(message: string): void {
-    log.error(chalk.red(message));
-  }
-}
+//   error(message: string): void {
+//     log.error(chalk.red(message));
+//   }
+// }

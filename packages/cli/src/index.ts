@@ -1,8 +1,9 @@
 import { cac, Command } from 'cac';
+import chalk from 'chalk';
+
 import { COMMANDS } from './plugin/index.js';
 import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
 import { VERSION } from './constants.js';
-import chalk from 'chalk';
 
 const cli = cac('farm');
 
@@ -35,7 +36,6 @@ cli
       await start(cleanOptions(resolveOptions));
     } catch (e) {
       // TODO refactor logger
-      // logger(e.message, { title: 'Farm Error', color: 'red' });
       process.exit(1);
     }
   });
@@ -54,7 +54,6 @@ cli
       const { build } = await resolveCore(resolveOptions.configPath);
       build(cleanOptions(resolveOptions));
     } catch (e) {
-      // logger(e.message, { title: 'Farm Error', color: 'red' });
       process.exit(1);
     }
   });
