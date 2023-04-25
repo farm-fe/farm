@@ -1,4 +1,5 @@
 import type { Config } from '../../binding/index.js';
+import { Logger } from '../logger.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 
@@ -7,6 +8,7 @@ export interface UserServerConfig {
   https?: boolean;
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
+  strictPort?: boolean;
 }
 
 export type NormalizedServerConfig = Required<
@@ -42,7 +44,7 @@ export interface GlobalFarmCLIOptions {
 }
 
 export interface FarmCLIServerOptions {
-  port?: string;
+  port?: number;
   open?: boolean;
   https?: boolean;
   hmr?: boolean;
@@ -54,3 +56,10 @@ export interface FarmCLIBuildOptions {
   sourcemap?: boolean;
   minify?: boolean;
 }
+
+export type FarmCLIOptions = FarmCLIServerOptions &
+  FarmCLIBuildOptions & {
+    logger?: Logger;
+    config?: string;
+    configPath?: string;
+  };

@@ -44,11 +44,11 @@ cli
   //TODO add host config
   .option('--port [port]', 'specify port')
   .option('--open', 'open browser on server start')
-  // TODO add https config with core
-  .option('--https', 'use https')
-  // TODO add strictPort open config with core
   .option('--hmr', 'enable hot module replacement')
-  .option('--strictPort', 'specified port is already in use, exit with error')
+  // TODO add https config with core
+  // .option('--https', 'use https')
+  // TODO add strictPort open config with core
+  // .option('--strictPort', 'specified port is already in use, exit with error')
   .action(async (options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
     const resolveOptions = resolveCommandOptions(options);
     try {
@@ -65,6 +65,7 @@ cli
 cli
   .command('build', 'compile the project in production mode')
   // TODO add target config
+  // .option("--target <target>", "transpile target")
   .option('--outDir <dir>', 'output directory')
   // TODO sourcemap output config path
   .option('--sourcemap', 'output source maps for build')
@@ -80,8 +81,8 @@ cli
     }
   });
 
-// TODO add watch command
 // watch command
+// TODO add watch command
 cli.command('watch', 'rebuilds when files have changed on disk');
 
 // create plugins command

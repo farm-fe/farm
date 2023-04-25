@@ -10,6 +10,7 @@ import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import {
+  FarmCLIOptions,
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
@@ -173,7 +174,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
-  hmr: DEFAULT_HMR_OPTIONS
+  hmr: DEFAULT_HMR_OPTIONS,
+  strictPort: false
 };
 
 export function normalizeDevServerOptions(
@@ -195,11 +197,12 @@ export function normalizeDevServerOptions(
  * @param configPath
  */
 export async function resolveUserConfig(
-  options: any,
+  options: FarmCLIOptions,
   logger: Logger,
   command: 'start' | 'build'
 ): Promise<UserConfig> {
   const { configPath } = options;
+
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
@@ -214,13 +217,14 @@ export async function resolveUserConfig(
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
       const config = await readConfigFile(resolvedPath, logger);
+
       // merge options
       if (command === 'start') {
-        resolveServerOptions(config, options);
+        mergeServerOptions(config, options);
       }
 
       if (command === 'build') {
-        resolveBuildOptions(config, options);
+        mergeBuildOptions(config, options);
       }
       if (config) {
         userConfig = parseUserConfig(config);
@@ -233,10 +237,10 @@ export async function resolveUserConfig(
 
     const config = await readConfigFile(configPath, logger);
     if (command === 'start') {
-      resolveServerOptions(config, options);
+      mergeServerOptions(config, options);
     }
     if (command === 'build') {
-      resolveBuildOptions(config, options);
+      mergeBuildOptions(config, options);
     }
     if (config) {
       userConfig = parseUserConfig(config);
@@ -348,7 +352,7 @@ async function readConfigFile(
   }
 }
 
-export function cleanConfig(config: any): any {
+export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
   delete config.configPath;
   delete config.config;
   delete config.outDir;
@@ -357,20 +361,20 @@ export function cleanConfig(config: any): any {
   return config;
 }
 
-export function resolveServerOptions(config: any, userOptions: any) {
-  config.server = { ...config.server, ...cleanConfig(userOptions) };
+// TODO optimizing merge methods
+export function mergeServerOptions(
+  config: UserConfig,
+  options: FarmCLIOptions
+) {
+  config.server = { ...config.server, ...cleanConfig(options) };
 }
 
-// TODO resolve build options
-export function resolveBuildOptions(config: any, userOptions: any) {
-  if (userOptions.outDir) {
-    config.compilation.output.path = userOptions.outDir;
+export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
+  if (options.outDir) {
+    config.compilation.output.path = options.outDir;
   }
-  console.log(config);
-
   config.compilation = {
     ...config.compilation,
-    ...cleanConfig(userOptions)
+    ...cleanConfig(options)
   };
-  console.log(config);
 }
