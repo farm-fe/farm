@@ -217,15 +217,8 @@ export async function resolveUserConfig(
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
       const config = await readConfigFile(resolvedPath, logger);
+      mergeConfig(config, options, command);
 
-      // merge options
-      if (command === 'start') {
-        mergeServerOptions(config, options);
-      }
-
-      if (command === 'build') {
-        mergeBuildOptions(config, options);
-      }
       if (config) {
         userConfig = parseUserConfig(config);
         // if we found a config file, stop searching
@@ -236,12 +229,8 @@ export async function resolveUserConfig(
     root = path.dirname(configPath);
 
     const config = await readConfigFile(configPath, logger);
-    if (command === 'start') {
-      mergeServerOptions(config, options);
-    }
-    if (command === 'build') {
-      mergeBuildOptions(config, options);
-    }
+    mergeConfig(config, options, command);
+
     if (config) {
       userConfig = parseUserConfig(config);
     }
@@ -349,6 +338,21 @@ async function readConfigFile(
         return (await import(resolvedPath)).default;
       }
     }
+  }
+}
+
+export function mergeConfig(
+  config: UserConfig,
+  options: FarmCLIOptions,
+  command: 'start' | 'build'
+) {
+  // merge options
+  if (command === 'start') {
+    mergeServerOptions(config, options);
+  }
+
+  if (command === 'build') {
+    mergeBuildOptions(config, options);
   }
 }
 
