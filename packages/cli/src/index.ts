@@ -1,5 +1,4 @@
-import { cac, Command } from 'cac';
-import chalk from 'chalk';
+import { cac } from 'cac';
 
 import { COMMANDS } from './plugin/index.js';
 import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
@@ -15,7 +14,7 @@ cli
 // dev command
 cli
   .command(
-    '',
+    'aa',
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
@@ -73,14 +72,8 @@ cli
   });
 
 // Listening for unknown command
-cli.on('command:*', function (obj: { args: string[] }) {
-  const availableCommands = cli.commands.map((cmd: Command) => cmd.name);
-  console.log(chalk.red(`Unknown command：${obj.args[0]}`));
-  if (availableCommands.length > 0) {
-    console.log(
-      chalk.red(`Available commands：${availableCommands.join(',')}`)
-    );
-  }
+cli.on('command:*', () => {
+  cli.outputHelp();
 });
 
 cli.help();
