@@ -13,7 +13,7 @@ import {
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
-  UserServerConfig,
+  UserServerConfig
 } from './types.js';
 import { Logger } from '../logger.js';
 import { pathToFileURL } from 'node:url';
@@ -24,7 +24,7 @@ export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
   'farm.config.ts',
   'farm.config.js',
-  'farm.config.mjs',
+  'farm.config.mjs'
 ];
 
 type CompilationMode = 'development' | 'production';
@@ -41,11 +41,11 @@ export async function normalizeUserCompilationConfig(
   const config: Config['config'] = merge(
     {
       input: {
-        index: './index.html',
+        index: './index.html'
       },
       output: {
-        path: './dist',
-      },
+        path: './dist'
+      }
     },
     userConfig.compilation
   );
@@ -56,7 +56,7 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime) {
     config.runtime = {
       path: require.resolve('@farmfe/runtime'),
-      plugins: [],
+      plugins: []
     };
   }
 
@@ -157,7 +157,7 @@ export async function normalizeUserCompilationConfig(
   const normalizedConfig: Config = {
     config: finalConfig,
     rustPlugins,
-    jsPlugins,
+    jsPlugins
   };
 
   return normalizedConfig;
@@ -166,14 +166,14 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9801,
+  port: 9801
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
-  hmr: DEFAULT_HMR_OPTIONS,
+  hmr: DEFAULT_HMR_OPTIONS
 };
 
 export function normalizeDevServerOptions(
@@ -186,7 +186,7 @@ export function normalizeDevServerOptions(
         ? false
         : options?.hmr !== false
         ? DEFAULT_HMR_OPTIONS
-        : options.hmr,
+        : options.hmr
   });
 }
 
@@ -197,7 +197,7 @@ export function normalizeDevServerOptions(
 export async function resolveUserConfig(
   options: any,
   logger: Logger,
-  command: "start" | "build"
+  command: 'start' | 'build'
 ): Promise<UserConfig> {
   const { configPath } = options;
   if (!path.isAbsolute(configPath)) {
@@ -215,12 +215,12 @@ export async function resolveUserConfig(
       const resolvedPath = path.join(configPath, name);
       const config = await readConfigFile(resolvedPath, logger);
       // merge options
-      if (command === "start") {
+      if (command === 'start') {
         resolveServerOptions(config, options);
       }
 
-      if (command === "build") {
-        // resolveBuildOptions(config, options);
+      if (command === 'build') {
+        resolveBuildOptions(config, options);
       }
       if (config) {
         userConfig = parseUserConfig(config);
@@ -232,8 +232,12 @@ export async function resolveUserConfig(
     root = path.dirname(configPath);
 
     const config = await readConfigFile(configPath, logger);
-    resolveServerOptions(config, options);
-
+    if (command === 'start') {
+      resolveServerOptions(config, options);
+    }
+    if (command === 'build') {
+      resolveBuildOptions(config, options);
+    }
     if (config) {
       userConfig = parseUserConfig(config);
     }
@@ -265,32 +269,32 @@ async function readConfigFile(
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: resolvedPath,
+            config: resolvedPath
           },
           output: {
             filename: fileName,
             path: outputPath,
-            targetEnv: 'node',
+            targetEnv: 'node'
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`),
+            ...module.builtinModules.map((m) => `^node:${m}$`)
           ],
           partialBundling: {
             moduleBuckets: [
               {
                 name: fileName,
-                test: ['.+'],
-              },
-            ],
+                test: ['.+']
+              }
+            ]
           },
           sourcemap: false,
           treeShaking: false,
-          minify: false,
+          minify: false
         },
         server: {
-          hmr: false,
-        },
+          hmr: false
+        }
         // plugins: [
         //   {
         //     name: 'farm-plugin-external',
@@ -344,19 +348,29 @@ async function readConfigFile(
   }
 }
 
-export function cleanServerConfig(config: any): any {
+export function cleanConfig(config: any): any {
   delete config.configPath;
   delete config.config;
+  delete config.outDir;
   delete config.strictPort;
   delete config.open;
   return config;
 }
 
 export function resolveServerOptions(config: any, userOptions: any) {
-  config.server = { ...config.server, ...cleanServerConfig(userOptions) };
+  config.server = { ...config.server, ...cleanConfig(userOptions) };
 }
 
 // TODO resolve build options
-export function resolveBuildOptions() {
-  //TODO resolve build options
+export function resolveBuildOptions(config: any, userOptions: any) {
+  if (userOptions.outDir) {
+    config.compilation.output.path = userOptions.outDir;
+  }
+  console.log(config);
+
+  config.compilation = {
+    ...config.compilation,
+    ...cleanConfig(userOptions)
+  };
+  console.log(config);
 }

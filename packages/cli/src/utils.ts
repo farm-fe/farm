@@ -1,11 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
-import Module from "node:module";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import walkdir from "walkdir";
-import type { start, build } from "@farmfe/core";
-import spawn from "cross-spawn";
-import npmlog from "npmlog";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
+import Module from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { start, build } from '@farmfe/core';
+import walkdir from 'walkdir';
+import spawn from 'cross-spawn';
 
 interface installProps {
   cwd: string; // 项目路径
@@ -14,8 +14,8 @@ interface installProps {
 
 export const TEMPLATES_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "templates"
+  '..',
+  'templates'
 );
 
 export function copyFiles(
@@ -39,9 +39,9 @@ export function copyFiles(
     }
   });
 
-  if (!existsSync(path.join(dest, ".gitignore"))) {
+  if (!existsSync(path.join(dest, '.gitignore'))) {
     writeFileSync(
-      path.join(dest, ".gitignore"),
+      path.join(dest, '.gitignore'),
       `
 node_modules
 *.farm`
@@ -53,11 +53,11 @@ export function resolveCore(cwd: string): Promise<{
   start: typeof start;
   build: typeof build;
 }> {
-  const require = Module.createRequire(path.join(cwd, "package.json"));
+  const require = Module.createRequire(path.join(cwd, 'package.json'));
 
-  const farmCorePath = require.resolve("@farmfe/core");
+  const farmCorePath = require.resolve('@farmfe/core');
 
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     return import(pathToFileURL(farmCorePath).toString());
   }
 
@@ -67,23 +67,23 @@ export async function install(options: installProps): Promise<void> {
   const cwd = options.cwd;
   return new Promise((resolve, reject) => {
     const command = options.package;
-    const args = ["install"];
+    const args = ['install'];
 
     const child = spawn(command, args, {
       cwd,
-      stdio: "inherit",
+      stdio: 'inherit'
     });
 
-    child.once("close", (code: number) => {
+    child.once('close', (code: number) => {
       if (code !== 0) {
         reject({
-          command: `${command} ${args.join(" ")}`,
+          command: `${command} ${args.join(' ')}`
         });
         return;
       }
       resolve();
     });
-    child.once("error", reject);
+    child.once('error', reject);
   });
 }
 /**
@@ -92,7 +92,7 @@ export async function install(options: installProps): Promise<void> {
  * @returns
  */
 export function formatTargetDir(targetDir: string | undefined) {
-  return targetDir?.trim().replace(/\/+$/g, "");
+  return targetDir?.trim().replace(/\/+$/g, '');
 }
 
 /**
@@ -106,40 +106,29 @@ export function filterDuplicateOptions<T>(options: T) {
   }
 }
 
-export function logger(msg: any, { title = "WARN", color = "yellow" } = {}) {
-  const COLOR_CODE = [
-    "black",
-    "red",
-    "green",
-    "yellow",
-    "blue",
-    "magenta",
-    "cyan",
-    "white",
-  ].indexOf(color);
-  if (COLOR_CODE >= 0) {
-    const TITLE_STR = title ? `\x1b[4${COLOR_CODE};30m ${title} \x1b[0m ` : "";
-    console.log(`${TITLE_STR}\x1b[3${COLOR_CODE}m${msg}\x1b[;0m`);
-  } else {
-    console.log(title ? `${title} ${msg}` : msg);
-  }
-}
-
 /**
- * log模块
+ * clear command screen
  */
-
-export function log(level: string, message: string) {
-  npmlog.level = process.env.LOG_LEVEL || "info"; // 判断debug模式
-  npmlog.heading = "farmfe-cli"; // 修改前缀
-  npmlog[level](message);
+export function clearScreen() {
+  const repeatCount = process.stdout.rows - 2;
+  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+  console.log(blank);
+  readline.cursorTo(process.stdout, 0, 0);
+  readline.clearScreenDown(process.stdout);
 }
 
 export function cleanOptions(options: any) {
   const resolveOptions = { ...options };
-  delete resolveOptions["--"];
+  delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
   return resolveOptions;
+}
+
+export function resolveCommandOptions(options: any) {
+  filterDuplicateOptions(options);
+  const root = path.join(process.cwd(), options.config ?? '');
+  options.configPath = root;
+  return options;
 }
