@@ -964,6 +964,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_mdx"
+version = "0.0.1"
+dependencies = [
+ "farmfe_compiler",
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
+ "serde",
+]
+
+[[package]]
 name = "farmfe_plugin_minify"
 version = "0.0.1"
 dependencies = [

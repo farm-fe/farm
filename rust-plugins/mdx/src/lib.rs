@@ -9,7 +9,6 @@ pub struct FarmPluginMdx {}
 
 impl FarmPluginMdx {
   fn new(config: &Config, options: String) -> Self {
-    
     Self {}
   }
 }
