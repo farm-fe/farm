@@ -222,7 +222,9 @@ export async function resolveUserConfig(
       }
       const config = await readConfigFile(resolvedPath, logger);
 
-      if (!isEmptyObject(options)) {
+      // The merge property can only be enabled if command line arguments are passed
+      const filterOptions = cleanConfig(options);
+      if (!isEmptyObject(filterOptions)) {
         mergeConfig(config, options, command);
       }
 
@@ -239,7 +241,8 @@ export async function resolveUserConfig(
     }
     const config = await readConfigFile(configPath, logger);
 
-    if (!isEmptyObject(options)) {
+    const filterOptions = cleanConfig(options);
+    if (!isEmptyObject(filterOptions)) {
       mergeConfig(config, options, command);
     }
 
@@ -358,14 +361,13 @@ export function mergeConfig(
   options: FarmCLIOptions,
   command: 'start' | 'build'
 ) {
-  const cleanOptions = cleanConfig(options);
   // merge options
   if (command === 'start') {
-    mergeServerOptions(config, cleanOptions);
+    mergeServerOptions(config, options);
   }
 
   if (command === 'build') {
-    mergeBuildOptions(config, cleanOptions);
+    mergeBuildOptions(config, options);
   }
 }
 
