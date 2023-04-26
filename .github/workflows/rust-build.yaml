@@ -23,7 +23,7 @@ jobs:
       - run: ln -s ~/zig-linux-x86_64-0.9.1/zig /usr/local/bin
 
       - name: Build - Arm64
-        run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin --zig
+        run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
         with:
