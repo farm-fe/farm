@@ -222,7 +222,9 @@ export async function resolveUserConfig(
       }
       const config = await readConfigFile(resolvedPath, logger);
 
-      mergeConfig(config, options, command);
+      if (!isEmptyObject(options)) {
+        mergeConfig(config, options, command);
+      }
 
       if (config) {
         userConfig = parseUserConfig(config);
@@ -236,7 +238,10 @@ export async function resolveUserConfig(
       clearScreen();
     }
     const config = await readConfigFile(configPath, logger);
-    mergeConfig(config, options, command);
+
+    if (!isEmptyObject(options)) {
+      mergeConfig(config, options, command);
+    }
 
     if (config) {
       userConfig = parseUserConfig(config);
@@ -353,13 +358,14 @@ export function mergeConfig(
   options: FarmCLIOptions,
   command: 'start' | 'build'
 ) {
+  const cleanOptions = cleanConfig(options);
   // merge options
   if (command === 'start') {
-    mergeServerOptions(config, options);
+    mergeServerOptions(config, cleanOptions);
   }
 
   if (command === 'build') {
-    mergeBuildOptions(config, options);
+    mergeBuildOptions(config, cleanOptions);
   }
 }
 
@@ -377,15 +383,14 @@ export function mergeServerOptions(
   config: UserConfig,
   options: FarmCLIOptions
 ) {
-  const cliOptions = cleanConfig(options);
-  config.server = merge(config.server, cliOptions);
+  config.server = merge(config.server, options);
 }
 
 export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
   if (options.outDir) {
     config.compilation.output.path = options.outDir;
   }
-  config.compilation = merge(config.compilation, cleanConfig(options));
+  config.compilation = merge(config.compilation, options);
 }
 
 export function clearScreen() {
@@ -394,4 +399,8 @@ export function clearScreen() {
   console.log(blank);
   readline.cursorTo(process.stdout, 0, 0);
   readline.clearScreenDown(process.stdout);
+}
+
+export function isEmptyObject<T extends object>(obj: T): boolean {
+  return Reflect.ownKeys(obj).length === 0;
 }

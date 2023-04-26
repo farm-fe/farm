@@ -17,7 +17,6 @@ export default <UserConfig>{
   },
   server: {
     hmr: true,
-    port: 6666,
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
 };
