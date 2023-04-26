@@ -18,5 +18,14 @@ export default <UserConfig>{
   server: {
     hmr: true,
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', '@farmfe/plugin-mdx'],
+  plugins: [
+    '@farmfe/plugin-react',
+    '@farmfe/plugin-sass',
+    [
+      '@farmfe/plugin-mdx',
+      {
+        name: 'rust-plugin-mdx',
+      },
+    ],
+  ],
 };
