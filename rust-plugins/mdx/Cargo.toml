@@ -1,0 +1,11 @@
+[package]
+edition = "2021"
+name = "farmfe-plugin-mdx"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { version = "*" }
+farmfe_toolkit_plugin_types = { version = "*" }
