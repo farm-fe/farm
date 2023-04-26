@@ -77,7 +77,7 @@ cargo test
 - Input `pnpm test` in the root directory to run all test cases based on `vitest`.
 
 ```sh
-# root path or crates path
+# root path
 pnpm test
 ```
 

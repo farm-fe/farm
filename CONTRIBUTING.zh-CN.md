@@ -73,7 +73,7 @@ cargo test
 - 在根目录下输入 `pnpm test` 基于 `vitest` 运行所有的 `Node` 代码测试用例。
 
 ```sh
-# root path or crates path
+# root path
 pnpm test
 ```
 
