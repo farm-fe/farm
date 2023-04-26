@@ -24,7 +24,6 @@ export async function start(options: FarmCLIOptions): Promise<void> {
     logger,
     'start'
   );
-  console.log(userConfig);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
