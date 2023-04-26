@@ -1,6 +1,6 @@
 # 贡献指南
 
-非常感谢您对 Farm 感兴趣, 在您提交 Pull Request 之前, 请先阅读以下指南。
+非常感谢您对 Farm 的贡献, 在您提交 Pull Request 之前, 请先阅读以下指南。
 
 ## 行为规范准则
 
@@ -54,6 +54,28 @@ $ pnpm bootstrap # install the dependencies of the project with series of initia
 - 如果`Examples/react`正常运行，则表明开发环境配置成功。
 
 - 如果您更改了`crates`中的 `Rust` 代码，请再次运行 `Packages/core` 下的 `npm run build：rs` 以获取最新的二进制代码。
+
+## 测试
+
+我们还需要测试两个部分，一套 `Rust` 测试，一套 `Node` 测试，在您提交代码之前，请确保所有测试均能通过。
+
+### Rust 测试
+
+- 在根目录下输入 `cargo test` 将会运行所有的 `Rust` 代码测试用例。
+
+```sh
+# root path or crates path
+cargo test
+```
+
+### Node 测试
+
+- 在根目录下输入 `pnpm test` 基于 `vitest` 运行所有的 `Node` 代码测试用例。
+
+```sh
+# root path
+pnpm test
+```
 
 ## 通过脚手架快速创建插件
 
