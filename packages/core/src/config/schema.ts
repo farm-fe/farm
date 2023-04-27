@@ -11,7 +11,7 @@ const ConfigSchema = z
         path: z.string().optional(),
         publicPath: z.string().optional(),
         assetsFilename: z.string().optional(),
-        targetEnv: z.enum(['browser', 'node']).optional(),
+        targetEnv: z.enum(['browser', 'node']).optional()
       })
       .strict()
       .optional(),
@@ -22,7 +22,7 @@ const ConfigSchema = z
         mainFields: z.array(z.string()).optional(),
         conditions: z.array(z.string()).optional(),
         symlinks: z.boolean().optional(),
-        strictExports: z.boolean().optional(),
+        strictExports: z.boolean().optional()
       })
       .strict()
       .optional(),
@@ -34,13 +34,13 @@ const ConfigSchema = z
       .object({
         path: z.string().nonempty(),
         plugins: z.array(z.string()).optional(),
-        swcHelpersPath: z.string().optional(),
+        swcHelpersPath: z.string().optional()
       })
       .strict()
       .optional(),
     assets: z
       .object({
-        include: z.array(z.string()).optional(),
+        include: z.array(z.string()).optional()
       })
       .strict()
       .optional(),
@@ -57,7 +57,7 @@ const ConfigSchema = z
             'es2019',
             'es2020',
             'es2021',
-            'es2022',
+            'es2022'
           ])
           .optional(),
         parser: z.object({
@@ -71,7 +71,7 @@ const ConfigSchema = z
               importAssertions: z.boolean(),
               privateInObject: z.boolean(),
               allowSuperOutsideMethod: z.boolean(),
-              allowReturnOutsideFunction: z.boolean(),
+              allowReturnOutsideFunction: z.boolean()
             })
             .strict()
             .optional(),
@@ -80,11 +80,11 @@ const ConfigSchema = z
               tsx: z.boolean(),
               decorators: z.boolean(),
               dts: z.boolean(),
-              noEarlyErrors: z.boolean(),
+              noEarlyErrors: z.boolean()
             })
             .strict()
-            .optional(),
-        }),
+            .optional()
+        })
       })
       .strict()
       .optional(),
@@ -95,75 +95,23 @@ const ConfigSchema = z
           z
             .object({
               name: z.string(),
-              test: z.array(z.string()),
+              test: z.array(z.string())
             })
             .strict()
-        ),
+        )
       })
       .strict()
       .optional(),
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
-    minify: z.boolean().optional(),
-  })
-  .strict();
-
-const RustPluginSchema = z.union([
-  z.string().nonempty(),
-  z.tuple([z.string(), z.record(z.any())]),
-]);
-
-const HookExecutor = z.function(
-  z.tuple([z.any(), z.any().optional(), z.any().optional()]),
-  z.any()
-);
-
-const JSPluginSchema = z
-  .object({
-    name: z.string().nonempty(),
-    priority: z.number().optional(),
-    config: z.any().optional(),
-    resolve: z
-      .object({
-        filters: z
-          .object({
-            importers: z.array(z.string()),
-            sources: z.array(z.string()),
-          })
-          .strict(),
-        executor: HookExecutor,
-      })
-      .strict()
-      .optional(),
-    load: z
-      .object({
-        filters: z
-          .object({
-            resolvedPaths: z.array(z.string()),
-          })
-          .strict(),
-        executor: HookExecutor,
-      })
-      .strict()
-      .optional(),
-    transform: z
-      .object({
-        filters: z
-          .object({
-            resolvedPaths: z.array(z.string()),
-          })
-          .strict(),
-        executor: HookExecutor,
-      })
-      .strict()
-      .optional(),
+    minify: z.boolean().optional()
   })
   .strict();
 
 const UserConfigSchema = z
   .object({
     root: z.string().optional(),
-    plugins: z.array(z.union([RustPluginSchema, JSPluginSchema])).optional(),
+    plugins: z.array(z.any()).optional(),
     compilation: ConfigSchema.optional(),
     server: z
       .object({
@@ -176,14 +124,14 @@ const UserConfigSchema = z
               .object({
                 ignores: z.array(z.string()).optional(),
                 host: z.string().nonempty().optional(),
-                port: z.number().positive().int().optional(),
+                port: z.number().positive().int().optional()
               })
-              .strict(),
+              .strict()
           ])
-          .optional(),
+          .optional()
       })
       .strict()
-      .optional(),
+      .optional()
   })
   .strict();
 
@@ -191,4 +139,5 @@ export function parseUserConfig(config: unknown) {
   const parsed = UserConfigSchema.parse(config);
   // TODO: parse will only return correct types if tsconfig is set to strict
   return parsed as UserConfig;
+  // return config as UserConfig;
 }
