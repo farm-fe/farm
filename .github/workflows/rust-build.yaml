@@ -5,7 +5,7 @@ jobs:
   # cross compile arm64 macos cause github runners does not native support it
   cross-build-mac-arm:
     name: Build and Upload Artifacts - darwin-arm64
-    runs-on: ubuntu-latest
+    runs-on: macos-10.15
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
@@ -17,13 +17,13 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm && pnpm i --frozen-lockfile
       - run: rustup target add aarch64-apple-darwin
-      - run: wget --quiet https://ziglang.org/download/0.9.1/zig-linux-x86_64-0.9.1.tar.xz
-      - run: tar -xf zig-linux-x86_64-0.9.1.tar.xz
-      - run: mv zig-linux-x86_64-0.9.1 ~/
-      - run: ln -s ~/zig-linux-x86_64-0.9.1/zig /usr/local/bin
+      - run: wget --quiet https://ziglang.org/download/0.10.1/zig-linux-x86_64-0.10.1.tar.xz
+      - run: tar -xf zig-linux-x86_64-0.10.1.tar.xz
+      - run: mv zig-linux-x86_64-0.10.1 ~/
+      - run: ln -s ~/zig-linux-x86_64-0.10.1/zig /usr/local/bin
 
       - name: Build - Arm64
-        run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin
+        run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin --zig
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
         with:
