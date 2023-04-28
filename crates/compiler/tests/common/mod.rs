@@ -55,6 +55,7 @@ pub fn create_css_modules_compiler(
       },
       lazy_compilation: false,
       minify: false,
+      preset_env: false,
       ..Default::default()
     },
     vec![],
@@ -84,6 +85,7 @@ pub fn create_compiler(
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       minify,
+      preset_env: false,
       ..Default::default()
     },
     vec![],
@@ -129,6 +131,7 @@ pub fn create_compiler_with_plugins(
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       minify,
+      preset_env: false,
       ..Default::default()
     },
     plugins,
@@ -192,10 +195,10 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
     let expected_lines = expected_result.trim().lines().collect::<Vec<&str>>();
     let result_lines = result.trim().lines().collect::<Vec<&str>>();
 
-    assert_eq!(expected_lines.len(), result_lines.len());
-
     for (expected, result) in expected_lines.iter().zip(result_lines.iter()) {
       assert_eq!(expected.trim(), result.trim()); // ignore whitespace
     }
+
+    assert_eq!(expected_lines.len(), result_lines.len());
   }
 }

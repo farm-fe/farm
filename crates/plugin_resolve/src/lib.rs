@@ -21,7 +21,7 @@ impl FarmPluginResolve {
   pub fn new(config: &Config) -> Self {
     Self {
       root: config.root.clone(),
-      resolver: Resolver::new(config.resolve.clone(), config.output.clone()),
+      resolver: Resolver::new(),
     }
   }
 }
@@ -73,7 +73,7 @@ impl Plugin for FarmPluginResolve {
     }
 
     let resolver = &self.resolver;
-    let result = resolver.resolve(source, basedir.clone(), &param.kind);
+    let result = resolver.resolve(source, basedir.clone(), &param.kind, context);
 
     // remove the .js if the result is not found to support using native esm with typescript
     if result.is_none() && source.ends_with(".js") {
@@ -81,15 +81,11 @@ impl Plugin for FarmPluginResolve {
 
       return Ok(
         resolver
-          .resolve(&source, basedir.clone(), &param.kind)
+          .resolve(&source, basedir.clone(), &param.kind, context)
           .map(|result| PluginResolveHookResult { query, ..result }),
       );
     }
 
-    Ok(
-      resolver
-        .resolve(source, basedir.clone(), &param.kind)
-        .map(|result| PluginResolveHookResult { query, ..result }),
-    )
+    Ok(result.map(|result| PluginResolveHookResult { query, ..result }))
   }
 }

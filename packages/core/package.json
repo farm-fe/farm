@@ -34,7 +34,7 @@
     "email": "1521488775@qq.com"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.10.0",
+    "@napi-rs/cli": "^2.15.2",
     "@types/figlet": "^1.5.5",
     "@types/koa": "^2.13.5",
     "@types/koa-static": "^4.0.2",
@@ -55,7 +55,7 @@
     "artifacts": "napi artifacts",
     "build": "tsc -p tsconfig.build.json",
     "build:rs": "npm run build:rs:debug -- --release",
-    "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding/binding.cjs --dts binding.d.ts",
+    "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",

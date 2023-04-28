@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use farmfe_core::{
-  config::{OutputConfig, ResolveConfig, TargetEnv},
+  config::{Config, OutputConfig, ResolveConfig, TargetEnv},
+  context::CompilationContext,
   plugin::ResolveKind,
 };
 use farmfe_plugin_resolve::resolver::Resolver;
@@ -12,10 +15,15 @@ fn resolve_imports_basic() {
     "tests/fixtures/resolve-node-modules/imports/node_modules/chalk/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
 
       // Parsing packages in node_modules
-      let resolved = resolver.resolve("#ansi-styles", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "#ansi-styles",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -39,10 +47,15 @@ fn resolve_imports_replace_object() {
     "tests/fixtures/resolve-node-modules/imports/node_modules/chalk/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
 
       // Parsing packages in node_modules
-      let resolved = resolver.resolve("#supports-color", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "#supports-color",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -66,10 +79,15 @@ fn resolve_imports_replace_deps() {
     "tests/fixtures/resolve-node-modules/imports/node_modules/chalk/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
 
       // import resolve other deps like `"#ansi-styles-execa": "execa"`
-      let resolved = resolver.resolve("#ansi-styles-execa", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "#ansi-styles-execa",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -94,15 +112,25 @@ fn resolve_imports_target_browser() {
     "tests/fixtures/resolve-node-modules/imports/node_modules/chalk/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(
-        ResolveConfig::default(),
-        OutputConfig {
-          target_env: TargetEnv::Browser,
+      let context = CompilationContext::new(
+        Config {
+          output: OutputConfig {
+            target_env: TargetEnv::Browser,
+            ..Default::default()
+          },
           ..Default::default()
         },
-      );
+        vec![],
+      )
+      .unwrap();
+      let resolver = Resolver::new();
 
-      let resolved = resolver.resolve("#supports-color", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "#supports-color",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(context),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -126,15 +154,25 @@ fn resolve_imports_target_node() {
     "tests/fixtures/resolve-node-modules/imports/node_modules/chalk/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(
-        ResolveConfig::default(),
-        OutputConfig {
-          target_env: TargetEnv::Node,
+      let resolver = Resolver::new();
+      let context = CompilationContext::new(
+        Config {
+          output: OutputConfig {
+            target_env: TargetEnv::Node,
+            ..Default::default()
+          },
           ..Default::default()
         },
-      );
+        vec![],
+      )
+      .unwrap();
 
-      let resolved = resolver.resolve("#supports-color", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "#supports-color",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(context),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(

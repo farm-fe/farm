@@ -10,7 +10,7 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
-    PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
+    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookResult, ResolveKind,
   },
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -71,7 +71,6 @@ impl Plugin for FarmPluginRuntime {
       },
     );
 
-    // TODO make sure all runtime modules are in the same ModuleBucket
     Ok(Some(()))
   }
 
@@ -140,25 +139,22 @@ impl Plugin for FarmPluginRuntime {
     }
   }
 
-  fn process_module(
+  fn transform(
     &self,
-    param: &mut PluginProcessModuleHookParam,
+    param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if let ModuleMetaData::Script(script) = &mut param.meta {
-      // context.config.runtime.path should be a absolute path without symlink
-      let farm_runtime_module_id = format!("{}{}", context.config.runtime.path, RUNTIME_SUFFIX);
-      let module_id = param.module_id.resolved_path(context.config.root.as_str());
-
-      if farm_runtime_module_id == module_id {
-        insert_runtime_plugins(&mut script.ast, context);
-        return Ok(Some(()));
-      }
-    } else {
-      return Ok(None);
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+    let farm_runtime_module_id = format!("{}{}", context.config.runtime.path, RUNTIME_SUFFIX);
+    // if the module is runtime entry, then inject runtime plugins
+    if farm_runtime_module_id == param.resolved_path {
+      return Ok(Some(PluginTransformHookResult {
+        content: insert_runtime_plugins(param.content.clone(), context),
+        module_type: Some(param.module_type.clone()),
+        source_map: None,
+      }));
     }
-    // TODO insert runtime plugin as runtime entry's dependency too.
-    Ok(Some(()))
+
+    Ok(None)
   }
 
   fn analyze_deps(
@@ -375,7 +371,7 @@ impl Plugin for FarmPluginRuntime {
         context.config.script.target.clone(),
         context.meta.script.cm.clone(),
         None,
-        context.config.minify
+        context.config.minify,
       )
       .map_err(|e| CompilationError::GenerateResourcesError {
         name: resource_pot.id.to_string(),

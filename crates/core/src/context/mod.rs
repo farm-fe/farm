@@ -41,6 +41,12 @@ impl CompilationContext {
   }
 }
 
+impl Default for CompilationContext {
+  fn default() -> Self {
+    Self::new(Config::default(), vec![]).unwrap()
+  }
+}
+
 /// Shared meta info for the core and core plugins, for example, shared swc [SourceMap]
 /// The **custom** field can be used for custom plugins to store shared meta data across compilation
 pub struct ContextMetaData {
