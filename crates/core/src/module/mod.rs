@@ -186,6 +186,23 @@ impl Default for ScriptModuleMetaData {
   }
 }
 
+impl ScriptModuleMetaData {
+  pub fn take_ast(&mut self) -> SwcModule {
+    std::mem::replace(
+      &mut self.ast,
+      SwcModule {
+        span: Default::default(),
+        body: Default::default(),
+        shebang: None,
+      },
+    )
+  }
+
+  pub fn set_ast(&mut self, ast: SwcModule) {
+    self.ast = ast;
+  }
+}
+
 #[cache_item]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ModuleSystem {

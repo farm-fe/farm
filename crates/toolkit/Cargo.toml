@@ -25,6 +25,8 @@ swc_ecma_transforms = { version = "0.217.14", features = [
   "react",
   "concurrent",
 ] }
+swc_ecma_preset_env = { version = "0.194.21" }
+preset_env_base = { version = "0.4.2" }
 swc_css_parser = { version = "0.146.4" }
 swc_css_visit = { version = "0.136.4" }
 swc_css_codegen = { version = "0.147.4" }

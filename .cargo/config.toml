@@ -1,3 +1,13 @@
 
 [net]
 git-fetch-with-cli = true
+
+# [target.aarch64-apple-darwin]
+# rustflags = [
+#   "-C",
+#   "link-arg=-I<sysroot>/usr/include",
+#   "-C",
+#   "link-arg=-F<sysroot>/System/Library/Frameworks",
+#   "-C",
+#   "link-arg=-L<sysroot>/usr/lib",
+# ]

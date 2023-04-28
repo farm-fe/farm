@@ -28,6 +28,8 @@ pub struct Config {
   pub tree_shaking: bool,
   // TODO: support minify options
   pub minify: bool,
+  // TODO: support preset env options
+  pub preset_env: bool,
 }
 
 impl Default for Config {
@@ -53,6 +55,7 @@ impl Default for Config {
       core_lib_path: None,
       tree_shaking: true,
       minify: true,
+      preset_env: true,
     }
   }
 }

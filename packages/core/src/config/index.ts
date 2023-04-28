@@ -138,6 +138,14 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  if (config.presetEnv === undefined) {
+    if (mode === 'production') {
+      config.presetEnv = true;
+    } else {
+      config.presetEnv = false;
+    }
+  }
+
   const plugins = userConfig.plugins ?? [];
   const rustPlugins = [];
   const jsPlugins = [];
@@ -298,7 +306,8 @@ async function readConfigFile(
           },
           sourcemap: false,
           treeShaking: false,
-          minify: false
+          minify: false,
+          presetEnv: false
         },
         server: {
           hmr: false
