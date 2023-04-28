@@ -6,7 +6,7 @@ import { test, expect, describe } from 'vitest';
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
   normalizeDevServerOptions,
-  resolveUserConfig,
+  resolveUserConfig
 } from '../src/index.js';
 import { parseUserConfig } from '../src/config/schema.js';
 import { DefaultLogger } from '../src/logger.js';
@@ -15,18 +15,19 @@ test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
   const config = await resolveUserConfig(
-    path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
-    new DefaultLogger()
+    { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
+    new DefaultLogger(),
+    'start'
   );
 
   expect(config).toEqual({
     compilation: {
       input: {
-        main: './main.tsx',
+        main: './main.tsx'
       },
-      external: builtinModules,
+      external: builtinModules
     },
-    root: path.join(filePath, 'fixtures', 'config'),
+    root: path.join(filePath, 'fixtures', 'config')
   });
 });
 
@@ -60,7 +61,7 @@ describe('parseUserConfig', () => {
   test('extraneous config', () => {
     expect(() =>
       parseUserConfig({
-        extra: 'should throw',
+        extra: 'should throw'
       })
     ).toThrowError('Unrecognized key');
   });
@@ -70,23 +71,23 @@ describe('parseUserConfig', () => {
       parseUserConfig({
         compilation: {
           input: {
-            index: './index.html',
+            index: './index.html'
           },
           resolve: {
             symlinks: true,
-            mainFields: ['module', 'main', 'customMain'],
+            mainFields: ['module', 'main', 'customMain']
           },
           define: {
-            BTN: 'Click me',
+            BTN: 'Click me'
           },
           output: {
-            path: './build',
-          },
+            path: './build'
+          }
         },
         server: {
-          hmr: true,
+          hmr: true
         },
-        plugins: ['@farmfe/plugin-react'],
+        plugins: ['@farmfe/plugin-react']
       })
     ).not.toThrow();
   });

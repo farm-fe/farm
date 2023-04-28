@@ -2,6 +2,7 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import readline from 'node:readline';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
@@ -10,6 +11,7 @@ import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import {
+  FarmCLIOptions,
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
@@ -181,7 +183,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
-  hmr: DEFAULT_HMR_OPTIONS
+  hmr: DEFAULT_HMR_OPTIONS,
+  strictPort: false
 };
 
 export function normalizeDevServerOptions(
@@ -203,9 +206,12 @@ export function normalizeDevServerOptions(
  * @param configPath
  */
 export async function resolveUserConfig(
-  configPath: string,
-  logger: Logger
+  options: FarmCLIOptions,
+  logger: Logger,
+  command: 'start' | 'build'
 ): Promise<UserConfig> {
+  const { configPath } = options;
+
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
@@ -219,7 +225,16 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
+      if (command === 'start') {
+        clearScreen();
+      }
       const config = await readConfigFile(resolvedPath, logger);
+
+      // The merge property can only be enabled if command line arguments are passed
+      const filterOptions = cleanConfig(options);
+      if (!isEmptyObject(filterOptions)) {
+        mergeConfig(config, options, command);
+      }
 
       if (config) {
         userConfig = parseUserConfig(config);
@@ -229,8 +244,15 @@ export async function resolveUserConfig(
     }
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
-
+    if (command === 'start') {
+      clearScreen();
+    }
     const config = await readConfigFile(configPath, logger);
+
+    const filterOptions = cleanConfig(options);
+    if (!isEmptyObject(filterOptions)) {
+      mergeConfig(config, options, command);
+    }
 
     if (config) {
       userConfig = parseUserConfig(config);
@@ -341,4 +363,55 @@ async function readConfigFile(
       }
     }
   }
+}
+
+export function mergeConfig(
+  config: UserConfig,
+  options: FarmCLIOptions,
+  command: 'start' | 'build'
+) {
+  // merge options
+  if (command === 'start') {
+    mergeServerOptions(config, options);
+  }
+
+  if (command === 'build') {
+    mergeBuildOptions(config, options);
+  }
+}
+
+export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
+  delete config.configPath;
+  delete config.config;
+  delete config.outDir;
+  delete config.strictPort;
+  delete config.open;
+  return config;
+}
+
+// TODO optimizing merge methods
+export function mergeServerOptions(
+  config: UserConfig,
+  options: FarmCLIOptions
+) {
+  config.server = merge(config.server, options);
+}
+
+export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
+  if (options.outDir) {
+    config.compilation.output.path = options.outDir;
+  }
+  config.compilation = merge(config.compilation, options);
+}
+
+export function clearScreen() {
+  const repeatCount = process.stdout.rows - 2;
+  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+  console.log(blank);
+  readline.cursorTo(process.stdout, 0, 0);
+  readline.clearScreenDown(process.stdout);
+}
+
+export function isEmptyObject<T extends object>(obj: T): boolean {
+  return Reflect.ownKeys(obj).length === 0;
 }

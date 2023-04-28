@@ -237,6 +237,9 @@ importers:
       inquirer:
         specifier: ^9.1.4
         version: 9.1.4
+      loglevel:
+        specifier: ^1.8.1
+        version: 1.8.1
       walkdir:
         specifier: ^0.4.1
         version: 0.4.1

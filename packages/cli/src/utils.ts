@@ -1,10 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import readline from 'node:readline';
 import Module from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import walkdir from 'walkdir';
 import type { start, build } from '@farmfe/core';
+import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
+import type { GlobalFarmCLIOptions } from './types.js';
 
 interface installProps {
   cwd: string; // 项目路径
@@ -53,6 +55,7 @@ export function resolveCore(cwd: string): Promise<{
   build: typeof build;
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
+
   const farmCorePath = require.resolve('@farmfe/core');
 
   if (process.platform === 'win32') {
@@ -69,13 +72,13 @@ export async function install(options: installProps): Promise<void> {
 
     const child = spawn(command, args, {
       cwd,
-      stdio: 'inherit',
+      stdio: 'inherit'
     });
 
     child.once('close', (code: number) => {
       if (code !== 0) {
         reject({
-          command: `${command} ${args.join(' ')}`,
+          command: `${command} ${args.join(' ')}`
         });
         return;
       }
@@ -91,4 +94,44 @@ export async function install(options: installProps): Promise<void> {
  */
 export function formatTargetDir(targetDir: string | undefined) {
   return targetDir?.trim().replace(/\/+$/g, '');
+}
+
+/**
+ * filter duplicate item in options
+ */
+export function filterDuplicateOptions<T>(options: T) {
+  for (const [key, value] of Object.entries(options)) {
+    if (Array.isArray(value)) {
+      options[key as keyof T] = value[value.length - 1];
+    }
+  }
+}
+
+/**
+ * clear command screen
+ */
+export function clearScreen() {
+  const repeatCount = process.stdout.rows - 2;
+  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+  console.log(blank);
+  readline.cursorTo(process.stdout, 0, 0);
+  readline.clearScreenDown(process.stdout);
+}
+
+export function cleanOptions(options: GlobalFarmCLIOptions) {
+  const resolveOptions = { ...options };
+  delete resolveOptions['--'];
+  delete resolveOptions.m;
+  delete resolveOptions.c;
+  delete resolveOptions.w;
+  return resolveOptions;
+}
+
+export function resolveCommandOptions(
+  options: GlobalFarmCLIOptions
+): GlobalFarmCLIOptions {
+  filterDuplicateOptions(options);
+  const root = path.join(process.cwd(), options.config ?? '');
+  options.configPath = root;
+  return options;
 }

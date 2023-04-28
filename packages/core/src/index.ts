@@ -8,21 +8,23 @@ import { Compiler } from './compiler/index.js';
 import {
   normalizeUserCompilationConfig,
   resolveUserConfig,
-  UserConfig,
+  UserConfig
 } from './config/index.js';
 import { DefaultLogger, Logger } from './logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
+import type { FarmCLIOptions } from './config/types.js';
 
-export async function start(options: {
-  configPath?: string;
-  logger?: Logger;
-}): Promise<void> {
+export async function start(options: FarmCLIOptions): Promise<void> {
+  // TODO merger config options Encapsulation universal
+
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(
-    options.configPath,
-    logger
+    options,
+    logger,
+    'start'
   );
+
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'development'
@@ -55,10 +57,13 @@ export async function build(options: {
   logger?: Logger;
 }): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+
   const userConfig: UserConfig = await resolveUserConfig(
-    options.configPath,
-    logger
+    options,
+    logger,
+    'build'
   );
+
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
