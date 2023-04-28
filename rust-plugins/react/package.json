@@ -7,7 +7,7 @@
   "license": "MIT",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@napi-rs/cli": "^2.10.0"
+    "@napi-rs/cli": "^2.15.2"
   },
   "napi": {
     "name": "farm-plugin-react",

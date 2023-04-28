@@ -389,8 +389,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@napi-rs/cli':
-        specifier: ^2.10.0
-        version: 2.10.0
+        specifier: ^2.15.2
+        version: 2.15.2
 
   rust-plugins/sass:
     optionalDependencies:
@@ -420,8 +420,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@napi-rs/cli':
-        specifier: ^2.10.0
-        version: 2.10.0
+        specifier: ^2.15.2
+        version: 2.15.2
       extract-zip:
         specifier: ^2.0.1
         version: 2.0.1
@@ -1522,12 +1522,6 @@ packages:
     resolution: {integrity: sha512-6RU5ol2lDtO8bD9Yxe6CZkl0DArdv0qkuoZC+ZwowU+cdRlVE1157wjCmlA5Rsf1Xc/brACnsZa5PZpEDfTFFg==}
     dependencies:
       make-plural: 7.2.0
-    dev: true
-
-  /@napi-rs/cli@2.10.0:
-    resolution: {integrity: sha512-pK/VLOdo690FEItPJ9T5PLEfzmDTHgXjzuVChnsKvqI9vPg+rH12iyoxOrux6PAqg/pImJTd4CCabRqEfLt/sA==}
-    engines: {node: '>= 10'}
-    hasBin: true
     dev: true
 
   /@napi-rs/cli@2.15.2:

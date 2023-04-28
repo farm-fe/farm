@@ -8,11 +8,12 @@ Farm has implemented all basic features for a web building tool. However, there 
 - [x] Partial Bundling
 - [x] Both Rust and JavaScript Plugin System
 - [x] Source Map
-- [ ] Resource Minimization
+- [x] Resource Minimization
 - [x] Tree Shaking
-- [ ] CSS Modules
+- [x] CSS Modules
 - [x] Official Plugins like Sass
 - [ ] Persistent Cache
+- [x] Polyfill
 
 See milestones: https://github.com/farm-fe/farm/milestones
 
