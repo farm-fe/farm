@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.7.1
+
+### Patch Changes
+
+- 079bb21: Fix that zod parse js plugin executor lead to napi error
+
 ## 0.7.0
 
 ### Minor Changes
