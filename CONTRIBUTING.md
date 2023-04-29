@@ -59,6 +59,28 @@ $ pnpm bootstrap # install the dependencies of the project
 
 - If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
 
+## Testing
+
+We also need to test two parts, a set of `Rust` tests and a set of `Node` tests. Make sure all the tests pass before you submit the code.
+
+### Rust Testing
+
+- Input `cargo test` in the root directory will run all the test cases.
+
+```sh
+# root path or crates path
+cargo test
+```
+
+### Node Testing
+
+- Input `pnpm test` in the root directory to run all test cases based on `vitest`.
+
+```sh
+# root path
+pnpm test
+```
+
 ## Quickly create plugins through scaffold
 
 If you want to develop a plugin for farm, farm provides a scaffolding to help you quickly create a plugin, which you can create with the following command.
@@ -68,8 +90,6 @@ Farm supports the creation of rust and js plugins.
 ```bash
 $ farm plugin create <plugin-name> # create a plugin support js or rust
 ```
-
-##
 
 ## Pull Request Preface Tip
 

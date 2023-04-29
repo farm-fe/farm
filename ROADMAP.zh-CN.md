@@ -8,11 +8,12 @@ Farm 目前已经实现了 Web 构建工具的所有基本功能。然而, 离�
 - [x] Partial Bundling
 - [x] Both Rust and JavaScript Plugin System
 - [x] Source Map
-- [ ] Resource Minimization
+- [x] Resource Minimization
 - [x] Tree Shaking
-- [ ] CSS Modules
+- [x] CSS Modules
 - [x] Official Plugins like Sass
 - [ ] Persistent Cache
+- [x] Polyfill
 
 请参阅里程碑: https://github.com/farm-fe/farm/milestones
 

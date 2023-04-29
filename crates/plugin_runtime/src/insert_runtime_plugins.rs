@@ -3,102 +3,39 @@ use std::sync::Arc;
 use farmfe_core::{
   config::{FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
   context::CompilationContext,
-  swc_common::DUMMY_SP,
-  swc_ecma_ast::{
-    ArrayLit, CallExpr, Callee, Expr, ExprOrSpread, ExprStmt, Ident, ImportDecl,
-    ImportDefaultSpecifier, ImportSpecifier, MemberExpr, MemberProp, Module as SwcModule,
-    ModuleDecl, ModuleItem, Stmt, Str,
-  },
 };
 
-pub fn insert_runtime_plugins(ast: &mut SwcModule, context: &Arc<CompilationContext>) {
-  // find the last import statement and insert the runtime plugins after it
-  let last_import_stmt_index = ast
-    .body
+const PLUGIN_VAR_PREFIX: &str = "__farm_plugin__";
+
+pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>) -> String {
+  let plugins = context
+    .config
+    .runtime
+    .plugins
     .iter()
     .enumerate()
-    .rev()
-    .find_map(|(i, stmt)| {
-      if let ModuleItem::ModuleDecl(ModuleDecl::Import(_)) = stmt {
-        Some(i)
-      } else {
-        None
-      }
+    .map(|(i, plugin_path)| {
+      let ident = format!("{}{}", PLUGIN_VAR_PREFIX, i);
+      let import_stmt = format!("import {} from '{}';", ident, plugin_path);
+      (ident, import_stmt)
     })
-    .unwrap_or(0);
+    .collect::<Vec<_>>();
+  let idents = plugins
+    .iter()
+    .map(|(ident, _)| ident.as_str())
+    .collect::<Vec<_>>();
+  let imports = plugins
+    .iter()
+    .map(|(_, import)| import.as_str())
+    .collect::<Vec<_>>();
 
-  let plugin_var_prefix = "__farm_plugin__";
-
-  let import_plugin_stmts =
-    context
-      .config
-      .runtime
-      .plugins
-      .iter()
-      .enumerate()
-      .map(|(i, plugin_path)| {
-        ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-          span: DUMMY_SP,
-          specifiers: vec![ImportSpecifier::Default(ImportDefaultSpecifier {
-            span: DUMMY_SP,
-            local: Ident::new(
-              format!("{}{}", plugin_var_prefix, i).as_str().into(),
-              DUMMY_SP,
-            ),
-          })],
-          src: Box::new(Str {
-            span: DUMMY_SP,
-            value: plugin_path.as_str().into(),
-            raw: None,
-          }),
-          type_only: false,
-          asserts: None,
-        }))
-      });
-
-  ast.body.splice(
-    last_import_stmt_index..last_import_stmt_index,
-    import_plugin_stmts,
+  // FARM_GLOBAL_THIS.FARM_MODULE_SYSTEM.setPlugins([PLUGIN_VAR_PREFIX0, PLUGIN_VAR_PREFIX1, ...])
+  let plugins_call = format!(
+    "{}.{}.setPlugins([{}]);",
+    FARM_GLOBAL_THIS,
+    FARM_MODULE_SYSTEM,
+    idents.join(", ")
   );
 
-  // insert the setPlugins call at the end of the module
-  let set_plugins_call = CallExpr {
-    span: DUMMY_SP,
-    callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
-      span: DUMMY_SP,
-      obj: Box::new(Expr::Member(MemberExpr {
-        span: DUMMY_SP,
-        obj: Box::new(Expr::Ident(Ident::new(FARM_GLOBAL_THIS.into(), DUMMY_SP))),
-        prop: MemberProp::Ident(Ident::new(FARM_MODULE_SYSTEM.into(), DUMMY_SP)),
-      })),
-      prop: MemberProp::Ident(Ident::new("setPlugins".into(), DUMMY_SP)),
-    }))),
-    args: vec![ExprOrSpread {
-      spread: None,
-      expr: Box::new(Expr::Array(ArrayLit {
-        span: DUMMY_SP,
-        elems: context
-          .config
-          .runtime
-          .plugins
-          .iter()
-          .enumerate()
-          .map(|(i, _)| {
-            Some(ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Ident(Ident::new(
-                format!("{}{}", plugin_var_prefix, i).as_str().into(),
-                DUMMY_SP,
-              ))),
-            })
-          })
-          .collect(),
-      })),
-    }],
-    type_args: None,
-  };
-  ast.body.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-    span: DUMMY_SP,
-    expr: Box::new(Expr::Call(set_plugins_call)),
-  })));
+  format!("{}\n{}\n{}", imports.join("\n"), content, plugins_call,)
 }

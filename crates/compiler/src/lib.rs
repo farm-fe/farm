@@ -48,6 +48,10 @@ impl Compiler {
       plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
     }
 
+    if config.preset_env {
+      plugins.push(Arc::new(farmfe_plugin_polyfill::FarmPluginPolyfill::new(&config)) as _);
+    }
+
     plugins.append(&mut plugin_adapters);
     // sort plugins by priority
     plugins.sort_by_key(|a| a.priority());

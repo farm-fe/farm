@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@napi-rs/cli": "^2.10.0",
+    "@napi-rs/cli": "^2.15.2",
     "extract-zip": "^2.0.1",
     "node-fetch": "^3.2.10",
     "tar": "^6.1.11"

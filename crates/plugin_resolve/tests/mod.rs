@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{OutputConfig, ResolveConfig},
+  config::{Config, OutputConfig, ResolveConfig},
+  context::CompilationContext,
   plugin::ResolveKind,
 };
 use farmfe_plugin_resolve::resolver::Resolver;
@@ -12,10 +13,15 @@ fn resolve_relative_specifier_without_extension() {
   fixture(
     "tests/fixtures/resolve-relative-specifier/**/index.*",
     |file, _| {
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
       let cwd = file.parent().unwrap().to_path_buf();
 
-      let resolved = resolver.resolve("./index", cwd.clone(), &ResolveKind::Entry);
+      let resolved = resolver.resolve(
+        "./index",
+        cwd.clone(),
+        &ResolveKind::Entry,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -31,13 +37,23 @@ fn resolve_relative_specifier_with_extension() {
   fixture(
     "tests/fixtures/resolve-relative-specifier/**/index.*",
     |file, _| {
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
       let cwd = file.parent().unwrap().to_path_buf();
 
-      let resolved = resolver.resolve("./index.html", cwd.clone(), &ResolveKind::Entry);
+      let resolved = resolver.resolve(
+        "./index.html",
+        cwd.clone(),
+        &ResolveKind::Entry,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_none());
 
-      let resolved = resolver.resolve("./index.ts", cwd.clone(), &ResolveKind::Entry);
+      let resolved = resolver.resolve(
+        "./index.ts",
+        cwd.clone(),
+        &ResolveKind::Entry,
+        &Arc::new(CompilationContext::default()),
+      );
       let resolved = resolved.unwrap();
       assert_eq!(
         resolved.resolved_path,
@@ -53,9 +69,14 @@ fn resolve_node_modules_normal() {
     "tests/fixtures/resolve-node-modules/normal/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
 
-      let resolved = resolver.resolve("pkg-a", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "pkg-a",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -71,7 +92,12 @@ fn resolve_node_modules_normal() {
       assert!(!resolved.external);
       assert!(!resolved.side_effects);
 
-      let resolved = resolver.resolve("pkg-a/index.js", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "pkg-a/index.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -87,7 +113,12 @@ fn resolve_node_modules_normal() {
       assert!(!resolved.external);
       assert!(!resolved.side_effects);
 
-      let resolved = resolver.resolve("pkg-a/lib", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "pkg-a/lib",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -104,7 +135,12 @@ fn resolve_node_modules_normal() {
       assert!(!resolved.external);
       assert!(!resolved.side_effects);
 
-      let resolved = resolver.resolve("pkg-b", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "pkg-b",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -121,7 +157,12 @@ fn resolve_node_modules_normal() {
       assert!(!resolved.external);
       assert!(!resolved.side_effects);
 
-      let resolved = resolver.resolve("dir-main", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "dir-main",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -143,15 +184,25 @@ fn resolve_node_modules_normal() {
 fn resolve_alias() {
   fixture("tests/fixtures/resolve-alias/index.ts", |file, _| {
     let cwd = file.parent().unwrap().to_path_buf();
-    let resolver = Resolver::new(
-      ResolveConfig {
-        alias: HashMap::from([("@".to_string(), cwd.to_string_lossy().to_string())]),
+    let resolver = Resolver::new();
+    let context = CompilationContext::new(
+      Config {
+        resolve: ResolveConfig {
+          alias: HashMap::from([("@".to_string(), cwd.to_string_lossy().to_string())]),
+          ..Default::default()
+        },
         ..Default::default()
       },
-      OutputConfig::default(),
-    );
+      vec![],
+    )
+    .unwrap();
 
-    let resolved = resolver.resolve("@/pages/a", cwd.clone(), &ResolveKind::Import);
+    let resolved = resolver.resolve(
+      "@/pages/a",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &Arc::new(context),
+    );
     assert!(resolved.is_some());
     let resolved = resolved.unwrap();
 
@@ -170,9 +221,14 @@ fn resolve_alias() {
 fn resolve_dot() {
   fixture!("tests/fixtures/resolve-dot/index.ts", |file, _| {
     let cwd = file.parent().unwrap().to_path_buf();
-    let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+    let resolver = Resolver::new();
 
-    let resolved = resolver.resolve(".", cwd.clone(), &ResolveKind::Import);
+    let resolved = resolver.resolve(
+      ".",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &Arc::new(CompilationContext::default()),
+    );
     assert!(resolved.is_some());
     let resolved = resolved.unwrap();
 
@@ -189,9 +245,14 @@ fn resolve_double_dot() {
     "tests/fixtures/resolve-double-dot/lib/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
 
-      let resolved = resolver.resolve("..", cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        "..",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -214,9 +275,14 @@ fn resolve_absolute_specifier() {
     "tests/fixtures/resolve-absolute-specifier/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+      let resolver = Resolver::new();
 
-      let resolved = resolver.resolve(file.to_str().unwrap(), cwd.clone(), &ResolveKind::Import);
+      let resolved = resolver.resolve(
+        file.to_str().unwrap(),
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -226,6 +292,7 @@ fn resolve_absolute_specifier() {
         cwd.join("lib").to_str().unwrap(),
         cwd.clone(),
         &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
       );
 
       assert!(resolved.is_some());
@@ -243,21 +310,25 @@ fn resolve_absolute_specifier() {
   );
 }
 
-// TODO pass this test
-// #[test]
-// fn resolve_package_dir() {
-//   fixture!(
-//     "tests/fixtures/resolve-node-modules/package_dir/entry.js",
-//     |file, _| {
-//       let cwd = file.parent().unwrap().to_path_buf();
-//       let resolver = Resolver::new(ResolveConfig::default(), OutputConfig::default());
+#[test]
+fn resolve_package_dir() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/package_dir/entry.js",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
 
-//       let resolved = resolver.resolve(cwd.to_str().unwrap(), cwd.clone(), &ResolveKind::Import);
-//       assert!(resolved.is_some());
+      let resolved = resolver.resolve(
+        cwd.to_str().unwrap(),
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
 
-//       let resolved = resolved.unwrap();
+      let resolved = resolved.unwrap();
 
-//       assert_eq!(resolved.resolved_path, file.to_string_lossy().to_string());
-//     }
-//   );
-// }
+      assert_eq!(resolved.resolved_path, file.to_string_lossy().to_string());
+    }
+  );
+}

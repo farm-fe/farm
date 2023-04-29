@@ -19,6 +19,7 @@ farmfe_toolkit = { path = "../toolkit" }
 farmfe_utils = { path = "../utils" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_plugin_json = { path = "../plugin_json" }
+farmfe_plugin_polyfill = { path = "../plugin_polyfill" }
 
 [features]
 profile = ["farmfe_core/profile"]
