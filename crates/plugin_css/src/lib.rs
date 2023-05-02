@@ -18,10 +18,11 @@ use farmfe_core::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::DUMMY_SP,
+  swc_common::{DUMMY_SP},
   swc_css_ast::Stylesheet,
 };
 use farmfe_toolkit::{
+  base64::engine::{general_purpose, Engine},
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::{read_file_utf8, transform_output_filename},
   script::module_type_from_id,
@@ -132,6 +133,9 @@ impl Plugin for FarmPluginCss {
         &context.config.root,
       );
 
+      let enabled_sourcemap = context.config.sourcemap.enabled();
+
+      // css modules
       if is_modules {
         let query = param.query.iter().fold(HashMap::new(), |mut acc, (k, v)| {
           acc.insert(k.to_string(), v.to_string());
@@ -144,6 +148,8 @@ impl Plugin for FarmPluginCss {
           .is_some();
 
         let is_production = matches!(context.config.mode, farmfe_core::config::Mode::Production);
+
+        // real css code
         if is_modules_file {
           if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
             let ast = self
@@ -152,7 +158,16 @@ impl Plugin for FarmPluginCss {
               .remove(module_id.relative_path())
               .expect("receive an valid css modules file");
 
-            let (content, _) = codegen_css_stylesheet(&ast, None, context.config.minify);
+            let (mut content, src_map) = codegen_css_stylesheet(
+              &ast,
+              Some(context.meta.css.cm.clone()),
+              context.config.minify,
+            );
+
+            if enabled_sourcemap {
+              inline_source_map(&mut content, src_map);
+            }
+
             let js_code = wrapper_style_load(&content, module_id.to_string());
 
             return Ok(Some(PluginTransformHookResult {
@@ -169,6 +184,7 @@ impl Plugin for FarmPluginCss {
           }
         }
 
+        // next, get ident from ast and export through JS
         let mut css_stylesheet = parse_css_stylesheet(
           &module_id.to_string(),
           &param.content,
@@ -253,8 +269,32 @@ impl Plugin for FarmPluginCss {
         }));
       }
 
+      // original css
       if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-        let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
+        let content_with_sourcemap = if enabled_sourcemap {
+          let stylesheet = parse_css_stylesheet(
+            &module_id.to_string(),
+            &param.content,
+            context.meta.css.cm.clone(),
+          )?;
+
+          let (mut css_code, src_map) = codegen_css_stylesheet(
+            &stylesheet,
+            Some(context.meta.css.cm.clone()),
+            context.config.minify,
+          );
+
+          inline_source_map(&mut css_code, src_map);
+
+          Some(css_code)
+        } else {
+          None
+        };
+
+        let css_js_code = wrapper_style_load(
+          content_with_sourcemap.as_ref().unwrap_or(&param.content),
+          module_id.to_string(),
+        );
 
         Ok(Some(PluginTransformHookResult {
           content: css_js_code,
@@ -411,4 +451,13 @@ impl FarmPluginCss {
       ast_map: Mutex::new(HashMap::new()),
     }
   }
+}
+
+fn inline_source_map(css_code: &mut String, src_map: Option<Vec<u8>>) {
+  let base64 = general_purpose::STANDARD.encode(src_map.expect("failed to generate source map"));
+
+  css_code.push_str(
+    format!("\n/*# sourceMappingURL=data:application/json;charset=utf-8;base64,{base64}*/")
+      .as_str(),
+  );
 }
