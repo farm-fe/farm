@@ -38,10 +38,10 @@
         });
         noop();
         var _default = {
-            "hello": `farm_hello`,
-            "base": `farm_base`,
-            "hide": `farm_hide`,
-            "show": `farm_show`
+            "hello": `hello-51e5814c`,
+            "base": `base-51e5814c`,
+            "hide": `hide-51e5814c`,
+            "show": `show-51e5814c`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -61,15 +61,15 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //a1b6e7b5.css:
- .farm_base {
+ .base-51e5814c {
   font-size: 20px;
 }
-.farm_hide {
+.hide-51e5814c {
   display: none;
 }
-.farm_show {
+.show-51e5814c {
   display: block;
 }
- .farm_hello {
+ .hello-51e5814c {
   color: blue;
 }

@@ -38,7 +38,7 @@
         });
         noop();
         var _default = {
-            "action": `farm_action`
+            "action": `action-f132cfc6`
         };
     },
     "95fe6ac5": function(module, exports, require, dynamicRequire) {
@@ -56,7 +56,7 @@
         noop();
         var _actioncss = _interop_require_default._(require("8b6840d6"));
         var _default = {
-            "base": `farm_base ${_actioncss.default["action"]}`
+            "base": `base-8725e0d7 ${_actioncss.default["action"]}`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -76,9 +76,9 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //254f35b5.css:
- .farm_action {
+ .action-f132cfc6 {
   color: red;
 }
-.farm_base {
+.base-8725e0d7 {
   font-size: 18px;
 }

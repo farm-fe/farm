@@ -38,9 +38,9 @@
         });
         noop();
         var _default = {
-            "hello": `farm_hello`,
-            "bar": `farm_bar`,
-            "main": `farm_main`
+            "hello": `hello-04feaf7c`,
+            "bar": `bar-04feaf7c`,
+            "main": `main-04feaf7c`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -60,12 +60,12 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //a1b6e7b5.css:
-  .foo  .farm_hello {
+  .foo  .hello-04feaf7c {
   color: red;
 }
-.farm_bar {
+.bar-04feaf7c {
   color: red;
 }
- .farm_main  .description {
+ .main-04feaf7c  .description {
   color: blue;
 }
