@@ -14,7 +14,6 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
   },
-  relative_path::RelativePath,
   resource::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceType,
@@ -24,7 +23,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
-  fs::read_file_utf8,
+  fs::{read_file_utf8, transform_output_filename},
   script::module_type_from_id,
   swc_atoms::JsWord,
   swc_css_modules::TransformConfig,
@@ -37,18 +36,22 @@ use farmfe_utils::stringify_query;
 
 struct CssModuleRename {
   indent_name: String,
+  hash: String,
 }
 
 impl TransformConfig for CssModuleRename {
   fn new_name_for(&self, local: &JsWord) -> JsWord {
-    let r: HashMap<String, String> = [("name".into(), local.to_string())].into_iter().collect();
+    let name = local.to_string();
+    let r: HashMap<String, &String> = [("name".into(), &name), ("hash".into(), &self.hash)]
+      .into_iter()
+      .collect();
     transform_css_module_indent_name(self.indent_name.clone(), r).into()
   }
 }
 
 fn transform_css_module_indent_name(
   indent_name: String,
-  context: HashMap<String, String>,
+  context: HashMap<String, &String>,
 ) -> String {
   context.iter().fold(indent_name, |acc, (key, value)| {
     acc.replace(&format!("[{}]", key), value)
@@ -149,7 +152,7 @@ impl Plugin for FarmPluginCss {
               .remove(module_id.relative_path())
               .expect("receive an valid css modules file");
 
-            let content = codegen_css_stylesheet(&ast, context.config.minify);
+            let (content, _) = codegen_css_stylesheet(&ast, None, context.config.minify);
             let js_code = wrapper_style_load(&content, module_id.to_string());
 
             return Ok(Some(PluginTransformHookResult {
@@ -176,6 +179,7 @@ impl Plugin for FarmPluginCss {
           &mut css_stylesheet,
           CssModuleRename {
             indent_name: context.config.css.indent_name.clone(),
+            hash: hash::sha256(param.resolved_path.as_bytes(), 8),
           },
         );
 
@@ -347,16 +351,54 @@ impl Plugin for FarmPluginCss {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       let stylesheet = &resource_pot.meta.as_css().ast;
 
-      let css_code = codegen_css_stylesheet(&stylesheet, context.config.minify);
+      let source_map_enabled = context.config.sourcemap.enabled();
 
-      Ok(Some(vec![Resource {
-        name: resource_pot.id.to_string(),
+      let (mut css_code, src_map) = codegen_css_stylesheet(
+        &stylesheet,
+        if source_map_enabled {
+          Some(context.meta.css.cm.clone())
+        } else {
+          None
+        },
+        context.config.minify,
+      );
+
+      let filename = transform_output_filename(
+        context.config.output.filename.clone(),
+        resource_pot.id.to_string().as_str(),
+        css_code.as_bytes(),
+        ResourceType::Css.to_ext().as_str(),
+      );
+
+      let sourcemap_filename = format!("{filename}.map");
+
+      let mut resources = vec![];
+
+      if context.config.sourcemap.enabled()
+        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
+      {
+        css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
+
+        resources.push(Resource {
+          name: sourcemap_filename,
+          bytes: src_map.unwrap(),
+          emitted: false,
+          resource_type: ResourceType::SourceMap,
+          resource_pot: resource_pot.id.clone(),
+          preserve_name: true,
+        })
+      }
+
+      resources.push(Resource {
+        name: filename.clone(),
         bytes: css_code.as_bytes().to_vec(),
         emitted: false,
         resource_type: ResourceType::Css,
         resource_pot: resource_pot.id.clone(),
-        preserve_name: false,
-      }]))
+        preserve_name: true,
+      });
+
+      Ok(Some(resources))
     } else {
       Ok(None)
     }

@@ -130,7 +130,7 @@ impl Default for CssConfig {
   fn default() -> Self {
     Self {
       modules: false,
-      indent_name: String::from("farm_[name]"),
+      indent_name: String::from("[name]-[hash]"),
     }
   }
 }
