@@ -1,11 +1,11 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import sass, { StringOptions } from 'sass';
+import { StringOptions } from 'sass';
 import { getAdditionContext, pluginName, tryRead } from './options.js';
 import { pathToFileURL } from 'url';
+import { getSassImplementation } from './utils.js';
 
-export interface SassOptions {
+export type SassPluginOptions = StringOptions<'sync'> & {
   match?: string[];
-  sassOption?: StringOptions<'async'>;
   /**
    * - relative or absolute path
    * - globals file will be added to the top of the sass file
@@ -13,17 +13,20 @@ export interface SassOptions {
    *
    * relative to project root or cwd
    */
+  implementation?: string;
   globals?: string[];
   content?: string;
   sourceMap?: boolean;
-}
+};
 
-const defaultMatch = ['\\.scss$'];
+const defaultMatch = ['\\.(s[ac]ss)$'];
 
-export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
+export default function farmSassPlugin(
+  options: SassPluginOptions = {}
+): JsPlugin {
   let farmConfig!: UserConfig;
   let cacheAdditionContext: string | null;
-
+  const implementation = getSassImplementation(options.implementation);
   const cwd = () => farmConfig.root ?? process.cwd();
 
   const match = (options.match ?? defaultMatch).map((item) => item.toString());
@@ -37,14 +40,13 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
         const data = await tryRead(param.resolvedPath);
         return {
           content: data,
-          moduleType: 'css',
+          moduleType: 'sass'
         };
-      },
+      }
     },
-
     transform: {
       filters: {
-        resolvedPaths: match,
+        resolvedPaths: match
       },
       async executor(param) {
         try {
@@ -52,20 +54,19 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
             cacheAdditionContext ??
             (cacheAdditionContext = getAdditionContext(cwd(), options));
 
-          const { css, sourceMap } = await sass.compileStringAsync(
-            `${additionContext}\n${param.content}`,
-            {
-              sourceMap: Boolean(
-                options.sourceMap ?? farmConfig?.compilation?.sourcemap
-              ),
-              url: pathToFileURL(param.resolvedPath),
-            }
-          );
+          const { css, sourceMap } = await (
+            await implementation
+          ).compileStringAsync(`${additionContext}\n${param.content}`, {
+            sourceMap: Boolean(
+              options.sourceMap ?? farmConfig?.compilation?.sourcemap
+            ),
+            url: pathToFileURL(param.resolvedPath)
+          });
 
           return {
             content: css,
             moduleType: 'css',
-            sourceMap: sourceMap && JSON.stringify(sourceMap),
+            sourceMap: sourceMap && JSON.stringify(sourceMap)
           };
         } catch (error) {
           console.error(error);
@@ -73,9 +74,9 @@ export default function farmSassPlugin(options: SassOptions = {}): JsPlugin {
 
         return {
           content: '',
-          moduleType: 'css',
+          moduleType: 'css'
         };
-      },
-    },
+      }
+    }
   };
 }

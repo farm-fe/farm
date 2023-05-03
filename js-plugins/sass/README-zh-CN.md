@@ -35,12 +35,19 @@ export default defineFarmConfig({
 ```
 
 ## Options
+### implementation
+
+类型: `string`
+
+默认值: `''`
+
+指定sass文件的执行器(如sass,sass-embedded),如果未定义，则默认查找node_module中的文件
 
 ### match
 
 类型: `string[]`
 
-默认值: `["\\.scss$"]`
+默认值: `["\\.s[ac]ss$"]`
 
 指定匹配的文件
 
@@ -48,7 +55,7 @@ export default defineFarmConfig({
 
 类型: `string[]`
 
-默认值: `undefined`
+默认值: `[]`
 
 将读取文件中的内容并注入到每个 sass/scss 文件中, 它通常用来注入一些全局变量
 
@@ -58,7 +65,7 @@ export default defineFarmConfig({
 
 类型: `string`
 
-默认值: `undefined`
+默认值: `''`
 
 它与 `globals` 的作用一致, 但它可以很方便的使用, 通常注入一些简单的 sass/scss 内容
 

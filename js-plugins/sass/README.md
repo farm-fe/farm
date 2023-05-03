@@ -36,11 +36,19 @@ export default defineFarmConfig({
 
 ## Options
 
+### implementation
+
+Type: `string`
+
+Default: `''`
+
+Specify the executor of the sass file (such as sass, sass-embedded), if not defined, the file in node_module will be searched by default.
+
 ### match
 
 Type: `string[]`
 
-Default: `["\\.scss$"]`
+Default: `["\\.s[ac]ss$"]`
 
 Specifies the matching files.
 
@@ -48,17 +56,18 @@ Specifies the matching files.
 
 Type: `string[]`
 
-Default: `undefined`
+Default: `[]`
 
 Reads the contents from a file and injects them into each sass/scss file. It is typically used to inject some global variables
 
 > Note that normal css should not be written in this file, otherwise it will inject them repeatedly into each compiled css file
 
+
 ### content
 
 Type: `string`
 
-Default: `undefined`
+Default: `''`
 
 It has the same function as globals, but it can be conveniently used to inject some simple sass/scss content
 

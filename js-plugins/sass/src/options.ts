@@ -1,10 +1,10 @@
 import { isAbsolute, join } from 'path';
-import type { SassOptions } from './index.js';
+import type { SassPluginOptions } from './index.js';
 import fs from 'fs';
 
 export const pluginName = 'farm-sass-plugin';
 
-export const getAdditionContext = (cwd: string, option: SassOptions) => {
+export const getAdditionContext = (cwd: string, option: SassPluginOptions) => {
   const { globals = [], content } = option;
 
   const result = globals.reduce((result, file) => {
@@ -14,7 +14,6 @@ export const getAdditionContext = (cwd: string, option: SassOptions) => {
     } else {
       filepath = join(cwd, file);
     }
-
     try {
       result.push(fs.readFileSync(filepath, 'utf-8'));
     } catch (error) {
@@ -22,7 +21,6 @@ export const getAdditionContext = (cwd: string, option: SassOptions) => {
     }
     return result;
   }, []);
-
   if (content) {
     result.push(content);
   }
