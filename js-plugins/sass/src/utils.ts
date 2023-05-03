@@ -37,7 +37,7 @@ export function getSassImplementation(implementation?: string) {
       process.exit(error);
     }
   }
-  // if conifg
+  // if config
   if (typeof implementation === 'string') {
     try {
       resolvedImplementation = __require(implementation);
