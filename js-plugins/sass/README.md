@@ -38,9 +38,9 @@ export default defineFarmConfig({
 
 ### implementation
 
-Type: `string`
+Type: `string | undefined`
 
-Default: `''`
+Default: `undefined`
 
 Specify the executor of the sass file (such as sass, sass-embedded), if not defined, the file in node_module will be searched by default.
 
@@ -65,9 +65,9 @@ Reads the contents from a file and injects them into each sass/scss file. It is 
 
 ### content
 
-Type: `string`
+Type: `string | undefined`
 
-Default: `''`
+Default: `undefined`
 
 It has the same function as globals, but it can be conveniently used to inject some simple sass/scss content
 

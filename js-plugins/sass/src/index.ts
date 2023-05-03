@@ -13,9 +13,9 @@ export type SassPluginOptions = StringOptions<'sync'> & {
    *
    * relative to project root or cwd
    */
-  implementation?: string;
+  implementation?: string | undefined;
   globals?: string[];
-  content?: string;
+  content?: string | undefined;
   sourceMap?: boolean;
 };
 

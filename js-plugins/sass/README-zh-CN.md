@@ -37,9 +37,9 @@ export default defineFarmConfig({
 ## Options
 ### implementation
 
-类型: `string`
+类型: `string | undefined`
 
-默认值: `''`
+默认值: `undefined`
 
 指定sass文件的执行器(如sass,sass-embedded),如果未定义，则默认查找node_module中的文件
 
@@ -63,9 +63,9 @@ export default defineFarmConfig({
 
 ### content
 
-类型: `string`
+类型: `string | undefined`
 
-默认值: `''`
+默认值: `undefined`
 
 它与 `globals` 的作用一致, 但它可以很方便的使用, 通常注入一些简单的 sass/scss 内容
 
