@@ -30,7 +30,7 @@ use farmfe_toolkit::{
     codegen_module, module_system_from_deps, module_type_from_id, parse_module,
     swc_try_with::try_with, syntax_from_module_type,
   },
-  sourcemap::swc_gen::build_source_map,
+  sourcemap::swc_gen::{build_source_map, AstModule},
   swc_ecma_minifier::{
     optimize,
     option::{ExtraOptions, MinifyOptions},
@@ -339,7 +339,11 @@ impl Plugin for FarmPluginScript {
       if context.config.sourcemap.enabled()
         && (context.config.sourcemap.is_all() || !resource_pot.immutable)
       {
-        let src_map = build_source_map(&src_map_buf, context.meta.script.cm.clone(), ast);
+        let src_map = build_source_map(
+          &src_map_buf,
+          context.meta.script.cm.clone(),
+          AstModule::Script(ast),
+        );
 
         resources.push(Resource {
           bytes: src_map,

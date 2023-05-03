@@ -38,9 +38,9 @@
         });
         noop();
         var _default = {
-            "hello": `farm_hello`,
-            "bar": `farm_bar`,
-            "main": `farm_main`
+            "hello": `farm-hello`,
+            "bar": `farm-bar`,
+            "main": `farm-main`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -60,12 +60,12 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //a1b6e7b5.css:
-  .foo  .farm_hello {
+  .foo  .farm-hello {
   color: red;
 }
-.farm_bar {
+.farm-bar {
   color: red;
 }
- .farm_main  .description {
+ .farm-main  .description {
   color: blue;
 }

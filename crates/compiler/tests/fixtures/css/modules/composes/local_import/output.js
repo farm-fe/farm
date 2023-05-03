@@ -38,8 +38,8 @@
         });
         noop();
         var _default = {
-            "action": `farm_action`,
-            "base": `farm_base`
+            "action": `farm-action`,
+            "base": `farm-base`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -59,9 +59,9 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //a1b6e7b5.css:
- .farm_base {
+ .farm-base {
   font-size: 24px;
 }
-.farm_action {
+.farm-action {
   color: red;
 }
