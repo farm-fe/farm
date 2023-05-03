@@ -38,9 +38,9 @@
         });
         noop();
         var _default = {
-            "hello": `hello-04feaf7c`,
-            "bar": `bar-04feaf7c`,
-            "main": `main-04feaf7c`
+            "hello": `farm-hello`,
+            "bar": `farm-bar`,
+            "main": `farm-main`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -60,12 +60,12 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //a1b6e7b5.css:
-  .foo  .hello-04feaf7c {
+  .foo  .farm-hello {
   color: red;
 }
-.bar-04feaf7c {
+.farm-bar {
   color: red;
 }
- .main-04feaf7c  .description {
+ .farm-main  .description {
   color: blue;
 }

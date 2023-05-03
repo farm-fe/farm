@@ -18,7 +18,7 @@ use farmfe_core::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::{DUMMY_SP},
+  swc_common::DUMMY_SP,
   swc_css_ast::Stylesheet,
 };
 use farmfe_toolkit::{

@@ -38,8 +38,8 @@
         });
         noop();
         var _default = {
-            "action": `action-e766ce7e`,
-            "base": `base-e766ce7e`
+            "action": `farm-action`,
+            "base": `farm-base`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -59,9 +59,9 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //a1b6e7b5.css:
- .base-e766ce7e {
+ .farm-base {
   font-size: 24px;
 }
-.action-e766ce7e {
+.farm-action {
   color: red;
 }
