@@ -104,7 +104,13 @@ const ConfigSchema = z
       .optional(),
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
-    minify: z.boolean().optional()
+    minify: z.boolean().optional(),
+    css: z
+      .object({
+        modules: z.boolean().optional(),
+        indentName: z.string().optional()
+      })
+      .optional()
   })
   .strict();
 

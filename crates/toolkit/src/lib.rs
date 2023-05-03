@@ -34,3 +34,4 @@ pub use swc_atoms;
 
 pub use lazy_static;
 pub use regex;
+pub use base64;

@@ -92,16 +92,21 @@ impl SourceMapGenConfig for SwcSourceMapConfig<'_> {
   }
 }
 
+pub enum AstModule<'a> {
+  Script(&'a SwcModule),
+  Css(&'a farmfe_core::swc_css_ast::Stylesheet),
+}
+
 pub fn build_source_map(
   mappings: &[(BytePos, LineCol)],
   cm: Arc<SourceMap>,
-  ast: &SwcModule,
+  ast: AstModule,
 ) -> Vec<u8> {
   let mut v = IdentCollector {
     names: Default::default(),
   };
 
-  ast.visit_with(&mut v);
+  v.visit_ident(ast);
 
   let config = SwcSourceMapConfig {
     source_file_name: None,
@@ -127,5 +132,23 @@ impl Visit for IdentCollector {
 
   fn visit_ident(&mut self, ident: &Ident) {
     self.names.insert(ident.span.lo, ident.sym.clone());
+  }
+}
+
+impl swc_css_visit::Visit for IdentCollector {
+  fn visit_ident(&mut self, ident: &farmfe_core::swc_css_ast::Ident) {
+    self.names.insert(ident.span.lo, ident.value.clone());
+  }
+}
+
+impl IdentCollector {
+  fn visit_ident(&mut self, module: AstModule) {
+    match module {
+      AstModule::Script(ast) => ast.visit_with(self),
+      AstModule::Css(stylesheet) => {
+        use swc_css_visit::VisitWith;
+        stylesheet.visit_with(self)
+      }
+    };
   }
 }

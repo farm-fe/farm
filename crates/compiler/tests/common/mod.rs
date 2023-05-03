@@ -51,6 +51,7 @@ pub fn create_css_modules_compiler(
       sourcemap: SourcemapConfig::Bool(false),
       css: CssConfig {
         modules: true,
+        indent_name: "farm-[name]".into(),
         ..Default::default()
       },
       lazy_compilation: false,

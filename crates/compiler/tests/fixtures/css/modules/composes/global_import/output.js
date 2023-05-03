@@ -38,7 +38,7 @@
         });
         noop();
         var _default = {
-            "base": `farm_base action`
+            "base": `farm-base action`
         };
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
@@ -58,7 +58,7 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //a1b6e7b5.css:
- .farm_base {
+ .farm-base {
   font-size: 20px;
 }
  .action {
