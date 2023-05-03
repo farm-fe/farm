@@ -194,6 +194,46 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/react-sass-js:
+    dependencies:
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.30.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-sass':
+        specifier: workspace:^1.0.0
+        version: link:../../js-plugins/sass
+      '@farmfe/plugin-react':
+        specifier: workspace:^0.1.3
+        version: link:../../rust-plugins/react
+      '@farmfe/plugin-sass':
+        specifier: workspace:^0.0.3
+        version: link:../../rust-plugins/sass
+      '@types/react':
+        specifier: '18'
+        version: 18.0.17
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.0.6
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
+
   examples/script-entry:
     dependencies:
       '@farmfe/cli':
@@ -232,14 +272,16 @@ importers:
         version: 4.1.3
 
   js-plugins/sass:
-    dependencies:
-      sass:
-        specifier: ^1.60.0
-        version: 1.60.0
     devDependencies:
       '@farmfe/core':
         specifier: workspace:^0.7.0
         version: link:../../packages/core
+      sass:
+        specifier: ^1.62.1
+        version: 1.62.1
+      sass-embedded:
+        specifier: ^1.62.0
+        version: 1.62.0
 
   js-plugins/vue:
     dependencies:
@@ -598,6 +640,10 @@ packages:
 
   /@bcoe/v8-coverage@0.2.3:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+    dev: true
+
+  /@bufbuild/protobuf@1.2.0:
+    resolution: {integrity: sha512-MBVuQMOBHxgGnZ9XCUIi8WOy5O/T4ma3TduCRhRvndv3UDbG9cHgd8h6nOYSGyBYPEvXf1z9nTwhp8mVIDbq2g==}
     dev: true
 
   /@changesets/apply-release-plan@6.1.3:
@@ -2583,6 +2629,10 @@ packages:
     resolution: {integrity: sha512-ex5W9DoOQ/LUEU3PMdLs9ua/CYZl1678NUkKOdUSi8Aw5F1idieaiRURCBFJCwVcrD1J8Iy3vfWSloaMwO2qFg==}
     dependencies:
       wcwidth: 1.0.1
+    dev: true
+
+  /buffer-builder@0.2.0:
+    resolution: {integrity: sha512-7VPMEPuYznPSoR21NE1zvd2Xna6c/CloiZCfcMXR1Jny6PjX0N4Nsa38zcBFo/FMK+BlA+FLKbJCQ0i2yxp+Xg==}
     dev: true
 
   /buffer-crc32@0.2.13:
@@ -4770,7 +4820,7 @@ packages:
 
   /immutable@4.3.0:
     resolution: {integrity: sha512-0AOCmOip+xgJwEVTQj1EfiDDOkPmuyllDuTuEX+DDXUgapLAsBIfkg3sxCYyCEA8mQqZrrxPUGjcOQ2JS3WLkg==}
-    dev: false
+    dev: true
 
   /import-fresh@3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
@@ -6995,6 +7045,15 @@ packages:
     dev: false
     optional: true
 
+  /sass-embedded-darwin-arm64@1.62.0:
+    resolution: {integrity: sha512-bYEM6DY7kteOd/aJXUisiavm8B1acRhpIn+rhzKZeTn87kUW5RzZv2nKaSmb1vUd4ZptDGaJ144qz/d20rnogQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /sass-embedded-darwin-x64@1.60.0:
     resolution: {integrity: sha512-K7uFEzL5CnzPh7uNscstd2v4NooTJoQyjd64z6y3MWb3ArCl57w4ig/QAzwnydJ2YgaJD2YYVQrokCHyu4tjOw==}
     engines: {node: '>=14.0.0'}
@@ -7002,6 +7061,15 @@ packages:
     os: [darwin]
     requiresBuild: true
     dev: false
+    optional: true
+
+  /sass-embedded-darwin-x64@1.62.0:
+    resolution: {integrity: sha512-2sBQ4uWjZbf8TKXF8Aq7N0p5V2tKUr4zX9gQAiKvm1NBYwsW22+m8D34heOWu50ikpIxebvt7i/z7hafH5kzKg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
     optional: true
 
   /sass-embedded-linux-arm64@1.60.0:
@@ -7013,6 +7081,24 @@ packages:
     dev: false
     optional: true
 
+  /sass-embedded-linux-arm64@1.62.0:
+    resolution: {integrity: sha512-FexUt8aE7I7fJub3N6+NsDdbPRP/O8o400qpbEbY7BWgiWEdpr81OBulQZY/2LzZUnz9keUhfpmltNY3SNg3kg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /sass-embedded-linux-arm@1.62.0:
+    resolution: {integrity: sha512-0lz9Ids/OzKiOK+fd5wo/fHBGJ5lCHbcRsjDnU0CIMWkUmMt7yhcFABWB/TUofS5XvrohYbGqs+yKP3X0oGX3g==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /sass-embedded-linux-ia32@1.60.0:
     resolution: {integrity: sha512-2XkIOT+7rNkjuDMugFASnbvwh9Fg48hZZh8kW4ZPGj1QxHtZNlGLXt0C/i0jAZUdjhhyjd9l+xUIxZj5/JClPg==}
     engines: {node: '>=14.0.0'}
@@ -7020,6 +7106,15 @@ packages:
     os: [linux]
     requiresBuild: true
     dev: false
+    optional: true
+
+  /sass-embedded-linux-ia32@1.62.0:
+    resolution: {integrity: sha512-VpDHtMIwcoWqDsiskjhDYAle0SJV4mUiZJTXg5RkMzoX1ZyNiVz+uNaZ88kDqcGXsWpe2i0sIlljD4ryaiMAhA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [ia32]
+    os: [linux]
+    requiresBuild: true
+    dev: true
     optional: true
 
   /sass-embedded-linux-x64@1.60.0:
@@ -7031,6 +7126,15 @@ packages:
     dev: false
     optional: true
 
+  /sass-embedded-linux-x64@1.62.0:
+    resolution: {integrity: sha512-dntYMsu0QonlerFB8VDlzxoJcpMEtN9lPHstKOQ6rk6hbSFPvcI8MqqUomlOjmpakKeVrpyZ04nm9jHrzlFmYg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
   /sass-embedded-win32-ia32@1.60.0:
     resolution: {integrity: sha512-pMNKxcysEVK4Dh27yLFNBAMqAKAJoVsl67lQ79LNrlZIVlIIwo/s1ajvImbf2srhWzizDJ1irxH2oBpF0kvxEA==}
     engines: {node: '>=14.0.0'}
@@ -7038,6 +7142,15 @@ packages:
     os: [win32]
     requiresBuild: true
     dev: false
+    optional: true
+
+  /sass-embedded-win32-ia32@1.62.0:
+    resolution: {integrity: sha512-rTCZCVkQa6XcreyQ8gYqnsEG13HCzqKoN2mCvIuGwJro8IjyT2PzWauouO0M06T0FLH0pc3EvKdKaLdtijf9AQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [ia32]
+    os: [win32]
+    requiresBuild: true
+    dev: true
     optional: true
 
   /sass-embedded-win32-x64@1.60.0:
@@ -7049,15 +7162,44 @@ packages:
     dev: false
     optional: true
 
-  /sass@1.60.0:
-    resolution: {integrity: sha512-updbwW6fNb5gGm8qMXzVO7V4sWf7LMXnMly/JEyfbfERbVH46Fn6q02BX7/eHTdKpE7d+oTkMMQpFWNUMfFbgQ==}
-    engines: {node: '>=12.0.0'}
+  /sass-embedded-win32-x64@1.62.0:
+    resolution: {integrity: sha512-g6DZBPGfIDKLBarvYRVKJ+7rJAHJXkOQQVrYSWm22klA9ZNZ0CaVyqLqejttZPKGreD8h/xh2uz/s6w/P900Sw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /sass-embedded@1.62.0:
+    resolution: {integrity: sha512-SwTIG6UmrMiT94/v8G+2pPf6i+XwY4hOQxm8HZl0ld0st2KdGDj/SBXDznFl7+sJ6tFq6hvVvrB9rW5Nj7EhuQ==}
+    engines: {node: '>=14.0.0'}
+    dependencies:
+      '@bufbuild/protobuf': 1.2.0
+      buffer-builder: 0.2.0
+      immutable: 4.3.0
+      rxjs: 7.8.0
+      supports-color: 8.1.1
+    optionalDependencies:
+      sass-embedded-darwin-arm64: 1.62.0
+      sass-embedded-darwin-x64: 1.62.0
+      sass-embedded-linux-arm: 1.62.0
+      sass-embedded-linux-arm64: 1.62.0
+      sass-embedded-linux-ia32: 1.62.0
+      sass-embedded-linux-x64: 1.62.0
+      sass-embedded-win32-ia32: 1.62.0
+      sass-embedded-win32-x64: 1.62.0
+    dev: true
+
+  /sass@1.62.1:
+    resolution: {integrity: sha512-NHpxIzN29MXvWiuswfc1W3I0N8SXBd8UR26WntmDlRYf0bSADnwnOjsyMZ3lMezSlArD33Vs3YFhp7dWvL770A==}
+    engines: {node: '>=14.0.0'}
     hasBin: true
     dependencies:
       chokidar: 3.5.3
       immutable: 4.3.0
       source-map-js: 1.0.2
-    dev: false
+    dev: true
 
   /sax@1.2.4:
     resolution: {integrity: sha512-NqVDv9TpANUjFm0N8uM5GxL36UgKi9/atZw+x7YFnQ8ckwFGKrl4xX4yWtrey3UJm5nP1kUbnYgLopqWNSRhWw==}
@@ -7430,6 +7572,13 @@ packages:
   /supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
+    dependencies:
+      has-flag: 4.0.0
+    dev: true
+
+  /supports-color@8.1.1:
+    resolution: {integrity: sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==}
+    engines: {node: '>=10'}
     dependencies:
       has-flag: 4.0.0
     dev: true
