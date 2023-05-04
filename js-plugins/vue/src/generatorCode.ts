@@ -238,11 +238,12 @@ export function genOtherCode(
   hasScoped: boolean,
   hash: string,
   isHmr = false,
-  rerenderOnly: boolean
+  rerenderOnly: boolean,
+  filename: string
 ) {
   const otherCodeArr = [
     assignRenderCode,
-    assignFilenameCode,
+    genFileNameCode(filename),
     hasScoped ? genAssignScopedCode(hash) : '',
     genAssignHmrIdCode(hash),
     defaultHmrCode,
@@ -316,7 +317,7 @@ export function genMainCode(
     deleteStyles,
     addStyles
   );
-  const otherCode = genOtherCode(hasScoped, hash, isHmr, rerenderOnly);
+  const otherCode = genOtherCode(hasScoped, hash, isHmr, rerenderOnly, filename);
 
   output.push(scriptCode, templateCode, stylesCode, otherCode);
   return {
