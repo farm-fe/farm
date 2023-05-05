@@ -11,7 +11,7 @@ import { Compiler } from '../compiler/index.js';
 import {
   UserServerConfig,
   NormalizedServerConfig,
-  normalizeDevServerOptions,
+  normalizeDevServerOptions
 } from '../config/index.js';
 import { hmr } from './middlewares/hmr.js';
 import { HmrEngine } from './hmr-engine.js';
@@ -20,6 +20,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { lazyCompilation } from './middlewares/lazy-compilation.js';
 import { resources } from './middlewares/resources.js';
+// import { proxyPlugin } from './middlewares/proxy.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -42,14 +43,18 @@ export class DevServer {
   ) {
     this.config = normalizeDevServerOptions(options, 'development');
     this._app = new Koa();
-
+    // const context = {
+    //   config: this.config,
+    //   app: this._app,
+    // };
+    // proxyPlugin(context);
     // this._app.use(serve(this._dist));
     this._app.use(resources(this._compiler));
 
     if (this.config.hmr) {
       this.ws = new WebSocketServer({
         port: this.config.hmr.port,
-        host: this.config.hmr.host,
+        host: this.config.hmr.host
       });
       this._app.use(hmr(this));
       this.hmrEngine = new HmrEngine(this._compiler, this, this.logger);
@@ -86,7 +91,7 @@ export class DevServer {
       boxen(
         `${brandColor(
           figlet.textSync('FARM', {
-            width: 40,
+            width: 40
           })
         )}
 Version ${chalk.green.bold(version)}
@@ -100,7 +105,7 @@ Version ${chalk.green.bold(version)}
           margin: 1,
           align: 'center',
           borderColor: 'cyan',
-          borderStyle: 'round',
+          borderStyle: 'round'
         }
       ),
       false
