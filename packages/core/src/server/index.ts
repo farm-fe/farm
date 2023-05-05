@@ -40,7 +40,13 @@ interface FarmServerContext {
   logger: Logger;
 }
 
-export class DevServer {
+interface ImplDevServer {
+  createFarmServer(options: UserServerConfig): void;
+  listen(): Promise<void>;
+  getCompiler(): Compiler;
+}
+
+export class DevServer implements ImplDevServer {
   private _app: Koa;
 
   _context: FarmServerContext;
