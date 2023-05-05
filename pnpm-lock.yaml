@@ -405,6 +405,9 @@ importers:
       '@types/figlet':
         specifier: ^1.5.5
         version: 1.5.5
+      '@types/http-proxy':
+        specifier: ^1.17.11
+        version: 1.17.11
       '@types/koa':
         specifier: ^2.13.5
         version: 2.13.5
@@ -1844,6 +1847,12 @@ packages:
 
   /@types/http-errors@1.8.2:
     resolution: {integrity: sha512-EqX+YQxINb+MeXaIqYDASb6U6FCHbWjkj4a1CKDBks3d/QiB2+PqBLyO72vLDgAO1wUI4O+9gweRcQK11bTL/w==}
+    dev: true
+
+  /@types/http-proxy@1.17.11:
+    resolution: {integrity: sha512-HC8G7c1WmaF2ekqpnFq626xd3Zz0uvaqFmBJNRZCGEZCXkvSdJoNFn/8Ygbd9fKNQj8UzLdCETaI0UWPAjK7IA==}
+    dependencies:
+      '@types/node': 18.15.8
     dev: true
 
   /@types/inquirer@9.0.3:

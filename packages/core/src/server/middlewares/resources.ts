@@ -5,6 +5,7 @@
 import { Context, Next } from 'koa';
 import { extname } from 'path';
 import { Compiler } from '../../compiler/index.js';
+import { DevServer } from '../index.js';
 
 export function resources(compiler: Compiler) {
   return async (ctx: Context, next: Next) => {
@@ -29,4 +30,8 @@ export function resources(compiler: Compiler) {
 
     ctx.body = Buffer.from(resource);
   };
+}
+
+export function resourcesPlugin(distance: DevServer) {
+  distance._context.app.use(resources(distance._context.compiler));
 }

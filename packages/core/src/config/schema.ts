@@ -123,6 +123,17 @@ const UserConfigSchema = z
       .object({
         port: z.number().positive().int().optional(),
         https: z.boolean().optional(),
+        proxy: z
+          .record(
+            z.object({
+              target: z.string(),
+              changeOrigin: z.boolean(),
+              rewrite: z
+                .function(z.tuple([z.string(), z.object({})]))
+                .optional()
+            })
+          )
+          .optional(),
         hmr: z
           .union([
             z.boolean(),

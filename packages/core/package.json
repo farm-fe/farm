@@ -36,6 +36,7 @@
   "devDependencies": {
     "@napi-rs/cli": "^2.15.2",
     "@types/figlet": "^1.5.5",
+    "@types/http-proxy": "^1.17.11",
     "@types/koa": "^2.13.5",
     "@types/koa-static": "^4.0.2",
     "@types/lodash": "^4.14.191",
