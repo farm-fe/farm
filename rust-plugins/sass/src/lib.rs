@@ -5,7 +5,7 @@ use farmfe_core::serde_json::{self, Value};
 use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex, resolve::follow_symlinks};
-use sass_embedded::{OutputStyle, Sass, StringOptions, StringOptionsBuilder};
+use sass_embedded::{OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::env::consts::{ARCH, OS};
@@ -27,9 +27,9 @@ impl FarmPluginSass {
     }
   }
 
-  pub fn get_sass_options(&self) -> StringOptions {
+  pub fn get_sass_options(&self, resolve_path: String) -> StringOptions {
     let options = serde_json::from_str(&self.sass_options).unwrap_or_default();
-    get_options(options)
+    get_options(options, resolve_path)
   }
 }
 
@@ -46,6 +46,7 @@ impl Plugin for FarmPluginSass {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let reg = Regex::new(r#"\.(sass|scss)$"#).unwrap();
     if reg.is_match(param.resolved_path) {
+      println!("sass: {:?}", param.resolved_path);
       let content = fs::read_file_utf8(param.resolved_path).unwrap();
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
         content,
@@ -61,7 +62,7 @@ impl Plugin for FarmPluginSass {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
-      let exe_path = get_exe_path();
+      let exe_path: PathBuf = get_exe_path();
       let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
         panic!(
           "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{} \n",
@@ -70,7 +71,7 @@ impl Plugin for FarmPluginSass {
           get_arch()
         )
       });
-      let string_options = self.get_sass_options();
+      let string_options = self.get_sass_options(param.resolved_path.to_string());
       let compile_result = sass.compile_string(&param.content, string_options).unwrap();
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: compile_result.css,
@@ -146,9 +147,9 @@ fn get_exe_path() -> PathBuf {
   }
 }
 
-fn get_options(options: Value) -> StringOptions {
+fn get_options(options: Value, resolve_path: String) -> StringOptions {
   let mut builder = StringOptionsBuilder::new();
-
+  builder = builder.url(Url::from_file_path(resolve_path).unwrap());
   if let Some(source_map) = options.get("sourceMap") {
     builder = builder.source_map(source_map.as_bool().unwrap());
   }
@@ -178,6 +179,7 @@ fn get_options(options: Value) -> StringOptions {
     };
     builder = builder.style(output_style);
   }
+
   // TODO support more options
 
   builder.build()
