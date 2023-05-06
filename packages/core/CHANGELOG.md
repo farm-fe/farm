@@ -1,5 +1,30 @@
 # @farmfe/core
 
+## 0.7.1
+
+### Patch Changes
+
+- 079bb21: Fix that zod parse js plugin executor lead to napi error
+
+## 0.7.0
+
+### Minor Changes
+
+- a04008f: Support script, css and html minification
+
+### Patch Changes
+
+- 7ff4d97: support css modules
+- Updated dependencies [a04008f]
+  - @farmfe/runtime@0.6.0
+  - @farmfe/runtime-plugin-hmr@3.1.2
+
+## 0.6.4
+
+### Patch Changes
+
+- 6fa3454: Do not resolve browser when targetEnv is node
+
 ## 0.6.3
 
 ### Patch Changes

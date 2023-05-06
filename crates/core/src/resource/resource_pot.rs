@@ -33,7 +33,7 @@ impl ResourcePot {
       id,
       resource_pot_type: ty,
       modules: HashSet::new(),
-      meta: ResourcePotMetaData::Custom(Box::new(EmptyResourcePotMetaData) as _),
+      meta: ResourcePotMetaData::default(),
       entry_module: None,
       resources: HashSet::new(),
       module_groups: HashSet::new(),
@@ -51,6 +51,10 @@ impl ResourcePot {
     modules.sort_by_key(|m| m.to_string());
 
     modules
+  }
+
+  pub fn take_meta(&mut self) -> ResourcePotMetaData {
+    std::mem::take(&mut self.meta)
   }
 
   pub fn remove_module(&mut self, module_id: &ModuleId) {
@@ -132,6 +136,12 @@ pub enum ResourcePotMetaData {
   Custom(Box<dyn SerializeCustomResourcePotMetaData>),
 }
 
+impl Default for ResourcePotMetaData {
+  fn default() -> Self {
+    Self::Custom(Box::new(EmptyResourcePotMetaData) as _)
+  }
+}
+
 impl ResourcePotMetaData {
   pub fn as_js(&self) -> &JsResourcePotMetaData {
     match self {
@@ -141,6 +151,13 @@ impl ResourcePotMetaData {
   }
 
   pub fn as_js_mut(&mut self) -> &mut JsResourcePotMetaData {
+    match self {
+      ResourcePotMetaData::Js(r) => r,
+      _ => panic!("ResourcePotMetaData is not js!"),
+    }
+  }
+
+  pub fn take_js(self) -> JsResourcePotMetaData {
     match self {
       ResourcePotMetaData::Js(r) => r,
       _ => panic!("ResourcePotMetaData is not js!"),

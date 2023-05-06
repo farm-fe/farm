@@ -12,8 +12,8 @@ fn load_package_json() {
     assert!(result.is_ok());
     let result = result.unwrap();
 
-    assert_eq!(result.name, "fixture-package-json".to_string());
-    assert_eq!(result.version, "1.0.0".to_string());
+    assert_eq!(result.name, Some("fixture-package-json".to_string()));
+    assert_eq!(result.version, Some("1.0.0".to_string()));
     assert!(matches!(
       result.side_effects(),
       ParsedSideEffects::Bool(false)
@@ -25,8 +25,8 @@ fn load_package_json() {
     assert!(result.is_ok());
     let result = result.unwrap();
 
-    assert_eq!(result.name, "sub-fixture".to_string());
-    assert_eq!(result.version, "1.0.0".to_string());
+    assert_eq!(result.name, Some("sub-fixture".to_string()));
+    assert_eq!(result.version, Some("1.0.0".to_string()));
 
     assert!(matches!(result.side_effects(), ParsedSideEffects::Array(_)));
 
@@ -48,7 +48,7 @@ fn load_package_json() {
       .unwrap();
     assert_eq!(
       cached_result.value().name,
-      "fixture-package-json".to_string(),
+      Some("fixture-package-json".to_string()),
     );
   })
 }

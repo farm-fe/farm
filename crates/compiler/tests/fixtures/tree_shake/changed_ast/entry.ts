@@ -1,3 +1,3 @@
-import { Description } from "./comp";
+import { Description } from './comp';
 
 console.log(Description());

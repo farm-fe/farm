@@ -20,11 +20,16 @@ pub struct Config {
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
+  pub css: CssConfig,
   pub sourcemap: SourcemapConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
   pub tree_shaking: bool,
+  // TODO: support minify options
+  pub minify: bool,
+  // TODO: support preset env options
+  pub preset_env: bool,
 }
 
 impl Default for Config {
@@ -42,12 +47,15 @@ impl Default for Config {
       external: vec![],
       runtime: Default::default(),
       script: Default::default(),
+      css: Default::default(),
       assets: Default::default(),
       sourcemap: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
       lazy_compilation: true,
       core_lib_path: None,
       tree_shaking: true,
+      minify: true,
+      preset_env: true,
     }
   }
 }
@@ -105,12 +113,30 @@ impl Default for Mode {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfig {
   pub target: EsVersion,
   pub parser: ScriptParserConfig,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CssConfig {
+  pub modules: bool,
+  pub indent_name: String,
+}
+
+impl Default for CssConfig {
+  fn default() -> Self {
+    Self {
+      modules: false,
+      indent_name: String::from("[name]-[hash]"),
+    }
+  }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct ScriptParserConfig {
   pub es_config: EsConfig,
   pub ts_config: TsConfig,

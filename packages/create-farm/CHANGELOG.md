@@ -1,5 +1,23 @@
 # create-farm
 
+## 1.1.7
+
+### Patch Changes
+
+- 36dee2a: update react-plugin-version cause error
+
+## 1.1.6
+
+### Patch Changes
+
+- 36860f8: remove sourcemap reduce size
+
+## 1.1.5
+
+### Patch Changes
+
+- 9f980d5: Optimize template style to support dark mode
+
 ## 1.1.4
 
 ### Patch Changes

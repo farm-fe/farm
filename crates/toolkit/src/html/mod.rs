@@ -33,13 +33,13 @@ pub fn parse_html_document(
 }
 
 /// Generate code from a html [Document] and output the code [String]
-pub fn codegen_html_document(document: &Document) -> String {
+pub fn codegen_html_document(document: &Document, minify: bool) -> String {
   let mut html_code = String::new();
   let html_writer = BasicHtmlWriter::new(&mut html_code, None, BasicHtmlWriterConfig::default());
   let mut html_gen = CodeGenerator::new(
     html_writer,
     CodegenConfig {
-      minify: false,
+      minify,
       ..Default::default()
     },
   );

@@ -1,0 +1,8 @@
+.base {
+  font-size: 20px;
+  composes: action from global;
+}
+
+:global .action {
+  color: red;
+}

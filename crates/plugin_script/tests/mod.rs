@@ -21,7 +21,8 @@ fn load_parse_and_analyze_deps() {
   fixture(
     "tests/fixtures/load_parse_analyze/**/index.*",
     |file: PathBuf, _| {
-      let config = Config::default();
+      let mut config = Config::default();
+      config.minify = false;
       let plugin_script = farmfe_plugin_script::FarmPluginScript::new(&config);
       let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
       let id = file.to_string_lossy().to_string();

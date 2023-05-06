@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LaptopOutlined,
   NotificationOutlined,
-  UserOutlined
+  UserOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
@@ -13,13 +13,13 @@ const { Header, Content, Sider } = Layout;
 
 const items1: MenuProps['items'] = ['1', '2', '3'].map((key) => ({
   key,
-  label: `nav ${key}`
+  label: `nav ${key}`,
 }));
 
 const items2: MenuProps['items'] = [
   UserOutlined,
   LaptopOutlined,
-  NotificationOutlined
+  NotificationOutlined,
 ].map((icon, index) => {
   const key = String(index + 1);
 
@@ -32,15 +32,15 @@ const items2: MenuProps['items'] = [
       const subKey = index * 4 + j + 1;
       return {
         key: subKey,
-        label: `option${subKey}`
+        label: `option${subKey}`,
       };
-    })
+    }),
   };
 });
 
 export const AntdLayout: React.FC = () => {
   const {
-    token: { colorBgContainer }
+    token: { colorBgContainer },
   } = theme.useToken();
 
   return (
@@ -75,7 +75,7 @@ export const AntdLayout: React.FC = () => {
               padding: 24,
               margin: 0,
               minHeight: 280,
-              background: colorBgContainer
+              background: colorBgContainer,
             }}
           >
             Content

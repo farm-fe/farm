@@ -23,8 +23,8 @@ impl Default for ParsedSideEffects {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PackageJsonInfo {
-  pub name: String,
-  pub version: String,
+  pub name: Option<String>,
+  pub version: Option<String>,
 
   parsed_side_effects: Option<ParsedSideEffects>,
   raw: Option<String>,

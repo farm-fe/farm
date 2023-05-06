@@ -24,7 +24,9 @@ export default {
           test: ['.+']
         }
       ]
-    }
+    },
+    minify: true,
+    sourcemap: false
   },
   server: {
     hmr: false

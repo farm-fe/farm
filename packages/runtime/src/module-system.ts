@@ -4,20 +4,25 @@ import { Resource, ResourceLoader, targetEnv } from './resource-loader';
 
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore swc helpers does not have type definition
-import interopRequireDefault from '@swc/helpers/lib/_interop_require_default.js';
+import { _interop_require_default } from '@swc/helpers/_/_interop_require_default';
 // @ts-ignore swc helpers does not have type definition
-import interopRequireWildcard from '@swc/helpers/lib/_interop_require_wildcard.js';
+import { _interop_require_wildcard } from '@swc/helpers/_/_interop_require_wildcard';
 // @ts-ignore swc helpers does not have type definition
-import exportStar from '@swc/helpers/lib/_export_star.js';
+import { _export_star } from '@swc/helpers/_/_export_star';
 
 const INTERNAL_MODULE_MAP: Record<string, any> = {
-  '@swc/helpers/lib/_interop_require_default.js': {
-    default: interopRequireDefault,
+  '@swc/helpers/_/_interop_require_default': {
+    default: _interop_require_default,
+    _: _interop_require_default
   },
-  '@swc/helpers/lib/_interop_require_wildcard.js': {
-    default: interopRequireWildcard,
+  '@swc/helpers/_/_interop_require_wildcard': {
+    default: _interop_require_wildcard,
+    _: _interop_require_wildcard
   },
-  '@swc/helpers/lib/_export_star.js': { default: exportStar },
+  '@swc/helpers/_/_export_star': {
+    default: _export_star,
+    _: _export_star
+  }
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

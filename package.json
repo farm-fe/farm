@@ -23,6 +23,8 @@
     "lint-staged": "^13.0.3",
     "nanospinner": "^1.1.0",
     "prettier": "^2.7.1",
+    "prettier-eslint": "^15.0.1",
+    "prettier-eslint-cli": "^7.1.0",
     "rimraf": "^3.0.2",
     "typescript": "^4.9.4",
     "vite": "^3.0.4",
@@ -39,12 +41,10 @@
   },
   "lint-staged": {
     "packages/**/*.ts": [
-      "eslint --fix",
-      "prettier --write --ignore-unknown"
+      "prettier-eslint --write"
+    ],
+    "js-plugins/**/*.ts": [
+      "prettier-eslint --write"
     ]
-  },
-  "prettier": {
-    "semi": true,
-    "singleQuote": true
   }
 }

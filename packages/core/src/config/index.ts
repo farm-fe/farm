@@ -2,6 +2,7 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import readline from 'node:readline';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
@@ -10,21 +11,25 @@ import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import {
+  FarmCLIOptions,
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
-  UserServerConfig,
+  UserServerConfig
 } from './types.js';
 import { Logger } from '../logger.js';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { parseUserConfig } from './schema.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
   'farm.config.ts',
   'farm.config.js',
-  'farm.config.mjs',
+  'farm.config.mjs'
 ];
+
+type CompilationMode = 'development' | 'production';
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
@@ -33,16 +38,16 @@ export const DEFAULT_CONFIG_NAMES = [
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode: 'development' | 'production' = 'production'
+  mode: CompilationMode = 'production'
 ): Promise<Config> {
   const config: Config['config'] = merge(
     {
       input: {
-        index: './index.html',
+        index: './index.html'
       },
       output: {
-        path: './dist',
-      },
+        path: './dist'
+      }
     },
     userConfig.compilation
   );
@@ -53,7 +58,7 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime) {
     config.runtime = {
       path: require.resolve('@farmfe/runtime'),
-      plugins: [],
+      plugins: []
     };
   }
 
@@ -84,16 +89,20 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.mode === 'production') {
-    if (!config.output?.filename) {
+    if (!config.output) {
+      config.output = {};
+    }
+    if (!config.output.filename) {
       config.output.filename = '[resourceName].[contentHash].[ext]';
     }
-    if (!config.output?.assetsFilename) {
+    if (!config.output.assetsFilename) {
       config.output.assetsFilename = '[resourceName].[contentHash].[ext]';
     }
   }
 
   const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server
+    userConfig.server,
+    mode
   );
 
   if (
@@ -121,6 +130,22 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  if (config.minify === undefined) {
+    if (mode === 'production') {
+      config.minify = true;
+    } else {
+      config.minify = false;
+    }
+  }
+
+  if (config.presetEnv === undefined) {
+    if (mode === 'production') {
+      config.presetEnv = true;
+    } else {
+      config.presetEnv = false;
+    }
+  }
+
   const plugins = userConfig.plugins ?? [];
   const rustPlugins = [];
   const jsPlugins = [];
@@ -142,7 +167,7 @@ export async function normalizeUserCompilationConfig(
   const normalizedConfig: Config = {
     config: finalConfig,
     rustPlugins,
-    jsPlugins,
+    jsPlugins
   };
 
   return normalizedConfig;
@@ -151,7 +176,7 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9801,
+  port: 9801
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
@@ -159,20 +184,21 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   https: false,
   // http2: false,
   hmr: DEFAULT_HMR_OPTIONS,
+  strictPort: false
 };
 
 export function normalizeDevServerOptions(
-  options?: UserServerConfig
+  options: UserServerConfig | undefined,
+  mode: CompilationMode
 ): NormalizedServerConfig {
-  if (!options) {
-    return DEFAULT_DEV_SERVER_OPTIONS;
-  }
-
-  if (options.hmr === true) {
-    options.hmr = DEFAULT_HMR_OPTIONS;
-  }
-
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options);
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
+    hmr:
+      mode === 'production'
+        ? false
+        : options?.hmr !== false
+        ? DEFAULT_HMR_OPTIONS
+        : options.hmr
+  });
 }
 
 /**
@@ -180,9 +206,12 @@ export function normalizeDevServerOptions(
  * @param configPath
  */
 export async function resolveUserConfig(
-  configPath: string,
-  logger: Logger
+  options: FarmCLIOptions,
+  logger: Logger,
+  command: 'start' | 'build'
 ): Promise<UserConfig> {
+  const { configPath } = options;
+
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
@@ -196,21 +225,37 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
+      if (command === 'start') {
+        clearScreen();
+      }
       const config = await readConfigFile(resolvedPath, logger);
 
+      // The merge property can only be enabled if command line arguments are passed
+      const filterOptions = cleanConfig(options);
+      if (!isEmptyObject(filterOptions)) {
+        mergeConfig(config, options, command);
+      }
+
       if (config) {
-        userConfig = config;
+        userConfig = parseUserConfig(config);
         // if we found a config file, stop searching
         break;
       }
     }
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
-
+    if (command === 'start') {
+      clearScreen();
+    }
     const config = await readConfigFile(configPath, logger);
 
+    const filterOptions = cleanConfig(options);
+    if (!isEmptyObject(filterOptions)) {
+      mergeConfig(config, options, command);
+    }
+
     if (config) {
-      userConfig = config;
+      userConfig = parseUserConfig(config);
     }
   }
 
@@ -240,30 +285,33 @@ async function readConfigFile(
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: resolvedPath,
+            config: resolvedPath
           },
           output: {
             filename: fileName,
             path: outputPath,
+            targetEnv: 'node'
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`),
+            ...module.builtinModules.map((m) => `^node:${m}$`)
           ],
           partialBundling: {
             moduleBuckets: [
               {
                 name: fileName,
-                test: ['.+'],
-              },
-            ],
+                test: ['.+']
+              }
+            ]
           },
           sourcemap: false,
           treeShaking: false,
+          minify: false,
+          presetEnv: false
         },
         server: {
-          hmr: false,
-        },
+          hmr: false
+        }
         // plugins: [
         //   {
         //     name: 'farm-plugin-external',
@@ -315,4 +363,55 @@ async function readConfigFile(
       }
     }
   }
+}
+
+export function mergeConfig(
+  config: UserConfig,
+  options: FarmCLIOptions,
+  command: 'start' | 'build'
+) {
+  // merge options
+  if (command === 'start') {
+    mergeServerOptions(config, options);
+  }
+
+  if (command === 'build') {
+    mergeBuildOptions(config, options);
+  }
+}
+
+export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
+  delete config.configPath;
+  delete config.config;
+  delete config.outDir;
+  delete config.strictPort;
+  delete config.open;
+  return config;
+}
+
+// TODO optimizing merge methods
+export function mergeServerOptions(
+  config: UserConfig,
+  options: FarmCLIOptions
+) {
+  config.server = merge(config.server, options);
+}
+
+export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
+  if (options.outDir) {
+    config.compilation.output.path = options.outDir;
+  }
+  config.compilation = merge(config.compilation, options);
+}
+
+export function clearScreen() {
+  const repeatCount = process.stdout.rows - 2;
+  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+  console.log(blank);
+  readline.cursorTo(process.stdout, 0, 0);
+  readline.clearScreenDown(process.stdout);
+}
+
+export function isEmptyObject<T extends object>(obj: T): boolean {
+  return Reflect.ownKeys(obj).length === 0;
 }

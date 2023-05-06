@@ -6,7 +6,6 @@ use farmfe_core::{
   error::{CompilationError, Result},
   hashbrown::HashMap,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
-  parking_lot::RwLock,
   plugin::{
     Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
     PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,

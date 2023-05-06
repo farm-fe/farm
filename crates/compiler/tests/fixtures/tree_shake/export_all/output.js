@@ -1,8 +1,5 @@
 //index.js:
- import module from "node:module";
-global.__farmNodeRequire = module.createRequire(import.meta.url);
-global.__farmNodeBuiltinModules = module.builtinModules;
-(function(modules, entryModule) {
+ (function(modules, entryModule) {
     var cache = {};
     function require(id) {
         if (cache[id]) return cache[id].exports;
@@ -33,8 +30,8 @@ global.__farmNodeBuiltinModules = module.builtinModules;
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _exportStar = require("@swc/helpers/lib/_export_star.js").default;
-        _exportStar(require("f380ea31"), exports);
+        var _export_star = require("@swc/helpers/_/_export_star");
+        _export_star._(require("f380ea31"), exports);
     },
     "b5d64806": function(module, exports, require, dynamicRequire) {
         "use strict";
@@ -61,5 +58,4 @@ global.__farmNodeBuiltinModules = module.builtinModules;
 var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
-var entry = farmModuleSystem.require("b5d64806").default;
-export default entry;
+var entry = farmModuleSystem.require("b5d64806");

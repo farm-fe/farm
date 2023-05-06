@@ -14,6 +14,8 @@ use swc_css_parser::{
   parser::{Parser, ParserConfig},
 };
 
+use crate::sourcemap::swc_gen::{build_source_map, AstModule};
+
 /// parse the input css file content to [Stylesheet]
 pub fn parse_css_stylesheet(
   id: &str,
@@ -40,12 +42,30 @@ pub fn parse_css_stylesheet(
     })
 }
 
-pub fn codegen_css_stylesheet(stylesheet: &Stylesheet) -> String {
+pub fn codegen_css_stylesheet(
+  stylesheet: &Stylesheet,
+  cm: Option<Arc<SourceMap>>,
+  minify: bool,
+) -> (String, Option<Vec<u8>>) {
   let mut css_code = String::new();
-  let css_writer = BasicCssWriter::new(&mut css_code, None, BasicCssWriterConfig::default());
-  let mut gen = CodeGenerator::new(css_writer, CodegenConfig { minify: false });
+  let mut source_map = Vec::new();
+  let css_writer = BasicCssWriter::new(
+    &mut css_code,
+    if cm.is_some() {
+      Some(&mut source_map)
+    } else {
+      None
+    },
+    BasicCssWriterConfig::default(),
+  );
+  let mut gen = CodeGenerator::new(css_writer, CodegenConfig { minify });
 
   gen.emit(stylesheet).unwrap();
 
-  css_code
+  if let Some(cm) = cm {
+    let src_map = build_source_map(&source_map, cm, AstModule::Css(stylesheet));
+    (css_code, Some(src_map))
+  } else {
+    (css_code, None)
+  }
 }

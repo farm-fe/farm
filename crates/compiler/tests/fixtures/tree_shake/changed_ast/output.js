@@ -1,8 +1,5 @@
 //index.js:
- import module from "node:module";
-global.__farmNodeRequire = module.createRequire(import.meta.url);
-global.__farmNodeBuiltinModules = module.builtinModules;
-(function(modules, entryModule) {
+ (function(modules, entryModule) {
     var cache = {};
     function require(id) {
         if (cache[id]) return cache[id].exports;
@@ -39,8 +36,8 @@ global.__farmNodeBuiltinModules = module.builtinModules;
                 return Description;
             }
         });
-        var _interopRequireWildcard = require("@swc/helpers/lib/_interop_require_wildcard.js").default;
-        var _dep = _interopRequireWildcard(require("dep.ts"));
+        var _interop_require_wildcard = require("@swc/helpers/_/_interop_require_wildcard");
+        var _dep = _interop_require_wildcard._(require("dep.ts"));
         const LazyComp = _dep.default.lazy(()=>Promise.resolve({
                 default: ()=>_dep.default.createElement("div", {
                         __source: {
@@ -119,5 +116,4 @@ global.__farmNodeBuiltinModules = module.builtinModules;
 var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
-var entry = farmModuleSystem.require("entry.ts").default;
-export default entry;
+var entry = farmModuleSystem.require("entry.ts");

@@ -1,0 +1,25 @@
+{
+  "name": "@farmfe-examples/less",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "clsx": "^1.2.1",
+    "core-js": "^3.30.1",
+    "react": "18",
+    "react-dom": "18"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-less": "workspace:^0.0.1",
+    "@farmfe/plugin-react": "workspace:^0.1.3",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "less": "^4.1.3",
+    "react-refresh": "^0.14.0"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build"
+  }
+}

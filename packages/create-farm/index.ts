@@ -29,6 +29,8 @@ welcome();
 const argv = minimist<{
   t?: string;
   template?: string;
+  skipInstall: boolean;
+  'skip-install': boolean;
 }>(process.argv.slice(2), { string: ['_'] });
 
 const cwd = process.cwd();
@@ -41,6 +43,7 @@ async function createFarm() {
   const argFramework = argv.template || argv.t;
   let targetDir = argProjectName || DEFAULT_TARGET_NAME;
   let result: IResultType = {};
+  const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? false;
   try {
     result = await prompts(
       [
@@ -51,7 +54,7 @@ async function createFarm() {
           initial: DEFAULT_TARGET_NAME,
           onState: (state: any) => {
             targetDir = formatTargetDir(state.value) || DEFAULT_TARGET_NAME;
-          },
+          }
         },
         {
           type: () =>
@@ -61,7 +64,7 @@ async function createFarm() {
             (targetDir === '.'
               ? '🚨 Current directory'
               : `🚨 Target directory "${targetDir}"`) +
-            ` is not empty. Overwrite existing files and continue?`,
+            ` is not empty. Overwrite existing files and continue?`
         },
         {
           type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
@@ -70,7 +73,7 @@ async function createFarm() {
             }
             return null;
           },
-          name: 'overwriteChecker',
+          name: 'overwriteChecker'
         },
         {
           type: argFramework ? null : 'select',
@@ -80,48 +83,43 @@ async function createFarm() {
           choices: [
             {
               title: chalk.blue('React'),
-              value: 'react',
+              value: 'react'
             },
-            { title: chalk.green('Vue'), value: 'vue' },
-          ],
+            { title: chalk.green('Vue'), value: 'vue' }
+          ]
         },
         {
-          type: 'confirm',
-          name: 'autoInstall',
-          message: 'Whether you need to install dependencies automatically ?',
-        },
-        {
-          type: pkgInfo && !result.autoInstall ? null : 'select',
+          type: pkgInfo || skipInstall ? null : 'select',
           name: 'packageManager',
           message: 'Which package manager do you want to use?',
           choices: [
             { title: 'npm', value: 'npm' },
             {
-              title: isYarnInstalled ? 'Yarn' : 'Yarn (yarn not install)',
+              title: isYarnInstalled ? 'Yarn' : 'Yarn (not installed)',
               value: 'yarn',
-              disabled: !isYarnInstalled,
+              disabled: !isYarnInstalled
             },
             {
-              title: isPnpmInstalled ? 'Pnpm' : 'Pnpm (pnpm not install)',
+              title: isPnpmInstalled ? 'Pnpm' : 'Pnpm (not installed)',
               value: 'pnpm',
-              disabled: !isPnpmInstalled,
-            },
-          ],
-        },
+              disabled: !isPnpmInstalled
+            }
+          ]
+        }
       ],
       {
         onCancel: () => {
           throw new Error(chalk.red('❌') + ' Operation cancelled');
-        },
+        }
       }
     );
   } catch (cancelled: any) {
     console.log(cancelled.message);
     return;
   }
-  const { framework = argFramework, autoInstall, packageManager } = result;
+  const { framework = argFramework, packageManager } = result;
   await copyTemplate(targetDir, framework!);
-  await installationDeps(targetDir, autoInstall!, packageManager!);
+  await installationDeps(targetDir, !skipInstall, packageManager!);
 }
 
 function formatTargetDir(targetDir: string | undefined) {
@@ -178,7 +176,7 @@ function pkgFromUserAgent(userAgent: string | undefined) {
   const pkgSpecArr = pkgSpec.split('/');
   return {
     name: pkgSpecArr[0],
-    version: pkgSpecArr[1],
+    version: pkgSpecArr[1]
   };
 }
 
@@ -217,8 +215,7 @@ function copyDir(srcDir: string, destDir: string) {
 }
 
 function welcome() {
-  console.log(chalk.magenta(`\n⚡ Welcome To Create Farm Project!`));
-  console.log();
+  console.log(chalk.magenta(`\n⚡ Welcome To Create Farm Project! \n`));
 }
 
 createFarm();

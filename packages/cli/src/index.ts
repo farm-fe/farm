@@ -1,33 +1,73 @@
 import { cac } from 'cac';
-import { create } from './create/index.js';
+import { readFileSync } from 'node:fs';
 import { COMMANDS } from './plugin/index.js';
-import { resolveCore } from './utils.js';
+import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
+import { createLogger } from './logger.js';
+import type {
+  FarmCLIBuildOptions,
+  FarmCLIServerOptions,
+  GlobalFarmCLIOptions
+} from './types.js';
 
-const cli = cac();
+const logger = createLogger();
 
+const { version } = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url)).toString()
+);
+
+const cli = cac('farm');
+
+// common command
+cli
+  .option('-c, --config <file>', `use specified config file`)
+  .option('-m, --mode <mode>', `set env mode`);
+
+// dev command
 cli
   .command(
-    'start',
+    '',
     'Compile the project in dev mode and serve it with farm dev server'
   )
-  .action(async () => {
-    const cwd = process.cwd();
-    const { start } = await resolveCore(cwd);
-    // TODO set config path
-    start({
-      configPath: cwd,
-    });
+  .alias('start')
+  //TODO add host config
+  .option('--port [port]', 'specify port')
+  // TODO add open config with core
+  // .option('--open', 'open browser on server start')
+  .option('--hmr', 'enable hot module replacement')
+  // TODO add https config
+  // .option('--https', 'use https')
+  // TODO add strictPort open config with core
+  // .option('--strictPort', 'specified port is already in use, exit with error')
+  .action(async (options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
+    const resolveOptions = resolveCommandOptions(options);
+    try {
+      const { start } = await resolveCore(resolveOptions.configPath);
+
+      await start(cleanOptions(resolveOptions));
+    } catch (e) {
+      logger.error(e.message);
+      process.exit(1);
+    }
   });
 
+// build command
 cli
-  .command('build', 'Compile the project in production mode')
-  .action(async () => {
-    const cwd = process.cwd();
-    const { build } = await resolveCore(cwd);
-    // TODO set config path
-    build({
-      configPath: cwd,
-    });
+  .command('build', 'compile the project in production mode')
+  // TODO add target config
+  // .option("--target <target>", "transpile target")
+  .option('--outDir <dir>', 'output directory')
+  // TODO sourcemap output config path
+  .option('--sourcemap', 'output source maps for build')
+  .option('--minify', 'code compression at build time')
+  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
+    const resolveOptions = resolveCommandOptions(options);
+    try {
+      const { build } = await resolveCore(resolveOptions.configPath);
+      build(cleanOptions(resolveOptions));
+    } catch (e) {
+      logger.error(e.message);
+      process.exit(1);
+    }
   });
 cli
   .command('watch', 'Compile the project in production mode')
@@ -36,36 +76,40 @@ cli
     const { watch } = await resolveCore(cwd);
     // TODO set config path
     watch({
-      configPath: cwd,
+      configPath: cwd
     });
   });
 
-cli.command('create [name]', 'Create a new project').action((name: string) => {
-  create(name);
-});
+// watch command
+// TODO add watch command
+cli.command('watch', 'rebuilds when files have changed on disk');
 
-cli.command('').action(() => {
-  cli.outputHelp();
-});
+// create plugins command
+cli
+  .command('plugin [command]', 'Commands for manage plugins', {
+    allowUnknownOptions: true
+  })
+  // TODO refactor plugin command
+  .action((command: keyof typeof COMMANDS, args: unknown) => {
+    try {
+      COMMANDS[command](args);
+    } catch (e) {
+      logger.error(
+        'The command arg parameter is incorrect. Please check whether you entered the correct parameter. such as "farm create plugin"'
+      );
+      process.exit(1);
+    }
+  });
 
-const pluginCmd = cli.command(
-  'plugin <command>',
-  'Commands for manage plugins',
-  {
-    allowUnknownOptions: true,
-  }
-);
-pluginCmd.action((command: keyof typeof COMMANDS, args: unknown) => {
-  COMMANDS[command](args);
+// Listening for unknown command
+cli.on('command:*', () => {
+  logger.error(
+    'Unknown command place Run "my-cli --help" to see available commands'
+  );
 });
-
-pluginCmd.cli.help();
 
 cli.help();
 
-try {
-  cli.parse();
-} catch (e) {
-  // TODO error handling
-  console.log(e);
-}
+cli.version(version);
+
+cli.parse();

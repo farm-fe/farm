@@ -41,6 +41,12 @@ impl CompilationContext {
   }
 }
 
+impl Default for CompilationContext {
+  fn default() -> Self {
+    Self::new(Config::default(), vec![]).unwrap()
+  }
+}
+
 /// Shared meta info for the core and core plugins, for example, shared swc [SourceMap]
 /// The **custom** field can be used for custom plugins to store shared meta data across compilation
 pub struct ContextMetaData {
@@ -73,6 +79,7 @@ impl Default for ContextMetaData {
 pub struct ScriptContextMetaData {
   pub cm: Arc<SourceMap>,
   pub globals: Globals,
+  pub runtime_ast: RwLock<Option<swc_ecma_ast::Module>>,
 }
 
 impl ScriptContextMetaData {
@@ -80,6 +87,7 @@ impl ScriptContextMetaData {
     Self {
       cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
       globals: Globals::new(),
+      runtime_ast: RwLock::new(None),
     }
   }
 }
@@ -92,12 +100,14 @@ impl Default for ScriptContextMetaData {
 
 pub struct CssContextMetaData {
   pub cm: Arc<SourceMap>,
+  pub globals: Globals,
 }
 
 impl CssContextMetaData {
   pub fn new() -> Self {
     Self {
       cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
+      globals: Globals::new(),
     }
   }
 }
@@ -110,12 +120,14 @@ impl Default for CssContextMetaData {
 
 pub struct HtmlContextMetaData {
   pub cm: Arc<SourceMap>,
+  pub globals: Globals,
 }
 
 impl HtmlContextMetaData {
   pub fn new() -> Self {
     Self {
       cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
+      globals: Globals::new(),
     }
   }
 }

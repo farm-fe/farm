@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use farmfe_core::{
+  context::CompilationContext,
   glob::glob,
   hashbrown::HashSet,
   module::{

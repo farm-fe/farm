@@ -1,0 +1,5 @@
+.base {
+  font-size: 18px;
+
+  composes: action from './action.css';
+}

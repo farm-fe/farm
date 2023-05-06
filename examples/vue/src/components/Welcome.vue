@@ -1,7 +1,6 @@
 <template>
   <div class="farm-container">
     <img class="logo" src="../../assets/logo.png" alt="" />
-    <h1>Welcome to <span class="title">Farm!</span></h1>
     <FarmCard>
       <div class="main-desc">
         <h2 class="main-sub-title">
@@ -93,7 +92,8 @@ import ButtonAction from './Button.vue';
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 62px;
+  gap: 40px;
+  height: 100%;
 }
 .action {
   display: flex;
@@ -104,10 +104,8 @@ import ButtonAction from './Button.vue';
   flex-direction: column;
   justify-content: center;
   height: 100%;
-  max-width: 60vw;
-  width: 60vw;
   align-items: center;
-  padding: 2rem 1rem;
+  padding: 0rem 1rem;
   gap: 1.7rem;
 }
 .farm-desc {
@@ -119,7 +117,7 @@ import ButtonAction from './Button.vue';
 .container-box {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 2rem;
 }
 .container-box img {
   width: 70px;
@@ -146,15 +144,6 @@ import ButtonAction from './Button.vue';
   gap: 8px;
 }
 
-.rich-content,
-.fast-content,
-.fully-content {
-  color: #666;
-}
-
-h2 {
-  margin: 15px;
-}
 .sub-title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -163,21 +152,27 @@ h2 {
 .logo {
   width: 450px;
 }
-.title {
-  background: var(--accent-gradient);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  background-size: 400%;
-  background-position: 0%;
-}
 
-h1 {
-  margin: 0;
-}
 .img {
   width: 100px;
   height: 100px;
+}
+
+@media (max-width: 1760px) {
+  .farm-desc {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 32px;
+  }
+  .farm-container {
+    width: 60vw;
+  }
+}
+
+@media (max-width: 640px) {
+  .farm-container {
+    width: 100vw;
+  }
 }
 </style>

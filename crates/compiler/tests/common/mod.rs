@@ -2,16 +2,12 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{Config, Mode, RuntimeConfig, SourcemapConfig},
+  config::{Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig},
   plugin::Plugin,
   resource::ResourceType,
 };
 
-pub fn create_compiler(
-  input: HashMap<String, String>,
-  cwd: PathBuf,
-  crate_path: PathBuf,
-) -> Compiler {
+pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
   let swc_helpers_path = crate_path
     .join("tests")
     .join("fixtures")
@@ -28,15 +24,59 @@ pub fn create_compiler(
     .to_string_lossy()
     .to_string();
 
+  RuntimeConfig {
+    path: runtime_path,
+    plugins: vec![],
+    swc_helpers_path,
+  }
+}
+
+pub fn create_css_modules_compiler(
+  input: HashMap<String, String>,
+  cwd: PathBuf,
+  crate_path: PathBuf,
+  mode: Mode,
+) -> Compiler {
   let compiler = Compiler::new(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: RuntimeConfig {
-        path: runtime_path,
-        plugins: vec![],
-        swc_helpers_path,
+      runtime: generate_runtime(crate_path),
+      output: farmfe_core::config::OutputConfig {
+        filename: "[resourceName].[ext]".to_string(),
+        ..Default::default()
       },
+      mode,
+      external: vec!["react-refresh".to_string(), "module".to_string()],
+      sourcemap: SourcemapConfig::Bool(false),
+      css: CssConfig {
+        modules: true,
+        indent_name: "farm-[name]".into(),
+        ..Default::default()
+      },
+      lazy_compilation: false,
+      minify: false,
+      preset_env: false,
+      ..Default::default()
+    },
+    vec![],
+  )
+  .unwrap();
+
+  compiler
+}
+
+pub fn create_compiler(
+  input: HashMap<String, String>,
+  cwd: PathBuf,
+  crate_path: PathBuf,
+  minify: bool,
+) -> Compiler {
+  let compiler = Compiler::new(
+    Config {
+      input,
+      root: cwd.to_string_lossy().to_string(),
+      runtime: generate_runtime(crate_path),
       output: farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
@@ -45,6 +85,8 @@ pub fn create_compiler(
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
+      minify,
+      preset_env: false,
       ..Default::default()
     },
     vec![],
@@ -58,6 +100,7 @@ pub fn create_compiler_with_plugins(
   input: HashMap<String, String>,
   cwd: PathBuf,
   crate_path: PathBuf,
+  minify: bool,
   plugins: Vec<Arc<(dyn Plugin + 'static)>>,
 ) -> Compiler {
   let swc_helpers_path = crate_path
@@ -88,6 +131,8 @@ pub fn create_compiler_with_plugins(
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
+      minify,
+      preset_env: false,
       ..Default::default()
     },
     plugins,
@@ -151,10 +196,10 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
     let expected_lines = expected_result.trim().lines().collect::<Vec<&str>>();
     let result_lines = result.trim().lines().collect::<Vec<&str>>();
 
-    assert_eq!(expected_lines.len(), result_lines.len());
-
     for (expected, result) in expected_lines.iter().zip(result_lines.iter()) {
       assert_eq!(expected.trim(), result.trim()); // ignore whitespace
     }
+
+    assert_eq!(expected_lines.len(), result_lines.len());
   }
 }

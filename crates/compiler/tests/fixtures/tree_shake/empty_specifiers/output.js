@@ -1,8 +1,5 @@
 //index.js:
- import module from "node:module";
-global.__farmNodeRequire = module.createRequire(import.meta.url);
-global.__farmNodeBuiltinModules = module.builtinModules;
-(function(modules, entryModule) {
+ (function(modules, entryModule) {
     var cache = {};
     function require(id) {
         if (cache[id]) return cache[id].exports;
@@ -56,9 +53,9 @@ global.__farmNodeBuiltinModules = module.builtinModules;
                 return _default;
             }
         });
-        var _interopRequireDefault = require("@swc/helpers/lib/_interop_require_default.js").default;
+        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
         require("b3d9bc98");
-        var _comp = _interopRequireDefault(require("6f462555"));
+        var _comp = _interop_require_default._(require("6f462555"));
         console.log(_comp.default);
         var _default = 2;
     }
@@ -66,8 +63,7 @@ global.__farmNodeBuiltinModules = module.builtinModules;
 var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
-var entry = farmModuleSystem.require("b5d64806").default;
-export default entry;
+var entry = farmModuleSystem.require("b5d64806");
 
 
 //92a5e8c3.css:
