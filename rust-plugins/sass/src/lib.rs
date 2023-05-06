@@ -46,7 +46,6 @@ impl Plugin for FarmPluginSass {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let reg = Regex::new(r#"\.(sass|scss)$"#).unwrap();
     if reg.is_match(param.resolved_path) {
-      println!("sass: {:?}", param.resolved_path);
       let content = fs::read_file_utf8(param.resolved_path).unwrap();
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
         content,
