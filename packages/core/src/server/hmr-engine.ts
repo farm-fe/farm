@@ -2,11 +2,11 @@
 
 import {
   Compiler,
-  VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX,
+  VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX
 } from '../compiler/index.js';
 import { DevServer } from './index.js';
 // import debounce from 'lodash.debounce';
-import { Logger } from '../logger.js';
+import { Logger } from '../utils/logger.js';
 import { isAbsolute, relative } from 'path';
 import chalk from 'chalk';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
@@ -79,7 +79,7 @@ export class HmrEngine {
         }
         dynamicResourcesMap[key] = value.map((r) => ({
           path: r[0],
-          type: r[1] as 'script' | 'link',
+          type: r[1] as 'script' | 'link'
         }));
       }
     }
@@ -104,14 +104,14 @@ export class HmrEngine {
     // @ts-ignore TODO fix this
     this._updateResults.set(id, {
       result: resultStr,
-      count: this._devServer.ws.clients.size,
+      count: this._devServer.ws.clients.size
     });
     // console.log(this._updateResults);
 
     this._devServer.ws.clients.forEach((client) => {
       client.send(
         JSON.stringify({
-          id,
+          id
         })
       );
     });

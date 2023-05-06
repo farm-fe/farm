@@ -17,7 +17,7 @@ import {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import { Logger } from '../logger.js';
+import { Logger } from '../utils/logger.js';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseUserConfig } from './schema.js';

@@ -10,7 +10,7 @@ import {
   resolveUserConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger, Logger } from './logger.js';
+import { DefaultLogger, Logger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';

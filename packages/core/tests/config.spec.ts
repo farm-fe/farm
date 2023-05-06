@@ -9,7 +9,7 @@ import {
   resolveUserConfig
 } from '../src/index.js';
 import { parseUserConfig } from '../src/config/schema.js';
-import { DefaultLogger } from '../src/logger.js';
+import { DefaultLogger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));

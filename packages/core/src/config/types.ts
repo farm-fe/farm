@@ -1,5 +1,5 @@
 import type { Config } from '../../binding/index.js';
-import { Logger } from '../logger.js';
+import { Logger } from '../utils/logger.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 
