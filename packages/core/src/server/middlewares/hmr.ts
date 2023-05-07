@@ -6,6 +6,8 @@
  */
 
 import { Context } from 'koa';
+import { WebSocketServer } from 'ws';
+import { HmrEngine } from '../hmr-engine.js';
 import { DevServer } from '../index.js';
 
 export function hmr(server: DevServer) {
@@ -25,4 +27,19 @@ export function hmr(server: DevServer) {
       }
     }
   };
+}
+
+export function hmrPlugin(distance: DevServer) {
+  if (distance.config.hmr) {
+    distance.ws = new WebSocketServer({
+      port: distance.config.hmr.port,
+      host: distance.config.hmr.host
+    });
+    distance._context.app.use(hmr(distance));
+    distance.hmrEngine = new HmrEngine(
+      distance._context.compiler,
+      distance,
+      distance.logger
+    );
+  }
 }
