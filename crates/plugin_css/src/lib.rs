@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use std::{
   path::PathBuf,
   sync::Arc,
@@ -5,7 +7,7 @@ use std::{
 };
 
 use farmfe_core::{
-  config::Config,
+  config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   hashbrown::HashMap,
   module::{CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
@@ -25,13 +27,12 @@ use farmfe_toolkit::{
   base64::engine::{general_purpose, Engine},
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::{read_file_utf8, transform_output_filename},
+  hash,
   script::module_type_from_id,
   swc_atoms::JsWord,
-  swc_css_modules::TransformConfig,
-};
-use farmfe_toolkit::{
-  hash,
-  swc_css_modules::{compile, CssClassName},
+  swc_css_modules::{compile, CssClassName, TransformConfig},
+  swc_css_prefixer,
+  swc_css_visit::VisitMut,
 };
 use farmfe_utils::stringify_query;
 
@@ -86,6 +87,15 @@ style.remove();
   )
 }
 
+fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: Option<&CssPrefixerConfig>) {
+  if let Some(css_prefixer_config) = css_prefixer_config {
+    let mut prefixer = swc_css_prefixer::prefixer(swc_css_prefixer::options::Options {
+      env: css_prefixer_config.targets.clone(),
+    });
+    prefixer.visit_mut_stylesheet(stylesheet);
+  }
+}
+
 impl Plugin for FarmPluginCss {
   fn name(&self) -> &str {
     "FarmPluginCss"
@@ -125,32 +135,64 @@ impl Plugin for FarmPluginCss {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let is_modules = context.config.css.modules;
-
       let module_id = ModuleId::new(
         param.resolved_path,
         &stringify_query(&param.query),
         &context.config.root,
       );
 
+      let is_css_modules = param
+        .query
+        .iter()
+        .any(|(k, v)| k == "modules" && v == "true");
+
       let enabled_sourcemap = context.config.sourcemap.enabled();
 
+      let record_ast = (context.config.css.modules.is_some()
+        || context.config.css.prefixer.is_some())
+        && !is_css_modules;
+
+      let mut stylesheet =
+        if record_ast || matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+          Some(parse_css_stylesheet(
+            &module_id.to_string(),
+            &param.content,
+            context.meta.css.cm.clone(),
+          )?)
+        } else {
+          None
+        };
+
+      let mut css_modules_result = None;
+      if let Some(mut stylesheet) = stylesheet.take() {
+        // css prefixer
+        prefixer(&mut stylesheet, context.config.css.prefixer.as_ref());
+
+        // css modules
+        if let Some(css_modules_config) = &context.config.css.modules && !is_css_modules {
+          css_modules_result = Some(compile(
+            &mut stylesheet,
+            CssModuleRename {
+              indent_name: css_modules_config.indent_name.clone(),
+              hash: hash::sha256(param.resolved_path.as_bytes(), 8),
+            },
+          ));
+        }
+
+        if record_ast {
+          self
+            .ast_map
+            .lock()
+            .insert(module_id.to_string(), stylesheet);
+        }
+      }
+
       // css modules
-      if is_modules {
-        let query = param.query.iter().fold(HashMap::new(), |mut acc, (k, v)| {
-          acc.insert(k.to_string(), v.to_string());
-          acc
-        });
-
-        let is_modules_file = query
-          .get("modules")
-          .and_then(|is_module| Some(is_module == "true"))
-          .is_some();
-
+      if context.config.css.modules.is_some() {
         let is_production = matches!(context.config.mode, farmfe_core::config::Mode::Production);
 
         // real css code
-        if is_modules_file {
+        if is_css_modules {
           if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
             let ast = self
               .ast_map
@@ -185,25 +227,12 @@ impl Plugin for FarmPluginCss {
         }
 
         // next, get ident from ast and export through JS
-        let mut css_stylesheet = parse_css_stylesheet(
-          &module_id.to_string(),
-          &param.content,
-          context.meta.css.cm.clone(),
-        )?;
-
-        let stylesheet = compile(
-          &mut css_stylesheet,
-          CssModuleRename {
-            indent_name: context.config.css.indent_name.clone(),
-            hash: hash::sha256(param.resolved_path.as_bytes(), 8),
-          },
-        );
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::new();
         let mut export_names = Vec::new();
 
-        for (name, classes) in stylesheet.renamed.iter() {
+        for (name, classes) in css_modules_result.as_ref().unwrap().renamed.iter() {
           let mut after_transform_classes = Vec::new();
           for v in classes {
             match v {
@@ -257,11 +286,6 @@ impl Plugin for FarmPluginCss {
             .join(",")
         );
 
-        self
-          .ast_map
-          .lock()
-          .insert(module_id.to_string(), css_stylesheet);
-
         return Ok(Some(PluginTransformHookResult {
           content: code,
           module_type: Some(ModuleType::Js),
@@ -272,14 +296,8 @@ impl Plugin for FarmPluginCss {
       // original css
       if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
         let content_with_sourcemap = if enabled_sourcemap {
-          let stylesheet = parse_css_stylesheet(
-            &module_id.to_string(),
-            &param.content,
-            context.meta.css.cm.clone(),
-          )?;
-
           let (mut css_code, src_map) = codegen_css_stylesheet(
-            &stylesheet,
+            stylesheet.as_ref().unwrap(),
             Some(context.meta.css.cm.clone()),
             context.config.minify,
           );
@@ -316,13 +334,14 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let is_css_modules = param
+      let take_from_record = (param
         .query
         .iter()
         .any(|(k, v)| k == "modules" && v == "true")
-        && context.config.css.modules;
+        && context.config.css.modules.is_some())
+        || context.config.css.prefixer.is_some();
 
-      let css_stylesheet = if is_css_modules {
+      let css_stylesheet = if take_from_record {
         self
           .ast_map
           .lock()

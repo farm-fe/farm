@@ -14,7 +14,18 @@ export default <UserConfig>{
     output: {
       path: './build',
     },
-    sourcemap: false
+    sourcemap: false,
+    css: {
+      modules: {
+        indentName: 'farm-[name]-[hash]',
+      },
+      prefixer: {
+        targets: {
+          chrome: '58',
+          ie: '11',
+        },
+      },
+    },
     // treeShaking: true,
     // minify: true,
   },

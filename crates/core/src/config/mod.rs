@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use swc_ecma_ast::EsVersion;
 use swc_ecma_parser::{EsConfig, TsConfig};
+use swc_css_prefixer::options::Targets;
 
 pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
@@ -121,18 +122,29 @@ pub struct ScriptConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
-pub struct CssConfig {
-  pub modules: bool,
+pub struct CssModulesConfig {
   pub indent_name: String,
 }
 
-impl Default for CssConfig {
+impl Default for CssModulesConfig {
   fn default() -> Self {
     Self {
-      modules: false,
       indent_name: String::from("[name]-[hash]"),
     }
   }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CssPrefixerConfig {
+  #[serde(skip_serializing)]
+  pub targets: Option<Targets>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CssConfig {
+  pub modules: Option<CssModulesConfig>,
+  pub prefixer: Option<CssPrefixerConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

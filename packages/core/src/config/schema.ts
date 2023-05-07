@@ -107,8 +107,16 @@ const ConfigSchema = z
     minify: z.boolean().optional(),
     css: z
       .object({
-        modules: z.boolean().optional(),
-        indentName: z.string().optional()
+        modules: z
+          .object({
+            indentName: z.string().optional()
+          })
+          .optional(),
+        prefixer: z
+          .object({
+            targets: z.string().or(z.record(z.string()).optional()).optional()
+          })
+          .optional()
       })
       .optional()
   })
