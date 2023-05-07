@@ -70,6 +70,19 @@ cli
     }
   });
 
+cli
+  .command('preview', 'compile the project in watch mode')
+  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
+    const resolveOptions = resolveCommandOptions(options);
+    try {
+      const { preview } = await resolveCore(resolveOptions.configPath);
+      preview(cleanOptions(resolveOptions));
+    } catch (e) {
+      logger.error(e.message);
+      process.exit(1);
+    }
+  });
+
 // watch command
 // TODO add watch command
 cli.command('watch', 'rebuilds when files have changed on disk');

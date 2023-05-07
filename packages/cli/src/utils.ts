@@ -53,6 +53,7 @@ node_modules
 export function resolveCore(cwd: string): Promise<{
   start: typeof start;
   build: typeof build;
+  preview: any;
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
 

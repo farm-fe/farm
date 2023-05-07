@@ -4,6 +4,9 @@ export * from './server/index.js';
 export * from './plugin/index.js';
 
 import chalk from 'chalk';
+import sirv from 'sirv';
+// import compression from 'koa-compress';
+import Koa from 'koa';
 import { Compiler } from './compiler/index.js';
 import {
   normalizeUserCompilationConfig,
@@ -14,6 +17,7 @@ import { DefaultLogger, Logger } from './logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
+import path from 'path';
 
 export async function start(options: FarmCLIOptions): Promise<void> {
   // TODO merger config options Encapsulation universal
@@ -81,4 +85,40 @@ export async function build(options: {
       normalizedConfig.config.output.path
     )}.`
   );
+}
+
+export async function preview(
+  options: FarmCLIOptions,
+  port = 1911
+): Promise<void> {
+  const logger = options.logger ?? new DefaultLogger();
+
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    logger,
+    'build'
+  );
+
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
+  );
+
+  const app = new Koa();
+  const staticFilesHandler = sirv(
+    path.join(normalizedConfig.config.root, 'build'),
+    {
+      etag: true,
+      single: true
+    }
+  );
+
+  // app.use(compression()); // 使用 compression 中间件
+  app.use(async (ctx, next) => {
+    await staticFilesHandler(ctx.req, ctx.res, next);
+  });
+
+  app.listen(port, () => {
+    console.log('Server is running on http://localhost:1911');
+  });
 }
