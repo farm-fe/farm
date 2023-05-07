@@ -1,6 +1,7 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { pluginName } from './options.js';
 import { getLessImplementation, tryRead } from './utils.js';
+import path from 'path';
 
 export type LessPluginOptions = Less.Options & {
   implementation?: string;
@@ -37,6 +38,7 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
                 ? `${await options.additionalData(param.content, this)}`
                 : `${options.additionalData}\n${param.content}`;
           }
+          options.paths.unshift(path.dirname(param.resolvedPath));
           const { css, sourceMap } = await implementation.render(relData, {
             sourceMap: {
               outputSourceFiles: Boolean(
