@@ -134,7 +134,8 @@ impl Default for CssModulesConfig {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct CssPrefixerConfig {
   #[serde(skip_serializing)]
   pub targets: Option<Targets>,
