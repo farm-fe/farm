@@ -20,7 +20,7 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
         const data = await tryRead(param.resolvedPath);
         return {
           content: data,
-          moduleType: 'sass',
+          moduleType: 'less',
         };
       },
     },
@@ -29,6 +29,8 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
       async executor(param) {
         try {
           let relData;
+          const fileRoot = path.dirname(param.resolvedPath);
+          const configPaths = options.paths;
           if (
             typeof options.additionalData !== 'undefined' &&
             options.additionalData
@@ -38,14 +40,14 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
                 ? `${await options.additionalData(param.content, this)}`
                 : `${options.additionalData}\n${param.content}`;
           }
-          options.paths.unshift(path.dirname(param.resolvedPath));
           const { css, sourceMap } = await implementation.render(relData, {
+            ...options,
             sourceMap: {
               outputSourceFiles: Boolean(
                 options.sourceMap ?? farmConfig?.compilation?.sourcemap
               ),
             },
-            ...options,
+            paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot],
           });
           return {
             content: css,
