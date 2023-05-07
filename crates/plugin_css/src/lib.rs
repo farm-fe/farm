@@ -7,7 +7,7 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{Config, CssPrefixerConfig},
+  config::{Config, CssPrefixerConfig, Mode},
   context::CompilationContext,
   hashbrown::HashMap,
   module::{CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
@@ -148,30 +148,35 @@ impl Plugin for FarmPluginCss {
 
       let enabled_sourcemap = context.config.sourcemap.enabled();
 
-      let record_ast = (context.config.css.modules.is_some()
-        || context.config.css.prefixer.is_some())
-        && !is_css_modules;
+      let is_production = matches!(context.config.mode, farmfe_core::config::Mode::Production);
+      let is_enabled_prefixer = context.config.css.prefixer.is_some();
+      let is_enabled_css_modules = context.config.css.modules.is_some();
 
-      let mut stylesheet =
-        if record_ast || matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-          Some(parse_css_stylesheet(
-            &module_id.to_string(),
-            &param.content,
-            context.meta.css.cm.clone(),
-          )?)
-        } else {
-          None
-        };
+      let record_ast =
+        !is_css_modules && ((is_enabled_prefixer && is_production) || is_enabled_css_modules);
+
+      let is_parse_css_stylesheet =
+        record_ast || enabled_sourcemap || (is_enabled_prefixer && !is_production);
+
+      let mut stylesheet = if is_parse_css_stylesheet {
+        Some(parse_css_stylesheet(
+          &module_id.to_string(),
+          &param.content,
+          context.meta.css.cm.clone(),
+        )?)
+      } else {
+        None
+      };
 
       let mut css_modules_result = None;
-      if let Some(mut stylesheet) = stylesheet.take() {
+      if let Some(mut css_stylesheet) = stylesheet.take() {
         // css prefixer
-        prefixer(&mut stylesheet, context.config.css.prefixer.as_ref());
+        prefixer(&mut css_stylesheet, context.config.css.prefixer.as_ref());
 
         // css modules
         if let Some(css_modules_config) = &context.config.css.modules && !is_css_modules {
           css_modules_result = Some(compile(
-            &mut stylesheet,
+            &mut css_stylesheet,
             CssModuleRename {
               indent_name: css_modules_config.indent_name.clone(),
               hash: hash::sha256(param.resolved_path.as_bytes(), 8),
@@ -183,17 +188,17 @@ impl Plugin for FarmPluginCss {
           self
             .ast_map
             .lock()
-            .insert(module_id.to_string(), stylesheet);
+            .insert(module_id.to_string(), css_stylesheet);
+        } else {
+          stylesheet = Some(css_stylesheet);
         }
       }
 
       // css modules
       if context.config.css.modules.is_some() {
-        let is_production = matches!(context.config.mode, farmfe_core::config::Mode::Production);
-
         // real css code
         if is_css_modules {
-          if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+          if !is_production {
             let ast = self
               .ast_map
               .lock()
@@ -227,7 +232,6 @@ impl Plugin for FarmPluginCss {
         }
 
         // next, get ident from ast and export through JS
-
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::new();
         let mut export_names = Vec::new();
@@ -294,15 +298,21 @@ impl Plugin for FarmPluginCss {
       }
 
       // original css
-      if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-        let content_with_sourcemap = if enabled_sourcemap {
+      if !is_production {
+        let content_with_sourcemap = if let Some(stylesheet) = stylesheet {
           let (mut css_code, src_map) = codegen_css_stylesheet(
-            stylesheet.as_ref().unwrap(),
-            Some(context.meta.css.cm.clone()),
+            &stylesheet,
+            if enabled_sourcemap {
+              Some(context.meta.css.cm.clone())
+            } else {
+              None
+            },
             context.config.minify,
           );
 
-          inline_source_map(&mut css_code, src_map);
+          if enabled_sourcemap {
+            inline_source_map(&mut css_code, src_map);
+          }
 
           Some(css_code)
         } else {

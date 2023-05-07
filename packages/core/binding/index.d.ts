@@ -177,7 +177,7 @@ export interface Config {
         indentName?: string;
       };
       prefixer?: {
-        targets?: string | BrowserTargetsRecord;
+        targets?: string[] | string | BrowserTargetsRecord;
       };
     };
     sourcemap?: boolean | 'all';

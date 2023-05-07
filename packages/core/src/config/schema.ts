@@ -114,7 +114,11 @@ const ConfigSchema = z
           .optional(),
         prefixer: z
           .object({
-            targets: z.string().or(z.record(z.string()).optional()).optional()
+            targets: z
+              .string()
+              .or(z.record(z.string()))
+              .or(z.array(z.string()))
+              .optional()
           })
           .optional()
       })
