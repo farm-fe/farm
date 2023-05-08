@@ -47,7 +47,7 @@ pub fn create_css_compiler(
         ..Default::default()
       },
       mode: Mode::Production,
-      external: vec!["react-refresh".to_string(), "module".to_string()],
+      external: vec!["^react-refresh$".to_string(), "^module$".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       css: css_config,
       lazy_compilation: false,
@@ -78,7 +78,7 @@ pub fn create_compiler(
         ..Default::default()
       },
       mode: Mode::Production,
-      external: vec!["react-refresh".to_string(), "module".to_string()],
+      external: vec!["^react-refresh$".to_string(), "^module$".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       minify,

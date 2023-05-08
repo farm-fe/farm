@@ -59,13 +59,11 @@ style.remove();
   )
 }
 
-fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: Option<&CssPrefixerConfig>) {
-  if let Some(css_prefixer_config) = css_prefixer_config {
-    let mut prefixer = swc_css_prefixer::prefixer(swc_css_prefixer::options::Options {
-      env: css_prefixer_config.targets.clone(),
-    });
-    prefixer.visit_mut_stylesheet(stylesheet);
-  }
+fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
+  let mut prefixer = swc_css_prefixer::prefixer(swc_css_prefixer::options::Options {
+    env: css_prefixer_config.targets.clone(),
+  });
+  prefixer.visit_mut_stylesheet(stylesheet);
 }
 
 impl Plugin for FarmPluginCss {
@@ -143,28 +141,14 @@ impl Plugin for FarmPluginCss {
         &stringify_query(&param.query),
         &context.config.root,
       );
-
-      let mut css_stylesheet = parse_css_stylesheet(
-        &module_id.to_string(),
-        &param.content,
-        Arc::new(SourceMap::new(FilePathMapping::empty())),
-      )?;
-
-      let enable_prefixer = context.config.css.prefixer.is_some();
       let enable_css_modules = context.config.css.modules.is_some();
-
-      if enable_prefixer {
-        // css prefixer
-        prefixer(&mut css_stylesheet, context.config.css.prefixer.as_ref());
-      }
 
       // css modules
       if enable_css_modules && self.is_path_match_css_modules(param.resolved_path) {
         // real css code
         if is_farm_css_modules(param.resolved_path) {
           if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-            let (content, _) = codegen_css_stylesheet(&css_stylesheet, None, context.config.minify);
-            let js_code = wrapper_style_load(&content, module_id.to_string());
+            let js_code = wrapper_style_load(&param.content, module_id.to_string());
 
             return Ok(Some(PluginTransformHookResult {
               content: js_code,
@@ -172,13 +156,15 @@ impl Plugin for FarmPluginCss {
               source_map: None,
             }));
           } else {
-            return Ok(Some(PluginTransformHookResult {
-              content: param.content.to_string(),
-              module_type: Some(ModuleType::Css),
-              source_map: None,
-            }));
+            return Ok(None);
           }
         } else {
+          let mut css_stylesheet = parse_css_stylesheet(
+            &module_id.to_string(),
+            &param.content,
+            Arc::new(SourceMap::new(FilePathMapping::empty())),
+          )?;
+
           // js code for css modules
           // next, get ident from ast and export through JS
           let stylesheet = compile(
@@ -192,7 +178,7 @@ impl Plugin for FarmPluginCss {
                 .unwrap()
                 .indent_name
                 .clone(),
-              hash: sha256(param.resolved_path.as_bytes(), 8),
+              hash: sha256(module_id.to_string().as_bytes(), 8),
             },
           );
           let (css_code, _) = codegen_css_stylesheet(&css_stylesheet, None, context.config.minify);
@@ -252,15 +238,7 @@ impl Plugin for FarmPluginCss {
           }));
         }
       } else if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-        let stylesheet = parse_css_stylesheet(
-          &module_id.to_string(),
-          &param.content,
-          context.meta.css.cm.clone(),
-        )?;
-
-        let (css_code, _) = codegen_css_stylesheet(&stylesheet, None, context.config.minify);
-
-        let css_js_code = wrapper_style_load(&css_code, module_id.to_string());
+        let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
 
         Ok(Some(PluginTransformHookResult {
           content: css_js_code,
@@ -296,6 +274,30 @@ impl Plugin for FarmPluginCss {
     } else {
       Ok(None)
     }
+  }
+
+  fn process_module(
+    &self,
+    param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let enable_prefixer = context.config.css.prefixer.is_some();
+    let css_stylesheet = match &mut param.meta {
+      ModuleMetaData::Css(meta) => &mut meta.ast,
+      _ => return Ok(None),
+    };
+
+    if enable_prefixer {
+      // css prefixer
+      prefixer(
+        css_stylesheet,
+        context.config.css.prefixer.as_ref().unwrap(),
+      );
+
+      return Ok(Some(()));
+    }
+
+    Ok(None)
   }
 
   fn analyze_deps(
