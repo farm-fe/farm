@@ -89,14 +89,16 @@ export async function build(options: {
   );
 }
 
-export async function preview(options: FarmCLIOptions): Promise<void> {
-  const DEFAULT_PORT = 1911;
+export async function preview(
+  options: FarmCLIOptions,
+  port = 1911
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
 
   const userConfig: UserConfig = await resolveUserConfig(
     options,
     logger,
-    'build'
+    'start'
   );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
@@ -114,24 +116,20 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
       etag: true,
       single: true
     });
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       staticFilesHandler(ctx.req, ctx.res, () => {
-        // if (err) {
-        //   reject(err);
-        // } else {
-        //   resolve(true);
-        // }
-        resolve(true);
+        resolve();
       });
     });
   }
+
   app.use(compression()); // 使用 compression 中间件
   app.use(async (ctx) => {
     await StaticFilesHandler(ctx);
   });
 
-  app.listen(DEFAULT_PORT, () => {
-    logger.info(chalk.green(`build preview server running at:\n`));
+  app.listen(port, () => {
+    logger.info(chalk.green(`preview server running at:\n`));
     const interfaces = os.networkInterfaces();
     Object.keys(interfaces).forEach((key) =>
       (interfaces[key] || [])
@@ -141,12 +139,12 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
             type: detail.address.includes('127.0.0.1')
               ? 'Local:   '
               : 'Network: ',
-            host: detail.address.replace('127.0.0.1', '127.0.0.1')
+            host: detail.address
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${chalk.bold(DEFAULT_PORT)}`;
-          logger.info(`  > ${type} ${chalk.cyan(url)}`);
+          const url = `${'http'}://${host}:${chalk.bold(port)}`;
+          logger.info(`  > ${type} ${chalk.cyan(url)}`, false);
         })
     );
   });

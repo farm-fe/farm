@@ -5,6 +5,7 @@ import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
 import { createLogger } from './logger.js';
 import type {
   FarmCLIBuildOptions,
+  FarmCLIPreviewOptions,
   FarmCLIServerOptions,
   GlobalFarmCLIOptions
 } from './types.js';
@@ -72,11 +73,14 @@ cli
 
 cli
   .command('preview', 'compile the project in watch mode')
-  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
+  .option('--port [port]', 'specify port')
+  // TODO add open config with core
+  // .option('--open', 'open browser on server start')
+  .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
     const resolveOptions = resolveCommandOptions(options);
     try {
       const { preview } = await resolveCore(resolveOptions.configPath);
-      preview(cleanOptions(resolveOptions));
+      preview(cleanOptions(resolveOptions), resolveOptions.port);
     } catch (e) {
       logger.error(e.message);
       process.exit(1);
