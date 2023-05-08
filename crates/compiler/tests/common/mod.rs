@@ -2,9 +2,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{
-    Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
-  },
+  config::{Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig},
   plugin::Plugin,
   resource::ResourceType,
 };
