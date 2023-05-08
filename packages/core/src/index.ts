@@ -3,9 +3,11 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
 
+// import http from 'http';
 import chalk from 'chalk';
 import sirv from 'sirv';
-// import compression from 'koa-compress';
+import os from 'node:os';
+import compression from 'koa-compress';
 import Koa from 'koa';
 import { Compiler } from './compiler/index.js';
 import {
@@ -87,10 +89,8 @@ export async function build(options: {
   );
 }
 
-export async function preview(
-  options: FarmCLIOptions,
-  port = 1911
-): Promise<void> {
+export async function preview(options: FarmCLIOptions): Promise<void> {
+  const DEFAULT_PORT = 1911;
   const logger = options.logger ?? new DefaultLogger();
 
   const userConfig: UserConfig = await resolveUserConfig(
@@ -104,21 +104,50 @@ export async function preview(
     'production'
   );
 
+  const { root, output } = normalizedConfig.config;
+  const distDir = path.resolve(root, output.path);
+
   const app = new Koa();
-  const staticFilesHandler = sirv(
-    path.join(normalizedConfig.config.root, 'build'),
-    {
+
+  function StaticFilesHandler(ctx: any) {
+    const staticFilesHandler = sirv(distDir, {
       etag: true,
       single: true
-    }
-  );
-
-  // app.use(compression()); // 使用 compression 中间件
-  app.use(async (ctx, next) => {
-    await staticFilesHandler(ctx.req, ctx.res, next);
+    });
+    return new Promise((resolve) => {
+      staticFilesHandler(ctx.req, ctx.res, () => {
+        // if (err) {
+        //   reject(err);
+        // } else {
+        //   resolve(true);
+        // }
+        resolve(true);
+      });
+    });
+  }
+  app.use(compression()); // 使用 compression 中间件
+  app.use(async (ctx) => {
+    await StaticFilesHandler(ctx);
   });
 
-  app.listen(port, () => {
-    console.log('Server is running on http://localhost:1911');
+  app.listen(DEFAULT_PORT, () => {
+    logger.info(chalk.green(`build preview server running at:\n`));
+    const interfaces = os.networkInterfaces();
+    Object.keys(interfaces).forEach((key) =>
+      (interfaces[key] || [])
+        .filter((details) => details.family === 'IPv4')
+        .map((detail) => {
+          return {
+            type: detail.address.includes('127.0.0.1')
+              ? 'Local:   '
+              : 'Network: ',
+            host: detail.address.replace('127.0.0.1', '127.0.0.1')
+          };
+        })
+        .forEach(({ type, host }) => {
+          const url = `${'http'}://${host}:${chalk.bold(DEFAULT_PORT)}`;
+          logger.info(`  > ${type} ${chalk.cyan(url)}`);
+        })
+    );
   });
 }
