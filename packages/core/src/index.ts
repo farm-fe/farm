@@ -123,7 +123,7 @@ export async function preview(
     });
   }
 
-  app.use(compression()); // 使用 compression 中间件
+  app.use(compression());
   app.use(async (ctx) => {
     await StaticFilesHandler(ctx);
   });
