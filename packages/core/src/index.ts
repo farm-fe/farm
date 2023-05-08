@@ -8,7 +8,7 @@ import chalk from 'chalk';
 import sirv from 'sirv';
 import os from 'node:os';
 import compression from 'koa-compress';
-import Koa from 'koa';
+import Koa, { Context } from 'koa';
 import { Compiler } from './compiler/index.js';
 import {
   normalizeUserCompilationConfig,
@@ -111,7 +111,7 @@ export async function preview(
 
   const app = new Koa();
 
-  function StaticFilesHandler(ctx: any) {
+  function StaticFilesHandler(ctx: Context) {
     const staticFilesHandler = sirv(distDir, {
       etag: true,
       single: true
