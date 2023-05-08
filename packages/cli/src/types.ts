@@ -26,5 +26,5 @@ export interface FarmCLIBuildOptions {
 
 export interface FarmCLIPreviewOptions {
   open?: boolean;
-  port?: string;
+  port?: number;
 }
