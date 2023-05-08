@@ -82,7 +82,8 @@
     "unref",
     "unsize",
     "upcasting",
-    "walkdir"
+    "walkdir",
+    "prefixer"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
