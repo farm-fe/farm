@@ -84,6 +84,22 @@ export interface PluginTransformHookResult {
   sourceMap?: string | null;
 }
 
+type BrowserTargetsRecord = Partial<
+  Record<
+    | 'chrome'
+    | 'opera'
+    | 'edge'
+    | 'firefox'
+    | 'safari'
+    | 'ie'
+    | 'ios'
+    | 'android'
+    | 'node'
+    | 'electron',
+    string
+  >
+> & { [key: string]: string };
+
 export interface Config {
   config?: {
     coreLibPath?: string;
@@ -157,8 +173,12 @@ export interface Config {
       };
     };
     css?: {
-      modules?: boolean;
-      indentName?: string;
+      modules?: {
+        indentName?: string;
+      };
+      prefixer?: {
+        targets?: string[] | string | BrowserTargetsRecord;
+      };
     };
     sourcemap?: boolean | 'all';
     partialBundling?: {
