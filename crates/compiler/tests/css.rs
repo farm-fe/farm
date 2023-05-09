@@ -20,7 +20,7 @@ fn css_modules() {
       CssConfig {
         modules: Some(CssModulesConfig {
           indent_name: "farm-[name]".into(),
-          ..Default::default()
+          paths: vec![".+".to_string()],
         }),
         ..Default::default()
       },

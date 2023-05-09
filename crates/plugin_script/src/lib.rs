@@ -455,7 +455,7 @@ impl FarmPluginScript {
           // TODO support top level await, and only support reexport default export now, should support more export type in the future
           // call the entry module
           let call_entry = parse_module(
-            "farm-internal-call-entry-module",
+            "farm_internal_call_entry_module",
             &format!(
               r#"var {} = globalThis || window || global || self;
                 var farmModuleSystem = {}.{};
