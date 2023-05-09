@@ -8,6 +8,7 @@
   "words": [
     "aarch",
     "antd",
+    "applescript",
     "Architecure",
     "Basepath",
     "bindgen",
@@ -52,10 +53,12 @@
     "normpath",
     "npmlog",
     "opentelemetry",
+    "osascript",
     "pathdiff",
     "petgraph",
     "Pluggable",
     "pnpm",
+    "prefixer",
     "protobuf",
     "protoc",
     "querify",
@@ -81,8 +84,7 @@
     "unref",
     "unsize",
     "upcasting",
-    "walkdir",
-    "prefixer"
+    "walkdir"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

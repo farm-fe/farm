@@ -76,7 +76,6 @@ export class DevServer {
     const end = Date.now();
 
     this._app.listen(this.config.port);
-    console.log(this.config);
 
     const version = JSON.parse(
       readFileSync(
