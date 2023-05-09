@@ -11,7 +11,7 @@ import open from 'open';
 import { execa } from 'execa';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
-import { DefaultLogger } from './logger.js';
+import { DefaultLogger } from '../utils/logger.js';
 
 // https://github.com/sindresorhus/open#app
 const OSX_CHROME = 'google chrome';
@@ -97,7 +97,7 @@ function startBrowserProcess(browser: string | undefined, url: string) {
   // Fallback to open
   // (It will always open new tab)
   try {
-    const options = { app: browser, url: true };
+    const options = browser ? { app: { name: browser, arguments: [] } } : {};
     const logger = new DefaultLogger();
     open(url, options).catch((e: any) => {
       logger.error(e);
