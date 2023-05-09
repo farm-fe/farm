@@ -1,9 +1,11 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * The following is modified based on source found in
+ * https://github.com/facebook/create-react-app
  *
- * This source code is licensed under the MIT license found in the
- * LICENSE file at
+ * MIT Licensed
+ * Copyright (c) 2015-present, Facebook, Inc.
  * https://github.com/facebook/create-react-app/blob/master/LICENSE
+ *
  */
 
 import path from 'path';
