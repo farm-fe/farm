@@ -1,8 +1,5 @@
-$hoverColor: #f10215;
-.description {
-  .description {
-    &:hover {
-      color: $hoverColor;
-    }
-  }
+@import './variables.scss';
+
+body {
+  background-color: $primaryColor;
 }

@@ -2,7 +2,9 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig},
+  config::{
+    Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
+  },
   plugin::Plugin,
   resource::ResourceType,
 };
@@ -31,11 +33,11 @@ pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
   }
 }
 
-pub fn create_css_modules_compiler(
+pub fn create_css_compiler(
   input: HashMap<String, String>,
   cwd: PathBuf,
   crate_path: PathBuf,
-  mode: Mode,
+  css_config: CssConfig,
 ) -> Compiler {
   let compiler = Compiler::new(
     Config {
@@ -46,14 +48,10 @@ pub fn create_css_modules_compiler(
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
       },
-      mode,
+      mode: Mode::Production,
       external: vec!["react-refresh".to_string(), "module".to_string()],
       sourcemap: SourcemapConfig::Bool(false),
-      css: CssConfig {
-        modules: true,
-        indent_name: "farm-[name]".into(),
-        ..Default::default()
-      },
+      css: css_config,
       lazy_compilation: false,
       minify: false,
       preset_env: false,

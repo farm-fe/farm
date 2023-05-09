@@ -31,6 +31,9 @@ swc_ecma_ast = { version = "0.103.4", features = ["rkyv-impl"] }
 swc_ecma_parser = { version = "0.133.8" }
 swc_common = { version = "0.31.4", features = ["concurrent", "sourcemap"] }
 swc_css_ast = { version = "0.137.4", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "0.149.7" }
+swc_ecma_preset_env = { version = "0.194.21" }
+preset_env_base = { version = "0.4.2" }
 swc_html_ast = { version = "0.31.4", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.14.3", features = ["packing"], optional = true }
