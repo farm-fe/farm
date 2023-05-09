@@ -15,7 +15,7 @@ export function Welcome() {
         <div className="main-desc">
           <h2 className="main-sub-title">
             Get started With
-            <span className="main-content"> React + Farm</span>
+            <span className="main-content"> React + Farm + Less</span>
           </h2>
           <span className="main-content">
             Super fast web building tool written in Rust.

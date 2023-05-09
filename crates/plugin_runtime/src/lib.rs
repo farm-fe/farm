@@ -265,7 +265,7 @@ impl Plugin for FarmPluginRuntime {
         let minimal_runtime = include_str!(".\\js-runtime\\minimal-runtime.js");
 
         let mut runtime_ast = parse_module(
-          "farm-internal-minimal-runtime",
+          "farm_internal_minimal_runtime",
           minimal_runtime,
           Syntax::Es(context.config.script.parser.es_config.clone()),
           context.config.script.target.clone(),
@@ -326,7 +326,7 @@ impl Plugin for FarmPluginRuntime {
       let wrapper = include_str!(".\\js-runtime\\resource-wrapper.js");
 
       let mut wrapper_ast = parse_module(
-        "farm-internal-resource-wrapper",
+        "farm_internal_resource_wrapper",
         wrapper,
         Syntax::Es(context.config.script.parser.es_config.clone()),
         context.config.script.target.clone(),
