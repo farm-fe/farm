@@ -52,9 +52,9 @@ async function createFarm() {
           name: 'projectName',
           message: 'Project name:',
           initial: DEFAULT_TARGET_NAME,
-          onState: (state: any) => {
+          onState: (state) => {
             targetDir = formatTargetDir(state.value) || DEFAULT_TARGET_NAME;
-          },
+          }
         },
         {
           type: () =>
@@ -64,16 +64,16 @@ async function createFarm() {
             (targetDir === '.'
               ? '🚨 Current directory'
               : `🚨 Target directory "${targetDir}"`) +
-            ` is not empty. Overwrite existing files and continue?`,
+            ` is not empty. Overwrite existing files and continue?`
         },
         {
-          type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
+          type: (_, { overwrite }: { overwrite?: boolean }) => {
             if (overwrite === false) {
               throw new Error(chalk.red('❌') + ' Operation cancelled');
             }
             return null;
           },
-          name: 'overwriteChecker',
+          name: 'overwriteChecker'
         },
         {
           type: argFramework ? null : 'select',
@@ -83,10 +83,10 @@ async function createFarm() {
           choices: [
             {
               title: chalk.blue('React'),
-              value: 'react',
+              value: 'react'
             },
-            { title: chalk.green('Vue'), value: 'vue' },
-          ],
+            { title: chalk.green('Vue'), value: 'vue' }
+          ]
         },
         {
           type: pkgInfo || skipInstall ? null : 'select',
@@ -97,23 +97,23 @@ async function createFarm() {
             {
               title: isYarnInstalled ? 'Yarn' : 'Yarn (not installed)',
               value: 'yarn',
-              disabled: !isYarnInstalled,
+              disabled: !isYarnInstalled
             },
             {
               title: isPnpmInstalled ? 'Pnpm' : 'Pnpm (not installed)',
               value: 'pnpm',
-              disabled: !isPnpmInstalled,
-            },
-          ],
-        },
+              disabled: !isPnpmInstalled
+            }
+          ]
+        }
       ],
       {
         onCancel: () => {
           throw new Error(chalk.red('❌') + ' Operation cancelled');
-        },
+        }
       }
     );
-  } catch (cancelled: any) {
+  } catch (cancelled) {
     console.log(cancelled.message);
     return;
   }
@@ -176,7 +176,7 @@ function pkgFromUserAgent(userAgent: string | undefined) {
   const pkgSpecArr = pkgSpec.split('/');
   return {
     name: pkgSpecArr[0],
-    version: pkgSpecArr[1],
+    version: pkgSpecArr[1]
   };
 }
 
