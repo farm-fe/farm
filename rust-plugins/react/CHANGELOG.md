@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.1.4
+
+### Patch Changes
+
+- 926c9cb: Fix css modules HMR & update ci yaml
+
 ## 0.1.3
 
 ### Patch Changes
