@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.8
+
+### Patch Changes
+
+- 1e33f07: update verison
+
 ## 1.1.7
 
 ### Patch Changes
