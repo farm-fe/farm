@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.9
+
+### Patch Changes
+
+- d9fe509: add polyfill config
+
 ## 1.1.8
 
 ### Patch Changes
