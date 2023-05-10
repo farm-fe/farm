@@ -2,13 +2,13 @@ import {
   SFCDescriptor,
   SFCScriptBlock,
   SFCTemplateBlock,
-  SFCStyleBlock,
+  SFCStyleBlock
 } from '@vue/compiler-sfc';
 import {
   CacheDescriptor,
   QueryObj,
   ResolvedOptions,
-  StylesCodeCache,
+  StylesCodeCache
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 
@@ -20,7 +20,8 @@ export function handleHmr(
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   query: QueryObj,
-  resolvedPath: string
+  resolvedPath: string,
+  mode: 'development' | 'production' = 'production'
 ) {
   const beforeDescriptor = cacheDescriptor[resolvedPath];
   // set descriptors cache to hmr
@@ -36,7 +37,8 @@ export function handleHmr(
       beforeDescriptor,
       descriptor,
       stylesCodeCache,
-      resolvedPath
+      resolvedPath,
+      mode
     );
   }
 }
@@ -46,7 +48,8 @@ function diffDescriptor(
   prevDescriptor: SFCDescriptor,
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
-  resolvedPath: string
+  resolvedPath: string,
+  mode: 'development' | 'production' = 'production'
 ) {
   let _rerender_only = false;
   // if script changed, rerender from root.
@@ -71,6 +74,7 @@ function diffDescriptor(
     descriptor,
     stylesCodeCache,
     resolvedPath,
+    mode,
     true,
     _rerender_only,
     deleteStyles,
