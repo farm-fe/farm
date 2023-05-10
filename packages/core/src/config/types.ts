@@ -11,6 +11,8 @@ export interface UserServerConfig {
   hmr?: boolean | UserHmrConfig;
   proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
+  open?: boolean;
+  host?: string;
 }
 
 export type NormalizedServerConfig = Required<

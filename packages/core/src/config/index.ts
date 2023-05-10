@@ -183,8 +183,10 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
+  host: 'localhost',
   proxy: {},
   hmr: DEFAULT_HMR_OPTIONS,
+  open: false,
   strictPort: false
 };
 

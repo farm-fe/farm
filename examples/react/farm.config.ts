@@ -27,8 +27,7 @@ export default <UserConfig>{
     // minify: true,
   },
   server: {
-    hmr: true,
-    open: true
+    hmr: true
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 };

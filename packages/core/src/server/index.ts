@@ -22,6 +22,7 @@ import { hmrPlugin } from './middlewares/hmr.js';
 import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
 import { proxyPlugin } from './middlewares/proxy.js';
+import { openBrowser } from './openBrowser.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -81,6 +82,7 @@ export class DevServer implements ImplDevServer {
   }
 
   async listen(): Promise<void> {
+    const { port, open, https, host } = this.config;
     const start = Date.now();
     // compile the project and start the dev server
     if (process.env.FARM_PROFILE) {
@@ -89,8 +91,15 @@ export class DevServer implements ImplDevServer {
       await this._compiler.compile();
     }
     const end = Date.now();
-    this.server.listen(this.config.port);
+    this.server.listen(port);
     this.startDevLogger(start, end);
+
+    const protocol = https ? 'https' : 'http';
+    const hostname = host || 'localhost';
+
+    if (open) {
+      openBrowser(`${protocol}://${hostname}:${port}`);
+    }
   }
 
   private resolvedFarmServerPlugins() {
