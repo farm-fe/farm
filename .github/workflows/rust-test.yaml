@@ -3,10 +3,6 @@ on:
   pull_request:
     branches:
       - main
-    # paths:
-    #   - 'crates/**'
-    #   - 'rust-plugins/**'
-    #   - 'packages/**'
 
 jobs:
   cargo-check:
