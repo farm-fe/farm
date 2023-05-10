@@ -33,7 +33,7 @@ cli
   //TODO add host config
   .option('--port [port]', 'specify port')
   // TODO add open config with core
-  // .option('--open', 'open browser on server start')
+  .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
   // TODO add https config
   // .option('--https', 'use https')

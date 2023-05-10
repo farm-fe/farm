@@ -388,7 +388,6 @@ export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
   delete config.config;
   delete config.outDir;
   delete config.strictPort;
-  delete config.open;
   return config;
 }
 
