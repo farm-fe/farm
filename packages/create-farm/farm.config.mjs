@@ -26,7 +26,8 @@ export default {
       ]
     },
     minify: true,
-    sourcemap: false
+    sourcemap: false,
+    presetEnv: false
   },
   server: {
     hmr: false
