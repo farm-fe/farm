@@ -162,7 +162,7 @@ impl Plugin for FarmPluginReact {
   fn analyze_deps(
     &self,
     param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // insert a global entry into the html module and make sure the inserted module executes first
     if  matches!(context.config.mode, farmfe_core::config::Mode::Development) && param.module.module_type == farmfe_core::module::ModuleType::Html {
