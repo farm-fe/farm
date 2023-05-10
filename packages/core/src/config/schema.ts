@@ -105,6 +105,7 @@ const ConfigSchema = z
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
+    presetEnv: z.boolean().optional(),
     css: z
       .object({
         modules: z
@@ -136,6 +137,17 @@ const UserConfigSchema = z
         port: z.number().positive().int().optional(),
         open: z.boolean().optional(),
         https: z.boolean().optional(),
+        proxy: z
+          .record(
+            z.object({
+              target: z.string(),
+              changeOrigin: z.boolean(),
+              rewrite: z
+                .function(z.tuple([z.string(), z.object({})]))
+                .optional()
+            })
+          )
+          .optional(),
         hmr: z
           .union([
             z.boolean(),

@@ -16,7 +16,15 @@ pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>
     .enumerate()
     .map(|(i, plugin_path)| {
       let ident = format!("{}{}", PLUGIN_VAR_PREFIX, i);
-      let import_stmt = format!("import {} from '{}';", ident, plugin_path);
+      let import_stmt = format!(
+        "import {} from '{}';",
+        ident,
+        if cfg!(windows) {
+          plugin_path.replace("\\", "\\\\")
+        } else {
+          plugin_path.to_string()
+        }
+      );
       (ident, import_stmt)
     })
     .collect::<Vec<_>>();

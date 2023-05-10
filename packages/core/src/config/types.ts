@@ -2,12 +2,14 @@ import type { Config } from '../../binding/index.js';
 import { Logger } from '../utils/logger.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
+import { ProxiesOptions } from '../server/middlewares/proxy.js';
 
 export interface UserServerConfig {
   port?: number;
   https?: boolean;
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
+  proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
 }
 
@@ -57,9 +59,17 @@ export interface FarmCLIBuildOptions {
   minify?: boolean;
 }
 
-export type FarmCLIOptions = FarmCLIServerOptions &
-  FarmCLIBuildOptions & {
-    logger?: Logger;
-    config?: string;
-    configPath?: string;
-  };
+export interface FarmCLIPreviewOptions {
+  open?: boolean;
+  https?: boolean;
+  port?: number;
+}
+
+export interface FarmCLIOptions
+  extends FarmCLIServerOptions,
+    FarmCLIBuildOptions,
+    FarmCLIPreviewOptions {
+  logger?: Logger;
+  config?: string;
+  configPath?: string;
+}

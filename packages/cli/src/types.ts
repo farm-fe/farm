@@ -7,6 +7,7 @@ export interface GlobalFarmCLIOptions {
   mode?: string;
   w?: boolean;
   watch?: boolean;
+  port?: number;
 }
 
 export interface FarmCLIServerOptions {
@@ -21,4 +22,9 @@ export interface FarmCLIBuildOptions {
   outDir?: string;
   sourcemap?: boolean;
   minify?: boolean;
+}
+
+export interface FarmCLIPreviewOptions {
+  open?: boolean;
+  port?: number;
 }
