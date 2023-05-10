@@ -414,14 +414,12 @@ importers:
       koa:
         specifier: ^2.13.4
         version: 2.13.4
-
       koa-compress:
         specifier: ^5.1.1
         version: 5.1.1
-
       koa-proxies:
         specifier: ^0.12.3
-        version: 0.12.3(koa@2.13.4
+        version: 0.12.3(koa@2.13.4)
       koa-static:
         specifier: ^5.0.0
         version: 5.0.0
@@ -5363,6 +5361,23 @@ packages:
     dependencies:
       co: 4.6.0
       koa-compose: 4.1.0
+    dev: false
+
+  /koa-is-json@1.0.0:
+    resolution: {integrity: sha512-+97CtHAlWDx0ndt0J8y3P12EWLwTLMXIfMnYDev3wOTwH/RpBGMlfn4bDXlMEg1u73K6XRE9BbUp+5ZAYoRYWw==}
+    dev: false
+
+  /koa-proxies@0.12.3(koa@2.13.4):
+    resolution: {integrity: sha512-griAAVJbuzaGCt9H8RtLIsqcQhb5Q8uDPopQ6aK5DtRMvv6xb5SP/LEQ7Z8/bI1gAqd8n9WjMeT0c04I09ZAUg==}
+    peerDependencies:
+      koa: '>=2'
+    dependencies:
+      http-proxy: 1.18.1
+      koa: 2.13.4
+      path-match: 1.2.4
+      uuid: 8.3.2
+    transitivePeerDependencies:
+      - debug
     dev: false
 
   /koa-send@5.0.1:
