@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 4dd08b2: add corejs deps
+- 4dd08b2: add core-js deps
 
 ## 1.1.9
 
