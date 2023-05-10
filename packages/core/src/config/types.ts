@@ -2,12 +2,14 @@ import type { Config } from '../../binding/index.js';
 import { Logger } from '../logger.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
+import { ProxiesOptions } from '../server/middlewares/proxy.js';
 
 export interface UserServerConfig {
   port?: number;
   https?: boolean;
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
+  proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
 }
 
