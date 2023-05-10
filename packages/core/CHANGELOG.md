@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.7.3
+
+### Patch Changes
+
+- d9fe509: add polyfill config
+
 ## 0.7.2
 
 ### Patch Changes
