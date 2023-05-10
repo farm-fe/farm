@@ -165,7 +165,7 @@ impl Plugin for FarmPluginReact {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // insert a global entry into the html module and make sure the inserted module executes first
-    if param.module.module_type == farmfe_core::module::ModuleType::Html {
+    if  matches!(context.config.mode, farmfe_core::config::Mode::Development) && param.module.module_type == farmfe_core::module::ModuleType::Html {
       param.deps.insert(
         0,
         PluginAnalyzeDepsHookResultEntry {
