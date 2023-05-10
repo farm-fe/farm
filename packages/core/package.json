@@ -38,6 +38,7 @@
     "@types/figlet": "^1.5.5",
     "@types/http-proxy": "^1.17.11",
     "@types/koa": "^2.13.5",
+    "@types/koa-compress": "^4.0.3",
     "@types/koa-static": "^4.0.2",
     "@types/lodash": "^4.14.191",
     "@types/lodash.debounce": "^4.0.7",
@@ -72,11 +73,13 @@
     "figlet": "^1.5.2",
     "http-proxy": "^1.18.1",
     "koa": "^2.13.4",
+    "koa-compress": "^5.1.1",
     "koa-proxies": "^0.12.3",
     "koa-static": "^5.0.0",
     "lodash.debounce": "^4.0.8",
     "lodash.merge": "^4.6.2",
     "loglevel": "^1.8.1",
+    "sirv": "^2.0.3",
     "ws": "^8.12.0",
     "zod": "^3.21.4"
   }

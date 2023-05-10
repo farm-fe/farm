@@ -3,7 +3,12 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
 
+// import http from 'http';
 import chalk from 'chalk';
+import sirv from 'sirv';
+import os from 'node:os';
+import compression from 'koa-compress';
+import Koa, { Context } from 'koa';
 import { Compiler } from './compiler/index.js';
 import {
   normalizeUserCompilationConfig,
@@ -14,6 +19,7 @@ import { DefaultLogger, Logger } from './logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
+import path from 'path';
 
 export async function start(options: FarmCLIOptions): Promise<void> {
   // TODO merger config options Encapsulation universal
@@ -81,4 +87,65 @@ export async function build(options: {
       normalizedConfig.config.output.path
     )}.`
   );
+}
+
+export async function preview(
+  options: FarmCLIOptions,
+  port = 1911
+): Promise<void> {
+  const logger = options.logger ?? new DefaultLogger();
+
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    logger,
+    'start'
+  );
+
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
+  );
+
+  const { root, output } = normalizedConfig.config;
+  const distDir = path.resolve(root, output.path);
+
+  const app = new Koa();
+
+  function StaticFilesHandler(ctx: Context) {
+    const staticFilesHandler = sirv(distDir, {
+      etag: true,
+      single: true
+    });
+    return new Promise<void>((resolve) => {
+      staticFilesHandler(ctx.req, ctx.res, () => {
+        resolve();
+      });
+    });
+  }
+
+  app.use(compression());
+  app.use(async (ctx) => {
+    await StaticFilesHandler(ctx);
+  });
+
+  app.listen(port, () => {
+    logger.info(chalk.green(`preview server running at:\n`));
+    const interfaces = os.networkInterfaces();
+    Object.keys(interfaces).forEach((key) =>
+      (interfaces[key] || [])
+        .filter((details) => details.family === 'IPv4')
+        .map((detail) => {
+          return {
+            type: detail.address.includes('127.0.0.1')
+              ? 'Local:   '
+              : 'Network: ',
+            host: detail.address
+          };
+        })
+        .forEach(({ type, host }) => {
+          const url = `${'http'}://${host}:${chalk.bold(port)}`;
+          logger.info(`  > ${type} ${chalk.cyan(url)}`, false);
+        })
+    );
+  });
 }

@@ -59,9 +59,17 @@ export interface FarmCLIBuildOptions {
   minify?: boolean;
 }
 
-export type FarmCLIOptions = FarmCLIServerOptions &
-  FarmCLIBuildOptions & {
-    logger?: Logger;
-    config?: string;
-    configPath?: string;
-  };
+export interface FarmCLIPreviewOptions {
+  open?: boolean;
+  https?: boolean;
+  port?: number;
+}
+
+export interface FarmCLIOptions
+  extends FarmCLIServerOptions,
+    FarmCLIBuildOptions,
+    FarmCLIPreviewOptions {
+  logger?: Logger;
+  config?: string;
+  configPath?: string;
+}
