@@ -214,7 +214,15 @@ impl Plugin for FarmPluginCss {
     {}
     export default {{{}}}
     "#,
-            format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX),
+            format!(
+              "{}{}",
+              if cfg!(windows) {
+                param.resolved_path.replace("\\", "\\\\")
+              } else {
+                param.resolved_path.to_string()
+              },
+              FARM_CSS_MODULES_SUFFIX
+            ),
             FARM_CSS_MODULES,
             encode_css(&css_code),
             dynamic_import_of_composes
