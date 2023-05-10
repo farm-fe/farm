@@ -75,7 +75,7 @@ farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806");
 
 
-//254f35b5.css:
+//83b2b217.css:
  .farm-action {
   color: red;
 }
