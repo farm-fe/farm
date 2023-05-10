@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.10
+
+### Patch Changes
+
+- 4dd08b2: add corejs deps
+
 ## 1.1.9
 
 ### Patch Changes
