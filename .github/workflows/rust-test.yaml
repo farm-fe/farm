@@ -1,9 +1,12 @@
 name: CI
 on:
   pull_request:
-    paths:
-      - 'crates/**'
-      - 'rust-plugins/**'
+    branches:
+      - main
+    # paths:
+    #   - 'crates/**'
+    #   - 'rust-plugins/**'
+    #   - 'packages/**'
 
 jobs:
   cargo-check:
