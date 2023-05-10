@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 1e33f07: update verison
+- 1e33f07: update version
 
 ## 1.1.7
 
