@@ -1,6 +1,7 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { pluginName } from './options.js';
 import { getLessImplementation, tryRead } from './utils.js';
+import path from 'path';
 
 export type LessPluginOptions = Less.Options & {
   implementation?: string;
@@ -19,7 +20,7 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
         const data = await tryRead(param.resolvedPath);
         return {
           content: data,
-          moduleType: 'sass',
+          moduleType: 'less',
         };
       },
     },
@@ -28,6 +29,8 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
       async executor(param) {
         try {
           let relData;
+          const fileRoot = path.dirname(param.resolvedPath);
+          const configPaths = options.paths;
           if (
             typeof options.additionalData !== 'undefined' &&
             options.additionalData
@@ -38,12 +41,13 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
                 : `${options.additionalData}\n${param.content}`;
           }
           const { css, sourceMap } = await implementation.render(relData, {
+            ...options,
             sourceMap: {
               outputSourceFiles: Boolean(
                 options.sourceMap ?? farmConfig?.compilation?.sourcemap
               ),
             },
-            ...options,
+            paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot],
           });
           return {
             content: css,
