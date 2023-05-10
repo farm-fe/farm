@@ -48,7 +48,7 @@ function executeNodeScript(scriptPath: string, url: string) {
   const child = execa('node', [scriptPath, ...extraArgs, url], {
     stdio: 'inherit'
   });
-  child.on('close', (code: any) => {
+  child.on('close', (code: number) => {
     if (code !== 0) {
       console.log();
       console.log(
@@ -101,7 +101,7 @@ function startBrowserProcess(browser: string | undefined, url: string) {
   try {
     const options = browser ? { app: { name: browser, arguments: [] } } : {};
     const logger = new DefaultLogger();
-    open(url, options).catch((e: any) => {
+    open(url, options).catch((e: Error) => {
       logger.error(e);
     }); // Prevent `unhandledRejection` error.
     return true;
@@ -121,7 +121,7 @@ export function openBrowser(url: string) {
       // Special case: BROWSER="none" will prevent opening completely.
       return false;
     case Actions.SCRIPT:
-      return executeNodeScript(value!, url);
+      return executeNodeScript(value, url);
     case Actions.BROWSER:
       return startBrowserProcess(value, url);
     default:
