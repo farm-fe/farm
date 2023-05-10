@@ -105,6 +105,7 @@ const ConfigSchema = z
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
+    presetEnv: z.boolean().optional(),
     css: z
       .object({
         modules: z

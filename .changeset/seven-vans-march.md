@@ -2,4 +2,4 @@
 'create-farm': patch
 ---
 
-update verison
+add corejs deps
