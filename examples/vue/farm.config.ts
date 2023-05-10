@@ -14,5 +14,14 @@ export default defineFarmConfig({
       strictExports: true,
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://music-erkelost.vercel.app/banner',
+        changeOrigin: true,
+        rewrite: (path: any) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
   plugins: [farmJsPluginVue()],
 });
