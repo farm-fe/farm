@@ -417,6 +417,20 @@ impl ModuleGraph {
     (result, cyclic)
   }
 
+  pub fn update_execution_order_for_modules(&mut self) {
+    let (mut topo_sorted_modules, _) = self.toposort();
+
+    topo_sorted_modules.reverse();
+
+    topo_sorted_modules
+      .iter()
+      .enumerate()
+      .for_each(|(order, module_id)| {
+        let module = self.module_mut(module_id).unwrap();
+        module.execution_order = order;
+      });
+  }
+
   pub fn internal_graph(&self) -> &StableDiGraph<Module, ModuleGraphEdge> {
     &self.g
   }
