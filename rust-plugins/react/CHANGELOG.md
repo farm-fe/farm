@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.1.5
+
+### Patch Changes
+
+- 6ee7065: Fix that dev code presents in prod
+
 ## 0.1.4
 
 ### Patch Changes
