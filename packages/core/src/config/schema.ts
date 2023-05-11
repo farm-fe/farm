@@ -105,10 +105,23 @@ const ConfigSchema = z
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
+    presetEnv: z.boolean().optional(),
     css: z
       .object({
-        modules: z.boolean().optional(),
-        indentName: z.string().optional()
+        modules: z
+          .object({
+            indentName: z.string().optional()
+          })
+          .optional(),
+        prefixer: z
+          .object({
+            targets: z
+              .string()
+              .or(z.record(z.string()))
+              .or(z.array(z.string()))
+              .optional()
+          })
+          .optional()
       })
       .optional()
   })
@@ -122,7 +135,19 @@ const UserConfigSchema = z
     server: z
       .object({
         port: z.number().positive().int().optional(),
+        open: z.boolean().optional(),
         https: z.boolean().optional(),
+        proxy: z
+          .record(
+            z.object({
+              target: z.string(),
+              changeOrigin: z.boolean(),
+              rewrite: z
+                .function(z.tuple([z.string(), z.object({})]))
+                .optional()
+            })
+          )
+          .optional(),
         hmr: z
           .union([
             z.boolean(),

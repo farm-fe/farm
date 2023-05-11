@@ -1,0 +1,9 @@
+.child {
+  color: yellowgreen;
+  // background-color: whitesmoke;
+}
+
+:global .child-global {
+  color: yellowgreen;
+  background-color: whitesmoke;
+}

@@ -1,9 +1,8 @@
 name: CI
 on:
   pull_request:
-    paths:
-      - 'crates/**'
-      - 'rust-plugins/**'
+    branches:
+      - main
 
 jobs:
   cargo-check:
@@ -28,7 +27,7 @@ jobs:
       matrix:
         os:
           # linux tests run in job coverage workflow
-          - macos-10.15
+          - macos-latest
           - windows-latest
     steps:
       - uses: actions/checkout@v3

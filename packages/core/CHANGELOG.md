@@ -1,5 +1,19 @@
 # @farmfe/core
 
+## 0.7.3
+
+### Patch Changes
+
+- d9fe509: add polyfill config
+
+## 0.7.2
+
+### Patch Changes
+
+- 659bc72: css modules support path hash & css sourcemap
+- e0521e5: support css prefixer
+- 926c9cb: Fix css modules HMR & update ci yaml
+
 ## 0.7.1
 
 ### Patch Changes

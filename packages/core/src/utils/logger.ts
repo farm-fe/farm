@@ -10,7 +10,7 @@ export interface Logger {
   debug(message: string): void;
   info(message: string, banner?: boolean): void;
   warn(message: string): void;
-  error(message: string): void;
+  error(message: string | Error): void;
 }
 
 export class DefaultLogger implements Logger {
@@ -28,7 +28,7 @@ export class DefaultLogger implements Logger {
     log.warn(message);
   }
 
-  error(message: string): void {
+  error(message: string | Error): void {
     log.error(chalk.red(message));
   }
 }

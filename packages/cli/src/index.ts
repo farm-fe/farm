@@ -5,6 +5,7 @@ import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
 import { createLogger } from './logger.js';
 import type {
   FarmCLIBuildOptions,
+  FarmCLIPreviewOptions,
   FarmCLIServerOptions,
   GlobalFarmCLIOptions
 } from './types.js';
@@ -32,7 +33,7 @@ cli
   //TODO add host config
   .option('--port [port]', 'specify port')
   // TODO add open config with core
-  // .option('--open', 'open browser on server start')
+  .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
   // TODO add https config
   // .option('--https', 'use https')
@@ -78,6 +79,22 @@ cli
     watch({
       configPath: cwd
     });
+  });
+
+cli
+  .command('preview', 'compile the project in watch mode')
+  .option('--port [port]', 'specify port')
+  // TODO add open config with core
+  // .option('--open', 'open browser on server start')
+  .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
+    const resolveOptions = resolveCommandOptions(options);
+    try {
+      const { preview } = await resolveCore(resolveOptions.configPath);
+      preview(cleanOptions(resolveOptions), resolveOptions.port);
+    } catch (e) {
+      logger.error(e.message);
+      process.exit(1);
+    }
   });
 
 // watch command

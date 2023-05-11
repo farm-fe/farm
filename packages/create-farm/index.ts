@@ -52,7 +52,7 @@ async function createFarm() {
           name: 'projectName',
           message: 'Project name:',
           initial: DEFAULT_TARGET_NAME,
-          onState: (state: any) => {
+          onState: (state) => {
             targetDir = formatTargetDir(state.value) || DEFAULT_TARGET_NAME;
           }
         },
@@ -67,7 +67,7 @@ async function createFarm() {
             ` is not empty. Overwrite existing files and continue?`
         },
         {
-          type: (_: any, { overwrite }: { overwrite?: boolean }): any => {
+          type: (_, { overwrite }: { overwrite?: boolean }) => {
             if (overwrite === false) {
               throw new Error(chalk.red('❌') + ' Operation cancelled');
             }
@@ -113,7 +113,7 @@ async function createFarm() {
         }
       }
     );
-  } catch (cancelled: any) {
+  } catch (cancelled) {
     console.log(cancelled.message);
     return;
   }

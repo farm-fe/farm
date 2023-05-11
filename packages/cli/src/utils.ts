@@ -3,7 +3,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import Module from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { start, build } from '@farmfe/core';
+import type { start, build, preview } from '@farmfe/core';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
 import type { GlobalFarmCLIOptions } from './types.js';
@@ -54,6 +54,7 @@ export function resolveCore(cwd: string): Promise<{
   start: typeof start;
   build: typeof build;
   watch: typeof start;
+  preview: typeof preview;
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
 

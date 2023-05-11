@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.0.4
+
+### Patch Changes
+
+- 926c9cb: Fix css modules HMR & update ci yaml
+
 ## 0.0.3
 
 ### Patch Changes
