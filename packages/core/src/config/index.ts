@@ -17,7 +17,7 @@ import {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import { Logger } from '../logger.js';
+import { Logger } from '../utils/logger.js';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseUserConfig } from './schema.js';
@@ -183,8 +183,10 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
   // http2: false,
+  host: 'localhost',
   proxy: {},
   hmr: DEFAULT_HMR_OPTIONS,
+  open: false,
   strictPort: false
 };
 
@@ -386,7 +388,6 @@ export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
   delete config.config;
   delete config.outDir;
   delete config.strictPort;
-  delete config.open;
   return config;
 }
 

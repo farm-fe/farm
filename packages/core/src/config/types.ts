@@ -1,5 +1,5 @@
 import type { Config } from '../../binding/index.js';
-import { Logger } from '../logger.js';
+import { Logger } from '../utils/logger.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 import { ProxiesOptions } from '../server/middlewares/proxy.js';
@@ -11,6 +11,8 @@ export interface UserServerConfig {
   hmr?: boolean | UserHmrConfig;
   proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
+  open?: boolean;
+  host?: string;
 }
 
 export type NormalizedServerConfig = Required<
