@@ -135,6 +135,7 @@ const UserConfigSchema = z
     server: z
       .object({
         port: z.number().positive().int().optional(),
+        open: z.boolean().optional(),
         https: z.boolean().optional(),
         proxy: z
           .record(
