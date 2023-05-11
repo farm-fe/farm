@@ -3,9 +3,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'packages/**'
-      - 'crates/**'
 
 jobs:
   call-rust-build:

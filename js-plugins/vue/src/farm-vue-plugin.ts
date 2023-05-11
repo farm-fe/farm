@@ -9,7 +9,7 @@ import {
   PreProcessorsType,
   PreProcessorsOptions,
   ValueOf,
-  FarmVuePluginOptions,
+  FarmVuePluginOptions
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 import {
@@ -21,7 +21,7 @@ import {
   isLess,
   isSass,
   isStyl,
-  loadPreProcessor,
+  loadPreProcessor
 } from './utils.js';
 
 // apply style langs
@@ -48,7 +48,7 @@ export default function farmVuePlugin(
     },
     load: {
       filters: {
-        resolvedPaths: ['.vue$'],
+        resolvedPaths: ['.vue$']
       },
       async executor(params, ctx) {
         const { resolvedPath } = params;
@@ -58,19 +58,19 @@ export default function farmVuePlugin(
         } catch (err) {
           error({
             id: resolvedPath,
-            message: "path is not right,can't readFile",
+            message: "path is not right,can't readFile"
           });
         }
         return {
           content: source,
-          moduleType: 'ts',
+          moduleType: 'ts'
         };
-      },
+      }
     },
     // add hmr code In root file
     transform: {
       filters: {
-        resolvedPaths: ['.vue$', ...include],
+        resolvedPaths: ['.vue$', ...include]
       },
       async executor(params, ctx) {
         //If path in exclude,skip transform.
@@ -94,7 +94,7 @@ export default function farmVuePlugin(
           }
           return {
             content: typeof styleCode === 'string' ? styleCode : '',
-            moduleType: 'css',
+            moduleType: 'css'
           };
         }
 
@@ -112,29 +112,31 @@ export default function farmVuePlugin(
             descriptor,
             stylesCodeCache,
             query,
-            resolvedPath
+            resolvedPath,
+            farmConfig.mode
           );
           if (isHmr)
             return {
               content: isHmr.source,
               moduleType: isHmr.moduleType,
-              sourceMap: isHmr.map,
+              sourceMap: isHmr.map
             };
 
           const {
             source: mainCode,
             moduleType,
-            map,
+            map
           } = genMainCode(
             resolvedOptions,
             descriptor,
             stylesCodeCache,
-            resolvedPath
+            resolvedPath,
+            farmConfig.mode
           );
           return {
             content: mainCode,
             moduleType,
-            sourceMap: map,
+            sourceMap: map
           };
         }
 
@@ -146,11 +148,11 @@ export default function farmVuePlugin(
           return {
             content:
               'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
-            moduleType: 'js',
+            moduleType: 'js'
           };
         }
-      },
-    },
+      }
+    }
   };
 }
 
@@ -168,7 +170,7 @@ async function preProcession(styleCode: string, moduleType: string) {
       case 'scss':
         processor = await loadPreProcessor(PreProcessorsType.sass);
         return await compilePreProcessorCodeToCss(styleCode, processor, {
-          indentedSyntax: moduleType === 'sass',
+          indentedSyntax: moduleType === 'sass'
         });
       case 'stylus':
         processor = await loadPreProcessor(PreProcessorsType.stylus);
@@ -208,7 +210,7 @@ export async function compilePreProcessorCodeToCss<
           data: styleCode,
           ...((options as PreProcessorsOptions<
             PreProcessors[PreProcessorsType.sass]
-          >) ?? {}),
+          >) ?? {})
         },
         (exception, { css }) => {
           if (exception) {
