@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-vue
 
+## 1.0.1
+
+### Patch Changes
+
+- 6ee7065: Fix that dev code presents in prod
+
 ## 1.0.0
 
 ### Patch Changes
