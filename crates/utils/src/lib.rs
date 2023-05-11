@@ -109,11 +109,14 @@ mod tests {
 
   #[test]
   fn parse_query_t() {
-    let str = "./a.png?inline";
+    let str = "./a.png?inline&b=c";
     let parsed_query = parse_query(str);
     assert_eq!(
       parsed_query,
-      vec![("inline".to_string(), "true".to_string())]
+      vec![
+        ("inline".to_string(), "true".to_string()),
+        ("b".to_string(), "c".to_string())
+      ]
     );
 
     let str = "?a=b";
