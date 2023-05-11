@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-less",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "support less compile for farm.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
