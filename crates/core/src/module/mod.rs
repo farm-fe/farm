@@ -47,6 +47,9 @@ pub struct Module {
   /// whether this module is immutable, for example, the module is immutable if it is from node_modules.
   /// This field will be set according to partialBundling.immutable of the user config, default to the module whose resolved_path contains ["/node_modules/"].
   pub immutable: bool,
+  /// Execution order of this module in the module graph
+  /// updated after the module graph is built
+  pub execution_order: usize,
 }
 
 impl Module {
@@ -61,6 +64,7 @@ impl Module {
       source_map_chain: vec![],
       external: false,
       immutable: false,
+      execution_order: 0,
     }
   }
 }

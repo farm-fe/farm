@@ -8,9 +8,8 @@ use farmfe_core::{
   error::CompilationError,
   hashbrown::HashSet,
   module::{
-    module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
-    module_group::ModuleGroupId,
-    Module, ModuleId, ModuleType,
+    module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId,
+    ModuleType,
   },
   plugin::{PluginResolveHookParam, ResolveKind},
   rayon::ThreadPool,
