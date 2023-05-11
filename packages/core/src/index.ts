@@ -65,7 +65,8 @@ export async function watch(options: {
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(
     options.configPath,
-    logger
+    logger,
+    'start'
   );
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
