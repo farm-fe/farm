@@ -14,7 +14,7 @@
     "start": "rimraf dist && tsup --watch",
     "build:tsup": "tsup",
     "build": "farm build",
-    "watch": "farm watch",
+    "watch": "farm watch1",
     "prepublishOnly": "npm run build"
   },
   "author": "",

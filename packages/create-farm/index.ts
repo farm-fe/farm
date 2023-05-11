@@ -18,7 +18,7 @@ interface IResultType {
   autoInstall?: boolean;
   packageManager?: string;
 }
-
+asdasdsa;
 // judge node version
 judgeNodeVersion();
 

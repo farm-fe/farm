@@ -5,6 +5,8 @@ export * from './plugin/index.js';
 
 // import http from 'http';
 import chalk from 'chalk';
+import fs from 'fs';
+import chokidar from 'chokidar';
 import sirv from 'sirv';
 import os from 'node:os';
 import compression from 'koa-compress';
@@ -56,39 +58,6 @@ export async function start(options: FarmCLIOptions): Promise<void> {
     const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
     fileWatcher.watch(devServer);
   }
-}
-
-export async function watch(options: {
-  configPath?: string;
-  logger?: Logger;
-}): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options.configPath,
-    logger,
-    'start'
-  );
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    'production'
-  );
-  const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, userConfig.server);
-  // Make sure the server is listening before we watch for file changes
-  const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
-  fileWatcher.watch(compiler);
-  const start = Date.now();
-  compiler.removeOutputPathDir();
-  await compiler.compile();
-  compiler.writeResourcesToDisk();
-  logger.info(
-    `Build completed in ${chalk.green(
-      `${Date.now() - start}ms`
-    )}! Resources emitted to ${chalk.green(
-      normalizedConfig.config.output.path
-    )}.`
-  );
-  process.stdin.resume();
 }
 
 export async function build(options: {
@@ -181,4 +150,57 @@ export async function preview(
         })
     );
   });
+}
+
+export async function watch(options: {
+  configPath?: string;
+  logger?: Logger;
+  watchPath?: string;
+}): Promise<void> {
+  const watcherPath = options.watchPath;
+  const logger = options.logger ?? new DefaultLogger();
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    logger,
+    'build'
+  );
+
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
+  );
+  const compiler = new Compiler(normalizedConfig);
+  console.log(watcherPath);
+  console.log(45646545645645);
+
+  const watcher = chokidar.watch(watcherPath, {
+    persistent: true, // 持续监听文件变化
+    ignoreInitial: false // 不忽略初始的文件变化事件
+  });
+  // console.log(watcher);
+
+  // 监听文件变化事件
+  watcher.on('change', (path) => {
+    // 读取文件内容
+    fs.readFile(path, 'utf8', async (err, data) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log(data);
+        // 根据文件类型进行相应的处理，例如重新编译和构建相关的模块等
+        const start = Date.now();
+        compiler.removeOutputPathDir();
+        await compiler.compile();
+        compiler.writeResourcesToDisk();
+        logger.info(
+          `Build completed in ${chalk.green(
+            `${Date.now() - start}ms`
+          )}! Resources emitted to ${chalk.green(
+            normalizedConfig.config.output.path
+          )}.`
+        );
+      }
+    });
+  });
+  console.log(options.configPath);
 }

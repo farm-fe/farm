@@ -70,14 +70,18 @@ cli
       process.exit(1);
     }
   });
+
 cli
-  .command('watch', 'Compile the project in production mode')
-  .action(async () => {
+  .command('watch1', 'watch file change')
+  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     const cwd = process.cwd();
-    const { watch } = await resolveCore(cwd);
+    const resolveOptions = resolveCommandOptions(options);
+
+    const { watch } = await resolveCore(resolveOptions.configPath);
     // TODO set config path
-    watch({
-      configPath: cwd
+
+    await watch({
+      watchPath: cwd
     });
   });
 
