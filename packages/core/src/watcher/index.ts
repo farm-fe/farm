@@ -18,7 +18,7 @@ export class FileWatcher {
     this._options = config ?? {};
   }
 
-  async watch(serverOrCompiler: DevServer | Compiler) {
+  async watch(serverOrCompiler: DevServer | Compiler, config: any) {
     const compiler =
       serverOrCompiler instanceof DevServer
         ? serverOrCompiler.getCompiler()
@@ -29,7 +29,11 @@ export class FileWatcher {
         ? compiler.resolvedModulePaths(this._root)
         : [this._root],
       {
-        ignored: this._options.ignores
+        ignored: this._options.ignores,
+        awaitWriteFinish: {
+          stabilityThreshold: 100, // 稳定性阈值为 1000ms
+          pollInterval: 200 // 轮询间隔为 100ms
+        }
       }
     );
     if (serverOrCompiler instanceof DevServer) {
@@ -71,10 +75,7 @@ export class FileWatcher {
         console.warn(
           `Build completed in ${chalk.green(
             `${Date.now() - start}ms`
-          )}! Resources emitted to ${chalk
-            .green
-            // normalizedConfig.config.output.path
-            ()}.`
+          )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
         );
       }
     });

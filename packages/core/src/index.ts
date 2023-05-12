@@ -56,7 +56,7 @@ export async function start(options: FarmCLIOptions): Promise<void> {
     }
 
     const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
-    fileWatcher.watch(devServer);
+    fileWatcher.watch(devServer, {});
   }
 }
 
@@ -174,7 +174,7 @@ export async function watch(options: {
   const fileWatcher = new FileWatcher(watcherPath, {
     ignores: [/node_modules/, /dist/]
   });
-  fileWatcher.watch(compiler);
+  fileWatcher.watch(compiler, normalizedConfig);
   // const watcher = chokidar.watch(watcherPath, {});
   // build(options);
 
