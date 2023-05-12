@@ -18,6 +18,7 @@ interface IResultType {
   autoInstall?: boolean;
   packageManager?: string;
 }
+
 // judge node version
 judgeNodeVersion();
 
@@ -183,6 +184,7 @@ function judgeNodeVersion() {
   const currentVersion = process.versions.node;
   const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
   const minimumMajorVersion = 16;
+
   if (requiredMajorVersion < minimumMajorVersion) {
     console.log(
       chalk.yellow(`create-farm unsupported Node.js v${currentVersion}.`)
@@ -190,6 +192,7 @@ function judgeNodeVersion() {
     console.log(
       chalk.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
     );
+    process.exit(1);
   }
 }
 

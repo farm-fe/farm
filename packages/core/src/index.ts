@@ -171,7 +171,9 @@ export async function watch(options: {
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
-  const fileWatcher = new FileWatcher(watcherPath, { ignores: ['dist'] });
+  const fileWatcher = new FileWatcher(watcherPath, {
+    ignores: [/node_modules/, /dist/]
+  });
   fileWatcher.watch(compiler);
   // const watcher = chokidar.watch(watcherPath, {});
   // build(options);

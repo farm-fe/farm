@@ -1,10 +1,11 @@
+import chalk from 'chalk';
 import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 
 import { DevServer } from '../server/index.js';
 
 export interface FileWatcherOptions {
-  ignores?: string[];
+  ignores?: string[] | any;
 }
 
 export class FileWatcher {
@@ -63,12 +64,18 @@ export class FileWatcher {
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
-        console.log(this._options.ignores, '忽略的文件');
-
         // TODO update and emit the result
-        console.log(path, '更新 path');
+        const start = Date.now();
         await compiler.update([path]);
         compiler.writeResourcesToDisk();
+        console.warn(
+          `Build completed in ${chalk.green(
+            `${Date.now() - start}ms`
+          )}! Resources emitted to ${chalk
+            .green
+            // normalizedConfig.config.output.path
+            ()}.`
+        );
       }
     });
   }
