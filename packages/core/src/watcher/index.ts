@@ -17,7 +17,7 @@ export class FileWatcher {
     this._options = config ?? {};
   }
 
-  watch(serverOrCompiler: DevServer | Compiler) {
+  async watch(serverOrCompiler: DevServer | Compiler) {
     const compiler =
       serverOrCompiler instanceof DevServer
         ? serverOrCompiler.getCompiler()
@@ -28,7 +28,7 @@ export class FileWatcher {
         ? compiler.resolvedModulePaths(this._root)
         : [this._root],
       {
-        ignored: this._options.ignores,
+        ignored: this._options.ignores
       }
     );
     if (serverOrCompiler instanceof DevServer) {
@@ -54,11 +54,19 @@ export class FileWatcher {
       });
     }
 
+    if (serverOrCompiler instanceof Compiler) {
+      await compiler.compile();
+      compiler.writeResourcesToDisk();
+    }
+
     this._watcher.on('change', async (path) => {
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
+        console.log(this._options.ignores, '忽略的文件');
+
         // TODO update and emit the result
+        console.log(path, '更新 path');
         await compiler.update([path]);
         compiler.writeResourcesToDisk();
       }

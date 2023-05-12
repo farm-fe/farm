@@ -190,7 +190,6 @@ function judgeNodeVersion() {
     console.log(
       chalk.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
     );
-    process.exit(1);
   }
 }
 

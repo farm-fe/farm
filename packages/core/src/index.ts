@@ -5,8 +5,8 @@ export * from './plugin/index.js';
 
 // import http from 'http';
 import chalk from 'chalk';
-import fs from 'fs';
-import chokidar from 'chokidar';
+// import fs from 'fs';
+// import chokidar from 'chokidar';
 import sirv from 'sirv';
 import os from 'node:os';
 import compression from 'koa-compress';
@@ -159,50 +159,48 @@ export async function watch(options: {
 }): Promise<void> {
   const watcherPath = options.watchPath;
   options.configPath = watcherPath;
-  // const logger = options.logger ?? new DefaultLogger();
-  // const userConfig: UserConfig = await resolveUserConfig(
-  //   options,
-  //   logger,
-  //   'build'
-  // );
+  const logger = options.logger ?? new DefaultLogger();
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    logger,
+    'build'
+  );
 
-  // const normalizedConfig = await normalizeUserCompilationConfig(
-  //   userConfig,
-  //   'production'
-  // );
-  // const compiler = new Compiler(normalizedConfig);
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
+  );
+  const compiler = new Compiler(normalizedConfig);
+  const fileWatcher = new FileWatcher(watcherPath, { ignores: ['dist'] });
+  fileWatcher.watch(compiler);
+  // const watcher = chokidar.watch(watcherPath, {});
+  // build(options);
 
-  const watcher = chokidar.watch(watcherPath, {
-    persistent: true, // 持续监听文件变化
-    ignoreInitial: false // 不忽略初始的文件变化事件
-  });
-  build(options);
+  // // 监听文件变化事件
+  // watcher.on('change', (path) => {
+  //   // 读取文件内容
+  //   fs.readFile(path, 'utf8', async (err) => {
+  //     if (err) {
+  //       console.error(err, '编译报错了');
+  //     } else {
+  //       // const start = Date.now();
+  //       // compiler.removeOutputPathDir();
+  //       // console.log(path);
 
-  // 监听文件变化事件
-  watcher.on('change', (path) => {
-    // 读取文件内容
-    fs.readFile(path, 'utf8', async (err) => {
-      if (err) {
-        console.error(err, '编译报错了');
-      } else {
-        // const start = Date.now();
-        // compiler.removeOutputPathDir();
-        // console.log(path);
+  //       // await compiler.update([path]);
+  //       // compiler.writeResourcesToDisk();
+  //       // logger.info(
+  //       //   `Build completed in ${chalk.green(
+  //       //     `${Date.now() - start}ms`
+  //       //   )}! Resources emitted to ${chalk.green(
+  //       //     normalizedConfig.config.output.path
+  //       //   )}.`
+  //       // );
 
-        // await compiler.update([path]);
-        // compiler.writeResourcesToDisk();
-        // logger.info(
-        //   `Build completed in ${chalk.green(
-        //     `${Date.now() - start}ms`
-        //   )}! Resources emitted to ${chalk.green(
-        //     normalizedConfig.config.output.path
-        //   )}.`
-        // );
-
-        build({
-          configPath: watcherPath
-        });
-      }
-    });
-  });
+  //       build({
+  //         configPath: watcherPath
+  //       });
+  //     }
+  //   });
+  // });
 }
