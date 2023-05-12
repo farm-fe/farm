@@ -158,49 +158,47 @@ export async function watch(options: {
   watchPath?: string;
 }): Promise<void> {
   const watcherPath = options.watchPath;
-  const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
+  // const logger = options.logger ?? new DefaultLogger();
+  // const userConfig: UserConfig = await resolveUserConfig(
+  //   options,
+  //   logger,
+  //   'build'
+  // );
 
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    'production'
-  );
-  const compiler = new Compiler(normalizedConfig);
-  console.log(watcherPath);
-  console.log(45646545645645);
+  // const normalizedConfig = await normalizeUserCompilationConfig(
+  //   userConfig,
+  //   'production'
+  // );
+  // const compiler = new Compiler(normalizedConfig);
 
   const watcher = chokidar.watch(watcherPath, {
     persistent: true, // 持续监听文件变化
     ignoreInitial: false // 不忽略初始的文件变化事件
   });
-  // console.log(watcher);
+  build(options);
 
   // 监听文件变化事件
   watcher.on('change', (path) => {
     // 读取文件内容
-    fs.readFile(path, 'utf8', async (err, data) => {
+    fs.readFile(path, 'utf8', async (err) => {
       if (err) {
-        console.error(err);
+        console.error(err, '编译报错了');
       } else {
-        console.log(data);
-        // 根据文件类型进行相应的处理，例如重新编译和构建相关的模块等
-        const start = Date.now();
-        compiler.removeOutputPathDir();
-        await compiler.compile();
-        compiler.writeResourcesToDisk();
-        logger.info(
-          `Build completed in ${chalk.green(
-            `${Date.now() - start}ms`
-          )}! Resources emitted to ${chalk.green(
-            normalizedConfig.config.output.path
-          )}.`
-        );
+        // const start = Date.now();
+        // compiler.removeOutputPathDir();
+        // console.log(path);
+
+        // await compiler.update([path]);
+        // compiler.writeResourcesToDisk();
+        // logger.info(
+        //   `Build completed in ${chalk.green(
+        //     `${Date.now() - start}ms`
+        //   )}! Resources emitted to ${chalk.green(
+        //     normalizedConfig.config.output.path
+        //   )}.`
+        // );
+        build(options);
       }
     });
   });
-  console.log(options.configPath);
 }
