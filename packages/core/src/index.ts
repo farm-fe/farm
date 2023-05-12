@@ -158,6 +158,7 @@ export async function watch(options: {
   watchPath?: string;
 }): Promise<void> {
   const watcherPath = options.watchPath;
+  options.configPath = watcherPath;
   // const logger = options.logger ?? new DefaultLogger();
   // const userConfig: UserConfig = await resolveUserConfig(
   //   options,
@@ -197,7 +198,10 @@ export async function watch(options: {
         //     normalizedConfig.config.output.path
         //   )}.`
         // );
-        build(options);
+
+        build({
+          configPath: watcherPath
+        });
       }
     });
   });
