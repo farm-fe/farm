@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Config, CssPrefixerConfig, Mode},
+  config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   module::{CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
@@ -328,8 +328,16 @@ impl Plugin for FarmPluginCss {
         rules: vec![],
       };
 
+      let mut modules = vec![];
+
       for module_id in resource_pot.modules() {
         let module = module_graph.module(module_id).unwrap();
+        modules.push(module);
+      }
+
+      modules.sort_by_key(|module| module.execution_order);
+
+      for module in modules {
         let module_css_ast: &Stylesheet = &module.meta.as_css().ast;
         merged_css_ast.rules.extend(module_css_ast.rules.to_vec());
       }

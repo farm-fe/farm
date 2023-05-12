@@ -76,9 +76,9 @@ var entry = farmModuleSystem.require("b5d64806");
 
 
 //83b2b217.css:
- .farm-action {
-  color: red;
-}
-.farm-base {
+ .farm-base {
   font-size: 18px;
+}
+.farm-action {
+  color: red;
 }
