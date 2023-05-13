@@ -31,8 +31,8 @@ export class FileWatcher {
       {
         ignored: this._options.ignores,
         awaitWriteFinish: {
-          stabilityThreshold: 100, // 稳定性阈值为 1000ms
-          pollInterval: 200 // 轮询间隔为 100ms
+          stabilityThreshold: 300, // 稳定性阈值为 1000ms
+          pollInterval: 100 // 轮询间隔为 100ms
         }
       }
     );
@@ -70,6 +70,7 @@ export class FileWatcher {
       } else {
         // TODO update and emit the result
         const start = Date.now();
+        compiler.removeOutputPathDir();
         await compiler.update([path]);
         compiler.writeResourcesToDisk();
         console.warn(

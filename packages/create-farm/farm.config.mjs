@@ -6,7 +6,7 @@ import { builtinModules } from 'module';
 export default {
   compilation: {
     input: {
-      index: './index.ts'
+      index: './index.js'
     },
     output: {
       path: 'dist',
@@ -25,8 +25,8 @@ export default {
         }
       ]
     },
-    minify: true,
-    sourcemap: false,
+    minify: false,
+    // sourcemap: false,
     presetEnv: false
   },
   server: {
