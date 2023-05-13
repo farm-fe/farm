@@ -93,20 +93,26 @@ export class Compiler {
 
   writeResourcesToDisk(): void {
     const resources = this.resources();
-    const configOutputPath = this.config.config.output.path;
-    const outputPath = path.isAbsolute(configOutputPath)
-      ? configOutputPath
-      : path.join(this.config.config.root, configOutputPath);
+    console.log('resources', resources);
 
-    for (const [name, resource] of Object.entries(resources)) {
-      const filePath = path.join(outputPath, name);
+    setTimeout(() => {
+      const resources = this.resources();
+      console.log('延迟之后的 resources', resources);
+      const configOutputPath = this.config.config.output.path;
+      const outputPath = path.isAbsolute(configOutputPath)
+        ? configOutputPath
+        : path.join(this.config.config.root, configOutputPath);
 
-      if (!existsSync(path.dirname(filePath))) {
-        mkdirSync(path.dirname(filePath), { recursive: true });
+      for (const [name, resource] of Object.entries(resources)) {
+        const filePath = path.join(outputPath, name);
+
+        if (!existsSync(path.dirname(filePath))) {
+          mkdirSync(path.dirname(filePath), { recursive: true });
+        }
+
+        writeFileSync(filePath, resource);
       }
-
-      writeFileSync(filePath, resource);
-    }
+    }, 100);
   }
 
   removeOutputPathDir() {
