@@ -59,13 +59,13 @@ farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806");
 
 
-//5507417f.css:
- .foo .farm-hello {
+//429aa195.css:
+  .foo  .farm-hello {
   color: red;
 }
 .farm-bar {
   color: red;
 }
-.farm-main .description {
+ .farm-main  .description {
   color: blue;
 }
