@@ -182,19 +182,10 @@ impl Plugin for FarmPluginCss {
           },
         );
 
-        let real_css_path = format!(
-          "{}{}",
-          if cfg!(windows) {
-            param.resolved_path.replace("\\", "\\\\")
-          } else {
-            param.resolved_path.to_string()
-          },
-          FARM_CSS_MODULES_SUFFIX
+        self.ast_map.lock().insert(
+          format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX),
+          css_stylesheet,
         );
-        self
-          .ast_map
-          .lock()
-          .insert(real_css_path.clone(), css_stylesheet);
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::new();
@@ -220,16 +211,24 @@ impl Plugin for FarmPluginCss {
           }
           export_names.push((name, after_transform_classes));
         }
-
+        
         let code = format!(
           r#"
     import "{}?{}";
     {}
     export default {{{}}}
     "#,
-          real_css_path,
+          format!(
+            "{}{}",
+            if cfg!(windows) {
+              param.resolved_path.replace("\\", "\\\\")
+            } else {
+              param.resolved_path.to_string()
+            },
+            FARM_CSS_MODULES_SUFFIX
+          ),
           // add hash to avoid cache, make sure hmr works
-          sha256(param.content.as_bytes(), 8),
+          sha256(param.content.replace("\r\n", "\n").as_bytes(), 8),
           dynamic_import_of_composes
             .into_iter()
             .fold(Vec::new(), |mut acc, (from, name)| {
@@ -273,7 +272,11 @@ impl Plugin for FarmPluginCss {
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
       let css_stylesheet = if is_farm_css_modules(&param.resolved_path) {
-        self.ast_map.lock().remove(&param.resolved_path).unwrap()
+        self
+          .ast_map
+          .lock()
+          .remove(&param.resolved_path)
+          .unwrap_or_else(|| panic!("ast not found {:?}", param.resolved_path))
       } else {
         parse_css_stylesheet(
           &param.module_id.to_string(),
