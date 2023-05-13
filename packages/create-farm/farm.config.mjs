@@ -6,7 +6,7 @@ import { builtinModules } from 'module';
 export default {
   compilation: {
     input: {
-      index: './index.ts'
+      index: './index.js'
     },
     output: {
       path: 'dist',
