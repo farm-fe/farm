@@ -7,7 +7,6 @@ use farmfe_core::{
     module_group::{ModuleGroup, ModuleGroupGraph},
     Module, ModuleId,
   },
-  plugin::ResolveKind,
 };
 
 use super::diff_and_patch_module_graph::DiffResult;
