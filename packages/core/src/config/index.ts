@@ -403,7 +403,11 @@ export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
   if (options.outDir) {
     config.compilation.output.path = options.outDir;
   }
-  config.compilation = merge(config.compilation, options);
+
+  if (!config) {
+    config = {};
+  }
+  config.compilation = merge(config?.compilation ?? {}, options);
 }
 
 export function clearScreen() {

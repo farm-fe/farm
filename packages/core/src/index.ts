@@ -5,8 +5,8 @@ export * from './plugin/index.js';
 
 // import http from 'http';
 import chalk from 'chalk';
-import fs from 'fs';
-import chokidar from 'chokidar';
+// import fs from 'fs';
+// import chokidar from 'chokidar';
 import sirv from 'sirv';
 import os from 'node:os';
 import compression from 'koa-compress';
@@ -56,7 +56,7 @@ export async function start(options: FarmCLIOptions): Promise<void> {
     }
 
     const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
-    fileWatcher.watch(devServer);
+    fileWatcher.watch(devServer, {});
   }
 }
 
@@ -158,6 +158,7 @@ export async function watch(options: {
   watchPath?: string;
 }): Promise<void> {
   const watcherPath = options.watchPath;
+  options.configPath = watcherPath;
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(
     options,
@@ -170,37 +171,38 @@ export async function watch(options: {
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
-  console.log(watcherPath);
-  console.log(45646545645645);
-
-  const watcher = chokidar.watch(watcherPath, {
-    persistent: true, // 持续监听文件变化
-    ignoreInitial: false // 不忽略初始的文件变化事件
+  const fileWatcher = new FileWatcher(watcherPath, {
+    ignores: [/node_modules/, /dist/]
   });
-  // console.log(watcher);
+  fileWatcher.watch(compiler, normalizedConfig);
+  // const watcher = chokidar.watch(watcherPath, {});
+  // build(options);
 
-  // 监听文件变化事件
-  watcher.on('change', (path) => {
-    // 读取文件内容
-    fs.readFile(path, 'utf8', async (err, data) => {
-      if (err) {
-        console.error(err);
-      } else {
-        console.log(data);
-        // 根据文件类型进行相应的处理，例如重新编译和构建相关的模块等
-        const start = Date.now();
-        compiler.removeOutputPathDir();
-        await compiler.compile();
-        compiler.writeResourcesToDisk();
-        logger.info(
-          `Build completed in ${chalk.green(
-            `${Date.now() - start}ms`
-          )}! Resources emitted to ${chalk.green(
-            normalizedConfig.config.output.path
-          )}.`
-        );
-      }
-    });
-  });
-  console.log(options.configPath);
+  // // 监听文件变化事件
+  // watcher.on('change', (path) => {
+  //   // 读取文件内容
+  //   fs.readFile(path, 'utf8', async (err) => {
+  //     if (err) {
+  //       console.error(err, '编译报错了');
+  //     } else {
+  //       // const start = Date.now();
+  //       // compiler.removeOutputPathDir();
+  //       // console.log(path);
+
+  //       // await compiler.update([path]);
+  //       // compiler.writeResourcesToDisk();
+  //       // logger.info(
+  //       //   `Build completed in ${chalk.green(
+  //       //     `${Date.now() - start}ms`
+  //       //   )}! Resources emitted to ${chalk.green(
+  //       //     normalizedConfig.config.output.path
+  //       //   )}.`
+  //       // );
+
+  //       build({
+  //         configPath: watcherPath
+  //       });
+  //     }
+  //   });
+  // });
 }

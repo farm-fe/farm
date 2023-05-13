@@ -26,13 +26,13 @@ cli
 // dev command
 cli
   .command(
-    '',
+    'start',
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
   //TODO add host config
+  // .option('--host [host]', 'specify host')
   .option('--port [port]', 'specify port')
-  // TODO add open config with core
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
   // TODO add https config
@@ -66,23 +66,20 @@ cli
       const { build } = await resolveCore(resolveOptions.configPath);
       build(cleanOptions(resolveOptions));
     } catch (e) {
-      logger.error(e.message);
       process.exit(1);
     }
   });
 
 cli
-  .command('watch1', 'watch file change')
+  .command('watch', 'watch file change')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     const cwd = process.cwd();
     const resolveOptions = resolveCommandOptions(options);
-
+    resolveOptions.watchPath = cwd;
     const { watch } = await resolveCore(resolveOptions.configPath);
     // TODO set config path
 
-    await watch({
-      watchPath: cwd
-    });
+    await watch(cleanOptions(resolveOptions));
   });
 
 cli
@@ -100,10 +97,6 @@ cli
       process.exit(1);
     }
   });
-
-// watch command
-// TODO add watch command
-cli.command('watch', 'rebuilds when files have changed on disk');
 
 // create plugins command
 cli

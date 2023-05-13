@@ -1,10 +1,11 @@
+import chalk from 'chalk';
 import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 
 import { DevServer } from '../server/index.js';
 
 export interface FileWatcherOptions {
-  ignores?: string[];
+  ignores?: string[] | any;
 }
 
 export class FileWatcher {
@@ -17,7 +18,7 @@ export class FileWatcher {
     this._options = config ?? {};
   }
 
-  watch(serverOrCompiler: DevServer | Compiler) {
+  async watch(serverOrCompiler: DevServer | Compiler, config: any) {
     const compiler =
       serverOrCompiler instanceof DevServer
         ? serverOrCompiler.getCompiler()
@@ -29,6 +30,10 @@ export class FileWatcher {
         : [this._root],
       {
         ignored: this._options.ignores,
+        awaitWriteFinish: {
+          stabilityThreshold: 100, // 稳定性阈值为 1000ms
+          pollInterval: 200 // 轮询间隔为 100ms
+        }
       }
     );
     if (serverOrCompiler instanceof DevServer) {
@@ -54,13 +59,24 @@ export class FileWatcher {
       });
     }
 
+    if (serverOrCompiler instanceof Compiler) {
+      await compiler.compile();
+      compiler.writeResourcesToDisk();
+    }
+
     this._watcher.on('change', async (path) => {
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
         // TODO update and emit the result
+        const start = Date.now();
         await compiler.update([path]);
         compiler.writeResourcesToDisk();
+        console.warn(
+          `Build completed in ${chalk.green(
+            `${Date.now() - start}ms`
+          )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
+        );
       }
     });
   }
