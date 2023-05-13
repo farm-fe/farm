@@ -175,9 +175,9 @@ export async function watch(options: {
     ignores: [/node_modules/, /dist/]
   });
   fileWatcher.watch(compiler, normalizedConfig);
-  build({
-    configPath: watcherPath
-  });
+  // build({
+  //   configPath: watcherPath
+  // });
   // const watcher = chokidar.watch(watcherPath, {});
   // build(options);
 

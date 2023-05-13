@@ -68,9 +68,7 @@ export class FileWatcher {
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
-        // TODO update and emit the result
         const start = Date.now();
-        compiler.removeOutputPathDir();
         await compiler.update([path]);
         compiler.writeResourcesToDisk();
         console.warn(
