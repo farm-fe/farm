@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.7.4
+
+### Patch Changes
+
+- 1c42307: Fix that css module should be execution order
+
 ## 0.7.3
 
 ### Patch Changes
