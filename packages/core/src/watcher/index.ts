@@ -69,7 +69,7 @@ export class FileWatcher {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
         const start = Date.now();
-        await compiler.update([path]);
+        await compiler.update([path], true);
         compiler.writeResourcesToDisk();
         console.warn(
           `Build completed in ${chalk.green(
