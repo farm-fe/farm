@@ -169,7 +169,7 @@ export async function watch(options: {
   );
   const compiler = new Compiler(normalizedConfig);
   const fileWatcher = new FileWatcher(watcherPath, {
-    ignores: [/node_modules/, /dist/]
+    ignores: ['**/{.git,node_modules}/**', /dist/]
   });
   fileWatcher.watch(compiler, normalizedConfig);
 }

@@ -76,7 +76,7 @@ export class FileWatcher {
         const start = Date.now();
         await compiler.update([path], true);
         logger.info(
-          `Build completed in ${chalk.green(
+          `⚡️ Build completed in ${chalk.green(
             `${Date.now() - start}ms`
           )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
         );
