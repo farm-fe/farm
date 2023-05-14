@@ -61,6 +61,7 @@ export class FileWatcher {
     }
 
     if (serverOrCompiler instanceof Compiler) {
+      // TODO optimize logger info
       const logger = new DefaultLogger();
       normalizeOptions(logger, config);
       await compiler.compile();
@@ -85,6 +86,7 @@ export class FileWatcher {
   }
 }
 
+// TODO optimize logger info
 export function normalizeOptions(logger: any, options: any) {
   logger.info(
     `Building entry: ${chalk.green(JSON.stringify(options.config.input.index))}`
