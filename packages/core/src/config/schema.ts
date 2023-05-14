@@ -3,6 +3,7 @@ import { UserConfig } from './types.js';
 
 const ConfigSchema = z
   .object({
+    watchPath: z.string().optional(),
     coreLibPath: z.string().optional(),
     input: z.record(z.string()).optional(),
     output: z

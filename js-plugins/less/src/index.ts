@@ -20,9 +20,9 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
         const data = await tryRead(param.resolvedPath);
         return {
           content: data,
-          moduleType: 'less',
+          moduleType: 'less'
         };
-      },
+      }
     },
     transform: {
       filters: { resolvedPaths: ['\\.less$'] },
@@ -45,23 +45,23 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
             sourceMap: {
               outputSourceFiles: Boolean(
                 options.sourceMap ?? farmConfig?.compilation?.sourcemap
-              ),
+              )
             },
-            paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot],
+            paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
           });
           return {
             content: css,
             moduleType: 'css',
-            sourceMap: sourceMap && JSON.stringify(sourceMap),
+            sourceMap: sourceMap && JSON.stringify(sourceMap)
           };
         } catch (e) {
           console.error(e);
         }
         return {
           content: '',
-          moduleType: 'css',
+          moduleType: 'css'
         };
-      },
-    },
+      }
+    }
   };
 }

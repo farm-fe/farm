@@ -13,16 +13,16 @@ import { _export_star } from '@swc/helpers/_/_export_star';
 const INTERNAL_MODULE_MAP: Record<string, any> = {
   '@swc/helpers/_/_interop_require_default': {
     default: _interop_require_default,
-    _: _interop_require_default,
+    _: _interop_require_default
   },
   '@swc/helpers/_/_interop_require_wildcard': {
     default: _interop_require_wildcard,
-    _: _interop_require_wildcard,
+    _: _interop_require_wildcard
   },
   '@swc/helpers/_/_export_star': {
     default: _export_star,
-    _: _export_star,
-  },
+    _: _export_star
+  }
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
