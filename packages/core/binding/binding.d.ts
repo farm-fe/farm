@@ -34,7 +34,7 @@ export class Compiler {
   /** sync compile */
   compileSync(): void
   /** TODO: usage example */
-  update(paths: Array<string>, callback: (...args: any[]) => any): object
+  update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
   hasModule(resolvedPath: string): boolean
   resources(): Record<string, Buffer>
   relativeModulePaths(): Array<string>

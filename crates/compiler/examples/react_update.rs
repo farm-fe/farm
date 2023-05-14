@@ -56,6 +56,7 @@ fn main() {
         UpdateType::Updated,
       )],
       || {},
+      false,
     )
     .unwrap();
 }
