@@ -3,6 +3,7 @@ import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 
 import { DevServer } from '../server/index.js';
+import { DefaultLogger } from '../utils/logger.js';
 
 export interface FileWatcherOptions {
   ignores?: string[] | any;
@@ -60,6 +61,8 @@ export class FileWatcher {
     }
 
     if (serverOrCompiler instanceof Compiler) {
+      const logger = new DefaultLogger();
+      normalizeOptions(logger, config);
       await compiler.compile();
       compiler.writeResourcesToDisk();
     }
@@ -68,9 +71,10 @@ export class FileWatcher {
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
       } else {
+        const logger = new DefaultLogger();
         const start = Date.now();
         await compiler.update([path], true);
-        console.warn(
+        logger.info(
           `Build completed in ${chalk.green(
             `${Date.now() - start}ms`
           )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
@@ -79,4 +83,11 @@ export class FileWatcher {
       }
     });
   }
+}
+
+export function normalizeOptions(logger: any, options: any) {
+  logger.info(
+    `Building entry: ${chalk.green(JSON.stringify(options.config.input.index))}`
+  );
+  logger.info(`Running in watch mode`);
 }
