@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "vue": "^3.2.45",
-    "core-js": "^3.8.3"
+    "core-js": "^3.30.1"
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.1",
@@ -13,6 +13,7 @@
   },
   "scripts": {
     "start": "farm start",
-    "build": "farm build"
+    "build": "farm build",
+    "preview": "farm preview"
   }
 }
