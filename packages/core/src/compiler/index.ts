@@ -48,6 +48,7 @@ export class Compiler {
 
   async update(
     paths: string[],
+    sync = false,
     ignoreCompilingCheck = false
   ): Promise<JsUpdateResult> {
     let resolve: (res: JsUpdateResult) => void;
@@ -63,18 +64,22 @@ export class Compiler {
     }
 
     this.compiling = true;
-    const res = this._bindingCompiler.update(paths, async () => {
-      const next = this._updateQueue.shift();
+    const res = this._bindingCompiler.update(
+      paths,
+      async () => {
+        const next = this._updateQueue.shift();
 
-      if (next) {
-        await this.update(next.paths, true).then(next.resolve);
-      } else {
-        this.compiling = false;
-        this._onUpdateFinishQueue.forEach((cb) => cb());
-        // clear update finish queue
-        this._onUpdateFinishQueue = [];
-      }
-    });
+        if (next) {
+          await this.update(next.paths, true).then(next.resolve);
+        } else {
+          this.compiling = false;
+          this._onUpdateFinishQueue.forEach((cb) => cb());
+          // clear update finish queue
+          this._onUpdateFinishQueue = [];
+        }
+      },
+      sync
+    );
 
     return res as JsUpdateResult;
   }
