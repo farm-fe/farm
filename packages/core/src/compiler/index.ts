@@ -98,7 +98,7 @@ export class Compiler {
 
   writeResourcesToDisk(): void {
     const resources = this.resources();
-    console.log('延迟之后的 resources', resources);
+    console.log(resources);
     const configOutputPath = this.config.config.output.path;
     const outputPath = path.isAbsolute(configOutputPath)
       ? configOutputPath

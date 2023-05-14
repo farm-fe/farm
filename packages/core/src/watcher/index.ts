@@ -70,12 +70,12 @@ export class FileWatcher {
       } else {
         const start = Date.now();
         await compiler.update([path], true);
-        compiler.writeResourcesToDisk();
         console.warn(
           `Build completed in ${chalk.green(
             `${Date.now() - start}ms`
           )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
         );
+        compiler.writeResourcesToDisk();
       }
     });
   }
