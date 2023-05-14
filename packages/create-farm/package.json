@@ -11,8 +11,6 @@
     "create-farm": "bin/create-farm.mjs"
   },
   "scripts": {
-    "start": "tsup --watch",
-    "build:tsup": "tsup",
     "build": "farm build",
     "watch": "farm watch",
     "prepublishOnly": "npm run build"
@@ -37,7 +35,6 @@
     "gradient-string": "^2.0.2",
     "minimist": "^1.2.8",
     "ora": "^6.3.0",
-    "prompts": "^2.4.2",
-    "tsup": "^6.7.0"
+    "prompts": "^2.4.2"
   }
 }
