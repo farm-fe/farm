@@ -4,8 +4,6 @@ import { throwError } from './options.js';
 
 const __require = createRequire(import.meta.url);
 
-// export const logger:Logger = new DefaultLogger();
-
 export function getLessImplementation(implementation?: string) {
   let resolvedImplementation;
   if (!implementation || typeof implementation === 'string') {
