@@ -4,6 +4,7 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   module::{CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
+  parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
@@ -18,7 +19,7 @@ use farmfe_core::{
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::{read_file_utf8, transform_output_filename},
-  hash::{base64_decode, base64_encode, sha256},
+  hash::sha256,
   regex::Regex,
   script::module_type_from_id,
   swc_atoms::JsWord,
@@ -28,11 +29,11 @@ use farmfe_toolkit::{
 };
 use farmfe_utils::{parse_query, stringify_query};
 
-const FARM_CSS_MODULES: &str = "FARM_CSS_MODULES";
 const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
 
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
+  ast_map: Mutex<HashMap<String, Stylesheet>>,
 }
 
 fn wrapper_style_load(code: &String, id: String) -> String {
@@ -85,13 +86,10 @@ impl Plugin for FarmPluginCss {
       let split = param.source.split('?').collect::<Vec<&str>>();
       let strip_query_path = split[0].to_string();
       let query = parse_query(&param.source);
-      let meta: HashMap<String, String> = HashMap::from_iter(query.into_iter());
-      let hash = sha256(&meta.get(FARM_CSS_MODULES).unwrap().as_bytes(), 32);
 
       return Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
         resolved_path: strip_query_path,
-        meta,
-        query: vec![("hash".to_string(), hash)],
+        query,
         ..Default::default()
       }));
     }
@@ -106,10 +104,9 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if is_farm_css_modules(param.resolved_path) {
-      let content = param.meta.get(FARM_CSS_MODULES).unwrap().to_string();
-
       return Ok(Some(PluginLoadHookResult {
-        content: decode_css(content.as_str()),
+        // return empty content as we don't need to load the module, it is already parsed and stored in the ast_map
+        content: "".to_string(),
         module_type: ModuleType::Css,
       }));
     };
@@ -143,108 +140,114 @@ impl Plugin for FarmPluginCss {
       );
       let enable_css_modules = context.config.css.modules.is_some();
 
-      // css modules
-      if enable_css_modules && self.is_path_match_css_modules(param.resolved_path) {
-        // real css code
-        if is_farm_css_modules(param.resolved_path) {
-          if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-            let js_code = wrapper_style_load(&param.content, module_id.to_string());
-
-            return Ok(Some(PluginTransformHookResult {
-              content: js_code,
-              module_type: Some(ModuleType::Js),
-              source_map: None,
-            }));
-          } else {
-            return Ok(None);
-          }
-        } else {
-          let mut css_stylesheet = parse_css_stylesheet(
-            &module_id.to_string(),
-            &param.content,
-            Arc::new(SourceMap::new(FilePathMapping::empty())),
-          )?;
-
-          // js code for css modules
-          // next, get ident from ast and export through JS
-          let stylesheet = compile(
-            &mut css_stylesheet,
-            CssModuleRename {
-              indent_name: context
-                .config
-                .css
-                .modules
-                .as_ref()
-                .unwrap()
-                .indent_name
-                .clone(),
-              hash: sha256(module_id.to_string().as_bytes(), 8),
-            },
-          );
-          let (css_code, _) = codegen_css_stylesheet(&css_stylesheet, None, context.config.minify);
-
-          // for composes dynamic import (eg: composes: action from "./action.css")
-          let mut dynamic_import_of_composes = HashMap::new();
-          let mut export_names = Vec::new();
-
-          for (name, classes) in stylesheet.renamed.iter() {
-            let mut after_transform_classes = Vec::new();
-            for v in classes {
-              match v {
-                CssClassName::Local { name } => {
-                  after_transform_classes.push(name.value.to_string());
-                }
-                CssClassName::Global { name } => {
-                  after_transform_classes.push(name.value.to_string());
-                }
-                CssClassName::Import { name, from } => {
-                  let v = dynamic_import_of_composes
-                    .entry(from)
-                    .or_insert(format!("f_{}", sha256(from.as_bytes(), 5)));
-                  after_transform_classes.push(format!("${{{}[\"{}\"]}}", v, name.value));
-                }
-              }
-            }
-            export_names.push((name, after_transform_classes));
-          }
-
-          let code = format!(
-            r#"
-    import "{}?{}={}"
-    {}
-    export default {{{}}}
-    "#,
-            format!(
-              "{}{}",
-              if cfg!(windows) {
-                param.resolved_path.replace("\\", "\\\\")
-              } else {
-                param.resolved_path.to_string()
-              },
-              FARM_CSS_MODULES_SUFFIX
-            ),
-            FARM_CSS_MODULES,
-            encode_css(&css_code),
-            dynamic_import_of_composes
-              .into_iter()
-              .fold(Vec::new(), |mut acc, (from, name)| {
-                acc.push(format!("import {name} from \"{from}\""));
-                acc
-              })
-              .join(";\n"),
-            export_names
-              .iter()
-              .map(|(name, classes)| format!("\"{}\": `{}`", name, classes.join(" ").trim()))
-              .collect::<Vec<String>>()
-              .join(",")
-          );
+      // real css modules code
+      if is_farm_css_modules(param.resolved_path) {
+        if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+          let ast = self.ast_map.lock().remove(param.resolved_path).unwrap();
+          let (css_code, _) = codegen_css_stylesheet(&ast, None, context.config.minify);
+          let js_code = wrapper_style_load(&css_code, module_id.to_string());
 
           return Ok(Some(PluginTransformHookResult {
-            content: code,
+            content: js_code,
             module_type: Some(ModuleType::Js),
             source_map: None,
           }));
+        } else {
+          return Ok(None);
         }
+      }
+
+      // css modules
+      if enable_css_modules && self.is_path_match_css_modules(param.resolved_path) {
+        let mut css_stylesheet = parse_css_stylesheet(
+          &module_id.to_string(),
+          &param.content,
+          Arc::new(SourceMap::new(FilePathMapping::empty())),
+        )?;
+
+        // js code for css modules
+        // next, get ident from ast and export through JS
+        let stylesheet = compile(
+          &mut css_stylesheet,
+          CssModuleRename {
+            indent_name: context
+              .config
+              .css
+              .modules
+              .as_ref()
+              .unwrap()
+              .indent_name
+              .clone(),
+            hash: sha256(module_id.to_string().as_bytes(), 8),
+          },
+        );
+
+        self.ast_map.lock().insert(
+          format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX),
+          css_stylesheet,
+        );
+
+        // for composes dynamic import (eg: composes: action from "./action.css")
+        let mut dynamic_import_of_composes = HashMap::new();
+        let mut export_names = Vec::new();
+
+        for (name, classes) in stylesheet.renamed.iter() {
+          let mut after_transform_classes = Vec::new();
+          for v in classes {
+            match v {
+              CssClassName::Local { name } => {
+                after_transform_classes.push(name.value.to_string());
+              }
+              CssClassName::Global { name } => {
+                after_transform_classes.push(name.value.to_string());
+              }
+              CssClassName::Import { name, from } => {
+                let v = dynamic_import_of_composes
+                  .entry(from)
+                  .or_insert(format!("f_{}", sha256(from.as_bytes(), 5)));
+                after_transform_classes.push(format!("${{{}[\"{}\"]}}", v, name.value));
+              }
+            }
+          }
+          export_names.push((name, after_transform_classes));
+        }
+        
+        let code = format!(
+          r#"
+    import "{}?{}";
+    {}
+    export default {{{}}}
+    "#,
+          format!(
+            "{}{}",
+            if cfg!(windows) {
+              param.resolved_path.replace("\\", "\\\\")
+            } else {
+              param.resolved_path.to_string()
+            },
+            FARM_CSS_MODULES_SUFFIX
+          ),
+          // add hash to avoid cache, make sure hmr works
+          sha256(param.content.replace("\r\n", "\n").as_bytes(), 8),
+          dynamic_import_of_composes
+            .into_iter()
+            .fold(Vec::new(), |mut acc, (from, name)| {
+              acc.push(format!("import {name} from \"{from}\""));
+              acc
+            })
+            .join(";\n"),
+          export_names
+            .iter()
+            .map(|(name, classes)| format!("\"{}\": `{}`", name, classes.join(" ").trim()))
+            .collect::<Vec<String>>()
+            .join(",")
+        );
+
+        return Ok(Some(PluginTransformHookResult {
+          content: code,
+          module_type: Some(ModuleType::Js),
+          source_map: None,
+        }));
       } else if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
         let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
 
@@ -268,11 +271,19 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let css_stylesheet = parse_css_stylesheet(
-        &param.module_id.to_string(),
-        &param.content,
-        context.meta.css.cm.clone(),
-      )?;
+      let css_stylesheet = if is_farm_css_modules(&param.resolved_path) {
+        self
+          .ast_map
+          .lock()
+          .remove(&param.resolved_path)
+          .unwrap_or_else(|| panic!("ast not found {:?}", param.resolved_path))
+      } else {
+        parse_css_stylesheet(
+          &param.module_id.to_string(),
+          &param.content,
+          context.meta.css.cm.clone(),
+        )?
+      };
 
       let meta = ModuleMetaData::Css(CssModuleMetaData {
         ast: css_stylesheet,
@@ -430,6 +441,7 @@ impl FarmPluginCss {
             .collect()
         })
         .unwrap_or_default(),
+      ast_map: Mutex::new(Default::default()),
     }
   }
 
@@ -472,14 +484,4 @@ fn is_farm_css_modules(path: &str) -> bool {
     .next()
     .unwrap()
     .ends_with(FARM_CSS_MODULES_SUFFIX)
-}
-
-fn encode_css(s: &str) -> String {
-  let base64 = base64_encode(s.as_bytes());
-  base64.replace("=", "@farm_eq@")
-}
-
-fn decode_css(s: &str) -> String {
-  let base64 = s.replace("@farm_eq@", "=");
-  base64_decode(base64.as_bytes())
 }

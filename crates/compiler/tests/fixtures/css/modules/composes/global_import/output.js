@@ -57,10 +57,10 @@ farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806");
 
 
-//3178a36c.css:
+//7bb5e13c.css:
  .farm-base {
   font-size: 20px;
 }
-.action {
+ .action {
   color: red;
 }

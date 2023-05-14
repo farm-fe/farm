@@ -72,7 +72,12 @@ enum ResolveModuleResult {
 }
 
 impl Compiler {
-  pub fn update<F>(&self, paths: Vec<(String, UpdateType)>, callback: F) -> Result<UpdateResult>
+  pub fn update<F>(
+    &self,
+    paths: Vec<(String, UpdateType)>,
+    callback: F,
+    sync: bool,
+  ) -> Result<UpdateResult>
   where
     F: FnOnce() + Send + Sync + 'static,
   {
@@ -140,6 +145,7 @@ impl Compiler {
       previous_module_groups,
       &updated_module_ids,
       callback,
+      sync,
     );
     // TODO1: only regenerate the resources for script modules.
     // TODO2: should reload when html change
@@ -315,6 +321,7 @@ impl Compiler {
     previous_module_groups: HashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
     callback: F,
+    sync: bool,
   ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
   where
     F: FnOnce() + Send + Sync + 'static,
@@ -327,9 +334,10 @@ impl Compiler {
     // TODO call optimize to support tree shaking in dev mode
 
     // if there are new module groups, we should run the tasks synchronously
-    if affected_module_groups
-      .iter()
-      .any(|ag| !previous_module_groups.contains(ag))
+    if sync
+      || affected_module_groups
+        .iter()
+        .any(|ag| !previous_module_groups.contains(ag))
     {
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
