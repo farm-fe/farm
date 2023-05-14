@@ -1,5 +1,6 @@
 import type { UserConfig } from '@farmfe/core';
 import farmLessPlugin from '@farmfe/js-plugin-less';
+import path from 'path';
 
 export default <UserConfig>{
   compilation: {
@@ -23,6 +24,10 @@ export default <UserConfig>{
     hmr: true,
   },
   plugins: ['@farmfe/plugin-react',farmLessPlugin({
-    additionalData: `@hoverColor: #f10215;`
+    additionalData: (content:string, resolvePath:string) => {
+      if (path.basename(resolvePath,'.less') === 'index') {
+        return `@hoverColor: #f10215;` + content;
+      }
+    },
   }) ],
 };

@@ -37,7 +37,10 @@ export default function farmLessPlugin(options?: LessPluginOptions): JsPlugin {
           ) {
             relData =
               typeof options.additionalData === 'function'
-                ? `${await options.additionalData(param.content, this)}`
+                ? `${await options.additionalData(
+                    param.content,
+                    param.resolvedPath
+                  )}`
                 : `${options.additionalData}\n${param.content}`;
           }
           const { css, sourceMap } = await implementation.render(relData, {
