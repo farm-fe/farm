@@ -1,8 +1,9 @@
-import type { Config } from '../../binding/index.js';
 import { Logger } from '../utils/logger.js';
+import { ProxiesOptions } from '../server/middlewares/proxy.js';
+
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
-import { ProxiesOptions } from '../server/middlewares/proxy.js';
+import type { Config } from '../../binding/index.js';
 
 export interface UserServerConfig {
   port?: number;

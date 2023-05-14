@@ -2,8 +2,8 @@
  * Serve resources that stored in memory. This middleware will be enabled when server.writeToDisk is false.
  */
 
+import { extname } from 'node:path';
 import { Context, Next } from 'koa';
-import { extname } from 'path';
 import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
 
