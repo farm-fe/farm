@@ -7,6 +7,7 @@ export interface GlobalFarmCLIOptions {
   mode?: string;
   w?: boolean;
   watch?: boolean;
+  watchPath?: string;
   port?: number;
 }
 

@@ -3,7 +3,6 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
 
-// import http from 'http';
 import chalk from 'chalk';
 import sirv from 'sirv';
 import os from 'node:os';
@@ -54,7 +53,7 @@ export async function start(options: FarmCLIOptions): Promise<void> {
     }
 
     const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
-    fileWatcher.watch(devServer);
+    fileWatcher.watch(devServer, {});
   }
 }
 
@@ -148,4 +147,29 @@ export async function preview(
         })
     );
   });
+}
+
+export async function watch(options: {
+  configPath?: string;
+  logger?: Logger;
+  watchPath?: string;
+}): Promise<void> {
+  const watcherPath = options.watchPath;
+  options.configPath = watcherPath;
+  const logger = options.logger ?? new DefaultLogger();
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    logger,
+    'build'
+  );
+
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
+  );
+  const compiler = new Compiler(normalizedConfig);
+  const fileWatcher = new FileWatcher(watcherPath, {
+    ignores: ['**/{.git,node_modules}/**', /dist/]
+  });
+  fileWatcher.watch(compiler, normalizedConfig);
 }

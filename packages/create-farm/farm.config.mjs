@@ -25,7 +25,7 @@ export default {
         }
       ]
     },
-    minify: true,
+    minify: false,
     sourcemap: false,
     presetEnv: false
   },

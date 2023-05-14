@@ -378,8 +378,11 @@ importers:
         specifier: ^0.4.1
         version: 0.4.1
     devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: 'link:'
       '@farmfe/core':
-        specifier: workspace:^0.7.0
+        specifier: workspace:*
         version: link:../core
       '@types/cross-spawn':
         specifier: ^6.0.2
