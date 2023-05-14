@@ -3,10 +3,7 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
 
-// import http from 'http';
 import chalk from 'chalk';
-// import fs from 'fs';
-// import chokidar from 'chokidar';
 import sirv from 'sirv';
 import os from 'node:os';
 import compression from 'koa-compress';
@@ -175,37 +172,4 @@ export async function watch(options: {
     ignores: [/node_modules/, /dist/]
   });
   fileWatcher.watch(compiler, normalizedConfig);
-  // build({
-  //   configPath: watcherPath
-  // });
-  // const watcher = chokidar.watch(watcherPath, {});
-  // build(options);
-
-  // // 监听文件变化事件
-  // watcher.on('change', (path) => {
-  //   // 读取文件内容
-  //   fs.readFile(path, 'utf8', async (err) => {
-  //     if (err) {
-  //       console.error(err, '编译报错了');
-  //     } else {
-  //       // const start = Date.now();
-  //       // compiler.removeOutputPathDir();
-  //       // console.log(path);
-
-  //       // await compiler.update([path]);
-  //       // compiler.writeResourcesToDisk();
-  //       // logger.info(
-  //       //   `Build completed in ${chalk.green(
-  //       //     `${Date.now() - start}ms`
-  //       //   )}! Resources emitted to ${chalk.green(
-  //       //     normalizedConfig.config.output.path
-  //       //   )}.`
-  //       // );
-
-  //       build({
-  //         configPath: watcherPath
-  //       });
-  //     }
-  //   });
-  // });
 }

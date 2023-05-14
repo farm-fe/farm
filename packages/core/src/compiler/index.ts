@@ -98,7 +98,6 @@ export class Compiler {
 
   writeResourcesToDisk(): void {
     const resources = this.resources();
-    console.log(resources);
     const configOutputPath = this.config.config.output.path;
     const outputPath = path.isAbsolute(configOutputPath)
       ? configOutputPath
@@ -126,7 +125,6 @@ export class Compiler {
   }
 
   resolvedModulePaths(root: string): string[] {
-    console.log(this._bindingCompiler.relativeModulePaths());
     return this._bindingCompiler
       .relativeModulePaths()
       .map((p) => this.transformModulePath(root, p));
