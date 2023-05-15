@@ -69,18 +69,18 @@ export async function build(
   const start = Date.now();
   const compiler = new Compiler(normalizedConfig);
   compiler.removeOutputPathDir();
-  await compiler.compile();
-  compiler.writeResourcesToDisk();
-  logger.info(
-    `Build completed in ${chalk.green(
-      `${Date.now() - start}ms`
-    )}! Resources emitted to ${chalk.green(
-      normalizedConfig.config.output.path
-    )}.`
-  );
-
   if (userConfig.compilation.watch) {
     startFileWatcher(userConfig.root, compiler, normalizedConfig);
+  } else {
+    await compiler.compile();
+    compiler.writeResourcesToDisk();
+    logger.info(
+      `Build completed in ${chalk.green(
+        `${Date.now() - start}ms`
+      )}! Resources emitted to ${chalk.green(
+        normalizedConfig.config.output.path
+      )}.`
+    );
   }
 }
 
@@ -146,7 +146,6 @@ export async function watch(
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
-
   startFileWatcher(userConfig.root, compiler, normalizedConfig);
 }
 
