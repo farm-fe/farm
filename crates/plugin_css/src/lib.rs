@@ -56,7 +56,8 @@ module.onDispose(() => {{
 style.remove();
 }});
 "#,
-    code, id
+    code.replace("`", "'").replace("\\", "\\\\"),
+    id
   )
 }
 
@@ -211,7 +212,7 @@ impl Plugin for FarmPluginCss {
           }
           export_names.push((name, after_transform_classes));
         }
-        
+
         let code = format!(
           r#"
     import "{}?{}";
