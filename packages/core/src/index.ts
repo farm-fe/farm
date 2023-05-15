@@ -20,7 +20,9 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 
-export async function start(options: FarmCLIOptions): Promise<void> {
+export async function start(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   // TODO merger config options Encapsulation universal
 
   const logger = options.logger ?? new DefaultLogger();
@@ -57,10 +59,9 @@ export async function start(options: FarmCLIOptions): Promise<void> {
   }
 }
 
-export async function build(options: {
-  configPath?: string;
-  logger?: Logger;
-}): Promise<void> {
+export async function build(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
 
   const userConfig: UserConfig = await resolveUserConfig(

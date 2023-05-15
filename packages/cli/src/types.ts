@@ -9,6 +9,8 @@ export interface GlobalFarmCLIOptions {
   watch?: boolean;
   watchPath?: string;
   port?: number;
+  lazy?: boolean;
+  l?: boolean;
 }
 
 export interface FarmCLIServerOptions {
@@ -20,9 +22,11 @@ export interface FarmCLIServerOptions {
 }
 
 export interface FarmCLIBuildOptions {
+  input?: string;
   outDir?: string;
   sourcemap?: boolean;
   minify?: boolean;
+  treeShaking?: boolean;
 }
 
 export interface FarmCLIPreviewOptions {

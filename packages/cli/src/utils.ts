@@ -126,6 +126,7 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
+  delete resolveOptions.l;
   return resolveOptions;
 }
 
