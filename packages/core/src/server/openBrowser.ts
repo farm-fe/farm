@@ -8,7 +8,7 @@
  *
  */
 
-import path from 'path';
+import path from 'node:path';
 import open from 'open';
 import { execa } from 'execa';
 import chalk from 'chalk';

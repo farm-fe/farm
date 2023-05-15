@@ -3,9 +3,10 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
 
+import path from 'node:path';
+import os from 'node:os';
 import chalk from 'chalk';
 import sirv from 'sirv';
-import os from 'node:os';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
 import { Compiler } from './compiler/index.js';
@@ -18,7 +19,6 @@ import { DefaultLogger, Logger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
-import path from 'path';
 
 export async function start(options: FarmCLIOptions): Promise<void> {
   // TODO merger config options Encapsulation universal
@@ -88,12 +88,9 @@ export async function build(options: {
   );
 }
 
-export async function preview(
-  options: FarmCLIOptions,
-  port = 1911
-): Promise<void> {
+export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-
+  const port = options.port ?? 1911;
   const userConfig: UserConfig = await resolveUserConfig(
     options,
     logger,
@@ -108,8 +105,6 @@ export async function preview(
   const { root, output } = normalizedConfig.config;
   const distDir = path.resolve(root, output.path);
 
-  const app = new Koa();
-
   function StaticFilesHandler(ctx: Context) {
     const staticFilesHandler = sirv(distDir, {
       etag: true,
@@ -121,7 +116,7 @@ export async function preview(
       });
     });
   }
-
+  const app = new Koa();
   app.use(compression());
   app.use(async (ctx) => {
     await StaticFilesHandler(ctx);

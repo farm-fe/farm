@@ -2,12 +2,12 @@
  * Lazy compilation middleware. Using the same logic as HMR middleware, but
  */
 
+import { relative } from 'node:path';
 import { Context } from 'koa';
 import chalk from 'chalk';
 
 import { DevServer } from '../index.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { relative } from 'path';
 
 export function lazyCompilation(server: DevServer) {
   const compiler = server.getCompiler();

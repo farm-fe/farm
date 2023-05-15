@@ -1,8 +1,9 @@
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import http from 'node:http';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import Koa from 'koa';
-// import serve from 'koa-static';
 import { WebSocketServer } from 'ws';
 import chalk from 'chalk';
 import boxen from 'boxen';
@@ -16,11 +17,9 @@ import {
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { brandColor, Logger } from '../utils/logger.js';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { hmrPlugin } from './middlewares/hmr.js';
 import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
+import { hmrPlugin } from './middlewares/hmr.js';
 import { proxyPlugin } from './middlewares/proxy.js';
 import { openBrowser } from './openBrowser.js';
 

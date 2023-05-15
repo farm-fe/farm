@@ -1,5 +1,4 @@
 import { URL } from 'node:url';
-
 import chalk from 'chalk';
 import proxy, { IKoaProxiesOptions, IBaseKoaProxiesOptions } from 'koa-proxies';
 import type { ServerOptions as HttpProxyServerOptions } from 'http-proxy';

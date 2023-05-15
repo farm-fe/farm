@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
-
 import { DevServer } from '../server/index.js';
 import { DefaultLogger } from '../utils/logger.js';
 

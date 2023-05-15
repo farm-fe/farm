@@ -1,7 +1,7 @@
 import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
 import { COMMANDS } from './plugin/index.js';
-import { cleanOptions, resolveCommandOptions, resolveCore } from './utils.js';
+import { resolveCommandOptions, resolveCore } from './utils.js';
 import { createLogger } from './logger.js';
 import type {
   FarmCLIBuildOptions,
@@ -26,27 +26,24 @@ cli
 // dev command
 cli
   .command(
-    'start',
+    '[root]',
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
-  //TODO add host config
-  // .option('--host [host]', 'specify host')
-  .option('--port [port]', 'specify port')
+  .option('--host [host]', 'specify host')
+  .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
-  // TODO add https config
-  // .option('--https', 'use https')
-  // TODO add strictPort open config with core
-  // .option('--strictPort', 'specified port is already in use, exit with error')
+  .option('--https', 'use https')
+  .option('--strictPort', 'specified port is already in use, exit with error')
   .action(async (options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
     const resolveOptions = resolveCommandOptions(options);
     try {
       const { start } = await resolveCore(resolveOptions.configPath);
-
-      await start(cleanOptions(resolveOptions));
+      // TODO config with merge level
+      await start(resolveOptions);
     } catch (e) {
-      logger.error(e.message);
+      logger.error(`Failed to start server:\n ${e.stack}`);
       process.exit(1);
     }
   });
@@ -64,8 +61,9 @@ cli
     const resolveOptions = resolveCommandOptions(options);
     try {
       const { build } = await resolveCore(resolveOptions.configPath);
-      build(cleanOptions(resolveOptions));
+      build(resolveOptions);
     } catch (e) {
+      logger.error(`error during build:\n${e.stack}`);
       process.exit(1);
     }
   });
@@ -73,27 +71,29 @@ cli
 cli
   .command('watch', 'watch file change')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const cwd = process.cwd();
-    const resolveOptions = resolveCommandOptions(options);
-    resolveOptions.watchPath = cwd;
-    const { watch } = await resolveCore(resolveOptions.configPath);
-    // TODO set config path
-
-    await watch(cleanOptions(resolveOptions));
+    try {
+      const cwd = process.cwd();
+      const resolveOptions = resolveCommandOptions(options);
+      resolveOptions.watchPath = cwd;
+      const { watch } = await resolveCore(resolveOptions.configPath);
+      watch(resolveOptions);
+    } catch (e) {
+      logger.error(`error during watch project:\n${e.stack}`);
+      process.exit(1);
+    }
   });
 
 cli
   .command('preview', 'compile the project in watch mode')
   .option('--port [port]', 'specify port')
-  // TODO add open config with core
-  // .option('--open', 'open browser on server start')
+  .option('--open', 'open browser on server preview start')
   .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
     const resolveOptions = resolveCommandOptions(options);
     try {
       const { preview } = await resolveCore(resolveOptions.configPath);
-      preview(cleanOptions(resolveOptions), resolveOptions.port);
+      preview(resolveOptions);
     } catch (e) {
-      logger.error(e.message);
+      logger.error(`Failed to start server:\n${e.stack}`);
       process.exit(1);
     }
   });
@@ -109,7 +109,7 @@ cli
       COMMANDS[command](args);
     } catch (e) {
       logger.error(
-        'The command arg parameter is incorrect. Please check whether you entered the correct parameter. such as "farm create plugin"'
+        `The command arg parameter is incorrect. If you want to create a plugin in farm. such as "farm create plugin"\n${e.stack}`
       );
       process.exit(1);
     }
@@ -118,7 +118,7 @@ cli
 // Listening for unknown command
 cli.on('command:*', () => {
   logger.error(
-    'Unknown command place Run "my-cli --help" to see available commands'
+    'Unknown command place Run "farm --help" to see available commands'
   );
 });
 

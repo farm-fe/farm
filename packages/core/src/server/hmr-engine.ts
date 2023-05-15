@@ -1,16 +1,17 @@
 // queue all updates and compile them one by one
 
+import { isAbsolute, relative } from 'node:path';
+import chalk from 'chalk';
+// import debounce from 'lodash.debounce';
+
 import {
   Compiler,
   VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX
 } from '../compiler/index.js';
 import { DevServer } from './index.js';
-// import debounce from 'lodash.debounce';
 import { Logger } from '../utils/logger.js';
-import { isAbsolute, relative } from 'path';
-import chalk from 'chalk';
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { JsUpdateResult } from '../../binding/binding.js';
+import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];

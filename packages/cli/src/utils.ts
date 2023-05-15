@@ -132,8 +132,12 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
 export function resolveCommandOptions(
   options: GlobalFarmCLIOptions
 ): GlobalFarmCLIOptions {
+  const root = path.join(process.cwd(), options?.config ?? '');
+  if (!options)
+    return {
+      configPath: root
+    };
   filterDuplicateOptions(options);
-  const root = path.join(process.cwd(), options.config ?? '');
   options.configPath = root;
-  return options;
+  return cleanOptions(options);
 }
