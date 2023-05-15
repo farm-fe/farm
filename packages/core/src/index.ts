@@ -79,6 +79,10 @@ export async function build(
       normalizedConfig.config.output.path
     )}.`
   );
+
+  if (userConfig.compilation.watch) {
+    startFileWatcher(userConfig.root, compiler, normalizedConfig);
+  }
 }
 
 export async function preview(options: FarmCLIOptions): Promise<void> {
@@ -138,8 +142,6 @@ export async function watch(options: {
   logger?: Logger;
   watchPath?: string;
 }): Promise<void> {
-  const watcherPath = options.watchPath;
-  options.configPath = watcherPath;
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
@@ -148,7 +150,15 @@ export async function watch(options: {
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
-  const fileWatcher = new FileWatcher(watcherPath, {
+  startFileWatcher(userConfig.root, compiler, normalizedConfig);
+}
+
+export function startFileWatcher(
+  watcherDirPath: string,
+  compiler: Compiler,
+  normalizedConfig: any
+) {
+  const fileWatcher = new FileWatcher(watcherDirPath, {
     ignores: ['**/{.git,node_modules}/**', /dist/]
   });
   fileWatcher.watch(compiler, normalizedConfig);

@@ -227,12 +227,7 @@ export async function resolveUserConfig(
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
       const config = await readConfigFile(resolvedPath, logger);
-
-      // The merge property can only be enabled if command line arguments are passed
-      const resolveInlineConfig = cleanConfig(options);
-
-      const farmConfig = mergeConfig(config, resolveInlineConfig);
-
+      const farmConfig = mergeUserConfig(config, options);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
         // if we found a config file, stop searching
@@ -242,13 +237,10 @@ export async function resolveUserConfig(
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
     const config = await readConfigFile(configPath, logger);
-
-    const resolveInlineConfig = cleanConfig(options);
-    const farmConfig = mergeConfig(config, resolveInlineConfig);
+    const farmConfig = mergeUserConfig(config, options);
 
     if (config) {
       userConfig = parseUserConfig(farmConfig);
-      // if we found a config file, stop searching
     }
   }
 
@@ -297,6 +289,7 @@ async function readConfigFile(
               }
             ]
           },
+          watch: false,
           sourcemap: false,
           treeShaking: false,
           minify: false,
@@ -358,10 +351,6 @@ async function readConfigFile(
   }
 }
 
-export function mergeConfig(config: UserConfig, options: FarmCLIOptions) {
-  return mergeConfigRecursively(config, options);
-}
-
 export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
   delete config.configPath;
   return config;
@@ -375,95 +364,31 @@ export function mergeServerOptions(
   config.server = merge(config.server, options);
 }
 
-export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
-  if (options.outDir) {
-    config.compilation.output.path = options.outDir;
-  }
-
-  if (!config) {
-    config = {};
-  }
-  config.compilation = merge(config?.compilation ?? {}, options);
+export function mergeUserConfig(config: any, options: any) {
+  // The merge property can only be enabled if command line arguments are passed
+  const resolveInlineConfig = cleanConfig(options);
+  return mergeConfiguration(config, resolveInlineConfig);
 }
 
-export function isEmptyObject<T extends object>(obj: T): boolean {
-  return Reflect.ownKeys(obj).length === 0;
-}
-
-// export function mergeConfigRecursively(
-//   target: Record<string, any>,
-//   source: Record<string, any>
-// ) {
-//   const targetObj: Record<string, any> = Object.assign({}, target);
-//   for (const key in source) {
-//     if (targetObj[key] && isObject(targetObj)) {
-//       mergeConfigRecursively(targetObj[key], source[key]);
-//     } else {
-//       targetObj[key] = source[key];
-//     }
-//   }
-// }
-
-function mergeConfigRecursively(
+function mergeConfiguration(
   a: Record<string, any>,
   b: Record<string, any>
-) {
-  const merged: Record<string, any> = { ...a };
+): Record<string, any> {
+  const result: Record<string, any> = { ...a };
   for (const key in b) {
-    const value = b[key];
-    if (value == null) {
-      continue;
-    }
-
-    const existing = merged[key];
-    if (Array.isArray(existing) && Array.isArray(value)) {
-      merged[key] = [...existing, ...value];
-      continue;
-    }
-    if (isObject(existing) && isObject(value)) {
-      merged[key] = mergeConfigRecursively(existing, value);
-      continue;
-    }
-
-    // fields that require special handling
-    if (existing != null) {
-      if (key === 'alias') {
-        merged[key] = mergeAlias(existing, value);
-        continue;
-      } else if (key === 'assetsInclude') {
-        merged[key] = [].concat(existing, value);
+    if (Object.prototype.hasOwnProperty.call(b, key)) {
+      const value = b[key];
+      if (value == null) {
         continue;
       }
+      if (Array.isArray(value)) {
+        result[key] = result[key] ? [...result[key], ...value] : value;
+      } else if (isObject(value)) {
+        result[key] = mergeConfiguration(result[key] || {}, value);
+      } else {
+        result[key] = value;
+      }
     }
-
-    merged[key] = value;
   }
-  return merged;
-}
-
-function mergeAlias(a: any = [], b: any = []): any[] {
-  return [...normalizeAlias(a), ...normalizeAlias(b)];
-}
-
-function normalizeAlias(o: any): any[] {
-  return Array.isArray(o)
-    ? o.map(normalizeSingleAlias)
-    : Object.keys(o).map((find) =>
-        normalizeSingleAlias({
-          find,
-          replacement: (o as any)[find]
-        })
-      );
-}
-
-function normalizeSingleAlias({ find, replacement }: any): any {
-  if (
-    typeof find === 'string' &&
-    find.endsWith('/') &&
-    replacement.endsWith('/')
-  ) {
-    find = find.slice(0, find.length - 1);
-    replacement = replacement.slice(0, replacement.length - 1);
-  }
-  return { find, replacement };
+  return result;
 }

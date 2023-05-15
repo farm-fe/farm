@@ -8,6 +8,10 @@ export function clearScreen() {
   readline.clearScreenDown(process.stdout);
 }
 
-export function isObject(value: unknown): value is Record<string, any> {
+export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+export function isEmptyObject<T extends object>(obj: T): boolean {
+  return Reflect.ownKeys(obj).length === 0;
 }
