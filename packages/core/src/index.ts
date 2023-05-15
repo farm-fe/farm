@@ -20,15 +20,13 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 
-export async function start(options: FarmCLIOptions): Promise<void> {
+export async function start(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   // TODO merger config options Encapsulation universal
 
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'start'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -57,17 +55,12 @@ export async function start(options: FarmCLIOptions): Promise<void> {
   }
 }
 
-export async function build(options: {
-  configPath?: string;
-  logger?: Logger;
-}): Promise<void> {
+export async function build(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
 
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -91,11 +84,7 @@ export async function build(options: {
 export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'start'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -152,11 +141,7 @@ export async function watch(options: {
   const watcherPath = options.watchPath;
   options.configPath = watcherPath;
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,

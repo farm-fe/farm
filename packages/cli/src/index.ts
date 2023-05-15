@@ -1,7 +1,11 @@
 import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
 import { COMMANDS } from './plugin/index.js';
-import { resolveCommandOptions, resolveCore } from './utils.js';
+import {
+  getUserConfigPath,
+  resolveCommandOptions,
+  resolveCore
+} from './utils.js';
 import { createLogger } from './logger.js';
 import type {
   FarmCLIBuildOptions,
@@ -35,48 +39,96 @@ cli
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
   .option('--https', 'use https')
+  .option('-l, --lazy', 'lazyCompilation')
   .option('--strictPort', 'specified port is already in use, exit with error')
-  .action(async (options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
-    const resolveOptions = resolveCommandOptions(options);
-    try {
-      const { start } = await resolveCore(resolveOptions.configPath);
-      // TODO config with merge level
-      await start(resolveOptions);
-    } catch (e) {
-      logger.error(`Failed to start server:\n ${e.stack}`);
-      process.exit(1);
+  .action(
+    async (
+      root: string,
+      options: FarmCLIServerOptions & GlobalFarmCLIOptions
+    ) => {
+      try {
+        const resolveOptions = resolveCommandOptions(options);
+        const configPath = getUserConfigPath(options);
+        const defaultOptions = {
+          compilation: {
+            root,
+            mode: options.mode,
+            lazyCompilation: options.lazy
+          },
+          server: resolveOptions,
+          configPath
+        };
+        console.log(defaultOptions);
+
+        const { start } = await resolveCore(configPath);
+        await start(defaultOptions);
+      } catch (e) {
+        logger.error(`Failed to start server:\n ${e.stack}`);
+        process.exit(1);
+      }
     }
-  });
+  );
 
 // build command
-cli
-  .command('build', 'compile the project in production mode')
-  // TODO add target config
-  // .option("--target <target>", "transpile target")
-  .option('--outDir <dir>', 'output directory')
-  // TODO sourcemap output config path
-  .option('--sourcemap', 'output source maps for build')
-  .option('--minify', 'code compression at build time')
-  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const resolveOptions = resolveCommandOptions(options);
-    try {
-      const { build } = await resolveCore(resolveOptions.configPath);
-      build(resolveOptions);
-    } catch (e) {
-      logger.error(`error during build:\n${e.stack}`);
-      process.exit(1);
-    }
-  });
+// cli
+//   .command('build', 'compile the project in production mode')
+//   // TODO add target config
+//   // .option("--target <target>", "transpile target")
+//   .option('-o, --outDir <dir>', 'output directory')
+//   .option('-i, --input <file>', 'input file path')
+//   .option('--sourcemap', 'output source maps for build')
+//   .option('--treeShaking', 'Eliminate useless code without side effects')
+//   .option('--minify', 'code compression at build time')
+//   .option('-w --watch', 'watch file change')
+//   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
+//     try {
+//       // const resolveOptions = resolveCommandOptions(options);
+//       const configPath = getUserConfigPath(options);
+//       const defaultOptions = {
+//         compilation: {
+//           mode: options.mode,
+//           watch: options.watch,
+//           output: {
+//             path: options.outDir
+//           },
+//           input: {
+//             index: options.input
+//           },
+//           sourcemap: options.sourcemap,
+//           minify: options.minify,
+//           treeShaking: options.treeShaking
+//         }
+//       };
+//       const { build } = await resolveCore(configPath);
+//       build(defaultOptions);
+//     } catch (e) {
+//       logger.error(`error during build:\n${e.stack}`);
+//       process.exit(1);
+//     }
+//   });
 
 cli
   .command('watch', 'watch file change')
+  .option('-o, --outDir <dir>', 'output directory')
+  .option('-i, --input <file>', 'input file path')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     try {
-      const cwd = process.cwd();
       const resolveOptions = resolveCommandOptions(options);
-      resolveOptions.watchPath = cwd;
+      const defaultOptions = {
+        mode: options.mode,
+        watchPath: process.cwd(),
+        configPath: options.config,
+        compilation: {
+          output: {
+            path: options.outDir
+          },
+          input: {
+            index: options.input
+          }
+        }
+      };
       const { watch } = await resolveCore(resolveOptions.configPath);
-      watch(resolveOptions);
+      watch(defaultOptions);
     } catch (e) {
       logger.error(`error during watch project:\n${e.stack}`);
       process.exit(1);
