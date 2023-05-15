@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.1.11
+
+### Patch Changes
+
+- ce9bbe8: Optimize template code to remove tsup deps use farm
+
 ## 1.1.10
 
 ### Patch Changes
