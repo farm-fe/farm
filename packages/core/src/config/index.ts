@@ -2,7 +2,6 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import readline from 'node:readline';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
@@ -21,6 +20,7 @@ import { Logger } from '../utils/logger.js';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseUserConfig } from './schema.js';
+import { isObject } from '../utils/utils.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -210,17 +210,15 @@ export function normalizeDevServerOptions(
  */
 export async function resolveUserConfig(
   options: FarmCLIOptions,
-  logger: Logger,
-  command: 'start' | 'build'
+  logger: Logger
 ): Promise<UserConfig> {
+  let userConfig: UserConfig = {};
+  let root: string = process.cwd();
   const { configPath } = options;
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
-
-  let userConfig: UserConfig = {};
-  let root: string = process.cwd();
 
   // if configPath points to a directory, try to find a config file in it using default config
   if (fs.statSync(configPath).isDirectory()) {
@@ -228,37 +226,29 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-      if (command === 'start') {
-        clearScreen();
-      }
       const config = await readConfigFile(resolvedPath, logger);
 
       // The merge property can only be enabled if command line arguments are passed
-      const filterOptions = cleanConfig(options);
-      if (!isEmptyObject(filterOptions)) {
-        mergeConfig(config, options, command);
-      }
+      const resolveInlineConfig = cleanConfig(options);
+
+      const farmConfig = mergeConfig(config, resolveInlineConfig);
 
       if (config) {
-        userConfig = parseUserConfig(config);
+        userConfig = parseUserConfig(farmConfig);
         // if we found a config file, stop searching
         break;
       }
     }
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
-    if (command === 'start') {
-      clearScreen();
-    }
     const config = await readConfigFile(configPath, logger);
 
-    const filterOptions = cleanConfig(options);
-    if (!isEmptyObject(filterOptions)) {
-      mergeConfig(config, options, command);
-    }
+    const resolveInlineConfig = cleanConfig(options);
+    const farmConfig = mergeConfig(config, resolveInlineConfig);
 
     if (config) {
-      userConfig = parseUserConfig(config);
+      userConfig = parseUserConfig(farmConfig);
+      // if we found a config file, stop searching
     }
   }
 
@@ -368,26 +358,12 @@ async function readConfigFile(
   }
 }
 
-export function mergeConfig(
-  config: UserConfig,
-  options: FarmCLIOptions,
-  command: 'start' | 'build'
-) {
-  // merge options
-  if (command === 'start') {
-    mergeServerOptions(config, options);
-  }
-
-  if (command === 'build') {
-    mergeBuildOptions(config, options);
-  }
+export function mergeConfig(config: UserConfig, options: FarmCLIOptions) {
+  return mergeConfigRecursively(config, options);
 }
 
 export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
   delete config.configPath;
-  delete config.config;
-  delete config.outDir;
-  delete config.strictPort;
   return config;
 }
 
@@ -410,14 +386,84 @@ export function mergeBuildOptions(config: UserConfig, options: FarmCLIOptions) {
   config.compilation = merge(config?.compilation ?? {}, options);
 }
 
-export function clearScreen() {
-  const repeatCount = process.stdout.rows - 2;
-  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
-  console.log(blank);
-  readline.cursorTo(process.stdout, 0, 0);
-  readline.clearScreenDown(process.stdout);
-}
-
 export function isEmptyObject<T extends object>(obj: T): boolean {
   return Reflect.ownKeys(obj).length === 0;
+}
+
+// export function mergeConfigRecursively(
+//   target: Record<string, any>,
+//   source: Record<string, any>
+// ) {
+//   const targetObj: Record<string, any> = Object.assign({}, target);
+//   for (const key in source) {
+//     if (targetObj[key] && isObject(targetObj)) {
+//       mergeConfigRecursively(targetObj[key], source[key]);
+//     } else {
+//       targetObj[key] = source[key];
+//     }
+//   }
+// }
+
+function mergeConfigRecursively(
+  a: Record<string, any>,
+  b: Record<string, any>
+) {
+  const merged: Record<string, any> = { ...a };
+  for (const key in b) {
+    const value = b[key];
+    if (value == null) {
+      continue;
+    }
+
+    const existing = merged[key];
+    if (Array.isArray(existing) && Array.isArray(value)) {
+      merged[key] = [...existing, ...value];
+      continue;
+    }
+    if (isObject(existing) && isObject(value)) {
+      merged[key] = mergeConfigRecursively(existing, value);
+      continue;
+    }
+
+    // fields that require special handling
+    if (existing != null) {
+      if (key === 'alias') {
+        merged[key] = mergeAlias(existing, value);
+        continue;
+      } else if (key === 'assetsInclude') {
+        merged[key] = [].concat(existing, value);
+        continue;
+      }
+    }
+
+    merged[key] = value;
+  }
+  return merged;
+}
+
+function mergeAlias(a: any = [], b: any = []): any[] {
+  return [...normalizeAlias(a), ...normalizeAlias(b)];
+}
+
+function normalizeAlias(o: any): any[] {
+  return Array.isArray(o)
+    ? o.map(normalizeSingleAlias)
+    : Object.keys(o).map((find) =>
+        normalizeSingleAlias({
+          find,
+          replacement: (o as any)[find]
+        })
+      );
+}
+
+function normalizeSingleAlias({ find, replacement }: any): any {
+  if (
+    typeof find === 'string' &&
+    find.endsWith('/') &&
+    replacement.endsWith('/')
+  ) {
+    find = find.slice(0, find.length - 1);
+    replacement = replacement.slice(0, replacement.length - 1);
+  }
+  return { find, replacement };
 }

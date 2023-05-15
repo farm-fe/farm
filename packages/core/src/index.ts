@@ -26,11 +26,7 @@ export async function start(
   // TODO merger config options Encapsulation universal
 
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'start'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -64,11 +60,7 @@ export async function build(
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
 
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -92,11 +84,7 @@ export async function build(
 export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'start'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -153,11 +141,7 @@ export async function watch(options: {
   const watcherPath = options.watchPath;
   options.configPath = watcherPath;
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
