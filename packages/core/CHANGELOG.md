@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.7.5
+
+### Patch Changes
+
+- 086d1a3: Fix bugs when transforming css
+
 ## 0.7.4
 
 ### Patch Changes
