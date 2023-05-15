@@ -30,11 +30,11 @@ cli
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
-  .option('--host [host]', 'specify host')
+  // .option('--host [host]', 'specify host')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
-  .option('--https', 'use https')
+  // .option('--https', 'use https')
   .option('-l, --lazy', 'lazyCompilation')
   .option('--strictPort', 'specified port is already in use, exit with error')
   .action(
