@@ -136,11 +136,9 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   });
 }
 
-export async function watch(options: {
-  configPath?: string;
-  logger?: Logger;
-  watchPath?: string;
-}): Promise<void> {
+export async function watch(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(

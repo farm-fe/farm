@@ -122,6 +122,7 @@ cli
         },
         configPath
       };
+
       const { watch } = await resolveCore(configPath);
       watch(defaultOptions);
     } catch (e) {
