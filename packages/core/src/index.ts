@@ -155,7 +155,7 @@ export function startFileWatcher(
   normalizedConfig: Config
 ) {
   const fileWatcher = new FileWatcher(watcherDirPath, {
-    ignores: ['**/{.git,node_modules}/**']
+    ignores: ['**/{.git,node_modules}/**', /dist/]
   });
   fileWatcher.watch(compiler, normalizedConfig);
 }
