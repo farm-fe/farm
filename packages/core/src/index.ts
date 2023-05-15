@@ -19,6 +19,7 @@ import { DefaultLogger, Logger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
+import { Config } from '../binding/index.js';
 
 export async function start(
   options: FarmCLIOptions & UserConfig
@@ -27,11 +28,11 @@ export async function start(
 
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
-
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'development'
   );
+
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, userConfig.server);
 
@@ -59,9 +60,7 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
-
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
@@ -99,12 +98,12 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   const distDir = path.resolve(root, output.path);
 
   function StaticFilesHandler(ctx: Context) {
-    const staticFilesHandler = sirv(distDir, {
+    const staticFilesServer = sirv(distDir, {
       etag: true,
       single: true
     });
     return new Promise<void>((resolve) => {
-      staticFilesHandler(ctx.req, ctx.res, () => {
+      staticFilesServer(ctx.req, ctx.res, () => {
         resolve();
       });
     });
@@ -144,22 +143,22 @@ export async function watch(options: {
 }): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
-
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
+
   startFileWatcher(userConfig.root, compiler, normalizedConfig);
 }
 
 export function startFileWatcher(
   watcherDirPath: string,
   compiler: Compiler,
-  normalizedConfig: any
+  normalizedConfig: Config
 ) {
   const fileWatcher = new FileWatcher(watcherDirPath, {
-    ignores: ['**/{.git,node_modules}/**', /dist/]
+    ignores: ['**/{.git,node_modules}/**']
   });
   fileWatcher.watch(compiler, normalizedConfig);
 }

@@ -1,11 +1,7 @@
 import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
 import { COMMANDS } from './plugin/index.js';
-import {
-  getUserConfigPath,
-  resolveCommandOptions,
-  resolveCore
-} from './utils.js';
+import { getConfigPath, resolveCommandOptions, resolveCore } from './utils.js';
 import { createLogger } from './logger.js';
 import type {
   FarmCLIBuildOptions,
@@ -48,7 +44,7 @@ cli
     ) => {
       try {
         const resolveOptions = resolveCommandOptions(options);
-        const configPath = getUserConfigPath(options);
+        const configPath = getConfigPath(options.config);
         const defaultOptions = {
           compilation: {
             root,
@@ -81,7 +77,7 @@ cli
   .option('-w, --watch', 'watch file change')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     try {
-      const configPath = getUserConfigPath(options);
+      const configPath = getConfigPath(options.config);
       const defaultOptions = {
         compilation: {
           mode: options.mode,
@@ -113,11 +109,9 @@ cli
   .option('-i, --input <file>', 'input file path')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     try {
-      const resolveOptions = resolveCommandOptions(options);
+      const configPath = getConfigPath(options.config);
       const defaultOptions = {
         mode: options.mode,
-        watchPath: process.cwd(),
-        configPath: options.config,
         compilation: {
           output: {
             path: options.outDir
@@ -125,9 +119,10 @@ cli
           input: {
             index: options.input
           }
-        }
+        },
+        configPath
       };
-      const { watch } = await resolveCore(resolveOptions.configPath);
+      const { watch } = await resolveCore(configPath);
       watch(defaultOptions);
     } catch (e) {
       logger.error(`error during watch project:\n${e.stack}`);
@@ -140,10 +135,19 @@ cli
   .option('--port [port]', 'specify port')
   .option('--open', 'open browser on server preview start')
   .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
-    const resolveOptions = resolveCommandOptions(options);
     try {
-      const { preview } = await resolveCore(resolveOptions.configPath);
-      preview(resolveOptions);
+      const configPath = getConfigPath(options.config);
+      const resolveOptions = resolveCommandOptions(options);
+      const defaultOptions = {
+        compilation: {
+          mode: options.mode
+        },
+        server: resolveOptions,
+        configPath
+      };
+
+      const { preview } = await resolveCore(configPath);
+      preview(defaultOptions);
     } catch (e) {
       logger.error(`Failed to start server:\n${e.stack}`);
       process.exit(1);

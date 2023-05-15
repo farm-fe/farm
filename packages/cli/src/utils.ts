@@ -137,6 +137,6 @@ export function resolveCommandOptions(
   return cleanOptions(options);
 }
 
-export function getUserConfigPath(options: any) {
-  return path.join(process.cwd(), options?.config ?? '');
+export function getConfigPath(configPath: string) {
+  return path.join(process.cwd(), configPath ?? '');
 }
