@@ -128,6 +128,7 @@ export interface Config {
       plugins?: string[];
       swcHelpersPath?: string;
     };
+    watch?: boolean,
     assets?: {
       include?: string[];
     };

@@ -15,25 +15,24 @@ import {
   resolveUserConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger, Logger } from './utils/logger.js';
+import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
+import { Config } from '../binding/index.js';
 
-export async function start(options: FarmCLIOptions): Promise<void> {
+export async function start(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   // TODO merger config options Encapsulation universal
 
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'start'
-  );
-
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'development'
   );
+
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, userConfig.server);
 
@@ -57,18 +56,11 @@ export async function start(options: FarmCLIOptions): Promise<void> {
   }
 }
 
-export async function build(options: {
-  configPath?: string;
-  logger?: Logger;
-}): Promise<void> {
+export async function build(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
-
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
@@ -77,25 +69,25 @@ export async function build(options: {
   const start = Date.now();
   const compiler = new Compiler(normalizedConfig);
   compiler.removeOutputPathDir();
-  await compiler.compile();
-  compiler.writeResourcesToDisk();
-  logger.info(
-    `Build completed in ${chalk.green(
-      `${Date.now() - start}ms`
-    )}! Resources emitted to ${chalk.green(
-      normalizedConfig.config.output.path
-    )}.`
-  );
+  if (userConfig.compilation.watch) {
+    startFileWatcher(userConfig.root, compiler, normalizedConfig);
+  } else {
+    await compiler.compile();
+    compiler.writeResourcesToDisk();
+    logger.info(
+      `Build completed in ${chalk.green(
+        `${Date.now() - start}ms`
+      )}! Resources emitted to ${chalk.green(
+        normalizedConfig.config.output.path
+      )}.`
+    );
+  }
 }
 
 export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'start'
-  );
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -106,12 +98,12 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   const distDir = path.resolve(root, output.path);
 
   function StaticFilesHandler(ctx: Context) {
-    const staticFilesHandler = sirv(distDir, {
+    const staticFilesServer = sirv(distDir, {
       etag: true,
       single: true
     });
     return new Promise<void>((resolve) => {
-      staticFilesHandler(ctx.req, ctx.res, () => {
+      staticFilesServer(ctx.req, ctx.res, () => {
         resolve();
       });
     });
@@ -144,26 +136,25 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   });
 }
 
-export async function watch(options: {
-  configPath?: string;
-  logger?: Logger;
-  watchPath?: string;
-}): Promise<void> {
-  const watcherPath = options.watchPath;
-  options.configPath = watcherPath;
+export async function watch(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
-
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
-  const fileWatcher = new FileWatcher(watcherPath, {
+  startFileWatcher(userConfig.root, compiler, normalizedConfig);
+}
+
+export function startFileWatcher(
+  watcherDirPath: string,
+  compiler: Compiler,
+  normalizedConfig: Config
+) {
+  const fileWatcher = new FileWatcher(watcherDirPath, {
     ignores: ['**/{.git,node_modules}/**', /dist/]
   });
   fileWatcher.watch(compiler, normalizedConfig);
