@@ -29,17 +29,14 @@ export function hmr(server: DevServer) {
   };
 }
 
-export function hmrPlugin(distance: DevServer) {
-  if (distance.config.hmr) {
-    distance.ws = new WebSocketServer({
-      port: distance.config.hmr.port,
-      host: distance.config.hmr.host
+export function hmrPlugin(context: DevServer) {
+  const { config, _context, logger } = context;
+  if (config.hmr) {
+    context.ws = new WebSocketServer({
+      port: config.hmr.port,
+      host: config.hmr.host
     });
-    distance._context.app.use(hmr(distance));
-    distance.hmrEngine = new HmrEngine(
-      distance._context.compiler,
-      distance,
-      distance.logger
-    );
+    _context.app.use(hmr(context));
+    context.hmrEngine = new HmrEngine(_context.compiler, context, logger);
   }
 }
