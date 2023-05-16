@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.7.6
+
+### Patch Changes
+
+- a281ce6: optimize core script code
+
 ## 0.7.5
 
 ### Patch Changes
