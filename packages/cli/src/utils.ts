@@ -126,18 +126,17 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
+  delete resolveOptions.l;
   return resolveOptions;
 }
 
 export function resolveCommandOptions(
   options: GlobalFarmCLIOptions
 ): GlobalFarmCLIOptions {
-  const root = path.join(process.cwd(), options?.config ?? '');
-  if (!options)
-    return {
-      configPath: root
-    };
   filterDuplicateOptions(options);
-  options.configPath = root;
   return cleanOptions(options);
+}
+
+export function getConfigPath(configPath: string) {
+  return path.join(process.cwd(), configPath ?? '');
 }

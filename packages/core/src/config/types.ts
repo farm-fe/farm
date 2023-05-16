@@ -45,7 +45,7 @@ export interface GlobalFarmCLIOptions {
   c?: boolean | string;
   config?: string;
   m?: string;
-  mode?: string;
+  mode?: 'development' | 'production';
 }
 
 export interface FarmCLIServerOptions {
