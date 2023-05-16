@@ -9,7 +9,7 @@
   "devDependencies": {
     "@farmfe/cli": "^0.5.2",
     "@farmfe/core": "^0.7.6",
-    "@farmfe/js-plugin-vue": "^0.2.1"
+    "@farmfe/js-plugin-vue": "^1.0.1"
   },
   "scripts": {
     "start": "farm start",
