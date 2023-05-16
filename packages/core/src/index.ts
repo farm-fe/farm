@@ -24,8 +24,6 @@ import { Config } from '../binding/index.js';
 export async function start(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  // TODO merger config options Encapsulation universal
-
   const logger = options.logger ?? new DefaultLogger();
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(

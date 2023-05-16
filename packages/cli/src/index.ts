@@ -21,7 +21,8 @@ const cli = cac('farm');
 // common command
 cli
   .option('-c, --config <file>', `use specified config file`)
-  .option('-m, --mode <mode>', `set env mode`);
+  .option('-m, --mode <mode>', `set env mode`)
+  .option('--clearScreen', 'allow/disable clear screen when logging');
 
 // dev command
 cli
@@ -30,11 +31,14 @@ cli
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
-  // .option('--host [host]', 'specify host')
+  .option('--host <host>', 'specify host')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
+  .option('--cors', `enable CORS`)
+  // TODO add other server options
   // .option('--https', 'use https')
+  // .option('--strictPort', `[boolean] exit if specified port is already in use`)
   .option('-l, --lazy', 'lazyCompilation')
   .option('--strictPort', 'specified port is already in use, exit with error')
   .action(
@@ -52,6 +56,7 @@ cli
             lazyCompilation: options.lazy
           },
           server: resolveOptions,
+          clearScreen: options.clearScreen ?? true,
           configPath
         };
 
