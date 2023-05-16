@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.0
+
+### Minor Changes
+
+- a8066e7: update template and farm version
+
 ## 1.1.11
 
 ### Patch Changes
