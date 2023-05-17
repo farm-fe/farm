@@ -20,7 +20,7 @@ import { Logger } from '../utils/logger.js';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseUserConfig } from './schema.js';
-import { isObject } from '../utils/utils.js';
+import { clearScreen, isObject } from '../utils/common.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -182,12 +182,15 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: false,
+  protocol: 'http',
+  hostname: 'localhost',
   // http2: false,
   host: 'localhost',
   proxy: {},
   hmr: DEFAULT_HMR_OPTIONS,
   open: false,
-  strictPort: false
+  strictPort: false,
+  cors: false
 };
 
 export function normalizeDevServerOptions(
@@ -215,6 +218,8 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = options;
+
+  if (options.clearScreen) clearScreen();
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -364,7 +369,10 @@ export function mergeServerOptions(
   config.server = merge(config.server, options);
 }
 
-export function mergeUserConfig(config: any, options: any) {
+export function mergeUserConfig(
+  config: Record<string, any>,
+  options: Record<string, any>
+) {
   // The merge property can only be enabled if command line arguments are passed
   const resolveInlineConfig = cleanConfig(options);
   return mergeConfiguration(config, resolveInlineConfig);

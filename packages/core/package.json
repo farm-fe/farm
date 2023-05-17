@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -40,6 +40,7 @@
     "@types/koa": "^2.13.5",
     "@types/koa-compress": "^4.0.3",
     "@types/koa-static": "^4.0.2",
+    "@types/koa__cors": "^4.0.0",
     "@types/lodash": "^4.14.191",
     "@types/lodash.debounce": "^4.0.7",
     "@types/lodash.merge": "^4.6.7",
@@ -66,6 +67,7 @@
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.6.0",
     "@farmfe/runtime-plugin-hmr": "workspace:^3.1.2",
+    "@koa/cors": "^4.0.0",
     "@swc/helpers": "^0.5.0",
     "boxen": "^7.0.1",
     "chalk": "^5.2.0",

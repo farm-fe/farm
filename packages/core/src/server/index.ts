@@ -21,6 +21,7 @@ import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
 import { hmrPlugin } from './middlewares/hmr.js';
 import { proxyPlugin } from './middlewares/proxy.js';
+import { corsPlugin } from './middlewares/cors.js';
 import { openBrowser } from './openBrowser.js';
 
 /**
@@ -63,7 +64,13 @@ export class DevServer implements ImplDevServer {
   }
 
   createFarmServer(options: UserServerConfig) {
-    this.config = normalizeDevServerOptions(options, 'development');
+    const protocol = options.https ? 'https' : 'http';
+    let hostname = options.host || 'localhost';
+    if (hostname === '0.0.0.0') hostname = 'localhost';
+    this.config = normalizeDevServerOptions(
+      { ...options, protocol, hostname },
+      'development'
+    );
     this._app = new Koa();
     this.server = http.createServer(this._app.callback());
     this._context = {
@@ -81,7 +88,7 @@ export class DevServer implements ImplDevServer {
   }
 
   async listen(): Promise<void> {
-    const { port, open, https, host } = this.config;
+    const { port, open, protocol, hostname } = this.config;
     const start = Date.now();
     // compile the project and start the dev server
     if (process.env.FARM_PROFILE) {
@@ -93,9 +100,6 @@ export class DevServer implements ImplDevServer {
     this.server.listen(port);
     this.startDevLogger(start, end);
 
-    const protocol = https ? 'https' : 'http';
-    const hostname = host || 'localhost';
-
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}`);
     }
@@ -105,6 +109,7 @@ export class DevServer implements ImplDevServer {
     const resolvedPlugins = [
       lazyCompilationPlugin,
       hmrPlugin,
+      corsPlugin,
       resourcesPlugin,
       proxyPlugin
     ];
@@ -113,6 +118,7 @@ export class DevServer implements ImplDevServer {
   }
 
   private startDevLogger(start: number, end: number) {
+    const { port, protocol, hostname } = this.config;
     const version = JSON.parse(
       readFileSync(
         join(fileURLToPath(import.meta.url), '../../../package.json'),
@@ -129,7 +135,7 @@ export class DevServer implements ImplDevServer {
   Version ${chalk.green.bold(version)}
   
   🔥 Ready on ${chalk.green.bold(
-    `http://localhost:${this.config.port}`
+    `${protocol}://${hostname}:${port}`
   )} in ${chalk.green.bold(`${end - start}ms`)}.
     `,
         {

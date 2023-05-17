@@ -93,7 +93,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.4
+        specifier: workspace:^0.1.5
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.0.4
@@ -173,7 +173,7 @@ importers:
         specifier: workspace:^1.0.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.4
+        specifier: workspace:^0.1.5
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.0.4
@@ -216,7 +216,7 @@ importers:
         specifier: workspace:^1.0.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.4
+        specifier: workspace:^0.1.5
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.0.4
@@ -256,7 +256,7 @@ importers:
         specifier: workspace:^1.0.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.4
+        specifier: workspace:^0.1.5
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.0.4
@@ -424,6 +424,9 @@ importers:
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.1.2
         version: link:../runtime-plugin-hmr
+      '@koa/cors':
+        specifier: ^4.0.0
+        version: 4.0.0
       '@swc/helpers':
         specifier: ^0.5.0
         version: 0.5.0
@@ -497,6 +500,9 @@ importers:
       '@types/koa-static':
         specifier: ^4.0.2
         version: 4.0.2
+      '@types/koa__cors':
+        specifier: ^4.0.0
+        version: 4.0.0
       '@types/lodash':
         specifier: ^4.14.191
         version: 4.14.191
@@ -1514,6 +1520,13 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: true
 
+  /@koa/cors@4.0.0:
+    resolution: {integrity: sha512-Y4RrbvGTlAaa04DBoPBWJqDR5gPj32OOz827ULXfgB1F7piD1MB/zwn8JR2LAnvdILhxUbXbkXGWuNVsFuVFCQ==}
+    engines: {node: '>= 14.0.0'}
+    dependencies:
+      vary: 1.1.2
+    dev: false
+
   /@manypkg/find-root@1.1.0:
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
     dependencies:
@@ -1869,6 +1882,12 @@ packages:
       '@types/keygrip': 1.0.2
       '@types/koa-compose': 3.2.5
       '@types/node': 18.15.3
+    dev: true
+
+  /@types/koa__cors@4.0.0:
+    resolution: {integrity: sha512-qpwswNgQ2GxiDGNnKbDSBY5XmQTVJ6fspNvInLsAJ+jSwINxihvVzblj5anujNBg2BtL0xpUrcIt3UYwGzu05A==}
+    dependencies:
+      '@types/koa': 2.13.5
     dev: true
 
   /@types/less@3.0.3:
