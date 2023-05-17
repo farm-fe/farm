@@ -1,4 +1,6 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
+import fs from 'fs';
+import { Project } from 'ts-morph';
 import { getResolvedOptions, handleExclude, handleInclude } from './utils';
 export default function farmDtsPlugin(
   farmDtsPluginOptions: any = {}
@@ -21,29 +23,36 @@ export default function farmDtsPlugin(
       },
       async executor(params: any, ctx: any) {
         const { resolvedPath } = params;
-        console.log(resolvedPath);
+        const data = await fs.promises.readFile(resolvedPath, 'utf-8');
 
-        console.log(ctx);
+        let source = data;
+        console.log(source);
 
-        let source = '';
         return {
-          content: source,
+          content: data,
           moduleType: 'ts'
         };
       }
     },
-    // add hmr code In root file
     transform: {
       filters: {
         // resolvedPaths: ['.ts$', ...include]
         resolvedPaths: ['.ts$']
       },
       async executor(params: any, ctx: any) {
-        const { resolvedPath } = params;
-        console.log(resolvedPath);
+        console.log(params);
+        const project = new Project();
+        // const sourceFile = project.createSourceFile(
+        //   params.resolvedPath,
+        //   params.content
+        // );
+        // console.log(sourceFile);
 
-        console.log(ctx);
-
+        // const dtsFile = sourceFile
+        //   .emitToMemory()
+        //   .getFiles()
+        //   .find((f) => f.filePath.endsWith('.d.ts'))!;
+        // console.log(dtsFile.text);
         let source = '';
         return {
           content: source,

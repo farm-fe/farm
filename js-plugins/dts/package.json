@@ -4,6 +4,7 @@
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "start": "tsc -w",
     "build": "tsc",
@@ -14,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "fast-glob": "^3.2.12",
     "ts-morph": "^18.0.0"
   },
   "devDependencies": {
