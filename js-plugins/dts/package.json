@@ -12,5 +12,11 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "ts-morph": "^18.0.0"
+  },
+  "devDependencies": {
+    "@farmfe/core": "workspace:*"
+  }
 }

@@ -2,10 +2,12 @@ import path from 'path';
 import crypto from 'crypto';
 import { createRequire } from 'module';
 
+// @ts-ignore
 export function warn({ id, message }) {
   console.warn(`[${id}:warn]:"${message}"`);
 }
 
+// @ts-ignore
 export function error({ id, message }) {
   console.error(`[${id}-(error)]:"${message}"`);
 }
@@ -57,39 +59,34 @@ export function isRegExp(reg: unknown): reg is RegExp {
   return Object.prototype.toString.call(reg) === '[object RegExp]';
 }
 
-export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
-  const resolvedOptions: ResolvedOptions = {
+export function getResolvedOptions(defaultVueOptions: any) {
+  const resolvedOptions: any = {
     include: [],
     exclude: [],
     isProduction: false, // default: 'development'
-    sourceMap: false,
-    script: {},
-    template: {},
-    style: {}
+    sourceMap: false
   };
   for (const key in defaultVueOptions) {
-    const val = defaultVueOptions[key as keyof FarmVuePluginOptions];
+    const val = defaultVueOptions[key as keyof any];
     switch (key) {
       case 'include':
         resolvedOptions.include = (
           isArray(val) ? val : [val]
-        ) as ResolvedOptions['include'];
+        ) as any['include'];
       case 'exclude':
         resolvedOptions.exclude = (
           isArray(val) ? val : [val]
-        ) as ResolvedOptions['exclude'];
+        ) as any['exclude'];
       case 'isProduction':
         if (val === true) resolvedOptions.isProduction = true;
       case 'sourceMap':
         if (val === true) resolvedOptions.sourceMap = true;
       case 'script':
-        resolvedOptions.script = (val ? val : {}) as ResolvedOptions['script'];
+        resolvedOptions.script = (val ? val : {}) as any['script'];
       case 'template':
-        resolvedOptions.template = (
-          val ? val : {}
-        ) as ResolvedOptions['template'];
+        resolvedOptions.template = (val ? val : {}) as any['template'];
       case 'style':
-        resolvedOptions.style = (val ? val : {}) as ResolvedOptions['style'];
+        resolvedOptions.style = (val ? val : {}) as any['style'];
     }
   }
   resolvedOptions.sourceMap =
@@ -97,18 +94,18 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
   return resolvedOptions;
 }
 
-export function handleInclude(resolvedOptions: ResolvedOptions) {
+export function handleInclude(resolvedOptions: any) {
   return [
     ...new Set(
-      resolvedOptions.include.map((match) => {
+      resolvedOptions.include.map((match: any) => {
         return isRegExp(match) ? match.toString().slice(1, -1) : match;
       })
     )
   ];
 }
 
-export function handleExclude(resolvedOptions: ResolvedOptions) {
-  return resolvedOptions.exclude.map((match) => {
+export function handleExclude(resolvedOptions: any) {
+  return resolvedOptions.exclude.map((match: any) => {
     return isRegExp(match) ? match : new RegExp(match);
   });
 }
@@ -123,49 +120,4 @@ export async function dynamicImportFromESM(moduleName: string) {
   } catch (error) {
     throw error;
   }
-}
-
-export async function loadPreProcessor<T extends PreProcessorsType>(
-  lang: T
-): Promise<PreProcessors[T]> {
-  try {
-    const preProcessor = await dynamicImportFromESM(lang);
-    return preProcessor;
-  } catch (error) {
-    if (error.code === 'MODULE_NOT_FOUND') {
-      throw new Error(
-        `Preprocessor dependency "${lang}" not found. Did you install it?`
-      );
-    } else {
-      const message = new Error(
-        `Preprocessor dependency "${lang}" failed to load:\n${error.message}`
-      );
-      message.stack = error.stack + '\n' + message.stack;
-      throw message;
-    }
-  }
-}
-
-export function isLess(
-  preProcessor: unknown
-): preProcessor is PreProcessors[PreProcessorsType.less] {
-  return (
-    typeof preProcessor !== 'function' &&
-    'version' in (preProcessor as PreProcessors[PreProcessorsType.less])
-  );
-}
-
-export function isSass(
-  preProcessor: unknown
-): preProcessor is PreProcessors[PreProcessorsType.sass] {
-  return 'info' in (preProcessor as PreProcessors[PreProcessorsType.sass]);
-}
-
-export function isStyl(
-  preProcessor: unknown
-): preProcessor is PreProcessors[PreProcessorsType.stylus] {
-  return (
-    typeof preProcessor === 'function' &&
-    'version' in (preProcessor as PreProcessors[PreProcessorsType.stylus])
-  );
 }

@@ -1,6 +1,6 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { getResolvedOptions, handleExclude, handleInclude } from './utils';
-export default function farmVuePlugin(
+export default function farmDtsPlugin(
   farmDtsPluginOptions: any = {}
 ): JsPlugin {
   // options hooks to get farmConfig
@@ -10,17 +10,21 @@ export default function farmVuePlugin(
   const exclude = handleExclude(resolvedOptions);
   const include = handleInclude(resolvedOptions);
   return {
-    name: 'farm-vue-plugin',
+    name: 'farm-dts-plugin',
     config(config: any) {
       farmConfig = config || {};
       return config;
     },
     load: {
       filters: {
-        // resolvedPaths: ['.ts$']
+        resolvedPaths: ['.ts$']
       },
-      async executor(params, ctx) {
+      async executor(params: any, ctx: any) {
         const { resolvedPath } = params;
+        console.log(resolvedPath);
+
+        console.log(ctx);
+
         let source = '';
         return {
           content: source,
@@ -31,9 +35,21 @@ export default function farmVuePlugin(
     // add hmr code In root file
     transform: {
       filters: {
-        // resolvedPaths: ['.vue$', ...include]
+        // resolvedPaths: ['.ts$', ...include]
+        resolvedPaths: ['.ts$']
       },
-      async executor(params, ctx) {}
+      async executor(params: any, ctx: any) {
+        const { resolvedPath } = params;
+        console.log(resolvedPath);
+
+        console.log(ctx);
+
+        let source = '';
+        return {
+          content: source,
+          moduleType: 'ts'
+        };
+      }
     }
   };
 }

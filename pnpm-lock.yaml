@@ -280,6 +280,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/ts:
+    dependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:*
+        version: link:../../js-plugins/dts
+
   examples/vue:
     dependencies:
       core-js:
@@ -323,6 +335,16 @@ importers:
       '@farmfe/js-plugin-vue':
         specifier: workspace:*
         version: link:../../js-plugins/vue
+
+  js-plugins/dts:
+    dependencies:
+      ts-morph:
+        specifier: ^18.0.0
+        version: 18.0.0
+    devDependencies:
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   js-plugins/less:
     devDependencies:
@@ -472,9 +494,6 @@ importers:
       sirv:
         specifier: ^2.0.3
         version: 2.0.3
-      ts-morph:
-        specifier: ^18.0.0
-        version: 18.0.0
       ws:
         specifier: ^8.12.0
         version: 8.12.0
