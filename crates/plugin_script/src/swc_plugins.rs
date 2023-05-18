@@ -2,7 +2,7 @@ use anyhow::Context;
 use farmfe_core::{
   error::{CompilationError, Result},
   serde_json, swc_common,
-  swc_ecma_ast::Module as SwcModule,
+  swc_ecma_ast::{Program, Module as SwcModule},
 };
 use farmfe_toolkit::swc_ecma_visit::{noop_fold_type, Fold};
 use swc_ecma_loader::{
@@ -48,7 +48,7 @@ struct RustPlugins {
 }
 
 impl RustPlugins {
-  fn apply(&mut self, n: SwcModule) -> Result<SwcModule> {
+  fn apply(&mut self, n: Program) -> Result<Program> {
     if self.plugins.is_none() || self.plugins.as_ref().unwrap().is_empty() {
       return Ok(n);
     }
@@ -56,7 +56,7 @@ impl RustPlugins {
     self.apply_inner(n)
   }
 
-  fn apply_inner(&mut self, n: SwcModule) -> Result<SwcModule> {
+  fn apply_inner(&mut self, n: Program) -> Result<Program> {
     use std::{path::PathBuf, sync::Arc};
 
     use swc_common::{plugin::serialized::PluginSerializedBytes, FileName};
@@ -128,6 +128,6 @@ impl Fold for RustPlugins {
   noop_fold_type!();
 
   fn fold_module(&mut self, n: SwcModule) -> SwcModule {
-    self.apply(n).expect("failed to invoke plugin")
+    self.apply(Program::Module(n)).expect("failed to invoke plugin").expect_module()
   }
 }

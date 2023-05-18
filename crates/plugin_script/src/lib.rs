@@ -163,7 +163,7 @@ impl Plugin for FarmPluginScript {
         },
       )?;
 
-      if param.module_type.is_script() {
+      if matches!(param.module_type, ModuleType::Tsx) {
         try_with(
           context.meta.script.cm.clone(),
           &context.meta.script.globals,
