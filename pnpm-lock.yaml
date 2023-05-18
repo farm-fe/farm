@@ -291,6 +291,9 @@ importers:
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
         version: link:../../js-plugins/dts
+      ts-morph:
+        specifier: ^18.0.0
+        version: 18.0.0
 
   examples/vue:
     dependencies:
