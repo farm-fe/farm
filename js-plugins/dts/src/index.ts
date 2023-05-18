@@ -1,7 +1,7 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import fs from 'fs';
 import { Project } from 'ts-morph';
-import { getResolvedOptions, handleExclude, handleInclude } from './utils';
+import { getResolvedOptions, handleExclude, handleInclude } from './utils.js';
 export default function farmDtsPlugin(
   farmDtsPluginOptions: any = {}
 ): JsPlugin {
