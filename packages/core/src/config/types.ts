@@ -4,16 +4,20 @@ import { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 import type { Config } from '../../binding/index.js';
+import type cors from '@koa/cors';
 
 export interface UserServerConfig {
   port?: number;
   https?: boolean;
+  protocol?: 'http' | 'https';
+  hostname?: string;
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
   proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
   open?: boolean;
   host?: string;
+  cors?: boolean | cors.Options;
 }
 
 export type NormalizedServerConfig = Required<
@@ -75,4 +79,5 @@ export interface FarmCLIOptions
   logger?: Logger;
   config?: string;
   configPath?: string;
+  clearScreen?: boolean;
 }

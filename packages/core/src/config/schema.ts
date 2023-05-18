@@ -136,11 +136,17 @@ const UserConfigSchema = z
     root: z.string().optional(),
     plugins: z.array(z.any()).optional(),
     compilation: ConfigSchema.optional(),
+    clearScreen: z.boolean().optional(),
     server: z
       .object({
         port: z.number().positive().int().optional(),
+        host: z
+          .string()
+          .regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+          .optional(),
         open: z.boolean().optional(),
         https: z.boolean().optional(),
+        cors: z.boolean().optional(),
         proxy: z
           .record(
             z.object({

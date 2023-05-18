@@ -11,6 +11,7 @@ export interface GlobalFarmCLIOptions {
   port?: number;
   lazy?: boolean;
   l?: boolean;
+  clearScreen?: boolean;
 }
 
 export interface FarmCLIServerOptions {
