@@ -146,6 +146,21 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  // swc plugins
+  if (config.script?.plugins?.length) {
+    const swcPlugins: [string, string][] = [];
+
+    for (const plugin of config.script.plugins) {
+      if (typeof plugin === 'string') {
+        swcPlugins.push([plugin, '{}']);
+      } else {
+        swcPlugins.push([plugin[0], JSON.stringify(plugin[1])]);
+      }
+    }
+
+    config.script.plugins = swcPlugins;
+  }
+
   const plugins = userConfig.plugins ?? [];
   const rustPlugins = [];
   const jsPlugins = [];

@@ -92,7 +92,7 @@ impl Compiler {
       );
       println!("{}", error_message);
       // TODO Temporarily exit the process with exit
-      // std::process::exit(1);
+      std::process::exit(1);
       // return Err(CompilationError::GenericError(error_messages.join(", ")));
     }
 

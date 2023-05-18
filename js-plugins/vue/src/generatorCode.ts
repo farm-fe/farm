@@ -115,7 +115,7 @@ export function genScriptCode(
     }));
     cacheScript.set(descriptor, result);
     code += rewriteDefault(content, '_sfc_main');
-    if (script && script.lang === 'ts') moduleType = 'ts';
+    if (script?.lang) moduleType = script.lang;
   }
   // default script code
   else {

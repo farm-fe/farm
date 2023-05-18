@@ -7,3 +7,11 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
+swc_plugin_proxy = { version = "0.33.3", features = ["plugin-rt"] }
+swc_plugin_runner = { version = "0.95.4", features = [
+  "ecma",
+  "rkyv-impl",
+  "plugin_transform_schema_v1",
+] }
+swc_ecma_loader = { version = "0.43.12", features = ["cache", "node", "tsc"] }
+anyhow = { version = "1.0.40", features = ["backtrace"] }

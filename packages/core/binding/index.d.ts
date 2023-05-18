@@ -172,6 +172,7 @@ export interface Config {
           noEarlyErrors: boolean;
         };
       };
+      plugins: (string | [string, string | Record<string, any>])[];
     };
     css?: {
       modules?: {

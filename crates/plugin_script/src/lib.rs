@@ -15,10 +15,13 @@ use farmfe_core::{
   },
   relative_path::RelativePath,
   resource::{
-    resource_pot::{self, ResourcePot, ResourcePotType},
+    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::{comments::NoopComments, FilePathMapping, Mark, SourceMap, GLOBALS},
+  serde_json,
+  swc_common::{
+    comments::NoopComments, plugin::metadata::TransformPluginMetadataContext, Mark, GLOBALS,
+  },
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleDecl, ModuleItem, Stmt,
   },
@@ -31,20 +34,17 @@ use farmfe_toolkit::{
     swc_try_with::try_with, syntax_from_module_type,
   },
   sourcemap::swc_gen::{build_source_map, AstModule},
-  swc_ecma_minifier::{
-    optimize,
-    option::{ExtraOptions, MinifyOptions},
-  },
   swc_ecma_transforms::{
-    fixer::fixer,
     resolver,
     typescript::{strip, strip_with_jsx},
   },
-  swc_ecma_visit::FoldWith,
-  swc_ecma_visit::VisitMutWith,
+  swc_ecma_visit::{FoldWith, VisitMutWith},
 };
+use swc_plugins::PluginConfig;
 
 mod deps_analyzer;
+mod swc_plugins;
+
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
 pub struct FarmPluginScript {}
@@ -152,6 +152,7 @@ impl Plugin for FarmPluginScript {
             farmfe_core::module::ModuleType::Tsx => {
               ast.visit_mut_with(&mut strip_with_jsx(
                 context.meta.script.cm.clone(),
+                // TODO make it configurable
                 Default::default(),
                 NoopComments, // TODO parse comments
                 top_level_mark,
@@ -161,6 +162,45 @@ impl Plugin for FarmPluginScript {
           }
         },
       )?;
+
+      if param.module_type.is_script() {
+        try_with(
+          context.meta.script.cm.clone(),
+          &context.meta.script.globals,
+          || {
+            let swc_plugins = context
+              .config
+              .script
+              .plugins
+              .clone()
+              .into_iter()
+              .map(|(path, config)| PluginConfig(path, serde_json::to_value(config).unwrap()))
+              .collect::<Vec<_>>();
+            // TODO run the plugin only for specific module
+            let transform_metadata_context = Arc::new(TransformPluginMetadataContext::new(
+              Some(param.module_id.resolved_path(&context.config.root)),
+              context.config.mode.to_string(),
+              None,
+            ));
+            swc_plugin_runner::cache::init_plugin_module_cache_once(&None);
+            let source_map = context.meta.script.cm.clone();
+            let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
+
+            // execute swc plugins
+            let mut swc_plugins_transformers = swc_plugins::plugins(
+              Some(swc_plugins),
+              transform_metadata_context,
+              None,
+              source_map,
+              unresolved_mark,
+            );
+
+            let mut ast = param.meta.as_script_mut().take_ast();
+            ast = ast.fold_with(&mut swc_plugins_transformers);
+            param.meta.as_script_mut().set_ast(ast);
+          },
+        )?;
+      }
 
       return Ok(Some(()));
     }

@@ -12,6 +12,9 @@ export default <UserConfig>{
     resolve: {
       strictExports: true,
     },
+    script: {
+      plugins: ['swc-plugin-vue-jsx']
+    }
   },
-  plugins: [jsPluginVue(), '@farmfe/plugin-vue-jsx'],
+  plugins: [jsPluginVue()],
 };

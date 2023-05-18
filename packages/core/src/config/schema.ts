@@ -61,31 +61,34 @@ const ConfigSchema = z
             'es2022'
           ])
           .optional(),
-        parser: z.object({
-          esConfig: z
-            .object({
-              jsx: z.boolean().optional(),
-              fnBind: z.boolean(),
-              decorators: z.boolean(),
-              decoratorsBeforeExport: z.boolean(),
-              exportDefaultFrom: z.boolean(),
-              importAssertions: z.boolean(),
-              privateInObject: z.boolean(),
-              allowSuperOutsideMethod: z.boolean(),
-              allowReturnOutsideFunction: z.boolean()
-            })
-            .strict()
-            .optional(),
-          tsConfig: z
-            .object({
-              tsx: z.boolean(),
-              decorators: z.boolean(),
-              dts: z.boolean(),
-              noEarlyErrors: z.boolean()
-            })
-            .strict()
-            .optional()
-        })
+        parser: z
+          .object({
+            esConfig: z
+              .object({
+                jsx: z.boolean().optional(),
+                fnBind: z.boolean(),
+                decorators: z.boolean(),
+                decoratorsBeforeExport: z.boolean(),
+                exportDefaultFrom: z.boolean(),
+                importAssertions: z.boolean(),
+                privateInObject: z.boolean(),
+                allowSuperOutsideMethod: z.boolean(),
+                allowReturnOutsideFunction: z.boolean()
+              })
+              .strict()
+              .optional(),
+            tsConfig: z
+              .object({
+                tsx: z.boolean(),
+                decorators: z.boolean(),
+                dts: z.boolean(),
+                noEarlyErrors: z.boolean()
+              })
+              .strict()
+              .optional()
+          })
+          .optional(),
+        plugins: z.array(z.any()).optional()
       })
       .strict()
       .optional(),

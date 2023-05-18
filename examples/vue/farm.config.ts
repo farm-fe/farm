@@ -1,9 +1,7 @@
-// change to @farmfe/core/config when resolve support conditional exports
-import { defineFarmConfig } from '@farmfe/core/config';
+import type { UserConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
-import farmPluginVueJsx from '@farmfe/plugin-vue-jsx';
 
-export default defineFarmConfig({
+export default <UserConfig>{
   compilation: {
     input: {
       index: './index.html',
@@ -24,5 +22,5 @@ export default defineFarmConfig({
       },
     },
   },
-  plugins: [farmJsPluginVue(),  ['@farmfe/plugin-vue-jsx', { name: 'erkelost' }],],
-});
+  plugins: [farmJsPluginVue()],
+};

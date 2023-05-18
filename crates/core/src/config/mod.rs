@@ -113,11 +113,21 @@ impl Default for Mode {
   }
 }
 
+impl ToString for Mode {
+  fn to_string(&self) -> String {
+    match self {
+      Mode::Development => "development".to_string(),
+      Mode::Production => "production".to_string(),
+    }
+  }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfig {
   pub target: EsVersion,
   pub parser: ScriptParserConfig,
+  pub plugins: Vec<(String, String)>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
