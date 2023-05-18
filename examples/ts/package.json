@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "keywords": [],
+  "type": "module",
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -13,11 +14,13 @@
   },
   "scripts": {
     "start": "farm start",
-    "build": "farm build",
+    "build": "tsc",
+    "build:farm": "farm build",
     "preview": "farm preview"
   },
   "dependencies": {
     "@relaxed/utils": "^2.0.34",
+    "fast-glob": "^3.2.12",
     "ts-morph": "^18.0.0"
   }
 }

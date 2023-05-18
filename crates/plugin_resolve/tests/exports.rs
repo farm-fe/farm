@@ -13,7 +13,7 @@ fn resolve_exports_basic() {
       let resolver = Resolver::new();
       // Parsing packages in node_modules
       let resolved = resolver.resolve(
-        "basic",
+        "ts-morph",
         cwd.clone(),
         &ResolveKind::Import,
         &Arc::new(CompilationContext::default()),
@@ -24,9 +24,9 @@ fn resolve_exports_basic() {
         resolved.resolved_path,
         cwd
           .join("node_modules")
-          .join("basic")
-          .join("lib")
-          .join("basic-exports.js")
+          .join("ts-morph")
+          .join("dist")
+          .join("ts-morph.js")
           .to_string_lossy()
           .to_string()
       );

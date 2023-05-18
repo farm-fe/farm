@@ -285,6 +285,9 @@ importers:
       '@relaxed/utils':
         specifier: ^2.0.34
         version: 2.0.34
+      fast-glob:
+        specifier: ^3.2.12
+        version: 3.2.12
       ts-morph:
         specifier: ^18.0.0
         version: 18.0.0
