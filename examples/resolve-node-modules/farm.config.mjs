@@ -28,7 +28,7 @@ export default {
     minify: false,
     sourcemap: false,
     presetEnv: false,
-    treeShaking: false,
+    treeShaking: true,
   },
   server: {
     hmr: false
