@@ -593,6 +593,7 @@ impl Resolver {
       let dir = package_json_info.dir();
       let path = Path::new(resolved_path);
       if let Value::Object(obj) = exports_field {
+        println!("exports_field: {:?}", obj);
         for (key, value) in obj {
           let key_path = self.get_key_path(&key, &dir);
           if self.are_paths_equal(key_path, resolved_path) {
@@ -667,6 +668,13 @@ impl Resolver {
                       if key_word.to_lowercase() == "require" {
                         let path = Path::new(resolved_path);
                         match key_value {
+                          Value::String(key_value) => {
+                            if path.is_absolute() {
+                              let value_path =
+                                self.get_key_path(&key_value, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                          }
                           Value::Object(key_value) => {
                             if path.is_absolute() {
                               for (key, value) in key_value {
@@ -695,12 +703,6 @@ impl Resolver {
                                   }
                                 }
                               }
-
-                              // let value_path = self.get_key_path(
-                              //   &key_value.as_str().unwrap(),
-                              //   package_json_info.dir(),
-                              // );
-                              // return Some(value_path);
                             }
                           }
                           _ => {}

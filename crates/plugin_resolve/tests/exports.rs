@@ -122,55 +122,6 @@ fn resolve_exports_replace() {
 }
 
 #[test]
-fn resolve_exports_import_require() {
-  fixture!(
-    "tests/fixtures/resolve-node-modules/exports/index.ts",
-    |file, _| {
-      let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new();
-
-      let resolved = resolver.resolve(
-        "require-import/config",
-        cwd.clone(),
-        &ResolveKind::Import,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("require-import")
-          .join("lib")
-          .join("base-import.js")
-          .to_string_lossy()
-          .to_string()
-      );
-
-      let resolved = resolver.resolve(
-        "require-import/config",
-        cwd.clone(),
-        &ResolveKind::Require,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("require-import")
-          .join("lib")
-          .join("base-require.cjs")
-          .to_string_lossy()
-          .to_string()
-      );
-    }
-  );
-}
-
-#[test]
 fn resolve_exports_nesting() {
   fixture!(
     "tests/fixtures/resolve-node-modules/exports/index.ts",
@@ -344,7 +295,7 @@ fn resolve_exports_require() {
       let resolver = Resolver::new();
       // Parsing packages in node_modules
       let resolved = resolver.resolve(
-        "mkdirp",
+        "nesting-require",
         cwd.clone(),
         &ResolveKind::Require,
         &Arc::new(CompilationContext::default()),
@@ -355,11 +306,60 @@ fn resolve_exports_require() {
         resolved.resolved_path,
         cwd
           .join("node_modules")
-          .join("mkdirp")
+          .join("nesting-require")
           .join("dist")
           .join("cjs")
           .join("src")
           .join("index-cjs.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_exports_import_require() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "require-import/config",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("require-import")
+          .join("lib")
+          .join("base-import.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      let resolved = resolver.resolve(
+        "require-import/config",
+        cwd.clone(),
+        &ResolveKind::Require,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("require-import")
+          .join("lib")
+          .join("base-require.cjs")
           .to_string_lossy()
           .to_string()
       );
