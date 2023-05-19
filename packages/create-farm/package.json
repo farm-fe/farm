@@ -36,8 +36,5 @@
     "minimist": "^1.2.8",
     "ora": "^6.3.0",
     "prompts": "^2.4.2"
-  },
-  "dependencies": {
-    "ts-morph": "^18.0.0"
   }
 }

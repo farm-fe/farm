@@ -6,13 +6,11 @@ import prompts from 'prompts';
 import minimist from 'minimist';
 import path from 'node:path';
 import fs from 'node:fs';
-import { Project } from 'ts-morph';
 
 import { loadWithRocketGradient } from './utils/gradient.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
 import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
 import { fileURLToPath } from 'node:url';
-console.log(Project);
 
 interface IResultType {
   packageName?: string;

@@ -9,14 +9,11 @@
   "license": "ISC",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
-    "@farmfe/js-plugin-vue": "workspace:*"
+    "@farmfe/core": "workspace:*"
   },
   "scripts": {
-    "start": "farm start",
     "build": "tsc",
-    "build:farm": "farm build",
-    "preview": "farm preview"
+    "build:farm": "farm build"
   },
   "dependencies": {
     "ts-morph": "^18.0.0"
