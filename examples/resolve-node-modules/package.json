@@ -13,8 +13,7 @@
     "@farmfe/core": "workspace:*"
   },
   "scripts": {
-    "build": "tsc",
-    "build:farm": "farm build"
+    "build": "farm build"
   },
   "dependencies": {
     "ts-morph": "^18.0.0"

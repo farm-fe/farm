@@ -593,7 +593,6 @@ impl Resolver {
       let dir = package_json_info.dir();
       let path = Path::new(resolved_path);
       if let Value::Object(obj) = exports_field {
-        println!("exports_field: {:?}", obj);
         for (key, value) in obj {
           let key_path = self.get_key_path(&key, &dir);
           if self.are_paths_equal(key_path, resolved_path) {
