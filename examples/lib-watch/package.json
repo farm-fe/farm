@@ -6,7 +6,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "watch": "farm watch"
+    "watch": "farm watch",
+    "build": "farm build"
   },
   "keywords": [],
   "author": "",

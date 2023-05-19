@@ -68,12 +68,12 @@ export async function build(
   const compiler = new Compiler(normalizedConfig);
   compiler.removeOutputPathDir();
   if (userConfig.compilation.watch) {
-    startFileWatcher(userConfig.root, compiler, normalizedConfig);
+    createFileWatcher(userConfig.root, compiler, normalizedConfig);
   } else {
     await compiler.compile();
     compiler.writeResourcesToDisk();
     logger.info(
-      `Build completed in ${chalk.green(
+      `⚡️ Build completed in ${chalk.green(
         `${Date.now() - start}ms`
       )}! Resources emitted to ${chalk.green(
         normalizedConfig.config.output.path
@@ -144,16 +144,18 @@ export async function watch(
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
-  startFileWatcher(userConfig.root, compiler, normalizedConfig);
+  createFileWatcher(userConfig.root, compiler, normalizedConfig);
 }
 
-export function startFileWatcher(
+export function createFileWatcher(
   watcherDirPath: string,
   compiler: Compiler,
   normalizedConfig: Config
 ) {
+  const outDir = normalizedConfig.config.output.path;
+  const outDirRegex = new RegExp(`^.*${outDir}.*$`);
   const fileWatcher = new FileWatcher(watcherDirPath, {
-    ignores: ['**/{.git,node_modules}/**', /dist/]
+    ignores: ['**/{.git,node_modules}/**', outDirRegex]
   });
   fileWatcher.watch(compiler, normalizedConfig);
 }

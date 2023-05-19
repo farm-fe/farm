@@ -1,24 +1,29 @@
+import { performance } from 'node:perf_hooks';
 import chalk from 'chalk';
 import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
 import { DefaultLogger } from '../utils/logger.js';
 
+import { Config } from '../../binding/index.js';
+
 export interface FileWatcherOptions {
-  ignores?: string[] | any;
+  ignores?: (string | RegExp)[];
 }
 
 export class FileWatcher {
   private _root: string;
   private _watcher: FSWatcher;
   private _options: FileWatcherOptions;
+  private _logger: DefaultLogger;
 
-  constructor(root: string, config?: FileWatcherOptions) {
+  constructor(root: string, options?: FileWatcherOptions) {
     this._root = root;
-    this._options = config ?? {};
+    this._logger = new DefaultLogger();
+    this._options = options ?? {};
   }
 
-  async watch(serverOrCompiler: DevServer | Compiler, config: any) {
+  async watch(serverOrCompiler: DevServer | Compiler, config: Config) {
     const compiler =
       serverOrCompiler instanceof DevServer
         ? serverOrCompiler.getCompiler()
@@ -29,11 +34,7 @@ export class FileWatcher {
         ? compiler.resolvedModulePaths(this._root)
         : [this._root],
       {
-        ignored: this._options.ignores,
-        awaitWriteFinish: {
-          stabilityThreshold: 300, // 稳定性阈值为 1000ms
-          pollInterval: 100 // 轮询间隔为 100ms
-        }
+        ignored: this._options.ignores
       }
     );
     if (serverOrCompiler instanceof DevServer) {
@@ -60,35 +61,50 @@ export class FileWatcher {
     }
 
     if (serverOrCompiler instanceof Compiler) {
-      // TODO optimize logger info
-      const logger = new DefaultLogger();
-      normalizeOptions(logger, config);
-      await compiler.compile();
-      compiler.writeResourcesToDisk();
+      await compilerHandler(async () => {
+        await compiler.compile();
+        compiler.writeResourcesToDisk();
+      }, config);
+      normalizeWatchLogger(this._logger, config);
     }
 
     this._watcher.on('change', async (path) => {
       if (serverOrCompiler instanceof DevServer) {
         serverOrCompiler.hmrEngine.hmrUpdate(path);
-      } else {
-        const logger = new DefaultLogger();
-        const start = Date.now();
-        await compiler.update([path], true);
-        logger.info(
-          `⚡️ Build completed in ${chalk.green(
-            `${Date.now() - start}ms`
-          )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
-        );
-        compiler.writeResourcesToDisk();
+      }
+
+      if (serverOrCompiler instanceof Compiler) {
+        await compilerHandler(async () => {
+          await compiler.update([path], true);
+          compiler.writeResourcesToDisk();
+        }, config);
       }
     });
   }
 }
 
-// TODO optimize logger info
-export function normalizeOptions(logger: any, options: any) {
-  logger.info(
-    `Building entry: ${chalk.green(JSON.stringify(options.config.input.index))}`
-  );
+export function normalizeWatchLogger(logger: DefaultLogger, config?: Config) {
+  const outDir = config.config.output.path;
   logger.info(`Running in watch mode`);
+  logger.info(`Watching for changes`);
+  logger.info(`Ignoring changes in "**/{.git,node_modules}/**" | "${outDir}"`);
+}
+
+async function compilerHandler(callback: () => Promise<void>, config: Config) {
+  const logger = new DefaultLogger();
+  const startTime = performance.now();
+
+  // 计算时间差，精确到毫秒
+  try {
+    await callback();
+  } catch (error) {
+    logger.error(error);
+  }
+  const endTime = performance.now();
+  const elapsedTime = Math.floor(endTime - startTime);
+  logger.info(
+    `⚡️ Build completed in ${chalk.green(
+      `${elapsedTime}ms`
+    )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
+  );
 }
