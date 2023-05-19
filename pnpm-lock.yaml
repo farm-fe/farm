@@ -148,6 +148,15 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/lib-watch:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/react:
     dependencies:
       clsx:

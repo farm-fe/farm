@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "private": true,
+  "type": "module",
   "scripts": {
     "watch": "farm watch"
   },
