@@ -1,7 +1,5 @@
-import path from 'node:path';
-import pro from 'ts-morph/dist/ts-morph.js';
-import fs from 'fast-glob'
-console.log(pro);
-console.log(path);
-console.log(fs);
+import { Project } from 'ts-morph';
+// import common from '@ts-morph/common';
+// console.log(common);
+console.log(Project);
 

@@ -19,8 +19,6 @@
     "preview": "farm preview"
   },
   "dependencies": {
-    "@relaxed/utils": "^2.0.34",
-    "fast-glob": "^3.2.12",
     "ts-morph": "^18.0.0"
   }
 }

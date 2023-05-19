@@ -334,3 +334,35 @@ fn resolve_priority() {
     }
   );
 }
+
+#[test]
+fn resolve_exports_require() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+      // Parsing packages in node_modules
+      let resolved = resolver.resolve(
+        "mkdirp",
+        cwd.clone(),
+        &ResolveKind::Require,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("mkdirp")
+          .join("dist")
+          .join("cjs")
+          .join("src")
+          .join("index-cjs.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}

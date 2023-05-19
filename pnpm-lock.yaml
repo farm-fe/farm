@@ -282,12 +282,6 @@ importers:
 
   examples/ts:
     dependencies:
-      '@relaxed/utils':
-        specifier: ^2.0.34
-        version: 2.0.34
-      fast-glob:
-        specifier: ^3.2.12
-        version: 3.2.12
       ts-morph:
         specifier: ^18.0.0
         version: 18.0.0
@@ -1708,12 +1702,6 @@ packages:
       rc-util: 5.30.0(react-dom@18.0.0)(react@18.0.0)
       react: 18.0.0
       react-dom: 18.0.0(react@18.0.0)
-    dev: false
-
-  /@relaxed/utils@2.0.34:
-    resolution: {integrity: sha512-Dcjd78EnkvJ6qW1SY8NXKGMkFCMe2MtBKJ1y5U+6D5vAAM4Zfk/mZwN2jB1Ml7gD7tBTmtCXOa9OtEM9yHKfiw==}
-    dependencies:
-      date-fns: 2.30.0
     dev: false
 
   /@simonwep/pickr@1.8.2:
@@ -3396,13 +3384,6 @@ packages:
     resolution: {integrity: sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A==}
     engines: {node: '>= 12'}
     dev: true
-
-  /date-fns@2.30.0:
-    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
-    engines: {node: '>=0.11'}
-    dependencies:
-      '@babel/runtime': 7.21.5
-    dev: false
 
   /dayjs@1.11.7:
     resolution: {integrity: sha512-+Yw9U6YO5TQohxLcIkrXBeY73WP3ejHWVvx8XCk3gxvQDCTEmS48ZrSZCKciI7Bhl/uCMyxYtE9UqRILmFphkQ==}
