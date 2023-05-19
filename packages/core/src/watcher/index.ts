@@ -93,8 +93,6 @@ export function normalizeWatchLogger(logger: DefaultLogger, config?: Config) {
 async function compilerHandler(callback: () => Promise<void>, config: Config) {
   const logger = new DefaultLogger();
   const startTime = performance.now();
-
-  // 计算时间差，精确到毫秒
   try {
     await callback();
   } catch (error) {
