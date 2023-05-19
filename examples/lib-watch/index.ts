@@ -1,3 +1,1 @@
-console.log(666);
-console.log(666);
-console.log("you are notify");
+console.log("test watch code");
