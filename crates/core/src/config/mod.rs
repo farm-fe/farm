@@ -87,18 +87,13 @@ impl Default for OutputConfig {
   }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
 pub enum TargetEnv {
   #[serde(rename = "browser")]
+  #[default]
   Browser,
   #[serde(rename = "node")]
   Node,
-}
-
-impl Default for TargetEnv {
-  fn default() -> Self {
-    TargetEnv::Browser
-  }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

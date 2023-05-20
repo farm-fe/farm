@@ -207,7 +207,7 @@ impl Compiler {
 
     // ================ Process Module End ===============
 
-    module.module_type = parse_param.module_type.clone();
+    module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
     module.source_map_chain = transform_result.source_map_chain;

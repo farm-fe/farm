@@ -50,7 +50,7 @@ pub fn transform_by_swc_plugins(
     None,
   ));
 
-  // Currently swc enables filesystemcache by default on Embedded runtime plugin
+  // Currently swc enables filesystem cache by default on Embedded runtime plugin
   // target.
   init_plugin_module_cache_once(true, &None);
 
