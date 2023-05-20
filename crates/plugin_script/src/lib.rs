@@ -15,10 +15,10 @@ use farmfe_core::{
   },
   relative_path::RelativePath,
   resource::{
-    resource_pot::{self, ResourcePot, ResourcePotType},
+    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
-  swc_common::{comments::NoopComments, FilePathMapping, Mark, SourceMap, GLOBALS},
+  swc_common::{comments::NoopComments, Mark, GLOBALS},
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleDecl, ModuleItem, Stmt,
   },
@@ -31,20 +31,17 @@ use farmfe_toolkit::{
     swc_try_with::try_with, syntax_from_module_type,
   },
   sourcemap::swc_gen::{build_source_map, AstModule},
-  swc_ecma_minifier::{
-    optimize,
-    option::{ExtraOptions, MinifyOptions},
-  },
   swc_ecma_transforms::{
-    fixer::fixer,
     resolver,
     typescript::{strip, strip_with_jsx},
   },
-  swc_ecma_visit::FoldWith,
   swc_ecma_visit::VisitMutWith,
 };
+use swc_plugins::transform_by_swc_plugins;
 
 mod deps_analyzer;
+mod swc_plugins;
+
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
 pub struct FarmPluginScript {}
@@ -152,6 +149,7 @@ impl Plugin for FarmPluginScript {
             farmfe_core::module::ModuleType::Tsx => {
               ast.visit_mut_with(&mut strip_with_jsx(
                 context.meta.script.cm.clone(),
+                // TODO make it configurable
                 Default::default(),
                 NoopComments, // TODO parse comments
                 top_level_mark,
@@ -161,11 +159,18 @@ impl Plugin for FarmPluginScript {
           }
         },
       )?;
-
-      return Ok(Some(()));
     }
 
-    Ok(None)
+    // execute swc plugins
+    if param.module_type.is_script() && context.config.script.plugins.len() > 0 {
+      try_with(
+        context.meta.script.cm.clone(),
+        &context.meta.script.globals,
+        || transform_by_swc_plugins(param, context).unwrap(),
+      )?;
+    }
+
+    Ok(Some(()))
   }
 
   fn analyze_deps(

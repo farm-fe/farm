@@ -134,11 +134,11 @@ impl ModuleGraph {
   }
 
   pub fn modules(&self) -> Vec<&Module> {
-    self.g.node_weights().into_iter().collect()
+    self.g.node_weights().collect()
   }
 
   pub fn modules_mut(&mut self) -> Vec<&mut Module> {
-    self.g.node_weights_mut().into_iter().collect()
+    self.g.node_weights_mut().collect()
   }
 
   pub fn has_module(&self, module_id: &ModuleId) -> bool {

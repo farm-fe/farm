@@ -188,12 +188,13 @@ pub trait Plugin: Any + Send + Sync {
   }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
   Entry,
   /// static import, e.g. `import a from './a'`
+  #[default]
   Import,
   /// static export, e.g. `export * from './a'`
   ExportFrom,
@@ -213,12 +214,6 @@ pub enum ResolveKind {
   HmrUpdate,
   /// Custom ResolveKind, e.g. `const worker = new Worker(new Url("worker.js"))` of a web worker
   Custom(String),
-}
-
-impl Default for ResolveKind {
-  fn default() -> Self {
-    ResolveKind::Import
-  }
 }
 
 impl ResolveKind {

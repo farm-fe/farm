@@ -172,6 +172,14 @@ export interface Config {
           noEarlyErrors: boolean;
         };
       };
+      plugins: {
+        name: string;
+        options?: Record<string, any>;
+        filters?: {
+          resolvedPaths?: string[];
+          moduleTypes?: ModuleType[];
+        }
+      }[];
     };
     css?: {
       modules?: {
