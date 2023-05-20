@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.8.0
+
+### Minor Changes
+
+- e780747: Support swc plugin
+
 ## 0.7.6
 
 ### Patch Changes

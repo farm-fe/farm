@@ -1,5 +1,16 @@
 # @farmfe/js-plugin-vue
 
+## 1.1.0
+
+### Minor Changes
+
+- e780747: Support swc plugin
+
+### Patch Changes
+
+- Updated dependencies [e780747]
+  - @farmfe/core@0.8.0
+
 ## 1.0.1
 
 ### Patch Changes

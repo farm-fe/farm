@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.1.6
+
+### Patch Changes
+
+- e780747: Bump version cause the Rust core changed
+
 ## 0.1.5
 
 ### Patch Changes
