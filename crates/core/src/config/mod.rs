@@ -5,6 +5,8 @@ use swc_css_prefixer::options::Targets;
 use swc_ecma_ast::EsVersion;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
+use crate::module::ModuleType;
+
 pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
 
@@ -124,10 +126,35 @@ impl ToString for Mode {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
+pub struct ScriptConfigPluginFilters {
+  pub resolved_paths: Vec<String>,
+  pub module_types: Vec<ModuleType>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ScriptConfigPlugin {
+  pub name: String,
+  pub options: serde_json::Value,
+  pub filters: ScriptConfigPluginFilters,
+}
+
+impl Default for ScriptConfigPlugin {
+  fn default() -> Self {
+    Self {
+      name: String::new(),
+      options: serde_json::Value::Object(serde_json::Map::new()),
+      filters: ScriptConfigPluginFilters::default(),
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfig {
   pub target: EsVersion,
   pub parser: ScriptParserConfig,
-  pub plugins: Vec<(String, String)>,
+  pub plugins: Vec<ScriptConfigPlugin>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

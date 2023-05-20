@@ -18,10 +18,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceType,
   },
-  serde_json,
-  swc_common::{
-    comments::NoopComments, plugin::metadata::TransformPluginMetadataContext, Mark, GLOBALS,
-  },
+  swc_common::{comments::NoopComments, Mark, GLOBALS},
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleDecl, ModuleItem, Stmt,
   },
@@ -38,9 +35,9 @@ use farmfe_toolkit::{
     resolver,
     typescript::{strip, strip_with_jsx},
   },
-  swc_ecma_visit::{FoldWith, VisitMutWith},
+  swc_ecma_visit::VisitMutWith,
 };
-use swc_plugins::PluginConfig;
+use swc_plugins::transform_by_swc_plugins;
 
 mod deps_analyzer;
 mod swc_plugins;
@@ -162,50 +159,18 @@ impl Plugin for FarmPluginScript {
           }
         },
       )?;
-
-      if matches!(param.module_type, ModuleType::Tsx) {
-        try_with(
-          context.meta.script.cm.clone(),
-          &context.meta.script.globals,
-          || {
-            let swc_plugins = context
-              .config
-              .script
-              .plugins
-              .clone()
-              .into_iter()
-              .map(|(path, config)| PluginConfig(path, serde_json::to_value(config).unwrap()))
-              .collect::<Vec<_>>();
-            // TODO run the plugin only for specific module
-            let transform_metadata_context = Arc::new(TransformPluginMetadataContext::new(
-              Some(param.module_id.resolved_path(&context.config.root)),
-              context.config.mode.to_string(),
-              None,
-            ));
-            swc_plugin_runner::cache::init_plugin_module_cache_once(&None);
-            let source_map = context.meta.script.cm.clone();
-            let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
-
-            // execute swc plugins
-            let mut swc_plugins_transformers = swc_plugins::plugins(
-              Some(swc_plugins),
-              transform_metadata_context,
-              None,
-              source_map,
-              unresolved_mark,
-            );
-
-            let mut ast = param.meta.as_script_mut().take_ast();
-            ast = ast.fold_with(&mut swc_plugins_transformers);
-            param.meta.as_script_mut().set_ast(ast);
-          },
-        )?;
-      }
-
-      return Ok(Some(()));
     }
 
-    Ok(None)
+    // execute swc plugins
+    if param.module_type.is_script() && context.config.script.plugins.len() > 0 {
+      try_with(
+        context.meta.script.cm.clone(),
+        &context.meta.script.globals,
+        || transform_by_swc_plugins(param, context).unwrap(),
+      )?;
+    }
+
+    Ok(Some(()))
   }
 
   fn analyze_deps(

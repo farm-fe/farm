@@ -13,7 +13,16 @@ export default <UserConfig>{
       strictExports: true,
     },
     script: {
-      plugins: ['swc-plugin-vue-jsx']
+      plugins: [{
+        name: 'swc-plugin-vue-jsx',
+        options: {
+          "transformOn": true,
+          "optimize": true
+        },
+        filters: {
+          moduleTypes: ['tsx', 'jsx'],
+        }
+      }]
     }
   },
   plugins: [jsPluginVue()],

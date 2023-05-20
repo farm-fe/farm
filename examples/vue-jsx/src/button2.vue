@@ -1,15 +1,32 @@
 <template>
   <button @click="changeColor">change color</button>
 
-  <component :is="comp" />
+  <div class="comp">
+    <component :is="comp" />
+  </div>
 </template>
 
 <script lang="tsx" setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
-const comp = ref(<div style={{ color: '#fff', width: '100px', height: '30px', backgroundColor: 'red' }}></div>);
+const currentColor = ref('red');
+
+const comp = computed(() => (<div style={{ width: '100%', height: '100%', backgroundColor: currentColor.value }}></div>));
 
 const changeColor = () => {
-  comp.value = <div style={{ color: '#fff', width: '100px', height: '30px', backgroundColor: 'blue' }}></div>;
+  if (currentColor.value === 'red') {
+    currentColor.value = 'blue';
+  } else {
+    currentColor.value = 'red';
+  }
 }
 </script>
+
+<style scoped>
+.comp {
+  width: 100px;
+  color: #fff;
+  width: 100px;
+  height: 30px;
+}
+</style>

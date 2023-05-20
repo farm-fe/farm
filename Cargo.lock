@@ -1432,6 +1432,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "once_cell",
  "swc_ecma_loader",
  "swc_plugin_proxy",
  "swc_plugin_runner",
@@ -4248,9 +4249,9 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_minifier"
-version = "0.181.9"
+version = "0.181.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54377161d9fd7aa25e8b5eee2ad7d6bb4eeb6855adf45d86329b32b76d015a22"
+checksum = "aadeeaa3bf0196c9c315b365875f26f8817b9c3a407b6d94d4f69a54c8deb5a6"
 dependencies = [
  "ahash 0.7.6",
  "arrayvec",
@@ -4542,9 +4543,9 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_usage_analyzer"
-version = "0.13.5"
+version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "290c80ecfa73747a63782b16568c2fa7fa301c008f4d246de67d8286ba616f3f"
+checksum = "ab498b75aaef72ee0c6b3ea9a5fefd46e60b0531575fe6d2ab2c69871dfb4315"
 dependencies = [
  "ahash 0.7.6",
  "indexmap",
@@ -4605,9 +4606,9 @@ dependencies = [
 
 [[package]]
 name = "swc_error_reporters"
-version = "0.15.4"
+version = "0.15.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf37dae113d98ec257727dce3d746254a2731abc56e609a6f2efa7cf57806705"
+checksum = "60cd51fd8f4290023ded586a8409ee752a31aa9594f13eef411412f92e3ea9fb"
 dependencies = [
  "anyhow",
  "miette",
@@ -4765,9 +4766,9 @@ dependencies = [
 
 [[package]]
 name = "swc_plugin_runner"
-version = "0.95.5"
+version = "0.95.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cf6cb2f55f7959531a209109f03e69f3bfb5c34a654e2ac3cf106e3d265e30f"
+checksum = "8266484a39962fb0de6690988f811a8dfa4079389a6b488a370c251b18a1ab5b"
 dependencies = [
  "anyhow",
  "enumset",
