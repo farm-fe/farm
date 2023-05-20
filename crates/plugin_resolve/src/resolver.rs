@@ -666,10 +666,45 @@ impl Resolver {
                     ResolveKind::Require => {
                       if key_word.to_lowercase() == "require" {
                         let path = Path::new(resolved_path);
-                        if path.is_absolute() {
-                          let value_path = self
-                            .get_key_path(&key_value.as_str().unwrap(), package_json_info.dir());
-                          return Some(value_path);
+                        match key_value {
+                          Value::String(key_value) => {
+                            if path.is_absolute() {
+                              let value_path =
+                                self.get_key_path(&key_value, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                          }
+                          Value::Object(key_value) => {
+                            if path.is_absolute() {
+                              for (key, value) in key_value {
+                                match context.config.output.target_env {
+                                  TargetEnv::Node => {
+                                    if self.are_paths_equal(key, "default") {
+                                      if path.is_absolute() {
+                                        let value_path = self.get_key_path(
+                                          &value.as_str().unwrap(),
+                                          package_json_info.dir(),
+                                        );
+                                        return Some(value_path);
+                                      }
+                                    }
+                                  }
+                                  TargetEnv::Browser => {
+                                    if self.are_paths_equal(key, "default") {
+                                      if path.is_absolute() {
+                                        let value_path = self.get_key_path(
+                                          &value.as_str().unwrap(),
+                                          package_json_info.dir(),
+                                        );
+                                        return Some(value_path);
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          _ => {}
                         }
                       }
                     }
