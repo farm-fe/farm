@@ -130,7 +130,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-less':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^0.0.3
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
         specifier: workspace:^0.1.6
@@ -179,7 +179,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^1.0.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
         specifier: workspace:^0.1.6
@@ -222,7 +222,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^1.0.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
         specifier: workspace:^0.1.6
@@ -262,7 +262,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^2.0.0
+        specifier: workspace:^1.0.0
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
         specifier: workspace:^0.1.6
