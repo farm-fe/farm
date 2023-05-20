@@ -23,5 +23,4 @@ export default <UserConfig>{
     }
   },
   plugins: [farmJsPluginVue()]
-});
-
+};
