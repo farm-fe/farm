@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-vue
 
+## 1.1.1
+
+### Patch Changes
+
+- 6f97c87: Change the dist's module system to ESM
+- Updated dependencies [6f97c87]
+  - @farmfe/core@0.8.1
+
 ## 1.1.0
 
 ### Minor Changes
