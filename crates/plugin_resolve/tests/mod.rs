@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Config, OutputConfig, ResolveConfig},
+  config::{Config, ResolveConfig},
   context::CompilationContext,
   plugin::ResolveKind,
 };
@@ -185,24 +185,37 @@ fn resolve_alias() {
   fixture("tests/fixtures/resolve-alias/index.ts", |file, _| {
     let cwd = file.parent().unwrap().to_path_buf();
     let resolver = Resolver::new();
-    let context = CompilationContext::new(
-      Config {
-        resolve: ResolveConfig {
-          alias: HashMap::from([("@".to_string(), cwd.to_string_lossy().to_string())]),
+    let context = Arc::new(
+      CompilationContext::new(
+        Config {
+          resolve: ResolveConfig {
+            alias: HashMap::from([
+              ("@".to_string(), cwd.to_string_lossy().to_string()),
+              ("/@".to_string(), cwd.to_string_lossy().to_string()),
+            ]),
+            ..Default::default()
+          },
           ..Default::default()
         },
-        ..Default::default()
-      },
-      vec![],
-    )
-    .unwrap();
-
-    let resolved = resolver.resolve(
-      "@/pages/a",
-      cwd.clone(),
-      &ResolveKind::Import,
-      &Arc::new(context),
+        vec![],
+      )
+      .unwrap(),
     );
+
+    let resolved = resolver.resolve("@/pages/a", cwd.clone(), &ResolveKind::Import, &context);
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("pages")
+        .join("a.tsx")
+        .to_string_lossy()
+        .to_string()
+    );
+
+    let resolved = resolver.resolve("/@/pages/a", cwd.clone(), &ResolveKind::Import, &context);
     assert!(resolved.is_some());
     let resolved = resolved.unwrap();
 

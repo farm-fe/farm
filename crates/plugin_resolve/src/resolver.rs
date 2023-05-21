@@ -109,7 +109,10 @@ impl Resolver {
       }
     }
 
-    if self.is_source_absolute(source) {
+    // try alias first
+    if let Some(result) = self.try_alias(source, base_dir.clone(), kind, context) {
+      return Some(result);
+    } else if self.is_source_absolute(source) {
       let path_buf = PathBuf::from_str(source).unwrap();
 
       return self
@@ -159,42 +162,35 @@ impl Resolver {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
     } else {
-      // try alias first
-      self
-        .try_alias(source, base_dir.clone(), kind, context)
-        .or_else(|| {
-          // check if the result is cached
-          if let Some(result) =
-            self
-              .resolve_node_modules_cache
-              .lock()
-              .get(&ResolveNodeModuleCacheKey {
-                source: source.to_string(),
-                base_dir: base_dir.to_string_lossy().to_string(),
-                kind: kind.clone(),
-              })
-          {
-            return result.clone();
-          }
-
-          let (result, tried_paths) =
-            self.try_node_modules(source, base_dir.clone(), kind, context);
-          // cache the result
-          for tried_path in tried_paths {
-            let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
-            let key = ResolveNodeModuleCacheKey {
-              source: source.to_string(),
-              base_dir: tried_path.to_string_lossy().to_string(),
-              kind: kind.clone(),
-            };
-
-            if !resolve_node_modules_cache.contains_key(&key) {
-              resolve_node_modules_cache.insert(key, result.clone());
-            }
-          }
-
-          result
+      // check if the result is cached
+      if let Some(result) = self
+        .resolve_node_modules_cache
+        .lock()
+        .get(&ResolveNodeModuleCacheKey {
+          source: source.to_string(),
+          base_dir: base_dir.to_string_lossy().to_string(),
+          kind: kind.clone(),
         })
+      {
+        return result.clone();
+      }
+
+      let (result, tried_paths) = self.try_node_modules(source, base_dir.clone(), kind, context);
+      // cache the result
+      for tried_path in tried_paths {
+        let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
+        let key = ResolveNodeModuleCacheKey {
+          source: source.to_string(),
+          base_dir: tried_path.to_string_lossy().to_string(),
+          kind: kind.clone(),
+        };
+
+        if !resolve_node_modules_cache.contains_key(&key) {
+          resolve_node_modules_cache.insert(key, result.clone());
+        }
+      }
+
+      result
     }
   }
 
