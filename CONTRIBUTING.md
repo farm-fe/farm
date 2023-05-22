@@ -23,7 +23,7 @@ Please feel free to open an issue using the [feature request template](https://g
 - Fork the Farm repository into your own GitHub account.
 - Please adhere to the code style that you see around the location you are working on.
 - Setup Your Development Environment.
-- Checkout a topic branch from a base branch, e.g. `main` (If you submit the node side code, please pull the branch from the `refactor/ node` branch and submit).
+- Checkout a topic branch from a base branch, e.g. `main` (If you submit the node side code, please pull the branch from the `refactor/node` branch and submit).
 - Run `cargo test` and make sure that it passes.
 - If you've changed some packages And prepare for an updated version, you should output `npx changset` in the root directory.
 
