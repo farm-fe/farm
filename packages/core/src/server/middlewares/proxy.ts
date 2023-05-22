@@ -1,4 +1,3 @@
-import { URL } from 'node:url';
 import chalk from 'chalk';
 import proxy, { IKoaProxiesOptions, IBaseKoaProxiesOptions } from 'koa-proxies';
 import type { ServerOptions as HttpProxyServerOptions } from 'http-proxy';
@@ -14,16 +13,17 @@ export function proxyPlugin(context: DevServer) {
   const options = config.proxy;
   Object.keys(options).forEach((path) => {
     let opts = options[path] as IBaseKoaProxiesOptions;
+
     if (typeof opts === 'string') {
-      opts = { target: opts };
+      opts = { target: opts, changeOrigin: true } as IBaseKoaProxiesOptions;
     }
-    opts.logs = (ctx: any, target: string) => {
-      logger.info(
-        `${ctx.req.method} "${ctx.req.oldPath}" proxy to ${chalk.cyan(
-          new URL(ctx.req.url, target)
-        )}`
-      );
-    };
+    app.on('error', (err, ctx) => {
+      // proxy watcher error
+      if (ctx.req.oldPath === path) {
+        logger.info(`${chalk.red(`http proxy error:`)}\n${err.stack}`);
+      }
+    });
+
     app.use(proxy(path, opts));
   });
 }
