@@ -29,14 +29,17 @@ export class FileWatcher {
         ? serverOrCompiler.getCompiler()
         : serverOrCompiler;
 
-    this._watcher = chokidar.watch(
-      serverOrCompiler instanceof DevServer
-        ? compiler.resolvedModulePaths(this._root)
-        : [this._root],
-      {
-        ignored: this._options.ignores
-      }
-    );
+    // this._watcher = chokidar.watch(
+    //   serverOrCompiler instanceof DevServer
+    //     ? compiler.resolvedModulePaths(this._root)
+    //     : [this._root],
+    //   {
+    //     ignored: this._options.ignores
+    //   }
+    // );
+    this._watcher = chokidar.watch([this._root], {
+      ignored: this._options.ignores
+    });
     if (serverOrCompiler instanceof DevServer) {
       serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
         const added = updateResult.added.map((addedModule) => {
@@ -68,14 +71,24 @@ export class FileWatcher {
       normalizeWatchLogger(this._logger, config);
     }
 
-    this._watcher.on('change', async (path) => {
+    this._watcher.on('change', async (file) => {
       if (serverOrCompiler instanceof DevServer) {
-        serverOrCompiler.hmrEngine.hmrUpdate(path);
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        console.log(file, 6666666);
+        console.log(file.endsWith('.tsx'));
+
+        if (file === serverOrCompiler.config.host || file.endsWith('.tsx')) {
+          chalk.green('config or .env file changed, restarting server...');
+          await restartServer(serverOrCompiler);
+          return;
+        }
+        serverOrCompiler.hmrEngine.hmrUpdate(file);
       }
 
       if (serverOrCompiler instanceof Compiler) {
         await compilerHandler(async () => {
-          await compiler.update([path], true);
+          await compiler.update([file], true);
           compiler.writeResourcesToDisk();
         }, config);
       }
@@ -105,4 +118,8 @@ async function compilerHandler(callback: () => Promise<void>, config: Config) {
       `${elapsedTime}ms`
     )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
   );
+}
+
+export async function restartServer(server: DevServer) {
+  await server.close();
 }

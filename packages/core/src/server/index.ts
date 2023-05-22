@@ -43,6 +43,7 @@ interface FarmServerContext {
 interface ImplDevServer {
   createFarmServer(options: UserServerConfig): void;
   listen(): Promise<void>;
+  close(): Promise<void>;
   getCompiler(): Compiler;
 }
 
@@ -103,6 +104,13 @@ export class DevServer implements ImplDevServer {
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}`);
     }
+  }
+
+  async close() {
+    this.server?.close(() => {
+      console.log('HTTP server is closed');
+      this.listen();
+    });
   }
 
   private resolvedFarmServerPlugins() {
