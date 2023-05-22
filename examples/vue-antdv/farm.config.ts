@@ -1,8 +1,9 @@
 // change to @farmfe/core/config when resolve support conditional exports
-import { defineFarmConfig } from '@farmfe/core/config';
+import { UserConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
+import path from 'path';
 
-export default defineFarmConfig({
+export default <UserConfig>{
   compilation: {
     input: {
       index: './index.html',
@@ -12,7 +13,11 @@ export default defineFarmConfig({
     },
     resolve: {
       strictExports: true,
+      alias: {
+        '/@': path.join(process.cwd(), 'src')
+      }
     },
+    lazyCompilation: true
   },
   server: {
     proxy: {
@@ -24,4 +29,4 @@ export default defineFarmConfig({
     },
   },
   plugins: [farmJsPluginVue()],
-});
+};

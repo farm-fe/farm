@@ -139,6 +139,15 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  /// Similar to [Plugin::render_resource_pot] but only for the Farm runtime
+  fn render_runtime_resource_pot(
+    &self,
+    _resource_pot: &mut ResourcePot,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
   /// Render the [ResourcePot] in [ResourcePotMap].
   /// May merge the module's ast in the same resource to a single ast and transform the output format to custom module system and ESM
   fn render_resource_pot(
@@ -186,6 +195,16 @@ pub trait Plugin: Any + Send + Sync {
   fn finish(&self, _stat: &Stats, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     Ok(None)
   }
+
+  /// Called when calling compiler.update(module_paths).
+  /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
+  fn update_modules(&self, params: &mut UpdateContext, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    Ok(None)
+  }
+}
+
+pub struct UpdateContext {
+
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]

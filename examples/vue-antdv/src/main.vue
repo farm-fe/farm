@@ -8,9 +8,9 @@
         mode="horizontal"
         :style="{ lineHeight: '64px' }"
       >
-        <a-menu-item key="1">nav 1</a-menu-item>
-        <a-menu-item key="2">nav 2</a-menu-item>
-        <a-menu-item key="3">nav 3</a-menu-item>
+        <a-menu-item key="1"><RouterLink to="/test">To Test</RouterLink></a-menu-item>
+        <a-menu-item key="2"><RouterLink to="/">To Main</RouterLink></a-menu-item>
+        <a-menu-item key="3"><RouterLink to="/test1/test2">To Nest Test3</RouterLink></a-menu-item>
       </a-menu>
     </a-layout-header>
     <a-layout>
@@ -68,8 +68,7 @@
         <a-layout-content
           :style="{ background: '#fff', padding: '24px', margin: 0, minHeight: '280px' }"
         >
-          <DatePicker v-model:value="selectedDate" valueFormat="YYYY-MM-DD" />
-          <span style="margin-left: 10px;">current selected date: {{ selectedDate ?? '-' }}</span>
+          <RouterView />
         </a-layout-content>
       </a-layout>
     </a-layout>
@@ -93,7 +92,6 @@ export default defineComponent({
       selectedKeys2: ref<string[]>(['1']),
       collapsed: ref<boolean>(false),
       openKeys: ref<string[]>(['sub1']),
-      selectedDate: ref<string>(),
     };
   },
 });
