@@ -314,6 +314,9 @@ importers:
       '@farmfe/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@farmfe/js-plugin-vue':
         specifier: workspace:*
         version: link:../../js-plugins/vue
