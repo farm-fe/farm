@@ -72,7 +72,7 @@ cli
 // build command
 cli
   .command('build', 'compile the project in production mode')
-  // TODO add target config
+  // TODO add target config esm, commonjs
   // .option("--target <target>", "transpile target")
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
