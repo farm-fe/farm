@@ -73,16 +73,11 @@ export class FileWatcher {
 
     this._watcher.on('change', async (file) => {
       if (serverOrCompiler instanceof DevServer) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        console.log(file, 6666666);
-        console.log(file.endsWith('.tsx'));
-
-        if (file === serverOrCompiler.config.host || file.endsWith('.tsx')) {
-          chalk.green('config or .env file changed, restarting server...');
-          await restartServer(serverOrCompiler);
-          return;
-        }
+        // if (file === serverOrCompiler.config.host || file.endsWith('.tsx')) {
+        //   chalk.green('config or .env file changed, restarting server...');
+        //   await restartServer(serverOrCompiler);
+        //   return;
+        // }
         serverOrCompiler.hmrEngine.hmrUpdate(file);
       }
 

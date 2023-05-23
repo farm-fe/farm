@@ -20,54 +20,50 @@ const cli = cac('farm');
 
 // common command
 cli
-  .option('-c, --config <file>', `use specified config file`)
-  .option('-m, --mode <mode>', `set env mode`)
+  // TODO base options
+  .option('-c, --config <file>', 'use specified config file')
+  .option('-m, --mode <mode>', 'set env mode')
+  .option('--base <path>', 'public base path')
   .option('--clearScreen', 'allow/disable clear screen when logging');
 
 // dev command
 cli
   .command(
-    '[root]',
+    'start',
     'Compile the project in dev mode and serve it with farm dev server'
   )
-  .alias('start')
-  .option('--host <host>', 'specify host')
+  .alias('dev')
+  .option('-l, --lazy', 'lazyCompilation')
+  .option('--host [host]', 'specify host')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
-  .option('--cors', `enable CORS`)
-  // TODO add other server options
-  // .option('--https', 'use https')
-  // .option('--strictPort', `[boolean] exit if specified port is already in use`)
-  .option('-l, --lazy', 'lazyCompilation')
+  .option('--cors', 'enable CORS')
+  // TODO add https config
+  .option('--https', 'use https')
+  // TODO add strictPort config
   .option('--strictPort', 'specified port is already in use, exit with error')
-  .action(
-    async (
-      root: string,
-      options: FarmCLIServerOptions & GlobalFarmCLIOptions
-    ) => {
-      try {
-        const resolveOptions = resolveCommandOptions(options);
-        const configPath = getConfigPath(options.config);
-        const defaultOptions = {
-          compilation: {
-            root,
-            mode: options.mode,
-            lazyCompilation: options.lazy
-          },
-          server: resolveOptions,
-          clearScreen: options.clearScreen ?? true,
-          configPath
-        };
+  .action(async (options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
+    try {
+      const resolveOptions = resolveCommandOptions(options);
+      const configPath = getConfigPath(options.config);
+      const inlineConfig = {
+        compilation: {
+          mode: options.mode,
+          lazyCompilation: options.lazy
+        },
+        server: resolveOptions,
+        clearScreen: options.clearScreen ?? true,
+        configPath
+      };
 
-        const { start } = await resolveCore(configPath);
-        await start(defaultOptions);
-      } catch (e) {
-        logger.error(`Failed to start server:\n ${e.stack}`);
-        process.exit(1);
-      }
+      const { start } = await resolveCore(configPath);
+      await start(inlineConfig);
+    } catch (e) {
+      logger.error(`Failed to start server:\n ${e.stack}`);
+      process.exit(1);
     }
-  );
+  });
 
 // build command
 cli

@@ -46,12 +46,13 @@
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
     "inquirer": "^9.1.4",
-    "walkdir": "^0.4.1",
-    "loglevel": "^1.8.1"
+    "kleur": "^4.1.5",
+    "loglevel": "^1.8.1",
+    "walkdir": "^0.4.1"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
     "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@types/cross-spawn": "^6.0.2",
     "@types/inquirer": "^9.0.3"
   }

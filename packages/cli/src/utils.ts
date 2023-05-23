@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import readline from 'node:readline';
 import Module from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -58,9 +59,18 @@ export function resolveCore(cwd: string): Promise<{
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
 
-  const farmCorePath = require.resolve('@farmfe/core');
+  let farmCorePath: string;
+  try {
+    farmCorePath = require.resolve('@farmfe/core');
+  } catch (err) {
+    // TODO Encapsulation logger
+    console.error(
+      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
+    );
+    process.exit(1);
+  }
 
-  if (process.platform === 'win32') {
+  if (isWindows) {
     return import(pathToFileURL(farmCorePath).toString());
   }
 
@@ -134,10 +144,13 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
 export function resolveCommandOptions(
   options: GlobalFarmCLIOptions
 ): GlobalFarmCLIOptions {
-  filterDuplicateOptions(options);
-  return cleanOptions(options);
+  const resolveOptions = { ...options };
+  filterDuplicateOptions(resolveOptions);
+  return cleanOptions(resolveOptions);
 }
 
 export function getConfigPath(configPath: string) {
   return path.join(process.cwd(), configPath ?? '');
 }
+
+export const isWindows = os.platform() === 'win32';
