@@ -11,7 +11,9 @@ use farmfe_core::{
     module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId,
     ModuleType,
   },
-  plugin::{PluginResolveHookParam, ResolveKind},
+  plugin::{
+    PluginResolveHookParam, PluginUpdateModulesHookParams, ResolveKind, UpdateResult, UpdateType,
+  },
   rayon::ThreadPool,
   resource::ResourceType,
 };
@@ -37,29 +39,6 @@ mod patch_module_group_graph;
 mod regenerate_resources;
 mod update_context;
 
-/// The output after the updating process
-#[derive(Debug, Default)]
-pub struct UpdateResult {
-  pub added_module_ids: Vec<ModuleId>,
-  pub updated_module_ids: Vec<ModuleId>,
-  pub removed_module_ids: Vec<ModuleId>,
-  /// Javascript module map string, the key is the module id, the value is the module function
-  /// This code string should be returned to the client side as MIME type `application/javascript`
-  pub resources: String,
-  pub boundaries: HashMap<String, Vec<Vec<String>>>,
-  pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
-}
-
-#[derive(Debug, Clone)]
-pub enum UpdateType {
-  // added a new module
-  Added,
-  // updated a module
-  Updated,
-  // removed a module
-  Removed,
-}
-
 enum ResolveModuleResult {
   /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
   ExistingBeforeUpdate(ModuleId),
@@ -83,6 +62,19 @@ impl Compiler {
   {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
     let update_context = Arc::new(UpdateContext::new(&self.context, &paths));
+
+    let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams {
+      paths,
+      update_result: UpdateResult::default(),
+    };
+
+    self
+      .context
+      .plugin_driver
+      .update_modules(&mut plugin_update_modules_hook_params, &self.context)?;
+
+    let paths = plugin_update_modules_hook_params.paths;
+    let mut update_result = plugin_update_modules_hook_params.update_result;
 
     for (path, update_type) in paths.clone() {
       match update_type {
@@ -157,14 +149,17 @@ impl Compiler {
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
 
     // TODO: support sourcemap for hmr. and should generate the hmr update response body in rust side.
-    Ok(UpdateResult {
-      added_module_ids: diff_result.added_modules.into_iter().collect(),
-      updated_module_ids,
-      removed_module_ids: diff_result.removed_modules.into_iter().collect(),
-      resources,
-      boundaries,
-      dynamic_resources_map,
-    })
+    update_result
+      .added_module_ids
+      .extend(diff_result.added_modules.into_iter());
+    update_result.updated_module_ids.extend(updated_module_ids);
+    update_result
+      .removed_module_ids
+      .extend(diff_result.removed_modules.into_iter());
+    update_result.resources = resources;
+    update_result.boundaries = boundaries;
+    update_result.dynamic_resources_map = dynamic_resources_map;
+    Ok(update_result)
   }
 
   /// Resolving, loading, transforming and parsing a module in a separate thread.

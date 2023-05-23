@@ -63,7 +63,7 @@ export default function farmVuePlugin(
         }
         return {
           content: source,
-          moduleType: 'ts'
+          moduleType: 'vue'
         };
       }
     },
@@ -73,6 +73,10 @@ export default function farmVuePlugin(
         resolvedPaths: ['.vue$', ...include]
       },
       async executor(params, ctx) {
+        if (params.moduleType !== 'vue') {
+          return;
+        }
+
         //If path in exclude,skip transform.
         for (let reg of exclude) {
           if (reg.test(params.resolvedPath))
