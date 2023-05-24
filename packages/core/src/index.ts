@@ -2,6 +2,7 @@ export * from './compiler/index.js';
 export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
+export * from './utils/index.js';
 
 import path from 'node:path';
 import os from 'node:os';

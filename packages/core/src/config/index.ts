@@ -20,7 +20,7 @@ import { Logger } from '../utils/logger.js';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseUserConfig } from './schema.js';
-import { clearScreen, isObject } from '../utils/common.js';
+import { clearScreen, isObject } from '../utils/index.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [

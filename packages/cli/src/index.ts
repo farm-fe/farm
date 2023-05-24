@@ -1,11 +1,12 @@
 import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
-import { COMMANDS } from './plugin/index.js';
 import Module from 'node:module';
 import { pathToFileURL } from 'node:url';
-import type { start, build, preview, watch } from '@farmfe/core';
+import { DefaultLogger } from '@farmfe/core';
 import { getConfigPath, isWindows, resolveCommandOptions } from './utils.js';
-import { createLogger } from './logger.js';
+import { COMMANDS } from './plugin/index.js';
+
+import type { start, build, preview, watch } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
@@ -14,7 +15,7 @@ import type {
 } from './types.js';
 import path from 'node:path';
 
-const logger = createLogger();
+const logger = new DefaultLogger();
 
 const { version } = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url)).toString()

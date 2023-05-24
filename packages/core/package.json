@@ -75,7 +75,6 @@
     "execa": "^7.1.1",
     "figlet": "^1.5.2",
     "http-proxy": "^1.18.1",
-    "kleur": "^4.1.5",
     "koa": "^2.13.4",
     "koa-compress": "^5.1.1",
     "koa-proxies": "^0.12.3",

@@ -14,6 +14,7 @@ export interface Logger {
 }
 
 export class DefaultLogger implements Logger {
+  constructor(private name: string = 'Farm') {}
   trace(message: string): void {
     log.trace(message);
   }
@@ -21,7 +22,9 @@ export class DefaultLogger implements Logger {
     log.debug(message);
   }
   info(message: string, banner = true): void {
-    log.info(`${banner ? brandColor('[ Farm ] ') : ''}${message}`);
+    log.info(
+      `${banner ? brandColor(`[ ${this.name} ] `) : ''}${message} : ${message}`
+    );
   }
 
   warn(message: string): void {
