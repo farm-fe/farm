@@ -126,5 +126,3 @@ export function resolveCommandOptions(
 export function getConfigPath(configPath: string) {
   return path.join(process.cwd(), configPath ?? '');
 }
-
-export const isWindows = os.platform() === 'win32';
