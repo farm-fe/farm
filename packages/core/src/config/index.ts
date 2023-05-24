@@ -166,6 +166,7 @@ export async function normalizeUserCompilationConfig(
       rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
     } else if (typeof plugin === 'object') {
       if (
+        plugin.transform &&
         !plugin.transform.filters?.moduleTypes &&
         !plugin.transform.filters?.resolvedPaths
       ) {
@@ -174,10 +175,12 @@ export async function normalizeUserCompilationConfig(
         );
       }
 
-      if (!plugin.transform.filters.moduleTypes) {
-        plugin.transform.filters.moduleTypes = [];
-      } else if (!plugin.transform.filters.resolvedPaths) {
-        plugin.transform.filters.resolvedPaths = [];
+      if (plugin.transform) {
+        if (!plugin.transform.filters.moduleTypes) {
+          plugin.transform.filters.moduleTypes = [];
+        } else if (!plugin.transform.filters.resolvedPaths) {
+          plugin.transform.filters.resolvedPaths = [];
+        }
       }
 
       jsPlugins.push(plugin as JsPlugin);

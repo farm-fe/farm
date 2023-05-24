@@ -1,6 +1,7 @@
-use farmfe_compiler::{update::UpdateType, Compiler};
+use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{Config, RuntimeConfig},
+  plugin::UpdateType,
   relative_path::RelativePath,
 };
 
