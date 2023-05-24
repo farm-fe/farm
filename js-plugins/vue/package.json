@@ -40,7 +40,7 @@
   "dependencies": {
     "@jridgewell/gen-mapping": "^0.3.2",
     "@jridgewell/trace-mapping": "^0.3.17",
-    "@vue/compiler-sfc": "^3.2.47",
+    "@vue/compiler-sfc": "^3.3.0",
     "source-map": "^0.7.4"
   },
   "peerDependencies": {

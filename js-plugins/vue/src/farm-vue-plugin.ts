@@ -31,6 +31,13 @@ const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
 
+const parseQuery = (query: [string, string][]) =>
+  query.reduce((pre, [key, value]) => {
+    pre[key] = value;
+
+    return pre;
+  }, {} as Record<string, string>);
+
 export default function farmVuePlugin(
   farmVuePluginOptions: FarmVuePluginOptions = {}
 ): JsPlugin {
@@ -48,11 +55,29 @@ export default function farmVuePlugin(
     },
     load: {
       filters: {
-        resolvedPaths: ['.vue$']
+        resolvedPaths: ['.vue$', ...include]
       },
       async executor(params, ctx) {
         const { resolvedPath } = params;
         let source = '';
+
+        const query = parseQuery(params.query);
+        const { vue, lang, hash } = query;
+
+        // handle .vue file
+        if (vue === 'true' && hash) {
+          let styleCode = stylesCodeCache[hash];
+          // if lang is not "css", use preProcessor to handle
+          if (applyStyleLangs.includes(lang)) {
+            const { css } = await preProcession(styleCode, lang);
+            styleCode = css;
+          }
+          return {
+            content: typeof styleCode === 'string' ? styleCode : '',
+            moduleType: 'css'
+          };
+        }
+
         try {
           source = await fs.promises.readFile(resolvedPath, 'utf-8');
         } catch (err) {
@@ -70,37 +95,17 @@ export default function farmVuePlugin(
     // add hmr code In root file
     transform: {
       filters: {
-        resolvedPaths: ['.vue$', ...include]
+        moduleTypes: ['vue']
       },
       async executor(params, ctx) {
-        if (params.moduleType !== 'vue') {
-          return;
-        }
-
-        //If path in exclude,skip transform.
+        // If path in exclude,skip transform.
         for (let reg of exclude) {
           if (reg.test(params.resolvedPath))
             return { content: params.content, moduleType: params.moduleType };
         }
-        const query: Record<string, string> = {};
-        params.query.forEach(([key, value]) => {
-          query[key] = value;
-        });
-        const { vue, lang, hash } = query;
+
+        const query = parseQuery(params.query);
         const { resolvedPath, content: source } = params;
-        // handle .vue file
-        if (vue === 'true' && hash) {
-          let styleCode = stylesCodeCache[hash];
-          // if lang is not "css", use preProcessor to handle
-          if (applyStyleLangs.includes(lang)) {
-            const { css } = await preProcession(styleCode, lang);
-            styleCode = css;
-          }
-          return {
-            content: typeof styleCode === 'string' ? styleCode : '',
-            moduleType: 'css'
-          };
-        }
 
         // transform vue
         const result = callWithErrorHandle<null, typeof parse, [string]>(

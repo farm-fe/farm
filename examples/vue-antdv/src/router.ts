@@ -23,7 +23,7 @@ export const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes, // `routes: routes` 的缩写
+  routes // `routes: routes` 的缩写
 });
 
 export default router;

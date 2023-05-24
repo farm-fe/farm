@@ -165,6 +165,21 @@ export async function normalizeUserCompilationConfig(
     if (typeof plugin === 'string' || Array.isArray(plugin)) {
       rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
     } else if (typeof plugin === 'object') {
+      if (
+        !plugin.transform.filters?.moduleTypes &&
+        !plugin.transform.filters?.resolvedPaths
+      ) {
+        throw new Error(
+          `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
+        );
+      }
+
+      if (!plugin.transform.filters.moduleTypes) {
+        plugin.transform.filters.moduleTypes = [];
+      } else if (!plugin.transform.filters.resolvedPaths) {
+        plugin.transform.filters.resolvedPaths = [];
+      }
+
       jsPlugins.push(plugin as JsPlugin);
     }
   }
