@@ -12,7 +12,7 @@ import Koa, { Context } from 'koa';
 import { Compiler } from './compiler/index.js';
 import {
   normalizeUserCompilationConfig,
-  resolveUserConfig,
+  resolveInlineConfig,
   UserConfig
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
@@ -22,24 +22,24 @@ import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
 
 export async function start(
-  options: FarmCLIOptions & UserConfig
+  inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const config: UserConfig = await resolveInlineConfig(inlineConfig, logger);
+
   const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
+    config,
     'development'
   );
 
   const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, userConfig.server);
+  const devServer = new DevServer(compiler, logger, config.server);
 
   await devServer.listen();
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     logger.info(
-      'HMR enabled, watching for file changes under ' +
-        chalk.green(userConfig.root)
+      'HMR enabled, watching for file changes under ' + chalk.green(config.root)
     );
 
     if (normalizedConfig.config.mode === 'production') {
@@ -49,7 +49,7 @@ export async function start(
       process.exit(1);
     }
 
-    const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
+    const fileWatcher = new FileWatcher(config.root, devServer.config.hmr);
     fileWatcher.watch(devServer, {});
   }
 }
@@ -58,7 +58,7 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const userConfig: UserConfig = await resolveInlineConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
@@ -85,7 +85,7 @@ export async function build(
 export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const userConfig: UserConfig = await resolveInlineConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -138,7 +138,7 @@ export async function watch(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const userConfig: UserConfig = await resolveInlineConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'

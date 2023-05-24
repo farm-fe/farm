@@ -1,10 +1,8 @@
 import { z } from 'zod';
 import { UserConfig } from './types.js';
 
-const ConfigSchema = z
+const compilationConfigSchema = z
   .object({
-    watch: z.boolean().optional(),
-    coreLibPath: z.string().optional(),
     input: z.record(z.string()).optional(),
     output: z
       .object({
@@ -30,7 +28,8 @@ const ConfigSchema = z
     define: z.record(z.string()).optional(),
     external: z.array(z.string()).optional(),
     mode: z.enum(['development', 'production']).optional(),
-    root: z.string().optional(),
+    watch: z.boolean().optional(),
+    coreLibPath: z.string().optional(),
     runtime: z
       .object({
         path: z.string().nonempty(),
@@ -131,11 +130,11 @@ const ConfigSchema = z
   })
   .strict();
 
-const UserConfigSchema = z
+const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
     plugins: z.array(z.any()).optional(),
-    compilation: ConfigSchema.optional(),
+    compilation: compilationConfigSchema.optional(),
     clearScreen: z.boolean().optional(),
     server: z
       .object({
@@ -177,7 +176,7 @@ const UserConfigSchema = z
   .strict();
 
 export function parseUserConfig(config: unknown) {
-  const parsed = UserConfigSchema.parse(config);
+  const parsed = FarmConfigSchema.parse(config);
   // TODO: parse will only return correct types if tsconfig is set to strict
   return parsed as UserConfig;
   // return config as UserConfig;

@@ -3,10 +3,16 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "declaration": false
+    "declaration": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
-  "exclude": ["node_modules"],
-  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "src/**/*"
+  ],
   "references": [
     {
       "path": "../core/tsconfig.build.json"

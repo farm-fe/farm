@@ -1,7 +1,10 @@
 import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
 import { COMMANDS } from './plugin/index.js';
-import { getConfigPath, resolveCommandOptions, resolveCore } from './utils.js';
+import Module from 'node:module';
+import { pathToFileURL } from 'node:url';
+import type { start, build, preview, watch } from '@farmfe/core';
+import { getConfigPath, isWindows, resolveCommandOptions } from './utils.js';
 import { createLogger } from './logger.js';
 import type {
   FarmCLIBuildOptions,
@@ -9,6 +12,7 @@ import type {
   FarmCLIServerOptions,
   GlobalFarmCLIOptions
 } from './types.js';
+import path from 'node:path';
 
 const logger = createLogger();
 
@@ -29,10 +33,10 @@ cli
 // dev command
 cli
   .command(
-    'start',
+    '[root]',
     'Compile the project in dev mode and serve it with farm dev server'
   )
-  .alias('dev')
+  .alias('start')
   .option('-l, --lazy', 'lazyCompilation')
   .option('--host [host]', 'specify host')
   .option('--port <port>', 'specify port')
@@ -43,27 +47,32 @@ cli
   .option('--https', 'use https')
   // TODO add strictPort config
   .option('--strictPort', 'specified port is already in use, exit with error')
-  .action(async (options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
-    try {
-      const resolveOptions = resolveCommandOptions(options);
-      const configPath = getConfigPath(options.config);
-      const inlineConfig = {
-        compilation: {
-          mode: options.mode,
-          lazyCompilation: options.lazy
-        },
-        server: resolveOptions,
-        clearScreen: options.clearScreen ?? true,
-        configPath
-      };
+  .action(
+    async (
+      root: string,
+      options: FarmCLIServerOptions & GlobalFarmCLIOptions
+    ) => {
+      try {
+        const resolveOptions = resolveCommandOptions(options);
+        const configPath = getConfigPath(options.config);
+        const inlineConfig = {
+          compilation: {
+            mode: options.mode,
+            lazyCompilation: options.lazy
+          },
+          server: resolveOptions,
+          clearScreen: options.clearScreen ?? true,
+          configPath
+        };
 
-      const { start } = await resolveCore(configPath);
-      await start(inlineConfig);
-    } catch (e) {
-      logger.error(`Failed to start server:\n ${e.stack}`);
-      process.exit(1);
+        const { start } = await resolveCore(configPath);
+        await start(inlineConfig);
+      } catch (e) {
+        logger.error(`Failed to start server:\n ${e.stack}`);
+        process.exit(1);
+      }
     }
-  });
+  );
 
 // build command
 cli
@@ -185,3 +194,29 @@ cli.help();
 cli.version(version);
 
 cli.parse();
+
+export function resolveCore(cwd: string): Promise<{
+  start: typeof start;
+  build: typeof build;
+  watch: typeof watch;
+  preview: typeof preview;
+}> {
+  const require = Module.createRequire(path.join(cwd, 'package.json'));
+
+  let farmCorePath: string;
+  try {
+    farmCorePath = require.resolve('@farmfe/core');
+  } catch (err) {
+    // TODO Encapsulation logger
+    console.error(
+      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
+    );
+    process.exit(1);
+  }
+
+  if (isWindows) {
+    return import(pathToFileURL(farmCorePath).toString());
+  }
+
+  return import(farmCorePath);
+}

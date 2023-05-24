@@ -222,7 +222,7 @@ export function normalizeDevServerOptions(
  * Resolve and load user config from the specified path
  * @param configPath
  */
-export async function resolveUserConfig(
+export async function resolveInlineConfig(
   options: FarmCLIOptions,
   logger: Logger
 ): Promise<UserConfig> {
@@ -342,14 +342,6 @@ export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
   return config;
 }
 
-// TODO optimizing merge methods
-export function mergeServerOptions(
-  config: UserConfig,
-  options: FarmCLIOptions
-) {
-  config.server = merge(config.server, options);
-}
-
 export function mergeUserConfig(
   config: Record<string, any>,
   options: Record<string, any>
@@ -359,7 +351,7 @@ export function mergeUserConfig(
   return mergeConfiguration(config, resolveInlineConfig);
 }
 
-function mergeConfiguration(
+export function mergeConfiguration(
   a: Record<string, any>,
   b: Record<string, any>
 ): Record<string, any> {

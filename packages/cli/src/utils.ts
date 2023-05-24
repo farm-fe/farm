@@ -2,9 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import readline from 'node:readline';
-import Module from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { start, build, preview, watch } from '@farmfe/core';
+import { fileURLToPath } from 'node:url';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
 import type { GlobalFarmCLIOptions } from './types.js';
@@ -51,31 +49,6 @@ node_modules
   }
 }
 
-export function resolveCore(cwd: string): Promise<{
-  start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
-}> {
-  const require = Module.createRequire(path.join(cwd, 'package.json'));
-
-  let farmCorePath: string;
-  try {
-    farmCorePath = require.resolve('@farmfe/core');
-  } catch (err) {
-    // TODO Encapsulation logger
-    console.error(
-      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
-    );
-    process.exit(1);
-  }
-
-  if (isWindows) {
-    return import(pathToFileURL(farmCorePath).toString());
-  }
-
-  return import(farmCorePath);
-}
 export async function install(options: installProps): Promise<void> {
   const cwd = options.cwd;
   return new Promise((resolve, reject) => {
@@ -137,6 +110,7 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
   delete resolveOptions.c;
   delete resolveOptions.w;
   delete resolveOptions.l;
+  delete resolveOptions.mode;
   delete resolveOptions.clearScreen;
   return resolveOptions;
 }
