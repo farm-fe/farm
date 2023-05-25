@@ -437,9 +437,6 @@ importers:
       cac:
         specifier: ^6.7.14
         version: 6.7.14
-      chalk:
-        specifier: ^5.2.0
-        version: 5.2.0
       cross-spawn:
         specifier: ^7.0.3
         version: 7.0.3
@@ -449,12 +446,6 @@ importers:
       inquirer:
         specifier: ^9.1.4
         version: 9.1.4(typescript@4.9.4)
-      kleur:
-        specifier: ^4.1.5
-        version: 4.1.5
-      loglevel:
-        specifier: ^1.8.1
-        version: 1.8.1
       walkdir:
         specifier: ^0.4.1
         version: 0.4.1
@@ -504,9 +495,6 @@ importers:
       http-proxy:
         specifier: ^1.18.1
         version: 1.18.1
-      kleur:
-        specifier: ^4.1.5
-        version: 4.1.5
       koa:
         specifier: ^2.13.4
         version: 2.13.4
@@ -5203,6 +5191,7 @@ packages:
   /kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+    dev: true
 
   /koa-compose@4.1.0:
     resolution: {integrity: sha512-8ODW8TrDuMYvXRwra/Kh7/rJo9BtOfPc6qO8eAfC80CnCvSjSl0bkRM24X6/XBBEyj0v1nRUQ1LyOy3dbqOWXw==}
