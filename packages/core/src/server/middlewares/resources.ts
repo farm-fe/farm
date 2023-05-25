@@ -26,9 +26,14 @@ export function resources(compiler: Compiler) {
     ctx.type = extname(resourcePath);
     const resource = compiler.resources()[resourcePath];
 
-    if (!resource) return;
-
-    ctx.body = Buffer.from(resource);
+    // Fallback to index.html if the resource is not found
+    // TODO make this configurable by spa option and find the closest index.html from ctx.path
+    if (!resource) {
+      ctx.type = '.html';
+      ctx.body = compiler.resources()['index.html'];
+    } else {
+      ctx.body = Buffer.from(resource);
+    }
   };
 }
 

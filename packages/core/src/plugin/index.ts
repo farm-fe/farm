@@ -5,7 +5,7 @@ import {
   PluginResolveHookParam,
   PluginResolveHookResult,
   PluginTransformHookParam,
-  PluginTransformHookResult,
+  PluginTransformHookResult
 } from '../../binding/index.js';
 
 interface CompilationContext {
@@ -44,7 +44,7 @@ export interface JsPlugin {
   >;
 
   transform?: JsPluginHook<
-    { resolvedPaths: string[] },
+    { resolvedPaths?: string[]; moduleTypes?: string[] },
     PluginTransformHookParam,
     PluginTransformHookResult
   >;

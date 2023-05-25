@@ -31,6 +31,13 @@ const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
 
+const parseQuery = (query: [string, string][]) =>
+  query.reduce((pre, [key, value]) => {
+    pre[key] = value;
+
+    return pre;
+  }, {} as Record<string, string>);
+
 export default function farmVuePlugin(
   farmVuePluginOptions: FarmVuePluginOptions = {}
 ): JsPlugin {
@@ -48,42 +55,15 @@ export default function farmVuePlugin(
     },
     load: {
       filters: {
-        resolvedPaths: ['.vue$']
+        resolvedPaths: ['.vue$', ...include]
       },
       async executor(params, ctx) {
         const { resolvedPath } = params;
         let source = '';
-        try {
-          source = await fs.promises.readFile(resolvedPath, 'utf-8');
-        } catch (err) {
-          error({
-            id: resolvedPath,
-            message: "path is not right,can't readFile"
-          });
-        }
-        return {
-          content: source,
-          moduleType: 'ts'
-        };
-      }
-    },
-    // add hmr code In root file
-    transform: {
-      filters: {
-        resolvedPaths: ['.vue$', ...include]
-      },
-      async executor(params, ctx) {
-        //If path in exclude,skip transform.
-        for (let reg of exclude) {
-          if (reg.test(params.resolvedPath))
-            return { content: params.content, moduleType: params.moduleType };
-        }
-        const query: Record<string, string> = {};
-        params.query.forEach(([key, value]) => {
-          query[key] = value;
-        });
+
+        const query = parseQuery(params.query);
         const { vue, lang, hash } = query;
-        const { resolvedPath, content: source } = params;
+
         // handle .vue file
         if (vue === 'true' && hash) {
           let styleCode = stylesCodeCache[hash];
@@ -98,58 +78,92 @@ export default function farmVuePlugin(
           };
         }
 
-        // transform vue
-        const result = callWithErrorHandle<null, typeof parse, [string]>(
-          this,
-          parse,
-          [source]
-        );
-        if (result) {
-          const { descriptor } = result;
-          const isHmr = handleHmr(
-            resolvedOptions,
-            cacheDescriptor,
-            descriptor,
-            stylesCodeCache,
-            query,
-            resolvedPath,
-            farmConfig.mode
-          );
-          if (isHmr)
-            return {
-              content: isHmr.source,
-              moduleType: isHmr.moduleType,
-              sourceMap: isHmr.map
-            };
-
-          const {
-            source: mainCode,
-            moduleType,
-            map
-          } = genMainCode(
-            resolvedOptions,
-            descriptor,
-            stylesCodeCache,
-            resolvedPath,
-            farmConfig.mode
-          );
-          return {
-            content: mainCode,
-            moduleType,
-            sourceMap: map
-          };
+        try {
+          source = await fs.promises.readFile(resolvedPath, 'utf-8');
+        } catch (err) {
+          error({
+            id: resolvedPath,
+            message: "path is not right,can't readFile"
+          });
         }
+        return {
+          content: source,
+          moduleType: 'vue'
+        };
+      }
+    },
+    // add hmr code In root file
+    transform: {
+      filters: {
+        moduleTypes: ['vue']
+      },
+      async executor(params, ctx) {
+        try {
+          // If path in exclude,skip transform.
+          for (const reg of exclude) {
+            if (reg.test(params.resolvedPath))
+              return { content: params.content, moduleType: params.moduleType };
+          }
 
-        // default
-        else {
-          console.error(
-            `[farm-vue-plugin]:there is no path can be match,please check!`
+          const query = parseQuery(params.query);
+          const { resolvedPath, content: source } = params;
+
+          // transform vue
+          const result = callWithErrorHandle<null, typeof parse, [string]>(
+            this,
+            parse,
+            [source]
           );
-          return {
-            content:
-              'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
-            moduleType: 'js'
-          };
+          if (result) {
+            const { descriptor } = result;
+            const isHmr = handleHmr(
+              resolvedOptions,
+              cacheDescriptor,
+              descriptor,
+              stylesCodeCache,
+              query,
+              resolvedPath,
+              farmConfig.mode
+            );
+            if (isHmr)
+              return {
+                content: isHmr.source,
+                moduleType: isHmr.moduleType,
+                sourceMap: isHmr.map
+              };
+
+            const {
+              source: mainCode,
+              moduleType,
+              map
+            } = genMainCode(
+              resolvedOptions,
+              descriptor,
+              stylesCodeCache,
+              resolvedPath,
+              farmConfig.mode
+            );
+            return {
+              content: mainCode,
+              moduleType,
+              sourceMap: map
+            };
+          }
+
+          // default
+          else {
+            console.error(
+              `[farm-vue-plugin]:there is no path can be match,please check!`
+            );
+            return {
+              content:
+                'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
+              moduleType: 'js'
+            };
+          }
+        } catch (err) {
+          console.error(err);
+          throw err;
         }
       }
     }

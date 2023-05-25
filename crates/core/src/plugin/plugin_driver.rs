@@ -7,6 +7,7 @@ use super::{
   Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
   PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+  PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
@@ -186,6 +187,8 @@ impl PluginDriver {
   hook_parallel!(generate_end);
 
   hook_parallel!(finish, stat: &Stats);
+
+  hook_serial!(update_modules, &mut PluginUpdateModulesHookParams);
 }
 
 #[derive(Debug)]

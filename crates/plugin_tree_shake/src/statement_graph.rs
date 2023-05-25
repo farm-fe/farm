@@ -259,7 +259,19 @@ impl StatementGraph {
       let mut stmts = VecDeque::from([(stmt_id, used_defined_idents, used_dep_idents)]);
       let mut visited = HashSet::new();
 
+      let hash_stmt = |stmt_id: &StatementId, used_defined_idents: &HashSet<String>| {
+        let mut hash = format!("{}:", stmt_id);
+
+        for ident in used_defined_idents {
+          hash += ident;
+        }
+
+        hash
+      };
+
       while let Some((stmt_id, used_defined_idents, used_dep_idents)) = stmts.pop_front() {
+        let hash = hash_stmt(&stmt_id, &used_defined_idents);
+
         // if stmt_id is already in used_statements, add used_defined_idents to it
         if let Some(idents) = used_statements.get_mut(&stmt_id) {
           idents.extend(used_defined_idents);
@@ -267,11 +279,11 @@ impl StatementGraph {
           used_statements.insert(stmt_id, used_defined_idents);
         }
 
-        if visited.contains(&stmt_id) {
+        if visited.contains(&hash) {
           continue;
         }
 
-        visited.insert(stmt_id);
+        visited.insert(hash);
 
         let deps = self.dependencies(&stmt_id);
 

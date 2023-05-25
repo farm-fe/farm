@@ -13,6 +13,7 @@ export interface JsPluginLoadHookFilters {
 }
 export interface JsPluginTransformHookFilters {
   resolvedPaths: Array<string>
+  moduleTypes: Array<string>
 }
 export interface JsUpdateResult {
   added: Array<string>
