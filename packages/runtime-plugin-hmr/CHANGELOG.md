@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.1.3
+
+### Patch Changes
+
+- 1148f68: Bugfix https://github.com/farm-fe/farm/issues/336
+
 ## 3.1.2
 
 ### Patch Changes
