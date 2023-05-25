@@ -1,5 +1,17 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.0
+
+### Minor Changes
+
+- 1148f68: - Support lazy compilation for vue and support moduleTypes filter for js plugin transform hook
+  - Bundle @farmfe/js-plugin-vue with Farm
+
+### Patch Changes
+
+- Updated dependencies [1148f68]
+  - @farmfe/core@0.8.2
+
 ## 1.1.1
 
 ### Patch Changes

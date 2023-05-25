@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.8.2
+
+### Patch Changes
+
+- 1148f68: - Support lazy compilation for vue and support moduleTypes filter for js plugin transform hook
+  - Bundle @farmfe/js-plugin-vue with Farm
+- Updated dependencies [1148f68]
+  - @farmfe/runtime-plugin-hmr@3.1.3
+
 ## 0.8.1
 
 ### Patch Changes
