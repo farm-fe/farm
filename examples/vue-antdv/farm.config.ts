@@ -16,8 +16,7 @@ export default <UserConfig>{
       alias: {
         '/@': path.join(process.cwd(), 'src')
       }
-    },
-    lazyCompilation: true
+    }
   },
   server: {
     proxy: {

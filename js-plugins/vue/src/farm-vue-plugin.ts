@@ -98,67 +98,72 @@ export default function farmVuePlugin(
         moduleTypes: ['vue']
       },
       async executor(params, ctx) {
-        // If path in exclude,skip transform.
-        for (let reg of exclude) {
-          if (reg.test(params.resolvedPath))
-            return { content: params.content, moduleType: params.moduleType };
-        }
+        try {
+          // If path in exclude,skip transform.
+          for (const reg of exclude) {
+            if (reg.test(params.resolvedPath))
+              return { content: params.content, moduleType: params.moduleType };
+          }
 
-        const query = parseQuery(params.query);
-        const { resolvedPath, content: source } = params;
+          const query = parseQuery(params.query);
+          const { resolvedPath, content: source } = params;
 
-        // transform vue
-        const result = callWithErrorHandle<null, typeof parse, [string]>(
-          this,
-          parse,
-          [source]
-        );
-        if (result) {
-          const { descriptor } = result;
-          const isHmr = handleHmr(
-            resolvedOptions,
-            cacheDescriptor,
-            descriptor,
-            stylesCodeCache,
-            query,
-            resolvedPath,
-            farmConfig.mode
+          // transform vue
+          const result = callWithErrorHandle<null, typeof parse, [string]>(
+            this,
+            parse,
+            [source]
           );
-          if (isHmr)
+          if (result) {
+            const { descriptor } = result;
+            const isHmr = handleHmr(
+              resolvedOptions,
+              cacheDescriptor,
+              descriptor,
+              stylesCodeCache,
+              query,
+              resolvedPath,
+              farmConfig.mode
+            );
+            if (isHmr)
+              return {
+                content: isHmr.source,
+                moduleType: isHmr.moduleType,
+                sourceMap: isHmr.map
+              };
+
+            const {
+              source: mainCode,
+              moduleType,
+              map
+            } = genMainCode(
+              resolvedOptions,
+              descriptor,
+              stylesCodeCache,
+              resolvedPath,
+              farmConfig.mode
+            );
             return {
-              content: isHmr.source,
-              moduleType: isHmr.moduleType,
-              sourceMap: isHmr.map
+              content: mainCode,
+              moduleType,
+              sourceMap: map
             };
+          }
 
-          const {
-            source: mainCode,
-            moduleType,
-            map
-          } = genMainCode(
-            resolvedOptions,
-            descriptor,
-            stylesCodeCache,
-            resolvedPath,
-            farmConfig.mode
-          );
-          return {
-            content: mainCode,
-            moduleType,
-            sourceMap: map
-          };
-        }
-
-        // default
-        else {
-          console.error(
-            `[farm-vue-plugin]:there is no path can be match,please check!`
-          );
-          return {
-            content:
-              'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
-            moduleType: 'js'
-          };
+          // default
+          else {
+            console.error(
+              `[farm-vue-plugin]:there is no path can be match,please check!`
+            );
+            return {
+              content:
+                'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
+              moduleType: 'js'
+            };
+          }
+        } catch (err) {
+          console.error(err);
+          throw err;
         }
       }
     }
