@@ -12,6 +12,7 @@ use std::{
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
+  module::ModuleType,
   plugin::{
     PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
     PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
@@ -310,6 +311,11 @@ impl JsPluginTransformHook {
       .resolved_paths
       .iter()
       .any(|f| f.is_match(param.resolved_path))
+      || self
+        .filters
+        .module_types
+        .iter()
+        .any(|ty| &param.module_type == ty)
     {
       self
         .tsfn
@@ -375,11 +381,13 @@ impl From<JsPluginLoadHookFilters> for PluginLoadHookFilters {
 #[napi(object)]
 pub struct JsPluginTransformHookFilters {
   pub resolved_paths: Vec<String>,
+  pub module_types: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct PluginTransformHookFilters {
   pub resolved_paths: Vec<Regex>,
+  pub module_types: Vec<ModuleType>,
 }
 
 impl From<JsPluginTransformHookFilters> for PluginTransformHookFilters {
@@ -390,6 +398,7 @@ impl From<JsPluginTransformHookFilters> for PluginTransformHookFilters {
         .into_iter()
         .map(|f| Regex::new(&f).unwrap())
         .collect(),
+      module_types: f.module_types.into_iter().map(|ty| ty.into()).collect(),
     }
   }
 }

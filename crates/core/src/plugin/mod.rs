@@ -10,7 +10,7 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
     ModuleType,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource},
+  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource, ResourceType},
   stats::Stats,
 };
 
@@ -186,6 +186,16 @@ pub trait Plugin: Any + Send + Sync {
   fn finish(&self, _stat: &Stats, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     Ok(None)
   }
+
+  /// Called when calling compiler.update(module_paths).
+  /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
+  fn update_modules(
+    &self,
+    params: &mut PluginUpdateModulesHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -345,4 +355,31 @@ pub struct PluginAnalyzeDepsHookResultEntry {
 pub struct PluginFinalizeModuleHookParam<'a> {
   pub module: &'a mut Module,
   pub deps: &'a Vec<PluginAnalyzeDepsHookResultEntry>,
+}
+
+/// The output after the updating process
+#[derive(Debug, Default)]
+pub struct UpdateResult {
+  pub added_module_ids: Vec<ModuleId>,
+  pub updated_module_ids: Vec<ModuleId>,
+  pub removed_module_ids: Vec<ModuleId>,
+  /// Javascript module map string, the key is the module id, the value is the module function
+  /// This code string should be returned to the client side as MIME type `application/javascript`
+  pub resources: String,
+  pub boundaries: HashMap<String, Vec<Vec<String>>>,
+  pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
+}
+#[derive(Debug, Clone)]
+pub enum UpdateType {
+  // added a new module
+  Added,
+  // updated a module
+  Updated,
+  // removed a module
+  Removed,
+}
+
+pub struct PluginUpdateModulesHookParams {
+  pub update_result: UpdateResult,
+  pub paths: Vec<(String, UpdateType)>,
 }

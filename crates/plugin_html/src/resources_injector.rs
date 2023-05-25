@@ -171,7 +171,7 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "link",
           None,
-          vec![("rel", "stylesheet"), ("href", css)],
+          vec![("rel", "stylesheet"), ("href", &format!("/{}", css))],
         )));
       }
 
@@ -190,7 +190,7 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "script",
           None,
-          vec![("src", script)],
+          vec![("src", &format!("/{}", script))],
         )));
       }
 

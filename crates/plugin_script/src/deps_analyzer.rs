@@ -63,7 +63,9 @@ impl<'a> Visit for DepsAnalyzer<'a> {
               });
             }
           }
-          _ => { /* others are ignored */ }
+          _ => {
+            n.visit_children_with(self);
+          }
         }
       }
       _ => {

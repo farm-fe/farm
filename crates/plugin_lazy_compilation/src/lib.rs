@@ -22,8 +22,9 @@ impl Plugin for FarmPluginLazyCompilation {
     "FarmPluginLazyCompilation"
   }
 
+  /// The lazy compilation plugin should take priority of all other plugins
   fn priority(&self) -> i32 {
-    110
+    i32::MAX
   }
 
   fn resolve(
