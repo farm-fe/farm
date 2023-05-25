@@ -1,6 +1,6 @@
 # Contributing to Farm
 
-Thank you for your interest in contributing to Farm!. Before submitting your contribution, please make sure to take a moment and read through the following guidelines:
+Thank you for your interest in contributing to Farm!. Before submitting your contribution, please make sure to take a moment and read through the following guidelines.
 
 ## Code of Conduct
 
@@ -20,12 +20,30 @@ Please feel free to open an issue using the [feature request template](https://g
 
 ## Pull Request Guidelines
 
-- Fork the Farm repository into your own GitHub account.
 - Please adhere to the code style that you see around the location you are working on.
+  
 - Setup Your Development Environment.
+  
 - Checkout a topic branch from a base branch, e.g. `main` (If you submit the node side code, please pull the branch from the `refactor/node` branch and submit).
+  
 - Run `cargo test` and make sure that it passes.
+  
 - If you've changed some packages And prepare for an updated version, you should output `npx changset` in the root directory.
+
+## Setup
+
+- Fork and clone the repo.
+
+- Create a branch for your PR with `git checkout -b your-branch-name`.
+
+- To keep `main` branch pointing to remote repository and make pull requests from branches on your fork. To do this, run:
+
+```bash
+  git remote add upstream https://github.com/farm-fe/farm.git
+  git fetch upstream
+  git branch --set-upstream-to=upstream/main main
+```
+
 
 ## Development Environment Setup
 
