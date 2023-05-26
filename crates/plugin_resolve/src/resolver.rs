@@ -268,7 +268,19 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
-    for (alias, replaced) in &context.config.resolve.alias {
+    // sort the alias by length, so that the longest alias will be matched first
+    let mut alias_list: Vec<_> = context
+      .config
+      .resolve
+      .alias
+      .iter()
+      .map(|(alias, _)| alias)
+      .collect();
+    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+
+    for alias in alias_list {
+      let replaced = context.config.resolve.alias.get(alias).unwrap();
+
       if alias.ends_with("$") && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind, context);
       } else if !alias.ends_with("$") && source.starts_with(alias) {
@@ -277,6 +289,7 @@ impl Resolver {
           .to_logical_path(replaced)
           .to_string_lossy()
           .to_string();
+
         return self.resolve(&new_source, base_dir, kind, context);
       }
     }

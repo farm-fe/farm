@@ -5,7 +5,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "7c4a34c2": function(module, exports, require, dynamicRequire) {
+    "7c4a34c2": function(module, exports, farmRequire, dynamicRequire) {
         console.log("1111");
     }
 });
@@ -40,7 +40,7 @@ window.__FARM_TARGET_ENV__ = 'browser';
     }
     require(entryModule);
 })({
-    "ec853507": function(module, exports, require, dynamicRequire) {
+    "ec853507": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);

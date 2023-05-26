@@ -147,9 +147,14 @@ pub fn syntax_from_module_type(
 /// * callee is an identifier named `require`
 /// * arguments is a single string literal
 /// * require is a global variable
-pub fn is_commonjs_require(unresolved_mark: Mark, call_expr: &CallExpr) -> bool {
+pub fn is_commonjs_require(
+  unresolved_mark: Mark,
+  top_level_mark: Mark,
+  call_expr: &CallExpr,
+) -> bool {
   if let Callee::Expr(box Expr::Ident(Ident { span, sym, .. })) = &call_expr.callee {
-    sym == "require" && span.ctxt.outer() == unresolved_mark
+    sym == "require"
+      && (span.ctxt.outer() == unresolved_mark || span.ctxt.outer() == top_level_mark)
   } else {
     false
   }

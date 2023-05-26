@@ -25,35 +25,20 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "05ee5ec7": function(module, exports, farmRequire, dynamicRequire) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        Object.defineProperty(exports, "default", {
-            enumerable: true,
-            get: function() {
-                return _default;
-            }
-        });
-        const aValue = "a";
-        var a = aValue;
-        var d;
-        console.log(a);
-        d = "d";
-        const b = "b";
-        function _default() {
-            return b;
-        }
+    "363fc137": function(module, exports, farmRequire, dynamicRequire) {
+        console.log("utils.js");
     },
     "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-        var _dep = _interop_require_default._(farmRequire("05ee5ec7"));
-        (0, _dep.default)();
+        const fs = farmRequire("e4b1dea3");
+        const utils = farmRequire("363fc137");
+        console.log(fs, utils);
+    },
+    "e4b1dea3": function(module, exports, farmRequire, dynamicRequire) {
+        console.log("fs-extra");
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;

@@ -110,6 +110,7 @@ export interface Config {
       publicPath?: string;
       assetsFilename?: string;
       targetEnv?: 'browser' | 'node';
+      format?: 'cjs' | 'esm';
     };
     resolve?: {
       extensions?: string[];
