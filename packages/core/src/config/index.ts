@@ -58,6 +58,10 @@ export async function normalizeUserCompilationConfig(
   if (!isNodeEnvSet) {
     process.env.NODE_ENV = env;
   }
+  const isProduction = process.env.NODE_ENV === 'production';
+  // TODO resolve root path
+
+  // TODO load .env files
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 
