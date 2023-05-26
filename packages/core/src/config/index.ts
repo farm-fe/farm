@@ -38,7 +38,8 @@ type CompilationMode = 'development' | 'production';
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode: CompilationMode = 'production'
+  mode: CompilationMode = 'development',
+  env: Record<string, string> = 'development'
 ): Promise<Config> {
   const config: Config['config'] = merge(
     {
@@ -52,6 +53,10 @@ export async function normalizeUserCompilationConfig(
     userConfig.compilation
   );
   config.coreLibPath = bindingPath;
+  const isNodeEnvSet = !!process.env.NODE_ENV;
+  if (!isNodeEnvSet) {
+    process.env.NODE_ENV = defaultNodeEnv;
+  }
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 
@@ -260,6 +265,7 @@ export async function resolveInlineConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
+
       const config = await readConfigFile(resolvedPath, logger);
       const farmConfig = mergeUserConfig(config, options);
       if (config) {

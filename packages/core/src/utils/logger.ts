@@ -22,9 +22,7 @@ export class DefaultLogger implements Logger {
     log.debug(message);
   }
   info(message: string, banner = true): void {
-    log.info(
-      `${banner ? brandColor(`[ ${this.name} ] `) : ''}${message} : ${message}`
-    );
+    log.info(`${banner ? brandColor(`[ ${this.name} ] `) : ''}${message}`);
   }
 
   warn(message: string): void {

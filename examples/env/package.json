@@ -1,0 +1,14 @@
+{
+  "name": "@farmfe-examples/vue-antdv",
+  "version": "0.0.1",
+  "private": true,
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  }
+}
