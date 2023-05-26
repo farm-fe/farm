@@ -38,7 +38,7 @@ type CompilationMode = 'development' | 'production';
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode = 'development',
+  mode: CompilationMode = 'development',
   env: CompilationMode = 'development'
 ): Promise<Config> {
   // TODO resolve env file
@@ -58,7 +58,7 @@ export async function normalizeUserCompilationConfig(
   if (!isNodeEnvSet) {
     process.env.NODE_ENV = env;
   }
-  const isProduction = process.env.NODE_ENV === 'production';
+  // const isProduction = process.env.NODE_ENV === 'production';
   // TODO resolve root path
 
   // TODO load .env files

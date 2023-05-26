@@ -27,7 +27,7 @@ const compilationConfigSchema = z
       .optional(),
     define: z.record(z.string()).optional(),
     external: z.array(z.string()).optional(),
-    mode: z.enum(['development', 'production']).optional(),
+    mode: z.string().optional(),
     watch: z.boolean().optional(),
     coreLibPath: z.string().optional(),
     runtime: z
@@ -78,10 +78,10 @@ const compilationConfigSchema = z
               .optional(),
             tsConfig: z
               .object({
-                tsx: z.boolean(),
-                decorators: z.boolean(),
-                dts: z.boolean(),
-                noEarlyErrors: z.boolean()
+                tsx: z.boolean().optional(),
+                decorators: z.boolean().optional(),
+                dts: z.boolean().optional(),
+                noEarlyErrors: z.boolean().optional()
               })
               .strict()
               .optional()

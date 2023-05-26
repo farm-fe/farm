@@ -111,6 +111,19 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/dts:
+    dependencies:
+      ts-morph:
+        specifier: ^18.0.0
+        version: 18.0.0
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/env:
     devDependencies:
       '@farmfe/cli':
