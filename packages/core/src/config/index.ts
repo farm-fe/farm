@@ -56,7 +56,6 @@ export async function normalizeUserCompilationConfig(
   }
   const isProduction = process.env.NODE_ENV === 'production';
   const isDevelopment = process.env.NODE_ENV === 'development';
-  console.log(isProduction);
 
   const config: Config['config'] = merge(
     {
