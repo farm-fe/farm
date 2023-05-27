@@ -12,7 +12,8 @@ const ConfigSchema = z
         path: z.string().optional(),
         publicPath: z.string().optional(),
         assetsFilename: z.string().optional(),
-        targetEnv: z.enum(['browser', 'node']).optional()
+        targetEnv: z.enum(['browser', 'node']).optional(),
+        format: z.enum(['cjs', 'esm']).optional()
       })
       .strict()
       .optional(),

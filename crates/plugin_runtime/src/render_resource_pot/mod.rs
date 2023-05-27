@@ -15,7 +15,7 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::{
-  script::swc_try_with::try_with,
+  script::{codegen_module, swc_try_with::try_with},
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
     fixer,
@@ -30,7 +30,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use self::source_replacer::SourceReplacer;
+use self::source_replacer::{SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE};
 
 // mod farm_module_system; // TODO: replace with farm_module_system later, as soon as it's ready
 mod source_replacer;
@@ -111,6 +111,7 @@ pub fn resource_pot_to_runtime_object_lit(
           // replace import source with module id
           let mut source_replacer = SourceReplacer::new(
             unresolved_mark,
+            top_level_mark,
             module_graph,
             m_id.clone(),
             module.meta.as_script().module_system.clone(),
@@ -167,14 +168,14 @@ pub fn resource_pot_to_runtime_object_lit(
 /// ```
 /// will be rendered to
 /// ```js
-/// async function(module, exports, require) {
-///   const b = require('./b');
+/// async function(module, exports, farmRequire) {
+///   const b = farmRequire('./b');
 ///   console.log(b);
 ///   exports.b = b;
 /// }
 /// ```
 fn wrap_module_ast(ast: SwcModule) -> Function {
-  let params = vec!["module", "exports", "require", "dynamicRequire"]
+  let params = vec!["module", "exports", FARM_REQUIRE, DYNAMIC_REQUIRE]
     .into_iter()
     .map(|ident| Param {
       span: DUMMY_SP,
@@ -198,9 +199,22 @@ fn wrap_module_ast(ast: SwcModule) -> Function {
       .into_iter()
       .map(|item| match item {
         ModuleItem::ModuleDecl(decl) => {
+          let code = codegen_module(
+            &SwcModule {
+              span: DUMMY_SP,
+              shebang: None,
+              body: vec![ModuleItem::ModuleDecl(decl)],
+            },
+            Default::default(),
+            Arc::new(Default::default()),
+            None,
+            false,
+          )
+          .unwrap();
+
           panic!(
-            "should transform all esm module item to commonjs first! {:?}",
-            decl
+            "should transform all esm module item to commonjs first! code: {}",
+            String::from_utf8(code).unwrap()
           )
         }
         ModuleItem::Stmt(stmt) => stmt,

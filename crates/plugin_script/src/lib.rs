@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
-  config::{Config, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  config::{Config, ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{ModuleId, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
@@ -184,8 +184,10 @@ impl Plugin for FarmPluginScript {
       let module_ast = &module.meta.as_script().ast;
       // TODO deal with dynamic import, when dynamic import and static import are mixed, using static import
       let mut analyzer = DepsAnalyzer::new(
+        &module.id,
         module_ast,
         Mark::from_u32(module.meta.as_script().unresolved_mark),
+        Mark::from_u32(module.meta.as_script().top_level_mark),
       );
 
       GLOBALS.set(&context.meta.script.globals, || {
@@ -208,23 +210,28 @@ impl Plugin for FarmPluginScript {
     if !param.module.module_type.is_script() {
       return Ok(None);
     }
-
+    // all jsx, js, ts, tsx modules should be transformed to js module for now
+    // cause the partial bundling is not support other module type yet
     param.module.module_type = ModuleType::Js;
-
-    if param.deps.len() > 0 {
-      let module_system =
-        module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
-      param.module.meta.as_script_mut().module_system = module_system;
+    // default to commonjs
+    let module_system = if param.deps.len() > 0 {
+      module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
     } else {
-      // default to commonjs
-      param.module.meta.as_script_mut().module_system = ModuleSystem::CommonJs;
+      ModuleSystem::CommonJs
+    };
+    param.module.meta.as_script_mut().module_system = module_system.clone();
 
-      let ast = &param.module.meta.as_script().ast;
+    let ast = &param.module.meta.as_script().ast;
 
+    if module_system != ModuleSystem::Hybrid {
       // if the ast contains ModuleDecl, it's a esm module
       for item in ast.body.iter() {
         if let ModuleItem::ModuleDecl(_) = item {
-          param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+          if module_system == ModuleSystem::CommonJs && param.deps.len() > 0 {
+            param.module.meta.as_script_mut().module_system = ModuleSystem::Hybrid;
+          } else {
+            param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+          }
           break;
         }
       }
@@ -441,14 +448,19 @@ impl FarmPluginScript {
             .insert(0, runtime_ast.body.to_vec().remove(0));
 
           let export_info = self.get_export_info_of_entry_module(entry_module_id, context);
-          let export_str = if context.config.output.target_env == TargetEnv::Node {
+          let export_str = if export_info.len() > 0 {
             export_info
               .iter()
               .map(|export| {
                 if export == "default" {
-                  "export default entry.default;".to_string()
+                  match context.config.output.format {
+                    ModuleFormat::CommonJs => "module.exports = entry.default;".to_string(),
+                    ModuleFormat::EsModule => "export default entry.default;".to_string(),
+                    _ => panic!("default export is not supported in this format"),
+                  }
                 } else {
-                  format!("export {{ {}: entry.{} }};", export, export)
+                  // format!("export {{ {}: entry.{} }};", export, export)
+                  panic!("named export is not supported");
                 }
               })
               .collect::<Vec<String>>()
@@ -480,11 +492,21 @@ impl FarmPluginScript {
           // insert node specific code.
           // TODO: support async module for node, using dynamic require to load external module instead of createRequire. createRequire does not support load ESM module.
           if context.config.output.target_env == TargetEnv::Node {
+            let code_str = match context.config.output.format {
+              ModuleFormat::EsModule => {
+                r#"import module from 'node:module';
+                global.__farmNodeRequire = module.createRequire(import.meta.url);
+                global.__farmNodeBuiltinModules = module.builtinModules;"#
+              }
+              ModuleFormat::CommonJs => {
+                r#"global.__farmNodeRequire = require;
+                global.__farmNodeBuiltinModules = require('node:module').builtinModules;"#
+              }
+              _ => panic!("node only support cjs and esm format"),
+            };
             let global_var = parse_module(
               "farm-global-var",
-              r#"import module from 'node:module';
-                global.__farmNodeRequire = module.createRequire(import.meta.url);
-                global.__farmNodeBuiltinModules = module.builtinModules;"#,
+              code_str,
               Syntax::Es(context.config.script.parser.es_config.clone()),
               context.config.script.target.clone(),
               context.meta.script.cm.clone(),

@@ -192,6 +192,11 @@ fn resolve_alias() {
             alias: HashMap::from([
               ("@".to_string(), cwd.to_string_lossy().to_string()),
               ("/@".to_string(), cwd.to_string_lossy().to_string()),
+              // long alias
+              (
+                "@/components".to_string(),
+                cwd.join("components").to_string_lossy().to_string(),
+              ),
             ]),
             ..Default::default()
           },
@@ -224,6 +229,25 @@ fn resolve_alias() {
       cwd
         .join("pages")
         .join("a.tsx")
+        .to_string_lossy()
+        .to_string()
+    );
+
+    let resolved = resolver.resolve(
+      "@/components/button",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &context,
+    );
+
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("components")
+        .join("button.tsx")
         .to_string_lossy()
         .to_string()
     );

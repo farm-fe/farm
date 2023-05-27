@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "d2214aaa": function(module, exports, require, dynamicRequire) {
+    "d2214aaa": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
@@ -25,7 +25,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "6f462555": function(module, exports, require, dynamicRequire) {
+    "6f462555": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -39,10 +39,10 @@
         noop();
         var _default = "comp";
     },
-    "b3d9bc98": function(module, exports, require, dynamicRequire) {
+    "b3d9bc98": function(module, exports, farmRequire, dynamicRequire) {
         console.log("resolved.ts");
     },
-    "b5d64806": function(module, exports, require, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -53,9 +53,9 @@
                 return _default;
             }
         });
-        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-        require("b3d9bc98");
-        var _comp = _interop_require_default._(require("6f462555"));
+        var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+        farmRequire("b3d9bc98");
+        var _comp = _interop_require_default._(farmRequire("6f462555"));
         console.log(_comp.default);
         var _default = 2;
     }
@@ -64,6 +64,7 @@ var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806");
+export default entry.default;
 
 
 //92a5e8c3.css:

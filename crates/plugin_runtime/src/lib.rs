@@ -63,6 +63,7 @@ impl Plugin for FarmPluginRuntime {
       "@swc/helpers".to_string(),
       config.runtime.swc_helpers_path.clone(),
     );
+
     config.partial_bundling.module_buckets.insert(
       0,
       PartialBundlingModuleBucketsConfig {

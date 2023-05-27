@@ -51,7 +51,11 @@
     "node": ">= 16"
   },
   "files": [
-    "binding",
+    "binding/binding.cjs",
+    "binding/binding.d.ts",
+    "binding/index.d.ts",
+    "binding/index.js",
+    "binding/resolve-binding.cjs",
     "dist"
   ],
   "scripts": {
