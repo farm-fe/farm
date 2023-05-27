@@ -142,7 +142,7 @@ export class DevServer implements ImplDevServer {
         )}
   Version ${chalk.green.bold(version)}
   
-  ⚡️ Ready on ${chalk.green.bold(
+  🔥 Ready on ${chalk.green.bold(
     `${protocol}://${hostname}:${port}`
   )} in ${chalk.green.bold(`${end - start}ms`)}.
     `,
