@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.8.3
+
+### Patch Changes
+
+- e0ff7f1: Fix module system detect and sort alias by length
+- Updated dependencies [e0ff7f1]
+  - @farmfe/runtime@0.6.1
+
 ## 0.8.2
 
 ### Patch Changes
