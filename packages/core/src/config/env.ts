@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { parse } from 'dotenv';
+import { parse, config } from 'dotenv';
 import { expand } from 'dotenv-expand';
 import { tryStatSync } from '../utils/index.js';
 
@@ -30,6 +30,7 @@ export function loadEnv(
       env[key] = process.env[key] as string;
     }
   }
+  config();
   // `expand` patched in patches/dotenv-expand@9.0.0.patch
   expand({ parsed });
   return env;
