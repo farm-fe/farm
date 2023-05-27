@@ -18,8 +18,14 @@ jobs:
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: cargo-test-code-coverage
+          shared-key: cargo-test-code-coverage-grcov
           cache-on-failure: true
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install Dependencies
+        run: npm install -g pnpm && pnpm i --frozen-lockfile
+
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
