@@ -472,7 +472,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^0.6.1
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.1.3
