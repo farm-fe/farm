@@ -16,7 +16,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: cargo-check
-          cache-on-failure: true
+          
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -42,8 +42,8 @@ jobs:
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: cargo-test-${{ matrix.os }}
-          cache-on-failure: true
+          shared-key: cargo-test-release-${{ matrix.os }}
+          
       - uses: actions/setup-node@v3
         with:
           node-version: 16

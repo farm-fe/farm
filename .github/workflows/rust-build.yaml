@@ -14,7 +14,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: cargo-test-${{ matrix.settings.crate }}
-          cache-on-failure: true
+          
       - uses: actions/setup-node@v3
         with:
           node-version: 16
@@ -54,7 +54,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: rust-build-${{ matrix.settings.os }}
-          cache-on-failure: true
+          
       - uses: actions/setup-node@v3
         with:
           node-version: 16
