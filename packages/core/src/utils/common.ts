@@ -1,4 +1,6 @@
 import readline from 'node:readline';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export function clearScreen() {
   const repeatCount = process.stdout.rows - 2;
@@ -6,4 +8,20 @@ export function clearScreen() {
   console.log(blank);
   readline.cursorTo(process.stdout, 0, 0);
   readline.clearScreenDown(process.stdout);
+}
+
+export function normalizePath(id: string): string {
+  return path.posix.normalize(id);
+}
+
+export function arraify<T>(target: T | T[]): T[] {
+  return Array.isArray(target) ? target : [target];
+}
+
+export function tryStatSync(file: string): fs.Stats | undefined {
+  try {
+    return fs.statSync(file, { throwIfNoEntry: false });
+  } catch {
+    // Ignore errors
+  }
 }

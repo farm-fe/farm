@@ -27,7 +27,6 @@ export async function start(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   const config: UserConfig = await resolveInlineConfig(inlineConfig, logger);
-
   const normalizedConfig = await normalizeUserCompilationConfig(config);
 
   const compiler = new Compiler(normalizedConfig);

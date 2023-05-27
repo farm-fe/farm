@@ -72,6 +72,8 @@
     "boxen": "^7.0.1",
     "chalk": "^5.2.0",
     "chokidar": "^3.5.3",
+    "dotenv": "^16.0.3",
+    "dotenv-expand": "^10.0.0",
     "execa": "^7.1.1",
     "figlet": "^1.5.2",
     "http-proxy": "^1.18.1",

@@ -133,9 +133,13 @@ const compilationConfigSchema = z
 const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
+    base: z.string().optional(),
+    clearScreen: z.boolean().optional(),
+    envDir: z.string().optional(),
+    envPrefix: z.string().optional(),
+    publicDir: z.string().optional(),
     plugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
-    clearScreen: z.boolean().optional(),
     server: z
       .object({
         port: z.number().positive().int().optional(),

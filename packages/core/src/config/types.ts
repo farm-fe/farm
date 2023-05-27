@@ -36,6 +36,11 @@ export interface UserHmrConfig {
 export interface UserConfig {
   /** current root of this project, default to current working directory */
   root?: string;
+  base?: string;
+  clearScreen?: boolean;
+  envDir?: string;
+  envPrefix?: string;
+  publicDir?: string;
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin)[];
   /** config related to compilation */
