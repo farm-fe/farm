@@ -13,7 +13,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: cargo-clippy
-          cache-on-failure: true
+          
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
