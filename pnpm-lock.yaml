@@ -459,6 +459,9 @@ importers:
       cac:
         specifier: ^6.7.14
         version: 6.7.14
+      chalk:
+        specifier: ^5.2.0
+        version: 5.2.0
       cross-spawn:
         specifier: ^7.0.3
         version: 7.0.3
@@ -2916,7 +2919,7 @@ packages:
     dev: true
 
   /chalk@1.1.3:
-    resolution: {integrity: sha512-U3lRVLMSlsCfjqYPbLyVv11M9CPW4I728d6TCKMAOJueEeB9/8o+eSsMnxPJD+Q+K909sdESg7C+tIkoH6on1A==}
+    resolution: {integrity: sha1-qBFcVeSnAv5NFQq9OHKCKn4J/Jg=}
     engines: {node: '>=0.10.0'}
     dependencies:
       ansi-styles: 2.2.1
