@@ -24,150 +24,15 @@ jobs:
       - name: Run cargo check
         run: cargo check --color always --all --all-targets
   cargo-test:
-    name: Test - ${{ matrix.settings.crate }} - ${{ matrix.settings.os }}
-    runs-on: ${{ matrix.settings.os }}
+    name: Test - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        settings:
-          - crate: windows-latest
-            os: farmfe_compiler
-          - crate: macos-latest
-            os: farmfe_compiler
-          - crate: ubuntu-latest
-            os: farmfe_compiler
-          - crate: windows-latest
-            os: farmfe_core
-          - crate: macos-latest
-            os: farmfe_core
-          - crate: ubuntu-latest
-            os: farmfe_core
-          - crate: windows-latest
-            os: farmfe_macro_cache_item
-          - crate: macos-latest
-            os: farmfe_macro_cache_item
-          - crate: ubuntu-latest
-            os: farmfe_macro_cache_item
-          - crate: windows-latest
-            os: farmfe_utils
-          - crate: macos-latest
-            os: farmfe_utils
-          - crate: ubuntu-latest
-            os: farmfe_utils
-          - crate: windows-latest
-            os: farmfe_plugin_css
-          - crate: macos-latest
-            os: farmfe_plugin_css
-          - crate: ubuntu-latest
-            os: farmfe_plugin_css
-          - crate: windows-latest
-            os: farmfe_toolkit
-          - crate: macos-latest
-            os: farmfe_toolkit
-          - crate: ubuntu-latest
-            os: farmfe_toolkit
-          - crate: windows-latest
-            os: farmfe_testing_helpers
-          - crate: macos-latest
-            os: farmfe_testing_helpers
-          - crate: ubuntu-latest
-            os: farmfe_testing_helpers
-          - crate: windows-latest
-            os: farmfe_plugin_html
-          - crate: macos-latest
-            os: farmfe_plugin_html
-          - crate: ubuntu-latest
-            os: farmfe_plugin_html
-          - crate: windows-latest
-            os: farmfe_plugin_json
-          - crate: macos-latest
-            os: farmfe_plugin_json
-          - crate: ubuntu-latest
-            os: farmfe_plugin_json
-          - crate: windows-latest
-            os: farmfe_plugin_lazy_compilation
-          - crate: macos-latest
-            os: farmfe_plugin_lazy_compilation
-          - crate: ubuntu-latest
-            os: farmfe_plugin_lazy_compilation
-          - crate: windows-latest
-            os: farmfe_plugin_minify
-          - crate: macos-latest
-            os: farmfe_plugin_minify
-          - crate: ubuntu-latest
-            os: farmfe_plugin_minify
-          - crate: windows-latest
-            os: farmfe_plugin_partial_bundling
-          - crate: macos-latest
-            os: farmfe_plugin_partial_bundling
-          - crate: ubuntu-latest
-            os: farmfe_plugin_partial_bundling
-          - crate: windows-latest
-            os: farmfe_plugin_polyfill
-          - crate: macos-latest
-            os: farmfe_plugin_polyfill
-          - crate: ubuntu-latest
-            os: farmfe_plugin_polyfill
-          - crate: windows-latest
-            os: farmfe_plugin_resolve
-          - crate: macos-latest
-            os: farmfe_plugin_resolve
-          - crate: ubuntu-latest
-            os: farmfe_plugin_resolve
-          - crate: windows-latest
-            os: farmfe_plugin_runtime
-          - crate: macos-latest
-            os: farmfe_plugin_runtime
-          - crate: ubuntu-latest
-            os: farmfe_plugin_runtime
-          - crate: windows-latest
-            os: farmfe_plugin_script
-          - crate: macos-latest
-            os: farmfe_plugin_script
-          - crate: ubuntu-latest
-            os: farmfe_plugin_script
-          - crate: windows-latest
-            os: farmfe_plugin_static_assets
-          - crate: macos-latest
-            os: farmfe_plugin_static_assets
-          - crate: ubuntu-latest
-            os: farmfe_plugin_static_assets
-          - crate: windows-latest
-            os: farmfe_plugin_tree_shake
-          - crate: macos-latest
-            os: farmfe_plugin_tree_shake
-          - crate: ubuntu-latest
-            os: farmfe_plugin_tree_shake
-          - crate: windows-latest
-            os: farmfe_macro_plugin
-          - crate: macos-latest
-            os: farmfe_macro_plugin
-          - crate: ubuntu-latest
-            os: farmfe_macro_plugin
-          - crate: windows-latest
-            os: farmfe_node
-          - crate: macos-latest
-            os: farmfe_node
-          - crate: ubuntu-latest
-            os: farmfe_node
-          - crate: windows-latest
-            os: farmfe_toolkit_plugin_types
-          - crate: macos-latest
-            os: farmfe_toolkit_plugin_types
-          - crate: ubuntu-latest
-            os: farmfe_toolkit_plugin_types
-          - crate: windows-latest
-            os: farmfe_plugin_react
-          - crate: macos-latest
-            os: farmfe_plugin_react
-          - crate: ubuntu-latest
-            os: farmfe_plugin_react
-          - crate: windows-latest
-            os: farmfe_plugin_sass
-          - crate: macos-latest
-            os: farmfe_plugin_sass
-          - crate: ubuntu-latest
-            os: farmfe_plugin_sass
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
@@ -177,11 +42,11 @@ jobs:
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: cargo-test-${{ matrix.settings.crate }}
+          shared-key: cargo-test-${{ matrix.os }}
           cache-on-failure: true
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run cargo test
-        run: cargo test -p ${{ matrix.settings.crate }}
+        run: cargo test
