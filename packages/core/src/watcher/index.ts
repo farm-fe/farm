@@ -69,15 +69,19 @@ export class FileWatcher {
     }
 
     this._watcher.on('change', async (path) => {
-      if (serverOrCompiler instanceof DevServer) {
-        serverOrCompiler.hmrEngine.hmrUpdate(path);
-      }
+      try {
+        if (serverOrCompiler instanceof DevServer) {
+          await serverOrCompiler.hmrEngine.hmrUpdate(path);
+        }
 
-      if (serverOrCompiler instanceof Compiler) {
-        await compilerHandler(async () => {
-          await compiler.update([path], true);
-          compiler.writeResourcesToDisk();
-        }, config);
+        if (serverOrCompiler instanceof Compiler) {
+          await compilerHandler(async () => {
+            await compiler.update([path], true);
+            compiler.writeResourcesToDisk();
+          }, config);
+        }
+      } catch (error) {
+        this._logger.error(error);
       }
     });
   }
