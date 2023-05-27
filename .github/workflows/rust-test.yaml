@@ -42,7 +42,7 @@ jobs:
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: cargo-test-${{ matrix.os }}
+          shared-key: cargo-test-release-${{ matrix.os }}
           cache-on-failure: true
       - uses: actions/setup-node@v3
         with:
