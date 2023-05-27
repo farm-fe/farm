@@ -14,6 +14,9 @@ const CWD = process.cwd();
 // Build the compiler binary
 const PKG_CORE = resolve(CWD, './packages/core');
 
+// Build cli
+const PKG_CLI = resolve(CWD, './packages/cli');
+
 // Build rust_plugin_react
 const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 
@@ -23,6 +26,7 @@ const PKG_JS_PLUGIN = resolve(CWD, './js-plugins');
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
+  await runTask('Cli', buildCli);
   await runTask('Core', buildCore);
   await runTask('RustPlugins', buildRustPlugins);
   await runTask('JsPlugins', buildJsPlugins);
@@ -30,29 +34,34 @@ export async function runTaskQueue() {
 }
 
 // install mac protobuf
-export const installMacProtobuf = () => {
+export const installMacProtobuf = () =>
   execa(DEFAULT_HOMEBREW_PACKAGE_MANAGER, ['install', 'protobuf'], {
-    cwd: CWD,
+    cwd: CWD
   });
-};
 
 // install linux protobuf
 export const installLinuxProtobuf = () =>
   execa(DEFAULT_LINUX_PACKAGE_MANAGER, ['install', '-y', 'protobuf-compiler'], {
-    cwd: CWD,
+    cwd: CWD
   });
 
 // build core command
 export const buildCore = () => {
   return Promise.all([
     execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-      cwd: PKG_CORE,
+      cwd: PKG_CORE
     }),
     execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
-      cwd: PKG_CORE,
-    }),
+      cwd: PKG_CORE
+    })
   ]);
 };
+
+// build cli command
+export const buildCli = () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+    cwd: PKG_CLI
+  });
 
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
