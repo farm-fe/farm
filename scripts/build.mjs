@@ -46,16 +46,10 @@ export const installLinuxProtobuf = () =>
   });
 
 // build core command
-export const buildCore = () => {
-  return Promise.all([
-    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-      cwd: PKG_CORE
-    }),
-    execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
-      cwd: PKG_CORE
-    })
-  ]);
-};
+export const buildCore = () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
+    cwd: PKG_CORE
+  });
 
 // build cli command
 export const buildCli = () =>
