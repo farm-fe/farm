@@ -6,18 +6,19 @@ import { DevServer } from '../server/index.js';
 import { DefaultLogger } from '../utils/logger.js';
 
 import { Config } from '../../binding/index.js';
+import { isObject } from '../utils/common.js';
 
 export interface FileWatcherOptions {
-  ignores?: (string | RegExp)[];
+  ignored?: (string | RegExp)[];
 }
 
 export class FileWatcher {
   private _root: string;
   private _watcher: FSWatcher;
-  private _options: FileWatcherOptions;
+  private _options: Config;
   private _logger: DefaultLogger;
 
-  constructor(root: string, options?: FileWatcherOptions) {
+  constructor(root: string, options?: Config) {
     this._root = root;
     this._logger = new DefaultLogger();
     this._options = options ?? {};
@@ -28,14 +29,15 @@ export class FileWatcher {
       serverOrCompiler instanceof DevServer
         ? serverOrCompiler.getCompiler()
         : serverOrCompiler;
-
+    const isWatcherObject = isObject(this._options.config?.watch);
+    const options = isWatcherObject ? this._options.config.watch : {};
+    const watcherOptions = resolvedWatcherOptions(options, config);
+    console.log(watcherOptions);
     this._watcher = chokidar.watch(
       serverOrCompiler instanceof DevServer
         ? compiler.resolvedModulePaths(this._root)
         : [this._root],
-      {
-        ignored: this._options.ignores
-      }
+      watcherOptions
     );
     if (serverOrCompiler instanceof DevServer) {
       serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
@@ -68,7 +70,7 @@ export class FileWatcher {
       normalizeWatchLogger(this._logger, config);
     }
 
-    this._watcher.on('change', async (path) => {
+    this._watcher.on('change', async (path: string) => {
       try {
         if (serverOrCompiler instanceof DevServer) {
           await serverOrCompiler.hmrEngine.hmrUpdate(path);
@@ -109,4 +111,23 @@ async function compilerHandler(callback: () => Promise<void>, config: Config) {
       `${elapsedTime}ms`
     )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
   );
+}
+
+export function resolvedWatcherOptions(
+  options: FileWatcherOptions,
+  config: Config
+) {
+  const { ignored = [] } = options;
+  const watcherOptions = {
+    ignored: [
+      '**/{.git,node_modules}/**',
+      new RegExp(config.config?.output?.path),
+      ...(Array.isArray(ignored) ? ignored : [ignored])
+    ],
+    ignoreInitial: true,
+    ignorePermissionErrors: true
+  };
+  console.log(watcherOptions);
+
+  return watcherOptions;
 }

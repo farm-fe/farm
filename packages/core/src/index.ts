@@ -49,7 +49,7 @@ export async function start(
       process.exit(1);
     }
 
-    const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
+    const fileWatcher = new FileWatcher(userConfig.root);
     fileWatcher.watch(devServer, {});
   }
 }
@@ -152,10 +152,9 @@ export function createFileWatcher(
   compiler: Compiler,
   normalizedConfig: Config
 ) {
-  const outDir = normalizedConfig.config.output.path;
-  const outDirRegex = new RegExp(`^.*${outDir}.*$`);
-  const fileWatcher = new FileWatcher(watcherDirPath, {
-    ignores: ['**/{.git,node_modules}/**', outDirRegex]
-  });
+  // const outDir = normalizedConfig.config.output.path;
+  // const outDirRegex = new RegExp(`^.*${outDir}.*$`);
+  // const isWatcherObject = isObject(normalizedConfig.config.watch);
+  const fileWatcher = new FileWatcher(watcherDirPath, normalizedConfig);
   fileWatcher.watch(compiler, normalizedConfig);
 }
