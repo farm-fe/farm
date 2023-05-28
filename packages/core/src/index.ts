@@ -64,7 +64,7 @@ export async function build(
   const start = Date.now();
   const compiler = new Compiler(normalizedConfig);
   compiler.removeOutputPathDir();
-  if (userConfig.compilation.watch) {
+  if (userConfig.compilation?.watch) {
     createFileWatcher(userConfig.root, compiler, normalizedConfig);
   } else {
     await compiler.compile();

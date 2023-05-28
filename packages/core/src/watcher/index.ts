@@ -71,21 +71,20 @@ export class FileWatcher {
       normalizeWatchLogger(this._logger, config);
     }
 
-    this._watcher.on('change', async (file) => {
-      if (serverOrCompiler instanceof DevServer) {
-        // if (file === serverOrCompiler.config.host || file.endsWith('.tsx')) {
-        //   chalk.green('config or .env file changed, restarting server...');
-        //   await restartServer(serverOrCompiler);
-        //   return;
-        // }
-        serverOrCompiler.hmrEngine.hmrUpdate(file);
-      }
+    this._watcher.on('change', async (path) => {
+      try {
+        if (serverOrCompiler instanceof DevServer) {
+          await serverOrCompiler.hmrEngine.hmrUpdate(path);
+        }
 
-      if (serverOrCompiler instanceof Compiler) {
-        await compilerHandler(async () => {
-          await compiler.update([file], true);
-          compiler.writeResourcesToDisk();
-        }, config);
+        if (serverOrCompiler instanceof Compiler) {
+          await compilerHandler(async () => {
+            await compiler.update([path], true);
+            compiler.writeResourcesToDisk();
+          }, config);
+        }
+      } catch (error) {
+        this._logger.error(error);
       }
     });
   }

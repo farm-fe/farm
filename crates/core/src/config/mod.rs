@@ -71,6 +71,7 @@ pub struct OutputConfig {
   pub filename: String,
   pub assets_filename: String,
   pub target_env: TargetEnv,
+  pub format: ModuleFormat,
 }
 
 impl Default for OutputConfig {
@@ -82,7 +83,8 @@ impl Default for OutputConfig {
       assets_filename: "[resourceName].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),
-      target_env: TargetEnv::Browser,
+      target_env: TargetEnv::default(),
+      format: ModuleFormat::default(),
     }
   }
 }
@@ -94,6 +96,15 @@ pub enum TargetEnv {
   Browser,
   #[serde(rename = "node")]
   Node,
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
+pub enum ModuleFormat {
+  #[serde(rename = "esm")]
+  #[default]
+  EsModule,
+  #[serde(rename = "cjs")]
+  CommonJs,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -18,6 +18,8 @@ use farmfe_toolkit::{
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 
+pub const DYNAMIC_REQUIRE: &str = "dynamicRequire";
+pub const FARM_REQUIRE: &str = "farmRequire";
 /// replace all `require('./xxx')` to the actual id and transform require('./xxx'). for example:
 /// ```js
 /// // a.js is originally a commonjs module
@@ -27,6 +29,7 @@ use farmfe_toolkit::{
 /// ```
 pub struct SourceReplacer<'a> {
   unresolved_mark: Mark,
+  top_level_mark: Mark,
   module_graph: &'a ModuleGraph,
   module_id: ModuleId,
   module_system: ModuleSystem,
@@ -36,6 +39,7 @@ pub struct SourceReplacer<'a> {
 impl<'a> SourceReplacer<'a> {
   pub fn new(
     unresolved_mark: Mark,
+    top_level_mark: Mark,
     module_graph: &'a ModuleGraph,
     module_id: ModuleId,
     module_system: ModuleSystem,
@@ -43,6 +47,7 @@ impl<'a> SourceReplacer<'a> {
   ) -> Self {
     Self {
       unresolved_mark,
+      top_level_mark,
       module_graph,
       module_id,
       module_system,
@@ -75,7 +80,7 @@ impl SourceReplacer<'_> {
       return SourceReplaceResult::NotReplaced;
     }
 
-    if is_commonjs_require(self.unresolved_mark, &*call_expr) {
+    if is_commonjs_require(self.unresolved_mark, self.top_level_mark, &*call_expr) {
       if let ExprOrSpread {
         spread: None,
         expr: box Expr::Lit(Lit::Str(Str { value, .. })),
@@ -89,6 +94,13 @@ impl SourceReplacer<'_> {
           .unwrap()
           .module_type
           .clone();
+
+        call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: FARM_REQUIRE.into(),
+          optional: false,
+        })));
+
         // leave source @swc/helpers/_/lib/_interop_require_default, @swc/helpers/_/lib/_interop_require_wildcard, @swc/helpers/_/lib/_export_star unchanged
         if !matches!(module_type, ModuleType::Runtime)
           && [
@@ -114,7 +126,6 @@ impl SourceReplacer<'_> {
 
         if dep_module.module_type.is_script() || dep_module.module_type == ModuleType::Runtime {
           *value = id.id(self.mode.clone()).into();
-
           return SourceReplaceResult::Replaced;
         } else {
           // replace require('./index.css') with an noop()
@@ -140,7 +151,7 @@ impl SourceReplacer<'_> {
       {
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
-          sym: "dynamicRequire".into(),
+          sym: DYNAMIC_REQUIRE.into(),
           optional: false,
         })));
 

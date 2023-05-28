@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "d2214aaa": function(module, exports, require, dynamicRequire) {
+    "d2214aaa": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
@@ -25,7 +25,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "052dab48": function(module, exports, require, dynamicRequire) {
+    "052dab48": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -40,7 +40,7 @@
             main: "./main.tsx"
         };
     },
-    "b5d64806": function(module, exports, require, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -51,10 +51,10 @@
                 return _default;
             }
         });
-        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-        var _module = require("module");
-        var _config = require("edceee38");
-        var _util = _interop_require_default._(require("052dab48"));
+        var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+        var _module = farmRequire("module");
+        var _config = farmRequire("edceee38");
+        var _util = _interop_require_default._(farmRequire("052dab48"));
         var _default = (0, _config.defineFarmConfig)({
             compilation: {
                 input: _util.default,
@@ -62,7 +62,7 @@
             }
         });
     },
-    "edceee38": function(module, exports, require, dynamicRequire) {
+    "edceee38": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -82,3 +82,4 @@ var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806");
+export default entry.default;

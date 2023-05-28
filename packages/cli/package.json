@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
-    "build": "tsc",
+    "build": "tsc -b",
     "type-check": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

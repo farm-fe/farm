@@ -16,12 +16,30 @@
 
 ## 提交代码指南
 
-- Fock [Farm](https://github.com/farm-fe/farm) 仓库。
 - 编写代码的时候, 请遵循代码编写规范。
+  
 - 设置您的本地开发环境。
+  
 - 在您的本地从 `main` 分支切出一个新的功能特性分支 (如果您提交关于 node 侧代码, 请从 `refactor/node` 分支拉取分支并提交)。
+  
 - 使用 `cargo test` 确保所有测试均能通过。
+
 - 如果您已经更改了一些包并准备更新版本，则您应该在根目录中输出`npx changeset` 用来发布新版本并且提交。
+
+## 设置
+
+- Fock 并且 clone 仓库到本地。
+
+- 为你的 PR 创建一个新的分支。 `git checkout -b your-branch-name`。
+
+- 保证您的 `main` 分支指向远程仓库, 并从分支上发出拉取请求, 请确保您的分支是基于 `main` 分支的, 并且运行:
+
+```bash
+  git remote add upstream https://github.com/farm-fe/farm.git
+  git fetch upstream
+  git branch --set-upstream-to=upstream/main main
+```
+
 
 ## 设置您的本地开发环境
 
@@ -33,7 +51,7 @@
 
 - 确保您的 [Pnpm](https://pnpm.io) 版本在 **8** 以上。
 
-### 设置其他依赖
+### 其他依赖
 
 - 在构建 `sass-embedded` 需要用到 [protoc](https://grpc.io/docs/protoc-installation/) 所以您的本地开发环境还需要安装 [protoc](https://grpc.io/docs/protoc-installation/)。
 
@@ -92,4 +110,5 @@ $ farm plugin create <plugin-name> # create a plugin support js or rust
 Farm 整个项目分为两个部分, JavaScript 和 Rust。
 
 - **JavaScript** 部分: 查看 packages 文件夹中的代码, 包含核心包(开发服务, 文件监听, 编译器包装), 脚手架, 运行时和运行时插件 (模块系统, HMR 热更新)。
+  
 - **Rust** 部分: 查看 crates 以及 rust-plugin 文件夹中的代码, 包含核心包 (编译上下文, 插件驱动等), 编译器 (编译进程、HMR 更新等), Rust 插件。

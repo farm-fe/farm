@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "ec853507": function(module, exports, require, dynamicRequire) {
+    "ec853507": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
@@ -25,7 +25,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "b5d64806": function(module, exports, require, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true

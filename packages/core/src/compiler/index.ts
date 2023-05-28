@@ -64,24 +64,29 @@ export class Compiler {
     }
 
     this.compiling = true;
-    const res = this._bindingCompiler.update(
-      paths,
-      async () => {
-        const next = this._updateQueue.shift();
+    try {
+      const res = await this._bindingCompiler.update(
+        paths,
+        async () => {
+          const next = this._updateQueue.shift();
 
-        if (next) {
-          await this.update(next.paths, true).then(next.resolve);
-        } else {
-          this.compiling = false;
-          this._onUpdateFinishQueue.forEach((cb) => cb());
-          // clear update finish queue
-          this._onUpdateFinishQueue = [];
-        }
-      },
-      sync
-    );
+          if (next) {
+            await this.update(next.paths, true).then(next.resolve);
+          } else {
+            this.compiling = false;
+            this._onUpdateFinishQueue.forEach((cb) => cb());
+            // clear update finish queue
+            this._onUpdateFinishQueue = [];
+          }
+        },
+        sync
+      );
 
-    return res as JsUpdateResult;
+      return res as JsUpdateResult;
+    } catch (e) {
+      this.compiling = false;
+      throw e;
+    }
   }
 
   hasModule(resolvedPath: string): boolean {

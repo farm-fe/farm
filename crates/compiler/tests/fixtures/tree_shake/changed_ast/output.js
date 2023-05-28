@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "../../_internal/runtime/index.js.farm-runtime": function(module, exports, require, dynamicRequire) {
+    "../../_internal/runtime/index.js.farm-runtime": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
@@ -25,7 +25,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "comp.tsx": function(module, exports, require, dynamicRequire) {
+    "comp.tsx": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -36,8 +36,8 @@
                 return Description;
             }
         });
-        var _interop_require_wildcard = require("@swc/helpers/_/_interop_require_wildcard");
-        var _dep = _interop_require_wildcard._(require("dep.ts"));
+        var _interop_require_wildcard = farmRequire("@swc/helpers/_/_interop_require_wildcard");
+        var _dep = _interop_require_wildcard._(farmRequire("dep.ts"));
         const LazyComp = _dep.default.lazy(()=>Promise.resolve({
                 default: ()=>_dep.default.createElement("div", {
                         __source: {
@@ -73,7 +73,7 @@
         $RefreshReg$(_c, "LazyComp");
         $RefreshReg$(_c1, "Description");
     },
-    "dep.ts": function(module, exports, require, dynamicRequire) {
+    "dep.ts": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -104,12 +104,12 @@
             }
         };
     },
-    "entry.ts": function(module, exports, require, dynamicRequire) {
+    "entry.ts": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _comp = require("comp.tsx");
+        var _comp = farmRequire("comp.tsx");
         console.log((0, _comp.Description)());
     }
 });
