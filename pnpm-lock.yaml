@@ -370,20 +370,6 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/vue
 
-<<<<<<< HEAD
-  js-plugins/dts:
-    dependencies:
-      fast-glob:
-        specifier: ^3.2.12
-        version: 3.2.12
-      ts-morph:
-        specifier: ^18.0.0
-        version: 18.0.0
-    devDependencies:
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-=======
   examples/vue-jsx:
     dependencies:
       vue:
@@ -402,7 +388,19 @@ importers:
       swc-plugin-vue-jsx:
         specifier: ^0.2.4
         version: 0.2.4
->>>>>>> 75044a57dce39dc2578f0273de356fc71fbe764e
+
+  js-plugins/dts:
+    dependencies:
+      fast-glob:
+        specifier: ^3.2.12
+        version: 3.2.12
+      ts-morph:
+        specifier: ^18.0.0
+        version: 18.0.0
+    devDependencies:
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   js-plugins/less:
     devDependencies:
@@ -3103,14 +3101,11 @@ packages:
     resolution: {integrity: sha512-q4dMFMlXtKR3XNBHyMHt/3pwYNA69EDk00lloMOaaUMKPUXBw6lpXtbu3MMVG6/uOihGnRDOlkyqsONEUj60+w==}
     dev: false
 
-<<<<<<< HEAD
-=======
   /codepage@1.15.0:
     resolution: {integrity: sha512-3g6NUTPd/YtuuGrhMnOMRjFc+LJw/bnMp3+0r/Wcz3IXUuCosKRJvMphm5+Q+bvTVGcJJuRvVLuYba+WojaFaA==}
     engines: {node: '>=0.8'}
     dev: false
 
->>>>>>> 75044a57dce39dc2578f0273de356fc71fbe764e
   /color-convert@1.9.3:
     resolution: {integrity: sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==}
     dependencies:
