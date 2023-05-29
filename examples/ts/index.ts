@@ -1,14 +1,14 @@
-import { Project } from 'ts-morph';
+// const { Project } = require("ts-morph")
+import { Project } from 'ts-morph'
+// interface obj {
+//   name: string;
+//   age: number;
+// }
 
-interface obj {
-  name: string;
-  age: number;
-}
-
-export const obj: obj = {
-  name: 'erkelost',
-  age: 18
-};
+// export const obj: obj = {
+//   name: 'erkelost',
+//   age: 18
+// };
 
 export const project = new Project();
 
