@@ -238,7 +238,6 @@ impl JsCompiler {
   pub fn relative_module_paths(&self) -> Vec<String> {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
-
     module_graph
       .modules()
       .into_iter()

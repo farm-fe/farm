@@ -33,12 +33,14 @@ export class FileWatcher {
     const options = isWatcherObject ? this._options.config.watch : {};
     const watcherOptions = resolvedWatcherOptions(options, config);
     // console.log(watcherOptions);
-    console.log(compiler.resolvedModulePaths(this._root));
+    console.log(this._root);
+
+    // console.log(compiler.resolvedModulePaths(this._root));
 
     this._watcher = chokidar.watch(
       serverOrCompiler instanceof DevServer
         ? compiler.resolvedModulePaths(this._root)
-        : '.',
+        : compiler.resolvedModulePaths(this._root),
       watcherOptions
     );
     if (serverOrCompiler instanceof DevServer) {

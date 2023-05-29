@@ -25,6 +25,8 @@ export class Compiler {
 
   constructor(config: Config) {
     this.config = config;
+    console.log(this.config);
+
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 
@@ -130,6 +132,10 @@ export class Compiler {
   }
 
   resolvedModulePaths(root: string): string[] {
+    console.log(
+      'resolvedModulePaths',
+      this._bindingCompiler.relativeModulePaths()
+    );
     return this._bindingCompiler
       .relativeModulePaths()
       .map((p) => this.transformModulePath(root, p));
