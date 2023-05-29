@@ -1,13 +1,14 @@
 use farmfe_core::swc_ecma_ast::{
   ImportDecl, ImportSpecifier, Module as SwcModule, ModuleExportName,
 };
-use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
+use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith};
 
 use crate::{
   module::TreeShakeModule,
   statement_graph::{
-    analyze_imports_and_exports::analyze_imports_and_exports, ExportInfo, ExportSpecifierInfo,
-    ImportInfo, ImportSpecifierInfo,
+    analyze_imports_and_exports::analyze_imports_and_exports,
+    defined_idents_collector::DefinedIdentsCollector, ExportInfo, ExportSpecifierInfo, ImportInfo,
+    ImportSpecifierInfo,
   },
 };
 
@@ -137,19 +138,18 @@ impl VisitMut for UselessExportStmtRemover {
       farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
         let mut decls_to_remove = vec![];
 
-        for (index, decl) in var_decl.decls.iter().enumerate() {
+        for (index, decl) in var_decl.decls.iter_mut().enumerate() {
           if !self
             .export_info
             .specifiers
             .iter()
             .any(|export_specifier| match export_specifier {
-              ExportSpecifierInfo::Named { local, .. } => match &decl.name {
-                farmfe_core::swc_ecma_ast::Pat::Ident(ident) => {
-                  ident.to_string() == local.to_string()
-                }
-                // TODO support other patterns
-                _ => false,
-              },
+              ExportSpecifierInfo::Named { local, .. } => {
+                let mut defined_idents_collector = DefinedIdentsCollector::new();
+                decl.name.visit_with(&mut defined_idents_collector);
+
+                defined_idents_collector.defined_idents.contains(local)
+              }
               _ => false,
             })
           {

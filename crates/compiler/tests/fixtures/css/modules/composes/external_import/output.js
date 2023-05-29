@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "0b3bded0": function(module, exports, require, dynamicRequire) {
+    "0b3bded0": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
@@ -25,7 +25,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "8b6840d6": function(module, exports, require, dynamicRequire) {
+    "8b6840d6": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -41,7 +41,7 @@
             "action": `farm-action`
         };
     },
-    "95fe6ac5": function(module, exports, require, dynamicRequire) {
+    "95fe6ac5": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -52,20 +52,20 @@
                 return _default;
             }
         });
-        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
+        var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
         noop();
-        var _actioncss = _interop_require_default._(require("8b6840d6"));
+        var _actioncss = _interop_require_default._(farmRequire("8b6840d6"));
         var _default = {
             "base": `farm-base ${_actioncss.default["action"]}`
         };
     },
-    "b5d64806": function(module, exports, require, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-        var _indexcss = _interop_require_default._(require("95fe6ac5"));
+        var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+        var _indexcss = _interop_require_default._(farmRequire("95fe6ac5"));
         console.log(_indexcss.default.base);
     }
 });

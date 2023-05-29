@@ -9,7 +9,9 @@ import {
   BindingMetadata,
   rewriteDefault,
   SFCStyleBlock,
-  SFCTemplateCompileResults
+  SFCTemplateCompileResults,
+  SFCScriptCompileOptions,
+  CompilerOptions
 } from '@vue/compiler-sfc';
 import { error, warn, getHash, parsePath } from './utils.js';
 import {
@@ -60,13 +62,27 @@ export function genTemplateCode(
   | Union<SFCTemplateCompileResults, { code: string }>
   | { code: string; map: RawSourceMap } {
   if (template) {
+    // if using TS, support TS syntax in template expressions
+    const expressionPlugins: CompilerOptions['expressionPlugins'] =
+      templateCompilerOptions?.compilerOptions?.expressionPlugins ?? [];
+    const lang = descriptor.scriptSetup?.lang || descriptor.script?.lang;
+    if (
+      lang &&
+      /tsx?$/.test(lang) &&
+      !expressionPlugins.includes('typescript')
+    ) {
+      expressionPlugins.push('typescript');
+    }
+
     const result = compileTemplate({
       source: template.content,
       filename,
       id: filename,
       compilerOptions: {
+        ...templateCompilerOptions?.compilerOptions,
         bindingMetadata: bindings ? bindings : undefined,
-        scopeId: hasScoped ? `data-v-${hash}` : undefined
+        scopeId: hasScoped ? `data-v-${hash}` : undefined,
+        expressionPlugins
       },
       inMap: template.map,
       slotted: descriptor.slotted,
@@ -107,15 +123,29 @@ export function genScriptCode(
   let code = '';
   let result: SFCScriptBlock = {} as SFCScriptBlock;
   const script = descriptor.script || descriptor.scriptSetup;
+  const babelParserPlugins: SFCScriptCompileOptions['babelParserPlugins'] = [];
+
+  if (script?.lang === 'ts' || script?.lang === 'tsx') {
+    babelParserPlugins.push('typescript');
+  }
+  if (script?.lang === 'jsx' || script?.lang === 'tsx') {
+    babelParserPlugins.push('jsx');
+  }
+
+  if (scriptCompilerOptions.babelParserPlugins) {
+    babelParserPlugins.push(...scriptCompilerOptions.babelParserPlugins);
+  }
+
   // if script exist, add transformed code
   if (script) {
     const { content } = (result = compileScript(descriptor, {
       id: filename,
-      ...scriptCompilerOptions
+      ...scriptCompilerOptions,
+      babelParserPlugins
     }));
     cacheScript.set(descriptor, result);
-    code += rewriteDefault(content, '_sfc_main');
-    if (script && script.lang === 'ts') moduleType = 'ts';
+    code += rewriteDefault(content, '_sfc_main', babelParserPlugins);
+    if (script?.lang) moduleType = script.lang;
   }
   // default script code
   else {
@@ -137,7 +167,7 @@ function genStyleCode(
   hash: string,
   resolvedPath: string,
   index: number,
-  isHmr: boolean = false
+  isHmr = false
 ) {
   const {
     attrs: { lang = 'css', scoped }
@@ -181,7 +211,7 @@ export function genStylesCode(
   resolvedPath: string,
   hash: string,
   filename: string,
-  isHmr: boolean = false,
+  isHmr = false,
   deleteStyles: SFCStyleBlock[] = [],
   addStyles: SFCStyleBlock[] = []
 ) {
@@ -223,7 +253,7 @@ export function genStylesCode(
 
 export function genQueryStr(queryObj: QueryObj) {
   const queryStrArr: string[] = [];
-  for (let key in queryObj) {
+  for (const key in queryObj) {
     if (queryObj[key] === 0 || queryObj[key])
       queryStrArr.push(`${key}=${queryObj[key]}`);
   }
@@ -265,8 +295,8 @@ export function genMainCode(
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
   mode: 'development' | 'production' = 'production',
-  isHmr: boolean = false,
-  rerenderOnly: boolean = false,
+  isHmr = false,
+  rerenderOnly = false,
   deleteStyles: SFCStyleBlock[] = [],
   addStyles: SFCStyleBlock[] = []
 ) {

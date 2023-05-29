@@ -1,22 +1,23 @@
 {
   "name": "@farmfe/js-plugin-vue",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "support vue sfc for farm.",
-  "main": "./dist/farm-vue-plugin.js",
+  "main": "./build/index.js",
   "types": "./dist/farm-vue-plugin.d.ts",
   "type": "module",
   "scripts": {
     "start": "tsc -w",
-    "build": "tsc",
+    "build": "farm build && tsc",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
-    "dist"
+    "dist",
+    "build"
   ],
   "exports": {
     ".": {
-      "import": "./dist/farm-vue-plugin.js"
+      "import": "./build/index.js"
     }
   },
   "repository": {
@@ -31,7 +32,8 @@
   "author": "ysy945",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/core": "workspace:^0.7.0",
+    "@farmfe/cli": "workspace:^",
+    "@farmfe/core": "workspace:^",
     "@types/less": "^3.0.3",
     "@types/node": "^18.15.3",
     "@types/sass": "~1.43.1",
@@ -40,11 +42,11 @@
   "dependencies": {
     "@jridgewell/gen-mapping": "^0.3.2",
     "@jridgewell/trace-mapping": "^0.3.17",
-    "@vue/compiler-sfc": "^3.2.47",
+    "@vue/compiler-sfc": "^3.3.0",
     "source-map": "^0.7.4"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.7.0",
+    "@farmfe/core": "^0.8.3",
     "less": "*",
     "sass": "*",
     "stylus": "*"

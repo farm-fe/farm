@@ -1,0 +1,19 @@
+{
+  "name": "lib-watch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "watch": "farm watch",
+    "build": "farm build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  }
+}

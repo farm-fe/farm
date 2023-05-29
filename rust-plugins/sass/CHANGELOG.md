@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.0.5
+
+### Patch Changes
+
+- e780747: Bump version cause the Rust core changed
+
 ## 0.0.4
 
 ### Patch Changes

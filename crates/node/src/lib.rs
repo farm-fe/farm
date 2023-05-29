@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use farmfe_compiler::{update::UpdateType, Compiler};
+use farmfe_compiler::Compiler;
 
 pub mod plugin_adapters;
 pub mod plugin_toolkit;
@@ -12,6 +12,7 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
+  plugin::UpdateType,
 };
 
 use napi::{

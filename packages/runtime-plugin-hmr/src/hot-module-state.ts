@@ -1,7 +1,7 @@
 import { HmrUpdateResult } from './types';
 import type {
   ModuleSystem,
-  ModuleInitialization,
+  ModuleInitialization
 } from '@farmfe/runtime/src/module-system';
 import { handleErrorSync } from './utils';
 
@@ -45,8 +45,6 @@ export function applyHotUpdates(
   result: HmrUpdateResult,
   moduleSystem: ModuleSystem
 ) {
-  console.log('applyHotUpdates', result);
-
   for (const id of result.removed) {
     moduleSystem.delete(id);
     REGISTERED_HOT_MODULES.delete(id);

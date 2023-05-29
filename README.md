@@ -21,8 +21,7 @@
 ---
 
 ## Intro
-
-Farm is a super-fast web building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
+The Farm is a super-fast web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
 ![xx](./assets/benchmark.png)
 
@@ -34,12 +33,12 @@ Farm is a super-fast web building tool written in Rust. Benchmark against other 
 
 ## Features
 
-- ⚡ **Super Fast**: Written in Rust, start a React / Vue project in milliseconds, perform an HMR update within 10ms for most situations.
+- ⚡ **Super Fast**: Written in Rust, start a React / Vue project in milliseconds and perform an HMR update within 10ms for most situations.
 - 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Supports both Rust and JavaScript plugins.
 - ⚙️ **Powerful**: Compiles JS/TS/JSX/TSX, CSS, HTML, and static assets out of the box.
 - ⏱️ **Lazy Compilation**: Dynamically imported resources are compiled only when requested.
 - 📦 **Partial Bundling**: Bundle your project into a few reasonable bundles, speeding up resource loading without losing caching granularity.
-- 🔒 **Consistency**: What you see in development will be exactly the same as what you get in production.
+- 🔒 **Consistency**: What you see in development will be the same as what you get in production.
 - 🌳 **Compatibility**: Supports both legacy (ES5) and modern browsers.
 
 <br/>

@@ -115,7 +115,18 @@ export async function normalizeUserCompilationConfig(
 
   // we should not deep merge compilation.input
   if (userConfig.compilation?.input) {
-    config.input = userConfig.compilation.input;
+    // Add ./ if userConfig.input is relative path without ./
+    const input: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(userConfig.compilation.input)) {
+      if (!path.isAbsolute(value) && !value.startsWith('./')) {
+        input[key] = `./${value}`;
+      } else {
+        input[key] = value;
+      }
+    }
+
+    config.input = input;
   }
 
   if (!config.root) {
@@ -154,6 +165,24 @@ export async function normalizeUserCompilationConfig(
     if (typeof plugin === 'string' || Array.isArray(plugin)) {
       rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
     } else if (typeof plugin === 'object') {
+      if (
+        plugin.transform &&
+        !plugin.transform.filters?.moduleTypes &&
+        !plugin.transform.filters?.resolvedPaths
+      ) {
+        throw new Error(
+          `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
+        );
+      }
+
+      if (plugin.transform) {
+        if (!plugin.transform.filters.moduleTypes) {
+          plugin.transform.filters.moduleTypes = [];
+        } else if (!plugin.transform.filters.resolvedPaths) {
+          plugin.transform.filters.resolvedPaths = [];
+        }
+      }
+
       jsPlugins.push(plugin as JsPlugin);
     }
   }
@@ -303,36 +332,6 @@ async function readConfigFile(
         server: {
           hmr: false
         }
-        // plugins: [
-        //   {
-        //     name: 'farm-plugin-external',
-        //     resolve: {
-        //       filters: {
-        //         importers: ['.+'],
-        //         sources: ['.+']
-        //       },
-        //       executor: (param) => {
-        //         // external all non-relative and non-absolute imports
-        //         if (
-        //           path.isAbsolute(param.source) ||
-        //           param.source.startsWith('.') ||
-        //           param.source.startsWith('@swc/helpers')
-        //         ) {
-        //           return null;
-        //         } else {
-        //           console.log('external', param.source);
-        //           return {
-        //             resolvedPath: 'external-path',
-        //             external: true,
-        //             sideEffects: false,
-        //             query: [],
-        //             meta: {}
-        //           };
-        //         }
-        //       }
-        //     }
-        //   }
-        // ]
       });
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();

@@ -5,6 +5,8 @@ use swc_css_prefixer::options::Targets;
 use swc_ecma_ast::EsVersion;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
+use crate::module::ModuleType;
+
 pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
 
@@ -69,6 +71,7 @@ pub struct OutputConfig {
   pub filename: String,
   pub assets_filename: String,
   pub target_env: TargetEnv,
+  pub format: ModuleFormat,
 }
 
 impl Default for OutputConfig {
@@ -80,23 +83,28 @@ impl Default for OutputConfig {
       assets_filename: "[resourceName].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),
-      target_env: TargetEnv::Browser,
+      target_env: TargetEnv::default(),
+      format: ModuleFormat::default(),
     }
   }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
 pub enum TargetEnv {
   #[serde(rename = "browser")]
+  #[default]
   Browser,
   #[serde(rename = "node")]
   Node,
 }
 
-impl Default for TargetEnv {
-  fn default() -> Self {
-    TargetEnv::Browser
-  }
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
+pub enum ModuleFormat {
+  #[serde(rename = "esm")]
+  #[default]
+  EsModule,
+  #[serde(rename = "cjs")]
+  CommonJs,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -113,11 +121,46 @@ impl Default for Mode {
   }
 }
 
+impl ToString for Mode {
+  fn to_string(&self) -> String {
+    match self {
+      Mode::Development => "development".to_string(),
+      Mode::Production => "production".to_string(),
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ScriptConfigPluginFilters {
+  pub resolved_paths: Vec<String>,
+  pub module_types: Vec<ModuleType>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ScriptConfigPlugin {
+  pub name: String,
+  pub options: serde_json::Value,
+  pub filters: ScriptConfigPluginFilters,
+}
+
+impl Default for ScriptConfigPlugin {
+  fn default() -> Self {
+    Self {
+      name: String::new(),
+      options: serde_json::Value::Object(serde_json::Map::new()),
+      filters: ScriptConfigPluginFilters::default(),
+    }
+  }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfig {
   pub target: EsVersion,
   pub parser: ScriptParserConfig,
+  pub plugins: Vec<ScriptConfigPlugin>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -140,12 +140,14 @@ impl Plugin for FarmPluginReact {
       let is_dev = matches!(context.config.mode, farmfe_core::config::Mode::Development);
       swc_transform_react(
         &self.core_lib,
-        context,
         ast,
         FarmSwcTransformReactOptions {
           top_level_mark,
           unresolved_mark,
           inject_helpers: true,
+          cm: context.meta.script.cm.clone(),
+          globals: &context.meta.script.globals,
+          mode: context.config.mode.clone(),
         },
       )?;
 
@@ -165,7 +167,9 @@ impl Plugin for FarmPluginReact {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // insert a global entry into the html module and make sure the inserted module executes first
-    if  matches!(context.config.mode, farmfe_core::config::Mode::Development) && param.module.module_type == farmfe_core::module::ModuleType::Html {
+    if matches!(context.config.mode, farmfe_core::config::Mode::Development)
+      && param.module.module_type == farmfe_core::module::ModuleType::Html
+    {
       param.deps.insert(
         0,
         PluginAnalyzeDepsHookResultEntry {

@@ -86,9 +86,15 @@ export class HmrEngine {
     }
 
     const resultStr = `export default {
-      added: [${result.added.map((r) => `'${r}'`).join(', ')}],
-      changed: [${result.changed.map((r) => `'${r}'`).join(', ')}],
-      removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
+      added: [${result.added
+        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
+        .join(', ')}],
+      changed: [${result.changed
+        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
+        .join(', ')}],
+      removed: [${result.removed
+        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
+        .join(', ')}],
       modules: ${
         result.modules.trim().endsWith(';')
           ? result.modules.trim().slice(0, -1)

@@ -5,7 +5,7 @@ use farmfe_core::{
 use farmfe_toolkit::swc_html_visit::{Visit, VisitWith};
 
 pub struct DepsAnalyzer {
-  pub deps: Option<Vec<PluginAnalyzeDepsHookResultEntry>>,
+  deps: Option<Vec<PluginAnalyzeDepsHookResultEntry>>,
 }
 
 pub const FARM_ENTRY: &str = "data-farm-entry-script";
@@ -57,7 +57,13 @@ pub fn get_script_src_value(element: &Element) -> Option<String> {
 
     if let Some(src_attr) = src_attr {
       if let Some(value) = &src_attr.value {
-        Some(value.to_string())
+        let value = value.to_string();
+        // the dependencies of html should be relative path and should not start with http or /
+        if value.starts_with("http") || value.starts_with("/") {
+          return None;
+        }
+
+        Some(value)
       } else {
         None
       }
@@ -78,7 +84,13 @@ pub fn get_href_link_value(element: &Element) -> Option<String> {
 
     if let Some(src_attr) = src_attr {
       if let Some(value) = &src_attr.value {
-        Some(value.to_string())
+        let value = value.to_string();
+        // the dependencies of html should be relative path and should not start with http or /
+        if value.starts_with("http") || value.starts_with("/") {
+          return None;
+        }
+
+        Some(value)
       } else {
         None
       }

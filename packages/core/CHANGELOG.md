@@ -1,5 +1,37 @@
 # @farmfe/core
 
+## 0.8.3
+
+### Patch Changes
+
+- e0ff7f1: Fix module system detect and sort alias by length
+- Updated dependencies [e0ff7f1]
+  - @farmfe/runtime@0.6.1
+
+## 0.8.2
+
+### Patch Changes
+
+- 1148f68: - Support lazy compilation for vue and support moduleTypes filter for js plugin transform hook
+  - Bundle @farmfe/js-plugin-vue with Farm
+- Updated dependencies [1148f68]
+  - @farmfe/runtime-plugin-hmr@3.1.3
+
+## 0.8.1
+
+### Patch Changes
+
+- 6f97c87: - Add missing dependencies execa
+  - Add ./ to config.input when the values of config.input is not absolute path and do not start with ./
+  - Alias resolve take precedent over all other resolve strategies
+  - Do not resolve html dependencies starts with `http` and `/`
+
+## 0.8.0
+
+### Minor Changes
+
+- e780747: Support swc plugin
+
 ## 0.7.6
 
 ### Patch Changes
