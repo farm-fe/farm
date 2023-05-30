@@ -37,7 +37,7 @@ use farmfe_toolkit::{
   },
   swc_ecma_visit::VisitMutWith,
 };
-use swc_plugins::transform_by_swc_plugins;
+use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
 mod swc_plugins;
@@ -376,6 +376,9 @@ impl Plugin for FarmPluginScript {
 
 impl FarmPluginScript {
   pub fn new(_config: &Config) -> Self {
+    // Currently swc enables filesystem cache by default on Embedded runtime plugin
+    // target.
+    init_plugin_module_cache_once(true, &None);
     Self {}
   }
 

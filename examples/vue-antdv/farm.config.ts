@@ -1,6 +1,7 @@
 // change to @farmfe/core/config when resolve support conditional exports
 import { UserConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
+import farmJsPluginLess from '@farmfe/js-plugin-less';
 import path from 'path';
 
 export default <UserConfig>{
@@ -27,5 +28,5 @@ export default <UserConfig>{
       },
     },
   },
-  plugins: [farmJsPluginVue()],
+  plugins: [farmJsPluginVue(), farmJsPluginLess()],
 };

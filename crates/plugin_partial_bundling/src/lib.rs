@@ -322,7 +322,7 @@ mod tests {
     let mut context = CompilationContext::new(Default::default(), vec![]).unwrap();
     let graph = construct_test_module_graph();
 
-    let _ = std::mem::replace(&mut context.module_graph, RwLock::new(graph));
+    let _ = std::mem::replace(&mut context.module_graph, Box::new(RwLock::new(graph)));
     let context = Arc::new(context);
     let mut module_graph = context.module_graph.write();
 

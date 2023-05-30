@@ -28,6 +28,7 @@ use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
 
 mod deps_analyzer;
 mod resources_injector;
+mod utils;
 
 pub struct FarmPluginHtml {}
 
