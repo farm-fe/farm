@@ -398,6 +398,9 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
     devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core

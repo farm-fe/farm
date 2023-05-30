@@ -26,7 +26,7 @@ export default function farmDtsPlugin(
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
 
         let source = data;
-        console.log(source);
+        // console.log(source);
 
         return {
           content: data,
@@ -40,9 +40,9 @@ export default function farmDtsPlugin(
         resolvedPaths: ['.ts$']
       },
       async executor(params: any, ctx: any) {
-        console.log(params);
+        // console.log(params);
         const project = new Project();
-        console.log(project);
+        // console.log(project);
         // const sourceFile = project.createSourceFile(
         //   params.resolvedPath,
         //   params.content

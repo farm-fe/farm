@@ -4,10 +4,9 @@
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "type": "module",
   "scripts": {
     "start": "tsc -w",
-    "build": "tsc",
+    "build": "farm build",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,6 +18,7 @@
     "ts-morph": "^18.0.0"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*"
+    "@farmfe/core": "workspace:*",
+    "@farmfe/cli": "workspace:*"
   }
 }
