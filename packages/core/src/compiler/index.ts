@@ -25,8 +25,6 @@ export class Compiler {
 
   constructor(config: Config) {
     this.config = config;
-    console.log(this.config);
-
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 

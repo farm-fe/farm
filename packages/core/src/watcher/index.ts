@@ -32,9 +32,6 @@ export class FileWatcher {
     const isWatcherObject = isObject(this._options.config?.watch);
     const options = isWatcherObject ? this._options.config.watch : {};
     const watcherOptions = resolvedWatcherOptions(options, config);
-    // console.log(watcherOptions);
-    console.log(this._root);
-
     // console.log(compiler.resolvedModulePaths(this._root));
 
     this._watcher = chokidar.watch(
@@ -131,7 +128,6 @@ export function resolvedWatcherOptions(
     ignoreInitial: true,
     ignorePermissionErrors: true
   };
-  console.log(watcherOptions);
 
   return watcherOptions;
 }
