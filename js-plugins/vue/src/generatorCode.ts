@@ -167,11 +167,12 @@ function genStyleCode(
   hash: string,
   resolvedPath: string,
   index: number,
-  isHmr: boolean = false
+  isHmr = false
 ) {
   const {
     attrs: { lang = 'css', scoped }
   } = style;
+
   const { code: styleCode, errors } = compileStyle({
     source: style.content,
     id: `data-v-${hash}`,
@@ -211,7 +212,7 @@ export function genStylesCode(
   resolvedPath: string,
   hash: string,
   filename: string,
-  isHmr: boolean = false,
+  isHmr = false,
   deleteStyles: SFCStyleBlock[] = [],
   addStyles: SFCStyleBlock[] = []
 ) {
@@ -253,7 +254,7 @@ export function genStylesCode(
 
 export function genQueryStr(queryObj: QueryObj) {
   const queryStrArr: string[] = [];
-  for (let key in queryObj) {
+  for (const key in queryObj) {
     if (queryObj[key] === 0 || queryObj[key])
       queryStrArr.push(`${key}=${queryObj[key]}`);
   }
@@ -295,8 +296,8 @@ export function genMainCode(
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
   mode: 'development' | 'production' = 'production',
-  isHmr: boolean = false,
-  rerenderOnly: boolean = false,
+  isHmr = false,
+  rerenderOnly = false,
   deleteStyles: SFCStyleBlock[] = [],
   addStyles: SFCStyleBlock[] = []
 ) {

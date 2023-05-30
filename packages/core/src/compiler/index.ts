@@ -71,7 +71,7 @@ export class Compiler {
           const next = this._updateQueue.shift();
 
           if (next) {
-            await this.update(next.paths, true).then(next.resolve);
+            await this.update(next.paths, true, true).then(next.resolve);
           } else {
             this.compiling = false;
             this._onUpdateFinishQueue.forEach((cb) => cb());

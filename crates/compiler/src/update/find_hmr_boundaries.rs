@@ -105,7 +105,7 @@ mod tests {
     )
     .unwrap();
 
-    context.module_graph = RwLock::new(module_graph);
+    context.module_graph = Box::new(RwLock::new(module_graph));
     Arc::new(context)
   }
   #[test]

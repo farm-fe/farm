@@ -10,7 +10,9 @@ use farmfe_toolkit::{
   swc_html_visit::{VisitMut, VisitMutWith},
 };
 
-use crate::deps_analyzer::{is_link_href, is_script_entry, is_script_src, FARM_ENTRY};
+use crate::utils::{
+  is_link_href, is_script_entry, is_script_resource, is_script_src, FARM_ENTRY, FARM_RESOURCE,
+};
 
 pub struct ResourcesInjectorOptions {
   pub mode: Mode,
@@ -149,21 +151,24 @@ window.__FARM_TARGET_ENV__ = '{}';
 
 impl VisitMut for ResourcesInjector {
   fn visit_mut_element(&mut self, element: &mut Element) {
-    let mut children_to_remove = vec![];
+    if element.tag_name.to_string() == "head" || element.tag_name.to_string() == "body" {
+      let mut children_to_remove = vec![];
 
-    // remove all non-http existing <href /> and <script /> first
-    for (i, child) in element.children.iter().enumerate() {
-      if let Child::Element(e) = child {
-        if is_script_src(e) || is_script_entry(e) || is_link_href(e) {
-          children_to_remove.push(i);
+      // remove all non-http existing <href /> and <script /> first
+      for (i, child) in element.children.iter().enumerate() {
+        if let Child::Element(e) = child {
+          if is_script_src(e) || is_script_entry(e) || is_link_href(e) || is_script_resource(e) {
+            children_to_remove.push(i);
+          }
         }
       }
+
+      // remove from the end to the beginning, so that the index is not affected
+      children_to_remove.reverse();
+      children_to_remove.into_iter().for_each(|i| {
+        element.children.remove(i);
+      });
     }
-    // remove from the end to the beginning, so that the index is not affected
-    children_to_remove.reverse();
-    children_to_remove.into_iter().for_each(|i| {
-      element.children.remove(i);
-    });
 
     if element.tag_name.to_string() == "head" {
       // inject css <link>
@@ -190,7 +195,10 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "script",
           None,
-          vec![("src", &format!("/{}", script))],
+          vec![
+            ("src", &format!("{}{}", self.options.public_path, script)),
+            (FARM_RESOURCE, "true"),
+          ],
         )));
       }
 

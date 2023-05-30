@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use farmfe_core::{
   config::{Config, FARM_MODULE_SYSTEM},
   module::ModuleId,
-  plugin::{Plugin, PluginHookContext, ResolveKind},
+  plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},
 };
 use farmfe_utils::stringify_query;
 
@@ -39,17 +39,62 @@ impl Plugin for FarmPluginLazyCompilation {
       }
     }
 
+    // If importer is dynamic virtual, we should resolve the dependency using the original importer
+    if let Some(importer) = &param.importer {
+      if importer.to_string().starts_with(DYNAMIC_VIRTUAL_PREFIX) {
+        let original_importer = importer.to_string().replace(DYNAMIC_VIRTUAL_PREFIX, "");
+        let resolve_result = context.plugin_driver.resolve(
+          &PluginResolveHookParam {
+            importer: Some(original_importer.into()),
+            ..param.clone()
+          },
+          context,
+          &PluginHookContext {
+            caller: Some("FarmPluginLazyCompilation".to_string()),
+            ..hook_context.clone()
+          },
+        )?;
+
+        if let Some(resolve_result) = resolve_result {
+          return Ok(Some(resolve_result));
+        }
+      }
+    }
+
     if param.source.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
-      return Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
-        resolved_path: param.source.to_string(),
-        external: false,
-        side_effects: false,
-        query: vec![],
-        meta: HashMap::from([(
-          "original".to_string(),
-          param.source.replace(DYNAMIC_VIRTUAL_PREFIX, ""),
-        )]),
-      }));
+      let original_path = param.source.replace(DYNAMIC_VIRTUAL_PREFIX, "");
+      let resolve_result = context.plugin_driver.resolve(
+        &PluginResolveHookParam {
+          source: original_path.clone(),
+          ..param.clone()
+        },
+        context,
+        &PluginHookContext {
+          caller: Some("FarmPluginLazyCompilation".to_string()),
+          ..hook_context.clone()
+        },
+      )?;
+
+      if let Some(mut resolve_result) = resolve_result {
+        resolve_result.resolved_path =
+          format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resolve_result.resolved_path);
+        resolve_result
+          .meta
+          .insert("original".to_string(), original_path);
+
+        return Ok(Some(resolve_result));
+      } else {
+        return Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
+          resolved_path: param.source.to_string(),
+          external: false,
+          side_effects: false,
+          query: vec![],
+          meta: HashMap::from([(
+            "original".to_string(),
+            param.source.replace(DYNAMIC_VIRTUAL_PREFIX, ""),
+          )]),
+        }));
+      }
     }
 
     if matches!(param.kind, ResolveKind::DynamicImport) {
@@ -65,10 +110,10 @@ impl Plugin for FarmPluginLazyCompilation {
       if let Some(resolve_result) = resolve_result {
         Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
           resolved_path: format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resolve_result.resolved_path),
-          external: false,
-          side_effects: false,
-          query: vec![],
-          meta: HashMap::new(),
+          external: resolve_result.external,
+          side_effects: resolve_result.side_effects,
+          query: resolve_result.query,
+          meta: resolve_result.meta,
         }))
       } else {
         Ok(None)
@@ -116,12 +161,11 @@ impl Plugin for FarmPluginLazyCompilation {
         }))
       } else {
         let resolved_path = param.meta.get("original").unwrap();
-
         context.plugin_driver.load(
           &farmfe_core::plugin::PluginLoadHookParam {
             resolved_path,
-            query: vec![],
-            meta: HashMap::new(),
+            query: param.query.clone(),
+            meta: param.meta.clone(),
           },
           context,
           &farmfe_core::plugin::PluginHookContext {
