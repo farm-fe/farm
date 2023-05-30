@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.6.1
+
+### Patch Changes
+
+- e0ff7f1: Using node cjs require to resolve external package
+
 ## 0.6.0
 
 ### Minor Changes
