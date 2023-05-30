@@ -17,7 +17,7 @@ import {
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
-import { FileWatcher } from './watcher/index.js';
+import { compilerHandler, FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
 
@@ -144,6 +144,11 @@ export async function watch(
     'production'
   );
   const compiler = new Compiler(normalizedConfig);
+  await compilerHandler(async () => {
+    await compiler.compile();
+    compiler.writeResourcesToDisk();
+  }, normalizedConfig);
+
   createFileWatcher(userConfig.root, compiler, normalizedConfig);
 }
 

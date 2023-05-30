@@ -35,9 +35,7 @@ export class FileWatcher {
     // console.log(compiler.resolvedModulePaths(this._root));
 
     this._watcher = chokidar.watch(
-      serverOrCompiler instanceof DevServer
-        ? compiler.resolvedModulePaths(this._root)
-        : compiler.resolvedModulePaths(this._root),
+      compiler.resolvedModulePaths(this._root),
       watcherOptions
     );
     if (serverOrCompiler instanceof DevServer) {
@@ -61,14 +59,6 @@ export class FileWatcher {
 
         this._watcher.unwatch(removed);
       });
-    }
-
-    if (serverOrCompiler instanceof Compiler) {
-      await compilerHandler(async () => {
-        await compiler.compile();
-        compiler.writeResourcesToDisk();
-      }, config);
-      normalizeWatchLogger(this._logger, config);
     }
 
     this._watcher.on('change', async (path: string) => {
@@ -97,7 +87,10 @@ export function normalizeWatchLogger(logger: DefaultLogger, config?: Config) {
   logger.info(`Ignoring changes in "**/{.git,node_modules}/**" | "${outDir}"`);
 }
 
-async function compilerHandler(callback: () => Promise<void>, config: Config) {
+export async function compilerHandler(
+  callback: () => Promise<void>,
+  config: Config
+) {
   const logger = new DefaultLogger();
   const startTime = performance.now();
   try {
