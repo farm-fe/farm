@@ -29,6 +29,7 @@ pub use petgraph;
 #[cfg(feature = "profile")]
 pub use puffin;
 pub use rayon;
+pub use regex;
 pub use relative_path;
 pub use rkyv;
 pub use rkyv_dyn;
@@ -40,4 +41,3 @@ pub use swc_css_ast;
 pub use swc_ecma_ast;
 pub use swc_ecma_parser;
 pub use swc_html_ast;
-
