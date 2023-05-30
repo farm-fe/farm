@@ -3,6 +3,7 @@ import { UserConfig } from './types.js';
 
 const ConfigSchema = z
   .object({
+    watch: z.boolean().optional(),
     coreLibPath: z.string().optional(),
     input: z.record(z.string()).optional(),
     output: z
@@ -11,7 +12,8 @@ const ConfigSchema = z
         path: z.string().optional(),
         publicPath: z.string().optional(),
         assetsFilename: z.string().optional(),
-        targetEnv: z.enum(['browser', 'node']).optional()
+        targetEnv: z.enum(['browser', 'node']).optional(),
+        format: z.enum(['cjs', 'esm']).optional()
       })
       .strict()
       .optional(),
@@ -60,31 +62,34 @@ const ConfigSchema = z
             'es2022'
           ])
           .optional(),
-        parser: z.object({
-          esConfig: z
-            .object({
-              jsx: z.boolean().optional(),
-              fnBind: z.boolean(),
-              decorators: z.boolean(),
-              decoratorsBeforeExport: z.boolean(),
-              exportDefaultFrom: z.boolean(),
-              importAssertions: z.boolean(),
-              privateInObject: z.boolean(),
-              allowSuperOutsideMethod: z.boolean(),
-              allowReturnOutsideFunction: z.boolean()
-            })
-            .strict()
-            .optional(),
-          tsConfig: z
-            .object({
-              tsx: z.boolean(),
-              decorators: z.boolean(),
-              dts: z.boolean(),
-              noEarlyErrors: z.boolean()
-            })
-            .strict()
-            .optional()
-        })
+        parser: z
+          .object({
+            esConfig: z
+              .object({
+                jsx: z.boolean().optional(),
+                fnBind: z.boolean(),
+                decorators: z.boolean(),
+                decoratorsBeforeExport: z.boolean(),
+                exportDefaultFrom: z.boolean(),
+                importAssertions: z.boolean(),
+                privateInObject: z.boolean(),
+                allowSuperOutsideMethod: z.boolean(),
+                allowReturnOutsideFunction: z.boolean()
+              })
+              .strict()
+              .optional(),
+            tsConfig: z
+              .object({
+                tsx: z.boolean(),
+                decorators: z.boolean(),
+                dts: z.boolean(),
+                noEarlyErrors: z.boolean()
+              })
+              .strict()
+              .optional()
+          })
+          .optional(),
+        plugins: z.array(z.any()).optional()
       })
       .strict()
       .optional(),
@@ -105,10 +110,23 @@ const ConfigSchema = z
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
+    presetEnv: z.boolean().optional(),
     css: z
       .object({
-        modules: z.boolean().optional(),
-        indentName: z.string().optional()
+        modules: z
+          .object({
+            indentName: z.string().optional()
+          })
+          .optional(),
+        prefixer: z
+          .object({
+            targets: z
+              .string()
+              .or(z.record(z.string()))
+              .or(z.array(z.string()))
+              .optional()
+          })
+          .optional()
       })
       .optional()
   })
@@ -119,10 +137,28 @@ const UserConfigSchema = z
     root: z.string().optional(),
     plugins: z.array(z.any()).optional(),
     compilation: ConfigSchema.optional(),
+    clearScreen: z.boolean().optional(),
     server: z
       .object({
         port: z.number().positive().int().optional(),
+        host: z
+          .string()
+          .regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+          .optional(),
+        open: z.boolean().optional(),
         https: z.boolean().optional(),
+        cors: z.boolean().optional(),
+        proxy: z
+          .record(
+            z.object({
+              target: z.string(),
+              changeOrigin: z.boolean(),
+              rewrite: z
+                .function(z.tuple([z.string(), z.object({})]))
+                .optional()
+            })
+          )
+          .optional(),
         hmr: z
           .union([
             z.boolean(),

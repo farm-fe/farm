@@ -13,16 +13,16 @@ import { _export_star } from '@swc/helpers/_/_export_star';
 const INTERNAL_MODULE_MAP: Record<string, any> = {
   '@swc/helpers/_/_interop_require_default': {
     default: _interop_require_default,
-    _: _interop_require_default,
+    _: _interop_require_default
   },
   '@swc/helpers/_/_interop_require_wildcard': {
     default: _interop_require_wildcard,
-    _: _interop_require_wildcard,
+    _: _interop_require_wildcard
   },
   '@swc/helpers/_/_export_star': {
     default: _export_star,
-    _: _export_star,
-  },
+    _: _export_star
+  }
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -76,26 +76,20 @@ export class ModuleSystem {
       }
     }
 
-    // if running on node, using native require to load node built-in modules
-    if (targetEnv === 'node') {
-      const { __farmNodeRequire, __farmNodeBuiltinModules } =
-        // TODO: polyfill globalThis
-        globalThis as unknown as {
-          __farmNodeRequire: (id: string) => any;
-          __farmNodeBuiltinModules: string[];
-        };
-
-      if (moduleId.startsWith('node:')) {
-        const nodeModuleId = moduleId.slice(5);
-        return __farmNodeRequire(nodeModuleId);
-      } else if (__farmNodeBuiltinModules.includes(moduleId)) {
-        return __farmNodeRequire(moduleId);
-      }
-    }
-
     const initializer = this.modules[moduleId];
 
     if (!initializer) {
+      // if running on node, using native require to load node built-in modules
+      if (targetEnv === 'node') {
+        const { __farmNodeRequire } =
+          // TODO: polyfill globalThis
+          globalThis as unknown as {
+            __farmNodeRequire: (id: string) => any;
+          };
+
+        return __farmNodeRequire(moduleId);
+      }
+
       throw new Error(`Module "${moduleId}" is not registered`);
     }
 

@@ -2,12 +2,12 @@
  * Lazy compilation middleware. Using the same logic as HMR middleware, but
  */
 
+import { relative } from 'node:path';
 import { Context } from 'koa';
 import chalk from 'chalk';
 
 import { DevServer } from '../index.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { relative } from 'path';
 
 export function lazyCompilation(server: DevServer) {
   const compiler = server.getCompiler();
@@ -48,7 +48,7 @@ export function lazyCompilation(server: DevServer) {
 
             dynamicResourcesMap[key] = value.map((r) => ({
               path: r[0],
-              type: r[1] as 'script' | 'link',
+              type: r[1] as 'script' | 'link'
             }));
           }
         }
@@ -64,4 +64,10 @@ export function lazyCompilation(server: DevServer) {
       }
     }
   };
+}
+
+export function lazyCompilationPlugin(distance: DevServer) {
+  if (distance._context.compiler.config.config.lazyCompilation) {
+    distance._context.app.use(lazyCompilation(distance));
+  }
 }

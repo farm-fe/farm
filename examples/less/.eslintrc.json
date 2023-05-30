@@ -2,7 +2,7 @@
   "root": true,
   "extends": "../../.eslintrc.base.json",
   "parserOptions": {
-    "project": ["./examples/react/tsconfig.json"]
+    "project": ["./examples/less/tsconfig.json"]
   },
   "rules": {}
 }

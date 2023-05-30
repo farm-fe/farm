@@ -42,6 +42,7 @@ pub fn parse_css_stylesheet(
     })
 }
 
+/// generate css code from [Stylesheet], return css code and source map
 pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
   cm: Option<Arc<SourceMap>>,

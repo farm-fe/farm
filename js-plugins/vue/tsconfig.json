@@ -3,9 +3,8 @@
   "compilerOptions": {
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "outDir": "dist",
-    "moduleResolution": "node"
+    "outDir": "dist"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "farm.config.mjs"],
   "exclude": ["node_modules"]
 }

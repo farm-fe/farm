@@ -1,5 +1,23 @@
 # @farmfe/plugin-react
 
+## 0.1.6
+
+### Patch Changes
+
+- e780747: Bump version cause the Rust core changed
+
+## 0.1.5
+
+### Patch Changes
+
+- 6ee7065: Fix that dev code presents in prod
+
+## 0.1.4
+
+### Patch Changes
+
+- 926c9cb: Fix css modules HMR & update ci yaml
+
 ## 0.1.3
 
 ### Patch Changes

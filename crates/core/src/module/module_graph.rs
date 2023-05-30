@@ -134,11 +134,11 @@ impl ModuleGraph {
   }
 
   pub fn modules(&self) -> Vec<&Module> {
-    self.g.node_weights().into_iter().collect()
+    self.g.node_weights().collect()
   }
 
   pub fn modules_mut(&mut self) -> Vec<&mut Module> {
-    self.g.node_weights_mut().into_iter().collect()
+    self.g.node_weights_mut().collect()
   }
 
   pub fn has_module(&self, module_id: &ModuleId) -> bool {
@@ -415,6 +415,20 @@ impl ModuleGraph {
     result.reverse();
 
     (result, cyclic)
+  }
+
+  pub fn update_execution_order_for_modules(&mut self) {
+    let (mut topo_sorted_modules, _) = self.toposort();
+
+    topo_sorted_modules.reverse();
+
+    topo_sorted_modules
+      .iter()
+      .enumerate()
+      .for_each(|(order, module_id)| {
+        let module = self.module_mut(module_id).unwrap();
+        module.execution_order = order;
+      });
   }
 
   pub fn internal_graph(&self) -> &StableDiGraph<Module, ModuleGraphEdge> {

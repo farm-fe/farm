@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "d2214aaa": function(module, exports, require, dynamicRequire) {
+    "d2214aaa": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         console.log("runtime/index.js");
         __farm_global_this__.__farm_module_system__.setPlugins([]);
@@ -25,15 +25,15 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "05ee5ec7": function(module, exports, require, dynamicRequire) {
+    "05ee5ec7": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
         });
-        var _export_star = require("@swc/helpers/_/_export_star");
-        _export_star._(require("ef0c4c9d"), exports);
+        var _export_star = farmRequire("@swc/helpers/_/_export_star");
+        _export_star._(farmRequire("ef0c4c9d"), exports);
     },
-    "b5d64806": function(module, exports, require, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -44,11 +44,11 @@
                 return _default;
             }
         });
-        var _export_star = require("@swc/helpers/_/_export_star");
-        _export_star._(require("05ee5ec7"), exports);
+        var _export_star = farmRequire("@swc/helpers/_/_export_star");
+        _export_star._(farmRequire("05ee5ec7"), exports);
         var _default = 2;
     },
-    "ef0c4c9d": function(module, exports, require, dynamicRequire) {
+    "ef0c4c9d": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -76,3 +76,4 @@ var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806");
+export default entry.default;

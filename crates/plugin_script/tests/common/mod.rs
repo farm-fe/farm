@@ -4,13 +4,18 @@ use farmfe_core::{
   context::CompilationContext,
   module::{Module, ModuleId},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginParseHookParam, ResolveKind,
+    Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
+    PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
+    PluginProcessModuleHookParam, ResolveKind,
   },
+  rkyv::de,
 };
 use farmfe_toolkit::script::module_system_from_deps;
 
-pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
+pub fn build_module_deps(
+  path: PathBuf,
+  base: PathBuf,
+) -> (Module, Vec<PluginAnalyzeDepsHookResultEntry>) {
   let config = Default::default();
   let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
   let script_plugin = farmfe_plugin_script::FarmPluginScript::new(&context.config);
@@ -33,7 +38,7 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
     .unwrap()
     .unwrap();
 
-  let parse_result = script_plugin
+  let mut parse_result = script_plugin
     .parse(
       &PluginParseHookParam {
         module_id: ModuleId::new(
@@ -59,6 +64,14 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
   ));
 
   module.module_type = load_result.module_type;
+
+  let mut process_module_param = PluginProcessModuleHookParam {
+    module_id: &module.id,
+    module_type: &module.module_type,
+    meta: &mut parse_result,
+  };
+  script_plugin.process_module(&mut process_module_param, &context);
+
   module.meta = parse_result;
 
   let mut analyze_deps_param = PluginAnalyzeDepsHookParam {
@@ -70,14 +83,21 @@ pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
     .analyze_deps(&mut analyze_deps_param, &context)
     .unwrap();
 
-  let deps = analyze_deps_param
-    .deps
-    .into_iter()
-    .map(|dep| dep.kind)
-    .collect::<Vec<ResolveKind>>();
-  let module_system = module_system_from_deps(deps);
+  let deps = analyze_deps_param.deps;
 
-  module.meta.as_script_mut().module_system = module_system;
+  script_plugin
+    .finalize_module(
+      &mut PluginFinalizeModuleHookParam {
+        module: &mut module,
+        deps: &deps,
+      },
+      &context,
+    )
+    .unwrap();
 
-  module
+  (module, deps)
+}
+
+pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
+  build_module_deps(path, base).0
 }

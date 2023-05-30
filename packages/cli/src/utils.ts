@@ -3,7 +3,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import Module from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { start, build } from '@farmfe/core';
+import type { start, build, preview, watch } from '@farmfe/core';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
 import type { GlobalFarmCLIOptions } from './types.js';
@@ -53,6 +53,8 @@ node_modules
 export function resolveCore(cwd: string): Promise<{
   start: typeof start;
   build: typeof build;
+  watch: typeof watch;
+  preview: typeof preview;
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
 
@@ -124,6 +126,8 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
+  delete resolveOptions.l;
+  delete resolveOptions.clearScreen;
   return resolveOptions;
 }
 
@@ -131,7 +135,9 @@ export function resolveCommandOptions(
   options: GlobalFarmCLIOptions
 ): GlobalFarmCLIOptions {
   filterDuplicateOptions(options);
-  const root = path.join(process.cwd(), options.config ?? '');
-  options.configPath = root;
-  return options;
+  return cleanOptions(options);
+}
+
+export function getConfigPath(configPath: string) {
+  return path.join(process.cwd(), configPath ?? '');
 }

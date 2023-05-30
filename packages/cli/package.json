@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/cli",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "CLI of Farm",
   "type": "module",
   "author": {
@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
-    "build": "tsc",
+    "build": "tsc -b",
     "type-check": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
@@ -50,7 +50,8 @@
     "loglevel": "^1.8.1"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:^0.7.0",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/cli": "workspace:*",
     "@types/cross-spawn": "^6.0.2",
     "@types/inquirer": "^9.0.3"
   }

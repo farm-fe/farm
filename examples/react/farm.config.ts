@@ -3,32 +3,32 @@ import type { UserConfig } from '@farmfe/core';
 export default <UserConfig>{
   compilation: {
     input: {
-      index: './index.html',
+      index: './index.html'
     },
     resolve: {
-      symlinks: true,
+      symlinks: true
     },
     define: {
-      BTN: 'Click me',
+      BTN: 'Click me'
     },
     output: {
-      path: './build',
+      path: './build'
     },
-    sourcemap: false
+    sourcemap: false,
+    css: {
+      // modules: {
+      //   indentName: 'farm-[name]-[hash]'
+      // },
+      prefixer: {
+        targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
+      }
+    }
     // treeShaking: true,
     // minify: true,
   },
   server: {
     hmr: true,
+    cors: true
   },
-  plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass',
-    [
-      '@farmfe/plugin-mdx',
-      {
-        name: 'rust-plugin-mdx',
-      },
-    ],
-  ],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 };

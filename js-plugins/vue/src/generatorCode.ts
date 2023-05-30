@@ -10,20 +10,22 @@ import {
   rewriteDefault,
   SFCStyleBlock,
   SFCTemplateCompileResults,
+  SFCScriptCompileOptions,
+  CompilerOptions
 } from '@vue/compiler-sfc';
 import { error, warn, getHash, parsePath } from './utils.js';
 import {
   QueryObj,
   StylesCodeCache,
   Union,
-  ResolvedOptions,
+  ResolvedOptions
 } from './farm-vue-types.js';
 import { cacheScript } from './farm-vue-hmr.js';
 import {
   fromMap,
   toEncodedMap,
   addMapping,
-  EncodedSourceMap,
+  EncodedSourceMap
 } from '@jridgewell/gen-mapping';
 import { eachMapping, TraceMap } from '@jridgewell/trace-mapping';
 import { RawSourceMap } from 'source-map';
@@ -60,19 +62,33 @@ export function genTemplateCode(
   | Union<SFCTemplateCompileResults, { code: string }>
   | { code: string; map: RawSourceMap } {
   if (template) {
+    // if using TS, support TS syntax in template expressions
+    const expressionPlugins: CompilerOptions['expressionPlugins'] =
+      templateCompilerOptions?.compilerOptions?.expressionPlugins ?? [];
+    const lang = descriptor.scriptSetup?.lang || descriptor.script?.lang;
+    if (
+      lang &&
+      /tsx?$/.test(lang) &&
+      !expressionPlugins.includes('typescript')
+    ) {
+      expressionPlugins.push('typescript');
+    }
+
     const result = compileTemplate({
       source: template.content,
       filename,
       id: filename,
       compilerOptions: {
+        ...templateCompilerOptions?.compilerOptions,
         bindingMetadata: bindings ? bindings : undefined,
         scopeId: hasScoped ? `data-v-${hash}` : undefined,
+        expressionPlugins
       },
       inMap: template.map,
       slotted: descriptor.slotted,
       preprocessLang: template.lang,
       scoped: hasScoped,
-      ...templateCompilerOptions,
+      ...templateCompilerOptions
     });
     const { code, map, errors, tips } = result;
 
@@ -83,18 +99,18 @@ export function genTemplateCode(
       tips.forEach((tip) =>
         warn({
           id: filename,
-          message: tip,
+          message: tip
         })
       );
     }
     return {
       ...result,
-      code: code.replace(/\nexport (function|const)/, '\n$1'),
+      code: code.replace(/\nexport (function|const)/, '\n$1')
     };
   }
   return {
     code: '',
-    map: {} as RawSourceMap,
+    map: {} as RawSourceMap
   };
 }
 
@@ -107,15 +123,29 @@ export function genScriptCode(
   let code = '';
   let result: SFCScriptBlock = {} as SFCScriptBlock;
   const script = descriptor.script || descriptor.scriptSetup;
+  const babelParserPlugins: SFCScriptCompileOptions['babelParserPlugins'] = [];
+
+  if (script?.lang === 'ts' || script?.lang === 'tsx') {
+    babelParserPlugins.push('typescript');
+  }
+  if (script?.lang === 'jsx' || script?.lang === 'tsx') {
+    babelParserPlugins.push('jsx');
+  }
+
+  if (scriptCompilerOptions.babelParserPlugins) {
+    babelParserPlugins.push(...scriptCompilerOptions.babelParserPlugins);
+  }
+
   // if script exist, add transformed code
   if (script) {
     const { content } = (result = compileScript(descriptor, {
       id: filename,
       ...scriptCompilerOptions,
+      babelParserPlugins
     }));
     cacheScript.set(descriptor, result);
-    code += rewriteDefault(content, '_sfc_main');
-    if (script && script.lang === 'ts') moduleType = 'ts';
+    code += rewriteDefault(content, '_sfc_main', babelParserPlugins);
+    if (script?.lang) moduleType = script.lang;
   }
   // default script code
   else {
@@ -124,7 +154,7 @@ export function genScriptCode(
   return {
     moduleType,
     code,
-    ...result,
+    ...result
   };
 }
 
@@ -137,17 +167,17 @@ function genStyleCode(
   hash: string,
   resolvedPath: string,
   index: number,
-  isHmr: boolean = false
+  isHmr = false
 ) {
   const {
-    attrs: { lang = 'css', scoped },
+    attrs: { lang = 'css', scoped }
   } = style;
   const { code: styleCode, errors } = compileStyle({
     source: style.content,
     id: `data-v-${hash}`,
     scoped: Boolean(scoped),
     filename,
-    ...styleCompilerOptions,
+    ...styleCompilerOptions
   });
   if (errors.length) {
     errors.forEach((err) => {
@@ -160,7 +190,7 @@ function genStyleCode(
     scoped: scoped ? hash : scoped,
     index,
     vue: true,
-    t: isHmr ? Date.now() : 0,
+    t: isHmr ? Date.now() : 0
   });
 
   const importPath = path.normalize(resolvedPath) + '?' + queryStr;
@@ -181,7 +211,7 @@ export function genStylesCode(
   resolvedPath: string,
   hash: string,
   filename: string,
-  isHmr: boolean = false,
+  isHmr = false,
   deleteStyles: SFCStyleBlock[] = [],
   addStyles: SFCStyleBlock[] = []
 ) {
@@ -223,7 +253,7 @@ export function genStylesCode(
 
 export function genQueryStr(queryObj: QueryObj) {
   const queryStrArr: string[] = [];
-  for (let key in queryObj) {
+  for (const key in queryObj) {
     if (queryObj[key] === 0 || queryObj[key])
       queryStrArr.push(`${key}=${queryObj[key]}`);
   }
@@ -239,16 +269,17 @@ export function genOtherCode(
   hash: string,
   isHmr = false,
   rerenderOnly: boolean,
-  filename: string
+  filename: string,
+  mode: 'development' | 'production' = 'production'
 ) {
   const otherCodeArr = [
     assignRenderCode,
     genFileNameCode(filename),
     hasScoped ? genAssignScopedCode(hash) : '',
     genAssignHmrIdCode(hash),
-    defaultHmrCode,
+    mode === 'development' ? defaultHmrCode : '',
     isHmr ? `_sfc_main._rerender_only=${rerenderOnly}` : '',
-    exportDefaultCode,
+    exportDefaultCode
   ];
 
   return otherCodeArr.join('\r\n');
@@ -263,8 +294,9 @@ export function genMainCode(
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
-  isHmr: boolean = false,
-  rerenderOnly: boolean = false,
+  mode: 'development' | 'production' = 'production',
+  isHmr = false,
+  rerenderOnly = false,
   deleteStyles: SFCStyleBlock[] = [],
   addStyles: SFCStyleBlock[] = []
 ) {
@@ -272,7 +304,7 @@ export function genMainCode(
     template: templateCompilerOptions,
     script: scriptCompilerOptions,
     style: styleCompilerOptions,
-    sourceMap,
+    sourceMap
   } = resolvedOptions;
   const output: string[] = [];
   const { template, scriptSetup, script, styles } = descriptor;
@@ -284,7 +316,7 @@ export function genMainCode(
     code: scriptCode,
     map: scriptMap,
     moduleType,
-    bindings,
+    bindings
   } = genScriptCode(scriptCompilerOptions, descriptor, filename);
 
   const { code: templateCode, map: templateMap } = genTemplateCode(
@@ -317,7 +349,14 @@ export function genMainCode(
     deleteStyles,
     addStyles
   );
-  const otherCode = genOtherCode(hasScoped, hash, isHmr, rerenderOnly, filename);
+  const otherCode = genOtherCode(
+    hasScoped,
+    hash,
+    isHmr,
+    rerenderOnly,
+    filename,
+    mode
+  );
 
   output.push(scriptCode, templateCode, stylesCode, otherCode);
   return {
@@ -326,7 +365,7 @@ export function genMainCode(
     map:
       typeof resolvedMap === 'string'
         ? resolvedMap
-        : JSON.stringify(resolvedMap),
+        : JSON.stringify(resolvedMap)
   };
 }
 
@@ -348,8 +387,8 @@ function genSourceMap(
         original: { line: m.originalLine, column: m.originalColumn },
         generated: {
           line: m.generatedLine + offset,
-          column: m.generatedColumn,
-        },
+          column: m.generatedColumn
+        }
       });
     });
     resolvedMap = toEncodedMap(gen);

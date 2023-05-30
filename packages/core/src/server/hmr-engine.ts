@@ -1,16 +1,17 @@
 // queue all updates and compile them one by one
 
+import { isAbsolute, relative } from 'node:path';
+import chalk from 'chalk';
+// import debounce from 'lodash.debounce';
+
 import {
   Compiler,
-  VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX,
+  VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX
 } from '../compiler/index.js';
 import { DevServer } from './index.js';
-// import debounce from 'lodash.debounce';
-import { Logger } from '../logger.js';
-import { isAbsolute, relative } from 'path';
-import chalk from 'chalk';
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import { Logger } from '../utils/logger.js';
 import { JsUpdateResult } from '../../binding/binding.js';
+import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
@@ -79,15 +80,21 @@ export class HmrEngine {
         }
         dynamicResourcesMap[key] = value.map((r) => ({
           path: r[0],
-          type: r[1] as 'script' | 'link',
+          type: r[1] as 'script' | 'link'
         }));
       }
     }
 
     const resultStr = `export default {
-      added: [${result.added.map((r) => `'${r}'`).join(', ')}],
-      changed: [${result.changed.map((r) => `'${r}'`).join(', ')}],
-      removed: [${result.removed.map((r) => `'${r}'`).join(', ')}],
+      added: [${result.added
+        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
+        .join(', ')}],
+      changed: [${result.changed
+        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
+        .join(', ')}],
+      removed: [${result.removed
+        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
+        .join(', ')}],
       modules: ${
         result.modules.trim().endsWith(';')
           ? result.modules.trim().slice(0, -1)
@@ -104,14 +111,14 @@ export class HmrEngine {
     // @ts-ignore TODO fix this
     this._updateResults.set(id, {
       result: resultStr,
-      count: this._devServer.ws.clients.size,
+      count: this._devServer.ws.clients.size
     });
     // console.log(this._updateResults);
 
     this._devServer.ws.clients.forEach((client) => {
       client.send(
         JSON.stringify({
-          id,
+          id
         })
       );
     });

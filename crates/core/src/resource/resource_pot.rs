@@ -46,7 +46,7 @@ impl ResourcePot {
   }
 
   pub fn modules(&self) -> Vec<&ModuleId> {
-    let mut modules: _ = self.modules.iter().collect::<Vec<&ModuleId>>();
+    let mut modules = self.modules.iter().collect::<Vec<&ModuleId>>();
     // sort by module id
     modules.sort_by_key(|m| m.to_string());
 

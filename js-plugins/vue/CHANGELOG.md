@@ -1,5 +1,42 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.0
+
+### Minor Changes
+
+- 1148f68: - Support lazy compilation for vue and support moduleTypes filter for js plugin transform hook
+  - Bundle @farmfe/js-plugin-vue with Farm
+
+### Patch Changes
+
+- Updated dependencies [1148f68]
+  - @farmfe/core@0.8.2
+
+## 1.1.1
+
+### Patch Changes
+
+- 6f97c87: Change the dist's module system to ESM
+- Updated dependencies [6f97c87]
+  - @farmfe/core@0.8.1
+
+## 1.1.0
+
+### Minor Changes
+
+- e780747: Support swc plugin
+
+### Patch Changes
+
+- Updated dependencies [e780747]
+  - @farmfe/core@0.8.0
+
+## 1.0.1
+
+### Patch Changes
+
+- 6ee7065: Fix that dev code presents in prod
+
 ## 1.0.0
 
 ### Patch Changes

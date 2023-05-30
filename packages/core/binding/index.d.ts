@@ -84,6 +84,22 @@ export interface PluginTransformHookResult {
   sourceMap?: string | null;
 }
 
+type BrowserTargetsRecord = Partial<
+  Record<
+    | 'chrome'
+    | 'opera'
+    | 'edge'
+    | 'firefox'
+    | 'safari'
+    | 'ie'
+    | 'ios'
+    | 'android'
+    | 'node'
+    | 'electron',
+    string
+  >
+> & { [key: string]: string };
+
 export interface Config {
   config?: {
     coreLibPath?: string;
@@ -94,6 +110,7 @@ export interface Config {
       publicPath?: string;
       assetsFilename?: string;
       targetEnv?: 'browser' | 'node';
+      format?: 'cjs' | 'esm';
     };
     resolve?: {
       extensions?: string[];
@@ -112,6 +129,7 @@ export interface Config {
       plugins?: string[];
       swcHelpersPath?: string;
     };
+    watch?: boolean,
     assets?: {
       include?: string[];
     };
@@ -155,10 +173,22 @@ export interface Config {
           noEarlyErrors: boolean;
         };
       };
+      plugins: {
+        name: string;
+        options?: Record<string, any>;
+        filters?: {
+          resolvedPaths?: string[];
+          moduleTypes?: ModuleType[];
+        }
+      }[];
     };
     css?: {
-      modules?: boolean;
-      indentName?: string;
+      modules?: {
+        indentName?: string;
+      };
+      prefixer?: {
+        targets?: string[] | string | BrowserTargetsRecord;
+      };
     };
     sourcemap?: boolean | 'all';
     partialBundling?: {

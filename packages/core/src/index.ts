@@ -3,32 +3,34 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
 
+import path from 'node:path';
+import os from 'node:os';
 import chalk from 'chalk';
+import sirv from 'sirv';
+import compression from 'koa-compress';
+import Koa, { Context } from 'koa';
 import { Compiler } from './compiler/index.js';
 import {
   normalizeUserCompilationConfig,
   resolveUserConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger, Logger } from './logger.js';
+import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
+import { Config } from '../binding/index.js';
 
-export async function start(options: FarmCLIOptions): Promise<void> {
-  // TODO merger config options Encapsulation universal
-
+export async function start(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'start'
-  );
-
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'development'
   );
+
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, userConfig.server);
 
@@ -48,22 +50,15 @@ export async function start(options: FarmCLIOptions): Promise<void> {
     }
 
     const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
-    fileWatcher.watch(devServer);
+    fileWatcher.watch(devServer, {});
   }
 }
 
-export async function build(options: {
-  configPath?: string;
-  logger?: Logger;
-}): Promise<void> {
+export async function build(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    logger,
-    'build'
-  );
-
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
@@ -72,13 +67,95 @@ export async function build(options: {
   const start = Date.now();
   const compiler = new Compiler(normalizedConfig);
   compiler.removeOutputPathDir();
-  await compiler.compile();
-  compiler.writeResourcesToDisk();
-  logger.info(
-    `Build completed in ${chalk.green(
-      `${Date.now() - start}ms`
-    )}! Resources emitted to ${chalk.green(
-      normalizedConfig.config.output.path
-    )}.`
+  if (userConfig.compilation?.watch) {
+    createFileWatcher(userConfig.root, compiler, normalizedConfig);
+  } else {
+    await compiler.compile();
+    compiler.writeResourcesToDisk();
+    logger.info(
+      `⚡️ Build completed in ${chalk.green(
+        `${Date.now() - start}ms`
+      )}! Resources emitted to ${chalk.green(
+        normalizedConfig.config.output.path
+      )}.`
+    );
+  }
+}
+
+export async function preview(options: FarmCLIOptions): Promise<void> {
+  const logger = options.logger ?? new DefaultLogger();
+  const port = options.port ?? 1911;
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
   );
+
+  const { root, output } = normalizedConfig.config;
+  const distDir = path.resolve(root, output.path);
+
+  function StaticFilesHandler(ctx: Context) {
+    const staticFilesServer = sirv(distDir, {
+      etag: true,
+      single: true
+    });
+    return new Promise<void>((resolve) => {
+      staticFilesServer(ctx.req, ctx.res, () => {
+        resolve();
+      });
+    });
+  }
+  const app = new Koa();
+  app.use(compression());
+  app.use(async (ctx) => {
+    await StaticFilesHandler(ctx);
+  });
+
+  app.listen(port, () => {
+    logger.info(chalk.green(`preview server running at:\n`));
+    const interfaces = os.networkInterfaces();
+    Object.keys(interfaces).forEach((key) =>
+      (interfaces[key] || [])
+        .filter((details) => details.family === 'IPv4')
+        .map((detail) => {
+          return {
+            type: detail.address.includes('127.0.0.1')
+              ? 'Local:   '
+              : 'Network: ',
+            host: detail.address
+          };
+        })
+        .forEach(({ type, host }) => {
+          const url = `${'http'}://${host}:${chalk.bold(port)}`;
+          logger.info(`  > ${type} ${chalk.cyan(url)}`, false);
+        })
+    );
+  });
+}
+
+export async function watch(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
+  const logger = options.logger ?? new DefaultLogger();
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    userConfig,
+    'production'
+  );
+  const compiler = new Compiler(normalizedConfig);
+  createFileWatcher(userConfig.root, compiler, normalizedConfig);
+}
+
+export function createFileWatcher(
+  watcherDirPath: string,
+  compiler: Compiler,
+  normalizedConfig: Config
+) {
+  const outDir = normalizedConfig.config.output.path;
+  const outDirRegex = new RegExp(`^.*${outDir}.*$`);
+  const fileWatcher = new FileWatcher(watcherDirPath, {
+    ignores: ['**/{.git,node_modules}/**', outDirRegex]
+  });
+  fileWatcher.watch(compiler, normalizedConfig);
 }

@@ -13,6 +13,7 @@ export interface JsPluginLoadHookFilters {
 }
 export interface JsPluginTransformHookFilters {
   resolvedPaths: Array<string>
+  moduleTypes: Array<string>
 }
 export interface JsUpdateResult {
   added: Array<string>
@@ -34,7 +35,7 @@ export class Compiler {
   /** sync compile */
   compileSync(): void
   /** TODO: usage example */
-  update(paths: Array<string>, callback: (...args: any[]) => any): object
+  update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
   hasModule(resolvedPath: string): boolean
   resources(): Record<string, Buffer>
   relativeModulePaths(): Array<string>

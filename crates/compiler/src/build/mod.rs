@@ -96,6 +96,10 @@ impl Compiler {
       // return Err(CompilationError::GenericError(error_messages.join(", ")));
     }
 
+    // Topo sort the module graph
+    let mut module_graph = self.context.module_graph.write();
+    module_graph.update_execution_order_for_modules();
+
     self.context.plugin_driver.build_end(&self.context)
   }
 
@@ -203,7 +207,7 @@ impl Compiler {
 
     // ================ Process Module End ===============
 
-    module.module_type = parse_param.module_type.clone();
+    module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
     module.source_map_chain = transform_result.source_map_chain;

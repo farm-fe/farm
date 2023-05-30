@@ -1,14 +1,23 @@
-import type { Config } from '../../binding/index.js';
-import { Logger } from '../logger.js';
+import { Logger } from '../utils/logger.js';
+import { ProxiesOptions } from '../server/middlewares/proxy.js';
+
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
+import type { Config } from '../../binding/index.js';
+import type cors from '@koa/cors';
 
 export interface UserServerConfig {
   port?: number;
   https?: boolean;
+  protocol?: 'http' | 'https';
+  hostname?: string;
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
+  proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
+  open?: boolean;
+  host?: string;
+  cors?: boolean | cors.Options;
 }
 
 export type NormalizedServerConfig = Required<
@@ -40,7 +49,7 @@ export interface GlobalFarmCLIOptions {
   c?: boolean | string;
   config?: string;
   m?: string;
-  mode?: string;
+  mode?: 'development' | 'production';
 }
 
 export interface FarmCLIServerOptions {
@@ -57,9 +66,18 @@ export interface FarmCLIBuildOptions {
   minify?: boolean;
 }
 
-export type FarmCLIOptions = FarmCLIServerOptions &
-  FarmCLIBuildOptions & {
-    logger?: Logger;
-    config?: string;
-    configPath?: string;
-  };
+export interface FarmCLIPreviewOptions {
+  open?: boolean;
+  https?: boolean;
+  port?: number;
+}
+
+export interface FarmCLIOptions
+  extends FarmCLIServerOptions,
+    FarmCLIBuildOptions,
+    FarmCLIPreviewOptions {
+  logger?: Logger;
+  config?: string;
+  configPath?: string;
+  clearScreen?: boolean;
+}

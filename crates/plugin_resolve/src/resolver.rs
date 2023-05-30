@@ -109,7 +109,10 @@ impl Resolver {
       }
     }
 
-    if self.is_source_absolute(source) {
+    // try alias first
+    if let Some(result) = self.try_alias(source, base_dir.clone(), kind, context) {
+      return Some(result);
+    } else if self.is_source_absolute(source) {
       let path_buf = PathBuf::from_str(source).unwrap();
 
       return self
@@ -159,42 +162,35 @@ impl Resolver {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
     } else {
-      // try alias first
-      self
-        .try_alias(source, base_dir.clone(), kind, context)
-        .or_else(|| {
-          // check if the result is cached
-          if let Some(result) =
-            self
-              .resolve_node_modules_cache
-              .lock()
-              .get(&ResolveNodeModuleCacheKey {
-                source: source.to_string(),
-                base_dir: base_dir.to_string_lossy().to_string(),
-                kind: kind.clone(),
-              })
-          {
-            return result.clone();
-          }
-
-          let (result, tried_paths) =
-            self.try_node_modules(source, base_dir.clone(), kind, context);
-          // cache the result
-          for tried_path in tried_paths {
-            let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
-            let key = ResolveNodeModuleCacheKey {
-              source: source.to_string(),
-              base_dir: tried_path.to_string_lossy().to_string(),
-              kind: kind.clone(),
-            };
-
-            if !resolve_node_modules_cache.contains_key(&key) {
-              resolve_node_modules_cache.insert(key, result.clone());
-            }
-          }
-
-          result
+      // check if the result is cached
+      if let Some(result) = self
+        .resolve_node_modules_cache
+        .lock()
+        .get(&ResolveNodeModuleCacheKey {
+          source: source.to_string(),
+          base_dir: base_dir.to_string_lossy().to_string(),
+          kind: kind.clone(),
         })
+      {
+        return result.clone();
+      }
+
+      let (result, tried_paths) = self.try_node_modules(source, base_dir.clone(), kind, context);
+      // cache the result
+      for tried_path in tried_paths {
+        let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
+        let key = ResolveNodeModuleCacheKey {
+          source: source.to_string(),
+          base_dir: tried_path.to_string_lossy().to_string(),
+          kind: kind.clone(),
+        };
+
+        if !resolve_node_modules_cache.contains_key(&key) {
+          resolve_node_modules_cache.insert(key, result.clone());
+        }
+      }
+
+      result
     }
   }
 
@@ -272,7 +268,19 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
-    for (alias, replaced) in &context.config.resolve.alias {
+    // sort the alias by length, so that the longest alias will be matched first
+    let mut alias_list: Vec<_> = context
+      .config
+      .resolve
+      .alias
+      .iter()
+      .map(|(alias, _)| alias)
+      .collect();
+    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+
+    for alias in alias_list {
+      let replaced = context.config.resolve.alias.get(alias).unwrap();
+
       if alias.ends_with("$") && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind, context);
       } else if !alias.ends_with("$") && source.starts_with(alias) {
@@ -281,6 +289,7 @@ impl Resolver {
           .to_logical_path(replaced)
           .to_string_lossy()
           .to_string();
+
         return self.resolve(&new_source, base_dir, kind, context);
       }
     }
@@ -666,10 +675,45 @@ impl Resolver {
                     ResolveKind::Require => {
                       if key_word.to_lowercase() == "require" {
                         let path = Path::new(resolved_path);
-                        if path.is_absolute() {
-                          let value_path = self
-                            .get_key_path(&key_value.as_str().unwrap(), package_json_info.dir());
-                          return Some(value_path);
+                        match key_value {
+                          Value::String(key_value) => {
+                            if path.is_absolute() {
+                              let value_path =
+                                self.get_key_path(&key_value, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                          }
+                          Value::Object(key_value) => {
+                            if path.is_absolute() {
+                              for (key, value) in key_value {
+                                match context.config.output.target_env {
+                                  TargetEnv::Node => {
+                                    if self.are_paths_equal(key, "default") {
+                                      if path.is_absolute() {
+                                        let value_path = self.get_key_path(
+                                          &value.as_str().unwrap(),
+                                          package_json_info.dir(),
+                                        );
+                                        return Some(value_path);
+                                      }
+                                    }
+                                  }
+                                  TargetEnv::Browser => {
+                                    if self.are_paths_equal(key, "default") {
+                                      if path.is_absolute() {
+                                        let value_path = self.get_key_path(
+                                          &value.as_str().unwrap(),
+                                          package_json_info.dir(),
+                                        );
+                                        return Some(value_path);
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          _ => {}
                         }
                       }
                     }

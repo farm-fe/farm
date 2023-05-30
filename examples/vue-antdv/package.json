@@ -1,0 +1,23 @@
+{
+  "name": "@farmfe-examples/vue-antdv",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@ant-design/icons-vue": "^6.1.0",
+    "ant-design-vue": "^3.2.20",
+    "core-js": "^3.30.1",
+    "vue": "^3.2.45",
+    "vue-router": "^4.2.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-vue": "workspace:*"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  }
+}

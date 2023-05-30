@@ -1,5 +1,35 @@
 # create-farm
 
+## 1.2.0
+
+### Minor Changes
+
+- a8066e7: update template and farm version
+
+## 1.1.11
+
+### Patch Changes
+
+- ce9bbe8: Optimize template code to remove tsup deps use farm
+
+## 1.1.10
+
+### Patch Changes
+
+- 4dd08b2: add core-js deps
+
+## 1.1.9
+
+### Patch Changes
+
+- d9fe509: add polyfill config
+
+## 1.1.8
+
+### Patch Changes
+
+- 1e33f07: update version
+
 ## 1.1.7
 
 ### Patch Changes

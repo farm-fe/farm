@@ -1,11 +1,12 @@
-use farmfe_compiler::{update::UpdateType, Compiler};
+use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{Config, RuntimeConfig},
+  plugin::UpdateType,
   relative_path::RelativePath,
 };
 
 fn main() {
-  let relative_root = RelativePath::new("examples/react-antd");
+  let relative_root = RelativePath::new("examples/css-modules");
   let cwd = std::env::current_dir().unwrap();
   let react_examples_root = relative_root.to_logical_path(cwd.clone());
   let linked_swc_helper_path = cwd
@@ -48,14 +49,15 @@ fn main() {
       vec![(
         cwd
           .join("examples")
-          .join("react-antd")
+          .join("css-modules")
           .join("src")
-          .join("main.tsx")
+          .join("main.module.css")
           .to_string_lossy()
           .to_string(),
         UpdateType::Updated,
       )],
       || {},
+      false,
     )
     .unwrap();
 }

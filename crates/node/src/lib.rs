@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use farmfe_compiler::{update::UpdateType, Compiler};
+use farmfe_compiler::Compiler;
 
 pub mod plugin_adapters;
 pub mod plugin_toolkit;
@@ -12,6 +12,7 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
+  plugin::UpdateType,
 };
 
 use napi::{
@@ -143,7 +144,13 @@ impl JsCompiler {
 
   /// TODO: usage example
   #[napi]
-  pub fn update(&self, e: Env, paths: Vec<String>, callback: JsFunction) -> napi::Result<JsObject> {
+  pub fn update(
+    &self,
+    e: Env,
+    paths: Vec<String>,
+    callback: JsFunction,
+    sync: bool,
+  ) -> napi::Result<JsObject> {
     let context = self.compiler.context().clone();
     let compiler = self.compiler.clone();
     let thread_safe_callback: ThreadsafeFunction<(), ErrorStrategy::Fatal> =
@@ -160,6 +167,7 @@ impl JsCompiler {
             move || {
               thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
             },
+            sync,
           )
           .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
       },
