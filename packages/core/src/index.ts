@@ -17,7 +17,11 @@ import {
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
-import { compilerHandler, FileWatcher } from './watcher/index.js';
+import {
+  compilerHandler,
+  FileWatcher,
+  normalizeWatchLogger
+} from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
 
@@ -148,7 +152,7 @@ export async function watch(
     await compiler.compile();
     compiler.writeResourcesToDisk();
   }, normalizedConfig);
-
+  normalizeWatchLogger(logger, normalizedConfig);
   createFileWatcher(userConfig.root, compiler, normalizedConfig);
 }
 
