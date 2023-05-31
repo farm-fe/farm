@@ -17,13 +17,10 @@ import {
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
-import {
-  compilerHandler,
-  FileWatcher,
-  normalizeWatchLogger
-} from './watcher/index.js';
+import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
+import { compilerHandler } from './utils/build.js';
 
 export async function start(
   options: FarmCLIOptions & UserConfig
@@ -68,22 +65,9 @@ export async function build(
     'production'
   );
 
-  const start = Date.now();
   const compiler = new Compiler(normalizedConfig);
   compiler.removeOutputPathDir();
-  if (userConfig.compilation?.watch) {
-    createFileWatcher(userConfig.root, compiler, normalizedConfig);
-  } else {
-    await compiler.compile();
-    compiler.writeResourcesToDisk();
-    logger.info(
-      `⚡️ Build completed in ${chalk.green(
-        `${Date.now() - start}ms`
-      )}! Resources emitted to ${chalk.green(
-        normalizedConfig.config.output.path
-      )}.`
-    );
-  }
+  createBundleHandler(userConfig.root, compiler, normalizedConfig);
 }
 
 export async function preview(options: FarmCLIOptions): Promise<void> {
@@ -147,23 +131,24 @@ export async function watch(
     userConfig,
     'production'
   );
+
   const compiler = new Compiler(normalizedConfig);
+  createBundleHandler(userConfig.root, compiler, normalizedConfig, true);
+}
+
+export async function createBundleHandler(
+  watcherDirPath: string,
+  compiler: Compiler,
+  normalizedConfig: Config,
+  watchMode = false
+) {
   await compilerHandler(async () => {
     await compiler.compile();
     compiler.writeResourcesToDisk();
   }, normalizedConfig);
-  normalizeWatchLogger(logger, normalizedConfig);
-  createFileWatcher(userConfig.root, compiler, normalizedConfig);
-}
-
-export function createFileWatcher(
-  watcherDirPath: string,
-  compiler: Compiler,
-  normalizedConfig: Config
-) {
-  // const outDir = normalizedConfig.config.output.path;
-  // const outDirRegex = new RegExp(`^.*${outDir}.*$`);
-  // const isWatcherObject = isObject(normalizedConfig.config.watch);
-  const fileWatcher = new FileWatcher(watcherDirPath, normalizedConfig);
-  fileWatcher.watch(compiler, normalizedConfig);
+  if (normalizedConfig.config?.watch || watchMode) {
+    const watcher = new FileWatcher(watcherDirPath, normalizedConfig);
+    watcher.watch(compiler, normalizedConfig);
+    watcher.normalizeWatchLogger();
+  }
 }

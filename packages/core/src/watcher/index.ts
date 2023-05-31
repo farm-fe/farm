@@ -1,5 +1,3 @@
-import { performance } from 'node:perf_hooks';
-import chalk from 'chalk';
 import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
@@ -8,9 +6,8 @@ import { DefaultLogger } from '../utils/logger.js';
 import { Config } from '../../binding/index.js';
 import { isObject } from '../utils/common.js';
 
-export interface FileWatcherOptions {
-  ignored?: (string | RegExp)[];
-}
+import type { WatchOptions as ChokidarFileWatcherOptions } from 'chokidar';
+import { compilerHandler } from '../utils/build.js';
 
 export class FileWatcher {
   private _root: string;
@@ -25,21 +22,14 @@ export class FileWatcher {
   }
 
   async watch(serverOrCompiler: DevServer | Compiler, config: Config) {
-    const compiler =
-      serverOrCompiler instanceof DevServer
-        ? serverOrCompiler.getCompiler()
-        : serverOrCompiler;
-    const isWatcherObject = isObject(this._options.config?.watch);
-    const options = isWatcherObject ? this._options.config.watch : {};
-    const watcherOptions = resolvedWatcherOptions(options, config);
-    // console.log(compiler.resolvedModulePaths(this._root));
+    // Determine how to compile the project
+    const compiler = this.getCompilerFromServerOrCompiler(serverOrCompiler);
 
-    this._watcher = chokidar.watch(
-      compiler.resolvedModulePaths(this._root),
-      watcherOptions
-    );
-    if (serverOrCompiler instanceof DevServer) {
-      serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
+    const watcherOptions = this.resolvedWatcherOptions();
+
+    if (compiler instanceof DevServer) {
+      this._watcher = chokidar.watch(compiler.resolvedModulePaths(this._root));
+      compiler.hmrEngine?.onUpdateFinish((updateResult) => {
         const added = updateResult.added.map((addedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
@@ -61,6 +51,13 @@ export class FileWatcher {
       });
     }
 
+    if (compiler instanceof Compiler) {
+      this._watcher = chokidar.watch(
+        compiler.resolvedModulePaths(this._root),
+        watcherOptions as ChokidarFileWatcherOptions
+      );
+    }
+
     this._watcher.on('change', async (path: string) => {
       try {
         if (serverOrCompiler instanceof DevServer) {
@@ -68,7 +65,7 @@ export class FileWatcher {
         }
 
         if (serverOrCompiler instanceof Compiler) {
-          await compilerHandler(async () => {
+          compilerHandler(async () => {
             await compiler.update([path], true);
             compiler.writeResourcesToDisk();
           }, config);
@@ -78,49 +75,39 @@ export class FileWatcher {
       }
     });
   }
-}
 
-export function normalizeWatchLogger(logger: DefaultLogger, config?: Config) {
-  const outDir = config.config.output.path;
-  logger.info(`Running in watch mode`);
-  logger.info(`Watching for changes`);
-  logger.info(`Ignoring changes in "**/{.git,node_modules}/**" | "${outDir}"`);
-}
-
-export async function compilerHandler(
-  callback: () => Promise<void>,
-  config: Config
-) {
-  const logger = new DefaultLogger();
-  const startTime = performance.now();
-  try {
-    await callback();
-  } catch (error) {
-    logger.error(error);
+  private getCompilerFromServerOrCompiler(
+    serverOrCompiler: DevServer | Compiler
+  ): Compiler {
+    return serverOrCompiler instanceof DevServer
+      ? serverOrCompiler.getCompiler()
+      : serverOrCompiler;
   }
-  const endTime = performance.now();
-  const elapsedTime = Math.floor(endTime - startTime);
-  logger.info(
-    `⚡️ Build completed in ${chalk.green(
-      `${elapsedTime}ms`
-    )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
-  );
-}
 
-export function resolvedWatcherOptions(
-  options: FileWatcherOptions,
-  config: Config
-) {
-  const { ignored = [] } = options;
-  const watcherOptions = {
-    ignored: [
-      '**/{.git,node_modules}/**',
-      new RegExp(config.config?.output?.path),
-      ...(Array.isArray(ignored) ? ignored : [ignored])
-    ],
-    ignoreInitial: true,
-    ignorePermissionErrors: true
-  };
+  private resolvedWatcherOptions() {
+    const watchOptionsType = isObject(this._options.config?.watch);
+    const userWatcherOptions = watchOptionsType
+      ? this._options.config.watch
+      : {};
+    const { ignored = [] } = userWatcherOptions as ChokidarFileWatcherOptions;
+    const watcherOptions = {
+      ignored: [
+        '**/{.git,node_modules}/**',
+        new RegExp(this._options.config?.output?.path),
+        ...(Array.isArray(ignored) ? ignored : [ignored])
+      ],
+      ignoreInitial: true,
+      ignorePermissionErrors: true
+    };
 
-  return watcherOptions;
+    return watcherOptions;
+  }
+
+  normalizeWatchLogger() {
+    const outDir = this._options.config.output.path;
+    this._logger.info(`Watching for changes`);
+    this._logger.info(
+      `Ignoring changes in "**/{.git,node_modules}/**" | "${outDir}"`
+    );
+  }
 }
