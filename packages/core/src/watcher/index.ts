@@ -9,7 +9,12 @@ import { isObject } from '../utils/common.js';
 import type { WatchOptions as ChokidarFileWatcherOptions } from 'chokidar';
 import { compilerHandler } from '../utils/build.js';
 
-export class FileWatcher {
+interface ImplFileWatcher {
+  watch(serverOrCompiler: DevServer | Compiler, config: Config): Promise<void>;
+  normalizeWatchLogger(): void;
+}
+
+export class FileWatcher implements ImplFileWatcher {
   private _root: string;
   private _watcher: FSWatcher;
   private _options: Config;
@@ -27,9 +32,9 @@ export class FileWatcher {
 
     const watcherOptions = this.resolvedWatcherOptions();
 
-    if (compiler instanceof DevServer) {
+    if (serverOrCompiler instanceof DevServer) {
       this._watcher = chokidar.watch(compiler.resolvedModulePaths(this._root));
-      compiler.hmrEngine?.onUpdateFinish((updateResult) => {
+      serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
         const added = updateResult.added.map((addedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
@@ -51,7 +56,7 @@ export class FileWatcher {
       });
     }
 
-    if (compiler instanceof Compiler) {
+    if (serverOrCompiler instanceof Compiler) {
       this._watcher = chokidar.watch(
         compiler.resolvedModulePaths(this._root),
         watcherOptions as ChokidarFileWatcherOptions
@@ -104,6 +109,7 @@ export class FileWatcher {
   }
 
   normalizeWatchLogger() {
+    // TODO other options like file type / size / mode
     const outDir = this._options.config.output.path;
     this._logger.info(`Watching for changes`);
     this._logger.info(
