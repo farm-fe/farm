@@ -149,6 +149,5 @@ export async function createBundleHandler(
   if (normalizedConfig.config?.watch || watchMode) {
     const watcher = new FileWatcher(watcherDirPath, normalizedConfig);
     watcher.watch(compiler, normalizedConfig);
-    watcher.normalizeWatchLogger();
   }
 }

@@ -11,7 +11,6 @@ import { compilerHandler } from '../utils/build.js';
 
 interface ImplFileWatcher {
   watch(serverOrCompiler: DevServer | Compiler, config: Config): Promise<void>;
-  normalizeWatchLogger(): void;
 }
 
 export class FileWatcher implements ImplFileWatcher {
@@ -90,30 +89,25 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   private resolvedWatcherOptions() {
-    const watchOptionsType = isObject(this._options.config?.watch);
-    const userWatcherOptions = watchOptionsType
-      ? this._options.config.watch
-      : {};
+    const { watch, output } = this._options.config;
+    const watchOptionsType = isObject(watch);
+    const userWatcherOptions = watchOptionsType ? watch : {};
     const { ignored = [] } = userWatcherOptions as ChokidarFileWatcherOptions;
     const watcherOptions = {
       ignored: [
         '**/{.git,node_modules}/**',
-        new RegExp(this._options.config?.output?.path),
+        new RegExp(output?.path),
         ...(Array.isArray(ignored) ? ignored : [ignored])
       ],
       ignoreInitial: true,
       ignorePermissionErrors: true
     };
-
-    return watcherOptions;
-  }
-
-  normalizeWatchLogger() {
-    // TODO other options like file type / size / mode
-    const outDir = this._options.config.output.path;
     this._logger.info(`Watching for changes`);
     this._logger.info(
-      `Ignoring changes in "**/{.git,node_modules}/**" | "${outDir}"`
+      `Ignoring changes in ${watcherOptions.ignored
+        .map((v) => '"' + v + '"')
+        .join(' | ')}`
     );
+    return watcherOptions;
   }
 }
