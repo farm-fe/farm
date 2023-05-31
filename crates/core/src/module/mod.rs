@@ -361,6 +361,11 @@ impl ModuleId {
 
   /// transform the id back to resolved path
   pub fn resolved_path(&self, root: &str) -> String {
+    // if self.relative_path is absolute path, return it directly
+    if Path::new(self.relative_path()).is_absolute() {
+      return self.relative_path().to_string();
+    }
+
     RelativePath::new(self.relative_path())
       .to_logical_path(root)
       .to_string_lossy()

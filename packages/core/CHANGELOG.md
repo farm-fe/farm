@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.8.4
+
+### Patch Changes
+
+- 3bb5808: Fix bugs:
+  1. recognize immutable modules from config
+  2. change all property on context to Box
+  3. external, resolve, lazy compile and deadlock bugfix
+
 ## 0.8.3
 
 ### Patch Changes

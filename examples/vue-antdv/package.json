@@ -13,7 +13,9 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/js-plugin-vue": "workspace:*"
+    "@farmfe/js-plugin-less": "workspace:^",
+    "@farmfe/js-plugin-vue": "workspace:*",
+    "xlsx-js-style": "^1.2.0"
   },
   "scripts": {
     "start": "farm start",
