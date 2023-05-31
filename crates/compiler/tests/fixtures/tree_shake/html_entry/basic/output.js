@@ -50,4 +50,4 @@ window.__FARM_TARGET_ENV__ = 'browser';
 <body>
   
 
-<script src="/ac35b2ca.js"></script><script data-farm-entry-script="true">__farm_module_system__.setInitialLoadedResources(['ac35b2ca.js']);</script><script data-farm-entry-script="true">__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">__farm_module_system__.require("7c4a34c2")</script></body></html>
+<script src="/ac35b2ca.js" data-farm-resource="true"></script><script data-farm-entry-script="true">__farm_module_system__.setInitialLoadedResources(['ac35b2ca.js']);</script><script data-farm-entry-script="true">__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">__farm_module_system__.require("7c4a34c2")</script></body></html>

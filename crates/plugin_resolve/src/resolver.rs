@@ -864,10 +864,14 @@ impl Resolver {
             if path.is_absolute() {
               let key_path = self.get_key_path(&key, package_json_info.dir());
 
-              return &key_path == resolved_path;
+              if &key_path == resolved_path {
+                return true;
+              }
             } else {
               // source, e.g. 'foo' in require('foo')
-              return &key == resolved_path;
+              if &key == resolved_path {
+                return true;
+              }
             }
           }
         }

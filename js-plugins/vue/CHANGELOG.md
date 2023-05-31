@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.1
+
+### Patch Changes
+
+- 3bb5808: Bump version as core changed
+- Updated dependencies [3bb5808]
+  - @farmfe/core@0.8.4
+
 ## 1.2.0
 
 ### Minor Changes

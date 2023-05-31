@@ -172,6 +172,7 @@ function genStyleCode(
   const {
     attrs: { lang = 'css', scoped }
   } = style;
+
   const { code: styleCode, errors } = compileStyle({
     source: style.content,
     id: `data-v-${hash}`,

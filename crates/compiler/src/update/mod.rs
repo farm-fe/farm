@@ -201,6 +201,22 @@ impl Compiler {
           mut module,
           resolve_module_id_result,
         }) => {
+          if resolve_module_id_result.resolve_result.external {
+            // insert external module to the graph
+            let module_id: ModuleId = resolve_param.source.as_str().into();
+            let mut module = Module::new(module_id.clone());
+            module.external = true;
+
+            Self::add_module_to_update_module_graph(&update_context, module);
+            Self::add_edge_to_update_module_graph(
+              &update_context,
+              &resolve_param,
+              &module_id,
+              order,
+            );
+            return;
+          }
+
           match Self::build_module(
             resolve_module_id_result.resolve_result,
             &mut module,
@@ -370,12 +386,14 @@ impl Compiler {
       callback();
     } else {
       std::thread::spawn(move || {
-        regenerate_resources_for_affected_module_groups(
+        if let Err(e) = regenerate_resources_for_affected_module_groups(
           affected_module_groups,
           &cloned_updated_module_ids,
           &cloned_context,
-        )
-        .unwrap();
+        ) {
+          println!("Failed to regenerate resources: {}", e);
+          println!("modules to regenerate: {:?}", cloned_updated_module_ids);
+        }
 
         finalize_resources(&cloned_context).unwrap();
         callback();
@@ -402,7 +420,12 @@ fn resolve_module(
         resolve_module_id_result.module_id.clone(),
         resolve_module_id_result.resolve_result.external,
         // TODO: make it configurable
-        module_id.to_string().contains("/node_modules/"),
+        context
+          .config
+          .partial_bundling
+          .immutable_modules
+          .iter()
+          .any(|im| im.is_match(&module_id.to_string())),
       ),
       resolve_module_id_result,
     })));
@@ -433,7 +456,12 @@ fn resolve_module(
       resolve_module_id_result.module_id.clone(),
       resolve_module_id_result.resolve_result.external,
       // TODO: make it configurable
-      module_id.to_string().contains("/node_modules/"),
+      context
+        .config
+        .partial_bundling
+        .immutable_modules
+        .iter()
+        .any(|im| im.is_match(&module_id.to_string())),
     ),
     resolve_module_id_result,
   })))

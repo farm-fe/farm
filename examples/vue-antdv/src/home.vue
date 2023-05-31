@@ -1,18 +1,18 @@
 
 <template>
-  <div ref="tableau" v-html="html"></div>
+  <div class="tableau" ref="tableau" v-html="html"></div>
   <button @click="exportFile">Export XLSX</button>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { read, utils, writeFileXLSX } from 'xlsx';
+import { read, utils, writeFileXLSX } from 'xlsx-js-style';
 import { Button } from 'ant-design-vue';
 
 const html = ref("");
 const tableau = ref();
 
-onMounted(async() => {
+onMounted(async () => {
   /* Download from https://sheetjs.com/pres.numbers */
   const f = await fetch("https://sheetjs.com/pres.numbers");
   const ab = await f.arrayBuffer();
@@ -30,3 +30,11 @@ function exportFile() {
   writeFileXLSX(wb, "SheetJSVueHTML.xlsx");
 }
 </script>
+
+<style scoped lang="less">
+.tableau {
+  margin: 1em;
+  border: 1px solid #ccc;
+  padding: 1em;
+}
+</style>
