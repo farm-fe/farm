@@ -20,6 +20,7 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
+import { compilerHandler } from './utils/build.js';
 
 export async function start(
   options: FarmCLIOptions & UserConfig
@@ -49,8 +50,8 @@ export async function start(
       process.exit(1);
     }
 
-    const fileWatcher = new FileWatcher(userConfig.root, devServer.config.hmr);
-    fileWatcher.watch(devServer, {});
+    const fileWatcher = new FileWatcher(devServer, normalizedConfig);
+    fileWatcher.watch();
   }
 }
 
@@ -58,28 +59,14 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
   );
 
-  const start = Date.now();
-  const compiler = new Compiler(normalizedConfig);
-  compiler.removeOutputPathDir();
-  if (userConfig.compilation?.watch) {
-    createFileWatcher(userConfig.root, compiler, normalizedConfig);
-  } else {
-    await compiler.compile();
-    compiler.writeResourcesToDisk();
-    logger.info(
-      `⚡️ Build completed in ${chalk.green(
-        `${Date.now() - start}ms`
-      )}! Resources emitted to ${chalk.green(
-        normalizedConfig.config.output.path
-      )}.`
-    );
-  }
+  createBundleHandler(normalizedConfig);
 }
 
 export async function preview(options: FarmCLIOptions): Promise<void> {
@@ -143,19 +130,23 @@ export async function watch(
     userConfig,
     'production'
   );
-  const compiler = new Compiler(normalizedConfig);
-  createFileWatcher(userConfig.root, compiler, normalizedConfig);
+
+  createBundleHandler(normalizedConfig, true);
 }
 
-export function createFileWatcher(
-  watcherDirPath: string,
-  compiler: Compiler,
-  normalizedConfig: Config
+export async function createBundleHandler(
+  normalizedConfig: Config,
+  watchMode = false
 ) {
-  const outDir = normalizedConfig.config.output.path;
-  const outDirRegex = new RegExp(`^.*${outDir}.*$`);
-  const fileWatcher = new FileWatcher(watcherDirPath, {
-    ignores: ['**/{.git,node_modules}/**', outDirRegex]
-  });
-  fileWatcher.watch(compiler, normalizedConfig);
+  const compiler = new Compiler(normalizedConfig);
+  await compilerHandler(async () => {
+    compiler.removeOutputPathDir();
+    await compiler.compile();
+    compiler.writeResourcesToDisk();
+  }, normalizedConfig);
+
+  if (normalizedConfig.config?.watch || watchMode) {
+    const watcher = new FileWatcher(compiler, normalizedConfig);
+    watcher.watch();
+  }
 }
