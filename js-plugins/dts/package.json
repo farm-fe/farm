@@ -6,7 +6,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "start": "tsc -w",
-    "build": "farm build",
+    "build": "farm watch",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

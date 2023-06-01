@@ -41,14 +41,18 @@ export default function farmDtsPlugin(
       },
       async executor(params: any, ctx: any) {
         // console.log(params);
-        const project = new Project();
+        // const project = new Project();
         // console.log(project);
-        // const sourceFile = project.createSourceFile(
-        //   params.resolvedPath,
-        //   params.content
-        // );
-        // console.log(sourceFile);
-
+        // const sourceFile = project.addSourceFileAtPath(params.resolvedPath);
+        // // const result = project.emitToMemory();
+        // const result = await project.emit({ emitOnlyDtsFiles: true });
+        // // const dtsFile = result;
+        const project = new Project({
+          compilerOptions: { outDir: 'dist', declaration: true }
+        });
+        project.createSourceFile('MyFile.ts', params.content);
+        // project.createSourceFile(params.resolvedPath, params.content);
+        project.emit(); // async
         // const dtsFile = sourceFile
         //   .emitToMemory()
         //   .getFiles()
