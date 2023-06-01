@@ -21,6 +21,7 @@ export type ResolveKind =
 
 export * from './binding.js';
 import { Compiler } from './binding.js';
+import type { WatchOptions } from 'chokidar';
 
 export default Compiler;
 export const bindingPath: string;
@@ -129,7 +130,7 @@ export interface Config {
       plugins?: string[];
       swcHelpersPath?: string;
     };
-    watch?: boolean,
+    watch?: boolean | WatcherOptions;
     assets?: {
       include?: string[];
     };
@@ -179,7 +180,7 @@ export interface Config {
         filters?: {
           resolvedPaths?: string[];
           moduleTypes?: ModuleType[];
-        }
+        };
       }[];
     };
     css?: {

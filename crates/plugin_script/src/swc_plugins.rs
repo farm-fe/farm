@@ -19,7 +19,6 @@ use once_cell::sync::Lazy;
 use swc_ecma_loader::{
   resolve::Resolve,
   resolvers::{lru::CachingResolver, node::NodeModulesResolver},
-  TargetEnv,
 };
 
 // This file is modified from https://github.com/swc-project/swc/tree/main/crates/swc/src/plugin.rs
@@ -27,6 +26,8 @@ use swc_ecma_loader::{
 /// A shared instance to plugin's module bytecode cache.
 pub static PLUGIN_MODULE_CACHE: Lazy<swc_plugin_runner::cache::PluginModuleCache> =
   Lazy::new(Default::default);
+pub static CACHING_RESOLVER: Lazy<CachingResolver<NodeModulesResolver>> =
+  Lazy::new(|| CachingResolver::new(40, NodeModulesResolver::default()));
 
 pub fn init_plugin_module_cache_once(
   enable_fs_cache_store: bool,
@@ -44,23 +45,14 @@ pub fn transform_by_swc_plugins(
   param: &mut PluginProcessModuleHookParam,
   context: &Arc<CompilationContext>,
 ) -> Result<()> {
-  let transform_metadata_context = Arc::new(TransformPluginMetadataContext::new(
-    Some(param.module_id.to_string()),
-    context.config.mode.to_string(),
-    None,
-  ));
-
-  // Currently swc enables filesystem cache by default on Embedded runtime plugin
-  // target.
-  init_plugin_module_cache_once(true, &None);
-
-  let plugin_resolver = CachingResolver::new(
-    40,
-    NodeModulesResolver::new(TargetEnv::Node, Default::default(), true),
-  );
   let mut plugins_should_execute = vec![];
 
   let plugins = &context.config.script.plugins;
+  let mut inner_cache = PLUGIN_MODULE_CACHE
+    .inner
+    .get()
+    .expect("Cache should be available")
+    .lock();
   // Populate cache to the plugin modules if not loaded
   for plugin_config in plugins.iter() {
     if !should_execute_swc_plugin(
@@ -75,13 +67,8 @@ pub fn transform_by_swc_plugins(
 
     let plugin_name = &plugin_config.name;
 
-    if !PLUGIN_MODULE_CACHE
-      .inner
-      .get()
-      .unwrap()
-      .lock()
-      .contains(&plugin_name)
-    {
+    if !inner_cache.contains(&plugin_name) {
+      let plugin_resolver = &CACHING_RESOLVER;
       let resolved_path = plugin_resolver
         .resolve(&FileName::Real(PathBuf::from(&plugin_name)), &plugin_name)
         .unwrap();
@@ -92,21 +79,22 @@ pub fn transform_by_swc_plugins(
         panic!("Failed to resolve plugin path: {:?}", resolved_path);
       };
 
-      let mut inner_cache = PLUGIN_MODULE_CACHE
-        .inner
-        .get()
-        .expect("Cache should be available")
-        .lock();
       inner_cache
         .store_bytes_from_path(&path, &plugin_name)
         .unwrap();
     }
   }
+  drop(inner_cache);
 
   if plugins_should_execute.is_empty() {
     return Ok(());
   }
 
+  let transform_metadata_context = Arc::new(TransformPluginMetadataContext::new(
+    Some(param.module_id.to_string()),
+    context.config.mode.to_string(),
+    None,
+  ));
   let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
   let mut plugin_transforms = swc_plugins(
     Some(plugins_should_execute),
@@ -121,7 +109,6 @@ pub fn transform_by_swc_plugins(
   program = program.fold_with(&mut plugin_transforms);
 
   param.meta.as_script_mut().set_ast(program.expect_module());
-
   Ok(())
 }
 

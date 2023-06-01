@@ -37,6 +37,7 @@ preset_env_base = { version = "0.4.2" }
 swc_html_ast = { version = "0.31.4", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.14.3", features = ["packing"], optional = true }
+regex = "1.7.3"
 
 [features]
 profile = ["dep:puffin"]

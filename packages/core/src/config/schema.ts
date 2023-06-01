@@ -3,7 +3,17 @@ import { UserConfig } from './types.js';
 
 const ConfigSchema = z
   .object({
-    watch: z.boolean().optional(),
+    watch: z
+      .union([
+        z.boolean(),
+        z.object({
+          // TODO watcher config schema
+          /* your watcher config schema */
+          ignored: z.array(z.string()).optional()
+        })
+      ])
+      .optional(),
+
     coreLibPath: z.string().optional(),
     input: z.record(z.string()).optional(),
     output: z

@@ -37,13 +37,23 @@ pub fn render_and_generate_update_resource(
   );
   update_resource_pot.immutable = true;
 
+  let module_graph = context.module_graph.read();
+
   for added in &diff_result.added_modules {
+    if module_graph.module(added).unwrap().external {
+      continue;
+    }
     update_resource_pot.add_module(added.clone());
   }
 
   for updated in updated_module_ids {
+    if module_graph.module(updated).unwrap().external {
+      continue;
+    }
     update_resource_pot.add_module(updated.clone());
   }
+
+  drop(module_graph);
 
   let module_graph = context.module_graph.read();
   let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &module_graph, context)?;
