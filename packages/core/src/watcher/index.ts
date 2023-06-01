@@ -29,8 +29,6 @@ export class FileWatcher implements ImplFileWatcher {
     // Determine how to compile the project
     const compiler = this.getCompilerFromServerOrCompiler(serverOrCompiler);
 
-    const watcherOptions = this.resolvedWatcherOptions();
-
     if (serverOrCompiler instanceof DevServer) {
       this._watcher = chokidar.watch(compiler.resolvedModulePaths(this._root));
       serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
@@ -56,6 +54,7 @@ export class FileWatcher implements ImplFileWatcher {
     }
 
     if (serverOrCompiler instanceof Compiler) {
+      const watcherOptions = this.resolvedWatcherOptions();
       this._watcher = chokidar.watch(
         compiler.resolvedModulePaths(this._root),
         watcherOptions as ChokidarFileWatcherOptions

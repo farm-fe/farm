@@ -143,6 +143,8 @@ export async function createBundleHandler(
     await compiler.compile();
     compiler.writeResourcesToDisk();
   }, normalizedConfig);
+  console.log(normalizedConfig.config?.watch || watchMode);
+
   if (normalizedConfig.config?.watch || watchMode) {
     const watcher = new FileWatcher(normalizedConfig);
     watcher.watch(compiler);
