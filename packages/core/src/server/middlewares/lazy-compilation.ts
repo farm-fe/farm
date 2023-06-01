@@ -35,6 +35,8 @@ export function lazyCompilation(server: DevServer) {
         )}.`
       );
 
+      server.hmrEngine.callUpdates(result);
+
       if (result) {
         let dynamicResourcesMap: Record<string, Resource[]> = null;
 

@@ -31,6 +31,10 @@ export class HmrEngine {
     this._devServer = devServer;
   }
 
+  callUpdates(result: JsUpdateResult) {
+    this._onUpdates?.forEach((cb) => cb(result));
+  }
+
   onUpdateFinish(cb: (result: JsUpdateResult) => void) {
     if (!this._onUpdates) {
       this._onUpdates = [];
@@ -104,7 +108,7 @@ export class HmrEngine {
       dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;
 
-    this._onUpdates?.forEach((cb) => cb(result));
+    this.callUpdates(result);
 
     const id = Date.now().toString();
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment

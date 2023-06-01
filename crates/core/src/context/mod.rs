@@ -16,27 +16,27 @@ use crate::{
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
-  pub config: Config,
-  pub module_graph: RwLock<ModuleGraph>,
-  pub module_group_graph: RwLock<ModuleGroupGraph>,
-  pub plugin_driver: PluginDriver,
-  pub resource_pot_map: RwLock<ResourcePotMap>,
-  pub resources_map: Mutex<HashMap<String, Resource>>,
-  pub cache_manager: CacheManager,
-  pub meta: ContextMetaData,
+  pub config: Box<Config>,
+  pub module_graph: Box<RwLock<ModuleGraph>>,
+  pub module_group_graph: Box<RwLock<ModuleGroupGraph>>,
+  pub plugin_driver: Box<PluginDriver>,
+  pub resource_pot_map: Box<RwLock<ResourcePotMap>>,
+  pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
+  pub cache_manager: Box<CacheManager>,
+  pub meta: Box<ContextMetaData>,
 }
 
 impl CompilationContext {
   pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     Ok(Self {
-      module_graph: RwLock::new(ModuleGraph::new()),
-      module_group_graph: RwLock::new(ModuleGroupGraph::new()),
-      resource_pot_map: RwLock::new(ResourcePotMap::new()),
-      resources_map: Mutex::new(HashMap::new()),
-      config,
-      plugin_driver: PluginDriver::new(plugins),
-      cache_manager: CacheManager::new(),
-      meta: ContextMetaData::new(),
+      module_graph: Box::new(RwLock::new(ModuleGraph::new())),
+      module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
+      resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
+      resources_map: Box::new(Mutex::new(HashMap::new())),
+      config: Box::new(config),
+      plugin_driver: Box::new(PluginDriver::new(plugins)),
+      cache_manager: Box::new(CacheManager::new()),
+      meta: Box::new(ContextMetaData::new()),
     })
   }
 }
