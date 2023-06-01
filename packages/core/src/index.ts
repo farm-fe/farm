@@ -50,8 +50,8 @@ export async function start(
       process.exit(1);
     }
 
-    const fileWatcher = new FileWatcher(userConfig.root);
-    fileWatcher.watch(devServer, {});
+    const fileWatcher = new FileWatcher(normalizedConfig);
+    fileWatcher.watch(devServer);
   }
 }
 
@@ -65,9 +65,7 @@ export async function build(
     'production'
   );
 
-  const compiler = new Compiler(normalizedConfig);
-  compiler.removeOutputPathDir();
-  createBundleHandler(userConfig.root, compiler, normalizedConfig);
+  createBundleHandler(normalizedConfig);
 }
 
 export async function preview(options: FarmCLIOptions): Promise<void> {
@@ -132,22 +130,21 @@ export async function watch(
     'production'
   );
 
-  const compiler = new Compiler(normalizedConfig);
-  createBundleHandler(userConfig.root, compiler, normalizedConfig, true);
+  createBundleHandler(normalizedConfig, true);
 }
 
 export async function createBundleHandler(
-  watcherDirPath: string,
-  compiler: Compiler,
   normalizedConfig: Config,
   watchMode = false
 ) {
+  const compiler = new Compiler(normalizedConfig);
   await compilerHandler(async () => {
+    compiler.removeOutputPathDir();
     await compiler.compile();
     compiler.writeResourcesToDisk();
   }, normalizedConfig);
   if (normalizedConfig.config?.watch || watchMode) {
-    const watcher = new FileWatcher(watcherDirPath, normalizedConfig);
-    watcher.watch(compiler, normalizedConfig);
+    const watcher = new FileWatcher(normalizedConfig);
+    watcher.watch(compiler);
   }
 }

@@ -19,13 +19,13 @@ export class FileWatcher implements ImplFileWatcher {
   private _options: Config;
   private _logger: DefaultLogger;
 
-  constructor(root: string, options?: Config) {
-    this._root = root;
+  constructor(options?: Config) {
+    this._root = options.config.root;
     this._logger = new DefaultLogger();
     this._options = options ?? {};
   }
 
-  async watch(serverOrCompiler: DevServer | Compiler, config: Config) {
+  async watch(serverOrCompiler: DevServer | Compiler) {
     // Determine how to compile the project
     const compiler = this.getCompilerFromServerOrCompiler(serverOrCompiler);
 
@@ -72,7 +72,7 @@ export class FileWatcher implements ImplFileWatcher {
           compilerHandler(async () => {
             await compiler.update([path], true);
             compiler.writeResourcesToDisk();
-          }, config);
+          }, this._options);
         }
       } catch (error) {
         this._logger.error(error);
