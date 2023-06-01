@@ -91,27 +91,26 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   private resolvedWatcherOptions() {
-    const { watch, output } = this.options.config;
-
-    const watchOptionsType = isObject(watch);
-    const userWatcherOptions = watchOptionsType ? watch : {};
+    const { watch: watcherOptions, output } = this.options.config;
+    const userWatcherOptions = isObject(watcherOptions) ? watcherOptions : {};
     const { ignored = [] } = userWatcherOptions as ChokidarFileWatcherOptions;
-
-    const watcherOptions = {
+    const resolveWatcherOptions = {
+      ignoreInitial: true,
+      ignorePermissionErrors: true,
+      ...watcherOptions,
       ignored: [
         '**/{.git,node_modules}/**',
-        new RegExp(output?.path),
+        output?.path,
         ...(Array.isArray(ignored) ? ignored : [ignored])
-      ],
-      ignoreInitial: true,
-      ignorePermissionErrors: true
+      ]
     };
+    // TODO other logger info
     this._logger.info(`Watching for changes`);
     this._logger.info(
-      `Ignoring changes in ${watcherOptions.ignored
-        .map((v) => '"' + v + '"')
+      `Ignoring changes in ${resolveWatcherOptions.ignored
+        .map((v: string | RegExp) => '"' + v + '"')
         .join(' | ')}`
     );
-    return watcherOptions;
+    return resolveWatcherOptions;
   }
 }

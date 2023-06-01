@@ -25,9 +25,6 @@ export default {
         }
       ]
     },
-    watch: {
-      ignored: ['**/{.git,node_modules}/**', 'index.js']
-    },
     minify: false,
     sourcemap: false,
     presetEnv: false,
