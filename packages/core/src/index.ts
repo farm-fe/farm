@@ -50,8 +50,8 @@ export async function start(
       process.exit(1);
     }
 
-    const fileWatcher = new FileWatcher(normalizedConfig);
-    fileWatcher.watch(devServer);
+    const fileWatcher = new FileWatcher(devServer, normalizedConfig);
+    fileWatcher.watch();
   }
 }
 
@@ -59,6 +59,7 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -143,10 +144,9 @@ export async function createBundleHandler(
     await compiler.compile();
     compiler.writeResourcesToDisk();
   }, normalizedConfig);
-  console.log(normalizedConfig.config?.watch || watchMode);
 
   if (normalizedConfig.config?.watch || watchMode) {
-    const watcher = new FileWatcher(normalizedConfig);
-    watcher.watch(compiler);
+    const watcher = new FileWatcher(compiler, normalizedConfig);
+    watcher.watch();
   }
 }

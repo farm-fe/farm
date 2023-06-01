@@ -264,6 +264,7 @@ export async function resolveUserConfig(
       const farmConfig = mergeUserConfig(config, options);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
+
         // if we found a config file, stop searching
         break;
       }

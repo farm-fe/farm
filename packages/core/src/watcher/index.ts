@@ -10,28 +10,31 @@ import type { WatchOptions as ChokidarFileWatcherOptions } from 'chokidar';
 import { compilerHandler } from '../utils/build.js';
 
 interface ImplFileWatcher {
-  watch(serverOrCompiler: DevServer | Compiler, config: Config): Promise<void>;
+  watch(): Promise<void>;
 }
 
 export class FileWatcher implements ImplFileWatcher {
   private _root: string;
   private _watcher: FSWatcher;
-  private _options: Config;
   private _logger: DefaultLogger;
 
-  constructor(options?: Config) {
+  constructor(
+    public serverOrCompiler: DevServer | Compiler,
+    public options?: Config
+  ) {
     this._root = options.config.root;
     this._logger = new DefaultLogger();
-    this._options = options ?? {};
   }
 
-  async watch(serverOrCompiler: DevServer | Compiler) {
+  async watch() {
     // Determine how to compile the project
-    const compiler = this.getCompilerFromServerOrCompiler(serverOrCompiler);
+    const compiler = this.getCompilerFromServerOrCompiler(
+      this.serverOrCompiler
+    );
 
-    if (serverOrCompiler instanceof DevServer) {
+    if (this.serverOrCompiler instanceof DevServer) {
       this._watcher = chokidar.watch(compiler.resolvedModulePaths(this._root));
-      serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
+      this.serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
         const added = updateResult.added.map((addedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
@@ -53,7 +56,7 @@ export class FileWatcher implements ImplFileWatcher {
       });
     }
 
-    if (serverOrCompiler instanceof Compiler) {
+    if (this.serverOrCompiler instanceof Compiler) {
       const watcherOptions = this.resolvedWatcherOptions();
       this._watcher = chokidar.watch(
         compiler.resolvedModulePaths(this._root),
@@ -63,15 +66,15 @@ export class FileWatcher implements ImplFileWatcher {
 
     this._watcher.on('change', async (path: string) => {
       try {
-        if (serverOrCompiler instanceof DevServer) {
-          await serverOrCompiler.hmrEngine.hmrUpdate(path);
+        if (this.serverOrCompiler instanceof DevServer) {
+          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
         }
 
-        if (serverOrCompiler instanceof Compiler) {
+        if (this.serverOrCompiler instanceof Compiler) {
           compilerHandler(async () => {
             await compiler.update([path], true);
             compiler.writeResourcesToDisk();
-          }, this._options);
+          }, this.options);
         }
       } catch (error) {
         this._logger.error(error);
@@ -88,10 +91,12 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   private resolvedWatcherOptions() {
-    const { watch, output } = this._options.config;
+    const { watch, output } = this.options.config;
+
     const watchOptionsType = isObject(watch);
     const userWatcherOptions = watchOptionsType ? watch : {};
     const { ignored = [] } = userWatcherOptions as ChokidarFileWatcherOptions;
+
     const watcherOptions = {
       ignored: [
         '**/{.git,node_modules}/**',
