@@ -6,7 +6,7 @@ import {
   PreProcessorsType,
   outputData,
   FarmVuePluginOptions,
-  ResolvedOptions,
+  ResolvedOptions
 } from './farm-vue-types.js';
 
 export function warn({ id, message }: outputData) {
@@ -30,11 +30,11 @@ export function parsePath(resolvedPath: string) {
   return {
     filename,
     filePath: path.join(dir, filename),
-    query: queryObj,
+    query: queryObj
   };
 }
 
-export function getHash(text: string, start: number = 0, end: number = 8) {
+export function getHash(text: string, start = 0, end = 8) {
   return crypto
     .createHash('sha256')
     .update(text)
@@ -72,7 +72,7 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
     sourceMap: false,
     script: {},
     template: {},
-    style: {},
+    style: {}
   };
   for (const key in defaultVueOptions) {
     const val = defaultVueOptions[key as keyof FarmVuePluginOptions];
@@ -81,20 +81,26 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
         resolvedOptions.include = (
           isArray(val) ? val : [val]
         ) as ResolvedOptions['include'];
+        break;
       case 'exclude':
         resolvedOptions.exclude = (
           isArray(val) ? val : [val]
         ) as ResolvedOptions['exclude'];
+        break;
       case 'isProduction':
         if (val === true) resolvedOptions.isProduction = true;
+        break;
       case 'sourceMap':
         if (val === true) resolvedOptions.sourceMap = true;
+        break;
       case 'script':
         resolvedOptions.script = (val ? val : {}) as ResolvedOptions['script'];
+        break;
       case 'template':
         resolvedOptions.template = (
           val ? val : {}
         ) as ResolvedOptions['template'];
+        break;
       case 'style':
         resolvedOptions.style = (val ? val : {}) as ResolvedOptions['style'];
     }
@@ -110,7 +116,7 @@ export function handleInclude(resolvedOptions: ResolvedOptions) {
       resolvedOptions.include.map((match) => {
         return isRegExp(match) ? match.toString().slice(1, -1) : match;
       })
-    ),
+    )
   ];
 }
 
@@ -121,15 +127,9 @@ export function handleExclude(resolvedOptions: ResolvedOptions) {
 }
 
 export async function dynamicImportFromESM(moduleName: string) {
-  try {
-    // @ts-ignore
-    // TODO: use dynamic import
-    const _require = createRequire(import.meta.url);
-    const module = _require(moduleName) ?? {};
-    return module.default ?? module;
-  } catch (error) {
-    throw error;
-  }
+  const _require = createRequire(import.meta.url);
+  const module = _require(moduleName) ?? {};
+  return module.default ?? module;
 }
 
 export async function loadPreProcessor<T extends PreProcessorsType>(

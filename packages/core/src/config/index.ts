@@ -114,7 +114,10 @@ export async function normalizeUserCompilationConfig(
   }
 
   // we should not deep merge compilation.input
-  if (userConfig.compilation?.input) {
+  if (
+    userConfig.compilation?.input &&
+    Object.keys(userConfig.compilation.input).length > 0
+  ) {
     // Add ./ if userConfig.input is relative path without ./
     const input: Record<string, string> = {};
 
