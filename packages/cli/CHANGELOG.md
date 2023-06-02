@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.3
+
+### Patch Changes
+
+- 4d719e4: Bugfix
+
 ## 0.5.2
 
 ### Patch Changes
