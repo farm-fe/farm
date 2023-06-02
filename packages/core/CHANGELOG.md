@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.8.5
+
+### Patch Changes
+
+- 4d719e4: Bugfix
+
 ## 0.8.4
 
 ### Patch Changes
