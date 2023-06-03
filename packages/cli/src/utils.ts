@@ -112,6 +112,7 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
   delete resolveOptions.l;
   delete resolveOptions.mode;
   delete resolveOptions.clearScreen;
+
   return resolveOptions;
 }
 

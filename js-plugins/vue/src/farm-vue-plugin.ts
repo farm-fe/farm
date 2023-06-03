@@ -23,6 +23,7 @@ import {
   isStyl,
   loadPreProcessor
 } from './utils.js';
+import { compileStyle } from '@vue/compiler-sfc';
 
 // apply style langs
 type ApplyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
@@ -57,25 +58,45 @@ export default function farmVuePlugin(
       filters: {
         resolvedPaths: ['.vue$', ...include]
       },
-      async executor(params, ctx) {
+      async executor(params, ctx, hookContext) {
         const { resolvedPath } = params;
         let source = '';
 
         const query = parseQuery(params.query);
-        const { vue, lang, hash } = query;
+        const { vue, lang, hash, scoped } = query;
 
         // handle .vue file
         if (vue === 'true' && hash) {
-          let styleCode = stylesCodeCache[hash];
+          const cssCode = stylesCodeCache[hash];
           // if lang is not "css", use preProcessor to handle
           if (applyStyleLangs.includes(lang)) {
-            const { css } = await preProcession(styleCode, lang);
-            styleCode = css;
+            const { css } = await preProcession(cssCode, lang);
+
+            const { code: styleCode, errors } = compileStyle({
+              source: css,
+              id: `data-v-${scoped}`,
+              scoped: Boolean(scoped),
+              filename: resolvedPath,
+              // preprocessLang: lang !== 'css' ? lang as 'less' | 'sass' | 'scss' | 'stylus' : undefined,
+              // preprocessCustomRequire: loadPreProcessor,
+              ...resolvedOptions.style
+            });
+            if (errors.length) {
+              errors.forEach((err) => {
+                error({ id: err.name, message: err.message });
+              });
+              return;
+            }
+            return {
+              content: styleCode,
+              moduleType: 'css'
+            };
+          } else {
+            return {
+              content: cssCode,
+              moduleType: 'css'
+            };
           }
-          return {
-            content: typeof styleCode === 'string' ? styleCode : '',
-            moduleType: 'css'
-          };
         }
 
         try {
@@ -83,7 +104,10 @@ export default function farmVuePlugin(
         } catch (err) {
           error({
             id: resolvedPath,
-            message: "path is not right,can't readFile"
+            message:
+              "path is not right,can't readFile" +
+              JSON.stringify(ctx) +
+              JSON.stringify(hookContext)
           });
         }
         return {

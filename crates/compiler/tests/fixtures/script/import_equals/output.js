@@ -36,12 +36,22 @@
         const fs = farmRequire("e4b1dea3");
         const utils = farmRequire("363fc137");
         console.log(fs, utils);
-    },
-    "e4b1dea3": function(module, exports, farmRequire, dynamicRequire) {
-        console.log("fs-extra");
     }
 });
 var __farm_global_this__ = globalThis || window || global || self;
 var farmModuleSystem = __farm_global_this__.__farm_module_system__;
 farmModuleSystem.bootstrap();
 var entry = farmModuleSystem.require("b5d64806");
+
+
+//484f1c65.js:
+ (function(modules) {
+    for(var key in modules){
+        var __farm_global_this__ = globalThis || window || global || self;
+        __farm_global_this__.__farm_module_system__.register(key, modules[key]);
+    }
+})({
+    "e4b1dea3": function(module, exports, farmRequire, dynamicRequire) {
+        console.log("fs-extra");
+    }
+});

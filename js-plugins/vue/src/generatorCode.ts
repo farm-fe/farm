@@ -2,7 +2,6 @@ import path from 'path';
 import {
   compileScript,
   compileTemplate,
-  compileStyle,
   SFCDescriptor,
   SFCScriptBlock,
   SFCTemplateBlock,
@@ -172,19 +171,7 @@ function genStyleCode(
   const {
     attrs: { lang = 'css', scoped }
   } = style;
-  const { code: styleCode, errors } = compileStyle({
-    source: style.content,
-    id: `data-v-${hash}`,
-    scoped: Boolean(scoped),
-    filename,
-    ...styleCompilerOptions
-  });
-  if (errors.length) {
-    errors.forEach((err) => {
-      error({ id: err.name, message: err.message });
-    });
-    return;
-  }
+
   const queryStr = genQueryStr({
     lang,
     scoped: scoped ? hash : scoped,
@@ -197,7 +184,7 @@ function genStyleCode(
 
   const hashName = getHash(importPath);
   if (!stylesCodeCache[hashName]) {
-    stylesCodeCache[hashName] = styleCode;
+    stylesCodeCache[hashName] = style.content;
   }
   stylesCodeArr.push(
     'import ' + JSON.stringify(importPath + `&hash=${hashName}`)

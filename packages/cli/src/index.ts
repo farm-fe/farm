@@ -93,12 +93,16 @@ cli
         compilation: {
           mode: options.mode,
           watch: options.watch,
-          output: {
-            path: options.outDir
-          },
-          input: {
-            index: options.input
-          },
+          output: options.outDir
+            ? {
+                path: options.outDir
+              }
+            : undefined,
+          input: options.input
+            ? {
+                index: options.input
+              }
+            : undefined,
           sourcemap: options.sourcemap,
           minify: options.minify,
           treeShaking: options.treeShaking
