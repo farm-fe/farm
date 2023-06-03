@@ -257,7 +257,7 @@ export function genOtherCode(
   isHmr = false,
   rerenderOnly: boolean,
   filename: string,
-  mode: 'development' | 'production' = 'production'
+  mode: string | 'development' | 'production' = 'production'
 ) {
   const otherCodeArr = [
     assignRenderCode,
@@ -281,7 +281,7 @@ export function genMainCode(
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
-  mode: 'development' | 'production' = 'production',
+  mode: string | 'development' | 'production' = 'production',
   isHmr = false,
   rerenderOnly = false,
   deleteStyles: SFCStyleBlock[] = [],

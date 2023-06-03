@@ -16,7 +16,7 @@ export default <UserConfig>{
   server: {
     proxy: {
       '/api': {
-        target: 'https://music-erkelost.vercel.app/banner',
+        target: 'http://v.juhe.cn/todayOnhistory/queryEvent.php',
         changeOrigin: true,
         rewrite: (path: any) => path.replace(/^\/api/, '')
       }
