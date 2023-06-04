@@ -1,9 +1,16 @@
-import log from 'loglevel';
 import chalk from 'chalk';
 
 export const brandColor = chalk.rgb(113, 26, 95);
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+
+enum LogLevel {
+  Trace = 'trace',
+  Debug = 'debug',
+  Info = 'info',
+  Warn = 'warn',
+  Error = 'error'
+}
 
 export interface Logger {
   trace(message: string): void;
@@ -14,21 +21,18 @@ export interface Logger {
 }
 
 export class DefaultLogger implements Logger {
-  private prefix: string;
-
   constructor(
-    private name = 'Farm',
-    level: LogLevelNames = 'info',
+    public level: LogLevelNames = 'info',
+    private name: string = 'Farm',
     private levelValues: Record<LogLevelNames, number> = {
       trace: 0,
       debug: 1,
       info: 2,
       warn: 3,
       error: 4
-    }
+    },
+    private prefix?: string
   ) {
-    log.setDefaultLevel(level);
-    console.log(`${log.getLevel()} ${level}`);
     this.prefix = brandColor(`[ ${this.name} ] `);
   }
 
@@ -38,29 +42,33 @@ export class DefaultLogger implements Logger {
     color?: any,
     showBanner?: boolean
   ): void {
-    const userLevel = log.getLevel();
-    if (userLevel <= this.levelValues[level]) {
-      console.log(color(`${showBanner ? this.prefix : ''}${message}`));
+    if (this.levelValues[this.level] <= this.levelValues[level]) {
+      const loggerMessage = color
+        ? color(`${showBanner ? this.prefix : ''}${message}`)
+        : `${showBanner ? this.prefix : ''}${message}`;
+      console.log(loggerMessage);
     }
   }
 
   trace(message: string): void {
-    this.logMessage('trace', message, chalk.gray);
+    this.logMessage(LogLevel.Trace, message, chalk.magenta);
   }
 
   debug(message: string): void {
-    this.logMessage('debug', message, chalk.blue);
+    this.logMessage(LogLevel.Debug, message, chalk.blue);
   }
 
   info(message: string): void {
-    this.logMessage('info', message);
+    this.logMessage(LogLevel.Info, message);
   }
 
   warn(message: string): void {
-    this.logMessage('warn', message, chalk.yellow);
+    this.logMessage(LogLevel.Warn, message, chalk.yellow);
   }
 
   error(message: string | Error): void {
-    this.logMessage('error', `${message}`, chalk.red);
+    const errorMessage =
+      message instanceof Error ? message.stack : `${message}`;
+    this.logMessage(LogLevel.Error, errorMessage, chalk.red);
   }
 }

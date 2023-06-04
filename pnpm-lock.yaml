@@ -529,9 +529,6 @@ importers:
       figlet:
         specifier: ^1.5.2
         version: 1.5.2
-      http-proxy:
-        specifier: ^1.18.1
-        version: 1.18.1
       koa:
         specifier: ^2.13.4
         version: 2.13.4
@@ -572,9 +569,6 @@ importers:
       '@types/figlet':
         specifier: ^1.5.5
         version: 1.5.5
-      '@types/http-proxy':
-        specifier: ^1.17.11
-        version: 1.17.11
       '@types/koa':
         specifier: ^2.13.5
         version: 2.13.5
@@ -1896,12 +1890,6 @@ packages:
 
   /@types/http-errors@2.0.1:
     resolution: {integrity: sha512-/K3ds8TRAfBvi5vfjuz8y6+GiAYBZ0x4tXv1Av6CWBWn0IlADc+ZX9pMq7oU0fNQPnBwIZl3rmeLp6SBApbxSQ==}
-    dev: true
-
-  /@types/http-proxy@1.17.11:
-    resolution: {integrity: sha512-HC8G7c1WmaF2ekqpnFq626xd3Zz0uvaqFmBJNRZCGEZCXkvSdJoNFn/8Ygbd9fKNQj8UzLdCETaI0UWPAjK7IA==}
-    dependencies:
-      '@types/node': 18.15.3
     dev: true
 
   /@types/inquirer@9.0.3:
