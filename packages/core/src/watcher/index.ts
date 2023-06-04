@@ -7,7 +7,7 @@ import { Config } from '../../binding/index.js';
 import { isObject } from '../utils/index.js';
 
 import type { WatchOptions as ChokidarFileWatcherOptions } from 'chokidar';
-import { compilerHandler } from '../utils/build.js';
+import { compilerHandler } from '../compiler/index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;

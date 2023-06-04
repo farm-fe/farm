@@ -21,7 +21,7 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
-import { compilerHandler } from './utils/build.js';
+import { compilerHandler } from './compiler/index.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -32,7 +32,6 @@ export async function start(
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config.server);
-
   await devServer.listen();
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {

@@ -1,3 +1,2 @@
-export * from './common.js';
-export * from './is.js';
+export * from './share.js';
 export * from './logger.js';
