@@ -110,7 +110,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
         })
         .forEach(({ type, host }) => {
           const url = `${'http'}://${host}:${chalk.bold(port)}`;
-          logger.info(`  > ${type} ${chalk.cyan(url)}`, false);
+          logger.info(`  > ${type} ${chalk.cyan(url)}`);
         })
     );
   });

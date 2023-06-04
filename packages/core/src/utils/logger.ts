@@ -32,10 +32,15 @@ export class DefaultLogger implements Logger {
     this.prefix = brandColor(`[ ${this.name} ] `);
   }
 
-  private logMessage(level: LogLevelNames, message: string, color?: any): void {
+  private logMessage(
+    level: LogLevelNames,
+    message: string,
+    color?: any,
+    showBanner?: boolean
+  ): void {
     const userLevel = log.getLevel();
     if (userLevel <= this.levelValues[level]) {
-      console.log(color(`${this.prefix}${message}`));
+      console.log(color(`${showBanner ? this.prefix : ''}${message}`));
     }
   }
 
