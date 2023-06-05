@@ -1,4 +1,4 @@
-export function logger(msg, { title = 'WARN', color = 'yellow' } = {}) {
+export function logger(msg, { title = 'FARM INFO', color = 'green' } = {}) {
   const COLOR_CODE = [
     'black',
     'red',
