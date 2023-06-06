@@ -42,6 +42,8 @@ export interface UserConfig {
   compilation?: Config['config'];
   /** config related to dev server */
   server?: UserServerConfig;
+  /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
+  publicDir?: string;
 }
 
 export interface GlobalFarmCLIOptions {

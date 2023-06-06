@@ -1,9 +1,15 @@
-use std::{collections::HashMap, sync::Arc};
+#![feature(box_patterns)]
 
+use std::sync::Arc;
+
+use dep_analyzer::DepAnalyzer;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig},
   context::CompilationContext,
-  module::{CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
+  hashbrown::HashMap,
+  module::{
+    module_graph::ModuleGraph, CssModuleMetaData, Module, ModuleId, ModuleMetaData, ModuleType,
+  },
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
@@ -11,7 +17,7 @@ use farmfe_core::{
   },
   resource::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
-    Resource, ResourceType,
+    Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{FilePathMapping, SourceMap, DUMMY_SP},
   swc_css_ast::Stylesheet,
@@ -25,18 +31,24 @@ use farmfe_toolkit::{
   swc_atoms::JsWord,
   swc_css_modules::{compile, CssClassName, TransformConfig},
   swc_css_prefixer,
-  swc_css_visit::VisitMut,
+  swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
 use farmfe_utils::{parse_query, stringify_query};
+use source_replacer::SourceReplacer;
+use transform_resource_pot::transform_css_resource_pot;
 
 const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
+
+mod dep_analyzer;
+mod source_replacer;
+pub mod transform_resource_pot;
 
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
   ast_map: Mutex<HashMap<String, Stylesheet>>,
 }
 
-fn wrapper_style_load(code: &String, id: String) -> String {
+pub fn wrapper_style_load(code: &String, id: String) -> String {
   format!(
     r#"
 const cssCode = `{}`;
@@ -143,19 +155,19 @@ impl Plugin for FarmPluginCss {
 
       // real css modules code
       if is_farm_css_modules(param.resolved_path) {
-        if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-          let ast = self.ast_map.lock().remove(param.resolved_path).unwrap();
-          let (css_code, _) = codegen_css_stylesheet(&ast, None, context.config.minify);
-          let js_code = wrapper_style_load(&css_code, module_id.to_string());
+        // if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+        //   let ast = self.ast_map.lock().remove(param.resolved_path).unwrap();
+        //   let (css_code, _) = codegen_css_stylesheet(&ast, None, context.config.minify);
+        //   let js_code = wrapper_style_load(&css_code, module_id.to_string());
 
-          return Ok(Some(PluginTransformHookResult {
-            content: js_code,
-            module_type: Some(ModuleType::Js),
-            source_map: None,
-          }));
-        } else {
-          return Ok(None);
-        }
+        //   return Ok(Some(PluginTransformHookResult {
+        //     content: js_code,
+        //     module_type: Some(ModuleType::Js),
+        //     source_map: None,
+        //   }));
+        // } else {
+        return Ok(None);
+        // }
       }
 
       // css modules
@@ -249,14 +261,14 @@ impl Plugin for FarmPluginCss {
           module_type: Some(ModuleType::Js),
           source_map: None,
         }));
-      } else if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-        let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
+      // } else if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+      //   let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
 
-        Ok(Some(PluginTransformHookResult {
-          content: css_js_code,
-          module_type: Some(ModuleType::Js),
-          source_map: None,
-        }))
+      //   Ok(Some(PluginTransformHookResult {
+      //     content: css_js_code,
+      //     module_type: Some(ModuleType::Js),
+      //     source_map: None,
+      //   }))
       } else {
         Ok(None)
       }
@@ -322,10 +334,41 @@ impl Plugin for FarmPluginCss {
 
   fn analyze_deps(
     &self,
-    _param: &mut PluginAnalyzeDepsHookParam,
+    param: &mut PluginAnalyzeDepsHookParam,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    if param.module.module_type == ModuleType::Css {
+      let stylesheet = &param.module.meta.as_css().ast;
+      // analyze dependencies:
+      // 1. @import './xxx.css'
+      // 2. url()
+      let mut dep_analyzer = DepAnalyzer::new();
+      stylesheet.visit_with(&mut dep_analyzer);
+      param.deps.extend(dep_analyzer.deps);
+    }
+
     Ok(None)
+  }
+
+  fn process_resource_pot_map(
+    &self,
+    resource_pot_map: &mut farmfe_core::resource::resource_pot_map::ResourcePotMap,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if !matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+      return Ok(None);
+    }
+
+    let mut module_graph = context.module_graph.write();
+
+    // transform css resource pot to js resource pot in development mode
+    for resource_pot in resource_pot_map.resource_pots_mut() {
+      if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
+        transform_css_resource_pot(resource_pot, &mut *module_graph, context)?;
+      }
+    }
+
+    Ok(Some(()))
   }
 
   fn render_resource_pot(
@@ -348,10 +391,22 @@ impl Plugin for FarmPluginCss {
       }
 
       modules.sort_by_key(|module| module.execution_order);
+      let resources_map = context.resources_map.lock();
 
       for module in modules {
-        let module_css_ast: &Stylesheet = &module.meta.as_css().ast;
-        merged_css_ast.rules.extend(module_css_ast.rules.to_vec());
+        let mut module_css_ast: Stylesheet = Stylesheet {
+          span: DUMMY_SP,
+          rules: module.meta.as_css().ast.rules.to_vec(),
+        };
+
+        source_replace(
+          &mut module_css_ast,
+          &module.id,
+          &*module_graph,
+          &*resources_map,
+        );
+
+        merged_css_ast.rules.extend(module_css_ast.rules);
       }
 
       resource_pot.meta = ResourcePotMetaData::Css(CssResourcePotMetaData {
@@ -406,7 +461,7 @@ impl Plugin for FarmPluginCss {
           bytes: src_map.unwrap(),
           emitted: false,
           resource_type: ResourceType::SourceMap,
-          resource_pot: resource_pot.id.clone(),
+          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
           preserve_name: true,
         })
       }
@@ -416,7 +471,7 @@ impl Plugin for FarmPluginCss {
         bytes: css_code.as_bytes().to_vec(),
         emitted: false,
         resource_type: ResourceType::Css,
-        resource_pot: resource_pot.id.clone(),
+        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         preserve_name: true,
       });
 
@@ -485,4 +540,14 @@ fn is_farm_css_modules(path: &str) -> bool {
     .next()
     .unwrap()
     .ends_with(FARM_CSS_MODULES_SUFFIX)
+}
+
+pub fn source_replace(
+  stylesheet: &mut Stylesheet,
+  module_id: &ModuleId,
+  module_graph: &ModuleGraph,
+  resources_map: &HashMap<String, Resource>,
+) {
+  let mut source_replacer = SourceReplacer::new(module_id.clone(), module_graph, resources_map);
+  stylesheet.visit_mut_with(&mut source_replacer);
 }

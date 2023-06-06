@@ -36,6 +36,7 @@
   "devDependencies": {
     "@napi-rs/cli": "^2.15.2",
     "@types/figlet": "^1.5.5",
+    "@types/fs-extra": "^11.0.1",
     "@types/http-proxy": "^1.17.11",
     "@types/koa": "^2.13.5",
     "@types/koa-compress": "^4.0.3",
@@ -78,6 +79,7 @@
     "chokidar": "^3.5.3",
     "execa": "^7.1.1",
     "figlet": "^1.5.2",
+    "fs-extra": "^11.1.1",
     "http-proxy": "^1.18.1",
     "koa": "^2.13.4",
     "koa-compress": "^5.1.1",

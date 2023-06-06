@@ -15,7 +15,7 @@ use farmfe_core::{
   resource::{
     resource_pot::{HtmlResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     resource_pot_map::ResourcePotMap,
-    Resource, ResourceType,
+    Resource, ResourceOrigin, ResourceType,
   },
   swc_html_ast::Document,
 };
@@ -152,7 +152,7 @@ impl Plugin for FarmPluginHtml {
         bytes: vec![],
         emitted: false,
         resource_type: ResourceType::Html,
-        resource_pot: resource_pot.id.clone(),
+        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         preserve_name: true,
       }]))
     } else {
@@ -252,7 +252,7 @@ impl Plugin for FarmPluginHtml {
       let script_entries = module_graph
         .dependencies(
           resource_pot_map
-            .resource_pot(&html_resource.resource_pot)
+            .resource_pot(html_resource.origin.as_resource_pot())
             .unwrap()
             .modules()[0],
         )
@@ -282,7 +282,7 @@ impl Plugin for FarmPluginHtml {
       );
 
       let resource_pot = resource_pot_map
-        .resource_pot_mut(&html_resource.resource_pot)
+        .resource_pot_mut(&html_resource.origin.as_resource_pot())
         .unwrap();
       let html_ast = &mut resource_pot.meta.as_html_mut().ast;
       resources_injector.inject(html_ast);
