@@ -1,5 +1,13 @@
 # @farmfe-examples/script-entry
 
+## 0.0.27
+
+### Patch Changes
+
+- Updated dependencies [8a32a53]
+  - @farmfe/core@0.8.6
+  - @farmfe/cli@0.5.3
+
 ## 0.0.26
 
 ### Patch Changes
