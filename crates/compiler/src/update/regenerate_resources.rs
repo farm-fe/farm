@@ -72,13 +72,13 @@ pub fn render_and_generate_update_resource(
     }
   }
 
-  transform_css_resource_pot(&mut update_css_resource_pot, &mut *module_graph, context)?;
+  transform_css_resource_pot(&mut update_css_resource_pot, &mut module_graph, context)?;
 
   for module_id in update_css_resource_pot.modules() {
     update_resource_pot.add_module(module_id.clone());
   }
 
-  let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &*module_graph, context)?;
+  let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &module_graph, context)?;
   // The hmr result should alway be a js resource
   update_resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
     ast: SwcModule {

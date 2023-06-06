@@ -83,10 +83,11 @@ pub fn transform_css_stylesheet(
   module_graph: &mut ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> Stylesheet {
-  let module = module_graph.module_mut(module_id).unwrap();
+  let mut stylesheet = {
+    let module = module_graph.module_mut(module_id).unwrap();
+    module.meta.as_css_mut().take_ast()
+  };
 
-  let mut stylesheet = module.meta.as_css_mut().take_ast();
-  drop(module);
   let resources_map = context.resources_map.lock();
   source_replace(&mut stylesheet, module_id, module_graph, &*resources_map);
 
