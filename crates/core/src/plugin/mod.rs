@@ -242,11 +242,12 @@ impl From<&str> for ResolveKind {
   }
 }
 
-impl Into<String> for ResolveKind {
-  fn into(self) -> String {
-    serde_json::to_string(&self).unwrap()
+impl From<ResolveKind> for String {
+  fn from(value: ResolveKind) -> Self {
+    serde_json::to_string(&value).unwrap()
   }
 }
+
 /// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PluginHookContext {
