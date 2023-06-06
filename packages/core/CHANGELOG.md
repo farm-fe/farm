@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.8.6
+
+### Patch Changes
+
+- 8a32a53: Support resolve @import and url() dependencies for css
+
 ## 0.8.5
 
 ### Patch Changes
