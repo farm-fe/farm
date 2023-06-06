@@ -37,7 +37,10 @@ impl Plugin for FarmPluginTreeShake {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // topo sort the module_graph, the cyclic modules will be marked as side_effects
-    let (topo_sorted_modules, cyclic_modules) = module_graph.toposort();
+    let (topo_sorted_modules, cyclic_modules) = {
+      farmfe_core::farm_profile_scope!("tree shake toposort".to_string());
+      module_graph.toposort()
+    };
 
     // mark cyclic modules as side_effects
     for chain in cyclic_modules {

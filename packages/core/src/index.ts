@@ -73,8 +73,8 @@ export async function build(
 
   // copy resources under publicDir to output.path
   const absPublicDirPath = normalizePublicDir(
-    options.publicDir,
-    normalizedConfig.config.output.path
+    normalizedConfig.config.output.path,
+    options.publicDir
   );
 
   if (existsSync(absPublicDirPath)) {
