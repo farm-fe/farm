@@ -6,6 +6,7 @@ import { extname } from 'node:path';
 import { Context, Next } from 'koa';
 import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
+import koaStatic from 'koa-static';
 
 export function resources(compiler: Compiler) {
   return async (ctx: Context, next: Next) => {
@@ -39,4 +40,5 @@ export function resources(compiler: Compiler) {
 
 export function resourcesPlugin(distance: DevServer) {
   distance._context.app.use(resources(distance._context.compiler));
+  distance._context.app.use(koaStatic(distance.publicPath));
 }

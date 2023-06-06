@@ -14,6 +14,7 @@ use crate::{
   stats::Stats,
 };
 
+pub mod constants;
 pub mod plugin_driver;
 
 pub const DEFAULT_PRIORITY: i32 = 100;
@@ -235,6 +236,17 @@ impl ResolveKind {
   }
 }
 
+impl From<&str> for ResolveKind {
+  fn from(value: &str) -> Self {
+    serde_json::from_str(value).unwrap()
+  }
+}
+
+impl Into<String> for ResolveKind {
+  fn into(self) -> String {
+    serde_json::to_string(&self).unwrap()
+  }
+}
 /// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PluginHookContext {

@@ -94,7 +94,7 @@ impl ModuleGraph {
   /// we can get `module b` by `(module a, "./b")`.
   ///
   /// Panic if the dep does not exist or the source is not correct
-  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &String) -> ModuleId {
+  pub fn get_dep_by_source_optional(&self, module_id: &ModuleId, source: &str) -> Option<ModuleId> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -106,11 +106,19 @@ impl ModuleGraph {
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
       if self.g[edge_index].iter().any(|e| e.source == *source) {
-        return self.g[node_index].id.clone();
+        return Some(self.g[node_index].id.clone());
       }
     }
 
-    panic!("source `{}` is not a edge of `{:?}`", source, module_id);
+    None
+  }
+
+  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &str) -> ModuleId {
+    if let Some(id) = self.get_dep_by_source_optional(module_id, source) {
+      id
+    } else {
+      panic!("source `{}` is not a edge of `{:?}`", source, module_id);
+    }
   }
 
   pub fn module(&self, module_id: &ModuleId) -> Option<&Module> {
