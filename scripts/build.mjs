@@ -137,12 +137,12 @@ export async function checkProtobuf() {
     }
     return true;
   } catch (error) {
-    return false;
+    process.exit(1);
   }
 }
 
 export async function installProtoBuf() {
-  if (!(await checkProtobuf())) {
+  if (!(checkProtobuf())) {
     logger(
       'Due to the use of protoc in the project, we currently judge that you have not installed. we need to install protobuf locally to make the project start successfully. \n- For mac users, will be use your local `homebrew` tool for installation. \n- For linux users, we will use your local `apt` tool for installation. \n- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n',
       { title: 'INFO' }
@@ -159,5 +159,7 @@ export async function installProtoBuf() {
       );
       process.exit(1);
     }
+  } else {
+    logger('Protobuf has been installed, skipping installation.');
   }
 }
