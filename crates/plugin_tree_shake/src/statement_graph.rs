@@ -211,6 +211,8 @@ impl StatementGraph {
     &self,
     used_exports: HashMap<StatementId, HashSet<UsedIdent>>,
   ) -> HashMap<StatementId, HashSet<String>> {
+    farmfe_core::farm_profile_function!("analyze_used_statements_and_idents".to_string());
+
     let mut used_statements: HashMap<usize, HashSet<String>> = HashMap::new();
 
     // sort used_exports by statement id

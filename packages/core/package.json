@@ -64,6 +64,7 @@
     "build": "tsc -p tsconfig.build.json",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
+    "build:rs:profile": "FARM_PROFILE=1 npm run build:rs -- --features profile",
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",
