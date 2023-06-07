@@ -1,8 +1,10 @@
 import path, { isAbsolute, dirname, resolve } from 'node:path';
 import crypto from 'crypto';
+import fs from 'node:fs';
 import { createRequire } from 'module';
 import { CompilerOptions } from 'ts-morph';
 import typescript from 'typescript';
+import { throwError } from './options.js';
 
 // @ts-ignore
 export function warn({ id, message }) {
@@ -222,4 +224,12 @@ export function getTsConfig(
 
 export function ensureArray<T>(value: T | T[]) {
   return Array.isArray(value) ? value : value ? [value] : [];
+}
+
+export async function tryRead(filename: string) {
+  try {
+    return await fs.promises.readFile(filename, 'utf-8');
+  } catch (e) {
+    throwError('readFile', e);
+  }
 }

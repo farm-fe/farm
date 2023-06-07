@@ -59,6 +59,8 @@ export default function farmVuePlugin(
         resolvedPaths: ['.vue$', ...include]
       },
       async executor(params, ctx, hookContext) {
+        console.log(params);
+
         const { resolvedPath } = params;
         let source = '';
 

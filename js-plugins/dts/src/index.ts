@@ -81,7 +81,7 @@ export default function farmDtsPlugin(
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
         let source = data; // console.log(source);
         return {
-          content: data,
+          content: source,
           moduleType: 'ts'
         };
       }
@@ -100,23 +100,33 @@ export default function farmDtsPlugin(
           content: sourceFile.getFullText()
         }));
 
+        try {
+          const diagnostics = project.getPreEmitDiagnostics();
+          console.log(diagnostics);
+        } catch (error) {
+          console.log(error);
+        }
         const service = project.getLanguageService();
-        const outputFiles = project.getSourceFiles().map(
-          (sourceFile) => {
-            // service.getEmitOutput(sourceFile, true)
-            console.log(sourceFile);
-          }
-          // .getOutputFiles()
-          // .map((outputFile) => ({
-          //   path: resolve(
-          //     root,
-          //     relative(farmConfig.output.path, outputFile.compilerObject.name)
-          //   ),
-          //   content: outputFile.getText()
-          // }))
-        );
-        // .flat()
-        // .concat(dtsOutputFiles);
+        // const outputFiles = project
+        //   .getSourceFiles()
+        //   .map((sourceFile) =>
+        //     service
+        //       .getEmitOutput(sourceFile, true)
+        //       .getOutputFiles()
+        //       .map((outputFile) => ({
+        //         path: resolve(
+        //           root,
+        //           relative(
+        //             farmConfig.output.path,
+        //             outputFile.compilerObject.name
+        //           )
+        //         ),
+        //         content: outputFile.getText()
+        //       }))
+        //   )
+        //   .flat()
+        //   .concat(dtsOutputFiles);
+        // console.log(outputFiles);
 
         // }
         // console.log(params);
