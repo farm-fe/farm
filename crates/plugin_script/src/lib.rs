@@ -375,10 +375,8 @@ impl Plugin for FarmPluginScript {
 }
 
 impl FarmPluginScript {
-  pub fn new(_config: &Config) -> Self {
-    // Currently swc enables filesystem cache by default on Embedded runtime plugin
-    // target.
-    init_plugin_module_cache_once(true, &None);
+  pub fn new(config: &Config) -> Self {
+    init_plugin_module_cache_once(config);
     Self {}
   }
 
