@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.8.8
+
+### Patch Changes
+
+- 8f02078: Pretty syntax error for html, css and js/ts/jsx/tsx
+
 ## 0.8.7
 
 ### Patch Changes
