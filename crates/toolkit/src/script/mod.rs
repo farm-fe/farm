@@ -14,6 +14,7 @@ use farmfe_core::{
   swc_common::{BytePos, FileName, LineCol, Mark, SourceMap},
   swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
 };
+use swc_error_reporters::handler::try_with_handler;
 
 pub mod swc_try_with;
 
@@ -29,13 +30,37 @@ pub fn parse_module(
   let input = StringInput::from(&*source_file);
   // TODO support parsing comments
   let lexer = Lexer::new(syntax, target, input, None);
+
   let mut parser = Parser::new_from(lexer);
-  parser
-    .parse_module()
-    .map_err(|e| CompilationError::ParseError {
-      resolved_path: id.to_string(),
-      source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e))) as _),
-    })
+  let module = parser.parse_module();
+  let mut recovered_errors = parser.take_errors();
+
+  match module {
+    Err(err) => {
+      recovered_errors.push(err);
+    }
+    Ok(m) => {
+      return Ok(m);
+    }
+  }
+
+  try_with_handler(cm, Default::default(), |handler| {
+    for err in recovered_errors {
+      err.into_diagnostic(handler).emit();
+    }
+
+    Err(anyhow::Error::msg("SyntaxError"))
+  })
+  .map_err(|e| CompilationError::ParseError {
+    resolved_path: id.to_string(),
+    msg: if let Some(s) = e.downcast_ref::<String>() {
+      s.to_string()
+    } else if let Some(s) = e.downcast_ref::<&str>() {
+      s.to_string()
+    } else {
+      "failed to handle with unknown panic message".to_string()
+    },
+  })
 }
 
 /// parse the content of a module to [SwcModule] ast.
@@ -54,7 +79,7 @@ pub fn parse_stmt(
     .parse_stmt(top_level)
     .map_err(|e| CompilationError::ParseError {
       resolved_path: id.to_string(),
-      source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e))) as _),
+      msg: format!("{:?}", e),
     })
 }
 
