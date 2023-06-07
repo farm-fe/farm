@@ -1,6 +1,8 @@
-import path from 'path';
+import path, { isAbsolute, dirname, resolve } from 'node:path';
 import crypto from 'crypto';
 import { createRequire } from 'module';
+import { CompilerOptions } from 'ts-morph';
+import typescript from 'typescript';
 
 // @ts-ignore
 export function warn({ id, message }) {
@@ -120,4 +122,104 @@ export async function dynamicImportFromESM(moduleName: string) {
   } catch (error) {
     throw error;
   }
+}
+
+export function resolveAbsolutePath(path: string, root: string) {
+  return path ? (isAbsolute(path) ? path : resolve(root, path)) : root;
+}
+
+export function mergeObjects<
+  T extends Record<string, unknown>,
+  U extends Record<string, unknown>
+>(sourceObj: T, targetObj: U) {
+  const loop: Array<{
+    source: Record<string, any>;
+    target: Record<string, any>;
+    // merged: Record<string, any>
+  }> = [
+    {
+      source: sourceObj,
+      target: targetObj
+      // merged: mergedObj
+    }
+  ];
+
+  while (loop.length) {
+    const { source, target } = loop.pop()!;
+
+    Object.keys(target).forEach((key) => {
+      if (isObject(target[key])) {
+        if (!isObject(source[key])) {
+          source[key] = {};
+        }
+
+        loop.push({
+          source: source[key],
+          target: target[key]
+        });
+      } else if (Array.isArray(target[key])) {
+        if (!Array.isArray(source[key])) {
+          source[key] = [];
+        }
+
+        loop.push({
+          source: source[key],
+          target: target[key]
+        });
+      } else {
+        source[key] = target[key];
+      }
+    });
+  }
+
+  return sourceObj as T & U;
+}
+
+export function isObject<T extends Record<string, any> = Record<string, any>>(
+  value: T
+): value is T {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+export function getTsConfig(
+  tsConfigPath: string,
+  readFileSync: (filePath: string, encoding?: string | undefined) => string
+) {
+  // #95 Should parse include or exclude from the base config when they are missing from
+  // the inheriting config. If the inherit config doesn't have `include` or `exclude` field,
+  // should get them from the parent config.
+  const tsConfig: {
+    compilerOptions: CompilerOptions;
+    include?: string[];
+    exclude?: string[];
+    extends?: string | string[];
+  } = {
+    compilerOptions: {},
+    ...(typescript.readConfigFile(tsConfigPath, readFileSync).config ?? {})
+  };
+
+  if (tsConfig.extends) {
+    ensureArray(tsConfig.extends).forEach((configPath: string) => {
+      const config = getTsConfig(
+        resolveAbsolutePath(configPath, dirname(tsConfigPath)),
+        readFileSync
+      );
+
+      // #171 Need to collect the full `compilerOptions` for `@microsoft/api-extractor`
+      Object.assign(tsConfig.compilerOptions, config.compilerOptions);
+      if (!tsConfig.include) {
+        tsConfig.include = config.include;
+      }
+
+      if (!tsConfig.exclude) {
+        tsConfig.exclude = config.exclude;
+      }
+    });
+  }
+
+  return tsConfig;
+}
+
+export function ensureArray<T>(value: T | T[]) {
+  return Array.isArray(value) ? value : value ? [value] : [];
 }

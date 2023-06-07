@@ -5,8 +5,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "start": "tsc -w",
-    "build": "farm watch",
+    "build": "farm build",
+    "watch": "farm watch",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
