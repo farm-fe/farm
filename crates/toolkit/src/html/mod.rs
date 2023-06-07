@@ -5,6 +5,7 @@ use farmfe_core::{
   swc_common::{input::SourceFileInput, FileName, SourceMap, DUMMY_SP},
   swc_html_ast::{Attribute, Child, Document, Element, Namespace, Text},
 };
+use swc_error_reporters::handler::try_with_handler;
 use swc_html_codegen::{
   writer::basic::{BasicHtmlWriter, BasicHtmlWriterConfig},
   CodeGenerator, CodegenConfig, Emit,
@@ -24,12 +25,37 @@ pub fn parse_html_document(
   let html_lexer = Lexer::new(SourceFileInput::from(&*source_file));
   let mut parser = Parser::new(html_lexer, ParserConfig::default());
 
-  parser
-    .parse_document()
-    .map_err(|e| CompilationError::ParseError {
-      resolved_path: id.to_string(),
-      source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e)))),
-    })
+  let parse_result = parser.parse_document();
+  let mut recovered_errors = parser.take_errors();
+
+  if (recovered_errors.len() == 0) {
+    match parse_result {
+      Err(err) => {
+        recovered_errors.push(err);
+      }
+      Ok(m) => {
+        return Ok(m);
+      }
+    }
+  }
+
+  try_with_handler(cm, Default::default(), |handler| {
+    for err in recovered_errors {
+      err.to_diagnostics(handler).emit();
+    }
+
+    Err(anyhow::Error::msg("SyntaxError"))
+  })
+  .map_err(|e| CompilationError::ParseError {
+    resolved_path: id.to_string(),
+    msg: if let Some(s) = e.downcast_ref::<String>() {
+      s.to_string()
+    } else if let Some(s) = e.downcast_ref::<&str>() {
+      s.to_string()
+    } else {
+      "failed to handle with unknown panic message".to_string()
+    },
+  })
 }
 
 /// Generate code from a html [Document] and output the code [String]
