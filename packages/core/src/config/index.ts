@@ -114,7 +114,10 @@ export async function normalizeUserCompilationConfig(
   }
 
   // we should not deep merge compilation.input
-  if (userConfig.compilation?.input) {
+  if (
+    userConfig.compilation?.input &&
+    Object.keys(userConfig.compilation.input).length > 0
+  ) {
     // Add ./ if userConfig.input is relative path without ./
     const input: Record<string, string> = {};
 
@@ -264,6 +267,7 @@ export async function resolveUserConfig(
       const farmConfig = mergeUserConfig(config, options);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
+
         // if we found a config file, stop searching
         break;
       }
@@ -398,4 +402,12 @@ function mergeConfiguration(
     }
   }
   return result;
+}
+
+export function normalizePublicDir(root: string, userPublicDir?: string) {
+  const publicDir = userPublicDir ?? 'public';
+  const absPublicDirPath = path.isAbsolute(publicDir)
+    ? publicDir
+    : path.join(root, publicDir);
+  return absPublicDirPath;
 }

@@ -1321,6 +1321,7 @@ name = "farmfe_plugin_css"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils",
 ]
@@ -1447,6 +1448,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "farmfe_utils",
 ]
 
 [[package]]
@@ -1456,6 +1458,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "farmfe_utils",
 ]
 
 [[package]]

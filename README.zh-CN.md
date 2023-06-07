@@ -22,7 +22,7 @@
 
 ## 介绍
 
-Farm 是一个使用 Rust 编写的超级快、轻量级的 Web 构建工具, 对照其他工具进行基准测试 (使用 Turbopack 的基准测试，1000 个 React 组件) 如下所示:
+Farm 是一个使用 Rust 编写的极速 Web 构建工具，对照其他工具进行基准测试 (使用 Turbopack 的基准测试，1000 个 React 组件) 如下所示:
 
 ![xx](./assets/benchmark.png)
 
@@ -35,23 +35,16 @@ Farm 是一个使用 Rust 编写的超级快、轻量级的 Web 构建工具, �
 ## 特性
 
 - ⚡ **超级快**: 使用 Rust 编写, 可以在毫秒级别内启动一个 React 或 Vue 项目。 在大多数情况下, 可以在 10ms 内执行 HMR 的更新。
-
 - 🧰 **完全可插拔**: Farm 由插件驱动, 通过创建插件来实现任何您想要的, 同时支持 Rust 和 JavaScript 插件。
-
 - ⚙️ **丰富的编译能力支持**: 开箱即用, Farm 内置了 JS/TS/JSX/TSX、CSS、HTML 和静态资源的编译。
-- ⏱️ **惰性编译**: 仅仅在请求时才编译动态导入的资源。
+- ⏱️ **懒编译**: 仅仅在请求时才编译动态导入的资源，极大提速大型 SPA 项目的编译。
 - 📦 **局部打包**: 自动根据依赖关系、资源大小，将项目打包成若干个资源，提升资源加载性能的同时，保证缓存命中率。
-- 🔒 **一致性**: 开发环境和生产环境的表现一致。
+- 🔒 **一致性**: 开发环境和生产环境的表现一致，所见即所得。
 - 🌳 **兼容性**: 同时支持传统(ES5)和现代浏览器。
 
 <br/>
 
-> **注意**:
->
-> - 关于设计动机和原则请看 [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation)。
-> - **项目仍在开发中，尚未准备好用于生产环境。欢迎贡献**。
->
-> Farm 基于 SWC 项目构建，使用 SWC 进行 HTML/CSS/JS/TSX/TS/JSX 解析、转换、优化和生成代码。
+Farm 设计动机和理念请看 [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation)。。
 
 <br/>
 
@@ -77,9 +70,10 @@ $ yarn create farm
 $ pnpm create farm
 ```
 
-请参考[文档](https://farm-fe.github.io)以了解有关 Farm 的更多信息。
+请参考[文档](https://farm-fe.github.io) 进一步了解 Farm。
 
 ## 计划
+Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境优化如 tree shake 以及产物压缩。我们已经将企业级 web 应用成功迁移到 Farm，极大提升了构建速度以及开发体验。
 
 查看 [计划](https://github.com/farm-fe/farm/blob/main/ROADMAP.zh-CN.md)
 
@@ -89,4 +83,4 @@ $ pnpm create farm
 
 ## 作者
 
-brightwu（吴明亮）, 曾就职于字节跳动和腾讯, 技术爱好者。
+brightwu（吴明亮）, 曾就职于字节跳动和腾讯。

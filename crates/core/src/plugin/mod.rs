@@ -14,6 +14,7 @@ use crate::{
   stats::Stats,
 };
 
+pub mod constants;
 pub mod plugin_driver;
 
 pub const DEFAULT_PRIORITY: i32 = 100;
@@ -232,6 +233,18 @@ impl ResolveKind {
   pub fn is_dynamic(&self) -> bool {
     matches!(self, ResolveKind::DynamicImport)
       || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
+  }
+}
+
+impl From<&str> for ResolveKind {
+  fn from(value: &str) -> Self {
+    serde_json::from_str(value).unwrap()
+  }
+}
+
+impl From<ResolveKind> for String {
+  fn from(value: ResolveKind) -> Self {
+    serde_json::to_string(&value).unwrap()
   }
 }
 

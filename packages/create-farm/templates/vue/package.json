@@ -8,8 +8,8 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.2",
-    "@farmfe/core": "^0.7.6",
-    "@farmfe/js-plugin-vue": "^1.0.1"
+    "@farmfe/core": "^0.8.6",
+    "@farmfe/js-plugin-vue": "^1.2.2"
   },
   "scripts": {
     "start": "farm start",

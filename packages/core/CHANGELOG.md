@@ -1,5 +1,23 @@
 # @farmfe/core
 
+## 0.8.7
+
+### Patch Changes
+
+- d8eeda9: Fix lazy compilation client and swc plugin deadlock
+
+## 0.8.6
+
+### Patch Changes
+
+- 8a32a53: Support resolve @import and url() dependencies for css
+
+## 0.8.5
+
+### Patch Changes
+
+- 4d719e4: Bugfix
+
 ## 0.8.4
 
 ### Patch Changes
