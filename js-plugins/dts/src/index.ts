@@ -101,26 +101,22 @@ export default function farmDtsPlugin(
         }));
 
         const service = project.getLanguageService();
-        const outputFiles = project.getSourceFiles();
-        // .map((sourceFile) =>
-        // service
-        // .getEmitOutput(sourceFile, true)
-        // .getOutputFiles()
-        // .map((outputFile) => ({
-        //   path: resolve(
-        //     root,
-        //     relative(
-        //       farmConfig.output.path,
-        //       outputFile.compilerObject.name
-        //     )
-        //   ),
-        //   content: outputFile.getText()
-        // }))
-        // )
+        const outputFiles = project.getSourceFiles().map(
+          (sourceFile) => {
+            // service.getEmitOutput(sourceFile, true)
+            console.log(sourceFile);
+          }
+          // .getOutputFiles()
+          // .map((outputFile) => ({
+          //   path: resolve(
+          //     root,
+          //     relative(farmConfig.output.path, outputFile.compilerObject.name)
+          //   ),
+          //   content: outputFile.getText()
+          // }))
+        );
         // .flat()
         // .concat(dtsOutputFiles);
-
-        console.log(outputFiles);
 
         // }
         // console.log(params);

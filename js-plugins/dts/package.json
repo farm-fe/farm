@@ -4,8 +4,10 @@
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
-    "build": "farm build",
+    "build": "tsc -p ./tsconfig.build.json",
+    "start": "pnpm run build -w",
     "watch": "farm watch",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
