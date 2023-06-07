@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.0.7
+
+### Patch Changes
+
+- d8eeda9: bump version as core changed
+
 ## 0.0.6
 
 ### Patch Changes
