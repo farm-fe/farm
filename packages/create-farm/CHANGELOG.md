@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.1
+
+### Patch Changes
+
+- d8eeda9: bump version as core changed
+
 ## 1.2.0
 
 ### Minor Changes

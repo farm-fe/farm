@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.8.7
+
+### Patch Changes
+
+- d8eeda9: Fix lazy compilation client and swc plugin deadlock
+
 ## 0.8.6
 
 ### Patch Changes

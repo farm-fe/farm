@@ -11,8 +11,8 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/plugin-react": "workspace:^0.1.7",
-    "@farmfe/plugin-sass": "workspace:^0.0.6",
+    "@farmfe/plugin-react": "workspace:^0.1.8",
+    "@farmfe/plugin-sass": "workspace:^0.0.7",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"
