@@ -81,11 +81,7 @@
     "dotenv-expand": "^10.0.0",
     "execa": "^7.1.1",
     "figlet": "^1.5.2",
-<<<<<<< HEAD
-=======
     "fs-extra": "^11.1.1",
-    "http-proxy": "^1.18.1",
->>>>>>> 67c5a1adfb432b73d1709b83547e706f13e5ad45
     "koa": "^2.13.4",
     "koa-compress": "^5.1.1",
     "koa-proxies": "^0.12.3",
