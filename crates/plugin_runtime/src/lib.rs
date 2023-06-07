@@ -15,7 +15,7 @@ use farmfe_core::{
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     resource_pot_map::ResourcePotMap,
-    Resource, ResourceType,
+    Resource, ResourceOrigin, ResourceType,
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
@@ -386,7 +386,7 @@ impl Plugin for FarmPluginRuntime {
         bytes,
         emitted: true, // do not emit runtime resource by default
         resource_type: ResourceType::Runtime,
-        resource_pot: resource_pot.id.clone(),
+        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         preserve_name: true,
       }]))
     } else {

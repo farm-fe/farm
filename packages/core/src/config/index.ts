@@ -418,3 +418,11 @@ export function mergeConfiguration(
   }
   return result;
 }
+
+export function normalizePublicDir(root: string, userPublicDir?: string) {
+  const publicDir = userPublicDir ?? 'public';
+  const absPublicDirPath = path.isAbsolute(publicDir)
+    ? publicDir
+    : path.join(root, publicDir);
+  return absPublicDirPath;
+}

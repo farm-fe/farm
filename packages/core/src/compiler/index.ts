@@ -38,7 +38,11 @@ export class Compiler {
       throw new Error('Already compiling');
     }
     this.compiling = true;
-    await this._bindingCompiler.compile();
+    if (process.env.FARM_PROFILE) {
+      this._bindingCompiler.compileSync();
+    } else {
+      await this._bindingCompiler.compile();
+    }
     this.compiling = false;
   }
 

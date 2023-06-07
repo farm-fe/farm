@@ -22,4 +22,4 @@ farmfe_plugin_json = { path = "../plugin_json" }
 farmfe_plugin_polyfill = { path = "../plugin_polyfill" }
 
 [features]
-profile = ["farmfe_core/profile"]
+profile = ["farmfe_core/profile", "farmfe_plugin_tree_shake/profile"]

@@ -16,6 +16,10 @@ pub fn remove_useless_stmts(
   tree_shake_module: &mut TreeShakeModule,
   swc_module: &mut SwcModule,
 ) -> (Vec<ImportInfo>, Vec<ExportInfo>) {
+  farmfe_core::farm_profile_function!(format!(
+    "remove_useless_stmts {:?}",
+    tree_shake_module.module_id.to_string()
+  ));
   // analyze the statement graph start from the used statements
   let mut used_stmts = tree_shake_module
     .used_statements()
