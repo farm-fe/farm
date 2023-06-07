@@ -21,7 +21,7 @@
 ---
 
 ## Intro
-The Farm is a super-fast web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
+Farm is a super-fast web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
 ![xx](./assets/benchmark.png)
 
@@ -43,18 +43,13 @@ The Farm is a super-fast web-building tool written in Rust. Benchmark against ot
 
 <br/>
 
-> **Note**:
->
-> - See [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation) for design motivation and principles.
-> - **This project is still under development and not production-ready. Contributions are welcome**.
->
-> This project is built on the SWC Project, using SWC for HTML/CSS/JS/TSX/TS/JSX parsing, transforming, optimizing, and code generation.
+See [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation) for design motivation and principles.
 
 <br/>
 
 ## Getting Started
 
-Create a new Farm(support both react and vue) project.
+Create a new Farm(support both React and Vue) project.
 
 With npm:
 
@@ -77,6 +72,8 @@ $ pnpm create farm
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## RoadMap
+
+Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
 
 See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
