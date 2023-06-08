@@ -73,7 +73,7 @@ export async function build(
 
   // copy resources under publicDir to output.path
   const absPublicDirPath = normalizePublicDir(
-    normalizedConfig.config.output.path,
+    normalizedConfig.config.root,
     options.publicDir
   );
 
