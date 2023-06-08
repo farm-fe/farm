@@ -1,4 +1,4 @@
-import { Logger } from '../utils/logger.js';
+import { Logger } from '../utils/index.js';
 import { ProxiesOptions } from '../server/middlewares/proxy.js';
 
 import type { JsPlugin } from '../plugin/index.js';

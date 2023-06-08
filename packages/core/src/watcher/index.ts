@@ -1,13 +1,11 @@
 import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
-import { DefaultLogger } from '../utils/logger.js';
 
 import { Config } from '../../binding/index.js';
-import { isObject } from '../utils/index.js';
+import { isObject, compilerHandler, DefaultLogger } from '../utils/index.js';
 
 import type { WatchOptions as ChokidarFileWatcherOptions } from 'chokidar';
-import { compilerHandler } from '../compiler/index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;

@@ -17,7 +17,7 @@ import {
   normalizePublicDir
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { brandColor, Logger } from '../utils/logger.js';
+import { brandColor, Logger } from '../utils/index.js';
 import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
 import { hmrPlugin } from './middlewares/hmr.js';

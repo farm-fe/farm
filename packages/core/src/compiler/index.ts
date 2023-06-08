@@ -1,10 +1,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { performance } from 'node:perf_hooks';
-import chalk from 'chalk';
 
 import { Compiler as BindingCompiler } from '../../binding/index.js';
-import { DefaultLogger } from '../utils/logger.js';
 
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 
@@ -155,24 +152,4 @@ export class Compiler {
   onUpdateFinish(cb: () => void) {
     this._onUpdateFinishQueue.push(cb);
   }
-}
-
-export async function compilerHandler(
-  callback: () => Promise<void>,
-  config: Config
-) {
-  const logger = new DefaultLogger();
-  const startTime = performance.now();
-  try {
-    await callback();
-  } catch (error) {
-    logger.error(error);
-  }
-  const endTime = performance.now();
-  const elapsedTime = Math.floor(endTime - startTime);
-  logger.info(
-    `⚡️ Build completed in ${chalk.green(
-      `${elapsedTime}ms`
-    )}! Resources emitted to ${chalk.green(config.config.output.path)}.`
-  );
 }

@@ -121,6 +121,7 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  // TODO resolve other server port
   const normalizedDevServerConfig = normalizeDevServerOptions(
     userConfig.server,
     mode
