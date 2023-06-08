@@ -11,7 +11,7 @@ export default <UserConfig>{
     },
     resolve: {
       strictExports: true
-    }
+    },
   },
   server: {
     proxy: {
