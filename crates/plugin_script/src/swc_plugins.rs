@@ -1,6 +1,5 @@
 use std::{path::PathBuf, sync::Arc};
 
-use anyhow::Context;
 use farmfe_core::{
   config::{ScriptConfigPlugin, ScriptConfigPluginFilters},
   context::CompilationContext,
@@ -12,6 +11,7 @@ use farmfe_core::{
   swc_common::{self, plugin::metadata::TransformPluginMetadataContext, FileName, Mark},
   swc_ecma_ast::{Module as SwcModule, Program, Script},
 };
+use farmfe_toolkit::anyhow::{self, Context};
 use farmfe_toolkit::{
   regex::Regex,
   swc_ecma_visit::{noop_fold_type, Fold, FoldWith},

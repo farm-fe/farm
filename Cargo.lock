@@ -1430,7 +1430,6 @@ dependencies = [
 name = "farmfe_plugin_script"
 version = "0.0.1"
 dependencies = [
- "anyhow",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
@@ -1472,6 +1471,7 @@ dependencies = [
 name = "farmfe_toolkit"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "base64 0.21.0",
  "farmfe_core",
  "farmfe_testing_helpers",
