@@ -94,11 +94,13 @@ cli
         compilation: {
           mode: options.mode,
           watch: options.watch,
-          output: options.outDir
-            ? {
-                path: options.outDir
-              }
-            : undefined,
+          output:
+            options.outDir || options.format
+              ? {
+                  path: options.outDir,
+                  format: options.format
+                }
+              : undefined,
           input: options.input
             ? {
                 index: options.input
