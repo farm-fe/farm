@@ -15,5 +15,4 @@ swc_plugin_runner = { version = "0.95.7", features = [
   "plugin_transform_host_native",
 ] }
 swc_ecma_loader = { version = "0.43.12", features = ["cache", "node", "tsc"] }
-anyhow = { version = "1.0.40", features = ["backtrace"] }
 once_cell = { version = "1.10.0" }

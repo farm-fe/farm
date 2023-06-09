@@ -1,4 +1,4 @@
-import { Logger } from '../utils/logger.js';
+import { Logger } from '../utils/index.js';
 import { ProxiesOptions } from '../server/middlewares/proxy.js';
 
 import type { JsPlugin } from '../plugin/index.js';
@@ -47,6 +47,7 @@ export interface UserConfig {
   compilation?: Config['config'];
   /** config related to dev server */
   server?: UserServerConfig;
+  /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
 }
 
 export interface GlobalFarmCLIOptions {

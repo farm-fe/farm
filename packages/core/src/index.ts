@@ -12,6 +12,7 @@ import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
 import { Compiler } from './compiler/index.js';
 import {
+  normalizePublicDir,
   normalizeUserCompilationConfig,
   resolveInlineConfig,
   UserConfig
@@ -21,7 +22,9 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
-import { compilerHandler } from './compiler/index.js';
+import { compilerHandler } from './utils/build.js';
+import { existsSync } from 'node:fs';
+import fse from 'fs-extra';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -29,6 +32,7 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
   const config: UserConfig = await resolveInlineConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
+  console.log(config.server);
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config.server);
@@ -61,7 +65,17 @@ export async function build(
     'production'
   );
 
-  createBundleHandler(normalizedConfig);
+  await createBundleHandler(normalizedConfig);
+
+  // copy resources under publicDir to output.path
+  const absPublicDirPath = normalizePublicDir(
+    normalizedConfig.config.output.path,
+    options.publicDir
+  );
+
+  if (existsSync(absPublicDirPath)) {
+    fse.copySync(absPublicDirPath, normalizedConfig.config.output.path);
+  }
 }
 
 export async function preview(options: FarmCLIOptions): Promise<void> {

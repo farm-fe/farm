@@ -1,0 +1,14 @@
+@import './base.css';
+@import url(./index.css);
+@import url("./extension.css");
+@import '/public.css';
+@import url(https://remote.css);
+
+
+body {
+  background: url('./background.png');
+}
+
+.home {
+  background: url('./img/home.png') no-repeat;
+}

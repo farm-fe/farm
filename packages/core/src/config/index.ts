@@ -121,10 +121,13 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  // TODO resolve other server port
   const normalizedDevServerConfig = normalizeDevServerOptions(
     userConfig.server,
     mode
   );
+  // console.log(normalizedDevServerConfig);
+  // console.log(hmrClientPluginPath);
 
   if (
     Array.isArray(config.runtime.plugins) &&
@@ -222,6 +225,7 @@ export async function normalizeUserCompilationConfig(
     rustPlugins,
     jsPlugins
   };
+  // console.log(config);
 
   return normalizedConfig;
 }
@@ -417,4 +421,12 @@ export function mergeConfiguration(
     }
   }
   return result;
+}
+
+export function normalizePublicDir(root: string, userPublicDir?: string) {
+  const publicDir = userPublicDir ?? 'public';
+  const absPublicDirPath = path.isAbsolute(publicDir)
+    ? publicDir
+    : path.join(root, publicDir);
+  return absPublicDirPath;
 }

@@ -11,9 +11,9 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId},
   plugin::{
-    PluginAnalyzeDepsHookResultEntry, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
-    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, ResolveKind,
+    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, PluginAnalyzeDepsHookResultEntry,
+    PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
+    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
   rayon,
   rayon::ThreadPool,
@@ -111,13 +111,23 @@ impl Compiler {
       caller: None,
       meta: HashMap::new(),
     };
-
-    let resolve_result = match resolve(resolve_param, context, &hook_context) {
+    let resolve_kind = resolve_param.kind.clone();
+    let mut resolve_result = match resolve(resolve_param, context, &hook_context) {
       Ok(resolved) => resolved,
       Err(e) => {
         return Err(e);
       }
     };
+
+    if !resolve_result
+      .meta
+      .contains_key(PLUGIN_BUILD_STAGE_META_RESOLVE_KIND)
+    {
+      resolve_result.meta.insert(
+        PLUGIN_BUILD_STAGE_META_RESOLVE_KIND.to_string(),
+        resolve_kind.into(),
+      );
+    }
 
     // make query part of module id
     let module_id = ModuleId::new(

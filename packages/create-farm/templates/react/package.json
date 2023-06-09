@@ -8,8 +8,8 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.2",
-    "@farmfe/core": "^0.7.6",
-    "@farmfe/plugin-react": "0.1.5",
+    "@farmfe/core": "^0.8.6",
+    "@farmfe/plugin-react": "^0.1.7",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0",

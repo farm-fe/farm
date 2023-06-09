@@ -13,10 +13,11 @@ import { Compiler } from '../compiler/index.js';
 import {
   UserServerConfig,
   NormalizedServerConfig,
-  normalizeDevServerOptions
+  normalizeDevServerOptions,
+  normalizePublicDir
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { brandColor, Logger } from '../utils/logger.js';
+import { brandColor, Logger } from '../utils/index.js';
 import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
 import { hmrPlugin } from './middlewares/hmr.js';
@@ -55,12 +56,18 @@ export class DevServer implements ImplDevServer {
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
   server?: http.Server;
+  publicPath?: string;
 
   constructor(
     private _compiler: Compiler,
     public logger: Logger,
-    options?: UserServerConfig
+    options?: UserServerConfig,
+    publicPath?: string
   ) {
+    this.publicPath = normalizePublicDir(
+      _compiler.config.config.root,
+      publicPath
+    );
     this.createFarmServer(options);
   }
 

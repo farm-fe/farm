@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "0.8.5",
+  "version": "0.8.8",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@napi-rs/cli": "^2.15.2",
     "@types/figlet": "^1.5.5",
+    "@types/fs-extra": "^11.0.1",
     "@types/koa": "^2.13.5",
     "@types/koa-compress": "^4.0.3",
     "@types/koa-static": "^4.0.2",
@@ -62,6 +63,7 @@
     "build": "tsc -p tsconfig.build.json",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
+    "build:rs:profile": "FARM_PROFILE=1 npm run build:rs -- --features profile",
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",
@@ -79,6 +81,7 @@
     "dotenv-expand": "^10.0.0",
     "execa": "^7.1.1",
     "figlet": "^1.5.2",
+    "fs-extra": "^11.1.1",
     "koa": "^2.13.4",
     "koa-compress": "^5.1.1",
     "koa-proxies": "^0.12.3",

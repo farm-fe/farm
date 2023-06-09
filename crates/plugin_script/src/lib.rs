@@ -16,7 +16,7 @@ use farmfe_core::{
   relative_path::RelativePath,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
-    Resource, ResourceType,
+    Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{comments::NoopComments, Mark, GLOBALS},
   swc_ecma_ast::{
@@ -344,7 +344,7 @@ impl Plugin for FarmPluginScript {
         name: filename,
         emitted: false,
         resource_type: ResourceType::Js,
-        resource_pot: resource_pot.id.clone(),
+        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         preserve_name: false,
       }];
 
@@ -362,7 +362,7 @@ impl Plugin for FarmPluginScript {
           name: sourcemap_filename,
           emitted: false,
           resource_type: ResourceType::SourceMap,
-          resource_pot: resource_pot.id.clone(),
+          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
           preserve_name: true,
         });
       }
@@ -375,10 +375,8 @@ impl Plugin for FarmPluginScript {
 }
 
 impl FarmPluginScript {
-  pub fn new(_config: &Config) -> Self {
-    // Currently swc enables filesystem cache by default on Embedded runtime plugin
-    // target.
-    init_plugin_module_cache_once(true, &None);
+  pub fn new(config: &Config) -> Self {
+    init_plugin_module_cache_once(config);
     Self {}
   }
 
