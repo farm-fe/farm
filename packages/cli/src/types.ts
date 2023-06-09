@@ -24,13 +24,11 @@ export interface FarmCLIServerOptions {
 
 export interface FarmCLIBuildOptions {
   input?: string;
-  output?: {
-    outDir?: string;
-    format?: 'cjs' | 'esm';
-  };
+  outDir?: string;
   sourcemap?: boolean;
   minify?: boolean;
   treeShaking?: boolean;
+  format?: 'cjs' | 'esm';
 }
 
 export interface FarmCLIPreviewOptions {
