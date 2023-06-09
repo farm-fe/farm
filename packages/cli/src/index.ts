@@ -95,10 +95,10 @@ cli
           mode: options.mode,
           watch: options.watch,
           output:
-            options.outDir || options.format
+            options.output.outDir || options.output.format
               ? {
-                  path: options.outDir,
-                  format: options.format
+                  path: options.output.outDir,
+                  format: options.output.format
                 }
               : undefined,
           input: options.input
@@ -132,7 +132,7 @@ cli
         mode: options.mode,
         compilation: {
           output: {
-            path: options.outDir
+            path: options.output.outDir
           },
           input: {
             index: options.input
