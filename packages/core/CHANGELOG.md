@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.8.9
+
+### Patch Changes
+
+- f16ff29: Fix publicDir error when build
+
 ## 0.8.8
 
 ### Patch Changes
