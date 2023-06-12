@@ -1,5 +1,5 @@
 import { z } from 'zod';
-// import { fromZodError } from 'zod-validation-error';
+import { fromZodError } from 'zod-validation-error';
 
 import { Logger } from '../utils/logger.js';
 
@@ -198,10 +198,8 @@ export function parseUserConfig(config: unknown, logger: Logger) {
     return parsed as UserConfig;
     // return config as UserConfig;
   } catch (err) {
-    // const validationError = fromZodError(err);
-    console.log(logger);
-
+    const validationError = fromZodError(err);
     // the error now is readable by the user
-    // logger.error(validationError);
+    logger.error(validationError);
   }
 }

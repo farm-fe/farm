@@ -283,7 +283,7 @@ export async function resolveUserConfig(
   }
 
   if (!userConfig?.root) {
-    userConfig.root = root ?? process.cwd();
+    userConfig.root = root;
   }
 
   return userConfig;
