@@ -282,7 +282,7 @@ export async function resolveUserConfig(
     }
   }
 
-  if (!userConfig?.root) {
+  if (!userConfig.root) {
     userConfig.root = root;
   }
 
