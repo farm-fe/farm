@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { UserConfig } from './types.js';
+// import { fromZodError } from 'zod-validation-error';
+
+import { Logger } from '../utils/logger.js';
+
+import type { UserConfig } from './types.js';
 
 const ConfigSchema = z
   .object({
@@ -187,9 +191,17 @@ const UserConfigSchema = z
   })
   .strict();
 
-export function parseUserConfig(config: unknown) {
-  const parsed = UserConfigSchema.parse(config);
+export function parseUserConfig(config: unknown, logger: Logger) {
   // TODO: parse will only return correct types if tsconfig is set to strict
-  return parsed as UserConfig;
-  // return config as UserConfig;
+  try {
+    const parsed = UserConfigSchema.parse(config);
+    return parsed as UserConfig;
+    // return config as UserConfig;
+  } catch (err) {
+    // const validationError = fromZodError(err);
+    console.log(logger);
+
+    // the error now is readable by the user
+    // logger.error(validationError);
+  }
 }

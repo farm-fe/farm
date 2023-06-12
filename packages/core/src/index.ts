@@ -9,6 +9,9 @@ import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
+import { existsSync } from 'node:fs';
+import fse from 'fs-extra';
+
 import { Compiler } from './compiler/index.js';
 import {
   normalizePublicDir,
@@ -19,11 +22,10 @@ import {
 import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
-import type { FarmCLIOptions } from './config/types.js';
-import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
-import { existsSync } from 'node:fs';
-import fse from 'fs-extra';
+
+import type { FarmCLIOptions } from './config/types.js';
+import type { Config } from '../binding/index.js';
 
 export async function start(
   options: FarmCLIOptions & UserConfig
