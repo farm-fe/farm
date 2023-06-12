@@ -25,7 +25,6 @@ const cli = cac('farm');
 
 // common command
 cli
-  // TODO base options
   .option('-c, --config <file>', 'use specified config file')
   .option('-m, --mode <mode>', 'set env mode')
   .option('--base <path>', 'public base path')
@@ -39,15 +38,15 @@ cli
   )
   .alias('start')
   .option('-l, --lazy', 'lazyCompilation')
-  .option('--host [host]', 'specify host')
+  .option('--host <host>', 'specify host')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
   .option('--cors', 'enable CORS')
   // TODO add https config
-  .option('--https', 'use https')
+  // .option('--https', 'use https')
   // TODO add strictPort config
-  .option('--strictPort', 'specified port is already in use, exit with error')
+  // .option('--strictPort', 'specified port is already in use, exit with error')
   .action(
     async (
       root: string,
@@ -58,6 +57,7 @@ cli
         const configPath = getConfigPath(options.config);
         const inlineConfig = {
           compilation: {
+            root,
             mode: options.mode,
             lazyCompilation: options.lazy
           },
@@ -80,7 +80,7 @@ cli
   .command('build', 'compile the project in production mode')
   // TODO add target config esm, commonjs
   // .option("--target <target>", "transpile target")
-  .option('--format [format]', 'transpile format esm, commonjs')
+  .option('--format <format>', 'transpile format esm, commonjs')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .option('--sourcemap', 'output source maps for build')
@@ -93,7 +93,6 @@ cli
       const defaultOptions = {
         compilation: {
           mode: options.mode,
-          watch: options.watch,
           output:
             options.outDir || options.format
               ? {
@@ -108,6 +107,7 @@ cli
             : undefined,
           sourcemap: options.sourcemap,
           minify: options.minify,
+          watch: options.watch,
           treeShaking: options.treeShaking
         },
         configPath
@@ -123,6 +123,7 @@ cli
 
 cli
   .command('watch', 'watch file change')
+  .option('--format <format>', 'transpile format esm, commonjs')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
@@ -131,12 +132,18 @@ cli
       const defaultOptions = {
         mode: options.mode,
         compilation: {
-          output: {
-            path: options.outDir
-          },
-          input: {
-            index: options.input
-          }
+          output:
+            options.outDir || options.format
+              ? {
+                  path: options.outDir,
+                  format: options.format
+                }
+              : undefined,
+          input: options.input
+            ? {
+                index: options.input
+              }
+            : undefined
         },
         configPath
       };
@@ -151,7 +158,7 @@ cli
 
 cli
   .command('preview', 'compile the project in watch mode')
-  .option('--port [port]', 'specify port')
+  .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server preview start')
   .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
     try {

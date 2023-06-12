@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { Logger, DefaultLogger } from '../utils/logger.js';
+
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
 import type { Config, JsUpdateResult } from '../../binding/index.js';
@@ -22,17 +24,18 @@ export class Compiler {
   private _updateQueue: UpdateQueueItem[] = [];
   private _onUpdateFinishQueue: (() => void)[] = [];
 
-  config: Config;
-  compiling = false;
+  public compiling = false;
 
-  constructor(config: Config) {
-    this.config = config;
+  private logger: Logger;
+
+  constructor(public config: Config) {
+    this.logger = new DefaultLogger();
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 
   async compile() {
     if (this.compiling) {
-      throw new Error('Already compiling');
+      this.logger.error('Already compiling');
     }
     this.compiling = true;
     if (process.env.FARM_PROFILE) {
@@ -45,7 +48,7 @@ export class Compiler {
 
   compileSync() {
     if (this.compiling) {
-      throw new Error('Already compiling');
+      this.logger.error('Already compiling');
     }
     this.compiling = true;
     this._bindingCompiler.compileSync();
@@ -126,10 +129,7 @@ export class Compiler {
   }
 
   removeOutputPathDir() {
-    const outputPath = path.join(
-      this.config.config.root,
-      this.config.config.output.path
-    );
+    const outputPath = this.outputPath();
     if (existsSync(outputPath)) {
       rmSync(outputPath, { recursive: true });
     }
@@ -151,5 +151,14 @@ export class Compiler {
 
   onUpdateFinish(cb: () => void) {
     this._onUpdateFinishQueue.push(cb);
+  }
+
+  outputPath() {
+    const { output, root } = this.config.config;
+    const configOutputPath = output.path;
+    const outputPath = path.isAbsolute(configOutputPath)
+      ? configOutputPath
+      : path.join(root, configOutputPath);
+    return outputPath;
   }
 }

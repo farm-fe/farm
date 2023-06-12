@@ -51,7 +51,7 @@ interface ImplDevServer {
 export class DevServer implements ImplDevServer {
   private _app: Koa;
 
-  _context: FarmServerContext;
+  public _context: FarmServerContext;
   ws: WebSocketServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
@@ -71,31 +71,14 @@ export class DevServer implements ImplDevServer {
     this.createFarmServer(options);
   }
 
-  createFarmServer(options: UserServerConfig) {
-    const protocol = options.https ? 'https' : 'http';
-    let hostname = options.host || 'localhost';
-    if (hostname === '0.0.0.0') hostname = 'localhost';
-    this.config = normalizeDevServerOptions(
-      { ...options, protocol, hostname },
-      'development'
-    );
-    this._app = new Koa();
-    this.server = http.createServer(this._app.callback());
-    this._context = {
-      config: this.config,
-      app: this._app,
-      server: this.server,
-      compiler: this._compiler,
-      logger: this.logger
-    };
-    this.resolvedFarmServerPlugins();
-  }
-
   getCompiler(): Compiler {
     return this._compiler;
   }
 
   async listen(): Promise<void> {
+    if (!this.server) {
+      this.logger.error('HTTP server is not created yet');
+    }
     const { port, open, protocol, hostname } = this.config;
     const start = Date.now();
     // compile the project and start the dev server
@@ -114,10 +97,40 @@ export class DevServer implements ImplDevServer {
   }
 
   async close() {
+    if (!this.server) {
+      this.logger.error('HTTP server is not created yet');
+    }
+    this.closeFarmServer();
+  }
+
+  async restart() {
+    // TODO restart
+  }
+
+  closeFarmServer() {
     this.server?.close(() => {
       console.log('HTTP server is closed');
-      this.listen();
     });
+  }
+
+  createFarmServer(options: UserServerConfig) {
+    const { https = false, host = 'localhost' } = options;
+    const protocol = https ? 'https' : 'http';
+    const hostname = host === '0.0.0.0' ? 'localhost' : host;
+    this.config = normalizeDevServerOptions(
+      { ...options, protocol, hostname },
+      'development'
+    );
+    this._app = new Koa();
+    this.server = http.createServer(this._app.callback());
+    this._context = {
+      config: this.config,
+      app: this._app,
+      server: this.server,
+      compiler: this._compiler,
+      logger: this.logger
+    };
+    this.resolvedFarmServerPlugins();
   }
 
   private resolvedFarmServerPlugins() {
@@ -129,7 +142,7 @@ export class DevServer implements ImplDevServer {
       proxyPlugin
     ];
     // this._app.use(serve(this._dist));
-    resolvedPlugins.forEach((p) => p(this));
+    resolvedPlugins.forEach((plugin) => plugin(this));
   }
 
   private startDevLogger(start: number, end: number) {
