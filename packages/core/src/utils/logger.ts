@@ -15,7 +15,7 @@ enum LogLevel {
 export interface Logger {
   trace(message: string): void;
   debug(message: string): void;
-  info(message: string): void;
+  info(message: string, showBanner?: boolean): void;
   warn(message: string): void;
   error(message: string | Error): void;
 }
@@ -40,7 +40,7 @@ export class DefaultLogger implements Logger {
     level: LogLevelNames,
     message: string,
     color?: any,
-    showBanner?: boolean
+    showBanner = true
   ): void {
     if (this.levelValues[this.level] <= this.levelValues[level]) {
       const loggerMessage = color
@@ -58,8 +58,8 @@ export class DefaultLogger implements Logger {
     this.logMessage(LogLevel.Debug, message, chalk.blue);
   }
 
-  info(message: string): void {
-    this.logMessage(LogLevel.Info, message);
+  info(message: string, showBanner?: boolean): void {
+    this.logMessage(LogLevel.Info, message, null, showBanner);
   }
 
   warn(message: string): void {

@@ -160,7 +160,8 @@ export class DevServer implements ImplDevServer {
           borderColor: 'cyan',
           borderStyle: 'round'
         }
-      )
+      ),
+      false
     );
   }
 }
