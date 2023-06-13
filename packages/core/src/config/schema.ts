@@ -200,6 +200,9 @@ export function parseUserConfig(config: unknown, logger: Logger) {
   } catch (err) {
     const validationError = fromZodError(err);
     // the error now is readable by the user
-    logger.error(validationError);
+    logger.error(
+      `resolve config error,${validationError}. \n Please check your configuration file [farm.config.ts] or command line configuration.`
+    );
+    process.exit(1);
   }
 }

@@ -8,6 +8,7 @@ import {
   normalizeDevServerOptions,
   resolveUserConfig
 } from '../src/index.js';
+
 import { parseUserConfig } from '../src/config/schema.js';
 import { DefaultLogger } from '../src/utils/logger.js';
 
@@ -16,8 +17,7 @@ test('resolveUserConfig', async () => {
 
   const config = await resolveUserConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new DefaultLogger(),
-    'start'
+    new DefaultLogger()
   );
 
   expect(config).toEqual({
@@ -53,42 +53,48 @@ describe('normalize-dev-server-options', () => {
 
 describe('parseUserConfig', () => {
   test('non-objects', () => {
-    expect(() => parseUserConfig('should throw')).toThrowError(
-      'Expected object, received string'
-    );
+    expect(() =>
+      parseUserConfig('should throw', new DefaultLogger())
+    ).toThrowError('Expected object, received string');
   });
 
   test('extraneous config', () => {
     expect(() =>
-      parseUserConfig({
-        extra: 'should throw'
-      })
+      parseUserConfig(
+        {
+          extra: 'should throw'
+        },
+        new DefaultLogger()
+      )
     ).toThrowError('Unrecognized key');
   });
 
   test('valid template config', () => {
     expect(() =>
-      parseUserConfig({
-        compilation: {
-          input: {
-            index: './index.html'
+      parseUserConfig(
+        {
+          compilation: {
+            input: {
+              index: './index.html'
+            },
+            resolve: {
+              symlinks: true,
+              mainFields: ['module', 'main', 'customMain']
+            },
+            define: {
+              BTN: 'Click me'
+            },
+            output: {
+              path: './build'
+            }
           },
-          resolve: {
-            symlinks: true,
-            mainFields: ['module', 'main', 'customMain']
+          server: {
+            hmr: true
           },
-          define: {
-            BTN: 'Click me'
-          },
-          output: {
-            path: './build'
-          }
+          plugins: ['@farmfe/plugin-react']
         },
-        server: {
-          hmr: true
-        },
-        plugins: ['@farmfe/plugin-react']
-      })
+        new DefaultLogger()
+      )
     ).not.toThrow();
   });
 });
