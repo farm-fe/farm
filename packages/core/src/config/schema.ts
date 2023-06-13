@@ -1,8 +1,6 @@
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
-import { Logger } from '../utils/logger.js';
-
 import type { UserConfig } from './types.js';
 
 const ConfigSchema = z

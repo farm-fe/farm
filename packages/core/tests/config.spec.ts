@@ -65,6 +65,14 @@ describe('parseUserConfig', () => {
     ).toThrowError('Unrecognized key');
   });
 
+  test('type error config', () => {
+    expect(() =>
+      parseUserConfig({
+        port: 'should throw'
+      })
+    ).toThrowError('Validation error');
+  });
+
   test('valid template config', () => {
     expect(() =>
       parseUserConfig({
