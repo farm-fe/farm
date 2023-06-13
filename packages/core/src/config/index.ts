@@ -5,11 +5,16 @@ import os from 'node:os';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
+import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
-import {
+import { parseUserConfig } from './schema.js';
+import { clearScreen, isObject } from '../utils/common.js';
+
+import type {
   FarmCLIOptions,
   NormalizedServerConfig,
   UserConfig,
@@ -17,10 +22,6 @@ import {
   UserServerConfig
 } from './types.js';
 import { Logger } from '../utils/logger.js';
-import { pathToFileURL } from 'node:url';
-import { createHash } from 'node:crypto';
-import { parseUserConfig } from './schema.js';
-import { clearScreen, isObject } from '../utils/common.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -267,7 +268,6 @@ export async function resolveUserConfig(
       const farmConfig = mergeUserConfig(config, options);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
-
         // if we found a config file, stop searching
         break;
       }
