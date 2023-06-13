@@ -68,7 +68,9 @@ describe('parseUserConfig', () => {
   test('type error config', () => {
     expect(() =>
       parseUserConfig({
-        port: 'should throw'
+        server: {
+          port: 'should throw'
+        }
       })
     ).toThrowError('Validation error');
   });
