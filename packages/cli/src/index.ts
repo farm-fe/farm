@@ -58,8 +58,8 @@ cli
         clearScreen: options.clearScreen ?? true,
         configPath
       };
-
       const { start } = await resolveCore(configPath);
+
       try {
         await start(defaultOptions);
       } catch (e) {
@@ -102,9 +102,9 @@ cli
       },
       configPath
     };
+    const { build } = await resolveCore(configPath);
 
     try {
-      const { build } = await resolveCore(configPath);
       build(defaultOptions);
     } catch (e) {
       logger.error(`error during build:\n${e.stack}`);
@@ -117,22 +117,22 @@ cli
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    try {
-      const configPath = getConfigPath(options.config);
-      const defaultOptions = {
-        mode: options.mode,
-        compilation: {
-          output: {
-            path: options.outDir
-          },
-          input: {
-            index: options.input
-          }
+    const configPath = getConfigPath(options.config);
+    const defaultOptions = {
+      mode: options.mode,
+      compilation: {
+        output: {
+          path: options.outDir
         },
-        configPath
-      };
+        input: {
+          index: options.input
+        }
+      },
+      configPath
+    };
+    const { watch } = await resolveCore(configPath);
 
-      const { watch } = await resolveCore(configPath);
+    try {
       watch(defaultOptions);
     } catch (e) {
       logger.error(`error during watch project:\n${e.stack}`);
@@ -154,9 +154,9 @@ cli
       server: resolveOptions,
       configPath
     };
+    const { preview } = await resolveCore(configPath);
 
     try {
-      const { preview } = await resolveCore(configPath);
       preview(defaultOptions);
     } catch (e) {
       logger.error(`Failed to start preview server:\n${e.stack}`);
