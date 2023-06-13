@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { UserConfig } from './types.js';
+import { fromZodError } from 'zod-validation-error';
+
+import type { UserConfig } from './types.js';
 
 const compilationConfigSchema = z
   .object({
@@ -191,8 +193,20 @@ const FarmConfigSchema = z
   .strict();
 
 export function parseUserConfig(config: unknown) {
+<<<<<<< HEAD
   const parsed = FarmConfigSchema.parse(config);
+=======
+>>>>>>> 682b0e2acbc711ce0b7892011fc1307928853327
   // TODO: parse will only return correct types if tsconfig is set to strict
-  return parsed as UserConfig;
-  // return config as UserConfig;
+  try {
+    const parsed = UserConfigSchema.parse(config);
+    return parsed as UserConfig;
+    // return config as UserConfig;
+  } catch (err) {
+    const validationError = fromZodError(err);
+    // the error now is readable by the user
+    throw new Error(
+      `${validationError}. \n Please check your configuration file or command line configuration.`
+    );
+  }
 }

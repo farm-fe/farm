@@ -13,6 +13,9 @@ import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
+import { existsSync } from 'node:fs';
+import fse from 'fs-extra';
+
 import { Compiler } from './compiler/index.js';
 import {
   normalizePublicDir,
@@ -59,7 +62,7 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveInlineConfig(options, logger);
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'

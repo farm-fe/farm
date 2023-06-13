@@ -10,21 +10,17 @@ import chalk from 'chalk';
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
-import {
+import { parseUserConfig } from './schema.js';
+import { clearScreen, isObject } from '../utils/common.js';
+
+import type {
   FarmCLIOptions,
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import {
-  Logger,
-  clearScreen,
-  isObject,
-  normalizePath
-} from '../utils/index.js';
-import { loadEnv } from './env.js';
-import { parseUserConfig } from './schema.js';
+import { Logger } from '../utils/logger.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -293,7 +289,6 @@ export async function resolveInlineConfig(
       const farmConfig = mergeUserConfig(config, options);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
-
         // if we found a config file, stop searching
         break;
       }
