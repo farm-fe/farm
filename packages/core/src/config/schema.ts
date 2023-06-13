@@ -191,7 +191,7 @@ const UserConfigSchema = z
   })
   .strict();
 
-export function parseUserConfig(config: unknown, logger: Logger) {
+export function parseUserConfig(config: unknown) {
   // TODO: parse will only return correct types if tsconfig is set to strict
   try {
     const parsed = UserConfigSchema.parse(config);
@@ -200,9 +200,8 @@ export function parseUserConfig(config: unknown, logger: Logger) {
   } catch (err) {
     const validationError = fromZodError(err);
     // the error now is readable by the user
-    logger.error(
-      `resolve config error,${validationError}. \n Please check your configuration file [farm.config.ts] or command line configuration.`
+    throw new Error(
+      `${validationError}. \n Please check your configuration file or command line configuration.`
     );
-    process.exit(1);
   }
 }

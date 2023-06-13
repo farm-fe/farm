@@ -267,7 +267,7 @@ export async function resolveUserConfig(
       const config = await readConfigFile(resolvedPath, logger);
       const farmConfig = mergeUserConfig(config, options);
       if (config) {
-        userConfig = parseUserConfig(farmConfig, logger);
+        userConfig = parseUserConfig(farmConfig);
         // if we found a config file, stop searching
         break;
       }
@@ -278,7 +278,7 @@ export async function resolveUserConfig(
     const farmConfig = mergeUserConfig(config, options);
 
     if (config) {
-      userConfig = parseUserConfig(farmConfig, logger);
+      userConfig = parseUserConfig(farmConfig);
     }
   }
 

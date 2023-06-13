@@ -46,21 +46,21 @@ cli
       root: string,
       options: FarmCLIServerOptions & GlobalFarmCLIOptions
     ) => {
-      try {
-        const resolveOptions = resolveCommandOptions(options);
-        const configPath = getConfigPath(options.config);
-        const defaultOptions = {
-          compilation: {
-            root,
-            mode: options.mode,
-            lazyCompilation: options.lazy
-          },
-          server: resolveOptions,
-          clearScreen: options.clearScreen ?? true,
-          configPath
-        };
+      const resolveOptions = resolveCommandOptions(options);
+      const configPath = getConfigPath(options.config);
+      const defaultOptions = {
+        compilation: {
+          root,
+          mode: options.mode,
+          lazyCompilation: options.lazy
+        },
+        server: resolveOptions,
+        clearScreen: options.clearScreen ?? true,
+        configPath
+      };
 
-        const { start } = await resolveCore(configPath);
+      const { start } = await resolveCore(configPath);
+      try {
         await start(defaultOptions);
       } catch (e) {
         logger.error(`Failed to start server:\n ${e.stack}`);
@@ -81,29 +81,29 @@ cli
   .option('--minify', 'code compression at build time')
   .option('-w, --watch', 'watch file change')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    try {
-      const configPath = getConfigPath(options.config);
-      const defaultOptions = {
-        compilation: {
-          mode: options.mode,
-          watch: options.watch,
-          output: options.outDir
-            ? {
-                path: options.outDir
-              }
-            : undefined,
-          input: options.input
-            ? {
-                index: options.input
-              }
-            : undefined,
-          sourcemap: options.sourcemap,
-          minify: options.minify,
-          treeShaking: options.treeShaking
-        },
-        configPath
-      };
+    const configPath = getConfigPath(options.config);
+    const defaultOptions = {
+      compilation: {
+        mode: options.mode,
+        watch: options.watch,
+        output: options.outDir
+          ? {
+              path: options.outDir
+            }
+          : undefined,
+        input: options.input
+          ? {
+              index: options.input
+            }
+          : undefined,
+        sourcemap: options.sourcemap,
+        minify: options.minify,
+        treeShaking: options.treeShaking
+      },
+      configPath
+    };
 
+    try {
       const { build } = await resolveCore(configPath);
       build(defaultOptions);
     } catch (e) {
@@ -145,21 +145,21 @@ cli
   .option('--port [port]', 'specify port')
   .option('--open', 'open browser on server preview start')
   .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
-    try {
-      const configPath = getConfigPath(options.config);
-      const resolveOptions = resolveCommandOptions(options);
-      const defaultOptions = {
-        compilation: {
-          mode: options.mode
-        },
-        server: resolveOptions,
-        configPath
-      };
+    const configPath = getConfigPath(options.config);
+    const resolveOptions = resolveCommandOptions(options);
+    const defaultOptions = {
+      compilation: {
+        mode: options.mode
+      },
+      server: resolveOptions,
+      configPath
+    };
 
+    try {
       const { preview } = await resolveCore(configPath);
       preview(defaultOptions);
     } catch (e) {
-      logger.error(`Failed to start server:\n${e.stack}`);
+      logger.error(`Failed to start preview server:\n${e.stack}`);
       process.exit(1);
     }
   });

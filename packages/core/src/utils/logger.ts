@@ -28,7 +28,7 @@ export class DefaultLogger implements Logger {
     log.warn(message);
   }
 
-  error(message: string | Error): void {
-    log.error(chalk.red(message));
+  error(message: string | Error, banner = true): void {
+    log.error(`${banner ? brandColor('[ Farm ] ') : ''}${chalk.red(message)}`);
   }
 }

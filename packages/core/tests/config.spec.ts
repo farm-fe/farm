@@ -8,7 +8,6 @@ import {
   normalizeDevServerOptions,
   resolveUserConfig
 } from '../src/index.js';
-
 import { parseUserConfig } from '../src/config/schema.js';
 import { DefaultLogger } from '../src/utils/logger.js';
 
@@ -53,48 +52,42 @@ describe('normalize-dev-server-options', () => {
 
 describe('parseUserConfig', () => {
   test('non-objects', () => {
-    expect(() =>
-      parseUserConfig('should throw', new DefaultLogger())
-    ).toThrowError('Expected object, received string');
+    expect(() => parseUserConfig('should throw')).toThrowError(
+      'Expected object, received string'
+    );
   });
 
   test('extraneous config', () => {
     expect(() =>
-      parseUserConfig(
-        {
-          extra: 'should throw'
-        },
-        new DefaultLogger()
-      )
+      parseUserConfig({
+        extra: 'should throw'
+      })
     ).toThrowError('Unrecognized key');
   });
 
   test('valid template config', () => {
     expect(() =>
-      parseUserConfig(
-        {
-          compilation: {
-            input: {
-              index: './index.html'
-            },
-            resolve: {
-              symlinks: true,
-              mainFields: ['module', 'main', 'customMain']
-            },
-            define: {
-              BTN: 'Click me'
-            },
-            output: {
-              path: './build'
-            }
+      parseUserConfig({
+        compilation: {
+          input: {
+            index: './index.html'
           },
-          server: {
-            hmr: true
+          resolve: {
+            symlinks: true,
+            mainFields: ['module', 'main', 'customMain']
           },
-          plugins: ['@farmfe/plugin-react']
+          define: {
+            BTN: 'Click me'
+          },
+          output: {
+            path: './build'
+          }
         },
-        new DefaultLogger()
-      )
+        server: {
+          hmr: true
+        },
+        plugins: ['@farmfe/plugin-react']
+      })
     ).not.toThrow();
   });
 });
