@@ -417,7 +417,12 @@ mod tests {
 
     let start_points = vec!["F".into(), "B".into()];
     let mut module_group_graph = module_group_graph_from_entries(
-      &module_graph.entries.clone().into_iter().collect(),
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
       &mut module_graph,
     );
     let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
@@ -442,7 +447,12 @@ mod tests {
     );
 
     let update_module_group_graph = module_group_graph_from_entries(
-      &module_graph.entries.clone().into_iter().collect(),
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
       &mut module_graph,
     );
 

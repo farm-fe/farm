@@ -14,7 +14,7 @@ pub enum CompilationError {
     source: Option<Box<dyn Error + Send + Sync>>,
   },
   // TODO, give the specific recommended plugin of this kind of module
-  #[error("Can not load `{resolved_path}`. Original error: {source:?}.\n\nPotential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n")]
+  #[error("Can not load `{resolved_path}`. Original error: \n{source:?}.\n\nPotential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n")]
   LoadError {
     resolved_path: String,
     #[source]

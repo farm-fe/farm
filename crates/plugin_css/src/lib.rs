@@ -7,9 +7,7 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   hashbrown::HashMap,
-  module::{
-    module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
@@ -24,7 +22,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
-  fs::{read_file_utf8, transform_output_filename},
+  fs::read_file_utf8,
   hash::sha256,
   regex::Regex,
   script::module_type_from_id,
@@ -440,19 +438,11 @@ impl Plugin for FarmPluginCss {
         context.config.minify,
       );
 
-      // let filename = transform_output_filename(
-      //   context.config.output.filename.clone(),
-      //   resource_pot.id.to_string().as_str(),
-      //   css_code.as_bytes(),
-      //   ResourceType::Css.to_ext().as_str(),
-      // );
-
-      // let sourcemap_filename = format!("{filename}.map");
-
       let mut resources = vec![];
 
       if context.config.sourcemap.enabled()
-        && (context.config.sourcemap.is_all() || !resource_pot.immutable) && src_map.is_some()
+        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
+        && src_map.is_some()
       {
         // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
 
@@ -462,7 +452,6 @@ impl Plugin for FarmPluginCss {
           emitted: false,
           resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          entry: false
         })
       }
 
@@ -472,7 +461,6 @@ impl Plugin for FarmPluginCss {
         emitted: false,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        entry: resource_pot.entry_module.is_some()
       });
 
       Ok(Some(resources))

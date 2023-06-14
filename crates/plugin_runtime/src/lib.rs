@@ -387,7 +387,6 @@ impl Plugin for FarmPluginRuntime {
         emitted: true, // do not emit runtime resource by default
         resource_type: ResourceType::Runtime,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        entry: false,
       }]))
     } else {
       Ok(None)

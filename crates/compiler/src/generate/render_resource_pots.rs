@@ -7,7 +7,6 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::PluginHookContext,
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  relative_path::RelativePath,
   resource::{resource_pot::ResourcePot, Resource, ResourceType},
 };
 use farmfe_toolkit::fs::{transform_output_entry_filename, transform_output_filename};
@@ -21,6 +20,7 @@ pub fn render_resource_pots_and_generate_resources(
   farmfe_core::puffin::profile_function!();
 
   let resources = Mutex::new(vec![]);
+  let entries = context.module_graph.read().entries.clone();
 
   // Note: Plugins should not using context.resource_pot_map, as it may cause deadlock
   resource_pots.into_par_iter().try_for_each(|resource_pot| {
@@ -51,33 +51,12 @@ pub fn render_resource_pots_and_generate_resources(
       if !matches!(r.resource_type, ResourceType::SourceMap(_)) {
         let name_before_update = r.name.clone();
 
-        if r.entry {
-          let (name, _) = resource_pot
-            .entry_module
-            .as_ref()
-            .map(|module_id| {
-              context
-                .config
-                .input
-                .iter()
-                .find(|(_, val)| {
-                  // if val is not absolute path, transform it to absolute path
-                  let val_path = Path::new(val);
-                  let abs_val_path = if val_path.is_absolute() {
-                    val_path.to_path_buf()
-                  } else {
-                    RelativePath::new(val).to_logical_path(&context.config.root)
-                  };
-
-                  module_id.resolved_path(&context.config.root) == abs_val_path.to_string_lossy()
-                })
-                .expect("Internal bug: entry file should exist")
-            })
-            .unwrap();
+        if let Some(name) = resource_pot.entry_module.as_ref() {
+          let entry_name = entries.get(name).unwrap();
           r.name = transform_output_entry_filename(
             context.config.output.entry_filename.clone(),
             resource_pot.id.to_string().as_str(),
-            name,
+            entry_name,
             &r.bytes,
             &r.resource_type.to_ext(),
           );
@@ -90,14 +69,14 @@ pub fn render_resource_pots_and_generate_resources(
           );
         }
 
-        let source_mapping_url = format!(
-          "\n//# sourceMappingURL={}.{}",
-          r.name,
-          ResourceType::SourceMap("".to_string()).to_ext()
-        );
-        r.bytes.append(&mut source_mapping_url.as_bytes().to_vec());
-
         if res_map.contains_key(&name_before_update) {
+          let source_mapping_url = format!(
+            "\n//# sourceMappingURL={}.{}",
+            r.name,
+            ResourceType::SourceMap("".to_string()).to_ext()
+          );
+          r.bytes.append(&mut source_mapping_url.as_bytes().to_vec());
+
           let v = res_map.remove(&name_before_update).unwrap();
           // reverse the map to speed up the lookup
           res_map.insert(v, r.name.to_string());

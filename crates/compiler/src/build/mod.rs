@@ -59,13 +59,13 @@ impl Compiler {
 
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
 
-    for (order, source) in self.context.config.input.values().enumerate() {
+    for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       Self::build_module_graph_threaded(
         thread_pool.clone(),
         PluginResolveHookParam {
           source: source.clone(),
           importer: None,
-          kind: ResolveKind::Entry,
+          kind: ResolveKind::Entry(name.clone()),
         },
         self.context.clone(),
         err_sender.clone(),
@@ -344,8 +344,10 @@ impl Compiler {
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
-    if matches!(kind, ResolveKind::Entry) {
-      module_graph.entries.insert(module.id.clone());
+    if let ResolveKind::Entry(name) = kind {
+      module_graph
+        .entries
+        .insert(module.id.clone(), name.to_string());
     }
 
     // check if the module already exists

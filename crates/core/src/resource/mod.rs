@@ -80,6 +80,4 @@ pub struct Resource {
   pub resource_type: ResourceType,
   /// the origin that this resource generated from
   pub origin: ResourceOrigin,
-  /// true means it is a entry resource
-  pub entry: bool,
 }

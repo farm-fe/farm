@@ -144,7 +144,6 @@ impl Plugin for FarmPluginStaticAssets {
               &stringify_query(&param.query),
               &context.config.root,
             )),
-            entry: false,
           },
         );
 

@@ -14,7 +14,7 @@ export default <UserConfig>{
     output: {
       path: './build'
     },
-    sourcemap: false,
+    sourcemap: true,
     css: {
       // modules: {
       //   indentName: 'farm-[name]-[hash]'

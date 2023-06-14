@@ -366,9 +366,13 @@ impl Compiler {
         .entries
         .clone()
         .into_iter()
-        .filter(|m| {
-          let module = module_graph.module(m).unwrap();
-          matches!(module.module_type, ModuleType::Html)
+        .filter_map(|(m, _)| {
+          let module = module_graph.module(&m).unwrap();
+          if matches!(module.module_type, ModuleType::Html) {
+            Some(m)
+          } else {
+            None
+          }
         })
         .collect::<Vec<_>>();
       let mut dynamic_resources = HashMap::new();

@@ -13,7 +13,6 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
-  relative_path::RelativePath,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -25,7 +24,7 @@ use farmfe_core::{
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  fs::{read_file_utf8, transform_output_filename},
+  fs::read_file_utf8,
   script::{
     codegen_module, module_system_from_deps, module_type_from_id, parse_module,
     swc_try_with::try_with, syntax_from_module_type,
@@ -291,7 +290,7 @@ impl Plugin for FarmPluginScript {
       let ast = &resource_pot.meta.as_js().ast;
       let mut src_map_buf = vec![];
 
-      let mut buf = codegen_module(
+      let buf = codegen_module(
         ast,
         context.config.script.target.clone(),
         context.meta.script.cm.clone(),
@@ -304,48 +303,12 @@ impl Plugin for FarmPluginScript {
         source: Some(Box::new(e)),
       })?;
 
-      // let filename = resource_pot
-      //   .entry_module
-      //   .as_ref()
-      //   .map(|module_id| {
-      //     let entry_filename =
-      //       RelativePath::new(&module_id.relative_path().to_string()).normalize();
-      //     let entry_name = context
-      //       .config
-      //       .input
-      //       .iter()
-      //       .find(|(_, val)| RelativePath::new(val).normalize() == entry_filename);
-
-      //     if let Some((entry_name, _)) = entry_name {
-      //       entry_name.to_string()
-      //     } else {
-      //       resource_pot.id.to_string()
-      //     }
-      //   })
-      //   .unwrap_or(resource_pot.id.to_string());
-
-      // let sourcemap_filename = transform_output_filename(
-      //   context.config.output.filename.clone(),
-      //   &filename,
-      //   &buf,
-      //   &ResourceType::SourceMap.to_ext(),
-      // );
-
-      if context.config.sourcemap.enabled()
-        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
-      {
-        // TODO: support inline sourcemap
-        // let source_mapping_url = format!("\n//# sourceMappingURL={}", sourcemap_filename);
-        // buf.append(&mut source_mapping_url.as_bytes().to_vec());
-      }
-
       let mut resources = vec![Resource {
         bytes: buf,
         name: resource_pot.id.to_string(),
         emitted: false,
         resource_type: ResourceType::Js,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        entry: resource_pot.entry_module.is_some(),
       }];
 
       if context.config.sourcemap.enabled()
@@ -363,7 +326,6 @@ impl Plugin for FarmPluginScript {
           emitted: false,
           resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          entry: false,
         });
       }
 
