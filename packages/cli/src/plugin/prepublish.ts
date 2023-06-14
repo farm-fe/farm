@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
-import path from 'path';
-import fs from 'fs/promises';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 
 /**
  * Farm plugin prepublish command, publish all packages under npm directory
@@ -25,7 +25,7 @@ export async function prepublish(_args: any): Promise<void> {
     // execute npm publish under the pkg directory
     execSync(`npm publish`, {
       cwd: path.join(npmDir, pkg),
-      stdio: 'inherit',
+      stdio: 'inherit'
     });
 
     packageNames.push(pkgName);
@@ -38,7 +38,7 @@ export async function prepublish(_args: any): Promise<void> {
     ...packageNames.reduce((acc, name) => {
       acc[name] = currentPackageVersion;
       return acc;
-    }, {}),
+    }, {})
   };
   // write current package.json
   await fs.writeFile(

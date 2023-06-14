@@ -2,13 +2,11 @@ import { readFileSync } from 'node:fs';
 import http from 'node:http';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import Koa from 'koa';
 import { WebSocketServer } from 'ws';
 import chalk from 'chalk';
 import boxen from 'boxen';
 import figlet from 'figlet';
-
 import { Compiler } from '../compiler/index.js';
 import {
   UserServerConfig,

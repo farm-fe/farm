@@ -1,8 +1,6 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-
 import { Logger, DefaultLogger } from '../utils/logger.js';
-
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
 import type { Config, JsUpdateResult } from '../../binding/index.js';

@@ -1,7 +1,6 @@
-import { Logger } from '../utils/index.js';
-import { ProxiesOptions } from '../server/middlewares/proxy.js';
-
 import type cors from '@koa/cors';
+import type { Logger } from '../utils/index.js';
+import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 import type { Config } from '../../binding/index.js';

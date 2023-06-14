@@ -1,7 +1,7 @@
-import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
 import Module from 'node:module';
 import { pathToFileURL } from 'node:url';
+import { cac } from 'cac';
 import { DefaultLogger, isWindows } from '@farmfe/core';
 import { getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';

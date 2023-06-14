@@ -1,12 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
+
 import type { GlobalFarmCLIOptions } from './types.js';
-import Module from 'node:module';
-import { build, preview, start, watch } from '@farmfe/core';
 
 interface installProps {
   cwd: string; // 项目路径
@@ -48,23 +47,6 @@ node_modules
 *.farm`
     );
   }
-}
-
-export function resolveCore(cwd: string): Promise<{
-  start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
-}> {
-  const require = Module.createRequire(path.join(cwd, 'package.json'));
-
-  const farmCorePath = require.resolve('@farmfe/core');
-
-  if (process.platform === 'win32') {
-    return import(pathToFileURL(farmCorePath).toString());
-  }
-
-  return import(farmCorePath);
 }
 
 export async function install(options: installProps): Promise<void> {

@@ -1,7 +1,6 @@
 import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
-
 import { Config } from '../../binding/index.js';
 import { isObject, compilerHandler, DefaultLogger } from '../utils/index.js';
 

@@ -6,7 +6,6 @@ import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import merge from 'lodash.merge';
 import chalk from 'chalk';
-
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
