@@ -49,6 +49,23 @@ node_modules
   }
 }
 
+export function resolveCore(cwd: string): Promise<{
+  start: typeof start;
+  build: typeof build;
+  watch: typeof watch;
+  preview: typeof preview;
+}> {
+  const require = Module.createRequire(path.join(cwd, 'package.json'));
+
+  const farmCorePath = require.resolve('@farmfe/core');
+
+  if (process.platform === 'win32') {
+    return import(pathToFileURL(farmCorePath).toString());
+  }
+
+  return import(farmCorePath);
+}
+
 export async function install(options: installProps): Promise<void> {
   const cwd = options.cwd;
   return new Promise((resolve, reject) => {
