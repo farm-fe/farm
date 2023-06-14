@@ -8,12 +8,10 @@ import path from 'node:path';
 import os from 'node:os';
 import { existsSync } from 'node:fs';
 
-import fse from 'fs-extra';
 import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
-import { existsSync } from 'node:fs';
 import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';

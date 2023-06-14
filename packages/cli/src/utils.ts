@@ -1,11 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import readline from 'node:readline';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
 import type { GlobalFarmCLIOptions } from './types.js';
+import Module from 'node:module';
+import { build, preview, start, watch } from '@farmfe/core';
 
 interface installProps {
   cwd: string; // 项目路径
