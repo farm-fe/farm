@@ -311,7 +311,7 @@ async function readConfigFile(
             config: resolvedPath
           },
           output: {
-            filename: fileName,
+            entryFilename: fileName,
             path: outputPath,
             targetEnv: 'node'
           },

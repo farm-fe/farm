@@ -1,14 +1,13 @@
 #![feature(path_file_prefix)]
 
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   config::Config,
   module::{ModuleId, ModuleType},
-  plugin::{
-    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, PluginHookContext, ResolveKind,
-  },
+  // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
+  plugin::Plugin,
   resource::{Resource, ResourceOrigin, ResourceType},
 };
 use farmfe_toolkit::{
@@ -80,13 +79,13 @@ impl Plugin for FarmPluginStaticAssets {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Asset) {
-      let resolve_kind = ResolveKind::from(
-        param
-          .meta
-          .get(PLUGIN_BUILD_STAGE_META_RESOLVE_KIND)
-          .unwrap()
-          .as_str(),
-      );
+      // let resolve_kind = ResolveKind::from(
+      //   param
+      //     .meta
+      //     .get(PLUGIN_BUILD_STAGE_META_RESOLVE_KIND)
+      //     .unwrap()
+      //     .as_str(),
+      // );
 
       if param.query.iter().find(|(k, _)| k == "inline").is_some() {
         let file_raw = read_file_raw(param.resolved_path)?;
@@ -145,7 +144,7 @@ impl Plugin for FarmPluginStaticAssets {
               &stringify_query(&param.query),
               &context.config.root,
             )),
-            preserve_name: false,
+            entry: false,
           },
         );
 

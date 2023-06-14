@@ -8,7 +8,7 @@ use farmfe_core::{
   context::CompilationContext,
   hashbrown::HashMap,
   module::{
-    module_graph::ModuleGraph, CssModuleMetaData, Module, ModuleId, ModuleMetaData, ModuleType,
+    module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType,
   },
   parking_lot::Mutex,
   plugin::{
@@ -430,7 +430,7 @@ impl Plugin for FarmPluginCss {
 
       let source_map_enabled = context.config.sourcemap.enabled();
 
-      let (mut css_code, src_map) = codegen_css_stylesheet(
+      let (css_code, src_map) = codegen_css_stylesheet(
         &stylesheet,
         if source_map_enabled {
           Some(context.meta.css.cm.clone())
@@ -440,39 +440,39 @@ impl Plugin for FarmPluginCss {
         context.config.minify,
       );
 
-      let filename = transform_output_filename(
-        context.config.output.filename.clone(),
-        resource_pot.id.to_string().as_str(),
-        css_code.as_bytes(),
-        ResourceType::Css.to_ext().as_str(),
-      );
+      // let filename = transform_output_filename(
+      //   context.config.output.filename.clone(),
+      //   resource_pot.id.to_string().as_str(),
+      //   css_code.as_bytes(),
+      //   ResourceType::Css.to_ext().as_str(),
+      // );
 
-      let sourcemap_filename = format!("{filename}.map");
+      // let sourcemap_filename = format!("{filename}.map");
 
       let mut resources = vec![];
 
       if context.config.sourcemap.enabled()
-        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
+        && (context.config.sourcemap.is_all() || !resource_pot.immutable) && src_map.is_some()
       {
-        css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
+        // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
 
         resources.push(Resource {
-          name: sourcemap_filename,
+          name: format!("{}.map", resource_pot.id.to_string()),
           bytes: src_map.unwrap(),
           emitted: false,
-          resource_type: ResourceType::SourceMap,
+          resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          preserve_name: true,
+          entry: false
         })
       }
 
       resources.push(Resource {
-        name: filename.clone(),
+        name: resource_pot.id.to_string(),
         bytes: css_code.as_bytes().to_vec(),
         emitted: false,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        preserve_name: true,
+        entry: resource_pot.entry_module.is_some()
       });
 
       Ok(Some(resources))

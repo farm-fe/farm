@@ -143,17 +143,13 @@ impl Plugin for FarmPluginHtml {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
-      // The name of html resource should not contain hash
-      let module_id = resource_pot.modules()[0];
-      let resource_name = module_id.to_string();
-
       Ok(Some(vec![Resource {
-        name: resource_name,
+        name: resource_pot.id.to_string(),
         bytes: vec![],
         emitted: false,
         resource_type: ResourceType::Html,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        preserve_name: true,
+        entry: resource_pot.entry_module.is_some()
       }]))
     } else {
       Ok(None)

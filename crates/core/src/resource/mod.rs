@@ -16,7 +16,7 @@ pub enum ResourceType {
   Js,
   Css,
   Html,
-  SourceMap,
+  SourceMap(String),
   Asset(String),
   Custom(String),
 }
@@ -30,7 +30,7 @@ impl ResourceType {
       ResourceType::Js => "js".to_string(),
       ResourceType::Css => "css".to_string(),
       ResourceType::Html => "html".to_string(),
-      ResourceType::SourceMap => "js.map".to_string(),
+      ResourceType::SourceMap(_) => "map".to_string(),
     }
   }
 
@@ -42,7 +42,7 @@ impl ResourceType {
       ResourceType::Js => "script".to_string(),
       ResourceType::Css => "link".to_string(),
       ResourceType::Html => "html".to_string(),
-      ResourceType::SourceMap => unreachable!(),
+      ResourceType::SourceMap(_) => unreachable!(),
     }
   }
 }
@@ -80,6 +80,6 @@ pub struct Resource {
   pub resource_type: ResourceType,
   /// the origin that this resource generated from
   pub origin: ResourceOrigin,
-  /// true means this resource's name should not be changed according to the [Config].
-  pub preserve_name: bool,
+  /// true means it is a entry resource
+  pub entry: bool,
 }

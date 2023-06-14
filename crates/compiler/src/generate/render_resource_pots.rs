@@ -1,14 +1,16 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
+  hashbrown::HashMap,
   parking_lot::Mutex,
   plugin::PluginHookContext,
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{resource_pot::ResourcePot, Resource},
+  relative_path::RelativePath,
+  resource::{resource_pot::ResourcePot, Resource, ResourceType},
 };
-use farmfe_toolkit::fs::transform_output_filename;
+use farmfe_toolkit::fs::{transform_output_entry_filename, transform_output_filename};
 
 pub fn render_resource_pots_and_generate_resources(
   resource_pots: Vec<&mut ResourcePot>,
@@ -33,21 +35,85 @@ pub fn render_resource_pots_and_generate_resources(
     let mut res =
       render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
 
-    for r in &mut res {
-      let mut filename_config = context.config.output.filename.clone();
+    let mut res_map = HashMap::new();
 
-      if !r.preserve_name {
-        filename_config = transform_output_filename(
-          filename_config,
-          &r.name,
-          &r.bytes,
-          &r.resource_type.to_ext(),
-        );
-      } else {
-        filename_config = r.name.clone();
+    for r in &res {
+      // deal source map resource
+      if let ResourceType::SourceMap(original_resource_name) = &r.resource_type {
+        if let Some(orig) = res.iter().find(|item| &item.name == original_resource_name) {
+          res_map.insert(orig.name.to_string(), r.name.to_string());
+        }
       }
+    }
 
-      r.name = filename_config;
+    // deal with non-sourcemap resources
+    for r in &mut res {
+      if !matches!(r.resource_type, ResourceType::SourceMap(_)) {
+        let name_before_update = r.name.clone();
+
+        if r.entry {
+          let (name, _) = resource_pot
+            .entry_module
+            .as_ref()
+            .map(|module_id| {
+              context
+                .config
+                .input
+                .iter()
+                .find(|(_, val)| {
+                  // if val is not absolute path, transform it to absolute path
+                  let val_path = Path::new(val);
+                  let abs_val_path = if val_path.is_absolute() {
+                    val_path.to_path_buf()
+                  } else {
+                    RelativePath::new(val).to_logical_path(&context.config.root)
+                  };
+
+                  module_id.resolved_path(&context.config.root)
+                    == abs_val_path.to_string_lossy().to_string()
+                })
+                .expect("Internal bug: entry file should exist")
+            })
+            .unwrap();
+          r.name = transform_output_entry_filename(
+            context.config.output.entry_filename.clone(),
+            resource_pot.id.to_string().as_str(),
+            name,
+            &r.bytes,
+            &r.resource_type.to_ext(),
+          );
+        } else {
+          r.name = transform_output_filename(
+            context.config.output.filename.clone(),
+            &r.name,
+            &r.bytes,
+            &r.resource_type.to_ext(),
+          );
+        }
+
+        let source_mapping_url = format!(
+          "\n//# sourceMappingURL={}.{}",
+          r.name,
+          ResourceType::SourceMap("".to_string()).to_ext()
+        );
+        r.bytes.append(&mut source_mapping_url.as_bytes().to_vec());
+
+        if res_map.contains_key(&name_before_update) {
+          let v = res_map.remove(&name_before_update).unwrap();
+          // reverse the map to speed up the lookup
+          res_map.insert(v, r.name.to_string());
+        }
+      }
+    }
+
+    // replace sourcemap resource
+    for r in &mut res {
+      // deal source map resource
+      if let ResourceType::SourceMap(_) = &r.resource_type {
+        if let Some(orig_name) = res_map.get(&r.name) {
+          r.name = format!("{}.{}", orig_name, r.resource_type.to_ext());
+        }
+      }
     }
 
     let mut resources = resources.lock();
