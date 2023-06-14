@@ -35,7 +35,12 @@ impl Plugin for FarmPluginPartialBundling {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleGroupGraph>> {
     let module_group_graph = module_group_graph_from_entries(
-      &module_graph.entries.clone().into_iter().collect(),
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
       module_graph,
     );
 
@@ -169,7 +174,7 @@ impl Plugin for FarmPluginPartialBundling {
           module.resource_pot = Some(resource_pot.id.clone());
           resource_pot.add_module(module_id.clone());
 
-          if module_graph.entries.contains(&module_id) {
+          if module_graph.entries.contains_key(&module_id) {
             resource_pot.entry_module = Some(module_id.clone());
           }
         }

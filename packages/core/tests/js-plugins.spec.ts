@@ -37,7 +37,7 @@ test('Js Plugin Execution - resolve', async () => {
           console.log(param);
           expect(param.source).toBe('./index.ts?foo=bar');
           expect(param.importer).toBe(null);
-          expect(param.kind).toBe('entry');
+          expect(param.kind).toEqual({ entry: 'index' });
 
           return {
             resolvedPath,

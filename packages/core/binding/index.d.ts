@@ -106,6 +106,7 @@ export interface Config {
     coreLibPath?: string;
     input?: Record<string, string>;
     output?: {
+      entryFilename?: string;
       filename?: string;
       path?: string;
       publicPath?: string;

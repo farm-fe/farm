@@ -41,3 +41,19 @@ pub fn transform_output_filename(
 
   res
 }
+
+pub fn transform_output_entry_filename(
+  entry_filename_config: String,
+  name: &str,
+  entry_filename: &str,
+  bytes: &[u8],
+  ext: &str,
+) -> String {
+  let mut res = entry_filename_config;
+
+  if res.contains("[entryName]") {
+    res = res.replace("[entryName]", entry_filename);
+  }
+
+  transform_output_filename(res, name, bytes, ext)
+}

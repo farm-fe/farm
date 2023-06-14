@@ -529,18 +529,44 @@ unsafe extern "C" fn catch_cb<T: DeserializeOwned>(
     &mut data,
   );
 
-  let rejected_value = rejected_value[0];
-  let result = Err(Error::from(unsafe {
-    JsUnknown::from_raw_unchecked(env, rejected_value)
-  }))
-  .map_err(|e| {
-    CompilationError::NAPIError(format!(
-      "Can not transform the js hook result to js error object. {:?}",
-      e
-    ))
-  });
+  let rejected_value = JsUnknown::from_raw_unchecked(env, rejected_value[0]);
+  // detect if the rejected value is a js error object
+  let is_error = rejected_value
+    .get_type()
+    .map(|ty| ty == ValueType::Object)
+    .unwrap_or(false);
+  let is_string = rejected_value
+    .get_type()
+    .map(|ty| ty == ValueType::String)
+    .unwrap_or(false);
+
+  let msg = if is_error {
+    let rejected_value = rejected_value.coerce_to_object().unwrap();
+    // get message and stack from the error object
+    let message = rejected_value
+      .get_named_property::<String>("message")
+      .unwrap();
+    let stack = rejected_value
+      .get_named_property::<String>("stack")
+      .unwrap();
+
+    format!("{}\n{}", message, stack)
+  } else if is_string {
+    // get the string value
+    rejected_value
+      .coerce_to_string()
+      .unwrap()
+      .into_utf8()
+      .unwrap()
+      .as_str()
+      .unwrap()
+      .to_string()
+  } else {
+    String::from("unsupported error type for js plugins")
+  };
+
   let sender = Box::from_raw(data as *mut Sender<Result<Option<T>>>);
-  sender.send(result).unwrap();
+  sender.send(Err(CompilationError::NAPIError(msg))).unwrap();
 
   this
 }

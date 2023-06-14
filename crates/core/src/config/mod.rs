@@ -68,6 +68,7 @@ impl Default for Config {
 pub struct OutputConfig {
   pub path: String,
   pub public_path: String,
+  pub entry_filename: String,
   pub filename: String,
   pub assets_filename: String,
   pub target_env: TargetEnv,
@@ -77,6 +78,7 @@ pub struct OutputConfig {
 impl Default for OutputConfig {
   fn default() -> Self {
     Self {
+      entry_filename: "[entryName].[ext]".to_string(),
       /// [resourceName].[contentHash].[ext]
       filename: "[resourceName].[ext]".to_string(),
       /// [resourceName].[contentHash].[ext]

@@ -1,7 +1,7 @@
 use farmfe_core::{
   config::Config,
   module::{module_graph::ModuleGraph, ModuleId},
-  plugin::{Plugin, ResolveKind},
+  plugin::Plugin,
 };
 use module::{TreeShakeModule, UsedExports};
 use statement_graph::{ExportInfo, ImportInfo};
@@ -51,7 +51,7 @@ impl Plugin for FarmPluginTreeShake {
     }
 
     // mark entry modules as side_effects
-    for entry_module_id in module_graph.entries.clone() {
+    for (entry_module_id, _) in module_graph.entries.clone() {
       let mut module = module_graph.module_mut(&entry_module_id).unwrap();
       module.side_effects = true;
     }

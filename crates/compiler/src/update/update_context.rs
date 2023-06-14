@@ -21,7 +21,12 @@ impl UpdateContext {
     let mut module_graph = ModuleGraph::new();
 
     existing_module_graph.dfs_breakable(
-      existing_module_graph.entries.clone().into_iter().collect(),
+      existing_module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
       &mut |parent_id, module_id| {
         if paths
           .iter()
