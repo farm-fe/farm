@@ -69,8 +69,7 @@ pub fn render_resource_pots_and_generate_resources(
                     RelativePath::new(val).to_logical_path(&context.config.root)
                   };
 
-                  module_id.resolved_path(&context.config.root)
-                    == abs_val_path.to_string_lossy().to_string()
+                  module_id.resolved_path(&context.config.root) == abs_val_path.to_string_lossy()
                 })
                 .expect("Internal bug: entry file should exist")
             })
