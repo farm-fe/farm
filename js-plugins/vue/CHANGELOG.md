@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.3
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+- Updated dependencies [ad90ff5]
+  - @farmfe/core@0.8.10
+
 ## 1.2.2
 
 ### Patch Changes
