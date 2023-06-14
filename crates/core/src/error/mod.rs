@@ -21,12 +21,8 @@ pub enum CompilationError {
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("Transform `{resolved_path}` failed.\nOriginal error: {source:?}")]
-  TransformError {
-    resolved_path: String,
-    #[source]
-    source: Option<Box<dyn Error + Send + Sync>>,
-  },
+  #[error("Transform `{resolved_path}` failed.\nError: {msg}")]
+  TransformError { resolved_path: String, msg: String },
   // TODO, give the specific recommended plugin of this kind of module
   #[error("Parse `{resolved_path}` failed.\n Error: {msg}.\n\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
   ParseError { resolved_path: String, msg: String },
