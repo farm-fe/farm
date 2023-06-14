@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.8.10
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
 ## 0.8.9
 
 ### Patch Changes

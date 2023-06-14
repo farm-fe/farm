@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.4
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
 ## 0.5.3
 
 ### Patch Changes
