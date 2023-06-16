@@ -142,14 +142,11 @@ impl Compiler {
 
     // If the module type is not script, we should skip render and generate update resource.
     // and just return `window.location.reload()`
-    let should_reload_page = updated_module_ids
-      .iter()
-      .find(|id| {
-        let module_graph = self.context.module_graph.read();
-        let module = module_graph.module(id).unwrap();
-        !module.module_type.is_script()
-      })
-      .is_some();
+    let should_reload_page = updated_module_ids.iter().any(|id| {
+      let module_graph = self.context.module_graph.read();
+      let module = module_graph.module(id).unwrap();
+      !module.module_type.is_script()
+    });
     let resources = if should_reload_page {
       "window.location.reload()".to_string()
     } else {

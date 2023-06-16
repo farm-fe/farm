@@ -58,7 +58,7 @@ impl Default for Config {
       runtime: Default::default(),
       script: Default::default(),
       css: Default::default(),
-      html: Box::new(Default::default()),
+      html: Box::default(),
       assets: Default::default(),
       sourcemap: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
@@ -66,7 +66,7 @@ impl Default for Config {
       core_lib_path: None,
       tree_shaking: true,
       minify: true,
-      preset_env: Box::new(PresetEnvConfig::default()),
+      preset_env: Box::<PresetEnvConfig>::default(),
     }
   }
 }
