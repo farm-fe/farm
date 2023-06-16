@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 
 use farmfe_core::{
-  context::CompilationContext,
   glob::glob,
-  hashbrown::{HashMap, HashSet},
+  hashbrown::HashMap,
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},

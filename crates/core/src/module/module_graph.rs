@@ -475,7 +475,7 @@ impl ModuleGraph {
       for (dep, _) in &deps {
         dfs(Some(entry), dep, op, visited, graph)
       }
-    };
+    }
 
     let mut visited = HashSet::new();
 

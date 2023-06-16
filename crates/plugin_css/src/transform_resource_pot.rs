@@ -32,7 +32,7 @@ pub fn transform_css_resource_pot(
 
     let module = module_graph.module_mut(module_id).unwrap();
     let source_map_enabled = context.config.sourcemap.enabled();
-    let (css_code, src_map) = codegen_css_stylesheet(
+    let (css_code, _src_map) = codegen_css_stylesheet(
       &stylesheet,
       if source_map_enabled {
         Some(context.meta.css.cm.clone())
