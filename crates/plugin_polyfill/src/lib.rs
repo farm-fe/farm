@@ -102,10 +102,10 @@ impl Plugin for FarmPluginPolyfill {
     }
 
     // ignore node_modules by default
-    let resolved_path = param.module_id.resolved_path(&context.config.root);
+    let relative_path = param.module_id.relative_path();
 
-    if !self.include.iter().any(|r| r.is_match(&resolved_path))
-      && self.exclude.iter().any(|r| r.is_match(&resolved_path))
+    if !self.include.iter().any(|r| r.is_match(&relative_path))
+      && self.exclude.iter().any(|r| r.is_match(&relative_path))
     {
       return Ok(None);
     }

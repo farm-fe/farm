@@ -21,6 +21,10 @@ function getCompiler(p: string, plugins: JsPlugin[]) {
   return getInternalCompiler(root, p, plugins);
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 test('Js Plugin Execution - resolve', async () => {
   const root = getJsPluginsFixturesDir();
   const resolvedPath = path.join(root, 'resolved.ts');
@@ -53,6 +57,8 @@ test('Js Plugin Execution - resolve', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
+  await sleep(500);
   const outputFilePath = getOutputFilePath('resolve');
 
   if (process.platform === 'win32') {
@@ -87,6 +93,9 @@ test('Js Plugin Execution - load', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
+  await sleep(500);
+
   const outputFilePath = getOutputFilePath('load');
 
   if (process.platform === 'win32') {
@@ -121,6 +130,9 @@ test('Js Plugin Execution - transform', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
+  await sleep(500);
+
   const outputFilePath = getOutputFilePath('transform');
 
   if (process.platform === 'win32') {
@@ -185,6 +197,9 @@ test('Js Plugin Execution - full', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
+  await sleep(500);
+
   const outputFilePath = getOutputFilePath('full');
 
   if (process.platform === 'win32') {
