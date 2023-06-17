@@ -85,7 +85,9 @@
     "unref",
     "unsize",
     "upcasting",
-    "walkdir"
+    "walkdir",
+    "Antdv",
+    "wechat"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
