@@ -21,6 +21,7 @@
 ---
 
 ## Intro
+
 Farm is a super-fast web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
 ![xx](./assets/benchmark.png)
@@ -71,11 +72,34 @@ $ pnpm create farm
 
 Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
+## Examples
+
+Farm support compiling React, Vue SFC, Sass, Less, Css Modules officially out of box. See our examples:
+
+### React Examples
+
+- [React-Basic](https://github.com/farm-fe/farm/tree/main/examples/react)
+- [React-Ant-Design](https://github.com/farm-fe/farm/tree/main/examples/react-antd)
+- [React-Sass-CssModules](https://github.com/farm-fe/farm/tree/main/examples/css-modules)
+- [React-Multi-Page-Application](https://github.com/farm-fe/farm/tree/main/examples/multi-page-app)
+
+### Vue Examples
+
+- [Vue-Basic](https://github.com/farm-fe/farm/tree/main/examples/vue)
+- [Vue-Jsx](https://github.com/farm-fe/farm/tree/main/examples/vue-jsx)
+- [Vue-Antdv](https://github.com/farm-fe/farm/tree/main/examples/vue-antdv)
+
 ## RoadMap
 
 Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
 
 See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
+
+## Chat With Us
+
+Discord: https://discord.gg/mDErq9aFnF
+
+微信群：<img src="./assets/wechat-group.jpg" width="300" />
 
 ## Contribution
 

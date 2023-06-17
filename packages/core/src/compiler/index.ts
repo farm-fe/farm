@@ -113,6 +113,10 @@ export class Compiler {
       : path.join(this.config.config.root, configOutputPath);
 
     for (const [name, resource] of Object.entries(resources)) {
+      if (process.env.NODE_ENV === 'test') {
+        console.log('Writing', name, 'to disk');
+      }
+
       const filePath = path.join(outputPath, name);
 
       if (!existsSync(path.dirname(filePath))) {
