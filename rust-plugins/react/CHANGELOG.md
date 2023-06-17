@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.1.10
+
+### Patch Changes
+
+- 55c0d0e: Bump version as core changed
+
 ## 0.1.9
 
 ### Patch Changes
