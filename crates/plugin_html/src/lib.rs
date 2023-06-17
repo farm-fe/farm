@@ -10,8 +10,9 @@ use farmfe_core::{
   },
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
   },
+  relative_path::RelativePath,
   resource::{
     resource_pot::{HtmlResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     resource_pot_map::ResourcePotMap,
@@ -29,6 +30,8 @@ use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
 mod deps_analyzer;
 mod resources_injector;
 mod utils;
+
+const BASE_HTML_CHILDREN_PLACEHOLDER: &str = "{{children}}";
 
 pub struct FarmPluginHtml {}
 
@@ -61,6 +64,54 @@ impl Plugin for FarmPluginHtml {
     } else {
       Ok(None)
     }
+  }
+
+  /// Inherit base html
+  fn transform(
+    &self,
+    param: &farmfe_core::plugin::PluginTransformHookParam,
+    context: &std::sync::Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<PluginTransformHookResult>> {
+    if param.module_type != ModuleType::Html {
+      return Ok(None);
+    }
+
+    if let Some(base) = &context.config.html.base {
+      let base_html = self
+        .load(
+          &PluginLoadHookParam {
+            resolved_path: RelativePath::new(base)
+              .to_logical_path(&context.config.root)
+              .to_str()
+              .unwrap(),
+            query: vec![],
+            meta: std::collections::HashMap::new(),
+          },
+          context,
+          &PluginHookContext::default(),
+        )
+        .map_err(|e| CompilationError::TransformError {
+          resolved_path: param.resolved_path.to_string(),
+          msg: format!("Load base html({}) fail. Error: {:?}", base, e),
+        })?
+        .ok_or(CompilationError::TransformError {
+          resolved_path: param.resolved_path.to_string(),
+          msg: format!(
+            "Load base html({}) fail: Base html file does not exist",
+            base
+          ),
+        })?;
+
+      return Ok(Some(PluginTransformHookResult {
+        content: base_html
+          .content
+          .replace(BASE_HTML_CHILDREN_PLACEHOLDER, &param.content),
+        module_type: None,
+        source_map: None,
+      }));
+    }
+
+    Ok(None)
   }
 
   fn parse(

@@ -192,6 +192,9 @@ export interface Config {
         targets?: string[] | string | BrowserTargetsRecord;
       };
     };
+    html?: {
+      base?: string;
+    };
     sourcemap?: boolean | 'all';
     partialBundling?: {
       moduleBuckets?: {
@@ -202,7 +205,13 @@ export interface Config {
     lazyCompilation?: boolean;
     treeShaking?: boolean;
     minify?: boolean;
-    presetEnv?: boolean;
+    presetEnv?: boolean | {
+      include?: string[];
+      exclude?: string[];
+      // TODO using swc's config
+      options?: any;
+      assumptions?: any;
+    };
   };
   jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]

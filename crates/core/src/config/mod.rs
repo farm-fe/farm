@@ -7,8 +7,14 @@ use swc_ecma_parser::{EsConfig, TsConfig};
 
 use crate::module::ModuleType;
 
+use self::{config_regex::ConfigRegex, html::HtmlConfig, preset_env::PresetEnvConfig};
+
 pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+
+pub mod config_regex;
+pub mod html;
+pub mod preset_env;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -24,6 +30,7 @@ pub struct Config {
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
   pub css: CssConfig,
+  pub html: Box<HtmlConfig>,
   pub sourcemap: SourcemapConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
@@ -32,7 +39,7 @@ pub struct Config {
   // TODO: support minify options
   pub minify: bool,
   // TODO: support preset env options
-  pub preset_env: bool,
+  pub preset_env: Box<PresetEnvConfig>,
 }
 
 impl Default for Config {
@@ -51,6 +58,7 @@ impl Default for Config {
       runtime: Default::default(),
       script: Default::default(),
       css: Default::default(),
+      html: Box::default(),
       assets: Default::default(),
       sourcemap: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
@@ -58,7 +66,7 @@ impl Default for Config {
       core_lib_path: None,
       tree_shaking: true,
       minify: true,
-      preset_env: true,
+      preset_env: Box::<PresetEnvConfig>::default(),
     }
   }
 }
@@ -302,42 +310,6 @@ impl Default for PartialBundlingConfig {
       module_buckets: vec![],
       immutable_modules: vec![ConfigRegex::default()],
     }
-  }
-}
-#[derive(Debug)]
-pub struct ConfigRegex(pub regex::Regex);
-
-impl Default for ConfigRegex {
-  fn default() -> Self {
-    Self(regex::Regex::new("node_modules/").unwrap())
-  }
-}
-
-// implement serde::Deserialize for ConfigRegex
-impl<'de> serde::Deserialize<'de> for ConfigRegex {
-  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-  where
-    D: serde::Deserializer<'de>,
-  {
-    let s = String::deserialize(deserializer)?;
-    let regex = regex::Regex::new(&s).map_err(serde::de::Error::custom)?;
-    Ok(Self(regex))
-  }
-}
-
-// implement serde::Serialize for ConfigRegex
-impl serde::Serialize for ConfigRegex {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::Serializer,
-  {
-    serializer.serialize_str(self.0.as_str())
-  }
-}
-
-impl ConfigRegex {
-  pub fn is_match(&self, s: &str) -> bool {
-    self.0.is_match(s)
   }
 }
 

@@ -76,11 +76,18 @@ export function applyHotUpdates(
         moduleSystem.clearCache(id);
       }
 
-      // require the boundary module
-      const boundary = chain[chain.length - 1];
-      const boundaryExports = moduleSystem.require(boundary);
-      const hotContext = REGISTERED_HOT_MODULES.get(boundary);
-      hotContext.tap(boundaryExports);
+      try {
+        // require the boundary module
+        const boundary = chain[chain.length - 1];
+        const boundaryExports = moduleSystem.require(boundary);
+        const hotContext = REGISTERED_HOT_MODULES.get(boundary);
+        hotContext.tap(boundaryExports);
+      } catch (err) {
+        // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
+        // See https://github.com/farm-fe/farm/issues/383
+        console.error(err);
+        window.location.reload();
+      }
     }
   }
 }

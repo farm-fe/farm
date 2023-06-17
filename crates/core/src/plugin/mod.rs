@@ -192,7 +192,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
   fn update_modules(
     &self,
-    params: &mut PluginUpdateModulesHookParams,
+    _params: &mut PluginUpdateModulesHookParams,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
