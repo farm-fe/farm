@@ -1,5 +1,18 @@
 # @farmfe/core
 
+## 0.9.0
+
+### Minor Changes
+
+- 55c0d0e: - Support configuring `html.base` to share html for multi-page application.
+  - Support configuring `presetEnv.include`, `presetEnv.exclude`, `presetEnv.options` and `presetEnv.
+  - Fix bug when editing html file, reload the page when html file change
+
+### Patch Changes
+
+- Updated dependencies [55c0d0e]
+  - @farmfe/runtime-plugin-hmr@3.1.4
+
 ## 0.8.10
 
 ### Patch Changes
