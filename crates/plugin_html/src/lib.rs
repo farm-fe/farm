@@ -143,17 +143,12 @@ impl Plugin for FarmPluginHtml {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
-      // The name of html resource should not contain hash
-      let module_id = resource_pot.modules()[0];
-      let resource_name = module_id.to_string();
-
       Ok(Some(vec![Resource {
-        name: resource_name,
+        name: resource_pot.id.to_string(),
         bytes: vec![],
         emitted: false,
         resource_type: ResourceType::Html,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        preserve_name: true,
       }]))
     } else {
       Ok(None)
@@ -183,7 +178,7 @@ impl Plugin for FarmPluginHtml {
       .entries
       .clone()
       .into_iter()
-      .filter(|m| {
+      .filter(|(m, _)| {
         let module = module_graph.module(m).unwrap();
         matches!(module.module_type, ModuleType::Html)
       })
@@ -191,7 +186,7 @@ impl Plugin for FarmPluginHtml {
 
     let mut resources_to_inject = HashMap::new();
 
-    for html_entry_id in &html_entries_ids {
+    for (html_entry_id, _) in &html_entries_ids {
       let module_group_id = html_entry_id.clone();
       let resource_pot_map = context.resource_pot_map.read();
       let module_group_graph = context.module_group_graph.read();

@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.2
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
 ## 1.2.1
 
 ### Patch Changes

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use farmfe_core::{
   context::CompilationContext,
   glob::glob,
-  hashbrown::HashSet,
+  hashbrown::{HashMap, HashSet},
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
@@ -79,7 +79,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
     )
     .unwrap();
 
-  graph.entries = HashSet::from(["A".into(), "B".into()]);
+  graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
   graph
 }

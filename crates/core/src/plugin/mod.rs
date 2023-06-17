@@ -203,7 +203,7 @@ pub trait Plugin: Any + Send + Sync {
 #[serde(rename_all = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
-  Entry,
+  Entry(String),
   /// static import, e.g. `import a from './a'`
   #[default]
   Import,

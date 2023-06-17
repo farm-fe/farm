@@ -71,7 +71,12 @@ impl Plugin for FarmPluginSass {
         )
       });
       let string_options = self.get_sass_options(param.resolved_path.to_string());
-      let compile_result = sass.compile_string(&param.content, string_options).unwrap();
+      let compile_result = sass
+        .compile_string(&param.content, string_options)
+        .map_err(|e| farmfe_core::error::CompilationError::TransformError {
+          resolved_path: param.resolved_path.to_string(),
+          msg: e.message().to_string(),
+        })?;
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: compile_result.css,
         source_map: None,

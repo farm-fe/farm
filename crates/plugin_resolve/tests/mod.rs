@@ -19,7 +19,7 @@ fn resolve_relative_specifier_without_extension() {
       let resolved = resolver.resolve(
         "./index",
         cwd.clone(),
-        &ResolveKind::Entry,
+        &ResolveKind::Entry(String::new()),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -43,7 +43,7 @@ fn resolve_relative_specifier_with_extension() {
       let resolved = resolver.resolve(
         "./index.html",
         cwd.clone(),
-        &ResolveKind::Entry,
+        &ResolveKind::Entry(String::new()),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_none());
@@ -51,7 +51,7 @@ fn resolve_relative_specifier_with_extension() {
       let resolved = resolver.resolve(
         "./index.ts",
         cwd.clone(),
-        &ResolveKind::Entry,
+        &ResolveKind::Entry(String::new()),
         &Arc::new(CompilationContext::default()),
       );
       let resolved = resolved.unwrap();

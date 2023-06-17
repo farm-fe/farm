@@ -3,14 +3,14 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Config, PartialBundlingModuleBucketsConfig, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  config::{Config, PartialBundlingModuleBucketsConfig},
   context::CompilationContext,
   error::CompilationError,
   module::{ModuleMetaData, ModuleSystem, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
-    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookResult, ResolveKind,
+    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookResult, ResolveKind,
   },
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -387,7 +387,6 @@ impl Plugin for FarmPluginRuntime {
         emitted: true, // do not emit runtime resource by default
         resource_type: ResourceType::Runtime,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        preserve_name: true,
       }]))
     } else {
       Ok(None)

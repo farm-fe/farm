@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.0.8
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
 ## 0.0.7
 
 ### Patch Changes

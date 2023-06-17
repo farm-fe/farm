@@ -149,8 +149,6 @@ fn load_parse_and_analyze_deps() {
           "export * from \"./c\";",
           "export { d } from \"./d\";",
           "console.log(a, b);",
-          "",
-          "//# sourceMappingURL=index.js.map"
         ]
       );
 

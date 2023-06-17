@@ -53,7 +53,7 @@ impl Plugin for FarmPluginJson {
       let json = serde_json::from_str::<serde_json::Value>(&param.content).map_err(|e| {
         CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
-          source: Some(Box::new(e)),
+          msg: format!("JSON parse error: {:?}", e),
         }
       })?;
 

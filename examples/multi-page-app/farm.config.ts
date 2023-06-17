@@ -3,18 +3,16 @@ import type { UserConfig } from '@farmfe/core';
 export default <UserConfig>{
   compilation: {
     input: {
-      index: './index.html'
+      index: './src/pages/index/index.html',
+      about: './src/pages/about/index.html',
     },
     resolve: {
       symlinks: true
     },
-    define: {
-      BTN: 'Click me'
-    },
     output: {
       path: './build'
     },
-    sourcemap: true,
+    sourcemap: false,
     css: {
       // modules: {
       //   indentName: 'farm-[name]-[hash]'
