@@ -73,7 +73,11 @@ export async function normalizeUserCompilationConfig(
     ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))
     : resolvedRootPath;
   const userEnv = loadEnv(mode, resolvedEnvPath, userConfig.envPrefix);
-  config.env = userEnv;
+  config.env = {
+    ...userEnv,
+    NODE_ENV: process.env.NODE_ENV
+  };
+
   // TODO resolve root path
 
   // TODO load .env files
