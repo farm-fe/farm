@@ -100,10 +100,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.9
+        specifier: workspace:^0.1.10
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.0.8
+        specifier: workspace:^0.0.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -146,10 +146,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-less':
-        specifier: workspace:^0.0.4
+        specifier: workspace:*
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.9
+        specifier: workspace:^0.1.10
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -195,13 +195,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^1.0.0
+        specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.9
+        specifier: workspace:^0.1.10
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.0.8
+        specifier: workspace:^0.0.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -235,13 +235,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^1.0.0
+        specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.9
+        specifier: workspace:^0.1.10
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.0.8
+        specifier: workspace:^0.0.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -278,13 +278,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^1.0.0
+        specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.9
+        specifier: workspace:^0.1.10
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.0.8
+        specifier: workspace:^0.0.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -318,13 +318,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-sass':
-        specifier: workspace:^1.0.0
+        specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.1.9
+        specifier: workspace:^0.1.10
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.0.8
+        specifier: workspace:^0.0.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -445,7 +445,7 @@ importers:
   js-plugins/less:
     devDependencies:
       '@farmfe/core':
-        specifier: workspace:^0.8.2
+        specifier: workspace:^0.9.0
         version: link:../../packages/core
       '@types/less':
         specifier: ^3.0.3
@@ -457,7 +457,7 @@ importers:
   js-plugins/sass:
     devDependencies:
       '@farmfe/core':
-        specifier: workspace:^0.8.0
+        specifier: workspace:^0.9.0
         version: link:../../packages/core
       sass:
         specifier: ^1.62.1
@@ -543,7 +543,7 @@ importers:
         specifier: workspace:^0.6.1
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.1.3
+        specifier: workspace:^3.1.4
         version: link:../runtime-plugin-hmr
       '@koa/cors':
         specifier: ^4.0.0

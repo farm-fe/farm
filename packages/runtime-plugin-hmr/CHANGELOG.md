@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.1.4
+
+### Patch Changes
+
+- 55c0d0e: Reload the page when HMR fails
+
 ## 3.1.3
 
 ### Patch Changes
