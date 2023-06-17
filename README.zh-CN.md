@@ -101,9 +101,11 @@ Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境
 
 ## 交流群
 
-Discord: https://discord.gg/mDErq9aFnF
+* 加入 [Discord](https://discord.gg/mDErq9aFnF)
 
-微信群：<img src="./assets/wechat-group.jpg" width="300" />
+* 微信群 
+
+<img src="./assets/wechat-group.jpg" width="30%" />
 
 ## 作者
 
