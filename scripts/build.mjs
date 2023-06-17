@@ -129,10 +129,13 @@ export function isWindows() {
 }
 
 export async function checkProtobuf() {
+  const isWindowsFlag = isWindows();
+  const isMacFlag = isMac();
+  const isLinuxFlag = isLinux();
   try {
-    if (isWindows()) {
+    if (isWindowsFlag) {
       await execa('where', ['protoc']);
-    } else if (isMac() || isLinux()) {
+    } else if (isMacFlag || isLinuxFlag) {
       await execa('which', ['protoc']);
     }
     return true;
