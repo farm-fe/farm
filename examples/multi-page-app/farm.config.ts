@@ -20,6 +20,9 @@ export default <UserConfig>{
       prefixer: {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
+    },
+    html: {
+      base: 'src/pages/base.html'
     }
     // treeShaking: true,
     // minify: true,

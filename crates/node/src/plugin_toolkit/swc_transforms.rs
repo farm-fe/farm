@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use farmfe_core::{
   config::Mode,
   error::Result,

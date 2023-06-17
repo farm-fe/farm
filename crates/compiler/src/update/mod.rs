@@ -139,11 +139,21 @@ impl Compiler {
       callback,
       sync,
     );
-    // TODO1: only regenerate the resources for script modules.
-    // TODO2: should reload when html change
-    // TODO3: cover it with tests
-    let resources =
-      render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?;
+
+    // If the module type is not script, we should skip render and generate update resource.
+    // and just return `window.location.reload()`
+    let should_reload_page = updated_module_ids.iter().any(|id| {
+      let module_graph = self.context.module_graph.read();
+      let module = module_graph.module(id).unwrap();
+      !module.module_type.is_script()
+    });
+    let resources = if should_reload_page {
+      "window.location.reload()".to_string()
+    } else {
+      // TODO1: only regenerate the resources for script modules.
+      // TODO3: cover it with tests
+      render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?
+    };
 
     // find the boundaries. TODO: detect the boundaries in the client side.
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
