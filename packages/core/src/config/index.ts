@@ -77,6 +77,7 @@ export async function normalizeUserCompilationConfig(
     ...userEnv,
     NODE_ENV: process.env.NODE_ENV
   };
+  config.define = Object.assign(config.define ?? {}, config.env);
 
   // TODO resolve root path
 
