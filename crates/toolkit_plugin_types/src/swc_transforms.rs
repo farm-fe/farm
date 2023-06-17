@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use farmfe_core::{
   config::Mode,
-  context::CompilationContext,
   error::Result,
   swc_common::{Globals, SourceMap},
   swc_ecma_ast,
