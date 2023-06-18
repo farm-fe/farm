@@ -97,9 +97,11 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 ## Chat With Us
 
-Discord: https://discord.gg/mDErq9aFnF
+* With [Discord](https://discord.gg/mDErq9aFnF)
 
-微信群：<img src="./assets/wechat-group.jpg" width="300" />
+* Wechat group 
+
+<img src="./assets/wechat-group.jpg" width="30%" />
 
 ## Contribution
 
