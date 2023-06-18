@@ -16,7 +16,7 @@ import { Compiler } from './compiler/index.js';
 import {
   normalizePublicDir,
   normalizeUserCompilationConfig,
-  resolveInlineConfig,
+  resolveUserConfig,
   UserConfig
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
@@ -31,7 +31,7 @@ export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
-  const config: UserConfig = await resolveInlineConfig(inlineConfig, logger);
+  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
   console.log(normalizedConfig);
 
@@ -60,7 +60,7 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveInlineConfig(options, logger);
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'
@@ -82,7 +82,7 @@ export async function build(
 export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveInlineConfig(options, logger);
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -135,7 +135,7 @@ export async function watch(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveInlineConfig(options, logger);
+  const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     'production'

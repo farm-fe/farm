@@ -73,15 +73,13 @@ export async function normalizeUserCompilationConfig(
     ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))
     : resolvedRootPath;
   const userEnv = loadEnv(mode, resolvedEnvPath, userConfig.envPrefix);
+  // TODO load env variables from .env file
   config.env = {
     ...userEnv,
     NODE_ENV: process.env.NODE_ENV
   };
   config.define = Object.assign(config.define ?? {}, config.env);
 
-  // TODO resolve root path
-
-  // TODO load .env files
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 
@@ -273,7 +271,7 @@ export function normalizeDevServerOptions(
  * Resolve and load user config from the specified path
  * @param configPath
  */
-export async function resolveInlineConfig(
+export async function resolveUserConfig(
   options: FarmCLIOptions,
   logger: Logger
 ): Promise<UserConfig> {
