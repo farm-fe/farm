@@ -18,6 +18,8 @@ export interface UserServerConfig {
   open?: boolean;
   host?: string;
   cors?: boolean | cors.Options;
+  // whether to serve static assets in spa mode, default to true
+  spa?: boolean;
 }
 
 export type NormalizedServerConfig = Required<
