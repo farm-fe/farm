@@ -162,6 +162,7 @@ export async function installProtoBuf() {
       process.exit(1);
     }
   } else {
+    console.log('');
     logger('Protobuf has been installed, skipping installation. \n');
   }
 }
