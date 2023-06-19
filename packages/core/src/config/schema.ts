@@ -105,7 +105,9 @@ const ConfigSchema = z
       })
       .strict()
       .optional(),
-    sourcemap: z.union([z.boolean(), z.literal('all')]).optional(),
+    sourcemap: z
+      .union([z.boolean(), z.literal('all'), z.literal('inline')])
+      .optional(),
     partialBundling: z
       .object({
         moduleBuckets: z.array(
@@ -122,7 +124,17 @@ const ConfigSchema = z
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
-    presetEnv: z.boolean().optional(),
+    presetEnv: z
+      .union([
+        z.boolean(),
+        z.object({
+          include: z.array(z.string()).optional(),
+          exclude: z.array(z.string()).optional(),
+          options: z.any().optional(),
+          assumptions: z.any().optional()
+        })
+      ])
+      .optional(),
     css: z
       .object({
         modules: z
@@ -140,7 +152,8 @@ const ConfigSchema = z
           })
           .optional()
       })
-      .optional()
+      .optional(),
+    html: z.object({ base: z.string().optional() }).optional()
   })
   .strict();
 

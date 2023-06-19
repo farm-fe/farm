@@ -29,7 +29,7 @@ use napi::{
     ThreadsafeFunctionReleaseMode,
   },
   threadsafe_function::ThreadsafeFunctionCallMode,
-  Env, Error, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
+  Env, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
 };
 use regex::Regex;
 

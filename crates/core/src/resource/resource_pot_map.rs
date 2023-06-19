@@ -1,7 +1,5 @@
 use hashbrown::HashMap;
 
-use petgraph::{graph::NodeIndex, stable_graph::StableDiGraph};
-
 use super::resource_pot::{ResourcePot, ResourcePotId};
 
 // TODO: Change Graph to Map, as the resource pot should be related to module group, and we already have resource group graph
