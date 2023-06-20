@@ -17,7 +17,11 @@ export interface Logger {
   debug(message: string): void;
   info(message: string, showBanner?: boolean): void;
   warn(message: string): void;
-  error(message: string | Error): void;
+  error(message: string | Error, options?: ErrorOptions): void;
+}
+
+export interface ErrorOptions {
+  exit?: boolean;
 }
 
 export class DefaultLogger implements Logger {
@@ -66,9 +70,12 @@ export class DefaultLogger implements Logger {
     this.logMessage(LogLevel.Warn, message, chalk.yellow);
   }
 
-  error(message: string | Error): void {
+  error(message: string | Error, options?: ErrorOptions): void {
     const errorMessage =
       message instanceof Error ? message.stack : `${message}`;
     this.logMessage(LogLevel.Error, errorMessage, chalk.red);
+    if (options.exit) {
+      process.exit(1);
+    }
   }
 }

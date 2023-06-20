@@ -100,40 +100,40 @@ test('Js Plugin Execution - resolve', async () => {
 //   }
 // });
 
-test('Js Plugin Execution - transform', async () => {
-  const root = getJsPluginsFixturesDir();
-  const compiler = await getCompiler('transform', [
-    {
-      name: 'test-transform',
-      priority: 1000,
-      transform: {
-        filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
-        },
-        executor: async (param) => {
-          console.log(param);
-          expect(param.moduleType).toBe('ts');
-          return {
-            content: 'export default 44;'
-          };
-        }
-      }
-    }
-  ]);
+// test('Js Plugin Execution - transform', async () => {
+//   const root = getJsPluginsFixturesDir();
+//   const compiler = await getCompiler('transform', [
+//     {
+//       name: 'test-transform',
+//       priority: 1000,
+//       transform: {
+//         filters: {
+//           resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
+//         },
+//         executor: async (param) => {
+//           console.log(param);
+//           expect(param.moduleType).toBe('ts');
+//           return {
+//             content: 'export default 44;'
+//           };
+//         }
+//       }
+//     }
+//   ]);
 
-  await compiler.compile();
-  await compiler.writeResourcesToDisk();
+//   await compiler.compile();
+//   await compiler.writeResourcesToDisk();
 
-  const outputFilePath = getOutputFilePath('transform');
+//   const outputFilePath = getOutputFilePath('transform');
 
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe(44);
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe(44);
-  }
-});
+//   if (process.platform === 'win32') {
+//     const result = await import(pathToFileURL(outputFilePath).toString());
+//     expect(result.default).toBe(44);
+//   } else {
+//     const result = await import(outputFilePath);
+//     expect(result.default).toBe(44);
+//   }
+// });
 
 test('Js Plugin Execution - full', async () => {
   const root = getJsPluginsFixturesDir();

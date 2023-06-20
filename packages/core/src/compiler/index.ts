@@ -33,7 +33,9 @@ export class Compiler {
 
   async compile() {
     if (this.compiling) {
-      this.logger.error('Already compiling');
+      this.logger.error('Already compiling', {
+        exit: true
+      });
     }
     this.compiling = true;
     if (process.env.FARM_PROFILE) {
@@ -46,7 +48,9 @@ export class Compiler {
 
   compileSync() {
     if (this.compiling) {
-      this.logger.error('Already compiling');
+      this.logger.error('Already compiling', {
+        exit: true
+      });
     }
     this.compiling = true;
     this._bindingCompiler.compileSync();

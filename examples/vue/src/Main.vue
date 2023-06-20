@@ -4,10 +4,6 @@
 
 <script lang="ts" setup>
 import Welcome from './components/Welcome.vue';
-fetch(`/api`, {
-  method: 'GET',
-})
-  .then((response) => response.json())
 </script>
 
 <style>

@@ -367,6 +367,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/server-proxy:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/vue:
     dependencies:
       core-js:

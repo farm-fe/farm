@@ -5,7 +5,7 @@ import {
   UserOutlined
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Breadcrumb, Layout, Menu, theme, Items } from 'antd';
+import { Breadcrumb, Layout, Menu, theme } from 'antd';
 
 import './main.css';
 
