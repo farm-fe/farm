@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.3
+
+### Patch Changes
+
+- 815c81c: update farm version
+
 ## 1.2.2
 
 ### Patch Changes
