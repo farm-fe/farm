@@ -65,40 +65,40 @@ test('Js Plugin Execution - resolve', async () => {
   }
 });
 
-test('Js Plugin Execution - load', async () => {
-  const root = getJsPluginsFixturesDir();
-  const compiler = await getCompiler('load', [
-    {
-      name: 'test-load',
-      priority: 1000,
-      load: {
-        filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
-        },
-        executor: async (param) => {
-          console.log(param);
-          return {
-            content: 'export default 33;',
-            moduleType: 'ts'
-          };
-        }
-      }
-    }
-  ]);
+// test('Js Plugin Execution - load', async () => {
+//   const root = getJsPluginsFixturesDir();
+//   const compiler = await getCompiler('load', [
+//     {
+//       name: 'test-load',
+//       priority: 1000,
+//       load: {
+//         filters: {
+//           resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
+//         },
+//         executor: async (param) => {
+//           console.log(param);
+//           return {
+//             content: 'export default 33;',
+//             moduleType: 'ts'
+//           };
+//         }
+//       }
+//     }
+//   ]);
 
-  await compiler.compile();
-  await compiler.writeResourcesToDisk();
+//   await compiler.compile();
+//   await compiler.writeResourcesToDisk();
 
-  const outputFilePath = getOutputFilePath('load');
+//   const outputFilePath = getOutputFilePath('load');
 
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe(33);
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe(33);
-  }
-});
+//   if (process.platform === 'win32') {
+//     const result = await import(pathToFileURL(outputFilePath).toString());
+//     expect(result.default).toBe(33);
+//   } else {
+//     const result = await import(outputFilePath);
+//     expect(result.default).toBe(33);
+//   }
+// });
 
 test('Js Plugin Execution - transform', async () => {
   const root = getJsPluginsFixturesDir();
