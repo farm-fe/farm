@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.9.1
+
+### Patch Changes
+
+- 7f0c8d7: Support `server.spa` option
+
 ## 0.9.0
 
 ### Minor Changes
