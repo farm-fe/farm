@@ -223,7 +223,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   hmr: DEFAULT_HMR_OPTIONS,
   open: false,
   strictPort: false,
-  cors: false
+  cors: false,
+  spa: true
 };
 
 export function normalizeDevServerOptions(
