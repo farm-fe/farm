@@ -222,7 +222,7 @@ impl JsCompiler {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
-    if let Some(node_env) = std::env::var("NODE_ENV") {
+    if let Ok(node_env) = std::env::var("NODE_ENV") {
       if node_env == "test" {
         println!("resources names: {:?}", resources.keys());
       }
