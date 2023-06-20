@@ -7,8 +7,9 @@ import { Context, Next } from 'koa';
 import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
 import koaStatic from 'koa-static';
+import { NormalizedServerConfig } from '../../config/types.js';
 
-export function resources(compiler: Compiler) {
+export function resources(compiler: Compiler, config: NormalizedServerConfig) {
   return async (ctx: Context, next: Next) => {
     await next();
 
@@ -23,22 +24,46 @@ export function resources(compiler: Compiler) {
       });
     }
 
+    // Fallback to index.html if the resource is not found
     const resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
-    ctx.type = extname(resourcePath);
     const resource = compiler.resources()[resourcePath];
 
-    // Fallback to index.html if the resource is not found
-    // TODO make this configurable by spa option and find the closest index.html from ctx.path
-    if (!resource) {
-      ctx.type = '.html';
-      ctx.body = compiler.resources()['index.html'];
+    // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
+    if (!resource && config.spa !== false) {
+      const pathComps = resourcePath.split('/');
+
+      while (pathComps.length > 0) {
+        const pathStr = pathComps.join('/') + '.html';
+        const resource = compiler.resources()[pathStr];
+
+        if (resource) {
+          ctx.type = '.html';
+          ctx.body = resource;
+          return;
+        }
+
+        pathComps.pop();
+      }
+
+      const indexHtml = compiler.resources()['index.html'];
+
+      if (indexHtml) {
+        ctx.type = '.html';
+        ctx.body = indexHtml;
+        return;
+      }
+      // cannot find index.html, return 404
+      ctx.status = 404;
     } else {
-      ctx.body = Buffer.from(resource);
+      ctx.type = extname(resourcePath);
+      ctx.body = resource;
     }
   };
 }
 
 export function resourcesPlugin(distance: DevServer) {
-  distance._context.app.use(resources(distance._context.compiler));
+  distance._context.app.use(
+    resources(distance._context.compiler, distance.config)
+  );
   distance._context.app.use(koaStatic(distance.publicPath));
 }
