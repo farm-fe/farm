@@ -2,14 +2,14 @@
   "name": "@farmfe/js-plugin-sass",
   "version": "1.0.3",
   "description": "support scss compile for farm.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.js"
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts",
+      "require": "./dist/src/index.js"
     },
     "./package.json": "./package.json"
   },
