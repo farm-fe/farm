@@ -2,7 +2,7 @@ import { isAbsolute, join } from 'path';
 import type { SassPluginOptions } from './index.js';
 import fs from 'fs';
 
-export const pluginName = 'farm-sass-plugin';
+export const pluginName = '@farmfe/js-plugin-sass';
 
 export const getAdditionContext = (cwd: string, option: SassPluginOptions) => {
   const { globals = [], content } = option;
