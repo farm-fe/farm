@@ -61,7 +61,7 @@ impl Compiler {
     F: FnOnce() + Send + Sync + 'static,
   {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
-    let update_context = Arc::new(UpdateContext::new(&self.context, &paths));
+    let update_context = Arc::new(UpdateContext::new());
 
     let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams {
       paths,
