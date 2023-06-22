@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.9.2
+
+### Patch Changes
+
+- 4656135: Fix hmr remove issue
+
 ## 0.9.1
 
 ### Patch Changes
