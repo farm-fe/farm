@@ -1,3 +1,4 @@
+import { WatchOptions } from 'chokidar';
 import { Logger } from '../utils/logger.js';
 import { ProxiesOptions } from '../server/middlewares/proxy.js';
 
@@ -33,6 +34,7 @@ export interface UserHmrConfig {
   ignores?: string[];
   host?: string;
   port?: number;
+  watchOptions?: WatchOptions;
 }
 
 export interface UserConfig {
