@@ -117,7 +117,6 @@ export class HmrEngine {
       result: resultStr,
       count: this._devServer.ws.clients.size
     });
-    // console.log(this._updateResults);
 
     this._devServer.ws.clients.forEach((client) => {
       client.send(
