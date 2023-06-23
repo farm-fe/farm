@@ -626,9 +626,23 @@ impl Resolver {
                     ResolveKind::Import => {
                       if self.are_paths_equal(&key_word, "default") {
                         if path.is_absolute() {
-                          let value_path =
-                            self.get_key_path(&key_value.to_string(), package_json_info.dir());
-                          return Some(value_path);
+                          match &key_value {
+                            Value::String(key_value_string) => {
+                              let value_path =
+                                self.get_key_path(&key_value_string, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                            Value::Object(key_value_object) => {
+                              if let Some(default_value) = key_value_object.get("default") {
+                                if let Value::String(default_str) = default_value {
+                                  let value_path =
+                                    self.get_key_path(&default_str, package_json_info.dir());
+                                  return Some(value_path);
+                                }
+                              }
+                            }
+                            _ => {}
+                          }
                         }
                       }
                       if self.are_paths_equal(&key_word, "import") {
