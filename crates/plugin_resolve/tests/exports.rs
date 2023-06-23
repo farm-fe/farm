@@ -152,6 +152,35 @@ fn resolve_exports_nesting() {
 }
 
 #[test]
+fn resolve_exports_nesting_default() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "nest-resolve",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("nest-resolve")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
 fn resolve_exports_degrade() {
   fixture!(
     "tests/fixtures/resolve-node-modules/exports/index.ts",

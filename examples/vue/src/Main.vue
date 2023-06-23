@@ -4,6 +4,8 @@
 
 <script lang="ts" setup>
 import Welcome from './components/Welcome.vue';
+import axios from "axios"
+console.log(axios.create);
 fetch('/api')
   .then((response) => response.json())
   .then((json) => console.log(json));
