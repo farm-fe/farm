@@ -756,7 +756,6 @@ impl Resolver {
     if context.config.output.target_env != TargetEnv::Browser {
       return None;
     }
-
     let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
     if let Some(browser_field) = browser_field {
       if let Value::Object(obj) = browser_field {
@@ -840,7 +839,6 @@ impl Resolver {
     field: &str,
   ) -> Option<Value> {
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
-
     if let Some(field_value) = raw_package_json_info.get(field) {
       return Some(field_value.clone());
     }

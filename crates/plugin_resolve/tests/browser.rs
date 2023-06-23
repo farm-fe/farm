@@ -74,6 +74,35 @@ fn resolve_browser_basic() {
 }
 
 #[test]
+fn resolve_browser_nesting() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/browser/node_modules/nesting/package.json",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "readable-stream",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("lib")
+          .join("readable-stream-browser.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
 fn resolve_browser_replace() {
   fixture!(
     "tests/fixtures/resolve-node-modules/browser/node_modules/replace/package.json",

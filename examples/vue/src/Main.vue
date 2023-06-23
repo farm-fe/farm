@@ -5,7 +5,10 @@
 <script lang="ts" setup>
 import Welcome from './components/Welcome.vue';
 import axios from "axios"
+import jszip from "jszip"
 console.log(axios.create);
+console.log(jszip);
+
 fetch('/api')
   .then((response) => response.json())
   .then((json) => console.log(json));
