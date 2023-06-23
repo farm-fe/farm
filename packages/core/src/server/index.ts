@@ -48,8 +48,8 @@ interface ImplDevServer {
 
 export class DevServer implements ImplDevServer {
   private _app: Koa;
-
   public _context: FarmServerContext;
+
   ws: WebSocketServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;

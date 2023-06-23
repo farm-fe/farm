@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { parse, config } from 'dotenv';
 import { expand } from 'dotenv-expand';
-import { tryStatSync } from '../utils/index.js';
+import { getFileSystemStats } from '../utils/index.js';
 
 export function loadEnv(
   mode: string,
@@ -15,7 +15,7 @@ export function loadEnv(
   const parsed = Object.fromEntries(
     envFiles.flatMap((file) => {
       const filePath = path.join(envDir, file);
-      if (!tryStatSync(filePath)?.isFile()) return [];
+      if (!getFileSystemStats(filePath)?.isFile()) return [];
 
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
@@ -33,7 +33,6 @@ export function loadEnv(
   }
 
   config();
-  // `expand` patched in patches/dotenv-expand@9.0.0.patch
   expand({ parsed });
   return env;
 }
