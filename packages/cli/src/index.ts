@@ -1,16 +1,21 @@
-import { cac } from 'cac';
 import { readFileSync } from 'node:fs';
+import Module from 'node:module';
+import { pathToFileURL } from 'node:url';
+import { cac } from 'cac';
+import { DefaultLogger, isWindows } from '@farmfe/core';
+import { getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
-import { getConfigPath, resolveCommandOptions, resolveCore } from './utils.js';
-import { createLogger } from './logger.js';
+
+import type { start, build, preview, watch } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
   FarmCLIServerOptions,
   GlobalFarmCLIOptions
 } from './types.js';
+import path from 'node:path';
 
-const logger = createLogger();
+const logger = new DefaultLogger();
 
 const { version } = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url)).toString()
@@ -20,8 +25,9 @@ const cli = cac('farm');
 
 // common command
 cli
-  .option('-c, --config <file>', `use specified config file`)
-  .option('-m, --mode <mode>', `set env mode`)
+  .option('-c, --config <file>', 'use specified config file')
+  .option('-m, --mode <mode>', 'set env mode')
+  .option('--base <path>', 'public base path')
   .option('--clearScreen', 'allow/disable clear screen when logging');
 
 // dev command
@@ -31,16 +37,16 @@ cli
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
+  .option('-l, --lazy', 'lazyCompilation')
   .option('--host <host>', 'specify host')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
-  .option('--cors', `enable CORS`)
-  // TODO add other server options
+  .option('--cors', 'enable CORS')
+  // TODO add https config
   // .option('--https', 'use https')
-  // .option('--strictPort', `[boolean] exit if specified port is already in use`)
-  .option('-l, --lazy', 'lazyCompilation')
-  .option('--strictPort', 'specified port is already in use, exit with error')
+  // TODO add strictPort config
+  // .option('--strictPort', 'specified port is already in use, exit with error')
   .action(
     async (
       root: string,
@@ -72,8 +78,9 @@ cli
 // build command
 cli
   .command('build', 'compile the project in production mode')
-  // TODO add target config
+  // TODO add target config esm, commonjs
   // .option("--target <target>", "transpile target")
+  .option('--format <format>', 'transpile format esm, commonjs')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .option('--sourcemap', 'output source maps for build')
@@ -114,6 +121,7 @@ cli
 
 cli
   .command('watch', 'watch file change')
+  .option('--format <format>', 'transpile format esm, commonjs')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
@@ -142,7 +150,7 @@ cli
 
 cli
   .command('preview', 'compile the project in watch mode')
-  .option('--port [port]', 'specify port')
+  .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server preview start')
   .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
     const configPath = getConfigPath(options.config);
@@ -193,3 +201,29 @@ cli.help();
 cli.version(version);
 
 cli.parse();
+
+export function resolveCore(cwd: string): Promise<{
+  start: typeof start;
+  build: typeof build;
+  watch: typeof watch;
+  preview: typeof preview;
+}> {
+  const require = Module.createRequire(path.join(cwd, 'package.json'));
+
+  let farmCorePath: string;
+  try {
+    farmCorePath = require.resolve('@farmfe/core');
+  } catch (err) {
+    // TODO Encapsulation logger
+    console.error(
+      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
+    );
+    process.exit(1);
+  }
+
+  if (isWindows) {
+    return import(pathToFileURL(farmCorePath).toString());
+  }
+
+  return import(farmCorePath);
+}

@@ -5,6 +5,6 @@ import input from './util';
 export default defineFarmConfig({
   compilation: {
     input,
-    external: builtinModules,
-  },
+    external: builtinModules
+  }
 });

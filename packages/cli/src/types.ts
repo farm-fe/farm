@@ -28,6 +28,7 @@ export interface FarmCLIBuildOptions {
   sourcemap?: boolean;
   minify?: boolean;
   treeShaking?: boolean;
+  format?: 'cjs' | 'esm';
 }
 
 export interface FarmCLIPreviewOptions {
