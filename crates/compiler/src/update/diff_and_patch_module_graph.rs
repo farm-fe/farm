@@ -22,7 +22,7 @@ pub struct ModuleDepsDiffResult {
 pub type ModuleDepsDiffResultMap = Vec<(ModuleId, ModuleDepsDiffResult)>;
 /// the diff result of a module, this records all related changes of the module graph
 /// for example, deeply added or removed dependencies also be recorded here
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DiffResult {
   pub deps_changes: ModuleDepsDiffResultMap,
   pub added_modules: HashSet<ModuleId>,
@@ -43,7 +43,7 @@ pub fn diff_module_graph(
   // TODO Optimize: support diff module deps by Vec to reduce redundant differing when there are many changed start_points
   for start_point in start_points {
     let (diff_result, added_modules, remove_modules) =
-      diff_module_deps(&start_point, module_graph, update_module_graph);
+      diff_module_deps(&start_point, module_graph, update_module_graph, &res);
 
     for diff_result_entry in diff_result {
       if !res.deps_changes.contains(&diff_result_entry) {
@@ -172,6 +172,7 @@ fn diff_module_deps(
   module_id: &ModuleId,
   module_graph: &ModuleGraph,
   update_module_graph: &ModuleGraph,
+  all_diff_result: &DiffResult,
 ) -> (
   ModuleDepsDiffResultMap,
   HashSet<ModuleId>,
@@ -222,6 +223,7 @@ fn diff_module_deps(
   ));
 
   let added_modules_vec = added_deps
+    .clone()
     .into_iter()
     .filter_map(|(id, _)| {
       if !module_graph.has_module(&id) {
@@ -236,7 +238,24 @@ fn diff_module_deps(
   let removed_modules_vec = removed_deps
     .into_iter()
     .filter_map(|(id, _)| {
-      if !update_module_graph.has_module(&id) {
+      // entry should not be removed for any reason
+      if module_graph.entries.contains_key(&id) {
+        return None;
+      }
+
+      let dependents = module_graph.dependents_ids(&id);
+
+      if dependents.iter().all(|dept| {
+        (dept == module_id && added_deps.iter().all(|(dep_id, _)| dep_id != &id))
+          || all_diff_result
+            .deps_changes
+            .iter()
+            .any(|(dep_parent_id, dep_change)| {
+              dep_parent_id == dept
+                && dep_change.removed.iter().any(|(dep_id, _)| dep_id == &id)
+                && dep_change.added.iter().all(|(dep_id, _)| dep_id != &id)
+            })
+      }) {
         Some(id)
       } else {
         None
@@ -292,27 +311,33 @@ fn diff_module_deps(
   let mut removed_visited = HashSet::new();
 
   while let Some(dep) = removed_queue.pop_front() {
-    if removed_visited.contains(&dep) {
-      continue;
-    }
-
-    removed_visited.insert(dep.clone());
-
     let children = module_graph.dependencies_ids(&dep);
     let mut children_removed = vec![];
 
-    if update_module_graph.has_module(&dep) {
-      panic!("This module({:?}) exists in updated module graph, this should never happen and there is a internal bug inside farm. Please report it via issues", dep);
-    }
-
     for child in children {
+      let visited_key = (dep.clone(), child.clone());
+
+      if removed_visited.contains(&visited_key) {
+        continue;
+      }
+
+      removed_visited.insert(visited_key);
+
       let edge_info = module_graph.edge_info(&dep, &child).unwrap();
       children_removed.push((child.clone(), edge_info.clone()));
 
-      if !update_module_graph.has_module(&child) {
+      let dependents = module_graph.dependents_ids(&child);
+      // if all dependents of child are removed, then child should be removed
+      if dependents.iter().all(|dept| removed_modules.contains(dept))
+        && !module_graph.entries.contains_key(&child)
+      {
         removed_queue.push_back(child.clone());
         removed_modules.insert(child);
       }
+      // if !update_module_graph.has_module(&child) {
+      //   removed_queue.push_back(child.clone());
+      //   removed_modules.insert(child);
+      // }
     }
 
     if children_removed.is_empty() {

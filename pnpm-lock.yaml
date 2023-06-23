@@ -261,6 +261,9 @@ importers:
       react-dom:
         specifier: '18'
         version: 18.0.0(react@18.0.0)
+      react-router-dom:
+        specifier: ^6.13.0
+        version: 6.13.0(react-dom@18.0.0)(react@18.0.0)
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1809,6 +1812,11 @@ packages:
       rc-util: 5.30.0(react-dom@18.0.0)(react@18.0.0)
       react: 18.0.0
       react-dom: 18.0.0(react@18.0.0)
+    dev: false
+
+  /@remix-run/router@1.6.3:
+    resolution: {integrity: sha512-EXJysQ7J3veRECd0kZFQwYYd5sJMcq2O/m60zu1W2l3oVQ9xtub8jTOtYRE0+M2iomyG/W3Ps7+vp2kna0C27Q==}
+    engines: {node: '>=14'}
     dev: false
 
   /@simonwep/pickr@1.8.2:
@@ -6939,6 +6947,29 @@ packages:
     resolution: {integrity: sha512-wViHqhAd8OHeLS/IRMJjTSDHF3U9eWi62F/MledQGPdJGDhodXJ9PBLNGr6WWL7qlH12Mt3TyTpbS+hGXMjCzQ==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /react-router-dom@6.13.0(react-dom@18.0.0)(react@18.0.0):
+    resolution: {integrity: sha512-6Nqoqd7fgwxxVGdbiMHTpDHCYPq62d7Wk1Of7B82vH7ZPwwsRaIa22zRZKPPg413R5REVNiyuQPKDG1bubcOFA==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+    dependencies:
+      '@remix-run/router': 1.6.3
+      react: 18.0.0
+      react-dom: 18.0.0(react@18.0.0)
+      react-router: 6.13.0(react@18.0.0)
+    dev: false
+
+  /react-router@6.13.0(react@18.0.0):
+    resolution: {integrity: sha512-Si6KnfEnJw7gUQkNa70dlpI1bul46FuSxX5t5WwlUBxE25DAz2BjVkwaK8Y2s242bQrZPXCpmwLPtIO5pv4tXg==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      react: '>=16.8'
+    dependencies:
+      '@remix-run/router': 1.6.3
+      react: 18.0.0
+    dev: false
 
   /react@18.0.0:
     resolution: {integrity: sha512-x+VL6wbT4JRVPm7EGxXhZ8w8LTROaxPXOqhlGyVSrv0sB1jkyFGgXxJ8LVoPRLvPR6/CIZGFmfzqUa2NYeMr2A==}

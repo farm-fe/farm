@@ -7,6 +7,7 @@ const root = createRoot(container);
 
 root.render(
   <>
+    <a href="/about">About</a>
     <div>Index page</div>
   </>
 );

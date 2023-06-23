@@ -1,3 +1,14 @@
+<div align="center">
+  <a href="https://github.com/farm-fe/farm">
+  <img src="../../assets/logo.png" width="550" />
+  </a>
+  <p>
+    <span>English</span> |
+    <a href="https://github.com/farm-fe/farm/blob/main/js-plugins/less/README-zh-CH.md">简体中文</a>  
+</div>
+
+---
+
 # Less Plugin for Farm
 
 Support compiling Less in Farm.

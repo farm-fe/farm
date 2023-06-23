@@ -1,3 +1,4 @@
+import { WatchOptions } from 'chokidar';
 import { Logger } from '../utils/logger.js';
 import { ProxiesOptions } from '../server/middlewares/proxy.js';
 
@@ -18,6 +19,8 @@ export interface UserServerConfig {
   open?: boolean;
   host?: string;
   cors?: boolean | cors.Options;
+  // whether to serve static assets in spa mode, default to true
+  spa?: boolean;
 }
 
 export type NormalizedServerConfig = Required<
@@ -31,6 +34,7 @@ export interface UserHmrConfig {
   ignores?: string[];
   host?: string;
   port?: number;
+  watchOptions?: WatchOptions;
 }
 
 export interface UserConfig {

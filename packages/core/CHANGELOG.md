@@ -1,5 +1,23 @@
 # @farmfe/core
 
+## 0.9.3
+
+### Patch Changes
+
+- 0e93bf0: Wait file write to finish by default
+
+## 0.9.2
+
+### Patch Changes
+
+- 4656135: Fix hmr remove issue
+
+## 0.9.1
+
+### Patch Changes
+
+- 7f0c8d7: Support `server.spa` option
+
 ## 0.9.0
 
 ### Minor Changes

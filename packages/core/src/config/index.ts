@@ -209,7 +209,13 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9801
+  port: 9801,
+  watchOptions: {
+    awaitWriteFinish: {
+      stabilityThreshold: 16,
+      pollInterval: 16
+    }
+  }
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
@@ -223,20 +229,24 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   hmr: DEFAULT_HMR_OPTIONS,
   open: false,
   strictPort: false,
-  cors: false
+  cors: false,
+  spa: true
 };
 
 export function normalizeDevServerOptions(
   options: UserServerConfig | undefined,
   mode: CompilationMode
 ): NormalizedServerConfig {
+  let hmr: false | UserHmrConfig = DEFAULT_HMR_OPTIONS;
+
+  if (mode === 'production' || options?.hmr === false) {
+    hmr = false;
+  } else {
+    hmr = merge({}, DEFAULT_HMR_OPTIONS, options?.hmr ?? {});
+  }
+
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
-    hmr:
-      mode === 'production'
-        ? false
-        : options?.hmr !== false
-        ? DEFAULT_HMR_OPTIONS
-        : options.hmr
+    hmr
   });
 }
 
