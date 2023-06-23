@@ -5,9 +5,9 @@ import { test, expect, describe } from 'vitest';
 
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
-  normalizeDevServerOptions,
-  resolveUserConfig
+  normalizeDevServerOptions
 } from '../src/index.js';
+import { resolveUserConfig } from '../src/config/index.js';
 import { parseUserConfig } from '../src/config/schema.js';
 import { DefaultLogger } from '../src/utils/logger.js';
 
@@ -18,6 +18,8 @@ test('resolveUserConfig', async () => {
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
     new DefaultLogger()
   );
+
+  console.log('拿到的 config', config);
 
   expect(config).toEqual({
     compilation: {
