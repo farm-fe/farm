@@ -9,7 +9,7 @@ import {
   VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX
 } from '../compiler/index.js';
 import { DevServer } from './index.js';
-import { Logger } from '../utils/logger.js';
+import { Logger } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 

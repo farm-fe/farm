@@ -1,0 +1,17 @@
+{
+  "name": "server-proxy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build"
+  }
+}
