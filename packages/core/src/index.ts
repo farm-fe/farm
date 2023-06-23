@@ -2,16 +2,16 @@ export * from './compiler/index.js';
 export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
+export * from './utils/index.js';
 
 import path from 'node:path';
 import os from 'node:os';
+import { existsSync } from 'node:fs';
 import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
-import { existsSync } from 'node:fs';
 import fse from 'fs-extra';
-
 import { Compiler } from './compiler/index.js';
 import {
   normalizePublicDir,
@@ -22,30 +22,26 @@ import {
 import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
+import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
 
 import type { FarmCLIOptions } from './config/types.js';
-import type { Config } from '../binding/index.js';
 
 export async function start(
-  options: FarmCLIOptions & UserConfig
+  inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    'development'
-  );
+  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
+  const normalizedConfig = await normalizeUserCompilationConfig(config);
+  console.log(normalizedConfig);
 
   const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, userConfig.server);
-
+  const devServer = new DevServer(compiler, logger, config.server);
   await devServer.listen();
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     logger.info(
-      'HMR enabled, watching for file changes under ' +
-        chalk.green(userConfig.root)
+      'HMR enabled, watching for file changes under ' + chalk.green(config.root)
     );
 
     if (normalizedConfig.config.mode === 'production') {
@@ -129,7 +125,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
         })
         .forEach(({ type, host }) => {
           const url = `${'http'}://${host}:${chalk.bold(port)}`;
-          logger.info(`  > ${type} ${chalk.cyan(url)}`, false);
+          logger.info(`  > ${type} ${chalk.cyan(url)}`);
         })
     );
   });

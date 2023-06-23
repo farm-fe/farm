@@ -115,6 +115,15 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/env:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/less:
     dependencies:
       clsx:
@@ -361,6 +370,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/server-proxy:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/vue:
     dependencies:
       axios:
@@ -517,9 +535,6 @@ importers:
       inquirer:
         specifier: ^9.1.4
         version: 9.1.4(typescript@4.9.4)
-      loglevel:
-        specifier: ^1.8.1
-        version: 1.8.1
       walkdir:
         specifier: ^0.4.1
         version: 0.4.1
@@ -560,6 +575,12 @@ importers:
       chokidar:
         specifier: ^3.5.3
         version: 3.5.3
+      dotenv:
+        specifier: ^16.0.3
+        version: 16.0.3
+      dotenv-expand:
+        specifier: ^10.0.0
+        version: 10.0.0
       execa:
         specifier: ^7.1.1
         version: 7.1.1
@@ -569,9 +590,6 @@ importers:
       fs-extra:
         specifier: ^11.1.1
         version: 11.1.1
-      http-proxy:
-        specifier: ^1.18.1
-        version: 1.18.1
       koa:
         specifier: ^2.13.4
         version: 2.13.4
@@ -618,9 +636,6 @@ importers:
       '@types/fs-extra':
         specifier: ^11.0.1
         version: 11.0.1
-      '@types/http-proxy':
-        specifier: ^1.17.11
-        version: 1.17.11
       '@types/koa':
         specifier: ^2.13.5
         version: 2.13.5
@@ -1954,12 +1969,6 @@ packages:
 
   /@types/http-errors@2.0.1:
     resolution: {integrity: sha512-/K3ds8TRAfBvi5vfjuz8y6+GiAYBZ0x4tXv1Av6CWBWn0IlADc+ZX9pMq7oU0fNQPnBwIZl3rmeLp6SBApbxSQ==}
-    dev: true
-
-  /@types/http-proxy@1.17.11:
-    resolution: {integrity: sha512-HC8G7c1WmaF2ekqpnFq626xd3Zz0uvaqFmBJNRZCGEZCXkvSdJoNFn/8Ygbd9fKNQj8UzLdCETaI0UWPAjK7IA==}
-    dependencies:
-      '@types/node': 18.15.3
     dev: true
 
   /@types/inquirer@9.0.3:
@@ -3751,6 +3760,16 @@ packages:
     dependencies:
       is-obj: 2.0.0
     dev: true
+
+  /dotenv-expand@10.0.0:
+    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
+    engines: {node: '>=12'}
+    dev: false
+
+  /dotenv@16.0.3:
+    resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
+    engines: {node: '>=12'}
+    dev: false
 
   /eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}

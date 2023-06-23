@@ -114,6 +114,7 @@ export interface Config {
       targetEnv?: 'browser' | 'node';
       format?: 'cjs' | 'esm';
     };
+    env?: Record<string, any>;
     resolve?: {
       extensions?: string[];
       alias?: Record<string, string>;
@@ -124,7 +125,7 @@ export interface Config {
     };
     define?: Record<string, string>;
     external?: string[];
-    mode?: 'development' | 'production';
+    mode?: string;
     root?: string;
     runtime?: {
       path: string;

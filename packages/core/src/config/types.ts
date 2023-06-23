@@ -1,8 +1,7 @@
-import { WatchOptions } from 'chokidar';
-import { Logger } from '../utils/logger.js';
-import { ProxiesOptions } from '../server/middlewares/proxy.js';
-
+import type { WatchOptions } from 'chokidar';
 import type cors from '@koa/cors';
+import type { Logger } from '../utils/index.js';
+import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 import type { Config } from '../../binding/index.js';
@@ -40,6 +39,11 @@ export interface UserHmrConfig {
 export interface UserConfig {
   /** current root of this project, default to current working directory */
   root?: string;
+  base?: string;
+  clearScreen?: boolean;
+  envDir?: string;
+  envPrefix?: string;
+  publicDir?: string;
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin)[];
   /** config related to compilation */
@@ -47,7 +51,6 @@ export interface UserConfig {
   /** config related to dev server */
   server?: UserServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
-  publicDir?: string;
 }
 
 export interface GlobalFarmCLIOptions {
