@@ -30,7 +30,10 @@ export class FileWatcher implements ImplFileWatcher {
     );
 
     if (this.serverOrCompiler instanceof DevServer) {
-      this._watcher = chokidar.watch(compiler.resolvedModulePaths(this._root));
+      this._watcher = chokidar.watch(
+        compiler.resolvedModulePaths(this._root),
+        this.serverOrCompiler.config.hmr.watchOptions
+      );
       this.serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
         const added = updateResult.added.map((addedModule) => {
           const resolvedPath = compiler.transformModulePath(

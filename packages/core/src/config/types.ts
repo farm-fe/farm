@@ -1,3 +1,4 @@
+import type { WatchOptions } from 'chokidar';
 import type cors from '@koa/cors';
 import type { Logger } from '../utils/index.js';
 import type { ProxiesOptions } from '../server/middlewares/proxy.js';
@@ -32,6 +33,7 @@ export interface UserHmrConfig {
   ignores?: string[];
   host?: string;
   port?: number;
+  watchOptions?: WatchOptions;
 }
 
 export interface UserConfig {

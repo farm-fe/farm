@@ -7,6 +7,8 @@ import {
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
 
+import { useNavigate, Outlet } from 'react-router-dom';
+
 import './main.css';
 
 const { Header, Content, Sider } = Layout;
@@ -42,6 +44,7 @@ export const AntdLayout: React.FC = () => {
   const {
     token: { colorBgContainer }
   } = theme.useToken();
+  const navigate = useNavigate();
 
   return (
     <Layout>
@@ -52,6 +55,7 @@ export const AntdLayout: React.FC = () => {
           mode="horizontal"
           defaultSelectedKeys={['2']}
           items={items1}
+          onClick={({ key }) => navigate(`/${key}`)}
         />
       </Header>
       <Layout>
@@ -78,7 +82,7 @@ export const AntdLayout: React.FC = () => {
               background: colorBgContainer
             }}
           >
-            Content
+            <Outlet />
           </Content>
         </Layout>
       </Layout>
