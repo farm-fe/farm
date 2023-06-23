@@ -61,6 +61,8 @@ test('Js Plugin Execution - resolve', async () => {
     expect(result.default).toBe(2);
   } else {
     const result = await import(outputFilePath);
+    console.log(result);
+
     expect(result.default).toBe(2);
   }
 });
