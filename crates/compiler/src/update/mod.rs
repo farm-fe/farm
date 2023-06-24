@@ -15,7 +15,7 @@ use farmfe_core::{
     PluginResolveHookParam, PluginUpdateModulesHookParams, ResolveKind, UpdateResult, UpdateType,
   },
   rayon::ThreadPool,
-  resource::ResourceType,
+  resource::{resource_pot::ResourcePotId, ResourceType},
 };
 use farmfe_plugin_html::get_dynamic_resources_map;
 
@@ -336,6 +336,23 @@ impl Compiler {
     (affected_module_groups, start_points, diff_result)
   }
 
+  fn call_process_resource_pots(&self, resource_pot_ids: &Vec<ResourcePotId>) -> Result<()> {
+    let mut resource_pot_map = self.context.resource_pot_map.write();
+    let mut resource_pots = resource_pot_map
+      .resource_pots_mut()
+      .into_iter()
+      .filter(|resource_pot| resource_pot_ids.contains(&resource_pot.id))
+      .collect::<Vec<_>>();
+
+    // call process_resource_pot_map hook
+    self
+      .context
+      .plugin_driver
+      .process_resource_pots(&mut resource_pots, &self.context)?;
+
+    Ok(())
+  }
+
   fn regenerate_resources<F>(
     &self,
     affected_module_groups: HashSet<ModuleGroupId>,
@@ -351,8 +368,18 @@ impl Compiler {
     let cloned_updated_module_ids = updated_module_ids.clone();
 
     let cloned_context = self.context.clone();
+    let resource_pot_ids = {
+      updated_module_ids
+        .iter()
+        .map(|id| {
+          let module_graph = cloned_context.module_graph.read();
+          let module = module_graph.module(id).unwrap();
+          module.resource_pot.as_ref().unwrap().clone()
+        })
+        .collect::<Vec<_>>()
+    };
 
-    // TODO call optimize to support tree shaking in dev mode
+    self.call_process_resource_pots(&resource_pot_ids).unwrap();
 
     // if there are new module groups, we should run the tasks synchronously
     if sync

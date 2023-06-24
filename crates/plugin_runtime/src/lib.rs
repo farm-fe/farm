@@ -248,17 +248,21 @@ impl Plugin for FarmPluginRuntime {
     }
   }
 
-  fn process_resource_pot_map(
+  fn process_resource_pots(
     &self,
-    resource_pot_map: &mut ResourcePotMap,
+    resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    if context.meta.script.runtime_ast.read().is_some() {
+      return Ok(None);
+    }
+
     let mut module_graph = context.module_graph.write();
 
-    for resource_pot in resource_pot_map.resource_pots_mut() {
+    for resource_pot in resource_pots {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
         let rendered_resource_pot_ast =
-          resource_pot_to_runtime_object_lit(resource_pot, &mut *module_graph, context)?;
+          resource_pot_to_runtime_object_lit(*resource_pot, &mut *module_graph, context)?;
 
         #[cfg(not(windows))]
         let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");

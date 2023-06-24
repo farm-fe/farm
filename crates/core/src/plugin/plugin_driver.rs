@@ -16,7 +16,7 @@ use crate::{
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource},
+  resource::{resource_pot::ResourcePot, Resource},
   stats::Stats,
 };
 
@@ -168,7 +168,7 @@ impl PluginDriver {
     _hook_context: &PluginHookContext
   );
 
-  hook_serial!(process_resource_pot_map, &mut ResourcePotMap);
+  hook_serial!(process_resource_pots, &mut Vec<&mut ResourcePot>);
 
   hook_serial!(render_resource_pot, &mut ResourcePot);
 

@@ -348,9 +348,9 @@ impl Plugin for FarmPluginCss {
     Ok(None)
   }
 
-  fn process_resource_pot_map(
+  fn process_resource_pots(
     &self,
-    resource_pot_map: &mut farmfe_core::resource::resource_pot_map::ResourcePotMap,
+    resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if !matches!(context.config.mode, farmfe_core::config::Mode::Development) {
@@ -360,10 +360,8 @@ impl Plugin for FarmPluginCss {
     let mut module_graph = context.module_graph.write();
 
     // transform css resource pot to js resource pot in development mode
-    for resource_pot in resource_pot_map.resource_pots_mut() {
-      if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
-        transform_css_resource_pot(resource_pot, &mut *module_graph, context)?;
-      }
+    for resource_pot in resource_pots {
+      transform_css_resource_pot(*resource_pot, &mut *module_graph, context)?;
     }
 
     Ok(Some(()))

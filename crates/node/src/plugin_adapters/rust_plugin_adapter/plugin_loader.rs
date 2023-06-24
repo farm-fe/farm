@@ -8,8 +8,8 @@ use libloading::{Error, Library, Symbol};
 /// load rust plugin from the specified path
 ///
 /// # Safety
-/// The plugin is loaded as a dynamic library and it's maybe unsafe. We use core_version to control the compatibility.
-pub unsafe fn load_rust_plugin<P: AsRef<OsStr>>(
+/// The plugin is loaded as a dynamic library and it may be unsafe. We use core_version to control the compatibility.
+pub unsafe fn load_rust_plugin<P: AsRef<OsStr> + std::fmt::Display>(
   filename: P,
   config: &Config,
   options: String,
@@ -23,8 +23,8 @@ pub unsafe fn load_rust_plugin<P: AsRef<OsStr>>(
 
   if core_version != VERSION {
     panic!(
-      "Incompatible Rust Plugin Error: Current core's version({}) is not compatible with the plugin used ({}).\nRefer to xxx(TODO) for details.",
-      VERSION, core_version
+      "Incompatible Rust Plugin: Current core's version({}) is not compatible with the plugin `{:?}` used ({}).\nRefer to xxx(TODO) for details.",
+      VERSION, core_version, filename
     );
   }
 
