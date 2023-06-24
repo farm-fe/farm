@@ -28,6 +28,13 @@ pub fn transform_css_resource_pot(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
   for module_id in resource_pot.modules() {
+    if !matches!(
+      module_graph.module(module_id).unwrap().module_type,
+      ModuleType::Css
+    ) {
+      continue;
+    }
+
     let stylesheet = transform_css_stylesheet(module_id, module_graph, context);
 
     let module = module_graph.module_mut(module_id).unwrap();
@@ -73,7 +80,9 @@ pub fn transform_css_resource_pot(
     )?;
   }
 
-  resource_pot.resource_pot_type = ResourcePotType::Js;
+  if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
+    resource_pot.resource_pot_type = ResourcePotType::Js;
+  }
 
   Ok(())
 }

@@ -10,7 +10,7 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
     ModuleType,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource, ResourceType},
+  resource::{resource_pot::ResourcePot, Resource, ResourceType},
   stats::Stats,
 };
 
@@ -132,9 +132,9 @@ pub trait Plugin: Any + Send + Sync {
   }
 
   /// process resource graph before render and generating each resource
-  fn process_resource_pot_map(
+  fn process_resource_pots(
     &self,
-    _resource_pot_map: &mut ResourcePotMap,
+    _resource_pots: &mut Vec<&mut ResourcePot>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
