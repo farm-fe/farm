@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.0.10
+
+### Patch Changes
+
+- eb11635: Fix that css HMR will always reload the whole page
+
 ## 0.0.9
 
 ### Patch Changes

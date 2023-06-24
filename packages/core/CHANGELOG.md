@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.9.4
+
+### Patch Changes
+
+- eb11635: Fix that css HMR will always reload the whole page
+
 ## 0.9.3
 
 ### Patch Changes
