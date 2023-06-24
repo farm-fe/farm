@@ -366,20 +366,7 @@ impl Compiler {
   {
     let mut dynamic_resources_map = None;
     let cloned_updated_module_ids = updated_module_ids.clone();
-
     let cloned_context = self.context.clone();
-    let resource_pot_ids = {
-      updated_module_ids
-        .iter()
-        .map(|id| {
-          let module_graph = cloned_context.module_graph.read();
-          let module = module_graph.module(id).unwrap();
-          module.resource_pot.as_ref().unwrap().clone()
-        })
-        .collect::<Vec<_>>()
-    };
-
-    self.call_process_resource_pots(&resource_pot_ids).unwrap();
 
     // if there are new module groups, we should run the tasks synchronously
     if sync
@@ -390,6 +377,7 @@ impl Compiler {
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
         &cloned_updated_module_ids,
+        true,
         &cloned_context,
       )
       .unwrap();
@@ -426,10 +414,24 @@ impl Compiler {
       dynamic_resources_map = Some(dynamic_resources);
       callback();
     } else {
+      let resource_pot_ids = {
+        updated_module_ids
+          .iter()
+          .map(|id| {
+            let module_graph = cloned_context.module_graph.read();
+            let module = module_graph.module(id).unwrap();
+            module.resource_pot.as_ref().unwrap().clone()
+          })
+          .collect::<Vec<_>>()
+      };
+
+      self.call_process_resource_pots(&resource_pot_ids).unwrap();
+
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
           affected_module_groups,
           &cloned_updated_module_ids,
+          false,
           &cloned_context,
         ) {
           println!("Failed to regenerate resources: {}", e);
