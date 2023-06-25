@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.1.11
+
+### Patch Changes
+
+- eb11635: Fix that css HMR will always reload the whole page
+
 ## 0.1.10
 
 ### Patch Changes

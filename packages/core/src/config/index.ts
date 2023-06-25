@@ -129,8 +129,6 @@ export async function normalizeUserCompilationConfig(
     userConfig.server,
     mode
   );
-  // console.log(normalizedDevServerConfig);
-  // console.log(hmrClientPluginPath);
 
   if (
     Array.isArray(config.runtime.plugins) &&
@@ -228,7 +226,6 @@ export async function normalizeUserCompilationConfig(
     rustPlugins,
     jsPlugins
   };
-  // console.log(config);
 
   return normalizedConfig;
 }

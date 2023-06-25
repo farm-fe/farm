@@ -107,7 +107,7 @@ export class DevServer implements ImplDevServer {
 
   closeFarmServer() {
     this.server?.close(() => {
-      console.log('HTTP server is closed');
+      this.logger.info('HTTP server is closed');
     });
   }
 

@@ -33,7 +33,6 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
-  console.log(normalizedConfig);
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config.server);

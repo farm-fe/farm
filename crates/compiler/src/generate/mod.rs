@@ -57,7 +57,7 @@ impl Compiler {
     self
       .context
       .plugin_driver
-      .process_resource_pot_map(&mut resource_pot_map, &self.context)?;
+      .process_resource_pots(&mut resource_pot_map.resource_pots_mut(), &self.context)?;
 
     Ok(())
   }

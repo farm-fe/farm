@@ -11,7 +11,7 @@ use farmfe_core::{
     PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap},
+  resource::resource_pot::ResourcePot,
 };
 
 use libloading::Library;
@@ -140,30 +140,28 @@ impl Plugin for RustPluginAdapter {
     self.plugin.partial_bundling(modules, context, hook_context)
   }
 
-  fn process_resource_pot_map(
+  fn process_resource_pots(
     &self,
-    resource_graph: &mut ResourcePotMap,
+    resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self
-      .plugin
-      .process_resource_pot_map(resource_graph, context)
+    self.plugin.process_resource_pots(resource_pots, context)
   }
 
   fn render_resource_pot(
     &self,
-    resource: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.render_resource_pot(resource, context)
+    self.plugin.render_resource_pot(resource_pot, context)
   }
 
   fn optimize_resource_pot(
     &self,
-    resource: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.optimize_resource_pot(resource, context)
+    self.plugin.optimize_resource_pot(resource_pot, context)
   }
 
   fn generate_resources(
