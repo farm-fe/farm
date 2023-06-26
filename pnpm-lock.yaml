@@ -391,9 +391,6 @@ importers:
       '@farmfe/js-plugin-solid':
         specifier: workspace:*
         version: link:../../js-plugins/solid
-      '@farmfe/plugin-sass':
-        specifier: workspace:*
-        version: link:../../rust-plugins/sass
       typescript:
         specifier: ^5.1.3
         version: 5.1.3

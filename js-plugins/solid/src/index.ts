@@ -35,7 +35,7 @@ export default function farmPluginSolid(
   let replaceDev = false;
   let projectRoot = process.cwd();
 
-  const extensionsToWatch = [...(options.extensions || []), '.tsx', '.jsx'];
+  const extensionsToWatch = [...(options.extensions ?? []), '.tsx', '.jsx'];
   const allExtensions = extensionsToWatch.map((extension) =>
     // An extension can be a string or a tuple [extension, options]
     typeof extension === 'string' ? extension : extension[0]
@@ -68,10 +68,11 @@ export default function farmPluginSolid(
     },
     load: {
       filters: {
-        resolvedPaths: ['.(j|t)sx?$', runtimePublicPath, ...allExtensions]
+        resolvedPaths: [...allExtensions, runtimePublicPath]
       },
       async executor(param) {
         if (param.resolvedPath === runtimePublicPath) {
+          console.log(runtimeCode);
           return {
             content: runtimeCode,
             moduleType: 'solid-refresh'
@@ -88,11 +89,10 @@ export default function farmPluginSolid(
     },
     transform: {
       filters: {
-        resolvedPaths: ['.(j|t)sx?$', runtimePublicPath, ...allExtensions],
         moduleTypes: ['solid']
       },
       async executor(param) {
-        const isSsr = options && options.ssr;
+        const isSsr = options.ssr;
         const currentFileExtension = extname(param.resolvedPath);
 
         if (
@@ -124,7 +124,7 @@ export default function farmPluginSolid(
           root: projectRoot,
           filename: param.resolvedPath,
           sourceFileName: param.resolvedPath,
-          presets: [[solid, { ...solidOptions, ...(options.solid || {}) }]],
+          presets: [[solid, { ...solidOptions, ...(options.solid ?? {}) }]],
           plugins:
             needHmr && !isSsr && !inNodeModules
               ? [[solidRefresh, { bundler: 'vite' }]]
@@ -149,7 +149,7 @@ export default function farmPluginSolid(
         );
 
         if (shouldBeProcessedWithTypescript) {
-          opts.presets.push([ts, options.typescript || {}]);
+          opts.presets.push([ts, options.typescript ?? {}]);
         }
 
         // Default value for babel user options
@@ -184,7 +184,7 @@ export default function farmPluginSolid(
         return {
           content: code,
           sourceMap: JSON.stringify(map),
-          moduleType: 'solid'
+          moduleType: 'js'
         };
       }
     }

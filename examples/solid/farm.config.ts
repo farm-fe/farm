@@ -14,5 +14,5 @@ export default defineFarmConfig({
       __DEV__: 'true'
     }
   },
-  plugins: [farmJsPluginSolid(), '@farmfe/plugin-sass']
+  plugins: [farmJsPluginSolid()]
 });

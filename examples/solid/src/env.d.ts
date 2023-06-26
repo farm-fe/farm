@@ -1,16 +1,21 @@
 declare const __DEV__: boolean;
 declare module '*.svg' {
-  export default string;
+  const src: string;
+  export default src;
 }
 declare module '*.module.css' {
-  export default Record<string, string>;
+  const styles: Record<string, string>;
+  export default styles;
 }
 declare module '*.module.sass' {
-  export default Record<string, string>;
+  const styles: Record<string, string>;
+  export default styles;
 }
 declare module '*.module.scss' {
-  export default Record<string, string>;
+  const styles: Record<string, string>;
+  export default styles;
 }
 declare module '*.module.less' {
-  export default Record<string, string>;
+  const styles: Record<string, string>;
+  export default styles;
 }

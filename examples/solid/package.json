@@ -9,7 +9,6 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-solid": "workspace:*",
-    "@farmfe/plugin-sass": "workspace:*",
     "typescript": "^5.1.3"
   },
   "scripts": {
