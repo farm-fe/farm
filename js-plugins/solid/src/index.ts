@@ -45,7 +45,7 @@ export default function farmPluginSolid(
     name: 'farm-plugin-solid',
     // TODO
     config(param = {}) {
-      // We inject the dev mode only if the use˜r explicitely wants it or if we are in dev (serve) mode
+      // We inject the dev mode only if the use˜r explicitly wants it or if we are in dev (serve) mode
       needHmr = param.mode === 'production';
       replaceDev = options.dev === true || param.mode === 'production';
       projectRoot = param.root ?? process.cwd();

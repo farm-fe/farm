@@ -27,7 +27,7 @@ export interface Options {
    */
   dev: boolean;
   /**
-   * This will force SSR code in the produced files. This is experiemental
+   * This will force SSR code in the produced files. This is experimental
    * and mostly not working yet.
    *
    * @default false
@@ -225,7 +225,7 @@ export interface Options {
 
     /**
      * Boolean indicates whether to set current render context on Custom Elements and slots.
-     * Useful for seemless Context API with Web Components.
+     * Useful for seemingly Context API with Web Components.
      *
      * @default true
      */

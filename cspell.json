@@ -88,7 +88,9 @@
     "upcasting",
     "walkdir",
     "Antdv",
-    "wechat"
+    "wechat",
+    "pluginutils",
+    "picomatch"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
