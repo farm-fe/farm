@@ -1,9 +1,13 @@
-import type { Component } from 'solid-js';
+import { createSignal } from 'solid-js';
 
 import logo from './logo.svg';
 import styles from './App.module.css';
 
+import type { Component } from 'solid-js';
+
 const App: Component = () => {
+  const [count, setCount] = createSignal(0);
+
   return (
     <div class={styles.App}>
       <header class={styles.header}>
@@ -19,6 +23,9 @@ const App: Component = () => {
         >
           Learn Solid
         </a>
+        <button class={styles.counter} onClick={() => setCount(count() + 1)}>
+          Count: {count()}
+        </button>
       </header>
     </div>
   );

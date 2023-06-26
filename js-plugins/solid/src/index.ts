@@ -12,6 +12,7 @@ import type { JsPlugin } from '@farmfe/core';
 import type { TransformOptions } from '@babel/core';
 import type { Options } from './types.js';
 
+// TODO: HMR
 const require = createRequire(import.meta.url);
 
 const runtimePublicPath = '/@solid-refresh';
@@ -43,7 +44,6 @@ export default function farmPluginSolid(
 
   return {
     name: 'farm-plugin-solid',
-    // TODO
     config(param = {}) {
       // We inject the dev mode only if the use˜r explicitly wants it or if we are in dev (serve) mode
       needHmr = param.mode === 'production';
@@ -127,7 +127,7 @@ export default function farmPluginSolid(
           presets: [[solid, { ...solidOptions, ...(options.solid ?? {}) }]],
           plugins:
             needHmr && !isSsr && !inNodeModules
-              ? [[solidRefresh, { bundler: 'vite' }]]
+              ? [[solidRefresh, { bundler: 'standard' }]]
               : [],
           sourceMaps: true,
           // Vite handles sourcemap flattening

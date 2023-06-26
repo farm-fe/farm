@@ -6,7 +6,7 @@ export interface ExtensionOptions {
   typescript?: boolean;
 }
 
-/** Configuration options for vite-plugin-solid. */
+/** Configuration options for @farmfe/js-plugin-solid. */
 export interface Options {
   /**
    * A [picomatch](https://github.com/micromatch/picomatch) pattern, or array of patterns, which specifies the files
@@ -42,7 +42,7 @@ export interface Options {
   hot: boolean;
   /**
    * This registers additional extensions that should be processed by
-   * vite-plugin-solid.
+   * @farmfe/js-plugin-solid.
    *
    * @default undefined
    */

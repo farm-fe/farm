@@ -23,6 +23,10 @@
   color: #b318f0;
 }
 
+.counter {
+  margin-top: 24px;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
