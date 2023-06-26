@@ -145,7 +145,7 @@ impl Compiler {
     let should_reload_page = updated_module_ids.iter().any(|id| {
       let module_graph = self.context.module_graph.read();
       let module = module_graph.module(id).unwrap();
-      !module.module_type.is_script()
+      !module.module_type.is_script() && module.module_type != ModuleType::Css
     });
     let resources = if should_reload_page {
       "window.location.reload()".to_string()
@@ -334,23 +334,6 @@ impl Compiler {
     );
 
     (affected_module_groups, start_points, diff_result)
-  }
-
-  fn call_process_resource_pots(&self, resource_pot_ids: &Vec<ResourcePotId>) -> Result<()> {
-    let mut resource_pot_map = self.context.resource_pot_map.write();
-    let mut resource_pots = resource_pot_map
-      .resource_pots_mut()
-      .into_iter()
-      .filter(|resource_pot| resource_pot_ids.contains(&resource_pot.id))
-      .collect::<Vec<_>>();
-
-    // call process_resource_pot_map hook
-    self
-      .context
-      .plugin_driver
-      .process_resource_pots(&mut resource_pots, &self.context)?;
-
-    Ok(())
   }
 
   fn regenerate_resources<F>(
