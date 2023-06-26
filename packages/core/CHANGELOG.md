@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.9.5
+
+### Patch Changes
+
+- b92441b: Fix css hmr panic
+
 ## 0.9.4
 
 ### Patch Changes
