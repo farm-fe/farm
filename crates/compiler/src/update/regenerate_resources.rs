@@ -110,7 +110,6 @@ pub fn render_and_generate_update_resource(
 pub fn regenerate_resources_for_affected_module_groups(
   affected_module_groups: HashSet<ModuleGroupId>,
   updated_module_ids: &Vec<ModuleId>,
-  call_process_resource_pots: bool,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
   clear_resource_pot_of_modules_in_module_groups(&affected_module_groups, context);
@@ -149,12 +148,10 @@ pub fn regenerate_resources_for_affected_module_groups(
 
   drop(module_graph);
 
-  if call_process_resource_pots {
-    // call process_resource_pot_map hook
-    context
-      .plugin_driver
-      .process_resource_pots(&mut resource_pots, context)?;
-  }
+  // call process_resource_pot_map hook
+  context
+    .plugin_driver
+    .process_resource_pots(&mut resource_pots, context)?;
 
   render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())
 }
