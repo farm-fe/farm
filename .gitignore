@@ -108,3 +108,4 @@ target
 
 build
 .swc
+.DS_Store
