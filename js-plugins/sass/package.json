@@ -2,14 +2,14 @@
   "name": "@farmfe/js-plugin-sass",
   "version": "1.0.3",
   "description": "support scss compile for farm.",
-  "main": "./dist/src/index.js",
+  "main": "./build/index.cjs",
   "types": "./dist/src/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/src/index.js",
+      "import": "./build/index.cjs",
       "types": "./dist/src/index.d.ts",
-      "require": "./dist/src/index.js"
+      "require": "./build/index.cjs"
     },
     "./package.json": "./package.json"
   },
@@ -32,7 +32,7 @@
     }
   ],
   "scripts": {
-    "build": "tsc -p ./tsconfig.build.json",
+    "build": "farm build && tsc -p ./tsconfig.build.json",
     "start": "pnpm run build -w",
     "prepublishOnly": "npm run build",
     "type-check": "pnpm run build --noEmit"
@@ -43,6 +43,7 @@
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
+    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:^0.9.0",
     "sass": "^1.62.1",
     "sass-embedded": "^1.62.0"

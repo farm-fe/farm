@@ -9,6 +9,7 @@ const compilationConfigSchema = z
     input: z.record(z.string()).optional(),
     output: z
       .object({
+        entryFilename: z.string().optional(),
         filename: z.string().optional(),
         path: z.string().optional(),
         publicPath: z.string().optional(),

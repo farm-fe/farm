@@ -1,7 +1,11 @@
 import type { UserConfig } from '@farmfe/core';
 import less from '@farmfe/js-plugin-less';
 
-export default <UserConfig>{
+function defineConfig(config: UserConfig) {
+  return config;
+}
+
+export default defineConfig({
   compilation: {
     resolve: {
       alias: {
@@ -12,4 +16,4 @@ export default <UserConfig>{
   plugins: [
     less({}),
   ]
-};
+});

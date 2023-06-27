@@ -6,7 +6,7 @@ import { builtinModules } from 'module';
 export default {
   compilation: {
     input: {
-      index: './src/farm-vue-plugin.ts'
+      index: './src/index.ts'
     },
     output: {
       path: 'build',
