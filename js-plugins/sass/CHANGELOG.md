@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-sass
 
+## 1.0.4
+
+### Patch Changes
+
+- c36c767: Build js plugins using Farm
+- Updated dependencies [c36c767]
+  - @farmfe/core@0.9.6
+
 ## 2.0.0
 
 ### Patch Changes
