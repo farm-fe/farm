@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.5
+
+### Patch Changes
+
+- c36c767: update farm.config.ts
+
 ## 1.2.4
 
 ### Patch Changes

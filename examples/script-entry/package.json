@@ -1,6 +1,6 @@
 {
   "name": "@farmfe-examples/script-entry",
-  "version": "0.0.38",
+  "version": "0.0.39",
   "private": true,
   "type": "module",
   "dependencies": {
