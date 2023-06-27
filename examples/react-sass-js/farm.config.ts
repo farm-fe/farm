@@ -1,8 +1,11 @@
 import type { UserConfig } from '@farmfe/core';
 import farmSassPlugin from '@farmfe/js-plugin-sass';
 
+function defineConfig(config: UserConfig) {
+  return config;
+}
 
-export default <UserConfig>{
+export default defineConfig({
   compilation: {
     input: {
       index: './index.html',
@@ -29,4 +32,4 @@ export default <UserConfig>{
       // globals: ['./src/variables.scss']
     })
   ],
-};
+});

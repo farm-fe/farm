@@ -1,3 +1,7 @@
 import type { UserConfig } from '@farmfe/core';
 
-export default <UserConfig>{};
+function defineConfig(config: UserConfig) {
+  return config;
+}
+
+export default defineConfig({});

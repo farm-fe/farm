@@ -1,8 +1,8 @@
 {
   "name": "@farmfe/js-plugin-vue",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "support vue sfc for farm.",
-  "main": "./build/index.js",
+  "main": "./build/index.cjs",
   "types": "./dist/farm-vue-plugin.d.ts",
   "type": "module",
   "scripts": {
@@ -17,7 +17,8 @@
   ],
   "exports": {
     ".": {
-      "import": "./build/index.js"
+      "import": "./build/index.cjs",
+      "require": "./build/index.cjs"
     }
   },
   "repository": {
@@ -47,7 +48,7 @@
     "source-map": "^0.7.4"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.9.5",
+    "@farmfe/core": "^0.9.6",
     "less": "*",
     "sass": "*",
     "stylus": "*"

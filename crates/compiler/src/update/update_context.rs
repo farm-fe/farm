@@ -1,14 +1,4 @@
-use std::sync::Arc;
-
-use farmfe_core::{
-  context::CompilationContext,
-  module::module_graph::{ModuleGraph, ModuleGraphEdge},
-  parking_lot::RwLock,
-};
-
-use crate::Compiler;
-
-use super::UpdateType;
+use farmfe_core::{module::module_graph::ModuleGraph, parking_lot::RwLock};
 
 /// Context for the update process, it will be re-created during each update.
 pub struct UpdateContext {
@@ -17,7 +7,7 @@ pub struct UpdateContext {
 
 impl UpdateContext {
   pub fn new() -> Self {
-    let mut module_graph = ModuleGraph::new();
+    let module_graph = ModuleGraph::new();
 
     Self {
       module_graph: RwLock::new(module_graph),

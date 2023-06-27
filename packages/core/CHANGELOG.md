@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.9.6
+
+### Patch Changes
+
+- c36c767: Do not resolve external dependencies when build farm.config.ts
+
 ## 0.9.5
 
 ### Patch Changes

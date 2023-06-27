@@ -1,6 +1,10 @@
 import type { UserConfig } from '@farmfe/core';
 
-export default <UserConfig>{
+function defineConfig(config: UserConfig) {
+  return config;
+}
+
+export default defineConfig({
   compilation: {
     input: {
       index: './index.html',
@@ -20,4 +24,4 @@ export default <UserConfig>{
     hmr: true,
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
-};
+});

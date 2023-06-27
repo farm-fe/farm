@@ -2,7 +2,7 @@ import fs from 'fs';
 import { createRequire } from 'module';
 import { throwError } from './options.js';
 
-const __require = createRequire(import.meta.url);
+const __require = createRequire(__filename);
 
 export function getLessImplementation(implementation?: string) {
   let resolvedImplementation;
