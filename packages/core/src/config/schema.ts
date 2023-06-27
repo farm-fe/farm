@@ -198,7 +198,8 @@ const FarmConfigSchema = z
               })
               .strict()
           ])
-          .optional()
+          .optional(),
+        middlewares: z.array(z.any()).optional()
       })
       .strict()
       .optional()
