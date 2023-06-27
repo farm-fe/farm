@@ -237,6 +237,12 @@ impl JsCompiler {
       }
     }
 
+    if let Ok(node_env) = std::env::var("NODE_ENV") {
+      if node_env == "test" {
+        println!("resources to js side: {:?}", result.keys());
+      }
+    }
+
     result
   }
 
