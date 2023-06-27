@@ -254,7 +254,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   open: false,
   strictPort: false,
   cors: false,
-  spa: true
+  spa: true,
+  middlewares: []
 };
 
 export function normalizeDevServerOptions(
