@@ -58,18 +58,27 @@ impl Plugin for FarmPluginResolve {
       Path::new(&self.root).to_path_buf()
     };
 
-    // check external first, if the source is set as external, return it immediately
-    if context.config.external.iter().any(|e| {
-      let reg = Regex::new(e).unwrap();
-      reg.is_match(source)
-    }) {
-      return Ok(Some(PluginResolveHookResult {
-        resolved_path: param.source.clone(),
-        external: true,
-        side_effects: false,
-        query,
-        meta: HashMap::new(),
-      }));
+    if [
+      "@swc/helpers/_/_interop_require_default",
+      "@swc/helpers/_/_interop_require_wildcard",
+      "@swc/helpers/_/_export_star",
+    ]
+    .into_iter()
+    .all(|s| source != s)
+    {
+      // check external first, if the source is set as external, return it immediately
+      if context.config.external.iter().any(|e| {
+        let reg = Regex::new(e).unwrap();
+        reg.is_match(source)
+      }) {
+        return Ok(Some(PluginResolveHookResult {
+          resolved_path: param.source.clone(),
+          external: true,
+          side_effects: false,
+          query,
+          meta: HashMap::new(),
+        }));
+      }
     }
 
     let resolver = &self.resolver;
