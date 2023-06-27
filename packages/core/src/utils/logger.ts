@@ -74,7 +74,8 @@ export class DefaultLogger implements Logger {
     const errorMessage =
       message instanceof Error ? message.stack : `${message}`;
     this.logMessage(LogLevel.Error, errorMessage, chalk.red);
-    if (options.exit) {
+
+    if (options?.exit) {
       process.exit(1);
     }
   }
