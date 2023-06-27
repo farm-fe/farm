@@ -1,6 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
-
-export default <UserConfig>{
+export default {
   compilation: {
     input: {
       index: './index.html'
@@ -23,12 +21,10 @@ export default <UserConfig>{
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     }
-    // treeShaking: true,
-    // minify: true,
   },
   server: {
     hmr: true,
-    cors: true,
+    cors: true
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 };

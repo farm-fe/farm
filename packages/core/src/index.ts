@@ -62,6 +62,7 @@ export async function build(
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
+    'production',
     'production'
   );
 

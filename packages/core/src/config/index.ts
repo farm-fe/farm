@@ -51,9 +51,11 @@ export async function normalizeUserCompilationConfig(
   );
 
   const nodeEnv = !!process.env.NODE_ENV;
+
   if (!nodeEnv) {
     process.env.NODE_ENV = env;
   }
+
   const isProduction = process.env.NODE_ENV === 'production';
   const isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -341,38 +343,42 @@ async function readConfigFile(
         hash.update(configFilePath).digest('hex')
       );
       const fileName = 'farm.config.bundle.mjs';
-      const normalizedConfig = await normalizeUserCompilationConfig({
-        compilation: {
-          input: {
-            config: configFilePath
+      const normalizedConfig = await normalizeUserCompilationConfig(
+        {
+          compilation: {
+            input: {
+              config: configFilePath
+            },
+            output: {
+              entryFilename: fileName,
+              path: outputPath,
+              targetEnv: 'node'
+            },
+            external: [
+              ...module.builtinModules.map((m) => `^${m}$`),
+              ...module.builtinModules.map((m) => `^node:${m}$`)
+            ],
+            partialBundling: {
+              moduleBuckets: [
+                {
+                  name: fileName,
+                  test: ['.+']
+                }
+              ]
+            },
+            watch: false,
+            sourcemap: false,
+            treeShaking: false,
+            minify: false,
+            presetEnv: false
           },
-          output: {
-            entryFilename: fileName,
-            path: outputPath,
-            targetEnv: 'node'
-          },
-          external: [
-            ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`)
-          ],
-          partialBundling: {
-            moduleBuckets: [
-              {
-                name: fileName,
-                test: ['.+']
-              }
-            ]
-          },
-          watch: false,
-          sourcemap: false,
-          treeShaking: false,
-          minify: false,
-          presetEnv: false
+          server: {
+            hmr: false
+          }
         },
-        server: {
-          hmr: false
-        }
-      });
+        null,
+        'production'
+      );
 
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
