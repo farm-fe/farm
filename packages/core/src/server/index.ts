@@ -12,7 +12,8 @@ import {
   UserServerConfig,
   NormalizedServerConfig,
   normalizeDevServerOptions,
-  normalizePublicDir
+  normalizePublicDir,
+  DevServerMiddleware
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { brandColor, Logger } from '../utils/index.js';
@@ -112,7 +113,7 @@ export class DevServer implements ImplDevServer {
   }
 
   createFarmServer(options: UserServerConfig) {
-    const { https = false, host = 'localhost' } = options;
+    const { https = false, host = 'localhost', middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     const hostname = host === '0.0.0.0' ? 'localhost' : host;
     this.config = normalizeDevServerOptions(
@@ -128,11 +129,13 @@ export class DevServer implements ImplDevServer {
       compiler: this._compiler,
       logger: this.logger
     };
-    this.resolvedFarmServerPlugins();
+    // 这里传入middleware配置
+    this.resolvedFarmServerPlugins(middlewares);
   }
 
-  private resolvedFarmServerPlugins() {
+  private resolvedFarmServerPlugins(middlewares?: DevServerMiddleware[]) {
     const resolvedPlugins = [
+      ...middlewares,
       lazyCompilationPlugin,
       hmrPlugin,
       corsPlugin,

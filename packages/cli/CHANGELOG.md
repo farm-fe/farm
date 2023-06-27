@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.5
+
+### Patch Changes
+
+- 2ea850c: update cli with create-farm version optimize server code
+
 ## 0.5.4
 
 ### Patch Changes

@@ -8,6 +8,7 @@ import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
 import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
+import { generateFileTree, generateFileTreeHtml } from '../../utils/file.js';
 
 export function resources(compiler: Compiler, config: NormalizedServerConfig) {
   return async (ctx: Context, next: Next) => {
@@ -26,6 +27,14 @@ export function resources(compiler: Compiler, config: NormalizedServerConfig) {
 
     // Fallback to index.html if the resource is not found
     const resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
+    // output_files
+    if (resourcePath === '_output_files') {
+      const files = Object.keys(compiler.resources()).sort();
+      const fileTree = generateFileTree(files);
+      ctx.type = '.html';
+      ctx.body = generateFileTreeHtml(fileTree);
+      return;
+    }
     const resource = compiler.resources()[resourcePath];
 
     // if resource is not found and spa is not disabled, find the closest index.html from resourcePath

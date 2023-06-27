@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.4
+
+### Patch Changes
+
+- 2ea850c: update cli with create-farm version optimize server code
+
 ## 1.2.3
 
 ### Patch Changes
