@@ -24,7 +24,7 @@ Please feel free to open an issue using the [feature request template](https://g
   
 - Setup Your Development Environment.
   
-- Checkout a topic branch from a base branch, e.g. `main` (If you submit the node side code, please pull the branch from the `refactor/node` branch and submit).
+- Checkout a topic branch from a base branch, e.g. `main` .
   
 - Run `cargo test` and make sure that it passes.
   
