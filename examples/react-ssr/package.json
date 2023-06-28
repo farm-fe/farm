@@ -5,15 +5,16 @@
   "dependencies": {
     "clsx": "^1.2.1",
     "core-js": "^3.30.1",
+    "express": "^4.18.2",
     "react": "18",
-    "react-dom": "18"
+    "react-dom": "18",
+    "react-router-dom": "^6.13.0"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/js-plugin-sass": "workspace:^1.0.0",
-    "@farmfe/plugin-react": "workspace:^0.1.9",
-    "@farmfe/plugin-sass": "workspace:^0.0.8",
+    "@farmfe/plugin-react": "workspace:*",
+    "@farmfe/plugin-sass": "workspace:*",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"
@@ -21,6 +22,7 @@
   "scripts": {
     "start": "farm start",
     "build": "farm build",
+    "build:server": "farm build --config farm.config.server.ts",
     "preview": "farm preview"
   }
 }

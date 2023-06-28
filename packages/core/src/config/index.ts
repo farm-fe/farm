@@ -59,6 +59,7 @@ export async function normalizeUserCompilationConfig(
     },
     userConfig.compilation
   );
+  config.mode = mode;
   config.coreLibPath = bindingPath;
   const resolvedEnvPath = userConfig.envDir
     ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))

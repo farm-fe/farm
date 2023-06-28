@@ -75,6 +75,7 @@ impl JsCompiler {
           .expect("config should exist"),
       )
       .expect("can not transform js config object to rust config");
+    println!("config is {:?}", config.mode);
     let mut plugins_adapters = vec![];
 
     for js_plugin_object in js_plugins {
