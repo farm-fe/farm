@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-less
 
+## 0.0.7
+
+### Patch Changes
+
+- 08be0b5: Fix that files field in package.json of js-plugins misses build
+
 ## 0.0.6
 
 ### Patch Changes
