@@ -101,7 +101,6 @@ impl SourceReplacer<'_> {
           optional: false,
         })));
 
-        // leave source @swc/helpers/_/lib/_interop_require_default, @swc/helpers/_/lib/_interop_require_wildcard, @swc/helpers/_/lib/_export_star unchanged
         if !matches!(module_type, ModuleType::Runtime)
           && [
             "@swc/helpers/_/_interop_require_default",

@@ -1,9 +1,7 @@
 import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { pathToFileURL } from 'node:url';
-import { createHash } from 'node:crypto';
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 import { bindingPath, Config } from '../../binding/index.js';
@@ -336,11 +334,10 @@ async function readConfigFile(
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
-      const hash = createHash('md5');
       const outputPath = path.join(
-        os.tmpdir(),
-        'farmfe',
-        hash.update(configFilePath).digest('hex')
+        path.dirname(configFilePath),
+        'node_modules',
+        '.farm'
       );
       const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig(

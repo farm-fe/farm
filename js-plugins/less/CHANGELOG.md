@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-less
 
+## 0.0.6
+
+### Patch Changes
+
+- c36c767: Build js plugins using Farm
+- Updated dependencies [c36c767]
+  - @farmfe/core@0.9.6
+
 ## 1.0.0
 
 ### Patch Changes
