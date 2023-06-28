@@ -35,6 +35,7 @@ pub(crate) mod load;
 pub(crate) mod parse;
 pub(crate) mod resolve;
 pub(crate) mod transform;
+pub mod validate_config;
 
 pub(crate) struct ResolveModuleIdResult {
   pub module_id: ModuleId,
@@ -56,6 +57,7 @@ enum ResolveModuleResult {
 impl Compiler {
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
+    validate_config::validate_config(&self.context.config);
 
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
 
