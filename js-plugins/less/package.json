@@ -32,7 +32,8 @@
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
   "files": [
-    "dist"
+    "dist",
+    "build"
   ],
   "keywords": [],
   "license": "MIT",
