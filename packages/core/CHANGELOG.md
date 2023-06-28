@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.9.7
+
+### Patch Changes
+
+- de18942: Fix that build env set to development
+
 ## 0.9.6
 
 ### Patch Changes

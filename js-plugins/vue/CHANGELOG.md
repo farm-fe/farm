@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.6
+
+### Patch Changes
+
+- 9ec0179: fix: styles import in Vue SFC
+- Updated dependencies [de18942]
+  - @farmfe/core@0.9.7
+
 ## 1.2.5
 
 ### Patch Changes
