@@ -338,10 +338,10 @@ async function readConfigFile(
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: configFilePath
+            [fileName]: configFilePath
           },
           output: {
-            entryFilename: fileName,
+            entryFilename: '[entryName]',
             path: outputPath,
             targetEnv: 'node'
           },

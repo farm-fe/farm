@@ -19,7 +19,7 @@ export async function getCompiler(
         },
         output: {
           path: path.join('dist', p),
-          entryFilename: 'index.mjs',
+          entryFilename: '[entryName].mjs',
           targetEnv: 'node'
         },
         lazyCompilation: false,
