@@ -416,6 +416,9 @@ importers:
       '@farmfe/js-plugin-vue':
         specifier: workspace:*
         version: link:../../js-plugins/vue
+      sass:
+        specifier: ^1.62.1
+        version: 1.62.1
 
   examples/vue-antdv:
     dependencies:
