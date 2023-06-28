@@ -25,14 +25,22 @@ export function loadEnv(
       env[key] = value;
     }
   }
-
-  for (const key in process.env) {
-    if (key.startsWith(prefix)) {
-      env[key] = process.env[key] as string;
-    }
-  }
+  // Do not inject project process.env by default, cause it's unsafe
+  // for (const key in process.env) {
+  //   if (key.startsWith(prefix)) {
+  //     env[key] = process.env[key] as string;
+  //   }
+  // }
 
   config();
   expand({ parsed });
   return env;
+}
+
+export type CompilationMode = 'development' | 'production';
+
+export function setProcessEnv(mode: CompilationMode) {
+  if (!process.env.NODE_ENV) {
+    process.env.NODE_ENV = mode;
+  }
 }
