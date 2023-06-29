@@ -74,7 +74,7 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## Examples
 
-Farm support compiling React, Vue SFC, Sass, Less, Css Modules officially out of box. See our examples:
+Farm support compiling React, Vue, SolidJS, Sass, Less, Css Modules officially out of box. See our examples:
 
 ### React Examples
 
@@ -88,6 +88,10 @@ Farm support compiling React, Vue SFC, Sass, Less, Css Modules officially out of
 - [Vue-Basic](https://github.com/farm-fe/farm/tree/main/examples/vue)
 - [Vue-Jsx](https://github.com/farm-fe/farm/tree/main/examples/vue-jsx)
 - [Vue-Antdv](https://github.com/farm-fe/farm/tree/main/examples/vue-antdv)
+
+### SolidJS Examples
+
+- [SolidJS Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
 
 ## RoadMap
 
