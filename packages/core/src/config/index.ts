@@ -131,6 +131,8 @@ export async function normalizeUserCompilationConfig(
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     config.runtime.plugins.push(hmrClientPluginPath);
+    config.define.FARM_HMR_PORT = String(normalizedDevServerConfig.hmr.port);
+    config.define.FARM_HMR_HOST = normalizedDevServerConfig.hmr.host;
   }
 
   // we should not deep merge compilation.input
