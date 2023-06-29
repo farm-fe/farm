@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.6.2
+
+### Patch Changes
+
+- 3073e19: Isolate runtime from globalThis for script entries
+
 ## 0.6.1
 
 ### Patch Changes

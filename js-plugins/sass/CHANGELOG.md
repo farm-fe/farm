@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-sass
 
+## 1.0.6
+
+### Patch Changes
+
+- 3073e19: Bump version for js plugins
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+
 ## 1.0.5
 
 ### Patch Changes
