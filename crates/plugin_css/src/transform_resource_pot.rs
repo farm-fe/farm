@@ -36,9 +36,9 @@ pub fn transform_css_resource_pot(
     }
 
     let stylesheet = transform_css_stylesheet(module_id, module_graph, context);
-    let css_deps = transform_css_deps(module_id,module_graph,context);
+    let css_deps = transform_css_deps(module_id, module_graph, context);
 
-    let module = module_graph.module_mut(module_id).unwrap();    
+    let module = module_graph.module_mut(module_id).unwrap();
     let source_map_enabled = context.config.sourcemap.enabled();
     let (css_code, _src_map) = codegen_css_stylesheet(
       &stylesheet,
@@ -113,7 +113,14 @@ pub fn transform_css_deps(
   let dep_modules = module_graph.dependencies(module_id);
   for (module, _) in dep_modules {
     let relative_path = module.id(context.config.mode.clone()).to_string();
-    let load_statement = format!("farmRequire(\"{}\");", relative_path);
+    let load_statement = format!(
+      "farmRequire(\"{}\");",
+      if cfg!(windows) {
+        relative_path.replace("\\", "\\\\")
+      } else {
+        relative_path.to_string()
+      }
+    );
     load_statements.push(load_statement);
   }
   load_statements.join(" ")

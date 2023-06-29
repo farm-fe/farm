@@ -17,9 +17,11 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_common::{comments::NoopComments, Mark, GLOBALS},
+  swc_common::{comments::NoopComments, Mark, DUMMY_SP, GLOBALS},
   swc_ecma_ast::{
-    CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleDecl, ModuleItem, Stmt,
+    BindingIdent, BlockStmt, CallExpr, Callee, Decl, Expr, ExprStmt, FnExpr, Function, Ident,
+    ImportDecl, ImportDefaultSpecifier, ImportSpecifier, MemberExpr, MemberProp, ModuleDecl,
+    ModuleItem, Pat, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
   swc_ecma_parser::Syntax,
 };
@@ -40,6 +42,8 @@ use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
 mod swc_plugins;
+
+const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
@@ -437,16 +441,12 @@ impl FarmPluginScript {
           let call_entry = parse_module(
             "farm_internal_call_entry_module",
             &format!(
-              r#"var {} = globalThis || window || global || self;
-                var farmModuleSystem = {}.{};
+              r#"var farmModuleSystem = {}.{};
                 farmModuleSystem.bootstrap();
-                var entry = farmModuleSystem.require("{}");
-                {}"#,
-              FARM_GLOBAL_THIS,
+                return farmModuleSystem.require("{}");"#,
               FARM_GLOBAL_THIS,
               FARM_MODULE_SYSTEM,
               entry_module_id.id(context.config.mode.clone()),
-              export_str
             ),
             Syntax::Es(context.config.script.parser.es_config.clone()),
             context.config.script.target.clone(),
@@ -457,19 +457,18 @@ impl FarmPluginScript {
           if context.config.output.target_env == TargetEnv::Node {
             let code_str = match context.config.output.format {
               ModuleFormat::EsModule => {
-                r#"import module from 'node:module';
-                global.__farmNodeRequire = module.createRequire(import.meta.url);
-                global.__farmNodeBuiltinModules = module.builtinModules;"#
+                format!(
+                  r#"var __farmNodeRequire = {FARM_NODE_MODULE}.createRequire(import.meta.url);
+                var __farmNodeBuiltinModules = {FARM_NODE_MODULE}.builtinModules;"#
+                )
               }
-              ModuleFormat::CommonJs => {
-                r#"global.__farmNodeRequire = require;
-                global.__farmNodeBuiltinModules = require('node:module').builtinModules;"#
-              }
-              _ => panic!("node only support cjs and esm format"),
+              ModuleFormat::CommonJs => r#"var __farmNodeRequire = require;
+                var __farmNodeBuiltinModules = require('node:module').builtinModules;"#
+                .to_string(), // _ => panic!("node only support cjs and esm format"),
             };
             let global_var = parse_module(
               "farm-global-var",
-              code_str,
+              &code_str,
               Syntax::Es(context.config.script.parser.es_config.clone()),
               context.config.script.target.clone(),
               context.meta.script.cm.clone(),
@@ -477,7 +476,109 @@ impl FarmPluginScript {
             resource_pot_ast.body.splice(0..0, global_var.body);
           }
 
+          let func_body_prefix = parse_module(
+            "farm_internal_body_prefix",
+            &format!(
+              r#"
+            var __farm_global_this__ = {{
+              __FARM_TARGET_ENV__: '{}',
+            }};
+            var noop = function() {{}};
+            "#,
+              match &context.config.output.target_env {
+                TargetEnv::Browser => "browser",
+                TargetEnv::Node => "node",
+              }
+            ),
+            Syntax::Es(context.config.script.parser.es_config.clone()),
+            context.config.script.target.clone(),
+            context.meta.script.cm.clone(),
+          )?;
+          resource_pot_ast.body.splice(0..0, func_body_prefix.body);
           resource_pot_ast.body.extend(call_entry.body);
+
+          // create a self executing function
+          let resource_pot_body = std::mem::replace(&mut resource_pot_ast.body, vec![]);
+          let func = Function {
+            span: DUMMY_SP,
+            decorators: Default::default(),
+            is_async: false,
+            is_generator: false,
+            params: vec![],
+            body: Some(BlockStmt {
+              span: DUMMY_SP,
+              stmts: resource_pot_body
+                .into_iter()
+                .map(|stmt| match stmt {
+                  ModuleItem::ModuleDecl(_) => {
+                    unreachable!("ModuleDecl should not be in the body of entry resource pot")
+                  }
+                  ModuleItem::Stmt(stmt) => stmt,
+                })
+                .collect(),
+            }),
+            type_params: Default::default(),
+            return_type: Default::default(),
+          };
+          // make func self-executing
+          let func_self_executed = Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(Box::new(Expr::Fn(FnExpr {
+              ident: None,
+              function: Box::new(func),
+            }))),
+            args: vec![],
+            type_args: Default::default(),
+          });
+          // var entry = (function() { ... })()
+          let entry_var = VarDecl {
+            span: DUMMY_SP,
+            kind: VarDeclKind::Var,
+            declare: false,
+            decls: vec![VarDeclarator {
+              span: DUMMY_SP,
+              name: Pat::Ident(BindingIdent {
+                id: Ident::new("entry".into(), DUMMY_SP),
+                type_ann: None,
+              }),
+              init: Some(Box::new(func_self_executed)),
+              definite: false,
+            }],
+          };
+
+          if matches!(context.config.output.format, ModuleFormat::EsModule) {
+            resource_pot_ast
+              .body
+              .push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
+                span: DUMMY_SP,
+                specifiers: vec![ImportSpecifier::Default(ImportDefaultSpecifier {
+                  span: DUMMY_SP,
+                  local: Ident::new(FARM_NODE_MODULE.into(), DUMMY_SP),
+                })],
+                src: Box::new(Str {
+                  span: DUMMY_SP,
+                  value: "node:module".into(),
+                  raw: None,
+                }),
+                type_only: false,
+                asserts: None,
+              })));
+          }
+
+          resource_pot_ast
+            .body
+            .push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(entry_var)))));
+
+          if !export_str.is_empty() {
+            let export_module_items = parse_module(
+              "farm_internal_export_module_items",
+              &export_str,
+              Syntax::Es(context.config.script.parser.es_config.clone()),
+              context.config.script.target.clone(),
+              context.meta.script.cm.clone(),
+            )?;
+            resource_pot_ast.body.extend(export_module_items.body);
+          }
         }
         _ => unreachable!("Entry resource pot should be js type in FarmPluginScript"),
       }

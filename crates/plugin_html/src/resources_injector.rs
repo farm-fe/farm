@@ -1,5 +1,5 @@
 use farmfe_core::{
-  config::{Mode, FARM_MODULE_SYSTEM},
+  config::{Mode, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
   hashbrown::HashMap,
   module::ModuleId,
   resource::ResourceType,
@@ -67,7 +67,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"{}.setInitialLoadedResources({});"#,
+        r#"{FARM_GLOBAL_THIS}.{}.setInitialLoadedResources({});"#,
         FARM_MODULE_SYSTEM,
         format!("[{}]", initial_resources_code)
       )),
@@ -108,7 +108,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"{}.setDynamicModuleResourcesMap({});"#,
+        r#"{FARM_GLOBAL_THIS}.{}.setDynamicModuleResourcesMap({});"#,
         FARM_MODULE_SYSTEM, dynamic_resources_code
       )),
       vec![(FARM_ENTRY, "true")],
@@ -133,12 +133,13 @@ impl ResourcesInjector {
       r#"
 window.process = {{
   env: {{
-    NODE_ENV: '{}',
+    NODE_ENV: '{node_env}',
   }},
 }};
-window.__FARM_TARGET_ENV__ = '{}';
-{}"#,
-      node_env, "browser", define_code
+window.{FARM_GLOBAL_THIS} = {{
+  __FARM_TARGET_ENV__: 'browser',
+}};
+{define_code}"#
     );
 
     element.children.push(Child::Element(create_element(
@@ -208,7 +209,7 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"{}.setPublicPaths(['{}']);"#,
+          r#"{FARM_GLOBAL_THIS}.{}.setPublicPaths(['{}']);"#,
           FARM_MODULE_SYSTEM, self.options.public_path
         )),
         vec![(FARM_ENTRY, "true")],
@@ -216,14 +217,20 @@ impl VisitMut for ResourcesInjector {
 
       element.children.push(Child::Element(create_element(
         "script",
-        Some(&format!(r#"{}.bootstrap();"#, FARM_MODULE_SYSTEM)),
+        Some(&format!(
+          r#"{FARM_GLOBAL_THIS}.{}.bootstrap();"#,
+          FARM_MODULE_SYSTEM
+        )),
         vec![(FARM_ENTRY, "true")],
       )));
 
       for entry in &self.script_entries {
         element.children.push(Child::Element(create_element(
           "script",
-          Some(&format!(r#"{}.require("{}")"#, FARM_MODULE_SYSTEM, entry)),
+          Some(&format!(
+            r#"{FARM_GLOBAL_THIS}.{}.require("{}")"#,
+            FARM_MODULE_SYSTEM, entry
+          )),
           vec![(FARM_ENTRY, "true")],
         )));
       }
