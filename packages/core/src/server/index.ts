@@ -129,7 +129,6 @@ export class DevServer implements ImplDevServer {
       compiler: this._compiler,
       logger: this.logger
     };
-    // 这里传入middleware配置
     this.resolvedFarmServerPlugins(middlewares);
   }
 
