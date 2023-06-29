@@ -91,7 +91,7 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, Css Modules officially o
 
 ### SolidJS Examples
 
-- [SolidJS Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
+- [SolidJS-Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
 
 ## RoadMap
 

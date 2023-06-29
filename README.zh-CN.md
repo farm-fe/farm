@@ -74,7 +74,7 @@ $ pnpm create farm
 
 ## 示例
 
-Farm 支持编译 React、Vue SFC、Sass、Less、Css Modules 等场景场景，具体可以查看我们的示例:
+Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场景，具体可以查看我们的示例:
 
 ### React 项目示例
 
@@ -88,6 +88,10 @@ Farm 支持编译 React、Vue SFC、Sass、Less、Css Modules 等场景场景，
 - [Vue-Basic](https://github.com/farm-fe/farm/tree/main/examples/vue)
 - [Vue-Jsx](https://github.com/farm-fe/farm/tree/main/examples/vue-jsx)
 - [Vue-Antdv](https://github.com/farm-fe/farm/tree/main/examples/vue-antdv)
+
+### SolidJS 项目示例
+
+- [SolidJS-Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
 
 ## 开发计划
 
