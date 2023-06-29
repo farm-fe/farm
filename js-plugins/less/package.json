@@ -2,11 +2,12 @@
   "name": "@farmfe/js-plugin-less",
   "version": "0.0.7",
   "description": "support less compile for farm.",
-  "main": "./build/src/index.cjs",
+  "main": "./build/index.cjs",
   "types": "./dist/src/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
+      "default": "./build/index.cjs",
       "import": "./build/index.cjs",
       "types": "./dist/src/index.d.ts",
       "require": "./build/index.cjs"
