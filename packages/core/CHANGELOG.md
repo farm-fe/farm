@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.9.8
+
+### Patch Changes
+
+- 596fc2a: Fix HMR patch_module_group_graph panic
+- Updated dependencies [596fc2a]
+  - @farmfe/runtime-plugin-hmr@3.2.0
+
 ## 0.9.7
 
 ### Patch Changes
