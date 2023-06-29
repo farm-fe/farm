@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-less
 
+## 0.0.8
+
+### Patch Changes
+
+- 3073e19: Isolate runtime from globalThis for script entries
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+
 ## 0.0.7
 
 ### Patch Changes
