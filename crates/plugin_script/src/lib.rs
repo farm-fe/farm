@@ -483,7 +483,6 @@ impl FarmPluginScript {
             var __farm_global_this__ = {{
               __FARM_TARGET_ENV__: '{}',
             }};
-            var noop = function() {{}};
             "#,
               match &context.config.output.target_env {
                 TargetEnv::Browser => "browser",
@@ -546,7 +545,9 @@ impl FarmPluginScript {
             }],
           };
 
-          if matches!(context.config.output.format, ModuleFormat::EsModule) {
+          if matches!(context.config.output.format, ModuleFormat::EsModule)
+            && context.config.output.target_env == TargetEnv::Node
+          {
             resource_pot_ast
               .body
               .push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
