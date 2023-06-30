@@ -504,7 +504,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.9.6
+        specifier: workspace:^0.9.9
         version: link:../../packages/core
       '@types/less':
         specifier: ^3.0.3
@@ -519,7 +519,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.9.6
+        specifier: workspace:^0.9.9
         version: link:../../packages/core
       sass:
         specifier: ^1.62.1
@@ -633,7 +633,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.6.1
+        specifier: workspace:^0.6.2
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.2.0

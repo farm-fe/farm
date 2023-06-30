@@ -35,6 +35,6 @@
     "vite": "^4.3.9"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.9.8"
+    "@farmfe/core": "^0.9.10"
   }
 }

@@ -1,5 +1,19 @@
 # @farmfe/core
 
+## 0.9.10
+
+### Patch Changes
+
+- a40b07d: make resources order injected to html execution order
+
+## 0.9.9
+
+### Patch Changes
+
+- 3073e19: Isolate runtime from globalThis for script entries
+- Updated dependencies [3073e19]
+  - @farmfe/runtime@0.6.2
+
 ## 0.9.8
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.7
+
+### Patch Changes
+
+- 3073e19: Bump version for js plugins
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+
 ## 1.2.6
 
 ### Patch Changes
