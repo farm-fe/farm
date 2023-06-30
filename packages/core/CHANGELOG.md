@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.9.10
+
+### Patch Changes
+
+- a40b07d: make resources order injected to html execution order
+
 ## 0.9.9
 
 ### Patch Changes
