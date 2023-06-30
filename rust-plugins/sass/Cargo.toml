@@ -13,6 +13,7 @@ farmfe_toolkit_plugin_types = { version = "*", path = "../../crates/toolkit_plug
 farmfe_toolkit = { path = "../../crates/toolkit" }
 sass-embedded = { version = "0.6.2", features = ["legacy", "serde"] }
 serde = { version = "1.0", features = ["derive"] }
+grass = { version = "0.12.4"}
 
 [dev-dependencies]
 farmfe_testing_helpers = { path = "../../crates/testing_helpers" }

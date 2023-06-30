@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::env::consts::{ARCH, OS};
 use std::path::PathBuf;
+use grass;
 
 const PKG_NAME: &str = "@farmfe/plugin-sass";
 
@@ -61,24 +62,31 @@ impl Plugin for FarmPluginSass {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
-      let exe_path: PathBuf = get_exe_path();
-      let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
-        panic!(
-          "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{} \n",
-          e.message(),
-          get_os(),
-          get_arch()
-        )
-      });
-      let string_options = self.get_sass_options(param.resolved_path.to_string());
-      let compile_result = sass
-        .compile_string(&param.content, string_options)
-        .map_err(|e| farmfe_core::error::CompilationError::TransformError {
+      // let exe_path: PathBuf = get_exe_path();
+      // let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
+      //   panic!(
+      //     "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{} \n",
+      //     e.message(),
+      //     get_os(),
+      //     get_arch()
+      //   )
+      // });
+      // let string_options = self.get_sass_options(param.resolved_path.to_string());
+      // let compile_result = sass
+      //   .compile_string(&param.content, string_options)
+      //   .map_err(|e| farmfe_core::error::CompilationError::TransformError {
+      //     resolved_path: param.resolved_path.to_string(),
+      //     msg: e.message().to_string(),
+      //   })?;
+      
+      let css = grass::from_string(
+        &param.content.to_owned(),
+        &grass::Options::default()).map_err(|e| farmfe_core::error::CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
-          msg: e.message().to_string(),
+          msg: e.to_string(),
         })?;
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-        content: compile_result.css,
+        content: css,
         source_map: None,
         module_type: Some(farmfe_core::module::ModuleType::Css),
       }));

@@ -44,7 +44,7 @@ fn test() {
       .unwrap()
       .unwrap();
     let expected =
-      "body {\n  color: #000;\n}\nbody .description:hover {\n  background-color: #f8f9fa;\n}";
+      "body {\n  color: #000;\n}\nbody .description:hover {\n  background-color: #f8f9fa;\n}\n";
     assert_eq!(transformed.content, expected);
   });
 }
