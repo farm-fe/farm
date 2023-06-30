@@ -12,14 +12,9 @@ use farmfe_core::{
 };
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex, resolve::follow_symlinks};
+use grass;
 use sass_embedded::{FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::{env, fmt::Debug};
-use std::{
-  env::consts::{ARCH, OS},
-  fmt::Formatter,
-};
 
 const PKG_NAME: &str = "@farmfe/plugin-sass";
 
@@ -135,56 +130,33 @@ impl Plugin for FarmPluginSass {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
-      let exe_path: PathBuf = get_exe_path();
-      let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
-        panic!(
-          "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{} \n",
-          e.message(),
-          get_os(),
-          get_arch()
-        )
-      });
+      // let exe_path: PathBuf = get_exe_path();
+      // let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
+      //   panic!(
+      //     "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{} \n",
+      //     e.message(),
+      //     get_os(),
+      //     get_arch()
+      //   )
+      // });
+      // let string_options = self.get_sass_options(param.resolved_path.to_string());
+      // let compile_result = sass
+      //   .compile_string(&param.content, string_options)
+      //   .map_err(|e| farmfe_core::error::CompilationError::TransformError {
+      //     resolved_path: param.resolved_path.to_string(),
+      //     msg: e.message().to_string(),
+      //   })?;
 
-      let (mut string_options, additional_options) =
-        self.get_sass_options(param.resolved_path.to_string());
-
-      let paths = Arc::new(RwLock::new(vec![]));
-      let cloned_context = context.clone();
-
-      let import_collection = Box::new(FileImporterCollection {
-        paths: paths.clone(),
-        importer: param.module_id.clone().into(),
-        context: cloned_context,
-      });
-      // TODO support source map for additionalData
-      let content = if let Some(additional_data) = additional_options.get("additionalData") {
-        format!("{}\n{}", additional_data, param.content)
-      } else {
-        param.content.clone()
-      };
-
-      string_options
-        .common
-        .importers
-        .push(sass_embedded::SassImporter::FileImporter(import_collection));
-      string_options.url = None;
-
-      let compile_result = sass.compile_string(&content, string_options).map_err(|e| {
-        farmfe_core::error::CompilationError::TransformError {
-          resolved_path: param.resolved_path.to_string(),
-          msg: e.message().to_string(),
-        }
-      })?;
-
-      let paths = paths.read();
-
-      context
-        .add_watch_files(param.resolved_path.to_string(), paths.iter().collect())
-        .expect("cannot add file to watch graph");
-
+      let css =
+        grass::from_string(&param.content.to_owned(), &grass::Options::default()).map_err(|e| {
+          farmfe_core::error::CompilationError::TransformError {
+            resolved_path: param.resolved_path.to_string(),
+            msg: e.to_string(),
+          }
+        })?;
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-        content: compile_result.css,
-        source_map: compile_result.source_map,
+        content: css,
+        source_map: None,
         module_type: Some(farmfe_core::module::ModuleType::Css),
       }));
     }
