@@ -2,6 +2,8 @@ import { Module } from './module';
 import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
 import { Resource, ResourceLoader, targetEnv } from './resource-loader';
 
+declare const __farmNodeRequire: (moduleId: string) => any;
+
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore swc helpers does not have type definition
 import { _interop_require_default } from '@swc/helpers/_/_interop_require_default';
@@ -81,12 +83,6 @@ export class ModuleSystem {
     if (!initializer) {
       // if running on node, using native require to load node built-in modules
       if (targetEnv === 'node') {
-        const { __farmNodeRequire } =
-          // TODO: polyfill globalThis
-          globalThis as unknown as {
-            __farmNodeRequire: (id: string) => any;
-          };
-
         return __farmNodeRequire(moduleId);
       }
 

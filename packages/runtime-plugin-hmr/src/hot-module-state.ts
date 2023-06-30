@@ -45,6 +45,10 @@ export function applyHotUpdates(
   result: HmrUpdateResult,
   moduleSystem: ModuleSystem
 ) {
+  result.changed.forEach((id) => {
+    console.log(`[Farm HMR] ${id} updated`);
+  });
+
   for (const id of result.removed) {
     moduleSystem.delete(id);
     REGISTERED_HOT_MODULES.delete(id);

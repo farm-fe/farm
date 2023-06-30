@@ -107,4 +107,6 @@ dist
 target
 
 build
+!crates/**/build
 .swc
+.DS_Store

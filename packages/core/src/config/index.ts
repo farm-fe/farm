@@ -22,7 +22,7 @@ import {
   isObject,
   normalizePath
 } from '../utils/index.js';
-import { loadEnv } from './env.js';
+import { CompilationMode, loadEnv } from './env.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -31,8 +31,6 @@ export const DEFAULT_CONFIG_NAMES = [
   'farm.config.mjs'
 ];
 
-type CompilationMode = 'development' | 'production';
-
 /**
  * Normalize user config and transform it to rust compiler compatible config
  * @param config
@@ -40,20 +38,15 @@ type CompilationMode = 'development' | 'production';
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode = 'development',
-  env: CompilationMode = 'development'
+  mode: CompilationMode = 'development'
 ): Promise<Config> {
   // resolve root path
   const resolvedRootPath = normalizePath(
     userConfig.root ? path.resolve(userConfig.root) : process.cwd()
   );
 
-  const nodeEnv = !!process.env.NODE_ENV;
-  if (!nodeEnv) {
-    process.env.NODE_ENV = env;
-  }
-  const isProduction = process.env.NODE_ENV === 'production';
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isProduction = mode === 'production';
+  const isDevelopment = mode === 'development';
 
   const config: Config['config'] = merge(
     {
@@ -74,7 +67,7 @@ export async function normalizeUserCompilationConfig(
   // TODO load env variables from .env file
   config.env = {
     ...userEnv,
-    NODE_ENV: process.env.NODE_ENV
+    NODE_ENV: process.env.NODE_ENV || mode
   };
   config.define = Object.assign(config.define ?? {}, config.env);
 
@@ -110,6 +103,10 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  if (config.mode === undefined) {
+    config.mode = mode;
+  }
+
   if (isProduction) {
     if (!config.output) {
       config.output = {};
@@ -134,6 +131,8 @@ export async function normalizeUserCompilationConfig(
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     config.runtime.plugins.push(hmrClientPluginPath);
+    config.define.FARM_HMR_PORT = String(normalizedDevServerConfig.hmr.port);
+    config.define.FARM_HMR_HOST = normalizedDevServerConfig.hmr.host;
   }
 
   // we should not deep merge compilation.input
@@ -341,10 +340,10 @@ async function readConfigFile(
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: configFilePath
+            [fileName]: configFilePath
           },
           output: {
-            entryFilename: fileName,
+            entryFilename: '[entryName]',
             path: outputPath,
             targetEnv: 'node'
           },

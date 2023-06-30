@@ -1,5 +1,33 @@
 # @farmfe/core
 
+## 0.9.10
+
+### Patch Changes
+
+- a40b07d: make resources order injected to html execution order
+
+## 0.9.9
+
+### Patch Changes
+
+- 3073e19: Isolate runtime from globalThis for script entries
+- Updated dependencies [3073e19]
+  - @farmfe/runtime@0.6.2
+
+## 0.9.8
+
+### Patch Changes
+
+- 596fc2a: Fix HMR patch_module_group_graph panic
+- Updated dependencies [596fc2a]
+  - @farmfe/runtime-plugin-hmr@3.2.0
+
+## 0.9.7
+
+### Patch Changes
+
+- de18942: Fix that build env set to development
+
 ## 0.9.6
 
 ### Patch Changes

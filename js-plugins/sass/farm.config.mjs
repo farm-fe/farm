@@ -10,7 +10,7 @@ export default {
     },
     output: {
       path: 'build',
-      entryFilename: 'index.cjs',
+      entryFilename: '[entryName].cjs',
       targetEnv: 'node',
       format: 'cjs'
     },

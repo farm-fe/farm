@@ -1,5 +1,19 @@
 # @farmfe/js-plugin-sass
 
+## 1.0.6
+
+### Patch Changes
+
+- 3073e19: Bump version for js plugins
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+
+## 1.0.5
+
+### Patch Changes
+
+- 08be0b5: Fix that files field in package.json of js-plugins misses build
+
 ## 1.0.4
 
 ### Patch Changes

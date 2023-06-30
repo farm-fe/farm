@@ -4,7 +4,9 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::Result,
-  plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
+  plugin::{
+    Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
+  },
 };
 use farmfe_toolkit::regex::Regex;
 use farmfe_utils::parse_query;
@@ -58,13 +60,15 @@ impl Plugin for FarmPluginResolve {
       Path::new(&self.root).to_path_buf()
     };
 
-    if [
-      "@swc/helpers/_/_interop_require_default",
-      "@swc/helpers/_/_interop_require_wildcard",
-      "@swc/helpers/_/_export_star",
-    ]
-    .into_iter()
-    .all(|s| source != s)
+    // Entry module and internal modules should not be external
+    if !matches!(param.kind, ResolveKind::Entry(_))
+      && [
+        "@swc/helpers/_/_interop_require_default",
+        "@swc/helpers/_/_interop_require_wildcard",
+        "@swc/helpers/_/_export_star",
+      ]
+      .into_iter()
+      .all(|s| source != s)
     {
       // check external first, if the source is set as external, return it immediately
       if context.config.external.iter().any(|e| {

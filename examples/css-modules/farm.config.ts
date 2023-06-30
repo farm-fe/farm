@@ -17,7 +17,11 @@ export default defineConfig({
     // minify: true,
   },
   server: {
-    hmr: true,
+    hmr: {
+      port: 9802,
+    },
+    port: 9001,
+    open: true,
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
 });

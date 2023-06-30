@@ -261,6 +261,9 @@ importers:
       clsx:
         specifier: ^1.2.1
         version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.30.1
       react:
         specifier: '18'
         version: 18.0.0
@@ -416,6 +419,9 @@ importers:
       '@farmfe/js-plugin-vue':
         specifier: workspace:*
         version: link:../../js-plugins/vue
+      sass:
+        specifier: ^1.62.1
+        version: 1.62.1
 
   examples/vue-antdv:
     dependencies:
@@ -498,7 +504,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.9.6
+        specifier: workspace:^0.9.9
         version: link:../../packages/core
       '@types/less':
         specifier: ^3.0.3
@@ -513,7 +519,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.9.6
+        specifier: workspace:^0.9.9
         version: link:../../packages/core
       sass:
         specifier: ^1.62.1
@@ -627,10 +633,10 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.6.1
+        specifier: workspace:^0.6.2
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.1.4
+        specifier: workspace:^3.2.0
         version: link:../runtime-plugin-hmr
       '@koa/cors':
         specifier: ^4.0.0

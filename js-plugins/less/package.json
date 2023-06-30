@@ -1,12 +1,13 @@
 {
   "name": "@farmfe/js-plugin-less",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "description": "support less compile for farm.",
-  "main": "./build/src/index.cjs",
+  "main": "./build/index.cjs",
   "types": "./dist/src/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
+      "default": "./build/index.cjs",
       "import": "./build/index.cjs",
       "types": "./dist/src/index.d.ts",
       "require": "./build/index.cjs"
@@ -26,24 +27,25 @@
     "email": "1357711537@qq.com"
   },
   "scripts": {
-    "build": "farm build && tsc -p ./tsconfig.build.json",
+    "build": "rimraf dist && farm build && tsc -p ./tsconfig.build.json",
     "start": "pnpm run build -w",
     "prepublishOnly": "npm run build",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
   "files": [
-    "dist"
+    "dist",
+    "build"
   ],
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:^0.9.6",
+    "@farmfe/core": "workspace:^0.9.9",
     "@types/less": "^3.0.3",
     "less": "^4.1.3"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^0.9.6",
+    "@farmfe/core": "workspace:^0.9.9",
     "less": "^3.5.0 || ^4.0.0"
   }
 }

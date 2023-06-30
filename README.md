@@ -74,7 +74,7 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## Examples
 
-Farm support compiling React, Vue SFC, Sass, Less, Css Modules officially out of box. See our examples:
+Farm support compiling React, Vue, SolidJS, Sass, Less, Css Modules officially out of box. See our examples:
 
 ### React Examples
 
@@ -89,6 +89,10 @@ Farm support compiling React, Vue SFC, Sass, Less, Css Modules officially out of
 - [Vue-Jsx](https://github.com/farm-fe/farm/tree/main/examples/vue-jsx)
 - [Vue-Antdv](https://github.com/farm-fe/farm/tree/main/examples/vue-antdv)
 
+### SolidJS Examples
+
+- [SolidJS-Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
+
 ## RoadMap
 
 Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
@@ -97,11 +101,11 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 ## Chat With Us
 
-* With [Discord](https://discord.gg/mDErq9aFnF)
+- With [Discord](https://discord.gg/mDErq9aFnF)
 
-* Wechat group 
+- Wechat group
 
-<img src="./assets/wechat-group.jpg" width="30%" />
+<img src="./assets/wechat-group.jpeg" width="30%" />
 
 ## Contribution
 
