@@ -246,8 +246,31 @@ impl Plugin for FarmPluginHtml {
       // Found all resources in this entry html module group
       let mut dep_resources = vec![];
       let mut html_entry_resource = None;
+      let mut resource_pots_order_map = HashMap::<String, usize>::new();
+      // TODO make the resource pots order execution order when partial bundling
+      let mut sorted_resource_pots = module_group.resource_pots().into_iter().collect::<Vec<_>>();
+      sorted_resource_pots.iter().for_each(|rp| {
+        let rp = resource_pot_map.resource_pot(rp).unwrap();
+        let max_order = rp
+          .modules()
+          .iter()
+          .map(|m| {
+            let module = module_graph.module(m).unwrap();
+            module.execution_order
+          })
+          .min()
+          .unwrap_or(0);
 
-      for rp_id in module_group.resource_pots() {
+        resource_pots_order_map.insert(rp.id.to_string(), max_order);
+      });
+      sorted_resource_pots.sort_by(|a, b| {
+        let a_order = resource_pots_order_map.get(&a.to_string()).unwrap_or(&0);
+        let b_order = resource_pots_order_map.get(&b.to_string()).unwrap_or(&0);
+
+        a_order.cmp(b_order)
+      });
+
+      for rp_id in sorted_resource_pots {
         let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
           panic!(
             "Resource pot {} not found in resource pot map",
@@ -258,6 +281,7 @@ impl Plugin for FarmPluginHtml {
         for resource in rp.resources() {
           if rp.modules().contains(&html_entry_id) {
             html_entry_resource = Some(resource.clone());
+            continue;
           }
         }
 
