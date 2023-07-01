@@ -4,7 +4,6 @@ use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex};
 use serde::{Deserialize, Serialize};
-use grass;
 
 #[farm_plugin]
 #[derive(Debug, Deserialize, Serialize, Default)]
@@ -55,7 +54,7 @@ impl Plugin for FarmPluginSass {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
       let css = grass::from_string(
-        &param.content.to_owned(),
+        param.content.to_owned(),
         &grass::Options::default())
         .map_err(|e| farmfe_core::error::CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
