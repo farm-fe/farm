@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 0.10.0
+
+### Minor Changes
+
+- d604b5e: Support React SSR
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/runtime@0.7.0
+  - @farmfe/runtime-plugin-hmr@3.2.0
+
 ## 0.9.10
 
 ### Patch Changes

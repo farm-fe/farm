@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-less
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/core@0.10.0
+
 ## 0.0.8
 
 ### Patch Changes
