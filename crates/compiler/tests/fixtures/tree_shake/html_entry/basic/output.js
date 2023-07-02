@@ -26,8 +26,8 @@ window.process = {
   },
 };
 window.__farm_namespace__ = '__farm_default_namespace__';
-window[__farm_namespace__] = {};
-window[__farm_namespace__] = {
+(globalThis || window || global || self)[__farm_namespace__] = {};
+(globalThis || window || global || self)[__farm_namespace__] = {
   __FARM_TARGET_ENV__: 'browser',
 };
 </script><script data-farm-entry-script="true">(function(modules, entryModule) {
@@ -46,12 +46,11 @@ window[__farm_namespace__] = {
 })({
     "ec853507": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
-        console.log("runtime/index.js");
-        __farm_global_this__.__farm_module_system__.setPlugins([]);
+        console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
 }, "ec853507");
 </script></head>
 <body>
   
 
-<script src="/ac35b2ca.js" data-farm-resource="true"></script><script data-farm-entry-script="true">window[__farm_namespace__].__farm_module_system__.setInitialLoadedResources(['ac35b2ca.js']);</script><script data-farm-entry-script="true">window[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">window[__farm_namespace__].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">window[__farm_namespace__].__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">window[__farm_namespace__].__farm_module_system__.require("7c4a34c2")</script></body></html>
+<script src="/ac35b2ca.js" data-farm-resource="true"></script><script data-farm-entry-script="true">(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setInitialLoadedResources(['ac35b2ca.js']);</script><script data-farm-entry-script="true">(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.require("7c4a34c2")</script></body></html>
