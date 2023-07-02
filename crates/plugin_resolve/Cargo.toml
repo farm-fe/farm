@@ -8,3 +8,6 @@ farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
+
+[features]
+profile = ["farmfe_core/profile"]

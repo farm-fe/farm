@@ -10,12 +10,15 @@ export default {
     },
     output: {
       path: 'dist',
-      filename: 'index.[ext]'
+      targetEnv: 'node',
+      entryFilename: '[entryName].mjs'
     },
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
-    ]
+    ],
+    minify: false,
+    presetEnv: false,
     // partialBundling: {
     //   moduleBuckets: [
     //     {

@@ -6,6 +6,7 @@ use farmfe_core::{
   swc_html_ast::{Child, Document, Element},
 };
 use farmfe_toolkit::{
+  get_dynamic_resources_map::get_dynamic_resources_code,
   html::create_element,
   swc_html_visit::{VisitMut, VisitMutWith},
 };
@@ -18,6 +19,7 @@ pub struct ResourcesInjectorOptions {
   pub mode: Mode,
   pub public_path: String,
   pub define: std::collections::HashMap<String, String>,
+  pub namespace: String,
 }
 
 /// inject resources into the html ast
@@ -67,7 +69,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"{FARM_GLOBAL_THIS}.{}.setInitialLoadedResources({});"#,
+        r#"window[__farm_namespace__].{}.setInitialLoadedResources({});"#,
         FARM_MODULE_SYSTEM,
         format!("[{}]", initial_resources_code)
       )),
@@ -76,39 +78,13 @@ impl ResourcesInjector {
   }
 
   fn inject_dynamic_resources_map(&self, element: &mut Element) {
-    let mut dynamic_resources_code = String::new();
-
-    // inject dynamic resources
-    for (module_id, resources) in &self.dynamic_resources_map {
-      let mut resources_code = String::new();
-
-      for (resource_name, resource_type) in resources {
-        match resource_type {
-          ResourceType::Js => {
-            resources_code += &format!(r#"{{ path: '{}', type: 'script' }},"#, resource_name)
-          }
-          ResourceType::Css => {
-            resources_code += &format!(r#"{{ path: '{}', type: 'link' }},"#, resource_name)
-          }
-          _ => {
-            panic!(
-              "unsupported type ({:?}) when injecting dynamic resources",
-              resource_type
-            )
-          }
-        }
-      }
-
-      let id = module_id.id(self.options.mode.clone()).replace(r"\", r"\\");
-      dynamic_resources_code += &format!(r#"'{}': [{}],"#, id, resources_code);
-    }
-
-    dynamic_resources_code = format!("{{ {} }}", dynamic_resources_code);
+    let dynamic_resources_code =
+      get_dynamic_resources_code(&self.dynamic_resources_map, self.options.mode.clone());
 
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"{FARM_GLOBAL_THIS}.{}.setDynamicModuleResourcesMap({});"#,
+        r#"window[__farm_namespace__].{}.setDynamicModuleResourcesMap({});"#,
         FARM_MODULE_SYSTEM, dynamic_resources_code
       )),
       vec![(FARM_ENTRY, "true")],
@@ -129,6 +105,8 @@ impl ResourcesInjector {
         acc
       });
 
+    let namespace = &self.options.namespace;
+
     let code = format!(
       r#"
 window.process = {{
@@ -136,7 +114,9 @@ window.process = {{
     NODE_ENV: '{node_env}',
   }},
 }};
-window.{FARM_GLOBAL_THIS} = {{
+window.__farm_namespace__ = '{namespace}';
+window[__farm_namespace__] = {{}};
+window[__farm_namespace__] = {{
   __FARM_TARGET_ENV__: 'browser',
 }};
 {define_code}"#
@@ -209,7 +189,7 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"{FARM_GLOBAL_THIS}.{}.setPublicPaths(['{}']);"#,
+          r#"window[__farm_namespace__].{}.setPublicPaths(['{}']);"#,
           FARM_MODULE_SYSTEM, self.options.public_path
         )),
         vec![(FARM_ENTRY, "true")],
@@ -218,7 +198,7 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"{FARM_GLOBAL_THIS}.{}.bootstrap();"#,
+          r#"window[__farm_namespace__].{}.bootstrap();"#,
           FARM_MODULE_SYSTEM
         )),
         vec![(FARM_ENTRY, "true")],
@@ -228,7 +208,7 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "script",
           Some(&format!(
-            r#"{FARM_GLOBAL_THIS}.{}.require("{}")"#,
+            r#"window[__farm_namespace__].{}.require("{}")"#,
             FARM_MODULE_SYSTEM, entry
           )),
           vec![(FARM_ENTRY, "true")],

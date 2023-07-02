@@ -2,6 +2,8 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import crypto from 'node:crypto';
+
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 import { bindingPath, Config } from '../../binding/index.js';
@@ -59,6 +61,7 @@ export async function normalizeUserCompilationConfig(
     },
     userConfig.compilation
   );
+  config.mode = mode;
   config.coreLibPath = bindingPath;
   const resolvedEnvPath = userConfig.envDir
     ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))
@@ -94,6 +97,20 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime.plugins) {
     config.runtime.plugins = [];
   }
+  // set namespace to package.json name field's hash
+  if (!config.runtime.namespace) {
+    // read package.json name field
+    const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(
+        fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
+      );
+      config.runtime.namespace = crypto
+        .createHash('md5')
+        .update(packageJson.name)
+        .digest('hex');
+    }
+  }
 
   if (config.lazyCompilation === undefined) {
     if (isDevelopment) {
@@ -119,6 +136,14 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  if (config?.output?.targetEnv === 'node') {
+    config.external = [
+      ...(config.external ?? []),
+      ...module.builtinModules.map((m) => `^${m}($|/)`),
+      ...module.builtinModules.map((m) => `^node:${m}($|/)`)
+    ];
+  }
+
   // TODO resolve other server port
   const normalizedDevServerConfig = normalizeDevServerOptions(
     userConfig.server,
@@ -126,6 +151,7 @@ export async function normalizeUserCompilationConfig(
   );
 
   if (
+    config.output.targetEnv !== 'node' &&
     Array.isArray(config.runtime.plugins) &&
     normalizedDevServerConfig.hmr &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
@@ -252,7 +278,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   strictPort: false,
   cors: false,
   spa: true,
-  middlewares: []
+  plugins: []
 };
 
 export function normalizeDevServerOptions(

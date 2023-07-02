@@ -31,6 +31,7 @@ fn main() {
           .unwrap()
           .to_string_lossy()
           .to_string(),
+        ..Default::default()
       },
       ..Default::default()
     },

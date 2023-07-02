@@ -82,6 +82,7 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, Css Modules officially o
 - [React-Ant-Design](https://github.com/farm-fe/farm/tree/main/examples/react-antd)
 - [React-Sass-CssModules](https://github.com/farm-fe/farm/tree/main/examples/css-modules)
 - [React-Multi-Page-Application](https://github.com/farm-fe/farm/tree/main/examples/multi-page-app)
+- [React-SSR](https://github.com/farm-fe/farm/tree/main/examples/react-ssr)
 
 ### Vue Examples
 

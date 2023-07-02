@@ -20,6 +20,7 @@ export function hmr(server: DevServer) {
       );
 
       if (result) {
+        ctx.status = 200;
         ctx.type = 'application/javascript';
         ctx.body = result;
       } else {

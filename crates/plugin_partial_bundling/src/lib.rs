@@ -95,11 +95,7 @@ impl Plugin for FarmPluginPartialBundling {
       for bucket_config in &context.config.partial_bundling.module_buckets {
         let bucket_name = &bucket_config.name;
 
-        let regex = bucket_config
-          .test
-          .iter()
-          .map(|r| Regex::new(r).unwrap())
-          .collect::<Vec<_>>();
+        let regex = &bucket_config.test;
 
         if regex.iter().any(|r| r.is_match(&module_id.to_string())) {
           module_in_custom_buckets = true;

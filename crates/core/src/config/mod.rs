@@ -24,7 +24,7 @@ pub struct Config {
   pub root: String,
   pub mode: Mode,
   pub resolve: ResolveConfig,
-  pub external: Vec<String>,
+  pub external: Vec<ConfigRegex>,
   pub define: HashMap<String, String>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
@@ -143,7 +143,7 @@ impl ToString for Mode {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfigPluginFilters {
-  pub resolved_paths: Vec<String>,
+  pub resolved_paths: Vec<ConfigRegex>,
   pub module_types: Vec<ModuleType>,
 }
 
@@ -267,7 +267,7 @@ impl Default for ResolveConfig {
   }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RuntimeConfig {
   /// the absolute path of the runtime entry, a runtime is required for script module loading, executing and hot module updating.
@@ -276,6 +276,19 @@ pub struct RuntimeConfig {
   pub plugins: Vec<String>,
   /// swc helpers path
   pub swc_helpers_path: String,
+  /// namespace for the runtime
+  pub namespace: String,
+}
+
+impl Default for RuntimeConfig {
+  fn default() -> Self {
+    Self {
+      path: String::from(""),
+      plugins: vec![],
+      swc_helpers_path: String::from(""),
+      namespace: String::from("__farm_default_namespace__"),
+    }
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -283,7 +296,7 @@ pub struct RuntimeConfig {
 pub struct PartialBundlingModuleBucketsConfig {
   pub name: String,
   /// Regex vec to match the modules in the module bucket
-  pub test: Vec<String>,
+  pub test: Vec<ConfigRegex>,
 }
 
 impl Default for PartialBundlingModuleBucketsConfig {
