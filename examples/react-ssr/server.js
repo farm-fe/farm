@@ -1,9 +1,6 @@
-let path = require('path');
-let fsp = require('fs/promises');
-let express = require('express');
-
-let root = process.cwd();
-let isProduction = true;
+const path = require('path');
+const fsp = require('fs/promises');
+const express = require('express');
 
 function resolve(p) {
   return path.resolve(__dirname, p);
@@ -12,7 +9,6 @@ function resolve(p) {
 async function createServer() {
   let app = express();
 
-  // app.use(require("compression")());
   app.use(express.static(resolve('build')));
 
   app.use('/', async (req, res) => {
@@ -38,9 +34,6 @@ async function createServer() {
       res.setHeader('Content-Type', 'text/html');
       return res.status(200).end(html);
     } catch (error) {
-      if (!isProduction) {
-        vite.ssrFixStacktrace(error);
-      }
       console.log(error.stack);
       res.status(500).end(error.stack);
     }

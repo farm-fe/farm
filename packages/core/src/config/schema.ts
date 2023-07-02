@@ -200,7 +200,7 @@ const FarmConfigSchema = z
               .strict()
           ])
           .optional(),
-        middlewares: z.array(z.any()).optional()
+        plugins: z.array(z.any()).optional()
       })
       .strict()
       .optional()

@@ -3,7 +3,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Config, PartialBundlingModuleBucketsConfig},
+  config::{config_regex::ConfigRegex, Config, PartialBundlingModuleBucketsConfig},
   context::CompilationContext,
   error::CompilationError,
   module::{ModuleMetaData, ModuleSystem, ModuleType},
@@ -12,6 +12,7 @@ use farmfe_core::{
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
   },
+  regex::Regex,
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     resource_pot_map::ResourcePotMap,
@@ -68,7 +69,9 @@ impl Plugin for FarmPluginRuntime {
       0,
       PartialBundlingModuleBucketsConfig {
         name: "FARM_RUNTIME".to_string(),
-        test: vec![format!(".+{}", RUNTIME_SUFFIX)],
+        test: vec![ConfigRegex(
+          Regex::new(&format!(".+{}", RUNTIME_SUFFIX)).unwrap(),
+        )],
       },
     );
 

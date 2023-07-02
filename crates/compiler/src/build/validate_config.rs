@@ -5,7 +5,7 @@ use farmfe_toolkit::fs::{ENTRY_NAME, RESOURCE_NAME};
 pub fn validate_config(config: &Config) {
   let mut errors = vec![];
 
-  if config.input.len() > 1 && !config.output.entry_filename.contains(ENTRY_NAME) {
+  if config.input.len() > 2 && !config.output.entry_filename.contains(ENTRY_NAME) {
     errors.push(format!(
       "When `input` is more than one, `output.entry_filename` must contain {}",
       ENTRY_NAME
@@ -16,7 +16,7 @@ pub fn validate_config(config: &Config) {
     && !config.output.filename.contains(RESOURCE_NAME)
   {
     errors.push(format!(
-      "When `partial_bundling.module_buckets` is not configured `output.filename` must contain {}",
+      "`output.filename` must contain {} when `partial_bundling.module_buckets` is not configured",
       RESOURCE_NAME
     ));
   }

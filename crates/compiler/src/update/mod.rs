@@ -15,9 +15,9 @@ use farmfe_core::{
     PluginResolveHookParam, PluginUpdateModulesHookParams, ResolveKind, UpdateResult, UpdateType,
   },
   rayon::ThreadPool,
-  resource::{resource_pot::ResourcePotId, ResourceType},
+  resource::ResourceType,
 };
-use farmfe_plugin_html::get_dynamic_resources_map;
+use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
 
 use crate::{
   build::ResolvedModuleInfo, generate::finalize_resources::finalize_resources, Compiler,

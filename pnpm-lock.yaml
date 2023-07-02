@@ -412,6 +412,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
 
   examples/server-proxy:
     devDependencies:

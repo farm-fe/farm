@@ -5,8 +5,10 @@ use std::path::PathBuf;
 
 use common::generate_runtime;
 use farmfe_compiler::Compiler;
+use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
 use farmfe_core::plugin::UpdateType;
+use farmfe_core::regex::Regex;
 use farmfe_testing_helpers::fixture;
 
 mod common;
@@ -27,7 +29,10 @@ fn create_update_compiler(
         ..Default::default()
       },
       mode: Mode::Development,
-      external: vec!["^react-refresh$".to_string(), "^module$".to_string()],
+      external: vec![
+        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
+        ConfigRegex(Regex::new("^module$").unwrap()),
+      ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       minify,

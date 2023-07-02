@@ -21,8 +21,9 @@
   },
   "scripts": {
     "start": "farm start",
+    "watch": "farm watch --config farm.config.server.mjs",
     "build": "farm build",
-    "build:server": "farm build --config farm.config.server.ts",
+    "build:server": "farm build --config farm.config.server.mjs",
     "preview": "farm preview"
   }
 }
