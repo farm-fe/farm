@@ -69,7 +69,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"window[{FARM_NAMESPACE}].{}.setInitialLoadedResources({});"#,
+        r#"{FARM_GLOBAL_THIS}.{}.setInitialLoadedResources({});"#,
         FARM_MODULE_SYSTEM,
         format!("[{}]", initial_resources_code)
       )),
@@ -84,7 +84,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"window[{FARM_NAMESPACE}].{}.setDynamicModuleResourcesMap({});"#,
+        r#"{FARM_GLOBAL_THIS}.{}.setDynamicModuleResourcesMap({});"#,
         FARM_MODULE_SYSTEM, dynamic_resources_code
       )),
       vec![(FARM_ENTRY, "true")],
@@ -115,8 +115,8 @@ window.process = {{
   }},
 }};
 window.{FARM_NAMESPACE} = '{namespace}';
-window[{FARM_NAMESPACE}] = {{}};
-window[{FARM_NAMESPACE}] = {{
+{FARM_GLOBAL_THIS} = {{}};
+{FARM_GLOBAL_THIS} = {{
   __FARM_TARGET_ENV__: 'browser',
 }};
 {define_code}"#
@@ -189,7 +189,7 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"window[{FARM_NAMESPACE}].{}.setPublicPaths(['{}']);"#,
+          r#"{FARM_GLOBAL_THIS}.{}.setPublicPaths(['{}']);"#,
           FARM_MODULE_SYSTEM, self.options.public_path
         )),
         vec![(FARM_ENTRY, "true")],
@@ -198,7 +198,7 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"window[{FARM_NAMESPACE}].{}.bootstrap();"#,
+          r#"{FARM_GLOBAL_THIS}.{}.bootstrap();"#,
           FARM_MODULE_SYSTEM
         )),
         vec![(FARM_ENTRY, "true")],
@@ -208,7 +208,7 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "script",
           Some(&format!(
-            r#"window[{FARM_NAMESPACE}].{}.require("{}")"#,
+            r#"{FARM_GLOBAL_THIS}.{}.require("{}")"#,
             FARM_MODULE_SYSTEM, entry
           )),
           vec![(FARM_ENTRY, "true")],
