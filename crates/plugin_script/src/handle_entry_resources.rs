@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::{ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  config::{ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
   context::CompilationContext,
   hashbrown::HashMap,
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId},
@@ -189,7 +189,7 @@ pub fn handle_entry_resources(
       // 2. __farm_global_this by namespace
       let farm_namespace = &context.config.runtime.namespace;
       let farm_global_this_code = format!(
-        r#"(globalThis || window || global || self).__farm_namespace__ = '{farm_namespace}';(globalThis || window || global || self)['{farm_namespace}'] = {{__FARM_TARGET_ENV__: '{}'}};var {FARM_GLOBAL_THIS} = (globalThis || window || global || self)['{farm_namespace}'];"#,
+        r#"(globalThis || window || global || self).{FARM_NAMESPACE} = '{farm_namespace}';{FARM_GLOBAL_THIS} = {{__FARM_TARGET_ENV__: '{}'}};"#,
         match &context.config.output.target_env {
           TargetEnv::Browser => "browser",
           TargetEnv::Node => "node",

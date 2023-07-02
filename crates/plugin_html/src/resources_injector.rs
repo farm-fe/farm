@@ -1,5 +1,5 @@
 use farmfe_core::{
-  config::{Mode, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  config::{Mode, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
   hashbrown::HashMap,
   module::ModuleId,
   resource::ResourceType,
@@ -69,7 +69,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"window[__farm_namespace__].{}.setInitialLoadedResources({});"#,
+        r#"{FARM_GLOBAL_THIS}.{}.setInitialLoadedResources({});"#,
         FARM_MODULE_SYSTEM,
         format!("[{}]", initial_resources_code)
       )),
@@ -84,7 +84,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"window[__farm_namespace__].{}.setDynamicModuleResourcesMap({});"#,
+        r#"{FARM_GLOBAL_THIS}.{}.setDynamicModuleResourcesMap({});"#,
         FARM_MODULE_SYSTEM, dynamic_resources_code
       )),
       vec![(FARM_ENTRY, "true")],
@@ -114,9 +114,9 @@ window.process = {{
     NODE_ENV: '{node_env}',
   }},
 }};
-window.__farm_namespace__ = '{namespace}';
-window[__farm_namespace__] = {{}};
-window[__farm_namespace__] = {{
+window.{FARM_NAMESPACE} = '{namespace}';
+{FARM_GLOBAL_THIS} = {{}};
+{FARM_GLOBAL_THIS} = {{
   __FARM_TARGET_ENV__: 'browser',
 }};
 {define_code}"#
@@ -189,7 +189,7 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"window[__farm_namespace__].{}.setPublicPaths(['{}']);"#,
+          r#"{FARM_GLOBAL_THIS}.{}.setPublicPaths(['{}']);"#,
           FARM_MODULE_SYSTEM, self.options.public_path
         )),
         vec![(FARM_ENTRY, "true")],
@@ -198,7 +198,7 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"window[__farm_namespace__].{}.bootstrap();"#,
+          r#"{FARM_GLOBAL_THIS}.{}.bootstrap();"#,
           FARM_MODULE_SYSTEM
         )),
         vec![(FARM_ENTRY, "true")],
@@ -208,7 +208,7 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "script",
           Some(&format!(
-            r#"window[__farm_namespace__].{}.require("{}")"#,
+            r#"{FARM_GLOBAL_THIS}.{}.require("{}")"#,
             FARM_MODULE_SYSTEM, entry
           )),
           vec![(FARM_ENTRY, "true")],

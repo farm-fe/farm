@@ -9,8 +9,9 @@ use crate::module::ModuleType;
 
 use self::{config_regex::ConfigRegex, html::HtmlConfig, preset_env::PresetEnvConfig};
 
-pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
+pub const FARM_GLOBAL_THIS: &str = "(globalThis || window || global || self)[__farm_namespace__]";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+pub const FARM_NAMESPACE: &str = "__farm_namespace__";
 
 pub mod config_regex;
 pub mod html;
