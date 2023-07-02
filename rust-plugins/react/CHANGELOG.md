@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.2.0
+
+### Minor Changes
+
+- d604b5e: Support React SSR
+
 ## 0.1.11
 
 ### Patch Changes
