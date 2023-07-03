@@ -6,25 +6,26 @@ use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin, serde_json
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex};
 use grass;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[farm_plugin]
 pub struct FarmPluginSass {
-  sass_options: grass::Options,
+  options: String,
+  root: String,
   regex: Regex,
 }
 
 impl FarmPluginSass {
   pub fn new(config: &Config, options: String) -> Self {
     Self {
-      sass_options: self.get_sass_options(options, config.root.clone()),
+      options: options,
+      root: config.root.clone(),
       regex: Regex::new(r#"\.(sass|scss)$"#).unwrap(),
     }
   }
 
-  pub fn get_sass_options(&self, options: String, root: String) -> grass::Options {
-    let options: Value = serde_json::from_str(&self.sass_options).unwrap_or_default();
+  pub fn get_sass_options(&self) -> grass::Options {
+    let options: Value = serde_json::from_str(&self.options).unwrap_or_default();
     let mut sass_options = grass::Options::default();
 
     if let Value::Bool(quiet) = options.get("quiet").unwrap_or(&Value::Null) {
@@ -42,7 +43,7 @@ impl FarmPluginSass {
       sass_options = sass_options.unicode_error_messages(*unicode_error_messages);
     }
 
-    let mut paths = vec![Path::new(&root)];
+    let mut paths = vec![Path::new(&self.root)];
 
     if let Value::Array(load_paths) = options.get("load_paths").unwrap_or(&Value::Null) {
       for path in load_paths {
@@ -149,7 +150,8 @@ impl Plugin for FarmPluginSass {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
-      let css = grass::from_string(&param.content.to_owned(), &self.sass_options).map_err(|e| {
+      let sass_options = self.get_sass_options();
+      let css = grass::from_string(&param.content.to_owned(), &sass_options).map_err(|e| {
         farmfe_core::error::CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
           msg: e.to_string(),
