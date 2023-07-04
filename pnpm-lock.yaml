@@ -587,7 +587,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.10.0
+        specifier: workspace:^0.10.1
         version: link:../../packages/core
       postcss:
         specifier: ^8.4.24
