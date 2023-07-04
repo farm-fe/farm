@@ -169,7 +169,7 @@ export class HmrEngine {
       result.count--;
 
       // there are no more clients waiting for this update
-      if (result.count <= 0 && this._updateResults.size === 2) {
+      if (result.count <= 0 && this._updateResults.size >= 2) {
         /**
          * Edge handle
          * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
