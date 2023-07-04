@@ -167,12 +167,17 @@ export class HmrEngine {
 
     if (result) {
       result.count--;
+
       // there are no more clients waiting for this update
-      if (result.count <= 0) {
-        this._updateResults.delete(id);
+      if (result.count <= 0 && this._updateResults.size >= 2) {
+        /**
+         * Edge handle
+         * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
+         * So keep the result of the last time every time, so that the request can be successfully carried out.
+         */
+        this._updateResults.delete(this._updateResults.keys().next().value);
       }
     }
-
     return result?.result;
   }
 }
