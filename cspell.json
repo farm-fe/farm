@@ -90,7 +90,8 @@
     "Antdv",
     "wechat",
     "pluginutils",
-    "picomatch"
+    "picomatch",
+    "rsplit"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

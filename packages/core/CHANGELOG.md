@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.10.1
+
+### Patch Changes
+
+- eb9f382: Fix script entry source map inject
+
 ## 0.10.0
 
 ### Minor Changes
