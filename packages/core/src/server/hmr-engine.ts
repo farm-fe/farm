@@ -167,7 +167,6 @@ export class HmrEngine {
 
     if (result) {
       result.count--;
-      console.log(this._updateResults.size);
 
       // there are no more clients waiting for this update
       if (result.count <= 0 && this._updateResults.size === 2) {
