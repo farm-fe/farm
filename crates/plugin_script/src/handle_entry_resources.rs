@@ -249,14 +249,16 @@ pub fn handle_entry_resources(
           .clone(),
       )
       .unwrap();
-      // split source map
-      let mut entry_js_resource_code_iter = entry_js_resource_code.split("//# sourceMappingURL=");
-      let entry_js_resource_code = entry_js_resource_code_iter.next().unwrap();
-      let entry_js_resource_source_map =
-        if let Some(source_map) = entry_js_resource_code_iter.next() {
-          format!("\n//# sourceMappingURL={}", source_map)
+      // split last line
+      let (entry_js_resource_code, entry_js_resource_source_map) =
+        if let Some((c, m)) = entry_js_resource_code.rsplit_once("\n") {
+          if (m.starts_with("//# sourceMappingURL=")) {
+            (c.to_string(), format!("\n{}", m))
+          } else {
+            (entry_js_resource_code, "".to_string())
+          }
         } else {
-          "".to_string()
+          (entry_js_resource_code, "".to_string())
         };
 
       let entry_js_resource = resources_map

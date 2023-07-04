@@ -106,7 +106,7 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 - Wechat group
 
-<img src="./assets/wechat-group.jpeg" width="30%" />
+<img src="./assets/wechat-group.jpg" width="30%" />
 
 ## Contribution
 
