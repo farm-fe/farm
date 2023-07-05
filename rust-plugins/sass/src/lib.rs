@@ -6,7 +6,6 @@ use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex, resolve::follow_symlinks};
 use sass_embedded::{OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
-use serde::{Deserialize, Serialize};
 use std::env;
 use std::env::consts::{ARCH, OS};
 use std::path::PathBuf;
@@ -14,16 +13,16 @@ use std::path::PathBuf;
 const PKG_NAME: &str = "@farmfe/plugin-sass";
 
 #[farm_plugin]
-#[derive(Debug, Deserialize, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct FarmPluginSass {
   sass_options: String,
+  regex: Regex,
 }
 
 impl FarmPluginSass {
   pub fn new(_config: &Config, options: String) -> Self {
     Self {
       sass_options: options,
+      regex: Regex::new(r#"\.(sass|scss)$"#).unwrap(),
     }
   }
 
@@ -44,8 +43,7 @@ impl Plugin for FarmPluginSass {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
-    let reg = Regex::new(r#"\.(sass|scss)$"#).unwrap();
-    if reg.is_match(param.resolved_path) {
+    if self.regex.is_match(param.resolved_path) {
       let content = fs::read_file_utf8(param.resolved_path).unwrap();
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
         content,

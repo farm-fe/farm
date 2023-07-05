@@ -9,6 +9,7 @@ use farmfe_core::{
   config::TargetEnv,
   context::CompilationContext,
   error::{CompilationError, Result},
+  farm_profile_function, farm_profile_scope,
   hashbrown::HashMap,
   parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
@@ -54,6 +55,7 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
+    farm_profile_function!("resolver::resolve".to_string());
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -63,6 +65,7 @@ impl Resolver {
     );
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
+      farm_profile_scope!("resolve.check_external".to_string());
       if !self.is_source_absolute(source)
         && !self.is_source_relative(source)
         && self.is_module_external(package_json_info, source)
@@ -122,6 +125,7 @@ impl Resolver {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
     } else if self.is_source_relative(source) {
+      farm_profile_scope!("resolve.relative".to_string());
       // if it starts with './' or '../, it is a relative path
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
       let normalized_path = normalized_path.as_path();
@@ -268,6 +272,7 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
+    farm_profile_function!("try_alias".to_string());
     // sort the alias by length, so that the longest alias will be matched first
     let mut alias_list: Vec<_> = context
       .config
@@ -305,6 +310,7 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
+    farm_profile_function!("try_node_modules".to_string());
     // find node_modules until root
     let mut current = base_dir.clone();
     // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
@@ -469,6 +475,7 @@ impl Resolver {
     tried_paths: Vec<PathBuf>,
     context: &Arc<CompilationContext>,
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
+    farm_profile_function!("try_package".to_string());
     // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
 
     // search normal entry, based on self.config.main_fields, e.g. module/main
@@ -536,6 +543,7 @@ impl Resolver {
     _kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> PluginResolveHookResult {
+    farm_profile_function!("get_resolve_result".to_string());
     if let Ok(package_json_info) = package_json_info {
       let external = self.is_module_external(&package_json_info, &resolved_path);
       let side_effects = self.is_module_side_effects(&package_json_info, &resolved_path);
@@ -563,6 +571,7 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> PluginResolveHookResult {
+    farm_profile_function!("get_resolve_node_modules_result".to_string());
     if let Some(package_json_info) = package_json_info {
       let side_effects = self.is_module_side_effects(&package_json_info, &resolved_path);
       let resolved_path = self
@@ -595,6 +604,7 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
+    farm_profile_function!("try_exports_replace".to_string());
     // resolve exports field
     // TODO: add all cases from https://nodejs.org/api/packages.html
     let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
@@ -753,6 +763,7 @@ impl Resolver {
     resolved_path: &str,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
+    farm_profile_function!("try_browser_replace".to_string());
     if context.config.output.target_env != TargetEnv::Browser {
       return None;
     }
@@ -794,6 +805,7 @@ impl Resolver {
     resolved_path: &str,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
+    farm_profile_function!("try_imports_replace".to_string());
     if resolved_path.starts_with('#') {
       let imports_field = self.get_field_value_from_package_json_info(package_json_info, "imports");
       if let Some(imports_field) = imports_field {
@@ -853,6 +865,7 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     resolved_path: &str,
   ) -> bool {
+    farm_profile_function!("is_module_side_effects".to_string());
     match package_json_info.side_effects() {
       farmfe_core::common::ParsedSideEffects::Bool(b) => *b,
       farmfe_core::common::ParsedSideEffects::Array(arr) => {
@@ -866,6 +879,7 @@ impl Resolver {
   }
 
   fn is_module_external(&self, package_json_info: &PackageJsonInfo, resolved_path: &str) -> bool {
+    farm_profile_function!("is_module_external".to_string());
     let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
 
     if let Some(browser_field) = browser_field {
@@ -922,6 +936,7 @@ impl Resolver {
    */
 
   fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(&self, path1: P1, path2: P2) -> bool {
+    farm_profile_function!("are_paths_equal".to_string());
     let path1 = PathBuf::from(path1.as_ref());
     let path2 = PathBuf::from(path2.as_ref());
     let path1_suffix = path1.strip_prefix("/").unwrap_or(&path1);
@@ -935,6 +950,7 @@ impl Resolver {
    */
 
   fn get_key_path(&self, key: &str, dir: &String) -> String {
+    farm_profile_function!("get_key_path".to_string());
     let key_path = match Path::new(&key).is_relative() {
       true => {
         let resolve_key = &key.trim_matches('\"');
@@ -953,6 +969,7 @@ impl Resolver {
     str: &str,
     package_json_info: &PackageJsonInfo,
   ) -> Option<String> {
+    farm_profile_function!("get_string_value_path".to_string());
     let path = Path::new(&str);
     if path.extension().is_none() {
       // resolve imports field import other deps. import can only use relative paths

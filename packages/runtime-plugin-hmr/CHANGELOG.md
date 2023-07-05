@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.2.0
+
+### Minor Changes
+
+- 596fc2a: Support inject HMR port and host by config
+
 ## 3.1.4
 
 ### Patch Changes

@@ -5,6 +5,7 @@ import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 import type { Config } from '../../binding/index.js';
+import { DevServer } from '../index.js';
 
 export interface UserServerConfig {
   port?: number;
@@ -20,6 +21,7 @@ export interface UserServerConfig {
   cors?: boolean | cors.Options;
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
+  plugins?: DevServerPlugin[];
 }
 
 export type NormalizedServerConfig = Required<
@@ -90,3 +92,5 @@ export interface FarmCLIOptions
   configPath?: string;
   clearScreen?: boolean;
 }
+
+export type DevServerPlugin = (context: DevServer) => void;

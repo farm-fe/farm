@@ -131,6 +131,7 @@ export interface Config {
       path: string;
       plugins?: string[];
       swcHelpersPath?: string;
+      namespace?: string;
     };
     watch?: boolean | WatcherOptions;
     assets?: {

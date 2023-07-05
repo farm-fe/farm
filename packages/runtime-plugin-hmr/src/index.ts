@@ -5,9 +5,11 @@ import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
 import { applyHotUpdates, createHotContext } from './hot-module-state';
 import { HmrUpdatePacket, HmrUpdateResult } from './types';
 
-// TODO using host and port from the config, default to use location.host
-const port = 9801;
-const host = 'localhost';
+declare const FARM_HMR_PORT: string | undefined;
+declare const FARM_HMR_HOST: string | undefined;
+
+const port = Number(FARM_HMR_PORT || 9801);
+const host = FARM_HMR_HOST || 'localhost';
 
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-hmr-client-plugin',
@@ -45,5 +47,5 @@ export default <FarmRuntimePlugin>{
   moduleCreated(module) {
     // create a hot context for each module
     module.meta.hot = createHotContext(module.id);
-  },
+  }
 };

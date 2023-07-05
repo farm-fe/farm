@@ -9,6 +9,7 @@ const compilationConfigSchema = z
     input: z.record(z.string()).optional(),
     output: z
       .object({
+        entryFilename: z.string().optional(),
         filename: z.string().optional(),
         path: z.string().optional(),
         publicPath: z.string().optional(),
@@ -198,7 +199,8 @@ const FarmConfigSchema = z
               })
               .strict()
           ])
-          .optional()
+          .optional(),
+        plugins: z.array(z.any()).optional()
       })
       .strict()
       .optional()

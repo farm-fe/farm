@@ -50,23 +50,25 @@ pub fn render_resource_pots_and_generate_resources(
     for r in &mut res {
       if !matches!(r.resource_type, ResourceType::SourceMap(_)) {
         let name_before_update = r.name.clone();
-
-        if let Some(name) = resource_pot.entry_module.as_ref() {
-          let entry_name = entries.get(name).unwrap();
-          r.name = transform_output_entry_filename(
-            context.config.output.entry_filename.clone(),
-            resource_pot.id.to_string().as_str(),
-            entry_name,
-            &r.bytes,
-            &r.resource_type.to_ext(),
-          );
-        } else {
-          r.name = transform_output_filename(
-            context.config.output.filename.clone(),
-            &r.name,
-            &r.bytes,
-            &r.resource_type.to_ext(),
-          );
+        // ignore runtime resource
+        if !matches!(r.resource_type, ResourceType::Runtime) {
+          if let Some(name) = resource_pot.entry_module.as_ref() {
+            let entry_name = entries.get(name).unwrap();
+            r.name = transform_output_entry_filename(
+              context.config.output.entry_filename.clone(),
+              resource_pot.id.to_string().as_str(),
+              entry_name,
+              &r.bytes,
+              &r.resource_type.to_ext(),
+            );
+          } else {
+            r.name = transform_output_filename(
+              context.config.output.filename.clone(),
+              &r.name,
+              &r.bytes,
+              &r.resource_type.to_ext(),
+            );
+          }
         }
 
         if res_map.contains_key(&name_before_update) {

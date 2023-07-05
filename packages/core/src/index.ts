@@ -26,11 +26,13 @@ import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
 
 import type { FarmCLIOptions } from './config/types.js';
+import { setProcessEnv } from './config/env.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
+  setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
 
@@ -59,6 +61,7 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+  setProcessEnv('production');
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -134,10 +137,11 @@ export async function watch(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+  setProcessEnv('development');
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
-    'production'
+    'development'
   );
 
   createBundleHandler(normalizedConfig, true);

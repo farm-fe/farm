@@ -1,5 +1,34 @@
 # @farmfe/js-plugin-less
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/core@0.10.0
+
+## 0.0.8
+
+### Patch Changes
+
+- 3073e19: Isolate runtime from globalThis for script entries
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+
+## 0.0.7
+
+### Patch Changes
+
+- 08be0b5: Fix that files field in package.json of js-plugins misses build
+
+## 0.0.6
+
+### Patch Changes
+
+- c36c767: Build js plugins using Farm
+- Updated dependencies [c36c767]
+  - @farmfe/core@0.9.6
+
 ## 1.0.0
 
 ### Patch Changes

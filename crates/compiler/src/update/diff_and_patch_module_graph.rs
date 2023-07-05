@@ -235,7 +235,7 @@ fn diff_module_deps(
     .collect::<Vec<_>>();
   let mut added_modules: HashSet<ModuleId> = added_modules_vec.clone().into_iter().collect();
 
-  let removed_modules_vec = removed_deps
+  let mut removed_modules_vec = removed_deps
     .into_iter()
     .filter_map(|(id, _)| {
       // entry should not be removed for any reason
@@ -291,6 +291,11 @@ fn diff_module_deps(
         added_modules.insert(child);
       } else {
         children_added.push((child.clone(), edge_info.clone()));
+        // the removed module is added again, so we should remove it from removed_modules
+        if removed_modules.contains(&child) {
+          removed_modules.remove(&child);
+          removed_modules_vec.retain(|item| item != &child);
+        }
       }
     }
 

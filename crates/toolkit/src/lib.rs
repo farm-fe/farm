@@ -37,3 +37,5 @@ pub use anyhow;
 pub use base64;
 pub use farmfe_core::regex;
 pub use lazy_static;
+
+pub mod get_dynamic_resources_map;

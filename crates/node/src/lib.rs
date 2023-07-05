@@ -75,6 +75,7 @@ impl JsCompiler {
           .expect("config should exist"),
       )
       .expect("can not transform js config object to rust config");
+
     let mut plugins_adapters = vec![];
 
     for js_plugin_object in js_plugins {
@@ -234,6 +235,12 @@ impl JsCompiler {
       // only write expose non-emitted resource
       if !resource.emitted {
         result.insert(resource.name.clone(), resource.bytes.clone().into());
+      }
+    }
+
+    if let Ok(node_env) = std::env::var("NODE_ENV") {
+      if node_env == "test" {
+        println!("resources to js side: {:?}", result.keys());
       }
     }
 

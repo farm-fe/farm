@@ -4,10 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
   hashbrown::HashMap,
-  module::{
-    module_group::{ModuleGroupGraph, ModuleGroupId},
-    HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType,
-  },
+  module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
@@ -15,13 +12,13 @@ use farmfe_core::{
   relative_path::RelativePath,
   resource::{
     resource_pot::{HtmlResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
-    resource_pot_map::ResourcePotMap,
     Resource, ResourceOrigin, ResourceType,
   },
   swc_html_ast::Document,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
+  get_dynamic_resources_map::get_dynamic_resources_map,
   html::{codegen_html_document, parse_html_document},
   script::module_type_from_id,
 };
@@ -246,8 +243,31 @@ impl Plugin for FarmPluginHtml {
       // Found all resources in this entry html module group
       let mut dep_resources = vec![];
       let mut html_entry_resource = None;
+      let mut resource_pots_order_map = HashMap::<String, usize>::new();
+      // TODO make the resource pots order execution order when partial bundling
+      let mut sorted_resource_pots = module_group.resource_pots().into_iter().collect::<Vec<_>>();
+      sorted_resource_pots.iter().for_each(|rp| {
+        let rp = resource_pot_map.resource_pot(rp).unwrap();
+        let max_order = rp
+          .modules()
+          .iter()
+          .map(|m| {
+            let module = module_graph.module(m).unwrap();
+            module.execution_order
+          })
+          .min()
+          .unwrap_or(0);
 
-      for rp_id in module_group.resource_pots() {
+        resource_pots_order_map.insert(rp.id.to_string(), max_order);
+      });
+      sorted_resource_pots.sort_by(|a, b| {
+        let a_order = resource_pots_order_map.get(&a.to_string()).unwrap_or(&0);
+        let b_order = resource_pots_order_map.get(&b.to_string()).unwrap_or(&0);
+
+        a_order.cmp(b_order)
+      });
+
+      for rp_id in sorted_resource_pots {
         let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
           panic!(
             "Resource pot {} not found in resource pot map",
@@ -258,6 +278,7 @@ impl Plugin for FarmPluginHtml {
         for resource in rp.resources() {
           if rp.modules().contains(&html_entry_id) {
             html_entry_resource = Some(resource.clone());
+            continue;
           }
         }
 
@@ -324,6 +345,7 @@ impl Plugin for FarmPluginHtml {
           mode: context.config.mode.clone(),
           public_path: context.config.output.public_path.clone(),
           define: context.config.define.clone(),
+          namespace: context.config.runtime.namespace.clone(),
         },
       );
 
@@ -345,68 +367,4 @@ impl FarmPluginHtml {
   pub fn new(_: &Config) -> Self {
     Self {}
   }
-}
-
-pub fn get_dynamic_resources_map(
-  module_group_graph: &ModuleGroupGraph,
-  module_group_id: &ModuleGroupId,
-  resource_pot_map: &ResourcePotMap,
-  resources_map: &HashMap<String, Resource>,
-) -> HashMap<ModuleId, Vec<(String, ResourceType)>> {
-  let mut dep_module_groups = vec![];
-
-  module_group_graph.bfs(&module_group_id, &mut |mg_id| {
-    if mg_id != module_group_id {
-      dep_module_groups.push(mg_id.clone());
-    }
-  });
-
-  let mut dynamic_resources_map = HashMap::<ModuleId, Vec<(String, ResourceType)>>::new();
-
-  for mg_id in dep_module_groups {
-    let mg = module_group_graph.module_group(&mg_id).unwrap();
-
-    for rp_id in mg.resource_pots() {
-      let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
-        panic!(
-          "Resource pot {} not found in resource pot map",
-          rp_id.to_string()
-        )
-      });
-
-      if dynamic_resources_map.contains_key(&mg_id) {
-        let resources = dynamic_resources_map.get_mut(&mg_id).unwrap();
-
-        for r in rp.resources() {
-          let resource = resources_map.get(r).unwrap();
-
-          // Currently only support js and css
-          if !matches!(resource.resource_type, ResourceType::Js | ResourceType::Css) {
-            continue;
-          }
-
-          resources.push((resource.name.clone(), resource.resource_type.clone()));
-        }
-      } else {
-        let mut resources = vec![];
-
-        for r in rp.resources() {
-          let resource = resources_map
-            .get(r)
-            .unwrap_or_else(|| panic!("{} not found", r));
-
-          // Currently only support js and css
-          if !matches!(resource.resource_type, ResourceType::Js | ResourceType::Css) {
-            continue;
-          }
-
-          resources.push((resource.name.clone(), resource.resource_type.clone()));
-        }
-
-        dynamic_resources_map.insert(mg_id.clone(), resources);
-      }
-    }
-  }
-
-  dynamic_resources_map
 }

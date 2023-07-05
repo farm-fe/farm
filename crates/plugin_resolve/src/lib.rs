@@ -4,7 +4,10 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::Result,
-  plugin::{Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult},
+  farm_profile_function, farm_profile_scope,
+  plugin::{
+    Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
+  },
 };
 use farmfe_toolkit::regex::Regex;
 use farmfe_utils::parse_query;
@@ -42,6 +45,8 @@ impl Plugin for FarmPluginResolve {
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
+    farm_profile_function!("plugin_resolve::resolve".to_string());
+
     let source = &param.source;
     let query = parse_query(source);
     // split query from source
@@ -58,18 +63,27 @@ impl Plugin for FarmPluginResolve {
       Path::new(&self.root).to_path_buf()
     };
 
-    // check external first, if the source is set as external, return it immediately
-    if context.config.external.iter().any(|e| {
-      let reg = Regex::new(e).unwrap();
-      reg.is_match(source)
-    }) {
-      return Ok(Some(PluginResolveHookResult {
-        resolved_path: param.source.clone(),
-        external: true,
-        side_effects: false,
-        query,
-        meta: HashMap::new(),
-      }));
+    // Entry module and internal modules should not be external
+    if !matches!(param.kind, ResolveKind::Entry(_))
+      && [
+        "@swc/helpers/_/_interop_require_default",
+        "@swc/helpers/_/_interop_require_wildcard",
+        "@swc/helpers/_/_export_star",
+      ]
+      .into_iter()
+      .all(|s| source != s)
+    {
+      farm_profile_scope!("plugin_resolve::resolve::check_external".to_string());
+      // check external first, if the source is set as external, return it immediately
+      if context.config.external.iter().any(|e| e.is_match(source)) {
+        return Ok(Some(PluginResolveHookResult {
+          resolved_path: param.source.clone(),
+          external: true,
+          side_effects: false,
+          query,
+          meta: HashMap::new(),
+        }));
+      }
     }
 
     let resolver = &self.resolver;
@@ -77,6 +91,7 @@ impl Plugin for FarmPluginResolve {
 
     // remove the .js if the result is not found to support using native esm with typescript
     if result.is_none() && source.ends_with(".js") {
+      farm_profile_scope!("plugin_resolve::resolve::remove_dot_js".to_string());
       let source = source.replace(".js", "");
 
       return Ok(

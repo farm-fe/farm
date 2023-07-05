@@ -46,11 +46,12 @@ pub struct FarmPluginCss {
   ast_map: Mutex<HashMap<String, Stylesheet>>,
 }
 
-pub fn wrapper_style_load(code: &String, id: String) -> String {
+pub fn wrapper_style_load(code: &String, id: String, css_deps: &String) -> String {
   format!(
     r#"
 const cssCode = `{}`;
 const farmId = '{}';
+{}
 const previousStyle = document.querySelector(`style[data-farm-id="${{farmId}}"]`);
 const style = document.createElement('style');
 style.setAttribute('data-farm-id', farmId);
@@ -67,7 +68,8 @@ style.remove();
 }});
 "#,
     code.replace("`", "'").replace("\\", "\\\\"),
-    id
+    id.replace("\\", "\\\\"),
+    css_deps
   )
 }
 

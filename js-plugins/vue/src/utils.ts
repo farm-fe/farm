@@ -127,7 +127,7 @@ export function handleExclude(resolvedOptions: ResolvedOptions) {
 }
 
 export async function dynamicImportFromESM(moduleName: string) {
-  const _require = createRequire(import.meta.url);
+  const _require = createRequire(__dirname);
   const module = _require(moduleName) ?? {};
   return module.default ?? module;
 }

@@ -1,5 +1,63 @@
 # @farmfe/core
 
+## 0.10.1
+
+### Patch Changes
+
+- eb9f382: Fix script entry source map inject
+
+## 0.10.0
+
+### Minor Changes
+
+- d604b5e: Support React SSR
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/runtime@0.7.0
+  - @farmfe/runtime-plugin-hmr@3.2.0
+
+## 0.9.10
+
+### Patch Changes
+
+- a40b07d: make resources order injected to html execution order
+
+## 0.9.9
+
+### Patch Changes
+
+- 3073e19: Isolate runtime from globalThis for script entries
+- Updated dependencies [3073e19]
+  - @farmfe/runtime@0.6.2
+
+## 0.9.8
+
+### Patch Changes
+
+- 596fc2a: Fix HMR patch_module_group_graph panic
+- Updated dependencies [596fc2a]
+  - @farmfe/runtime-plugin-hmr@3.2.0
+
+## 0.9.7
+
+### Patch Changes
+
+- de18942: Fix that build env set to development
+
+## 0.9.6
+
+### Patch Changes
+
+- c36c767: Do not resolve external dependencies when build farm.config.ts
+
+## 0.9.5
+
+### Patch Changes
+
+- b92441b: Fix css hmr panic
+
 ## 0.9.4
 
 ### Patch Changes

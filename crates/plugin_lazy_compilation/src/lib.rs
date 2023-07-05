@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  config::{Config, FARM_MODULE_SYSTEM},
+  config::{Config, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
   module::ModuleId,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},
 };
@@ -152,7 +152,7 @@ impl Plugin for FarmPluginLazyCompilation {
           )
           .replace(
             "'FARM_MODULE_SYSTEM'",
-            &format!("window.{}", FARM_MODULE_SYSTEM),
+            &format!("{}.{}", FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM),
           );
 
         Ok(Some(farmfe_core::plugin::PluginLoadHookResult {

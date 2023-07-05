@@ -12,7 +12,8 @@ import {
   UserServerConfig,
   NormalizedServerConfig,
   normalizeDevServerOptions,
-  normalizePublicDir
+  normalizePublicDir,
+  DevServerPlugin
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { brandColor, Logger } from '../utils/index.js';
@@ -73,6 +74,10 @@ export class DevServer implements ImplDevServer {
     return this._compiler;
   }
 
+  app(): Koa {
+    return this._app;
+  }
+
   async listen(): Promise<void> {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
@@ -112,7 +117,7 @@ export class DevServer implements ImplDevServer {
   }
 
   createFarmServer(options: UserServerConfig) {
-    const { https = false, host = 'localhost' } = options;
+    const { https = false, host = 'localhost', plugins = [] } = options;
     const protocol = https ? 'https' : 'http';
     const hostname = host === '0.0.0.0' ? 'localhost' : host;
     this.config = normalizeDevServerOptions(
@@ -128,11 +133,12 @@ export class DevServer implements ImplDevServer {
       compiler: this._compiler,
       logger: this.logger
     };
-    this.resolvedFarmServerPlugins();
+    this.resolvedFarmServerPlugins(plugins);
   }
 
-  private resolvedFarmServerPlugins() {
+  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
     const resolvedPlugins = [
+      ...middlewares,
       lazyCompilationPlugin,
       hmrPlugin,
       corsPlugin,

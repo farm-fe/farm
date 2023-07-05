@@ -15,9 +15,9 @@ use farmfe_core::{
     PluginResolveHookParam, PluginUpdateModulesHookParams, ResolveKind, UpdateResult, UpdateType,
   },
   rayon::ThreadPool,
-  resource::{resource_pot::ResourcePotId, ResourceType},
+  resource::ResourceType,
 };
-use farmfe_plugin_html::get_dynamic_resources_map;
+use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
 
 use crate::{
   build::ResolvedModuleInfo, generate::finalize_resources::finalize_resources, Compiler,
@@ -145,7 +145,7 @@ impl Compiler {
     let should_reload_page = updated_module_ids.iter().any(|id| {
       let module_graph = self.context.module_graph.read();
       let module = module_graph.module(id).unwrap();
-      !module.module_type.is_script()
+      !module.module_type.is_script() && module.module_type != ModuleType::Css
     });
     let resources = if should_reload_page {
       "window.location.reload()".to_string()
@@ -336,23 +336,6 @@ impl Compiler {
     (affected_module_groups, start_points, diff_result)
   }
 
-  fn call_process_resource_pots(&self, resource_pot_ids: &Vec<ResourcePotId>) -> Result<()> {
-    let mut resource_pot_map = self.context.resource_pot_map.write();
-    let mut resource_pots = resource_pot_map
-      .resource_pots_mut()
-      .into_iter()
-      .filter(|resource_pot| resource_pot_ids.contains(&resource_pot.id))
-      .collect::<Vec<_>>();
-
-    // call process_resource_pot_map hook
-    self
-      .context
-      .plugin_driver
-      .process_resource_pots(&mut resource_pots, &self.context)?;
-
-    Ok(())
-  }
-
   fn regenerate_resources<F>(
     &self,
     affected_module_groups: HashSet<ModuleGroupId>,
@@ -377,7 +360,6 @@ impl Compiler {
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
         &cloned_updated_module_ids,
-        true,
         &cloned_context,
       )
       .unwrap();
@@ -414,24 +396,10 @@ impl Compiler {
       dynamic_resources_map = Some(dynamic_resources);
       callback();
     } else {
-      let resource_pot_ids = {
-        updated_module_ids
-          .iter()
-          .map(|id| {
-            let module_graph = cloned_context.module_graph.read();
-            let module = module_graph.module(id).unwrap();
-            module.resource_pot.as_ref().unwrap().clone()
-          })
-          .collect::<Vec<_>>()
-      };
-
-      self.call_process_resource_pots(&resource_pot_ids).unwrap();
-
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
           affected_module_groups,
           &cloned_updated_module_ids,
-          false,
           &cloned_context,
         ) {
           println!("Failed to regenerate resources: {}", e);

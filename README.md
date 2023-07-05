@@ -74,7 +74,7 @@ Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## Examples
 
-Farm support compiling React, Vue SFC, Sass, Less, Css Modules officially out of box. See our examples:
+Farm support compiling React, Vue, SolidJS, Sass, Less, Css Modules officially out of box. See our examples:
 
 ### React Examples
 
@@ -82,12 +82,17 @@ Farm support compiling React, Vue SFC, Sass, Less, Css Modules officially out of
 - [React-Ant-Design](https://github.com/farm-fe/farm/tree/main/examples/react-antd)
 - [React-Sass-CssModules](https://github.com/farm-fe/farm/tree/main/examples/css-modules)
 - [React-Multi-Page-Application](https://github.com/farm-fe/farm/tree/main/examples/multi-page-app)
+- [React-SSR](https://github.com/farm-fe/farm/tree/main/examples/react-ssr)
 
 ### Vue Examples
 
 - [Vue-Basic](https://github.com/farm-fe/farm/tree/main/examples/vue)
 - [Vue-Jsx](https://github.com/farm-fe/farm/tree/main/examples/vue-jsx)
 - [Vue-Antdv](https://github.com/farm-fe/farm/tree/main/examples/vue-antdv)
+
+### SolidJS Examples
+
+- [SolidJS-Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
 
 ## RoadMap
 
@@ -97,9 +102,9 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 ## Chat With Us
 
-* With [Discord](https://discord.gg/mDErq9aFnF)
+- With [Discord](https://discord.gg/mDErq9aFnF)
 
-* Wechat group 
+- Wechat group
 
 <img src="./assets/wechat-group.jpg" width="30%" />
 

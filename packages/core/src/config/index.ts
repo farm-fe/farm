@@ -1,9 +1,9 @@
 import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { pathToFileURL } from 'node:url';
-import { createHash } from 'node:crypto';
+import crypto from 'node:crypto';
+
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 import { bindingPath, Config } from '../../binding/index.js';
@@ -24,7 +24,7 @@ import {
   isObject,
   normalizePath
 } from '../utils/index.js';
-import { loadEnv } from './env.js';
+import { CompilationMode, loadEnv } from './env.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -33,8 +33,6 @@ export const DEFAULT_CONFIG_NAMES = [
   'farm.config.mjs'
 ];
 
-type CompilationMode = 'development' | 'production';
-
 /**
  * Normalize user config and transform it to rust compiler compatible config
  * @param config
@@ -42,20 +40,15 @@ type CompilationMode = 'development' | 'production';
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode = 'development',
-  env: CompilationMode = 'development'
+  mode: CompilationMode = 'development'
 ): Promise<Config> {
   // resolve root path
   const resolvedRootPath = normalizePath(
     userConfig.root ? path.resolve(userConfig.root) : process.cwd()
   );
 
-  const nodeEnv = !!process.env.NODE_ENV;
-  if (!nodeEnv) {
-    process.env.NODE_ENV = env;
-  }
-  const isProduction = process.env.NODE_ENV === 'production';
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isProduction = mode === 'production';
+  const isDevelopment = mode === 'development';
 
   const config: Config['config'] = merge(
     {
@@ -68,6 +61,7 @@ export async function normalizeUserCompilationConfig(
     },
     userConfig.compilation
   );
+  config.mode = mode;
   config.coreLibPath = bindingPath;
   const resolvedEnvPath = userConfig.envDir
     ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))
@@ -76,7 +70,7 @@ export async function normalizeUserCompilationConfig(
   // TODO load env variables from .env file
   config.env = {
     ...userEnv,
-    NODE_ENV: process.env.NODE_ENV
+    NODE_ENV: process.env.NODE_ENV || mode
   };
   config.define = Object.assign(config.define ?? {}, config.env);
 
@@ -103,6 +97,20 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime.plugins) {
     config.runtime.plugins = [];
   }
+  // set namespace to package.json name field's hash
+  if (!config.runtime.namespace) {
+    // read package.json name field
+    const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(
+        fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
+      );
+      config.runtime.namespace = crypto
+        .createHash('md5')
+        .update(packageJson.name)
+        .digest('hex');
+    }
+  }
 
   if (config.lazyCompilation === undefined) {
     if (isDevelopment) {
@@ -110,6 +118,10 @@ export async function normalizeUserCompilationConfig(
     } else {
       config.lazyCompilation = false;
     }
+  }
+
+  if (config.mode === undefined) {
+    config.mode = mode;
   }
 
   if (isProduction) {
@@ -124,6 +136,14 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  if (config?.output?.targetEnv === 'node') {
+    config.external = [
+      ...(config.external ?? []),
+      ...module.builtinModules.map((m) => `^${m}($|/)`),
+      ...module.builtinModules.map((m) => `^node:${m}($|/)`)
+    ];
+  }
+
   // TODO resolve other server port
   const normalizedDevServerConfig = normalizeDevServerOptions(
     userConfig.server,
@@ -131,11 +151,14 @@ export async function normalizeUserCompilationConfig(
   );
 
   if (
+    config.output.targetEnv !== 'node' &&
     Array.isArray(config.runtime.plugins) &&
     normalizedDevServerConfig.hmr &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     config.runtime.plugins.push(hmrClientPluginPath);
+    config.define.FARM_HMR_PORT = String(normalizedDevServerConfig.hmr.port);
+    config.define.FARM_HMR_HOST = normalizedDevServerConfig.hmr.host;
   }
 
   // we should not deep merge compilation.input
@@ -254,7 +277,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   open: false,
   strictPort: false,
   cors: false,
-  spa: true
+  spa: true,
+  plugins: []
 };
 
 export function normalizeDevServerOptions(
@@ -333,26 +357,26 @@ async function readConfigFile(
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
-      const hash = createHash('md5');
       const outputPath = path.join(
-        os.tmpdir(),
-        'farmfe',
-        hash.update(configFilePath).digest('hex')
+        path.dirname(configFilePath),
+        'node_modules',
+        '.farm'
       );
       const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: configFilePath
+            [fileName]: configFilePath
           },
           output: {
-            entryFilename: fileName,
+            entryFilename: '[entryName]',
             path: outputPath,
             targetEnv: 'node'
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`)
+            ...module.builtinModules.map((m) => `^node:${m}$`),
+            '^[^./].*'
           ],
           partialBundling: {
             moduleBuckets: [

@@ -36,6 +36,7 @@ pub fn transform_css_resource_pot(
     }
 
     let stylesheet = transform_css_stylesheet(module_id, module_graph, context);
+    let css_deps = transform_css_deps(module_id, module_graph, context);
 
     let module = module_graph.module_mut(module_id).unwrap();
     let source_map_enabled = context.config.sourcemap.enabled();
@@ -53,7 +54,7 @@ pub fn transform_css_resource_pot(
       context.meta.script.cm.clone(),
       &context.meta.script.globals,
       || {
-        let css_code = wrapper_style_load(&css_code, module.id.to_string());
+        let css_code = wrapper_style_load(&css_code, module.id.to_string(), &css_deps);
         let mut ast = parse_module(
           &module.id.to_string(),
           &css_code,
@@ -101,4 +102,26 @@ pub fn transform_css_stylesheet(
   source_replace(&mut stylesheet, module_id, module_graph, &*resources_map);
 
   stylesheet
+}
+
+pub fn transform_css_deps(
+  module_id: &ModuleId,
+  module_graph: &mut ModuleGraph,
+  context: &Arc<CompilationContext>,
+) -> String {
+  let mut load_statements = Vec::new();
+  let dep_modules = module_graph.dependencies(module_id);
+  for (module, _) in dep_modules {
+    let relative_path = module.id(context.config.mode.clone()).to_string();
+    let load_statement = format!(
+      "farmRequire(\"{}\");",
+      if cfg!(windows) {
+        relative_path.replace("\\", "\\\\")
+      } else {
+        relative_path.to_string()
+      }
+    );
+    load_statements.push(load_statement);
+  }
+  load_statements.join(" ")
 }

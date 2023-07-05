@@ -1,5 +1,36 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.8
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/core@0.10.0
+
+## 1.2.7
+
+### Patch Changes
+
+- 3073e19: Bump version for js plugins
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+
+## 1.2.6
+
+### Patch Changes
+
+- 9ec0179: fix: styles import in Vue SFC
+- Updated dependencies [de18942]
+  - @farmfe/core@0.9.7
+
+## 1.2.5
+
+### Patch Changes
+
+- c36c767: Build js plugins using Farm
+- Updated dependencies [c36c767]
+  - @farmfe/core@0.9.6
+
 ## 2.0.0
 
 ### Patch Changes
