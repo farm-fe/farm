@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "vue": "^3.2.45",
+    "vue": "^3.3.4",
     "core-js": "^3.30.1"
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.5",
-    "@farmfe/core": "^0.9.4",
-    "@farmfe/js-plugin-vue": "^1.2.4"
+    "@farmfe/core": "^0.10.1",
+    "@farmfe/js-plugin-vue": "^1.2.8"
   },
   "scripts": {
     "start": "farm start",
