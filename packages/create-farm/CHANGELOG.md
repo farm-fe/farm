@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.6
+
+### Patch Changes
+
+- 9f6d497: update template version
+
 ## 1.2.5
 
 ### Patch Changes
