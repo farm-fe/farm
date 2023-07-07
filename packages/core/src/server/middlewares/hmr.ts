@@ -12,8 +12,6 @@ import { DevServer } from '../index.js';
 
 export function hmr(server: DevServer) {
   return async (ctx: Context, next: () => Promise<void>) => {
-    await next();
-
     if (ctx.path === '/__hmr') {
       const result = server.hmrEngine?.getUpdateResult?.(
         ctx.query.id as string
@@ -26,6 +24,8 @@ export function hmr(server: DevServer) {
       } else {
         throw new Error(`HMR update result not found for id ${ctx.query.id}`);
       }
+    } else {
+      await next();
     }
   };
 }
