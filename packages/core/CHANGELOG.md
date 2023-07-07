@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.10.2
+
+### Patch Changes
+
+- 4fc704d: Fix that HMR middleware slow
+
 ## 0.10.1
 
 ### Patch Changes
