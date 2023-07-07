@@ -33,6 +33,7 @@ fn main() {
           .to_string(),
         plugins: vec![],
         swc_helpers_path,
+        ..Default::default()
       },
       ..Default::default()
     },

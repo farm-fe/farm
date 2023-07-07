@@ -231,11 +231,7 @@ fn should_execute_swc_plugin(
   filters: &ScriptConfigPluginFilters,
 ) -> bool {
   // transform it to Regex first and test against it
-  let resolve_paths_regex = filters
-    .resolved_paths
-    .iter()
-    .map(|p| Regex::new(p).unwrap())
-    .collect::<Vec<Regex>>();
+  let resolve_paths_regex = &filters.resolved_paths;
 
   resolve_paths_regex
     .iter()

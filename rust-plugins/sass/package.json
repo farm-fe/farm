@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-sass",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -41,6 +41,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
+    "dev": "npm run build && npm run copy-artifacts",
     "build": "napi build --platform --cargo-name farmfe_plugin_sass -p farmfe_plugin_sass --release",
     "copy-artifacts": "node scripts/copy-artifacts.mjs",
     "type-check": "echo \"No type-checking configured.\"",

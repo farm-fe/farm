@@ -3,6 +3,7 @@
 use farmfe_core::{
   config::Config,
   plugin::{Plugin, PluginAnalyzeDepsHookResultEntry, ResolveKind},
+  serde_json,
 };
 
 use farmfe_macro_plugin::farm_plugin;
@@ -17,15 +18,28 @@ use react_refresh::inject_react_refresh;
 
 const GLOBAL_INJECT_MODULE_ID: &str = "farmfe_plugin_react_global_inject";
 
+#[derive(Debug, serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+struct SwcTransformReactOptions {
+  pub refresh: Option<bool>,
+}
+
 #[farm_plugin]
 pub struct FarmPluginReact {
   core_lib: Library,
+  options: String,
+  enable_react_refresh: bool,
 }
 
 impl FarmPluginReact {
-  pub fn new(config: &Config, _options: String) -> Self {
+  pub fn new(config: &Config, options: String) -> Self {
+    let react_options = serde_json::from_str::<SwcTransformReactOptions>(&options).unwrap();
+    let is_dev = matches!(config.mode, farmfe_core::config::Mode::Development);
+
     Self {
       core_lib: load_core_lib(config.core_lib_path.as_ref().unwrap()),
+      options,
+      enable_react_refresh: is_dev && react_options.refresh.unwrap_or(true),
     }
   }
 }
@@ -137,7 +151,7 @@ impl Plugin for FarmPluginReact {
       let top_level_mark = param.meta.as_script().top_level_mark;
       let unresolved_mark = param.meta.as_script().unresolved_mark;
       let ast = &mut param.meta.as_script_mut().ast;
-      let is_dev = matches!(context.config.mode, farmfe_core::config::Mode::Development);
+
       swc_transform_react(
         &self.core_lib,
         ast,
@@ -148,10 +162,11 @@ impl Plugin for FarmPluginReact {
           cm: context.meta.script.cm.clone(),
           globals: &context.meta.script.globals,
           mode: context.config.mode.clone(),
+          options: self.options.clone(),
         },
       )?;
 
-      if is_dev {
+      if self.enable_react_refresh {
         inject_react_refresh(&self.core_lib, ast);
       }
 
@@ -164,10 +179,10 @@ impl Plugin for FarmPluginReact {
   fn analyze_deps(
     &self,
     param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
-    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // insert a global entry into the html module and make sure the inserted module executes first
-    if matches!(context.config.mode, farmfe_core::config::Mode::Development)
+    if self.enable_react_refresh
       && param.module.module_type == farmfe_core::module::ModuleType::Html
     {
       param.deps.insert(

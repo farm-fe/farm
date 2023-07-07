@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.7.0
+
+### Minor Changes
+
+- d604b5e: Support React SSR
+
 ## 0.6.2
 
 ### Patch Changes

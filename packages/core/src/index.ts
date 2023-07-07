@@ -137,10 +137,11 @@ export async function watch(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+  setProcessEnv('development');
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
-    'production'
+    'development'
   );
 
   createBundleHandler(normalizedConfig, true);

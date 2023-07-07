@@ -34,6 +34,7 @@ fn main() {
           .to_string(),
         plugins: vec![],
         swc_helpers_path,
+        ..Default::default()
       },
       tree_shaking: false,
       ..Default::default()

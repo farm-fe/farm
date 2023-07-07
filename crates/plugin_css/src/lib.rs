@@ -7,7 +7,7 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   hashbrown::HashMap,
-  module::{module_graph::{ModuleGraph}, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
+  module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
@@ -68,7 +68,7 @@ style.remove();
 }});
 "#,
     code.replace("`", "'").replace("\\", "\\\\"),
-    id,
+    id.replace("\\", "\\\\"),
     css_deps
   )
 }

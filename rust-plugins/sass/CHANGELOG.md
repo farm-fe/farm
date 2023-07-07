@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.1.0
+
+### Minor Changes
+
+- d604b5e: Support React SSR
+
 ## 0.0.10
 
 ### Patch Changes
