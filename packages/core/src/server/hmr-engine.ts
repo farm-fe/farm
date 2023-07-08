@@ -15,8 +15,8 @@ import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  private _updateResults: Map<string, { result: string; count: number }> =
-    new Map();
+  // private _updateResults: Map<string, { result: string; count: number }> =
+  //   new Map();
 
   private _compiler: Compiler;
   private _devServer: DevServer;
@@ -158,22 +158,22 @@ export class HmrEngine {
     }
   }
 
-  getUpdateResult(id: string) {
-    const result = this._updateResults.get(id);
+  // getUpdateResult(id: string) {
+  //   const result = this._updateResults.get(id);
 
-    if (result) {
-      result.count--;
+  //   if (result) {
+  //     result.count--;
 
-      // there are no more clients waiting for this update
-      if (result.count <= 0 && this._updateResults.size >= 2) {
-        /**
-         * Edge handle
-         * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
-         * So keep the result of the last time every time, so that the request can be successfully carried out.
-         */
-        this._updateResults.delete(this._updateResults.keys().next().value);
-      }
-    }
-    return result?.result;
-  }
+  //     // there are no more clients waiting for this update
+  //     if (result.count <= 0 && this._updateResults.size >= 2) {
+  //       /**
+  //        * Edge handle
+  //        * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
+  //        * So keep the result of the last time every time, so that the request can be successfully carried out.
+  //        */
+  //       this._updateResults.delete(this._updateResults.keys().next().value);
+  //     }
+  //   }
+  //   return result?.result;
+  // }
 }
