@@ -110,13 +110,13 @@ export class HmrEngine {
 
     this.callUpdates(result);
 
-    const id = Date.now().toString();
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore TODO fix this
-    this._updateResults.set(id, {
-      result: resultStr,
-      count: this._devServer.ws.clients.size
-    });
+    // const id = Date.now().toString();
+    // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // // @ts-ignore TODO fix this
+    // this._updateResults.set(id, {
+    //   result: resultStr,
+    //   count: this._devServer.ws.clients.size
+    // });
 
     this._devServer.ws.clients.forEach((client) => {
       client.send(resultStr);
