@@ -89,7 +89,7 @@ export class HmrEngine {
       }
     }
 
-    const resultStr = `export default {
+    const resultStr = `{
       added: [${result.added
         .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
         .join(', ')}],
@@ -119,11 +119,7 @@ export class HmrEngine {
     });
 
     this._devServer.ws.clients.forEach((client) => {
-      client.send(
-        JSON.stringify({
-          id
-        })
-      );
+      client.send(resultStr);
     });
 
     // if there are more updates, recompile again
