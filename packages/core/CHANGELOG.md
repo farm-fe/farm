@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.10.3
+
+### Patch Changes
+
+- 8162eab: Remove hmr http request and use websocket/eval instead
+- Updated dependencies [8162eab]
+  - @farmfe/runtime-plugin-hmr@3.2.1
+
 ## 0.10.2
 
 ### Patch Changes
