@@ -96,6 +96,11 @@ export class DevServer implements ImplDevServer {
     } else {
       await this._compiler.compile();
     }
+
+    if (this.config.writeToDisk) {
+      this._compiler.writeResourcesToDisk();
+    }
+
     const end = Date.now();
     this.server.listen(port, host);
     this.error(port, host);

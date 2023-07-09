@@ -71,8 +71,15 @@ export function resources(compiler: Compiler, config: NormalizedServerConfig) {
 }
 
 export function resourcesPlugin(distance: DevServer) {
-  distance._context.app.use(
-    resources(distance._context.compiler, distance.config)
-  );
+  if (!distance.config.writeToDisk) {
+    distance._context.app.use(
+      resources(distance._context.compiler, distance.config)
+    );
+  } else {
+    distance._context.app.use(
+      koaStatic(distance.getCompiler().config.config.output.path)
+    );
+  }
+
   distance._context.app.use(koaStatic(distance.publicPath));
 }

@@ -50,9 +50,6 @@ export async function normalizeUserCompilationConfig(
     userConfig.root ? path.resolve(userConfig.root) : process.cwd()
   );
 
-  const isProduction = mode === 'production';
-  const isDevelopment = mode === 'development';
-
   const config: Config['config'] = merge(
     {
       input: {
@@ -64,7 +61,10 @@ export async function normalizeUserCompilationConfig(
     },
     userConfig.compilation
   );
-  config.mode = mode;
+  config.mode = config.mode ?? mode;
+  const isProduction = config.mode === 'production';
+  const isDevelopment = config.mode === 'development';
+
   config.coreLibPath = bindingPath;
 
   const resolvedEnvPath = userConfig.envDir
@@ -292,7 +292,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   strictPort: false,
   cors: false,
   spa: true,
-  plugins: []
+  plugins: [],
+  writeToDisk: false
 };
 
 export function normalizeDevServerOptions(
@@ -406,7 +407,8 @@ async function readConfigFile(
           sourcemap: false,
           treeShaking: false,
           minify: false,
-          presetEnv: false
+          presetEnv: false,
+          lazyCompilation: false
         },
         server: {
           hmr: false
