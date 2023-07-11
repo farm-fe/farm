@@ -8,7 +8,7 @@
   "devDependencies": {
     "@farmfe/cli": "^0.5.5",
     "@farmfe/core": "^0.10.1",
-    "@farmfe/js-plugin-solid": "^0.0.1",
+    "@farmfe/js-plugin-solid": "^1.0.1",
     "typescript": "^5.1.3"
   },
   "scripts": {
