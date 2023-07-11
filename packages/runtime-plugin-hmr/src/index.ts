@@ -3,7 +3,7 @@
  */
 import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
 import { applyHotUpdates, createHotContext } from './hot-module-state';
-import { HmrUpdatePacket, HmrUpdateResult } from './types';
+import { HmrUpdateResult } from './types';
 
 declare const FARM_HMR_PORT: string | undefined;
 declare const FARM_HMR_HOST: string | undefined;
@@ -25,12 +25,14 @@ export default <FarmRuntimePlugin>{
       // after the file is recompiled, the server will generated a update resource and send its id to the client
       // the client will use the id to fetch the update resource and apply the update
       socket.addEventListener('message', (event) => {
-        const data = JSON.parse(event.data) as HmrUpdatePacket;
-        import(`/__hmr?id=${data.id}`).then(
-          (result: { default: HmrUpdateResult }) => {
-            applyHotUpdates(result.default, moduleSystem);
-          }
-        );
+        // const data = JSON.parse(event.data) as HmrUpdatePacket;
+        const result: HmrUpdateResult = eval(`(${event.data})`);
+        applyHotUpdates(result, moduleSystem);
+        // import(`/__hmr?id=${data.id}`).then(
+        //   (result: { default: HmrUpdateResult }) => {
+        //     applyHotUpdates(result.default, moduleSystem);
+        //   }
+        // );
       });
 
       socket.addEventListener('open', () => {
