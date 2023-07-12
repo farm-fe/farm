@@ -37,7 +37,9 @@ export class Compiler {
   /** TODO: usage example */
   update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
   hasModule(resolvedPath: string): boolean
+  hasWatcherModule(resolvedPath: string): boolean
   resources(): Record<string, Buffer>
+  watchResources(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
 }

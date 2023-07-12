@@ -223,9 +223,10 @@ impl JsCompiler {
   pub fn has_module(&self, resolved_path: String) -> bool {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
+    let watch_graph = context.watch_graph.read();
     let module_id = ModuleId::new(&resolved_path, "", &context.config.root);
 
-    module_graph.has_module(&module_id)
+    module_graph.has_module(&module_id) || watch_graph.has_module(&module_id)
   }
 
   #[napi]
@@ -255,6 +256,19 @@ impl JsCompiler {
     }
 
     result
+  }
+
+  #[napi]
+  pub fn watch_resources(&self) -> Vec<String> {
+    let context = self.compiler.context();
+
+    let watch_graph = context.watch_graph.read();
+
+    return watch_graph
+      .resources()
+      .into_iter()
+      .map(|id| id.to_string())
+      .collect();
   }
 
   #[napi]

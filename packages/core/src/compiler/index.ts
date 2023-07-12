@@ -141,6 +141,12 @@ export class Compiler {
     }
   }
 
+  resolveWatchPaths(root: string): string[] {
+    return this._bindingCompiler
+      .watchResources()
+      .map((p) => this.transformModulePath(root, p));
+  }
+
   resolvedModulePaths(root: string): string[] {
     return this._bindingCompiler
       .relativeModulePaths()

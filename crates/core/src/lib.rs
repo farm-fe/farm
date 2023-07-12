@@ -1,6 +1,7 @@
 #![deny(clippy::all)]
 #![allow(clippy::ptr_arg)]
 #![feature(trivial_bounds)]
+#![feature(is_some_and)]
 // #![feature(unsize)]
 // #![feature(trait_upcasting)]
 

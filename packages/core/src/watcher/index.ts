@@ -69,7 +69,10 @@ export class FileWatcher implements ImplFileWatcher {
       paths.forEach(handlePathChange);
     });
 
-    this._watcher.watch(compiler.resolvedModulePaths(this._root));
+    this._watcher.watch([
+      ...compiler.resolvedModulePaths(this._root),
+      ...compiler.resolveWatchPaths(this._root)
+    ]);
 
     if (this.serverOrCompiler instanceof DevServer) {
       // chokidar.watch(

@@ -1,15 +1,21 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, path::Path, sync::Arc};
 
 use dashmap::DashMap;
 use hashbrown::HashMap;
 use parking_lot::{Mutex, RwLock};
+use relative_path::RelativePath;
 use swc_common::{FilePathMapping, Globals, SourceMap};
 
 use crate::{
   cache::CacheManager,
   config::Config,
   error::Result,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph},
+  module::{
+    module_graph::{ModuleGraph, ModuleGraphEdge},
+    module_group::ModuleGroupGraph,
+    watch_graph::WatchGraph,
+    Module, ModuleId,
+  },
   plugin::{plugin_driver::PluginDriver, Plugin},
   resource::{resource_pot_map::ResourcePotMap, Resource},
 };
@@ -17,6 +23,7 @@ use crate::{
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
   pub config: Box<Config>,
+  pub watch_graph: Box<RwLock<WatchGraph>>,
   pub module_graph: Box<RwLock<ModuleGraph>>,
   pub module_group_graph: Box<RwLock<ModuleGroupGraph>>,
   pub plugin_driver: Box<PluginDriver>,
@@ -29,6 +36,7 @@ pub struct CompilationContext {
 impl CompilationContext {
   pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     Ok(Self {
+      watch_graph: Box::new(RwLock::new(WatchGraph::new())),
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
@@ -38,6 +46,42 @@ impl CompilationContext {
       cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
     })
+  }
+
+  pub fn add_watch_files(&self, source: String, deps: Vec<String>) -> Result<()> {
+    // @import 'variable.scss'
+    // @import './variable.scss'
+    let mut watch_graph = self.watch_graph.write();
+
+    for dep in deps {
+      let source = source.clone();
+
+      let dep_path = if Path::new(&dep).is_absolute() {
+        dep.to_string()
+      } else {
+        RelativePath::new(&self.config.root)
+          .relative(
+            RelativePath::new(&source)
+              .parent()
+              .expect("failed parse dirname")
+              .join(&dep),
+          )
+          .normalize()
+          .to_string()
+      };
+
+      let cwd = &self.config.root;
+
+      let from = ModuleId::new(&source, "", cwd);
+      let to = ModuleId::new(dep_path.as_str(), &"", cwd);
+
+      watch_graph.add_node(from.clone());
+      watch_graph.add_node(to.clone());
+
+      watch_graph.add_edge(&from, &to)?;
+    }
+
+    Ok(())
   }
 }
 

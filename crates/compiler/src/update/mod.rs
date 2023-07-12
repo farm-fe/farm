@@ -63,6 +63,33 @@ impl Compiler {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
     let update_context = Arc::new(UpdateContext::new());
 
+    let watch_graph = self.context.watch_graph.read();
+
+    // fetch watch file relation module, and replace watch file
+    let paths: Vec<(String, UpdateType)> = paths
+      .into_iter()
+      .flat_map(|(path, update_type)| {
+        let module_id = ModuleId::new(&path, "", &self.context.config.root);
+
+        if watch_graph.has_module(&module_id) {
+          watch_graph
+            .relation_roots(&module_id)
+            .into_iter()
+            .map(|item| {
+              (
+                item.resolved_path(&self.context.config.root),
+                UpdateType::Updated,
+              )
+            })
+            .collect()
+        } else {
+          vec![(path, update_type)]
+        }
+      })
+      .collect();
+
+    drop(watch_graph);
+
     let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams {
       paths,
       update_result: UpdateResult::default(),
