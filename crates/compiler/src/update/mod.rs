@@ -64,24 +64,23 @@ impl Compiler {
     let update_context = Arc::new(UpdateContext::new());
 
     let watch_graph = self.context.watch_graph.read();
-
+    let module_graph = self.context.module_graph.read();
     // fetch watch file relation module, and replace watch file
     let paths: Vec<(String, UpdateType)> = paths
       .into_iter()
       .flat_map(|(path, update_type)| {
-        let module_id = ModuleId::new(&path, "", &self.context.config.root);
-
-        if watch_graph.has_module(&module_id) {
-          watch_graph
-            .relation_roots(&module_id)
+        if watch_graph.has_module(&path) {
+          let r: Vec<(String, UpdateType)> = watch_graph
+            .relation_roots(&path)
             .into_iter()
-            .map(|item| {
-              (
-                item.resolved_path(&self.context.config.root),
-                UpdateType::Updated,
-              )
-            })
-            .collect()
+            .map(|item| (item.to_owned(), UpdateType::Updated))
+            .collect();
+
+          if module_graph.has_module(&ModuleId::new(path.as_str(), "", &self.context.config.root)) {
+            return [r, vec![(path, update_type)]].concat();
+          };
+
+          r
         } else {
           vec![(path, update_type)]
         }
@@ -89,6 +88,7 @@ impl Compiler {
       .collect();
 
     drop(watch_graph);
+    drop(module_graph);
 
     let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams {
       paths,

@@ -226,7 +226,7 @@ impl JsCompiler {
     let watch_graph = context.watch_graph.read();
     let module_id = ModuleId::new(&resolved_path, "", &context.config.root);
 
-    module_graph.has_module(&module_id) || watch_graph.has_module(&module_id)
+    module_graph.has_module(&module_id) || watch_graph.has_module(&resolved_path)
   }
 
   #[napi]

@@ -48,37 +48,17 @@ impl CompilationContext {
     })
   }
 
-  pub fn add_watch_files(&self, source: String, deps: Vec<String>) -> Result<()> {
+  pub fn add_watch_files(&self, from: String, deps: Vec<String>) -> Result<()> {
     // @import 'variable.scss'
     // @import './variable.scss'
     let mut watch_graph = self.watch_graph.write();
 
     for dep in deps {
-      let source = source.clone();
-
-      let dep_path = if Path::new(&dep).is_absolute() {
-        dep.to_string()
-      } else {
-        RelativePath::new(&self.config.root)
-          .relative(
-            RelativePath::new(&source)
-              .parent()
-              .expect("failed parse dirname")
-              .join(&dep),
-          )
-          .normalize()
-          .to_string()
-      };
-
-      let cwd = &self.config.root;
-
-      let from = ModuleId::new(&source, "", cwd);
-      let to = ModuleId::new(dep_path.as_str(), &"", cwd);
-
       watch_graph.add_node(from.clone());
-      watch_graph.add_node(to.clone());
 
-      watch_graph.add_edge(&from, &to)?;
+      watch_graph.add_node(dep.clone());
+
+      watch_graph.add_edge(&from, &dep)?;
     }
 
     Ok(())
@@ -179,5 +159,37 @@ impl HtmlContextMetaData {
 impl Default for HtmlContextMetaData {
   fn default() -> Self {
     Self::new()
+  }
+}
+
+#[cfg(test)]
+mod tests {
+
+  mod add_watch_files {
+
+    use super::super::CompilationContext;
+
+    #[test]
+    fn file_as_root_and_dep() {
+      let context = CompilationContext::default();
+      let vc = "./v_c".to_string();
+      let vd = "./v_d".to_string();
+      let a = "./a".to_string();
+
+      context
+        .add_watch_files(a.clone(), vec![vc.to_string(), vd.to_string()])
+        .unwrap();
+
+      context
+        .add_watch_files(vc.clone(), vec![vd.to_string()])
+        .unwrap();
+
+      let watch_graph = context.watch_graph.read();
+
+      assert_eq!(watch_graph.relation_roots(&vc), vec![&a]);
+      let mut r = watch_graph.relation_roots(&vd);
+      r.sort();
+      assert_eq!(r, vec![&a, &vc]);
+    }
   }
 }
