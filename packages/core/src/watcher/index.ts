@@ -27,14 +27,16 @@ export class FileWatcher implements ImplFileWatcher {
     );
 
     this._watcher = new JsFileWatcher((paths: string[]) => {
-      console.log(arguments);
       const handlePathChange = async (path: string): Promise<void> => {
         try {
           if (this.serverOrCompiler instanceof DevServer) {
             await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
           }
 
-          if (this.serverOrCompiler instanceof Compiler) {
+          if (
+            this.serverOrCompiler instanceof Compiler &&
+            this.serverOrCompiler.hasModule(path)
+          ) {
             compilerHandler(async () => {
               await compiler.update([path], true);
               compiler.writeResourcesToDisk();
@@ -47,13 +49,7 @@ export class FileWatcher implements ImplFileWatcher {
       paths.forEach(handlePathChange);
     });
 
-    compiler.resolvedModulePaths(this._root).forEach((path) => {
-      try {
-        this._watcher.watch(path);
-      } catch (error) {
-        // ignore error
-      }
-    });
+    this._watcher.watch(compiler.resolvedModulePaths(this._root));
 
     if (this.serverOrCompiler instanceof DevServer) {
       // chokidar.watch(
@@ -68,31 +64,18 @@ export class FileWatcher implements ImplFileWatcher {
           );
           return resolvedPath;
         });
-        added.forEach((path) => {
-          try {
-            this._watcher.watch(path);
-          } catch (error) {
-            // ignore error
-          }
-        });
-        // this._watcher.add(added);
 
-        const removed = updateResult.removed.map((removedModule) => {
-          const resolvedPath = compiler.transformModulePath(
-            this._root,
-            removedModule
-          );
-          return resolvedPath;
-        });
+        this._watcher.watch(added);
+
+        // const removed = updateResult.removed.map((removedModule) => {
+        //   const resolvedPath = compiler.transformModulePath(
+        //     this._root,
+        //     removedModule
+        //   );
+        //   return resolvedPath;
+        // });
 
         // this._watcher.unwatch(removed);
-        removed.forEach((path) => {
-          try {
-            this._watcher.unwatch(path);
-          } catch (error) {
-            // ignore error
-          }
-        });
       });
     }
 

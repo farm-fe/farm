@@ -44,6 +44,6 @@ export class Compiler {
 export type FileWatcher = JsFileWatcher
 export class JsFileWatcher {
   constructor(callback: (...args: any[]) => any)
-  watch(path: string): void
-  unwatch(path: string): void
+  watch(paths: Array<string>): void
+  unwatch(paths: Array<string>): void
 }

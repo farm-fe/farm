@@ -252,7 +252,7 @@ pub fn handle_entry_resources(
       // split last line
       let (entry_js_resource_code, entry_js_resource_source_map) =
         if let Some((c, m)) = entry_js_resource_code.rsplit_once("\n") {
-          if (m.starts_with("//# sourceMappingURL=")) {
+          if m.starts_with("//# sourceMappingURL=") {
             (c.to_string(), format!("\n{}", m))
           } else {
             (entry_js_resource_code, "".to_string())

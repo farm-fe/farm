@@ -1,6 +1,10 @@
 #![deny(clippy::all)]
 
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{
+  collections::HashMap,
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use farmfe_compiler::Compiler;
 
@@ -22,7 +26,7 @@ use napi::{
   },
   Env, JsFunction, JsObject, NapiRaw, Status,
 };
-use notify::{RecommendedWatcher, Watcher};
+use notify::{event::ModifyKind, EventKind, RecommendedWatcher, Watcher};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 // pub use farmfe_toolkit_plugin;
@@ -271,9 +275,96 @@ impl JsCompiler {
   }
 }
 
+pub struct FsWatcher {
+  watcher: notify::RecommendedWatcher,
+  watched_paths: Vec<PathBuf>,
+}
+
+impl FsWatcher {
+  pub fn new<F>(mut callback: F) -> notify::Result<Self>
+  where
+    F: FnMut(Vec<String>) + Send + Sync + 'static,
+  {
+    let watcher = RecommendedWatcher::new(
+      move |result: std::result::Result<notify::Event, notify::Error>| {
+        let event = result.unwrap();
+        let get_paths = || {
+          event
+            .paths
+            .iter()
+            .map(|p| p.to_str().unwrap().to_string())
+            .collect::<Vec<_>>()
+        };
+        // println!("{:?} {:?}", event.kind, event);
+        if cfg!(target_os = "macos") {
+          if matches!(event.kind, EventKind::Modify(ModifyKind::Data(_))) {
+            callback(get_paths());
+          }
+        } else {
+          if event.kind.is_modify() {
+            callback(get_paths());
+          }
+        }
+      },
+      Default::default(),
+    )?;
+
+    Ok(Self {
+      watcher,
+      watched_paths: vec![],
+    })
+  }
+
+  pub fn watch(&mut self, paths: Vec<&Path>) -> notify::Result<()> {
+    if paths.is_empty() {
+      return Ok(());
+    }
+
+    let mut prefix_comps = vec![];
+    let first_item = &paths[0];
+    let rest = &paths[1..];
+
+    for (index, comp) in first_item.components().enumerate() {
+      if rest.iter().all(|item| {
+        let mut item_comps = item.components();
+
+        if index >= item.components().count() {
+          return false;
+        }
+
+        return item_comps.nth(index).unwrap() == comp;
+      }) {
+        prefix_comps.push(comp.clone());
+      }
+    }
+
+    let watch_path = PathBuf::from_iter(prefix_comps.iter());
+
+    if self
+      .watched_paths
+      .iter()
+      .any(|item| watch_path.starts_with(item))
+    {
+      return Ok(());
+    } else {
+      self.watched_paths.push(watch_path.clone());
+    }
+
+    // println!("watch path {:?}", watch_path);
+
+    self
+      .watcher
+      .watch(watch_path.as_path(), notify::RecursiveMode::Recursive)
+  }
+
+  pub fn unwatch(&mut self, path: &str) -> notify::Result<()> {
+    self.watcher.unwatch(Path::new(path))
+  }
+}
+
 #[napi(js_name = "JsFileWatcher")]
 pub struct FileWatcher {
-  watcher: notify::RecommendedWatcher,
+  watcher: FsWatcher,
 }
 
 #[napi]
@@ -289,53 +380,32 @@ impl FileWatcher {
         }
 
         Ok(vec![array])
-        // ctx
-        //   .value
-        //   .into_iter()
-        //   .map(|v| ctx.env.create_string(v))
-        //   .map(|v| vec![v])
       })?;
 
-    let watcher = RecommendedWatcher::new(
-      move |result: std::result::Result<notify::Event, notify::Error>| {
-        let event = result.unwrap();
-        println!("event: {:?} {:?}", event.kind, event.paths);
-        if event.kind.is_modify() {
-          let paths = event
-            .paths
-            .iter()
-            .map(|p| p.to_str().unwrap().to_string())
-            .collect();
-          thread_safe_callback.call(paths, ThreadsafeFunctionCallMode::Blocking);
-        }
-      },
-      Default::default(),
-    )
+    let watcher = FsWatcher::new(move |paths| {
+      thread_safe_callback.call(paths, ThreadsafeFunctionCallMode::Blocking);
+    })
     .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
 
-    Ok(Self { watcher: watcher })
+    Ok(Self { watcher })
   }
 
   #[napi]
-  pub fn watch(&mut self, path: String) -> napi::Result<()> {
+  pub fn watch(&mut self, paths: Vec<String>) -> napi::Result<()> {
     self
       .watcher
-      .watch(Path::new(&path), notify::RecursiveMode::Recursive)
-      .map_err(|e| {
-        napi::Error::new(
-          Status::GenericFailure,
-          format!("watch path {} failed: {}", path, e),
-        )
-      })
+      .watch(paths.iter().map(|item| Path::new(item)).collect())
+      .ok();
+
+    Ok(())
   }
 
   #[napi]
-  pub fn unwatch(&mut self, path: String) -> napi::Result<()> {
-    self.watcher.unwatch(Path::new(&path)).map_err(|e| {
-      napi::Error::new(
-        Status::GenericFailure,
-        format!("unwatch path {} failed: {}", path, e),
-      )
-    })
+  pub fn unwatch(&mut self, paths: Vec<String>) -> napi::Result<()> {
+    for path in paths {
+      self.watcher.unwatch(&path).ok();
+    }
+
+    Ok(())
   }
 }
