@@ -1,6 +1,6 @@
 #![deny(clippy::all)]
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use farmfe_compiler::Compiler;
 
@@ -17,9 +17,12 @@ use farmfe_core::{
 
 use napi::{
   bindgen_prelude::{Buffer, FromNapiValue},
-  threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode},
+  threadsafe_function::{
+    ErrorStrategy, ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
+  },
   Env, JsFunction, JsObject, NapiRaw, Status,
 };
+use notify::{RecommendedWatcher, Watcher};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 // pub use farmfe_toolkit_plugin;
@@ -265,5 +268,74 @@ impl JsCompiler {
     let resources = context.resources_map.lock();
 
     resources.get(&name).map(|r| r.bytes.clone().into())
+  }
+}
+
+#[napi(js_name = "JsFileWatcher")]
+pub struct FileWatcher {
+  watcher: notify::RecommendedWatcher,
+}
+
+#[napi]
+impl FileWatcher {
+  #[napi(constructor)]
+  pub fn new(_: Env, callback: JsFunction) -> napi::Result<Self> {
+    let thread_safe_callback: ThreadsafeFunction<Vec<String>, ErrorStrategy::Fatal> = callback
+      .create_threadsafe_function(0, |ctx: ThreadSafeCallContext<Vec<String>>| {
+        let mut array = ctx.env.create_array_with_length(ctx.value.len())?;
+
+        for (i, v) in ctx.value.iter().enumerate() {
+          array.set_element(i as u32, ctx.env.create_string(v)?)?;
+        }
+
+        Ok(vec![array])
+        // ctx
+        //   .value
+        //   .into_iter()
+        //   .map(|v| ctx.env.create_string(v))
+        //   .map(|v| vec![v])
+      })?;
+
+    let watcher = RecommendedWatcher::new(
+      move |result: std::result::Result<notify::Event, notify::Error>| {
+        let event = result.unwrap();
+        println!("event: {:?} {:?}", event.kind, event.paths);
+        if event.kind.is_modify() {
+          let paths = event
+            .paths
+            .iter()
+            .map(|p| p.to_str().unwrap().to_string())
+            .collect();
+          thread_safe_callback.call(paths, ThreadsafeFunctionCallMode::Blocking);
+        }
+      },
+      Default::default(),
+    )
+    .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+    Ok(Self { watcher: watcher })
+  }
+
+  #[napi]
+  pub fn watch(&mut self, path: String) -> napi::Result<()> {
+    self
+      .watcher
+      .watch(Path::new(&path), notify::RecursiveMode::Recursive)
+      .map_err(|e| {
+        napi::Error::new(
+          Status::GenericFailure,
+          format!("watch path {} failed: {}", path, e),
+        )
+      })
+  }
+
+  #[napi]
+  pub fn unwatch(&mut self, path: String) -> napi::Result<()> {
+    self.watcher.unwatch(Path::new(&path)).map_err(|e| {
+      napi::Error::new(
+        Status::GenericFailure,
+        format!("unwatch path {} failed: {}", path, e),
+      )
+    })
   }
 }

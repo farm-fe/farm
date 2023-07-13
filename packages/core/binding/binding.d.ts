@@ -41,3 +41,9 @@ export class Compiler {
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
 }
+export type FileWatcher = JsFileWatcher
+export class JsFileWatcher {
+  constructor(callback: (...args: any[]) => any)
+  watch(path: string): void
+  unwatch(path: string): void
+}

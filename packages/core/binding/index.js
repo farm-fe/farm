@@ -7,4 +7,5 @@ import bindingPath from './resolve-binding.cjs';
 process.env.FARM_LIB_CORE_PATH = bindingPath;
 
 const Compiler = binding.Compiler;
-export { Compiler, bindingPath };
+const JsFileWatcher = binding.JsFileWatcher;
+export { Compiler, bindingPath, JsFileWatcher };

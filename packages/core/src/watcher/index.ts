@@ -1,10 +1,7 @@
-import chokidar, { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
-import { Config } from '../../binding/index.js';
-import { isObject, compilerHandler, DefaultLogger } from '../utils/index.js';
-
-import type { WatchOptions as ChokidarFileWatcherOptions } from 'chokidar';
+import { Config, JsFileWatcher } from '../../binding/index.js';
+import { compilerHandler, DefaultLogger } from '../utils/index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -12,7 +9,7 @@ interface ImplFileWatcher {
 
 export class FileWatcher implements ImplFileWatcher {
   private _root: string;
-  private _watcher: FSWatcher;
+  private _watcher: JsFileWatcher;
   private _logger: DefaultLogger;
 
   constructor(
@@ -29,11 +26,40 @@ export class FileWatcher implements ImplFileWatcher {
       this.serverOrCompiler
     );
 
+    this._watcher = new JsFileWatcher((paths: string[]) => {
+      console.log(arguments);
+      const handlePathChange = async (path: string): Promise<void> => {
+        try {
+          if (this.serverOrCompiler instanceof DevServer) {
+            await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
+          }
+
+          if (this.serverOrCompiler instanceof Compiler) {
+            compilerHandler(async () => {
+              await compiler.update([path], true);
+              compiler.writeResourcesToDisk();
+            }, this.options);
+          }
+        } catch (error) {
+          this._logger.error(error);
+        }
+      };
+      paths.forEach(handlePathChange);
+    });
+
+    compiler.resolvedModulePaths(this._root).forEach((path) => {
+      try {
+        this._watcher.watch(path);
+      } catch (error) {
+        // ignore error
+      }
+    });
+
     if (this.serverOrCompiler instanceof DevServer) {
-      this._watcher = chokidar.watch(
-        compiler.resolvedModulePaths(this._root),
-        this.serverOrCompiler.config.hmr.watchOptions
-      );
+      // chokidar.watch(
+      //   compiler.resolvedModulePaths(this._root),
+      //   this.serverOrCompiler.config.hmr.watchOptions
+      // );
       this.serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
         const added = updateResult.added.map((addedModule) => {
           const resolvedPath = compiler.transformModulePath(
@@ -42,7 +68,14 @@ export class FileWatcher implements ImplFileWatcher {
           );
           return resolvedPath;
         });
-        this._watcher.add(added);
+        added.forEach((path) => {
+          try {
+            this._watcher.watch(path);
+          } catch (error) {
+            // ignore error
+          }
+        });
+        // this._watcher.add(added);
 
         const removed = updateResult.removed.map((removedModule) => {
           const resolvedPath = compiler.transformModulePath(
@@ -52,34 +85,26 @@ export class FileWatcher implements ImplFileWatcher {
           return resolvedPath;
         });
 
-        this._watcher.unwatch(removed);
+        // this._watcher.unwatch(removed);
+        removed.forEach((path) => {
+          try {
+            this._watcher.unwatch(path);
+          } catch (error) {
+            // ignore error
+          }
+        });
       });
     }
 
     if (this.serverOrCompiler instanceof Compiler) {
-      const watcherOptions = this.resolvedWatcherOptions();
-      this._watcher = chokidar.watch(
-        compiler.resolvedModulePaths(this._root),
-        watcherOptions as ChokidarFileWatcherOptions
-      );
+      // const watcherOptions = this.resolvedWatcherOptions();
+      // this._watcher = chokidar.watch(
+      //   compiler.resolvedModulePaths(this._root),
+      //   watcherOptions as ChokidarFileWatcherOptions
+      // );
     }
 
-    this._watcher.on('change', async (path: string) => {
-      try {
-        if (this.serverOrCompiler instanceof DevServer) {
-          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
-        }
-
-        if (this.serverOrCompiler instanceof Compiler) {
-          compilerHandler(async () => {
-            await compiler.update([path], true);
-            compiler.writeResourcesToDisk();
-          }, this.options);
-        }
-      } catch (error) {
-        this._logger.error(error);
-      }
-    });
+    // this._watcher.on('change', );
   }
 
   private getCompilerFromServerOrCompiler(
@@ -90,29 +115,29 @@ export class FileWatcher implements ImplFileWatcher {
       : serverOrCompiler;
   }
 
-  private resolvedWatcherOptions() {
-    const { watch: watcherOptions, output } = this.options.config;
-    const userWatcherOptions = isObject(watcherOptions) ? watcherOptions : {};
-    const { ignored = [] } = userWatcherOptions as ChokidarFileWatcherOptions;
-    const resolveWatcherOptions = {
-      ignoreInitial: true,
-      ignorePermissionErrors: true,
-      ...watcherOptions,
-      ignored: [
-        '**/{.git,node_modules}/**',
-        output?.path,
-        ...(Array.isArray(ignored) ? ignored : [ignored])
-      ]
-    };
-    // TODO other logger info
-    this._logger.info(`Watching for changes`);
-    this._logger.info(
-      `Ignoring changes in ${resolveWatcherOptions.ignored
-        .map((v: string | RegExp) => '"' + v + '"')
-        .join(' | ')}`
-    );
-    return resolveWatcherOptions;
-  }
+  // private resolvedWatcherOptions() {
+  //   const { watch: watcherOptions, output } = this.options.config;
+  //   const userWatcherOptions = isObject(watcherOptions) ? watcherOptions : {};
+  //   const { ignored = [] } = userWatcherOptions as ChokidarFileWatcherOptions;
+  //   const resolveWatcherOptions = {
+  //     ignoreInitial: true,
+  //     ignorePermissionErrors: true,
+  //     ...watcherOptions,
+  //     ignored: [
+  //       '**/{.git,node_modules}/**',
+  //       output?.path,
+  //       ...(Array.isArray(ignored) ? ignored : [ignored])
+  //     ]
+  //   };
+  //   // TODO other logger info
+  //   this._logger.info(`Watching for changes`);
+  //   this._logger.info(
+  //     `Ignoring changes in ${resolveWatcherOptions.ignored
+  //       .map((v: string | RegExp) => '"' + v + '"')
+  //       .join(' | ')}`
+  //   );
+  //   return resolveWatcherOptions;
+  // }
 }
 
 export async function restartServer(server: DevServer) {
