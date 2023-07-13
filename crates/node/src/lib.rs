@@ -323,12 +323,12 @@ impl FsWatcher {
     })
   }
 
-  #[cfg(target_os = "macos")]
+  #[cfg(any(target_os = "macos", target_os = "windows"))]
   pub fn watch(&mut self, paths: Vec<&Path>) -> notify::Result<()> {
     if paths.is_empty() {
       return Ok(());
     }
-
+    // find the longest common prefix
     let mut prefix_comps = vec![];
     let first_item = &paths[0];
     let rest = &paths[1..];
