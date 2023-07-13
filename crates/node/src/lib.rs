@@ -26,7 +26,10 @@ use napi::{
   },
   Env, JsFunction, JsObject, NapiRaw, Status,
 };
-use notify::{event::ModifyKind, EventKind, RecommendedWatcher, Watcher};
+use notify::{
+  event::{AccessKind, ModifyKind},
+  EventKind, RecommendedWatcher, Watcher,
+};
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 // pub use farmfe_toolkit_plugin;
@@ -295,9 +298,14 @@ impl FsWatcher {
             .map(|p| p.to_str().unwrap().to_string())
             .collect::<Vec<_>>()
         };
-        // println!("{:?} {:?}", event.kind, event);
+        println!("{:?} {:?}", event.kind, event);
         if cfg!(target_os = "macos") {
           if matches!(event.kind, EventKind::Modify(ModifyKind::Data(_))) {
+            callback(get_paths());
+          }
+        } else if cfg!(target_os = "linux") {
+          // a close event is always followed by a modify event
+          if matches!(event.kind, EventKind::Access(AccessKind::Close(_))) {
             callback(get_paths());
           }
         } else {
@@ -315,6 +323,7 @@ impl FsWatcher {
     })
   }
 
+  #[cfg(target_os = "macos")]
   pub fn watch(&mut self, paths: Vec<&Path>) -> notify::Result<()> {
     if paths.is_empty() {
       return Ok(());
@@ -355,6 +364,24 @@ impl FsWatcher {
     self
       .watcher
       .watch(watch_path.as_path(), notify::RecursiveMode::Recursive)
+  }
+
+  #[cfg(target_os = "linux")]
+  pub fn watch(&mut self, paths: Vec<&Path>) -> notify::Result<()> {
+    for path in paths {
+      if self.watched_paths.contains(&path.to_path_buf()) {
+        continue;
+      }
+
+      self
+        .watcher
+        .watch(path, notify::RecursiveMode::NonRecursive)
+        .ok();
+
+      self.watched_paths.push(path.to_path_buf());
+    }
+
+    Ok(())
   }
 
   pub fn unwatch(&mut self, path: &str) -> notify::Result<()> {
