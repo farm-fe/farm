@@ -298,7 +298,7 @@ impl FsWatcher {
             .map(|p| p.to_str().unwrap().to_string())
             .collect::<Vec<_>>()
         };
-        println!("{:?} {:?}", event.kind, event);
+        // println!("{:?} {:?}", event.kind, event);
         if cfg!(target_os = "macos") {
           if matches!(event.kind, EventKind::Modify(ModifyKind::Data(_))) {
             callback(get_paths());
