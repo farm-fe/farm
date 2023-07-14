@@ -2,6 +2,7 @@ import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
 import { Config, JsFileWatcher } from '../../binding/index.js';
 import { compilerHandler, DefaultLogger } from '../utils/index.js';
+import debounce from 'lodash.debounce';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -26,26 +27,31 @@ export class FileWatcher implements ImplFileWatcher {
       this.serverOrCompiler
     );
 
-    this._watcher = new JsFileWatcher((paths: string[]) => {
-      const handlePathChange = async (path: string): Promise<void> => {
-        try {
-          if (this.serverOrCompiler instanceof DevServer) {
-            await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
-          }
-
-          if (
-            this.serverOrCompiler instanceof Compiler &&
-            this.serverOrCompiler.hasModule(path)
-          ) {
-            compilerHandler(async () => {
-              await compiler.update([path], true);
-              compiler.writeResourcesToDisk();
-            }, this.options);
-          }
-        } catch (error) {
-          this._logger.error(error);
+    let handlePathChange = async (path: string): Promise<void> => {
+      try {
+        if (this.serverOrCompiler instanceof DevServer) {
+          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
         }
-      };
+
+        if (
+          this.serverOrCompiler instanceof Compiler &&
+          this.serverOrCompiler.hasModule(path)
+        ) {
+          compilerHandler(async () => {
+            await compiler.update([path], true);
+            compiler.writeResourcesToDisk();
+          }, this.options);
+        }
+      } catch (error) {
+        this._logger.error(error);
+      }
+    };
+
+    if (process.platform === 'win32') {
+      handlePathChange = debounce(handlePathChange, 3);
+    }
+
+    this._watcher = new JsFileWatcher((paths: string[]) => {
       paths.forEach(handlePathChange);
     });
 

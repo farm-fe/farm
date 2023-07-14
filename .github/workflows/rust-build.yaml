@@ -14,7 +14,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: cargo-test-${{ matrix.settings.crate }}
-          
+
       - uses: actions/setup-node@v3
         with:
           node-version: 16
@@ -25,6 +25,7 @@ jobs:
       - run: tar -xf zig-linux-x86_64-0.10.1.tar.xz
       - run: mv zig-linux-x86_64-0.10.1 ~/
       - run: ln -s ~/zig-linux-x86_64-0.10.1/zig /usr/local/bin
+      - run: chmod +x /usr/local/bin/zig
 
       - name: Build - Arm64
         run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin --zig
@@ -54,7 +55,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: rust-build-${{ matrix.settings.os }}
-          
+
       - uses: actions/setup-node@v3
         with:
           node-version: 16

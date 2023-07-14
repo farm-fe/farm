@@ -809,9 +809,6 @@ importers:
       '@types/koa__cors':
         specifier: ^4.0.0
         version: 4.0.0
-      '@types/lodash':
-        specifier: ^4.14.191
-        version: 4.14.191
       '@types/lodash.debounce':
         specifier: ^4.0.7
         version: 4.0.7
