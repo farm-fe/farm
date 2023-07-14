@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.10.4
+
+### Patch Changes
+
+- 6aa7563: Optimize File Watcher - remove chokidar and introduce rust notify
+
 ## 0.10.3
 
 ### Patch Changes
