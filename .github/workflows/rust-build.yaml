@@ -22,9 +22,9 @@ jobs:
         run: npm install -g pnpm && pnpm i --frozen-lockfile
       - run: rustup target add aarch64-apple-darwin
       - run: wget --quiet https://ziglang.org/download/0.10.1/zig-macos-x86_64-0.10.1.tar.xz
-      - run: tar -xf zig-linux-x86_64-0.10.1.tar.xz
-      - run: mv zig-linux-x86_64-0.10.1 ~/
-      - run: ln -s ~/zig-linux-x86_64-0.10.1/zig /usr/local/bin
+      - run: tar -xf zig-macos-x86_64-0.10.1.tar.xz
+      - run: mv zig-macos-x86_64-0.10.1 ~/
+      - run: ln -s ~/zig-macos-x86_64-0.10.1/zig /usr/local/bin
       - run: chmod +x /usr/local/bin/zig
 
       - name: Build - Arm64
