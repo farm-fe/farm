@@ -21,14 +21,15 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm && pnpm i --frozen-lockfile
       - run: rustup target add aarch64-apple-darwin
-      - run: wget --quiet https://ziglang.org/download/0.10.1/zig-macos-x86_64-0.10.1.tar.xz
-      - run: tar -xf zig-macos-x86_64-0.10.1.tar.xz
-      - run: mv zig-macos-x86_64-0.10.1 ~/
-      - run: ln -s ~/zig-macos-x86_64-0.10.1/zig /usr/local/bin
-      - run: chmod +x /usr/local/bin/zig
+      # - run: wget --quiet https://ziglang.org/download/0.10.1/zig-macos-x86_64-0.10.1.tar.xz
+      # - run: tar -xf zig-macos-x86_64-0.10.1.tar.xz
+      # - run: mv zig-macos-x86_64-0.10.1 ~/
+      # - run: ln -s ~/zig-macos-x86_64-0.10.1/zig /usr/local/bin
+      # - run: chmod +x /usr/local/bin/zig
 
       - name: Build - Arm64
-        run: cd packages/core && SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) npm run build:rs -- --target aarch64-apple-darwin --zig
+        run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin
+        # run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin --zig
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
         with:
