@@ -28,7 +28,7 @@ jobs:
       - run: chmod +x /usr/local/bin/zig
 
       - name: Build - Arm64
-        run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin --zig
+        run: cd packages/core && SDKROOT=$(xcrun -sdk macosx --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version) npm run build:rs -- --target aarch64-apple-darwin --zig
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
         with:
