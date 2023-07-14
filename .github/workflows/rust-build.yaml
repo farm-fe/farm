@@ -5,7 +5,7 @@ jobs:
   # cross compile arm64 macos cause github runners does not native support it
   cross-build-mac-arm:
     name: Build and Upload Artifacts - darwin-arm64
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust

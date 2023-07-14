@@ -308,10 +308,8 @@ impl FsWatcher {
           if matches!(event.kind, EventKind::Access(AccessKind::Close(_))) {
             callback(get_paths());
           }
-        } else {
-          if event.kind.is_modify() {
-            callback(get_paths());
-          }
+        } else if event.kind.is_modify() {
+          callback(get_paths());
         }
       },
       Default::default(),
@@ -421,7 +419,7 @@ impl FileWatcher {
   pub fn watch(&mut self, paths: Vec<String>) -> napi::Result<()> {
     self
       .watcher
-      .watch(paths.iter().map(|item| Path::new(item)).collect())
+      .watch(paths.iter().map(Path::new).collect())
       .ok();
 
     Ok(())
