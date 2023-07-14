@@ -256,13 +256,13 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9801,
-  watchOptions: {
-    awaitWriteFinish: {
-      stabilityThreshold: 16,
-      pollInterval: 16
-    }
-  }
+  port: 9801
+  // watchOptions: {
+  //   awaitWriteFinish: {
+  //     stabilityThreshold: 16,
+  //     pollInterval: 16
+  //   }
+  // }
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {

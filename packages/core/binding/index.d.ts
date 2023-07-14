@@ -189,6 +189,7 @@ export interface Config {
     css?: {
       modules?: {
         indentName?: string;
+        paths?: string[];
       };
       prefixer?: {
         targets?: string[] | string | BrowserTargetsRecord;
@@ -197,7 +198,7 @@ export interface Config {
     html?: {
       base?: string;
     };
-    sourcemap?: boolean | 'all';
+    sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
     partialBundling?: {
       moduleBuckets?: {
         name: string;
