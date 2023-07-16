@@ -7,11 +7,7 @@ pub const FARM_RESOURCE: &str = "data-farm-resource";
 
 pub fn is_script_src(element: &Element) -> bool {
   if let Some(v) = get_script_src_value(element) {
-    if !v.starts_with("http") {
-      true
-    } else {
-      false
-    }
+    !v.starts_with("http")
   } else {
     false
   }
@@ -32,11 +28,7 @@ pub fn is_script_entry(element: &Element) -> bool {
 
 pub fn is_link_href(element: &Element) -> bool {
   if let Some(v) = get_href_link_value(element) {
-    if !v.starts_with("http") {
-      true
-    } else {
-      false
-    }
+    !v.starts_with("http")
   } else {
     false
   }

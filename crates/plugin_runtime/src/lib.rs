@@ -15,7 +15,6 @@ use farmfe_core::{
   regex::Regex,
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
-    resource_pot_map::ResourcePotMap,
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::DUMMY_SP,
@@ -102,7 +101,7 @@ impl Plugin for FarmPluginRuntime {
           source: ori_source,
           ..param.clone()
         },
-        &context,
+        context,
         &PluginHookContext {
           caller: Some(String::from("FarmPluginRuntime")),
           meta: HashMap::new(),
@@ -236,7 +235,7 @@ impl Plugin for FarmPluginRuntime {
     if param.module.id.relative_path().ends_with(RUNTIME_SUFFIX) {
       param.module.module_type = ModuleType::Runtime;
 
-      if param.deps.len() > 0 {
+      if !param.deps.is_empty() {
         let module_system =
           module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
         param.module.meta.as_script_mut().module_system = module_system;
@@ -260,12 +259,12 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
 
-    let mut module_graph = context.module_graph.write();
+    let module_graph = context.module_graph.write();
 
     for resource_pot in resource_pots {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
         let rendered_resource_pot_ast =
-          resource_pot_to_runtime_object_lit(*resource_pot, &mut *module_graph, context)?;
+          resource_pot_to_runtime_object_lit(resource_pot, &module_graph, context)?;
 
         #[cfg(not(windows))]
         let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
@@ -275,8 +274,8 @@ impl Plugin for FarmPluginRuntime {
         let mut runtime_ast = parse_module(
           "farm_internal_minimal_runtime",
           minimal_runtime,
-          Syntax::Es(context.config.script.parser.es_config.clone()),
-          context.config.script.target.clone(),
+          Syntax::Es(context.config.script.parser.es_config),
+          context.config.script.target,
           context.meta.script.cm.clone(),
         )?;
 
@@ -326,7 +325,7 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
       let rendered_resource_pot_ast =
-        resource_pot_to_runtime_object_lit(resource_pot, &*module_graph, context)?;
+        resource_pot_to_runtime_object_lit(resource_pot, &module_graph, context)?;
 
       #[cfg(not(windows))]
       let wrapper = include_str!("./js-runtime/resource-wrapper.js");
@@ -336,8 +335,8 @@ impl Plugin for FarmPluginRuntime {
       let mut wrapper_ast = parse_module(
         "farm_internal_resource_wrapper",
         wrapper,
-        Syntax::Es(context.config.script.parser.es_config.clone()),
-        context.config.script.target.clone(),
+        Syntax::Es(context.config.script.parser.es_config),
+        context.config.script.target,
         context.meta.script.cm.clone(),
       )?;
 
@@ -376,7 +375,7 @@ impl Plugin for FarmPluginRuntime {
       let runtime_ast = runtime_ast.as_ref().unwrap();
       let bytes = codegen_module(
         runtime_ast,
-        context.config.script.target.clone(),
+        context.config.script.target,
         context.meta.script.cm.clone(),
         None,
         context.config.minify,

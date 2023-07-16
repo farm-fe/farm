@@ -339,9 +339,9 @@ impl FsWatcher {
           return false;
         }
 
-        return item_comps.nth(index).unwrap() == comp;
+        item_comps.nth(index).unwrap() == comp
       }) {
-        prefix_comps.push(comp.clone());
+        prefix_comps.push(comp);
       }
     }
 

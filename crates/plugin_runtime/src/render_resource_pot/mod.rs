@@ -103,7 +103,7 @@ pub fn resource_pot_to_runtime_object_lit(
                 preserve_import_meta: true,
                 ..Default::default()
               },
-              enable_available_feature_from_es_version(context.config.script.target.clone()),
+              enable_available_feature_from_es_version(context.config.script.target),
               None,
             ));
           }
@@ -195,8 +195,8 @@ fn wrap_module_ast(ast: SwcModule) -> Function {
     span: DUMMY_SP,
     stmts: ast
       .body
-      .to_vec()
-      .into_iter()
+      .iter()
+      .cloned()
       .map(|item| match item {
         ModuleItem::ModuleDecl(decl) => {
           let code = codegen_module(

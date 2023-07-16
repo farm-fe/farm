@@ -93,8 +93,8 @@ impl Plugin for FarmPluginScript {
       let mut swc_module = parse_module(
         &param.module_id.to_string(),
         &param.content,
-        syntax.clone(),
-        context.config.script.target.clone(),
+        syntax,
+        context.config.script.target,
         context.meta.script.cm.clone(),
       )?;
 
@@ -164,7 +164,7 @@ impl Plugin for FarmPluginScript {
     }
 
     // execute swc plugins
-    if param.module_type.is_script() && context.config.script.plugins.len() > 0 {
+    if param.module_type.is_script() && !context.config.script.plugins.is_empty() {
       try_with(
         context.meta.script.cm.clone(),
         &context.meta.script.globals,
@@ -216,7 +216,7 @@ impl Plugin for FarmPluginScript {
     // cause the partial bundling is not support other module type yet
     param.module.module_type = ModuleType::Js;
     // default to commonjs
-    let module_system = if param.deps.len() > 0 {
+    let module_system = if !param.deps.is_empty() {
       module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
     } else {
       ModuleSystem::CommonJs
@@ -229,7 +229,7 @@ impl Plugin for FarmPluginScript {
       // if the ast contains ModuleDecl, it's a esm module
       for item in ast.body.iter() {
         if let ModuleItem::ModuleDecl(_) = item {
-          if module_system == ModuleSystem::CommonJs && param.deps.len() > 0 {
+          if module_system == ModuleSystem::CommonJs && !param.deps.is_empty() {
             param.module.meta.as_script_mut().module_system = ModuleSystem::Hybrid;
           } else {
             param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
@@ -295,7 +295,7 @@ impl Plugin for FarmPluginScript {
 
       let buf = codegen_module(
         ast,
-        context.config.script.target.clone(),
+        context.config.script.target,
         context.meta.script.cm.clone(),
         Some(&mut src_map_buf),
         context.config.minify,

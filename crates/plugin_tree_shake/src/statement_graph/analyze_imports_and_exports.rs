@@ -53,7 +53,7 @@ pub fn analyze_imports_and_exports(
       return used_defined_idents.contains(ident);
     }
 
-    return true;
+    true
   };
 
   match stmt {
@@ -105,14 +105,14 @@ pub fn analyze_imports_and_exports(
         imports = Some(ImportInfo {
           source,
           specifiers,
-          stmt_id: id.clone(),
+          stmt_id: *id,
         });
       }
       swc_ecma_ast::ModuleDecl::ExportAll(export_all) => {
         exports = Some(ExportInfo {
           source: Some(export_all.src.value.to_string()),
           specifiers: vec![ExportSpecifierInfo::All(None)],
-          stmt_id: id.clone(),
+          stmt_id: *id,
         })
       }
       swc_ecma_ast::ModuleDecl::ExportDecl(export_decl) => {
@@ -121,7 +121,7 @@ pub fn analyze_imports_and_exports(
             exports = Some(ExportInfo {
               source: None,
               specifiers: vec![ExportSpecifierInfo::Named { local: class_decl.ident.to_string(), exported: None }],
-              stmt_id: id.clone(),
+              stmt_id: *id,
             });
             defined_idents.insert(class_decl.ident.to_string());
             analyze_and_insert_used_idents(&class_decl.class, Some(class_decl.ident.to_string()));
@@ -130,7 +130,7 @@ pub fn analyze_imports_and_exports(
             exports = Some(ExportInfo {
               source: None,
               specifiers: vec![ExportSpecifierInfo::Named { local: fn_decl.ident.to_string(), exported: None }],
-              stmt_id: id.clone(),
+              stmt_id: *id,
             });
             defined_idents.insert(fn_decl.ident.to_string());
             analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.to_string()));
@@ -167,7 +167,7 @@ pub fn analyze_imports_and_exports(
             exports = Some(ExportInfo {
               source: None,
               specifiers,
-              stmt_id: id.clone(),
+              stmt_id: *id,
             });
           },
           _ => unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration"),
@@ -177,7 +177,7 @@ pub fn analyze_imports_and_exports(
         exports = Some(ExportInfo {
           source: None,
           specifiers: vec![ExportSpecifierInfo::Default],
-          stmt_id: id.clone(),
+          stmt_id: *id,
         });
         match &export_default_decl.decl {
           swc_ecma_ast::DefaultDecl::Class(class_expr) => {
@@ -201,7 +201,7 @@ pub fn analyze_imports_and_exports(
         exports = Some(ExportInfo {
           source: None,
           specifiers: vec![ExportSpecifierInfo::Default],
-          stmt_id: id.clone(),
+          stmt_id: *id,
         });
         analyze_and_insert_used_idents(&export_default_expr.expr, None);
       }
@@ -250,7 +250,7 @@ pub fn analyze_imports_and_exports(
         exports = Some(ExportInfo {
           source: export_named.src.as_ref().map(|s| s.value.to_string()),
           specifiers,
-          stmt_id: id.clone(),
+          stmt_id: *id,
         });
       }
       _ => {}

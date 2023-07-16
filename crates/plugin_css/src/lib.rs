@@ -46,7 +46,7 @@ pub struct FarmPluginCss {
   ast_map: Mutex<HashMap<String, Stylesheet>>,
 }
 
-pub fn wrapper_style_load(code: &String, id: String, css_deps: &String) -> String {
+pub fn wrapper_style_load(code: &str, id: String, css_deps: &String) -> String {
   format!(
     r#"
 const cssCode = `{}`;
@@ -67,8 +67,8 @@ module.onDispose(() => {{
 style.remove();
 }});
 "#,
-    code.replace("`", "'").replace("\\", "\\\\"),
-    id.replace("\\", "\\\\"),
+    code.replace('`', "'").replace('\\', "\\\\"),
+    id.replace('\\', "\\\\"),
     css_deps
   )
 }
@@ -227,19 +227,16 @@ impl Plugin for FarmPluginCss {
 
         let code = format!(
           r#"
-    import "{}?{}";
+    import "{}{}?{}";
     {}
     export default {{{}}}
     "#,
-          format!(
-            "{}{}",
-            if cfg!(windows) {
-              param.resolved_path.replace("\\", "\\\\")
-            } else {
-              param.resolved_path.to_string()
-            },
-            FARM_CSS_MODULES_SUFFIX
-          ),
+          if cfg!(windows) {
+            param.resolved_path.replace('\\', "\\\\")
+          } else {
+            param.resolved_path.to_string()
+          },
+          FARM_CSS_MODULES_SUFFIX,
           // add hash to avoid cache, make sure hmr works
           sha256(param.content.replace("\r\n", "\n").as_bytes(), 8),
           dynamic_import_of_composes
@@ -256,11 +253,11 @@ impl Plugin for FarmPluginCss {
             .join(",")
         );
 
-        return Ok(Some(PluginTransformHookResult {
+        Ok(Some(PluginTransformHookResult {
           content: code,
           module_type: Some(ModuleType::Js),
           source_map: None,
-        }));
+        }))
       // } else if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
       //   let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
 
@@ -363,7 +360,7 @@ impl Plugin for FarmPluginCss {
 
     // transform css resource pot to js resource pot in development mode
     for resource_pot in resource_pots {
-      transform_css_resource_pot(*resource_pot, &mut *module_graph, context)?;
+      transform_css_resource_pot(resource_pot, &mut module_graph, context)?;
     }
 
     Ok(Some(()))
@@ -400,8 +397,8 @@ impl Plugin for FarmPluginCss {
         source_replace(
           &mut module_css_ast,
           &module.id,
-          &*module_graph,
-          &*resources_map,
+          &module_graph,
+          &resources_map,
         );
 
         merged_css_ast.rules.extend(module_css_ast.rules);
@@ -429,7 +426,7 @@ impl Plugin for FarmPluginCss {
       let source_map_enabled = context.config.sourcemap.enabled();
 
       let (css_code, src_map) = codegen_css_stylesheet(
-        &stylesheet,
+        stylesheet,
         if source_map_enabled {
           Some(context.meta.css.cm.clone())
         } else {
@@ -442,17 +439,17 @@ impl Plugin for FarmPluginCss {
 
       if context.config.sourcemap.enabled()
         && (context.config.sourcemap.is_all() || !resource_pot.immutable)
-        && src_map.is_some()
       {
         // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
-
-        resources.push(Resource {
-          name: format!("{}.map", resource_pot.id.to_string()),
-          bytes: src_map.unwrap(),
-          emitted: false,
-          resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
-          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        })
+        if let Some(bytes) = src_map {
+          resources.push(Resource {
+            name: format!("{}.map", resource_pot.id.to_string()),
+            bytes,
+            emitted: false,
+            resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
+            origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+          })
+        }
       }
 
       resources.push(Resource {
@@ -523,8 +520,7 @@ fn transform_css_module_indent_name(
 
 fn is_farm_css_modules(path: &str) -> bool {
   path
-    .split("?")
-    .into_iter()
+    .split('?')
     .next()
     .unwrap()
     .ends_with(FARM_CSS_MODULES_SUFFIX)

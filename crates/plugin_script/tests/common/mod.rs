@@ -6,11 +6,10 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
     PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
-    PluginProcessModuleHookParam, ResolveKind,
+    PluginProcessModuleHookParam,
   },
-  rkyv::de,
 };
-use farmfe_toolkit::script::module_system_from_deps;
+
 
 pub fn build_module_deps(
   path: PathBuf,
@@ -28,7 +27,7 @@ pub fn build_module_deps(
   let load_result = script_plugin
     .load(
       &PluginLoadHookParam {
-        resolved_path: &path.to_string_lossy().to_string(),
+        resolved_path: &path.to_string_lossy(),
         query: vec![],
         meta: HashMap::new(),
       },
@@ -42,7 +41,7 @@ pub fn build_module_deps(
     .parse(
       &PluginParseHookParam {
         module_id: ModuleId::new(
-          &path.to_string_lossy().to_string(),
+          &path.to_string_lossy(),
           "",
           base.to_str().unwrap(),
         ),
@@ -58,7 +57,7 @@ pub fn build_module_deps(
     .unwrap();
 
   let mut module = Module::new(ModuleId::new(
-    &path.to_string_lossy().to_string(),
+    &path.to_string_lossy(),
     "",
     base.to_str().unwrap(),
   ));

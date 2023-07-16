@@ -116,7 +116,7 @@ impl TreeShakeModule {
       }
     }
 
-    return exports;
+    exports
   }
 
   pub fn used_statements(&self) -> HashMap<StatementId, HashSet<String>> {
@@ -155,7 +155,7 @@ impl TreeShakeModule {
             used_idents.extend(
               referred_idents
                 .into_iter()
-                .map(|ident| UsedIdent::SwcIdent(ident)),
+                .map(UsedIdent::SwcIdent),
             );
           }
           // stmt.used_idents.iter().for_each(|used_ident| {
@@ -189,11 +189,11 @@ impl TreeShakeModule {
     }
 
     // 2. analyze used statements starting from used exports
-    let used_statements = self
-      .stmt_graph
-      .analyze_used_statements_and_idents(stmt_used_idents_map);
+    
 
-    return used_statements;
+    self
+      .stmt_graph
+      .analyze_used_statements_and_idents(stmt_used_idents_map)
   }
 
   pub fn used_exports_idents(&self) -> Vec<(UsedIdent, StatementId)> {
@@ -265,10 +265,8 @@ impl TreeShakeModule {
                     if is_ident_equal(ident, &exported) {
                       used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
                     }
-                  } else {
-                    if is_ident_equal(ident, &local) {
-                      used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
-                    }
+                  } else if is_ident_equal(ident, &local) {
+                    used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
                   }
                 }
                 ExportSpecifierInfo::Namespace(ns) => {
@@ -282,10 +280,7 @@ impl TreeShakeModule {
           } else {
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
             for export_info in self.exports() {
-              if export_info.specifiers.iter().any(|sp| match sp {
-                ExportSpecifierInfo::All(_) => true,
-                _ => false,
-              }) {
+              if export_info.specifiers.iter().any(|sp| matches!(sp, ExportSpecifierInfo::All(_))) {
                 let stmt_id = export_info.stmt_id;
                 used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
               }
@@ -304,8 +299,8 @@ fn is_ident_equal(ident1: &String, ident2: &String) -> bool {
   let split2 = ident2.split('#').collect::<Vec<_>>();
 
   if split1.len() == 2 && split2.len() == 2 {
-    return split1[0] == split2[0] && split1[1] == split2[1];
+    split1[0] == split2[0] && split1[1] == split2[1]
   } else {
-    return split1[0] == split2[0];
+    split1[0] == split2[0]
   }
 }

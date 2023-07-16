@@ -126,19 +126,15 @@ pub fn codegen_module(
 pub fn module_type_from_id(id: &str) -> Option<ModuleType> {
   let path = PathBuf::from(id);
 
-  if let Some(ext) = path.extension() {
-    Some(match ext.to_str().unwrap() {
-      "ts" => ModuleType::Ts,
-      "tsx" => ModuleType::Tsx,
-      "js" | "mjs" | "cjs" => ModuleType::Js,
-      "jsx" => ModuleType::Jsx,
-      "css" => ModuleType::Css,
-      "html" => ModuleType::Html,
-      ext => ModuleType::Custom(ext.to_string()),
-    })
-  } else {
-    None
-  }
+  path.extension().map(|ext| match ext.to_str().unwrap() {
+    "ts" => ModuleType::Ts,
+    "tsx" => ModuleType::Tsx,
+    "js" | "mjs" | "cjs" => ModuleType::Js,
+    "jsx" => ModuleType::Jsx,
+    "css" => ModuleType::Css,
+    "html" => ModuleType::Html,
+    ext => ModuleType::Custom(ext.to_string()),
+  })
 }
 
 /// return [None] if module type is not script

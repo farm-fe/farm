@@ -99,7 +99,7 @@ pub fn transform_css_stylesheet(
   };
 
   let resources_map = context.resources_map.lock();
-  source_replace(&mut stylesheet, module_id, module_graph, &*resources_map);
+  source_replace(&mut stylesheet, module_id, module_graph, &resources_map);
 
   stylesheet
 }
@@ -116,7 +116,7 @@ pub fn transform_css_deps(
     let load_statement = format!(
       "farmRequire(\"{}\");",
       if cfg!(windows) {
-        relative_path.replace("\\", "\\\\")
+        relative_path.replace('\\', "\\\\")
       } else {
         relative_path.to_string()
       }
