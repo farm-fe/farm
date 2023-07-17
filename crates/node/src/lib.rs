@@ -38,6 +38,12 @@ use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::R
 extern crate napi_derive;
 
 #[napi(object)]
+pub struct WatchDiffResult {
+  pub add: Vec<String>,
+  pub remove: Vec<String>,
+}
+
+#[napi(object)]
 pub struct JsUpdateResult {
   pub added: Vec<String>,
   pub changed: Vec<String>,
@@ -45,6 +51,7 @@ pub struct JsUpdateResult {
   pub modules: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<String, Vec<Vec<String>>>>,
+  pub extra_watch_result: WatchDiffResult,
 }
 
 #[napi(js_name = "Compiler")]
@@ -214,6 +221,21 @@ impl JsCompiler {
               })
               .collect()
           }),
+
+          extra_watch_result: WatchDiffResult {
+            add: res
+              .extra_watch_result
+              .add
+              .into_iter()
+              .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
+              .collect(),
+            remove: res
+              .extra_watch_result
+              .remove
+              .into_iter()
+              .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
+              .collect(),
+          },
         })
       },
     )

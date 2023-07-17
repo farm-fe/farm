@@ -146,6 +146,22 @@ impl WatchGraph {
   pub fn has_module(&self, module_id: &String) -> bool {
     self.id_index_map.contains_key(module_id)
   }
+
+  pub fn delete_module(&mut self, module_id: &String) {
+    if !self.id_index_map.contains_key(module_id) {
+      return;
+    }
+
+    let index = self.id_index_map.remove(module_id).unwrap();
+
+    let mut walk = self.g.neighbors_undirected(index).detach();
+
+    while let Some((edge, _)) = walk.next(&self.g) {
+      self.g.remove_edge(edge);
+    }
+
+    self.g.remove_node(index);
+  }
 }
 
 #[cfg(test)]

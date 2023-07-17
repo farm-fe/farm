@@ -15,6 +15,10 @@ export interface JsPluginTransformHookFilters {
   resolvedPaths: Array<string>
   moduleTypes: Array<string>
 }
+export interface WatchDiffResult {
+  add: Array<string>
+  remove: Array<string>
+}
 export interface JsUpdateResult {
   added: Array<string>
   changed: Array<string>
@@ -22,6 +26,7 @@ export interface JsUpdateResult {
   modules: string
   boundaries: Record<string, Array<Array<string>>>
   dynamicResourcesMap?: Record<string, Array<Array<string>>>
+  extraWatchResult: WatchDiffResult
 }
 export type JsCompiler = Compiler
 export class Compiler {

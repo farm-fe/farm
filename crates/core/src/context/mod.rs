@@ -48,7 +48,7 @@ impl CompilationContext {
     })
   }
 
-  pub fn add_watch_files(&self, from: String, deps: Vec<String>) -> Result<()> {
+  pub fn add_watch_files(&self, from: String, deps: Vec<&String>) -> Result<()> {
     // @import 'variable.scss'
     // @import './variable.scss'
     let mut watch_graph = self.watch_graph.write();
@@ -58,7 +58,7 @@ impl CompilationContext {
 
       watch_graph.add_node(dep.clone());
 
-      watch_graph.add_edge(&from, &dep)?;
+      watch_graph.add_edge(&from, dep)?;
     }
 
     Ok(())
@@ -177,11 +177,11 @@ mod tests {
       let a = "./a".to_string();
 
       context
-        .add_watch_files(a.clone(), vec![vc.to_string(), vd.to_string()])
+        .add_watch_files(a.clone(), vec![&vc, &vd])
         .unwrap();
 
       context
-        .add_watch_files(vc.clone(), vec![vd.to_string()])
+        .add_watch_files(vc.clone(), vec![&vd])
         .unwrap();
 
       let watch_graph = context.watch_graph.read();
