@@ -176,7 +176,7 @@ impl Compiler {
       sync,
     );
 
-    // after update_module,
+    // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
       let resources: HashSet<&String> = watch_graph.resources().into_iter().collect();

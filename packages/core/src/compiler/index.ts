@@ -173,4 +173,8 @@ export class Compiler {
       : path.join(root, configOutputPath);
     return outputPath;
   }
+
+  addExtraWatchFile(root: string, paths: string[]) {
+    this._bindingCompiler.addWatchFiles(root, paths);
+  }
 }

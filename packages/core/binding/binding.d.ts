@@ -41,6 +41,7 @@ export class Compiler {
   compileSync(): void
   /** TODO: usage example */
   update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
+  addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
   resources(): Record<string, Buffer>
   watchResources(): Array<string>

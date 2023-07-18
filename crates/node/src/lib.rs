@@ -242,6 +242,14 @@ impl JsCompiler {
   }
 
   #[napi]
+  pub fn add_watch_files(&self, root: String, paths: Vec<String>) {
+    let context = self.compiler.context().clone();
+    context
+      .add_watch_files(root, paths.iter().collect())
+      .expect("failed add extra files to watch list");
+  }
+
+  #[napi]
   pub fn has_module(&self, resolved_path: String) -> bool {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
