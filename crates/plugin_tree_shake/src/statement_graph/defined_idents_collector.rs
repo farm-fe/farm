@@ -27,8 +27,8 @@ impl Visit for DefinedIdentsCollector {
         self.defined_idents.insert(bi.id.to_string());
       }
       Pat::Array(array_pat) => {
-        for elem in &array_pat.elems {
-          self.visit_pat(elem.as_ref().unwrap());
+        for elem in array_pat.elems.iter().flatten() {
+          self.visit_pat(elem);
         }
       }
       Pat::Rest(rest_pat) => {
