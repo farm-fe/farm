@@ -69,9 +69,8 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"{FARM_GLOBAL_THIS}.{}.setInitialLoadedResources({});"#,
-        FARM_MODULE_SYSTEM,
-        format!("[{}]", initial_resources_code)
+        r#"{FARM_GLOBAL_THIS}.{}.setInitialLoadedResources([{}]);"#,
+        FARM_MODULE_SYSTEM, initial_resources_code
       )),
       vec![(FARM_ENTRY, "true")],
     )));

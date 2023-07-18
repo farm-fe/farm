@@ -41,7 +41,7 @@ impl Plugin for FarmPluginJson {
       }));
     }
 
-    return Ok(None);
+    Ok(None)
   }
 
   fn transform(
@@ -57,7 +57,7 @@ impl Plugin for FarmPluginJson {
         }
       })?;
 
-      let js = format!("module.exports = {}", json.to_string());
+      let js = format!("module.exports = {}", json);
 
       Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: js,

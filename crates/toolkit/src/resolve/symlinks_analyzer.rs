@@ -42,10 +42,8 @@ impl SymlinksAnalyzer {
 
     // there is symlink existed
     let real_path = if real_path != path {
-      let relative_path = diff_paths(path.clone(), current.clone()).unwrap();
-      let real_path = real_path.join(relative_path);
-
-      real_path
+      let relative_path = diff_paths(path.clone(), current).unwrap();
+      real_path.join(relative_path)
     } else {
       path.clone()
     };

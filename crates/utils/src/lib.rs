@@ -7,18 +7,18 @@ pub const PARSE_QUERY_TRUE: &str = "true";
 
 /// parse `?a=b` to `HashMap { a: b }`, `?a` to `HashMap { a: "true" }`
 pub fn parse_query(path: &str) -> Vec<(String, String)> {
-  if !path.contains("?") {
+  if !path.contains('?') {
     return vec![];
   }
 
   let query_str = path.split('?').last().unwrap();
-  let pairs = query_str.split("&");
+  let pairs = query_str.split('&');
 
   let mut query = vec![];
 
   for pair in pairs {
-    if pair.contains("=") {
-      let kv = pair.split("=").collect::<Vec<_>>();
+    if pair.contains('=') {
+      let kv = pair.split('=').collect::<Vec<_>>();
 
       if kv.len() != 2 {
         panic!("Invalid query: {}", pair);
@@ -52,7 +52,7 @@ pub fn stringify_query(query: &Vec<(String, String)>) -> String {
     }
   }
 
-  format!("?{}", qs.join("&").to_string())
+  format!("?{}", qs.join("&"))
 }
 
 // get platform independent relative path

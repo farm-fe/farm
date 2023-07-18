@@ -57,7 +57,7 @@ pub fn get_script_src_value(element: &Element) -> Option<String> {
       if let Some(value) = &src_attr.value {
         let value = value.to_string();
         // the dependencies of html should be relative path and should not start with http or /
-        if value.starts_with("http") || value.starts_with("/") {
+        if value.starts_with("http") || value.starts_with('/') {
           return None;
         }
 
@@ -84,7 +84,7 @@ pub fn get_href_link_value(element: &Element) -> Option<String> {
       if let Some(value) = &src_attr.value {
         let value = value.to_string();
         // the dependencies of html should be relative path and should not start with http or /
-        if value.starts_with("http") || value.starts_with("/") {
+        if value.starts_with("http") || value.starts_with('/') {
           return None;
         }
 

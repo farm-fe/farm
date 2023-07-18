@@ -20,7 +20,7 @@ pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>
         "import {} from '{}';",
         ident,
         if cfg!(windows) {
-          plugin_path.replace("\\", "\\\\")
+          plugin_path.replace('\\', "\\\\")
         } else {
           plugin_path.to_string()
         }

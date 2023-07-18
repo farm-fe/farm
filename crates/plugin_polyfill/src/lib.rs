@@ -104,8 +104,8 @@ impl Plugin for FarmPluginPolyfill {
     // ignore node_modules by default
     let relative_path = param.module_id.relative_path();
 
-    if !self.include.iter().any(|r| r.is_match(&relative_path))
-      && self.exclude.iter().any(|r| r.is_match(&relative_path))
+    if !self.include.iter().any(|r| r.is_match(relative_path))
+      && self.exclude.iter().any(|r| r.is_match(relative_path))
     {
       return Ok(None);
     }
@@ -124,7 +124,7 @@ impl Plugin for FarmPluginPolyfill {
           // TODO: support comments
           None as Option<NoopComments>,
           self.config.clone(),
-          self.assumptions.clone(),
+          self.assumptions,
           &mut feature_flag,
         ));
         ast.visit_mut_with(&mut inject_helpers(unresolved_mark));

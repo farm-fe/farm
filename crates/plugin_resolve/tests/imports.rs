@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::{Config, OutputConfig, ResolveConfig, TargetEnv},
+  config::{Config, OutputConfig, TargetEnv},
   context::CompilationContext,
   plugin::ResolveKind,
 };

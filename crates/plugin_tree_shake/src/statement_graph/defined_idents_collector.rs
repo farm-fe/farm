@@ -27,14 +27,12 @@ impl Visit for DefinedIdentsCollector {
         self.defined_idents.insert(bi.id.to_string());
       }
       Pat::Array(array_pat) => {
-        for elem in &array_pat.elems {
-          if let Some(elem) = elem {
-            self.visit_pat(elem);
-          }
+        for elem in array_pat.elems.iter().flatten() {
+          self.visit_pat(elem);
         }
       }
       Pat::Rest(rest_pat) => {
-        self.visit_pat(&*rest_pat.arg);
+        self.visit_pat(&rest_pat.arg);
       }
       Pat::Object(obj_pat) => {
         for prop in &obj_pat.props {
@@ -51,13 +49,13 @@ impl Visit for DefinedIdentsCollector {
               self.used_idents.extend(used_idents_collector.used_idents);
             }
             ObjectPatProp::Rest(rest_prop) => {
-              self.visit_pat(&*rest_prop.arg);
+              self.visit_pat(&rest_prop.arg);
             }
           }
         }
       }
       Pat::Assign(assign_pat) => {
-        self.visit_pat(&*assign_pat.left);
+        self.visit_pat(&assign_pat.left);
       }
       Pat::Invalid(_) => {}
       Pat::Expr(_) => {}
