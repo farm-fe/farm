@@ -19,7 +19,7 @@ import {
   Union,
   ResolvedOptions
 } from './farm-vue-types.js';
-import { cacheScript } from './farm-vue-hmr.js';
+import { cacheScript, isEqualBlock } from './farm-vue-hmr.js';
 import {
   fromMap,
   toEncodedMap,
@@ -186,6 +186,7 @@ function genStyleCode(
   if (!stylesCodeCache[hashName]) {
     stylesCodeCache[hashName] = style.content;
   }
+
   stylesCodeArr.push(
     'import ' + JSON.stringify(importPath + `&hash=${hashName}`)
   );
@@ -206,6 +207,9 @@ export function genStylesCode(
   const { styles } = descriptor;
   if (styles.length) {
     for (let i = 0; i < styles.length; i++) {
+      // // if style is deleted, skip
+      // if (deleteStyles.some((ds) => isEqualBlock(ds, styles[i]))) continue;
+
       genStyleCode(
         styleCompilerOptions,
         styles[i],
@@ -215,13 +219,15 @@ export function genStylesCode(
         hash,
         resolvedPath,
         i,
-        false
+        isHmr
       );
     }
   }
 
   if (isHmr && addStyles.length) {
     for (let i = 0; i < addStyles.length; i++) {
+      if (styles.some((ds) => isEqualBlock(ds, addStyles[i]))) continue;
+
       genStyleCode(
         styleCompilerOptions,
         styles[i],
@@ -231,10 +237,11 @@ export function genStylesCode(
         hash,
         resolvedPath,
         i,
-        true
+        isHmr
       );
     }
   }
+
   return stylesCodeArr.join('\r\n');
 }
 

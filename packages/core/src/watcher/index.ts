@@ -3,6 +3,7 @@ import { DevServer } from '../server/index.js';
 import { Config, JsFileWatcher } from '../../binding/index.js';
 import { compilerHandler, DefaultLogger } from '../utils/index.js';
 import debounce from 'lodash.debounce';
+import { DEFAULT_HMR_OPTIONS } from '../index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -12,12 +13,25 @@ export class FileWatcher implements ImplFileWatcher {
   private _root: string;
   private _watcher: JsFileWatcher;
   private _logger: DefaultLogger;
+  private _awaitWriteFinish: number;
 
   constructor(
     public serverOrCompiler: DevServer | Compiler,
     public options?: Config
   ) {
     this._root = options.config.root;
+    this._awaitWriteFinish = DEFAULT_HMR_OPTIONS.watchOptions.awaitWriteFinish;
+
+    if (serverOrCompiler instanceof DevServer) {
+      this._awaitWriteFinish =
+        serverOrCompiler.config.hmr.watchOptions.awaitWriteFinish ??
+        this._awaitWriteFinish;
+    } else if (serverOrCompiler instanceof Compiler) {
+      this._awaitWriteFinish =
+        serverOrCompiler.config.config?.watch?.watchOptions?.awaitWriteFinish ??
+        this._awaitWriteFinish;
+    }
+
     this._logger = new DefaultLogger();
   }
 

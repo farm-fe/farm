@@ -138,7 +138,7 @@ function hasScriptChanged(prev: SFCDescriptor, next: SFCDescriptor) {
   return false;
 }
 
-function isEqualBlock(
+export function isEqualBlock(
   a: SFCScriptBlock | SFCTemplateBlock | SFCStyleBlock,
   b: SFCScriptBlock | SFCTemplateBlock | SFCStyleBlock
 ) {
