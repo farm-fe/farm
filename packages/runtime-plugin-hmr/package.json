@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime-plugin-hmr",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Runtime hmr plugin of Farm",
   "author": {
     "name": "bright wu",

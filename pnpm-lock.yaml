@@ -722,7 +722,7 @@ importers:
         specifier: workspace:^0.7.0
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.2.1
+        specifier: workspace:^3.2.2
         version: link:../runtime-plugin-hmr
       '@koa/cors':
         specifier: ^4.0.0
