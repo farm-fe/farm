@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.10.5
+
+### Patch Changes
+
+- b70ce32: Enlarge default watch debounce on windows
+- Updated dependencies [b70ce32]
+  - @farmfe/runtime-plugin-hmr@3.2.2
+
 ## 0.10.4
 
 ### Patch Changes

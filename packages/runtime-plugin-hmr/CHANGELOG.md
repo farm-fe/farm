@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.2.2
+
+### Patch Changes
+
+- b70ce32: Fix that vue SFC does not remove previous css styles when HMR
+
 ## 3.2.1
 
 ### Patch Changes
