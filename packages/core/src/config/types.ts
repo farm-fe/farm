@@ -35,7 +35,10 @@ export interface UserHmrConfig {
   ignores?: string[];
   host?: string;
   port?: number;
-  // watchOptions?: WatchOptions;
+  watchOptions?: {
+    // this options only works in windows
+    awaitWriteFinish?: number;
+  };
 }
 
 export interface UserConfig {
