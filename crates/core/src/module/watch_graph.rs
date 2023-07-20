@@ -69,9 +69,9 @@ impl WatchGraph {
     // v_d     v_e   v_f
     //           \    /
     //            v_g
-    // e change 引起 a、f、c 更新
-    // c change 引起 a
-    // g change 引起 a 更新
+    // e change causes a、f、c update
+    // c change causes a
+    // g change causes a update
     //
     // m  |  root
     // a -> []
@@ -168,42 +168,38 @@ impl WatchGraph {
 mod tests {
 
   use super::WatchGraph;
-
+  ///```md
+  ///    a            a          v_c
+  ///      \        /   \        /
+  ///      v_c     v_c  v_d   v_d
+  ///      /
+  ///   v_d
+  ///```
   fn create_watch_graph_instance() -> WatchGraph {
-    //          a
-    //            \
-    //            v_c
-    //            /
-    //          v_d
     let mut watch_graph = WatchGraph::new();
-    watch_graph.add_node("a".into());
+    let a: String = "a".into();
     let v_c: String = "v_c".into();
     let v_d: String = "v_d".into();
+    watch_graph.add_node(a.clone());
     watch_graph.add_node(v_c.clone());
     watch_graph.add_node(v_d.clone());
 
-    watch_graph.add_edge(&"a".into(), &v_c).unwrap();
+    watch_graph.add_edge(&a, &v_c).unwrap();
     watch_graph.add_edge(&v_c, &v_d).unwrap();
 
     watch_graph
   }
 
   #[test]
-  fn dependencies() {
-    //          a
-    //            \
-    //            v_c
-    //            /
-    //          v_d
-
-    let v_c = "v_c".into();
-    let v_d = "v_d".into();
+  fn resources() {
+    let v_c: String = "v_c".into();
+    let v_d: String = "v_d".into();
     let watch_graph = create_watch_graph_instance();
 
-    let expect = vec![&v_d, &v_c];
-    for item in watch_graph.resources() {
-      assert!(expect.contains(&item));
-    }
+    let expect = vec![&v_c, &v_d];
+    let mut resources = watch_graph.resources();
+    resources.sort();
+    assert_eq!(resources, expect)
   }
 
   #[test]
