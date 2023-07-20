@@ -71,7 +71,7 @@ export class FileWatcher implements ImplFileWatcher {
 
     this._watcher.watch([
       ...compiler.resolvedModulePaths(this._root),
-      ...compiler.resolveWatchPaths(this._root)
+      ...compiler.resolveWatchPaths()
     ]);
 
     if (this.serverOrCompiler instanceof DevServer) {
@@ -80,7 +80,10 @@ export class FileWatcher implements ImplFileWatcher {
       //   this.serverOrCompiler.config.hmr.watchOptions
       // );
       this.serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
-        const added = updateResult.added.map((addedModule) => {
+        const added = [
+          ...updateResult.added,
+          ...updateResult.extraWatchResult.add
+        ].map((addedModule) => {
           const resolvedPath = compiler.transformModulePath(
             this._root,
             addedModule
