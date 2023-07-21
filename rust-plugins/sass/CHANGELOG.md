@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.1.1
+
+### Patch Changes
+
+- d6c3230: support add extra watch file
+
 ## 0.1.0
 
 ### Minor Changes
