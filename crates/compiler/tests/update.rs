@@ -54,7 +54,7 @@ fn update_without_dependencies_change() {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_update_compiler(
         HashMap::from([("index".to_string(), "./index.html".to_string())]),
-        cwd.clone(),
+        cwd,
         crate_path,
         false,
       );
@@ -69,7 +69,7 @@ fn update_without_dependencies_change() {
         .to_string();
       let result = compiler
         .update(
-          vec![(update_file.clone(), UpdateType::Updated)],
+          vec![(update_file, UpdateType::Updated)],
           || {},
           true,
         )
@@ -92,7 +92,7 @@ fn update_without_dependencies_change_css() {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_update_compiler(
         HashMap::from([("index".to_string(), "./index.html".to_string())]),
-        cwd.clone(),
+        cwd,
         crate_path,
         false,
       );
@@ -121,7 +121,7 @@ fn update_without_dependencies_change_css() {
 
       let result = compiler
         .update(
-          vec![(update_file.clone(), UpdateType::Updated)],
+          vec![(update_file, UpdateType::Updated)],
           || {},
           false,
         )
@@ -228,7 +228,7 @@ fn update_with_dependencies_change_css_modules() {
       original_ts_file.write_all(original_ts.as_bytes()).unwrap();
       let result = compiler
         .update(
-          vec![(update_file.clone(), UpdateType::Updated)],
+          vec![(update_file, UpdateType::Updated)],
           || {},
           false,
         )

@@ -1,5 +1,33 @@
 # @farmfe/core
 
+## 0.10.5
+
+### Patch Changes
+
+- b70ce32: Enlarge default watch debounce on windows
+- Updated dependencies [b70ce32]
+  - @farmfe/runtime-plugin-hmr@3.2.2
+
+## 0.10.4
+
+### Patch Changes
+
+- 6aa7563: Optimize File Watcher - remove chokidar and introduce rust notify
+
+## 0.10.3
+
+### Patch Changes
+
+- 8162eab: Remove hmr http request and use websocket/eval instead
+- Updated dependencies [8162eab]
+  - @farmfe/runtime-plugin-hmr@3.2.1
+
+## 0.10.2
+
+### Patch Changes
+
+- 4fc704d: Fix that HMR middleware slow
+
 ## 0.10.1
 
 ### Patch Changes

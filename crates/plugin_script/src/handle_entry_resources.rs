@@ -65,7 +65,7 @@ fn get_export_info_code(
 ) -> String {
   let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, context);
 
-  if export_info.len() > 0 {
+  if !export_info.is_empty() {
     export_info
       .iter()
       .map(|export| {
@@ -136,7 +136,7 @@ pub fn get_entry_resource_and_dep_resources_name(
   }
 
   let dynamic_resources_map =
-    get_dynamic_resources_map(module_group_graph, entry, &*resource_pot_map, resource_map);
+    get_dynamic_resources_map(module_group_graph, entry, &resource_pot_map, resource_map);
   let dynamic_resources_code =
     get_dynamic_resources_code(&dynamic_resources_map, context.config.mode.clone());
 
@@ -165,7 +165,7 @@ pub fn handle_entry_resources(
         get_entry_resource_and_dep_resources_name(
           entry,
           module,
-          &*module_group_graph,
+          &module_group_graph,
           resources_map,
           context,
         );
@@ -239,7 +239,7 @@ pub fn handle_entry_resources(
       );
 
       // 7. append export code
-      let export_info_code = get_export_info_code(entry, &*module_graph, context);
+      let export_info_code = get_export_info_code(entry, &module_graph, context);
 
       let entry_js_resource_code = String::from_utf8(
         resources_map
@@ -251,8 +251,8 @@ pub fn handle_entry_resources(
       .unwrap();
       // split last line
       let (entry_js_resource_code, entry_js_resource_source_map) =
-        if let Some((c, m)) = entry_js_resource_code.rsplit_once("\n") {
-          if (m.starts_with("//# sourceMappingURL=")) {
+        if let Some((c, m)) = entry_js_resource_code.rsplit_once('\n') {
+          if m.starts_with("//# sourceMappingURL=") {
             (c.to_string(), format!("\n{}", m))
           } else {
             (entry_js_resource_code, "".to_string())

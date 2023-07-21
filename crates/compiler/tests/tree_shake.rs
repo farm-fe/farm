@@ -52,7 +52,7 @@ fn tree_shake_html_entry() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name.clone(), "./index.html".to_string())]),
+        HashMap::from([(entry_name, "./index.html".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         false,

@@ -87,9 +87,9 @@ impl Plugin for FarmPluginStaticAssets {
       //     .as_str(),
       // );
 
-      if param.query.iter().find(|(k, _)| k == "inline").is_some() {
+      if param.query.iter().any(|(k, _)| k == "inline") {
         let file_raw = read_file_raw(param.resolved_path)?;
-        let file_base64 = general_purpose::STANDARD.encode(&file_raw);
+        let file_base64 = general_purpose::STANDARD.encode(file_raw);
         let path = Path::new(param.resolved_path);
         let ext = path.extension().and_then(|s| s.to_str()).unwrap();
         // TODO: recognize MIME type
@@ -103,7 +103,7 @@ impl Plugin for FarmPluginStaticAssets {
           module_type: Some(ModuleType::Js),
           source_map: None,
         }));
-      } else if param.query.iter().find(|(k, _)| k == "raw").is_some() {
+      } else if param.query.iter().any(|(k, _)| k == "raw") {
         let file_utf8 = read_file_utf8(param.resolved_path)?;
         let content = format!("export default \"{}\"", file_utf8);
 

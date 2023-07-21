@@ -221,7 +221,7 @@ fn add_used_exports_by_import_info(
       }
       statement_graph::ImportSpecifierInfo::Named { local, imported } => {
         if let Some(ident) = imported {
-          if ident.to_string() == "default" {
+          if *ident == "default" {
             imported_tree_shake_module
               .used_exports
               .add_used_export(&module::UsedIdent::Default);
@@ -304,6 +304,6 @@ fn add_used_exports_by_export_info(
 }
 
 fn strip_context(ident: &String) -> String {
-  let ident_split = ident.split("#").into_iter().collect::<Vec<_>>();
+  let ident_split = ident.split('#').collect::<Vec<_>>();
   ident_split[0].to_string()
 }

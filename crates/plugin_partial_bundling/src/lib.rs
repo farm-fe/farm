@@ -12,7 +12,7 @@ use farmfe_core::{
   plugin::{Plugin, PluginHookContext},
   resource::resource_pot::{ResourcePot, ResourcePotId},
 };
-use farmfe_toolkit::{hash::sha256, regex::Regex};
+use farmfe_toolkit::hash::sha256;
 use module_bucket::{ModuleBucket, ModuleBucketId};
 
 mod module_bucket;
@@ -139,9 +139,7 @@ impl Plugin for FarmPluginPartialBundling {
           let module_ids = rules_map.get_mut(&rule).unwrap();
           module_ids.push(module_id.clone());
         } else {
-          let mut module_ids = vec![];
-          module_ids.push(module_id.clone());
-          rules_map.insert(rule, module_ids);
+          rules_map.insert(rule, vec![module_id.clone()]);
         }
       }
 
@@ -211,7 +209,7 @@ pub fn module_group_graph_from_entries(
     visited.insert(entry);
     let mut queue = VecDeque::from(dynamic_dependencies);
 
-    while queue.len() > 0 {
+    while !queue.is_empty() {
       let head = queue.pop_front().unwrap();
 
       if visited.contains(&head) {
@@ -272,7 +270,7 @@ fn module_group_from_entry(
       let mut queue = VecDeque::new();
       queue.push_back(dep.clone());
 
-      while queue.len() > 0 {
+      while !queue.is_empty() {
         let head = queue.pop_front().unwrap();
 
         if visited.contains(&head) {
@@ -329,7 +327,7 @@ mod tests {
 
     let module_group_graph = plugin
       .analyze_module_graph(
-        &mut *module_graph,
+        &mut module_graph,
         &context,
         &PluginHookContext {
           caller: None,

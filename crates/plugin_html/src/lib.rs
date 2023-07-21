@@ -172,8 +172,8 @@ impl Plugin for FarmPluginHtml {
 
       resource_pot.meta = ResourcePotMetaData::Html(HtmlResourcePotMetaData {
         ast: Document {
-          span: html_module_document.span.clone(),
-          mode: html_module_document.mode.clone(),
+          span: html_module_document.span,
+          mode: html_module_document.mode,
           children: html_module_document.children.to_vec(),
         },
       });
@@ -286,9 +286,9 @@ impl Plugin for FarmPluginHtml {
       }
 
       let dynamic_resources_map = get_dynamic_resources_map(
-        &*module_group_graph,
+        &module_group_graph,
         &module_group_id,
-        &*resource_pot_map,
+        &resource_pot_map,
         resources_map,
       );
 
@@ -350,7 +350,7 @@ impl Plugin for FarmPluginHtml {
       );
 
       let resource_pot = resource_pot_map
-        .resource_pot_mut(&html_resource.origin.as_resource_pot())
+        .resource_pot_mut(html_resource.origin.as_resource_pot())
         .unwrap();
       let html_ast = &mut resource_pot.meta.as_html_mut().ast;
       resources_injector.inject(html_ast);

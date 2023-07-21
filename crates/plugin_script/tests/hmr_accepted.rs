@@ -67,6 +67,6 @@ fn hmr_accepted() {
       )
       .unwrap();
 
-    assert_eq!(module.meta.as_script().hmr_accepted, true);
+    assert!(module.meta.as_script().hmr_accepted);
   });
 }

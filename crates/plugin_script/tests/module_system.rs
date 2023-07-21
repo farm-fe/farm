@@ -32,7 +32,7 @@ pub fn module_system_with_ts() {
   fixture!(
     "tests/fixtures/module_system/hybrid-no-import.ts",
     |path, base| {
-      let module = build_module(path.clone(), base);
+      let module = build_module(path, base);
       assert_eq!(module.meta.as_script().module_system, ModuleSystem::Hybrid);
     }
   );

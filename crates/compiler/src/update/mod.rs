@@ -63,6 +63,33 @@ impl Compiler {
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
     let update_context = Arc::new(UpdateContext::new());
 
+    let watch_graph = self.context.watch_graph.read();
+    let module_graph = self.context.module_graph.read();
+    // fetch watch file relation module, and replace watch file
+    let paths: Vec<(String, UpdateType)> = paths
+      .into_iter()
+      .flat_map(|(path, update_type)| {
+        if watch_graph.has_module(&path) {
+          let r: Vec<(String, UpdateType)> = watch_graph
+            .relation_roots(&path)
+            .into_iter()
+            .map(|item| (item.to_owned(), UpdateType::Updated))
+            .collect();
+
+          if module_graph.has_module(&ModuleId::new(path.as_str(), "", &self.context.config.root)) {
+            return [r, vec![(path, update_type)]].concat();
+          };
+
+          r
+        } else {
+          vec![(path, update_type)]
+        }
+      })
+      .collect();
+
+    drop(watch_graph);
+    drop(module_graph);
+
     let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams {
       paths,
       update_result: UpdateResult::default(),
@@ -75,6 +102,15 @@ impl Compiler {
 
     let paths = plugin_update_modules_hook_params.paths;
     let mut update_result = plugin_update_modules_hook_params.update_result;
+
+    let mut old_watch_extra_resources: HashSet<String> = self
+      .context
+      .watch_graph
+      .read()
+      .modules()
+      .into_iter()
+      .cloned()
+      .collect();
 
     for (path, update_type) in paths.clone() {
       match update_type {
@@ -140,6 +176,22 @@ impl Compiler {
       sync,
     );
 
+    // after update_module, diff old_resource and new_resource
+    {
+      let watch_graph = self.context.watch_graph.read();
+      let resources: HashSet<&String> = watch_graph.modules().into_iter().collect();
+
+      let watch_diff_result = &mut update_result.extra_watch_result;
+
+      for resource in resources {
+        if !old_watch_extra_resources.remove(resource) {
+          watch_diff_result.add.push(resource.clone());
+        };
+      }
+
+      watch_diff_result.remove.extend(old_watch_extra_resources);
+    }
+
     // If the module type is not script, we should skip render and generate update resource.
     // and just return `window.location.reload()`
     let should_reload_page = updated_module_ids.iter().any(|id| {
@@ -195,6 +247,12 @@ impl Compiler {
             return;
           }
         };
+
+      let mut graph_watch = context.watch_graph.write();
+
+      graph_watch.delete_module(&resolve_param.source);
+
+      drop(graph_watch);
 
       match resolve_module_result {
         ResolveModuleResult::ExistingBeforeUpdate(module_id) => {

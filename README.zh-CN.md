@@ -109,7 +109,7 @@ Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境
 
 * 微信群 
 
-<img src="./assets/wechat-group.jpg" width="30%" />
+<img src="./assets/wechat-group.png" width="30%" />
 
 ## 作者
 
