@@ -38,6 +38,12 @@ use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::R
 extern crate napi_derive;
 
 #[napi(object)]
+pub struct WatchDiffResult {
+  pub add: Vec<String>,
+  pub remove: Vec<String>,
+}
+
+#[napi(object)]
 pub struct JsUpdateResult {
   pub added: Vec<String>,
   pub changed: Vec<String>,
@@ -45,6 +51,7 @@ pub struct JsUpdateResult {
   pub modules: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<String, Vec<Vec<String>>>>,
+  pub extra_watch_result: WatchDiffResult,
 }
 
 #[napi(js_name = "Compiler")]
@@ -214,18 +221,42 @@ impl JsCompiler {
               })
               .collect()
           }),
+
+          extra_watch_result: WatchDiffResult {
+            add: res
+              .extra_watch_result
+              .add
+              .into_iter()
+              .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
+              .collect(),
+            remove: res
+              .extra_watch_result
+              .remove
+              .into_iter()
+              .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
+              .collect(),
+          },
         })
       },
     )
   }
 
   #[napi]
+  pub fn add_watch_files(&self, root: String, paths: Vec<String>) {
+    let context = self.compiler.context().clone();
+    context
+      .add_watch_files(root, paths.iter().collect())
+      .expect("failed add extra files to watch list");
+  }
+
+  #[napi]
   pub fn has_module(&self, resolved_path: String) -> bool {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
+    let watch_graph = context.watch_graph.read();
     let module_id = ModuleId::new(&resolved_path, "", &context.config.root);
 
-    module_graph.has_module(&module_id)
+    module_graph.has_module(&module_id) || watch_graph.has_module(&resolved_path)
   }
 
   #[napi]
@@ -255,6 +286,19 @@ impl JsCompiler {
     }
 
     result
+  }
+
+  #[napi]
+  pub fn watch_resources(&self) -> Vec<String> {
+    let context = self.compiler.context();
+
+    let watch_graph = context.watch_graph.read();
+
+    return watch_graph
+      .modules()
+      .into_iter()
+      .map(|id| id.to_string())
+      .collect();
   }
 
   #[napi]

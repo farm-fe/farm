@@ -15,6 +15,10 @@ export interface JsPluginTransformHookFilters {
   resolvedPaths: Array<string>
   moduleTypes: Array<string>
 }
+export interface WatchDiffResult {
+  add: Array<string>
+  remove: Array<string>
+}
 export interface JsUpdateResult {
   added: Array<string>
   changed: Array<string>
@@ -22,6 +26,7 @@ export interface JsUpdateResult {
   modules: string
   boundaries: Record<string, Array<Array<string>>>
   dynamicResourcesMap?: Record<string, Array<Array<string>>>
+  extraWatchResult: WatchDiffResult
 }
 export type JsCompiler = Compiler
 export class Compiler {
@@ -36,8 +41,10 @@ export class Compiler {
   compileSync(): void
   /** TODO: usage example */
   update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
+  addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
   resources(): Record<string, Buffer>
+  watchResources(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
 }

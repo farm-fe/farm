@@ -141,6 +141,10 @@ export class Compiler {
     }
   }
 
+  resolveWatchPaths(): string[] {
+    return this._bindingCompiler.watchResources();
+  }
+
   resolvedModulePaths(root: string): string[] {
     return this._bindingCompiler
       .relativeModulePaths()
@@ -166,5 +170,9 @@ export class Compiler {
       ? configOutputPath
       : path.join(root, configOutputPath);
     return outputPath;
+  }
+
+  addExtraWatchFile(root: string, paths: string[]) {
+    this._bindingCompiler.addWatchFiles(root, paths);
   }
 }

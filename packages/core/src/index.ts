@@ -27,6 +27,7 @@ import { compilerHandler } from './utils/build.js';
 
 import type { FarmCLIOptions } from './config/types.js';
 import { setProcessEnv } from './config/env.js';
+import { JsPlugin } from './plugin/index.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -39,6 +40,13 @@ export async function start(
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config.server);
   await devServer.listen();
+
+  if (normalizedConfig.config.mode === 'development') {
+    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configDevServer?.(devServer)
+    );
+  }
+
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     logger.info(
