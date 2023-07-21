@@ -28,6 +28,7 @@ impl EdgeMode {
   }
 }
 
+#[derive(Default)]
 pub struct WatchGraph {
   g: StableDiGraph<String, EdgeMode>,
   id_index_map: HashMap<String, NodeIndex<DefaultIx>>,
@@ -82,11 +83,7 @@ impl WatchGraph {
     // f -> [a]
     // g -> [a]
     // h -> []
-    let roots: Vec<String> = self
-      .relation_roots(from)
-      .into_iter()
-      .map(|item| item.clone())
-      .collect();
+    let roots: Vec<String> = self.relation_roots(from).into_iter().cloned().collect();
 
     let roots: Vec<String> = [roots, vec![from.clone()]].concat();
 
@@ -105,18 +102,15 @@ impl WatchGraph {
     Ok(())
   }
 
-  pub fn resources(&self) -> Vec<&String> {
+  pub fn modules(&self) -> Vec<&String> {
     let mut res = HashSet::new();
 
     for node in self.g.edge_indices() {
-      match self.g.edge_weight(node).unwrap() {
-        EdgeMode::WatchImport => {
-          if let Some((_root, to)) = self.g.edge_endpoints(node) {
-            res.insert(self.g.node_weight(to).unwrap());
-          }
+      if matches!(self.g.edge_weight(node), Some(EdgeMode::WatchImport)) {
+        if let Some((_root, to)) = self.g.edge_endpoints(node) {
+          res.insert(self.g.node_weight(to).unwrap());
         }
-        _ => {}
-      };
+      }
     }
 
     res.into_iter().collect()
@@ -191,13 +185,13 @@ mod tests {
   }
 
   #[test]
-  fn resources() {
+  fn modules() {
     let v_c: String = "v_c".into();
     let v_d: String = "v_d".into();
     let watch_graph = create_watch_graph_instance();
 
     let expect = vec![&v_c, &v_d];
-    let mut resources = watch_graph.resources();
+    let mut resources = watch_graph.modules();
     resources.sort();
     assert_eq!(resources, expect)
   }

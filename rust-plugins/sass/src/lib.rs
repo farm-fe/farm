@@ -52,7 +52,7 @@ impl FileImporter for FileImporterCollection {
   ) -> sass_embedded::Result<Option<Url>> {
     let resolved_path: String = if !PathBuf::from(url).is_absolute() {
       RelativePathBuf::from(url.to_string())
-        .to_logical_path(self.cwd.to_string())
+        .to_logical_path(&self.cwd)
         .to_string_lossy()
         .to_string()
         .into()
@@ -64,7 +64,7 @@ impl FileImporter for FileImporterCollection {
     self.paths.write().push(resolved_path.to_string());
 
     sass_embedded::Result::Ok(Some(
-      Url::from_file_path(resolved_path.to_string()).unwrap(),
+      Url::from_file_path(resolved_path).unwrap(),
     ))
   }
 }

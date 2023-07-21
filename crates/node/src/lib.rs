@@ -295,7 +295,7 @@ impl JsCompiler {
     let watch_graph = context.watch_graph.read();
 
     return watch_graph
-      .resources()
+      .modules()
       .into_iter()
       .map(|id| id.to_string())
       .collect();

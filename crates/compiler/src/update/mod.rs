@@ -107,7 +107,7 @@ impl Compiler {
       .context
       .watch_graph
       .read()
-      .resources()
+      .modules()
       .into_iter()
       .cloned()
       .collect();
@@ -179,7 +179,7 @@ impl Compiler {
     // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
-      let resources: HashSet<&String> = watch_graph.resources().into_iter().collect();
+      let resources: HashSet<&String> = watch_graph.modules().into_iter().collect();
 
       let watch_diff_result = &mut update_result.extra_watch_result;
 

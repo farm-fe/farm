@@ -1,21 +1,15 @@
-use std::{any::Any, path::Path, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use dashmap::DashMap;
 use hashbrown::HashMap;
 use parking_lot::{Mutex, RwLock};
-use relative_path::RelativePath;
 use swc_common::{FilePathMapping, Globals, SourceMap};
 
 use crate::{
   cache::CacheManager,
   config::Config,
   error::Result,
-  module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
-    module_group::ModuleGroupGraph,
-    watch_graph::WatchGraph,
-    Module, ModuleId,
-  },
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph},
   plugin::{plugin_driver::PluginDriver, Plugin},
   resource::{resource_pot_map::ResourcePotMap, Resource},
 };
@@ -176,13 +170,9 @@ mod tests {
       let vd = "./v_d".to_string();
       let a = "./a".to_string();
 
-      context
-        .add_watch_files(a.clone(), vec![&vc, &vd])
-        .unwrap();
+      context.add_watch_files(a.clone(), vec![&vc, &vd]).unwrap();
 
-      context
-        .add_watch_files(vc.clone(), vec![&vd])
-        .unwrap();
+      context.add_watch_files(vc.clone(), vec![&vd]).unwrap();
 
       let watch_graph = context.watch_graph.read();
 
