@@ -136,6 +136,19 @@ export class DevServer implements ImplDevServer {
     this.resolvedFarmServerPlugins(plugins);
   }
 
+  /**
+   *
+   * Add listening files for root manually
+   *
+   * > listening file with root must as file.
+   *
+   * @param root
+   * @param deps
+   */
+  addWatchFile(root: string, deps: string[]) {
+    this.getCompiler().addExtraWatchFile(root, deps);
+  }
+
   private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
     const resolvedPlugins = [
       ...middlewares,
@@ -165,7 +178,7 @@ export class DevServer implements ImplDevServer {
           })
         )}
   Version ${chalk.green.bold(version)}
-  
+
   🔥 Ready on ${chalk.green.bold(
     `${protocol}://${hostname}:${port}`
   )} in ${chalk.green.bold(`${end - start}ms`)}.

@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-vue
 
+## 1.2.9
+
+### Patch Changes
+
+- b70ce32: Fix that vue SFC does not remove previous css styles when HMR
+- Updated dependencies [b70ce32]
+  - @farmfe/core@0.10.5
+
 ## 1.2.8
 
 ### Patch Changes

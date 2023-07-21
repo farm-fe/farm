@@ -7,6 +7,7 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../binding/index.js';
+import { DevServer } from '../index.js';
 
 interface CompilationContext {
   resolve(
@@ -27,6 +28,13 @@ export interface JsPlugin {
   priority?: number;
 
   config?: Callback<Config['config'], Config['config']>;
+
+  /**
+   * runs in development mode only
+   * @param server
+   * @returns
+   */
+  configDevServer?: (server: DevServer) => void;
 
   resolve?: JsPluginHook<
     {

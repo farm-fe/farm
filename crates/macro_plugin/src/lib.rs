@@ -5,7 +5,7 @@ use syn::{parse_macro_input, ItemStruct};
 #[proc_macro_attribute]
 pub fn farm_plugin(_attr: TokenStream, item: TokenStream) -> TokenStream {
   let item_struct: ItemStruct = parse_macro_input!(item);
-  let struct_name = item_struct.ident.clone();
+  let struct_name = &item_struct.ident;
 
   let ts = quote! {
     #[no_mangle]

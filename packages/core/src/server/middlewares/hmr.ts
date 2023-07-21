@@ -10,10 +10,10 @@ import { WebSocketServer } from 'ws';
 import { HmrEngine } from '../hmr-engine.js';
 import { DevServer } from '../index.js';
 
-/**
- * @deprecated HMR result is now served by websocket, send to client via websocket and get the result by `eval` the websocket message.
- * @param context DevServer
- */
+// /**
+//  * @deprecated HMR result is now served by websocket, send to client via websocket and get the result by `eval` the websocket message.
+//  * @param context DevServer
+//  */
 // export function hmr(server: DevServer) {
 //   return async (ctx: Context, next: () => Promise<void>) => {
 //     if (ctx.path === '/__hmr') {
