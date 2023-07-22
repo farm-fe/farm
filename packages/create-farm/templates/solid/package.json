@@ -1,15 +1,14 @@
 {
-  "name": "@farmfe-examples/vue",
-  "version": "1.0.0",
+  "name": "@farmfe-examples/solid",
+  "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "vue": "^3.3.4",
-    "core-js": "^3.30.1"
+    "solid-js": "^1.7.6"
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.5",
     "@farmfe/core": "^0.10.6",
-    "@farmfe/js-plugin-vue": "^1.2.8"
+    "@farmfe/js-plugin-solid": "^1.0.2"
   },
   "scripts": {
     "start": "farm start",

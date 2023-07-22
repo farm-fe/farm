@@ -92,7 +92,8 @@
     "pluginutils",
     "picomatch",
     "rsplit",
-    "unwatch"
+    "unwatch",
+    "Avenir"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
