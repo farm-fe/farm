@@ -1,34 +1,35 @@
-import { createSignal } from 'solid-js';
+import { createSignal } from "solid-js";
+import solidLogo from "./assets/solid.svg";
+import farmLogo from "./assets/logo.png";
+import "./App.css";
 
-import logo from './logo.svg';
-import styles from './App.module.css';
-
-import type { Component } from 'solid-js';
-
-const App: Component = () => {
+function App() {
   const [count, setCount] = createSignal(0);
 
   return (
-    <div class={styles.App}>
-      <header class={styles.header}>
-        <img src={logo} class={styles.logo} alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          class={styles.link}
-          href="https://github.com/solidjs/solid"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
+    <>
+      <div>
+        <a href="https://farm-fe.github.io/" target="_blank">
+          <img src={farmLogo} class="logo" alt="Farm logo" />
         </a>
-        <button class={styles.counter} onClick={() => setCount(count() + 1)}>
-          Count: {count()}
+        <a href="https://solidjs.com" target="_blank">
+          <img src={solidLogo} class="logo solid" alt="Solid logo" />
+        </a>
+      </div>
+      <h1>Farm + Solid</h1>
+      <div class="card">
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count()}
         </button>
-      </header>
-    </div>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+      <p class="read-the-docs">
+        Click on the Farm and Solid logos to learn more
+      </p>
+    </>
   );
-};
+}
 
 export default App;
