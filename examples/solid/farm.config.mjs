@@ -1,7 +1,6 @@
-import { defineFarmConfig } from '@farmfe/core/config';
 import farmJsPluginSolid from '@farmfe/js-plugin-solid';
 
-export default defineFarmConfig({
+export default {
   compilation: {
     mode: process.env.NODE_ENV,
     input: {
@@ -15,4 +14,4 @@ export default defineFarmConfig({
     }
   },
   plugins: [farmJsPluginSolid()]
-});
+};
