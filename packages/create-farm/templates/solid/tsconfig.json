@@ -8,5 +8,5 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js"
   },
-  "include": ["src", "farm.config.ts"]
+  "include": ["src", "farm.config.mjs"]
 }
