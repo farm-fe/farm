@@ -15,8 +15,8 @@ import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  private _updateResults: Map<string, { result: string; count: number }> =
-    new Map();
+  // private _updateResults: Map<string, { result: string; count: number }> =
+  //   new Map();
 
   private _compiler: Compiler;
   private _devServer: DevServer;
@@ -89,7 +89,7 @@ export class HmrEngine {
       }
     }
 
-    const resultStr = `export default {
+    const resultStr = `{
       added: [${result.added
         .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
         .join(', ')}],
@@ -110,20 +110,16 @@ export class HmrEngine {
 
     this.callUpdates(result);
 
-    const id = Date.now().toString();
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore TODO fix this
-    this._updateResults.set(id, {
-      result: resultStr,
-      count: this._devServer.ws.clients.size
-    });
+    // const id = Date.now().toString();
+    // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // // @ts-ignore TODO fix this
+    // this._updateResults.set(id, {
+    //   result: resultStr,
+    //   count: this._devServer.ws.clients.size
+    // });
 
     this._devServer.ws.clients.forEach((client) => {
-      client.send(
-        JSON.stringify({
-          id
-        })
-      );
+      client.send(resultStr);
     });
 
     // if there are more updates, recompile again
@@ -162,22 +158,22 @@ export class HmrEngine {
     }
   }
 
-  getUpdateResult(id: string) {
-    const result = this._updateResults.get(id);
+  // getUpdateResult(id: string) {
+  //   const result = this._updateResults.get(id);
 
-    if (result) {
-      result.count--;
+  //   if (result) {
+  //     result.count--;
 
-      // there are no more clients waiting for this update
-      if (result.count <= 0 && this._updateResults.size >= 2) {
-        /**
-         * Edge handle
-         * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
-         * So keep the result of the last time every time, so that the request can be successfully carried out.
-         */
-        this._updateResults.delete(this._updateResults.keys().next().value);
-      }
-    }
-    return result?.result;
-  }
+  //     // there are no more clients waiting for this update
+  //     if (result.count <= 0 && this._updateResults.size >= 2) {
+  //       /**
+  //        * Edge handle
+  //        * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
+  //        * So keep the result of the last time every time, so that the request can be successfully carried out.
+  //        */
+  //       this._updateResults.delete(this._updateResults.keys().next().value);
+  //     }
+  //   }
+  //   return result?.result;
+  // }
 }

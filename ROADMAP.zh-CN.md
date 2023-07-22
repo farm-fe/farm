@@ -1,6 +1,6 @@
 # 计划
 
-Farm 目前已经实现了 Web 构建工具的所有基本功能。然而, 离生产应用还有一些工作要做。
+Farm 目前已经实现了 Web 构建工具的所有基本功能。
 
 - [x] Resolving, loading, transforming, and resource generating for web assets (HTML, CSS, JS/JSX/TS/TSX, static assets, and so on).
 - [x] Lazy Compilation

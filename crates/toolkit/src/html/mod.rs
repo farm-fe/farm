@@ -28,7 +28,7 @@ pub fn parse_html_document(
   let parse_result = parser.parse_document();
   let mut recovered_errors = parser.take_errors();
 
-  if recovered_errors.len() == 0 {
+  if recovered_errors.is_empty() {
     match parse_result {
       Err(err) => {
         recovered_errors.push(err);

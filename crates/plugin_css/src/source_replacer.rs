@@ -79,31 +79,23 @@ impl<'a> VisitMut for SourceReplacer<'a> {
     // remove all at rule that resolves to a module
     for (i, rule) in stylesheet.rules.iter().enumerate() {
       if let Rule::AtRule(box at_rule) = rule {
-        if let Some(box prelude) = &at_rule.prelude {
-          if let AtRulePrelude::ImportPrelude(import) = prelude {
-            let source = match &import.href {
-              box ImportHref::Url(url) => {
-                if let Some(value) = &url.value {
-                  Some(match &**value {
-                    UrlValue::Str(str) => str.value.to_string(),
-                    UrlValue::Raw(raw) => raw.value.to_string(),
-                  })
-                } else {
-                  None
-                }
-              }
-              box ImportHref::Str(str) => Some(str.value.to_string()),
-            };
+        if let Some(box AtRulePrelude::ImportPrelude(import)) = &at_rule.prelude {
+          let source = match &import.href {
+            box ImportHref::Url(url) => url.value.as_ref().map(|value| match &**value {
+              UrlValue::Str(str) => str.value.to_string(),
+              UrlValue::Raw(raw) => raw.value.to_string(),
+            }),
+            box ImportHref::Str(str) => Some(str.value.to_string()),
+          };
 
-            if let Some(source) = source {
-              if !is_source_ignored(&source)
-                && self
-                  .module_graph
-                  .get_dep_by_source_optional(&self.module_id, &source)
-                  .is_some()
-              {
-                rules_to_remove.push(i);
-              }
+          if let Some(source) = source {
+            if !is_source_ignored(&source)
+              && self
+                .module_graph
+                .get_dep_by_source_optional(&self.module_id, &source)
+                .is_some()
+            {
+              rules_to_remove.push(i);
             }
           }
         }

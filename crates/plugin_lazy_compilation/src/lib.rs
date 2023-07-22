@@ -139,7 +139,7 @@ impl Plugin for FarmPluginLazyCompilation {
       if param.meta.get("original").is_none() {
         let resolved_path = param.resolved_path;
         let dynamic_code = include_str!("dynamic_module.ts")
-          .replace("MODULE_PATH", &resolved_path.replace(r"\", r"\\"))
+          .replace("MODULE_PATH", &resolved_path.replace('\\', r"\\"))
           .replace(
             "MODULE_ID",
             &ModuleId::new(
@@ -148,7 +148,7 @@ impl Plugin for FarmPluginLazyCompilation {
               &context.config.root,
             )
             .id(context.config.mode.clone())
-            .replace(r"\", r"\\"),
+            .replace('\\', r"\\"),
           )
           .replace(
             "'FARM_MODULE_SYSTEM'",

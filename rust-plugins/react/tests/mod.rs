@@ -1,12 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
 
-use farmfe_compiler::Compiler;
-use farmfe_core::config::{Config, OutputConfig, RuntimeConfig};
+
+
+
 use farmfe_testing_helpers::fixture;
 
 #[test]
 fn test() {
-  fixture!("tests/fixtures/button.tsx", |file, cwd| {
+  fixture!("tests/fixtures/button.tsx", |_file, _cwd| {
     // let config = Config {
     //   input: HashMap::from([("button".to_string(), file.to_string_lossy().to_string())]),
     //   output: OutputConfig {

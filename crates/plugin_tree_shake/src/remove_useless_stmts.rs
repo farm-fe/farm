@@ -36,7 +36,7 @@ pub fn remove_useless_stmts(
     let module_item = &mut swc_module.body[*stmt_id];
 
     let (import_info, export_info, ..) =
-      analyze_imports_and_exports(&stmt_id, module_item, Some(used_defined_idents.clone()));
+      analyze_imports_and_exports(stmt_id, module_item, Some(used_defined_idents.clone()));
 
     if let Some(import_info) = import_info {
       used_import_infos.push(import_info.clone());
@@ -104,23 +104,18 @@ impl VisitMut for UselessImportStmtsRemover {
     let mut specifiers_to_remove = vec![];
 
     for (index, specifier) in import_decl.specifiers.iter().enumerate() {
-      match specifier {
-        ImportSpecifier::Named(named_specifier) => {
-          if !self
-            .import_info
-            .specifiers
-            .iter()
-            .any(|specifier| match specifier {
-              ImportSpecifierInfo::Named { local, .. } => {
-                named_specifier.local.to_string() == local.to_string()
-              }
-              _ => false,
-            })
-          {
-            specifiers_to_remove.push(index);
-          }
+      if let ImportSpecifier::Named(named_specifier) = specifier {
+        if !self
+          .import_info
+          .specifiers
+          .iter()
+          .any(|specifier| match specifier {
+            ImportSpecifierInfo::Named { local, .. } => named_specifier.local.to_string() == *local,
+            _ => false,
+          })
+        {
+          specifiers_to_remove.push(index);
         }
-        _ => {}
       }
     }
 
@@ -186,7 +181,7 @@ impl VisitMut for UselessExportStmtRemover {
           ExportSpecifierInfo::Named { local, .. } => match specifier {
             farmfe_core::swc_ecma_ast::ExportSpecifier::Named(named_specifier) => {
               match &named_specifier.orig {
-                ModuleExportName::Ident(ident) => ident.to_string() == local.to_string(),
+                ModuleExportName::Ident(ident) => ident.to_string() == *local,
                 _ => false,
               }
             }

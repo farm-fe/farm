@@ -445,7 +445,7 @@ mod tests {
     );
 
     let affected_groups = patch_module_group_graph(
-      start_points.clone(),
+      start_points,
       &diff_result,
       &removed_modules,
       &mut module_graph,
@@ -535,7 +535,7 @@ mod tests {
     );
 
     let affected_groups = patch_module_group_graph(
-      start_points.clone(),
+      start_points,
       &diff_result,
       &removed_modules,
       &mut module_graph,

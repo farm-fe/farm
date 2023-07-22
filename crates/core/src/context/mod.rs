@@ -9,7 +9,7 @@ use crate::{
   cache::CacheManager,
   config::Config,
   error::Result,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph},
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph},
   plugin::{plugin_driver::PluginDriver, Plugin},
   resource::{resource_pot_map::ResourcePotMap, Resource},
 };
@@ -17,6 +17,7 @@ use crate::{
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
   pub config: Box<Config>,
+  pub watch_graph: Box<RwLock<WatchGraph>>,
   pub module_graph: Box<RwLock<ModuleGraph>>,
   pub module_group_graph: Box<RwLock<ModuleGroupGraph>>,
   pub plugin_driver: Box<PluginDriver>,
@@ -29,6 +30,7 @@ pub struct CompilationContext {
 impl CompilationContext {
   pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     Ok(Self {
+      watch_graph: Box::new(RwLock::new(WatchGraph::new())),
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
@@ -38,6 +40,22 @@ impl CompilationContext {
       cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
     })
+  }
+
+  pub fn add_watch_files(&self, from: String, deps: Vec<&String>) -> Result<()> {
+    // @import 'variable.scss'
+    // @import './variable.scss'
+    let mut watch_graph = self.watch_graph.write();
+
+    for dep in deps {
+      watch_graph.add_node(from.clone());
+
+      watch_graph.add_node(dep.clone());
+
+      watch_graph.add_edge(&from, dep)?;
+    }
+
+    Ok(())
   }
 }
 
@@ -135,5 +153,33 @@ impl HtmlContextMetaData {
 impl Default for HtmlContextMetaData {
   fn default() -> Self {
     Self::new()
+  }
+}
+
+#[cfg(test)]
+mod tests {
+
+  mod add_watch_files {
+
+    use super::super::CompilationContext;
+
+    #[test]
+    fn file_as_root_and_dep() {
+      let context = CompilationContext::default();
+      let vc = "./v_c".to_string();
+      let vd = "./v_d".to_string();
+      let a = "./a".to_string();
+
+      context.add_watch_files(a.clone(), vec![&vc, &vd]).unwrap();
+
+      context.add_watch_files(vc.clone(), vec![&vd]).unwrap();
+
+      let watch_graph = context.watch_graph.read();
+
+      assert_eq!(watch_graph.relation_roots(&vc), vec![&a]);
+      let mut r = watch_graph.relation_roots(&vd);
+      r.sort();
+      assert_eq!(r, vec![&a, &vc]);
+    }
   }
 }

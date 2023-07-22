@@ -41,6 +41,18 @@ export function createHotContext(id: string) {
   return state;
 }
 
+function removeCssStyles(removed: string[]) {
+  for (const id of removed) {
+    const previousStyle = document.querySelector(
+      `style[data-farm-id="${{ id }}"]`
+    );
+
+    if (previousStyle) {
+      previousStyle.remove();
+    }
+  }
+}
+
 export function applyHotUpdates(
   result: HmrUpdateResult,
   moduleSystem: ModuleSystem
@@ -53,6 +65,8 @@ export function applyHotUpdates(
     moduleSystem.delete(id);
     REGISTERED_HOT_MODULES.delete(id);
   }
+
+  removeCssStyles(result.removed);
 
   for (const id of result.added) {
     moduleSystem.register(id, result.modules[id]);

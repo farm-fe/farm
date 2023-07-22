@@ -370,6 +370,12 @@ pub struct PluginFinalizeModuleHookParam<'a> {
   pub deps: &'a Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
+#[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct WatchDiffResult {
+  pub add: Vec<String>,
+  pub remove: Vec<String>,
+}
+
 /// The output after the updating process
 #[derive(Debug, Default)]
 pub struct UpdateResult {
@@ -381,6 +387,7 @@ pub struct UpdateResult {
   pub resources: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
+  pub extra_watch_result: WatchDiffResult,
 }
 #[derive(Debug, Clone)]
 pub enum UpdateType {

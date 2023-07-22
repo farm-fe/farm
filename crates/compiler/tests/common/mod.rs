@@ -188,8 +188,8 @@ pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> 
 }
 
 pub fn load_expected_result(cwd: PathBuf) -> String {
-  let expected_result = std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string());
-  expected_result
+  
+  std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string())
 }
 
 pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) {

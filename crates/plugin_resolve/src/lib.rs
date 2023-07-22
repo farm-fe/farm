@@ -9,7 +9,7 @@ use farmfe_core::{
     Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
   },
 };
-use farmfe_toolkit::regex::Regex;
+
 use farmfe_utils::parse_query;
 use resolver::Resolver;
 
@@ -36,7 +36,7 @@ impl Plugin for FarmPluginResolve {
 
   // Internal Resolve Plugin has the lower priority, so it will be executed at last
   fn priority(&self) -> i32 {
-    return 99;
+    99
   }
 
   fn resolve(
@@ -96,7 +96,7 @@ impl Plugin for FarmPluginResolve {
 
       return Ok(
         resolver
-          .resolve(&source, basedir.clone(), &param.kind, context)
+          .resolve(&source, basedir, &param.kind, context)
           .map(|result| PluginResolveHookResult { query, ..result }),
       );
     }

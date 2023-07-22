@@ -83,7 +83,7 @@ impl Statement {
     // transform defined_idents_map from HashMap<Ident, Vec<Ident>> to HashMap<String, Ident> using ToString
     let defined_idents_map = defined_idents_map
       .into_iter()
-      .map(|(key, value)| (key.to_string(), value))
+      .map(|(key, value)| (key, value))
       .collect();
 
     Self {
@@ -131,7 +131,7 @@ impl StatementGraph {
           }
         }
 
-        if deps_idents.len() > 0 {
+        if !deps_idents.is_empty() {
           edges_to_add.push((stmt.id, def_stmt.id, deps_idents));
         }
       }

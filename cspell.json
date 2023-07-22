@@ -91,7 +91,8 @@
     "wechat",
     "pluginutils",
     "picomatch",
-    "rsplit"
+    "rsplit",
+    "unwatch"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

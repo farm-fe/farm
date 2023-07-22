@@ -14,13 +14,13 @@ use farmfe_testing_helpers::fixture;
 
 #[test]
 fn analyze_deps() {
-  fixture!("tests/fixtures/analyze_deps/basic.css", |file, base| {
+  fixture!("tests/fixtures/analyze_deps/basic.css", |file, _base| {
     let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
     let css_plugin = FarmPluginCss::new(&context.config);
     let load_result = css_plugin
       .load(
         &PluginLoadHookParam {
-          resolved_path: &file.to_string_lossy().to_string(),
+          resolved_path: &file.to_string_lossy(),
           query: vec![],
           meta: HashMap::new(),
         },

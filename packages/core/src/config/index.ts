@@ -258,10 +258,7 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   host: 'localhost',
   port: 9801,
   watchOptions: {
-    awaitWriteFinish: {
-      stabilityThreshold: 16,
-      pollInterval: 16
-    }
+    awaitWriteFinish: 10
   }
 };
 
