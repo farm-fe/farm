@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.10.6
+
+### Patch Changes
+
+- d6c3230: support add extra watch file
+
 ## 0.10.5
 
 ### Patch Changes
