@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.7
+
+### Patch Changes
+
+- 49bf977: update template add solid template
+
 ## 1.2.6
 
 ### Patch Changes
