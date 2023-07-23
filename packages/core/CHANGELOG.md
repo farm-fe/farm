@@ -1,5 +1,152 @@
 # @farmfe/core
 
+## 0.10.6
+
+### Patch Changes
+
+- d6c3230: support add extra watch file
+
+## 0.10.5
+
+### Patch Changes
+
+- b70ce32: Enlarge default watch debounce on windows
+- Updated dependencies [b70ce32]
+  - @farmfe/runtime-plugin-hmr@3.2.2
+
+## 0.10.4
+
+### Patch Changes
+
+- 6aa7563: Optimize File Watcher - remove chokidar and introduce rust notify
+
+## 0.10.3
+
+### Patch Changes
+
+- 8162eab: Remove hmr http request and use websocket/eval instead
+- Updated dependencies [8162eab]
+  - @farmfe/runtime-plugin-hmr@3.2.1
+
+## 0.10.2
+
+### Patch Changes
+
+- 4fc704d: Fix that HMR middleware slow
+
+## 0.10.1
+
+### Patch Changes
+
+- eb9f382: Fix script entry source map inject
+
+## 0.10.0
+
+### Minor Changes
+
+- d604b5e: Support React SSR
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/runtime@0.7.0
+  - @farmfe/runtime-plugin-hmr@3.2.0
+
+## 0.9.10
+
+### Patch Changes
+
+- a40b07d: make resources order injected to html execution order
+
+## 0.9.9
+
+### Patch Changes
+
+- 3073e19: Isolate runtime from globalThis for script entries
+- Updated dependencies [3073e19]
+  - @farmfe/runtime@0.6.2
+
+## 0.9.8
+
+### Patch Changes
+
+- 596fc2a: Fix HMR patch_module_group_graph panic
+- Updated dependencies [596fc2a]
+  - @farmfe/runtime-plugin-hmr@3.2.0
+
+## 0.9.7
+
+### Patch Changes
+
+- de18942: Fix that build env set to development
+
+## 0.9.6
+
+### Patch Changes
+
+- c36c767: Do not resolve external dependencies when build farm.config.ts
+
+## 0.9.5
+
+### Patch Changes
+
+- b92441b: Fix css hmr panic
+
+## 0.9.4
+
+### Patch Changes
+
+- eb11635: Fix that css HMR will always reload the whole page
+
+## 0.9.3
+
+### Patch Changes
+
+- 0e93bf0: Wait file write to finish by default
+
+## 0.9.2
+
+### Patch Changes
+
+- 4656135: Fix hmr remove issue
+
+## 0.9.1
+
+### Patch Changes
+
+- 7f0c8d7: Support `server.spa` option
+
+## 0.9.0
+
+### Minor Changes
+
+- 55c0d0e: - Support configuring `html.base` to share html for multi-page application.
+  - Support configuring `presetEnv.include`, `presetEnv.exclude`, `presetEnv.options` and `presetEnv.
+  - Fix bug when editing html file, reload the page when html file change
+
+### Patch Changes
+
+- Updated dependencies [55c0d0e]
+  - @farmfe/runtime-plugin-hmr@3.1.4
+
+## 0.8.10
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
+## 0.8.9
+
+### Patch Changes
+
+- f16ff29: Fix publicDir error when build
+
+## 0.8.8
+
+### Patch Changes
+
+- 8f02078: Pretty syntax error for html, css and js/ts/jsx/tsx
+
 ## 0.8.7
 
 ### Patch Changes

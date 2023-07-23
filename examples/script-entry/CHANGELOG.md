@@ -1,5 +1,180 @@
 # @farmfe-examples/script-entry
 
+## 0.0.50
+
+### Patch Changes
+
+- Updated dependencies [d6c3230]
+  - @farmfe/core@0.10.6
+  - @farmfe/cli@0.5.5
+
+## 0.0.49
+
+### Patch Changes
+
+- Updated dependencies [b70ce32]
+  - @farmfe/core@0.10.5
+  - @farmfe/cli@0.5.5
+
+## 0.0.48
+
+### Patch Changes
+
+- Updated dependencies [6aa7563]
+  - @farmfe/core@0.10.4
+  - @farmfe/cli@0.5.5
+
+## 0.0.47
+
+### Patch Changes
+
+- Updated dependencies [8162eab]
+  - @farmfe/core@0.10.3
+  - @farmfe/cli@0.5.5
+
+## 0.0.46
+
+### Patch Changes
+
+- Updated dependencies [4fc704d]
+  - @farmfe/core@0.10.2
+  - @farmfe/cli@0.5.5
+
+## 0.0.45
+
+### Patch Changes
+
+- Updated dependencies [eb9f382]
+  - @farmfe/core@0.10.1
+  - @farmfe/cli@0.5.5
+
+## 0.0.44
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/core@0.10.0
+  - @farmfe/cli@0.5.5
+
+## 0.0.43
+
+### Patch Changes
+
+- Updated dependencies [a40b07d]
+  - @farmfe/core@0.9.10
+  - @farmfe/cli@0.5.5
+
+## 0.0.42
+
+### Patch Changes
+
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+  - @farmfe/cli@0.5.5
+
+## 0.0.41
+
+### Patch Changes
+
+- Updated dependencies [596fc2a]
+  - @farmfe/core@0.9.8
+  - @farmfe/cli@0.5.5
+
+## 0.0.40
+
+### Patch Changes
+
+- Updated dependencies [de18942]
+  - @farmfe/core@0.9.7
+  - @farmfe/cli@0.5.5
+
+## 0.0.39
+
+### Patch Changes
+
+- Updated dependencies [c36c767]
+  - @farmfe/core@0.9.6
+  - @farmfe/cli@0.5.5
+
+## 0.0.38
+
+### Patch Changes
+
+- Updated dependencies [b92441b]
+  - @farmfe/core@0.9.5
+  - @farmfe/cli@0.5.5
+
+## 0.0.37
+
+### Patch Changes
+
+- Updated dependencies [2ea850c]
+  - @farmfe/cli@0.5.5
+
+## 0.0.36
+
+### Patch Changes
+
+- Updated dependencies [eb11635]
+  - @farmfe/core@0.9.4
+  - @farmfe/cli@0.5.4
+
+## 0.0.35
+
+### Patch Changes
+
+- Updated dependencies [0e93bf0]
+  - @farmfe/core@0.9.3
+  - @farmfe/cli@0.5.4
+
+## 0.0.34
+
+### Patch Changes
+
+- Updated dependencies [4656135]
+  - @farmfe/core@0.9.2
+  - @farmfe/cli@0.5.4
+
+## 0.0.33
+
+### Patch Changes
+
+- Updated dependencies [7f0c8d7]
+  - @farmfe/core@0.9.1
+  - @farmfe/cli@0.5.4
+
+## 0.0.32
+
+### Patch Changes
+
+- Updated dependencies [55c0d0e]
+  - @farmfe/core@0.9.0
+  - @farmfe/cli@0.5.4
+
+## 0.0.31
+
+### Patch Changes
+
+- Updated dependencies [ad90ff5]
+  - @farmfe/core@0.8.10
+  - @farmfe/cli@0.5.4
+
+## 0.0.30
+
+### Patch Changes
+
+- Updated dependencies [f16ff29]
+  - @farmfe/core@0.8.9
+  - @farmfe/cli@0.5.3
+
+## 0.0.29
+
+### Patch Changes
+
+- Updated dependencies [8f02078]
+  - @farmfe/core@0.8.8
+  - @farmfe/cli@0.5.3
+
 ## 0.0.28
 
 ### Patch Changes

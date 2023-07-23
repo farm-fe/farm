@@ -59,7 +59,13 @@ impl<'a> SourceReplacer<'a> {
 impl<'a> VisitMut for SourceReplacer<'a> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     if let Expr::Call(call_expr) = expr {
-      self.replace_source_with_id(call_expr);
+      if let SourceReplaceResult::NotScriptModule = self.replace_source_with_id(call_expr) {
+        *expr = Expr::Lit(Lit::Str(Str {
+          span: DUMMY_SP,
+          value: "".into(),
+          raw: None,
+        }));
+      }
     } else {
       expr.visit_mut_children_with(self);
     }
@@ -101,7 +107,6 @@ impl SourceReplacer<'_> {
           optional: false,
         })));
 
-        // leave source @swc/helpers/_/lib/_interop_require_default, @swc/helpers/_/lib/_interop_require_wildcard, @swc/helpers/_/lib/_export_star unchanged
         if !matches!(module_type, ModuleType::Runtime)
           && [
             "@swc/helpers/_/_interop_require_default",
@@ -128,18 +133,7 @@ impl SourceReplacer<'_> {
           *value = id.id(self.mode.clone()).into();
           return SourceReplaceResult::Replaced;
         } else {
-          // replace require('./index.css') with an noop()
-          *call_expr = CallExpr {
-            span: DUMMY_SP,
-            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
-              span: DUMMY_SP,
-              sym: "noop".into(),
-              optional: false,
-            }))),
-            args: vec![],
-            type_args: None,
-          };
-
+          // not script module should not be executed and should be removed
           return SourceReplaceResult::NotScriptModule;
         }
       }

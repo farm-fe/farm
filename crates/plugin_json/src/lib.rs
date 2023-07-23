@@ -41,7 +41,7 @@ impl Plugin for FarmPluginJson {
       }));
     }
 
-    return Ok(None);
+    Ok(None)
   }
 
   fn transform(
@@ -53,11 +53,11 @@ impl Plugin for FarmPluginJson {
       let json = serde_json::from_str::<serde_json::Value>(&param.content).map_err(|e| {
         CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
-          source: Some(Box::new(e)),
+          msg: format!("JSON parse error: {:?}", e),
         }
       })?;
 
-      let js = format!("module.exports = {}", json.to_string());
+      let js = format!("module.exports = {}", json);
 
       Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: js,

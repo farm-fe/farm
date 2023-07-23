@@ -16,8 +16,7 @@ test('resolveUserConfig', async () => {
 
   const config = await resolveUserConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new DefaultLogger(),
-    'start'
+    new DefaultLogger()
   );
 
   expect(config).toEqual({
@@ -64,6 +63,16 @@ describe('parseUserConfig', () => {
         extra: 'should throw'
       })
     ).toThrowError('Unrecognized key');
+  });
+
+  test('type error config', () => {
+    expect(() =>
+      parseUserConfig({
+        server: {
+          port: 'should throw'
+        }
+      })
+    ).toThrowError('Validation error');
   });
 
   test('valid template config', () => {

@@ -1,23 +1,15 @@
 import { z } from 'zod';
-import { UserConfig } from './types.js';
+import { fromZodError } from 'zod-validation-error';
 
-const ConfigSchema = z
+import type { UserConfig } from './types.js';
+
+const compilationConfigSchema = z
   .object({
-    watch: z
-      .union([
-        z.boolean(),
-        z.object({
-          // TODO watcher config schema
-          /* your watcher config schema */
-          ignored: z.array(z.string()).optional()
-        })
-      ])
-      .optional(),
-
-    coreLibPath: z.string().optional(),
+    root: z.string().optional(),
     input: z.record(z.string()).optional(),
     output: z
       .object({
+        entryFilename: z.string().optional(),
         filename: z.string().optional(),
         path: z.string().optional(),
         publicPath: z.string().optional(),
@@ -40,8 +32,18 @@ const ConfigSchema = z
       .optional(),
     define: z.record(z.string()).optional(),
     external: z.array(z.string()).optional(),
-    mode: z.enum(['development', 'production']).optional(),
-    root: z.string().optional(),
+    mode: z.string().optional(),
+    watch: z
+      .union([
+        z.boolean(),
+        z.object({
+          // TODO watcher config schema
+          /* your watcher config schema */
+          ignored: z.array(z.string()).optional()
+        })
+      ])
+      .optional(),
+    coreLibPath: z.string().optional(),
     runtime: z
       .object({
         path: z.string().nonempty(),
@@ -90,10 +92,10 @@ const ConfigSchema = z
               .optional(),
             tsConfig: z
               .object({
-                tsx: z.boolean(),
-                decorators: z.boolean(),
-                dts: z.boolean(),
-                noEarlyErrors: z.boolean()
+                tsx: z.boolean().optional(),
+                decorators: z.boolean().optional(),
+                dts: z.boolean().optional(),
+                noEarlyErrors: z.boolean().optional()
               })
               .strict()
               .optional()
@@ -103,7 +105,9 @@ const ConfigSchema = z
       })
       .strict()
       .optional(),
-    sourcemap: z.union([z.boolean(), z.literal('all')]).optional(),
+    sourcemap: z
+      .union([z.boolean(), z.literal('all'), z.literal('inline')])
+      .optional(),
     partialBundling: z
       .object({
         moduleBuckets: z.array(
@@ -120,7 +124,17 @@ const ConfigSchema = z
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
-    presetEnv: z.boolean().optional(),
+    presetEnv: z
+      .union([
+        z.boolean(),
+        z.object({
+          include: z.array(z.string()).optional(),
+          exclude: z.array(z.string()).optional(),
+          options: z.any().optional(),
+          assumptions: z.any().optional()
+        })
+      ])
+      .optional(),
     css: z
       .object({
         modules: z
@@ -138,16 +152,21 @@ const ConfigSchema = z
           })
           .optional()
       })
-      .optional()
+      .optional(),
+    html: z.object({ base: z.string().optional() }).optional()
   })
   .strict();
 
-const UserConfigSchema = z
+const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
-    plugins: z.array(z.any()).optional(),
-    compilation: ConfigSchema.optional(),
+    base: z.string().optional(),
     clearScreen: z.boolean().optional(),
+    envDir: z.string().optional(),
+    envPrefix: z.string().optional(),
+    publicDir: z.string().optional(),
+    plugins: z.array(z.any()).optional(),
+    compilation: compilationConfigSchema.optional(),
     server: z
       .object({
         port: z.number().positive().int().optional(),
@@ -180,7 +199,8 @@ const UserConfigSchema = z
               })
               .strict()
           ])
-          .optional()
+          .optional(),
+        plugins: z.array(z.any()).optional()
       })
       .strict()
       .optional()
@@ -188,8 +208,15 @@ const UserConfigSchema = z
   .strict();
 
 export function parseUserConfig(config: unknown) {
-  const parsed = UserConfigSchema.parse(config);
-  // TODO: parse will only return correct types if tsconfig is set to strict
-  return parsed as UserConfig;
-  // return config as UserConfig;
+  try {
+    const parsed = FarmConfigSchema.parse(config);
+    return parsed as UserConfig;
+    // return config as UserConfig;
+  } catch (err) {
+    const validationError = fromZodError(err);
+    // the error now is readable by the user
+    throw new Error(
+      `${validationError}. \n Please check your configuration file or command line configuration.`
+    );
+  }
 }

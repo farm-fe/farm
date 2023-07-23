@@ -10,7 +10,7 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
     ModuleType,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource, ResourceType},
+  resource::{resource_pot::ResourcePot, Resource, ResourceType},
   stats::Stats,
 };
 
@@ -132,9 +132,9 @@ pub trait Plugin: Any + Send + Sync {
   }
 
   /// process resource graph before render and generating each resource
-  fn process_resource_pot_map(
+  fn process_resource_pots(
     &self,
-    _resource_pot_map: &mut ResourcePotMap,
+    _resource_pots: &mut Vec<&mut ResourcePot>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -192,7 +192,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
   fn update_modules(
     &self,
-    params: &mut PluginUpdateModulesHookParams,
+    _params: &mut PluginUpdateModulesHookParams,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -203,7 +203,7 @@ pub trait Plugin: Any + Send + Sync {
 #[serde(rename_all = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
-  Entry,
+  Entry(String),
   /// static import, e.g. `import a from './a'`
   #[default]
   Import,
@@ -370,6 +370,12 @@ pub struct PluginFinalizeModuleHookParam<'a> {
   pub deps: &'a Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
+#[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct WatchDiffResult {
+  pub add: Vec<String>,
+  pub remove: Vec<String>,
+}
+
 /// The output after the updating process
 #[derive(Debug, Default)]
 pub struct UpdateResult {
@@ -381,6 +387,7 @@ pub struct UpdateResult {
   pub resources: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
+  pub extra_watch_result: WatchDiffResult,
 }
 #[derive(Debug, Clone)]
 pub enum UpdateType {

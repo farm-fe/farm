@@ -1,17 +1,15 @@
-import chalk from 'chalk';
 import proxy, { IKoaProxiesOptions, IBaseKoaProxiesOptions } from 'koa-proxies';
-import type { ServerOptions as HttpProxyServerOptions } from 'http-proxy';
-import { DevServer } from '../index.js';
+import type { DevServer } from '../index.js';
 
-export type ProxiesOptions = IKoaProxiesOptions & HttpProxyServerOptions;
+export type ProxiesOptions = IKoaProxiesOptions;
 
-export function proxyPlugin(context: DevServer) {
-  const { app, config, logger } = context._context;
+export function proxyPlugin(devServer: DevServer) {
+  const { app, config, logger } = devServer._context;
   if (!config.proxy) {
     return;
   }
   const options = config.proxy;
-  Object.keys(options).forEach((path) => {
+  for (const path of Object.keys(options)) {
     let opts = options[path] as IBaseKoaProxiesOptions;
 
     if (typeof opts === 'string') {
@@ -20,10 +18,14 @@ export function proxyPlugin(context: DevServer) {
     app.on('error', (err, ctx) => {
       // proxy watcher error
       if (ctx.req.oldPath === path) {
-        logger.info(`${chalk.red(`http proxy error:`)}\n${err.stack}`);
+        logger.error(`http proxy error:\n ${err.stack}`);
       }
     });
 
-    app.use(proxy(path, opts));
-  });
+    try {
+      app.use(proxy(path, opts));
+    } catch (err) {
+      logger.error(`Error setting proxy for path ${path}: ${err.message}`);
+    }
+  }
 }

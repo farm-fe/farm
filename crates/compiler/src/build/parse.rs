@@ -23,12 +23,9 @@ pub fn parse(
       Some(meta) => Ok(meta),
       None => Err(CompilationError::ParseError {
         resolved_path: parse_param.resolved_path.clone(),
-        source: None,
+        msg: "No plugins handle this kind of module".to_string(),
       }),
     },
-    Err(e) => Err(CompilationError::ParseError {
-      resolved_path: parse_param.resolved_path.clone(),
-      source: Some(Box::new(e)),
-    }),
+    Err(e) => Err(e),
   }
 }

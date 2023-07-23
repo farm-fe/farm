@@ -1,15 +1,15 @@
 {
   "name": "@farmfe/js-plugin-sass",
-  "version": "1.0.2",
+  "version": "1.0.7",
   "description": "support scss compile for farm.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./build/index.cjs",
+  "types": "./dist/src/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.js"
+      "import": "./build/index.cjs",
+      "types": "./dist/src/index.d.ts",
+      "require": "./build/index.cjs"
     },
     "./package.json": "./package.json"
   },
@@ -32,23 +32,25 @@
     }
   ],
   "scripts": {
-    "build": "tsc -p ./tsconfig.build.json",
+    "build": "rimraf dist && farm build && tsc -p ./tsconfig.build.json",
     "start": "pnpm run build -w",
     "prepublishOnly": "npm run build",
-    "type-check": "pnpm run build --noEmit"
+    "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
   "files": [
-    "dist"
+    "dist",
+    "build"
   ],
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/core": "workspace:^0.8.0",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:^0.10.0",
     "sass": "^1.62.1",
     "sass-embedded": "^1.62.0"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^0.8.0",
+    "@farmfe/core": "workspace:^0.10.0",
     "sass": "^1.3.0",
     "sass-embedded": "*"
   }

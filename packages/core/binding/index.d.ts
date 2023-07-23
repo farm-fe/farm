@@ -106,6 +106,7 @@ export interface Config {
     coreLibPath?: string;
     input?: Record<string, string>;
     output?: {
+      entryFilename?: string;
       filename?: string;
       path?: string;
       publicPath?: string;
@@ -113,6 +114,7 @@ export interface Config {
       targetEnv?: 'browser' | 'node';
       format?: 'cjs' | 'esm';
     };
+    env?: Record<string, any>;
     resolve?: {
       extensions?: string[];
       alias?: Record<string, string>;
@@ -123,12 +125,13 @@ export interface Config {
     };
     define?: Record<string, string>;
     external?: string[];
-    mode?: 'development' | 'production';
+    mode?: string;
     root?: string;
     runtime?: {
       path: string;
       plugins?: string[];
       swcHelpersPath?: string;
+      namespace?: string;
     };
     watch?: boolean | WatcherOptions;
     assets?: {
@@ -186,12 +189,16 @@ export interface Config {
     css?: {
       modules?: {
         indentName?: string;
+        paths?: string[];
       };
       prefixer?: {
         targets?: string[] | string | BrowserTargetsRecord;
       };
     };
-    sourcemap?: boolean | 'all';
+    html?: {
+      base?: string;
+    };
+    sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
     partialBundling?: {
       moduleBuckets?: {
         name: string;
@@ -201,7 +208,13 @@ export interface Config {
     lazyCompilation?: boolean;
     treeShaking?: boolean;
     minify?: boolean;
-    presetEnv?: boolean;
+    presetEnv?: boolean | {
+      include?: string[];
+      exclude?: string[];
+      // TODO using swc's config
+      options?: any;
+      assumptions?: any;
+    };
   };
   jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]

@@ -2,8 +2,12 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig},
+  config::{
+    config_regex::ConfigRegex, preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig,
+    SourcemapConfig,
+  },
   plugin::Plugin,
+  regex::Regex,
   resource::ResourceType,
 };
 
@@ -28,6 +32,7 @@ pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
     path: runtime_path,
     plugins: vec![],
     swc_helpers_path,
+    ..Default::default()
   }
 }
 
@@ -47,12 +52,15 @@ pub fn create_css_compiler(
         ..Default::default()
       },
       mode: Mode::Production,
-      external: vec!["^react-refresh$".to_string(), "^module$".to_string()],
+      external: vec![
+        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
+        ConfigRegex(Regex::new("^module$").unwrap()),
+      ],
       sourcemap: SourcemapConfig::Bool(false),
       css: css_config,
       lazy_compilation: false,
       minify: false,
-      preset_env: false,
+      preset_env: Box::new(PresetEnvConfig::Bool(false)),
       ..Default::default()
     },
     vec![],
@@ -78,11 +86,14 @@ pub fn create_compiler(
         ..Default::default()
       },
       mode: Mode::Production,
-      external: vec!["^react-refresh$".to_string(), "^module$".to_string()],
+      external: vec![
+        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
+        ConfigRegex(Regex::new("^module$").unwrap()),
+      ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       minify,
-      preset_env: false,
+      preset_env: Box::new(PresetEnvConfig::Bool(false)),
       ..Default::default()
     },
     vec![],
@@ -123,12 +134,16 @@ pub fn create_compiler_with_plugins(
         path: runtime_path,
         plugins: vec![],
         swc_helpers_path,
+        ..Default::default()
       },
-      external: vec!["react-refresh".to_string(), "module".to_string()],
+      external: vec![
+        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
+        ConfigRegex(Regex::new("^module$").unwrap()),
+      ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       minify,
-      preset_env: false,
+      preset_env: Box::new(PresetEnvConfig::Bool(false)),
       ..Default::default()
     },
     plugins,
@@ -173,8 +188,8 @@ pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> 
 }
 
 pub fn load_expected_result(cwd: PathBuf) -> String {
-  let expected_result = std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string());
-  expected_result
+  
+  std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string())
 }
 
 pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) {

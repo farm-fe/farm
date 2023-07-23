@@ -2,13 +2,16 @@ export * from './compiler/index.js';
 export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/index.js';
+export * from './utils/index.js';
 
 import path from 'node:path';
 import os from 'node:os';
+import { existsSync } from 'node:fs';
 import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
+import fse from 'fs-extra';
 import { Compiler } from './compiler/index.js';
 import {
   normalizePublicDir,
@@ -19,31 +22,35 @@ import {
 import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
-import type { FarmCLIOptions } from './config/types.js';
 import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
-import { existsSync } from 'node:fs';
-import fse from 'fs-extra';
+
+import type { FarmCLIOptions } from './config/types.js';
+import { setProcessEnv } from './config/env.js';
+import { JsPlugin } from './plugin/index.js';
 
 export async function start(
-  options: FarmCLIOptions & UserConfig
+  inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    'development'
-  );
+  const logger = inlineConfig.logger ?? new DefaultLogger();
+  setProcessEnv('development');
+  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
+  const normalizedConfig = await normalizeUserCompilationConfig(config);
 
   const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, userConfig.server);
-
+  const devServer = new DevServer(compiler, logger, config.server);
   await devServer.listen();
+
+  if (normalizedConfig.config.mode === 'development') {
+    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configDevServer?.(devServer)
+    );
+  }
+
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     logger.info(
-      'HMR enabled, watching for file changes under ' +
-        chalk.green(userConfig.root)
+      'HMR enabled, watching for file changes under ' + chalk.green(config.root)
     );
 
     if (normalizedConfig.config.mode === 'production') {
@@ -62,7 +69,7 @@ export async function build(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
-
+  setProcessEnv('production');
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -73,7 +80,7 @@ export async function build(
 
   // copy resources under publicDir to output.path
   const absPublicDirPath = normalizePublicDir(
-    normalizedConfig.config.output.path,
+    normalizedConfig.config.root,
     options.publicDir
   );
 
@@ -128,7 +135,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
         })
         .forEach(({ type, host }) => {
           const url = `${'http'}://${host}:${chalk.bold(port)}`;
-          logger.info(`  > ${type} ${chalk.cyan(url)}`, false);
+          logger.info(`  > ${type} ${chalk.cyan(url)}`);
         })
     );
   });
@@ -138,10 +145,11 @@ export async function watch(
   options: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
+  setProcessEnv('development');
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
-    'production'
+    'development'
   );
 
   createBundleHandler(normalizedConfig, true);

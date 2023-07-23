@@ -1,11 +1,11 @@
 {
   "name": "@farmfe-examples/script-entry",
-  "version": "0.0.28",
+  "version": "0.0.50",
   "private": true,
-  "type": "module",
   "dependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*"
+    "@farmfe/core": "workspace:*",
+    "lodash": "^4.17.21"
   },
   "scripts": {
     "build": "farm build"

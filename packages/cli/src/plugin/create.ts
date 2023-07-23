@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { copyFiles, TEMPLATES_DIR } from '../utils.js';
@@ -24,7 +24,7 @@ export async function create(args: CreateArgs): Promise<void> {
       type: 'input',
       name: 'dir',
       message: 'Where to create the plugin? E.g. ./farm-plugin-xxx',
-      default: '.',
+      default: '.'
     });
   }
 
@@ -32,7 +32,7 @@ export async function create(args: CreateArgs): Promise<void> {
     prompts.push({
       type: 'input',
       name: 'npmName',
-      message: 'What is the npm name of the plugin? E.g. farmfe-plugin-xxx',
+      message: 'What is the npm name of the plugin? E.g. farmfe-plugin-xxx'
     });
   }
 
@@ -40,7 +40,7 @@ export async function create(args: CreateArgs): Promise<void> {
     prompts.push({
       type: 'input',
       name: 'structName',
-      message: 'What is the name struct of the plugin? E.g. FarmPluginXxx',
+      message: 'What is the name struct of the plugin? E.g. FarmPluginXxx'
     });
   }
 

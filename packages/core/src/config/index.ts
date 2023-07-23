@@ -1,26 +1,30 @@
 import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
+import { pathToFileURL } from 'node:url';
+import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
-
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
-import {
+import { parseUserConfig } from './schema.js';
+
+import type {
   FarmCLIOptions,
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import { Logger } from '../utils/logger.js';
-import { pathToFileURL } from 'node:url';
-import { createHash } from 'node:crypto';
-import { parseUserConfig } from './schema.js';
-import { clearScreen, isObject } from '../utils/common.js';
+import {
+  Logger,
+  clearScreen,
+  isObject,
+  normalizePath
+} from '../utils/index.js';
+import { CompilationMode, loadEnv } from './env.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -29,8 +33,6 @@ export const DEFAULT_CONFIG_NAMES = [
   'farm.config.mjs'
 ];
 
-type CompilationMode = 'development' | 'production';
-
 /**
  * Normalize user config and transform it to rust compiler compatible config
  * @param config
@@ -38,8 +40,16 @@ type CompilationMode = 'development' | 'production';
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
-  mode: CompilationMode = 'production'
+  mode: CompilationMode = 'development'
 ): Promise<Config> {
+  // resolve root path
+  const resolvedRootPath = normalizePath(
+    userConfig.root ? path.resolve(userConfig.root) : process.cwd()
+  );
+
+  const isProduction = mode === 'production';
+  const isDevelopment = mode === 'development';
+
   const config: Config['config'] = merge(
     {
       input: {
@@ -51,7 +61,19 @@ export async function normalizeUserCompilationConfig(
     },
     userConfig.compilation
   );
+  config.mode = mode;
   config.coreLibPath = bindingPath;
+  const resolvedEnvPath = userConfig.envDir
+    ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))
+    : resolvedRootPath;
+  const userEnv = loadEnv(mode, resolvedEnvPath, userConfig.envPrefix);
+  // TODO load env variables from .env file
+  config.env = {
+    ...userEnv,
+    NODE_ENV: process.env.NODE_ENV || mode
+  };
+  config.define = Object.assign(config.define ?? {}, config.env);
+
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 
@@ -75,9 +97,23 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime.plugins) {
     config.runtime.plugins = [];
   }
+  // set namespace to package.json name field's hash
+  if (!config.runtime.namespace) {
+    // read package.json name field
+    const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(
+        fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
+      );
+      config.runtime.namespace = crypto
+        .createHash('md5')
+        .update(packageJson.name)
+        .digest('hex');
+    }
+  }
 
   if (config.lazyCompilation === undefined) {
-    if (mode === 'development') {
+    if (isDevelopment) {
       config.lazyCompilation = true;
     } else {
       config.lazyCompilation = false;
@@ -88,7 +124,7 @@ export async function normalizeUserCompilationConfig(
     config.mode = mode;
   }
 
-  if (config.mode === 'production') {
+  if (isProduction) {
     if (!config.output) {
       config.output = {};
     }
@@ -100,17 +136,29 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  if (config?.output?.targetEnv === 'node') {
+    config.external = [
+      ...(config.external ?? []),
+      ...module.builtinModules.map((m) => `^${m}($|/)`),
+      ...module.builtinModules.map((m) => `^node:${m}($|/)`)
+    ];
+  }
+
+  // TODO resolve other server port
   const normalizedDevServerConfig = normalizeDevServerOptions(
     userConfig.server,
     mode
   );
 
   if (
+    config.output.targetEnv !== 'node' &&
     Array.isArray(config.runtime.plugins) &&
     normalizedDevServerConfig.hmr &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     config.runtime.plugins.push(hmrClientPluginPath);
+    config.define.FARM_HMR_PORT = String(normalizedDevServerConfig.hmr.port);
+    config.define.FARM_HMR_HOST = normalizedDevServerConfig.hmr.host;
   }
 
   // we should not deep merge compilation.input
@@ -137,7 +185,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.treeShaking === undefined) {
-    if (mode === 'production') {
+    if (isProduction) {
       config.treeShaking = true;
     } else {
       config.treeShaking = false;
@@ -145,7 +193,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.minify === undefined) {
-    if (mode === 'production') {
+    if (isProduction) {
       config.minify = true;
     } else {
       config.minify = false;
@@ -153,7 +201,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.presetEnv === undefined) {
-    if (mode === 'production') {
+    if (isProduction) {
       config.presetEnv = true;
     } else {
       config.presetEnv = false;
@@ -208,7 +256,10 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9801
+  port: 9801,
+  watchOptions: {
+    awaitWriteFinish: 10
+  }
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
@@ -222,20 +273,25 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   hmr: DEFAULT_HMR_OPTIONS,
   open: false,
   strictPort: false,
-  cors: false
+  cors: false,
+  spa: true,
+  plugins: []
 };
 
 export function normalizeDevServerOptions(
   options: UserServerConfig | undefined,
-  mode: CompilationMode
+  mode: string
 ): NormalizedServerConfig {
+  let hmr: false | UserHmrConfig = DEFAULT_HMR_OPTIONS;
+
+  if (mode === 'production' || options?.hmr === false) {
+    hmr = false;
+  } else {
+    hmr = merge({}, DEFAULT_HMR_OPTIONS, options?.hmr ?? {});
+  }
+
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
-    hmr:
-      mode === 'production'
-        ? false
-        : options?.hmr !== false
-        ? DEFAULT_HMR_OPTIONS
-        : options.hmr
+    hmr
   });
 }
 
@@ -263,11 +319,11 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
+
       const config = await readConfigFile(resolvedPath, logger);
       const farmConfig = mergeUserConfig(config, options);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
-
         // if we found a config file, stop searching
         break;
       }
@@ -290,34 +346,34 @@ export async function resolveUserConfig(
 }
 
 async function readConfigFile(
-  resolvedPath: string,
+  configFilePath: string,
   logger: Logger
 ): Promise<UserConfig | undefined> {
-  if (fs.existsSync(resolvedPath)) {
-    logger.info(`Using config file at ${chalk.green(resolvedPath)}`);
+  if (fs.existsSync(configFilePath)) {
+    logger.info(`Using config file at ${chalk.green(configFilePath)}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
-    if (resolvedPath.endsWith('.ts')) {
+    if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
-      const hash = createHash('md5');
       const outputPath = path.join(
-        os.tmpdir(),
-        'farmfe',
-        hash.update(resolvedPath).digest('hex')
+        path.dirname(configFilePath),
+        'node_modules',
+        '.farm'
       );
       const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig({
         compilation: {
           input: {
-            config: resolvedPath
+            [fileName]: configFilePath
           },
           output: {
-            filename: fileName,
+            entryFilename: '[entryName]',
             path: outputPath,
             targetEnv: 'node'
           },
           external: [
             ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`)
+            ...module.builtinModules.map((m) => `^node:${m}$`),
+            '^[^./].*'
           ],
           partialBundling: {
             moduleBuckets: [
@@ -337,6 +393,7 @@ async function readConfigFile(
           hmr: false
         }
       });
+
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
       compiler.writeResourcesToDisk();
@@ -351,9 +408,9 @@ async function readConfigFile(
     } else {
       // Change to vm.module of node or loaders as far as it is stable
       if (process.platform === 'win32') {
-        return (await import(pathToFileURL(resolvedPath).toString())).default;
+        return (await import(pathToFileURL(configFilePath).toString())).default;
       } else {
-        return (await import(resolvedPath)).default;
+        return (await import(configFilePath)).default;
       }
     }
   }
@@ -364,24 +421,16 @@ export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
   return config;
 }
 
-// TODO optimizing merge methods
-export function mergeServerOptions(
-  config: UserConfig,
-  options: FarmCLIOptions
-) {
-  config.server = merge(config.server, options);
-}
-
 export function mergeUserConfig(
   config: Record<string, any>,
   options: Record<string, any>
 ) {
   // The merge property can only be enabled if command line arguments are passed
-  const resolveInlineConfig = cleanConfig(options);
-  return mergeConfiguration(config, resolveInlineConfig);
+  const resolvedInlineConfig = cleanConfig(options);
+  return mergeConfiguration(config, resolvedInlineConfig);
 }
 
-function mergeConfiguration(
+export function mergeConfiguration(
   a: Record<string, any>,
   b: Record<string, any>
 ): Record<string, any> {

@@ -1,6 +1,6 @@
 import { throwError } from './options.js';
 import { createRequire } from 'module';
-const __require = createRequire(import.meta.url);
+const __require = createRequire(__dirname);
 /**
  * If not configured, the default implementation is to look for
  * @returns

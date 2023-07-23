@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import { parse } from '@vue/compiler-sfc';
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { handleHmr } from './farm-vue-hmr.js';
@@ -72,7 +73,9 @@ export default function farmVuePlugin(
           const cssCode = stylesCodeCache[hash];
           // if lang is not "css", use preProcessor to handle
           if (applyStyleLangs.includes(lang)) {
-            const { css } = await preProcession(cssCode, lang);
+            const { css } = await preProcession(cssCode, lang, {
+              paths: [path.dirname(resolvedPath)]
+            });
 
             const { code: styleCode, errors } = compileStyle({
               source: css,
@@ -107,7 +110,7 @@ export default function farmVuePlugin(
           error({
             id: resolvedPath,
             message:
-              "path is not right,can't readFile" +
+              "path is not right, can't readFile" +
               JSON.stringify(ctx) +
               JSON.stringify(hookContext)
           });
@@ -118,7 +121,7 @@ export default function farmVuePlugin(
         };
       }
     },
-    // add hmr code In root file
+    // add hmr code in root file
     transform: {
       filters: {
         moduleTypes: ['vue']
@@ -196,7 +199,11 @@ export default function farmVuePlugin(
   };
 }
 
-async function preProcession(styleCode: string, moduleType: string) {
+async function preProcession(
+  styleCode: string,
+  moduleType: string,
+  options?: { paths: string[] }
+) {
   const __default = { css: styleCode, map: '' };
   let processor: ValueOf<PreProcessors>;
   try {
@@ -205,16 +212,21 @@ async function preProcession(styleCode: string, moduleType: string) {
     switch (moduleType) {
       case 'less':
         processor = await loadPreProcessor(PreProcessorsType.less);
-        return await compilePreProcessorCodeToCss(styleCode, processor);
+        return await compilePreProcessorCodeToCss(styleCode, processor, {
+          paths: options.paths ?? []
+        });
       case 'sass':
       case 'scss':
         processor = await loadPreProcessor(PreProcessorsType.sass);
         return await compilePreProcessorCodeToCss(styleCode, processor, {
-          indentedSyntax: moduleType === 'sass'
+          indentedSyntax: moduleType === 'sass',
+          includePaths: options.paths ?? []
         });
       case 'stylus':
         processor = await loadPreProcessor(PreProcessorsType.stylus);
-        return await compilePreProcessorCodeToCss(styleCode, processor);
+        return await compilePreProcessorCodeToCss(styleCode, processor, {
+          paths: options.paths ?? []
+        });
       default:
         return __default;
     }
@@ -233,13 +245,17 @@ export async function compilePreProcessorCodeToCss<
 ): Promise<{ css: string }> {
   if (isLess(preProcessor)) {
     return await new Promise((resolve, reject) => {
-      preProcessor.render(styleCode, {}, (error, { css }) => {
-        if (error) {
-          reject(error);
-        }
+      preProcessor.render(
+        styleCode,
+        options as Less.Options,
+        (error, { css }) => {
+          if (error) {
+            reject(error);
+          }
 
-        resolve({ css });
-      });
+          resolve({ css });
+        }
+      );
     });
   }
 
@@ -265,7 +281,7 @@ export async function compilePreProcessorCodeToCss<
 
   if (isStyl(preProcessor)) {
     return await new Promise((resolve, reject) => {
-      preProcessor.render(styleCode, {}, (err, css) => {
+      preProcessor.render(styleCode, options, (err, css) => {
         if (err) {
           reject(err);
         }

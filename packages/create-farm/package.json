@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "1.2.1",
+  "version": "1.2.7",
   "description": "use create-farm to create farm project",
   "exports": {
     ".": "./bin/create-farm.mjs"
@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "farm build",
-    "watch": "farm watch",
+    "dev": "farm watch",
     "prepublishOnly": "npm run build"
   },
   "author": "",

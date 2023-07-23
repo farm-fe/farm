@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use farmfe_core::{
   config::Mode,
-  context::CompilationContext,
   error::Result,
   swc_common::{Globals, SourceMap},
   swc_ecma_ast,
@@ -15,6 +14,7 @@ pub struct FarmSwcTransformReactOptions<'a> {
   pub mode: Mode,
   pub cm: Arc<SourceMap>,
   pub globals: &'a Globals,
+  pub options: String,
 }
 
 pub fn swc_transform_react(

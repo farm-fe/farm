@@ -1,5 +1,41 @@
 # create-farm
 
+## 1.2.7
+
+### Patch Changes
+
+- 49bf977: update template add solid template
+
+## 1.2.6
+
+### Patch Changes
+
+- 9f6d497: update template version
+
+## 1.2.5
+
+### Patch Changes
+
+- c36c767: update farm.config.ts
+
+## 1.2.4
+
+### Patch Changes
+
+- 2ea850c: update cli with create-farm version optimize server code
+
+## 1.2.3
+
+### Patch Changes
+
+- 815c81c: update farm version
+
+## 1.2.2
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
 ## 1.2.1
 
 ### Patch Changes

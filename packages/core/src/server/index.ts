@@ -2,22 +2,21 @@ import { readFileSync } from 'node:fs';
 import http from 'node:http';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import Koa from 'koa';
 import { WebSocketServer } from 'ws';
 import chalk from 'chalk';
 import boxen from 'boxen';
 import figlet from 'figlet';
-
 import { Compiler } from '../compiler/index.js';
 import {
   UserServerConfig,
   NormalizedServerConfig,
   normalizeDevServerOptions,
-  normalizePublicDir
+  normalizePublicDir,
+  DevServerPlugin
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { brandColor, Logger } from '../utils/logger.js';
+import { brandColor, Logger } from '../utils/index.js';
 import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
 import { hmrPlugin } from './middlewares/hmr.js';
@@ -44,13 +43,14 @@ interface FarmServerContext {
 interface ImplDevServer {
   createFarmServer(options: UserServerConfig): void;
   listen(): Promise<void>;
+  close(): Promise<void>;
   getCompiler(): Compiler;
 }
 
 export class DevServer implements ImplDevServer {
   private _app: Koa;
+  public _context: FarmServerContext;
 
-  _context: FarmServerContext;
   ws: WebSocketServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
@@ -70,31 +70,18 @@ export class DevServer implements ImplDevServer {
     this.createFarmServer(options);
   }
 
-  createFarmServer(options: UserServerConfig) {
-    const protocol = options.https ? 'https' : 'http';
-    let hostname = options.host || 'localhost';
-    if (hostname === '0.0.0.0') hostname = 'localhost';
-    this.config = normalizeDevServerOptions(
-      { ...options, protocol, hostname },
-      'development'
-    );
-    this._app = new Koa();
-    this.server = http.createServer(this._app.callback());
-    this._context = {
-      config: this.config,
-      app: this._app,
-      server: this.server,
-      compiler: this._compiler,
-      logger: this.logger
-    };
-    this.resolvedFarmServerPlugins();
-  }
-
   getCompiler(): Compiler {
     return this._compiler;
   }
 
+  app(): Koa {
+    return this._app;
+  }
+
   async listen(): Promise<void> {
+    if (!this.server) {
+      this.logger.error('HTTP server is not created yet');
+    }
     const { port, open, protocol, hostname } = this.config;
     const start = Date.now();
     // compile the project and start the dev server
@@ -112,8 +99,59 @@ export class DevServer implements ImplDevServer {
     }
   }
 
-  private resolvedFarmServerPlugins() {
+  async close() {
+    if (!this.server) {
+      this.logger.error('HTTP server is not created yet');
+    }
+    this.closeFarmServer();
+  }
+
+  async restart() {
+    // TODO restart
+  }
+
+  closeFarmServer() {
+    this.server?.close(() => {
+      this.logger.info('HTTP server is closed');
+    });
+  }
+
+  createFarmServer(options: UserServerConfig) {
+    const { https = false, host = 'localhost', plugins = [] } = options;
+    const protocol = https ? 'https' : 'http';
+    const hostname = host === '0.0.0.0' ? 'localhost' : host;
+    this.config = normalizeDevServerOptions(
+      { ...options, protocol, hostname },
+      'development'
+    );
+    this._app = new Koa();
+    this.server = http.createServer(this._app.callback());
+    this._context = {
+      config: this.config,
+      app: this._app,
+      server: this.server,
+      compiler: this._compiler,
+      logger: this.logger
+    };
+    this.resolvedFarmServerPlugins(plugins);
+  }
+
+  /**
+   *
+   * Add listening files for root manually
+   *
+   * > listening file with root must as file.
+   *
+   * @param root
+   * @param deps
+   */
+  addWatchFile(root: string, deps: string[]) {
+    this.getCompiler().addExtraWatchFile(root, deps);
+  }
+
+  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
     const resolvedPlugins = [
+      ...middlewares,
       lazyCompilationPlugin,
       hmrPlugin,
       corsPlugin,
@@ -121,7 +159,7 @@ export class DevServer implements ImplDevServer {
       proxyPlugin
     ];
     // this._app.use(serve(this._dist));
-    resolvedPlugins.forEach((p) => p(this));
+    resolvedPlugins.forEach((plugin) => plugin(this));
   }
 
   private startDevLogger(start: number, end: number) {
@@ -140,7 +178,7 @@ export class DevServer implements ImplDevServer {
           })
         )}
   Version ${chalk.green.bold(version)}
-  
+
   🔥 Ready on ${chalk.green.bold(
     `${protocol}://${hostname}:${port}`
   )} in ${chalk.green.bold(`${end - start}ms`)}.

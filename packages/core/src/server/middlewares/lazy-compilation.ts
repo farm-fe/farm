@@ -13,8 +13,6 @@ export function lazyCompilation(server: DevServer) {
   const compiler = server.getCompiler();
 
   return async (ctx: Context, next: () => Promise<any>) => {
-    await next();
-
     if (ctx.path === '/__lazy_compile') {
       const paths = (ctx.query.paths as string).split(',');
       const pathsStr = paths
@@ -64,6 +62,8 @@ export function lazyCompilation(server: DevServer) {
       } else {
         throw new Error(`Lazy compilation result not found for paths ${paths}`);
       }
+    } else {
+      await next();
     }
   };
 }

@@ -103,16 +103,6 @@ pub fn render_and_generate_update_resource(
     .find(|r| matches!(r.resource_type, ResourceType::Js))
     .unwrap();
 
-  if context.config.sourcemap.is_all() {
-    // find sourceMappingUrl= and remove it
-    let str = String::from_utf8(js_resource.bytes).unwrap();
-    let mut lines = str.lines();
-    // remove the last line
-    lines.next_back();
-    let new_str = lines.collect::<Vec<_>>().join("\n");
-    return Ok(new_str);
-  }
-
   // TODO: also return sourcemap
   Ok(String::from_utf8(js_resource.bytes).unwrap())
 }
@@ -150,11 +140,18 @@ pub fn regenerate_resources_for_affected_module_groups(
     resource_pot.clear_resources();
   }
 
-  let resource_pots = resource_pot_map
+  let mut resource_pots = resource_pot_map
     .resource_pots_mut()
     .into_iter()
     .filter(|rp| affected_resource_pots_ids.contains(&rp.id))
     .collect::<Vec<&mut ResourcePot>>();
+
+  drop(module_graph);
+
+  // call process_resource_pot_map hook
+  context
+    .plugin_driver
+    .process_resource_pots(&mut resource_pots, context)?;
 
   render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())
 }

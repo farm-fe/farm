@@ -24,6 +24,7 @@ use self::module_group::ModuleGroupId;
 
 pub mod module_graph;
 pub mod module_group;
+pub mod watch_graph;
 
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage

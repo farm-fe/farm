@@ -1,6 +1,10 @@
 import type { UserConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
 
-export default <UserConfig>{
+function defineConfig(config: UserConfig) {
+  return config;
+}
+
+export default defineConfig({
   plugins: [farmJsPluginVue()],
-};
+});

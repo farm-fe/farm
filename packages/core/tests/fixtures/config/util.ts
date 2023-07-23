@@ -1,3 +1,3 @@
 export default {
-  main: './main.tsx',
+  main: './main.tsx'
 };

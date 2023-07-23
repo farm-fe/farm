@@ -10,6 +10,7 @@
     "antd",
     "applescript",
     "Architecure",
+    "arraify",
     "Basepath",
     "bindgen",
     "brightwu",
@@ -85,7 +86,14 @@
     "unref",
     "unsize",
     "upcasting",
-    "walkdir"
+    "walkdir",
+    "Antdv",
+    "wechat",
+    "pluginutils",
+    "picomatch",
+    "rsplit",
+    "unwatch",
+    "Avenir"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

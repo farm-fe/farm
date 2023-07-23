@@ -1,6 +1,5 @@
 use std::{path::PathBuf, sync::Arc};
 
-use anyhow::Context;
 use farmfe_core::{
   config::{ScriptConfigPlugin, ScriptConfigPluginFilters},
   context::CompilationContext,
@@ -12,8 +11,8 @@ use farmfe_core::{
   swc_common::{self, plugin::metadata::TransformPluginMetadataContext, FileName, Mark},
   swc_ecma_ast::{Module as SwcModule, Program, Script},
 };
+use farmfe_toolkit::anyhow::{self, Context};
 use farmfe_toolkit::{
-  regex::Regex,
   swc_ecma_visit::{noop_fold_type, Fold, FoldWith},
 };
 use once_cell::sync::Lazy;
@@ -41,7 +40,7 @@ pub fn init_plugin_module_cache_once(config: &farmfe_core::config::Config) {
     if !inner_cache.contains_key(plugin_name) {
       let plugin_resolver = &CACHING_RESOLVER;
       let resolved_path = plugin_resolver
-        .resolve(&FileName::Real(PathBuf::from(&plugin_name)), &plugin_name)
+        .resolve(&FileName::Real(PathBuf::from(&plugin_name)), plugin_name)
         .unwrap();
 
       let path = if let FileName::Real(value) = resolved_path {
@@ -162,7 +161,7 @@ impl RustPlugins {
     //   },
     //   || {
     let mut serialized = PluginSerializedBytes::try_serialize(
-      &swc_common::plugin::serialized::VersionedSerializable::new(n.clone()),
+      &swc_common::plugin::serialized::VersionedSerializable::new(n),
     )?;
 
     // Run plugin transformation against current program.
@@ -231,11 +230,7 @@ fn should_execute_swc_plugin(
   filters: &ScriptConfigPluginFilters,
 ) -> bool {
   // transform it to Regex first and test against it
-  let resolve_paths_regex = filters
-    .resolved_paths
-    .iter()
-    .map(|p| Regex::new(p).unwrap())
-    .collect::<Vec<Regex>>();
+  let resolve_paths_regex = &filters.resolved_paths;
 
   resolve_paths_regex
     .iter()

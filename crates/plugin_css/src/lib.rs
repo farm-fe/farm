@@ -7,9 +7,7 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   hashbrown::HashMap,
-  module::{
-    module_graph::ModuleGraph, CssModuleMetaData, Module, ModuleId, ModuleMetaData, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
@@ -24,7 +22,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
-  fs::{read_file_utf8, transform_output_filename},
+  fs::read_file_utf8,
   hash::sha256,
   regex::Regex,
   script::module_type_from_id,
@@ -48,11 +46,12 @@ pub struct FarmPluginCss {
   ast_map: Mutex<HashMap<String, Stylesheet>>,
 }
 
-pub fn wrapper_style_load(code: &String, id: String) -> String {
+pub fn wrapper_style_load(code: &str, id: String, css_deps: &String) -> String {
   format!(
     r#"
 const cssCode = `{}`;
 const farmId = '{}';
+{}
 const previousStyle = document.querySelector(`style[data-farm-id="${{farmId}}"]`);
 const style = document.createElement('style');
 style.setAttribute('data-farm-id', farmId);
@@ -68,8 +67,9 @@ module.onDispose(() => {{
 style.remove();
 }});
 "#,
-    code.replace("`", "'").replace("\\", "\\\\"),
-    id
+    code.replace('`', "'").replace('\\', "\\\\"),
+    id.replace('\\', "\\\\"),
+    css_deps
   )
 }
 
@@ -227,19 +227,16 @@ impl Plugin for FarmPluginCss {
 
         let code = format!(
           r#"
-    import "{}?{}";
+    import "{}{}?{}";
     {}
     export default {{{}}}
     "#,
-          format!(
-            "{}{}",
-            if cfg!(windows) {
-              param.resolved_path.replace("\\", "\\\\")
-            } else {
-              param.resolved_path.to_string()
-            },
-            FARM_CSS_MODULES_SUFFIX
-          ),
+          if cfg!(windows) {
+            param.resolved_path.replace('\\', "\\\\")
+          } else {
+            param.resolved_path.to_string()
+          },
+          FARM_CSS_MODULES_SUFFIX,
           // add hash to avoid cache, make sure hmr works
           sha256(param.content.replace("\r\n", "\n").as_bytes(), 8),
           dynamic_import_of_composes
@@ -256,11 +253,11 @@ impl Plugin for FarmPluginCss {
             .join(",")
         );
 
-        return Ok(Some(PluginTransformHookResult {
+        Ok(Some(PluginTransformHookResult {
           content: code,
           module_type: Some(ModuleType::Js),
           source_map: None,
-        }));
+        }))
       // } else if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
       //   let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
 
@@ -350,9 +347,9 @@ impl Plugin for FarmPluginCss {
     Ok(None)
   }
 
-  fn process_resource_pot_map(
+  fn process_resource_pots(
     &self,
-    resource_pot_map: &mut farmfe_core::resource::resource_pot_map::ResourcePotMap,
+    resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if !matches!(context.config.mode, farmfe_core::config::Mode::Development) {
@@ -362,10 +359,8 @@ impl Plugin for FarmPluginCss {
     let mut module_graph = context.module_graph.write();
 
     // transform css resource pot to js resource pot in development mode
-    for resource_pot in resource_pot_map.resource_pots_mut() {
-      if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
-        transform_css_resource_pot(resource_pot, &mut *module_graph, context)?;
-      }
+    for resource_pot in resource_pots {
+      transform_css_resource_pot(resource_pot, &mut module_graph, context)?;
     }
 
     Ok(Some(()))
@@ -402,8 +397,8 @@ impl Plugin for FarmPluginCss {
         source_replace(
           &mut module_css_ast,
           &module.id,
-          &*module_graph,
-          &*resources_map,
+          &module_graph,
+          &resources_map,
         );
 
         merged_css_ast.rules.extend(module_css_ast.rules);
@@ -430,8 +425,8 @@ impl Plugin for FarmPluginCss {
 
       let source_map_enabled = context.config.sourcemap.enabled();
 
-      let (mut css_code, src_map) = codegen_css_stylesheet(
-        &stylesheet,
+      let (css_code, src_map) = codegen_css_stylesheet(
+        stylesheet,
         if source_map_enabled {
           Some(context.meta.css.cm.clone())
         } else {
@@ -440,39 +435,29 @@ impl Plugin for FarmPluginCss {
         context.config.minify,
       );
 
-      let filename = transform_output_filename(
-        context.config.output.filename.clone(),
-        resource_pot.id.to_string().as_str(),
-        css_code.as_bytes(),
-        ResourceType::Css.to_ext().as_str(),
-      );
-
-      let sourcemap_filename = format!("{filename}.map");
-
       let mut resources = vec![];
 
       if context.config.sourcemap.enabled()
         && (context.config.sourcemap.is_all() || !resource_pot.immutable)
       {
-        css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
-
-        resources.push(Resource {
-          name: sourcemap_filename,
-          bytes: src_map.unwrap(),
-          emitted: false,
-          resource_type: ResourceType::SourceMap,
-          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          preserve_name: true,
-        })
+        // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
+        if let Some(bytes) = src_map {
+          resources.push(Resource {
+            name: format!("{}.map", resource_pot.id.to_string()),
+            bytes,
+            emitted: false,
+            resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
+            origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+          })
+        }
       }
 
       resources.push(Resource {
-        name: filename.clone(),
+        name: resource_pot.id.to_string(),
         bytes: css_code.as_bytes().to_vec(),
         emitted: false,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        preserve_name: true,
       });
 
       Ok(Some(resources))
@@ -535,8 +520,7 @@ fn transform_css_module_indent_name(
 
 fn is_farm_css_modules(path: &str) -> bool {
   path
-    .split("?")
-    .into_iter()
+    .split('?')
     .next()
     .unwrap()
     .ends_with(FARM_CSS_MODULES_SUFFIX)

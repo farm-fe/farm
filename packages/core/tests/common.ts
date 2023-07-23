@@ -15,11 +15,11 @@ export async function getCompiler(
       root,
       compilation: {
         input: input ?? {
-          index: './index.ts?foo=bar'
+          index: './index.ts?foo=bar' // Farm does not recommand using query strings in input. We just use it for testing.
         },
         output: {
           path: path.join('dist', p),
-          filename: 'index.mjs',
+          entryFilename: '[entryName].mjs',
           targetEnv: 'node'
         },
         lazyCompilation: false,

@@ -41,14 +41,32 @@ export function createHotContext(id: string) {
   return state;
 }
 
+function removeCssStyles(removed: string[]) {
+  for (const id of removed) {
+    const previousStyle = document.querySelector(
+      `style[data-farm-id="${{ id }}"]`
+    );
+
+    if (previousStyle) {
+      previousStyle.remove();
+    }
+  }
+}
+
 export function applyHotUpdates(
   result: HmrUpdateResult,
   moduleSystem: ModuleSystem
 ) {
+  result.changed.forEach((id) => {
+    console.log(`[Farm HMR] ${id} updated`);
+  });
+
   for (const id of result.removed) {
     moduleSystem.delete(id);
     REGISTERED_HOT_MODULES.delete(id);
   }
+
+  removeCssStyles(result.removed);
 
   for (const id of result.added) {
     moduleSystem.register(id, result.modules[id]);
@@ -76,11 +94,18 @@ export function applyHotUpdates(
         moduleSystem.clearCache(id);
       }
 
-      // require the boundary module
-      const boundary = chain[chain.length - 1];
-      const boundaryExports = moduleSystem.require(boundary);
-      const hotContext = REGISTERED_HOT_MODULES.get(boundary);
-      hotContext.tap(boundaryExports);
+      try {
+        // require the boundary module
+        const boundary = chain[chain.length - 1];
+        const boundaryExports = moduleSystem.require(boundary);
+        const hotContext = REGISTERED_HOT_MODULES.get(boundary);
+        hotContext.tap(boundaryExports);
+      } catch (err) {
+        // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
+        // See https://github.com/farm-fe/farm/issues/383
+        console.error(err);
+        window.location.reload();
+      }
     }
   }
 }

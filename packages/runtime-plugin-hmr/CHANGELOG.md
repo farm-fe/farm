@@ -1,5 +1,29 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.2.2
+
+### Patch Changes
+
+- b70ce32: Fix that vue SFC does not remove previous css styles when HMR
+
+## 3.2.1
+
+### Patch Changes
+
+- 8162eab: Remove hmr http request and use websocket/eval instead
+
+## 3.2.0
+
+### Minor Changes
+
+- 596fc2a: Support inject HMR port and host by config
+
+## 3.1.4
+
+### Patch Changes
+
+- 55c0d0e: Reload the page when HMR fails
+
 ## 3.1.3
 
 ### Patch Changes

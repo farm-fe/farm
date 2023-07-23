@@ -1,8 +1,8 @@
 import { performance } from 'node:perf_hooks';
 import chalk from 'chalk';
-import { DefaultLogger } from '../utils/logger.js';
+import { DefaultLogger } from './logger.js';
 
-import { Config } from '../../binding/index.js';
+import type { Config } from '../../binding/index.js';
 
 export async function compilerHandler(
   callback: () => Promise<void>,

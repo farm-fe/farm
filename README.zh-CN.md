@@ -72,14 +72,44 @@ $ pnpm create farm
 
 请参考[文档](https://farm-fe.github.io) 进一步了解 Farm。
 
-## 计划
+## 示例
+
+Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场景，具体可以查看我们的示例:
+
+### React 项目示例
+
+- [React-Basic](https://github.com/farm-fe/farm/tree/main/examples/react)
+- [React-Ant-Design](https://github.com/farm-fe/farm/tree/main/examples/react-antd)
+- [React-Sass-CssModules](https://github.com/farm-fe/farm/tree/main/examples/css-modules)
+- [React-Multi-Page-Application](https://github.com/farm-fe/farm/tree/main/examples/multi-page-app)
+
+### Vue 项目示例
+
+- [Vue-Basic](https://github.com/farm-fe/farm/tree/main/examples/vue)
+- [Vue-Jsx](https://github.com/farm-fe/farm/tree/main/examples/vue-jsx)
+- [Vue-Antdv](https://github.com/farm-fe/farm/tree/main/examples/vue-antdv)
+
+### SolidJS 项目示例
+
+- [SolidJS-Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
+
+## 开发计划
+
 Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境优化如 tree shake 以及产物压缩。我们已经将企业级 web 应用成功迁移到 Farm，极大提升了构建速度以及开发体验。
 
-查看 [计划](https://github.com/farm-fe/farm/blob/main/ROADMAP.zh-CN.md)
+查看 [开发计划](https://github.com/farm-fe/farm/blob/main/ROADMAP.zh-CN.md)
 
 ## 贡献
 
 查看 [贡献指南](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.zh-CN.md)
+
+## 交流群
+
+* 加入 [Discord](https://discord.gg/mDErq9aFnF)
+
+* 微信群 
+
+<img src="./assets/wechat-group.png" width="30%" />
 
 ## 作者
 

@@ -10,8 +10,9 @@ export default {
     },
     output: {
       path: 'build',
-      filename: 'index.[ext]',
-      targetEnv: 'node'
+      entryFilename: '[entryName].cjs',
+      targetEnv: 'node',
+      format: 'cjs'
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),

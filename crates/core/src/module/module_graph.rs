@@ -73,8 +73,9 @@ pub struct ModuleGraph {
   g: StableDiGraph<Module, ModuleGraphEdge>,
   /// to index module in the graph using [ModuleId]
   id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
-  /// entry modules of this module graph
-  pub entries: HashSet<ModuleId>,
+  /// entry modules of this module graph.
+  /// (Entry Module Id, Entry Name)
+  pub entries: HashMap<ModuleId, String>,
 }
 
 impl ModuleGraph {
@@ -82,7 +83,7 @@ impl ModuleGraph {
     Self {
       g: StableDiGraph::new(),
       id_index_map: HashMap::new(),
-      entries: HashSet::new(),
+      entries: HashMap::new(),
     }
   }
 
@@ -413,7 +414,7 @@ impl ModuleGraph {
 
     let mut visited = HashSet::new();
 
-    for entry in entries {
+    for (entry, _) in entries {
       let mut res = vec![];
       dfs(entry, self, &mut stack, &mut visited, &mut res, &mut cyclic);
 
@@ -474,7 +475,7 @@ impl ModuleGraph {
       for (dep, _) in &deps {
         dfs(Some(entry), dep, op, visited, graph)
       }
-    };
+    }
 
     let mut visited = HashSet::new();
 
@@ -535,7 +536,7 @@ impl Default for ModuleGraph {
 
 #[cfg(test)]
 mod tests {
-  use hashbrown::HashSet;
+  use hashbrown::HashMap;
 
   use crate::{
     module::{Module, ModuleId},
@@ -610,7 +611,7 @@ mod tests {
       )
       .unwrap();
 
-    graph.entries = HashSet::from(["A".into(), "B".into()]);
+    graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
     graph
   }

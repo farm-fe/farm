@@ -1,5 +1,29 @@
 # @farmfe/plugin-react
 
+## 0.2.0
+
+### Minor Changes
+
+- d604b5e: Support React SSR
+
+## 0.1.11
+
+### Patch Changes
+
+- eb11635: Fix that css HMR will always reload the whole page
+
+## 0.1.10
+
+### Patch Changes
+
+- 55c0d0e: Bump version as core changed
+
+## 0.1.9
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
 ## 0.1.8
 
 ### Patch Changes

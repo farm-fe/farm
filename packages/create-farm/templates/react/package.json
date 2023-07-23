@@ -1,19 +1,19 @@
 {
   "name": "@farmfe-examples/react",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "dependencies": {
     "clsx": "^1.2.1",
     "react": "18",
-    "react-dom": "18"
+    "react-dom": "18",
+    "core-js": "^3.30.1"
   },
   "devDependencies": {
-    "@farmfe/cli": "^0.5.2",
-    "@farmfe/core": "^0.8.6",
-    "@farmfe/plugin-react": "^0.1.7",
+    "@farmfe/cli": "^0.5.5",
+    "@farmfe/core": "^0.10.6",
+    "@farmfe/plugin-react": "^0.2.0",
     "@types/react": "18",
     "@types/react-dom": "18",
-    "react-refresh": "^0.14.0",
-    "typescript": "^4.5.2"
+    "react-refresh": "^0.14.0"
   },
   "scripts": {
     "start": "farm start",
