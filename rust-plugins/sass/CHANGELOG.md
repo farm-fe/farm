@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.1.2
+
+### Patch Changes
+
+- 75f58c1: Fix that extra watch file panic
+
 ## 0.1.1
 
 ### Patch Changes

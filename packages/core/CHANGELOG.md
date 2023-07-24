@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.10.7
+
+### Patch Changes
+
+- 75f58c1: Fix that extra watch file panic
+
 ## 0.10.6
 
 ### Patch Changes

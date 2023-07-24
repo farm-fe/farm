@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.2.1
+
+### Patch Changes
+
+- 75f58c1: Fix that extra watch file panic
+
 ## 0.2.0
 
 ### Minor Changes
