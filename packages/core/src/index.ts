@@ -39,13 +39,14 @@ export async function start(
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config.server);
-  await devServer.listen();
 
   if (normalizedConfig.config.mode === 'development') {
     normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       plugin.configDevServer?.(devServer)
     );
   }
+
+  await devServer.listen();
 
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {

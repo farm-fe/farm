@@ -62,7 +62,7 @@ export class FileWatcher implements ImplFileWatcher {
     };
 
     if (process.platform === 'win32') {
-      handlePathChange = debounce(handlePathChange, 3);
+      handlePathChange = debounce(handlePathChange, this._awaitWriteFinish);
     }
 
     this._watcher = new JsFileWatcher((paths: string[]) => {
@@ -71,7 +71,7 @@ export class FileWatcher implements ImplFileWatcher {
 
     this._watcher.watch([
       ...compiler.resolvedModulePaths(this._root),
-      ...compiler.resolveWatchPaths()
+      ...compiler.resolvedWatchPaths()
     ]);
 
     if (this.serverOrCompiler instanceof DevServer) {

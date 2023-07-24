@@ -44,7 +44,7 @@ export class Compiler {
   addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
   resources(): Record<string, Buffer>
-  watchResources(): Array<string>
+  watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
 }
