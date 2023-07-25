@@ -82,7 +82,7 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场
 - [React-Ant-Design](https://github.com/farm-fe/farm/tree/main/examples/react-antd)
 - [React-Sass-CssModules](https://github.com/farm-fe/farm/tree/main/examples/css-modules)
 - [React-Multi-Page-Application](https://github.com/farm-fe/farm/tree/main/examples/multi-page-app)
-- [React-Tailwindcss](https://github.com/farm-fe/farm/tree/main/examples/tailwind)
+- [React-TailwindCSS](https://github.com/farm-fe/farm/tree/main/examples/tailwind)
 
 ### Vue 项目示例
 
