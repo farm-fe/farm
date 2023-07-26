@@ -55,18 +55,20 @@ export default function farmPostcssPlugin(
         );
 
         // record CSS dependencies from @imports
-        for (const message of messages) {
-          if (message.type === 'dependency') {
-            devServer.addWatchFile(param.resolvedPath, [message.file]);
-          } else if (message.type === 'dir-dependency') {
-            const { dir, glob: globPattern = '**' } = message;
-            // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies
-            const files = glob.sync(path.join(dir, globPattern), {
-              ignore: ['**/node_modules/**']
-            });
-            devServer.addWatchFile(param.resolvedPath, files);
-          } else if (message.type === 'warning') {
-            console.warn(`[${pluginName}] ${message.text}`);
+        if (process.env.NODE_ENV === 'development') {
+          for (const message of messages) {
+            if (message.type === 'dependency') {
+              devServer.addWatchFile(param.resolvedPath, [message.file]);
+            } else if (message.type === 'dir-dependency') {
+              const { dir, glob: globPattern = '**' } = message;
+              // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies
+              const files = glob.sync(path.join(dir, globPattern), {
+                ignore: ['**/node_modules/**']
+              });
+              devServer.addWatchFile(param.resolvedPath, files);
+            } else if (message.type === 'warning') {
+              console.warn(`[${pluginName}] ${message.text}`);
+            }
           }
         }
 
