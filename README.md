@@ -26,10 +26,9 @@
 ---
 
 ## Intro
+The Farm is a super-fast web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
-Farm is a super-fast web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
-
-![xx](./assets/benchmark.png)
+![xx](./assets/benchmark.jpg)
 
 > Test Repository: https://github.com/farm-fe/performance-compare
 >
@@ -70,16 +69,11 @@ $ yarn create farm
 ```
 
 With pnpm:
-
-```bash
-$ pnpm create farm
-```
-
-Refer to [Documentation](https://farm-fe.github.io) to learn more about Farm.
+Refer to the [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## Examples
 
-Farm support compiling React, Vue, SolidJS, Sass, Less, Css Modules officially out of box. See our examples:
+Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules officially out of the box. See our examples:
 
 ### React Examples
 
@@ -101,8 +95,7 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, Css Modules officially o
 - [SolidJS-Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
 
 ## RoadMap
-
-Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
+The Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
 
 See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 

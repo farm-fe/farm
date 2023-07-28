@@ -2,18 +2,23 @@
   <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
-  <p>基于 Rust 的极速构建引擎</p>
+  <h3>基于 Rust 的极速构建引擎</h3>
   <p>
     <a href="https://github.com/farm-fe/farm/blob/main/README.md">English</a> | 
     <span>简体中文</span>
   </p>
   <p align="center">
     <a href="https://discord.gg/mDErq9aFnF">
-      <img src="https://img.shields.io/badge/chat-discord-blueviolet?style=flat&logo=discord" alt="discord chat" />
+      <img src="https://img.shields.io/badge/chat-discord-blueviolet?style=flat&logo=discord&colorA=ffe3f5&colorB=711a5f" alt="discord chat" />
     </a>
-    <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg" alt="npm package"></a>
-    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg" alt="node compatibility"></a>
-    <a href="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml"><img src="https://github.com/farm-fe/farm/actions/workflows/rust-test.yaml/badge.svg" alt="build status"></a>
+    <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="npm package"></a>
+    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="node compatibility"></a>
+  <a href="https://npmcharts.com/compare/@farmfe/core?minimal=true">
+    <img src="https://img.shields.io/npm/dm/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="downloads" />
+  </a>
+  <a href="https://github.com/farm-fe/farm/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/@farmfe/core?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="license" />
+  </a>
   </p>
   <br/>
 </div>
@@ -24,7 +29,7 @@
 
 Farm 是一个使用 Rust 编写的极速 Web 构建工具，对照其他工具进行基准测试 (使用 Turbopack 的基准测试，1000 个 React 组件) 如下所示:
 
-![xx](./assets/benchmark.png)
+![xx](./assets/benchmark.jpg)
 
 > 测试仓库地址: https://github.com/farm-fe/performance-compare
 >
@@ -106,9 +111,9 @@ Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境
 
 ## 交流群
 
-* 加入 [Discord](https://discord.gg/mDErq9aFnF)
+- 加入 [Discord](https://discord.gg/mDErq9aFnF)
 
-* 微信群 
+- 微信群
 
 <img src="./assets/wechat-group.png" width="30%" />
 
