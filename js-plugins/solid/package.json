@@ -8,19 +8,12 @@
   },
   "license": "MIT",
   "type": "module",
-  "main": "./dist/cjs/index.cjs",
-  "module": "./dist/esm/index.mjs",
-  "types": "./dist/types/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/cjs/index.cjs",
-      "import": "./dist/esm/index.mjs",
-      "types": "./dist/types/index.d.ts"
-    }
-  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "start": "rollup -c -w",
-    "build": "rollup -c && tsc --emitDeclarationOnly",
+    "start": "farm build -w",
+    "build": "farm build && tsc --emitDeclarationOnly",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -32,17 +25,10 @@
     "solid-refresh": "^0.5.3"
   },
   "devDependencies": {
-    "@babel/plugin-transform-typescript": "^7.22.9",
-    "@babel/preset-env": "^7.22.9",
+    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@rollup/plugin-babel": "^6.0.3",
-    "@rollup/plugin-commonjs": "^23.0.7",
-    "@rollup/plugin-node-resolve": "^15.1.0",
     "@types/babel__core": "^7.20.1",
-    "rollup": "^3.27.0",
-    "rollup-plugin-cleaner": "^1.0.0",
-    "solid-js": "^1.7.8",
-    "vite": "^4.4.7"
+    "solid-js": "^1.7.8"
   },
   "peerDependencies": {
     "@farmfe/core": "^0.10.7"

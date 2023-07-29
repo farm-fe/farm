@@ -13,7 +13,7 @@ import type { TransformOptions } from '@babel/core';
 import type { Options } from './types.js';
 
 // TODO: HMR
-const require = createRequire(import.meta.url);
+const require = createRequire(__dirname);
 
 const runtimePublicPath = '/@solid-refresh';
 const runtimeFilePath = require.resolve('solid-refresh/dist/solid-refresh.mjs');
