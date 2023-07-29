@@ -8,31 +8,41 @@
   },
   "license": "MIT",
   "type": "module",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.mjs",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/cjs/index.cjs",
+      "import": "./dist/esm/index.mjs",
+      "types": "./dist/types/index.d.ts"
     }
   },
   "scripts": {
-    "start": "tsc -w",
-    "build": "tsc",
+    "start": "rollup -c -w",
+    "build": "rollup -c && tsc --emitDeclarationOnly",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@babel/core": "^7.22.5",
+    "@babel/core": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
-    "babel-preset-solid": "^1.7.4",
+    "@rollup/pluginutils": "^5.0.2",
+    "babel-preset-solid": "^1.7.7",
     "merge-anything": "^5.1.7",
-    "solid-refresh": "^0.5.3",
-    "@rollup/pluginutils": "^5.0.2"
+    "solid-refresh": "^0.5.3"
   },
   "devDependencies": {
+    "@babel/plugin-transform-typescript": "^7.22.9",
+    "@babel/preset-env": "^7.22.9",
     "@farmfe/core": "workspace:*",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-commonjs": "^23.0.7",
+    "@rollup/plugin-node-resolve": "^15.1.0",
     "@types/babel__core": "^7.20.1",
-    "vite": "^4.3.9"
+    "rollup": "^3.27.0",
+    "rollup-plugin-cleaner": "^1.0.0",
+    "solid-js": "^1.7.8",
+    "vite": "^4.4.7"
   },
   "peerDependencies": {
     "@farmfe/core": "^0.10.7"
