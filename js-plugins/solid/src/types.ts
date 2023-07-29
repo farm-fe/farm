@@ -1,5 +1,10 @@
-import type { FilterPattern } from 'vite';
 import type { TransformOptions } from '@babel/core';
+
+export type FilterPattern =
+  | ReadonlyArray<string | RegExp>
+  | string
+  | RegExp
+  | null;
 
 /** Possible options for the extensions property */
 export interface ExtensionOptions {
