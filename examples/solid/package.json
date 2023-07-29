@@ -9,6 +9,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-solid": "workspace:*",
+    "solid-refresh": "^0.5.3",
     "typescript": "^5.1.3"
   },
   "scripts": {
