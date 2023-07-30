@@ -26,7 +26,10 @@
 ---
 
 ## Intro
-The Farm is a super-fast web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
+
+Farm is a super-fast web-building tool written in Rust, like webpack and vite, but much faster.
+
+Farm is designed to be performance first, benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
 ![xx](./assets/benchmark.jpg)
 
@@ -39,10 +42,10 @@ The Farm is a super-fast web-building tool written in Rust. Benchmark against ot
 ## Features
 
 - ⚡ **Super Fast**: Written in Rust, start a React / Vue project in milliseconds and perform an HMR update within 10ms for most situations.
-- 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, achieve anything you want by creating a plugin. Supports both Rust and JavaScript plugins.
-- ⚙️ **Powerful**: Compiles JS/TS/JSX/TSX, CSS, HTML, and static assets out of the box.
-- ⏱️ **Lazy Compilation**: Dynamically imported resources are compiled only when requested.
-- 📦 **Partial Bundling**: Bundle your project into a few reasonable bundles, speeding up resource loading without losing caching granularity.
+- 🧰 **Fully Pluggable**: Everything inside Farm is powered by plugins, supports Farm compilation plugins(both Rust and JavaScript plugins, and SWC plugins), Farm runtime plugins and Farm server plugin. Achieve anything you want by creating a plugin.
+- ⚙️ **Powerful**: Compiles JS/TS/JSX/TSX, CSS, Css Modules, Sass, Less, Postcss, HTML, and static assets out of the box. Support official compilation plugins for Popular frameworks like React, Vue, SolidJs.
+- ⏱️ **Lazy Compilation**: Dynamically imported resources are compiled only when requested, speed up compilation for large scale project. Just write a `dynamic import` and the imported module won't be compiled when it is executed.
+- 📦 **Partial Bundling**: Bundle your project into a few reasonable bundles automatically, speeding up resource loading without losing caching granularity.
 - 🔒 **Consistency**: What you see in development will be the same as what you get in production.
 - 🌳 **Compatibility**: Supports both legacy (ES5) and modern browsers.
 
@@ -83,6 +86,7 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
 - [React-Multi-Page-Application](https://github.com/farm-fe/farm/tree/main/examples/multi-page-app)
 - [React-SSR](https://github.com/farm-fe/farm/tree/main/examples/react-ssr)
 - [React-TailwindCSS](https://github.com/farm-fe/farm/tree/main/examples/tailwind)
+- [React-Emotion](https://github.com/farm-fe/farm/tree/main/examples/emotion)
 
 ### Vue Examples
 
@@ -95,6 +99,7 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
 - [SolidJS-Basic](https://github.com/farm-fe/farm/tree/main/examples/solid)
 
 ## RoadMap
+
 The Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
 
 See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).

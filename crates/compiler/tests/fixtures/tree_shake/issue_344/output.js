@@ -77,7 +77,7 @@
         });
         var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
         var _command = _interop_require_default._(farmRequire("4ef5be87"));
-        const { program , createCommand , createArgument , createOption , CommanderError , InvalidArgumentError , InvalidOptionArgumentError , Command , Argument , Option , Help  } = _command.default;
+        const { program, createCommand, createArgument, createOption, CommanderError, InvalidArgumentError, InvalidOptionArgumentError, Command, Argument, Option, Help } = _command.default;
     },
     "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
