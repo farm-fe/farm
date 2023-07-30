@@ -115,7 +115,7 @@ Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境
 
 - 微信群
 
-<img src="./assets/wechat-group.png" width="30%" />
+<img src="https://github.com/farm-fe/farm/assets/66500121/10baac12-d074-4a3a-b040-136b9408718d" width="30%" />
 
 ## 作者
 
