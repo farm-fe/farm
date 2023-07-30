@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.3.0
+
+### Minor Changes
+
+- 56f235c: Upgrade swc crates and support emotion
+
 ## 0.2.1
 
 ### Patch Changes

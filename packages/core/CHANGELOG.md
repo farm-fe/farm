@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.11.0
+
+### Minor Changes
+
+- 56f235c: Upgrade swc crates and support emotion
+
 ## 0.10.7
 
 ### Patch Changes

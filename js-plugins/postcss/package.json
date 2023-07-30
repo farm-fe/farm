@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-postcss",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "support postcss for farm.",
   "main": "./build/index.cjs",
   "types": "./dist/src/index.d.ts",
@@ -40,13 +40,13 @@
   "license": "MIT",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:^0.10.1",
+    "@farmfe/core": "workspace:^0.11.0",
     "postcss": "^8.4.24",
     "postcss-load-config": "^4.0.1",
     "fast-glob": "^3.3.1"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^0.10.1",
+    "@farmfe/core": "workspace:^0.11.0",
     "postcss": ">=8.0.0"
   }
 }
