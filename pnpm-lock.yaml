@@ -136,9 +136,6 @@ importers:
       '@farmfe/plugin-react':
         specifier: workspace:^0.2.1
         version: link:../../rust-plugins/react
-      '@farmfe/plugin-sass':
-        specifier: workspace:^0.1.2
-        version: link:../../rust-plugins/sass
       '@swc/plugin-emotion':
         specifier: ^2.5.70
         version: 2.5.70
