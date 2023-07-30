@@ -12,9 +12,7 @@ use farmfe_core::{
   swc_ecma_ast::{Module as SwcModule, Program, Script},
 };
 use farmfe_toolkit::anyhow::{self, Context};
-use farmfe_toolkit::{
-  swc_ecma_visit::{noop_fold_type, Fold, FoldWith},
-};
+use farmfe_toolkit::swc_ecma_visit::{noop_fold_type, Fold, FoldWith};
 use once_cell::sync::Lazy;
 use swc_ecma_loader::{
   resolve::Resolve,
@@ -178,6 +176,7 @@ impl RustPlugins {
           .expect("plugin module should be cached")
           .clone();
         let plugin_name = plugin_module_bytes.get_module_name().to_string();
+        let runtime = swc_plugin_runner::wasix_runtime::build_wasi_runtime(None);
 
         let mut plugin_transform_executor = swc_plugin_runner::create_plugin_transform_executor(
           &self.source_map,
@@ -185,6 +184,7 @@ impl RustPlugins {
           &self.metadata_context,
           plugin_module_bytes,
           Some(p.options.clone()),
+          runtime,
         );
 
         serialized = plugin_transform_executor
