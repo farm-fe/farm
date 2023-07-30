@@ -93,7 +93,9 @@
     "picomatch",
     "rsplit",
     "unwatch",
-    "Avenir"
+    "Avenir",
+    "wasix",
+    "wasi"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
