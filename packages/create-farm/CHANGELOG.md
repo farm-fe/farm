@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.9
+
+### Patch Changes
+
+- 21401f2: Upgrade farm version
+
 ## 1.2.8
 
 ### Patch Changes
