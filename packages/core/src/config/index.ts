@@ -74,7 +74,7 @@ export async function normalizeUserCompilationConfig(
   };
   config.define = Object.assign(
     {},
-    config.define,
+    config?.define,
     Object.keys(config.env).reduce((env: any, key) => {
       env[`process.env.${key}`] = JSON.stringify(config.env[key]);
       return env;
