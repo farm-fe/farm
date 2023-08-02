@@ -65,8 +65,6 @@ cli
         configPath
       };
 
-      console.log(defaultOptions);
-
       const { start } = await resolveCore(configPath);
 
       try {

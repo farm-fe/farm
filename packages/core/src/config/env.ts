@@ -43,4 +43,6 @@ export function setProcessEnv(mode: CompilationMode) {
   if (!process.env.NODE_ENV) {
     process.env.NODE_ENV = mode;
   }
+  process.env.aaa = 'aaa';
+  console.log(process.env);
 }
