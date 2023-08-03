@@ -5,7 +5,6 @@ import './main.css';
 declare const BTN: string;
 declare const IRRELEVANT_ESCAPE_ENV: string;
 export function Main() {
-  console.log(process.env);
   return (
     <>
       <Welcome />

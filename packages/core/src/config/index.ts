@@ -64,9 +64,11 @@ export async function normalizeUserCompilationConfig(
   );
   config.mode = mode;
   config.coreLibPath = bindingPath;
+
   const resolvedEnvPath = userConfig.envDir
-    ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))
+    ? userConfig.envDir
     : resolvedRootPath;
+
   const userEnv = loadEnv(
     userConfig.compilation.mode ?? mode,
     resolvedEnvPath,
@@ -86,6 +88,7 @@ export async function normalizeUserCompilationConfig(
       return env;
     }, {})
   );
+
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 

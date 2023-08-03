@@ -3,12 +3,12 @@ import path from 'node:path';
 
 import { parse, config } from 'dotenv';
 import { expand } from 'dotenv-expand';
-import { getFileSystemStats } from '../utils/index.js';
+import { arraify, getFileSystemStats } from '../utils/index.js';
 
 export function loadEnv(
   mode: string,
   envDir: string,
-  prefix = 'FARM_'
+  prefixes: string | string[] = 'FARM_'
 ): Record<string, string> {
   const env: Record<string, string> = {};
   const envFiles = [`.env`, `.env.${mode}`];
@@ -20,11 +20,12 @@ export function loadEnv(
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
   );
-
+  prefixes = arraify(prefixes);
   // For security reasons, we won't get inline env variables.
   // Do not inject project process.env by default, cause it's unsafe
+
   for (const [key, value] of Object.entries(parsed)) {
-    if (key.startsWith(prefix)) {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) {
       env[key] = value;
     }
   }

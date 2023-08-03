@@ -115,6 +115,8 @@ export interface Config {
       format?: 'cjs' | 'esm';
     };
     env?: Record<string, any>;
+    envDir?: string;
+    envPrefix?: string | string[];
     resolve?: {
       extensions?: string[];
       alias?: Record<string, string>;
