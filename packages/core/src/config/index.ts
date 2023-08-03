@@ -73,7 +73,6 @@ export async function normalizeUserCompilationConfig(
     userConfig.envPrefix
   );
 
-  // TODO load env variables from .env file
   config.env = {
     ...userEnv,
     NODE_ENV: process.env.NODE_ENV || mode

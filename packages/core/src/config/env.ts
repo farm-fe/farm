@@ -20,17 +20,14 @@ export function loadEnv(
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
   );
+
+  // For security reasons, we won't get inline env variables.
+  // Do not inject project process.env by default, cause it's unsafe
   for (const [key, value] of Object.entries(parsed)) {
     if (key.startsWith(prefix)) {
       env[key] = value;
     }
   }
-  // Do not inject project process.env by default, cause it's unsafe
-  // for (const key in process.env) {
-  //   if (key.startsWith(prefix)) {
-  //     env[key] = process.env[key] as string;
-  //   }
-  // }
 
   config();
   expand({ parsed });
