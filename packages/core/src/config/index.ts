@@ -70,7 +70,7 @@ export async function normalizeUserCompilationConfig(
     : resolvedRootPath;
 
   const userEnv = loadEnv(
-    userConfig.compilation.mode ?? mode,
+    userConfig.compilation?.mode ?? mode,
     resolvedEnvPath,
     userConfig.envPrefix
   );
