@@ -64,6 +64,7 @@ cli
         clearScreen: options.clearScreen ?? true,
         configPath
       };
+
       const { start } = await resolveCore(configPath);
 
       try {

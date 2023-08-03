@@ -1,17 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { parse, config } from 'dotenv';
+import { parse } from 'dotenv';
 import { expand } from 'dotenv-expand';
-import { getFileSystemStats } from '../utils/index.js';
+import { arraify, getFileSystemStats } from '../utils/index.js';
 
 export function loadEnv(
   mode: string,
   envDir: string,
-  prefix = 'FARM_'
+  prefixes: string | string[] = 'FARM_'
 ): Record<string, string> {
   const env: Record<string, string> = {};
-  const envFiles = [`.env`, `.env.${mode}`];
+  const envFiles = [`.env`, `.env.local`, `.env.${mode}`, `.env.${mode}.local`];
   const parsed = Object.fromEntries(
     envFiles.flatMap((file) => {
       const filePath = path.join(envDir, file);
@@ -20,20 +20,16 @@ export function loadEnv(
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
   );
+  expand({ parsed });
+  // For security reasons, we won't get inline env variables.
+  // Do not inject project process.env by default, cause it's unsafe
+  prefixes = arraify(prefixes);
   for (const [key, value] of Object.entries(parsed)) {
-    if (key.startsWith(prefix)) {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) {
       env[key] = value;
     }
   }
-  // Do not inject project process.env by default, cause it's unsafe
-  // for (const key in process.env) {
-  //   if (key.startsWith(prefix)) {
-  //     env[key] = process.env[key] as string;
-  //   }
-  // }
 
-  config();
-  expand({ parsed });
   return env;
 }
 

@@ -35,6 +35,7 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
+
   const normalizedConfig = await normalizeUserCompilationConfig(config);
 
   const compiler = new Compiler(normalizedConfig);

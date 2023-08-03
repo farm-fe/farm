@@ -47,7 +47,7 @@ export interface UserConfig {
   base?: string;
   clearScreen?: boolean;
   envDir?: string;
-  envPrefix?: string;
+  envPrefix?: string | string[];
   publicDir?: string;
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin)[];

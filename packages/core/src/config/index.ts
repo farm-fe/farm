@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
+
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
@@ -63,16 +64,30 @@ export async function normalizeUserCompilationConfig(
   );
   config.mode = mode;
   config.coreLibPath = bindingPath;
+
   const resolvedEnvPath = userConfig.envDir
-    ? normalizePath(path.resolve(resolvedRootPath, userConfig.envDir))
+    ? userConfig.envDir
     : resolvedRootPath;
-  const userEnv = loadEnv(mode, resolvedEnvPath, userConfig.envPrefix);
-  // TODO load env variables from .env file
+
+  const userEnv = loadEnv(
+    userConfig.compilation?.mode ?? mode,
+    resolvedEnvPath,
+    userConfig.envPrefix
+  );
+
   config.env = {
     ...userEnv,
     NODE_ENV: process.env.NODE_ENV || mode
   };
-  config.define = Object.assign(config.define ?? {}, config.env);
+
+  config.define = Object.assign(
+    {},
+    config?.define,
+    Object.keys(config.env).reduce((env: any, key) => {
+      env[`process.env.${key}`] = config.env[key];
+      return env;
+    }, {})
+  );
 
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
@@ -300,14 +315,14 @@ export function normalizeDevServerOptions(
  * @param configPath
  */
 export async function resolveUserConfig(
-  options: FarmCLIOptions,
+  inlineOptions: FarmCLIOptions,
   logger: Logger
 ): Promise<UserConfig> {
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
-  const { configPath } = options;
+  const { configPath } = inlineOptions;
 
-  if (options.clearScreen) clearScreen();
+  if (inlineOptions.clearScreen) clearScreen();
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -321,7 +336,7 @@ export async function resolveUserConfig(
       const resolvedPath = path.join(configPath, name);
 
       const config = await readConfigFile(resolvedPath, logger);
-      const farmConfig = mergeUserConfig(config, options);
+      const farmConfig = mergeUserConfig(config, inlineOptions);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
         // if we found a config file, stop searching
@@ -331,7 +346,7 @@ export async function resolveUserConfig(
   } else if (fs.statSync(configPath).isFile()) {
     root = path.dirname(configPath);
     const config = await readConfigFile(configPath, logger);
-    const farmConfig = mergeUserConfig(config, options);
+    const farmConfig = mergeUserConfig(config, inlineOptions);
 
     if (config) {
       userConfig = parseUserConfig(farmConfig);
