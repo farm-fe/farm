@@ -57,25 +57,26 @@ Farm 设计动机和理念请看 [RFC-001](https://github.com/farm-fe/rfcs/blob/
 
 ## 快速开始
 
-创建一个 Farm 项目 :
-
-使用 npm:
+使用任意常用包管理器，即可快速创建一个 Farm 项目:
 
 ```bash
-$ npm create farm@latest
+# npm
+npm create farm@latest
+# yarn
+yarn create farm@latest
+# pnpm
+pnpm create farm@latest
 ```
 
-使用 yarn:
+然后启动项目:
 
 ```bash
-$ yarn create farm
+cd farm-project && npm start
 ```
 
-使用 pnpm:
+1 分钟快速开始视频演示:
 
-```bash
-$ pnpm create farm
-```
+https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3173
 
 请参考[文档](https://farm-fe.github.io) 进一步了解 Farm。
 
