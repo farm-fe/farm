@@ -57,21 +57,31 @@ See [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architectu
 
 ## Getting Started
 
-Create a new Farm(support both React and Vue) project.
-
-With npm:
+Create a new Farm(support both React and Vue) project with your favorite package manager:
 
 ```bash
-$ npm create farm@latest
+# with npm
+npm create farm@latest
+# with yarn
+yarn create farm@latest
+# with pnpm
+pnpm create farm@latest
 ```
 
-With yarn:
+Then start the project:
 
 ```bash
-$ yarn create farm
+cd farm-project && npm start
 ```
 
-With pnpm:
+See our 1 minute quick start video:
+
+
+
+https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3173
+
+
+
 Refer to the [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
 ## Examples
