@@ -76,9 +76,7 @@ cd farm-project && npm start
 
 See our 1 minute quick start video:
 
-<video controls>
-  <source src="./assets/quick-start.mp4" type="video/mp4" />
-</video>
+https://github.com/farm-fe/farm/assets/8372439/28ae808a-d0ec-407f-ada3-ae646d97bd53
 
 Refer to the [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
