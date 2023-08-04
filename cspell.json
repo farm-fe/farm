@@ -106,6 +106,7 @@
     "**/*.svg",
     "**/tests/**",
     "**/examples/**",
-    "rust-plugins/sass/ext/sass/**"
+    "rust-plugins/sass/ext/sass/**",
+    "assets/**"
   ]
 }
