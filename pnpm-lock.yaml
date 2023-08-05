@@ -109,12 +109,6 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  examples/generate-dts:
-    dependencies:
-=======
-=======
   examples/emotion:
     dependencies:
       '@emotion/react':
@@ -155,25 +149,29 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
->>>>>>> 88234d638021f4550e7a6af27e55498edfd3bb14
   examples/env:
     devDependencies:
->>>>>>> ebcfa0a0686fae34a01ad5cfb2bc478874338d9b
       '@farmfe/cli':
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
-<<<<<<< HEAD
+
+  examples/generate-dts:
+    dependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
         version: link:../../js-plugins/dts
       ts-morph:
         specifier: ^18.0.0
         version: 18.0.0
-=======
->>>>>>> ebcfa0a0686fae34a01ad5cfb2bc478874338d9b
 
   examples/less:
     dependencies:
@@ -653,16 +651,6 @@ importers:
         specifier: ^0.2.4
         version: 0.2.4
 
-<<<<<<< HEAD
-  js-plugins/dts:
-    dependencies:
-      fast-glob:
-        specifier: ^3.2.12
-        version: 3.2.12
-      ts-morph:
-        specifier: ^18.0.0
-        version: 18.0.0
-=======
   examples/x-data-spreadsheet:
     dependencies:
       jszip:
@@ -671,7 +659,6 @@ importers:
       x-data-spreadsheet:
         specifier: ^1.1.9
         version: 1.1.9
->>>>>>> ebcfa0a0686fae34a01ad5cfb2bc478874338d9b
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -679,12 +666,25 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
-<<<<<<< HEAD
-=======
       '@farmfe/js-plugin-less':
         specifier: workspace:*
         version: link:../../js-plugins/less
->>>>>>> ebcfa0a0686fae34a01ad5cfb2bc478874338d9b
+
+  js-plugins/dts:
+    dependencies:
+      fast-glob:
+        specifier: ^3.2.12
+        version: 3.2.12
+      ts-morph:
+        specifier: ^18.0.0
+        version: 18.0.0
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   js-plugins/less:
     devDependencies:
@@ -2754,7 +2754,7 @@ packages:
   /@ts-morph/common@0.19.0:
     resolution: {integrity: sha512-Unz/WHmd4pGax91rdIKWi51wnVUW11QttMEPpBiBgIewnc9UQIX7UDLxr5vRlqeByXCwhkF6VabSsI0raWcyAQ==}
     dependencies:
-      fast-glob: 3.2.12
+      fast-glob: 3.3.1
       minimatch: 7.4.6
       mkdirp: 2.1.6
       path-browserify: 1.0.1
@@ -5399,7 +5399,6 @@ packages:
       glob-parent: 5.1.2
       merge2: 1.4.1
       micromatch: 4.0.5
-    dev: true
 
   /fast-json-stable-stringify@2.1.0:
     resolution: {integrity: sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==}
@@ -5791,7 +5790,7 @@ packages:
     dependencies:
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.2.12
+      fast-glob: 3.3.1
       ignore: 5.2.4
       merge2: 1.4.1
       slash: 3.0.0
