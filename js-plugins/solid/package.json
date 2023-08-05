@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-solid",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "SolidJS support for Farm",
   "author": {
     "name": "J4ck W4n9",
@@ -8,33 +8,29 @@
   },
   "license": "MIT",
   "type": "module",
-  "module": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "scripts": {
-    "start": "tsc -w",
-    "build": "tsc",
+    "start": "farm build -w",
+    "build": "farm build && tsc --emitDeclarationOnly",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@babel/core": "^7.22.5",
+    "@babel/core": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
-    "babel-preset-solid": "^1.7.4",
+    "@rollup/pluginutils": "^5.0.2",
+    "babel-preset-solid": "^1.7.7",
     "merge-anything": "^5.1.7",
-    "solid-refresh": "^0.5.3",
-    "@rollup/pluginutils": "^5.0.2"
+    "solid-refresh": "^0.5.3"
   },
   "devDependencies": {
+    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@types/babel__core": "^7.20.1",
-    "vite": "^4.3.9"
+    "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.10.6"
+    "@farmfe/core": "^0.11.0"
   }
 }

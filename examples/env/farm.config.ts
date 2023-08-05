@@ -1,7 +1,13 @@
 import type { UserConfig } from '@farmfe/core';
-
+import { resolve } from 'path';
 function defineConfig(config: UserConfig) {
   return config;
 }
 
-export default defineConfig({});
+export default defineConfig({
+  compilation: {
+    mode: 'staging'
+  },
+  envPrefix: ['FARM_', 'CUSTOM_PREFIX_', 'NEW_'],
+  envDir: resolve(process.cwd(), './env')
+});

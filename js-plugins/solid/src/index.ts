@@ -13,7 +13,7 @@ import type { TransformOptions } from '@babel/core';
 import type { Options } from './types.js';
 
 // TODO: HMR
-const require = createRequire(import.meta.url);
+const require = createRequire(__dirname);
 
 const runtimePublicPath = '/@solid-refresh';
 const runtimeFilePath = require.resolve('solid-refresh/dist/solid-refresh.mjs');
@@ -46,7 +46,7 @@ export default function farmPluginSolid(
     name: 'farm-plugin-solid',
     config(param = {}) {
       // We inject the dev mode only if the use˜r explicitly wants it or if we are in dev (serve) mode
-      needHmr = param.mode === 'production';
+      needHmr = param.mode !== 'production';
       replaceDev = options.dev === true || param.mode === 'production';
       projectRoot = param.root ?? process.cwd();
 
@@ -72,7 +72,6 @@ export default function farmPluginSolid(
       },
       async executor(param) {
         if (param.resolvedPath === runtimePublicPath) {
-          console.log(runtimeCode);
           return {
             content: runtimeCode,
             moduleType: 'solid-refresh'
@@ -89,7 +88,7 @@ export default function farmPluginSolid(
     },
     transform: {
       filters: {
-        moduleTypes: ['solid']
+        moduleTypes: ['solid', 'solid-refresh']
       },
       async executor(param) {
         const isSsr = options.ssr;

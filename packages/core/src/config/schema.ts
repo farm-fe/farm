@@ -39,7 +39,12 @@ const compilationConfigSchema = z
         z.object({
           // TODO watcher config schema
           /* your watcher config schema */
-          ignored: z.array(z.string()).optional()
+          ignored: z.array(z.string()).optional(),
+          watchOptions: z
+            .object({
+              awaitWriteFinish: z.number().positive().int().optional()
+            })
+            .optional()
         })
       ])
       .optional(),
@@ -163,7 +168,7 @@ const FarmConfigSchema = z
     base: z.string().optional(),
     clearScreen: z.boolean().optional(),
     envDir: z.string().optional(),
-    envPrefix: z.string().optional(),
+    envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
     plugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
@@ -195,7 +200,12 @@ const FarmConfigSchema = z
               .object({
                 ignores: z.array(z.string()).optional(),
                 host: z.string().nonempty().optional(),
-                port: z.number().positive().int().optional()
+                port: z.number().positive().int().optional(),
+                watchOptions: z
+                  .object({
+                    awaitWriteFinish: z.number().positive().int().optional()
+                  })
+                  .optional()
               })
               .strict()
           ])

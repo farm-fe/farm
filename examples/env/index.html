@@ -1,13 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-<body>
-  <div id="app"></div>
-  <script>var process = { env: { NODE_ENV: 'development' } };__FARM_TARGET_ENV__ = 'browser'</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .pre {
+        display: block;
+        unicode-bidi: embed;
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Environment Variables</h1>
+    <p>FARM_CUSTOM_ENV_VARIABLE: <code class="custom"></code></p>
+    <p>FARM_EFFECTIVE_MODE_FILE_NAME: <code class="file"></code></p>
+    <p>FARM_BOOL: <code class="bool"></code></p>
+    <p>FARM_EXPAND_A: <code class="expand_a"></code></p>
+    <p>CUSTOM_PREFIX_ENV_VARIABLE: <code class="prefix"></code></p>
+    <p>
+      FARM_EXPAND_B:
+      <code class="expand_b"></code>
+    </p>
+    <p>
+      FARM_ESCAPE_A:
+      <code class="escape_a"></code>
+    </p>
+    <p>FARM_ESCAPE_B: <code class="escape_b"></code></p>
+    <script>
+      console.log(process.env);
+      text('.custom', process.env.FARM_CUSTOM_ENV_VARIABLE);
+      text('.file', process.env.FARM_EFFECTIVE_MODE_FILE_NAME);
+      text('.bool', process.env.FARM_BOOL);
+      text('.prefix', process.env.CUSTOM_PREFIX_ENV_VARIABLE);
+      text('.expand_a', process.env.FARM_EXPAND_A);
+      text('.expand_b', process.env.FARM_EXPAND_B);
+      text('.escape_b', process.env.FARM_ESCAPE_B);
+      text('.escape_a', process.env.FARM_ESCAPE_A);
+      function text(el, text) {
+        document.querySelector(el).textContent = text;
+      }
+    </script>
+  </body>
 </html>

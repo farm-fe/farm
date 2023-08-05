@@ -115,6 +115,8 @@ export interface Config {
       format?: 'cjs' | 'esm';
     };
     env?: Record<string, any>;
+    envDir?: string;
+    envPrefix?: string | string[];
     resolve?: {
       extensions?: string[];
       alias?: Record<string, string>;
@@ -208,13 +210,15 @@ export interface Config {
     lazyCompilation?: boolean;
     treeShaking?: boolean;
     minify?: boolean;
-    presetEnv?: boolean | {
-      include?: string[];
-      exclude?: string[];
-      // TODO using swc's config
-      options?: any;
-      assumptions?: any;
-    };
+    presetEnv?:
+      | boolean
+      | {
+          include?: string[];
+          exclude?: string[];
+          // TODO using swc's config
+          options?: any;
+          assumptions?: any;
+        };
   };
   jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]

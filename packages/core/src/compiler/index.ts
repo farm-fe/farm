@@ -141,8 +141,8 @@ export class Compiler {
     }
   }
 
-  resolveWatchPaths(): string[] {
-    return this._bindingCompiler.watchResources();
+  resolvedWatchPaths(): string[] {
+    return this._bindingCompiler.watchModules();
   }
 
   resolvedModulePaths(root: string): string[] {

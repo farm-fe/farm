@@ -5,16 +5,16 @@ use farmfe_core::{
   module::ModuleType,
   parking_lot::RwLock,
   plugin::Plugin,
-  relative_path::{RelativePath, RelativePathBuf},
+  relative_path::RelativePath,
   serde_json::{self, Value},
 };
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex, resolve::follow_symlinks};
 use sass_embedded::{FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
-use std::env;
 use std::env::consts::{ARCH, OS};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::{env, path::Path};
 
 const PKG_NAME: &str = "@farmfe/plugin-sass";
 
@@ -50,22 +50,18 @@ impl FileImporter for FileImporterCollection {
     url: &str,
     _options: &sass_embedded::ImporterOptions,
   ) -> sass_embedded::Result<Option<Url>> {
-    let resolved_path: String = if !PathBuf::from(url).is_absolute() {
-      RelativePathBuf::from(url.to_string())
+    let resolved_path: String = if !Path::new(url).is_absolute() {
+      RelativePath::new(url)
         .to_logical_path(&self.cwd)
         .to_string_lossy()
         .to_string()
-        .into()
     } else {
-      RelativePathBuf::from(url.to_string())
-    }
-    .to_string();
+      url.to_string()
+    };
 
-    self.paths.write().push(resolved_path.to_string());
+    self.paths.write().push(resolved_path.clone());
 
-    sass_embedded::Result::Ok(Some(
-      Url::from_file_path(resolved_path).unwrap(),
-    ))
+    sass_embedded::Result::Ok(Some(Url::from_file_path(resolved_path).unwrap()))
   }
 }
 
@@ -112,9 +108,10 @@ impl Plugin for FarmPluginSass {
 
       let import_collection = Box::new(FileImporterCollection {
         paths: paths.clone(),
-        cwd: RelativePathBuf::from(param.resolved_path)
+        cwd: Path::new(param.resolved_path)
           .parent()
           .unwrap()
+          .to_string_lossy()
           .to_string(),
       });
 

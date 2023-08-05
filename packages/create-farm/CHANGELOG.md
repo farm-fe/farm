@@ -1,5 +1,17 @@
 # create-farm
 
+## 1.2.9
+
+### Patch Changes
+
+- 21401f2: Upgrade farm version
+
+## 1.2.8
+
+### Patch Changes
+
+- 75f58c1: Bump core version
+
 ## 1.2.7
 
 ### Patch Changes

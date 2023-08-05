@@ -93,7 +93,9 @@
     "picomatch",
     "rsplit",
     "unwatch",
-    "Avenir"
+    "Avenir",
+    "wasix",
+    "wasi"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
@@ -104,6 +106,7 @@
     "**/*.svg",
     "**/tests/**",
     "**/examples/**",
-    "rust-plugins/sass/ext/sass/**"
+    "rust-plugins/sass/ext/sass/**",
+    "assets/**"
   ]
 }

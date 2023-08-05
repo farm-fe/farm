@@ -289,7 +289,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn watch_resources(&self) -> Vec<String> {
+  pub fn watch_modules(&self) -> Vec<String> {
     let context = self.compiler.context();
 
     let watch_graph = context.watch_graph.read();
