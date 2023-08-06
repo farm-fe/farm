@@ -81,78 +81,92 @@ export default function farmDtsPlugin(
         const { resolvedPath } = params;
         console.log(resolvedPath);
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
-        let source = data;
         return {
-          content: source,
-          moduleType: 'dts'
+          content: data,
+          moduleType: 'ts'
         };
       }
     },
     transform: {
       filters: {
-        moduleTypes: ['dts']
+        resolvedPaths: ['.ts$']
       },
       async executor(params: any, ctx: any) {
-        // if (project && include && include.length) {
-        // sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
-        // // project.resolveSourceFileDependencies();
-        // const dtsOutputFiles = Array.from(sourceDtsFiles).map((sourceFile) => ({
-        //   path: sourceFile.getFilePath(),
-        //   content: sourceFile.getFullText()
-        // }));
-
-        // try {
-        //   const diagnostics = project.getPreEmitDiagnostics();
-        //   console.log(diagnostics);
-        // } catch (error) {
-        //   console.log(error);
-        // }
-        // const service = project.getLanguageService();
-        // const outputFiles = project
-        //   .getSourceFiles()
-        //   .map((sourceFile) =>
-        //     service
-        //       .getEmitOutput(sourceFile, true)
-        //       .getOutputFiles()
-        //       .map((outputFile) => ({
-        //         path: resolve(
-        //           root,
-        //           relative(
-        //             farmConfig.output.path,
-        //             outputFile.compilerObject.name
-        //           )
-        //         ),
-        //         content: outputFile.getText()
-        //       }))
-        //   )
-        //   .flat()
-        //   .concat(dtsOutputFiles);
-
-        // }
-        // console.log(params);
-        // const project = new Project();
-        // console.log(project);
-        // const sourceFile = project.addSourceFileAtPath(params.resolvedPath);
-        // // const result = project.emitToMemory();
-        // const result = await project.emit({ emitOnlyDtsFiles: true });
-        // // const dtsFile
-        // const project = new Project({
-        //   compilerOptions: { outDir: 'dist', declaration: true }
-        // });
-        // project.createSourceFile('MyFile.ts', params.content);
-        // project.createSourceFile(params.resolvedPath, params.content);
-        // project.emit(); // async
-        // const dtsFile = sourceFile
-        //   .emitToMemory()
-        //   .getFiles()
-        //   .find((f) => f.filePath.endsWith('.d.ts'))!;
-        // console.log(dtsFile.text);
-        let source = '';
         return {
-          content: source,
-          moduleType: 'js'
+          content: params.content,
+          moduleType: 'ts'
         };
       }
     }
+    // transform: {
+    //   filters: {
+    //     // moduleTypes: ['ts'],
+    //     resolvedPaths: ['.ts$']
+    //   },
+    //   async executor(params: any, ctx: any) {
+    //     console.log(ctx);
+    //     console.log(params);
+
+    //     // if (project && include && include.length) {
+    //     // sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
+    //     // // project.resolveSourceFileDependencies();
+    //     // const dtsOutputFiles = Array.from(sourceDtsFiles).map((sourceFile) => ({
+    //     //   path: sourceFile.getFilePath(),
+    //     //   content: sourceFile.getFullText()
+    //     // }));
+
+    //     // try {
+    //     //   const diagnostics = project.getPreEmitDiagnostics();
+    //     //   console.log(diagnostics);
+    //     // } catch (error) {
+    //     //   console.log(error);
+    //     // }
+    //     // const service = project.getLanguageService();
+    //     // const outputFiles = project
+    //     //   .getSourceFiles()
+    //     //   .map((sourceFile) =>
+    //     //     service
+    //     //       .getEmitOutput(sourceFile, true)
+    //     //       .getOutputFiles()
+    //     //       .map((outputFile) => ({
+    //     //         path: resolve(
+    //     //           root,
+    //     //           relative(
+    //     //             farmConfig.output.path,
+    //     //             outputFile.compilerObject.name
+    //     //           )
+    //     //         ),
+    //     //         content: outputFile.getText()
+    //     //       }))
+    //     //   )
+    //     //   .flat()
+    //     //   .concat(dtsOutputFiles);
+
+    //     // }
+    //     // console.log(params);
+    //     // const project = new Project();
+    //     // console.log(project);
+    //     // const sourceFile = project.addSourceFileAtPath(params.resolvedPath);
+    //     // // const result = project.emitToMemory();
+    //     // const result = await project.emit({ emitOnlyDtsFiles: true });
+    //     // // const dtsFile
+    //     // const project = new Project({
+    //     //   compilerOptions: { outDir: 'dist', declaration: true }
+    //     // });
+    //     // project.createSourceFile('MyFile.ts', params.content);
+    //     // project.createSourceFile(params.resolvedPath, params.content);
+    //     // project.emit(); // async
+    //     // const dtsFile = sourceFile
+    //     //   .emitToMemory()
+    //     //   .getFiles()
+    //     //   .find((f) => f.filePath.endsWith('.d.ts'))!;
+    //     // console.log(dtsFile.text);
+    //     // let source = '';
+    //     // return {
+    //     //   content: source,
+    //     //   moduleType: 'js'
+    //     // };
+    //   }
+    // }
   };
 }
