@@ -40,133 +40,121 @@ export default function farmDtsPlugin(
   return {
     name: 'farm-dts-plugin',
     priority: 1000,
-    // config(config: any) {
-    //   farmConfig = config || {};
-    //   root = resolveAbsolutePath(farmConfig.root ?? '', farmConfig.root);
-    //   tsConfigPath = resolveAbsolutePath(tsConfigFilePath, root);
-    //   libFolderPath = libFolderPath && resolveAbsolutePath(libFolderPath, root);
-    //   project = new Project({
-    //     compilerOptions: mergeObjects(compilerOptions, {
-    //       rootDir: compilerOptions.rootDir || root,
-    //       noEmitOnError,
-    //       outDir: farmConfig,
-    //       // #27 declarationDir option will make no declaration file generated
-    //       declarationDir: undefined,
-    //       // compile vue setup script will generate expose parameter for setup function
-    //       // although user never use it which will get an unexpected unused error
-    //       noUnusedParameters: false,
-    //       declaration: true,
-    //       noEmit: false,
-    //       emitDeclarationOnly: true,
-    //       // #153 maybe a bug of ts-morph
-    //       composite: false
-    //     } as CompilerOptions),
-    //     tsConfigFilePath: tsConfigPath,
-    //     skipAddingFilesFromTsConfig: true,
-    //     libFolderPath
-    //   });
-    //   allowJs = project.getCompilerOptions().allowJs ?? false;
-    //   const tsConfig = getTsConfig(
-    //     tsConfigPath,
-    //     project.getFileSystem().readFileSync
-    //   );
-    //   compilerOptions = tsConfig.compilerOptions;
-    //   return config;
-    // },
+    config(config: any) {
+      farmConfig = config || {};
+      root = resolveAbsolutePath(farmConfig.root ?? '', farmConfig.root);
+      tsConfigPath = resolveAbsolutePath(tsConfigFilePath, root);
+      libFolderPath = libFolderPath && resolveAbsolutePath(libFolderPath, root);
+      project = new Project({
+        compilerOptions: mergeObjects(compilerOptions, {
+          rootDir: compilerOptions.rootDir || root,
+          noEmitOnError,
+          outDir: farmConfig,
+          // #27 declarationDir option will make no declaration file generated
+          declarationDir: undefined,
+          // compile vue setup script will generate expose parameter for setup function
+          // although user never use it which will get an unexpected unused error
+          noUnusedParameters: false,
+          declaration: true,
+          noEmit: false,
+          emitDeclarationOnly: true,
+          // #153 maybe a bug of ts-morph
+          composite: false
+        } as CompilerOptions),
+        tsConfigFilePath: tsConfigPath,
+        skipAddingFilesFromTsConfig: true,
+        libFolderPath
+      });
+      allowJs = project.getCompilerOptions().allowJs ?? false;
+      const tsConfig = getTsConfig(
+        tsConfigPath,
+        project.getFileSystem().readFileSync
+      );
+      compilerOptions = tsConfig.compilerOptions;
+      return config;
+    },
     load: {
       filters: {
         resolvedPaths: ['.ts$']
       },
       async executor(params: any, ctx: any) {
         const { resolvedPath } = params;
-        console.log(resolvedPath);
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
         return {
           content: data,
-          moduleType: 'ts'
+          moduleType: 'dts'
         };
       }
     },
     transform: {
       filters: {
-        resolvedPaths: ['.ts$']
+        // resolvedPaths: ['.ts$'],
+        moduleTypes: ['dts']
       },
       async executor(params: any, ctx: any) {
+        if (project) {
+          sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
+          // project.resolveSourceFileDependencies();
+          const dtsOutputFiles = Array.from(sourceDtsFiles).map(
+            (sourceFile) => ({
+              path: sourceFile.getFilePath(),
+              content: sourceFile.getFullText()
+            })
+          );
+
+          try {
+            const diagnostics = project.getPreEmitDiagnostics();
+            // console.log(diagnostics);
+          } catch (error) {
+            console.log(error);
+          }
+          const service = project.getLanguageService();
+          const outputFiles = project
+            .getSourceFiles()
+            .map((sourceFile) =>
+              service
+                .getEmitOutput(sourceFile, true)
+                .getOutputFiles()
+                .map((outputFile) => ({
+                  path: resolve(
+                    root,
+                    relative(
+                      farmConfig.output.path,
+                      outputFile.compilerObject.name
+                    )
+                  ),
+                  content: outputFile.getText()
+                }))
+            )
+            .flat()
+            .concat(dtsOutputFiles);
+          console.log(outputFiles);
+
+          // }
+          // console.log(params);
+          // const project = new Project();
+          // console.log(project);
+          // const sourceFile = project.addSourceFileAtPath(params.resolvedPath);
+          // // const result = project.emitToMemory();
+          // const result = await project.emit({ emitOnlyDtsFiles: true });
+          // // const dtsFile
+          // const project = new Project({
+          //   compilerOptions: { outDir: 'dist', declaration: true }
+          // });
+          // project.createSourceFile('MyFile.ts', params.content);
+          // project.createSourceFile(params.resolvedPath, params.content);
+          // project.emit(); // async
+          // const dtsFile = sourceFile
+          //   .emitToMemory()
+          //   .getFiles()
+          //   .find((f) => f.filePath.endsWith('.d.ts'))!;
+          // console.log(dtsFile.text);
+        }
         return {
           content: params.content,
           moduleType: 'ts'
         };
       }
     }
-    // transform: {
-    //   filters: {
-    //     // moduleTypes: ['ts'],
-    //     resolvedPaths: ['.ts$']
-    //   },
-    //   async executor(params: any, ctx: any) {
-    //     console.log(ctx);
-    //     console.log(params);
-
-    //     // if (project && include && include.length) {
-    //     // sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
-    //     // // project.resolveSourceFileDependencies();
-    //     // const dtsOutputFiles = Array.from(sourceDtsFiles).map((sourceFile) => ({
-    //     //   path: sourceFile.getFilePath(),
-    //     //   content: sourceFile.getFullText()
-    //     // }));
-
-    //     // try {
-    //     //   const diagnostics = project.getPreEmitDiagnostics();
-    //     //   console.log(diagnostics);
-    //     // } catch (error) {
-    //     //   console.log(error);
-    //     // }
-    //     // const service = project.getLanguageService();
-    //     // const outputFiles = project
-    //     //   .getSourceFiles()
-    //     //   .map((sourceFile) =>
-    //     //     service
-    //     //       .getEmitOutput(sourceFile, true)
-    //     //       .getOutputFiles()
-    //     //       .map((outputFile) => ({
-    //     //         path: resolve(
-    //     //           root,
-    //     //           relative(
-    //     //             farmConfig.output.path,
-    //     //             outputFile.compilerObject.name
-    //     //           )
-    //     //         ),
-    //     //         content: outputFile.getText()
-    //     //       }))
-    //     //   )
-    //     //   .flat()
-    //     //   .concat(dtsOutputFiles);
-
-    //     // }
-    //     // console.log(params);
-    //     // const project = new Project();
-    //     // console.log(project);
-    //     // const sourceFile = project.addSourceFileAtPath(params.resolvedPath);
-    //     // // const result = project.emitToMemory();
-    //     // const result = await project.emit({ emitOnlyDtsFiles: true });
-    //     // // const dtsFile
-    //     // const project = new Project({
-    //     //   compilerOptions: { outDir: 'dist', declaration: true }
-    //     // });
-    //     // project.createSourceFile('MyFile.ts', params.content);
-    //     // project.createSourceFile(params.resolvedPath, params.content);
-    //     // project.emit(); // async
-    //     // const dtsFile = sourceFile
-    //     //   .emitToMemory()
-    //     //   .getFiles()
-    //     //   .find((f) => f.filePath.endsWith('.d.ts'))!;
-    //     // console.log(dtsFile.text);
-    //     // let source = '';
-    //     // return {
-    //     //   content: source,
-    //     //   moduleType: 'js'
-    //     // };
-    //   }
-    // }
   };
 }

@@ -11,5 +11,8 @@ export default {
     },
     sourcemap: false
   },
+  server: {
+    hmr: false
+  },
   plugins: [farmDtsPlugin()]
 };
