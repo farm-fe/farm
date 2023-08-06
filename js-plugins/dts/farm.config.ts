@@ -1,4 +1,3 @@
-import farmDtsPlugin from '@farmfe/js-plugin-dts';
 import { builtinModules } from 'module';
 
 /**
@@ -7,12 +6,11 @@ import { builtinModules } from 'module';
 export default {
   compilation: {
     input: {
-      index: './index.ts'
+      index: './src/index.ts'
     },
     output: {
       path: 'dist',
       filename: 'index.[ext]',
-      format: 'cjs',
       targetEnv: 'node'
     },
     external: [
@@ -30,10 +28,9 @@ export default {
     minify: false,
     sourcemap: false,
     presetEnv: false,
-    treeShaking: true
+    treeShaking: false
   },
   server: {
     hmr: false
-  },
-  plugins: [farmDtsPlugin()]
+  }
 };

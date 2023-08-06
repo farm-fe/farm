@@ -9,11 +9,13 @@ import {
   handleInclude,
   mergeObjects,
   resolveAbsolutePath,
-  getTsConfig
+  getTsConfig,
+  ensureArray,
+  ensureAbsolute
 } from './utils.js';
 
 import type { SourceFile, CompilerOptions } from 'ts-morph';
-import { relative, resolve } from 'node:path';
+import path, { relative, resolve } from 'node:path';
 
 export default function farmDtsPlugin(
   farmDtsPluginOptions: any = {}
@@ -37,19 +39,27 @@ export default function farmDtsPlugin(
   let include = handleInclude(resolvedOptions);
   const sourceDtsFiles = new Set<SourceFile>();
   const emittedFiles = new Map<string, string>();
+
   return {
     name: 'farm-dts-plugin',
     priority: 1000,
     config(config: any) {
       farmConfig = config || {};
+      root = config.root || process.cwd();
+      const outputDirs = farmDtsPluginOptions.outputDir
+        ? ensureArray(farmDtsPluginOptions.outputDir).map((d) =>
+            ensureAbsolute(d, root)
+          )
+        : [ensureAbsolute(config.output.path, root)];
+
       root = resolveAbsolutePath(farmConfig.root ?? '', farmConfig.root);
       tsConfigPath = resolveAbsolutePath(tsConfigFilePath, root);
-      libFolderPath = libFolderPath && resolveAbsolutePath(libFolderPath, root);
+      libFolderPath = resolveAbsolutePath(libFolderPath, root);
       project = new Project({
         compilerOptions: mergeObjects(compilerOptions, {
           rootDir: compilerOptions.rootDir || root,
           noEmitOnError,
-          outDir: farmConfig,
+          outDir: outputDirs[0],
           // #27 declarationDir option will make no declaration file generated
           declarationDir: undefined,
           // compile vue setup script will generate expose parameter for setup function
@@ -92,8 +102,12 @@ export default function farmDtsPlugin(
         moduleTypes: ['dts']
       },
       async executor(params: any, ctx: any) {
+        // console.log(params);
+
         if (project) {
-          sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
+          sourceDtsFiles.add(
+            project.addSourceFileAtPath(path.resolve(params.resolvedPath))
+          );
           // project.resolveSourceFileDependencies();
           const dtsOutputFiles = Array.from(sourceDtsFiles).map(
             (sourceFile) => ({
@@ -101,7 +115,6 @@ export default function farmDtsPlugin(
               content: sourceFile.getFullText()
             })
           );
-
           try {
             const diagnostics = project.getPreEmitDiagnostics();
             // console.log(diagnostics);

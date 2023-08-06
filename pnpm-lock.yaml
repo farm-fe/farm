@@ -676,8 +676,8 @@ importers:
         specifier: ^3.2.12
         version: 3.2.12
       ts-morph:
-        specifier: ^18.0.0
-        version: 18.0.0
+        specifier: ^19.0.0
+        version: 19.0.0
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -2753,6 +2753,15 @@ packages:
 
   /@ts-morph/common@0.19.0:
     resolution: {integrity: sha512-Unz/WHmd4pGax91rdIKWi51wnVUW11QttMEPpBiBgIewnc9UQIX7UDLxr5vRlqeByXCwhkF6VabSsI0raWcyAQ==}
+    dependencies:
+      fast-glob: 3.3.1
+      minimatch: 7.4.6
+      mkdirp: 2.1.6
+      path-browserify: 1.0.1
+    dev: false
+
+  /@ts-morph/common@0.20.0:
+    resolution: {integrity: sha512-7uKjByfbPpwuzkstL3L5MQyuXPSKdoNG93Fmi2JoDcTf3pEP731JdRFAduRVkOs8oqxPsXKA+ScrWkdQ8t/I+Q==}
     dependencies:
       fast-glob: 3.3.1
       minimatch: 7.4.6
@@ -9559,6 +9568,13 @@ packages:
     resolution: {integrity: sha512-Kg5u0mk19PIIe4islUI/HWRvm9bC1lHejK4S0oh1zaZ77TMZAEmQC0sHQYiu2RgCQFZKXz1fMVi/7nOOeirznA==}
     dependencies:
       '@ts-morph/common': 0.19.0
+      code-block-writer: 12.0.0
+    dev: false
+
+  /ts-morph@19.0.0:
+    resolution: {integrity: sha512-D6qcpiJdn46tUqV45vr5UGM2dnIEuTGNxVhg0sk5NX11orcouwj6i1bMqZIz2mZTZB1Hcgy7C3oEVhAT+f6mbQ==}
+    dependencies:
+      '@ts-morph/common': 0.20.0
       code-block-writer: 12.0.0
     dev: false
 

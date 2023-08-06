@@ -233,3 +233,7 @@ export async function tryRead(filename: string) {
     throwError('readFile', e);
   }
 }
+
+export function ensureAbsolute(path: string, root: string) {
+  return path ? (isAbsolute(path) ? path : resolve(root, path)) : root;
+}

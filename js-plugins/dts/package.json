@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
+    "build:farn": "farm build",
     "start": "pnpm run build -w",
     "watch": "farm watch",
     "prepublishOnly": "npm run build",
@@ -17,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "fast-glob": "^3.2.12",
-    "ts-morph": "^18.0.0"
+    "ts-morph": "^19.0.0"
   },
   "devDependencies": {
     "@farmfe/core": "workspace:*",
