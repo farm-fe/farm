@@ -1,5 +1,7 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import fs from 'node:fs';
+import fs from 'fs-extra';
+import { dirname } from 'node:path';
+import os from 'node:os';
 import { Project } from 'ts-morph';
 import glob from 'fast-glob';
 
@@ -11,7 +13,9 @@ import {
   resolveAbsolutePath,
   getTsConfig,
   ensureArray,
-  ensureAbsolute
+  ensureAbsolute,
+  queryPublicPath,
+  runParallel
 } from './utils.js';
 
 import type { SourceFile, CompilerOptions } from 'ts-morph';
@@ -38,21 +42,27 @@ export default function farmDtsPlugin(
   let exclude = handleExclude(resolvedOptions);
   let include = handleInclude(resolvedOptions);
   const sourceDtsFiles = new Set<SourceFile>();
+  let entryRoot = farmDtsPluginOptions.entryRoot ?? '';
+  let outputDirs: string[] = [];
   const emittedFiles = new Map<string, string>();
 
+  // CONST
+  const noneExport = 'export {};\n';
+
+  // TODO support vue
   return {
     name: 'farm-dts-plugin',
     priority: 1000,
     config(config: any) {
       farmConfig = config || {};
       root = config.root || process.cwd();
-      const outputDirs = farmDtsPluginOptions.outputDir
+
+      outputDirs = farmDtsPluginOptions.outputDir
         ? ensureArray(farmDtsPluginOptions.outputDir).map((d) =>
             ensureAbsolute(d, root)
           )
         : [ensureAbsolute(config.output.path, root)];
 
-      root = resolveAbsolutePath(farmConfig.root ?? '', farmConfig.root);
       tsConfigPath = resolveAbsolutePath(tsConfigFilePath, root);
       libFolderPath = resolveAbsolutePath(libFolderPath, root);
       project = new Project({
@@ -102,12 +112,8 @@ export default function farmDtsPlugin(
         moduleTypes: ['dts']
       },
       async executor(params: any, ctx: any) {
-        // console.log(params);
-
         if (project) {
-          sourceDtsFiles.add(
-            project.addSourceFileAtPath(path.resolve(params.resolvedPath))
-          );
+          sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
           // project.resolveSourceFileDependencies();
           const dtsOutputFiles = Array.from(sourceDtsFiles).map(
             (sourceFile) => ({
@@ -115,6 +121,7 @@ export default function farmDtsPlugin(
               content: sourceFile.getFullText()
             })
           );
+
           try {
             const diagnostics = project.getPreEmitDiagnostics();
             // console.log(diagnostics);
@@ -128,21 +135,37 @@ export default function farmDtsPlugin(
               service
                 .getEmitOutput(sourceFile, true)
                 .getOutputFiles()
-                .map((outputFile) => ({
-                  path: resolve(
-                    root,
-                    relative(
-                      farmConfig.output.path,
-                      outputFile.compilerObject.name
-                    )
-                  ),
-                  content: outputFile.getText()
-                }))
+                .map((outputFile) => {
+                  return {
+                    path: resolve(
+                      root,
+                      relative(
+                        farmConfig.output.path,
+                        path.normalize(outputFile.compilerObject.name)
+                      )
+                    ),
+                    content: outputFile.getText()
+                  };
+                })
             )
-            .flat()
-            .concat(dtsOutputFiles);
-          console.log(outputFiles);
+            .flat();
+          // .concat(dtsOutputFiles);
 
+          entryRoot =
+            entryRoot || queryPublicPath(outputFiles.map((file) => file.path));
+          entryRoot = ensureAbsolute(entryRoot, root);
+          await runParallel(
+            os.cpus().length,
+            outputFiles,
+            async (outputFile: any) => {
+              let filePath = outputFile.path;
+              filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
+              let content = outputFile.content;
+              if (filePath.endsWith('.d.ts')) {
+                writeFileWithCheck(filePath, content);
+              }
+            }
+          );
           // }
           // console.log(params);
           // const project = new Project();
@@ -170,4 +193,20 @@ export default function farmDtsPlugin(
       }
     }
   };
+}
+
+async function writeFileWithCheck(filePath: string, content: string) {
+  // 获取文件夹路径
+  const folderPath = path.dirname(filePath);
+
+  try {
+    // 检查文件夹是否存在
+    await fs.access(folderPath);
+  } catch (error) {
+    // 如果文件夹不存在，则创建它
+    await fs.mkdir(folderPath, { recursive: true });
+  }
+
+  // 写文件
+  await fs.writeFile(filePath, content, 'utf-8');
 }

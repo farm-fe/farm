@@ -1,4 +1,4 @@
-import path, { isAbsolute, dirname, resolve } from 'node:path';
+import path, { isAbsolute, dirname, normalize, sep, resolve } from 'node:path';
 import crypto from 'crypto';
 import fs from 'node:fs';
 import { createRequire } from 'module';
@@ -236,4 +236,82 @@ export async function tryRead(filename: string) {
 
 export function ensureAbsolute(path: string, root: string) {
   return path ? (isAbsolute(path) ? path : resolve(root, path)) : root;
+}
+
+export function queryPublicPath(paths: string[]) {
+  const speRE = /[\\/]/;
+
+  if (paths.length === 0) {
+    return '';
+  } else if (paths.length === 1) {
+    return dirname(paths[0]);
+  }
+
+  let publicPath = normalize(dirname(paths[0])) + sep;
+  let publicUnits = publicPath.split(speRE);
+  let index = publicUnits.length - 1;
+
+  for (const path of paths.slice(1)) {
+    if (!index) {
+      return publicPath;
+    }
+
+    const dirPath = normalize(dirname(path)) + sep;
+
+    if (dirPath.startsWith(publicPath)) {
+      continue;
+    }
+
+    const units = dirPath.split(speRE);
+
+    if (units.length < index) {
+      publicPath = dirPath;
+      publicUnits = units;
+      continue;
+    }
+
+    for (let i = 0; i <= index; ++i) {
+      if (publicUnits[i] !== units[i]) {
+        if (!i) {
+          return '';
+        }
+
+        index = i - 1;
+        publicUnits = publicUnits.slice(0, index + 1);
+        publicPath = publicUnits.join(sep) + sep;
+        break;
+      }
+    }
+  }
+
+  return publicPath.slice(0, -1);
+}
+
+export async function runParallel<T>(
+  maxConcurrency: number,
+  source: T[],
+  iteratorFn: (item: T, source: T[]) => Promise<any>
+) {
+  const ret: Promise<any>[] = [];
+  const executing: Promise<any>[] = [];
+
+  for (const item of source) {
+    const p = Promise.resolve().then(() => iteratorFn(item, source));
+
+    ret.push(p);
+
+    if (maxConcurrency <= source.length) {
+      const e: Promise<any> = p.then(() =>
+        executing.splice(executing.indexOf(e), 1)
+      );
+
+      executing.push(e);
+
+      if (executing.length >= maxConcurrency) {
+        await Promise.race(executing);
+      }
+    }
+  }
+
+  return Promise.all(ret);
 }
