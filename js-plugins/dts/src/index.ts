@@ -150,6 +150,7 @@ export default function farmDtsPlugin(
             )
             .flat();
           // .concat(dtsOutputFiles);
+          console.log(outputFiles);
 
           entryRoot =
             entryRoot || queryPublicPath(outputFiles.map((file) => file.path));
@@ -162,6 +163,8 @@ export default function farmDtsPlugin(
               filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
               let content = outputFile.content;
               if (filePath.endsWith('.d.ts')) {
+                console.log('找到了');
+
                 writeFileWithCheck(filePath, content);
               }
             }

@@ -767,6 +767,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:*
+        version: link:../dts
       '@types/babel__core':
         specifier: ^7.20.1
         version: 7.20.1
