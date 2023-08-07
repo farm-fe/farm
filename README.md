@@ -84,6 +84,11 @@ https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3
 
 Refer to the [Documentation](https://farm-fe.github.io) to learn more about Farm.
 
+## Contribution
+
+See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).
+
+
 ## Examples
 
 Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules officially out of the box. See our examples:
@@ -122,9 +127,12 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 <img src="https://github.com/farm-fe/farm/assets/66500121/10baac12-d074-4a3a-b040-136b9408718d" width="30%" />
 
-## Contribution
 
-See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).
+## Contributors 
+
+<a href="https://github.com/farm-fe/farm/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=farm-fe/farm" />
+</a>
 
 ## Author
 

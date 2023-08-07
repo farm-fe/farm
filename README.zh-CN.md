@@ -80,6 +80,11 @@ https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3
 
 请参考[文档](https://farm-fe.github.io) 进一步了解 Farm。
 
+
+## 贡献
+
+查看 [贡献指南](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.zh-CN.md)
+
 ## 示例
 
 Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场景，具体可以查看我们的示例:
@@ -110,9 +115,6 @@ Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境
 
 查看 [开发计划](https://github.com/farm-fe/farm/blob/main/ROADMAP.zh-CN.md)
 
-## 贡献
-
-查看 [贡献指南](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.zh-CN.md)
 
 ## 交流群
 
@@ -121,6 +123,13 @@ Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境
 - 微信群
 
 <img src="https://github.com/farm-fe/farm/assets/66500121/10baac12-d074-4a3a-b040-136b9408718d" width="30%" />
+
+
+## 感谢贡献者们做出的努力
+
+<a href="https://github.com/farm-fe/farm/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=farm-fe/farm" />
+</a>
 
 ## 作者
 
