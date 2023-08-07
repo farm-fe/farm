@@ -122,7 +122,7 @@ Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境
 
 - 微信群
 
-<img src="https://github.com/ErKeLost/unplugin-imagemin/assets/66500121/10d18092-6a5b-42c1-9afc-fe3d8fe67796" width="30%" />
+<img src="https://github.com/farm-fe/farm/assets/66500121/19fe1c76-318c-4440-8146-bed9d0e14ae7" width="30%" />
 
 
 ## 感谢贡献者们做出的努力
