@@ -21,16 +21,14 @@ import {
 import type { SourceFile, CompilerOptions } from 'ts-morph';
 import path, { relative, resolve } from 'node:path';
 
-export default function farmDtsPlugin(
-  farmDtsPluginOptions: any = {}
-): JsPlugin {
+export default function farmDtsPlugin(dtsPluginOptions: any = {}): JsPlugin {
   // options hooks to get farmConfig
-  let farmConfig: UserConfig['compilation'];
+  let config: UserConfig['compilation'];
   let tsConfigPath: string;
   let root: string;
   let libFolderPath: string;
   let allowJs: boolean;
-  const resolvedOptions = getResolvedOptions(farmDtsPluginOptions);
+  const resolvedOptions = getResolvedOptions(dtsPluginOptions);
   const {
     tsConfigFilePath = 'tsconfig.json',
     noEmitOnError = false,
@@ -42,7 +40,7 @@ export default function farmDtsPlugin(
   let exclude = handleExclude(resolvedOptions);
   let include = handleInclude(resolvedOptions);
   const sourceDtsFiles = new Set<SourceFile>();
-  let entryRoot = farmDtsPluginOptions.entryRoot ?? '';
+  let entryRoot = dtsPluginOptions.entryRoot ?? '';
   let outputDirs: string[] = [];
   const emittedFiles = new Map<string, string>();
 
@@ -54,11 +52,11 @@ export default function farmDtsPlugin(
     name: 'farm-dts-plugin',
     priority: 1000,
     config(config: any) {
-      farmConfig = config || {};
+      config = config || {};
       root = config.root || process.cwd();
 
-      outputDirs = farmDtsPluginOptions.outputDir
-        ? ensureArray(farmDtsPluginOptions.outputDir).map((d) =>
+      outputDirs = dtsPluginOptions.outputDir
+        ? ensureArray(dtsPluginOptions.outputDir).map((d) =>
             ensureAbsolute(d, root)
           )
         : [ensureAbsolute(config.output.path, root)];
