@@ -98,8 +98,10 @@ export default function farmDtsPlugin(
         resolvedPaths: ['.ts$']
       },
       async executor(params: any, ctx: any) {
+        console.log(params);
         const { resolvedPath } = params;
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
+
         return {
           content: data,
           moduleType: 'dts'
@@ -150,7 +152,6 @@ export default function farmDtsPlugin(
             )
             .flat();
           // .concat(dtsOutputFiles);
-          console.log(outputFiles);
 
           entryRoot =
             entryRoot || queryPublicPath(outputFiles.map((file) => file.path));
@@ -163,8 +164,6 @@ export default function farmDtsPlugin(
               filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
               let content = outputFile.content;
               if (filePath.endsWith('.d.ts')) {
-                console.log('找到了');
-
                 writeFileWithCheck(filePath, content);
               }
             }
