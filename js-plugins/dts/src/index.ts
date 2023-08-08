@@ -99,6 +99,7 @@ export default function farmDtsPlugin(
       },
       async executor(params: any, ctx: any) {
         console.log(params);
+
         const { resolvedPath } = params;
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
 
