@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.10
+
+### Patch Changes
+
+- 3dcbea2: fix pnpm preview NODE_ENV undefined error
+
 ## 1.2.9
 
 ### Patch Changes
