@@ -21,47 +21,43 @@ import {
 import type { SourceFile, CompilerOptions } from 'ts-morph';
 import path, { relative, resolve } from 'node:path';
 
-export default function farmDtsPlugin(dtsPluginOptions: any = {}): JsPlugin {
+export default function farmDtsPlugin(options: any = {}): JsPlugin {
   // options hooks to get farmConfig
-  let config: UserConfig['compilation'];
-  let tsConfigPath: string;
-  let root: string;
+  let farmConfig: UserConfig['compilation'];
+  let useFlag: boolean = false;
+  const resolvedOptions = getResolvedOptions(options);
+  const { tsconfigPath = 'tsconfig.json', noEmitOnError = false } =
+    resolvedOptions;
+  let root = ensureAbsolute(options.root ?? '', process.cwd());
+  let publicRoot = '';
+  let entryRoot = options.entryRoot ?? '';
   let libFolderPath: string;
-  let allowJs: boolean;
-  const resolvedOptions = getResolvedOptions(dtsPluginOptions);
-  const {
-    tsConfigFilePath = 'tsconfig.json',
-    noEmitOnError = false,
-    skipDiagnostics = false,
-    copyDtsFiles = false
-  } = resolvedOptions;
   let compilerOptions = resolvedOptions.compilerOptions ?? {};
   let project: Project | undefined;
+  let outputDirs: string[];
+  let tsConfigPath: string;
+  let allowJs = false;
   let exclude = handleExclude(resolvedOptions);
   let include = handleInclude(resolvedOptions);
   const sourceDtsFiles = new Set<SourceFile>();
-  let entryRoot = dtsPluginOptions.entryRoot ?? '';
-  let outputDirs: string[] = [];
+  const outputFiles = new Map<string, string>();
   const emittedFiles = new Map<string, string>();
-
-  // CONST
-  const noneExport = 'export {};\n';
 
   // TODO support vue
   return {
     name: 'farm-dts-plugin',
     priority: 1000,
     config(config: any) {
-      config = config || {};
+      useFlag = config.mode !== 'development';
+      farmConfig = config || {};
+
       root = config.root || process.cwd();
 
-      outputDirs = dtsPluginOptions.outputDir
-        ? ensureArray(dtsPluginOptions.outputDir).map((d) =>
-            ensureAbsolute(d, root)
-          )
+      outputDirs = options.outputDir
+        ? ensureArray(options.outputDir).map((d) => ensureAbsolute(d, root))
         : [ensureAbsolute(config.output.path, root)];
 
-      tsConfigPath = resolveAbsolutePath(tsConfigFilePath, root);
+      tsConfigPath = resolveAbsolutePath(tsconfigPath, root);
       libFolderPath = resolveAbsolutePath(libFolderPath, root);
       project = new Project({
         compilerOptions: mergeObjects(compilerOptions, {
@@ -96,8 +92,6 @@ export default function farmDtsPlugin(dtsPluginOptions: any = {}): JsPlugin {
         resolvedPaths: ['.ts$']
       },
       async executor(params: any, ctx: any) {
-        console.log(params);
-
         const { resolvedPath } = params;
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
 
@@ -129,14 +123,15 @@ export default function farmDtsPlugin(dtsPluginOptions: any = {}): JsPlugin {
           } catch (error) {
             console.log(error);
           }
+
           const service = project.getLanguageService();
           const outputFiles = project
             .getSourceFiles()
-            .map((sourceFile) =>
+            .map((sourceFile: any) =>
               service
                 .getEmitOutput(sourceFile, true)
                 .getOutputFiles()
-                .map((outputFile) => {
+                .map((outputFile: any) => {
                   return {
                     path: resolve(
                       root,
@@ -153,7 +148,8 @@ export default function farmDtsPlugin(dtsPluginOptions: any = {}): JsPlugin {
           // .concat(dtsOutputFiles);
 
           entryRoot =
-            entryRoot || queryPublicPath(outputFiles.map((file) => file.path));
+            entryRoot ||
+            queryPublicPath(outputFiles.map((file: any) => file.path));
           entryRoot = ensureAbsolute(entryRoot, root);
           await runParallel(
             os.cpus().length,
@@ -162,6 +158,9 @@ export default function farmDtsPlugin(dtsPluginOptions: any = {}): JsPlugin {
               let filePath = outputFile.path;
               filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
               let content = outputFile.content;
+              console.log(filePath);
+              console.log(content);
+
               if (filePath.endsWith('.d.ts')) {
                 writeFileWithCheck(filePath, content);
               }

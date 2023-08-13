@@ -11,8 +11,6 @@ export default {
     },
     output: {
       path: 'dist',
-      filename: 'index.[ext]',
-      format: 'cjs',
       targetEnv: 'node'
     },
     external: [

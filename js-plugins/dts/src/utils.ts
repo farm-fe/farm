@@ -1,10 +1,22 @@
-import path, { isAbsolute, dirname, normalize, sep, resolve } from 'node:path';
+import path, {
+  posix,
+  isAbsolute,
+  dirname,
+  normalize,
+  sep,
+  resolve
+} from 'node:path';
+import { existsSync, lstatSync, readdirSync, rmdirSync } from 'node:fs';
+
+import typescript from 'typescript';
+
 import crypto from 'crypto';
 import fs from 'node:fs';
 import { createRequire } from 'module';
 import { CompilerOptions } from 'ts-morph';
-import typescript from 'typescript';
 import { throwError } from './options.js';
+
+const windowsSlashRE = /\\+/g;
 
 // @ts-ignore
 export function warn({ id, message }) {
@@ -33,6 +45,14 @@ export function parsePath(resolvedPath: string) {
   };
 }
 
+export function slash(p: string): string {
+  return p.replace(windowsSlashRE, '/');
+}
+
+export function normalizePath(id: string): string {
+  return posix.normalize(slash(id));
+}
+
 export function getHash(text: string, start: number = 0, end: number = 8) {
   return crypto
     .createHash('sha256')
@@ -53,6 +73,20 @@ export function callWithErrorHandle<
   } catch (e) {
     console.error(e);
   }
+}
+
+export function isNativeObj<
+  T extends Record<string, any> = Record<string, any>
+>(value: T): value is T {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+export function isPromise(value: unknown): value is Promise<any> {
+  return (
+    !!value &&
+    (typeof value === 'function' || typeof value === 'object') &&
+    typeof (value as any).then === 'function'
+  );
 }
 
 export function isArray(val: unknown): val is unknown[] {
