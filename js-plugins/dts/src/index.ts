@@ -21,6 +21,13 @@ import {
 import type { SourceFile, CompilerOptions } from 'ts-morph';
 import path, { relative, resolve } from 'node:path';
 
+const noneExport = 'export {};\n';
+const vueRE = /\.vue$/;
+const svelteRE = /\.svelte$/;
+const tsRE = /\.(m|c)?tsx?$/;
+const jsRE = /\.(m|c)?jsx?$/;
+const dtsRE = /\.d\.(m|c)?tsx?$/;
+const tjsRE = /\.(m|c)?(t|j)sx?$/;
 export default function farmDtsPlugin(options: any = {}): JsPlugin {
   // options hooks to get farmConfig
   let farmConfig: UserConfig['compilation'];
@@ -38,7 +45,7 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
   let tsConfigPath: string;
   let allowJs = false;
   let exclude = handleExclude(resolvedOptions);
-  let include = handleInclude(resolvedOptions);
+  let include: any = handleInclude(resolvedOptions);
   const sourceDtsFiles = new Set<SourceFile>();
   const outputFiles = new Map<string, string>();
   const emittedFiles = new Map<string, string>();
@@ -108,7 +115,28 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
       },
       async executor(params: any, ctx: any) {
         if (project) {
-          sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
+          const files = await glob(['src/**', '*.d.ts'], {
+            cwd: root,
+            absolute: true,
+            ignore: ['node_modules/**']
+          });
+          console.log(files);
+          for (const file of files) {
+            // if (dtsRE.test(file)) {
+            console.log('添加地址');
+
+            sourceDtsFiles.add(project.addSourceFileAtPath(file));
+
+            // if (!copyDtsFiles) {
+            //   continue;
+            // }
+
+            // includedFiles.add(file);
+            // continue;
+            // }
+          }
+          // project.resolveSourceFileDependencies();
+          // sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
           // project.resolveSourceFileDependencies();
           const dtsOutputFiles = Array.from(sourceDtsFiles).map(
             (sourceFile) => ({
@@ -144,8 +172,9 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
                   };
                 })
             )
-            .flat();
-          // .concat(dtsOutputFiles);
+            .flat()
+            .concat(dtsOutputFiles);
+          console.log(outputFiles);
 
           entryRoot =
             entryRoot ||
@@ -156,9 +185,10 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
             outputFiles,
             async (outputFile: any) => {
               let filePath = outputFile.path;
+              console.log(filePath);
+
               filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
               let content = outputFile.content;
-              console.log(filePath);
               console.log(content);
 
               if (filePath.endsWith('.d.ts')) {
