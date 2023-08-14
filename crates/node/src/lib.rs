@@ -20,7 +20,7 @@ use farmfe_core::{
 };
 
 use napi::{
-  bindgen_prelude::{Array, Buffer, FromNapiValue},
+  bindgen_prelude::{Buffer, FromNapiValue},
   threadsafe_function::{
     ErrorStrategy, ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
   },
@@ -332,7 +332,7 @@ impl JsCompiler {
   pub fn get_resolve_records(&self) -> Vec<String> {
     let context = self.compiler.context();
     let record_manager = &context.record_manager;
-    return record_manager.get_resolve_records();
+    record_manager.get_resolve_records()
   }
 
   #[napi]
@@ -348,7 +348,7 @@ impl JsCompiler {
         source_maps: record.source_maps,
       })
       .collect();
-    return js_transform_records;
+    js_transform_records
   }
 }
 

@@ -50,7 +50,7 @@ impl RecordManager {
     }
 
     let resolve_ids: Vec<String> = resolve_id_set.into_iter().collect();
-    return resolve_ids;
+    resolve_ids
   }
 
   pub fn get_transform_records_by_id(&self, id: &str) -> Vec<TransformRecord> {
