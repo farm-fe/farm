@@ -115,25 +115,27 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
       },
       async executor(params: any, ctx: any) {
         if (project) {
+          project.createSourceFile(
+            params.resolvedPath,
+            await fs.readFile(params.resolvedPath, 'utf-8'),
+            { overwrite: true }
+          );
           const files = await glob(['src/**', '*.d.ts'], {
             cwd: root,
             absolute: true,
             ignore: ['node_modules/**']
           });
-          console.log(files);
           for (const file of files) {
-            // if (dtsRE.test(file)) {
-            console.log('添加地址');
+            if (dtsRE.test(file)) {
+              sourceDtsFiles.add(project.addSourceFileAtPath(file));
 
-            sourceDtsFiles.add(project.addSourceFileAtPath(file));
+              // if (!copyDtsFiles) {
+              //   continue;
+              // }
 
-            // if (!copyDtsFiles) {
-            //   continue;
-            // }
-
-            // includedFiles.add(file);
-            // continue;
-            // }
+              // includedFiles.add(file);
+              // continue;
+            }
           }
           // project.resolveSourceFileDependencies();
           // sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
@@ -144,6 +146,7 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
               content: sourceFile.getFullText()
             })
           );
+          console.log(dtsOutputFiles);
 
           try {
             const diagnostics = project.getPreEmitDiagnostics();
@@ -151,7 +154,7 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
           } catch (error) {
             console.log(error);
           }
-
+          project.resolveSourceFileDependencies();
           const service = project.getLanguageService();
           const outputFiles = project
             .getSourceFiles()
@@ -185,11 +188,9 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
             outputFiles,
             async (outputFile: any) => {
               let filePath = outputFile.path;
-              console.log(filePath);
 
               filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
               let content = outputFile.content;
-              console.log(content);
 
               if (filePath.endsWith('.d.ts')) {
                 writeFileWithCheck(filePath, content);
