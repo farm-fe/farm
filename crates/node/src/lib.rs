@@ -20,7 +20,7 @@ use farmfe_core::{
 };
 
 use napi::{
-  bindgen_prelude::{Buffer, FromNapiValue},
+  bindgen_prelude::{Array, Buffer, FromNapiValue},
   threadsafe_function::{
     ErrorStrategy, ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
   },
@@ -52,6 +52,13 @@ pub struct JsUpdateResult {
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<String, Vec<Vec<String>>>>,
   pub extra_watch_result: WatchDiffResult,
+}
+
+#[napi(object, js_name = "TransformRecord")]
+pub struct JsTransformRecord {
+  pub name: String,
+  pub result: String,
+  pub source_maps: Option<String>,
 }
 
 #[napi(js_name = "Compiler")]
@@ -319,6 +326,29 @@ impl JsCompiler {
     let resources = context.resources_map.lock();
 
     resources.get(&name).map(|r| r.bytes.clone().into())
+  }
+
+  #[napi]
+  pub fn get_resolve_records(&self) -> Vec<String> {
+    let context = self.compiler.context();
+    let record_manager = &context.record_manager;
+    return record_manager.get_resolve_records();
+  }
+
+  #[napi]
+  pub fn get_transform_records_by_id(&self, id: String) -> Vec<JsTransformRecord> {
+    let context = self.compiler.context();
+    let record_manager = &context.record_manager;
+    let transform_records = record_manager.get_transform_records_by_id(&id);
+    let js_transform_records: Vec<JsTransformRecord> = transform_records
+      .into_iter()
+      .map(|record| JsTransformRecord {
+        name: record.name,
+        result: record.result,
+        source_maps: record.source_maps,
+      })
+      .collect();
+    return js_transform_records;
   }
 }
 

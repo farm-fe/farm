@@ -17,7 +17,7 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
   },
   resource::{resource_pot::ResourcePot, Resource},
-  stats::Stats,
+  stats::Stats, record::{ResolveRecord, TransformRecord},
 };
 
 pub struct PluginDriver {
@@ -71,6 +71,28 @@ macro_rules! hook_parallel {
   };
 }
 
+macro_rules! hook_first_with_callback {
+  (
+      $func_name:ident,
+      $ret_ty:ty,
+      $callback:expr,
+      $($arg:ident: $ty:ty),*
+  ) => {
+      pub fn $func_name(&self, $($arg: $ty),*) -> $ret_ty {
+          for plugin in &self.plugins {
+              let ret = plugin.$func_name($($arg),*)?;
+              if ret.is_some() {
+                let plugin_name = plugin.name().to_string();
+                $callback(&ret, plugin_name, $($arg),*);
+                return Ok(ret);
+              }
+          }
+
+          Ok(None)
+      }
+  };
+}
+
 impl PluginDriver {
   pub fn new(mut plugins: Vec<Arc<dyn Plugin>>) -> Self {
     plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
@@ -87,21 +109,35 @@ impl PluginDriver {
 
   hook_parallel!(build_start);
 
-  hook_first!(
+  hook_first_with_callback!(
     resolve,
     Result<Option<PluginResolveHookResult>>,
+    | result: &Option<PluginResolveHookResult>, plugin_name: String, param: &PluginResolveHookParam, context: &Arc<CompilationContext>, _hook_context: &PluginHookContext| {
+        context.record_manager.add_resolve_record(param.source.clone(), ResolveRecord {
+          name: plugin_name,
+          result: result.as_ref().unwrap().resolved_path.clone()
+        });
+    },
     param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
-  );
+);
 
-  hook_first!(
-    load,
-    Result<Option<PluginLoadHookResult>>,
-    param: &PluginLoadHookParam,
-    context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext
-  );
+hook_first_with_callback!(
+  load,
+  Result<Option<PluginLoadHookResult>>,
+  | _result: &Option<PluginLoadHookResult>, plugin_name: String, param: &PluginLoadHookParam, context: &Arc<CompilationContext>, _hook_context: &PluginHookContext| {
+
+      context.record_manager.add_load_record(param.resolved_path.to_string(), TransformRecord {
+        name:plugin_name,
+        result:_result.as_ref().unwrap().content.clone(), 
+        source_maps: None
+      });
+  },
+  param: &PluginLoadHookParam,
+  context: &Arc<CompilationContext>,
+  _hook_context: &PluginHookContext
+);
 
   pub fn transform(
     &self,
@@ -120,8 +156,24 @@ impl PluginDriver {
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
+        let plugin_name =plugin.name().to_string();
+
         if let Some(source_map) = plugin_result.source_map {
+          context.record_manager.add_transform_record(param.resolved_path.to_string(), TransformRecord {
+            name:plugin_name,
+            result: param.content.clone(), 
+            source_maps: Some(source_map.clone())
+          });
+
           result.source_map_chain.push(source_map);
+
+        } else {
+
+          context.record_manager.add_transform_record(param.resolved_path.to_string(), TransformRecord {
+            name:plugin_name,
+            result: param.content.clone(), 
+            source_maps: None
+          });
         }
       }
     }

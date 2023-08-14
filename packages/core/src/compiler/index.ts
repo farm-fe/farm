@@ -175,4 +175,12 @@ export class Compiler {
   addExtraWatchFile(root: string, paths: string[]) {
     this._bindingCompiler.addWatchFiles(root, paths);
   }
+
+  getResolveRecords() {
+    return this._bindingCompiler.getResolveRecords();
+  }
+
+  getTransformRecords(id: string) {
+    return this._bindingCompiler.getTransformRecordsById(id);
+  }
 }
