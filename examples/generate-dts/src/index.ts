@@ -1,9 +1,10 @@
-import type { TestBase } from './test'
-
-console.log('我是打包哦')
+import type { TestBase } from './test';
+import { a } from './bbb';
+console.log('我是打包哦');
+console.log(a);
 
 export interface Test extends TestBase {
-  count: number
+  count: number;
 }
 
 // export { testFn } from './comment'

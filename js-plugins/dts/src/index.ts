@@ -114,6 +114,8 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
         moduleTypes: ['dts']
       },
       async executor(params: any, ctx: any) {
+        console.log('我走进来 transform 了');
+
         if (project) {
           project.createSourceFile(
             params.resolvedPath,
