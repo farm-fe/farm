@@ -114,8 +114,6 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
         moduleTypes: ['dts']
       },
       async executor(params: any, ctx: any) {
-        console.log('我走进来 transform 了');
-
         if (project) {
           project.createSourceFile(
             params.resolvedPath,
@@ -148,11 +146,9 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
               content: sourceFile.getFullText()
             })
           );
-          console.log(dtsOutputFiles);
 
           try {
             const diagnostics = project.getPreEmitDiagnostics();
-            // console.log(diagnostics);
           } catch (error) {
             console.log(error);
           }
@@ -179,7 +175,6 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
             )
             .flat()
             .concat(dtsOutputFiles);
-          console.log(outputFiles);
 
           entryRoot =
             entryRoot ||
@@ -200,9 +195,7 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
             }
           );
           // }
-          // console.log(params);
           // const project = new Project();
-          // console.log(project);
           // const sourceFile = project.addSourceFileAtPath(params.resolvedPath);
           // // const result = project.emitToMemory();
           // const result = await project.emit({ emitOnlyDtsFiles: true });
