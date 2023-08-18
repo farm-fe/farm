@@ -56,6 +56,8 @@ export interface JsPlugin {
     PluginTransformHookParam,
     PluginTransformHookResult
   >;
+
+  finish?: { executor: Callback<Record<string, never>, Record<string, never>> };
 }
 
 export { rustPluginResolver } from './rustPluginResolver.js';
