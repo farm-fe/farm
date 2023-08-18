@@ -28,7 +28,7 @@ export default {
       ]
     },
     minify: false,
-    sourcemap: true,
+    sourcemap: false,
     presetEnv: false
   },
   server: {
