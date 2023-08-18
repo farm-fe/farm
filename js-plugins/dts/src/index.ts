@@ -6,7 +6,6 @@ import { Project } from 'ts-morph';
 import glob from 'fast-glob';
 
 import {
-  getResolvedOptions,
   handleExclude,
   handleInclude,
   mergeObjects,
@@ -22,8 +21,6 @@ import type { SourceFile, CompilerOptions } from 'ts-morph';
 import path, { relative, resolve } from 'node:path';
 
 const noneExport = 'export {};\n';
-const vueRE = /\.vue$/;
-const svelteRE = /\.svelte$/;
 const tsRE = /\.(m|c)?tsx?$/;
 const jsRE = /\.(m|c)?jsx?$/;
 const dtsRE = /\.d\.(m|c)?tsx?$/;
@@ -31,21 +28,29 @@ const tjsRE = /\.(m|c)?(t|j)sx?$/;
 export default function farmDtsPlugin(options: any = {}): JsPlugin {
   // options hooks to get farmConfig
   let farmConfig: UserConfig['compilation'];
+  const {
+    tsConfigFilePath = 'tsconfig.json',
+    tsconfigPath = 'tsconfig.json',
+    aliasesExclude = [],
+    staticImport = false,
+    clearPureImport = true,
+    insertTypesEntry = false,
+    noEmitOnError = false,
+    skipDiagnostics = false,
+    copyDtsFiles = false
+  } = options;
   let useFlag: boolean = false;
-  const resolvedOptions = getResolvedOptions(options);
-  const { tsconfigPath = 'tsconfig.json', noEmitOnError = false } =
-    resolvedOptions;
   let root = ensureAbsolute(options.root ?? '', process.cwd());
   let publicRoot = '';
   let entryRoot = options.entryRoot ?? '';
   let libFolderPath: string;
-  let compilerOptions = resolvedOptions.compilerOptions ?? {};
+  let compilerOptions = options.compilerOptions ?? {};
   let project: Project | undefined;
   let outputDirs: string[];
   let tsConfigPath: string;
   let allowJs = false;
-  let exclude = handleExclude(resolvedOptions);
-  let include: any = handleInclude(resolvedOptions);
+  // let exclude = handleExclude(options);
+  // let include: any = handleInclude(options);
   const sourceDtsFiles = new Set<SourceFile>();
   const outputFiles = new Map<string, string>();
   const emittedFiles = new Map<string, string>();
@@ -101,121 +106,101 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
       async executor(params: any, ctx: any) {
         const { resolvedPath } = params;
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
-
-        return {
-          content: data,
-          moduleType: 'dts'
-        };
-      }
-    },
-    transform: {
-      filters: {
-        // resolvedPaths: ['.ts$'],
-        moduleTypes: ['dts']
-      },
-      async executor(params: any, ctx: any) {
         if (project) {
           project.createSourceFile(
             params.resolvedPath,
             await fs.readFile(params.resolvedPath, 'utf-8'),
             { overwrite: true }
           );
+          // TODO never use 好像就不需要了
           const files = await glob(['src/**', '*.d.ts'], {
             cwd: root,
             absolute: true,
             ignore: ['node_modules/**']
           });
+
           for (const file of files) {
-            if (dtsRE.test(file)) {
-              sourceDtsFiles.add(project.addSourceFileAtPath(file));
+            // if (dtsRE.test(file)) {
+            sourceDtsFiles.add(project.addSourceFileAtPath(file));
 
-              // if (!copyDtsFiles) {
-              //   continue;
-              // }
-
-              // includedFiles.add(file);
-              // continue;
+            if (!copyDtsFiles) {
+              continue;
             }
+
+            // includedFiles.add(file);
+            continue;
+            // }
           }
-          // project.resolveSourceFileDependencies();
-          // sourceDtsFiles.add(project.addSourceFileAtPath(params.resolvedPath));
-          // project.resolveSourceFileDependencies();
-          const dtsOutputFiles = Array.from(sourceDtsFiles).map(
-            (sourceFile) => ({
-              path: sourceFile.getFilePath(),
-              content: sourceFile.getFullText()
-            })
-          );
-
-          try {
-            const diagnostics = project.getPreEmitDiagnostics();
-          } catch (error) {
-            console.log(error);
-          }
-          project.resolveSourceFileDependencies();
-          const service = project.getLanguageService();
-          const outputFiles = project
-            .getSourceFiles()
-            .map((sourceFile: any) =>
-              service
-                .getEmitOutput(sourceFile, true)
-                .getOutputFiles()
-                .map((outputFile: any) => {
-                  return {
-                    path: resolve(
-                      root,
-                      relative(
-                        farmConfig.output.path,
-                        path.normalize(outputFile.compilerObject.name)
-                      )
-                    ),
-                    content: outputFile.getText()
-                  };
-                })
-            )
-            .flat()
-            .concat(dtsOutputFiles);
-
-          entryRoot =
-            entryRoot ||
-            queryPublicPath(outputFiles.map((file: any) => file.path));
-          entryRoot = ensureAbsolute(entryRoot, root);
-          await runParallel(
-            os.cpus().length,
-            outputFiles,
-            async (outputFile: any) => {
-              let filePath = outputFile.path;
-
-              filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
-              let content = outputFile.content;
-
-              if (filePath.endsWith('.d.ts')) {
-                writeFileWithCheck(filePath, content);
-              }
-            }
-          );
-          // }
-          // const project = new Project();
-          // const sourceFile = project.addSourceFileAtPath(params.resolvedPath);
-          // // const result = project.emitToMemory();
-          // const result = await project.emit({ emitOnlyDtsFiles: true });
-          // // const dtsFile
-          // const project = new Project({
-          //   compilerOptions: { outDir: 'dist', declaration: true }
-          // });
-          // project.createSourceFile('MyFile.ts', params.content);
-          // project.createSourceFile(params.resolvedPath, params.content);
-          // project.emit(); // async
-          // const dtsFile = sourceFile
-          //   .emitToMemory()
-          //   .getFiles()
-          //   .find((f) => f.filePath.endsWith('.d.ts'))!;
-          // console.log(dtsFile.text);
         }
         return {
-          content: params.content,
+          content: data,
           moduleType: 'ts'
         };
+      }
+    },
+    finish: {
+      async executor() {
+        console.log('我要开始构建了啊');
+        console.log(sourceDtsFiles.size);
+
+        const dtsOutputFiles = Array.from(sourceDtsFiles).map((sourceFile) => ({
+          path: sourceFile.getFilePath(),
+          content: sourceFile.getFullText()
+        }));
+
+        try {
+          const diagnostics = project.getPreEmitDiagnostics();
+        } catch (error) {
+          console.log(error);
+        }
+        project.resolveSourceFileDependencies();
+        const service = project.getLanguageService();
+        console.log(
+          project.getSourceFiles().slice(0, 8)
+          // .map((file) => service.getEmitOutput(file, true).getOutputFiles())
+        );
+
+        const outputFiles = project
+          .getSourceFiles()
+          .map((sourceFile: any) =>
+            service
+              .getEmitOutput(sourceFile, true)
+              .getOutputFiles()
+              .map((outputFile: any) => {
+                return {
+                  path: resolve(
+                    root,
+                    relative(
+                      farmConfig.output.path,
+                      path.normalize(outputFile.compilerObject.name)
+                    )
+                  ),
+                  content: outputFile.getText()
+                };
+              })
+          )
+          .flat();
+        // .concat(dtsOutputFiles);
+
+        entryRoot =
+          entryRoot ||
+          queryPublicPath(outputFiles.map((file: any) => file.path));
+        entryRoot = ensureAbsolute(entryRoot, root);
+        await runParallel(
+          os.cpus().length,
+          outputFiles,
+          async (outputFile: any) => {
+            let filePath = outputFile.path;
+
+            filePath = resolve(outputDirs[0], relative(entryRoot, filePath));
+            let content = outputFile.content;
+
+            if (filePath.endsWith('.d.ts')) {
+              writeFileWithCheck(filePath, content);
+            }
+          }
+        );
+        return {};
       }
     }
   };

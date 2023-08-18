@@ -798,6 +798,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:^
+        version: link:../dts
       '@types/less':
         specifier: ^3.0.3
         version: 3.0.3

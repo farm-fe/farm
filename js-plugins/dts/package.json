@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
-    "build:farn": "farm build",
+    "build:farm": "farm build",
     "start": "pnpm run build -w",
     "watch": "farm watch",
     "prepublishOnly": "npm run build",
