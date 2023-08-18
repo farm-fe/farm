@@ -38,6 +38,17 @@ export interface TransformRecord {
   result: string
   sourceMaps?: string
 }
+export interface ModuleRecord {
+  name: string
+}
+export interface AnalyzeDep {
+  source: string
+  kind: string
+}
+export interface AnalyzeDepsRecord {
+  name: string
+  deps: Array<AnalyzeDep>
+}
 export type JsCompiler = Compiler
 export class Compiler {
   constructor(config: object)
@@ -59,6 +70,8 @@ export class Compiler {
   resource(name: string): Buffer | null
   getResolveRecords(): Array<string>
   getTransformRecordsById(id: string): Array<TransformRecord>
+  getProcessRecordsById(id: string): Array<ModuleRecord>
+  getAnalyzeDepsRecordsById(id: string): Array<AnalyzeDepsRecord>
 }
 export type FileWatcher = JsFileWatcher
 export class JsFileWatcher {

@@ -183,4 +183,12 @@ export class Compiler {
   getTransformRecords(id: string) {
     return this._bindingCompiler.getTransformRecordsById(id);
   }
+
+  getProcessRecords(id: string) {
+    return this._bindingCompiler.getProcessRecordsById(id);
+  }
+
+  getAnalyzeDepsRecords(id: string) {
+    return this._bindingCompiler.getAnalyzeDepsRecordsById(id);
+  }
 }

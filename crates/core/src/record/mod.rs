@@ -2,10 +2,15 @@ use std::sync::{Arc, RwLock};
 
 use hashbrown::{HashMap, HashSet};
 
+
+use crate::plugin::PluginAnalyzeDepsHookResultEntry;
+
 /// All hook operation record are write down by [RecordManager]
 pub struct RecordManager {
   resolve_id_map: Arc<RwLock<HashMap<String, Vec<ResolveRecord>>>>,
   transform_map: Arc<RwLock<HashMap<String, Vec<TransformRecord>>>>,
+  process_map: Arc<RwLock<HashMap<String, Vec<ModuleRecord>>>>,
+  analyze_deps_map: Arc<RwLock<HashMap<String, Vec<AnalyzeDepsRecord>>>>,
 }
 
 impl RecordManager {
@@ -13,6 +18,8 @@ impl RecordManager {
     Self {
       resolve_id_map: Arc::new(RwLock::new(HashMap::new())),
       transform_map: Arc::new(RwLock::new(HashMap::new())),
+      process_map: Arc::new(RwLock::new(HashMap::new())),
+      analyze_deps_map: Arc::new(RwLock::new(HashMap::new())),
     }
   }
 
@@ -39,6 +46,29 @@ impl RecordManager {
     }
   }
 
+  pub fn add_parse_record(&self, id: String, record: ModuleRecord) {
+    let mut process_map = self.process_map.write().unwrap();
+    if process_map.get(&id).is_none() {
+      process_map.insert(id, vec![record]);
+    }
+  }
+
+  pub fn add_process_record(&self, id: String, record: ModuleRecord) {
+    let mut process_map = self.process_map.write().unwrap();
+    if let Some(records) = process_map.get_mut(&id) {
+      records.push(record);
+    }
+  }
+
+  pub fn add_analyze_deps_record(&self, id: String, record: AnalyzeDepsRecord) {
+    let mut analyze_deps_map = self.analyze_deps_map.write().unwrap();
+    if let Some(records) = analyze_deps_map.get_mut(&id) {
+      records.push(record);
+    }else {
+      analyze_deps_map.insert(id, vec![record]);
+    }
+  }
+
   pub fn get_resolve_records(&self) -> Vec<String> {
     let resolve_id_map = self.resolve_id_map.read().unwrap();
     let mut resolve_id_set = HashSet::new();
@@ -56,6 +86,25 @@ impl RecordManager {
   pub fn get_transform_records_by_id(&self, id: &str) -> Vec<TransformRecord> {
     let transform_map = self.transform_map.read().unwrap();
     match transform_map.get(id) {
+      Some(records) => records.clone(),
+      None => Vec::new(),
+    }
+  }
+
+  pub fn get_process_records_by_id(&self, id: &str) -> Vec<ModuleRecord> {
+    let process_map = self.process_map.read().unwrap();
+    let a=  self.get_analyze_deps_records_by_id(id);
+    println!("module {:?}: {:?}", id, a);
+    match process_map.get(id) {
+      Some(records) => records.clone(),
+      None => Vec::new(),
+    }
+  }
+
+  pub fn get_analyze_deps_records_by_id(&self, id: &str) -> Vec<AnalyzeDepsRecord> {
+    let analyze_deps_map: std::sync::RwLockReadGuard<'_, HashMap<String, Vec<AnalyzeDepsRecord>>> = self.analyze_deps_map.read().unwrap();
+    // println!("analyze_deps_map: {:?}", analyze_deps_map);
+    match analyze_deps_map.get(id) {
       Some(records) => records.clone(),
       None => Vec::new(),
     }
@@ -79,4 +128,15 @@ pub struct TransformRecord {
   pub name: String,
   pub result: String,
   pub source_maps: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ModuleRecord {
+  pub name: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnalyzeDepsRecord {
+  pub name: String,
+  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>
 }

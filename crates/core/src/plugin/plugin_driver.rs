@@ -16,8 +16,9 @@ use crate::{
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
   },
+  record::{ModuleRecord, ResolveRecord, TransformRecord, AnalyzeDepsRecord},
   resource::{resource_pot::ResourcePot, Resource},
-  stats::Stats, record::{ResolveRecord, TransformRecord},
+  stats::Stats,
 };
 
 pub struct PluginDriver {
@@ -93,6 +94,22 @@ macro_rules! hook_first_with_callback {
   };
 }
 
+macro_rules! hook_serial_with_callback {
+  ($func_name:ident, $param_ty:ty, $callback:expr) => {
+    pub fn $func_name(&self, param: $param_ty, context: &Arc<CompilationContext>) -> Result<()> {
+      for plugin in &self.plugins {
+        let ret = plugin.$func_name(param, context)?;
+        let plugin_name = plugin.name().to_string();
+        if ret.is_some() {
+          $callback(plugin_name, param, context);
+        }
+      }
+
+      Ok(())
+    }
+  };
+}
+
 impl PluginDriver {
   pub fn new(mut plugins: Vec<Arc<dyn Plugin>>) -> Self {
     plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
@@ -112,32 +129,45 @@ impl PluginDriver {
   hook_first_with_callback!(
     resolve,
     Result<Option<PluginResolveHookResult>>,
-    | result: &Option<PluginResolveHookResult>, plugin_name: String, param: &PluginResolveHookParam, context: &Arc<CompilationContext>, _hook_context: &PluginHookContext| {
-        context.record_manager.add_resolve_record(param.source.clone(), ResolveRecord {
+    |result: &Option<PluginResolveHookResult>,
+     plugin_name: String,
+     param: &PluginResolveHookParam,
+     context: &Arc<CompilationContext>,
+     _hook_context: &PluginHookContext| {
+      context.record_manager.add_resolve_record(
+        param.source.clone(),
+        ResolveRecord {
           name: plugin_name,
-          result: result.as_ref().unwrap().resolved_path.clone()
-        });
+          result: result.as_ref().unwrap().resolved_path.clone(),
+        },
+      );
     },
     param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
-);
+  );
 
-hook_first_with_callback!(
-  load,
-  Result<Option<PluginLoadHookResult>>,
-  | _result: &Option<PluginLoadHookResult>, plugin_name: String, param: &PluginLoadHookParam, context: &Arc<CompilationContext>, _hook_context: &PluginHookContext| {
-
-      context.record_manager.add_load_record(param.resolved_path.to_string(), TransformRecord {
-        name:plugin_name,
-        result:_result.as_ref().unwrap().content.clone(), 
-        source_maps: None
-      });
-  },
-  param: &PluginLoadHookParam,
-  context: &Arc<CompilationContext>,
-  _hook_context: &PluginHookContext
-);
+  hook_first_with_callback!(
+    load,
+    Result<Option<PluginLoadHookResult>>,
+    |_result: &Option<PluginLoadHookResult>,
+     plugin_name: String,
+     param: &PluginLoadHookParam,
+     context: &Arc<CompilationContext>,
+     _hook_context: &PluginHookContext| {
+      context.record_manager.add_load_record(
+        param.resolved_path.to_string(),
+        TransformRecord {
+          name: plugin_name,
+          result: _result.as_ref().unwrap().content.clone(),
+          source_maps: None,
+        },
+      );
+    },
+    param: &PluginLoadHookParam,
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
+  );
 
   pub fn transform(
     &self,
@@ -156,24 +186,28 @@ hook_first_with_callback!(
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
-        let plugin_name =plugin.name().to_string();
+        let plugin_name = plugin.name().to_string();
 
         if let Some(source_map) = plugin_result.source_map {
-          context.record_manager.add_transform_record(param.resolved_path.to_string(), TransformRecord {
-            name:plugin_name,
-            result: param.content.clone(), 
-            source_maps: Some(source_map.clone())
-          });
+          context.record_manager.add_transform_record(
+            param.resolved_path.to_string(),
+            TransformRecord {
+              name: plugin_name,
+              result: param.content.clone(),
+              source_maps: Some(source_map.clone()),
+            },
+          );
 
           result.source_map_chain.push(source_map);
-
         } else {
-
-          context.record_manager.add_transform_record(param.resolved_path.to_string(), TransformRecord {
-            name:plugin_name,
-            result: param.content.clone(), 
-            source_maps: None
-          });
+          context.record_manager.add_transform_record(
+            param.resolved_path.to_string(),
+            TransformRecord {
+              name: plugin_name,
+              result: param.content.clone(),
+              source_maps: None,
+            },
+          );
         }
       }
     }
@@ -184,17 +218,49 @@ hook_first_with_callback!(
     Ok(result)
   }
 
-  hook_first!(
+  hook_first_with_callback!(
     parse,
     Result<Option<ModuleMetaData>>,
+    |_result: &Option<ModuleMetaData>,
+     plugin_name: String,
+     param: &PluginParseHookParam,
+     context: &Arc<CompilationContext>,
+     _hook_context: &PluginHookContext| {
+      context.record_manager.add_parse_record(
+        param.resolved_path.to_string(),
+        ModuleRecord { name: plugin_name },
+      );
+    },
     param: &PluginParseHookParam,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
   );
 
-  hook_serial!(process_module, &mut PluginProcessModuleHookParam);
+  hook_serial_with_callback!(
+    process_module,
+    &mut PluginProcessModuleHookParam,
+    |plugin_name: String,
+     param: &mut PluginProcessModuleHookParam,
+     context: &Arc<CompilationContext>| {
+      context.record_manager.add_process_record(
+        param.module_id.resolved_path(&context.config.root),
+        ModuleRecord { name: plugin_name },
+      );
+    }
+  );
 
-  hook_serial!(analyze_deps, &mut PluginAnalyzeDepsHookParam);
+  hook_serial_with_callback!(
+    analyze_deps,
+    &mut PluginAnalyzeDepsHookParam,
+    |plugin_name: String,
+     param: &mut PluginAnalyzeDepsHookParam,
+     context: &Arc<CompilationContext>| {
+      context.record_manager.add_analyze_deps_record(param.module.id.resolved_path(&context.config.root), AnalyzeDepsRecord {
+        name: plugin_name,
+        deps: param.deps.clone()
+      });
+    }
+  );
 
   hook_serial!(finalize_module, &mut PluginFinalizeModuleHookParam);
 

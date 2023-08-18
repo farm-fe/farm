@@ -359,7 +359,7 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PluginAnalyzeDepsHookResultEntry {
   pub source: String,
   pub kind: ResolveKind,
