@@ -70,11 +70,12 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
         : [ensureAbsolute(config.output.path, root)];
 
       tsConfigPath = resolveAbsolutePath(tsconfigPath, root);
-      libFolderPath = resolveAbsolutePath(libFolderPath, root);
-      project = new Project({
+      // libFolderPath = resolveAbsolutePath(libFolderPath, root);
+      libFolderPath = undefined;
+      const oo = {
         compilerOptions: mergeObjects(compilerOptions, {
           rootDir: compilerOptions.rootDir || root,
-          noEmitOnError,
+          noEmitOnError: false,
           outDir: outputDirs[0],
           // #27 declarationDir option will make no declaration file generated
           declarationDir: undefined,
@@ -90,7 +91,10 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
         tsConfigFilePath: tsConfigPath,
         skipAddingFilesFromTsConfig: true,
         libFolderPath
-      });
+      };
+      project = new Project(oo);
+      console.log(oo);
+
       allowJs = project.getCompilerOptions().allowJs ?? false;
       const tsConfig = getTsConfig(
         tsConfigPath,
@@ -105,35 +109,51 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
       },
       async executor(params: any, ctx: any) {
         const { resolvedPath } = params;
+        // console.log('load', params.resolvedPath);
         const data = await fs.promises.readFile(resolvedPath, 'utf-8');
         if (project) {
-          project.createSourceFile(
-            params.resolvedPath,
-            await fs.readFile(params.resolvedPath, 'utf-8'),
-            { overwrite: true }
-          );
+          // project.createSourceFile(
+          //   params.resolvedPath,
+          //   await fs.readFile(params.resolvedPath, 'utf-8'),
+          //   { overwrite: true }
+          // );
           // TODO never use 好像就不需要了
-          const files = await glob(['src/**', '*.d.ts'], {
-            cwd: root,
-            absolute: true,
-            ignore: ['node_modules/**']
-          });
-
-          for (const file of files) {
-            // if (dtsRE.test(file)) {
-            sourceDtsFiles.add(project.addSourceFileAtPath(file));
-
-            if (!copyDtsFiles) {
-              continue;
-            }
-
-            // includedFiles.add(file);
-            continue;
-            // }
-          }
+          // const files = await glob(['src/**', '*.d.ts'], {
+          //   cwd: root,
+          //   absolute: true,
+          //   ignore: ['node_modules/**']
+          // });
+          // for (const file of files) {
+          //   // if (dtsRE.test(file)) {
+          //   sourceDtsFiles.add(project.addSourceFileAtPath(file));
+          //   if (!copyDtsFiles) {
+          //     continue;
+          //   }
+          //   // includedFiles.add(file);
+          //   continue;
+          //   // }
+          // }
         }
         return {
           content: data,
+          moduleType: 'dts'
+        };
+      }
+    },
+    transform: {
+      filters: {
+        // resolvedPaths: ['.ts$'],
+        moduleTypes: ['dts']
+      },
+      async executor(params: any, ctx: any) {
+        console.log(params.resolvedPath);
+        project.createSourceFile(
+          params.resolvedPath,
+          await fs.readFile(params.resolvedPath, 'utf-8'),
+          { overwrite: true }
+        );
+        return {
+          content: params.content,
           moduleType: 'ts'
         };
       }
@@ -141,46 +161,41 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
     finish: {
       async executor() {
         console.log('我要开始构建了啊');
-        console.log(sourceDtsFiles.size);
+        // console.log(sourceDtsFiles.size);
 
-        const dtsOutputFiles = Array.from(sourceDtsFiles).map((sourceFile) => ({
-          path: sourceFile.getFilePath(),
-          content: sourceFile.getFullText()
-        }));
+        // const dtsOutputFiles = Array.from(sourceDtsFiles).map((sourceFile) => ({
+        //   path: sourceFile.getFilePath(),
+        //   content: sourceFile.getFullText()
+        // }));
 
         try {
           const diagnostics = project.getPreEmitDiagnostics();
         } catch (error) {
           console.log(error);
         }
-        project.resolveSourceFileDependencies();
-        const service = project.getLanguageService();
-        console.log(
-          project.getSourceFiles().slice(0, 8)
-          // .map((file) => service.getEmitOutput(file, true).getOutputFiles())
-        );
+        const startTime = Date.now();
+        // project.resolveSourceFileDependencies();
+        // console.log(project.getSourceFiles());
+        const outputDir = outputDirs[0];
 
+        const service = project.getLanguageService();
         const outputFiles = project
           .getSourceFiles()
-          .map((sourceFile: any) =>
+          .map((sourceFile) =>
             service
               .getEmitOutput(sourceFile, true)
               .getOutputFiles()
-              .map((outputFile: any) => {
-                return {
-                  path: resolve(
-                    root,
-                    relative(
-                      farmConfig.output.path,
-                      path.normalize(outputFile.compilerObject.name)
-                    )
-                  ),
-                  content: outputFile.getText()
-                };
-              })
+              .map((outputFile) => ({
+                path: resolve(
+                  root,
+                  relative(outputDir, outputFile.compilerObject.name)
+                ),
+                content: outputFile.getText()
+              }))
           )
           .flat();
         // .concat(dtsOutputFiles);
+        // console.log('outputFiles', outputFiles);
 
         entryRoot =
           entryRoot ||

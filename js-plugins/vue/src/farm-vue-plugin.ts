@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { parse } from '@vue/compiler-sfc';
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import { handleHmr } from './farm-vue-hmr.ts';
-import {
+import { handleHmr } from './farm-vue-hmr.js';
+import type {
   StylesCodeCache,
   CacheDescriptor,
   PreProcessors,
@@ -11,8 +11,8 @@ import {
   PreProcessorsOptions,
   ValueOf,
   FarmVuePluginOptions
-} from './farm-vue-types.ts';
-import { genMainCode } from './generatorCode.ts';
+} from './farm-vue-types.js';
+import { genMainCode } from './generatorCode.js';
 import {
   callWithErrorHandle,
   error,
@@ -23,7 +23,7 @@ import {
   isSass,
   isStyl,
   loadPreProcessor
-} from './utils.ts';
+} from './utils.js';
 import { compileStyle } from '@vue/compiler-sfc';
 
 // apply style langs
