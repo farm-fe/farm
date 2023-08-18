@@ -4,14 +4,15 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   plugin::{
-    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
-    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult, DEFAULT_PRIORITY,
+    EmptyPluginHookParam, Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
+    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+    PluginTransformHookResult, DEFAULT_PRIORITY,
   },
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
 use self::thread_safe_js_plugin_hook::{
-  JsPluginLoadHook, JsPluginResolveHook, JsPluginTransformHook,
+  JsPluginFinishHook, JsPluginLoadHook, JsPluginResolveHook, JsPluginTransformHook,
 };
 
 pub mod context;
@@ -23,6 +24,7 @@ pub struct JsPluginAdapter {
   js_resolve_hook: Option<JsPluginResolveHook>,
   js_load_hook: Option<JsPluginLoadHook>,
   js_transform_hook: Option<JsPluginTransformHook>,
+  js_finish_hook: Option<JsPluginFinishHook>,
 }
 
 impl JsPluginAdapter {
@@ -35,6 +37,7 @@ impl JsPluginAdapter {
     let load_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "load").ok();
     let transform_hook_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "transform").ok();
+    let finish_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "finish").ok();
 
     // TODO calculating hooks should execute
     Ok(Self {
@@ -43,6 +46,7 @@ impl JsPluginAdapter {
       js_resolve_hook: resolve_hook_obj.map(|obj| JsPluginResolveHook::new(env, obj)),
       js_load_hook: load_hook_obj.map(|obj| JsPluginLoadHook::new(env, obj)),
       js_transform_hook: transform_hook_obj.map(|obj| JsPluginTransformHook::new(env, obj)),
+      js_finish_hook: finish_hook_obj.map(|obj| JsPluginFinishHook::new(env, obj)),
     })
   }
 }
@@ -92,6 +96,19 @@ impl Plugin for JsPluginAdapter {
     if let Some(js_transform_hook) = &self.js_transform_hook {
       let cp = param.clone();
       js_transform_hook.call(cp, context.clone())
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn finish(
+    &self,
+    _stat: &farmfe_core::stats::Stats,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(js_finish_hook) = &self.js_finish_hook {
+      js_finish_hook.call(EmptyPluginHookParam {}, context.clone())?;
+      Ok(Some(()))
     } else {
       Ok(None)
     }

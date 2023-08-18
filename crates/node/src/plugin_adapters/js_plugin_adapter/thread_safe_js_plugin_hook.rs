@@ -14,8 +14,9 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::ModuleType,
   plugin::{
-    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
-    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
+    EmptyPluginHookParam, EmptyPluginHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookParam, PluginTransformHookResult,
   },
   serde::{de::DeserializeOwned, Serialize},
 };
@@ -323,6 +324,32 @@ impl JsPluginTransformHook {
     } else {
       Ok(None)
     }
+  }
+}
+
+pub struct JsPluginFinishHook {
+  tsfn: ThreadSafeJsPluginHook,
+}
+
+impl JsPluginFinishHook {
+  pub fn new(env: &Env, obj: JsObject) -> Self {
+    let func = obj
+      .get_named_property::<JsFunction>("executor")
+      .expect("executor should be checked in js side");
+
+    Self {
+      tsfn: ThreadSafeJsPluginHook::new::<EmptyPluginHookParam, EmptyPluginHookResult>(env, func),
+    }
+  }
+
+  pub fn call(
+    &self,
+    param: EmptyPluginHookParam,
+    ctx: Arc<CompilationContext>,
+  ) -> Result<Option<EmptyPluginHookResult>> {
+    self
+      .tsfn
+      .call::<EmptyPluginHookParam, EmptyPluginHookResult>(param, ctx, None)
   }
 }
 
