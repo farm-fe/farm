@@ -42,6 +42,7 @@
     "hasher",
     "idents",
     "jridgewell",
+    "kolorist",
     "libfarmfe",
     "libloading",
     "loglevel",
