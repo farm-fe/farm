@@ -33,6 +33,7 @@
     "egui",
     "elems",
     "esbuild",
+    "importee",
     "execa",
     "farmfe",
     "Fock",
