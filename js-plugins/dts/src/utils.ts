@@ -9,6 +9,7 @@ import path, {
 import { existsSync, lstatSync, readdirSync, rmdirSync } from 'node:fs';
 
 import typescript from 'typescript';
+import extra from 'fs-extra';
 
 import crypto from 'crypto';
 import fs from 'node:fs';
@@ -17,6 +18,7 @@ import { CompilerOptions } from 'ts-morph';
 import { throwError } from './options.js';
 
 const windowsSlashRE = /\\+/g;
+const globSuffixRE = /^((?:.*\.[^.]+)|(?:\*+))$/;
 
 // @ts-ignore
 export function warn({ id, message }) {
@@ -348,4 +350,37 @@ export async function runParallel<T>(
   }
 
   return Promise.all(ret);
+}
+
+export async function tryToReadFileSync(path: string) {
+  try {
+    return await fs.promises.readFile(path, 'utf-8');
+  } catch (error) {
+    console.error(`[Farm Plugin Dts]: ${error.type}: ${error.message}`);
+  }
+}
+
+export function normalizeGlob(path: string) {
+  if (/[\\/]$/.test(path)) {
+    return path + '**';
+  } else if (!globSuffixRE.test(path.split(/[\\/]/).pop()!)) {
+    return path + '/**';
+  }
+
+  return path;
+}
+
+export async function writeFileWithCheck(filePath: string, content: string) {
+  // 获取文件夹路径
+  const folderPath = path.dirname(filePath);
+  try {
+    // 检查文件夹是否存在
+    await extra.access(folderPath);
+  } catch (error) {
+    // 如果文件夹不存在，则创建它
+    await extra.mkdir(folderPath, { recursive: true });
+  }
+
+  // 写文件
+  await extra.writeFile(filePath, content, 'utf-8');
 }
