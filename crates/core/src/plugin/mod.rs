@@ -403,3 +403,9 @@ pub struct PluginUpdateModulesHookParams {
   pub update_result: UpdateResult,
   pub paths: Vec<(String, UpdateType)>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmptyPluginHookParam {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmptyPluginHookResult {}
