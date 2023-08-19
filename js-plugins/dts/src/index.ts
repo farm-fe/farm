@@ -124,9 +124,8 @@ export default function farmDtsPlugin(options: any = {}): JsPlugin {
       }
     },
     finish: {
-      async executor() {
+      executor() {
         ctx.handleCloseBundle();
-        return {};
       }
     }
   };

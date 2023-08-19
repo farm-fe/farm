@@ -4,7 +4,7 @@
   "description": "support vue sfc for farm.",
   "main": "./build/index.cjs",
   "module": "./dist/farm-vue-plugin.js",
-  "types": "./dist/farm-vue-plugin.d.ts",
+  "types": "./build/farm-vue-plugin.d.ts",
   "type": "module",
   "scripts": {
     "start": "tsc -w",
