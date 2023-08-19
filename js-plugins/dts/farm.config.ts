@@ -9,7 +9,7 @@ export default {
       index: './src/index.ts'
     },
     output: {
-      path: 'dist',
+      path: 'build',
       filename: 'index.[ext]',
       targetEnv: 'node'
     },

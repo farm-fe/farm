@@ -15,6 +15,7 @@ import {
   queryPublicPath,
   resolveAbsolutePath,
   runParallel,
+  tryToReadFileSync,
   writeFileWithCheck
 } from './utils.js';
 export default class Context {
@@ -92,6 +93,12 @@ export default class Context {
       tsConfigOptions,
       tsConfigPath
     };
+  }
+
+  async handleTransform(id: string) {
+    this.project.createSourceFile(id, await tryToReadFileSync(id), {
+      overwrite: true
+    });
   }
 
   async handleCloseBundle() {
