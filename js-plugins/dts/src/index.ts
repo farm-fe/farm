@@ -2,9 +2,13 @@ import type { JsPlugin } from '@farmfe/core';
 
 import Context from './context.js';
 import { tryToReadFileSync } from './utils.js';
-export default function farmDtsPlugin(options: any = {}): JsPlugin {
+
+import type { DtsPluginOptions } from './types.js';
+
+export default function farmDtsPlugin(options: DtsPluginOptions): JsPlugin {
   const ctx = new Context();
-  // TODO support vue other file type
+  // TODO support vue other framework file type
+  // TODO support alias
   return {
     name: 'farm-dts-plugin',
     priority: 1000,

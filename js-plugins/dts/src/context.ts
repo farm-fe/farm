@@ -172,19 +172,12 @@ export default class Context {
     entryRoot =
       entryRoot || queryPublicPath(outputFiles.map((file: any) => file.path));
     entryRoot = ensureAbsolute(entryRoot, this.options.root);
-    await runParallel(
-      os.cpus().length,
-      outputFiles,
-      async (outputFile: any) => {
-        let filePath = outputFile.path;
-        filePath = resolve(
-          this.options.outputDir,
-          relative(entryRoot, filePath)
-        );
-        let content = outputFile.content;
-        writeFileWithCheck(filePath, content);
-      }
-    );
+    await runParallel(os.cpus().length, outputFiles, async (outputFile) => {
+      let filePath = outputFile.path;
+      filePath = resolve(this.options.outputDir, relative(entryRoot, filePath));
+      let content = outputFile.content;
+      writeFileWithCheck(filePath, content);
+    });
     const endTime = performance.now();
     const elapsedTime = Math.floor(endTime - startTime);
     this.logger.info(

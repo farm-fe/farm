@@ -33,5 +33,7 @@ export default {
   server: {
     hmr: false
   },
-  plugins: [farmDtsPlugin()]
+  plugins: [farmDtsPlugin({
+    outputDir: 'build'
+  })]
 };
