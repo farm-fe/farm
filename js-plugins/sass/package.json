@@ -3,12 +3,12 @@
   "version": "2.0.0",
   "description": "support scss compile for farm.",
   "main": "./build/index.cjs",
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/index.cjs",
-      "types": "./dist/src/index.d.ts",
+      "types": "./dist/index.d.ts",
       "require": "./build/index.cjs"
     },
     "./package.json": "./package.json"
@@ -32,8 +32,9 @@
     }
   ],
   "scripts": {
-    "build": "rimraf dist && farm build && tsc -p ./tsconfig.build.json",
+    "build": "pnpm run clean && farm build && tsc -p ./tsconfig.build.json",
     "start": "pnpm run build -w",
+    "clean": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
