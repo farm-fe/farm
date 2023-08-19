@@ -34,16 +34,5 @@ export default {
   server: {
     hmr: false
   },
-  plugins: [
-    farmDtsPlugin({
-      // libFolderPath: '../../node_modules/typescript/lib',
-      // outputDir: ['dist', 'types'],
-      // // include: ['src/index.ts'],
-      // // aliasesExclude: [/^@components/],
-      // staticImport: true,
-      // skipDiagnostics: false,
-      // // rollupTypes: true,
-      // insertTypesEntry: true
-    })
-  ]
+  plugins: [farmDtsPlugin()]
 };
