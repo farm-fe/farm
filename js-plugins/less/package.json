@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "support less compile for farm.",
   "main": "./build/index.cjs",
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "default": "./build/index.cjs",
       "import": "./build/index.cjs",
-      "types": "./dist/src/index.d.ts",
+      "types": "./dist/index.d.ts",
       "require": "./build/index.cjs"
     },
     "./package.json": "./package.json"
@@ -27,9 +27,10 @@
     "email": "1357711537@qq.com"
   },
   "scripts": {
-    "build": "rimraf dist && farm build && tsc -p ./tsconfig.build.json",
+    "build": "pnpm run clean && farm build && tsc -p ./tsconfig.build.json",
     "start": "pnpm run build -w",
     "prepublishOnly": "npm run build",
+    "clean": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
   "files": [

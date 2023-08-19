@@ -1,8 +1,9 @@
 import fs from 'fs';
 import { createRequire } from 'module';
-import { throwError } from './options.js';
 
 const __require = createRequire(__filename);
+
+export const { name: pluginName } = __require('../package.json');
 
 export function getLessImplementation(implementation?: string) {
   let resolvedImplementation;
@@ -23,4 +24,8 @@ export async function tryRead(filename: string) {
   } catch (e) {
     throwError('readFile', e);
   }
+}
+
+export function throwError(type: string, error: Error) {
+  console.error(`[${pluginName} ${type} Error] ${error}`);
 }

@@ -1,10 +1,11 @@
 import { isAbsolute, join } from 'path';
-import type { SassPluginOptions } from './index.js';
 import fs from 'fs';
+import { createRequire } from 'module';
+import type { SassPluginOptions } from './index.js';
 
-import pkg from '../package.json';
+const __require = createRequire(__dirname);
 
-export const pluginName = pkg.name;
+export const { name: pluginName } = __require('../package.json');
 
 export const getAdditionContext = (cwd: string, option: SassPluginOptions) => {
   const { globals = [], content } = option;

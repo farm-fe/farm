@@ -36,7 +36,7 @@
     "start": "pnpm --filter @farmfe/cli start",
     "build": "pnpm --filter @farmfe/cli build",
     "release": "node scripts/release.mjs",
-    "clean": "rimraf node_modules **/*/node_modules",
+    "clean": "rimraf node_modules **/*/node_modules && pnpm -r exec --parallel run clean",
     "bump": "node scripts/bump.mjs",
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler"
   },
