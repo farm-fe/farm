@@ -69,16 +69,7 @@ export interface DtsPluginOptions {
   libFolderPath?: string;
 
   /**
-   * Specify the log level of plugin
-   *
-   * By Default it base on 'logLevel' option of your vite config
-   */
-  /**
-   * After emit diagnostic hook
-   *
    * According to the length to judge whether there is any type error
-   *
-   * @default () => {}
    */
   afterDiagnostic?: (diagnostics: Diagnostic[]) => void | Promise<void>;
 }
