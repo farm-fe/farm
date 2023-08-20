@@ -13,8 +13,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "start": "farm build -w",
-    "build": "farm build && tsc --emitDeclarationOnly",
-    "build:farm": "farm build",
+    "build": "farm build",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

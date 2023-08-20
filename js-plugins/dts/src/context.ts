@@ -25,7 +25,7 @@ export default class Context {
   include: string[];
   exclude: string[];
   logger = new DefaultLogger();
-  handleResolveOptions(options: any, config: any) {
+  handleResolveOptions(options: any = {}, config: any) {
     this.config = config;
     let libFolderPath: string;
     const defaultOption: any = {
@@ -39,6 +39,7 @@ export default class Context {
       copyDtsFiles: false,
       afterDiagnostic: () => {}
     };
+
     const userOptions = mergeObjects(defaultOption, options);
     const isDev = this.config.mode === 'development';
     const root = this.config.root || process.cwd();

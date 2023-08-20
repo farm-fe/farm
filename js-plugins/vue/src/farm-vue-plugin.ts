@@ -3,7 +3,7 @@ import path from 'path';
 import { parse } from '@vue/compiler-sfc';
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { handleHmr } from './farm-vue-hmr.js';
-import type {
+import {
   StylesCodeCache,
   CacheDescriptor,
   PreProcessors,

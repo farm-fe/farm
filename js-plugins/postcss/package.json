@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "support postcss for farm.",
   "main": "./build/index.cjs",
-  "types": "./dist/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "default": "./build/index.cjs",
       "import": "./build/index.cjs",
-      "types": "./dist/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/index.cjs"
     },
     "./package.json": "./package.json"
@@ -27,7 +27,7 @@
     "email": "1521488775@qq.com"
   },
   "scripts": {
-    "build": "pnpm run clean && farm build && tsc -p ./tsconfig.build.json",
+    "build": "pnpm run clean && farm build",
     "start": "pnpm run build -w",
     "clean": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",
@@ -42,6 +42,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:^0.11.0",
+    "@farmfe/js-plugin-dts": "workspace:*",
     "postcss": "^8.4.24",
     "postcss-load-config": "^4.0.1",
     "fast-glob": "^3.3.1"
