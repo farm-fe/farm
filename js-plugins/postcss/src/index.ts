@@ -43,39 +43,47 @@ export default function farmPostcssPlugin(
     transform: {
       filters: { moduleTypes: ['css'] },
       async executor(param) {
-        const { css, map, messages } = await postcssProcessor.process(
-          param.content,
-          {
-            ...postcssOptions,
-            from: param.resolvedPath,
-            map: Boolean(
-              options.sourceMap ?? farmConfig?.compilation?.sourcemap
-            )
-          }
-        );
-
-        // record CSS dependencies from @imports
-        if (process.env.NODE_ENV === 'development') {
-          for (const message of messages) {
-            if (message.type === 'dependency') {
-              devServer.addWatchFile(param.resolvedPath, [message.file]);
-            } else if (message.type === 'dir-dependency') {
-              const { dir, glob: globPattern = '**' } = message;
-              // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies
-              const files = glob.sync(path.join(dir, globPattern), {
-                ignore: ['**/node_modules/**']
-              });
-              devServer.addWatchFile(param.resolvedPath, files);
-            } else if (message.type === 'warning') {
-              console.warn(`[${pluginName}] ${message.text}`);
+        try {
+          const { css, map, messages } = await postcssProcessor.process(
+            param.content,
+            {
+              ...postcssOptions,
+              from: param.resolvedPath,
+              map: Boolean(
+                options.sourceMap ?? farmConfig?.compilation?.sourcemap
+              )
+            }
+          );
+          // record CSS dependencies from @imports
+          if (process.env.NODE_ENV === 'development') {
+            for (const message of messages) {
+              if (message.type === 'dependency') {
+                devServer.addWatchFile(param.resolvedPath, [
+                  message.file as string
+                ]);
+              } else if (message.type === 'dir-dependency') {
+                const { dir, glob: globPattern = '**' } = message;
+                // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies
+                const files = glob.sync(path.join(dir, globPattern), {
+                  ignore: ['**/node_modules/**']
+                });
+                devServer.addWatchFile(param.resolvedPath, files);
+              } else if (message.type === 'warning') {
+                console.warn(`[${pluginName}] ${message.text}`);
+              }
             }
           }
+          return {
+            content: css,
+            moduleType: 'css',
+            sourceMap: options.sourceMap && JSON.stringify(map.toJSON())
+          };
+        } catch (error) {
+          console.error(`[${pluginName}] ${error}`);
         }
-
         return {
-          content: css,
-          moduleType: 'css',
-          sourceMap: options.sourceMap && JSON.stringify(map.toJSON())
+          content: '',
+          moduleType: 'css'
         };
       }
     }
