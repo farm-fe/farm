@@ -16,7 +16,7 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
-  plugin::UpdateType,
+  plugin::UpdateType
 };
 
 use napi::{
@@ -52,6 +52,31 @@ pub struct JsUpdateResult {
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<String, Vec<Vec<String>>>>,
   pub extra_watch_result: WatchDiffResult,
+}
+
+#[napi(object, js_name = "TransformRecord")]
+pub struct JsTransformRecord {
+  pub name: String,
+  pub result: String,
+  pub source_maps: Option<String>,
+}
+
+#[napi(object, js_name = "ModuleRecord")]
+pub struct JsModuleRecord {
+  pub name: String,
+}
+
+#[napi(object, js_name = "AnalyzeDep")]
+pub struct JsAnalyzeDep {
+  pub source: String,
+  pub kind: String,
+}
+
+#[napi(object, js_name = "AnalyzeDepsRecord")]
+
+pub struct JsAnalyzeDepsRecord {
+  pub name: String,
+  pub deps: Vec<JsAnalyzeDep>
 }
 
 #[napi(js_name = "Compiler")]
@@ -319,6 +344,61 @@ impl JsCompiler {
     let resources = context.resources_map.lock();
 
     resources.get(&name).map(|r| r.bytes.clone().into())
+  }
+
+  #[napi]
+  pub fn get_resolve_records(&self) -> Vec<String> {
+    let context = self.compiler.context();
+    let record_manager = &context.record_manager;
+    record_manager.get_resolve_records()
+  }
+
+  #[napi]
+  pub fn get_transform_records_by_id(&self, id: String) -> Vec<JsTransformRecord> {
+    let context = self.compiler.context();
+    let record_manager = &context.record_manager;
+    let transform_records = record_manager.get_transform_records_by_id(&id);
+    let js_transform_records: Vec<JsTransformRecord> = transform_records
+      .into_iter()
+      .map(|record| JsTransformRecord {
+        name: record.name,
+        result: record.result,
+        source_maps: record.source_maps,
+      })
+      .collect();
+    js_transform_records
+  }
+
+  #[napi]
+  pub fn get_process_records_by_id(&self, id: String) -> Vec<JsModuleRecord> {
+    let context = self.compiler.context();
+    let record_manager = &context.record_manager;
+    let process_records = record_manager.get_process_records_by_id(&id);
+    let js_process_records: Vec<JsModuleRecord> = process_records
+      .into_iter()
+      .map(|record| JsModuleRecord {
+        name: record.name,
+      })
+      .collect();
+    js_process_records
+  }
+
+  #[napi]
+  pub fn get_analyze_deps_records_by_id(&self, id: String) -> Vec<JsAnalyzeDepsRecord> {
+    let context = self.compiler.context();
+    let record_manager = &context.record_manager;
+    let analyze_deps_records = record_manager.get_analyze_deps_records_by_id(&id);
+    let js_analyze_deps_records: Vec<JsAnalyzeDepsRecord> = analyze_deps_records
+      .into_iter()
+      .map(|record| JsAnalyzeDepsRecord {
+        name: record.name,
+        deps: record.deps.into_iter().map(|dep| JsAnalyzeDep {
+          source: dep.source,
+          kind: String::from(dep.kind)
+        }).collect()
+      })
+      .collect();
+    js_analyze_deps_records
   }
 }
 

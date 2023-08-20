@@ -12,6 +12,7 @@ use crate::{
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph},
   plugin::{plugin_driver::PluginDriver, Plugin},
   resource::{resource_pot_map::ResourcePotMap, Resource},
+  record::RecordManager,
 };
 
 /// Shared context through the whole compilation.
@@ -25,6 +26,7 @@ pub struct CompilationContext {
   pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
   pub cache_manager: Box<CacheManager>,
   pub meta: Box<ContextMetaData>,
+  pub record_manager: Box<RecordManager>
 }
 
 impl CompilationContext {
@@ -39,6 +41,7 @@ impl CompilationContext {
       plugin_driver: Box::new(PluginDriver::new(plugins)),
       cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
+      record_manager: Box::new(RecordManager::new()),
     })
   }
 
