@@ -5,15 +5,13 @@ import { builtinModules } from 'module';
  */
 export default {
   compilation: {
-    minify: false,
-    presetEnv: false,
     input: {
       index: './src/index.ts'
     },
     output: {
-      entryFilename: '[entryName].cjs',
-      targetEnv: 'node',
-      format: 'cjs'
+      path: 'build',
+      filename: 'index.[ext]',
+      targetEnv: 'node'
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
@@ -22,11 +20,15 @@ export default {
     partialBundling: {
       moduleBuckets: [
         {
-          name: 'index.js',
+          name: 'node.bundle.js',
           test: ['.+']
         }
       ]
-    }
+    },
+    minify: false,
+    sourcemap: false,
+    presetEnv: false,
+    treeShaking: false
   },
   server: {
     hmr: false

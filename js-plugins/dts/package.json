@@ -1,0 +1,30 @@
+{
+  "name": "@farmfe/js-plugin-dts",
+  "version": "0.1.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.build.json",
+    "build:farm": "farm build",
+    "start": "pnpm run build -w",
+    "watch": "farm watch",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fast-glob": "^3.2.12",
+    "fs-extra": "^11.1.1",
+    "kolorist": "^1.8.0",
+    "ts-morph": "^19.0.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@types/fs-extra": "^11.0.1"
+  }
+}

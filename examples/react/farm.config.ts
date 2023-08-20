@@ -26,9 +26,9 @@ export default defineConfig({
       prefixer: {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
-    }
+    },
     // treeShaking: true,
-    // minify: true,
+    minify: false,
   },
   server: {
     hmr: true,
