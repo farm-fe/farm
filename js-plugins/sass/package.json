@@ -3,12 +3,12 @@
   "version": "2.0.0",
   "description": "support scss compile for farm.",
   "main": "./build/index.cjs",
-  "types": "./dist/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/index.cjs",
-      "types": "./dist/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/index.cjs"
     },
     "./package.json": "./package.json"
@@ -32,7 +32,7 @@
     }
   ],
   "scripts": {
-    "build": "pnpm run clean && farm build && tsc -p ./tsconfig.build.json",
+    "build": "pnpm run clean && farm build",
     "start": "pnpm run build -w",
     "clean": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",
@@ -47,6 +47,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:^0.11.0",
+    "@farmfe/js-plugin-dts": "workspace:*",
     "sass": "^1.62.1",
     "sass-embedded": "^1.62.0"
   },

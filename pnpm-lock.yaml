@@ -703,6 +703,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:^0.11.0
         version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:^
+        version: link:../dts
       '@types/less':
         specifier: ^3.0.3
         version: 3.0.3
@@ -718,6 +721,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:^0.11.0
         version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:*
+        version: link:../dts
       fast-glob:
         specifier: ^3.3.1
         version: 3.3.1
@@ -736,6 +742,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:^0.11.0
         version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:*
+        version: link:../dts
       sass:
         specifier: ^1.62.1
         version: 1.62.1

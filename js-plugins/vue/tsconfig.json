@@ -1,36 +1,15 @@
-// {
-//   "extends": "../../tsconfig.base.json",
-//   "compilerOptions": {
-//     "noUnusedLocals": false,
-//     "noUnusedParameters": false,
-//     "outDir": "dist"
-//   },
-//   "include": ["src/**/*", "farm.config.mjs"],
-//   "exclude": ["node_modules"]
-// }
-
 {
-  // test comment
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "outDir": "dist",
-    "strict": true,
-    "jsx": "preserve",
-    "allowJs": true,
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "experimentalDecorators": true,
-    "types": ["vite/client"],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "lib": ["esnext", "dom"]
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "outDir": "dist"
   },
-  "include": ["src", "*.d.ts"]
+  "include": [
+    "src/**/*",
+    "farm.config.mjs"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

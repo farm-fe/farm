@@ -1,5 +1,5 @@
 import { builtinModules } from 'module';
-
+import farmDtsPlugin from '@farmfe/js-plugin-dts';
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -32,5 +32,8 @@ export default {
   },
   server: {
     hmr: false
-  }
+  },
+  plugins: [farmDtsPlugin({
+    tsConfigPath: './tsconfig.json',
+  })]
 };

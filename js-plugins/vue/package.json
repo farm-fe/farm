@@ -4,12 +4,11 @@
   "description": "support vue sfc for farm.",
   "main": "./build/index.cjs",
   "module": "./dist/farm-vue-plugin.js",
-  "types": "./dist/farm-vue-plugin.d.ts",
+  "types": "./build/farm-vue-plugin.d.ts",
   "type": "module",
   "scripts": {
     "start": "tsc -w",
-    "build:tsc": "tsc",
-    "build": "farm build",
+    "build": "farm build && tsc",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -22,7 +21,7 @@
       "default": "./build/index.cjs",
       "require": "./build/index.cjs",
       "import": "./dist/farm-vue-plugin.js",
-      "types": "./dist/farm-vue-plugin.d.ts"
+      "types": "./build/farm-vue-plugin.d.ts"
     }
   },
   "repository": {
