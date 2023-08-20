@@ -2,6 +2,7 @@ import type { JsPlugin } from '@farmfe/core';
 
 import Context from './context.js';
 import { tryToReadFileSync } from './utils.js';
+import { pluginName } from './options.js';
 
 import type { DtsPluginOptions } from './types.js';
 
@@ -10,7 +11,7 @@ export default function farmDtsPlugin(options: DtsPluginOptions): JsPlugin {
   // TODO support vue other framework file type
   // TODO support alias
   return {
-    name: 'farm-dts-plugin',
+    name: pluginName,
     priority: 1000,
     config(config: any) {
       ctx.handleResolveOptions(options, config);

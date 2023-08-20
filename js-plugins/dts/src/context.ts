@@ -3,7 +3,7 @@ import { DefaultLogger } from '@farmfe/core';
 import { green } from 'kolorist';
 import glob from 'fast-glob';
 import os from 'node:os';
-import { dirname, relative, resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { CompilerOptions, Project, SourceFile } from 'ts-morph';
 import {
   ensureAbsolute,

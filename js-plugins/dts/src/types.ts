@@ -53,16 +53,12 @@ export interface DtsPluginOptions {
   /**
    * Whether skip typescript diagnostics
    *
-   * Skip type diagnostics means that type errors will not interrupt the build process
-   *
    * @default true
    */
   skipDiagnostics?: boolean;
 
   /**
    * Customize typescript lib folder path
-   *
-   * Should pass a relative path to root or a absolute path
    *
    * @default undefined
    */
