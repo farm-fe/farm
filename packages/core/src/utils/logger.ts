@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import chalk, { ChalkInstance } from 'chalk';
 
 export const brandColor = chalk.rgb(113, 26, 95);
 
@@ -23,11 +23,14 @@ export interface Logger {
 export interface ErrorOptions {
   exit?: boolean;
 }
-
+interface LoggerOptions {
+  name?: string;
+  brandColor?: ChalkInstanceKeys;
+}
+type ChalkInstanceKeys = keyof ChalkInstance;
 export class DefaultLogger implements Logger {
   constructor(
-    public level: LogLevelNames = 'info',
-    private name: string = 'Farm',
+    public options?: LoggerOptions,
     private levelValues: Record<LogLevelNames, number> = {
       trace: 0,
       debug: 1,
@@ -37,16 +40,24 @@ export class DefaultLogger implements Logger {
     },
     private prefix?: string
   ) {
-    this.prefix = brandColor(`[ ${this.name} ] `);
+    if (!options) {
+      options = {};
+    }
+    const { name = 'Farm' } = options;
+
+    const prefixColor: ChalkInstanceKeys = options.brandColor;
+    this.prefix = options.brandColor
+      ? chalk.hex(prefixColor)(`[ ${name} ] `)
+      : brandColor(`[ ${name} ] `);
   }
 
   private logMessage(
     level: LogLevelNames,
     message: string,
-    color?: any,
+    color?: ChalkInstance,
     showBanner = true
   ): void {
-    if (this.levelValues[this.level] <= this.levelValues[level]) {
+    if (this.levelValues[level] <= this.levelValues[level]) {
       const loggerMessage = color
         ? color(`${showBanner ? this.prefix : ''}${message}`)
         : `${showBanner ? this.prefix : ''}${message}`;
