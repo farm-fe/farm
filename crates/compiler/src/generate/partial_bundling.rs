@@ -20,9 +20,8 @@ pub fn partial_bundling(
   // insert the module group map into the context
   let mut context_module_group_graph = context.module_group_graph.write();
   context_module_group_graph.replace(module_group_graph);
-
-  let resource_pot_map =
-    generate_resource_pot_map(&mut context_module_group_graph, context, hook_context)?;
+  drop(context_module_group_graph);
+  let resource_pot_map = generate_resource_pot_map(context, hook_context)?;
   // insert the resource pot graph into the context
   let mut g = context.resource_pot_map.write();
   g.replace(resource_pot_map);
@@ -47,18 +46,22 @@ fn analyze_module_graph(
 }
 
 fn generate_resource_pot_map(
-  module_group_graph: &mut ModuleGroupGraph,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotMap> {
+  let mut module_group_graph = context.module_group_graph.write();
   let mut modules = HashSet::new();
 
   for g in module_group_graph.module_groups_mut() {
     modules.extend(g.modules().clone());
   }
 
+  drop(module_group_graph);
+
   let resources_pots =
     call_partial_bundling_hook(&modules.into_iter().collect(), context, hook_context)?;
+
+  let mut module_group_graph = context.module_group_graph.write();
 
   let mut resource_pot_map = ResourcePotMap::new();
   let module_graph = context.module_graph.read();
@@ -66,9 +69,14 @@ fn generate_resource_pot_map(
   for mut resource_pot in resources_pots {
     let mut module_groups = HashSet::new();
 
-    for module_id in resource_pot.modules() {
-      let module = module_graph.module(module_id).unwrap();
-      module_groups.extend(module.module_groups.clone());
+    let resource_modules = resource_pot.modules();
+    if resource_pot.entry_module.is_some() {
+      module_groups.insert(resource_pot.entry_module.clone().unwrap());
+    } else {
+      for module_id in resource_modules {
+        let module = module_graph.module(module_id).unwrap();
+        module_groups.extend(module.module_groups.clone());
+      }
     }
 
     resource_pot.module_groups = module_groups.clone();

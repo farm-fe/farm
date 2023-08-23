@@ -205,6 +205,10 @@ export interface Config {
       moduleBuckets?: {
         name: string;
         test: string[];
+        reuseExistingResourcePot?: boolean,
+        maxConcurrentRequests?: number;
+        minSize?: number;
+        weight?: number;
       }[];
     };
     lazyCompilation?: boolean;

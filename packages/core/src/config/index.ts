@@ -394,7 +394,9 @@ async function readConfigFile(
             moduleBuckets: [
               {
                 name: fileName,
-                test: ['.+']
+                test: ['.+'],
+                reuseExistingResourcePot: true,
+                maxConcurrentRequests: 1
               }
             ]
           },

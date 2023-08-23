@@ -119,7 +119,11 @@ const compilationConfigSchema = z
           z
             .object({
               name: z.string(),
-              test: z.array(z.string())
+              test: z.array(z.string()),
+              reuseExistingResourcePot: z.boolean().default(false),
+              weight: z.number().default(0),
+              maxConcurrentRequests: z.number().default(20),
+              minSize: z.number().default(1024 * 20)
             })
             .strict()
         )

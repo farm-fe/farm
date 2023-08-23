@@ -44,7 +44,9 @@ impl ResourcePot {
   pub fn add_module(&mut self, module_id: ModuleId) {
     self.modules.insert(module_id);
   }
-
+  pub fn replace_module(&mut self, modules: HashSet<ModuleId>) {
+    self.modules = modules;
+  }
   pub fn modules(&self) -> Vec<&ModuleId> {
     let mut modules = self.modules.iter().collect::<Vec<&ModuleId>>();
     // sort by module id

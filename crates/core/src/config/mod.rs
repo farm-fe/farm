@@ -292,19 +292,28 @@ impl Default for RuntimeConfig {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PartialBundlingModuleBucketsConfig {
   pub name: String,
   /// Regex vec to match the modules in the module bucket
   pub test: Vec<ConfigRegex>,
+  pub min_size: Option<u64>,
+  pub max_concurrent_requests: Option<u32>,
+  pub weight: isize,
+  pub reuse_existing_resource_pot: bool,
 }
 
 impl Default for PartialBundlingModuleBucketsConfig {
   fn default() -> Self {
+
     Self {
+      reuse_existing_resource_pot: false,
       name: "".to_string(),
       test: vec![],
+      max_concurrent_requests: None,
+      min_size: None,
+      weight: 0,
     }
   }
 }

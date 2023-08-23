@@ -71,6 +71,10 @@ impl Plugin for FarmPluginRuntime {
         test: vec![ConfigRegex(
           Regex::new(&format!(".+{}", RUNTIME_SUFFIX)).unwrap(),
         )],
+        weight: 100,
+        max_concurrent_requests: Some(1),
+        reuse_existing_resource_pot: true,
+        ..Default::default()
       },
     );
 
