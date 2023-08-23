@@ -13,7 +13,9 @@ import {
   NormalizedServerConfig,
   normalizeDevServerOptions,
   normalizePublicDir,
-  DevServerPlugin
+  DevServerPlugin,
+  UserConfig,
+  DEFAULT_HMR_OPTIONS
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { brandColor, Logger } from '../utils/index.js';
@@ -94,7 +96,6 @@ export class DevServer implements ImplDevServer {
     const end = Date.now();
     this.server.listen(port);
     this.startDevLogger(start, end);
-
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}`);
     }
@@ -196,4 +197,43 @@ export class DevServer implements ImplDevServer {
       false
     );
   }
+}
+
+export async function resolvePortConflict(
+  config: UserConfig,
+  logger: Logger
+): Promise<{ updatedConfig: UserConfig }> {
+  let hmrPort = DEFAULT_HMR_OPTIONS.port;
+  const normalizedDevConfig = normalizeDevServerOptions(
+    config.server,
+    'development'
+  );
+  let devPort = normalizedDevConfig.port;
+
+  const server = http.createServer();
+
+  return new Promise((resolve, reject) => {
+    // attach listener to the server to listen for port conflict
+    const onError = (e: Error & { code?: string }) => {
+      if (e.code === 'EADDRINUSE') {
+        // TODO: if strictPort, throw Error(`Port ${port} is already in use`))
+        logger.info(`Port ${devPort} is in use, trying another one...`);
+        // update hmrPort and devPort
+        config.server.hmr = { port: ++hmrPort };
+        config.server.port = ++devPort;
+        server.listen(devPort);
+      } else {
+        server.removeListener('error', onError);
+        reject(e);
+      }
+    };
+
+    server.on('error', onError);
+    server.listen(devPort, () => {
+      // logger.info(`Port Available at: http://localhost:${devPort}`);
+      server.close();
+      const result = { updatedConfig: config };
+      resolve(result);
+    });
+  });
 }
