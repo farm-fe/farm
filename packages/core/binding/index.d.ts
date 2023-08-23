@@ -216,6 +216,10 @@ export interface Config {
       enforceResources?: {
         name: string;
         test: string[];
+        reuseExistingResourcePot?: boolean,
+        maxConcurrentRequests?: number;
+        minSize?: number;
+        weight?: number;
       }[];
       enforceTargetConcurrentRequests?: boolean;
       enforceTargetMinSize?: boolean;

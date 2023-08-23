@@ -1,0 +1,16 @@
+{
+  "name": "@farmfe-examples/partial-bundling",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  },
+  "scripts": {
+    "build": "farm build",
+    "postinstall": "node bootstrap.js"
+  },
+  "devDependencies": {
+    "@swc/helpers": "^0.5.0"
+  }
+}

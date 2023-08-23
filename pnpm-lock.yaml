@@ -382,6 +382,19 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/partial-bundling:
+    dependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      '@swc/helpers':
+        specifier: ^0.5.0
+        version: 0.5.0
+
   examples/postcss:
     dependencies:
       core-js:

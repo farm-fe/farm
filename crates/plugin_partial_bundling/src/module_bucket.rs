@@ -1,3 +1,5 @@
+use std::{hash::Hash, mem::replace};
+
 use farmfe_core::{
   hashbrown::HashSet,
   module::{Module, ModuleId, ModuleType},

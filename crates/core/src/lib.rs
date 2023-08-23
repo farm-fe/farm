@@ -2,6 +2,9 @@
 #![allow(clippy::ptr_arg)]
 #![feature(trivial_bounds)]
 #![feature(is_some_and)]
+#![feature(const_trait_impl)]
+#![feature(hasher_prefixfree_extras)]
+
 // #![feature(unsize)]
 // #![feature(trait_upcasting)]
 

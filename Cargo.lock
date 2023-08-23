@@ -1498,6 +1498,7 @@ dependencies = [
  "farmfe_utils",
  "lazy_static",
  "preset_env_base",
+ "rand",
  "sha2",
  "sourcemap",
  "swc_atoms",

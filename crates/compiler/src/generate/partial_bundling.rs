@@ -25,7 +25,6 @@ pub fn partial_bundling(
   let mut context_module_group_graph = context.module_group_graph.write();
   context_module_group_graph.replace(module_group_graph);
   drop(context_module_group_graph);
-
   let resource_pot_map = generate_resource_pot_map(context, hook_context)?;
   // insert the resource pot graph into the context
   let mut g = context.resource_pot_map.write();
@@ -61,6 +60,8 @@ pub fn generate_resource_pot_map(
   // extends enforce resource pots
   resources_pots.extend(enforce_resource_pots);
   fill_necessary_fields_for_resource_pot(resources_pots.iter_mut().collect(), context);
+
+  let mut module_group_graph = context.module_group_graph.write();
 
   let mut resource_pot_map = ResourcePotMap::new();
 

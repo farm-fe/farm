@@ -1,16 +1,19 @@
-use std::{collections::VecDeque, sync::Arc};
+#![feature(is_some_and)]
+
+use std::{collections::VecDeque, fs, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   config::{config_regex::ConfigRegex, Config},
   context::CompilationContext,
+  farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
   module::{
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupGraph},
-    ModuleId, ModuleType,
+    ModuleId,
   },
   plugin::{Plugin, PluginHookContext},
-  resource::resource_pot::{ResourcePot, ResourcePotId},
+  resource::resource_pot::ResourcePot,
 };
 use generate_module_buckets::{generate_module_buckets_map, group_module_buckets_by_module_group};
 use generate_resource_pots::generate_resource_pots;
