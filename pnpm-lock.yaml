@@ -390,10 +390,6 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
-    devDependencies:
-      '@swc/helpers':
-        specifier: ^0.5.0
-        version: 0.5.0
 
   examples/postcss:
     dependencies:

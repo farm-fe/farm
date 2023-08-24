@@ -11,7 +11,8 @@ export default {
     },
     output: {
       path: 'build',
-      entryFilename: '[entryName].cjs',
+      entryFilename: '[entryName].[ext]',
+      filename: '[resourceName].[ext]',
       targetEnv: 'node',
       format: 'cjs'
     },

@@ -10,7 +10,7 @@ use farmfe_core::{
   module::{
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupGraph},
-    ModuleId,
+    ModuleId, ModuleType,
   },
   plugin::{Plugin, PluginHookContext},
   resource::resource_pot::ResourcePot,

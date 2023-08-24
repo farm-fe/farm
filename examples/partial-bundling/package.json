@@ -10,7 +10,5 @@
     "build": "farm build",
     "postinstall": "node bootstrap.js"
   },
-  "devDependencies": {
-    "@swc/helpers": "^0.5.0"
-  }
+  "devDependencies": {}
 }

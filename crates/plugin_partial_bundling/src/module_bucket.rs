@@ -1,4 +1,4 @@
-use std::{hash::Hash, mem::replace};
+use std::mem::replace;
 
 use farmfe_core::{
   hashbrown::HashSet,
