@@ -3,12 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
+import http from 'node:http';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/index.js';
+import { DevServer } from '../server/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import { parseUserConfig } from './schema.js';
 
@@ -25,6 +27,7 @@ import {
   isObject,
   normalizePath
 } from '../utils/index.js';
+
 import { CompilationMode, loadEnv } from './env.js';
 
 export * from './types.js';
@@ -356,7 +359,8 @@ export async function resolveUserConfig(
   if (!userConfig.root) {
     userConfig.root = root;
   }
-
+  // check port availability: auto increment the port if a conflict occurs
+  await DevServer.resolvePortConflict(userConfig, logger);
   return userConfig;
 }
 
@@ -474,4 +478,42 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
     ? publicDir
     : path.join(root, publicDir);
   return absPublicDirPath;
+}
+
+export async function resolvePortConflict(
+  config: UserConfig,
+  logger: Logger
+): Promise<{ updatedConfig: UserConfig }> {
+  let hmrPort = DEFAULT_HMR_OPTIONS.port;
+  const normalizedDevConfig = normalizeDevServerOptions(
+    config.server,
+    'development'
+  );
+  let devPort = normalizedDevConfig.port;
+
+  const server = http.createServer();
+
+  return new Promise((resolve, reject) => {
+    // attach listener to the server to listen for port conflict
+    const onError = (e: Error & { code?: string }) => {
+      if (e.code === 'EADDRINUSE') {
+        // TODO: if strictPort, throw Error(`Port ${port} is already in use`))
+        logger.info(`Port ${devPort} is in use, trying another one...`);
+        // update hmrPort and devPort
+        config.server.hmr = { port: ++hmrPort };
+        config.server.port = ++devPort;
+        server.listen(devPort);
+      } else {
+        server.removeListener('error', onError);
+        reject(e);
+      }
+    };
+
+    server.on('error', onError);
+    server.listen(devPort, () => {
+      // logger.info(`Port Available at: http://localhost:${devPort}`);
+      server.close();
+      resolve(null);
+    });
+  });
 }

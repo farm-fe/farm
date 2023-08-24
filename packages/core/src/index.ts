@@ -20,7 +20,7 @@ import {
   UserConfig
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
-import { DevServer, resolvePortConflict } from './server/index.js';
+import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
@@ -34,15 +34,11 @@ export async function start(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
-  let config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-  // check port availability: auto increment the port if a conflict occurs
-  await resolvePortConflict(config, logger).then((res) => {
-    config = res.updatedConfig;
-  });
+  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
   // TODO conflict_port
   const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, config.server);
+  const devServer = new DevServer(compiler, logger, config);
 
   if (normalizedConfig.config.mode === 'development') {
     normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
