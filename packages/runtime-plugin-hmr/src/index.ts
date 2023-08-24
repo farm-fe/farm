@@ -8,13 +8,13 @@ import { HmrUpdateResult } from './types';
 declare const FARM_HMR_PORT: string | undefined;
 declare const FARM_HMR_HOST: string | undefined;
 
-const port = Number(FARM_HMR_PORT || 9801);
+const port = Number(FARM_HMR_PORT || 9000);
 const host = FARM_HMR_HOST || 'localhost';
 
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-hmr-client-plugin',
   bootstrap(moduleSystem) {
-    console.log('[Farm HMR] connecting to the server...');
+    console.log('[Farm HMR] connecting to the server...', port);
 
     function connect() {
       // setup websocket connection

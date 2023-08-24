@@ -146,23 +146,26 @@ export class DevServer implements ImplDevServer {
     logger: Logger
   ): Promise<void> {
     let hmrPort = DEFAULT_HMR_OPTIONS.port;
-    const normalizedDevConfig = normalizeDevServerOptions(
-      userConfig.server,
-      'development'
-    );
-    let devPort = normalizedDevConfig.port;
-
+    let devPort = userConfig.server.port;
+    const { strictPort } = userConfig.server;
     const httpServer = http.createServer();
 
     return new Promise((resolve, reject) => {
       // attach listener to the server to listen for port conflict
       const onError = (e: Error & { code?: string }) => {
         if (e.code === 'EADDRINUSE') {
+          if (strictPort) {
+            httpServer.removeListener('error', onError);
+            reject(new Error(`Port ${devPort} is already in use`));
+          }
           // TODO: if strictPort, throw Error(`Port ${port} is already in use`))
           logger.warn(`Port ${devPort} is in use, trying another one...`);
           // update hmrPort and devPort
-          userConfig.server.hmr = { port: ++hmrPort };
-          userConfig.server.port = ++devPort;
+          userConfig.server = {
+            ...userConfig.server,
+            hmr: { port: ++hmrPort },
+            port: ++devPort
+          };
           httpServer.listen(devPort);
         } else {
           httpServer.removeListener('error', onError);
@@ -172,7 +175,6 @@ export class DevServer implements ImplDevServer {
 
       httpServer.on('error', onError);
       httpServer.listen(devPort, () => {
-        // logger.info(`Port Available at: http://localhost:${devPort}`);
         httpServer.close();
         resolve();
       });

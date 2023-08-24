@@ -274,7 +274,7 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9801,
+  port: 9000,
   watchOptions: {
     awaitWriteFinish: 10
   }
