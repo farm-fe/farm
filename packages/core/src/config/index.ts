@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
-import http from 'node:http';
 
 import merge from 'lodash.merge';
 import chalk from 'chalk';
@@ -274,7 +273,7 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9000,
+  port: 9801,
   watchOptions: {
     awaitWriteFinish: 10
   }
@@ -478,42 +477,4 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
     ? publicDir
     : path.join(root, publicDir);
   return absPublicDirPath;
-}
-
-export async function resolvePortConflict(
-  config: UserConfig,
-  logger: Logger
-): Promise<{ updatedConfig: UserConfig }> {
-  let hmrPort = DEFAULT_HMR_OPTIONS.port;
-  const normalizedDevConfig = normalizeDevServerOptions(
-    config.server,
-    'development'
-  );
-  let devPort = normalizedDevConfig.port;
-
-  const server = http.createServer();
-
-  return new Promise((resolve, reject) => {
-    // attach listener to the server to listen for port conflict
-    const onError = (e: Error & { code?: string }) => {
-      if (e.code === 'EADDRINUSE') {
-        // TODO: if strictPort, throw Error(`Port ${port} is already in use`))
-        logger.info(`Port ${devPort} is in use, trying another one...`);
-        // update hmrPort and devPort
-        config.server.hmr = { port: ++hmrPort };
-        config.server.port = ++devPort;
-        server.listen(devPort);
-      } else {
-        server.removeListener('error', onError);
-        reject(e);
-      }
-    };
-
-    server.on('error', onError);
-    server.listen(devPort, () => {
-      // logger.info(`Port Available at: http://localhost:${devPort}`);
-      server.close();
-      resolve(null);
-    });
-  });
 }

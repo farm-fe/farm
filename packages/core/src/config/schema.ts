@@ -193,6 +193,7 @@ const FarmConfigSchema = z
             })
           )
           .optional(),
+        strictPort: z.boolean().optional(),
         hmr: z
           .union([
             z.boolean(),
