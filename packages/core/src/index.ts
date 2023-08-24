@@ -36,7 +36,6 @@ export async function start(
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
-  // TODO conflict_port
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config);
 

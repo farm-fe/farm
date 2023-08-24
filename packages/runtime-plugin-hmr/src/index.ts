@@ -18,10 +18,7 @@ export default <FarmRuntimePlugin>{
 
     function connect() {
       // setup websocket connection
-      console.log('走进来链接了');
-
       const socket = new WebSocket(`ws://${host}:${port}`);
-
       // listen for the message from the server
       // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
       // after the file is recompiled, the server will generated a update resource and send its id to the client
