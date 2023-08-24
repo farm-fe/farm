@@ -10,7 +10,7 @@ pub fn is_subset<T: PartialEq>(v1: &[T], v2: &[T]) -> bool {
   v1.iter().all(|item| v2.contains(item))
 }
 
-pub fn resource_pot_ids_to_string<'a, I: Iterator<Item = &'a K>, K>(resources: I) -> String
+pub fn ids_to_string<'a, I: Iterator<Item = &'a K>, K>(resources: I) -> String
 where
   K: ToString + 'a,
 {
@@ -112,7 +112,7 @@ impl Into<ResourcePot> for ResourceUnit {
           "{}-{:?}-{}",
           self.immutable,
           resource_pot_type,
-          resource_pot_ids_to_string(self.modules.iter())
+          ids_to_string(self.modules.iter())
         )
         .as_bytes(),
         8

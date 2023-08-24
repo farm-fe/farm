@@ -13,7 +13,8 @@ export default {
     output: {
       path: 'dist',
       targetEnv: 'node',
-      entryFilename: '[entryName].mjs'
+      format: 'cjs'
+      // entryFilename: '[entryName].mjs'
     },
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
@@ -23,14 +24,16 @@ export default {
     presetEnv: false,
     sourcemap: false,
     lazyCompilation: false,
-    // partialBundling: {
-    //   moduleBuckets: [
-    //     {
-    //       name: 'node.bundle.js',
-    //       test: ['.+']
-    //     }
-    //   ]
-    // }
+    partialBundling: {
+      moduleBuckets: [
+        {
+          name: 'common',
+          test: [],
+          minSize: 1024,
+          maxConcurrentRequests: 5
+        }
+      ]
+    }
   },
   server: {
     hmr: false

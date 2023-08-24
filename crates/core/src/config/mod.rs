@@ -298,7 +298,7 @@ pub struct PartialBundlingModuleBucketsConfig {
   pub name: String,
   /// Regex vec to match the modules in the module bucket
   pub test: Vec<ConfigRegex>,
-  pub min_size: Option<u64>,
+  pub min_size: Option<usize>,
   pub max_concurrent_requests: Option<u32>,
   pub weight: isize,
   pub reuse_existing_resource_pot: bool,

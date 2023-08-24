@@ -174,6 +174,7 @@ impl Compiler {
     };
 
     let load_result = call_and_catch_error!(load, &load_param, context, &hook_context);
+    let size = load_result.content.len();
     // ================ Load End ===============
 
     // ================ Transform Start ===============
@@ -224,6 +225,7 @@ impl Compiler {
     module.external = false;
     module.source_map_chain = transform_result.source_map_chain;
     module.meta = module_meta;
+    module.size = size;
 
     // ================ Analyze Deps Start ===============
     let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);

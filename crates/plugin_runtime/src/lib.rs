@@ -1,6 +1,6 @@
 #![feature(box_patterns)]
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, isize::MAX, sync::Arc};
 
 use farmfe_core::{
   config::{config_regex::ConfigRegex, Config, PartialBundlingModuleBucketsConfig},
@@ -71,8 +71,7 @@ impl Plugin for FarmPluginRuntime {
         test: vec![ConfigRegex(
           Regex::new(&format!(".+{}", RUNTIME_SUFFIX)).unwrap(),
         )],
-        weight: 100,
-        max_concurrent_requests: Some(1),
+        weight: MAX,
         reuse_existing_resource_pot: true,
         ..Default::default()
       },
@@ -265,56 +264,62 @@ impl Plugin for FarmPluginRuntime {
 
     let module_graph = context.module_graph.write();
 
-    for resource_pot in resource_pots {
-      if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-        let rendered_resource_pot_ast =
-          resource_pot_to_runtime_object_lit(resource_pot, &module_graph, context)?;
+    let (entry, runtimes) =
+      resource_pots
+        .iter()
+        .fold((None, vec![]), |(mut entry, mut runtime_pots), item| {
+          if matches!(item.resource_pot_type, ResourcePotType::Runtime) {
+            if item.entry_module.is_some() {
+              entry = item.entry_module.clone();
+            }
+            runtime_pots.push(&**item);
+          }
 
-        #[cfg(not(windows))]
-        let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
-        #[cfg(windows)]
-        let minimal_runtime = include_str!(".\\js-runtime\\minimal-runtime.js");
+          return (entry, runtime_pots);
+        });
 
-        let mut runtime_ast = parse_module(
-          "farm_internal_minimal_runtime",
-          minimal_runtime,
-          Syntax::Es(context.config.script.parser.es_config),
-          context.config.script.target,
-          context.meta.script.cm.clone(),
-        )?;
+    if !runtimes.is_empty() {
+      let rendered_resource_pot_ast =
+        resource_pot_to_runtime_object_lit(runtimes, &module_graph, context)?;
 
-        if let ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-          expr: box Expr::Call(CallExpr { args, .. }),
-          ..
-        })) = &mut runtime_ast.body[0]
-        {
-          args[0] = ExprOrSpread {
-            spread: None,
-            expr: Box::new(Expr::Object(rendered_resource_pot_ast)),
-          };
-          args[1] = ExprOrSpread {
-            spread: None,
-            expr: Box::new(Expr::Lit(Lit::Str(Str {
-              span: DUMMY_SP,
-              value: resource_pot
-                .entry_module
-                .as_ref()
-                .unwrap()
-                .id(context.config.mode.clone())
-                .into(),
-              raw: None,
-            }))),
-          };
-        }
+      #[cfg(not(windows))]
+      let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
+      #[cfg(windows)]
+      let minimal_runtime = include_str!(".\\js-runtime\\minimal-runtime.js");
 
-        // TODO: minify runtime when minify is enabled
+      let mut runtime_ast = parse_module(
+        "farm_internal_minimal_runtime",
+        minimal_runtime,
+        Syntax::Es(context.config.script.parser.es_config),
+        context.config.script.target,
+        context.meta.script.cm.clone(),
+      )?;
 
-        // TODO transform async function if target is lower than es2017, should not externalize swc helpers
-        // This may cause async generator duplicated but it's ok for now. We can fix it later.
-
-        context.meta.script.runtime_ast.write().replace(runtime_ast);
-        break;
+      if let ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+        expr: box Expr::Call(CallExpr { args, .. }),
+        ..
+      })) = &mut runtime_ast.body[0]
+      {
+        args[0] = ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Object(rendered_resource_pot_ast)),
+        };
+        args[1] = ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP,
+            value: entry.unwrap().id(context.config.mode.clone()).into(),
+            raw: None,
+          }))),
+        };
       }
+
+      // TODO: minify runtime when minify is enabled
+
+      // TODO transform async function if target is lower than es2017, should not externalize swc helpers
+      // This may cause async generator duplicated but it's ok for now. We can fix it later.
+
+      context.meta.script.runtime_ast.write().replace(runtime_ast);
     }
 
     Ok(Some(()))
@@ -329,7 +334,7 @@ impl Plugin for FarmPluginRuntime {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
       let rendered_resource_pot_ast =
-        resource_pot_to_runtime_object_lit(resource_pot, &module_graph, context)?;
+        resource_pot_to_runtime_object_lit(vec![resource_pot], &module_graph, context)?;
 
       #[cfg(not(windows))]
       let wrapper = include_str!("./js-runtime/resource-wrapper.js");

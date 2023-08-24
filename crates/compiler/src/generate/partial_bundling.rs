@@ -66,6 +66,7 @@ fn generate_resource_pot_map(
   let mut resource_pot_map = ResourcePotMap::new();
   let module_graph = context.module_graph.read();
 
+  // TODO: module_id maybe in multiple resource_pot, so we need to keep it correctly
   for mut resource_pot in resources_pots {
     let mut module_groups = HashSet::new();
 

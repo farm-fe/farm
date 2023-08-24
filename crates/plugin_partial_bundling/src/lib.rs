@@ -10,7 +10,7 @@ use farmfe_core::{
   module::{
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupGraph},
-    ModuleId,
+    ModuleId, ModuleType,
   },
   plugin::{Plugin, PluginHookContext},
   resource::resource_pot::ResourcePot,
@@ -21,9 +21,7 @@ mod module_bucket;
 mod resource_group;
 mod split_resource_unit;
 
-use resource_group::{
-  is_subset, resource_pot_ids_to_string, ResourceGroup, ResourceUnit, ResourceUnitId,
-};
+use resource_group::{ids_to_string, is_subset, ResourceGroup, ResourceUnit, ResourceUnitId};
 
 fn try_get_filename(module_id: &ModuleId) -> String {
   PathBuf::from(module_id.to_string())
@@ -46,13 +44,20 @@ impl Plugin for FarmPluginPartialBundling {
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
     let module_buckets = &mut config.partial_bundling.module_buckets;
 
+    module_buckets.push(PartialBundlingModuleBucketsConfig {
+      name: "i-vendor".into(),
+      test: config.partial_bundling.immutable_modules.clone(),
+      weight: 1000000000,
+      ..Default::default()
+    });
+
     if module_buckets.iter().any(|bucket| bucket.name != "vendor") {
       module_buckets.push(PartialBundlingModuleBucketsConfig {
         name: "vendor".into(),
-        test: vec![ConfigRegex::new(r"[/]?node_modules[/]?")],
-        max_concurrent_requests: Some(500),
         min_size: Some(1024 * 20),
-        weight: -10,
+        test: vec![ConfigRegex::new("[\\/]node_modules[\\/]")],
+        max_concurrent_requests: Some(500),
+        weight: -20,
         ..Default::default()
       });
     }
@@ -107,26 +112,23 @@ impl Plugin for FarmPluginPartialBundling {
                                 module_bucket_map: &mut HashMap<ModuleBucketId, ModuleBucket>,
                                 bucket_config: PartialBundlingModuleBucketsConfig,
                                 resource_units: HashSet<ResourceUnitId>,
-                                module_id: &ModuleId| {
+                                module_id: &ModuleId,
+                                module_type: &ModuleType,
+                                size: usize| {
       let module_bucket = module_bucket_map
         .entry(module_bucket_id.clone())
         .or_insert_with(|| {
-          ModuleBucket::new(
-            module_bucket_id.clone(),
-            HashSet::new(),
-            true,
-            bucket_config,
-          )
+          ModuleBucket::new(module_bucket_id.clone(), HashSet::new(), bucket_config)
         });
 
-      module_bucket.add_module(module_id.clone());
+      module_bucket.add_module(module_id.clone(), module_type, size);
 
       for resource_pot_id in resource_units {
         module_bucket.add_resource_pot(resource_pot_id);
       }
     };
 
-    let mut resource_group = ResourceGroup {
+    let mut resource_group: ResourceGroup = ResourceGroup {
       resource_pot_group_map: HashMap::new(),
     };
 
@@ -134,19 +136,11 @@ impl Plugin for FarmPluginPartialBundling {
     let mut module_group_redirect_resource_map: ModduleGroupRedirectResourceMap = HashMap::new();
 
     let mut resource_unit_sets: HashMap<String, Vec<ResourceUnitId>> = Default::default();
-    let mut module_size_map = HashMap::new();
 
     farm_profile_scope!("partial_bundling.gen_resource_unit");
     // 1. gen resource pot groups set (len > 1)
-    // 2. gen module size map
-    // 3. gen module_group resource pot, if not exists
+    // 2. gen module_group resource pot, if not exists
     for module_id in modules {
-      if let Ok(len) = fs::File::open(module_id.resolved_path(&context.config.root))
-        .map(|file| file.metadata().map(|metadata| metadata.len()).unwrap_or(0))
-      {
-        module_size_map.insert(module_id.clone(), len);
-      };
-
       if !module_graph.has_module(module_id) {
         continue;
       }
@@ -194,7 +188,7 @@ impl Plugin for FarmPluginPartialBundling {
 
       module_relation_resource_pots.sort();
 
-      let key = resource_pot_ids_to_string(module_relation_resource_pots.iter());
+      let key = ids_to_string(module_relation_resource_pots.iter());
 
       resource_unit_sets.insert(key, module_relation_resource_pots);
     }
@@ -259,7 +253,7 @@ impl Plugin for FarmPluginPartialBundling {
             let module_bucket_id = format!(
               "{}-{}",
               bucket_config.name,
-              resource_pot_ids_to_string(resource_units.iter())
+              ids_to_string(resource_units.iter())
             )
             .into();
 
@@ -269,6 +263,8 @@ impl Plugin for FarmPluginPartialBundling {
               bucket_config.clone(),
               resource_units,
               module_id,
+              &module.module_type,
+              module.size,
             );
           }
         });
@@ -280,16 +276,12 @@ impl Plugin for FarmPluginPartialBundling {
       .values_mut()
       .filter_map(|module_bucket| {
         if let Some(min_size) = module_bucket.config.min_size {
-          let size = split_resource_unit::count_modules_size(
-            module_bucket.modules().iter(),
-            &module_size_map,
-            &module_graph,
-          );
+          let size = &module_bucket.size;
 
           let size = size
-            .into_iter()
-            .filter(|(_, v)| *v != 0 && *v < min_size)
-            .map(|(k, _)| k)
+            .iter()
+            .filter(|(_, v)| **v != 0 && **v < min_size)
+            .map(|(k, _)| k.clone())
             .collect::<Vec<_>>();
 
           if size.is_empty() {
@@ -333,27 +325,8 @@ impl Plugin for FarmPluginPartialBundling {
 
     // gen resource unit by module_bucket
     while !module_bucket_ids.is_empty() {
-      let cur_process_module_bucket_id = module_bucket_ids
-        .iter()
-        .reduce(|a, b| {
-          let module_bucket_1 = module_bucket_map.get(a).unwrap();
-          let module_bucket_2 = module_bucket_map.get(b).unwrap();
-
-          // TODO: improve find best module bucket
-          if module_bucket_1.config.weight > module_bucket_2.config.weight {
-            return a;
-          } else if module_bucket_1.config.weight < module_bucket_2.config.weight {
-            return b;
-          }
-
-          if module_bucket_1.resource_units().len() > module_bucket_2.resource_units().len() {
-            a
-          } else {
-            b
-          }
-        })
-        .unwrap()
-        .clone();
+      let cur_process_module_bucket_id =
+        module_bucket::find_best_process_bucket(&module_bucket_ids, &module_bucket_map);
 
       let cur_process_module_bucket_id = module_bucket_ids
         .take(&cur_process_module_bucket_id)
@@ -390,7 +363,7 @@ impl Plugin for FarmPluginPartialBundling {
         });
       }
 
-      // transfer to other resource_pot
+      // transfer to other resource_unit
       if bucket_resource_units.len() < module_bucket.resource_units.len() {
         if reuse_existing_resource_unit {
           bucket_resource_units.insert(reuse_resource_unit_id.clone().unwrap());
@@ -402,11 +375,12 @@ impl Plugin for FarmPluginPartialBundling {
           let module_bucket_id: ModuleBucketId = format!(
             "{}-{}",
             bucket_config.name,
-            resource_pot_ids_to_string(bucket_resource_units.iter())
+            ids_to_string(bucket_resource_units.iter())
           )
           .into();
 
           for module_id in module_bucket.modules().clone() {
+            let module = module_graph.module(&module_id).unwrap();
             module_bucket_ids.insert(module_bucket_id.clone());
             add_module_to_bucket(
               module_bucket_id.clone(),
@@ -414,6 +388,8 @@ impl Plugin for FarmPluginPartialBundling {
               bucket_config.clone(),
               bucket_resource_units.clone(),
               &module_id,
+              &module.module_type,
+              module.size,
             );
           }
         }
@@ -455,7 +431,7 @@ impl Plugin for FarmPluginPartialBundling {
         for bucket_id in module_bucket_ids.iter() {
           // TODO: this bucket resource pot is out module bucket subset
           let bucket = module_bucket_map.get_mut(bucket_id).unwrap();
-          bucket.remove_module(module_id);
+          bucket.remove_module(module_id, &module.module_type, module.size);
         }
 
         // delete in other resource_pot module
@@ -467,10 +443,6 @@ impl Plugin for FarmPluginPartialBundling {
         }
 
         let resource_pot_group = resource_group.group_mut(&resource_unit_id).unwrap();
-
-        if module_graph.entries.contains_key(module_id) {
-          resource_pot_group.resource_unit.entry_module = Some(module_id.clone());
-        }
 
         resource_pot_group.add_module(module_id);
       }

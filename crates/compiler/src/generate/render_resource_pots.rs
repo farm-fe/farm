@@ -51,7 +51,21 @@ pub fn render_resource_pots_and_generate_resources(
       if !matches!(r.resource_type, ResourceType::SourceMap(_)) {
         let name_before_update = r.name.clone();
         // ignore runtime resource
+
         if !matches!(r.resource_type, ResourceType::Runtime) {
+          let ext = if matches!(r.resource_type, ResourceType::Js)
+            && matches!(
+              context.config.output.target_env,
+              farmfe_core::config::TargetEnv::Node
+            ) {
+            match context.config.output.format {
+              farmfe_core::config::ModuleFormat::EsModule => "mjs".to_string(),
+              farmfe_core::config::ModuleFormat::CommonJs => "cjs".to_string(),
+            }
+          } else {
+            r.resource_type.to_ext()
+          };
+
           if let Some(name) = resource_pot.entry_module.as_ref() {
             let entry_name = entries.get(name).unwrap();
             r.name = transform_output_entry_filename(
@@ -59,14 +73,14 @@ pub fn render_resource_pots_and_generate_resources(
               resource_pot.id.to_string().as_str(),
               entry_name,
               &r.bytes,
-              &r.resource_type.to_ext(),
+              &ext,
             );
           } else {
             r.name = transform_output_filename(
               context.config.output.filename.clone(),
               &r.name,
               &r.bytes,
-              &r.resource_type.to_ext(),
+              &ext,
             );
           }
         }

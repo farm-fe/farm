@@ -56,7 +56,7 @@ mod source_replacer;
 /// }
 /// ```
 pub fn resource_pot_to_runtime_object_lit(
-  resource_pot: &mut ResourcePot,
+  resource_pot: Vec<&ResourcePot>,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> Result<ObjectLit> {
@@ -68,8 +68,8 @@ pub fn resource_pot_to_runtime_object_lit(
   let props = Mutex::new(HashMap::new());
 
   resource_pot
-    .modules()
-    .into_par_iter()
+    .into_iter()
+    .flat_map(|resource_pot| resource_pot.modules())
     .try_for_each(|m_id| {
       let module = module_graph
         .module(m_id)

@@ -1,7 +1,9 @@
-use std::{hash::Hash, mem::replace};
+use std::mem::replace;
 
 use farmfe_core::{
-  config::PartialBundlingModuleBucketsConfig, hashbrown::HashSet, module::ModuleId,
+  config::PartialBundlingModuleBucketsConfig,
+  hashbrown::{HashMap, HashSet},
+  module::{ModuleId, ModuleType},
 };
 
 use crate::ResourceUnitId;
@@ -14,25 +16,24 @@ use crate::ResourceUnitId;
 #[derive(Debug)]
 pub struct ModuleBucket {
   pub id: ModuleBucketId,
-  pub customized_by_user: bool,
   modules: HashSet<ModuleId>,
   pub config: PartialBundlingModuleBucketsConfig,
   pub resource_units: HashSet<ResourceUnitId>,
+  pub size: HashMap<ModuleType, usize>,
 }
 
 impl ModuleBucket {
   pub fn new(
     id: ModuleBucketId,
     modules: HashSet<ModuleId>,
-    customized_by_user: bool,
     config: PartialBundlingModuleBucketsConfig,
   ) -> Self {
     Self {
       id,
-      customized_by_user,
       modules,
       config,
       resource_units: HashSet::new(),
+      size: HashMap::new(),
     }
   }
 
@@ -44,8 +45,27 @@ impl ModuleBucket {
     &self.resource_units
   }
 
-  pub fn add_module(&mut self, module_id: ModuleId) {
+  fn add_size(&mut self, module_type: &ModuleType, size: usize) {
+    if !self.size.contains_key(module_type) {
+      self.size.insert(module_type.clone(), 0);
+    }
+
+    *self.size.get_mut(module_type).unwrap() += size;
+  }
+
+  fn sub_size(&mut self, module_type: &ModuleType, size: usize) {
+    if self.size.contains_key(module_type) {
+      *self.size.get_mut(module_type).unwrap() -= size;
+    }
+  }
+
+  pub fn total_size(&self) -> u128 {
+    self.size.values().fold(0, |r, s| r + (*s as u128))
+  }
+
+  pub fn add_module(&mut self, module_id: ModuleId, module_type: &ModuleType, size: usize) {
     self.modules.insert(module_id);
+    self.add_size(module_type, size);
   }
 
   pub fn replace_modules(&mut self, modules: HashSet<ModuleId>) {
@@ -60,9 +80,56 @@ impl ModuleBucket {
     self.resource_units.insert(resource_pot_id);
   }
 
-  pub fn remove_module(&mut self, module_id: &ModuleId) -> bool {
+  pub fn remove_module(
+    &mut self,
+    module_id: &ModuleId,
+    module_type: &ModuleType,
+    size: usize,
+  ) -> bool {
+    self.sub_size(module_type, size);
+
     self.modules.remove(module_id)
   }
+}
+
+pub fn find_best_process_bucket(
+  module_bucket_ids: &HashSet<ModuleBucketId>,
+  module_bucket_map: &HashMap<ModuleBucketId, ModuleBucket>,
+) -> ModuleBucketId {
+  module_bucket_ids
+    .iter()
+    .reduce(|a, b| {
+      let module_bucket_1 = module_bucket_map.get(a).unwrap();
+      let module_bucket_2 = module_bucket_map.get(b).unwrap();
+
+      let r = module_bucket_1
+        .config
+        .weight
+        .cmp(&module_bucket_2.config.weight);
+      if !r.is_eq() {
+        return if r.is_gt() { a } else { b };
+      }
+
+      let a_units_len = module_bucket_1.resource_units().len() as isize;
+      let b_units_len = module_bucket_2.resource_units().len() as isize;
+
+      let r = ((module_bucket_1.total_size()) * (a_units_len as u128))
+        .cmp(&(module_bucket_2.total_size() * b_units_len as u128));
+
+      if !r.is_eq() {
+        return if r.is_gt() { a } else { b };
+      }
+
+      let r = a_units_len.cmp(&b_units_len);
+
+      if !r.is_eq() {
+        return if r.is_gt() { a } else { b };
+      }
+
+      a
+    })
+    .unwrap()
+    .clone()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
