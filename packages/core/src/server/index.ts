@@ -18,7 +18,7 @@ import {
   DEFAULT_HMR_OPTIONS
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { brandColor, Logger } from '../utils/index.js';
+import { brandColor, clearScreen, Logger } from '../utils/index.js';
 import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
 import { hmrPlugin } from './middlewares/hmr.js';
@@ -145,32 +145,40 @@ export class DevServer implements ImplDevServer {
     userConfig: UserConfig,
     logger: Logger
   ): Promise<void> {
+    const normalizedDevConfig = normalizeDevServerOptions(
+      userConfig.server,
+      'development'
+    );
+    let devPort = normalizedDevConfig.port;
+
     let hmrPort = DEFAULT_HMR_OPTIONS.port;
-    let devPort = userConfig.server.port;
-    // const { strictPort } = userConfig.server;
+    const { strictPort } = userConfig.server;
     const httpServer = http.createServer();
 
     return new Promise((resolve, reject) => {
+      function handleServerAddressInUse() {
+        if (strictPort) {
+          httpServer.removeListener('error', onError);
+          reject(new Error(`Port ${devPort} is already in use`));
+        } else {
+          logger.warn(`Port ${devPort} is in use, trying another one...`);
+          // update hmrPort and devPort
+          userConfig.server.hmr = { port: ++hmrPort };
+          userConfig.server.port = ++devPort;
+          httpServer.listen(devPort);
+        }
+      }
+      function handleError(e: Error) {
+        httpServer.removeListener('error', onError);
+        reject(e);
+      }
       // attach listener to the server to listen for port conflict
       const onError = (e: Error & { code?: string }) => {
         if (e.code === 'EADDRINUSE') {
-          // if (strictPort) {
-          //   console.log('strictPort了啊');
-          //   httpServer.removeListener('error', onError);
-          //   reject(new Error(`Port ${devPort} is already in use`));
-          // }
-          // TODO: if strictPort, throw Error(`Port ${port} is already in use`))
-          logger.warn(`Port ${devPort} is in use, trying another one...`);
-          // update hmrPort and devPort
-          userConfig.server = {
-            ...userConfig.server,
-            hmr: { port: ++hmrPort },
-            port: ++devPort
-          };
-          httpServer.listen(devPort);
+          handleServerAddressInUse();
+          clearScreen();
         } else {
-          httpServer.removeListener('error', onError);
-          reject(e);
+          handleError(e);
         }
       };
 

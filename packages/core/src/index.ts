@@ -34,7 +34,6 @@ export async function start(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
-
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
   // TODO conflict_port

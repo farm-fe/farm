@@ -360,6 +360,7 @@ export async function resolveUserConfig(
   }
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
+
   return userConfig;
 }
 
