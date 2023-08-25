@@ -149,10 +149,10 @@ export class DevServer implements ImplDevServer {
       userConfig.server,
       'development'
     );
-    let devPort = normalizedDevConfig.port;
 
+    let devPort = normalizedDevConfig.port;
     let hmrPort = DEFAULT_HMR_OPTIONS.port;
-    const { strictPort } = userConfig.server;
+    const { strictPort } = normalizedDevConfig;
     const httpServer = http.createServer();
 
     return new Promise((resolve, reject) => {
