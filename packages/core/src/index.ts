@@ -35,18 +35,15 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-
   const normalizedConfig = await normalizeUserCompilationConfig(config);
-
   const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, config.server);
+  const devServer = new DevServer(compiler, logger, config);
 
   if (normalizedConfig.config.mode === 'development') {
     normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       plugin.configDevServer?.(devServer)
     );
   }
-
   await devServer.listen();
 
   // Make sure the server is listening before we watch for file changes

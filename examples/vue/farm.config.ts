@@ -17,5 +17,8 @@ export default defineConfig({
       strictExports: true
     }
   },
+  server: {
+    strictPort: false,
+  },
   plugins: [farmJsPluginVue()]
 });

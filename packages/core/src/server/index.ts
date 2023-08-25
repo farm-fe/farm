@@ -13,10 +13,12 @@ import {
   NormalizedServerConfig,
   normalizeDevServerOptions,
   normalizePublicDir,
-  DevServerPlugin
+  DevServerPlugin,
+  UserConfig,
+  DEFAULT_HMR_OPTIONS
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { brandColor, Logger } from '../utils/index.js';
+import { brandColor, clearScreen, Logger } from '../utils/index.js';
 import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
 import { resourcesPlugin } from './middlewares/resources.js';
 import { hmrPlugin } from './middlewares/hmr.js';
@@ -43,6 +45,7 @@ interface FarmServerContext {
 
 interface ImplDevServer {
   createFarmServer(options: UserServerConfig): void;
+  // resolvePortConflict(userConfig: UserConfig, logger: Logger): Promise<void>;
   listen(): Promise<void>;
   close(): Promise<void>;
   getCompiler(): Compiler;
@@ -57,18 +60,20 @@ export class DevServer implements ImplDevServer {
   hmrEngine?: HmrEngine;
   server?: http.Server;
   publicPath?: string;
+  userConfig?: UserConfig;
 
   constructor(
     private _compiler: Compiler,
     public logger: Logger,
-    options?: UserServerConfig,
+    options?: UserConfig,
     publicPath?: string
   ) {
     this.publicPath = normalizePublicDir(
       _compiler.config.config.root,
       publicPath
     );
-    this.createFarmServer(options);
+    this.userConfig = options;
+    this.createFarmServer(options.server);
   }
 
   getCompiler(): Compiler {
@@ -94,7 +99,6 @@ export class DevServer implements ImplDevServer {
     const end = Date.now();
     this.server.listen(port);
     this.startDevLogger(start, end);
-
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}`);
     }
@@ -135,6 +139,55 @@ export class DevServer implements ImplDevServer {
       logger: this.logger
     };
     this.resolvedFarmServerPlugins(plugins);
+  }
+
+  static resolvePortConflict(
+    userConfig: UserConfig,
+    logger: Logger
+  ): Promise<void> {
+    const normalizedDevConfig = normalizeDevServerOptions(
+      userConfig.server,
+      'development'
+    );
+
+    let devPort = normalizedDevConfig.port;
+    let hmrPort = DEFAULT_HMR_OPTIONS.port;
+    const { strictPort } = normalizedDevConfig;
+    const httpServer = http.createServer();
+
+    return new Promise((resolve, reject) => {
+      function handleServerAddressInUse() {
+        if (strictPort) {
+          httpServer.removeListener('error', onError);
+          reject(new Error(`Port ${devPort} is already in use`));
+        } else {
+          logger.warn(`Port ${devPort} is in use, trying another one...`);
+          // update hmrPort and devPort
+          userConfig.server.hmr = { port: ++hmrPort };
+          userConfig.server.port = ++devPort;
+          httpServer.listen(devPort);
+        }
+      }
+      function handleError(e: Error) {
+        httpServer.removeListener('error', onError);
+        reject(e);
+      }
+      // attach listener to the server to listen for port conflict
+      const onError = (e: Error & { code?: string }) => {
+        if (e.code === 'EADDRINUSE') {
+          handleServerAddressInUse();
+          clearScreen();
+        } else {
+          handleError(e);
+        }
+      };
+
+      httpServer.on('error', onError);
+      httpServer.listen(devPort, () => {
+        httpServer.close();
+        resolve();
+      });
+    });
   }
 
   /**
