@@ -88,7 +88,7 @@ export class DevServer implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
-    const { port, open, protocol, hostname } = this.config;
+    const { port, open, protocol, hostname, host } = this.config;
     const start = Date.now();
     // compile the project and start the dev server
     if (process.env.FARM_PROFILE) {
@@ -97,11 +97,39 @@ export class DevServer implements ImplDevServer {
       await this._compiler.compile();
     }
     const end = Date.now();
-    this.server.listen(port);
+    this.server.listen(port, host);
+    this.error(port, host);
     this.startDevLogger(start, end);
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}`);
     }
+  }
+
+  async error(port: number, ip: string | boolean) {
+    // TODO error
+    // TODO Callback handling of all errors extracted from the function
+    function handleError(
+      error: Error & { code?: string },
+      port: number,
+      ip: string | boolean
+    ) {
+      // TODO ip boolean type true ... false
+      const errorMap: any = {
+        EADDRINUSE: `Port ${port} is already in use`,
+        EACCES: `Permission denied to use port ${port}`,
+        EADDRNOTAVAIL: `The IP address ${ip} is not available on this machine.`
+      };
+
+      const errorMessage =
+        errorMap[error.code] || `An error occurred: ${error}`;
+      this.logger.error(errorMessage);
+    }
+    this.server.on('error', (error: Error & { code?: string }) => {
+      handleError(error, port, ip);
+      this.server.close(() => {
+        process.exit(1);
+      });
+    });
   }
 
   async close() {
@@ -129,6 +157,7 @@ export class DevServer implements ImplDevServer {
       { ...options, protocol, hostname },
       'development'
     );
+
     this._app = new Koa();
     this.server = http.createServer(this._app.callback());
     this._context = {
