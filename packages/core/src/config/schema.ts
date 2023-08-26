@@ -176,8 +176,11 @@ const FarmConfigSchema = z
       .object({
         port: z.number().positive().int().optional(),
         host: z
-          .string()
-          .regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+          .union([
+            z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/),
+            z.literal('localhost'),
+            z.boolean()
+          ])
           .optional(),
         open: z.boolean().optional(),
         https: z.boolean().optional(),

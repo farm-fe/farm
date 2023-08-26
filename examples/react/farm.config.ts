@@ -28,18 +28,23 @@ export default defineConfig({
       }
     },
     // treeShaking: true,
-    minify: false,
+    minify: false
   },
   server: {
     hmr: true,
     cors: true,
+    host: 'localhost'
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', {
-    name: 'plugin-finish-hook-test',
-    finish: {
-      executor(param, context, hookContext) {
-        console.log('plugin-finish-hook-test', param, context, hookContext);
-      },
+  plugins: [
+    '@farmfe/plugin-react',
+    '@farmfe/plugin-sass',
+    {
+      name: 'plugin-finish-hook-test',
+      finish: {
+        executor(param, context, hookContext) {
+          console.log('plugin-finish-hook-test', param, context, hookContext);
+        }
+      }
     }
-  }]
+  ]
 });
