@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.11.1
+
+### Patch Changes
+
+- c8ef101: enable port auto-increment to prevent port conflict
+
 ## 0.11.0
 
 ### Minor Changes

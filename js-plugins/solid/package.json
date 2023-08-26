@@ -32,6 +32,6 @@
     "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.11.0"
+    "@farmfe/core": "^0.11.1"
   }
 }
