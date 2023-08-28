@@ -128,9 +128,7 @@ impl Plugin for FarmPluginPartialBundling {
       }
     };
 
-    let mut resource_group: ResourceGroup = ResourceGroup {
-      resource_pot_group_map: HashMap::new(),
-    };
+    let mut resource_group: ResourceGroup = ResourceGroup::new();
 
     type ModduleGroupRedirectResourceMap = HashMap<ModuleId, ResourceUnitId>;
     let mut module_group_redirect_resource_map: ModduleGroupRedirectResourceMap = HashMap::new();
@@ -154,8 +152,10 @@ impl Plugin for FarmPluginPartialBundling {
       module.module_groups.iter().for_each(|module_group| {
         let name = try_get_filename(module_group);
         if let Some(resource_unit_id) = module_group_redirect_resource_map.get(module_group) {
-          let resource_unit = resource_group.resource_pot_mut(resource_unit_id).unwrap();
-          resource_unit.add_module(module_id.clone());
+          resource_group
+            .resource_unit_mut(resource_unit_id)
+            .unwrap()
+            .add_module(module_id.clone());
         } else {
           let mut resource_unit = ResourceUnit::new(name);
 
@@ -163,10 +163,9 @@ impl Plugin for FarmPluginPartialBundling {
             resource_unit.entry_module = Some(module_group.clone());
           }
 
-          resource_unit.add_module(module_id.clone());
-
           module_group_redirect_resource_map.insert(module_group.clone(), resource_unit.id.clone());
 
+          resource_unit.add_module(module_id.clone());
           resource_group.add_resource_pot(resource_unit);
         }
       });
@@ -435,16 +434,17 @@ impl Plugin for FarmPluginPartialBundling {
         }
 
         // delete in other resource_pot module
-        for resource_pot_id in bucket_resource_units.iter() {
+        for bucket_resource_unit in bucket_resource_units.iter() {
           resource_group
-            .group_mut(resource_pot_id)
+            .resource_unit_mut(&bucket_resource_unit)
             .unwrap()
-            .remove_module(&module.id);
+            .remove_module(module_id);
         }
 
-        let resource_pot_group = resource_group.group_mut(&resource_unit_id).unwrap();
-
-        resource_pot_group.add_module(module_id);
+        resource_group
+          .resource_unit_mut(&resource_unit_id)
+          .unwrap()
+          .add_module(module_id.clone());
       }
     }
 
@@ -464,7 +464,7 @@ impl Plugin for FarmPluginPartialBundling {
       );
     });
 
-    let resources = resource_group.to_resources();
+    let resources = resource_group.to_resources(&module_graph);
 
     resources.iter().for_each(|resource_pot| {
       resource_pot.modules().iter().for_each(|module_id| {

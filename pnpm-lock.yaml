@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: false
@@ -261,6 +261,15 @@ importers:
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
+
+  examples/partial-bundling:
+    dependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   examples/postcss:
     dependencies:

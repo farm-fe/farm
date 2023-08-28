@@ -64,25 +64,9 @@ fn generate_resource_pot_map(
   let mut module_group_graph = context.module_group_graph.write();
 
   let mut resource_pot_map = ResourcePotMap::new();
-  let module_graph = context.module_graph.read();
 
-  // TODO: module_id maybe in multiple resource_pot, so we need to keep it correctly
-  for mut resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
-
-    let resource_modules = resource_pot.modules();
-    if resource_pot.entry_module.is_some() {
-      module_groups.insert(resource_pot.entry_module.clone().unwrap());
-    } else {
-      for module_id in resource_modules {
-        let module = module_graph.module(module_id).unwrap();
-        module_groups.extend(module.module_groups.clone());
-      }
-    }
-
-    resource_pot.module_groups = module_groups.clone();
-
-    for module_group_id in module_groups {
+  for resource_pot in resources_pots {
+    for module_group_id in &resource_pot.module_groups {
       let module_group = module_group_graph
         .module_group_mut(&module_group_id)
         .unwrap();

@@ -180,22 +180,12 @@ fn generate_and_diff_resource_pots(
     .map(|rp| rp.id.clone())
     .collect::<Vec<_>>();
 
-  let module_graph = context.module_graph.read();
   let mut resource_pot_map = context.resource_pot_map.write();
 
   let mut new_resource_pot_ids = vec![];
 
-  for mut resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
-
-    for module_id in resource_pot.modules() {
-      let module = module_graph.module(module_id).unwrap();
-      module_groups.extend(module.module_groups.clone());
-    }
-
-    resource_pot.module_groups = module_groups.clone();
-
-    for module_group_id in module_groups {
+  for resource_pot in resources_pots {
+    for module_group_id in &resource_pot.module_groups {
       let module_group = module_group_graph
         .module_group_mut(&module_group_id)
         .unwrap();

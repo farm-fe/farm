@@ -1,4 +1,4 @@
-use std::{any::Any, hash::Hash, path::Path};
+use std::{any::Any, path::Path};
 
 use blake2::{
   digest::{Update, VariableOutput},
