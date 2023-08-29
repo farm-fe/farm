@@ -97,7 +97,10 @@
     "unwatch",
     "Avenir",
     "wasix",
-    "wasi"
+    "wasi",
+    "linebpos",
+    "chpos",
+    "linechpos"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

@@ -1,9 +1,11 @@
-//! Swc implementation of the sourcemap generator.
+//! Swc implementation of the sourcemap generator. This implementation needs to be refactor later.
+//! Farm needs to provide a more reasonable sourcemap generator.
 
 use std::{collections::HashMap, path::Path, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
+  module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{
     source_map::{Pos, SourceMapGenConfig},
     BytePos, FileName, LineCol, SourceFile, SourceMap,
@@ -104,24 +106,35 @@ fn calc_utf16_offset(file: &SourceFile, bpos: BytePos, state: &mut ByteToCharPos
 pub fn build_source_map_with_config(
   cm: Arc<SourceMap>,
   mappings: &[(BytePos, LineCol)],
-  orig_map_chains: &[sourcemap::SourceMap],
   config: impl SourceMapGenConfig,
+  module_graph: &ModuleGraph,
 ) -> sourcemap::SourceMap {
-  let mut builder = SourceMapBuilder::new(None);
-
-  let mut src_id = 0u32;
-
-  for orig in orig_map_chains {
-    for src in orig.sources() {
-      let id = builder.add_source(src);
-      src_id = id + 1;
-
-      builder.set_source_contents(id, orig.get_source_contents(id));
+  let mut cache: HashMap<String, Vec<sourcemap::SourceMap>> = HashMap::new();
+  let mut get_orig_map_chains = |file_name: &FileName| {
+    if cache.get(&file_name.to_string()).is_some() {
+      return cache.get(&file_name.to_string()).unwrap().clone();
     }
-  }
+    let result = if let FileName::Real(file_name) = file_name {
+      let module_id = ModuleId::from(file_name.to_str().unwrap());
 
-  // // This method is optimized based on the fact that mapping is sorted.
-  // mappings.sort_by_key(|v| v.0);
+      if let Some(module) = module_graph.module(&module_id) {
+        module
+          .source_map_chain
+          .iter()
+          .map(|v| sourcemap::SourceMap::from_slice(v.as_bytes()).expect("invalid sourcemap"))
+          .collect::<Vec<_>>()
+      } else {
+        vec![]
+      }
+    } else {
+      vec![]
+    };
+    cache.insert(file_name.to_string(), result.clone());
+    result
+  };
+
+  let mut builder = SourceMapBuilder::new(None);
+  let mut src_id = 0u32;
 
   let mut cur_file: Option<Arc<SourceFile>> = None;
 
@@ -160,6 +173,8 @@ pub fn build_source_map_with_config(
 
         inline_sources_content = config.inline_sources_content(&f.name);
 
+        let orig_map_chains = get_orig_map_chains(&f.name);
+
         if inline_sources_content && orig_map_chains.is_empty() {
           builder.set_source_contents(src_id, Some(&f.src));
         }
@@ -171,6 +186,7 @@ pub fn build_source_map_with_config(
         &f
       }
     };
+
     if config.skip(&f.name) {
       continue;
     }
@@ -208,25 +224,44 @@ pub fn build_source_map_with_config(
 
     let mut col = chpos - linechpos;
     let mut name = None;
-    if let Some(orig) = &orig {
-      if let Some(token) = orig
-        .lookup_token(line, col)
-        .filter(|t| t.get_dst_line() == line)
-      {
-        line = token.get_src_line();
-        col = token.get_src_col();
-        if token.has_name() {
-          name = token.get_name();
-        }
-        if let Some(src) = token.get_source() {
-          src_id = builder.add_source(src);
-          if inline_sources_content && !builder.has_source_contents(src_id) {
-            if let Some(contents) = token.get_source_view() {
-              builder.set_source_contents(src_id, Some(contents.source()));
-            }
+    // try read original sourcemap chain
+    let orig_map_chains = get_orig_map_chains(&f.name);
+
+    if !orig_map_chains.is_empty() {
+      let mut is_found = false;
+      let mut last_found_source = None;
+      let mut last_found_token = None;
+      // try find original source from the sourcemap chain.
+      for orig in &orig_map_chains {
+        if let Some(token) = orig
+          .lookup_token(line, col)
+          .filter(|t| t.get_dst_line() == line)
+        {
+          is_found = true;
+          line = token.get_src_line();
+          col = token.get_src_col();
+
+          if token.has_name() {
+            name = token.get_name();
+          }
+
+          if let Some(src) = token.get_source() {
+            last_found_source = Some(src.to_string());
+            last_found_token = Some(token);
           }
         }
-      } else {
+      }
+
+      if let Some(src) = last_found_source.as_ref() {
+        src_id = builder.add_source(src);
+        if inline_sources_content && !builder.has_source_contents(src_id) {
+          if let Some(contents) = last_found_token.unwrap().get_source_view() {
+            builder.set_source_contents(src_id, Some(contents.source()));
+          }
+        }
+      }
+
+      if !is_found {
         continue;
       }
     }
@@ -313,7 +348,7 @@ pub fn build_source_map(
   mappings: &[(BytePos, LineCol)],
   cm: Arc<SourceMap>,
   ast: AstModule,
-  context: Arc<CompilationContext>,
+  module_graph: &ModuleGraph,
 ) -> Vec<u8> {
   let mut v = IdentCollector {
     names: Default::default(),
@@ -321,15 +356,15 @@ pub fn build_source_map(
 
   v.visit_ident(ast);
 
-  // let config = SwcSourceMapConfig {
-  //   source_file_name: None,
-  //   output_path: None,
-  //   names: &v.names,
-  //   inline_sources_content: true,
-  //   emit_columns: true,
-  // };
+  let config = SwcSourceMapConfig {
+    source_file_name: None,
+    output_path: None,
+    names: &v.names,
+    inline_sources_content: true,
+    emit_columns: true,
+  };
   let mut src_buf = vec![];
-  cm.build_source_map_with_config(mappings, None, config)
+  build_source_map_with_config(cm, mappings, config, module_graph)
     .to_writer(&mut src_buf)
     .unwrap();
 

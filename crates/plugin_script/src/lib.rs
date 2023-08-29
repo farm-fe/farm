@@ -317,10 +317,12 @@ impl Plugin for FarmPluginScript {
       if context.config.sourcemap.enabled()
         && (context.config.sourcemap.is_all() || !resource_pot.immutable)
       {
+        let module_graph = context.module_graph.read();
         let src_map = build_source_map(
           &src_map_buf,
           context.meta.script.cm.clone(),
           AstModule::Script(ast),
+          &module_graph,
         );
 
         resources.push(Resource {

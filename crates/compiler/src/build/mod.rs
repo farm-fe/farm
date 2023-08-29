@@ -1,5 +1,6 @@
 use std::{
   collections::HashMap,
+  path::{Path, PathBuf},
   sync::{
     mpsc::{channel, Receiver, Sender},
     Arc,
@@ -17,8 +18,10 @@ use farmfe_core::{
   },
   rayon,
   rayon::ThreadPool,
+  relative_path::RelativePath,
 };
 
+use farmfe_toolkit::hash::base64_decode;
 use farmfe_utils::stringify_query;
 
 use crate::{
@@ -174,6 +177,45 @@ impl Compiler {
     };
 
     let load_result = call_and_catch_error!(load, &load_param, context, &hook_context);
+
+    // try load source map after load module content.
+    if load_result.content.contains("//# sourceMappingURL") {
+      // detect that the source map is inline or not
+      let source_map = if load_result
+        .content
+        .contains("//# sourceMappingURL=data:application/json;base64,")
+      {
+        // inline source map
+        let source_map = load_result
+          .content
+          .split("//# sourceMappingURL=data:application/json;base64,");
+
+        if let Some(source_map) = source_map.skip(1).next() {
+          Some(base64_decode(source_map.as_bytes()))
+        } else {
+          None
+        }
+      } else {
+        // external source map
+        let source_map_path = load_result.content.split("//# sourceMappingURL=");
+        let source_map_path = source_map_path.skip(1).next().unwrap().to_string();
+        let resolved_path = Path::new(&load_param.resolved_path);
+        let base_dir = resolved_path.parent().unwrap();
+        let source_map_path = RelativePath::new(source_map_path.trim()).to_logical_path(base_dir);
+
+        if source_map_path.exists() {
+          let source_map = std::fs::read_to_string(source_map_path).unwrap();
+          Some(source_map)
+        } else {
+          None
+        }
+      };
+
+      if let Some(source_map) = source_map {
+        module.source_map_chain.push(source_map);
+      }
+    }
+
     // ================ Load End ===============
 
     // ================ Transform Start ===============
@@ -185,7 +227,7 @@ impl Compiler {
       meta: resolve_result.meta.clone(),
     };
 
-    let transform_result = call_and_catch_error!(transform, transform_param, context);
+    let mut transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
 
     // ================ Parse Start ===============
@@ -222,7 +264,9 @@ impl Compiler {
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
-    module.source_map_chain = transform_result.source_map_chain;
+    module
+      .source_map_chain
+      .append(&mut transform_result.source_map_chain);
     module.meta = module_meta;
 
     // ================ Analyze Deps Start ===============
