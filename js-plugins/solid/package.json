@@ -14,6 +14,7 @@
   "scripts": {
     "start": "farm build -w",
     "build": "farm build",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -33,5 +34,8 @@
   },
   "peerDependencies": {
     "@farmfe/core": "^0.11.1"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

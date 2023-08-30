@@ -27,7 +27,9 @@ export default {
           test: ['.+']
         }
       ]
-    }
+    },
+    sourcemap: false,
+    presetEnv: false
   },
   server: {
     hmr: false
