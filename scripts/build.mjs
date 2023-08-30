@@ -32,7 +32,6 @@ export async function runTaskQueue() {
   await runTask('Cli', buildCli);
   await runTask('Core', buildCore);
   await runTask('RustPlugins', buildRustPlugins);
-  await runTask('Dts', buildDts);
   await runTask('JsPlugins', buildJsPlugins);
   await runTask('Artifacts', copyArtifacts);
 }
@@ -73,7 +72,14 @@ export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 // build js plugins
 export const jsPlugins = () => batchBuildPlugins(PKG_JS_PLUGIN);
 
-export const buildJsPlugins = () => Promise.all(jsPlugins());
+// build chain
+export const buildJsPlugins = async () => {
+  // First, build Dts
+  await buildDts();
+
+  // Then, build other js plugins
+  await Promise.all(jsPlugins());
+};
 
 export const buildRustPlugins = () => Promise.all(rustPlugins());
 
@@ -177,5 +183,24 @@ export async function installProtoBuf() {
   } else {
     console.log('');
     logger('Protobuf has been installed, skipping installation. \n');
+  }
+}
+
+export async function cleanBundleCommand() {
+  try {
+    await execa(DEFAULT_PACKAGE_MANAGER, [
+      '-r',
+      '--filter=./packages/*',
+      '--filter=./js-plugins/*',
+      'run',
+      'clean'
+    ]);
+    logger('pnpm clean command completed successfully.');
+  } catch (error) {
+    logger('An error occurred while running pnpm clean command:', {
+      title: error.message,
+      color: 'red'
+    });
+    process.exit(1);
   }
 }

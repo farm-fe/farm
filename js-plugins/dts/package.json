@@ -10,6 +10,7 @@
     "build:farm": "farm build",
     "start": "pnpm run build -w",
     "watch": "farm watch",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,5 +27,8 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@types/fs-extra": "^11.0.1"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

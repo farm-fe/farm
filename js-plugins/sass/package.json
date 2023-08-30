@@ -32,14 +32,13 @@
     }
   ],
   "scripts": {
-    "build": "pnpm run clean && farm build",
-    "start": "pnpm run build -w",
-    "clean": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
+    "build": "pnpm clean && farm build",
+    "start": "pnpm build -w",
+    "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
   "files": [
-    "dist",
     "build"
   ],
   "keywords": [],

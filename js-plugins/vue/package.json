@@ -9,6 +9,7 @@
   "scripts": {
     "start": "tsc -w",
     "build": "farm build && tsc",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
