@@ -77,8 +77,10 @@ fn resolve_node_modules_normal() {
         &ResolveKind::Import,
         &Arc::new(CompilationContext::default()),
       );
+
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
+      println!("{:?}", resolved.resolved_path);
 
       assert_eq!(
         resolved.resolved_path,
