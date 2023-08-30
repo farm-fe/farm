@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.0
+
+### Minor Changes
+
+- ad00276: Support sourcemap chain
+
 ## 0.11.1
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-solid
 
+## 2.0.1
+
+### Patch Changes
+
+- 6ab20df: Reduce production volume and remove sourcemap
+- Updated dependencies [ad00276]
+  - @farmfe/core@0.12.0
+
 ## 2.0.0
 
 ### Patch Changes
