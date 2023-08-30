@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: false
@@ -701,7 +701,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.11.0
+        specifier: workspace:^0.12.0
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
@@ -719,7 +719,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.11.0
+        specifier: workspace:^0.12.0
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
@@ -740,7 +740,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.11.0
+        specifier: workspace:^0.12.0
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
