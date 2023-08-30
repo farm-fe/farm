@@ -100,7 +100,9 @@
     "wasi",
     "linebpos",
     "chpos",
-    "linechpos"
+    "linechpos",
+    "bpos",
+    "multibyte"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

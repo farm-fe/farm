@@ -186,19 +186,17 @@ impl Compiler {
         .contains("//# sourceMappingURL=data:application/json;base64,")
       {
         // inline source map
-        let source_map = load_result
+        let mut source_map = load_result
           .content
           .split("//# sourceMappingURL=data:application/json;base64,");
 
-        if let Some(source_map) = source_map.skip(1).next() {
-          Some(base64_decode(source_map.as_bytes()))
-        } else {
-          None
-        }
+        source_map
+          .nth(1)
+          .map(|source_map| base64_decode(source_map.as_bytes()))
       } else {
         // external source map
-        let source_map_path = load_result.content.split("//# sourceMappingURL=");
-        let source_map_path = source_map_path.skip(1).next().unwrap().to_string();
+        let mut source_map_path = load_result.content.split("//# sourceMappingURL=");
+        let source_map_path = source_map_path.nth(1).unwrap().to_string();
         let resolved_path = Path::new(&load_param.resolved_path);
         let base_dir = resolved_path.parent().unwrap();
         let source_map_path = RelativePath::new(source_map_path.trim()).to_logical_path(base_dir);
