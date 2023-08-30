@@ -38,7 +38,6 @@ pub fn transform_css_resource_pot(
     let stylesheet = transform_css_stylesheet(module_id, module_graph, context);
     let css_deps = transform_css_deps(module_id, module_graph, context);
 
-    let module = module_graph.module_mut(module_id).unwrap();
     let source_map_enabled = context.config.sourcemap.enabled();
     let (css_code, _src_map) = codegen_css_stylesheet(
       &stylesheet,
@@ -48,7 +47,9 @@ pub fn transform_css_resource_pot(
         None
       },
       context.config.minify,
+      module_graph,
     );
+    let module = module_graph.module_mut(module_id).unwrap();
     // TODO: support source map
     try_with(
       context.meta.script.cm.clone(),

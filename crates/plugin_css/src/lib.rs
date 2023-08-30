@@ -7,7 +7,10 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   hashbrown::HashMap,
-  module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
+  module::{
+    module_graph::{self, ModuleGraph},
+    CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType,
+  },
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
@@ -422,9 +425,8 @@ impl Plugin for FarmPluginCss {
   ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       let stylesheet = &resource_pot.meta.as_css().ast;
-
       let source_map_enabled = context.config.sourcemap.enabled();
-
+      let module_graph = context.module_graph.read();
       let (css_code, src_map) = codegen_css_stylesheet(
         stylesheet,
         if source_map_enabled {
@@ -433,6 +435,7 @@ impl Plugin for FarmPluginCss {
           None
         },
         context.config.minify,
+        &module_graph,
       );
 
       let mut resources = vec![];

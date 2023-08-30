@@ -17,6 +17,9 @@ const PKG_CORE = resolve(CWD, './packages/core');
 // Build cli
 const PKG_CLI = resolve(CWD, './packages/cli');
 
+// Build plugin dts
+const PKG_DTS = resolve(CWD, './js-plugins/dts');
+
 // Build rust_plugin_react
 const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 
@@ -29,6 +32,7 @@ export async function runTaskQueue() {
   await runTask('Cli', buildCli);
   await runTask('Core', buildCore);
   await runTask('RustPlugins', buildRustPlugins);
+  await runTask('Dts', buildDts);
   await runTask('JsPlugins', buildJsPlugins);
   await runTask('Artifacts', copyArtifacts);
 }
@@ -55,6 +59,12 @@ export const buildCore = () =>
 export const buildCli = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
     cwd: PKG_CLI
+  });
+
+// build dts command
+export const buildDts = () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+    cwd: PKG_DTS
   });
 
 // build rust plugins

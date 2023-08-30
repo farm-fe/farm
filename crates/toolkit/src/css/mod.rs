@@ -1,7 +1,9 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
+  context::CompilationContext,
   error::CompilationError,
+  module::module_graph::ModuleGraph,
   swc_common::{input::SourceFileInput, FileName, SourceMap},
   swc_css_ast::Stylesheet,
 };
@@ -72,6 +74,7 @@ pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
   cm: Option<Arc<SourceMap>>,
   minify: bool,
+  module_graph: &ModuleGraph,
 ) -> (String, Option<Vec<u8>>) {
   let mut css_code = String::new();
   let mut source_map = Vec::new();
@@ -89,7 +92,7 @@ pub fn codegen_css_stylesheet(
   gen.emit(stylesheet).unwrap();
 
   if let Some(cm) = cm {
-    let src_map = build_source_map(&source_map, cm, AstModule::Css(stylesheet));
+    let src_map = build_source_map(&source_map, cm, AstModule::Css(stylesheet), module_graph);
     (css_code, Some(src_map))
   } else {
     (css_code, None)

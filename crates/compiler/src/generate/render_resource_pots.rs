@@ -71,6 +71,8 @@ pub fn render_resource_pots_and_generate_resources(
           }
         }
 
+        // TODO support inline source map.
+        // generate_resources hook may need to be refactored to make sure the resource and it's sourcemap be returned together.
         if res_map.contains_key(&name_before_update) {
           let source_mapping_url = format!(
             "\n//# sourceMappingURL={}.{}",

@@ -362,11 +362,10 @@ impl SourcemapConfig {
   }
   pub fn is_inline(&self) -> bool {
     match self {
-      Self::Bool(b) if *b => true,
+      Self::Bool(_) => false,
       Self::Inline => true,
       Self::All => false,
       Self::AllInline => true,
-      _ => false,
     }
   }
 
