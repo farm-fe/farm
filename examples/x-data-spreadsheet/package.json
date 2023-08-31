@@ -5,7 +5,8 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/js-plugin-less": "workspace:*"
+    "@farmfe/js-plugin-less": "workspace:*",
+    "core-js": "^3.30.1"
   },
   "scripts": {
     "start": "farm start",
