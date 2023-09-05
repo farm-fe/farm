@@ -38,6 +38,7 @@ fn resolve_relative_specifier_with_extension() {
     "tests/fixtures/resolve-relative-specifier/**/index.*",
     |file, _| {
       let resolver = Resolver::new();
+      println!("{:?}", file.parent());
       let cwd = file.parent().unwrap().to_path_buf();
 
       let resolved = resolver.resolve(
@@ -46,6 +47,7 @@ fn resolve_relative_specifier_with_extension() {
         &ResolveKind::Entry(String::new()),
         &Arc::new(CompilationContext::default()),
       );
+      println!("{:?}", resolved);
       assert!(resolved.is_none());
 
       let resolved = resolver.resolve(
@@ -54,7 +56,9 @@ fn resolve_relative_specifier_with_extension() {
         &ResolveKind::Entry(String::new()),
         &Arc::new(CompilationContext::default()),
       );
+      println!("{:?}", resolved);
       let resolved = resolved.unwrap();
+      println!("{:?}", resolved.resolved_path);
       assert_eq!(
         resolved.resolved_path,
         cwd.join("index.ts").to_string_lossy().to_string()

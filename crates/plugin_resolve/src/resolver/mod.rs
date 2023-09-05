@@ -16,7 +16,10 @@ use farmfe_core::{
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
+
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
+
+use crate::resolver_common::NODE_MODULES;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ResolveNodeModuleCacheKey {
@@ -30,8 +33,6 @@ pub struct Resolver {
   resolve_node_modules_cache:
     Mutex<HashMap<ResolveNodeModuleCacheKey, Option<PluginResolveHookResult>>>,
 }
-
-const NODE_MODULES: &str = "node_modules";
 
 impl Resolver {
   pub fn new() -> Self {

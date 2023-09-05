@@ -1,6 +1,3 @@
 {
-  "editor.tabSize": 2,
-  "rust-analyzer.linkedProjects": [
-    ".\\crates\\plugin_resolve\\Cargo.toml"
-  ]
+  "editor.tabSize": 2
 }
