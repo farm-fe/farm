@@ -64,10 +64,10 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
-    println!("package_json_info: {:?}", package_json_info);
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       farm_profile_scope!("resolve.check_external".to_string());
+      println!("source: {:?}", source);
       if !self.is_source_absolute(source)
         && !self.is_source_relative(source)
         && self.is_module_external(package_json_info, source)
@@ -852,8 +852,8 @@ impl Resolver {
   fn is_module_external(&self, package_json_info: &PackageJsonInfo, resolved_path: &str) -> bool {
     farm_profile_function!("is_module_external".to_string());
     let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
-
     if let Some(Value::Object(obj)) = browser_field {
+      println!("这个是判断是否是external: {:?}", obj);
       for (key, value) in obj {
         let path = Path::new(resolved_path);
 
