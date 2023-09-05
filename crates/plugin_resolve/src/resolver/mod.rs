@@ -64,6 +64,7 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
+    println!("package_json_info: {:?}", package_json_info);
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       farm_profile_scope!("resolve.check_external".to_string());
