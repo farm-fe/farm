@@ -68,4 +68,6 @@ impl ResolveCache {
     })?;
     Ok(cache_contains_key.contains_key(key))
   }
+
+  // TODO feat error callback
 }
