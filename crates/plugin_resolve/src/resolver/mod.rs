@@ -57,6 +57,13 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("resolver::resolve".to_string());
+    static mut CALL_COUNT: u32 = 0; // 静态变量用于保存调用次数
+
+    // 使用 unsafe 块来操作静态变量，确保并发安全
+    unsafe {
+      CALL_COUNT += 1; // 增加调用次数
+      // println!("resolve function has been called {} times", CALL_COUNT);
+    }
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -67,7 +74,7 @@ impl Resolver {
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       farm_profile_scope!("resolve.check_external".to_string());
-      println!("source: {:?}", source);
+      // println!("source: {:?}", source);
       if !self.is_source_absolute(source)
         && !self.is_source_relative(source)
         && self.is_module_external(package_json_info, source)
@@ -169,6 +176,7 @@ impl Resolver {
         });
     } else {
       // check if the result is cached
+      // println!("source: 走缓存了 {:?}", source);
       if let Some(result) = self
         .resolve_node_modules_cache
         .lock()
@@ -853,7 +861,9 @@ impl Resolver {
     farm_profile_function!("is_module_external".to_string());
     let browser_field = self.get_field_value_from_package_json_info(package_json_info, "browser");
     if let Some(Value::Object(obj)) = browser_field {
-      println!("这个是判断是否是external: {:?}", obj);
+      // println!("这个是判断是否是external: {:?}", obj);
+      // println!("这个是判断是否是external: {:?}", resolved_path);
+      // println!("这个是判断是否是external: {:?}", package_json_info);
       for (key, value) in obj {
         let path = Path::new(resolved_path);
 
