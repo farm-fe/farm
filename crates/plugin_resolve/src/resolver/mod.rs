@@ -170,12 +170,13 @@ impl Resolver {
     } else {
       // check if the result is cached
       println!("prepare get cache: {:?}", source);
-      if let Some(result) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
+      if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
         source: source.to_string(),
         base_dir: base_dir.to_string_lossy().to_string(),
         kind: kind.clone(),
       }) {
-        return result.clone();
+        println!("get cache: {:?}", source);
+        return Some(result.clone());
       }
 
       let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
@@ -188,8 +189,16 @@ impl Resolver {
           kind: kind.clone(),
         };
 
-        if !resolve_module_cache.contains(&key) {
-          resolve_module_cache.insert(key, result.clone());
+        // insert
+        match resolve_module_cache.contains(&key) {
+          Ok(true) => {}
+          Ok(false) => {
+            println!("第一次存进来了 {:?}", key);
+            let _ = resolve_module_cache.insert(key, result.clone());
+          }
+          Err(err) => {
+            println!("{}", format!("Error checking cache: {}", err));
+          }
         }
       }
 
@@ -312,8 +321,8 @@ impl Resolver {
         kind: kind.clone(),
       };
 
-      if let Some(result) = self.resolve_module_cache.get(&key) {
-        return (result.clone(), tried_paths);
+      if let Ok(Some(result)) = self.resolve_module_cache.get(&key) {
+        return (Some(result.clone()), tried_paths);
       }
 
       tried_paths.push(current.clone());
