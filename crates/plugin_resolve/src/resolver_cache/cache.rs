@@ -16,9 +16,10 @@ impl ResolveCache {
   pub fn new() -> ResolveCache {
     // Whether it is necessary to distinguish the cache of different modules
     // qs: Whether the resolver module only needs to be instantiated once ？
+    // Caching only three cases: the first alias, the second absolute path, the third node_modules third party path
     ResolveCache {
+      // the first alias, the second absolute path, the third node_modules third party path
       cache: Mutex::new(HashMap::new()),
-      // resolve_node_modules_cache: Mutex::new(HashMap::new()),
     }
   }
 
