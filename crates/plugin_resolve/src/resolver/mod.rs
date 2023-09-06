@@ -19,25 +19,18 @@ use farmfe_core::{
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
-use crate::resolver_cache::ResolveCache;
+use crate::resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey};
 use crate::resolver_common::NODE_MODULES;
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ResolveNodeModuleCacheKey {
-  pub source: String,
-  pub base_dir: String,
-  pub kind: ResolveKind,
-}
 
 pub struct Resolver {
   /// the key is (source, base_dir) and the value is the resolved result
-  resolve_node_modules_cache: ResolveCache,
+  resolve_module_cache: ResolveCache,
 }
 
 impl Resolver {
   pub fn new() -> Self {
     Self {
-      resolve_node_modules_cache: ResolveCache::new(),
+      resolve_module_cache: ResolveCache::new(),
     }
   }
 
@@ -176,32 +169,29 @@ impl Resolver {
         });
     } else {
       // check if the result is cached
-      // if let Some(result) = self
-      //   .resolve_node_modules_cache
-      //   .lock()
-      //   .get(&ResolveNodeModuleCacheKey {
-      //     source: source.to_string(),
-      //     base_dir: base_dir.to_string_lossy().to_string(),
-      //     kind: kind.clone(),
-      //   })
-      // {
-      //   return result.clone();
-      // }
+      println!("prepare get cache: {:?}", source);
+      if let Some(result) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
+        source: source.to_string(),
+        base_dir: base_dir.to_string_lossy().to_string(),
+        kind: kind.clone(),
+      }) {
+        return result.clone();
+      }
 
       let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
       // cache the result
-      // for tried_path in tried_paths {
-      //   let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
-      //   let key = ResolveNodeModuleCacheKey {
-      //     source: source.to_string(),
-      //     base_dir: tried_path.to_string_lossy().to_string(),
-      //     kind: kind.clone(),
-      //   };
+      for tried_path in tried_paths {
+        let resolve_module_cache = &self.resolve_module_cache;
+        let key = ResolveNodeModuleCacheKey {
+          source: source.to_string(),
+          base_dir: tried_path.to_string_lossy().to_string(),
+          kind: kind.clone(),
+        };
 
-      //   if !resolve_node_modules_cache.contains_key(&key) {
-      //     resolve_node_modules_cache.insert(key, result.clone());
-      //   }
-      // }
+        if !resolve_module_cache.contains(&key) {
+          resolve_module_cache.insert(key, result.clone());
+        }
+      }
 
       result
     }
@@ -322,9 +312,9 @@ impl Resolver {
         kind: kind.clone(),
       };
 
-      // if let Some(result) = self.resolve_node_modules_cache.lock().get(&key) {
-      //   return (result.clone(), tried_paths);
-      // }
+      if let Some(result) = self.resolve_module_cache.get(&key) {
+        return (result.clone(), tried_paths);
+      }
 
       tried_paths.push(current.clone());
 
