@@ -67,9 +67,9 @@ $ pnpm bootstrap # install the dependencies of the project with series of initia
 
 - 使用`pnpm bootstRap`安装依赖项，并通过一系列初始化操作构建核心包。
 
-- 使用示例(打开新终端)：`cd Examples/Reaction&&pnpm start`，如果示例不能正常启动，则上报问题。
+- 使用示例(打开新终端)：`cd examples/react && pnpm start`，如果示例不能正常启动，则上报问题。
 
-- 如果`Examples/react`正常运行，则表明开发环境配置成功。
+- 如果`examples/react`正常运行，则表明开发环境配置成功。
 
 - 如果您更改了`crates`中的 `Rust` 代码，请再次运行 `Packages/core` 下的 `npm run build：rs` 以获取最新的二进制代码。
 
