@@ -221,7 +221,7 @@ export class DevServer implements ImplDevServer {
           httpServer.on('error', onError);
           httpServer.on('listening', () => {
             httpServer.close();
-            resolve(true); // 端口未被占用
+            resolve(true);
           });
           httpServer.listen(portToCheck, '::1');
         }
