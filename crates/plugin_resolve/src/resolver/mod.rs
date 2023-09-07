@@ -50,13 +50,7 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("resolver::resolve".to_string());
-    static mut CALL_COUNT: u32 = 0; // 静态变量用于保存调用次数
-
-    // 使用 unsafe 块来操作静态变量，确保并发安全
-    unsafe {
-      CALL_COUNT += 1; // 增加调用次数
-                       // println!("resolve function has been called {} times", CALL_COUNT);
-    }
+    // Load the package.json file located under base_dir
     let package_json_info = load_package_json(
       base_dir.clone(),
       Options {
@@ -64,14 +58,16 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
+    // encapsulation path constant
+    let is_source_absolute_constant: bool = self.is_source_absolute(source);
+    let is_source_relative_constant: bool = self.is_source_relative(source);
+    let is_source_dot_constant: bool = self.is_source_dot(source);
+    let is_source_double_dot_constant: bool = self.is_double_source_dot(source);
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       farm_profile_scope!("resolve.check_external".to_string());
-      // println!("source: {:?}", source);
-      if !self.is_source_absolute(source)
-        && !self.is_source_relative(source)
-        && self.is_module_external(package_json_info, source)
-      {
+      let is_source_module_external = self.is_module_external(package_json_info, source);
+      if !is_source_absolute_constant && !is_source_relative_constant && is_source_module_external {
         // this is an external module
         return Some(PluginResolveHookResult {
           resolved_path: String::from(source),
@@ -80,7 +76,7 @@ impl Resolver {
         });
       }
 
-      if !self.is_source_absolute(source) && !self.is_source_relative(source) {
+      if !is_source_absolute_constant && !is_source_relative_constant {
         // check browser replace
         if let Some(resolved_path) = self.try_browser_replace(package_json_info, source, context) {
           let external = self.is_module_external(package_json_info, &resolved_path);
@@ -114,10 +110,49 @@ impl Resolver {
       }
     }
 
+    // match source {
+    //   source
+    //     if self
+    //       .try_alias(source, base_dir.clone(), kind, context)
+    //       .is_some() =>
+    //   {
+    //     // Handle the alias case
+    //     self.try_alias(source, base_dir.clone(), kind, context)
+    //   }
+    //   source if is_source_absolute_constant => {
+    //     // Handle the absolute source case
+    //     resolve_absolute_module(source, context)
+    //   }
+    //   source if is_source_relative_constant => {
+    //     // Handle the relative source case
+    //     resolve_relative_module(source, base_dir, context)
+    //   }
+    //   source if is_source_dot_constant => {
+    //     // Handle the source dot case
+    //     resolve_dot_module(base_dir, kind, context)
+    //   }
+    //   source if is_source_double_dot_constant => {
+    //     // Handle the source double dot case
+    //     resolve_double_dot_module(base_dir, kind, context)
+    //   }
+    //   _ => {
+    //     // Handle the default case or other conditions
+    //     resolve_from_cache(source, base_dir, kind, context)
+    // }
+
+    //   match (self.try_alias(source, base_dir.clone(), kind, context), is_source_absolute_constant, is_source_relative_constant, is_source_dot_constant, is_source_double_dot_constant) {
+    //     (Some(result), _, _, _, _) => Some(result),
+    //     (None, true, _, _, _) => resolve_absolute_module(source, context),
+    //     (None, _, true, _, _) => resolve_relative_module(source, base_dir, context),
+    //     (None, _, _, true, _) => resolve_dot_module(base_dir, kind, context),
+    //     (None, _, _, _, true) => resolve_double_dot_module(base_dir, kind, context),
+    //     (None, _, _, _, _) => resolve_from_cache(source, base_dir, kind, context),
+    // }
+
     // try alias first
     if let Some(result) = self.try_alias(source, base_dir.clone(), kind, context) {
       Some(result)
-    } else if self.is_source_absolute(source) {
+    } else if is_source_absolute_constant {
       let path_buf = PathBuf::from_str(source).unwrap();
 
       return self
@@ -126,7 +161,7 @@ impl Resolver {
         .map(|resolved_path| {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
-    } else if self.is_source_relative(source) {
+    } else if is_source_relative_constant {
       farm_profile_scope!("resolve.relative".to_string());
       // if it starts with './' or '../, it is a relative path
       let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
@@ -152,14 +187,14 @@ impl Resolver {
       } else {
         None
       }
-    } else if self.is_source_dot(source) {
+    } else if is_source_dot_constant {
       // import xx from '.'
       return self
         .try_directory(&base_dir, kind, false, context)
         .map(|resolved_path| {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
-    } else if self.is_double_source_dot(source) {
+    } else if is_source_double_dot_constant {
       // import xx from '..'
       let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
       return self
@@ -193,11 +228,10 @@ impl Resolver {
         match resolve_module_cache.contains(&key) {
           Ok(true) => {}
           Ok(false) => {
-            println!("第一次存进来了 {:?}", key);
             let _ = resolve_module_cache.insert(key, result.clone());
           }
           Err(err) => {
-            println!("{}", format!("Error checking cache: {}", err));
+            println!("{}", format!("Error checking cache: {:?}", err));
           }
         }
       }
@@ -956,4 +990,123 @@ impl Resolver {
       Some(value_path)
     }
   }
+
+  // // resolve other methods
+  // fn resolve_external_module(source: &str) -> Option<PluginResolveHookResult> {
+  //   Some(PluginResolveHookResult {
+  //     resolved_path: String::from(source),
+  //     external: true,
+  //     ..Default::default()
+  //   })
+  // }
+
+  // fn resolve_absolute_module(
+  //   &self,
+  //   source: &str,
+  //   context: &CompilationContext,
+  // ) -> Option<PluginResolveHookResult> {
+  //   let path_buf = PathBuf::from_str(source).unwrap();
+  //   self
+  //     .try_file(&path_buf, context)
+  //     .or_else(|| self.try_directory(&path_buf, kind, false, context))
+  //     .map(|resolved_path| {
+  //       self.get_resolve_result(&package_json_info, resolved_path, kind, context)
+  //     })
+  // }
+
+  // fn resolve_relative_module(
+  //   source: &str,
+  //   base_dir: PathBuf,
+  //   context: &CompilationContext,
+  // ) -> Option<PluginResolveHookResult> {
+  //   farm_profile_scope!("resolve.relative".to_string());
+  //   let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
+  //   let normalized_path = normalized_path.as_path();
+
+  //   let normalized_path = if context.config.resolve.symlinks {
+  //     follow_symlinks(normalized_path.to_path_buf())
+  //   } else {
+  //     normalized_path.to_path_buf()
+  //   };
+
+  //   let resolved_path = self
+  //     .try_file(&normalized_path, context)
+  //     .or_else(|| self.try_directory(&normalized_path, kind, false, context))
+  //     .ok_or(CompilationError::GenericError(format!(
+  //       "File `{:?}` does not exist",
+  //       normalized_path
+  //     )));
+
+  //   if let Ok(resolved_path) = resolved_path {
+  //     Some(self.get_resolve_result(&package_json_info, resolved_path, kind, context))
+  //   } else {
+  //     None
+  //   }
+  // }
+
+  // fn resolve_dot_module(
+  //   base_dir: PathBuf,
+  //   kind: ResolveKind,
+  //   context: &CompilationContext,
+  // ) -> Option<PluginResolveHookResult> {
+  //   self
+  //     .try_directory(&base_dir, kind, false, context)
+  //     .map(|resolved_path| {
+  //       self.get_resolve_result(&package_json_info, resolved_path, kind, context)
+  //     })
+  // }
+
+  // fn resolve_double_dot_module(
+  //   base_dir: PathBuf,
+  //   kind: ResolveKind,
+  //   context: &CompilationContext,
+  // ) -> Option<PluginResolveHookResult> {
+  //   let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
+  //   self
+  //     .try_directory(&parent_path, kind, false, context)
+  //     .map(|resolved_path| {
+  //       self.get_resolve_result(&package_json_info, resolved_path, kind, context)
+  //     })
+  // }
+
+  // fn resolve_from_cache(
+  //   source: &str,
+  //   base_dir: PathBuf,
+  //   kind: &ResolveKind,
+  //   context: &CompilationContext,
+  // ) -> Option<PluginResolveHookResult> {
+  //   println!("prepare get cache: {:?}", source);
+  //   if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
+  //     source: source.to_string(),
+  //     base_dir: base_dir.to_string_lossy().to_string(),
+  //     kind: kind.clone(),
+  //   }) {
+  //     println!("get cache: {:?}", source);
+  //     return Some(result.clone());
+  //   }
+
+  //   let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
+  //   // cache the result
+  //   for tried_path in tried_paths {
+  //     let resolve_module_cache = &self.resolve_module_cache;
+  //     let key = ResolveNodeModuleCacheKey {
+  //       source: source.to_string(),
+  //       base_dir: tried_path.to_string_lossy().to_string(),
+  //       kind: kind.clone(),
+  //     };
+
+  //     // insert
+  //     match resolve_module_cache.contains(&key) {
+  //       Ok(true) => {}
+  //       Ok(false) => {
+  //         let _ = resolve_module_cache.insert(key, result.clone());
+  //       }
+  //       Err(err) => {
+  //         println!("{}", format!("Error checking cache: {:?}", err));
+  //       }
+  //     }
+  //   }
+
+  //   result
+  // }
 }

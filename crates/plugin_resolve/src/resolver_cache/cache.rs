@@ -1,6 +1,6 @@
 use farmfe_core::plugin::{PluginResolveHookResult, ResolveKind};
 use std::collections::HashMap;
-use std::sync::{PoisonError, RwLock, RwLockReadGuard};
+use std::sync::{PoisonError, RwLock};
 
 // define a struct `ResolveCache` used to cache parser result
 pub struct ResolveCache {
@@ -37,42 +37,27 @@ impl ResolveCache {
     &self,
     key: ResolveNodeModuleCacheKey,
     value: Option<PluginResolveHookResult>,
-  ) -> Result<(), String> {
+  ) -> Result<(), CacheError> {
     let mut cache = self.cache.write().map_err(|e| {
-      format!(
-        "When inserting cache module data Failed to lock cache: {:?}",
-        e
+      self.handle_cache_error(
+        e,
+        "resolver Cache Module When get cache module data Failed to lock cache:",
       )
     })?;
     cache.entry(key).or_insert(value);
     Ok(())
   }
-  // Get data from the cache and return a `Option` to indicate the success or failure of the operation.
-  // .map_err(|e| format!("resolver Cache Module When get cache module data Failed to lock cache: {:?}", e))?;
-
-  // pub fn get(
-  //   &self,
-  //   key: &ResolveNodeModuleCacheKey,
-  // ) -> Result<Option<PluginResolveHookResult>, String> {
-  //   let cache = self
-  //     .cache
-  //     .read()
-  //     .map_err(|e| self.handle_cache_error(e, "Get cache"))?;
-
-  //   match cache.get(key) {
-  //     Some(result) => Ok(Some(result.clone()).unwrap()),
-  //     None => Ok(None),
-  //   }
-  // }
 
   pub fn get(
     &self,
     key: &ResolveNodeModuleCacheKey,
   ) -> Result<Option<PluginResolveHookResult>, CacheError> {
-    let cache = self
-      .cache
-      .read()
-      .map_err(|e| self.handle_cache_error(e, "Get cache"))?;
+    let cache = self.cache.read().map_err(|e| {
+      self.handle_cache_error(
+        e,
+        "resolver Cache Module When get cache module data Failed to lock cache:",
+      )
+    })?;
     match cache.get(key) {
       Some(result) => Ok(result.clone()),
       None => Ok(None),
@@ -80,23 +65,20 @@ impl ResolveCache {
   }
 
   // Check whether the cache contains the specified key, and return a `Option` indicating the success or failure of the operation.
-  pub fn contains(&self, key: &ResolveNodeModuleCacheKey) -> Result<bool, String> {
+  pub fn contains(&self, key: &ResolveNodeModuleCacheKey) -> Result<bool, CacheError> {
     let cache_contains_key = self.cache.read().map_err(|e| {
-      format!(
-        "When contains cache module get keys data Failed to lock cache: {:?}",
-        e
+      self.handle_cache_error(
+        e,
+        "resolver Cache Module When contains keys module data Failed to lock cache:",
       )
     })?;
     Ok(cache_contains_key.contains_key(key))
   }
 
-  fn handle_cache_error<T, S>(
-    &self,
-    error: PoisonError<RwLockReadGuard<T>>,
-    context: S,
-  ) -> CacheError
+  fn handle_cache_error<T, S, E>(&self, error: PoisonError<E>, context: S) -> CacheError
   where
     S: Into<String>,
+    E: std::ops::Deref<Target = T>,
   {
     let error_msg = format!("{}: Failed to lock cache: {:?}", context.into(), error);
     CacheError::LockError(error_msg)
