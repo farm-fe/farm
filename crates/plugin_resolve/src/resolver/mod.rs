@@ -109,134 +109,105 @@ impl Resolver {
         }
       }
     }
-
-    // match source {
-    //   source
-    //     if self
-    //       .try_alias(source, base_dir.clone(), kind, context)
-    //       .is_some() =>
-    //   {
-    //     // Handle the alias case
-    //     self.try_alias(source, base_dir.clone(), kind, context)
-    //   }
-    //   source if is_source_absolute_constant => {
-    //     // Handle the absolute source case
-    //     resolve_absolute_module(source, context)
-    //   }
-    //   source if is_source_relative_constant => {
-    //     // Handle the relative source case
-    //     resolve_relative_module(source, base_dir, context)
-    //   }
-    //   source if is_source_dot_constant => {
-    //     // Handle the source dot case
-    //     resolve_dot_module(base_dir, kind, context)
-    //   }
-    //   source if is_source_double_dot_constant => {
-    //     // Handle the source double dot case
-    //     resolve_double_dot_module(base_dir, kind, context)
-    //   }
-    //   _ => {
-    //     // Handle the default case or other conditions
-    //     resolve_from_cache(source, base_dir, kind, context)
-    // }
-
-    //   match (self.try_alias(source, base_dir.clone(), kind, context), is_source_absolute_constant, is_source_relative_constant, is_source_dot_constant, is_source_double_dot_constant) {
-    //     (Some(result), _, _, _, _) => Some(result),
-    //     (None, true, _, _, _) => resolve_absolute_module(source, context),
-    //     (None, _, true, _, _) => resolve_relative_module(source, base_dir, context),
-    //     (None, _, _, true, _) => resolve_dot_module(base_dir, kind, context),
-    //     (None, _, _, _, true) => resolve_double_dot_module(base_dir, kind, context),
-    //     (None, _, _, _, _) => resolve_from_cache(source, base_dir, kind, context),
-    // }
-
-    // try alias first
-    if let Some(result) = self.try_alias(source, base_dir.clone(), kind, context) {
-      Some(result)
-    } else if is_source_absolute_constant {
-      let path_buf = PathBuf::from_str(source).unwrap();
-
-      return self
-        .try_file(&path_buf, context)
-        .or_else(|| self.try_directory(&path_buf, kind, false, context))
-        .map(|resolved_path| {
-          self.get_resolve_result(&package_json_info, resolved_path, kind, context)
-        });
-    } else if is_source_relative_constant {
-      farm_profile_scope!("resolve.relative".to_string());
-      // if it starts with './' or '../, it is a relative path
-      let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
-      let normalized_path = normalized_path.as_path();
-
-      let normalized_path = if context.config.resolve.symlinks {
-        follow_symlinks(normalized_path.to_path_buf())
-      } else {
-        normalized_path.to_path_buf()
-      };
-
-      // TODO try read symlink from the resolved path step by step to its parent util the root
-      let resolved_path = self
-        .try_file(&normalized_path, context)
-        .or_else(|| self.try_directory(&normalized_path, kind, false, context))
-        .ok_or(CompilationError::GenericError(format!(
-          "File `{:?}` does not exist",
-          normalized_path
-        )));
-
-      if let Ok(resolved_path) = resolved_path {
-        return Some(self.get_resolve_result(&package_json_info, resolved_path, kind, context));
-      } else {
-        None
+    match source {
+      source
+        if self
+          .try_alias(source, base_dir.clone(), kind, context)
+          .is_some() =>
+      {
+        // Handle the alias case
+        self.try_alias(source, base_dir.clone(), kind, context)
       }
-    } else if is_source_dot_constant {
-      // import xx from '.'
-      return self
-        .try_directory(&base_dir, kind, false, context)
-        .map(|resolved_path| {
-          self.get_resolve_result(&package_json_info, resolved_path, kind, context)
-        });
-    } else if is_source_double_dot_constant {
-      // import xx from '..'
-      let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
-      return self
-        .try_directory(&parent_path, kind, false, context)
-        .map(|resolved_path| {
-          self.get_resolve_result(&package_json_info, resolved_path, kind, context)
-        });
-    } else {
-      // check if the result is cached
-      println!("prepare get cache: {:?}", source);
-      if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
-        source: source.to_string(),
-        base_dir: base_dir.to_string_lossy().to_string(),
-        kind: kind.clone(),
-      }) {
-        println!("get cache: {:?}", source);
-        return Some(result.clone());
-      }
+      source if is_source_absolute_constant => {
+        // Handle the absolute source case
+        let path_buf = PathBuf::from_str(source).unwrap();
 
-      let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
-      // cache the result
-      for tried_path in tried_paths {
-        let resolve_module_cache = &self.resolve_module_cache;
-        let key = ResolveNodeModuleCacheKey {
-          source: source.to_string(),
-          base_dir: tried_path.to_string_lossy().to_string(),
-          kind: kind.clone(),
+        return self
+          .try_file(&path_buf, context)
+          .or_else(|| self.try_directory(&path_buf, kind, false, context))
+          .map(|resolved_path| {
+            self.get_resolve_result(&package_json_info, resolved_path, kind, context)
+          });
+      }
+      source if is_source_relative_constant => {
+        farm_profile_scope!("resolve.relative".to_string());
+        // if it starts with './' or '../, it is a relative path
+        let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
+        let normalized_path = normalized_path.as_path();
+
+        let normalized_path = if context.config.resolve.symlinks {
+          follow_symlinks(normalized_path.to_path_buf())
+        } else {
+          normalized_path.to_path_buf()
         };
 
-        // insert
-        match resolve_module_cache.contains(&key) {
-          Ok(true) => {}
-          Ok(false) => {
-            let _ = resolve_module_cache.insert(key, result.clone());
-          }
-          Err(err) => {
-            println!("{}", format!("Error checking cache: {:?}", err));
-          }
+        // TODO try read symlink from the resolved path step by step to its parent util the root
+        let resolved_path = self
+          .try_file(&normalized_path, context)
+          .or_else(|| self.try_directory(&normalized_path, kind, false, context))
+          .ok_or(CompilationError::GenericError(format!(
+            "File `{:?}` does not exist",
+            normalized_path
+          )));
+
+        if let Ok(resolved_path) = resolved_path {
+          return Some(self.get_resolve_result(&package_json_info, resolved_path, kind, context));
+        } else {
+          None
         }
       }
+      source if is_source_dot_constant => {
+        // import xx from '.'
+        return self
+          .try_directory(&base_dir, kind, false, context)
+          .map(|resolved_path| {
+            self.get_resolve_result(&package_json_info, resolved_path, kind, context)
+          });
+      }
+      source if is_source_double_dot_constant => {
+        // import xx from '..'
+        let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
+        return self
+          .try_directory(&parent_path, kind, false, context)
+          .map(|resolved_path| {
+            self.get_resolve_result(&package_json_info, resolved_path, kind, context)
+          });
+      }
+      _ => {
+        // check if the result is cached
+        println!("prepare get cache: {:?}", source);
+        if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
+          source: source.to_string(),
+          base_dir: base_dir.to_string_lossy().to_string(),
+          kind: kind.clone(),
+        }) {
+          println!("get cache: {:?}", source);
+          return Some(result.clone());
+        }
 
-      result
+        let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
+        // cache the result
+        for tried_path in tried_paths {
+          let resolve_module_cache = &self.resolve_module_cache;
+          let key = ResolveNodeModuleCacheKey {
+            source: source.to_string(),
+            base_dir: tried_path.to_string_lossy().to_string(),
+            kind: kind.clone(),
+          };
+
+          // insert
+          match resolve_module_cache.contains(&key) {
+            Ok(true) => {}
+            Ok(false) => {
+              let _ = resolve_module_cache.insert(key, result.clone());
+            }
+            Err(err) => {
+              println!("{}", format!("Error checking cache: {:?}", err));
+            }
+          }
+        }
+        result
+      }
     }
   }
 
@@ -1108,5 +1079,44 @@ impl Resolver {
   //   }
 
   //   result
+  // }
+
+  // match source {
+  //   source
+  //     if self
+  //       .try_alias(source, base_dir.clone(), kind, context)
+  //       .is_some() =>
+  //   {
+  //     // Handle the alias case
+  //     self.try_alias(source, base_dir.clone(), kind, context)
+  //   }
+  //   source if is_source_absolute_constant => {
+  //     // Handle the absolute source case
+  //     resolve_absolute_module(source, context)
+  //   }
+  //   source if is_source_relative_constant => {
+  //     // Handle the relative source case
+  //     resolve_relative_module(source, base_dir, context)
+  //   }
+  //   source if is_source_dot_constant => {
+  //     // Handle the source dot case
+  //     resolve_dot_module(base_dir, kind, context)
+  //   }
+  //   source if is_source_double_dot_constant => {
+  //     // Handle the source double dot case
+  //     resolve_double_dot_module(base_dir, kind, context)
+  //   }
+  //   _ => {
+  //     // Handle the default case or other conditions
+  //     resolve_from_cache(source, base_dir, kind, context)
+  // }
+
+  //   match (self.try_alias(source, base_dir.clone(), kind, context), is_source_absolute_constant, is_source_relative_constant, is_source_dot_constant, is_source_double_dot_constant) {
+  //     (Some(result), _, _, _, _) => Some(result),
+  //     (None, true, _, _, _) => resolve_absolute_module(source, context),
+  //     (None, _, true, _, _) => resolve_relative_module(source, base_dir, context),
+  //     (None, _, _, true, _) => resolve_dot_module(base_dir, kind, context),
+  //     (None, _, _, _, true) => resolve_double_dot_module(base_dir, kind, context),
+  //     (None, _, _, _, _) => resolve_from_cache(source, base_dir, kind, context),
   // }
 }

@@ -16,6 +16,7 @@ use resolver::Resolver;
 pub mod resolver;
 
 pub mod resolver_common;
+// pub mod resolver_parser;
 pub mod resolver_cache;
 
 pub struct FarmPluginResolve {
