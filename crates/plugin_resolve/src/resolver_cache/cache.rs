@@ -1,11 +1,16 @@
 use farmfe_core::plugin::{PluginResolveHookResult, ResolveKind};
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{PoisonError, RwLock, RwLockReadGuard};
 
 // define a struct `ResolveCache` used to cache parser result
 pub struct ResolveCache {
   //  use `RwLock` to protect the cache, allowing multiple threads to read at the same time, but exclusive when writing
   cache: RwLock<HashMap<ResolveNodeModuleCacheKey, Option<PluginResolveHookResult>>>,
+}
+
+#[derive(Debug)]
+pub enum CacheError {
+  LockError(String),
 }
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -43,17 +48,33 @@ impl ResolveCache {
     Ok(())
   }
   // Get data from the cache and return a `Option` to indicate the success or failure of the operation.
+  // .map_err(|e| format!("resolver Cache Module When get cache module data Failed to lock cache: {:?}", e))?;
+
+  // pub fn get(
+  //   &self,
+  //   key: &ResolveNodeModuleCacheKey,
+  // ) -> Result<Option<PluginResolveHookResult>, String> {
+  //   let cache = self
+  //     .cache
+  //     .read()
+  //     .map_err(|e| self.handle_cache_error(e, "Get cache"))?;
+
+  //   match cache.get(key) {
+  //     Some(result) => Ok(Some(result.clone()).unwrap()),
+  //     None => Ok(None),
+  //   }
+  // }
+
   pub fn get(
     &self,
     key: &ResolveNodeModuleCacheKey,
-  ) -> Result<Option<PluginResolveHookResult>, String> {
+  ) -> Result<Option<PluginResolveHookResult>, CacheError> {
     let cache = self
       .cache
       .read()
-      .map_err(|e| format!("When get cache module data Failed to lock cache: {:?}", e))?;
-
+      .map_err(|e| self.handle_cache_error(e, "Get cache"))?;
     match cache.get(key) {
-      Some(result) => Ok(Some(result.clone()).unwrap()),
+      Some(result) => Ok(result.clone()),
       None => Ok(None),
     }
   }
@@ -69,5 +90,15 @@ impl ResolveCache {
     Ok(cache_contains_key.contains_key(key))
   }
 
-  // TODO feat error callback
+  fn handle_cache_error<T, S>(
+    &self,
+    error: PoisonError<RwLockReadGuard<T>>,
+    context: S,
+  ) -> CacheError
+  where
+    S: Into<String>,
+  {
+    let error_msg = format!("{}: Failed to lock cache: {:?}", context.into(), error);
+    CacheError::LockError(error_msg)
+  }
 }
