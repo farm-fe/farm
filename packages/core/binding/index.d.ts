@@ -127,7 +127,7 @@ export interface Config {
     };
     define?: Record<string, string>;
     external?: string[];
-    mode?: string;
+    mode?: 'development' | 'production';
     root?: string;
     runtime?: {
       path: string;

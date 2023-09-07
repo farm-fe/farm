@@ -22,6 +22,7 @@ export interface UserServerConfig {
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
   plugins?: DevServerPlugin[];
+  writeToDisk?: boolean;
 }
 
 export type NormalizedServerConfig = Required<

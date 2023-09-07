@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use dep_analyzer::DepAnalyzer;
 use farmfe_core::{
-  config::{Config, CssPrefixerConfig},
+  config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
   hashbrown::HashMap,
   module::{
@@ -355,7 +355,9 @@ impl Plugin for FarmPluginCss {
     resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !matches!(context.config.mode, farmfe_core::config::Mode::Development) {
+    if !matches!(context.config.mode, farmfe_core::config::Mode::Development)
+      || !matches!(context.config.output.target_env, TargetEnv::Browser)
+    {
       return Ok(None);
     }
 
