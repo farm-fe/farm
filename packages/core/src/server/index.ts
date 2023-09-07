@@ -59,19 +59,33 @@ export class DevServer implements ImplDevServer {
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
   server?: http.Server;
+  publicDir?: string;
   publicPath?: string;
   userConfig?: UserConfig;
 
   constructor(
     private _compiler: Compiler,
     public logger: Logger,
-    options?: UserConfig,
-    publicPath?: string
+    options?: UserConfig
   ) {
-    this.publicPath = normalizePublicDir(
+    this.publicDir = normalizePublicDir(
       _compiler.config.config.root,
-      publicPath
+      options.publicDir
     );
+
+    this.publicPath = options?.compilation?.output?.publicPath || '/';
+
+    if (
+      this.publicPath.startsWith('/') &&
+      !this.publicPath.startsWith('http')
+    ) {
+      this.publicPath = this.publicPath.slice(1);
+    }
+
+    if (!this.publicPath.endsWith('/') && !this.publicPath.startsWith('http')) {
+      this.publicPath = this.publicPath + '/';
+    }
+
     this.userConfig = options;
     this.createFarmServer(options.server);
   }
@@ -98,7 +112,8 @@ export class DevServer implements ImplDevServer {
     }
 
     if (this.config.writeToDisk) {
-      this._compiler.writeResourcesToDisk();
+      const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
+      this._compiler.writeResourcesToDisk(base);
     }
 
     const end = Date.now();

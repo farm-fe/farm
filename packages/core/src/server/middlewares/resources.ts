@@ -10,7 +10,11 @@ import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/file.js';
 
-export function resources(compiler: Compiler, config: NormalizedServerConfig) {
+export function resources(
+  compiler: Compiler,
+  config: NormalizedServerConfig,
+  publicPath: string
+) {
   return async (ctx: Context, next: Next) => {
     await next();
 
@@ -35,7 +39,15 @@ export function resources(compiler: Compiler, config: NormalizedServerConfig) {
       ctx.body = generateFileTreeHtml(fileTree);
       return;
     }
-    const resource = compiler.resources()[resourcePath];
+
+    const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
+    let finalResourcePath = resourcePath;
+
+    if (base && resourcePath.startsWith(base)) {
+      finalResourcePath = resourcePath.slice(base.length);
+    }
+
+    const resource = compiler.resources()[finalResourcePath];
 
     // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
     if (!resource && config.spa !== false) {
@@ -73,13 +85,19 @@ export function resources(compiler: Compiler, config: NormalizedServerConfig) {
 export function resourcesPlugin(distance: DevServer) {
   if (!distance.config.writeToDisk) {
     distance._context.app.use(
-      resources(distance._context.compiler, distance.config)
+      resources(
+        distance._context.compiler,
+        distance.config,
+        distance.publicPath
+      )
     );
   } else {
     distance._context.app.use(
-      koaStatic(distance.getCompiler().config.config.output.path)
+      koaStatic(distance.getCompiler().config.config.output.path, {
+        extensions: ['html']
+      })
     );
   }
 
-  distance._context.app.use(koaStatic(distance.publicPath));
+  distance._context.app.use(koaStatic(distance.publicDir));
 }

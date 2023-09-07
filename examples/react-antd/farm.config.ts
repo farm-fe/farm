@@ -9,19 +9,15 @@ export default defineConfig({
     input: {
       index: './index.html',
     },
-    resolve: {
-      symlinks: true,
-    },
-    define: {
-      BTN: 'Click me',
-    },
     output: {
       path: './build',
+      publicPath: process.env.NODE_ENV === 'development' ? '/admin/' : '/',
     },
-    sourcemap: false,
+    sourcemap: true,
   },
   server: {
     hmr: true,
+    writeToDisk: false,
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
 });

@@ -75,6 +75,14 @@ export class HmrEngine {
         `${Date.now() - start}ms`
       )}`
     );
+    // TODO: write resources to disk when hmr finished in incremental mode
+    // if (this._devServer.config?.writeToDisk) {
+    //   this._compiler.onUpdateFinish(() => {
+    //     this._compiler.writeResourcesToDisk();
+    //     console.log('writeResourcesToDisk');
+    //   });
+    // }
+
     let dynamicResourcesMap: Record<string, Resource[]> = null;
 
     if (result.dynamicResourcesMap) {
