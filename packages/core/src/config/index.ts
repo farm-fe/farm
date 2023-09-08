@@ -176,6 +176,7 @@ export async function normalizeUserCompilationConfig(
     config.runtime.plugins.push(hmrClientPluginPath);
     config.define.FARM_HMR_PORT = String(normalizedDevServerConfig.hmr.port);
     config.define.FARM_HMR_HOST = normalizedDevServerConfig.hmr.host;
+    config.define.FARM_HMR_PATH = normalizedDevServerConfig.hmr.path;
   }
 
   // we should not deep merge compilation.input
@@ -273,7 +274,8 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: 'localhost',
-  port: 9801,
+  port: 9000,
+  path: '/__hmr',
   watchOptions: {
     awaitWriteFinish: 10
   }
@@ -305,7 +307,11 @@ export function normalizeDevServerOptions(
   if (mode === 'production' || options?.hmr === false) {
     hmr = false;
   } else {
-    hmr = merge({}, DEFAULT_HMR_OPTIONS, options?.hmr ?? {});
+    const devServerHostInfo = {
+      host: options?.host,
+      port: options?.port
+    };
+    hmr = merge({}, DEFAULT_HMR_OPTIONS, devServerHostInfo, options?.hmr ?? {});
   }
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
