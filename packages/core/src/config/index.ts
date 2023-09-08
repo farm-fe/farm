@@ -167,6 +167,9 @@ export async function normalizeUserCompilationConfig(
     mode
   );
 
+  // check port availability: auto increment the port if a conflict occurs
+  await DevServer.resolvePortConflict(userConfig);
+
   if (
     config.output.targetEnv !== 'node' &&
     Array.isArray(config.runtime.plugins) &&
@@ -359,8 +362,6 @@ export async function resolveUserConfig(
   if (!userConfig.root) {
     userConfig.root = root;
   }
-  // check port availability: auto increment the port if a conflict occurs
-  await DevServer.resolvePortConflict(userConfig, logger);
 
   return userConfig;
 }

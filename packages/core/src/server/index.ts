@@ -190,10 +190,7 @@ export class DevServer implements ImplDevServer {
     this.resolvedFarmServerPlugins(plugins);
   }
 
-  static async resolvePortConflict(
-    userConfig: UserConfig,
-    logger: Logger
-  ): Promise<void> {
+  static async resolvePortConflict(userConfig: UserConfig): Promise<void> {
     const normalizedDevConfig = normalizeDevServerOptions(
       userConfig.server,
       'development'
@@ -208,7 +205,7 @@ export class DevServer implements ImplDevServer {
         const onError = async (error: { code: string }) => {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
-            logger.warn(`Port ${devPort} is in use, trying another one...`);
+            // logger.warn(`Port ${devPort} is in use, trying another one...`);
             resolve(false);
           } else {
             reject(true);
