@@ -488,3 +488,21 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
     : path.join(root, publicDir);
   return absPublicDirPath;
 }
+
+export function normalizePublicPath(publicPath = '/', logger: Logger) {
+  if (publicPath.startsWith('.') || publicPath.startsWith('..')) {
+    logger.warn(
+      ` (!) Irregular "publicPath" options: ${publicPath}, it should only be an absolute path, an url or an empty string`
+    );
+    publicPath = publicPath.replace(/^\.+/, '');
+  }
+  if (publicPath.startsWith('/') && !publicPath.startsWith('http')) {
+    publicPath = publicPath.slice(1);
+  }
+
+  if (!publicPath.endsWith('/') && !publicPath.startsWith('http')) {
+    publicPath = publicPath + '/';
+  }
+
+  return publicPath;
+}
