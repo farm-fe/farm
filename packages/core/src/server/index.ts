@@ -220,7 +220,7 @@ export class DevServer implements ImplDevServer {
           httpServer.close();
           resolve(true);
         });
-        httpServer.listen(portToCheck, '::1');
+        httpServer.listen(portToCheck, 'localhost');
       });
     };
     if (strictPort) {
