@@ -208,6 +208,7 @@ export class DevServer implements ImplDevServer {
         const onError = async (error: { code: string }) => {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
+            logger.warn(`Port ${devPort} is in use, trying another one...`);
             resolve(false);
           } else {
             resolve(true);
@@ -217,7 +218,6 @@ export class DevServer implements ImplDevServer {
           httpServer.removeListener('error', onError);
           reject(new Error(`Port ${devPort} is already in use`));
         } else {
-          logger.warn(`Port ${devPort} is in use, trying another one...`);
           httpServer.on('error', onError);
           httpServer.on('listening', () => {
             httpServer.close();
@@ -229,7 +229,7 @@ export class DevServer implements ImplDevServer {
     };
 
     let isPortAvailableResult = await isPortAvailable(devPort);
-    while (isPortAvailableResult === false) {
+    while (isPortAvailableResult === false && userConfig.server) {
       userConfig.server.hmr = { port: ++hmrPort };
       userConfig.server.port = ++devPort;
       isPortAvailableResult = await isPortAvailable(devPort);
