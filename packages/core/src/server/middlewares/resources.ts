@@ -30,7 +30,8 @@ export function resources(
     }
 
     // Fallback to index.html if the resource is not found
-    const resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
+    let resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
+
     // output_files
     if (resourcePath === '_output_files') {
       const files = Object.keys(compiler.resources()).sort();
@@ -44,6 +45,7 @@ export function resources(
     let finalResourcePath = resourcePath;
 
     if (base && resourcePath.startsWith(base)) {
+      resourcePath = resourcePath.replace(new RegExp(`([^/]+)${base}`), '$1/');
       finalResourcePath = resourcePath.slice(base.length);
     }
 
