@@ -201,7 +201,7 @@ export class DevServer implements ImplDevServer {
         const onError = async (error: { code: string }) => {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
-            this.logger.warn(`Port ${devPort} is in use, trying another one...`);
+            // this.logger.warn(`Port ${devPort} is in use, trying another one...`);
             resolve(false);
           } else {
             reject(true);
