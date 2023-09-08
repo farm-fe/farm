@@ -37,10 +37,28 @@ import { DevServer } from '../index.js';
 export function hmrPlugin(context: DevServer) {
   const { config, _context, logger } = context;
   if (config.hmr) {
-    context.ws = new WebSocketServer({
-      port: config.hmr.port,
-      host: config.hmr.host
-    });
+    if (config.hmr.host === config.host && config.hmr.port === config.port) {
+      context.ws = new WebSocketServer({
+        noServer: true
+      });
+      context.server.on('upgrade', (request, socket, head) => {
+        if (
+          request.url === config.hmr.path &&
+          request.headers['sec-websocket-protocol'] === 'farm_hmr'
+        ) {
+          context.ws.handleUpgrade(request, socket, head, (ws) => {
+            context.ws.emit('connection', ws, request);
+          });
+        }
+      });
+    } else {
+      context.ws = new WebSocketServer({
+        port: config.hmr.port,
+        host: config.hmr.host,
+        path: config.hmr.path
+      });
+    }
+
     // _context.app.use(hmr(context));
     context.hmrEngine = new HmrEngine(_context.compiler, context, logger);
   }

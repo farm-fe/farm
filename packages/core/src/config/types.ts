@@ -36,6 +36,7 @@ export interface UserHmrConfig {
   ignores?: string[];
   host?: string;
   port?: number;
+  path?: string;
   watchOptions?: {
     // this options only works in windows
     awaitWriteFinish?: number;
@@ -45,7 +46,6 @@ export interface UserHmrConfig {
 export interface UserConfig {
   /** current root of this project, default to current working directory */
   root?: string;
-  base?: string;
   clearScreen?: boolean;
   envDir?: string;
   envPrefix?: string | string[];

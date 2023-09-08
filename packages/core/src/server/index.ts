@@ -13,6 +13,7 @@ import {
   NormalizedServerConfig,
   normalizeDevServerOptions,
   normalizePublicDir,
+  normalizePublicPath,
   DevServerPlugin,
   UserConfig,
   DEFAULT_HMR_OPTIONS
@@ -45,7 +46,6 @@ interface FarmServerContext {
 
 interface ImplDevServer {
   createFarmServer(options: UserServerConfig): void;
-  // resolvePortConflict(userConfig: UserConfig, logger: Logger): Promise<void>;
   listen(): Promise<void>;
   close(): Promise<void>;
   getCompiler(): Compiler;
@@ -73,18 +73,9 @@ export class DevServer implements ImplDevServer {
       options.publicDir
     );
 
-    this.publicPath = options?.compilation?.output?.publicPath || '/';
-
-    if (
-      this.publicPath.startsWith('/') &&
-      !this.publicPath.startsWith('http')
-    ) {
-      this.publicPath = this.publicPath.slice(1);
-    }
-
-    if (!this.publicPath.endsWith('/') && !this.publicPath.startsWith('http')) {
-      this.publicPath = this.publicPath + '/';
-    }
+    this.publicPath =
+      normalizePublicPath(options?.compilation?.output?.publicPath, logger) ||
+      '/';
 
     this.userConfig = options;
     this.createFarmServer(options.server);
@@ -103,6 +94,9 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     const { port, open, protocol, hostname, host } = this.config;
+    const publicPath = this.publicPath.startsWith('/')
+      ? this.publicPath
+      : `/${this.publicPath}`;
     const start = Date.now();
     // compile the project and start the dev server
     if (process.env.FARM_PROFILE) {
@@ -117,11 +111,13 @@ export class DevServer implements ImplDevServer {
     }
 
     const end = Date.now();
-    this.server.listen(port, host);
+    // this.server.listen(port, host);
+    // TODO: Temporarily remove the problem of websocket port inconsistency in subsequent migration of host configuration
+    this.server.listen(port);
     this.error(port, host);
     this.startDevLogger(start, end);
     if (open) {
-      openBrowser(`${protocol}://${hostname}:${port}`);
+      openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
     }
   }
 
@@ -205,7 +201,7 @@ export class DevServer implements ImplDevServer {
         const onError = async (error: { code: string }) => {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
-            // logger.warn(`Port ${devPort} is in use, trying another one...`);
+            logger.warn(`Port ${devPort} is in use, trying another one...`);
             resolve(false);
           } else {
             reject(true);
@@ -262,6 +258,9 @@ export class DevServer implements ImplDevServer {
 
   private startDevLogger(start: number, end: number) {
     const { port, protocol, hostname } = this.config;
+    const publicPath = this.publicPath.startsWith('/')
+      ? this.publicPath
+      : `/${this.publicPath}`;
     const version = JSON.parse(
       readFileSync(
         join(fileURLToPath(import.meta.url), '../../../package.json'),
@@ -278,7 +277,7 @@ export class DevServer implements ImplDevServer {
   Version ${chalk.green.bold(version)}
 
   🔥 Ready on ${chalk.green.bold(
-    `${protocol}://${hostname}:${port}`
+    `${protocol}://${hostname}:${port}${publicPath}`
   )} in ${chalk.green.bold(`${end - start}ms`)}.
     `,
         {
