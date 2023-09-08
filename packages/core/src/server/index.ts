@@ -45,7 +45,6 @@ interface FarmServerContext {
 
 interface ImplDevServer {
   createFarmServer(options: UserServerConfig): void;
-  // resolvePortConflict(userConfig: UserConfig, logger: Logger): Promise<void>;
   listen(): Promise<void>;
   close(): Promise<void>;
   getCompiler(): Compiler;
@@ -117,7 +116,9 @@ export class DevServer implements ImplDevServer {
     }
 
     const end = Date.now();
-    this.server.listen(port, host);
+    // this.server.listen(port, host);
+    // TODO: Temporarily remove the problem of websocket port inconsistency in subsequent migration of host configuration
+    this.server.listen(port);
     this.error(port, host);
     this.startDevLogger(start, end);
     if (open) {
@@ -208,6 +209,7 @@ export class DevServer implements ImplDevServer {
         const onError = async (error: { code: string }) => {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
+            logger.warn(`Port ${devPort} is in use, trying another one...`);
             resolve(false);
           } else {
             resolve(true);
@@ -217,13 +219,12 @@ export class DevServer implements ImplDevServer {
           httpServer.removeListener('error', onError);
           reject(new Error(`Port ${devPort} is already in use`));
         } else {
-          logger.warn(`Port ${devPort} is in use, trying another one...`);
           httpServer.on('error', onError);
           httpServer.on('listening', () => {
             httpServer.close();
             resolve(true);
           });
-          httpServer.listen(portToCheck, '::1');
+          httpServer.listen(portToCheck, '::');
         }
       });
     };
