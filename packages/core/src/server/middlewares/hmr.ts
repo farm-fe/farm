@@ -44,7 +44,7 @@ export function hmrPlugin(context: DevServer) {
       context.server.on('upgrade', (request, socket, head) => {
         if (
           request.url === config.hmr.path &&
-          request.headers['sec-websocket-protocol'] === 'farmhmr'
+          request.headers['sec-websocket-protocol'] === 'farm_hmr'
         ) {
           context.ws.handleUpgrade(request, socket, head, (ws) => {
             context.ws.emit('connection', ws, request);
