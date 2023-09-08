@@ -211,28 +211,27 @@ export class DevServer implements ImplDevServer {
             logger.warn(`Port ${devPort} is in use, trying another one...`);
             resolve(false);
           } else {
-            resolve(true);
+            reject(true);
           }
         };
-        if (strictPort) {
+        httpServer.on('error', onError);
+        httpServer.on('listening', () => {
           httpServer.removeListener('error', onError);
-          reject(new Error(`Port ${devPort} is already in use`));
-        } else {
-          httpServer.on('error', onError);
-          httpServer.on('listening', () => {
-            httpServer.close();
-            resolve(true);
-          });
-          httpServer.listen(portToCheck, '::1');
-        }
+          httpServer.close();
+          resolve(true);
+        });
+        httpServer.listen(portToCheck, '::1');
       });
     };
-
-    let isPortAvailableResult = await isPortAvailable(devPort);
-    while (isPortAvailableResult === false && userConfig.server) {
-      userConfig.server.hmr = { port: ++hmrPort };
-      userConfig.server.port = ++devPort;
-      isPortAvailableResult = await isPortAvailable(devPort);
+    if (strictPort) {
+      throw new Error(`Port ${devPort} is already in use`);
+    } else {
+      let isPortAvailableResult = await isPortAvailable(devPort);
+      while (isPortAvailableResult === false) {
+        userConfig.server.hmr = { port: ++hmrPort };
+        userConfig.server.port = ++devPort;
+        isPortAvailableResult = await isPortAvailable(devPort);
+      }
     }
     return;
   }
