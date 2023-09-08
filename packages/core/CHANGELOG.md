@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.1
+
+### Patch Changes
+
+- 5b1993f: Fix publicPath dev and support writeToDisk For dev server
+
 ## 0.12.0
 
 ### Minor Changes

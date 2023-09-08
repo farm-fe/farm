@@ -112,7 +112,7 @@ export class Compiler {
     return this._bindingCompiler.resource(path);
   }
 
-  writeResourcesToDisk(): void {
+  writeResourcesToDisk(base = ''): void {
     const resources = this.resources();
     const configOutputPath = this.config.config.output.path;
     const outputPath = path.isAbsolute(configOutputPath)
@@ -124,7 +124,7 @@ export class Compiler {
         console.log('Writing', name, 'to disk');
       }
 
-      const filePath = path.join(outputPath, name);
+      const filePath = path.join(outputPath, base, name);
 
       if (!existsSync(path.dirname(filePath))) {
         mkdirSync(path.dirname(filePath), { recursive: true });

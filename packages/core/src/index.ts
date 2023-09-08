@@ -36,6 +36,8 @@ export async function start(
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
+  setProcessEnv(normalizedConfig.config.mode);
+
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config);
 
@@ -74,6 +76,7 @@ export async function build(
     userConfig,
     'production'
   );
+  setProcessEnv(normalizedConfig.config.mode);
 
   await createBundleHandler(normalizedConfig);
 
@@ -150,6 +153,7 @@ export async function watch(
     userConfig,
     'development'
   );
+  setProcessEnv(normalizedConfig.config.mode);
 
   createBundleHandler(normalizedConfig, true);
 }
