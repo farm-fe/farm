@@ -185,7 +185,7 @@ export class DevServer implements ImplDevServer {
     this.resolvedFarmServerPlugins(plugins);
   }
 
-  static resolvePortConflict(
+  static async resolvePortConflict(
     userConfig: UserConfig,
     logger: Logger
   ): Promise<void> {
@@ -198,40 +198,38 @@ export class DevServer implements ImplDevServer {
     let hmrPort = DEFAULT_HMR_OPTIONS.port;
     const { strictPort } = normalizedDevConfig;
     const httpServer = http.createServer();
-
-    return new Promise((resolve, reject) => {
-      function handleServerAddressInUse() {
+    const isPortAvailable = (portToCheck: number) => {
+      return new Promise((resolve, reject) => {
+        const onError = async (error: { code: string }) => {
+          if (error.code === 'EADDRINUSE') {
+            clearScreen();
+            resolve(false);
+          } else {
+            resolve(true);
+          }
+        };
         if (strictPort) {
           httpServer.removeListener('error', onError);
           reject(new Error(`Port ${devPort} is already in use`));
         } else {
           logger.warn(`Port ${devPort} is in use, trying another one...`);
-          // update hmrPort and devPort
-          userConfig.server.hmr = { port: ++hmrPort };
-          userConfig.server.port = ++devPort;
-          httpServer.listen(devPort);
+          httpServer.on('error', onError);
+          httpServer.on('listening', () => {
+            httpServer.close();
+            resolve(true);
+          });
+          httpServer.listen(portToCheck, '::1');
         }
-      }
-      function handleError(e: Error) {
-        httpServer.removeListener('error', onError);
-        reject(e);
-      }
-      // attach listener to the server to listen for port conflict
-      const onError = (e: Error & { code?: string }) => {
-        if (e.code === 'EADDRINUSE') {
-          handleServerAddressInUse();
-          clearScreen();
-        } else {
-          handleError(e);
-        }
-      };
-
-      httpServer.on('error', onError);
-      httpServer.listen(devPort, () => {
-        httpServer.close();
-        resolve();
       });
-    });
+    };
+
+    let isPortAvailableResult = await isPortAvailable(devPort);
+    while (isPortAvailableResult === false) {
+      userConfig.server.hmr = { port: ++hmrPort };
+      userConfig.server.port = ++devPort;
+      isPortAvailableResult = await isPortAvailable(devPort);
+    }
+    return;
   }
 
   /**
