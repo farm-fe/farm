@@ -45,7 +45,6 @@ export interface UserHmrConfig {
 export interface UserConfig {
   /** current root of this project, default to current working directory */
   root?: string;
-  base?: string;
   clearScreen?: boolean;
   envDir?: string;
   envPrefix?: string | string[];
