@@ -32,7 +32,7 @@ export default defineConfig({
   },
   server: {
     hmr: true,
-    cors: true,
+    // cors: true,
     host: 'localhost'
   },
   plugins: [

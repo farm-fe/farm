@@ -7,17 +7,18 @@ function defineConfig(config: UserConfig) {
 export default defineConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: './index.html'
     },
     output: {
       path: './build',
-      publicPath: process.env.NODE_ENV === 'development' ? '/admin/' : '/',
+      publicPath: process.env.NODE_ENV === 'development' ? '/admin/' : '/'
     },
-    sourcemap: true,
+    sourcemap: true
   },
   server: {
     hmr: true,
     writeToDisk: false,
+    host: '127.0.0.1'
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 });
