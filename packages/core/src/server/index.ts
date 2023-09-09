@@ -204,6 +204,7 @@ export class DevServer implements ImplDevServer {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
             logger.warn(`Port ${devPort} is in use, trying another one...`);
+            httpServer.removeListener('error', onError);
             resolve(false);
           } else {
             resolve(true);
