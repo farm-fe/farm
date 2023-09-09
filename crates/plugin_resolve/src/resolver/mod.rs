@@ -422,10 +422,6 @@ impl Resolver {
                 },
               );
               if package_json_info.is_ok() {
-                println!(
-                  "resolved_path2: {:?}",
-                  package_path.to_str().unwrap().to_string()
-                );
                 return (
                   Some(self.get_resolve_node_modules_result(
                     package_json_info.ok().as_ref(),
@@ -515,7 +511,6 @@ impl Resolver {
             kind,
             context,
           ));
-          println!("resolved_path: {:?}", resolved_path);
           let result = resolved_path.as_ref().unwrap();
           let path = Path::new(result.resolved_path.as_str());
           if let Some(_extension) = path.extension() {
@@ -529,7 +524,6 @@ impl Resolver {
           } else {
             str.to_string()
           };
-          println!("field_value: {:?}", str);
           let dir = package_json_info.dir();
           let full_path = RelativePath::new(&str).to_logical_path(dir);
           // the main fields can be a file or directory
