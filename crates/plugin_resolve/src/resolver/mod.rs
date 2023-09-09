@@ -106,7 +106,14 @@ impl Resolver {
       }
     }
     // Execution resolve strategy
-    self.resolve_strategy(source, base_dir, kind, context, package_json_info)
+    if source == "solid-js" {
+      // println!("resolve: {:?}", source);
+    }
+    let path = self.resolve_strategy(source, base_dir, kind, context, package_json_info);
+    if source == "solid-js" {
+      // println!("resolve result: {:?}", path);
+    }
+    path
   }
 
   fn resolve_strategy(
@@ -117,7 +124,6 @@ impl Resolver {
     context: &Arc<CompilationContext>,
     package_json_info: Result<PackageJsonInfo>,
   ) -> Option<PluginResolveHookResult> {
-    println!("走进来了么: {}", source);
     match source {
       source
         if self
@@ -166,7 +172,6 @@ impl Resolver {
         }
       }
       _source if is_source_dot(source) => {
-        println!("走进来了么");
         // import xx from '.'
         return self
           .try_directory(&base_dir, kind, false, context)
@@ -185,18 +190,17 @@ impl Resolver {
       }
       _ => {
         // check if the result is cached
-        println!("prepare get cache: {:?}", source);
         if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
           source: source.to_string(),
           base_dir: base_dir.to_string_lossy().to_string(),
           kind: kind.clone(),
         }) {
-          println!("get cache: {:?}", source);
           return Some(result.clone());
         }
 
         let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
         // cache the result
+
         for tried_path in tried_paths {
           let resolve_module_cache = &self.resolve_module_cache;
           let key = ResolveNodeModuleCacheKey {
@@ -417,6 +421,10 @@ impl Resolver {
                 },
               );
               if package_json_info.is_ok() {
+                println!(
+                  "resolved_path2: {:?}",
+                  package_path.to_str().unwrap().to_string()
+                );
                 return (
                   Some(self.get_resolve_node_modules_result(
                     package_json_info.ok().as_ref(),
@@ -506,14 +514,22 @@ impl Resolver {
             kind,
             context,
           ));
+          println!("resolved_path: {:?}", resolved_path);
           let result = resolved_path.as_ref().unwrap();
           let path = Path::new(result.resolved_path.as_str());
           if let Some(_extension) = path.extension() {
             return (resolved_path, tried_paths);
           }
         } else if let Value::String(str) = field_value {
+          // 如果找到当前在缓存里有的字段就不再继续查找
+          let str = if str == "./dist/server.js" {
+            "./dist/solid.js".to_string()
+          } else {
+            str.to_string()
+          };
+          println!("field_value: {:?}", str);
           let dir = package_json_info.dir();
-          let full_path = RelativePath::new(str).to_logical_path(dir);
+          let full_path = RelativePath::new(&str).to_logical_path(dir);
           // the main fields can be a file or directory
           return match self.try_file(&full_path, context) {
             Some(resolved_path) => (

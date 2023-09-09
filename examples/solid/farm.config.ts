@@ -21,7 +21,7 @@ export default defineFarmConfig({
     }
   },
   server: {
-    open: true
+    // open: true
   },
   plugins: [farmJsPluginSolid()]
 });

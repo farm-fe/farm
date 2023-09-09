@@ -395,3 +395,33 @@ fn resolve_exports_import_require() {
     }
   );
 }
+
+#[test]
+fn resolve_exports_nesting_dot_fields() {
+  fixture!(
+    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "solid-js",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("dist")
+          .join("solid.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
