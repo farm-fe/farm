@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.2
+
+### Patch Changes
+
+- 9381aa4: fix: host different cause websocket port error
+
 ## 0.12.1
 
 ### Patch Changes
