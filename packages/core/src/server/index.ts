@@ -111,11 +111,7 @@ export class DevServer implements ImplDevServer {
     }
 
     const end = Date.now();
-    // this.server.listen(port, host);
-    // TODO: Temporarily remove the problem of websocket port inconsistency in subsequent migration of host configuration
-    this.server.listen(port, host, () => {
-      console.log('我得 port 和 host', port, host);
-    });
+    this.server.listen(port, host);
     this.error(port, host);
     this.startDevLogger(start, end);
     if (open) {
@@ -222,9 +218,7 @@ export class DevServer implements ImplDevServer {
             httpServer.close();
             resolve(true);
           });
-          httpServer.listen(portToCheck, host, () => {
-            console.log('端口冲突了开始检查', portToCheck, host);
-          });
+          httpServer.listen(portToCheck, host);
         }
       });
     };
