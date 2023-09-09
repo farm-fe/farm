@@ -207,7 +207,7 @@ export class DevServer implements ImplDevServer {
             httpServer.removeListener('error', onError);
             resolve(false);
           } else {
-            resolve(true);
+            reject(true);
           }
         };
         if (strictPort) {
