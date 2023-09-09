@@ -224,6 +224,7 @@ impl Resolver {
       }
     }
   }
+
   /// Try resolve as a file with the configured main fields.
   fn try_directory(
     &self,
@@ -522,6 +523,7 @@ impl Resolver {
           }
         } else if let Value::String(str) = field_value {
           // 如果找到当前在缓存里有的字段就不再继续查找
+          // 可能需要判断一下优先级 如果 其他字段找到了 exports  就不找 main 字段了
           let str = if str == "./dist/server.js" {
             "./dist/solid.js".to_string()
           } else {
