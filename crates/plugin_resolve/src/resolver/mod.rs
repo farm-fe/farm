@@ -106,14 +106,7 @@ impl Resolver {
       }
     }
     // Execution resolve strategy
-    if source == "solid-js" {
-      // println!("resolve: {:?}", source);
-    }
-    let path = self.resolve_strategy(source, base_dir, kind, context, package_json_info);
-    if source == "solid-js" {
-      // println!("resolve result: {:?}", path);
-    }
-    path
+    self.resolve_strategy(source, base_dir, kind, context, package_json_info)
   }
 
   fn resolve_strategy(
