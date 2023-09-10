@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.11
+
+### Patch Changes
+
+- be60085: update template version add host config ,Http server and websocket services share a set of ports
+
 ## 1.2.10
 
 ### Patch Changes
