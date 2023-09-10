@@ -20,7 +20,7 @@ use crate::resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey};
 use crate::resolver_common::{
   are_paths_equal, get_field_value_from_package_json_info, get_key_path, get_string_value_path,
   is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
-  is_source_dot, is_source_relative, NODE_MODULES,
+  is_source_dot, is_source_relative, try_file, NODE_MODULES,
 };
 
 pub struct Resolver {
@@ -137,8 +137,7 @@ impl Resolver {
         // Handle the absolute source case
         let path_buf = PathBuf::from_str(source).unwrap();
 
-        return self
-          .try_file(&path_buf, context)
+        return try_file(&path_buf, context)
           .or_else(|| self.try_directory(&path_buf, kind, false, context))
           .map(|resolved_path| {
             self.get_resolve_result(&package_json_info, resolved_path, kind, context)
@@ -157,8 +156,7 @@ impl Resolver {
         };
 
         // TODO try read symlink from the resolved path step by step to its parent util the root
-        let resolved_path = self
-          .try_file(&normalized_path, context)
+        let resolved_path = try_file(&normalized_path, context)
           .or_else(|| self.try_directory(&normalized_path, kind, false, context))
           .ok_or(CompilationError::GenericError(format!(
             "File `{:?}` does not exist",
@@ -240,7 +238,7 @@ impl Resolver {
     for main_file in &context.config.resolve.main_files {
       let file = dir.join(main_file);
 
-      if let Some(found) = self.try_file(&file, context) {
+      if let Some(found) = try_file(&file, context) {
         return Some(found);
       }
     }
@@ -266,26 +264,6 @@ impl Resolver {
     }
 
     None
-  }
-
-  /// Try resolve as a file with the configured extensions.
-  /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
-  fn try_file(&self, file: &PathBuf, context: &Arc<CompilationContext>) -> Option<String> {
-    // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
-    if file.exists() && file.is_file() {
-      Some(file.to_string_lossy().to_string())
-    } else {
-      let append_extension = |file: &PathBuf, ext: &str| {
-        let file_name = file.file_name().unwrap().to_string_lossy().to_string();
-        file.with_file_name(format!("{}.{}", file_name, ext))
-      };
-      let ext = context.config.resolve.extensions.iter().find(|&ext| {
-        let new_file = append_extension(file, ext);
-        new_file.exists() && new_file.is_file()
-      });
-
-      ext.map(|ext| append_extension(file, ext).to_string_lossy().to_string())
-    }
   }
 
   fn try_alias(
@@ -369,8 +347,7 @@ impl Resolver {
         if !package_path.join("package.json").exists() {
           // check if the source is a directory or file can be resolved
           if matches!(&package_path, package_path if package_path.exists()) {
-            if let Some(resolved_path) = self
-              .try_file(&package_path, context)
+            if let Some(resolved_path) = try_file(&package_path, context)
               .or_else(|| self.try_directory(&package_path, kind, true, context))
             {
               return (
@@ -434,8 +411,7 @@ impl Resolver {
               }
             }
           }
-          if let Some(resolved_path) = self
-            .try_file(&package_path, context)
+          if let Some(resolved_path) = try_file(&package_path, context)
             .or_else(|| self.try_directory(&package_path, kind, true, context))
           {
             return (
@@ -463,16 +439,14 @@ impl Resolver {
 
           // no main field found, try to resolve index.js file
           return (
-            self
-              .try_file(&package_path.join("index"), context)
-              .map(|resolved_path| {
-                self.get_resolve_node_modules_result(
-                  Some(&package_json_info),
-                  resolved_path,
-                  kind,
-                  context,
-                )
-              }),
+            try_file(&package_path.join("index"), context).map(|resolved_path| {
+              self.get_resolve_node_modules_result(
+                Some(&package_json_info),
+                resolved_path,
+                kind,
+                context,
+              )
+            }),
             tried_paths,
           );
         }
@@ -519,15 +493,15 @@ impl Resolver {
         } else if let Value::String(str) = field_value {
           // 如果找到当前在缓存里有的字段就不再继续查找
           // 可能需要判断一下优先级 如果 其他字段找到了 exports  就不找 main 字段了
-          let str = if str == "./dist/server.js" {
-            "./dist/solid.js".to_string()
-          } else {
-            str.to_string()
-          };
+          // let str = if str == "./dist/server.js" {
+          //   "./dist/solid.js".to_string()
+          // } else {
+          //   str.to_string()
+          // };
           let dir = package_json_info.dir();
           let full_path = RelativePath::new(&str).to_logical_path(dir);
           // the main fields can be a file or directory
-          return match self.try_file(&full_path, context) {
+          return match try_file(&full_path, context) {
             Some(resolved_path) => (
               Some(self.get_resolve_node_modules_result(
                 Some(package_json_info),
@@ -601,8 +575,7 @@ impl Resolver {
         .unwrap_or(resolved_path);
       // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
       let resolved_path_buf = PathBuf::from(&resolved_path);
-      let resolved_path = self
-        .try_file(&resolved_path_buf, context)
+      let resolved_path = try_file(&resolved_path_buf, context)
         .or_else(|| self.try_directory(&resolved_path_buf, kind, true, context))
         .unwrap_or(resolved_path);
 

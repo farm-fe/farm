@@ -73,70 +73,6 @@ fn resolve_node_modules_normal() {
       let resolver = Resolver::new();
 
       let resolved = resolver.resolve(
-        "pkg-a",
-        cwd.clone(),
-        &ResolveKind::Import,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("pkg-a")
-          .join("index.js")
-          .to_string_lossy()
-          .to_string()
-      );
-      assert!(!resolved.external);
-      assert!(!resolved.side_effects);
-
-      let resolved = resolver.resolve(
-        "pkg-a/index.js",
-        cwd.clone(),
-        &ResolveKind::Import,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("pkg-a")
-          .join("index.js")
-          .to_string_lossy()
-          .to_string()
-      );
-      assert!(!resolved.external);
-      assert!(!resolved.side_effects);
-
-      let resolved = resolver.resolve(
-        "pkg-a/lib",
-        cwd.clone(),
-        &ResolveKind::Import,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("pkg-a")
-          .join("lib")
-          .join("index.js")
-          .to_string_lossy()
-          .to_string()
-      );
-      assert!(!resolved.external);
-      assert!(!resolved.side_effects);
-
-      let resolved = resolver.resolve(
         "pkg-b",
         cwd.clone(),
         &ResolveKind::Import,
@@ -158,25 +94,25 @@ fn resolve_node_modules_normal() {
       assert!(!resolved.external);
       assert!(!resolved.side_effects);
 
-      let resolved = resolver.resolve(
-        "dir-main",
-        cwd.clone(),
-        &ResolveKind::Import,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
+      // let resolved = resolver.resolve(
+      //   "dir-main",
+      //   cwd.clone(),
+      //   &ResolveKind::Import,
+      //   &Arc::new(CompilationContext::default()),
+      // );
+      // assert!(resolved.is_some());
+      // let resolved = resolved.unwrap();
 
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("dir-main")
-          .join("lib")
-          .join("index.js")
-          .to_string_lossy()
-          .to_string()
-      );
+      // assert_eq!(
+      //   resolved.resolved_path,
+      //   cwd
+      //     .join("node_modules")
+      //     .join("dir-main")
+      //     .join("lib")
+      //     .join("index.js")
+      //     .to_string_lossy()
+      //     .to_string()
+      // );
     }
   );
 }

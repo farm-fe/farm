@@ -1,10 +1,12 @@
 use std::{
   path::{Path, PathBuf},
   str::FromStr,
+  sync::Arc,
 };
 
 use farmfe_core::{
   common::PackageJsonInfo,
+  context::CompilationContext,
   farm_profile_function,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
@@ -67,6 +69,26 @@ pub fn is_module_external(package_json_info: &PackageJsonInfo, resolved_path: &s
   }
 
   false
+}
+
+/// Try resolve as a file with the configured extensions.
+/// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
+pub fn try_file(file: &PathBuf, context: &Arc<CompilationContext>) -> Option<String> {
+  // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
+  if file.exists() && file.is_file() {
+    Some(file.to_string_lossy().to_string())
+  } else {
+    let append_extension = |file: &PathBuf, ext: &str| {
+      let file_name = file.file_name().unwrap().to_string_lossy().to_string();
+      file.with_file_name(format!("{}.{}", file_name, ext))
+    };
+    let ext = context.config.resolve.extensions.iter().find(|&ext| {
+      let new_file = append_extension(file, ext);
+      new_file.exists() && new_file.is_file()
+    });
+
+    ext.map(|ext| append_extension(file, ext).to_string_lossy().to_string())
+  }
 }
 
 pub fn get_field_value_from_package_json_info(

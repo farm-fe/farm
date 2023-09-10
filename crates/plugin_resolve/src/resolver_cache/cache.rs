@@ -1,5 +1,7 @@
 use farmfe_core::plugin::{PluginResolveHookResult, ResolveKind};
+use prettytable::{Cell, Row, Table};
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::{PoisonError, RwLock};
 
 // define a struct `ResolveCache` used to cache parser result
@@ -11,6 +13,16 @@ pub struct ResolveCache {
 #[derive(Debug)]
 pub enum CacheError {
   LockError(String),
+}
+
+impl fmt::Display for ResolveNodeModuleCacheKey {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(
+      f,
+      "source: {}, base_dir: {}, kind: {:?}",
+      self.source, self.base_dir, self.kind
+    )
+  }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash)]
