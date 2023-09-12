@@ -191,7 +191,6 @@ impl Resolver {
 
         let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
         // cache the result
-
         for tried_path in tried_paths {
           let resolve_module_cache = &self.resolve_module_cache;
           let key = ResolveNodeModuleCacheKey {
@@ -343,6 +342,7 @@ impl Resolver {
             if let Some(resolved_path) = try_file(&package_path, context)
               .or_else(|| self.try_directory(&package_path, kind, true, context))
             {
+              println!("try_node_modules: 这个是文件返回的 {:?}", resolved_path);
               return (
                 Some(self.get_resolve_node_modules_result(
                   package_json_info.ok().as_ref(),
@@ -391,6 +391,10 @@ impl Resolver {
                   resolve_ancestor_dir: false, // only look for current directory
                 },
               );
+              println!(
+                "try_node_modules: 这个是目录返回的 {:?}",
+                package_path.to_str().unwrap().to_string()
+              );
               if package_json_info.is_ok() {
                 return (
                   Some(self.get_resolve_node_modules_result(
@@ -407,6 +411,7 @@ impl Resolver {
           if let Some(resolved_path) = try_file(&package_path, context)
             .or_else(|| self.try_directory(&package_path, kind, true, context))
           {
+            println!("try_node_modules: 这个是啥返回的 {:?}", resolved_path);
             return (
               Some(self.get_resolve_node_modules_result(
                 package_json_info.ok().as_ref(),
@@ -433,6 +438,7 @@ impl Resolver {
           // no main field found, try to resolve index.js file
           return (
             try_file(&package_path.join("index"), context).map(|resolved_path| {
+              println!("try_node_modules:没有字段没找到返回的 {:?}", resolved_path);
               self.get_resolve_node_modules_result(
                 Some(&package_json_info),
                 resolved_path,
@@ -466,12 +472,18 @@ impl Resolver {
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
 
     for main_field in &context.config.resolve.main_fields {
+      println!("try_package: 这个是循环的字段 {:?}", main_field);
       if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
         continue;
       }
 
+      // solve 问题的关键 exports 字段没有找到对应的 路径 会返回 None 然后没有return 就去循环了
       if let Some(field_value) = raw_package_json_info.get(main_field) {
         if let Value::Object(_) = field_value {
+          println!(
+            "try_package: 这个是对象循环返回的 {:?}",
+            package_json_info.dir().to_string()
+          );
           let resolved_path = Some(self.get_resolve_node_modules_result(
             Some(package_json_info),
             package_json_info.dir().to_string(),
@@ -496,12 +508,15 @@ impl Resolver {
           // the main fields can be a file or directory
           return match try_file(&full_path, context) {
             Some(resolved_path) => (
-              Some(self.get_resolve_node_modules_result(
-                Some(package_json_info),
-                resolved_path,
-                kind,
-                context,
-              )),
+              {
+                println!("try_package: 我感觉是这里返回的 {:?}", resolved_path);
+                Some(self.get_resolve_node_modules_result(
+                  Some(package_json_info),
+                  resolved_path,
+                  kind,
+                  context,
+                ))
+              },
               tried_paths,
             ),
             None => (
@@ -599,8 +614,8 @@ impl Resolver {
     if let Some(exports_field) = exports_field {
       let dir = package_json_info.dir();
       let path = Path::new(resolved_path);
-      if let Value::Object(obj) = exports_field {
-        for (key, value) in obj {
+      if let Value::Object(field) = exports_field {
+        for (key, value) in field {
           let key_path = get_key_path(&key, dir);
           if are_paths_equal(key_path, resolved_path) {
             match value {
@@ -612,12 +627,13 @@ impl Resolver {
 
                   if are_paths_equal(&key_path, resolved_path) {
                     let value_path = get_key_path(&current_field_value, package_json_info.dir());
+                    println!("exports_field: 这个是字符串返回的w {:?}", value_path);
                     return Some(value_path);
                   }
                 }
               }
-              Value::Object(current_field_obj) => {
-                for (key_word, key_value) in current_field_obj {
+              Value::Object(current_field_value) => {
+                for (key_word, key_value) in current_field_value {
                   match kind {
                     // import with node default
                     ResolveKind::Import => {
@@ -633,6 +649,10 @@ impl Resolver {
                               key_value_object.get("default")
                             {
                               let value_path = get_key_path(default_str, package_json_info.dir());
+                              println!(
+                                "exports_field: 这个是对象返回的 default 字段 {:?}",
+                                value_path
+                              );
                               return Some(value_path);
                             }
                           }
@@ -664,6 +684,10 @@ impl Resolver {
                                     let value_path = get_key_path(
                                       key_value.as_str().unwrap(),
                                       package_json_info.dir(),
+                                    );
+                                    println!(
+                                      "exports_field: 这个是对象返回的 import 字段 {:?}",
+                                      value_path
                                     );
                                     return Some(value_path);
                                   }
