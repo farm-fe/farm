@@ -111,9 +111,7 @@ export class DevServer implements ImplDevServer {
     }
 
     const end = Date.now();
-    // this.server.listen(port, host);
-    // TODO: Temporarily remove the problem of websocket port inconsistency in subsequent migration of host configuration
-    this.server.listen(port);
+    this.server.listen(port, host);
     this.error(port, host);
     this.startDevLogger(start, end);
     if (open) {
@@ -186,47 +184,52 @@ export class DevServer implements ImplDevServer {
     this.resolvedFarmServerPlugins(plugins);
   }
 
-  static async resolvePortConflict(userConfig: UserConfig): Promise<void> {
+  static async resolvePortConflict(
+    userConfig: UserConfig,
+    logger: Logger
+  ): Promise<void> {
     const normalizedDevConfig = normalizeDevServerOptions(
       userConfig.server,
       'development'
     );
+    userConfig.server = normalizedDevConfig;
 
     let devPort = normalizedDevConfig.port;
     let hmrPort = DEFAULT_HMR_OPTIONS.port;
-    const { strictPort } = normalizedDevConfig;
+    const { strictPort, host } = normalizedDevConfig;
     const httpServer = http.createServer();
     const isPortAvailable = (portToCheck: number) => {
       return new Promise((resolve, reject) => {
         const onError = async (error: { code: string }) => {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
-            // this.logger.warn(`Port ${devPort} is in use, trying another one...`);
+            logger.warn(`Port ${devPort} is in use, trying another one...`);
+            httpServer.removeListener('error', onError);
             resolve(false);
           } else {
             reject(true);
           }
         };
-        httpServer.on('error', onError);
-        httpServer.on('listening', () => {
+        if (strictPort) {
           httpServer.removeListener('error', onError);
-          httpServer.close();
-          resolve(true);
-        });
-        httpServer.listen(portToCheck, 'localhost');
+          reject(new Error(`Port ${devPort} is already in use`));
+        } else {
+          httpServer.on('error', onError);
+          httpServer.on('listening', () => {
+            httpServer.close();
+            resolve(true);
+          });
+          httpServer.listen(portToCheck, host);
+        }
       });
     };
-    if (strictPort) {
-      throw new Error(`Port ${devPort} is already in use`);
-    } else {
-      let isPortAvailableResult = await isPortAvailable(devPort);
-      while (isPortAvailableResult === false) {
-        userConfig.server.hmr = { port: ++hmrPort };
-        userConfig.server.port = ++devPort;
-        isPortAvailableResult = await isPortAvailable(devPort);
-      }
+
+    let isPortAvailableResult = await isPortAvailable(devPort);
+    while (isPortAvailableResult === false) {
+      userConfig.server.hmr = { port: ++hmrPort };
+      userConfig.server.port = ++devPort;
+      isPortAvailableResult = await isPortAvailable(devPort);
     }
-    return;
   }
 
   /**
