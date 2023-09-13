@@ -725,27 +725,7 @@ impl Resolver {
                         }
                       }
                     }
-                    _ => {
-                      if are_paths_equal(&key_word, "default") && path.is_absolute() {
-                        match &key_value {
-                          Value::String(key_value_string) => {
-                            let value_path =
-                              get_key_path(key_value_string, package_json_info.dir());
-                            result_value = Some(value_path);
-                            break 'outer_loop;
-                          }
-                          Value::Object(key_value_object) => {
-                            if let Some(Value::String(default_str)) =
-                              key_value_object.get("default")
-                            {
-                              let value_path = get_key_path(default_str, package_json_info.dir());
-                              result_value = Some(value_path);
-                              break 'outer_loop;
-                            }
-                          }
-                          _ => {}
-                        }
-                      }
+                    ResolveKind::ExportFrom => {
                       if are_paths_equal(&key_word, "import") {
                         match key_value {
                           Value::String(import_value) => {
@@ -785,6 +765,7 @@ impl Resolver {
                         }
                       }
                     }
+                    _ => {}
                   }
                 }
               }
