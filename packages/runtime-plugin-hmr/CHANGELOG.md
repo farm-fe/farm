@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.2.3
+
+### Patch Changes
+
+- 54b93a9: Bump version
+
 ## 3.2.2
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 0.12.3
+
+### Patch Changes
+
+- be60085: update template version add host config ,Http server and websocket services share a set of ports
+
+## 0.12.2
+
+### Patch Changes
+
+- 9381aa4: fix: host different cause websocket port error
+
 ## 0.12.1
 
 ### Patch Changes

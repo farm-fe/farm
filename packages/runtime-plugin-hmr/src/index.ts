@@ -7,9 +7,11 @@ import { HmrUpdateResult } from './types';
 
 declare const FARM_HMR_PORT: string | undefined;
 declare const FARM_HMR_HOST: string | undefined;
+declare const FARM_HMR_PATH: string | undefined;
 
-const port = Number(FARM_HMR_PORT || 9801);
+const port = Number(FARM_HMR_PORT || 9000);
 const host = FARM_HMR_HOST || 'localhost';
+const path = FARM_HMR_PATH || '/__hmr';
 
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-hmr-client-plugin',
@@ -18,7 +20,7 @@ export default <FarmRuntimePlugin>{
 
     function connect() {
       // setup websocket connection
-      const socket = new WebSocket(`ws://${host}:${port}`);
+      const socket = new WebSocket(`ws://${host}:${port}${path}`, 'farm_hmr');
       // listen for the message from the server
       // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
       // after the file is recompiled, the server will generated a update resource and send its id to the client
