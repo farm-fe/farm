@@ -342,7 +342,6 @@ impl Resolver {
             if let Some(resolved_path) = try_file(&package_path, context)
               .or_else(|| self.try_directory(&package_path, kind, true, context))
             {
-              println!("try_node_modules: 这个是文件返回的 {:?}", resolved_path);
               return (
                 Some(self.get_resolve_node_modules_result(
                   package_json_info.ok().as_ref(),
@@ -391,10 +390,6 @@ impl Resolver {
                   resolve_ancestor_dir: false, // only look for current directory
                 },
               );
-              println!(
-                "try_node_modules: 这个是目录返回的 {:?}",
-                package_path.to_str().unwrap().to_string()
-              );
               if package_json_info.is_ok() {
                 return (
                   Some(self.get_resolve_node_modules_result(
@@ -411,7 +406,6 @@ impl Resolver {
           if let Some(resolved_path) = try_file(&package_path, context)
             .or_else(|| self.try_directory(&package_path, kind, true, context))
           {
-            println!("try_node_modules: 这个是啥返回的 {:?}", resolved_path);
             return (
               Some(self.get_resolve_node_modules_result(
                 package_json_info.ok().as_ref(),
@@ -438,7 +432,6 @@ impl Resolver {
           // no main field found, try to resolve index.js file
           return (
             try_file(&package_path.join("index"), context).map(|resolved_path| {
-              println!("try_node_modules:没有字段没找到返回的 {:?}", resolved_path);
               self.get_resolve_node_modules_result(
                 Some(&package_json_info),
                 resolved_path,
@@ -472,7 +465,6 @@ impl Resolver {
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
 
     for main_field in &context.config.resolve.main_fields {
-      // println!("try_package: 这个是循环的字段 {:?}", main_field);
       if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
         continue;
       }
@@ -492,13 +484,6 @@ impl Resolver {
             return (resolved_path, tried_paths);
           }
         } else if let Value::String(str) = field_value {
-          // 如果找到当前在缓存里有的字段就不再继续查找
-          // 可能需要判断一下优先级 如果 其他字段找到了 exports  就不找 main 字段了
-          // let str = if str == "./dist/server.js" {
-          //   "./dist/solid.js".to_string()
-          // } else {
-          //   str.to_string()
-          // };
           let dir = package_json_info.dir();
           let full_path = RelativePath::new(&str).to_logical_path(dir);
           // the main fields can be a file or directory
@@ -577,7 +562,6 @@ impl Resolver {
       let resolved_path = self
         .try_exports_replace(package_json_info, &resolved_path, kind, context)
         .unwrap_or(resolved_path);
-      println!("get_resolve_node_modules_result: 这个是最终返回的 {:?}", resolved_path);
       // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
       let resolved_path_buf = PathBuf::from(&resolved_path);
       let resolved_path = try_file(&resolved_path_buf, context)
@@ -615,6 +599,9 @@ impl Resolver {
         let mut result_value: Option<String> = None;
         'outer_loop: for (key, value) in field {
           let key_path = get_key_path(&key, dir);
+          if key_path.ends_with("*") || key_path.ends_with("**") {
+            continue; // skip
+          }
           if are_paths_equal(&key_path, resolved_path) {
             match value {
               Value::String(current_field_value) => {
@@ -625,14 +612,13 @@ impl Resolver {
 
                   if are_paths_equal(&key_path, resolved_path) {
                     let value_path = get_key_path(&current_field_value, package_json_info.dir());
-                    println!("exports_field: 这个是字符串返回的w {:?}", value_path);
                     result_value = Some(value_path);
                     break 'outer_loop;
                   }
                 }
               }
               Value::Object(current_field_value) => {
-                'inner_loop: for (key_word, key_value) in current_field_value {
+                for (key_word, key_value) in current_field_value {
                   match kind {
                     // import with node default
                     ResolveKind::Import => {
@@ -649,10 +635,6 @@ impl Resolver {
                               key_value_object.get("default")
                             {
                               let value_path = get_key_path(default_str, package_json_info.dir());
-                              println!(
-                                "exports_field: 这个是对象返回的 default 字段 {:?}",
-                                value_path
-                              );
                               result_value = Some(value_path);
                               break 'outer_loop;
                             }
@@ -661,15 +643,10 @@ impl Resolver {
                         }
                       }
                       if are_paths_equal(&key_word, "import") {
-                        println!("找到 import 字段对应了啊 {:?} {:?}", key_word, key_value);
                         match key_value {
                           Value::String(import_value) => {
                             if path.is_absolute() {
                               let value_path = get_key_path(&import_value, package_json_info.dir());
-                              println!(
-                                "exports_field: 这个是字符串返回的 import 字段 {:?}",
-                                value_path
-                              );
                               result_value = Some(value_path);
                               break 'outer_loop;
                               // return Some(value_path);
@@ -693,10 +670,6 @@ impl Resolver {
                                     let value_path = get_key_path(
                                       key_value.as_str().unwrap(),
                                       package_json_info.dir(),
-                                    );
-                                    println!(
-                                      "exports_field: 这个是对象返回的 import 字段 {:?}",
-                                      value_path
                                     );
                                     result_value = Some(value_path);
                                     break 'outer_loop;
@@ -752,7 +725,66 @@ impl Resolver {
                         }
                       }
                     }
-                    _ => {}
+                    _ => {
+                      if are_paths_equal(&key_word, "default") && path.is_absolute() {
+                        match &key_value {
+                          Value::String(key_value_string) => {
+                            let value_path =
+                              get_key_path(key_value_string, package_json_info.dir());
+                            result_value = Some(value_path);
+                            break 'outer_loop;
+                          }
+                          Value::Object(key_value_object) => {
+                            if let Some(Value::String(default_str)) =
+                              key_value_object.get("default")
+                            {
+                              let value_path = get_key_path(default_str, package_json_info.dir());
+                              result_value = Some(value_path);
+                              break 'outer_loop;
+                            }
+                          }
+                          _ => {}
+                        }
+                      }
+                      if are_paths_equal(&key_word, "import") {
+                        match key_value {
+                          Value::String(import_value) => {
+                            if path.is_absolute() {
+                              let value_path = get_key_path(&import_value, package_json_info.dir());
+                              result_value = Some(value_path);
+                              break 'outer_loop;
+                            }
+                          }
+                          Value::Object(import_value) => {
+                            for (key_word, key_value) in import_value {
+                              match context.config.output.target_env {
+                                TargetEnv::Node => {
+                                  if are_paths_equal(&key_word, "node") && path.is_absolute() {
+                                    let value_path = get_key_path(
+                                      key_value.as_str().unwrap(),
+                                      package_json_info.dir(),
+                                    );
+                                    result_value = Some(value_path);
+                                    break 'outer_loop;
+                                  }
+                                }
+                                TargetEnv::Browser => {
+                                  if are_paths_equal(key_word, "default") && path.is_absolute() {
+                                    let value_path = get_key_path(
+                                      key_value.as_str().unwrap(),
+                                      package_json_info.dir(),
+                                    );
+                                    result_value = Some(value_path);
+                                    break 'outer_loop;
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          _ => {}
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -760,8 +792,11 @@ impl Resolver {
                 // TODO strict_exports config with error
               }
             }
+          } else {
+            continue;
           }
         }
+        println!("result_value: {:?}", result_value);
         return result_value;
       }
     }

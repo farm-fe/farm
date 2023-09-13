@@ -7,7 +7,7 @@ customElement('my-counter', () => {
     <>
       <div>
         <button onClick={() => setCount(count() - 1)}>-</button>
-        <span>{count()}45ss64</span>
+        <span>{count()}</span>
         <button onClick={() => setCount(count() + 1)}>+</button>
       </div>
     </>
