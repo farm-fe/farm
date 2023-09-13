@@ -472,7 +472,7 @@ impl Resolver {
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
 
     for main_field in &context.config.resolve.main_fields {
-      println!("try_package: 这个是循环的字段 {:?}", main_field);
+      // println!("try_package: 这个是循环的字段 {:?}", main_field);
       if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
         continue;
       }
@@ -480,10 +480,6 @@ impl Resolver {
       // solve 问题的关键 exports 字段没有找到对应的 路径 会返回 None 然后没有return 就去循环了
       if let Some(field_value) = raw_package_json_info.get(main_field) {
         if let Value::Object(_) = field_value {
-          println!(
-            "try_package: 这个是对象循环返回的 {:?}",
-            package_json_info.dir().to_string()
-          );
           let resolved_path = Some(self.get_resolve_node_modules_result(
             Some(package_json_info),
             package_json_info.dir().to_string(),
@@ -509,7 +505,6 @@ impl Resolver {
           return match try_file(&full_path, context) {
             Some(resolved_path) => (
               {
-                println!("try_package: 我感觉是这里返回的 {:?}", resolved_path);
                 Some(self.get_resolve_node_modules_result(
                   Some(package_json_info),
                   resolved_path,
@@ -578,9 +573,11 @@ impl Resolver {
     farm_profile_function!("get_resolve_node_modules_result".to_string());
     if let Some(package_json_info) = package_json_info {
       let side_effects = is_module_side_effects(package_json_info, &resolved_path);
+
       let resolved_path = self
         .try_exports_replace(package_json_info, &resolved_path, kind, context)
         .unwrap_or(resolved_path);
+      println!("get_resolve_node_modules_result: 这个是最终返回的 {:?}", resolved_path);
       // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
       let resolved_path_buf = PathBuf::from(&resolved_path);
       let resolved_path = try_file(&resolved_path_buf, context)
@@ -615,9 +612,10 @@ impl Resolver {
       let dir = package_json_info.dir();
       let path = Path::new(resolved_path);
       if let Value::Object(field) = exports_field {
-        for (key, value) in field {
+        let mut result_value: Option<String> = None;
+        'outer_loop: for (key, value) in field {
           let key_path = get_key_path(&key, dir);
-          if are_paths_equal(key_path, resolved_path) {
+          if are_paths_equal(&key_path, resolved_path) {
             match value {
               Value::String(current_field_value) => {
                 let dir = package_json_info.dir();
@@ -628,12 +626,13 @@ impl Resolver {
                   if are_paths_equal(&key_path, resolved_path) {
                     let value_path = get_key_path(&current_field_value, package_json_info.dir());
                     println!("exports_field: 这个是字符串返回的w {:?}", value_path);
-                    return Some(value_path);
+                    result_value = Some(value_path);
+                    break 'outer_loop;
                   }
                 }
               }
               Value::Object(current_field_value) => {
-                for (key_word, key_value) in current_field_value {
+                'inner_loop: for (key_word, key_value) in current_field_value {
                   match kind {
                     // import with node default
                     ResolveKind::Import => {
@@ -642,7 +641,8 @@ impl Resolver {
                           Value::String(key_value_string) => {
                             let value_path =
                               get_key_path(key_value_string, package_json_info.dir());
-                            return Some(value_path);
+                            result_value = Some(value_path);
+                            break 'outer_loop;
                           }
                           Value::Object(key_value_object) => {
                             if let Some(Value::String(default_str)) =
@@ -653,18 +653,26 @@ impl Resolver {
                                 "exports_field: 这个是对象返回的 default 字段 {:?}",
                                 value_path
                               );
-                              return Some(value_path);
+                              result_value = Some(value_path);
+                              break 'outer_loop;
                             }
                           }
                           _ => {}
                         }
                       }
                       if are_paths_equal(&key_word, "import") {
+                        println!("找到 import 字段对应了啊 {:?} {:?}", key_word, key_value);
                         match key_value {
                           Value::String(import_value) => {
                             if path.is_absolute() {
                               let value_path = get_key_path(&import_value, package_json_info.dir());
-                              return Some(value_path);
+                              println!(
+                                "exports_field: 这个是字符串返回的 import 字段 {:?}",
+                                value_path
+                              );
+                              result_value = Some(value_path);
+                              break 'outer_loop;
+                              // return Some(value_path);
                             }
                           }
                           Value::Object(import_value) => {
@@ -676,7 +684,8 @@ impl Resolver {
                                       key_value.as_str().unwrap(),
                                       package_json_info.dir(),
                                     );
-                                    return Some(value_path);
+                                    result_value = Some(value_path);
+                                    break 'outer_loop;
                                   }
                                 }
                                 TargetEnv::Browser => {
@@ -689,7 +698,8 @@ impl Resolver {
                                       "exports_field: 这个是对象返回的 import 字段 {:?}",
                                       value_path
                                     );
-                                    return Some(value_path);
+                                    result_value = Some(value_path);
+                                    break 'outer_loop;
                                   }
                                 }
                               }
@@ -706,7 +716,8 @@ impl Resolver {
                           Value::String(key_value) => {
                             if path.is_absolute() {
                               let value_path = get_key_path(&key_value, package_json_info.dir());
-                              return Some(value_path);
+                              result_value = Some(value_path);
+                              break 'outer_loop;
                             }
                           }
                           Value::Object(key_value) => {
@@ -719,7 +730,8 @@ impl Resolver {
                                         value.as_str().unwrap(),
                                         package_json_info.dir(),
                                       );
-                                      return Some(value_path);
+                                      result_value = Some(value_path);
+                                      break 'outer_loop;
                                     }
                                   }
                                   TargetEnv::Browser => {
@@ -728,7 +740,8 @@ impl Resolver {
                                         value.as_str().unwrap(),
                                         package_json_info.dir(),
                                       );
-                                      return Some(value_path);
+                                      result_value = Some(value_path);
+                                      break 'outer_loop;
                                     }
                                   }
                                 }
@@ -749,6 +762,7 @@ impl Resolver {
             }
           }
         }
+        return result_value;
       }
     }
 
