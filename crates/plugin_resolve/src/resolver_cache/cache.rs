@@ -1,5 +1,4 @@
 use farmfe_core::plugin::{PluginResolveHookResult, ResolveKind};
-use prettytable::{Cell, Row, Table};
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::{PoisonError, RwLock};
