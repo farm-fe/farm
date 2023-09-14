@@ -19,7 +19,6 @@ pub fn is_source_relative(source: &str) -> bool {
   source.starts_with("./") || source.starts_with("../")
 }
 
-
 pub fn is_source_absolute(source: &str) -> bool {
   if let Ok(sp) = PathBuf::from_str(source) {
     sp.is_absolute()
@@ -110,8 +109,8 @@ pub fn get_field_value_from_package_json_info(
  * Prevent path carrying / cause path resolution to fail
  */
 
-pub fn are_paths_equal<P1: AsRef<Path>, P2: AsRef<Path>>(path1: P1, path2: P2) -> bool {
-  farm_profile_function!("are_paths_equal".to_string());
+pub fn are_values_equal<P1: AsRef<Path>, P2: AsRef<Path>>(path1: P1, path2: P2) -> bool {
+  farm_profile_function!("are_values_equal".to_string());
   let path1 = PathBuf::from(path1.as_ref());
   let path2 = PathBuf::from(path2.as_ref());
   let path1_suffix = path1.strip_prefix("/").unwrap_or(&path1);
@@ -153,10 +152,13 @@ pub fn get_string_value_path(str: &str, package_json_info: &PackageJsonInfo) -> 
 
 pub fn get_path_from_value(value: &Value, package_json_info: &PackageJsonInfo) -> Option<String> {
   match value {
-      Value::String(key_value_string) => Some(get_key_path(key_value_string, package_json_info.dir())),
-      Value::Object(key_value_object) => key_value_object.get("default")
-          .and_then(|default_str| default_str.as_str())
-          .map(|default_str| get_key_path(default_str, package_json_info.dir())),
-      _ => None,
+    Value::String(key_value_string) => {
+      Some(get_key_path(key_value_string, package_json_info.dir()))
+    }
+    Value::Object(key_value_object) => key_value_object
+      .get("default")
+      .and_then(|default_str| default_str.as_str())
+      .map(|default_str| get_key_path(default_str, package_json_info.dir())),
+    _ => None,
   }
 }

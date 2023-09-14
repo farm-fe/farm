@@ -18,7 +18,7 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 
 use crate::resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey};
 use crate::resolver_common::{
-  are_paths_equal, get_field_value_from_package_json_info, get_key_path, get_string_value_path,
+  are_values_equal, get_field_value_from_package_json_info, get_key_path, get_string_value_path,
   is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
   is_source_dot, is_source_relative, try_file, NODE_MODULES,
 };
@@ -602,13 +602,13 @@ impl Resolver {
           if key_path.ends_with("*") || key_path.ends_with("**") {
             continue; // skip
           }
-          if are_paths_equal(&key_path, resolved_path) {
+          if are_values_equal(&key_path, resolved_path) {
             match value {
               Value::String(current_field_value) => {
                 if path.is_absolute() {
                   let key_path = get_key_path(&key, dir);
 
-                  if are_paths_equal(&key_path, resolved_path) {
+                  if are_values_equal(&key_path, resolved_path) {
                     let value_path = get_key_path(&current_field_value, package_json_info.dir());
                     result_value = Some(value_path);
                     break 'outer_loop;
@@ -620,7 +620,7 @@ impl Resolver {
                   match kind {
                     // import with node default
                     ResolveKind::Import => {
-                      if are_paths_equal(&key_word, "default") && path.is_absolute() {
+                      if are_values_equal(&key_word, "default") && path.is_absolute() {
                         match &key_value {
                           Value::String(key_value_string) => {
                             let value_path =
@@ -640,7 +640,7 @@ impl Resolver {
                           _ => {}
                         }
                       }
-                      if are_paths_equal(&key_word, "import") {
+                      if are_values_equal(&key_word, "import") {
                         match key_value {
                           Value::String(import_value) => {
                             if path.is_absolute() {
@@ -654,7 +654,7 @@ impl Resolver {
                             for (key_word, key_value) in import_value {
                               match context.config.output.target_env {
                                 TargetEnv::Node => {
-                                  if are_paths_equal(&key_word, "node") && path.is_absolute() {
+                                  if are_values_equal(&key_word, "node") && path.is_absolute() {
                                     let value_path = get_key_path(
                                       key_value.as_str().unwrap(),
                                       package_json_info.dir(),
@@ -664,7 +664,7 @@ impl Resolver {
                                   }
                                 }
                                 TargetEnv::Browser => {
-                                  if are_paths_equal(key_word, "default") && path.is_absolute() {
+                                  if are_values_equal(key_word, "default") && path.is_absolute() {
                                     let value_path = get_key_path(
                                       key_value.as_str().unwrap(),
                                       package_json_info.dir(),
@@ -696,7 +696,7 @@ impl Resolver {
                               for (key, value) in key_value {
                                 match context.config.output.target_env {
                                   TargetEnv::Node => {
-                                    if are_paths_equal(key, "default") && path.is_absolute() {
+                                    if are_values_equal(key, "default") && path.is_absolute() {
                                       let value_path = get_key_path(
                                         value.as_str().unwrap(),
                                         package_json_info.dir(),
@@ -706,7 +706,7 @@ impl Resolver {
                                     }
                                   }
                                   TargetEnv::Browser => {
-                                    if are_paths_equal(key, "default") && path.is_absolute() {
+                                    if are_values_equal(key, "default") && path.is_absolute() {
                                       let value_path = get_key_path(
                                         value.as_str().unwrap(),
                                         package_json_info.dir(),
@@ -724,7 +724,7 @@ impl Resolver {
                       }
                     }
                     ResolveKind::ExportFrom => {
-                      if are_paths_equal(&key_word, "import") {
+                      if are_values_equal(&key_word, "import") {
                         match key_value {
                           Value::String(import_value) => {
                             if path.is_absolute() {
@@ -737,7 +737,7 @@ impl Resolver {
                             for (key_word, key_value) in import_value {
                               match context.config.output.target_env {
                                 TargetEnv::Node => {
-                                  if are_paths_equal(&key_word, "node") && path.is_absolute() {
+                                  if are_values_equal(&key_word, "node") && path.is_absolute() {
                                     let value_path = get_key_path(
                                       key_value.as_str().unwrap(),
                                       package_json_info.dir(),
@@ -747,7 +747,7 @@ impl Resolver {
                                   }
                                 }
                                 TargetEnv::Browser => {
-                                  if are_paths_equal(key_word, "default") && path.is_absolute() {
+                                  if are_values_equal(key_word, "default") && path.is_absolute() {
                                     let value_path = get_key_path(
                                       key_value.as_str().unwrap(),
                                       package_json_info.dir(),
@@ -800,7 +800,7 @@ impl Resolver {
         // resolved path
         if path.is_absolute() {
           let key_path = get_key_path(&key, package_json_info.dir());
-          if are_paths_equal(key_path, resolved_path) {
+          if are_values_equal(key_path, resolved_path) {
             if let Value::String(str) = value {
               let value_path = get_key_path(&str, package_json_info.dir());
               return Some(value_path);
@@ -809,7 +809,7 @@ impl Resolver {
         } else {
           // TODO: this is not correct, it should remap the package name
           // source, e.g. 'foo' in require('foo')
-          if are_paths_equal(&key, resolved_path) {
+          if are_values_equal(&key, resolved_path) {
             if let Value::String(str) = value {
               let value_path = get_key_path(&str, package_json_info.dir());
               return Some(value_path);
@@ -833,7 +833,7 @@ impl Resolver {
       let imports_field = get_field_value_from_package_json_info(package_json_info, "imports");
       if let Some(Value::Object(imports_field_map)) = imports_field {
         for (key, value) in imports_field_map {
-          if are_paths_equal(&key, resolved_path) {
+          if are_values_equal(&key, resolved_path) {
             if let Value::String(str) = &value {
               return get_string_value_path(str, package_json_info);
             }
@@ -842,14 +842,14 @@ impl Resolver {
               for (key, value) in str {
                 match context.config.output.target_env {
                   TargetEnv::Browser => {
-                    if are_paths_equal(key, "default") {
+                    if are_values_equal(key, "default") {
                       if let Value::String(str) = value {
                         return get_string_value_path(str, package_json_info);
                       }
                     }
                   }
                   TargetEnv::Node => {
-                    if are_paths_equal(key, "node") {
+                    if are_values_equal(key, "node") {
                       if let Value::String(str) = value {
                         return get_string_value_path(str, package_json_info);
                       }
