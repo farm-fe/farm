@@ -19,6 +19,7 @@ pub fn is_source_relative(source: &str) -> bool {
   source.starts_with("./") || source.starts_with("../")
 }
 
+
 pub fn is_source_absolute(source: &str) -> bool {
   if let Ok(sp) = PathBuf::from_str(source) {
     sp.is_absolute()
@@ -147,5 +148,15 @@ pub fn get_string_value_path(str: &str, package_json_info: &PackageJsonInfo) -> 
   } else {
     let value_path = get_key_path(str, package_json_info.dir());
     Some(value_path)
+  }
+}
+
+pub fn get_path_from_value(value: &Value, package_json_info: &PackageJsonInfo) -> Option<String> {
+  match value {
+      Value::String(key_value_string) => Some(get_key_path(key_value_string, package_json_info.dir())),
+      Value::Object(key_value_object) => key_value_object.get("default")
+          .and_then(|default_str| default_str.as_str())
+          .map(|default_str| get_key_path(default_str, package_json_info.dir())),
+      _ => None,
   }
 }

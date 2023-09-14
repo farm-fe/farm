@@ -605,8 +605,6 @@ impl Resolver {
           if are_paths_equal(&key_path, resolved_path) {
             match value {
               Value::String(current_field_value) => {
-                let dir = package_json_info.dir();
-                let path = Path::new(resolved_path);
                 if path.is_absolute() {
                   let key_path = get_key_path(&key, dir);
 
@@ -777,7 +775,6 @@ impl Resolver {
             continue;
           }
         }
-        println!("result_value: {:?}", result_value);
         return result_value;
       }
     }
