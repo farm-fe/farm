@@ -597,8 +597,10 @@ impl Resolver {
       let path = Path::new(resolved_path);
       if let Value::Object(field) = exports_field {
         let mut result_value: Option<String> = None;
-        'outer_loop: for (key, value) in field {
+        'find_field_loop: for (key, value) in field {
           let key_path = get_key_path(&key, dir);
+          println!("resolved_path: {}", resolved_path);
+          println!("key_path: {}", key_path);
           if key_path.ends_with("*") || key_path.ends_with("**") {
             continue; // skip
           }
@@ -607,11 +609,10 @@ impl Resolver {
               Value::String(current_field_value) => {
                 if path.is_absolute() {
                   let key_path = get_key_path(&key, dir);
-
                   if are_values_equal(&key_path, resolved_path) {
                     let value_path = get_key_path(&current_field_value, package_json_info.dir());
                     result_value = Some(value_path);
-                    break 'outer_loop;
+                    break 'find_field_loop;
                   }
                 }
               }
@@ -626,7 +627,7 @@ impl Resolver {
                             let value_path =
                               get_key_path(key_value_string, package_json_info.dir());
                             result_value = Some(value_path);
-                            break 'outer_loop;
+                            break 'find_field_loop;
                           }
                           Value::Object(key_value_object) => {
                             if let Some(Value::String(default_str)) =
@@ -634,7 +635,7 @@ impl Resolver {
                             {
                               let value_path = get_key_path(default_str, package_json_info.dir());
                               result_value = Some(value_path);
-                              break 'outer_loop;
+                              break 'find_field_loop;
                             }
                           }
                           _ => {}
@@ -646,7 +647,7 @@ impl Resolver {
                             if path.is_absolute() {
                               let value_path = get_key_path(&import_value, package_json_info.dir());
                               result_value = Some(value_path);
-                              break 'outer_loop;
+                              break 'find_field_loop;
                               // return Some(value_path);
                             }
                           }
@@ -660,7 +661,7 @@ impl Resolver {
                                       package_json_info.dir(),
                                     );
                                     result_value = Some(value_path);
-                                    break 'outer_loop;
+                                    break 'find_field_loop;
                                   }
                                 }
                                 TargetEnv::Browser => {
@@ -670,7 +671,7 @@ impl Resolver {
                                       package_json_info.dir(),
                                     );
                                     result_value = Some(value_path);
-                                    break 'outer_loop;
+                                    break 'find_field_loop;
                                   }
                                 }
                               }
@@ -688,7 +689,7 @@ impl Resolver {
                             if path.is_absolute() {
                               let value_path = get_key_path(&key_value, package_json_info.dir());
                               result_value = Some(value_path);
-                              break 'outer_loop;
+                              break 'find_field_loop;
                             }
                           }
                           Value::Object(key_value) => {
@@ -702,7 +703,7 @@ impl Resolver {
                                         package_json_info.dir(),
                                       );
                                       result_value = Some(value_path);
-                                      break 'outer_loop;
+                                      break 'find_field_loop;
                                     }
                                   }
                                   TargetEnv::Browser => {
@@ -712,7 +713,7 @@ impl Resolver {
                                         package_json_info.dir(),
                                       );
                                       result_value = Some(value_path);
-                                      break 'outer_loop;
+                                      break 'find_field_loop;
                                     }
                                   }
                                 }
@@ -730,7 +731,7 @@ impl Resolver {
                             if path.is_absolute() {
                               let value_path = get_key_path(&import_value, package_json_info.dir());
                               result_value = Some(value_path);
-                              break 'outer_loop;
+                              break 'find_field_loop;
                             }
                           }
                           Value::Object(import_value) => {
@@ -743,7 +744,7 @@ impl Resolver {
                                       package_json_info.dir(),
                                     );
                                     result_value = Some(value_path);
-                                    break 'outer_loop;
+                                    break 'find_field_loop;
                                   }
                                 }
                                 TargetEnv::Browser => {
@@ -753,7 +754,7 @@ impl Resolver {
                                       package_json_info.dir(),
                                     );
                                     result_value = Some(value_path);
-                                    break 'outer_loop;
+                                    break 'find_field_loop;
                                   }
                                 }
                               }
@@ -776,6 +777,10 @@ impl Resolver {
           }
         }
         return result_value;
+      }
+      if let Value::String(str) = exports_field {
+        let value_path = get_key_path(&str, package_json_info.dir());
+        return Some(value_path);
       }
     }
 

@@ -425,3 +425,184 @@ fn resolve_exports_nesting_dot_fields() {
     }
   );
 }
+
+#[test]
+fn resolve_exports_nesting_dot_value() {
+  fixture!(
+    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "solid-js/jsx-runtime",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("dist")
+          .join("solid.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_exports_nesting_base_path() {
+  fixture!(
+    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "solid-js/store",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("store")
+          .join("dist")
+          .join("store.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_exports_nesting_path() {
+  fixture!(
+    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "solid-js/store/worker",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("store")
+          .join("dist")
+          .join("server.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_exports_nesting_base() {
+  fixture!(
+    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "solid-js/dist/solid.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("dist")
+          .join("solid.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_exports_string_fields() {
+  fixture!(
+    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "exports",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("exports")
+          .join("exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+// #[test]
+// fn resolve_exports_extension() {
+//   fixture!(
+//     "tests/fixtures/resolve-node-modules/exports/index.ts",
+//     |file, _| {
+//       let cwd = file.parent().unwrap().to_path_buf();
+//       let resolver = Resolver::new();
+
+//       let resolved = resolver.resolve(
+//         "exports-extension/a",
+//         cwd.clone(),
+//         &ResolveKind::Import,
+//         &Arc::new(CompilationContext::default()),
+//       );
+//       assert!(resolved.is_some());
+//       let resolved = resolved.unwrap();
+//       assert_eq!(
+//         resolved.resolved_path,
+//         cwd
+//           .join("node_modules")
+//           .join("exports-extension")
+//           .join("a")
+//           .join("index.js")
+//           .to_string_lossy()
+//           .to_string()
+//       );
+//     }
+//   );
+// }

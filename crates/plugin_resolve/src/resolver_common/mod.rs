@@ -162,3 +162,12 @@ pub fn get_path_from_value(value: &Value, package_json_info: &PackageJsonInfo) -
     _ => None,
   }
 }
+
+pub fn get_file_name_form_path(path: &str) -> Option<String> {
+  farm_profile_function!("get_file_name_form_path".to_string());
+  let path = Path::new(path);
+  match path.file_name() {
+    Some(file_name) => Some(file_name.to_string_lossy().to_string()),
+    None => None,
+  }
+}
