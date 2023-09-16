@@ -1,5 +1,5 @@
-// import type { WatchOptions } from 'chokidar';
 import type cors from '@koa/cors';
+import type { OutgoingHttpHeaders } from 'http';
 import type { Logger } from '../utils/index.js';
 import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/index.js';
@@ -8,6 +8,7 @@ import type { Config } from '../../binding/index.js';
 import { DevServer } from '../index.js';
 
 export interface UserServerConfig {
+  headers?: OutgoingHttpHeaders | undefined;
   port?: number;
   https?: boolean;
   protocol?: 'http' | 'https';

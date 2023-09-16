@@ -27,6 +27,7 @@ import { proxyPlugin } from './middlewares/proxy.js';
 import { corsPlugin } from './middlewares/cors.js';
 import { openBrowser } from './openBrowser.js';
 import { recordsPlugin } from './middlewares/records.js';
+import { headersPlugin } from './middlewares/headers.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -245,9 +246,10 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
+  resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
     const resolvedPlugins = [
       ...middlewares,
+      headersPlugin,
       lazyCompilationPlugin,
       hmrPlugin,
       corsPlugin,
