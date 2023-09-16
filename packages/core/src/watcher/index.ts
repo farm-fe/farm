@@ -42,7 +42,6 @@ export class FileWatcher implements ImplFileWatcher {
     );
 
     let handlePathChange = async (path: string): Promise<void> => {
-      console.log('监听到了啊', path);
       // TODO prepare watch restart server
 
       try {
