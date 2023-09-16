@@ -246,7 +246,7 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
+  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
     const resolvedPlugins = [
       ...middlewares,
       headersPlugin,
