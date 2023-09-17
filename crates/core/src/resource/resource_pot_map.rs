@@ -46,6 +46,10 @@ impl ResourcePotMap {
   pub fn has_resource_pot(&self, id: &ResourcePotId) -> bool {
     self.map.contains_key(id)
   }
+
+  pub fn take_resource_pots(self) -> Vec<ResourcePot> {
+    self.map.into_iter().map(|(_, v)| v).collect()
+  }
 }
 
 impl Default for ResourcePotMap {

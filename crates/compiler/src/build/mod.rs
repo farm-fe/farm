@@ -1,6 +1,6 @@
 use std::{
   collections::HashMap,
-  path::{Path, PathBuf},
+  path::Path,
   sync::{
     mpsc::{channel, Receiver, Sender},
     Arc,
@@ -223,7 +223,6 @@ impl Compiler {
         module.source_map_chain.push(source_map);
       }
     }
-
     // ================ Load End ===============
 
     // ================ Transform Start ===============
@@ -268,7 +267,7 @@ impl Compiler {
     }
 
     // ================ Process Module End ===============
-
+    module.size = parse_param.content.as_bytes().len();
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;

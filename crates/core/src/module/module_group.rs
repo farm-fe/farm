@@ -1,7 +1,7 @@
 use hashbrown::{HashMap, HashSet};
 use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
-  visit::{Bfs, Dfs, EdgeRef, IntoEdgeReferences},
+  visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},
 };
 
 use crate::resource::resource_pot::ResourcePotId;
@@ -129,6 +129,14 @@ impl ModuleGroupGraph {
     }
   }
 
+  pub fn dfs_post_order(&self, entry: &ModuleGroupId, op: &mut dyn FnMut(&ModuleGroupId)) {
+    let mut dfs = DfsPostOrder::new(&self.g, *self.id_index_map.get(entry).unwrap());
+
+    while let Some(node_index) = dfs.next(&self.g) {
+      op(&self.g[node_index].id);
+    }
+  }
+
   pub fn bfs(&self, entry: &ModuleGroupId, op: &mut dyn FnMut(&ModuleGroupId)) {
     let mut bfs = Bfs::new(&self.g, *self.id_index_map.get(entry).unwrap());
 
@@ -178,7 +186,7 @@ impl ModuleGroupGraph {
     let mut visited = HashSet::new();
 
     for entry in entries {
-      self.dfs(&entry, &mut |id| {
+      self.dfs_post_order(&entry, &mut |id| {
         if !visited.contains(id) {
           sorted.push(id.clone());
           visited.insert(id.clone());
@@ -186,6 +194,7 @@ impl ModuleGroupGraph {
       });
     }
 
+    sorted.reverse();
     sorted
   }
 

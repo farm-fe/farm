@@ -278,6 +278,7 @@ pub fn patch_module_group_graph(
     }
   }
 
+  // Do not handle removed module group
   let affected_module_groups = affected_module_groups
     .into_iter()
     .filter(|g_id| module_group_graph.has(g_id))
@@ -326,9 +327,9 @@ mod tests {
     update_module_graph
       .remove_edge(&"A".into(), &"D".into())
       .unwrap();
-
-    let start_points = vec!["A".into(), "B".into()];
-    let mut module_group_graph = module_group_graph_from_entries(&start_points, &mut module_graph);
+    let entries = vec!["A".into(), "B".into()];
+    let start_points = vec!["A".into(), "C".into(), "D".into(), "E".into()];
+    let mut module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
 
     let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
     let removed_modules = patch_module_graph(
@@ -345,15 +346,23 @@ mod tests {
       &mut module_graph,
       &mut module_group_graph,
     );
-    assert_eq!(
-      affected_groups,
-      HashSet::from(["A".into(), "B".into(), "F".into()])
-    );
+    assert_eq!(affected_groups, HashSet::from(["A".into(), "B".into()]));
 
-    let update_module_group_graph =
-      module_group_graph_from_entries(&start_points, &mut module_graph);
+    let update_module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
 
     assert_eq!(module_group_graph, update_module_group_graph);
+
+    // makes sure that module_groups field of each module is correct
+    let module_a = module_graph.module(&"A".into()).unwrap();
+    assert_eq!(module_a.module_groups, HashSet::from(["A".into()]));
+    let module_b = module_graph.module(&"B".into()).unwrap();
+    assert_eq!(module_b.module_groups, HashSet::from(["B".into()]));
+    let module_c = module_graph.module(&"C".into()).unwrap();
+    assert_eq!(module_c.module_groups, HashSet::from(["A".into()]));
+    let module_d = module_graph.module(&"D".into()).unwrap();
+    assert_eq!(module_d.module_groups, HashSet::from(["B".into()]));
+    let module_e = module_graph.module(&"E".into()).unwrap();
+    assert_eq!(module_e.module_groups, HashSet::from(["B".into()]));
   }
 
   #[test]
@@ -376,19 +385,21 @@ mod tests {
       .unwrap();
 
     let start_points = vec!["B".into(), "A".into()];
+    let updated_modules = vec!["B".into(), "A".into()];
 
     let mut module_group_graph = module_group_graph_from_entries(&start_points, &mut module_graph);
 
-    let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+    let diff_result =
+      diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);
     let removed_modules = patch_module_graph(
-      start_points.clone(),
+      updated_modules.clone(),
       &diff_result,
       &mut module_graph,
       &mut update_module_graph,
     );
 
     let affected_groups = patch_module_group_graph(
-      start_points.clone(),
+      updated_modules.clone(),
       &diff_result,
       &removed_modules,
       &mut module_graph,
@@ -408,15 +419,37 @@ mod tests {
       module_group_graph_from_entries(&start_points, &mut module_graph);
 
     assert_eq!(module_group_graph, update_module_group_graph);
+
+    // makes sure that module_groups field of each module is correct
+    let module_a = module_graph.module(&"A".into()).unwrap();
+    assert_eq!(
+      module_a.module_groups,
+      HashSet::from(["A".into(), "F".into(), "B".into()])
+    );
+    let module_b = module_graph.module(&"B".into()).unwrap();
+    assert_eq!(module_b.module_groups, HashSet::from(["B".into()]));
+    let module_c = module_graph.module(&"C".into()).unwrap();
+    assert_eq!(
+      module_c.module_groups,
+      HashSet::from(["A".into(), "F".into(), "B".into()])
+    );
+    let module_f = module_graph.module(&"F".into()).unwrap();
+    assert_eq!(
+      module_f.module_groups,
+      HashSet::from(["B".into(), "F".into()])
+    );
+    let module_h = module_graph.module(&"H".into()).unwrap();
+    assert_eq!(module_h.module_groups, HashSet::from(["B".into()]));
   }
 
   #[test]
   fn test_patch_module_group_graph_3() {
     let mut module_graph = construct_test_module_graph();
     let mut update_module_graph = construct_test_module_graph();
-    update_module_graph.remove_module(&"A".into());
-    update_module_graph.remove_module(&"C".into());
     update_module_graph.remove_module(&"G".into());
+    update_module_graph
+      .remove_edge(&"F".into(), &"A".into())
+      .unwrap();
     update_module_graph.add_module(Module::new("H".into()));
     update_module_graph
       .add_edge(&"B".into(), &"H".into(), Default::default())
@@ -425,7 +458,7 @@ mod tests {
       .add_edge(&"H".into(), &"F".into(), Default::default())
       .unwrap();
 
-    let start_points = vec!["F".into(), "B".into()];
+    let updated_modules = vec!["F".into(), "E".into(), "B".into()];
     let mut module_group_graph = module_group_graph_from_entries(
       &module_graph
         .entries
@@ -435,17 +468,18 @@ mod tests {
         .collect(),
       &mut module_graph,
     );
-    let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+    let diff_result =
+      diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);
 
     let removed_modules = patch_module_graph(
-      start_points.clone(),
+      updated_modules.clone(),
       &diff_result,
       &mut module_graph,
       &mut update_module_graph,
     );
 
     let affected_groups = patch_module_group_graph(
-      start_points,
+      updated_modules,
       &diff_result,
       &removed_modules,
       &mut module_graph,
@@ -467,6 +501,28 @@ mod tests {
     );
 
     assert_eq!(module_group_graph, update_module_group_graph);
+
+    // makes sure that module_groups field of each module is correct
+    let module_a = module_graph.module(&"A".into()).unwrap();
+    assert_eq!(module_a.module_groups, HashSet::from(["A".into()]));
+    let module_b = module_graph.module(&"B".into()).unwrap();
+    assert_eq!(module_b.module_groups, HashSet::from(["B".into()]));
+    let module_c = module_graph.module(&"C".into()).unwrap();
+    assert_eq!(module_c.module_groups, HashSet::from(["A".into()]));
+    let module_d = module_graph.module(&"D".into()).unwrap();
+    assert_eq!(
+      module_d.module_groups,
+      HashSet::from(["B".into(), "D".into()])
+    );
+    let module_e = module_graph.module(&"E".into()).unwrap();
+    assert_eq!(module_e.module_groups, HashSet::from(["B".into()]));
+    let module_f = module_graph.module(&"F".into()).unwrap();
+    assert_eq!(
+      module_f.module_groups,
+      HashSet::from(["F".into(), "B".into()])
+    );
+    let module_h = module_graph.module(&"H".into()).unwrap();
+    assert_eq!(module_h.module_groups, HashSet::from(["B".into()]));
   }
 
   fn get_edge_info(kind: ResolveKind) -> ModuleGraphEdge {

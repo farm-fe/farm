@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, char::ToLowercase};
 
 use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
@@ -23,6 +23,10 @@ pub struct ResourcePot {
   pub entry_module: Option<ModuleId>,
   /// the resources generated in this [ResourcePot]
   resources: HashSet<String>,
+
+  /// This field should be filled in partial_bundling_hooks.
+  /// the module groups that this [ResourcePot] belongs to.
+  /// A [ResourcePot] can belong to multiple module groups.
   pub module_groups: HashSet<ModuleGroupId>,
   pub immutable: bool,
 }
@@ -105,7 +109,7 @@ impl ResourcePotId {
 }
 
 #[cache_item]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResourcePotType {
   Runtime,
   Js,
@@ -125,6 +129,12 @@ impl From<ModuleType> for ResourcePotType {
       ModuleType::Runtime => Self::Runtime,
       ModuleType::Custom(c) => Self::Custom(c),
     }
+  }
+}
+
+impl ToString for ResourcePotType {
+  fn to_string(&self) -> String {
+    format!("{:?}", self).to_lowercase()
   }
 }
 

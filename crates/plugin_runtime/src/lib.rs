@@ -3,7 +3,9 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config, PartialBundlingModuleBucketsConfig},
+  config::{
+    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+  },
   context::CompilationContext,
   error::CompilationError,
   module::{ModuleMetaData, ModuleSystem, ModuleType},
@@ -45,7 +47,6 @@ pub mod render_resource_pot;
 /// when entry is script, the runtime will be injected into the entry module's head, makes sure the runtime execute before all other code.
 ///
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
-/// ```
 pub struct FarmPluginRuntime {}
 
 impl Plugin for FarmPluginRuntime {
@@ -64,9 +65,9 @@ impl Plugin for FarmPluginRuntime {
       config.runtime.swc_helpers_path.clone(),
     );
 
-    config.partial_bundling.module_buckets.insert(
+    config.partial_bundling.enforce_resources.insert(
       0,
-      PartialBundlingModuleBucketsConfig {
+      PartialBundlingEnforceResourceConfig {
         name: "FARM_RUNTIME".to_string(),
         test: vec![ConfigRegex(
           Regex::new(&format!(".+{}", RUNTIME_SUFFIX)).unwrap(),

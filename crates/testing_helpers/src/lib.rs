@@ -4,7 +4,7 @@ use farmfe_core::{
   glob::glob,
   hashbrown::HashMap,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
+    module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
     Module,
   },
@@ -135,6 +135,76 @@ pub fn construct_test_module_group_graph() -> ModuleGroupGraph {
   for (from, to) in edges {
     module_group_graph.add_edge(&from.into(), &to.into());
   }
+
+  module_group_graph
+}
+
+/// construct a test module graph like below:
+/// ```plain
+///           A   B
+///          /|\ / \
+///         C | D   E
+///          \|/ \  |
+///           F  |  G
+///            \ | /
+///             \|/
+///              H
+/// ```
+/// * **dynamic dependencies**: `A -> D`, `C -> F`, `D -> F`, `E -> G`
+/// * **cyclic dependencies**: `F -> A`
+/// * others are static dependencies
+pub fn construct_test_module_graph_complex() -> ModuleGraph {
+  let mut test_module_graph = construct_test_module_graph();
+  let module_h = Module::new("H".into());
+  test_module_graph.add_module(module_h);
+
+  let static_edges = vec![("D", "H", 1), ("F", "H", 0), ("G", "H", 0)];
+
+  for (from, to, order) in static_edges {
+    test_module_graph
+      .add_edge_item(
+        &from.into(),
+        &to.into(),
+        ModuleGraphEdgeDataItem {
+          source: format!("./{}", to),
+          kind: ResolveKind::Import,
+          order,
+        },
+      )
+      .unwrap();
+  }
+
+  test_module_graph
+}
+
+/// construct a test module group graph using module graph like below:
+/// ```plain
+///           A   B
+///          /|\ / \
+///         C | D   E
+///          \|/ \  |
+///           F  |  G
+///            \ | /
+///             \|/
+///              H
+/// ```
+/// * **dynamic dependencies**: `A -> D`, `C -> F`, `D -> F`, `E -> G`
+/// * **cyclic dependencies**: `F -> A`
+/// * others are static dependencies
+pub fn construct_test_module_group_graph_complex() -> ModuleGroupGraph {
+  let mut module_group_graph = construct_test_module_group_graph();
+
+  let module_group_b = module_group_graph.module_group_mut(&"B".into()).unwrap();
+  module_group_b.add_module("H".into());
+
+  let module_group_d = module_group_graph.module_group_mut(&"D".into()).unwrap();
+  module_group_d.add_module("H".into());
+
+  let module_group_f = module_group_graph.module_group_mut(&"F".into()).unwrap();
+  module_group_f.add_module("H".into());
+
+  let module_group_g = module_group_graph.module_group_mut(&"G".into()).unwrap();
+  module_group_g.add_module("H".into());
 
   module_group_graph
 }
