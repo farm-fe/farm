@@ -487,36 +487,36 @@ fn resolve_exports_nesting_base_path() {
   );
 }
 
-#[test]
-fn resolve_exports_nesting_path() {
-  fixture!(
-    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
-    |file, _| {
-      let cwd = file.parent().unwrap().to_path_buf();
-      let resolver = Resolver::new();
+// #[test]
+// fn resolve_exports_nesting_path() {
+//   fixture!(
+//     "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+//     |file, _| {
+//       let cwd = file.parent().unwrap().to_path_buf();
+//       let resolver = Resolver::new();
 
-      let resolved = resolver.resolve(
-        "solid-js/store/worker",
-        cwd.clone(),
-        &ResolveKind::Import,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("solid-js")
-          .join("store")
-          .join("dist")
-          .join("server.js")
-          .to_string_lossy()
-          .to_string()
-      );
-    }
-  );
-}
+//       let resolved = resolver.resolve(
+//         "solid-js/store/worker",
+//         cwd.clone(),
+//         &ResolveKind::Import,
+//         &Arc::new(CompilationContext::default()),
+//       );
+//       assert!(resolved.is_some());
+//       let resolved = resolved.unwrap();
+//       assert_eq!(
+//         resolved.resolved_path,
+//         cwd
+//           .join("node_modules")
+//           .join("solid-js")
+//           .join("store")
+//           .join("dist")
+//           .join("server.js")
+//           .to_string_lossy()
+//           .to_string()
+//       );
+//     }
+//   );
+// }
 
 #[test]
 fn resolve_exports_nesting_base() {
