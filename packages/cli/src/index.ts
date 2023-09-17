@@ -54,6 +54,7 @@ cli
     ) => {
       const resolveOptions = resolveCommandOptions(options);
       const configPath = getConfigPath(options.config);
+
       const defaultOptions = {
         compilation: {
           root,

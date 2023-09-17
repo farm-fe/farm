@@ -343,11 +343,14 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-
       const config = await readConfigFile(resolvedPath, logger);
       const farmConfig = mergeUserConfig(config, inlineOptions);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
+        userConfig.resolveConfigPath = resolvedPath;
+
+        // warning !!! May cause stack overflow
+        // userConfig.configFileDependencies = getDependenciesRecursive(userConfig);
         // if we found a config file, stop searching
         break;
       }
@@ -368,7 +371,7 @@ export async function resolveUserConfig(
 
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
-
+  userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }
 
@@ -429,6 +432,7 @@ async function readConfigFile(
       const filePath = path.join(outputPath, fileName);
       // Change to vm.module of node or loaders as far as it is stable
       if (process.platform === 'win32') {
+        console.log((await import(pathToFileURL(filePath).toString())).default);
         return (await import(pathToFileURL(filePath).toString())).default;
       } else {
         return (await import(filePath)).default;
@@ -445,7 +449,7 @@ async function readConfigFile(
 }
 
 export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
-  delete config.configPath;
+  // delete config.configPath;
   return config;
 }
 
@@ -505,4 +509,42 @@ export function normalizePublicPath(publicPath = '/', logger: Logger) {
   }
 
   return publicPath;
+}
+
+export function getDependenciesRecursive(config: any) {
+  const content = fs.readFileSync(config.resolveConfigPath, 'utf-8');
+  const dependencyRegex = /import\s.*?from\s['"](.+?)['"]/g;
+  const requireRegex = /require\s*\(\s*['"](.+?)['"]\s*\)/g;
+  const allDependencies = [];
+  const dependencies = [];
+
+  let match;
+  while ((match = dependencyRegex.exec(content)) !== null) {
+    dependencies.push(match[1]);
+  }
+
+  while ((match = requireRegex.exec(content)) !== null) {
+    dependencies.push(match[1]);
+  }
+
+  for (const dependency of dependencies) {
+    const dependencyPath = path.resolve(
+      path.dirname(config.filePath),
+      dependency
+    );
+    // 检查依赖项是否在项目内部，而不是在node_modules中
+    if (!dependencyPath.includes('node_modules')) {
+      allDependencies.push(dependencyPath);
+      getDependenciesRecursive(dependencyPath);
+    }
+  }
+
+  return allDependencies;
+}
+
+export function isInternalDependency(dependencyPath: string) {
+  // 您可以根据您的项目结构定义条件来检查依赖项是否属于项目内部，例如，检查路径前缀或者特定文件夹
+  // 这里只是一个示例，您需要根据您的项目结构来定义适当的条件
+  const projectRoot = path.resolve(__dirname);
+  return dependencyPath.startsWith(projectRoot);
 }

@@ -150,17 +150,15 @@ export class DevServer implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
-    this.closeFarmServer();
+    await this.closeFarmServer();
   }
 
   async restart() {
     // TODO restart
   }
 
-  closeFarmServer() {
-    this.server?.close(() => {
-      this.logger.info('HTTP server is closed');
-    });
+  async closeFarmServer() {
+    await this.server?.close();
   }
 
   createFarmServer(options: UserServerConfig) {

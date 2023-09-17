@@ -1,9 +1,18 @@
+import debounce from 'lodash.debounce';
+import { basename, relative } from 'node:path';
+import chalk from 'chalk';
+
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
 import { Config, JsFileWatcher } from '../../binding/index.js';
 import { compilerHandler, DefaultLogger } from '../utils/index.js';
-import debounce from 'lodash.debounce';
-import { DEFAULT_HMR_OPTIONS } from '../index.js';
+import {
+  DEFAULT_HMR_OPTIONS,
+  normalizeUserCompilationConfig,
+  resolveUserConfig
+} from '../index.js';
+import type { UserConfig } from '../config/index.js';
+import { setProcessEnv } from '../config/env.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -17,7 +26,7 @@ export class FileWatcher implements ImplFileWatcher {
 
   constructor(
     public serverOrCompiler: DevServer | Compiler,
-    public options?: Config
+    public options?: Config & UserConfig
   ) {
     this._root = options.config.root;
     this._awaitWriteFinish = DEFAULT_HMR_OPTIONS.watchOptions.awaitWriteFinish;
@@ -43,7 +52,36 @@ export class FileWatcher implements ImplFileWatcher {
 
     let handlePathChange = async (path: string): Promise<void> => {
       // TODO prepare watch restart server
+      const fileName = basename(path);
+      const isEnv = fileName === '.env' || fileName.startsWith('.env.');
+      const isConfig = path === this.options.resolveConfigPath;
 
+      // const isConfigDependency = config.configFileDependencies.some(
+      // (name) => file === name,
+      // )
+      if (isEnv || isConfig) {
+        // TODO restart server
+        this._logger.info(
+          `Restarting server due to ${chalk.green(
+            relative(process.cwd(), path)
+          )} change...`
+        );
+        // this.serverOrCompiler.close()
+        if (this.serverOrCompiler instanceof DevServer) {
+          await this.serverOrCompiler.close();
+        }
+        setProcessEnv('development');
+        const config: UserConfig = await resolveUserConfig(
+          this.options.inlineConfig,
+          this._logger
+        );
+        const normalizedConfig = await normalizeUserCompilationConfig(config);
+        setProcessEnv(normalizedConfig.config.mode);
+        const compiler = new Compiler(normalizedConfig);
+        const devServer = new DevServer(compiler, this._logger, config);
+        devServer.listen();
+        return;
+      }
       try {
         if (this.serverOrCompiler instanceof DevServer) {
           await this.serverOrCompiler.hmrEngine.hmrUpdate(path);

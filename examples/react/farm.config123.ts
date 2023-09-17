@@ -1,5 +1,5 @@
 import type { UserConfig } from '@farmfe/core';
-import plugins from './plugins.ts'
+
 function defineConfig(config: UserConfig) {
   return config;
 }
@@ -33,8 +33,18 @@ export default defineConfig({
   server: {
     hmr: true,
     // cors: true,
-    port: 8888,
     host: 'localhost'
   },
-  plugins
+  plugins: [
+    '@farmfe/plugin-react',
+    '@farmfe/plugin-sass',
+    {
+      name: 'plugin-finish-hook-test',
+      finish: {
+        executor(param, context, hookContext) {
+          console.log('plugin-finish-hook-test', param, context, hookContext);
+        }
+      }
+    }
+  ]
 });

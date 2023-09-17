@@ -167,6 +167,7 @@ const FarmConfigSchema = z
     root: z.string().optional(),
     base: z.string().optional(),
     clearScreen: z.boolean().optional(),
+    configPath: z.string().optional(),
     envDir: z.string().optional(),
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),

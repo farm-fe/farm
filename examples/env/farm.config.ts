@@ -5,9 +5,12 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
-  compilation: {
-    mode: 'staging'
-  },
+  // compilation: {
+  //   mode: 'staging'
+  // },
   envPrefix: ['FARM_', 'CUSTOM_PREFIX_', 'NEW_'],
-  envDir: resolve(process.cwd(), './env')
+  envDir: resolve(process.cwd(), './env'),
+  server: {
+    port: 7757
+  }
 });

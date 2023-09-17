@@ -36,6 +36,7 @@ export async function start(
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
+
   setProcessEnv(normalizedConfig.config.mode);
 
   const compiler = new Compiler(normalizedConfig);
@@ -60,8 +61,10 @@ export async function start(
       );
       process.exit(1);
     }
-
-    const fileWatcher = new FileWatcher(devServer, normalizedConfig);
+    const fileWatcher = new FileWatcher(devServer, {
+      ...normalizedConfig,
+      ...config
+    });
     fileWatcher.watch();
   }
 }
