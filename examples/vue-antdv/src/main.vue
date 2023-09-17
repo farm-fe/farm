@@ -64,6 +64,12 @@
         </a-breadcrumb>
         <a-layout-content :style="{ background: '#fff', padding: '24px', margin: 0, minHeight: '280px' }">
           <RouterView />
+          <a-button type="primary" @click="showModal">Open Modal</a-button>
+          <a-modal v-model:open="open" title="Basic Modal" @ok="handleOk">
+            <p>Some contents...</p>
+            <p>Some contents...</p>
+            <p>Some contents...</p>
+          </a-modal>
         </a-layout-content>
       </a-layout>
     </a-layout>
@@ -82,7 +88,20 @@ export default defineComponent({
     DatePicker,
   },
   setup() {
+    const open = ref<boolean>(false);
+
+    const showModal = () => {
+      open.value = true;
+    };
+
+    const handleOk = (e: MouseEvent) => {
+      console.log(e);
+      open.value = false;
+    };
     return {
+      open,
+      showModal,
+      handleOk,
       selectedKeys1: ref<string[]>(['2']),
       selectedKeys2: ref<string[]>(['1']),
       collapsed: ref<boolean>(false),
