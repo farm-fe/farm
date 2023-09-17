@@ -2,6 +2,7 @@
   "name": "@farmfe-examples/react",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "dependencies": {
     "clsx": "^1.2.1",
     "core-js": "^3.30.1",

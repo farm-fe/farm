@@ -1,6 +1,6 @@
-import type { UserConfig } from '@farmfe/core';
-import plugins from './plugins.ts'
-function defineConfig(config: UserConfig) {
+// import type { UserConfig } from '@farmfe/core';
+// import plugins from './plugins.ts';
+function defineConfig(config) {
   return config;
 }
 
@@ -33,8 +33,8 @@ export default defineConfig({
   server: {
     hmr: true,
     // cors: true,
-    port: 8888,
+    port: 5854,
     host: 'localhost'
   },
-  plugins
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 });

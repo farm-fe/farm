@@ -330,7 +330,6 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
-
   if (inlineOptions.clearScreen) clearScreen();
 
   if (!path.isAbsolute(configPath)) {
@@ -348,7 +347,6 @@ export async function resolveUserConfig(
       if (config) {
         userConfig = parseUserConfig(farmConfig);
         userConfig.resolveConfigPath = resolvedPath;
-
         // warning !!! May cause stack overflow
         // userConfig.configFileDependencies = getDependenciesRecursive(userConfig);
         // if we found a config file, stop searching
@@ -362,6 +360,7 @@ export async function resolveUserConfig(
 
     if (config) {
       userConfig = parseUserConfig(farmConfig);
+      userConfig.resolveConfigPath = configPath;
     }
   }
 
@@ -430,6 +429,7 @@ async function readConfigFile(
       compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);
+
       // Change to vm.module of node or loaders as far as it is stable
       if (process.platform === 'win32') {
         return (await import(pathToFileURL(filePath).toString())).default;

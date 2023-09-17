@@ -1,5 +1,7 @@
-import debounce from 'lodash.debounce';
+import { readFileSync } from 'node:fs';
 import { basename, relative } from 'node:path';
+import { createRequire } from 'node:module';
+import debounce from 'lodash.debounce';
 import chalk from 'chalk';
 
 import { Compiler } from '../compiler/index.js';
@@ -13,7 +15,6 @@ import {
 } from '../index.js';
 import type { UserConfig } from '../config/index.js';
 import { setProcessEnv } from '../config/env.js';
-import { createRequire } from 'node:module';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -56,19 +57,13 @@ export class FileWatcher implements ImplFileWatcher {
       const fileName = basename(path);
       const isEnv = fileName === '.env' || fileName.startsWith('.env.');
       const isConfig = path === this.options.resolveConfigPath;
-
-      // const isConfigDependency = config.configFileDependencies.some(
-      // (name) => file === name,
-      // )
+      // TODO configFileDependencies
       if (isEnv || isConfig) {
-        // TODO restart server
         this._logger.info(
           `Restarting server due to ${chalk.green(
             relative(process.cwd(), path)
           )} change...`
         );
-
-        // this.serverOrCompiler.close()
         if (this.serverOrCompiler instanceof DevServer) {
           await this.serverOrCompiler.close();
         }
@@ -77,7 +72,17 @@ export class FileWatcher implements ImplFileWatcher {
           this.options.inlineConfig,
           this._logger
         );
-        // clearModuleCache(config.resolveConfigPath)
+        await readFileSync(this.options.resolveConfigPath, 'utf-8');
+        const _require = createRequire(import.meta.url);
+        delete _require.cache[_require.resolve(this.options.resolveConfigPath)];
+        const data = await import(this.options.resolveConfigPath);
+        console.log(data);
+        const moduleSpecifier = new URL(
+          this.options.resolveConfigPath,
+          import.meta.url
+        ).toString();
+        const module = await import(moduleSpecifier);
+        console.log(module.default); // 根据需要访问导出的内容
         const normalizedConfig = await normalizeUserCompilationConfig(config);
         setProcessEnv(normalizedConfig.config.mode);
         const compiler = new Compiler(normalizedConfig);
@@ -118,10 +123,6 @@ export class FileWatcher implements ImplFileWatcher {
     ]);
 
     if (this.serverOrCompiler instanceof DevServer) {
-      // chokidar.watch(
-      //   compiler.resolvedModulePaths(this._root),
-      //   this.serverOrCompiler.config.hmr.watchOptions
-      // );
       this.serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
         const added = [
           ...updateResult.added,
@@ -133,30 +134,9 @@ export class FileWatcher implements ImplFileWatcher {
           );
           return resolvedPath;
         });
-
         this._watcher.watch(added);
-
-        // const removed = updateResult.removed.map((removedModule) => {
-        //   const resolvedPath = compiler.transformModulePath(
-        //     this._root,
-        //     removedModule
-        //   );
-        //   return resolvedPath;
-        // });
-
-        // this._watcher.unwatch(removed);
       });
     }
-
-    if (this.serverOrCompiler instanceof Compiler) {
-      // const watcherOptions = this.resolvedWatcherOptions();
-      // this._watcher = chokidar.watch(
-      //   compiler.resolvedModulePaths(this._root),
-      //   watcherOptions as ChokidarFileWatcherOptions
-      // );
-    }
-
-    // this._watcher.on('change', );
   }
 
   private getCompilerFromServerOrCompiler(
@@ -166,30 +146,6 @@ export class FileWatcher implements ImplFileWatcher {
       ? serverOrCompiler.getCompiler()
       : serverOrCompiler;
   }
-
-  // private resolvedWatcherOptions() {
-  //   const { watch: watcherOptions, output } = this.options.config;
-  //   const userWatcherOptions = isObject(watcherOptions) ? watcherOptions : {};
-  //   const { ignored = [] } = userWatcherOptions as ChokidarFileWatcherOptions;
-  //   const resolveWatcherOptions = {
-  //     ignoreInitial: true,
-  //     ignorePermissionErrors: true,
-  //     ...watcherOptions,
-  //     ignored: [
-  //       '**/{.git,node_modules}/**',
-  //       output?.path,
-  //       ...(Array.isArray(ignored) ? ignored : [ignored])
-  //     ]
-  //   };
-  //   // TODO other logger info
-  //   this._logger.info(`Watching for changes`);
-  //   this._logger.info(
-  //     `Ignoring changes in ${resolveWatcherOptions.ignored
-  //       .map((v: string | RegExp) => '"' + v + '"')
-  //       .join(' | ')}`
-  //   );
-  //   return resolveWatcherOptions;
-  // }
 }
 
 export async function restartServer(server: DevServer) {
@@ -202,6 +158,5 @@ export function sleep(ms: number) {
 
 export function clearModuleCache(modulePath: string) {
   const _require = createRequire(import.meta.url);
-
   delete _require.cache[_require.resolve(modulePath)];
 }
