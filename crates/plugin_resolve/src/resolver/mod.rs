@@ -593,14 +593,12 @@ impl Resolver {
     // TODO: add all cases from https://nodejs.org/api/packages.html
     let exports_field = get_field_value_from_package_json_info(package_json_info, "exports");
     if let Some(exports_field) = exports_field {
-      let dir = package_json_info.dir();
+      let import_full_path = package_json_info.dir();
       let path = Path::new(resolved_path);
       if let Value::Object(field) = exports_field {
         let mut result_value: Option<String> = None;
         'find_field_loop: for (key, value) in field {
-          let key_path = get_key_path(&key, dir);
-          println!("resolved_path: {}", resolved_path);
-          println!("key_path: {}", key_path);
+          let key_path = get_key_path(&key, import_full_path);
           if key_path.ends_with("*") || key_path.ends_with("**") {
             continue; // skip
           }
@@ -608,9 +606,8 @@ impl Resolver {
             match value {
               Value::String(current_field_value) => {
                 if path.is_absolute() {
-                  let key_path = get_key_path(&key, dir);
                   if are_values_equal(&key_path, resolved_path) {
-                    let value_path = get_key_path(&current_field_value, package_json_info.dir());
+                    let value_path = get_key_path(&current_field_value, import_full_path);
                     result_value = Some(value_path);
                     break 'find_field_loop;
                   }
@@ -624,8 +621,7 @@ impl Resolver {
                       if are_values_equal(&key_word, "default") && path.is_absolute() {
                         match &key_value {
                           Value::String(key_value_string) => {
-                            let value_path =
-                              get_key_path(key_value_string, package_json_info.dir());
+                            let value_path = get_key_path(key_value_string, import_full_path);
                             result_value = Some(value_path);
                             break 'find_field_loop;
                           }
@@ -633,7 +629,7 @@ impl Resolver {
                             if let Some(Value::String(default_str)) =
                               key_value_object.get("default")
                             {
-                              let value_path = get_key_path(default_str, package_json_info.dir());
+                              let value_path = get_key_path(default_str, import_full_path);
                               result_value = Some(value_path);
                               break 'find_field_loop;
                             }
@@ -645,10 +641,9 @@ impl Resolver {
                         match key_value {
                           Value::String(import_value) => {
                             if path.is_absolute() {
-                              let value_path = get_key_path(&import_value, package_json_info.dir());
+                              let value_path = get_key_path(&import_value, import_full_path);
                               result_value = Some(value_path);
                               break 'find_field_loop;
-                              // return Some(value_path);
                             }
                           }
                           Value::Object(import_value) => {
@@ -687,7 +682,7 @@ impl Resolver {
                         match key_value {
                           Value::String(key_value) => {
                             if path.is_absolute() {
-                              let value_path = get_key_path(&key_value, package_json_info.dir());
+                              let value_path = get_key_path(&key_value, import_full_path);
                               result_value = Some(value_path);
                               break 'find_field_loop;
                             }
@@ -729,7 +724,7 @@ impl Resolver {
                         match key_value {
                           Value::String(import_value) => {
                             if path.is_absolute() {
-                              let value_path = get_key_path(&import_value, package_json_info.dir());
+                              let value_path = get_key_path(&import_value, import_full_path);
                               result_value = Some(value_path);
                               break 'find_field_loop;
                             }
@@ -749,10 +744,8 @@ impl Resolver {
                                 }
                                 TargetEnv::Browser => {
                                   if are_values_equal(key_word, "default") && path.is_absolute() {
-                                    let value_path = get_key_path(
-                                      key_value.as_str().unwrap(),
-                                      package_json_info.dir(),
-                                    );
+                                    let value_path =
+                                      get_key_path(key_value.as_str().unwrap(), import_full_path);
                                     result_value = Some(value_path);
                                     break 'find_field_loop;
                                   }
