@@ -432,7 +432,6 @@ async function readConfigFile(
       const filePath = path.join(outputPath, fileName);
       // Change to vm.module of node or loaders as far as it is stable
       if (process.platform === 'win32') {
-        console.log((await import(pathToFileURL(filePath).toString())).default);
         return (await import(pathToFileURL(filePath).toString())).default;
       } else {
         return (await import(filePath)).default;

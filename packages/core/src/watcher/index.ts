@@ -13,6 +13,7 @@ import {
 } from '../index.js';
 import type { UserConfig } from '../config/index.js';
 import { setProcessEnv } from '../config/env.js';
+import { createRequire } from 'node:module';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -66,6 +67,7 @@ export class FileWatcher implements ImplFileWatcher {
             relative(process.cwd(), path)
           )} change...`
         );
+
         // this.serverOrCompiler.close()
         if (this.serverOrCompiler instanceof DevServer) {
           await this.serverOrCompiler.close();
@@ -75,6 +77,7 @@ export class FileWatcher implements ImplFileWatcher {
           this.options.inlineConfig,
           this._logger
         );
+        // clearModuleCache(config.resolveConfigPath)
         const normalizedConfig = await normalizeUserCompilationConfig(config);
         setProcessEnv(normalizedConfig.config.mode);
         const compiler = new Compiler(normalizedConfig);
@@ -191,4 +194,14 @@ export class FileWatcher implements ImplFileWatcher {
 
 export async function restartServer(server: DevServer) {
   await server.close();
+}
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function clearModuleCache(modulePath: string) {
+  const _require = createRequire(import.meta.url);
+
+  delete _require.cache[_require.resolve(modulePath)];
 }

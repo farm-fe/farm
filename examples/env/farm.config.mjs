@@ -1,6 +1,6 @@
-import type { UserConfig } from '@farmfe/core';
+// import type { UserConfig } from '@farmfe/core';
 import { resolve } from 'path';
-function defineConfig(config: UserConfig) {
+function defineConfig(config) {
   return config;
 }
 
@@ -11,6 +11,6 @@ export default defineConfig({
   envPrefix: ['FARM_', 'CUSTOM_PREFIX_', 'NEW_'],
   envDir: resolve(process.cwd(), './env'),
   server: {
-    port: 7757
+    port: 7667
   }
 });
