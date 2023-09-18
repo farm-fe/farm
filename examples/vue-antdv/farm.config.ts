@@ -31,6 +31,7 @@ export default defineConfig({
         rewrite: (path: any) => path.replace(/^\/api/, ''),
       },
     },
+    cors: true
   },
   plugins: [farmJsPluginVue(), farmJsPluginLess()],
 });

@@ -175,6 +175,7 @@ const FarmConfigSchema = z
     compilation: compilationConfigSchema.optional(),
     server: z
       .object({
+        headers: z.record(z.string()).optional(),
         port: z.number().positive().int().optional(),
         host: z
           .union([

@@ -16,8 +16,13 @@ export default defineConfig({
     sourcemap: true
   },
   server: {
+    // headers: {
+    //   'Access-Control-Allow-Origin': '*'
+    // },
+    port: 9200,
     hmr: true,
     writeToDisk: false,
+    cors: true,
     host: '127.0.0.1'
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
