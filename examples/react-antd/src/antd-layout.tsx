@@ -12,6 +12,7 @@ import { Breadcrumb, Layout, Menu, theme } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 
 import './main.css';
+import logo from '../assets/logo.png';
 
 const { Header, Content, Sider } = Layout;
 
@@ -97,9 +98,13 @@ export const AntdLayout: React.FC = () => {
               background: colorBgContainer
             }}
           >
+            <div>
+              <img width={600} src={logo} />
+            </div>
             <Button type="primary" onClick={showModal}>
               Open Modal
             </Button>
+
             <Modal
               title="Basic Modal"
               open={isModalOpen}
