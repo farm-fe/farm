@@ -1,6 +1,6 @@
 {
   "name": "@farmfe-examples/react-antd",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^5.0.1",
