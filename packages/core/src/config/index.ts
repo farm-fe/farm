@@ -28,7 +28,8 @@ import {
 
 import { CompilationMode, loadEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-import { importFresh } from '../utils/file.js';
+// import { importFresh, importFresh2 } from '../utils/share.js';
+import { importFresh2 } from '../utils/share.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -434,10 +435,10 @@ async function readConfigFile(
       const filePath = path.join(outputPath, fileName);
 
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(filePath);
+      return await importFresh2(filePath);
     } else {
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(configFilePath);
+      return await importFresh2(configFilePath);
     }
   }
 }

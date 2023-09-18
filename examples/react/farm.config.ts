@@ -33,6 +33,7 @@ export default defineConfig({
   server: {
     hmr: true,
     cors: true,
+    port: 6021,
     host: 'localhost'
   },
   plugins: [

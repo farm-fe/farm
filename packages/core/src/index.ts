@@ -19,7 +19,7 @@ import {
   resolveUserConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger } from './utils/logger.js';
+import { DefaultLogger, Logger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { Config } from '../binding/index.js';
@@ -33,21 +33,10 @@ export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
-  setProcessEnv('development');
-  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(config);
-
-  setProcessEnv(normalizedConfig.config.mode);
-
-  const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, config);
-
-  if (normalizedConfig.config.mode === 'development') {
-    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configDevServer?.(devServer)
-    );
-  }
-  await devServer.listen();
+  const { normalizedConfig, devServer, config } = await resolveCompiler(
+    inlineConfig as any,
+    logger
+  );
 
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
@@ -176,4 +165,30 @@ export async function createBundleHandler(
     const watcher = new FileWatcher(compiler, normalizedConfig);
     watcher.watch();
   }
+}
+
+export async function resolveCompiler(
+  inlineConfig: FarmCLIOptions & UserConfig & Config,
+  logger: Logger
+) {
+  setProcessEnv('development');
+  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
+  const normalizedConfig = await normalizeUserCompilationConfig(config);
+
+  setProcessEnv(normalizedConfig.config.mode);
+
+  const compiler = new Compiler(normalizedConfig);
+  const devServer = new DevServer(compiler, logger, config);
+
+  if (normalizedConfig.config.mode === 'development') {
+    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configDevServer?.(devServer)
+    );
+  }
+  await devServer.listen();
+  return {
+    devServer,
+    normalizedConfig,
+    config
+  };
 }
