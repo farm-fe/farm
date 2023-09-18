@@ -77,7 +77,7 @@
     "boxen": "^7.0.1",
     "chalk": "^5.2.0",
     "dotenv": "^16.3.1",
-    "dotenv-expand": "^9.0.0",
+    "dotenv-expand": "^10.0.0",
     "execa": "^7.1.1",
     "figlet": "^1.5.2",
     "fs-extra": "^11.1.1",

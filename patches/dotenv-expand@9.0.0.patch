@@ -1,20 +1,9 @@
 diff --git a/lib/main.js b/lib/main.js
-index c873cc77229d4cd0cf9de98ae0970b25d89f312f..901758c6b665d2935501404fc09c6abd94b7eb1e 100644
+index 79d973c22f06403bfee45ff122bd384841c30da8..9392de262140f8f336146bef2419794532e4170f 100644
 --- a/lib/main.js
 +++ b/lib/main.js
-@@ -17,6 +17,10 @@ function _interpolate (envValue, environment, config) {
-       replacePart = parts[0]
-       value = replacePart.replace('\\$', '$')
-     } else {
-+      // PATCH: compatible with env variables ended with unescaped $
-+      if(!parts[2]) {
-+        return newEnv
-+      }
-       const keyParts = parts[2].split(':-')
-       const key = keyParts[0]
-       replacePart = parts[0].substring(prefix.length)
-@@ -50,9 +54,10 @@ function expand (config) {
-     config.parsed[configKey] = _interpolate(value, environment, config)
+@@ -69,9 +69,10 @@ function expand (config) {
+     )
    }
  
 -  for (const processKey in config.parsed) {

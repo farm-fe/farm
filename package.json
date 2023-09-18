@@ -53,7 +53,7 @@
       "@farmfe/core": "workspace:*"
     },
     "patchedDependencies": {
-      "dotenv-expand@9.0.0": "patches/dotenv-expand@9.0.0.patch"
+      "dotenv-expand@10.0.0": "patches/dotenv-expand@10.0.0.patch"
     }
   }
 }
