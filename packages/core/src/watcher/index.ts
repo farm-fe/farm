@@ -6,15 +6,17 @@ import chalk from 'chalk';
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
 import { Config, JsFileWatcher } from '../../binding/index.js';
-import { compilerHandler, DefaultLogger } from '../utils/index.js';
+import { compilerHandler, DefaultLogger, clearScreen } from '../utils/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
   JsPlugin,
   normalizeUserCompilationConfig,
   resolveUserConfig
 } from '../index.js';
-import type { UserConfig } from '../config/index.js';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { setProcessEnv } from '../config/env.js';
+
+import type { UserConfig } from '../config/index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -59,10 +61,12 @@ export class FileWatcher implements ImplFileWatcher {
       const isConfig = path === this.options.resolveConfigPath;
       // TODO configFileDependencies
       if (isEnv || isConfig) {
+        clearScreen();
+        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = false;
         this._logger.info(
-          `Restarting server due to ${chalk.green(
+          `restarting server due to ${chalk.green(
             relative(process.cwd(), path)
-          )} change...`
+          )} change`
         );
         if (this.serverOrCompiler instanceof DevServer) {
           await this.serverOrCompiler.close();

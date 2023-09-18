@@ -8,9 +8,9 @@ overrides:
   '@farmfe/core': workspace:*
 
 patchedDependencies:
-  dotenv-expand@9.0.0:
-    hash: dccccn23nvejzy75sgiosdt2au
-    path: patches/dotenv-expand@9.0.0.patch
+  dotenv-expand@10.0.0:
+    hash: dcar2o2abbvm3f7ghlazy45mqy
+    path: patches/dotenv-expand@10.0.0.patch
 
 importers:
 
@@ -895,8 +895,8 @@ importers:
         specifier: ^16.3.1
         version: 16.3.1
       dotenv-expand:
-        specifier: ^9.0.0
-        version: 9.0.0(patch_hash=dccccn23nvejzy75sgiosdt2au)
+        specifier: ^10.0.0
+        version: 10.0.0(patch_hash=dcar2o2abbvm3f7ghlazy45mqy)
       execa:
         specifier: ^7.1.1
         version: 7.1.1
@@ -4929,8 +4929,8 @@ packages:
       is-obj: 2.0.0
     dev: true
 
-  /dotenv-expand@9.0.0(patch_hash=dccccn23nvejzy75sgiosdt2au):
-    resolution: {integrity: sha512-uW8Hrhp5ammm9x7kBLR6jDfujgaDarNA02tprvZdyrJ7MpdzD1KyrIHG4l+YoC2fJ2UcdFdNWNWIjt+sexBHJw==}
+  /dotenv-expand@10.0.0(patch_hash=dcar2o2abbvm3f7ghlazy45mqy):
+    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
     engines: {node: '>=12'}
     dev: false
     patched: true

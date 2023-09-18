@@ -1,7 +1,6 @@
 import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
@@ -28,6 +27,8 @@ import {
 } from '../utils/index.js';
 
 import { CompilationMode, loadEnv } from './env.js';
+import { __FARM_GLOBAL__ } from './_global.js';
+import { importFresh } from '../utils/file.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -380,7 +381,8 @@ async function readConfigFile(
   logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
-    logger.info(`Using config file at ${chalk.green(configFilePath)}`);
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      logger.info(`Using config file at ${chalk.green(configFilePath)}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
@@ -501,50 +503,4 @@ export function normalizePublicPath(publicPath = '/', logger: Logger) {
   }
 
   return publicPath;
-}
-
-export function getDependenciesRecursive(config: any) {
-  const content = fs.readFileSync(config.resolveConfigPath, 'utf-8');
-  const dependencyRegex = /import\s.*?from\s['"](.+?)['"]/g;
-  const requireRegex = /require\s*\(\s*['"](.+?)['"]\s*\)/g;
-  const allDependencies = [];
-  const dependencies = [];
-
-  let match;
-  while ((match = dependencyRegex.exec(content)) !== null) {
-    dependencies.push(match[1]);
-  }
-
-  while ((match = requireRegex.exec(content)) !== null) {
-    dependencies.push(match[1]);
-  }
-
-  for (const dependency of dependencies) {
-    const dependencyPath = path.resolve(
-      path.dirname(config.filePath),
-      dependency
-    );
-    // 检查依赖项是否在项目内部，而不是在node_modules中
-    if (!dependencyPath.includes('node_modules')) {
-      allDependencies.push(dependencyPath);
-      getDependenciesRecursive(dependencyPath);
-    }
-  }
-
-  return allDependencies;
-}
-
-export function isInternalDependency(dependencyPath: string) {
-  const projectRoot = path.resolve(__dirname);
-  return dependencyPath.startsWith(projectRoot);
-}
-
-export async function importFresh(modulePath: string) {
-  const cacheBustingModulePath = `${modulePath}?update=${Date.now()}`;
-  if (process.platform === 'win32') {
-    return (await import(pathToFileURL(cacheBustingModulePath).toString()))
-      .default;
-  } else {
-    return (await import(cacheBustingModulePath)).default;
-  }
 }
