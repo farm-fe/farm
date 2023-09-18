@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { basename, relative } from 'node:path';
 import { createRequire } from 'node:module';
 import debounce from 'lodash.debounce';
@@ -10,6 +9,7 @@ import { Config, JsFileWatcher } from '../../binding/index.js';
 import { compilerHandler, DefaultLogger } from '../utils/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
+  JsPlugin,
   normalizeUserCompilationConfig,
   resolveUserConfig
 } from '../index.js';
@@ -67,27 +67,20 @@ export class FileWatcher implements ImplFileWatcher {
         if (this.serverOrCompiler instanceof DevServer) {
           await this.serverOrCompiler.close();
         }
-        setProcessEnv('development');
         const config: UserConfig = await resolveUserConfig(
           this.options.inlineConfig,
           this._logger
         );
-        await readFileSync(this.options.resolveConfigPath, 'utf-8');
-        const _require = createRequire(import.meta.url);
-        delete _require.cache[_require.resolve(this.options.resolveConfigPath)];
-        const data = await import(this.options.resolveConfigPath);
-        console.log(data);
-        const moduleSpecifier = new URL(
-          this.options.resolveConfigPath,
-          import.meta.url
-        ).toString();
-        const module = await import(moduleSpecifier);
-        console.log(module.default); // 根据需要访问导出的内容
         const normalizedConfig = await normalizeUserCompilationConfig(config);
         setProcessEnv(normalizedConfig.config.mode);
         const compiler = new Compiler(normalizedConfig);
         const devServer = new DevServer(compiler, this._logger, config);
         devServer.listen();
+        if (normalizedConfig.config.mode === 'development') {
+          normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+            plugin.configDevServer?.(devServer)
+          );
+        }
         return;
       }
       try {

@@ -431,18 +431,10 @@ async function readConfigFile(
       const filePath = path.join(outputPath, fileName);
 
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === 'win32') {
-        return (await import(pathToFileURL(filePath).toString())).default;
-      } else {
-        return (await import(filePath)).default;
-      }
+      return await importFresh(filePath);
     } else {
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === 'win32') {
-        return (await import(pathToFileURL(configFilePath).toString())).default;
-      } else {
-        return (await import(configFilePath)).default;
-      }
+      return await importFresh(configFilePath);
     }
   }
 }
@@ -542,8 +534,16 @@ export function getDependenciesRecursive(config: any) {
 }
 
 export function isInternalDependency(dependencyPath: string) {
-  // 您可以根据您的项目结构定义条件来检查依赖项是否属于项目内部，例如，检查路径前缀或者特定文件夹
-  // 这里只是一个示例，您需要根据您的项目结构来定义适当的条件
   const projectRoot = path.resolve(__dirname);
   return dependencyPath.startsWith(projectRoot);
+}
+
+export async function importFresh(modulePath: string) {
+  const cacheBustingModulePath = `${modulePath}?update=${Date.now()}`;
+  if (process.platform === 'win32') {
+    return (await import(pathToFileURL(cacheBustingModulePath).toString()))
+      .default;
+  } else {
+    return (await import(cacheBustingModulePath)).default;
+  }
 }

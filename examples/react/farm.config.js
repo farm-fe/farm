@@ -33,7 +33,7 @@ export default defineConfig({
   server: {
     hmr: true,
     // cors: true,
-    port: 5854,
+    port: 2789,
     host: 'localhost'
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']

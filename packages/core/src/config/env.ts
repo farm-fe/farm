@@ -16,11 +16,14 @@ export function loadEnv(
     envFiles.flatMap((file) => {
       const filePath = path.join(envDir, file);
       if (!getFileSystemStats(filePath)?.isFile()) return [];
-
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
   );
+  console.log(parsed);
+
   expand({ parsed });
+  console.log(expand({ parsed }));
+
   // For security reasons, we won't get inline env variables.
   // Do not inject project process.env by default, cause it's unsafe
   prefixes = arraify(prefixes);

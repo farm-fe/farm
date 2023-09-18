@@ -4,6 +4,14 @@ settings:
   autoInstallPeers: false
   excludeLinksFromLockfile: false
 
+overrides:
+  '@farmfe/core': workspace:*
+
+patchedDependencies:
+  dotenv-expand@9.0.0:
+    hash: dccccn23nvejzy75sgiosdt2au
+    path: patches/dotenv-expand@9.0.0.patch
+
 importers:
 
   .:
@@ -701,7 +709,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.12.0
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
@@ -719,7 +727,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.12.0
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
@@ -740,7 +748,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.12.0
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
@@ -808,7 +816,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
@@ -884,11 +892,11 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0
       dotenv:
-        specifier: ^16.0.3
-        version: 16.0.3
+        specifier: ^16.3.1
+        version: 16.3.1
       dotenv-expand:
-        specifier: ^10.0.0
-        version: 10.0.0
+        specifier: ^9.0.0
+        version: 9.0.0(patch_hash=dccccn23nvejzy75sgiosdt2au)
       execa:
         specifier: ^7.1.1
         version: 7.1.1
@@ -4921,13 +4929,14 @@ packages:
       is-obj: 2.0.0
     dev: true
 
-  /dotenv-expand@10.0.0:
-    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
+  /dotenv-expand@9.0.0(patch_hash=dccccn23nvejzy75sgiosdt2au):
+    resolution: {integrity: sha512-uW8Hrhp5ammm9x7kBLR6jDfujgaDarNA02tprvZdyrJ7MpdzD1KyrIHG4l+YoC2fJ2UcdFdNWNWIjt+sexBHJw==}
     engines: {node: '>=12'}
     dev: false
+    patched: true
 
-  /dotenv@16.0.3:
-    resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
+  /dotenv@16.3.1:
+    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
     engines: {node: '>=12'}
     dev: false
 
