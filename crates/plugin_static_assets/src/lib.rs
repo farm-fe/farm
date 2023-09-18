@@ -129,7 +129,20 @@ impl Plugin for FarmPluginStaticAssets {
           &bytes,
           ext,
         );
-        let content = format!("export default \"/{}\"", resource_name);
+        let content = if !context.config.output.public_path.is_empty() {
+          format!(
+            "export default \"/{}/{}\"",
+            context
+              .config
+              .output
+              .public_path
+              .trim_start_matches("/")
+              .trim_end_matches("/"),
+            resource_name
+          )
+        } else {
+          format!("export default \"/{}\"", resource_name)
+        };
 
         let mut resources_map = context.resources_map.lock();
         resources_map.insert(
