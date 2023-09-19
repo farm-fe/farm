@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-less
 
+## 1.1.0
+
+### Minor Changes
+
+- 1fea463: Aovid the situation where the return value of additionalData is not a string
+
 ## 1.0.1
 
 ### Patch Changes
