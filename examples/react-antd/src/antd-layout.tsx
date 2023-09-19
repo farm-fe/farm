@@ -1,4 +1,6 @@
 import React from 'react';
+import { useState } from 'react';
+import { Button, Modal } from 'antd';
 import {
   LaptopOutlined,
   NotificationOutlined,
@@ -10,6 +12,7 @@ import { Breadcrumb, Layout, Menu, theme } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 
 import './main.css';
+import logo from '../assets/logo.png';
 
 const { Header, Content, Sider } = Layout;
 
@@ -45,6 +48,19 @@ export const AntdLayout: React.FC = () => {
     token: { colorBgContainer }
   } = theme.useToken();
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleOk = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
 
   return (
     <Layout>
@@ -82,6 +98,23 @@ export const AntdLayout: React.FC = () => {
               background: colorBgContainer
             }}
           >
+            <div>
+              <img width={600} src={logo} />
+            </div>
+            <Button type="primary" onClick={showModal}>
+              Open Modal
+            </Button>
+
+            <Modal
+              title="Basic Modal"
+              open={isModalOpen}
+              onOk={handleOk}
+              onCancel={handleCancel}
+            >
+              <p>Some contents...</p>
+              <p>Some contents...</p>
+              <p>Some contents...</p>
+            </Modal>
             <Outlet />
           </Content>
         </Layout>
