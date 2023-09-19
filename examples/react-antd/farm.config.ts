@@ -11,7 +11,7 @@ export default defineConfig({
     },
     output: {
       path: './build',
-      publicPath: process.env.NODE_ENV === 'development' ? '/admin/' : '/'
+      publicPath: '/admin/'
     },
     sourcemap: true
   },

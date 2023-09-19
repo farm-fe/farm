@@ -156,7 +156,10 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "link",
           None,
-          vec![("rel", "stylesheet"), ("href", &format!("/{}", css))],
+          vec![
+            ("rel", "stylesheet"),
+            ("href", &format!("{}{}", self.options.public_path, css)),
+          ],
         )));
       }
 
