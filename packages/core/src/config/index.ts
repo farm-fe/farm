@@ -377,7 +377,7 @@ async function readConfigFile(
               '^[^./].*'
             ],
             partialBundling: {
-              moduleBuckets: [
+              enforceResources: [
                 {
                   name: fileName,
                   test: ['.+']

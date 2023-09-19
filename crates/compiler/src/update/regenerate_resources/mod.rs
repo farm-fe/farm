@@ -109,13 +109,18 @@ pub fn render_and_generate_update_resource(
 
 pub fn regenerate_resources_for_affected_module_groups(
   affected_module_groups: HashSet<ModuleGroupId>,
+  diff_result: DiffResult,
   updated_module_ids: &Vec<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
   clear_resource_pot_of_modules_in_module_groups(&affected_module_groups, context);
 
-  let mut affected_resource_pots_ids =
-    generate_and_diff_resource_pots(&affected_module_groups, context)?;
+  let mut affected_resource_pots_ids = generate_and_diff_resource_pots(
+    &affected_module_groups,
+    &diff_result,
+    updated_module_ids,
+    context,
+  )?;
 
   let mut resource_pot_map = context.resource_pot_map.write();
   // always rerender the updated module's resource pot

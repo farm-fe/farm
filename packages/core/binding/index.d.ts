@@ -202,10 +202,21 @@ export interface Config {
     };
     sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
     partialBundling?: {
-      moduleBuckets?: {
+      targetConcurrentRequest?: number;
+      targetMinSize?: number;
+      groups?: {
+        name: string;
+        test: string[];
+        groupType?: 'mutable' | 'immutable',
+        resourceType?: 'all' | 'initial' | 'async'
+      }[];
+      enforceResources?: {
         name: string;
         test: string[];
       }[];
+      enforceTargetConcurrentRequest?: boolean;
+      enforceTargetMinSize?: boolean;
+      immutableModules?: string[];
     };
     lazyCompilation?: boolean;
     treeShaking?: boolean;

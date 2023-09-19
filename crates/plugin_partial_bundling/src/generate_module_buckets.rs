@@ -32,6 +32,11 @@ pub fn generate_module_buckets_map(
 
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
+    // ignore external module
+    if module.external {
+      continue;
+    }
+
     let key = ModuleBucket::id(module);
 
     if let Some(module_bucket) = module_buckets_map.get_mut(&key) {

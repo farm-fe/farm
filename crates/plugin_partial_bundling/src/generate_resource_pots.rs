@@ -48,6 +48,10 @@ pub fn generate_resource_pots(
         resource_pot_id,
         ResourcePotType::from(module_bucket.module_type.clone()),
       );
+      println!(
+        "resource pot: {:?}. resource pot type: {:?}, module type: {:?}",
+        resource_pot.id, resource_pot.resource_pot_type, module_bucket.module_type,
+      );
 
       for module_id in module_bucket.modules() {
         resource_pot.add_module(module_id.clone());

@@ -110,6 +110,7 @@ impl PluginDriver {
      param: &PluginResolveHookParam,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
+      // TODO skip record manager if it is not enabled.
       context.record_manager.add_resolve_record(
         param.source.clone(),
         ResolveRecord {

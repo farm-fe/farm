@@ -24,9 +24,9 @@ pub fn partial_bundling(
   // insert the module group map into the context
   let mut context_module_group_graph = context.module_group_graph.write();
   context_module_group_graph.replace(module_group_graph);
+  drop(context_module_group_graph);
 
-  let resource_pot_map =
-    generate_resource_pot_map(&mut context_module_group_graph, context, hook_context)?;
+  let resource_pot_map = generate_resource_pot_map(context, hook_context)?;
   // insert the resource pot graph into the context
   let mut g = context.resource_pot_map.write();
   g.replace(resource_pot_map);
@@ -51,50 +51,16 @@ fn analyze_module_graph(
 }
 
 fn generate_resource_pot_map(
-  module_group_graph: &mut ModuleGroupGraph,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotMap> {
-  let mut modules = HashSet::new();
-  let mut enforce_resource_pot_map = ResourcePotMap::new();
-  let module_graph = context.module_graph.read();
-
-  // generate enforce resource pots first
-  for g in module_group_graph.module_groups_mut() {
-    for module_id in g.modules() {
-      if let Some(name) = get_enforce_resource_name_for_module(
-        module_id,
-        &context.config.partial_bundling.enforce_resources,
-      ) {
-        let (resource_pot_type, resource_pot_id) =
-          get_resource_pot_id_for_enforce_resources(name.clone(), module_id, &module_graph);
-
-        let resource_pot = enforce_resource_pot_map.resource_pot_mut(&resource_pot_id);
-
-        if let Some(resource_pot) = resource_pot {
-          resource_pot.add_module(module_id.clone());
-        } else {
-          let mut resource_pot = ResourcePot::new(resource_pot_id, resource_pot_type);
-          resource_pot.add_module(module_id.clone());
-          enforce_resource_pot_map.add_resource_pot(resource_pot);
-        }
-      } else {
-        // if the module is not in any enforce resource pot, add it modules for partial bundling
-        modules.insert(module_id.clone());
-      }
-    }
-    modules.extend(g.modules().clone());
-  }
-
-  drop(module_graph);
-
+  let (enforce_resource_pots, modules) = generate_enforce_resource_pots(context);
   let mut resources_pots =
     call_partial_bundling_hook(&modules.into_iter().collect(), context, hook_context)?;
   // extends enforce resource pots
-  resources_pots.extend(enforce_resource_pot_map.take_resource_pots());
+  resources_pots.extend(enforce_resource_pots);
 
-  resources_pots =
-    fill_necessary_fields_for_resource_pot(resources_pots, module_group_graph, context);
+  resources_pots = fill_necessary_fields_for_resource_pot(resources_pots, context);
 
   let mut resource_pot_map = ResourcePotMap::new();
 
@@ -139,10 +105,10 @@ pub fn call_partial_bundling_hook(
 
 pub fn fill_necessary_fields_for_resource_pot(
   mut resources_pots: Vec<ResourcePot>,
-  module_group_graph: &mut ModuleGroupGraph,
   context: &Arc<CompilationContext>,
 ) -> Vec<ResourcePot> {
   let mut module_graph = context.module_graph.write();
+  let mut module_group_graph = context.module_group_graph.write();
 
   for resource_pot in &mut resources_pots {
     let mut module_groups = HashSet::new();
@@ -185,5 +151,45 @@ pub fn get_resource_pot_id_for_enforce_resources(
   let resource_pot_id = ResourcePotId::new(format!("{}_{}", name, resource_pot_type.to_string()));
 
   (resource_pot_type, resource_pot_id)
+}
+
+fn generate_enforce_resource_pots(
+  context: &Arc<CompilationContext>,
+) -> (Vec<ResourcePot>, Vec<ModuleId>) {
+  let mut modules = HashSet::new();
+  let mut enforce_resource_pot_map = ResourcePotMap::new();
+  let module_graph = context.module_graph.read();
+  let module_group_graph = context.module_group_graph.read();
+
+  // generate enforce resource pots first
+  for g in module_group_graph.module_groups() {
+    for module_id in g.modules() {
+      if let Some(name) = get_enforce_resource_name_for_module(
+        module_id,
+        &context.config.partial_bundling.enforce_resources,
+      ) {
+        let (resource_pot_type, resource_pot_id) =
+          get_resource_pot_id_for_enforce_resources(name.clone(), module_id, &module_graph);
+
+        let resource_pot = enforce_resource_pot_map.resource_pot_mut(&resource_pot_id);
+
+        if let Some(resource_pot) = resource_pot {
+          resource_pot.add_module(module_id.clone());
+        } else {
+          let mut resource_pot = ResourcePot::new(resource_pot_id, resource_pot_type);
+          resource_pot.add_module(module_id.clone());
+          enforce_resource_pot_map.add_resource_pot(resource_pot);
+        }
+      } else {
+        // if the module is not in any enforce resource pot, add it modules for partial bundling
+        modules.insert(module_id.clone());
+      }
+    }
+  }
+
+  (
+    enforce_resource_pot_map.take_resource_pots(),
+    modules.into_iter().collect(),
+  )
 }
 // TODO test generate_resource_pot_map

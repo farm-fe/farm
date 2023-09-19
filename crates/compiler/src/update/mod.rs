@@ -172,6 +172,7 @@ impl Compiler {
       affected_module_groups,
       previous_module_groups,
       &updated_module_ids,
+      diff_result.clone(),
       callback,
       sync,
     );
@@ -399,6 +400,7 @@ impl Compiler {
     affected_module_groups: HashSet<ModuleGroupId>,
     previous_module_groups: HashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
+    diff_result: DiffResult,
     callback: F,
     sync: bool,
   ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
@@ -417,6 +419,7 @@ impl Compiler {
     {
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
+        diff_result,
         &cloned_updated_module_ids,
         &cloned_context,
       )
@@ -457,6 +460,7 @@ impl Compiler {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
           affected_module_groups,
+          diff_result,
           &cloned_updated_module_ids,
           &cloned_context,
         ) {
