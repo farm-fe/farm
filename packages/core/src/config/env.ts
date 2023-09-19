@@ -34,6 +34,7 @@ export function loadEnv(
       env[key] = value;
     }
   }
+
   return env;
 }
 
