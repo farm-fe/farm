@@ -27,6 +27,14 @@ test('resolveUserConfig', async () => {
       external: builtinModules
     },
     root: path.join(filePath, 'fixtures', 'config'),
+    resolveConfigPath:
+      '/Users/adny/rust/farm/packages/core/tests/fixtures/config/farm.config.ts',
+    inlineConfig: {
+      configPath:
+        '/Users/adny/rust/farm/packages/core/tests/fixtures/config/farm.config.ts'
+    },
+    configPath:
+      '/Users/adny/rust/farm/packages/core/tests/fixtures/config/farm.config.ts',
     server: normalizeDevServerOptions(config.server, 'development')
   });
 });

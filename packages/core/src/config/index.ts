@@ -333,7 +333,8 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
-  if (inlineOptions.clearScreen) clearScreen();
+  if (inlineOptions.clearScreen && __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__)
+    clearScreen();
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -350,8 +351,6 @@ export async function resolveUserConfig(
       if (config) {
         userConfig = parseUserConfig(farmConfig);
         userConfig.resolveConfigPath = resolvedPath;
-        // warning !!! May cause stack overflow
-        // userConfig.configFileDependencies = getDependenciesRecursive(userConfig);
         // if we found a config file, stop searching
         break;
       }
@@ -373,6 +372,7 @@ export async function resolveUserConfig(
 
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
+  // Save variables are used when restarting the service
   userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }

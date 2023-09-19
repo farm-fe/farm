@@ -161,7 +161,7 @@ export class DevServer implements ImplDevServer {
   }
 
   async closeFarmServer() {
-    await this.server?.close();
+    await this.server.close();
   }
 
   createFarmServer(options: UserServerConfig) {

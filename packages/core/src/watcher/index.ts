@@ -7,10 +7,16 @@ import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
 import { Config, JsFileWatcher } from '../../binding/index.js';
 import { compilerHandler, DefaultLogger, clearScreen } from '../utils/index.js';
-import { DEFAULT_HMR_OPTIONS, resolveCompiler } from '../index.js';
+import {
+  DEFAULT_HMR_OPTIONS,
+  JsPlugin,
+  normalizeUserCompilationConfig,
+  resolveUserConfig
+} from '../index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 
 import type { UserConfig } from '../config/index.js';
+import { setProcessEnv } from '../config/env.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -49,11 +55,10 @@ export class FileWatcher implements ImplFileWatcher {
     );
 
     let handlePathChange = async (path: string): Promise<void> => {
-      // TODO prepare watch restart server
       const fileName = basename(path);
       const isEnv = fileName === '.env' || fileName.startsWith('.env.');
       const isConfig = path === this.options.resolveConfigPath;
-      // TODO configFileDependencies
+      // TODO configFileDependencies e.g: isDependencies = ["./farm.config.ts"]
       if (isEnv || isConfig) {
         clearScreen();
         __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = false;
@@ -63,10 +68,23 @@ export class FileWatcher implements ImplFileWatcher {
           )} change`
         );
         if (this.serverOrCompiler instanceof DevServer) {
-          console.log(this.serverOrCompiler);
           await this.serverOrCompiler.close();
         }
-        resolveCompiler(this.options as any, this._logger);
+        const config: UserConfig = await resolveUserConfig(
+          this.options.inlineConfig,
+          this._logger
+        );
+        const normalizedConfig = await normalizeUserCompilationConfig(config);
+        setProcessEnv(normalizedConfig.config.mode);
+        const compiler = new Compiler(normalizedConfig);
+        const devServer = new DevServer(compiler, this._logger, config);
+        this.serverOrCompiler = devServer;
+        await devServer.listen();
+        if (normalizedConfig.config.mode === 'development') {
+          normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+            plugin.configDevServer?.(devServer)
+          );
+        }
         return;
       }
       try {
