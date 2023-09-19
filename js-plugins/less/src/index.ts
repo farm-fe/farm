@@ -40,7 +40,7 @@ export default function farmLessPlugin(
       filters: { resolvedPaths: ['\\.less$'] },
       async executor(param) {
         try {
-          let relData;
+          let relData = '';
           const fileRoot = path.dirname(param.resolvedPath);
           const configPaths = options.paths;
           if (
@@ -54,6 +54,10 @@ export default function farmLessPlugin(
                     param.resolvedPath
                   )}`
                 : `${options.additionalData}\n${param.content}`;
+            //  If the additionalData is a function, it might be return null or undefined, so we need to check it
+            if (typeof relData !== 'string') {
+              relData = param.content;
+            }
           } else {
             relData = param.content;
           }

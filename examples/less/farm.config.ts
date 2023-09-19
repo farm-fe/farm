@@ -32,6 +32,7 @@ export default defineConfig({
       if (path.basename(resolvePath,'.less') === 'index') {
         return `@hoverColor: #f10215;` + content;
       }
+      return content;
     },
   }) ],
 });
