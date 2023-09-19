@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 1fea463: Aovid the situation where the return value of additionalData is not a string
+- 1fea463: Make sure additionalData return a string
 
 ## 1.0.1
 
