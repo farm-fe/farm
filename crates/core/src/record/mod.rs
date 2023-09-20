@@ -95,8 +95,6 @@ impl RecordManager {
 
   pub fn get_transform_records_by_id(&self, id: &str) -> Vec<TransformRecord> {
     let transform_map = self.transform_map.read().unwrap();
-    let a = self.get_resource_pot_records_by_id(id);
-    println!("get_resource_pot_records_by_id:{:?}", a);
     match transform_map.get(id) {
       Some(records) => records.clone(),
       None => Vec::new(),
