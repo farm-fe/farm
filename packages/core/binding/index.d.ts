@@ -210,6 +210,7 @@ export interface Config {
     lazyCompilation?: boolean;
     treeShaking?: boolean;
     minify?: boolean;
+    record?: boolean;
     presetEnv?:
       | boolean
       | {

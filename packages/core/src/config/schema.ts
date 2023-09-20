@@ -129,6 +129,7 @@ const compilationConfigSchema = z
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
+    record: z.boolean().optional(),
     presetEnv: z
       .union([
         z.boolean(),

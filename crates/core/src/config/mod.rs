@@ -41,6 +41,7 @@ pub struct Config {
   pub minify: bool,
   // TODO: support preset env options
   pub preset_env: Box<PresetEnvConfig>,
+  pub record: bool,
 }
 
 impl Default for Config {
@@ -68,6 +69,7 @@ impl Default for Config {
       tree_shaking: true,
       minify: true,
       preset_env: Box::<PresetEnvConfig>::default(),
+      record: false
     }
   }
 }
