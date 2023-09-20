@@ -254,7 +254,6 @@ export async function normalizeUserCompilationConfig(
   let finalConfig = config;
   // call user config hooks
   for (const jsPlugin of jsPlugins) {
-    console.log(jsPlugin);
     finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
   }
 
