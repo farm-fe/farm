@@ -73,10 +73,22 @@ pub struct JsAnalyzeDep {
 }
 
 #[napi(object, js_name = "AnalyzeDepsRecord")]
-
 pub struct JsAnalyzeDepsRecord {
   pub name: String,
   pub deps: Vec<JsAnalyzeDep>
+}
+
+#[napi(object, js_name = "ModuleId")]
+pub struct JsModuleId {
+  pub relative_path: String,
+  pub query: String,
+}
+#[napi(object, js_name = "ResourcePotRecord")]
+pub struct JsResourcePotRecord {
+  pub name: String,
+  pub hook: String,
+  pub modules: Vec<String>,
+  pub resources: Vec<String>
 }
 
 #[napi(js_name = "Compiler")]
@@ -399,6 +411,23 @@ impl JsCompiler {
       })
       .collect();
     js_analyze_deps_records
+  }
+
+  #[napi]
+  pub fn get_resource_pot_records_by_id(&self, id: String) -> Vec<JsResourcePotRecord> {
+    let context = self.compiler.context();
+    let record_manager = &context.record_manager;
+    let resource_pot_records = record_manager.get_resource_pot_records_by_id(&id);
+    let js_resource_pot_records: Vec<JsResourcePotRecord> = resource_pot_records
+      .into_iter()
+      .map(|record| JsResourcePotRecord {
+        name: record.name,
+        hook: record.hook,
+        modules: record.modules.into_iter().map(|id| id.to_string()).collect(),
+        resources: record.resources
+      })
+      .collect();
+    js_resource_pot_records
   }
 }
 
