@@ -231,9 +231,12 @@ export async function normalizeUserCompilationConfig(
   const jsPlugins = [];
 
   for (const plugin of plugins) {
-    if (typeof plugin === 'string' || Array.isArray(plugin)) {
-      rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
-    } else if (typeof plugin === 'object') {
+    if (
+      typeof plugin === 'string' ||
+      (Array.isArray(plugin) && typeof plugin[0] === 'string')
+    ) {
+      rustPlugins.push(await rustPluginResolver(plugin, config.root));
+    } else if (Object.prototype.toString.call(plugin) === '[object object]') {
       if (
         plugin.transform &&
         !plugin.transform.filters?.moduleTypes &&
@@ -243,7 +246,6 @@ export async function normalizeUserCompilationConfig(
           `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
         );
       }
-
       if (plugin.transform) {
         if (!plugin.transform.filters.moduleTypes) {
           plugin.transform.filters.moduleTypes = [];
@@ -251,11 +253,33 @@ export async function normalizeUserCompilationConfig(
           plugin.transform.filters.resolvedPaths = [];
         }
       }
-
-      jsPlugins.push(plugin as JsPlugin);
+      jsPlugins.push(plugin);
+    } else if (Array.isArray(plugin)) {
+      for (const pluginItem of plugin) {
+        if (
+          pluginItem.transform &&
+          !pluginItem.transform.filters?.moduleTypes &&
+          !pluginItem.transform.filters?.resolvedPaths
+        ) {
+          throw new Error(
+            `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
+          );
+        }
+        if (pluginItem.transform) {
+          if (!pluginItem.transform.filters.moduleTypes) {
+            pluginItem.transform.filters.moduleTypes = [];
+          } else if (!pluginItem.transform.filters.resolvedPaths) {
+            pluginItem.transform.filters.resolvedPaths = [];
+          }
+        }
+        jsPlugins.push(pluginItem);
+      }
+    } else {
+      throw new Error(
+        `plugin ${plugin} is not supported, Please pass the correct plugin type`
+      );
     }
   }
-
   let finalConfig = config;
   // call user config hooks
   for (const jsPlugin of jsPlugins) {
