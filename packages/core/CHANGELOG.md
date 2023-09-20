@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.5
+
+### Patch Changes
+
+- 2d8635b: fix static assets loading issue when public path is empty
+
 ## 0.12.4
 
 ### Patch Changes
