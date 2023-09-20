@@ -70,20 +70,17 @@ impl Plugin for FarmPluginPartialBundling {
     // 0. handle enforceResources in separate hook
 
     // 1. get module group graph and module graph
-    println!("begin get lock");
     let mut module_graph = context.module_graph.write();
     let mut module_group_graph = context.module_group_graph.write();
     // 2. generate module buckets and group by module group
-    println!("begin generate module buckets group");
     let module_buckets_map = generate_module_buckets_map(modules, &module_graph);
     let module_group_buckets =
       group_module_buckets_by_module_group(&module_buckets_map, &module_group_graph, &module_graph);
 
     // 3. generate resource pots
-    println!("begin generate resource pots");
     let resource_pots =
       generate_resource_pots(module_group_buckets, module_buckets_map, &module_graph);
-    println!("done generate resource pots");
+
     Ok(Some(resource_pots))
   }
 }

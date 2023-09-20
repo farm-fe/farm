@@ -167,7 +167,7 @@ impl Compiler {
 
     let (affected_module_groups, updated_module_ids, diff_result) =
       self.diff_and_patch_context(paths, &update_context);
-
+    // TODO only regenerate one resource if there are not deps changes.
     let dynamic_resources_map = self.regenerate_resources(
       affected_module_groups,
       previous_module_groups,

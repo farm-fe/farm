@@ -7,7 +7,7 @@ use farmfe_core::{
   },
 };
 
-use crate::module_bucket::{self, ModuleBucket};
+use crate::module_bucket::ModuleBucket;
 
 pub struct ModuleGroupBuckets {
   pub module_group_id: ModuleGroupId,
