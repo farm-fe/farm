@@ -229,7 +229,7 @@ export async function normalizeUserCompilationConfig(
 
   const plugins = userConfig.plugins ?? [];
   const rustPlugins = [];
-  const jsPlugins = [];
+  const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
     if (
@@ -237,13 +237,13 @@ export async function normalizeUserCompilationConfig(
       (isArray(plugin) && typeof plugin[0] === 'string')
     ) {
       rustPlugins.push(await rustPluginResolver(plugin, config.root));
-    } else if (isObject(plugin as JsPlugin)) {
+    } else if (isObject(plugin)) {
       convertPlugin(plugin as JsPlugin);
-      jsPlugins.push(plugin);
+      jsPlugins.push(plugin as JsPlugin);
     } else if (isArray(plugin)) {
       for (const pluginNestItem of plugin) {
         convertPlugin(pluginNestItem as JsPlugin);
-        jsPlugins.push(pluginNestItem);
+        jsPlugins.push(pluginNestItem as JsPlugin);
       }
     } else {
       throw new Error(
@@ -254,6 +254,7 @@ export async function normalizeUserCompilationConfig(
   let finalConfig = config;
   // call user config hooks
   for (const jsPlugin of jsPlugins) {
+    console.log(jsPlugin);
     finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
   }
 
