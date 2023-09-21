@@ -50,7 +50,9 @@ export default defineConfig({
       name: 'plugin-update-modules-hook-test',
       updateModules: {
         executor(param, context, hookContext) {
-          console.log('plugin-update-modules-hook-test', param, context, hookContext);
+          console.log("params", param);
+          console.log("context", context);
+          console.log("hookContext", hookContext);
         }
       }
     }

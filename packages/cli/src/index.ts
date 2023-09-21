@@ -66,7 +66,7 @@ cli
         configPath
       };
 
-      const { start } = await resolveCore(configPath);
+      const { start } = await resolveCore();
 
       try {
         await start(defaultOptions);
@@ -111,7 +111,7 @@ cli
       },
       configPath
     };
-    const { build } = await resolveCore(configPath);
+    const { build } = await resolveCore();
 
     try {
       build(defaultOptions);
@@ -140,7 +140,7 @@ cli
       },
       configPath
     };
-    const { watch } = await resolveCore(configPath);
+    const { watch } = await resolveCore();
 
     try {
       watch(defaultOptions);
@@ -164,7 +164,7 @@ cli
       server: resolveOptions,
       configPath
     };
-    const { preview } = await resolveCore(configPath);
+    const { preview } = await resolveCore();
 
     try {
       preview(defaultOptions);
@@ -204,7 +204,7 @@ cli.version(version);
 
 cli.parse();
 
-export function resolveCore(cwd: string): Promise<{
+export function resolveCore(cwd: string = process.cwd()): Promise<{
   start: typeof start;
   build: typeof build;
   watch: typeof watch;
