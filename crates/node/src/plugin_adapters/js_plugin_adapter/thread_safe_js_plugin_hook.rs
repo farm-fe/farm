@@ -16,7 +16,8 @@ use farmfe_core::{
   plugin::{
     EmptyPluginHookParam, EmptyPluginHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, PluginTransformHookResult,
+    PluginTransformHookParam, PluginTransformHookResult, PluginUpdateModulesHookParams,
+    UpdateResult,
   },
   serde::{de::DeserializeOwned, Serialize},
 };
@@ -327,29 +328,65 @@ impl JsPluginTransformHook {
   }
 }
 
-pub struct JsPluginFinishHook {
+macro_rules! define_empty_params_js_plugin_hook {
+  ($name:ident) => {
+    pub struct $name {
+      tsfn: ThreadSafeJsPluginHook,
+    }
+
+    impl $name {
+      pub fn new(env: &Env, obj: JsObject) -> Self {
+        let func = obj
+          .get_named_property::<JsFunction>("executor")
+          .expect("executor should be checked in js side");
+
+        Self {
+          tsfn: ThreadSafeJsPluginHook::new::<EmptyPluginHookParam, EmptyPluginHookResult>(
+            env, func,
+          ),
+        }
+      }
+
+      pub fn call(
+        &self,
+        param: EmptyPluginHookParam,
+        ctx: Arc<CompilationContext>,
+      ) -> Result<Option<EmptyPluginHookResult>> {
+        self
+          .tsfn
+          .call::<EmptyPluginHookParam, EmptyPluginHookResult>(param, ctx, None)
+      }
+    }
+  };
+}
+
+define_empty_params_js_plugin_hook!(JsPluginBuildStartHook);
+define_empty_params_js_plugin_hook!(JsPluginBuildEndHook);
+define_empty_params_js_plugin_hook!(JsPluginFinishHook);
+
+pub struct JsPluginUpdateModulesHook {
   tsfn: ThreadSafeJsPluginHook,
 }
 
-impl JsPluginFinishHook {
+impl JsPluginUpdateModulesHook {
   pub fn new(env: &Env, obj: JsObject) -> Self {
     let func = obj
       .get_named_property::<JsFunction>("executor")
       .expect("executor should be checked in js side");
 
     Self {
-      tsfn: ThreadSafeJsPluginHook::new::<EmptyPluginHookParam, EmptyPluginHookResult>(env, func),
+      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParams, UpdateResult>(env, func),
     }
   }
 
   pub fn call(
     &self,
-    param: EmptyPluginHookParam,
+    param: PluginUpdateModulesHookParams,
     ctx: Arc<CompilationContext>,
-  ) -> Result<Option<EmptyPluginHookResult>> {
+  ) -> Result<Option<UpdateResult>> {
     self
       .tsfn
-      .call::<EmptyPluginHookParam, EmptyPluginHookResult>(param, ctx, None)
+      .call::<PluginUpdateModulesHookParams, UpdateResult>(param, ctx, None)
   }
 }
 

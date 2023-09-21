@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 0.12.5
+
+### Patch Changes
+
+- 2d8635b: fix static assets loading issue when public path is empty
+
+## 0.12.4
+
+### Patch Changes
+
+- b5f6e88: Fix that publicPath does not work for css and static assets
+
 ## 0.12.3
 
 ### Patch Changes

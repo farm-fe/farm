@@ -11,6 +11,13 @@ import { JsPlugin } from '../plugin/index.js';
 import { DevServer } from '../server/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import { parseUserConfig } from './schema.js';
+import {
+  Logger,
+  clearScreen,
+  isObject,
+  isArray,
+  normalizePath
+} from '../utils/index.js';
 
 import type {
   FarmCLIOptions,
@@ -19,12 +26,6 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import {
-  Logger,
-  clearScreen,
-  isObject,
-  normalizePath
-} from '../utils/index.js';
 
 import { CompilationMode, loadEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
@@ -171,7 +172,7 @@ export async function normalizeUserCompilationConfig(
 
   if (
     config.output.targetEnv !== 'node' &&
-    Array.isArray(config.runtime.plugins) &&
+    isArray(config.runtime.plugins) &&
     normalizedDevServerConfig.hmr &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
@@ -230,34 +231,28 @@ export async function normalizeUserCompilationConfig(
 
   const plugins = userConfig.plugins ?? [];
   const rustPlugins = [];
-  const jsPlugins = [];
+  const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
-    if (typeof plugin === 'string' || Array.isArray(plugin)) {
-      rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
-    } else if (typeof plugin === 'object') {
-      if (
-        plugin.transform &&
-        !plugin.transform.filters?.moduleTypes &&
-        !plugin.transform.filters?.resolvedPaths
-      ) {
-        throw new Error(
-          `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
-        );
-      }
-
-      if (plugin.transform) {
-        if (!plugin.transform.filters.moduleTypes) {
-          plugin.transform.filters.moduleTypes = [];
-        } else if (!plugin.transform.filters.resolvedPaths) {
-          plugin.transform.filters.resolvedPaths = [];
-        }
-      }
-
+    if (
+      typeof plugin === 'string' ||
+      (isArray(plugin) && typeof plugin[0] === 'string')
+    ) {
+      rustPlugins.push(await rustPluginResolver(plugin, config.root));
+    } else if (isObject(plugin)) {
+      convertPlugin(plugin as JsPlugin);
       jsPlugins.push(plugin as JsPlugin);
+    } else if (isArray(plugin)) {
+      for (const pluginNestItem of plugin) {
+        convertPlugin(pluginNestItem as JsPlugin);
+        jsPlugins.push(pluginNestItem as JsPlugin);
+      }
+    } else {
+      throw new Error(
+        `plugin ${plugin} is not supported, Please pass the correct plugin type`
+      );
     }
   }
-
   let finalConfig = config;
   // call user config hooks
   for (const jsPlugin of jsPlugins) {
@@ -468,7 +463,7 @@ export function mergeConfiguration(
       if (value == null) {
         continue;
       }
-      if (Array.isArray(value)) {
+      if (isArray(value)) {
         result[key] = result[key] ? [...result[key], ...value] : value;
       } else if (isObject(value)) {
         result[key] = mergeConfiguration(result[key] || {}, value);
@@ -504,4 +499,23 @@ export function normalizePublicPath(publicPath = '/', logger: Logger) {
   }
 
   return publicPath;
+}
+
+export function convertPlugin(plugin: JsPlugin): void {
+  if (
+    plugin.transform &&
+    !plugin.transform.filters?.moduleTypes &&
+    !plugin.transform.filters?.resolvedPaths
+  ) {
+    throw new Error(
+      `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
+    );
+  }
+  if (plugin.transform) {
+    if (!plugin.transform.filters.moduleTypes) {
+      plugin.transform.filters.moduleTypes = [];
+    } else if (!plugin.transform.filters.resolvedPaths) {
+      plugin.transform.filters.resolvedPaths = [];
+    }
+  }
 }
