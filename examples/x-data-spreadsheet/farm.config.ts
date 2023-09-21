@@ -13,6 +13,9 @@ export default defineConfig({
       }
     }
   },
+  server: {
+    port: 6699,
+  },
   plugins: [
     less({}),
   ]
