@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "use create-farm to create farm project",
   "exports": {
     ".": "./bin/create-farm.mjs"

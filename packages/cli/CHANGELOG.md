@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.6
+
+### Patch Changes
+
+- e90044c: fix: remove server unless options
+
 ## 0.5.5
 
 ### Patch Changes

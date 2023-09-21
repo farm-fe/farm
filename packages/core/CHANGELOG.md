@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.7
+
+### Patch Changes
+
+- baec8bf: feat: add restartserver fn with update create-farm
+
 ## 0.12.6
 
 ### Patch Changes
