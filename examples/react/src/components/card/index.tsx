@@ -4,7 +4,6 @@ import './index.css';
 
 export function FarmCard(props: PropsWithChildren) {
   const config = defineFarmConfig({});
-  console.log(config);
   return (
     <div className="card">
       <div className="card-content">{props.children}</div>

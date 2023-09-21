@@ -5,6 +5,12 @@ import { parse } from 'dotenv';
 import { expand } from 'dotenv-expand';
 import { arraify, getFileSystemStats } from '../utils/index.js';
 
+// Because of the limitation of dotenv-expand,
+// learn from the operation method of vite to dotenv.
+/**
+ * The following is modified based on source found in
+ * https://github.com/vitejs/vite/pull/14391/files
+ */
 export function loadEnv(
   mode: string,
   envDir: string,
@@ -16,7 +22,6 @@ export function loadEnv(
     envFiles.flatMap((file) => {
       const filePath = path.join(envDir, file);
       if (!getFileSystemStats(filePath)?.isFile()) return [];
-
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
   );

@@ -1,7 +1,6 @@
 import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
@@ -29,6 +28,8 @@ import type {
 } from './types.js';
 
 import { CompilationMode, loadEnv } from './env.js';
+import { __FARM_GLOBAL__ } from './_global.js';
+import { importFresh } from '../utils/share.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -326,8 +327,8 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
-
-  if (inlineOptions.clearScreen) clearScreen();
+  if (inlineOptions.clearScreen && __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__)
+    clearScreen();
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -339,7 +340,6 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-
       const config = await readConfigFile(resolvedPath, logger);
       const farmConfig = mergeUserConfig(config, inlineOptions);
       if (config) {
@@ -364,7 +364,8 @@ export async function resolveUserConfig(
 
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
-
+  // Save variables are used when restarting the service
+  userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }
 
@@ -373,7 +374,8 @@ async function readConfigFile(
   logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
-    logger.info(`Using config file at ${chalk.green(configFilePath)}`);
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      logger.info(`Using config file at ${chalk.green(configFilePath)}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
@@ -423,25 +425,18 @@ async function readConfigFile(
       compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);
+
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === 'win32') {
-        return (await import(pathToFileURL(filePath).toString())).default;
-      } else {
-        return (await import(filePath)).default;
-      }
+      return await importFresh(filePath);
     } else {
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === 'win32') {
-        return (await import(pathToFileURL(configFilePath).toString())).default;
-      } else {
-        return (await import(configFilePath)).default;
-      }
+      return await importFresh(configFilePath);
     }
   }
 }
 
 export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
-  delete config.configPath;
+  // delete config.configPath;
   return config;
 }
 
