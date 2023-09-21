@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.6
+
+### Patch Changes
+
+- 407e3e2: Support more js plugin hooks
+
 ## 0.12.5
 
 ### Patch Changes
