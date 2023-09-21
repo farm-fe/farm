@@ -45,6 +45,14 @@ export default defineConfig({
           console.log('plugin-finish-hook-test', param, context, hookContext);
         }
       }
+    },
+    {
+      name: 'plugin-update-modules-hook-test',
+      updateModules: {
+        executor(param, context, hookContext) {
+          console.log('plugin-update-modules-hook-test', param, context, hookContext);
+        }
+      }
     }
   ]
 });

@@ -10,7 +10,7 @@ pub mod resource_pot;
 pub mod resource_pot_map;
 
 #[cache_item]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum ResourceType {
   Runtime,
   Js,

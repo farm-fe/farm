@@ -377,7 +377,8 @@ pub struct WatchDiffResult {
 }
 
 /// The output after the updating process
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct UpdateResult {
   pub added_module_ids: Vec<ModuleId>,
   pub updated_module_ids: Vec<ModuleId>,
@@ -389,7 +390,7 @@ pub struct UpdateResult {
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
   pub extra_watch_result: WatchDiffResult,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UpdateType {
   // added a new module
   Added,
@@ -399,6 +400,8 @@ pub enum UpdateType {
   Removed,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct PluginUpdateModulesHookParams {
   pub update_result: UpdateResult,
   pub paths: Vec<(String, UpdateType)>,

@@ -1,5 +1,6 @@
 import {
   Config,
+  JsUpdateResult,
   PluginLoadHookParam,
   PluginLoadHookResult,
   PluginResolveHookParam,
@@ -36,6 +37,8 @@ export interface JsPlugin {
    */
   configDevServer?: (server: DevServer) => void;
 
+  buildStart?: { executor: Callback<Record<string, never>, void> };
+
   resolve?: JsPluginHook<
     {
       importers: string[];
@@ -57,7 +60,16 @@ export interface JsPlugin {
     PluginTransformHookResult
   >;
 
+  buildEnd?: { executor: Callback<Record<string, never>, void> };
+
   finish?: { executor: Callback<Record<string, never>, void> };
+
+  updateModules?: {
+    executor: Callback<
+      { updateResult: JsUpdateResult; paths: [string, string][] },
+      JsUpdateResult | undefined | null | void
+    >;
+  };
 }
 
 export { rustPluginResolver } from './rustPluginResolver.js';
