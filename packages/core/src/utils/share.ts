@@ -109,7 +109,7 @@ export async function importFresh2(modulePath: string) {
   } else {
     module = (await import(newFilepath)).default;
   }
-  fs.unlink(newFilepath, () => {});
+  fs.unlinkSync(newFilepath);
 
   return module;
 }
