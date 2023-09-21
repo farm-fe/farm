@@ -8,7 +8,7 @@ function defineConfig(config: UserConfig) {
 export default defineConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: '../index.html'
     },
     output: {
       path: './build'
@@ -18,7 +18,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3009,
+    port: 8009,
     strictPort: false,
   },
   plugins: [farmJsPluginVue()]

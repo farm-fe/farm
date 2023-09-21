@@ -85,6 +85,8 @@ export function formatTargetDir(targetDir: string | undefined) {
  * filter duplicate item in options
  */
 export function filterDuplicateOptions<T>(options: T) {
+  console.log(options);
+
   for (const [key, value] of Object.entries(options)) {
     if (Array.isArray(value)) {
       options[key as keyof T] = value[value.length - 1];
@@ -105,12 +107,16 @@ export function clearScreen() {
 
 export function cleanOptions(options: GlobalFarmCLIOptions) {
   const resolveOptions = { ...options };
+
   delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
   delete resolveOptions.l;
+  delete resolveOptions.lazy;
   delete resolveOptions.mode;
+  delete resolveOptions.base;
+  delete resolveOptions.config;
   delete resolveOptions.clearScreen;
 
   return resolveOptions;

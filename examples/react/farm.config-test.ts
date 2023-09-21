@@ -32,6 +32,7 @@ export default defineConfig({
   },
   server: {
     hmr: true,
+    port: 6321,
     // cors: true,
     host: 'localhost'
   },
