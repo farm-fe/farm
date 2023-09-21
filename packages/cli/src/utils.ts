@@ -85,8 +85,6 @@ export function formatTargetDir(targetDir: string | undefined) {
  * filter duplicate item in options
  */
 export function filterDuplicateOptions<T>(options: T) {
-  console.log(options);
-
   for (const [key, value] of Object.entries(options)) {
     if (Array.isArray(value)) {
       options[key as keyof T] = value[value.length - 1];
