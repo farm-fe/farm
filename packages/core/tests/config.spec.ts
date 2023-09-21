@@ -18,7 +18,6 @@ test('resolveUserConfig', async () => {
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
     new DefaultLogger()
   );
-  console.log(config);
   expect(config).toEqual({
     compilation: {
       input: {
@@ -28,11 +27,9 @@ test('resolveUserConfig', async () => {
     },
     root: path.join(filePath, 'fixtures', 'config'),
     inlineConfig: {
-      configPath:
-        '/Users/adny/rust/farm/packages/core/tests/fixtures/config/farm.config.ts'
+      configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
     },
-    configPath:
-      '/Users/adny/rust/farm/packages/core/tests/fixtures/config/farm.config.ts',
+    configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     server: normalizeDevServerOptions(config.server, 'development')
   });
 });
