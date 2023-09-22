@@ -110,8 +110,6 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   const distDir = path.resolve(root, output.path);
 
   function StaticFilesHandler(ctx: Context) {
-    console.log(ctx.request.path);
-
     const staticFilesServer = sirv(distDir, {
       etag: true,
       single: true
@@ -152,7 +150,9 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${chalk.bold(port)}`;
+          const url = `${'http'}://${host}:${chalk.bold(port)}${
+            output.publicPath
+          }`;
           logger.info(`  > ${type} ${chalk.cyan(url)}`);
         })
     );
