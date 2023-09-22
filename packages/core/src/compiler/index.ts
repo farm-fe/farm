@@ -191,4 +191,8 @@ export class Compiler {
   getAnalyzeDepsRecords(id: string) {
     return this._bindingCompiler.getAnalyzeDepsRecordsById(id);
   }
+
+  getResourcePotRecordsById(id: string) {
+    return this._bindingCompiler.getResourcePotRecordsById(id);
+  }
 }

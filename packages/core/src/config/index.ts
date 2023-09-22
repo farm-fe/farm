@@ -1,7 +1,6 @@
 import module from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
@@ -12,6 +11,13 @@ import { JsPlugin } from '../plugin/index.js';
 import { DevServer } from '../server/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import { parseUserConfig } from './schema.js';
+import {
+  Logger,
+  clearScreen,
+  isObject,
+  isArray,
+  normalizePath
+} from '../utils/index.js';
 
 import type {
   FarmCLIOptions,
@@ -20,14 +26,10 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import {
-  Logger,
-  clearScreen,
-  isObject,
-  normalizePath
-} from '../utils/index.js';
 
 import { CompilationMode, loadEnv } from './env.js';
+import { __FARM_GLOBAL__ } from './_global.js';
+import { importFresh } from '../utils/share.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -169,7 +171,7 @@ export async function normalizeUserCompilationConfig(
 
   if (
     config.output.targetEnv !== 'node' &&
-    Array.isArray(config.runtime.plugins) &&
+    isArray(config.runtime.plugins) &&
     normalizedDevServerConfig.hmr &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
@@ -228,34 +230,28 @@ export async function normalizeUserCompilationConfig(
 
   const plugins = userConfig.plugins ?? [];
   const rustPlugins = [];
-  const jsPlugins = [];
+  const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
-    if (typeof plugin === 'string' || Array.isArray(plugin)) {
-      rustPlugins.push(await rustPluginResolver(plugin, config.root as string));
-    } else if (typeof plugin === 'object') {
-      if (
-        plugin.transform &&
-        !plugin.transform.filters?.moduleTypes &&
-        !plugin.transform.filters?.resolvedPaths
-      ) {
-        throw new Error(
-          `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
-        );
-      }
-
-      if (plugin.transform) {
-        if (!plugin.transform.filters.moduleTypes) {
-          plugin.transform.filters.moduleTypes = [];
-        } else if (!plugin.transform.filters.resolvedPaths) {
-          plugin.transform.filters.resolvedPaths = [];
-        }
-      }
-
+    if (
+      typeof plugin === 'string' ||
+      (isArray(plugin) && typeof plugin[0] === 'string')
+    ) {
+      rustPlugins.push(await rustPluginResolver(plugin, config.root));
+    } else if (isObject(plugin)) {
+      convertPlugin(plugin as JsPlugin);
       jsPlugins.push(plugin as JsPlugin);
+    } else if (isArray(plugin)) {
+      for (const pluginNestItem of plugin) {
+        convertPlugin(pluginNestItem as JsPlugin);
+        jsPlugins.push(pluginNestItem as JsPlugin);
+      }
+    } else {
+      throw new Error(
+        `plugin ${plugin} is not supported, Please pass the correct plugin type`
+      );
     }
   }
-
   let finalConfig = config;
   // call user config hooks
   for (const jsPlugin of jsPlugins) {
@@ -331,8 +327,8 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
-
-  if (inlineOptions.clearScreen) clearScreen();
+  if (inlineOptions.clearScreen && __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__)
+    clearScreen();
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -344,7 +340,6 @@ export async function resolveUserConfig(
 
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-
       const config = await readConfigFile(resolvedPath, logger);
       const farmConfig = mergeUserConfig(config, inlineOptions);
       if (config) {
@@ -369,7 +364,8 @@ export async function resolveUserConfig(
 
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
-
+  // Save variables are used when restarting the service
+  userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }
 
@@ -378,7 +374,8 @@ async function readConfigFile(
   logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
-    logger.info(`Using config file at ${chalk.green(configFilePath)}`);
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      logger.info(`Using config file at ${chalk.green(configFilePath)}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;
@@ -428,25 +425,18 @@ async function readConfigFile(
       compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);
+
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === 'win32') {
-        return (await import(pathToFileURL(filePath).toString())).default;
-      } else {
-        return (await import(filePath)).default;
-      }
+      return await importFresh(filePath);
     } else {
       // Change to vm.module of node or loaders as far as it is stable
-      if (process.platform === 'win32') {
-        return (await import(pathToFileURL(configFilePath).toString())).default;
-      } else {
-        return (await import(configFilePath)).default;
-      }
+      return await importFresh(configFilePath);
     }
   }
 }
 
 export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
-  delete config.configPath;
+  // delete config.configPath;
   return config;
 }
 
@@ -470,7 +460,7 @@ export function mergeConfiguration(
       if (value == null) {
         continue;
       }
-      if (Array.isArray(value)) {
+      if (isArray(value)) {
         result[key] = result[key] ? [...result[key], ...value] : value;
       } else if (isObject(value)) {
         result[key] = mergeConfiguration(result[key] || {}, value);
@@ -506,4 +496,23 @@ export function normalizePublicPath(publicPath = '/', logger: Logger) {
   }
 
   return publicPath;
+}
+
+export function convertPlugin(plugin: JsPlugin): void {
+  if (
+    plugin.transform &&
+    !plugin.transform.filters?.moduleTypes &&
+    !plugin.transform.filters?.resolvedPaths
+  ) {
+    throw new Error(
+      `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
+    );
+  }
+  if (plugin.transform) {
+    if (!plugin.transform.filters.moduleTypes) {
+      plugin.transform.filters.moduleTypes = [];
+    } else if (!plugin.transform.filters.resolvedPaths) {
+      plugin.transform.filters.resolvedPaths = [];
+    }
+  }
 }

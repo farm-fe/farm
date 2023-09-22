@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-less
 
+## 1.1.0
+
+### Minor Changes
+
+- 1fea463: Make sure additionalData return a string
+
 ## 1.0.1
 
 ### Patch Changes

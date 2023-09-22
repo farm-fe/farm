@@ -18,7 +18,6 @@ test('resolveUserConfig', async () => {
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
     new DefaultLogger()
   );
-
   expect(config).toEqual({
     compilation: {
       input: {
@@ -27,6 +26,10 @@ test('resolveUserConfig', async () => {
       external: builtinModules
     },
     root: path.join(filePath, 'fixtures', 'config'),
+    inlineConfig: {
+      configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
+    },
+    configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     server: normalizeDevServerOptions(config.server, 'development')
   });
 });

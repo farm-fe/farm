@@ -18,7 +18,7 @@ export default defineConfig({
     output: {
       path: './build'
     },
-    sourcemap: true,
+    // sourcemap: true,
     css: {
       // modules: {
       //   indentName: 'farm-[name]-[hash]'
@@ -27,12 +27,12 @@ export default defineConfig({
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
-    // treeShaking: true,
+    treeShaking: true,
     minify: false
   },
   server: {
-    hmr: true,
     cors: true,
+    port: 6684,
     host: 'localhost'
   },
   plugins: [
@@ -42,7 +42,17 @@ export default defineConfig({
       name: 'plugin-finish-hook-test',
       finish: {
         executor(param, context, hookContext) {
-          console.log('plugin-finish-hook-test', param, context, hookContext);
+          // console.log('plugin-finish-hook-test', param, context, hookContext);
+        }
+      }
+    },
+    {
+      name: 'plugin-update-modules-hook-test',
+      updateModules: {
+        executor(param, context, hookContext) {
+          console.log("params", param);
+          console.log("context", context);
+          console.log("hookContext", hookContext);
         }
       }
     }

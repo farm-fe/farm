@@ -105,12 +105,16 @@ export function clearScreen() {
 
 export function cleanOptions(options: GlobalFarmCLIOptions) {
   const resolveOptions = { ...options };
+
   delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
   delete resolveOptions.l;
+  delete resolveOptions.lazy;
   delete resolveOptions.mode;
+  delete resolveOptions.base;
+  delete resolveOptions.config;
   delete resolveOptions.clearScreen;
 
   return resolveOptions;

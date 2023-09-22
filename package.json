@@ -47,5 +47,13 @@
     "js-plugins/**/*.ts": [
       "prettier-eslint --write"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "@farmfe/core": "workspace:*"
+    },
+    "patchedDependencies": {
+      "dotenv-expand@10.0.0": "patches/dotenv-expand@10.0.0.patch"
+    }
   }
 }

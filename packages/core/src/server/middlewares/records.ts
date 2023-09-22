@@ -25,6 +25,10 @@ export function records(server: DevServer) {
       const id = ctx.query.id as string;
       ctx.body = compiler.getAnalyzeDepsRecords(id);
       await next();
+    } else if (ctx.path === '/_resource_pot_records') {
+      const id = ctx.query.id as string;
+      ctx.body = compiler.getResourcePotRecordsById(id);
+      await next();
     } else {
       await next();
     }

@@ -28,6 +28,7 @@ import { corsPlugin } from './middlewares/cors.js';
 import { openBrowser } from './openBrowser.js';
 import { recordsPlugin } from './middlewares/records.js';
 import { headersPlugin } from './middlewares/headers.js';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -114,7 +115,8 @@ export class DevServer implements ImplDevServer {
     const end = Date.now();
     this.server.listen(port, host);
     this.error(port, host);
-    this.startDevLogger(start, end);
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      this.startDevLogger(start, end);
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
     }
@@ -151,17 +153,15 @@ export class DevServer implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
-    this.closeFarmServer();
+    await this.closeFarmServer();
   }
 
   async restart() {
     // TODO restart
   }
 
-  closeFarmServer() {
-    this.server?.close(() => {
-      this.logger.info('HTTP server is closed');
-    });
+  async closeFarmServer() {
+    await this.server.close();
   }
 
   createFarmServer(options: UserServerConfig) {

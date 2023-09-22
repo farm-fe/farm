@@ -4,6 +4,7 @@ export interface GlobalFarmCLIOptions {
   config?: string;
   configPath?: string;
   m?: string;
+  base?: string;
   mode?: 'development' | 'production';
   w?: boolean;
   watch?: boolean;

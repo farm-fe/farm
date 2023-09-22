@@ -19,7 +19,7 @@ import {
   resolveUserConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger } from './utils/logger.js';
+import { DefaultLogger, Logger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { Config } from '../binding/index.js';
@@ -33,9 +33,14 @@ export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
+  // const { normalizedConfig, devServer, config } = await resolveCompiler(
+  //   inlineConfig as any,
+  //   logger
+  // );
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);
+
   setProcessEnv(normalizedConfig.config.mode);
 
   const compiler = new Compiler(normalizedConfig);
@@ -47,7 +52,6 @@ export async function start(
     );
   }
   await devServer.listen();
-
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     logger.info(
@@ -60,8 +64,10 @@ export async function start(
       );
       process.exit(1);
     }
-
-    const fileWatcher = new FileWatcher(devServer, normalizedConfig);
+    const fileWatcher = new FileWatcher(devServer, {
+      ...normalizedConfig,
+      ...config
+    });
     fileWatcher.watch();
   }
 }
@@ -100,7 +106,6 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
     userConfig,
     'production'
   );
-
   const { root, output } = normalizedConfig.config;
   const distDir = path.resolve(root, output.path);
 
@@ -118,7 +123,16 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   const app = new Koa();
   app.use(compression());
   app.use(async (ctx) => {
-    await StaticFilesHandler(ctx);
+    const requestPath = ctx.request.path;
+    if (requestPath.startsWith(output.publicPath)) {
+      const modifiedPath = requestPath.substring(output.publicPath.length);
+      if (modifiedPath.startsWith('/')) {
+        ctx.request.path = modifiedPath;
+      } else {
+        ctx.request.path = `/${modifiedPath}`;
+      }
+      await StaticFilesHandler(ctx);
+    }
   });
 
   app.listen(port, () => {
@@ -136,7 +150,9 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${chalk.bold(port)}`;
+          const url = `${'http'}://${host}:${chalk.bold(port)}${
+            output.publicPath
+          }`;
           logger.info(`  > ${type} ${chalk.cyan(url)}`);
         })
     );
@@ -173,4 +189,30 @@ export async function createBundleHandler(
     const watcher = new FileWatcher(compiler, normalizedConfig);
     watcher.watch();
   }
+}
+
+export async function resolveCompiler(
+  inlineConfig: FarmCLIOptions & UserConfig & Config,
+  logger: Logger
+) {
+  setProcessEnv('development');
+  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
+  const normalizedConfig = await normalizeUserCompilationConfig(config);
+
+  setProcessEnv(normalizedConfig.config.mode);
+
+  const compiler = new Compiler(normalizedConfig);
+  const devServer = new DevServer(compiler, logger, config);
+
+  if (normalizedConfig.config.mode === 'development') {
+    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configDevServer?.(devServer)
+    );
+  }
+  await devServer.listen();
+  return {
+    devServer,
+    normalizedConfig,
+    config
+  };
 }

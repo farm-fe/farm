@@ -18,6 +18,7 @@ export default defineConfig({
     }
   },
   server: {
+    port: 3009,
     strictPort: false,
   },
   plugins: [farmJsPluginVue()]

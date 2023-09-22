@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.12
+
+### Patch Changes
+
+- baec8bf: feat: add restart-server fn with update create-farm
+
 ## 1.2.11
 
 ### Patch Changes

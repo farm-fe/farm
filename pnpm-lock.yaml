@@ -4,6 +4,14 @@ settings:
   autoInstallPeers: false
   excludeLinksFromLockfile: false
 
+overrides:
+  '@farmfe/core': workspace:*
+
+patchedDependencies:
+  dotenv-expand@10.0.0:
+    hash: dcar2o2abbvm3f7ghlazy45mqy
+    path: patches/dotenv-expand@10.0.0.patch
+
 importers:
 
   .:
@@ -286,6 +294,46 @@ importers:
       tailwindcss:
         specifier: ^3.3.2
         version: 3.3.2
+
+  examples/public-path:
+    dependencies:
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.30.1
+      react:
+        specifier: '18'
+        version: 18.0.0
+      react-dom:
+        specifier: '18'
+        version: 18.0.0(react@18.0.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-sass':
+        specifier: workspace:*
+        version: link:../../js-plugins/sass
+      '@farmfe/plugin-react':
+        specifier: workspace:^0.3.0
+        version: link:../../rust-plugins/react
+      '@farmfe/plugin-sass':
+        specifier: workspace:^0.2.0
+        version: link:../../rust-plugins/sass
+      '@types/react':
+        specifier: '18'
+        version: 18.0.0
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.0.0
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
 
   examples/react:
     dependencies:
@@ -604,8 +652,8 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0(vue@3.2.45)
       ant-design-vue:
-        specifier: ^3.2.20
-        version: 3.2.20(vue@3.2.45)
+        specifier: ^4.0.3
+        version: 4.0.3(vue@3.2.45)
       core-js:
         specifier: ^3.30.1
         version: 3.30.1
@@ -704,7 +752,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.12.0
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
@@ -722,7 +770,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.12.0
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
@@ -743,7 +791,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^0.12.0
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
@@ -811,7 +859,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/cli
       '@farmfe/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
@@ -887,11 +935,11 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0
       dotenv:
-        specifier: ^16.0.3
-        version: 16.0.3
+        specifier: ^16.3.1
+        version: 16.3.1
       dotenv-expand:
         specifier: ^10.0.0
-        version: 10.0.0
+        version: 10.0.0(patch_hash=dcar2o2abbvm3f7ghlazy45mqy)
       execa:
         specifier: ^7.1.1
         version: 7.1.1
@@ -1123,6 +1171,16 @@ packages:
 
   /@ant-design/icons-vue@6.1.0(vue@3.2.45):
     resolution: {integrity: sha512-EX6bYm56V+ZrKN7+3MT/ubDkvJ5rK/O2t380WFRflDcVFgsvl3NLH7Wxeau6R8DbrO5jWR6DSTC3B6gYFp77AA==}
+    peerDependencies:
+      vue: '>=3.0.3'
+    dependencies:
+      '@ant-design/colors': 6.0.0
+      '@ant-design/icons-svg': 4.2.1
+      vue: 3.2.45
+    dev: false
+
+  /@ant-design/icons-vue@7.0.0(vue@3.2.45):
+    resolution: {integrity: sha512-VEb0r/Jqo2qi9olfBephYlyxbmhQVZ5+tJ3Zw5VaBd5h0wV1zdjGt5mJxSbRRs2mnnOWpsa1s4PeoLwNnkLV/w==}
     peerDependencies:
       vue: '>=3.0.3'
     dependencies:
@@ -3634,19 +3692,22 @@ packages:
     resolution: {integrity: sha512-bN798gFfQX+viw3R7yrGWRqnrN2oRkEkUjjl4JNn4E8GxxbjtG3FbrEIIY3l8/hrwUwIeCZvi4QuOTP4MErVug==}
     engines: {node: '>=12'}
 
-  /ant-design-vue@3.2.20(vue@3.2.45):
-    resolution: {integrity: sha512-YWpMfGaGoRastIXEYfCoJiaRiDHk4chqtYhlKQM5GqPt6NfvrM1Vg2e60yHtjxlZjed91wCMm0rAmyUr7Hwzdg==}
+  /ant-design-vue@4.0.3(vue@3.2.45):
+    resolution: {integrity: sha512-fbgZbbirLx7rc19ytaGxApwS01CKLRzvEZmH0TVF06niQA9ekx7xkvfQGlmiSaCs4b8nWZi4Bo7gUzRNRt5YJA==}
     engines: {node: '>=12.22.0'}
     peerDependencies:
       vue: '>=3.2.0'
     dependencies:
       '@ant-design/colors': 6.0.0
-      '@ant-design/icons-vue': 6.1.0(vue@3.2.45)
+      '@ant-design/icons-vue': 7.0.0(vue@3.2.45)
       '@babel/runtime': 7.21.5
       '@ctrl/tinycolor': 3.6.0
+      '@emotion/hash': 0.9.1
+      '@emotion/unitless': 0.8.1
       '@simonwep/pickr': 1.8.2
       array-tree-filter: 2.1.0
       async-validator: 4.2.5
+      csstype: 3.1.2
       dayjs: 1.11.7
       dom-align: 1.12.4
       dom-scroll-into-view: 2.0.1
@@ -3655,6 +3716,8 @@ packages:
       resize-observer-polyfill: 1.5.1
       scroll-into-view-if-needed: 2.2.31
       shallow-equal: 1.2.1
+      stylis: 4.2.0
+      throttle-debounce: 5.0.0
       vue: 3.2.45
       vue-types: 3.0.2(vue@3.2.45)
       warning: 4.0.3
@@ -4913,13 +4976,14 @@ packages:
       is-obj: 2.0.0
     dev: true
 
-  /dotenv-expand@10.0.0:
+  /dotenv-expand@10.0.0(patch_hash=dcar2o2abbvm3f7ghlazy45mqy):
     resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
     engines: {node: '>=12'}
     dev: false
+    patched: true
 
-  /dotenv@16.0.3:
-    resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
+  /dotenv@16.3.1:
+    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
     engines: {node: '>=12'}
     dev: false
 

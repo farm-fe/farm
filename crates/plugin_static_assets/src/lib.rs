@@ -130,16 +130,21 @@ impl Plugin for FarmPluginStaticAssets {
           ext,
         );
         let content = if !context.config.output.public_path.is_empty() {
-          format!(
-            "export default \"/{}/{}\"",
-            context
-              .config
-              .output
-              .public_path
-              .trim_start_matches("/")
-              .trim_end_matches("/"),
-            resource_name
-          )
+          let normalized_public_path = context
+            .config
+            .output
+            .public_path
+            .trim_start_matches("/")
+            .trim_end_matches("/");
+
+          if normalized_public_path.is_empty() {
+            format!("export default \"/{}\"", resource_name)
+          } else {
+            format!(
+              "export default \"/{}/{}\"",
+              normalized_public_path, resource_name
+            )
+          }
         } else {
           format!("export default \"/{}\"", resource_name)
         };

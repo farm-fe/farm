@@ -2,10 +2,15 @@ import os from 'node:os';
 import readline from 'node:readline';
 import fs from 'node:fs';
 import path from 'node:path';
-/* eslint-disable @typescript-eslint/no-use-before-define */
+import { pathToFileURL } from 'node:url';
 
+/* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+export function isArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
 }
 
 export function isEmptyObject<T extends object>(obj: T): boolean {
@@ -42,4 +47,23 @@ export function getFileSystemStats(file: string): fs.Stats | undefined {
   } catch {
     // Ignore errors
   }
+}
+
+export async function importFresh(modulePath: string) {
+  const filepath = path.resolve(modulePath);
+  const fileContent = await fs.promises.readFile(filepath, 'utf8');
+  const ext = path.extname(filepath);
+  const extRegex = new RegExp(`\\${ext}$`);
+  const newFilepath = `${filepath.replace(extRegex, '')}${Date.now()}${ext}`;
+
+  await fs.promises.writeFile(newFilepath, fileContent);
+  let module;
+  if (process.platform === 'win32') {
+    module = (await import(pathToFileURL(newFilepath).toString())).default;
+  } else {
+    module = (await import(newFilepath)).default;
+  }
+  fs.unlinkSync(newFilepath);
+
+  return module;
 }
