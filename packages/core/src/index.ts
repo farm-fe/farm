@@ -124,8 +124,6 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   app.use(compression());
   app.use(async (ctx) => {
     const requestPath = ctx.request.path;
-    console.log(requestPath);
-    console.log(output.publicPath);
 
     if (requestPath.startsWith(output.publicPath)) {
       const modifiedPath = requestPath.substring(output.publicPath.length);
