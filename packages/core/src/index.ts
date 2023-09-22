@@ -106,11 +106,12 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
     userConfig,
     'production'
   );
-
   const { root, output } = normalizedConfig.config;
   const distDir = path.resolve(root, output.path);
 
   function StaticFilesHandler(ctx: Context) {
+    console.log(ctx.request.path);
+
     const staticFilesServer = sirv(distDir, {
       etag: true,
       single: true
@@ -124,7 +125,13 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   const app = new Koa();
   app.use(compression());
   app.use(async (ctx) => {
-    await StaticFilesHandler(ctx);
+    const requestPath = ctx.request.path;
+    if (requestPath.startsWith(output.publicPath)) {
+      // 判断请求是否以公共路径开始
+      const modifiedPath = requestPath.substring(output.publicPath.length); // 去掉公共路径前缀
+      ctx.request.path = `/${modifiedPath}`; // 修改请求路径
+      await StaticFilesHandler(ctx);
+    }
   });
 
   app.listen(port, () => {

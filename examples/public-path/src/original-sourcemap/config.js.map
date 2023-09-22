@@ -1,0 +1,1 @@
+{"version":3,"file":"config.js","sourceRoot":"","sources":["../src/config.ts"],"names":[],"mappings":"AAEA,MAAM,UAAU,gBAAgB,CAAC,UAAsB;IACrD,OAAO,UAAU,CAAC;AACpB,CAAC","sourcesContent":["import type { UserConfig } from './config/types.js';\n\nexport function defineFarmConfig(userConfig: UserConfig): UserConfig {\n  return userConfig;\n}\n"]}
