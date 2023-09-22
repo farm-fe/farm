@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.7
+
+### Patch Changes
+
+- 115b34d: chore: remove unless code
+
 ## 0.5.6
 
 ### Patch Changes
