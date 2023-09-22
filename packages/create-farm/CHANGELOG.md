@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- baec8bf: feat: add restartserver fn with update create-farm
+- baec8bf: feat: add restart-server fn with update create-farm
 
 ## 1.2.11
 
