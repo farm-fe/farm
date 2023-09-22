@@ -124,15 +124,19 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   app.use(compression());
   app.use(async (ctx) => {
     const requestPath = ctx.request.path;
+    console.log(requestPath);
+    console.log(output.publicPath);
+
     if (requestPath.startsWith(output.publicPath)) {
       const modifiedPath = requestPath.substring(output.publicPath.length);
+
       if (modifiedPath.startsWith('/')) {
         ctx.request.path = modifiedPath;
       } else {
         ctx.request.path = `/${modifiedPath}`;
       }
-      await StaticFilesHandler(ctx);
     }
+    await StaticFilesHandler(ctx);
   });
 
   app.listen(port, () => {
@@ -151,9 +155,9 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
         })
         .forEach(({ type, host }) => {
           const url = `${'http'}://${host}:${chalk.bold(port)}${
-            output.publicPath
+            output.publicPath ?? ''
           }`;
-          logger.info(`  > ${type} ${chalk.cyan(url)}`);
+          logger.info(`${chalk.magenta('>')} ${type} ${chalk.cyan(url)}`);
         })
     );
   });
