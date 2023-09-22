@@ -127,9 +127,12 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   app.use(async (ctx) => {
     const requestPath = ctx.request.path;
     if (requestPath.startsWith(output.publicPath)) {
-      // 判断请求是否以公共路径开始
-      const modifiedPath = requestPath.substring(output.publicPath.length); // 去掉公共路径前缀
-      ctx.request.path = `/${modifiedPath}`; // 修改请求路径
+      const modifiedPath = requestPath.substring(output.publicPath.length);
+      if (modifiedPath.startsWith('/')) {
+        ctx.request.path = modifiedPath;
+      } else {
+        ctx.request.path = `/${modifiedPath}`;
+      }
       await StaticFilesHandler(ctx);
     }
   });
