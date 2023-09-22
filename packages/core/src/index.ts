@@ -106,7 +106,6 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
     userConfig,
     'production'
   );
-
   const { root, output } = normalizedConfig.config;
   const distDir = path.resolve(root, output.path);
 
@@ -124,7 +123,16 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   const app = new Koa();
   app.use(compression());
   app.use(async (ctx) => {
-    await StaticFilesHandler(ctx);
+    const requestPath = ctx.request.path;
+    if (requestPath.startsWith(output.publicPath)) {
+      const modifiedPath = requestPath.substring(output.publicPath.length);
+      if (modifiedPath.startsWith('/')) {
+        ctx.request.path = modifiedPath;
+      } else {
+        ctx.request.path = `/${modifiedPath}`;
+      }
+      await StaticFilesHandler(ctx);
+    }
   });
 
   app.listen(port, () => {
@@ -142,7 +150,9 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${chalk.bold(port)}`;
+          const url = `${'http'}://${host}:${chalk.bold(port)}${
+            output.publicPath
+          }`;
           logger.info(`  > ${type} ${chalk.cyan(url)}`);
         })
     );
