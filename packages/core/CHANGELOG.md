@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.8
+
+### Patch Changes
+
+- 750ed61: preview command publicPath error
+
 ## 0.12.7
 
 ### Patch Changes
