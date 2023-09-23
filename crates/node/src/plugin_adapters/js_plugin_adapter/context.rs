@@ -54,7 +54,7 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     ctx.clone(),
   );
   js_context = attach_context_method(raw_env, js_context, WARN, Some(warn), ctx.clone());
-  js_context = attach_context_method(raw_env, js_context, ERROR, Some(error), ctx.clone());
+  js_context = attach_context_method(raw_env, js_context, ERROR, Some(error), ctx);
 
   js_context
 }
@@ -180,7 +180,7 @@ unsafe extern "C" fn get_watch_files(env: napi_env, info: napi_callback_info) ->
   let mut watched_files = watch_graph
     .modules()
     .into_iter()
-    .map(|s| s.clone())
+    .cloned()
     .collect::<Vec<_>>();
   let module_graph = ctx.module_graph.read();
   let mut modules = module_graph

@@ -1,3 +1,4 @@
+#[derive(Debug, Default)]
 pub struct LogStore {
   warnings: Vec<String>,
   errors: Vec<String>,
