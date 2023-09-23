@@ -43,10 +43,9 @@ cli
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
   .option('--cors', 'enable CORS')
+  .option('--strictPort', 'specified port is already in use, exit with error')
   // TODO add https config
   // .option('--https', 'use https')
-  // TODO add strictPort config
-  // .option('--strictPort', 'specified port is already in use, exit with error')
   .action(
     async (
       root: string,
