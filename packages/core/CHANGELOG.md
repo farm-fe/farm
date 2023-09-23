@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.9
+
+### Patch Changes
+
+- c12536a: fix: strictPort error
+
 ## 0.12.8
 
 ### Patch Changes
