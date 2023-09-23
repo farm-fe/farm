@@ -10,11 +10,24 @@ import {
 } from '../../binding/index.js';
 import { DevServer } from '../index.js';
 
+interface CompilationContextEmitFileParams {
+  resolvedPath: string;
+  name: string;
+  content: number[];
+  resourceType: 'runtime' | 'js' | 'css' | 'html' | string;
+}
+
 interface CompilationContext {
   resolve(
     param: PluginResolveHookParam,
     hookContext: { meta: Record<string, string>; caller: string }
   ): Promise<PluginResolveHookResult>;
+
+  addWatchFile(current_file: string, target_file: string): void;
+  emitFile(params: CompilationContextEmitFileParams): void;
+  getWatchFiles(): string[];
+  warn(message: string): void;
+  error(message: string): void;
 }
 
 type Callback<P, R> = (

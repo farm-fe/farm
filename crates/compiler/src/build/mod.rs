@@ -86,6 +86,16 @@ impl Compiler {
       errors.push(err);
     }
 
+    for err in self.context.log_store.read().errors() {
+      errors.push(CompilationError::GenericError(err.to_string()));
+    }
+
+    if !self.context.log_store.read().warnings().is_empty() {
+      for warning in self.context.log_store.read().warnings() {
+        println!("[warn] {}", warning);
+      }
+    }
+
     if !errors.is_empty() {
       let mut error_messages = vec![];
       for error in errors {
