@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/cli",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "CLI of Farm",
   "type": "module",
   "author": {
