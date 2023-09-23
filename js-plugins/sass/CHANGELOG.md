@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-sass
 
+## 2.0.2
+
+### Patch Changes
+
+- 8a14089: fix the createModule core
+
 ## 2.0.1
 
 ### Patch Changes
