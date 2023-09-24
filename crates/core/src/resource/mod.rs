@@ -1,3 +1,4 @@
+use heck::AsLowerCamelCase;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use farmfe_macro_cache_item::cache_item;
@@ -10,7 +11,7 @@ pub mod resource_pot;
 pub mod resource_pot_map;
 
 #[cache_item]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone)]
 pub enum ResourceType {
   Runtime,
   Js,
@@ -19,6 +20,47 @@ pub enum ResourceType {
   SourceMap(String),
   Asset(String),
   Custom(String),
+}
+
+impl ToString for ResourceType {
+  fn to_string(&self) -> String {
+    match *self {
+      Self::Custom(ref s) => s.to_string(),
+      Self::Asset(ref s) => s.to_string(),
+      _ => AsLowerCamelCase(format!("{:?}", self)).to_string(),
+    }
+  }
+}
+
+impl serde::Serialize for ResourceType {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.serialize_str(self.to_string().as_str())
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for ResourceType {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    let s = <std::string::String as serde::Deserialize>::deserialize(deserializer)?;
+    Ok(s.into())
+  }
+}
+
+impl From<String> for ResourceType {
+  fn from(s: String) -> Self {
+    match s.as_str() {
+      "js" => Self::Js,
+      "css" => Self::Css,
+      "html" => Self::Html,
+      "runtime" => Self::Runtime,
+      _ => Self::Custom(s),
+    }
+  }
 }
 
 impl ResourceType {
