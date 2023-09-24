@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.10
+
+### Patch Changes
+
+- b44fde7: Support js plugin hook context methods for unplugin
+
 ## 0.12.9
 
 ### Patch Changes
