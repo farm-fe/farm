@@ -10,20 +10,20 @@ import {
 } from '../../binding/index.js';
 import { DevServer } from '../index.js';
 
-interface CompilationContextEmitFileParams {
+export interface CompilationContextEmitFileParams {
   resolvedPath: string;
   name: string;
   content: number[];
   resourceType: 'runtime' | 'js' | 'css' | 'html' | string;
 }
 
-interface CompilationContext {
+export interface CompilationContext {
   resolve(
     param: PluginResolveHookParam,
     hookContext: { meta: Record<string, string>; caller: string }
   ): Promise<PluginResolveHookResult>;
 
-  addWatchFile(current_file: string, target_file: string): void;
+  addWatchFile(currentFile: string, targetFile: string): void;
   emitFile(params: CompilationContextEmitFileParams): void;
   getWatchFiles(): string[];
   warn(message: string): void;

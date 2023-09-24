@@ -221,7 +221,7 @@ export interface Config {
           assumptions?: any;
         };
   };
-  jsPlugins?: JsPlugin[];
+  jsPlugins?: object[];
   // [rustPluginFilePath, jsonStringifiedOptions]
   rustPlugins?: [string, string][];
 }
