@@ -327,6 +327,7 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
+
   if (inlineOptions.clearScreen && __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__)
     clearScreen();
 
