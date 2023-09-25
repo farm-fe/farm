@@ -33,10 +33,7 @@ export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
-  // const { normalizedConfig, devServer, config } = await resolveCompiler(
-  //   inlineConfig as any,
-  //   logger
-  // );
+
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(config);

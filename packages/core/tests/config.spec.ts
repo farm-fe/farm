@@ -29,6 +29,12 @@ test('resolveUserConfig', async () => {
     inlineConfig: {
       configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
     },
+    resolveConfigPath: path.join(
+      filePath,
+      'fixtures',
+      'config',
+      'farm.config.ts'
+    ),
     configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     server: normalizeDevServerOptions(config.server, 'development')
   });
