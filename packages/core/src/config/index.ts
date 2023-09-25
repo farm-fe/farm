@@ -12,10 +12,10 @@ import { DevServer } from '../server/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import { parseUserConfig } from './schema.js';
 import {
-  Logger,
   clearScreen,
-  isObject,
   isArray,
+  isObject,
+  Logger,
   normalizePath
 } from '../utils/index.js';
 
@@ -273,21 +273,14 @@ export function normalizeDevServerOptions(
   options: UserServerConfig | undefined,
   mode: string
 ): NormalizedServerConfig {
-  let hmr: false | UserHmrConfig = DEFAULT_HMR_OPTIONS;
+  const { host, port, hmr: hmrConfig } = options || {};
+  const isProductionMode = mode === 'production';
+  const hmr =
+    isProductionMode || hmrConfig === false
+      ? false
+      : merge({}, DEFAULT_HMR_OPTIONS, { host, port }, hmrConfig || {});
 
-  if (mode === 'production' || options?.hmr === false) {
-    hmr = false;
-  } else {
-    const devServerHostInfo = {
-      host: options?.host,
-      port: options?.port
-    };
-    hmr = merge({}, DEFAULT_HMR_OPTIONS, devServerHostInfo, options?.hmr ?? {});
-  }
-
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
-    hmr
-  });
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, { hmr });
 }
 
 /**
@@ -301,8 +294,12 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
-  if (inlineOptions.clearScreen && __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__)
+  if (
+    inlineOptions.clearScreen &&
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
+  ) {
     clearScreen();
+  }
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -339,7 +336,6 @@ export async function resolveUserConfig(
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
   // Save variables are used when restarting the service
-  userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }
 
@@ -410,7 +406,7 @@ async function readConfigFile(
 }
 
 export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
-  // delete config.configPath;
+  delete config.configPath;
   return config;
 }
 

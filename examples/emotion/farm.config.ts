@@ -27,12 +27,5 @@ export default defineConfig({
     // treeShaking: true,
     // minify: true,
   },
-  server: {
-    hmr: {
-      port: 9802,
-    },
-    port: 9001,
-    open: true,
-  },
   plugins: [['@farmfe/plugin-react', { "runtime": "automatic", "importSource": "@emotion/react" }]],
 });
