@@ -74,7 +74,10 @@ export class FileWatcher implements ImplFileWatcher {
           this.options.inlineConfig,
           this._logger
         );
-        const normalizedConfig = await normalizeUserCompilationConfig(config);
+        const normalizedConfig = await normalizeUserCompilationConfig(
+          config,
+          this._logger
+        );
         setProcessEnv(normalizedConfig.config.mode);
         const compiler = new Compiler(normalizedConfig);
         const devServer = new DevServer(compiler, this._logger, config);

@@ -39,7 +39,7 @@ export async function start(
   // );
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(config);
+  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   setProcessEnv(normalizedConfig.config.mode);
 
@@ -80,6 +80,7 @@ export async function build(
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
+    logger,
     'production'
   );
   setProcessEnv(normalizedConfig.config.mode);
@@ -104,6 +105,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
+    logger,
     'production'
   );
   const { root, output } = normalizedConfig.config;
@@ -169,6 +171,7 @@ export async function watch(
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
+    logger,
     'development'
   );
   setProcessEnv(normalizedConfig.config.mode);
@@ -199,7 +202,7 @@ export async function resolveCompiler(
 ) {
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(config);
+  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   setProcessEnv(normalizedConfig.config.mode);
 

@@ -45,13 +45,21 @@ export const DEFAULT_CONFIG_NAMES = [
  */
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
+  logger: Logger,
   mode: CompilationMode = 'development'
 ): Promise<Config> {
+  const { compilation, root, server, envDir, envPrefix } = userConfig;
   // resolve root path
   const resolvedRootPath = normalizePath(
-    userConfig.root ? path.resolve(userConfig.root) : process.cwd()
+    root ? path.resolve(root) : process.cwd()
   );
-
+  // resolve public path
+  if (compilation.output?.publicPath) {
+    compilation.output.publicPath = normalizePublicPath(
+      compilation.output.publicPath,
+      logger
+    );
+  }
   const config: Config['config'] = merge(
     {
       input: {
@@ -61,7 +69,7 @@ export async function normalizeUserCompilationConfig(
         path: './dist'
       }
     },
-    userConfig.compilation
+    compilation
   );
   config.mode = config.mode ?? mode;
   const isProduction = config.mode === 'production';
@@ -69,14 +77,12 @@ export async function normalizeUserCompilationConfig(
 
   config.coreLibPath = bindingPath;
 
-  const resolvedEnvPath = userConfig.envDir
-    ? userConfig.envDir
-    : resolvedRootPath;
+  const resolvedEnvPath = envDir ? envDir : resolvedRootPath;
 
   const userEnv = loadEnv(
-    userConfig.compilation?.mode ?? mode,
+    compilation?.mode ?? mode,
     resolvedEnvPath,
-    userConfig.envPrefix
+    envPrefix
   );
 
   config.env = {
@@ -164,10 +170,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   // TODO resolve other server port
-  const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server,
-    mode
-  );
+  const normalizedDevServerConfig = normalizeDevServerOptions(server, mode);
 
   if (
     config.output.targetEnv !== 'node' &&
@@ -182,14 +185,11 @@ export async function normalizeUserCompilationConfig(
   }
 
   // we should not deep merge compilation.input
-  if (
-    userConfig.compilation?.input &&
-    Object.keys(userConfig.compilation.input).length > 0
-  ) {
+  if (compilation?.input && Object.keys(compilation.input).length > 0) {
     // Add ./ if userConfig.input is relative path without ./
     const input: Record<string, string> = {};
 
-    for (const [key, value] of Object.entries(userConfig.compilation.input)) {
+    for (const [key, value] of Object.entries(compilation.input)) {
       if (!path.isAbsolute(value) && !value.startsWith('./')) {
         input[key] = `./${value}`;
       } else {
@@ -201,7 +201,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (!config.root) {
-    config.root = userConfig.root ?? process.cwd();
+    config.root = root ?? process.cwd();
   }
 
   if (config.treeShaking === undefined) {
@@ -385,40 +385,43 @@ async function readConfigFile(
         '.farm'
       );
       const fileName = 'farm.config.bundle.mjs';
-      const normalizedConfig = await normalizeUserCompilationConfig({
-        compilation: {
-          input: {
-            [fileName]: configFilePath
+      const normalizedConfig = await normalizeUserCompilationConfig(
+        {
+          compilation: {
+            input: {
+              [fileName]: configFilePath
+            },
+            output: {
+              entryFilename: '[entryName]',
+              path: outputPath,
+              targetEnv: 'node'
+            },
+            external: [
+              ...module.builtinModules.map((m) => `^${m}$`),
+              ...module.builtinModules.map((m) => `^node:${m}$`),
+              '^[^./].*'
+            ],
+            partialBundling: {
+              moduleBuckets: [
+                {
+                  name: fileName,
+                  test: ['.+']
+                }
+              ]
+            },
+            watch: false,
+            sourcemap: false,
+            treeShaking: false,
+            minify: false,
+            presetEnv: false,
+            lazyCompilation: false
           },
-          output: {
-            entryFilename: '[entryName]',
-            path: outputPath,
-            targetEnv: 'node'
-          },
-          external: [
-            ...module.builtinModules.map((m) => `^${m}$`),
-            ...module.builtinModules.map((m) => `^node:${m}$`),
-            '^[^./].*'
-          ],
-          partialBundling: {
-            moduleBuckets: [
-              {
-                name: fileName,
-                test: ['.+']
-              }
-            ]
-          },
-          watch: false,
-          sourcemap: false,
-          treeShaking: false,
-          minify: false,
-          presetEnv: false,
-          lazyCompilation: false
+          server: {
+            hmr: false
+          }
         },
-        server: {
-          hmr: false
-        }
-      });
+        logger
+      );
 
       const compiler = new Compiler(normalizedConfig);
       await compiler.compile();
@@ -480,22 +483,53 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
   return absPublicDirPath;
 }
 
-export function normalizePublicPath(publicPath = '/', logger: Logger) {
-  if (publicPath.startsWith('.') || publicPath.startsWith('..')) {
+/**
+ *
+ * @param publicPath  publicPath option
+ * @param logger  logger instance
+ * @param isPrefixNeeded  whether to add a prefix to the publicPath
+ * @returns  normalized publicPath
+ */
+export function normalizePublicPath(
+  publicPath = '/',
+  logger: Logger,
+  isPrefixNeeded = true
+) {
+  let normalizedPublicPath = publicPath;
+  if (
+    normalizedPublicPath.startsWith('.') ||
+    normalizedPublicPath.startsWith('..')
+  ) {
     logger.warn(
-      ` (!) Irregular "publicPath" options: ${publicPath}, it should only be an absolute path, an url or an empty string`
+      ` (!) Irregular 'publicPath' options: ${publicPath}, it should only be an absolute path, an url or an empty string.`
     );
-    publicPath = publicPath.replace(/^\.+/, '');
+    normalizedPublicPath = normalizedPublicPath.replace(/^\.+/, '');
   }
-  if (publicPath.startsWith('/') && !publicPath.startsWith('http')) {
-    publicPath = publicPath.slice(1);
+  if (
+    normalizedPublicPath.startsWith('/') &&
+    !normalizedPublicPath.startsWith('http') &&
+    !isPrefixNeeded
+  ) {
+    normalizedPublicPath = normalizedPublicPath.slice(1);
+  }
+  if (isPrefixNeeded && !normalizedPublicPath.startsWith('/')) {
+    logger.warn(
+      ` (!) Irregular 'publicPath' options: ${publicPath}, it should start with the absolute path.`
+    );
+    normalizedPublicPath = '/' + normalizedPublicPath;
   }
 
-  if (!publicPath.endsWith('/') && !publicPath.startsWith('http')) {
-    publicPath = publicPath + '/';
+  if (
+    !normalizedPublicPath.endsWith('/') &&
+    !normalizedPublicPath.startsWith('http')
+  ) {
+    logger.warn(
+      ` (!) Irregular 'publicPath' options: ${publicPath}, it should end with the absolute path.`
+    );
+    normalizedPublicPath = normalizedPublicPath + '/';
   }
 
-  return publicPath;
+  return normalizedPublicPath;
 }
 
 export function convertPlugin(plugin: JsPlugin): void {

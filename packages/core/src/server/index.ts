@@ -76,8 +76,11 @@ export class DevServer implements ImplDevServer {
     );
 
     this.publicPath =
-      normalizePublicPath(options?.compilation?.output?.publicPath, logger) ||
-      '/';
+      normalizePublicPath(
+        options?.compilation?.output?.publicPath,
+        logger,
+        false
+      ) || '/';
 
     this.userConfig = options;
     this.createFarmServer(options.server);
