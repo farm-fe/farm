@@ -227,36 +227,10 @@ export async function normalizeUserCompilationConfig(
       config.presetEnv = false;
     }
   }
-
-  const plugins = userConfig.plugins ?? [];
-  const rustPlugins = [];
-  const jsPlugins: JsPlugin[] = [];
-
-  for (const plugin of plugins) {
-    if (
-      typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
-    ) {
-      rustPlugins.push(await rustPluginResolver(plugin, config.root));
-    } else if (isObject(plugin)) {
-      convertPlugin(plugin as JsPlugin);
-      jsPlugins.push(plugin as JsPlugin);
-    } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin) {
-        convertPlugin(pluginNestItem as JsPlugin);
-        jsPlugins.push(pluginNestItem as JsPlugin);
-      }
-    } else {
-      throw new Error(
-        `plugin ${plugin} is not supported, Please pass the correct plugin type`
-      );
-    }
-  }
-  let finalConfig = config;
-  // call user config hooks
-  for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
-  }
+  const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
+    config,
+    userConfig
+  );
 
   const normalizedConfig: Config = {
     config: finalConfig,
@@ -515,4 +489,54 @@ export function convertPlugin(plugin: JsPlugin): void {
       plugin.transform.filters.resolvedPaths = [];
     }
   }
+}
+
+/**
+ * resolvePlugins split / jsPlugins / rustPlugins
+ * @param config
+ */
+export async function resolveAllPlugins(
+  finalConfig: Config['config'],
+  userConfig: UserConfig
+) {
+  const plugins = userConfig.plugins ?? [];
+  if (!plugins.length) {
+    return {
+      rustPlugins: [],
+      jsPlugins: [],
+      finalConfig
+    };
+  }
+  const rustPlugins = [];
+  const jsPlugins: JsPlugin[] = [];
+
+  for (const plugin of plugins) {
+    if (
+      typeof plugin === 'string' ||
+      (isArray(plugin) && typeof plugin[0] === 'string')
+    ) {
+      rustPlugins.push(await rustPluginResolver(plugin, finalConfig.root));
+    } else if (isObject(plugin)) {
+      convertPlugin(plugin as unknown as JsPlugin);
+      jsPlugins.push(plugin as unknown as JsPlugin);
+    } else if (isArray(plugin)) {
+      for (const pluginNestItem of plugin) {
+        convertPlugin(pluginNestItem as JsPlugin);
+        jsPlugins.push(pluginNestItem as JsPlugin);
+      }
+    } else {
+      throw new Error(
+        `plugin ${plugin} is not supported, Please pass the correct plugin type`
+      );
+    }
+  }
+  // call user config hooks
+  for (const jsPlugin of jsPlugins) {
+    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
+  }
+  return {
+    rustPlugins,
+    jsPlugins,
+    finalConfig
+  };
 }

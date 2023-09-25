@@ -56,7 +56,7 @@ export default defineConfig({
           ]
         },
         executor(param, context, hookContext) {
-          console.log('plugin-hook-context-test', param, context, hookContext);
+          // console.log('plugin-hook-context-test', param, context, hookContext);
           // console.log(context.getWatchFiles());
           // context.emitFile({
           //   resolvedPath: param.resolvedPath,
