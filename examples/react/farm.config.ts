@@ -33,7 +33,7 @@ export default defineConfig({
   },
   server: {
     cors: true,
-    port: 6654,
+    port: 6870,
     host: 'localhost'
   },
   plugins: [
@@ -77,9 +77,9 @@ export default defineConfig({
       name: 'plugin-update-modules-hook-test',
       updateModules: {
         executor(param, context, hookContext) {
-          console.log("params", param);
-          console.log("context", context);
-          console.log("hookContext", hookContext);
+          // console.log("params", param);
+          // console.log("context", context);
+          // console.log("hookContext", hookContext);
         }
       }
     }

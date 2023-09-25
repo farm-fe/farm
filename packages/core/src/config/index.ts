@@ -315,6 +315,7 @@ export async function resolveUserConfig(
       const farmConfig = mergeUserConfig(config, inlineOptions);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
+        userConfig.resolveConfigPath = resolvedPath;
         // if we found a config file, stop searching
         break;
       }
@@ -326,6 +327,7 @@ export async function resolveUserConfig(
 
     if (config) {
       userConfig = parseUserConfig(farmConfig);
+      userConfig.resolveConfigPath = configPath;
     }
   }
 
