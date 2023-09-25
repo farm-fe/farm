@@ -54,7 +54,7 @@ export async function normalizeUserCompilationConfig(
     root ? path.resolve(root) : process.cwd()
   );
   // resolve public path
-  if (compilation.output?.publicPath) {
+  if (compilation?.output?.publicPath) {
     compilation.output.publicPath = normalizePublicPath(
       compilation.output.publicPath,
       logger
