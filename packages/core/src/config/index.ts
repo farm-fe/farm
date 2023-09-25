@@ -327,6 +327,7 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
+
   if (inlineOptions.clearScreen && __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__)
     clearScreen();
 
@@ -344,6 +345,7 @@ export async function resolveUserConfig(
       const farmConfig = mergeUserConfig(config, inlineOptions);
       if (config) {
         userConfig = parseUserConfig(farmConfig);
+        userConfig.resolveConfigPath = resolvedPath;
         // if we found a config file, stop searching
         break;
       }
@@ -355,6 +357,7 @@ export async function resolveUserConfig(
 
     if (config) {
       userConfig = parseUserConfig(farmConfig);
+      userConfig.resolveConfigPath = configPath;
     }
   }
 
