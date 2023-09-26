@@ -37,6 +37,7 @@ export const DEFAULT_CONFIG_NAMES = [
   'farm.config.js',
   'farm.config.mjs'
 ];
+export const urlRegex = /^(https?:)?\/\/([^/]+)/;
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
@@ -464,38 +465,45 @@ export function normalizePublicPath(
   isPrefixNeeded = true
 ) {
   let normalizedPublicPath = publicPath;
+  let warning = false;
+  // normalize relative path
   if (
     normalizedPublicPath.startsWith('.') ||
     normalizedPublicPath.startsWith('..')
   ) {
-    logger.warn(
-      ` (!) Irregular 'publicPath' options: ${publicPath}, it should only be an absolute path, an url or an empty string.`
-    );
+    warning = true;
     normalizedPublicPath = normalizedPublicPath.replace(/^\.+/, '');
   }
+
+  // normalize appended relative path
+  if (!normalizedPublicPath.endsWith('/')) {
+    if (!urlRegex.test(normalizedPublicPath)) {
+      warning = true;
+    }
+    normalizedPublicPath = normalizedPublicPath + '/';
+  }
+
+  // normalize prepended relative path
   if (
     normalizedPublicPath.startsWith('/') &&
-    !normalizedPublicPath.startsWith('http') &&
+    !urlRegex.test(normalizedPublicPath) &&
     !isPrefixNeeded
   ) {
     normalizedPublicPath = normalizedPublicPath.slice(1);
-  }
-  if (isPrefixNeeded && !normalizedPublicPath.startsWith('/')) {
-    logger.warn(
-      ` (!) Irregular 'publicPath' options: ${publicPath}, it should start with the absolute path.`
-    );
+  } else if (
+    isPrefixNeeded &&
+    !normalizedPublicPath.startsWith('/') &&
+    !urlRegex.test(normalizedPublicPath)
+  ) {
+    warning = true;
     normalizedPublicPath = '/' + normalizedPublicPath;
   }
 
-  if (
-    !normalizedPublicPath.endsWith('/') &&
-    !normalizedPublicPath.startsWith('http')
-  ) {
+  warning &&
+    isPrefixNeeded &&
     logger.warn(
-      ` (!) Irregular 'publicPath' options: ${publicPath}, it should end with the absolute path.`
+      ` (!) Irregular 'publicPath' options: '${publicPath}', it should only be an absolute path like '/publicPath/', an url or an empty string.`
     );
-    normalizedPublicPath = normalizedPublicPath + '/';
-  }
 
   return normalizedPublicPath;
 }
