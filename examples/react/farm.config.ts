@@ -17,7 +17,8 @@ export default defineConfig({
       BTN: 'Click me'
     },
     output: {
-      path: './build'
+      path: './build',
+      // publicPath: './public/'
     },
     // sourcemap: true,
     css: {

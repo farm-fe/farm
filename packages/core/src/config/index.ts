@@ -12,10 +12,10 @@ import { DevServer } from '../server/index.js';
 import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import { parseUserConfig } from './schema.js';
 import {
-  Logger,
   clearScreen,
-  isObject,
   isArray,
+  isObject,
+  Logger,
   normalizePath
 } from '../utils/index.js';
 
@@ -227,36 +227,10 @@ export async function normalizeUserCompilationConfig(
       config.presetEnv = false;
     }
   }
-
-  const plugins = userConfig.plugins ?? [];
-  const rustPlugins = [];
-  const jsPlugins: JsPlugin[] = [];
-
-  for (const plugin of plugins) {
-    if (
-      typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
-    ) {
-      rustPlugins.push(await rustPluginResolver(plugin, config.root));
-    } else if (isObject(plugin)) {
-      convertPlugin(plugin as JsPlugin);
-      jsPlugins.push(plugin as JsPlugin);
-    } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin) {
-        convertPlugin(pluginNestItem as JsPlugin);
-        jsPlugins.push(pluginNestItem as JsPlugin);
-      }
-    } else {
-      throw new Error(
-        `plugin ${plugin} is not supported, Please pass the correct plugin type`
-      );
-    }
-  }
-  let finalConfig = config;
-  // call user config hooks
-  for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
-  }
+  const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
+    config,
+    userConfig
+  );
 
   const normalizedConfig: Config = {
     config: finalConfig,
@@ -299,21 +273,14 @@ export function normalizeDevServerOptions(
   options: UserServerConfig | undefined,
   mode: string
 ): NormalizedServerConfig {
-  let hmr: false | UserHmrConfig = DEFAULT_HMR_OPTIONS;
+  const { host, port, hmr: hmrConfig } = options || {};
+  const isProductionMode = mode === 'production';
+  const hmr =
+    isProductionMode || hmrConfig === false
+      ? false
+      : merge({}, DEFAULT_HMR_OPTIONS, { host, port }, hmrConfig || {});
 
-  if (mode === 'production' || options?.hmr === false) {
-    hmr = false;
-  } else {
-    const devServerHostInfo = {
-      host: options?.host,
-      port: options?.port
-    };
-    hmr = merge({}, DEFAULT_HMR_OPTIONS, devServerHostInfo, options?.hmr ?? {});
-  }
-
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
-    hmr
-  });
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, { hmr });
 }
 
 /**
@@ -327,9 +294,12 @@ export async function resolveUserConfig(
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
   const { configPath } = inlineOptions;
-
-  if (inlineOptions.clearScreen && __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__)
+  if (
+    inlineOptions.clearScreen &&
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
+  ) {
     clearScreen();
+  }
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
@@ -368,7 +338,6 @@ export async function resolveUserConfig(
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
   // Save variables are used when restarting the service
-  userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }
 
@@ -442,7 +411,7 @@ async function readConfigFile(
 }
 
 export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
-  // delete config.configPath;
+  delete config.configPath;
   return config;
 }
 
@@ -552,4 +521,54 @@ export function convertPlugin(plugin: JsPlugin): void {
       plugin.transform.filters.resolvedPaths = [];
     }
   }
+}
+
+/**
+ * resolvePlugins split / jsPlugins / rustPlugins
+ * @param config
+ */
+export async function resolveAllPlugins(
+  finalConfig: Config['config'],
+  userConfig: UserConfig
+) {
+  const plugins = userConfig.plugins ?? [];
+  if (!plugins.length) {
+    return {
+      rustPlugins: [],
+      jsPlugins: [],
+      finalConfig
+    };
+  }
+  const rustPlugins = [];
+  const jsPlugins: JsPlugin[] = [];
+
+  for (const plugin of plugins) {
+    if (
+      typeof plugin === 'string' ||
+      (isArray(plugin) && typeof plugin[0] === 'string')
+    ) {
+      rustPlugins.push(await rustPluginResolver(plugin, finalConfig.root));
+    } else if (isObject(plugin)) {
+      convertPlugin(plugin as unknown as JsPlugin);
+      jsPlugins.push(plugin as unknown as JsPlugin);
+    } else if (isArray(plugin)) {
+      for (const pluginNestItem of plugin) {
+        convertPlugin(pluginNestItem as JsPlugin);
+        jsPlugins.push(pluginNestItem as JsPlugin);
+      }
+    } else {
+      throw new Error(
+        `plugin ${plugin} is not supported, Please pass the correct plugin type`
+      );
+    }
+  }
+  // call user config hooks
+  for (const jsPlugin of jsPlugins) {
+    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
+  }
+  return {
+    rustPlugins,
+    jsPlugins,
+    finalConfig
+  };
 }
