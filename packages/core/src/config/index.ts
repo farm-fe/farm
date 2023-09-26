@@ -293,6 +293,7 @@ export async function resolveUserConfig(
 ): Promise<UserConfig> {
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
+
   const { configPath } = inlineOptions;
   if (
     inlineOptions.clearScreen &&
@@ -338,6 +339,7 @@ export async function resolveUserConfig(
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
   // Save variables are used when restarting the service
+  userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }
 
@@ -410,18 +412,12 @@ async function readConfigFile(
   }
 }
 
-export function cleanConfig(config: FarmCLIOptions): FarmCLIOptions {
-  delete config.configPath;
-  return config;
-}
-
 export function mergeUserConfig(
   config: Record<string, any>,
   options: Record<string, any>
 ) {
   // The merge property can only be enabled if command line arguments are passed
-  const resolvedInlineConfig = cleanConfig(options);
-  return mergeConfiguration(config, resolvedInlineConfig);
+  return mergeConfiguration(config, options);
 }
 
 export function mergeConfiguration(
