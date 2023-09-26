@@ -16,7 +16,8 @@ import {
   normalizePublicPath,
   DevServerPlugin,
   UserConfig,
-  DEFAULT_HMR_OPTIONS
+  DEFAULT_HMR_OPTIONS,
+  urlRegex
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { openBrowser } from './openBrowser.js';
@@ -101,10 +102,15 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     const { port, open, protocol, hostname, host } = this.config;
-    const publicPath = this.publicPath.startsWith('/')
-      ? this.publicPath
-      : `/${this.publicPath}`;
     const start = Date.now();
+    let publicPath;
+    if (urlRegex.test(this.publicPath)) {
+      publicPath = '/';
+    } else {
+      publicPath = this.publicPath.startsWith('/')
+        ? this.publicPath
+        : `/${this.publicPath}`;
+    }
     // compile the project and start the dev server
     if (process.env.FARM_PROFILE) {
       this._compiler.compileSync();
@@ -268,15 +274,20 @@ export class DevServer implements ImplDevServer {
 
   private startDevLogger(start: number, end: number) {
     const { port, protocol, hostname } = this.config;
-    const publicPath = this.publicPath.startsWith('/')
-      ? this.publicPath
-      : `/${this.publicPath}`;
     const version = JSON.parse(
       readFileSync(
         join(fileURLToPath(import.meta.url), '../../../package.json'),
         'utf-8'
       )
     ).version;
+    let publicPath;
+    if (urlRegex.test(this.publicPath)) {
+      publicPath = '/';
+    } else {
+      publicPath = this.publicPath.startsWith('/')
+        ? this.publicPath
+        : `/${this.publicPath}`;
+    }
     this.logger.info(
       boxen(
         `${brandColor(
