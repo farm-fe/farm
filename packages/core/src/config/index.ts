@@ -339,7 +339,6 @@ export async function resolveUserConfig(
   // check port availability: auto increment the port if a conflict occurs
   await DevServer.resolvePortConflict(userConfig, logger);
   // Save variables are used when restarting the service
-  userConfig.inlineConfig = inlineOptions;
   return userConfig;
 }
 
