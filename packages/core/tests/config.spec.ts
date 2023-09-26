@@ -32,6 +32,7 @@ test('resolveUserConfig', async () => {
       'config',
       'farm.config.ts'
     ),
+    inlineConfig: {},
     server: normalizeDevServerOptions(config.server, 'development')
   });
 });

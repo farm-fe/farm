@@ -34,7 +34,7 @@ export default defineConfig({
   },
   server: {
     cors: true,
-    port: 6870,
+    port: 6220,
     host: 'localhost'
   },
   plugins: [
