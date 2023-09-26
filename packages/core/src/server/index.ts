@@ -19,15 +19,17 @@ import {
   DEFAULT_HMR_OPTIONS
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { brandColor, clearScreen, Logger } from '../utils/index.js';
-import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
-import { resourcesPlugin } from './middlewares/resources.js';
-import { hmrPlugin } from './middlewares/hmr.js';
-import { proxyPlugin } from './middlewares/proxy.js';
-import { corsPlugin } from './middlewares/cors.js';
 import { openBrowser } from './openBrowser.js';
-import { recordsPlugin } from './middlewares/records.js';
-import { headersPlugin } from './middlewares/headers.js';
+import { brandColor, clearScreen, Logger } from '../utils/index.js';
+import {
+  lazyCompilationPlugin,
+  resourcesPlugin,
+  hmrPlugin,
+  proxyPlugin,
+  corsPlugin,
+  recordsPlugin,
+  headersPlugin
+} from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 
 /**
