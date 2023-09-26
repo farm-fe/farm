@@ -8,7 +8,7 @@ import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
 import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
-import { generateFileTree, generateFileTreeHtml } from '../../utils/file.js';
+import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
 
 export function resources(
   compiler: Compiler,
