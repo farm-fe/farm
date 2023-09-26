@@ -17,7 +17,8 @@ export default defineConfig({
       BTN: 'Click me'
     },
     output: {
-      path: './build'
+      path: './build',
+      publicPath: 'public'
     },
     // sourcemap: true,
     css: {
@@ -33,7 +34,7 @@ export default defineConfig({
   },
   server: {
     cors: true,
-    port: 6870,
+    port: 6260,
     host: 'localhost'
   },
   plugins: [

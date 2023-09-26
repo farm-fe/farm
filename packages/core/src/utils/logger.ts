@@ -40,14 +40,24 @@ export class DefaultLogger implements Logger {
     },
     private prefix?: string
   ) {
-    if (!options) {
-      options = {};
-    }
-    const { name = 'Farm' } = options;
+    if (!this.options) this.options = {};
+    this.brandPrefix();
+  }
 
-    const prefixColor: ChalkInstanceKeys = options.brandColor;
-    this.prefix = options.brandColor
-      ? chalk.hex(prefixColor)(`[ ${name} ] `)
+  private brandPrefix(color?: string | ChalkInstance) {
+    const { name = 'Farm' } = this.options;
+
+    let prefixColor: string | ChalkInstance | undefined;
+    if (typeof this.options.brandColor === 'string') {
+      prefixColor = this.options.brandColor;
+    } else if (typeof color !== 'undefined') {
+      prefixColor = color;
+    }
+
+    this.prefix = prefixColor
+      ? typeof prefixColor === 'string'
+        ? chalk.hex(prefixColor)(`[ ${name} ] `)
+        : prefixColor(`[ ${name} ] `)
       : brandColor(`[ ${name} ] `);
   }
 
@@ -66,22 +76,27 @@ export class DefaultLogger implements Logger {
   }
 
   trace(message: string): void {
+    this.brandPrefix(chalk.green);
     this.logMessage(LogLevel.Trace, message, chalk.magenta);
   }
 
   debug(message: string): void {
+    this.brandPrefix('#ff8c00');
     this.logMessage(LogLevel.Debug, message, chalk.blue);
   }
 
   info(message: string, showBanner?: boolean): void {
+    this.brandPrefix();
     this.logMessage(LogLevel.Info, message, null, showBanner);
   }
 
   warn(message: string): void {
+    this.brandPrefix(chalk.yellowBright);
     this.logMessage(LogLevel.Warn, message, chalk.yellow);
   }
 
   error(message: string | Error, options?: ErrorOptions): void {
+    this.brandPrefix(chalk.red);
     const errorMessage =
       message instanceof Error ? message.stack : `${message}`;
     this.logMessage(LogLevel.Error, errorMessage, chalk.red);
