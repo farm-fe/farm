@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.12.11
+
+### Patch Changes
+
+- bcff2e8: format the normalizePublicPath function
+
 ## 0.12.10
 
 ### Patch Changes
