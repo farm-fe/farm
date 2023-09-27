@@ -1,5 +1,41 @@
 # @farmfe/cli
 
+## 0.5.8
+
+### Patch Changes
+
+- c12536a: fix: strictPort error
+
+## 0.5.7
+
+### Patch Changes
+
+- 115b34d: chore: remove unless code
+
+## 0.5.6
+
+### Patch Changes
+
+- e90044c: fix: remove server unless options
+
+## 0.5.5
+
+### Patch Changes
+
+- 2ea850c: update cli with create-farm version optimize server code
+
+## 0.5.4
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
+## 0.5.3
+
+### Patch Changes
+
+- 4d719e4: Bugfix
+
 ## 0.5.2
 
 ### Patch Changes

@@ -10,10 +10,11 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
     ModuleType,
   },
-  resource::{resource_pot::ResourcePot, resource_pot_map::ResourcePotMap, Resource, ResourceType},
+  resource::{resource_pot::ResourcePot, Resource, ResourceType},
   stats::Stats,
 };
 
+pub mod constants;
 pub mod plugin_driver;
 
 pub const DEFAULT_PRIORITY: i32 = 100;
@@ -131,9 +132,9 @@ pub trait Plugin: Any + Send + Sync {
   }
 
   /// process resource graph before render and generating each resource
-  fn process_resource_pot_map(
+  fn process_resource_pots(
     &self,
-    _resource_pot_map: &mut ResourcePotMap,
+    _resource_pots: &mut Vec<&mut ResourcePot>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -191,7 +192,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
   fn update_modules(
     &self,
-    params: &mut PluginUpdateModulesHookParams,
+    _params: &mut PluginUpdateModulesHookParams,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -202,7 +203,7 @@ pub trait Plugin: Any + Send + Sync {
 #[serde(rename_all = "camelCase")]
 pub enum ResolveKind {
   /// entry input in the config
-  Entry,
+  Entry(String),
   /// static import, e.g. `import a from './a'`
   #[default]
   Import,
@@ -232,6 +233,18 @@ impl ResolveKind {
   pub fn is_dynamic(&self) -> bool {
     matches!(self, ResolveKind::DynamicImport)
       || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
+  }
+}
+
+impl From<&str> for ResolveKind {
+  fn from(value: &str) -> Self {
+    serde_json::from_str(value).unwrap()
+  }
+}
+
+impl From<ResolveKind> for String {
+  fn from(value: ResolveKind) -> Self {
+    serde_json::to_string(&value).unwrap()
   }
 }
 
@@ -346,7 +359,7 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PluginAnalyzeDepsHookResultEntry {
   pub source: String,
   pub kind: ResolveKind,
@@ -357,8 +370,15 @@ pub struct PluginFinalizeModuleHookParam<'a> {
   pub deps: &'a Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
+#[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct WatchDiffResult {
+  pub add: Vec<String>,
+  pub remove: Vec<String>,
+}
+
 /// The output after the updating process
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct UpdateResult {
   pub added_module_ids: Vec<ModuleId>,
   pub updated_module_ids: Vec<ModuleId>,
@@ -368,8 +388,9 @@ pub struct UpdateResult {
   pub resources: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
+  pub extra_watch_result: WatchDiffResult,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UpdateType {
   // added a new module
   Added,
@@ -379,7 +400,15 @@ pub enum UpdateType {
   Removed,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct PluginUpdateModulesHookParams {
   pub update_result: UpdateResult,
   pub paths: Vec<(String, UpdateType)>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmptyPluginHookParam {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmptyPluginHookResult {}

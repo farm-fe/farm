@@ -14,8 +14,10 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::ModuleType,
   plugin::{
-    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
-    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
+    EmptyPluginHookParam, EmptyPluginHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookParam, PluginTransformHookResult, PluginUpdateModulesHookParams,
+    UpdateResult,
   },
   serde::{de::DeserializeOwned, Serialize},
 };
@@ -29,7 +31,7 @@ use napi::{
     ThreadsafeFunctionReleaseMode,
   },
   threadsafe_function::ThreadsafeFunctionCallMode,
-  Env, Error, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
+  Env, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
 };
 use regex::Regex;
 
@@ -326,6 +328,68 @@ impl JsPluginTransformHook {
   }
 }
 
+macro_rules! define_empty_params_js_plugin_hook {
+  ($name:ident) => {
+    pub struct $name {
+      tsfn: ThreadSafeJsPluginHook,
+    }
+
+    impl $name {
+      pub fn new(env: &Env, obj: JsObject) -> Self {
+        let func = obj
+          .get_named_property::<JsFunction>("executor")
+          .expect("executor should be checked in js side");
+
+        Self {
+          tsfn: ThreadSafeJsPluginHook::new::<EmptyPluginHookParam, EmptyPluginHookResult>(
+            env, func,
+          ),
+        }
+      }
+
+      pub fn call(
+        &self,
+        param: EmptyPluginHookParam,
+        ctx: Arc<CompilationContext>,
+      ) -> Result<Option<EmptyPluginHookResult>> {
+        self
+          .tsfn
+          .call::<EmptyPluginHookParam, EmptyPluginHookResult>(param, ctx, None)
+      }
+    }
+  };
+}
+
+define_empty_params_js_plugin_hook!(JsPluginBuildStartHook);
+define_empty_params_js_plugin_hook!(JsPluginBuildEndHook);
+define_empty_params_js_plugin_hook!(JsPluginFinishHook);
+
+pub struct JsPluginUpdateModulesHook {
+  tsfn: ThreadSafeJsPluginHook,
+}
+
+impl JsPluginUpdateModulesHook {
+  pub fn new(env: &Env, obj: JsObject) -> Self {
+    let func = obj
+      .get_named_property::<JsFunction>("executor")
+      .expect("executor should be checked in js side");
+
+    Self {
+      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParams, UpdateResult>(env, func),
+    }
+  }
+
+  pub fn call(
+    &self,
+    param: PluginUpdateModulesHookParams,
+    ctx: Arc<CompilationContext>,
+  ) -> Result<Option<UpdateResult>> {
+    self
+      .tsfn
+      .call::<PluginUpdateModulesHookParams, UpdateResult>(param, ctx, None)
+  }
+}
+
 /// Resolve hook filters, works as `||`. If any importers or sources matches any regex item in the Vec, we treat it as filtered.
 #[napi(object)]
 struct JsPluginResolveHookFilters {
@@ -529,18 +593,44 @@ unsafe extern "C" fn catch_cb<T: DeserializeOwned>(
     &mut data,
   );
 
-  let rejected_value = rejected_value[0];
-  let result = Err(Error::from(unsafe {
-    JsUnknown::from_raw_unchecked(env, rejected_value)
-  }))
-  .map_err(|e| {
-    CompilationError::NAPIError(format!(
-      "Can not transform the js hook result to js error object. {:?}",
-      e
-    ))
-  });
+  let rejected_value = JsUnknown::from_raw_unchecked(env, rejected_value[0]);
+  // detect if the rejected value is a js error object
+  let is_error = rejected_value
+    .get_type()
+    .map(|ty| ty == ValueType::Object)
+    .unwrap_or(false);
+  let is_string = rejected_value
+    .get_type()
+    .map(|ty| ty == ValueType::String)
+    .unwrap_or(false);
+
+  let msg = if is_error {
+    let rejected_value = rejected_value.coerce_to_object().unwrap();
+    // get message and stack from the error object
+    let message = rejected_value
+      .get_named_property::<String>("message")
+      .unwrap();
+    let stack = rejected_value
+      .get_named_property::<String>("stack")
+      .unwrap();
+
+    format!("{}\n{}", message, stack)
+  } else if is_string {
+    // get the string value
+    rejected_value
+      .coerce_to_string()
+      .unwrap()
+      .into_utf8()
+      .unwrap()
+      .as_str()
+      .unwrap()
+      .to_string()
+  } else {
+    String::from("unsupported error type for js plugins")
+  };
+
   let sender = Box::from_raw(data as *mut Sender<Result<Option<T>>>);
-  sender.send(result).unwrap();
+  sender.send(Err(CompilationError::NAPIError(msg))).unwrap();
 
   this
 }

@@ -1,8 +1,11 @@
 import { isAbsolute, join } from 'path';
-import type { SassPluginOptions } from './index.js';
 import fs from 'fs';
+import { createRequire } from 'module';
+import type { SassPluginOptions } from './index.js';
 
-export const pluginName = 'farm-sass-plugin';
+const __require = createRequire(__filename);
+
+export const { name: pluginName } = __require('../package.json');
 
 export const getAdditionContext = (cwd: string, option: SassPluginOptions) => {
   const { globals = [], content } = option;

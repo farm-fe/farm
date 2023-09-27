@@ -1,12 +1,21 @@
 import module from 'module';
-
 import { UserConfig } from '@farmfe/core';
+import lodashMerge from 'lodash/merge';
 
-export default {
-  compilation: {
-    input: {
-      main: './main.tsx',
+function defineConfig(config: UserConfig) {
+  lodashMerge(config, {
+    compilation: {
+      input: {
+        main: './main.tsx',
+      },
+      external: module.builtinModules,
     },
-    external: module.builtinModules,
-  },
-} as UserConfig;
+  });
+  return config;
+}
+
+import('lodash/debounce').then((debounce) => {
+  console.log(debounce);
+});
+
+export default defineConfig({});

@@ -7,7 +7,7 @@ import { Compiler, normalizeUserCompilationConfig } from '../src/index.js';
 test('Binding - should parse config to rust correctly', async () => {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const config = await normalizeUserCompilationConfig({
-    root: path.resolve(currentDir, 'fixtures', 'binding'),
+    root: path.resolve(currentDir, 'fixtures', 'binding')
   });
   const compiler = new Compiler(config);
   await compiler.compile();

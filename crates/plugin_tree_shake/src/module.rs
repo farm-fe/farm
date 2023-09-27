@@ -65,6 +65,10 @@ pub struct TreeShakeModule {
 
 impl TreeShakeModule {
   pub fn new(module: &Module) -> Self {
+    farmfe_core::farm_profile_function!(format!(
+      "TreeShakeModule::new {:?}",
+      module.id.to_string()
+    ));
     let module_system = module.meta.as_script().module_system.clone();
 
     // 1. generate statement graph
@@ -112,10 +116,14 @@ impl TreeShakeModule {
       }
     }
 
-    return exports;
+    exports
   }
 
   pub fn used_statements(&self) -> HashMap<StatementId, HashSet<String>> {
+    farmfe_core::farm_profile_function!(format!(
+      "used_statements {:?}",
+      self.module_id.to_string()
+    ));
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
     let mut stmt_used_idents_map = HashMap::new();
@@ -127,46 +135,72 @@ impl TreeShakeModule {
       used_idents.insert(used_ident);
     }
 
-    for stmt in self.stmt_graph.stmts() {
-      if stmt.is_self_executed {
-        stmt_used_idents_map
-          .entry(stmt.id)
-          .or_insert(HashSet::new());
+    {
+      farmfe_core::farm_profile_scope!(format!(
+        "analyze self executed stmts {:?}",
+        self.module_id.to_string()
+      ));
+      for stmt in self.stmt_graph.stmts() {
+        if stmt.is_self_executed {
+          stmt_used_idents_map
+            .entry(stmt.id)
+            .or_insert(HashSet::new());
 
-        stmt.used_idents.iter().for_each(|used_ident| {
-          // find the defined ident
-          for stmt_inner in self.stmt_graph.stmts() {
-            if stmt_inner.id == stmt.id {
-              continue;
-            }
+          let dep_stmts = self.stmt_graph.dependencies(&stmt.id);
 
-            if stmt_inner
-              .defined_idents_map
-              .contains_key(&used_ident.to_string())
-              || stmt_inner
-                .defined_idents
-                .iter()
-                .any(|ident| ident.to_string() == used_ident.to_string())
-            {
-              let used_idents = stmt_used_idents_map
-                .entry(stmt_inner.id)
-                .or_insert(HashSet::new());
-              used_idents.insert(UsedIdent::SwcIdent(used_ident.clone()));
-            }
+          for (dep_stmt, referred_idents) in dep_stmts {
+            let used_idents = stmt_used_idents_map
+              .entry(dep_stmt.id)
+              .or_insert(HashSet::new());
+            used_idents.extend(
+              referred_idents
+                .into_iter()
+                .map(UsedIdent::SwcIdent),
+            );
           }
-        });
+          // stmt.used_idents.iter().for_each(|used_ident| {
+          //   // find the defined ident
+          //   stmt_used_idents_map
+          //   .entry(stmt.id)
+          //   .or_insert(HashSet::new());
+
+          //   for stmt_inner in self.stmt_graph.stmts() {
+          //     if stmt_inner.id == stmt.id {
+          //       continue;
+          //     }
+
+          //     if stmt_inner
+          //       .defined_idents_map
+          //       .contains_key(&used_ident.to_string())
+          //       || stmt_inner
+          //         .defined_idents
+          //         .iter()
+          //         .any(|ident| ident.to_string() == used_ident.to_string())
+          //     {
+          //       let used_idents = stmt_used_idents_map
+          //         .entry(stmt_inner.id)
+          //         .or_insert(HashSet::new());
+          //       used_idents.insert(UsedIdent::SwcIdent(used_ident.clone()));
+          //     }
+          //   }
+          // });
+        }
       }
     }
 
     // 2. analyze used statements starting from used exports
-    let used_statements = self
-      .stmt_graph
-      .analyze_used_statements_and_idents(stmt_used_idents_map);
+    
 
-    return used_statements;
+    self
+      .stmt_graph
+      .analyze_used_statements_and_idents(stmt_used_idents_map)
   }
 
   pub fn used_exports_idents(&self) -> Vec<(UsedIdent, StatementId)> {
+    farmfe_core::farm_profile_function!(format!(
+      "used_exports_idents {:?}",
+      self.module_id.to_string()
+    ));
     match &self.used_exports {
       UsedExports::All => {
         // all exported identifiers are used
@@ -231,10 +265,8 @@ impl TreeShakeModule {
                     if is_ident_equal(ident, &exported) {
                       used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
                     }
-                  } else {
-                    if is_ident_equal(ident, &local) {
-                      used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
-                    }
+                  } else if is_ident_equal(ident, &local) {
+                    used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
                   }
                 }
                 ExportSpecifierInfo::Namespace(ns) => {
@@ -248,10 +280,7 @@ impl TreeShakeModule {
           } else {
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
             for export_info in self.exports() {
-              if export_info.specifiers.iter().any(|sp| match sp {
-                ExportSpecifierInfo::All(_) => true,
-                _ => false,
-              }) {
+              if export_info.specifiers.iter().any(|sp| matches!(sp, ExportSpecifierInfo::All(_))) {
                 let stmt_id = export_info.stmt_id;
                 used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
               }
@@ -270,8 +299,8 @@ fn is_ident_equal(ident1: &String, ident2: &String) -> bool {
   let split2 = ident2.split('#').collect::<Vec<_>>();
 
   if split1.len() == 2 && split2.len() == 2 {
-    return split1[0] == split2[0] && split1[1] == split2[1];
+    split1[0] == split2[0] && split1[1] == split2[1]
   } else {
-    return split1[0] == split2[0];
+    split1[0] == split2[0]
   }
 }

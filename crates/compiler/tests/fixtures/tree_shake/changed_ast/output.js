@@ -1,5 +1,5 @@
 //index.js:
- (function(modules, entryModule) {
+ (globalThis || window || global || self).__farm_namespace__ = '__farm_default_namespace__';(globalThis || window || global || self)[__farm_namespace__] = {__FARM_TARGET_ENV__: 'browser'};(function(modules, entryModule) {
     var cache = {};
     function require(id) {
         if (cache[id]) return cache[id].exports;
@@ -15,13 +15,12 @@
 })({
     "../../_internal/runtime/index.js.farm-runtime": function(module, exports, farmRequire, dynamicRequire) {
         "use strict";
-        console.log("runtime/index.js");
-        __farm_global_this__.__farm_module_system__.setPlugins([]);
+        console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
 }, "../../_internal/runtime/index.js.farm-runtime");
-(function(modules) {
+(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({  });(function(modules) {
     for(var key in modules){
-        var __farm_global_this__ = globalThis || window || global || self;
+        var __farm_global_this__ = (globalThis || window || global || self)[__farm_namespace__];
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
@@ -113,7 +112,4 @@
         console.log((0, _comp.Description)());
     }
 });
-var __farm_global_this__ = globalThis || window || global || self;
-var farmModuleSystem = __farm_global_this__.__farm_module_system__;
-farmModuleSystem.bootstrap();
-var entry = farmModuleSystem.require("entry.ts");
+var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("entry.ts");

@@ -1,7 +1,9 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
+  context::CompilationContext,
   error::CompilationError,
+  module::module_graph::ModuleGraph,
   swc_common::{input::SourceFileInput, FileName, SourceMap},
   swc_css_ast::Stylesheet,
 };
@@ -13,6 +15,7 @@ use swc_css_parser::{
   lexer::Lexer,
   parser::{Parser, ParserConfig},
 };
+use swc_error_reporters::handler::try_with_handler;
 
 use crate::sourcemap::swc_gen::{build_source_map, AstModule};
 
@@ -33,13 +36,37 @@ pub fn parse_css_stylesheet(
   let lexer = Lexer::new(SourceFileInput::from(&*source_file), config);
   let mut parser = Parser::new(lexer, config);
 
-  // TODO may need to show error with parse.take_error()
-  parser
-    .parse_all()
-    .map_err(|e| CompilationError::ParseError {
-      resolved_path: id.to_string(),
-      source: Some(Box::new(CompilationError::GenericError(format!("{:?}", e)))),
-    })
+  let parse_result = parser.parse_all();
+  let mut recovered_errors = parser.take_errors();
+
+  if recovered_errors.len() == 0 {
+    match parse_result {
+      Err(err) => {
+        recovered_errors.push(err);
+      }
+      Ok(m) => {
+        return Ok(m);
+      }
+    }
+  }
+
+  try_with_handler(cm, Default::default(), |handler| {
+    for err in recovered_errors {
+      err.to_diagnostics(handler).emit();
+    }
+
+    Err(anyhow::Error::msg("SyntaxError"))
+  })
+  .map_err(|e| CompilationError::ParseError {
+    resolved_path: id.to_string(),
+    msg: if let Some(s) = e.downcast_ref::<String>() {
+      s.to_string()
+    } else if let Some(s) = e.downcast_ref::<&str>() {
+      s.to_string()
+    } else {
+      "failed to handle with unknown panic message".to_string()
+    },
+  })
 }
 
 /// generate css code from [Stylesheet], return css code and source map
@@ -47,6 +74,7 @@ pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
   cm: Option<Arc<SourceMap>>,
   minify: bool,
+  module_graph: &ModuleGraph,
 ) -> (String, Option<Vec<u8>>) {
   let mut css_code = String::new();
   let mut source_map = Vec::new();
@@ -64,7 +92,7 @@ pub fn codegen_css_stylesheet(
   gen.emit(stylesheet).unwrap();
 
   if let Some(cm) = cm {
-    let src_map = build_source_map(&source_map, cm, AstModule::Css(stylesheet));
+    let src_map = build_source_map(&source_map, cm, AstModule::Css(stylesheet), module_graph);
     (css_code, Some(src_map))
   } else {
     (css_code, None)

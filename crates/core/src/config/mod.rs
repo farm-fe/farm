@@ -7,8 +7,15 @@ use swc_ecma_parser::{EsConfig, TsConfig};
 
 use crate::module::ModuleType;
 
-pub const FARM_GLOBAL_THIS: &str = "__farm_global_this__";
+use self::{config_regex::ConfigRegex, html::HtmlConfig, preset_env::PresetEnvConfig};
+
+pub const FARM_GLOBAL_THIS: &str = "(globalThis || window || global || self)[__farm_namespace__]";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+pub const FARM_NAMESPACE: &str = "__farm_namespace__";
+
+pub mod config_regex;
+pub mod html;
+pub mod preset_env;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -18,12 +25,13 @@ pub struct Config {
   pub root: String,
   pub mode: Mode,
   pub resolve: ResolveConfig,
-  pub external: Vec<String>,
+  pub external: Vec<ConfigRegex>,
   pub define: HashMap<String, String>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
   pub css: CssConfig,
+  pub html: Box<HtmlConfig>,
   pub sourcemap: SourcemapConfig,
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
@@ -32,7 +40,8 @@ pub struct Config {
   // TODO: support minify options
   pub minify: bool,
   // TODO: support preset env options
-  pub preset_env: bool,
+  pub preset_env: Box<PresetEnvConfig>,
+  pub record: bool,
 }
 
 impl Default for Config {
@@ -51,6 +60,7 @@ impl Default for Config {
       runtime: Default::default(),
       script: Default::default(),
       css: Default::default(),
+      html: Box::default(),
       assets: Default::default(),
       sourcemap: Default::default(),
       partial_bundling: PartialBundlingConfig::default(),
@@ -58,7 +68,8 @@ impl Default for Config {
       core_lib_path: None,
       tree_shaking: true,
       minify: true,
-      preset_env: true,
+      preset_env: Box::<PresetEnvConfig>::default(),
+      record: false
     }
   }
 }
@@ -68,6 +79,7 @@ impl Default for Config {
 pub struct OutputConfig {
   pub path: String,
   pub public_path: String,
+  pub entry_filename: String,
   pub filename: String,
   pub assets_filename: String,
   pub target_env: TargetEnv,
@@ -77,6 +89,7 @@ pub struct OutputConfig {
 impl Default for OutputConfig {
   fn default() -> Self {
     Self {
+      entry_filename: "[entryName].[ext]".to_string(),
       /// [resourceName].[contentHash].[ext]
       filename: "[resourceName].[ext]".to_string(),
       /// [resourceName].[contentHash].[ext]
@@ -133,7 +146,7 @@ impl ToString for Mode {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfigPluginFilters {
-  pub resolved_paths: Vec<String>,
+  pub resolved_paths: Vec<ConfigRegex>,
   pub module_types: Vec<ModuleType>,
 }
 
@@ -257,7 +270,7 @@ impl Default for ResolveConfig {
   }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RuntimeConfig {
   /// the absolute path of the runtime entry, a runtime is required for script module loading, executing and hot module updating.
@@ -266,6 +279,19 @@ pub struct RuntimeConfig {
   pub plugins: Vec<String>,
   /// swc helpers path
   pub swc_helpers_path: String,
+  /// namespace for the runtime
+  pub namespace: String,
+}
+
+impl Default for RuntimeConfig {
+  fn default() -> Self {
+    Self {
+      path: String::from(""),
+      plugins: vec![],
+      swc_helpers_path: String::from(""),
+      namespace: String::from("__farm_default_namespace__"),
+    }
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -273,7 +299,7 @@ pub struct RuntimeConfig {
 pub struct PartialBundlingModuleBucketsConfig {
   pub name: String,
   /// Regex vec to match the modules in the module bucket
-  pub test: Vec<String>,
+  pub test: Vec<ConfigRegex>,
 }
 
 impl Default for PartialBundlingModuleBucketsConfig {
@@ -300,42 +326,6 @@ impl Default for PartialBundlingConfig {
       module_buckets: vec![],
       immutable_modules: vec![ConfigRegex::default()],
     }
-  }
-}
-#[derive(Debug)]
-pub struct ConfigRegex(pub regex::Regex);
-
-impl Default for ConfigRegex {
-  fn default() -> Self {
-    Self(regex::Regex::new("node_modules/").unwrap())
-  }
-}
-
-// implement serde::Deserialize for ConfigRegex
-impl<'de> serde::Deserialize<'de> for ConfigRegex {
-  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-  where
-    D: serde::Deserializer<'de>,
-  {
-    let s = String::deserialize(deserializer)?;
-    let regex = regex::Regex::new(&s).map_err(serde::de::Error::custom)?;
-    Ok(Self(regex))
-  }
-}
-
-// implement serde::Serialize for ConfigRegex
-impl serde::Serialize for ConfigRegex {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::Serializer,
-  {
-    serializer.serialize_str(self.0.as_str())
-  }
-}
-
-impl ConfigRegex {
-  pub fn is_match(&self, s: &str) -> bool {
-    self.0.is_match(s)
   }
 }
 
@@ -374,11 +364,10 @@ impl SourcemapConfig {
   }
   pub fn is_inline(&self) -> bool {
     match self {
-      Self::Bool(b) if *b => true,
+      Self::Bool(_) => false,
       Self::Inline => true,
       Self::All => false,
       Self::AllInline => true,
-      _ => false,
     }
   }
 

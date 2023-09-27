@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   hashbrown::HashSet,
-  module::{module_group::ModuleGroupId, ModuleId},
+  module::{module_group::ModuleGroupId, ModuleId, ModuleType},
   plugin::PluginHookContext,
   resource::{
     resource_pot::{
@@ -15,6 +15,7 @@ use farmfe_core::{
   swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
 };
 
+use farmfe_plugin_css::transform_resource_pot::transform_css_resource_pot;
 use farmfe_plugin_runtime::render_resource_pot::resource_pot_to_runtime_object_lit;
 
 use crate::generate::{
@@ -35,27 +36,48 @@ pub fn render_and_generate_update_resource(
     ResourcePotId::new(String::from("__UPDATE_RESOURCE_POT__")),
     ResourcePotType::Js,
   );
+  let mut update_css_resource_pot = ResourcePot::new(
+    ResourcePotId::new(String::from("__UPDATE_CSS_RESOURCE_POT__")),
+    ResourcePotType::Css,
+  );
   update_resource_pot.immutable = true;
 
-  let module_graph = context.module_graph.read();
+  let mut module_graph = context.module_graph.write();
 
   for added in &diff_result.added_modules {
-    if module_graph.module(added).unwrap().external {
+    let module = module_graph.module(added).unwrap();
+
+    if module.external {
       continue;
     }
-    update_resource_pot.add_module(added.clone());
+
+    if module.module_type == ModuleType::Css {
+      update_css_resource_pot.add_module(added.clone());
+    } else {
+      update_resource_pot.add_module(added.clone());
+    }
   }
 
   for updated in updated_module_ids {
-    if module_graph.module(updated).unwrap().external {
+    let module = module_graph.module(updated).unwrap();
+
+    if module.external {
       continue;
     }
-    update_resource_pot.add_module(updated.clone());
+
+    if matches!(module.module_type, ModuleType::Css) {
+      update_css_resource_pot.add_module(updated.clone());
+    } else {
+      update_resource_pot.add_module(updated.clone());
+    }
   }
 
-  drop(module_graph);
+  transform_css_resource_pot(&mut update_css_resource_pot, &mut module_graph, context)?;
 
-  let module_graph = context.module_graph.read();
+  for module_id in update_css_resource_pot.modules() {
+    update_resource_pot.add_module(module_id.clone());
+  }
+
   let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &module_graph, context)?;
   // The hmr result should alway be a js resource
   update_resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
@@ -80,16 +102,6 @@ pub fn render_and_generate_update_resource(
     .into_iter()
     .find(|r| matches!(r.resource_type, ResourceType::Js))
     .unwrap();
-
-  if context.config.sourcemap.is_all() {
-    // find sourceMappingUrl= and remove it
-    let str = String::from_utf8(js_resource.bytes).unwrap();
-    let mut lines = str.lines();
-    // remove the last line
-    lines.next_back();
-    let new_str = lines.collect::<Vec<_>>().join("\n");
-    return Ok(new_str);
-  }
 
   // TODO: also return sourcemap
   Ok(String::from_utf8(js_resource.bytes).unwrap())
@@ -128,11 +140,18 @@ pub fn regenerate_resources_for_affected_module_groups(
     resource_pot.clear_resources();
   }
 
-  let resource_pots = resource_pot_map
+  let mut resource_pots = resource_pot_map
     .resource_pots_mut()
     .into_iter()
     .filter(|rp| affected_resource_pots_ids.contains(&rp.id))
     .collect::<Vec<&mut ResourcePot>>();
+
+  drop(module_graph);
+
+  // call process_resource_pot_map hook
+  context
+    .plugin_driver
+    .process_resource_pots(&mut resource_pots, context)?;
 
   render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())
 }

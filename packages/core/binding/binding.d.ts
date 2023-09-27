@@ -15,6 +15,10 @@ export interface JsPluginTransformHookFilters {
   resolvedPaths: Array<string>
   moduleTypes: Array<string>
 }
+export interface WatchDiffResult {
+  add: Array<string>
+  remove: Array<string>
+}
 export interface JsUpdateResult {
   added: Array<string>
   changed: Array<string>
@@ -22,6 +26,33 @@ export interface JsUpdateResult {
   modules: string
   boundaries: Record<string, Array<Array<string>>>
   dynamicResourcesMap?: Record<string, Array<Array<string>>>
+  extraWatchResult: WatchDiffResult
+}
+export interface TransformRecord {
+  name: string
+  result: string
+  sourceMaps?: string
+}
+export interface ModuleRecord {
+  name: string
+}
+export interface AnalyzeDep {
+  source: string
+  kind: string
+}
+export interface AnalyzeDepsRecord {
+  name: string
+  deps: Array<AnalyzeDep>
+}
+export interface ModuleId {
+  relativePath: string
+  query: string
+}
+export interface ResourcePotRecord {
+  name: string
+  hook: string
+  modules: Array<string>
+  resources: Array<string>
 }
 export type JsCompiler = Compiler
 export class Compiler {
@@ -36,8 +67,21 @@ export class Compiler {
   compileSync(): void
   /** TODO: usage example */
   update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
+  addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
   resources(): Record<string, Buffer>
+  watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
+  getResolveRecords(): Array<string>
+  getTransformRecordsById(id: string): Array<TransformRecord>
+  getProcessRecordsById(id: string): Array<ModuleRecord>
+  getAnalyzeDepsRecordsById(id: string): Array<AnalyzeDepsRecord>
+  getResourcePotRecordsById(id: string): Array<ResourcePotRecord>
+}
+export type FileWatcher = JsFileWatcher
+export class JsFileWatcher {
+  constructor(callback: (...args: any[]) => any)
+  watch(paths: Array<string>): void
+  unwatch(paths: Array<string>): void
 }

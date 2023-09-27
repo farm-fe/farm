@@ -1,16 +1,28 @@
+<div align="center">
+  <a href="https://github.com/farm-fe/farm">
+  <img src="../../assets/logo.png" width="550" />
+  </a>
+  <p>
+    <a href="https://github.com/farm-fe/farm/blob/main/js-plugins/sass/README.md">English</a> |
+    <span>简体中文</span>
+</div>
+
+---
+
 # Sass Plugin for Farm
 
-Support compiling Sass/Scss in Farm.
+本文介绍如何在Farm中使用Sass插件进行编译Sa(c)ss文件。
 
-## Usage
+## 使用方法
 
-Install `@farmfe/js-plugin-sass` by your favorite package manager(npm, yarn, pnpm and so on):
+
+通过你最喜欢的包管理器（npm、yarn、pnpm 等）安装`@farmfe/js-plugin-sass`：
 
 ```bash
 npm i @farmfe/js-plugin-sass --save-dev # or pnpm/yarn add @farmfe/js-plugin-sass -D
 ```
 
-Configuring the plugin in `farm.config.ts`:
+在`farm.config.ts`中配置插件：
 
 ```ts
 import { defineFarmConfig } from '@farmfe/core/dist/config';
@@ -34,7 +46,7 @@ export default defineFarmConfig({
 });
 ```
 
-## Options
+## 配置项
 ### implementation
 
 类型: `string | undefined`

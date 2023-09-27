@@ -5,6 +5,11 @@
     "noUnusedParameters": false,
     "outDir": "dist"
   },
-  "include": ["src/**/*", "farm.config.mjs"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*",
+    "farm.config.mjs"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -10,6 +10,7 @@
     "antd",
     "applescript",
     "Architecure",
+    "arraify",
     "Basepath",
     "bindgen",
     "brightwu",
@@ -32,6 +33,7 @@
     "egui",
     "elems",
     "esbuild",
+    "importee",
     "execa",
     "farmfe",
     "Fock",
@@ -40,6 +42,7 @@
     "hasher",
     "idents",
     "jridgewell",
+    "kolorist",
     "libfarmfe",
     "libloading",
     "loglevel",
@@ -84,8 +87,23 @@
     "Turbopack",
     "unref",
     "unsize",
+    "unplugin",
     "upcasting",
-    "walkdir"
+    "walkdir",
+    "Antdv",
+    "wechat",
+    "pluginutils",
+    "picomatch",
+    "rsplit",
+    "unwatch",
+    "Avenir",
+    "wasix",
+    "wasi",
+    "linebpos",
+    "chpos",
+    "linechpos",
+    "bpos",
+    "multibyte"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
@@ -96,6 +114,7 @@
     "**/*.svg",
     "**/tests/**",
     "**/examples/**",
-    "rust-plugins/sass/ext/sass/**"
+    "rust-plugins/sass/ext/sass/**",
+    "assets/**"
   ]
 }

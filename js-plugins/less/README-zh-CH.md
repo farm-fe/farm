@@ -1,3 +1,14 @@
+<div align="center">
+  <a href="https://github.com/farm-fe/farm">
+  <img src="../../assets/logo.png" width="550" />
+  </a>
+  <p>
+    <a href="https://github.com/farm-fe/farm/blob/main/js-plugins/less/README.md">English</a> |
+    <span>简体中文</span>
+</div>
+
+---
+
 # Less Plugin for Farm
 
 本文介绍如何在Farm中使用Less插件进行编译Less文件。

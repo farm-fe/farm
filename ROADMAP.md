@@ -1,6 +1,6 @@
 # RoadMap
 
-Farm has implemented all basic features for a web building tool. However, there is still work to be done to make Farm production-ready.
+Farm has implemented all basic features for a web building tool.
 
 - [x] Resolving, loading, transforming, and resource generating for web assets (HTML, CSS, JS/JSX/TS/TSX, static assets, and so on).
 - [x] Lazy Compilation

@@ -4,7 +4,11 @@ import farmJsPluginVue from '@farmfe/js-plugin-vue';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 import path from 'path';
 
-export default <UserConfig>{
+function defineConfig(config: UserConfig) {
+  return config;
+}
+
+export default defineConfig({
   compilation: {
     input: {
       index: './index.html',
@@ -27,6 +31,7 @@ export default <UserConfig>{
         rewrite: (path: any) => path.replace(/^\/api/, ''),
       },
     },
+    cors: true
   },
   plugins: [farmJsPluginVue(), farmJsPluginLess()],
-};
+});

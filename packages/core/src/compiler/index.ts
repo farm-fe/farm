@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import type { Config, JsUpdateResult } from '../../binding/index.js';
+import { Logger, DefaultLogger } from '../utils/logger.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
+
+import type { Config, JsUpdateResult } from '../../binding/index.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX =
   'virtual:FARMFE_DYNAMIC_IMPORT:';
@@ -20,26 +22,35 @@ export class Compiler {
   private _updateQueue: UpdateQueueItem[] = [];
   private _onUpdateFinishQueue: (() => void)[] = [];
 
-  config: Config;
-  compiling = false;
+  public compiling = false;
 
-  constructor(config: Config) {
-    this.config = config;
+  private logger: Logger;
+
+  constructor(public config: Config) {
+    this.logger = new DefaultLogger();
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 
   async compile() {
     if (this.compiling) {
-      throw new Error('Already compiling');
+      this.logger.error('Already compiling', {
+        exit: true
+      });
     }
     this.compiling = true;
-    await this._bindingCompiler.compile();
+    if (process.env.FARM_PROFILE) {
+      this._bindingCompiler.compileSync();
+    } else {
+      await this._bindingCompiler.compile();
+    }
     this.compiling = false;
   }
 
   compileSync() {
     if (this.compiling) {
-      throw new Error('Already compiling');
+      this.logger.error('Already compiling', {
+        exit: true
+      });
     }
     this.compiling = true;
     this._bindingCompiler.compileSync();
@@ -101,7 +112,7 @@ export class Compiler {
     return this._bindingCompiler.resource(path);
   }
 
-  writeResourcesToDisk(): void {
+  writeResourcesToDisk(base = ''): void {
     const resources = this.resources();
     const configOutputPath = this.config.config.output.path;
     const outputPath = path.isAbsolute(configOutputPath)
@@ -109,7 +120,11 @@ export class Compiler {
       : path.join(this.config.config.root, configOutputPath);
 
     for (const [name, resource] of Object.entries(resources)) {
-      const filePath = path.join(outputPath, name);
+      if (process.env.NODE_ENV === 'test') {
+        console.log('Writing', name, 'to disk');
+      }
+
+      const filePath = path.join(outputPath, base, name);
 
       if (!existsSync(path.dirname(filePath))) {
         mkdirSync(path.dirname(filePath), { recursive: true });
@@ -120,13 +135,14 @@ export class Compiler {
   }
 
   removeOutputPathDir() {
-    const outputPath = path.join(
-      this.config.config.root,
-      this.config.config.output.path
-    );
+    const outputPath = this.outputPath();
     if (existsSync(outputPath)) {
       rmSync(outputPath, { recursive: true });
     }
+  }
+
+  resolvedWatchPaths(): string[] {
+    return this._bindingCompiler.watchModules();
   }
 
   resolvedModulePaths(root: string): string[] {
@@ -145,5 +161,38 @@ export class Compiler {
 
   onUpdateFinish(cb: () => void) {
     this._onUpdateFinishQueue.push(cb);
+  }
+
+  outputPath() {
+    const { output, root } = this.config.config;
+    const configOutputPath = output.path;
+    const outputPath = path.isAbsolute(configOutputPath)
+      ? configOutputPath
+      : path.join(root, configOutputPath);
+    return outputPath;
+  }
+
+  addExtraWatchFile(root: string, paths: string[]) {
+    this._bindingCompiler.addWatchFiles(root, paths);
+  }
+
+  getResolveRecords() {
+    return this._bindingCompiler.getResolveRecords();
+  }
+
+  getTransformRecords(id: string) {
+    return this._bindingCompiler.getTransformRecordsById(id);
+  }
+
+  getProcessRecords(id: string) {
+    return this._bindingCompiler.getProcessRecordsById(id);
+  }
+
+  getAnalyzeDepsRecords(id: string) {
+    return this._bindingCompiler.getAnalyzeDepsRecordsById(id);
+  }
+
+  getResourcePotRecordsById(id: string) {
+    return this._bindingCompiler.getResourcePotRecordsById(id);
   }
 }

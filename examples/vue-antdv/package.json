@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@ant-design/icons-vue": "^6.1.0",
-    "ant-design-vue": "^3.2.20",
+    "ant-design-vue": "^4.0.3",
     "core-js": "^3.30.1",
     "vue": "^3.2.45",
     "vue-router": "^4.2.1",

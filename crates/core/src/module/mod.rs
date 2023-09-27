@@ -13,6 +13,7 @@ use relative_path::RelativePath;
 use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
+use swc_common::DUMMY_SP;
 use swc_css_ast::Stylesheet;
 use swc_ecma_ast::Module as SwcModule;
 use swc_html_ast::Document;
@@ -23,6 +24,7 @@ use self::module_group::ModuleGroupId;
 
 pub mod module_graph;
 pub mod module_group;
+pub mod watch_graph;
 
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage
@@ -79,6 +81,17 @@ pub enum ModuleMetaData {
   Custom(Box<dyn SerializeCustomModuleMetaData>),
 }
 
+impl ToString for ModuleMetaData {
+  fn to_string(&self) -> String {
+    match self {
+      Self::Script(_) => "script".to_string(),
+      Self::Css(_) => "css".to_string(),
+      Self::Html(_) => "html".to_string(),
+      Self::Custom(_) => "custom".to_string(),
+    }
+  }
+}
+
 impl ModuleMetaData {
   pub fn as_script_mut(&mut self) -> &mut ScriptModuleMetaData {
     if let Self::Script(script) = self {
@@ -92,7 +105,7 @@ impl ModuleMetaData {
     if let Self::Script(script) = self {
       script
     } else {
-      panic!("ModuleMetaData is not Script")
+      panic!("ModuleMetaData is not Script but {:?}", self.to_string())
     }
   }
 
@@ -220,6 +233,22 @@ pub enum ModuleSystem {
 #[cache_item]
 pub struct CssModuleMetaData {
   pub ast: Stylesheet,
+}
+
+impl CssModuleMetaData {
+  pub fn take_ast(&mut self) -> Stylesheet {
+    std::mem::replace(
+      &mut self.ast,
+      Stylesheet {
+        span: DUMMY_SP,
+        rules: vec![],
+      },
+    )
+  }
+
+  pub fn set_ast(&mut self, ast: Stylesheet) {
+    self.ast = ast;
+  }
 }
 
 #[cache_item]

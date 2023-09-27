@@ -1,12 +1,14 @@
-import { Logger } from '../utils/logger.js';
-import { ProxiesOptions } from '../server/middlewares/proxy.js';
-
+import type cors from '@koa/cors';
+import type { OutgoingHttpHeaders } from 'http';
+import type { Logger } from '../utils/index.js';
+import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/index.js';
 import type { RustPlugin } from '../plugin/rustPluginResolver.js';
 import type { Config } from '../../binding/index.js';
-import type cors from '@koa/cors';
+import { DevServer } from '../index.js';
 
 export interface UserServerConfig {
+  headers?: OutgoingHttpHeaders | undefined;
   port?: number;
   https?: boolean;
   protocol?: 'http' | 'https';
@@ -18,6 +20,10 @@ export interface UserServerConfig {
   open?: boolean;
   host?: string;
   cors?: boolean | cors.Options;
+  // whether to serve static assets in spa mode, default to true
+  spa?: boolean;
+  plugins?: DevServerPlugin[];
+  writeToDisk?: boolean;
 }
 
 export type NormalizedServerConfig = Required<
@@ -31,17 +37,31 @@ export interface UserHmrConfig {
   ignores?: string[];
   host?: string;
   port?: number;
+  path?: string;
+  watchOptions?: {
+    // this options only works in windows
+    awaitWriteFinish?: number;
+  };
 }
 
 export interface UserConfig {
   /** current root of this project, default to current working directory */
   root?: string;
+  clearScreen?: boolean;
+  envDir?: string;
+  envPrefix?: string | string[];
+  publicDir?: string;
+  inlineConfig?: FarmCLIOptions;
+  configPath?: string;
+  resolveConfigPath?: string;
+  configFileDependencies?: string[];
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin)[];
   /** config related to compilation */
   compilation?: Config['config'];
   /** config related to dev server */
   server?: UserServerConfig;
+  /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
 }
 
 export interface GlobalFarmCLIOptions {
@@ -81,3 +101,5 @@ export interface FarmCLIOptions
   configPath?: string;
   clearScreen?: boolean;
 }
+
+export type DevServerPlugin = (context: DevServer) => void;

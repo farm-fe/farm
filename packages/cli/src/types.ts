@@ -4,6 +4,7 @@ export interface GlobalFarmCLIOptions {
   config?: string;
   configPath?: string;
   m?: string;
+  base?: string;
   mode?: 'development' | 'production';
   w?: boolean;
   watch?: boolean;
@@ -28,6 +29,7 @@ export interface FarmCLIBuildOptions {
   sourcemap?: boolean;
   minify?: boolean;
   treeShaking?: boolean;
+  format?: 'cjs' | 'esm';
 }
 
 export interface FarmCLIPreviewOptions {

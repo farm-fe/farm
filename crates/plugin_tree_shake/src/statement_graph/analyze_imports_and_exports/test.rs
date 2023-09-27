@@ -54,7 +54,7 @@ fn import_default() {
   );
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn import_named() {
   assert_eq!(defined_idents.len(), 3);
   let defined_idents_str = defined_idents
     .into_iter()
-    .map(|ident| ident.to_string())
+    .map(|ident| ident)
     .collect::<HashSet<_>>();
   assert!(defined_idents_str.contains(&"a#0".to_string()));
   assert!(defined_idents_str.contains(&"b#0".to_string()));
@@ -110,7 +110,7 @@ fn import_named() {
 
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn import_named_with_used_defined_idents() {
 
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -179,7 +179,7 @@ fn import_namespace() {
 
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -210,7 +210,7 @@ fn export_default_expr() {
   );
 
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -254,7 +254,7 @@ fn export_default_decl() {
   assert_eq!(values[0].len(), 1);
   let values_0 = values[0].iter().collect::<Vec<_>>();
   assert_eq!(values_0[0].to_string(), "b#0".to_string());
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -303,7 +303,7 @@ fn export_decl() {
   assert_eq!(values[0].len(), 1);
   let values_0 = values[0].iter().collect::<Vec<_>>();
   assert_eq!(values_0[0].to_string(), "b#0".to_string());
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -328,7 +328,7 @@ fn export_all() {
   assert_eq!(used_idents.len(), 0);
 
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -378,7 +378,7 @@ fn export_named_from() {
   assert_eq!(used_idents.len(), 0);
 
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -435,7 +435,7 @@ fn export_named() {
   assert!(used_idents_str.contains(&"any#0".to_string()));
 
   assert_eq!(defined_idents_map.len(), 3);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -470,7 +470,7 @@ fn export_named_with_used_defined_idents() {
   assert!(used_idents_str.contains(&"a#0".to_string()));
 
   assert_eq!(defined_idents_map.len(), 1);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -499,7 +499,7 @@ fn export_namespace() {
   assert_eq!(used_idents.len(), 0);
 
   assert_eq!(defined_idents_map.len(), 0);
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -539,7 +539,7 @@ fn func_decl() {
   assert!(values_0.contains(&"b#0".to_string()));
   assert!(values_0.contains(&"c#0".to_string()));
 
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -576,7 +576,7 @@ fn bar_decl() {
   assert_eq!(values_0.len(), 1);
   assert_eq!(values_0[0].to_string(), "b#0".to_string());
 
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -593,7 +593,7 @@ fn for_stmt() {
   assert_eq!(used_idents.len(), 5);
   let mut used_idents = used_idents
     .into_iter()
-    .map(|item| item.to_string())
+    .map(|item| item)
     .collect::<Vec<_>>();
   used_idents.sort();
   // treat a as used for now as it does not affect the result.
@@ -605,7 +605,7 @@ fn for_stmt() {
 
   assert_eq!(defined_idents_map.len(), 0);
 
-  assert_eq!(is_self_executed, true);
+  assert!(is_self_executed);
 }
 
 #[test]
@@ -627,7 +627,7 @@ fn empty_specifier_import() {
 
   assert_eq!(defined_idents_map.len(), 0);
 
-  assert_eq!(is_self_executed, true);
+  assert!(is_self_executed);
 }
 
 #[test]
@@ -642,7 +642,7 @@ fn var_decl_pat() {
 
   let mut defined_idents = defined_idents
     .into_iter()
-    .map(|item| item.to_string())
+    .map(|item| item)
     .collect::<Vec<_>>();
   defined_idents.sort();
 
@@ -655,7 +655,7 @@ fn var_decl_pat() {
 
   let mut used_idents = used_idents
     .into_iter()
-    .map(|item| item.to_string())
+    .map(|item| item)
     .collect::<Vec<_>>();
   used_idents.sort();
   assert_eq!(used_idents.len(), 2);
@@ -664,7 +664,7 @@ fn var_decl_pat() {
 
   assert_eq!(defined_idents_map.len(), 5);
   let mut keys = defined_idents_map.keys().collect::<Vec<_>>();
-  keys.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  keys.sort_by_key(|a| a.to_string());
   assert_eq!(keys.len(), 5);
   assert_eq!(keys[0].to_string(), "a#0".to_string());
   assert_eq!(keys[1].to_string(), "c#0".to_string());
@@ -674,10 +674,9 @@ fn var_decl_pat() {
 
   let values = defined_idents_map
     .values()
-    .into_iter()
     .map(|idents| {
       let mut idents = idents.iter().collect::<Vec<_>>();
-      idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+      idents.sort_by_key(|a| a.to_string());
       idents
     })
     .collect::<Vec<_>>();
@@ -698,7 +697,7 @@ fn var_decl_pat() {
   assert_eq!(values[4][0].to_string(), "d#0".to_string());
   assert_eq!(values[4][1].to_string(), "i#0".to_string());
 
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }
 
 #[test]
@@ -762,7 +761,7 @@ fn export_var_decl_pat() {
   }
 
   let mut defined_idents = defined_idents.iter().collect::<Vec<_>>();
-  defined_idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  defined_idents.sort_by_key(|a| a.to_string());
 
   assert_eq!(defined_idents.len(), 5);
   assert_eq!(defined_idents[0].to_string(), "a#0".to_string());
@@ -772,14 +771,14 @@ fn export_var_decl_pat() {
   assert_eq!(defined_idents[4].to_string(), "h#0".to_string());
 
   let mut used_idents = used_idents.iter().collect::<Vec<_>>();
-  used_idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  used_idents.sort_by_key(|a| a.to_string());
   assert_eq!(used_idents.len(), 2);
   assert_eq!(used_idents[0].to_string(), "d#0".to_string());
   assert_eq!(used_idents[1].to_string(), "i#0".to_string());
 
   assert_eq!(defined_idents_map.len(), 5);
   let mut keys = defined_idents_map.keys().collect::<Vec<_>>();
-  keys.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  keys.sort_by_key(|a| a.to_string());
   assert_eq!(keys.len(), 5);
   assert_eq!(keys[0].to_string(), "a#0".to_string());
   assert_eq!(keys[1].to_string(), "c#0".to_string());
@@ -789,10 +788,9 @@ fn export_var_decl_pat() {
 
   let values = defined_idents_map
     .values()
-    .into_iter()
     .map(|idents| {
       let mut idents = idents.iter().collect::<Vec<_>>();
-      idents.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+      idents.sort_by_key(|a| a.to_string());
       idents
     })
     .collect::<Vec<_>>();
@@ -813,5 +811,5 @@ fn export_var_decl_pat() {
   assert_eq!(values[4][0].to_string(), "d#0".to_string());
   assert_eq!(values[4][1].to_string(), "i#0".to_string());
 
-  assert_eq!(is_self_executed, false);
+  assert!(!is_self_executed);
 }

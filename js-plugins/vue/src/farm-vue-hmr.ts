@@ -21,7 +21,7 @@ export function handleHmr(
   stylesCodeCache: StylesCodeCache,
   query: QueryObj,
   resolvedPath: string,
-  mode: 'development' | 'production' = 'production'
+  mode: string | 'development' | 'production' = 'production'
 ) {
   const beforeDescriptor = cacheDescriptor[resolvedPath];
   // set descriptors cache to hmr
@@ -49,7 +49,7 @@ function diffDescriptor(
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
-  mode: 'development' | 'production' = 'production'
+  mode: string | 'development' | 'production' = 'production'
 ) {
   let _rerender_only = false;
   // if script changed, rerender from root.
@@ -138,7 +138,7 @@ function hasScriptChanged(prev: SFCDescriptor, next: SFCDescriptor) {
   return false;
 }
 
-function isEqualBlock(
+export function isEqualBlock(
   a: SFCScriptBlock | SFCTemplateBlock | SFCStyleBlock,
   b: SFCScriptBlock | SFCTemplateBlock | SFCStyleBlock
 ) {

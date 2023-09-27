@@ -1,11 +1,12 @@
 import React from 'react';
-import styles from './main.module.scss';
 import './main.css';
+
+import { Child } from './child';
 
 export function Main() {
   return (
     <div className={'main'}>
-      main<div className={`${styles.child} child-global`}>child</div>
+      main <Child />
     </div>
   );
 }

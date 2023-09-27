@@ -83,7 +83,7 @@ impl Statement {
     // transform defined_idents_map from HashMap<Ident, Vec<Ident>> to HashMap<String, Ident> using ToString
     let defined_idents_map = defined_idents_map
       .into_iter()
-      .map(|(key, value)| (key.to_string(), value))
+      .map(|(key, value)| (key, value))
       .collect();
 
     Self {
@@ -131,7 +131,7 @@ impl StatementGraph {
           }
         }
 
-        if deps_idents.len() > 0 {
+        if !deps_idents.is_empty() {
           edges_to_add.push((stmt.id, def_stmt.id, deps_idents));
         }
       }
@@ -211,6 +211,8 @@ impl StatementGraph {
     &self,
     used_exports: HashMap<StatementId, HashSet<UsedIdent>>,
   ) -> HashMap<StatementId, HashSet<String>> {
+    farmfe_core::farm_profile_function!("analyze_used_statements_and_idents".to_string());
+
     let mut used_statements: HashMap<usize, HashSet<String>> = HashMap::new();
 
     // sort used_exports by statement id

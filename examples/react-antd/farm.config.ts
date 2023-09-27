@@ -1,23 +1,29 @@
 import type { UserConfig } from '@farmfe/core';
 
-export default <UserConfig>{
+function defineConfig(config: UserConfig) {
+  return config;
+}
+
+export default defineConfig({
   compilation: {
     input: {
-      index: './index.html',
-    },
-    resolve: {
-      symlinks: true,
-    },
-    define: {
-      BTN: 'Click me',
+      index: './index.html'
     },
     output: {
       path: './build',
+      publicPath: '/admin/'
     },
-    sourcemap: false,
+    sourcemap: true
   },
   server: {
+    // headers: {
+    //   'Access-Control-Allow-Origin': '*'
+    // },
+    port: 7880,
     hmr: true,
+    writeToDisk: false,
+    cors: true,
+    host: '127.0.0.1'
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
-};
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
+});

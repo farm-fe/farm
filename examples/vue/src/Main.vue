@@ -9,12 +9,14 @@ fetch('/api')
   .then((json) => console.log(json));
 </script>
 
-<style>
+<style lang="scss">
+@import './styles/global.scss';
+
 #app {
   font-size: 18px;
   display: flex;
   justify-content: center;
-  max-width: 1280px;
+  max-width: $max-width;
   margin: 0 auto;
   font-weight: normal;
 }

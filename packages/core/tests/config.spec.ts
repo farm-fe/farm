@@ -1,7 +1,7 @@
 import { builtinModules } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { test, expect, describe } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
@@ -16,10 +16,8 @@ test('resolveUserConfig', async () => {
 
   const config = await resolveUserConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new DefaultLogger(),
-    'start'
+    new DefaultLogger()
   );
-
   expect(config).toEqual({
     compilation: {
       input: {
@@ -27,7 +25,17 @@ test('resolveUserConfig', async () => {
       },
       external: builtinModules
     },
-    root: path.join(filePath, 'fixtures', 'config')
+    root: path.join(filePath, 'fixtures', 'config'),
+    resolveConfigPath: path.join(
+      filePath,
+      'fixtures',
+      'config',
+      'farm.config.ts'
+    ),
+    inlineConfig: {
+      configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
+    },
+    server: normalizeDevServerOptions(config.server, 'development')
   });
 });
 
@@ -64,6 +72,16 @@ describe('parseUserConfig', () => {
         extra: 'should throw'
       })
     ).toThrowError('Unrecognized key');
+  });
+
+  test('type error config', () => {
+    expect(() =>
+      parseUserConfig({
+        server: {
+          port: 'should throw'
+        }
+      })
+    ).toThrowError('Validation error');
   });
 
   test('valid template config', () => {

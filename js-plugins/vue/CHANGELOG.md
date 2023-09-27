@@ -1,5 +1,81 @@
 # @farmfe/js-plugin-vue
 
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [ad00276]
+  - @farmfe/core@0.12.0
+
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [56f235c]
+  - @farmfe/core@0.11.0
+
+## 1.2.9
+
+### Patch Changes
+
+- b70ce32: Fix that vue SFC does not remove previous css styles when HMR
+- Updated dependencies [b70ce32]
+  - @farmfe/core@0.10.5
+
+## 1.2.8
+
+### Patch Changes
+
+- Updated dependencies [d604b5e]
+  - @farmfe/core@0.10.0
+
+## 1.2.7
+
+### Patch Changes
+
+- 3073e19: Bump version for js plugins
+- Updated dependencies [3073e19]
+  - @farmfe/core@0.9.9
+
+## 1.2.6
+
+### Patch Changes
+
+- 9ec0179: fix: styles import in Vue SFC
+- Updated dependencies [de18942]
+  - @farmfe/core@0.9.7
+
+## 1.2.5
+
+### Patch Changes
+
+- c36c767: Build js plugins using Farm
+- Updated dependencies [c36c767]
+  - @farmfe/core@0.9.6
+
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [55c0d0e]
+  - @farmfe/core@0.9.0
+
+## 1.2.3
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+- Updated dependencies [ad90ff5]
+  - @farmfe/core@0.8.10
+
+## 1.2.2
+
+### Patch Changes
+
+- 4d719e4: Bugfix
+- Updated dependencies [4d719e4]
+  - @farmfe/core@0.8.5
+
 ## 1.2.1
 
 ### Patch Changes

@@ -1,5 +1,6 @@
 use std::{
   collections::HashMap,
+  path::{Path, PathBuf},
   sync::{
     mpsc::{channel, Receiver, Sender},
     Arc,
@@ -11,14 +12,16 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId},
   plugin::{
-    PluginAnalyzeDepsHookResultEntry, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
-    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, ResolveKind,
+    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, PluginAnalyzeDepsHookResultEntry,
+    PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
+    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
   rayon,
   rayon::ThreadPool,
+  relative_path::RelativePath,
 };
 
+use farmfe_toolkit::hash::base64_decode;
 use farmfe_utils::stringify_query;
 
 use crate::{
@@ -35,6 +38,7 @@ pub(crate) mod load;
 pub(crate) mod parse;
 pub(crate) mod resolve;
 pub(crate) mod transform;
+pub mod validate_config;
 
 pub(crate) struct ResolveModuleIdResult {
   pub module_id: ModuleId,
@@ -56,16 +60,17 @@ enum ResolveModuleResult {
 impl Compiler {
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
+    validate_config::validate_config(&self.context.config);
 
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
 
-    for (order, source) in self.context.config.input.values().enumerate() {
+    for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       Self::build_module_graph_threaded(
         thread_pool.clone(),
         PluginResolveHookParam {
           source: source.clone(),
           importer: None,
-          kind: ResolveKind::Entry,
+          kind: ResolveKind::Entry(name.clone()),
         },
         self.context.clone(),
         err_sender.clone(),
@@ -79,6 +84,16 @@ impl Compiler {
 
     for err in err_receiver {
       errors.push(err);
+    }
+
+    for err in self.context.log_store.read().errors() {
+      errors.push(CompilationError::GenericError(err.to_string()));
+    }
+
+    if !self.context.log_store.read().warnings().is_empty() {
+      for warning in self.context.log_store.read().warnings() {
+        println!("[warn] {}", warning);
+      }
     }
 
     if !errors.is_empty() {
@@ -111,13 +126,23 @@ impl Compiler {
       caller: None,
       meta: HashMap::new(),
     };
-
-    let resolve_result = match resolve(resolve_param, context, &hook_context) {
+    let resolve_kind = resolve_param.kind.clone();
+    let mut resolve_result = match resolve(resolve_param, context, &hook_context) {
       Ok(resolved) => resolved,
       Err(e) => {
         return Err(e);
       }
     };
+
+    if !resolve_result
+      .meta
+      .contains_key(PLUGIN_BUILD_STAGE_META_RESOLVE_KIND)
+    {
+      resolve_result.meta.insert(
+        PLUGIN_BUILD_STAGE_META_RESOLVE_KIND.to_string(),
+        resolve_kind.into(),
+      );
+    }
 
     // make query part of module id
     let module_id = ModuleId::new(
@@ -162,6 +187,43 @@ impl Compiler {
     };
 
     let load_result = call_and_catch_error!(load, &load_param, context, &hook_context);
+
+    // try load source map after load module content.
+    if load_result.content.contains("//# sourceMappingURL") {
+      // detect that the source map is inline or not
+      let source_map = if load_result
+        .content
+        .contains("//# sourceMappingURL=data:application/json;base64,")
+      {
+        // inline source map
+        let mut source_map = load_result
+          .content
+          .split("//# sourceMappingURL=data:application/json;base64,");
+
+        source_map
+          .nth(1)
+          .map(|source_map| base64_decode(source_map.as_bytes()))
+      } else {
+        // external source map
+        let mut source_map_path = load_result.content.split("//# sourceMappingURL=");
+        let source_map_path = source_map_path.nth(1).unwrap().to_string();
+        let resolved_path = Path::new(&load_param.resolved_path);
+        let base_dir = resolved_path.parent().unwrap();
+        let source_map_path = RelativePath::new(source_map_path.trim()).to_logical_path(base_dir);
+
+        if source_map_path.exists() {
+          let source_map = std::fs::read_to_string(source_map_path).unwrap();
+          Some(source_map)
+        } else {
+          None
+        }
+      };
+
+      if let Some(source_map) = source_map {
+        module.source_map_chain.push(source_map);
+      }
+    }
+
     // ================ Load End ===============
 
     // ================ Transform Start ===============
@@ -173,7 +235,7 @@ impl Compiler {
       meta: resolve_result.meta.clone(),
     };
 
-    let transform_result = call_and_catch_error!(transform, transform_param, context);
+    let mut transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
 
     // ================ Parse Start ===============
@@ -210,7 +272,9 @@ impl Compiler {
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
-    module.source_map_chain = transform_result.source_map_chain;
+    module
+      .source_map_chain
+      .append(&mut transform_result.source_map_chain);
     module.meta = module_meta;
 
     // ================ Analyze Deps Start ===============
@@ -334,8 +398,10 @@ impl Compiler {
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
-    if matches!(kind, ResolveKind::Entry) {
-      module_graph.entries.insert(module.id.clone());
+    if let ResolveKind::Entry(name) = kind {
+      module_graph
+        .entries
+        .insert(module.id.clone(), name.to_string());
     }
 
     // check if the module already exists

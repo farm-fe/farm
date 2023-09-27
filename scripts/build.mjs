@@ -17,6 +17,9 @@ const PKG_CORE = resolve(CWD, './packages/core');
 // Build cli
 const PKG_CLI = resolve(CWD, './packages/cli');
 
+// Build plugin dts
+const PKG_DTS = resolve(CWD, './js-plugins/dts');
+
 // Build rust_plugin_react
 const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 
@@ -57,13 +60,26 @@ export const buildCli = () =>
     cwd: PKG_CLI
   });
 
+// build dts command
+export const buildDts = () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+    cwd: PKG_DTS
+  });
+
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
 // build js plugins
 export const jsPlugins = () => batchBuildPlugins(PKG_JS_PLUGIN);
 
-export const buildJsPlugins = () => Promise.all(jsPlugins());
+// build chain
+export const buildJsPlugins = async () => {
+  // First, build Dts
+  await buildDts();
+
+  // Then, build other js plugins
+  await Promise.all(jsPlugins());
+};
 
 export const buildRustPlugins = () => Promise.all(rustPlugins());
 
@@ -129,10 +145,13 @@ export function isWindows() {
 }
 
 export async function checkProtobuf() {
+  const isWindowsFlag = isWindows();
+  const isMacFlag = isMac();
+  const isLinuxFlag = isLinux();
   try {
-    if (isWindows()) {
+    if (isWindowsFlag) {
       await execa('where', ['protoc']);
-    } else if (isMac() || isLinux()) {
+    } else if (isMacFlag || isLinuxFlag) {
       await execa('which', ['protoc']);
     }
     return true;
@@ -142,10 +161,11 @@ export async function checkProtobuf() {
 }
 
 export async function installProtoBuf() {
-  if (!(await checkProtobuf())) {
+  const installFlag = await checkProtobuf();
+  if (!installFlag) {
     logger(
-      'Due to the use of protoc in the project, we currently judge that you have not installed. we need to install protobuf locally to make the project start successfully. \n- For mac users, will be use your local `homebrew` tool for installation. \n- For linux users, we will use your local `apt` tool for installation. \n- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n',
-      { title: 'INFO' }
+      'Due to the use of protoc in the project, we currently judge that you have not installed. we need to install protobuf locally to make the project start successfully. \n\n- For mac users, will be use your local `homebrew` tool for installation. (First, Make sure your computer has `homebrew` installed) \n- For linux users, we will use your local `apt` tool for installation. (First, Make sure your computer has `apt` installed) \n- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n',
+      { title: 'FARM WARN', color: 'yellow' }
     );
     if (isMac()) {
       await runTask('Protobuf', installMacProtobuf, 'Install', 'Install');
@@ -155,9 +175,32 @@ export async function installProtoBuf() {
     }
     if (isWindows()) {
       logger(
-        'If you are using a windows system, you can install it in the following ways:\n 1. open https://github.com/protocolbuffers/protobuf \n If you are a 32-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win32.zip \n If you are a 64-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win64.zip \n 2. After installation, find the path you installed, and copy the current path, adding to the environment variable of windows \n\n Or you can directly check out the following article to install \n https://www.geeksforgeeks.org/how-to-install-protocol-buffers-on-windows/'
+        'If you are using a windows system, you can install it in the following ways:\n\n 1. open https://github.com/protocolbuffers/protobuf \n If you are a 32-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win32.zip \n If you are a 64-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win64.zip \n 2. After installation, find the path you installed, and copy the current path, adding to the environment variable of windows \n\n Or you can directly check out the following article to install \n https://www.geeksforgeeks.org/how-to-install-protocol-buffers-on-windows/',
+        { title: 'FARM TIPS', color: 'yellow' }
       );
       process.exit(1);
     }
+  } else {
+    console.log('');
+    logger('Protobuf has been installed, skipping installation. \n');
+  }
+}
+
+export async function cleanBundleCommand() {
+  try {
+    await execa(DEFAULT_PACKAGE_MANAGER, [
+      '-r',
+      '--filter=./packages/*',
+      '--filter=./js-plugins/*',
+      'run',
+      'clean'
+    ]);
+    logger('pnpm clean command completed successfully.');
+  } catch (error) {
+    logger('An error occurred while running pnpm clean command:', {
+      title: error.message,
+      color: 'red'
+    });
+    process.exit(1);
   }
 }

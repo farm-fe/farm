@@ -8,6 +8,7 @@
     "module": "node16",
     "moduleResolution": "node16",
     "declaration": true,
+    "inlineSources": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "noUnusedLocals": true,

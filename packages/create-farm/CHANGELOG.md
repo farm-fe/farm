@@ -1,5 +1,89 @@
 # create-farm
 
+## 1.2.14
+
+### Patch Changes
+
+- 904ecb0: optimize core package update template version
+
+## 1.2.13
+
+### Patch Changes
+
+- c12536a: fix: strictPort error
+
+## 1.2.12
+
+### Patch Changes
+
+- baec8bf: feat: add restart-server fn with update create-farm
+
+## 1.2.11
+
+### Patch Changes
+
+- be60085: update template version add host config ,Http server and websocket services share a set of ports
+
+## 1.2.10
+
+### Patch Changes
+
+- 3dcbea2: fix pnpm preview NODE_ENV undefined error
+
+## 1.2.9
+
+### Patch Changes
+
+- 21401f2: Upgrade farm version
+
+## 1.2.8
+
+### Patch Changes
+
+- 75f58c1: Bump core version
+
+## 1.2.7
+
+### Patch Changes
+
+- 49bf977: update template add solid template
+
+## 1.2.6
+
+### Patch Changes
+
+- 9f6d497: update template version
+
+## 1.2.5
+
+### Patch Changes
+
+- c36c767: update farm.config.ts
+
+## 1.2.4
+
+### Patch Changes
+
+- 2ea850c: update cli with create-farm version optimize server code
+
+## 1.2.3
+
+### Patch Changes
+
+- 815c81c: update farm version
+
+## 1.2.2
+
+### Patch Changes
+
+- ad90ff5: Support output.entryFilename and fix sass bugs
+
+## 1.2.1
+
+### Patch Changes
+
+- d8eeda9: bump version as core changed
+
 ## 1.2.0
 
 ### Minor Changes

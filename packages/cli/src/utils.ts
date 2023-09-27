@@ -1,11 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import Module from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { start, build, preview, watch } from '@farmfe/core';
+import { fileURLToPath } from 'node:url';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
+
 import type { GlobalFarmCLIOptions } from './types.js';
 
 interface installProps {
@@ -50,22 +49,6 @@ node_modules
   }
 }
 
-export function resolveCore(cwd: string): Promise<{
-  start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
-}> {
-  const require = Module.createRequire(path.join(cwd, 'package.json'));
-
-  const farmCorePath = require.resolve('@farmfe/core');
-
-  if (process.platform === 'win32') {
-    return import(pathToFileURL(farmCorePath).toString());
-  }
-
-  return import(farmCorePath);
-}
 export async function install(options: installProps): Promise<void> {
   const cwd = options.cwd;
   return new Promise((resolve, reject) => {
@@ -122,11 +105,16 @@ export function clearScreen() {
 
 export function cleanOptions(options: GlobalFarmCLIOptions) {
   const resolveOptions = { ...options };
+
   delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
   delete resolveOptions.l;
+  delete resolveOptions.lazy;
+  delete resolveOptions.mode;
+  delete resolveOptions.base;
+  delete resolveOptions.config;
   delete resolveOptions.clearScreen;
 
   return resolveOptions;
@@ -135,8 +123,9 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
 export function resolveCommandOptions(
   options: GlobalFarmCLIOptions
 ): GlobalFarmCLIOptions {
-  filterDuplicateOptions(options);
-  return cleanOptions(options);
+  const resolveOptions = { ...options };
+  filterDuplicateOptions(resolveOptions);
+  return cleanOptions(resolveOptions);
 }
 
 export function getConfigPath(configPath: string) {

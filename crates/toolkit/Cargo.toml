@@ -16,32 +16,33 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
-swc_ecma_parser = { version = "0.134.5" }
-swc_ecma_visit = { version = "0.90.3" }
-swc_ecma_codegen = { version = "0.139.7" }
-swc_ecma_transforms = { version = "0.218.9", features = [
+swc_ecma_parser = { version = "0.137.4" }
+swc_ecma_visit = { version = "0.93.2" }
+swc_ecma_codegen = { version = "0.142.4" }
+swc_ecma_transforms = { version = "0.221.13", features = [
   "module",
   "typescript",
   "react",
   "concurrent",
 ] }
-swc_ecma_preset_env = { version = "0.195.9" }
-preset_env_base = { version = "0.4.2" }
-swc_css_parser = { version = "0.146.4" }
-swc_css_visit = { version = "0.136.4" }
-swc_css_codegen = { version = "0.147.4" }
-swc_css_minifier = { version = "0.112.5" }
-swc_css_modules = { version = "0.25.5" }
-swc_css_prefixer = { version = "0.149.7" }
-swc_html_parser = { version = "0.37.4" }
-swc_html_visit = { version = "0.31.4" }
-swc_html_codegen = { version = "0.40.4" }
-swc_html_minifier = { version = "0.121.9" }
-swc_error_reporters = { version = "0.15.4" }
-swc_atoms = { version = "0.5.3" }
-swc_ecma_transforms_base = "0.127.7"
-swc_ecma_minifier = "0.181.9"
+swc_ecma_preset_env = { version = "0.198.14" }
+preset_env_base = { version = "0.4.5" }
+swc_css_parser = { version = "0.146.21" }
+swc_css_visit = { version = "0.136.18" }
+swc_css_codegen = { version = "0.147.21" }
+swc_css_minifier = { version = "0.112.21" }
+swc_css_modules = { version = "0.25.24" }
+swc_css_prefixer = { version = "0.149.23" }
+swc_html_parser = { version = "0.37.21" }
+swc_html_visit = { version = "0.31.18" }
+swc_html_codegen = { version = "0.40.21" }
+swc_html_minifier = { version = "0.124.22" }
+swc_error_reporters = { version = "0.15.18" }
+swc_atoms = { version = "0.5.8" }
+swc_ecma_transforms_base = "0.130.6"
+swc_ecma_minifier = "0.184.22"
 lazy_static = "1.4.0"
 sha2 = "0.10.6"
 sourcemap = "6.2.3"
 base64 = "0.21.0"
+anyhow = { version = "1.0.40", features = ["backtrace"] }

@@ -49,7 +49,7 @@ fn find_hmr_accepted_recursively(
 ) -> bool {
   let module = module_graph.module(id).unwrap();
   // There is a path from the module to the root that does not have HMR accepted
-  if module_graph.entries.contains(id) {
+  if module_graph.entries.contains_key(id) {
     return false;
   } else if module.module_type.is_script() {
     let hmr_accepted = module.meta.as_script().hmr_accepted;

@@ -84,7 +84,8 @@ async function createFarm() {
               title: chalk.blue('React'),
               value: 'react'
             },
-            { title: chalk.green('Vue'), value: 'vue' }
+            { title: chalk.green('Vue'), value: 'vue' },
+            { title: chalk.blueBright('Solid'), value: 'solid' }
           ]
         },
         {
@@ -213,7 +214,7 @@ function copyDir(srcDir: string, destDir: string) {
 }
 
 function welcome() {
-  console.log(chalk.magenta(`\n⚡ Welcome To Create Farm Project! \n`));
+  console.log(chalk.magenta(`\n⚡ Welcome To Farm ! \n`));
 }
 
 createFarm();

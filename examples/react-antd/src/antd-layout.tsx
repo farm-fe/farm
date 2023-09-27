@@ -1,25 +1,30 @@
 import React from 'react';
+import { useState } from 'react';
+import { Button, Modal } from 'antd';
 import {
   LaptopOutlined,
   NotificationOutlined,
-  UserOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
 
+import { useNavigate, Outlet } from 'react-router-dom';
+
 import './main.css';
+import logo from '../assets/logo.png';
 
 const { Header, Content, Sider } = Layout;
 
 const items1: MenuProps['items'] = ['1', '2', '3'].map((key) => ({
   key,
-  label: `nav ${key}`,
+  label: `nav ${key}`
 }));
 
 const items2: MenuProps['items'] = [
   UserOutlined,
   LaptopOutlined,
-  NotificationOutlined,
+  NotificationOutlined
 ].map((icon, index) => {
   const key = String(index + 1);
 
@@ -32,16 +37,30 @@ const items2: MenuProps['items'] = [
       const subKey = index * 4 + j + 1;
       return {
         key: subKey,
-        label: `option${subKey}`,
+        label: `option${subKey}`
       };
-    }),
+    })
   };
 });
 
 export const AntdLayout: React.FC = () => {
   const {
-    token: { colorBgContainer },
+    token: { colorBgContainer }
   } = theme.useToken();
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleOk = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
 
   return (
     <Layout>
@@ -52,6 +71,7 @@ export const AntdLayout: React.FC = () => {
           mode="horizontal"
           defaultSelectedKeys={['2']}
           items={items1}
+          onClick={({ key }) => navigate(`/${key}`)}
         />
       </Header>
       <Layout>
@@ -75,10 +95,27 @@ export const AntdLayout: React.FC = () => {
               padding: 24,
               margin: 0,
               minHeight: 280,
-              background: colorBgContainer,
+              background: colorBgContainer
             }}
           >
-            Content
+            <div>
+              <img width={600} src={logo} />
+            </div>
+            <Button type="primary" onClick={showModal}>
+              Open Modal
+            </Button>
+
+            <Modal
+              title="Basic Modal"
+              open={isModalOpen}
+              onOk={handleOk}
+              onCancel={handleCancel}
+            >
+              <p>Some contents...</p>
+              <p>Some contents...</p>
+              <p>Some contents...</p>
+            </Modal>
+            <Outlet />
           </Content>
         </Layout>
       </Layout>

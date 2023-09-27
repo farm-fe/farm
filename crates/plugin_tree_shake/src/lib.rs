@@ -1,7 +1,7 @@
 use farmfe_core::{
   config::Config,
   module::{module_graph::ModuleGraph, ModuleId},
-  plugin::{Plugin, ResolveKind},
+  plugin::Plugin,
 };
 use module::{TreeShakeModule, UsedExports};
 use statement_graph::{ExportInfo, ImportInfo};
@@ -37,7 +37,10 @@ impl Plugin for FarmPluginTreeShake {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // topo sort the module_graph, the cyclic modules will be marked as side_effects
-    let (topo_sorted_modules, cyclic_modules) = module_graph.toposort();
+    let (topo_sorted_modules, cyclic_modules) = {
+      farmfe_core::farm_profile_scope!("tree shake toposort".to_string());
+      module_graph.toposort()
+    };
 
     // mark cyclic modules as side_effects
     for chain in cyclic_modules {
@@ -48,7 +51,7 @@ impl Plugin for FarmPluginTreeShake {
     }
 
     // mark entry modules as side_effects
-    for entry_module_id in module_graph.entries.clone() {
+    for (entry_module_id, _) in module_graph.entries.clone() {
       let mut module = module_graph.module_mut(&entry_module_id).unwrap();
       module.side_effects = true;
     }
@@ -218,7 +221,7 @@ fn add_used_exports_by_import_info(
       }
       statement_graph::ImportSpecifierInfo::Named { local, imported } => {
         if let Some(ident) = imported {
-          if ident.to_string() == "default" {
+          if *ident == "default" {
             imported_tree_shake_module
               .used_exports
               .add_used_export(&module::UsedIdent::Default);
@@ -301,6 +304,6 @@ fn add_used_exports_by_export_info(
 }
 
 fn strip_context(ident: &String) -> String {
-  let ident_split = ident.split("#").into_iter().collect::<Vec<_>>();
+  let ident_split = ident.split('#').collect::<Vec<_>>();
   ident_split[0].to_string()
 }

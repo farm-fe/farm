@@ -9,14 +9,20 @@ const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
 const moduleId = `MODULE_ID`;
 const modulePath = `MODULE_PATH`;
 
-FarmModuleSystem.lazyCompiling = false;
-FarmModuleSystem.compilingModules = new Map<string, Promise<any>>();
-FarmModuleSystem.lazyCompilingQueue = [] as [
-  string,
-  string,
-  (val: any) => void,
-  Promise<void>
-][];
+if (FarmModuleSystem.lazyCompiling === undefined) {
+  FarmModuleSystem.lazyCompiling = false;
+}
+if (FarmModuleSystem.compilingModules === undefined) {
+  FarmModuleSystem.compilingModules = new Map<string, Promise<any>>();
+}
+if (FarmModuleSystem.lazyCompilingQueue === undefined) {
+  FarmModuleSystem.lazyCompilingQueue = [] as [
+    string,
+    string,
+    (val: any) => void,
+    Promise<void>
+  ][];
+}
 
 const compilingModules = FarmModuleSystem.compilingModules;
 

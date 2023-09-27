@@ -302,7 +302,14 @@ pub fn patch_module_group_graph(
 
 #[cfg(test)]
 mod tests {
-  use farmfe_core::{hashbrown::HashSet, module::Module};
+  use farmfe_core::{
+    hashbrown::HashSet,
+    module::{
+      module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
+      Module,
+    },
+    plugin::ResolveKind,
+  };
   use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
   use farmfe_testing_helpers::construct_test_module_graph;
 
@@ -314,7 +321,8 @@ mod tests {
   fn test_patch_module_group_graph_1() {
     let mut module_graph = construct_test_module_graph();
     let mut update_module_graph = construct_test_module_graph();
-
+    update_module_graph.remove_module(&"F".into());
+    update_module_graph.remove_module(&"G".into());
     update_module_graph
       .remove_edge(&"A".into(), &"D".into())
       .unwrap();
@@ -356,6 +364,9 @@ mod tests {
     update_module_graph.remove_module(&"D".into());
     update_module_graph.remove_module(&"E".into());
     update_module_graph.remove_module(&"G".into());
+    update_module_graph
+      .remove_edge(&"C".into(), &"F".into())
+      .unwrap();
     update_module_graph.add_module(Module::new("H".into()));
     update_module_graph
       .add_edge(&"B".into(), &"H".into(), Default::default())
@@ -403,10 +414,9 @@ mod tests {
   fn test_patch_module_group_graph_3() {
     let mut module_graph = construct_test_module_graph();
     let mut update_module_graph = construct_test_module_graph();
-
-    update_module_graph
-      .remove_edge(&"F".into(), &"A".into())
-      .unwrap();
+    update_module_graph.remove_module(&"A".into());
+    update_module_graph.remove_module(&"C".into());
+    update_module_graph.remove_module(&"G".into());
     update_module_graph.add_module(Module::new("H".into()));
     update_module_graph
       .add_edge(&"B".into(), &"H".into(), Default::default())
@@ -417,7 +427,12 @@ mod tests {
 
     let start_points = vec!["F".into(), "B".into()];
     let mut module_group_graph = module_group_graph_from_entries(
-      &module_graph.entries.clone().into_iter().collect(),
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
       &mut module_graph,
     );
     let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
@@ -430,7 +445,7 @@ mod tests {
     );
 
     let affected_groups = patch_module_group_graph(
-      start_points.clone(),
+      start_points,
       &diff_result,
       &removed_modules,
       &mut module_graph,
@@ -442,7 +457,99 @@ mod tests {
     );
 
     let update_module_group_graph = module_group_graph_from_entries(
-      &module_graph.entries.clone().into_iter().collect(),
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
+      &mut module_graph,
+    );
+
+    assert_eq!(module_group_graph, update_module_group_graph);
+  }
+
+  fn get_edge_info(kind: ResolveKind) -> ModuleGraphEdge {
+    ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+      kind,
+      ..Default::default()
+    }])
+  }
+
+  #[test]
+  fn test_patch_module_group_graph_css_modules() {
+    let mut module_graph = construct_test_module_graph();
+    module_graph.add_module(Module::new("I.module.css".into()));
+    module_graph.add_module(Module::new("I.module.css.FARM_CSS_MODULES?1".into()));
+    module_graph
+      .add_edge(
+        &"D".into(),
+        &"I.module.css".into(),
+        get_edge_info(ResolveKind::Import),
+      )
+      .unwrap();
+    module_graph
+      .add_edge(
+        &"I.module.css".into(),
+        &"I.module.css.FARM_CSS_MODULES?1".into(),
+        get_edge_info(ResolveKind::Import),
+      )
+      .unwrap();
+
+    let mut update_module_graph = construct_test_module_graph();
+    update_module_graph.remove_module(&"A".into());
+    update_module_graph.remove_module(&"C".into());
+    update_module_graph.remove_module(&"B".into());
+    update_module_graph.remove_module(&"E".into());
+    update_module_graph.remove_module(&"G".into());
+
+    update_module_graph.add_module(Module::new("I.module.css".into()));
+    update_module_graph.add_module(Module::new("H".into()));
+    update_module_graph
+      .add_edge(&"D".into(), &"H".into(), get_edge_info(ResolveKind::Import))
+      .unwrap();
+    update_module_graph
+      .add_edge(
+        &"H".into(),
+        &"I.module.css".into(),
+        get_edge_info(ResolveKind::Import),
+      )
+      .unwrap();
+
+    let start_points = vec!["D".into()];
+    let mut module_group_graph = module_group_graph_from_entries(
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
+      &mut module_graph,
+    );
+    let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+    let removed_modules = patch_module_graph(
+      start_points.clone(),
+      &diff_result,
+      &mut module_graph,
+      &mut update_module_graph,
+    );
+
+    let affected_groups = patch_module_group_graph(
+      start_points,
+      &diff_result,
+      &removed_modules,
+      &mut module_graph,
+      &mut module_group_graph,
+    );
+    assert_eq!(affected_groups, HashSet::from(["D".into(), "B".into()]));
+
+    let update_module_group_graph = module_group_graph_from_entries(
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
       &mut module_graph,
     );
 

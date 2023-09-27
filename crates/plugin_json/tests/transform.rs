@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use farmfe_core::{
   config::Config,
@@ -9,7 +9,7 @@ use farmfe_core::{
 use farmfe_testing_helpers::fixture;
 
 fn generate_transform_fn(
-  file: &PathBuf,
+  file: &Path,
 ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
   let config = Config::default();
   let json_plugin = farmfe_plugin_json::FarmPluginJson::new(&config);

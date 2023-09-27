@@ -73,8 +73,9 @@ pub struct ModuleGraph {
   g: StableDiGraph<Module, ModuleGraphEdge>,
   /// to index module in the graph using [ModuleId]
   id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
-  /// entry modules of this module graph
-  pub entries: HashSet<ModuleId>,
+  /// entry modules of this module graph.
+  /// (Entry Module Id, Entry Name)
+  pub entries: HashMap<ModuleId, String>,
 }
 
 impl ModuleGraph {
@@ -82,7 +83,7 @@ impl ModuleGraph {
     Self {
       g: StableDiGraph::new(),
       id_index_map: HashMap::new(),
-      entries: HashSet::new(),
+      entries: HashMap::new(),
     }
   }
 
@@ -94,7 +95,7 @@ impl ModuleGraph {
   /// we can get `module b` by `(module a, "./b")`.
   ///
   /// Panic if the dep does not exist or the source is not correct
-  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &String) -> ModuleId {
+  pub fn get_dep_by_source_optional(&self, module_id: &ModuleId, source: &str) -> Option<ModuleId> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -106,11 +107,19 @@ impl ModuleGraph {
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
       if self.g[edge_index].iter().any(|e| e.source == *source) {
-        return self.g[node_index].id.clone();
+        return Some(self.g[node_index].id.clone());
       }
     }
 
-    panic!("source `{}` is not a edge of `{:?}`", source, module_id);
+    None
+  }
+
+  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &str) -> ModuleId {
+    if let Some(id) = self.get_dep_by_source_optional(module_id, source) {
+      id
+    } else {
+      panic!("source `{}` is not a edge of `{:?}`", source, module_id);
+    }
   }
 
   pub fn module(&self, module_id: &ModuleId) -> Option<&Module> {
@@ -405,7 +414,7 @@ impl ModuleGraph {
 
     let mut visited = HashSet::new();
 
-    for entry in entries {
+    for (entry, _) in entries {
       let mut res = vec![];
       dfs(entry, self, &mut stack, &mut visited, &mut res, &mut cyclic);
 
@@ -466,7 +475,7 @@ impl ModuleGraph {
       for (dep, _) in &deps {
         dfs(Some(entry), dep, op, visited, graph)
       }
-    };
+    }
 
     let mut visited = HashSet::new();
 
@@ -527,7 +536,7 @@ impl Default for ModuleGraph {
 
 #[cfg(test)]
 mod tests {
-  use hashbrown::HashSet;
+  use hashbrown::HashMap;
 
   use crate::{
     module::{Module, ModuleId},
@@ -602,7 +611,7 @@ mod tests {
       )
       .unwrap();
 
-    graph.entries = HashSet::from(["A".into(), "B".into()]);
+    graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
     graph
   }

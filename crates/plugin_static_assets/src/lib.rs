@@ -5,14 +5,16 @@ use std::path::Path;
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   config::Config,
-  module::ModuleType,
+  module::{ModuleId, ModuleType},
+  // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
   plugin::Plugin,
-  resource::{Resource, ResourceType},
+  resource::{Resource, ResourceOrigin, ResourceType},
 };
 use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
   lazy_static::lazy_static,
 };
+use farmfe_utils::stringify_query;
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
@@ -21,6 +23,8 @@ lazy_static! {
     "ico", "ttf", "woff", "woff2",
   ];
 }
+
+const PLUGIN_NAME: &str = "FarmPluginStaticAssets";
 
 pub struct FarmPluginStaticAssets {}
 
@@ -32,20 +36,11 @@ impl FarmPluginStaticAssets {
 
 impl Plugin for FarmPluginStaticAssets {
   fn name(&self) -> &str {
-    "FarmPluginStaticAssets"
+    PLUGIN_NAME
   }
   /// Make sure this plugin is executed last
   fn priority(&self) -> i32 {
     99
-  }
-
-  fn resolve(
-    &self,
-    _param: &farmfe_core::plugin::PluginResolveHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
-    Ok(None)
   }
 
   fn load(
@@ -84,12 +79,20 @@ impl Plugin for FarmPluginStaticAssets {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Asset) {
-      if param.query.iter().find(|(k, _)| k == "inline").is_some() {
+      // let resolve_kind = ResolveKind::from(
+      //   param
+      //     .meta
+      //     .get(PLUGIN_BUILD_STAGE_META_RESOLVE_KIND)
+      //     .unwrap()
+      //     .as_str(),
+      // );
+
+      if param.query.iter().any(|(k, _)| k == "inline") {
         let file_raw = read_file_raw(param.resolved_path)?;
-        let file_base64 = general_purpose::STANDARD.encode(&file_raw);
+        let file_base64 = general_purpose::STANDARD.encode(file_raw);
         let path = Path::new(param.resolved_path);
         let ext = path.extension().and_then(|s| s.to_str()).unwrap();
-
+        // TODO: recognize MIME type
         let content = format!(
           "export default \"data:image/{};base64,{}\"",
           ext, file_base64
@@ -100,7 +103,7 @@ impl Plugin for FarmPluginStaticAssets {
           module_type: Some(ModuleType::Js),
           source_map: None,
         }));
-      } else if param.query.iter().find(|(k, _)| k == "raw").is_some() {
+      } else if param.query.iter().any(|(k, _)| k == "raw") {
         let file_utf8 = read_file_utf8(param.resolved_path)?;
         let content = format!("export default \"{}\"", file_utf8);
 
@@ -126,7 +129,25 @@ impl Plugin for FarmPluginStaticAssets {
           &bytes,
           ext,
         );
-        let content = format!("export default \"/{}\"", resource_name);
+        let content = if !context.config.output.public_path.is_empty() {
+          let normalized_public_path = context
+            .config
+            .output
+            .public_path
+            .trim_start_matches("/")
+            .trim_end_matches("/");
+
+          if normalized_public_path.is_empty() {
+            format!("export default \"/{}\"", resource_name)
+          } else {
+            format!(
+              "export default \"/{}/{}\"",
+              normalized_public_path, resource_name
+            )
+          }
+        } else {
+          format!("export default \"/{}\"", resource_name)
+        };
 
         let mut resources_map = context.resources_map.lock();
         resources_map.insert(
@@ -136,8 +157,11 @@ impl Plugin for FarmPluginStaticAssets {
             bytes,
             emitted: false,
             resource_type: ResourceType::Asset(ext.to_string()),
-            resource_pot: "STATIC_ASSETS".into(),
-            preserve_name: false,
+            origin: ResourceOrigin::Module(ModuleId::new(
+              param.resolved_path,
+              &stringify_query(&param.query),
+              &context.config.root,
+            )),
           },
         );
 

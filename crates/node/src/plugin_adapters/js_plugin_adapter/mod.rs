@@ -4,14 +4,16 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   plugin::{
-    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
-    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult, DEFAULT_PRIORITY,
+    EmptyPluginHookParam, Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
+    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+    PluginTransformHookResult, DEFAULT_PRIORITY,
   },
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
 use self::thread_safe_js_plugin_hook::{
-  JsPluginLoadHook, JsPluginResolveHook, JsPluginTransformHook,
+  JsPluginBuildEndHook, JsPluginBuildStartHook, JsPluginFinishHook, JsPluginLoadHook,
+  JsPluginResolveHook, JsPluginTransformHook, JsPluginUpdateModulesHook,
 };
 
 pub mod context;
@@ -20,9 +22,13 @@ mod thread_safe_js_plugin_hook;
 pub struct JsPluginAdapter {
   name: String,
   priority: i32,
+  js_build_start_hook: Option<JsPluginBuildStartHook>,
   js_resolve_hook: Option<JsPluginResolveHook>,
   js_load_hook: Option<JsPluginLoadHook>,
   js_transform_hook: Option<JsPluginTransformHook>,
+  js_build_end_hook: Option<JsPluginBuildEndHook>,
+  js_finish_hook: Option<JsPluginFinishHook>,
+  js_update_modules_hook: Option<JsPluginUpdateModulesHook>,
 }
 
 impl JsPluginAdapter {
@@ -31,18 +37,29 @@ impl JsPluginAdapter {
     let priority =
       get_named_property::<i32>(env, &js_plugin_object, "priority").unwrap_or(DEFAULT_PRIORITY);
 
+    let build_start_hook_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "buildStart").ok();
     let resolve_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "resolve").ok();
     let load_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "load").ok();
     let transform_hook_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "transform").ok();
+    let build_end_hook_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "buildEnd").ok();
+    let finish_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "finish").ok();
+    let update_modules_hook_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "updateModules").ok();
 
-    // TODO calculating hooks should execute
     Ok(Self {
       name,
       priority,
+      js_build_start_hook: build_start_hook_obj.map(|obj| JsPluginBuildStartHook::new(env, obj)),
       js_resolve_hook: resolve_hook_obj.map(|obj| JsPluginResolveHook::new(env, obj)),
       js_load_hook: load_hook_obj.map(|obj| JsPluginLoadHook::new(env, obj)),
       js_transform_hook: transform_hook_obj.map(|obj| JsPluginTransformHook::new(env, obj)),
+      js_build_end_hook: build_end_hook_obj.map(|obj| JsPluginBuildEndHook::new(env, obj)),
+      js_finish_hook: finish_hook_obj.map(|obj| JsPluginFinishHook::new(env, obj)),
+      js_update_modules_hook: update_modules_hook_obj
+        .map(|obj| JsPluginUpdateModulesHook::new(env, obj)),
     })
   }
 }
@@ -50,6 +67,15 @@ impl JsPluginAdapter {
 impl Plugin for JsPluginAdapter {
   fn name(&self) -> &str {
     &self.name
+  }
+
+  fn build_start(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    if let Some(js_build_start_hook) = &self.js_build_start_hook {
+      js_build_start_hook.call(EmptyPluginHookParam {}, context.clone())?;
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
   }
 
   fn priority(&self) -> i32 {
@@ -92,6 +118,46 @@ impl Plugin for JsPluginAdapter {
     if let Some(js_transform_hook) = &self.js_transform_hook {
       let cp = param.clone();
       js_transform_hook.call(cp, context.clone())
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn build_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    if let Some(js_build_end_hook) = &self.js_build_end_hook {
+      js_build_end_hook.call(EmptyPluginHookParam {}, context.clone())?;
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn update_modules(
+    &self,
+    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(js_update_modules_hook) = &self.js_update_modules_hook {
+      let update_result = js_update_modules_hook.call(params.clone(), context.clone())?;
+
+      if let Some(result) = update_result {
+        params.update_result = result;
+      }
+
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn finish(
+    &self,
+    _stat: &farmfe_core::stats::Stats,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(js_finish_hook) = &self.js_finish_hook {
+      js_finish_hook.call(EmptyPluginHookParam {}, context.clone())?;
+      Ok(Some(()))
     } else {
       Ok(None)
     }

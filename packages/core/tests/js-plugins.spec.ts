@@ -37,7 +37,7 @@ test('Js Plugin Execution - resolve', async () => {
           console.log(param);
           expect(param.source).toBe('./index.ts?foo=bar');
           expect(param.importer).toBe(null);
-          expect(param.kind).toBe('entry');
+          expect(param.kind).toEqual({ entry: 'index' });
 
           return {
             resolvedPath,
@@ -53,6 +53,7 @@ test('Js Plugin Execution - resolve', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
   const outputFilePath = getOutputFilePath('resolve');
 
   if (process.platform === 'win32') {
@@ -87,6 +88,7 @@ test('Js Plugin Execution - load', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
   const outputFilePath = getOutputFilePath('load');
 
   if (process.platform === 'win32') {
@@ -121,6 +123,7 @@ test('Js Plugin Execution - transform', async () => {
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
   const outputFilePath = getOutputFilePath('transform');
 
   if (process.platform === 'win32') {
@@ -135,10 +138,18 @@ test('Js Plugin Execution - transform', async () => {
 test('Js Plugin Execution - full', async () => {
   const root = getJsPluginsFixturesDir();
   const resolvedPath = path.join(root, 'resolved.ts');
+  let builsStartEexcuted = false;
+  let buildEndEexcuted = false;
+
   const compiler = await getCompiler('full', [
     {
       name: 'test-full',
       priority: 1000,
+      buildStart: {
+        executor: async () => {
+          builsStartEexcuted = true;
+        }
+      },
       resolve: {
         filters: {
           sources: ['.*'],
@@ -179,12 +190,21 @@ test('Js Plugin Execution - full', async () => {
             moduleType: 'ts'
           };
         }
+      },
+      buildEnd: {
+        executor: async () => {
+          buildEndEexcuted = true;
+        }
       }
     }
   ]);
 
   await compiler.compile();
   await compiler.writeResourcesToDisk();
+
+  expect(builsStartEexcuted).toBe(true);
+  expect(buildEndEexcuted).toBe(true);
+
   const outputFilePath = getOutputFilePath('full');
 
   if (process.platform === 'win32') {
