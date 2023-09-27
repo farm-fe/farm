@@ -1,5 +1,23 @@
 # @farmfe/core
 
+## 0.12.11
+
+### Patch Changes
+
+- bcff2e8: format the normalizePublicPath function
+
+## 0.12.10
+
+### Patch Changes
+
+- b44fde7: Support js plugin hook context methods for unplugin
+
+## 0.12.9
+
+### Patch Changes
+
+- c12536a: fix: strictPort error
+
 ## 0.12.8
 
 ### Patch Changes

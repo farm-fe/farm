@@ -33,13 +33,10 @@ export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
-  // const { normalizedConfig, devServer, config } = await resolveCompiler(
-  //   inlineConfig as any,
-  //   logger
-  // );
+
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(config);
+  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   setProcessEnv(normalizedConfig.config.mode);
 
@@ -80,6 +77,7 @@ export async function build(
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
+    logger,
     'production'
   );
   setProcessEnv(normalizedConfig.config.mode);
@@ -104,6 +102,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
+    logger,
     'production'
   );
   const { root, output } = normalizedConfig.config;
@@ -124,15 +123,17 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   app.use(compression());
   app.use(async (ctx) => {
     const requestPath = ctx.request.path;
+
     if (requestPath.startsWith(output.publicPath)) {
       const modifiedPath = requestPath.substring(output.publicPath.length);
+
       if (modifiedPath.startsWith('/')) {
         ctx.request.path = modifiedPath;
       } else {
         ctx.request.path = `/${modifiedPath}`;
       }
-      await StaticFilesHandler(ctx);
     }
+    await StaticFilesHandler(ctx);
   });
 
   app.listen(port, () => {
@@ -151,9 +152,9 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
         })
         .forEach(({ type, host }) => {
           const url = `${'http'}://${host}:${chalk.bold(port)}${
-            output.publicPath
+            output.publicPath ?? ''
           }`;
-          logger.info(`  > ${type} ${chalk.cyan(url)}`);
+          logger.info(`${chalk.magenta('>')} ${type} ${chalk.cyan(url)}`);
         })
     );
   });
@@ -167,6 +168,7 @@ export async function watch(
   const userConfig: UserConfig = await resolveUserConfig(options, logger);
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
+    logger,
     'development'
   );
   setProcessEnv(normalizedConfig.config.mode);
@@ -197,7 +199,7 @@ export async function resolveCompiler(
 ) {
   setProcessEnv('development');
   const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(config);
+  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   setProcessEnv(normalizedConfig.config.mode);
 

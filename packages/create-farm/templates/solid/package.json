@@ -6,8 +6,8 @@
     "solid-js": "^1.7.6"
   },
   "devDependencies": {
-    "@farmfe/cli": "^0.5.5",
-    "@farmfe/core": "^0.12.7",
+    "@farmfe/cli": "^0.5.8",
+    "@farmfe/core": "^0.12.11",
     "@farmfe/js-plugin-solid": "^2.0.0"
   },
   "scripts": {

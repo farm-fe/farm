@@ -3,7 +3,7 @@ import fs from 'fs';
 import { createRequire } from 'module';
 import type { SassPluginOptions } from './index.js';
 
-const __require = createRequire(__dirname);
+const __require = createRequire(__filename);
 
 export const { name: pluginName } = __require('../package.json');
 

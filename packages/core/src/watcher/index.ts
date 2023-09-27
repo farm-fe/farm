@@ -57,7 +57,8 @@ export class FileWatcher implements ImplFileWatcher {
     let handlePathChange = async (path: string): Promise<void> => {
       const fileName = basename(path);
       const isEnv = fileName === '.env' || fileName.startsWith('.env.');
-      const isConfig = path === this.options.inlineConfig.configPath;
+      const isConfig = path === this.options.resolveConfigPath;
+
       // TODO configFileDependencies e.g: isDependencies = ["./farm.config.ts"]
       if (isEnv || isConfig) {
         clearScreen();
@@ -74,7 +75,10 @@ export class FileWatcher implements ImplFileWatcher {
           this.options.inlineConfig,
           this._logger
         );
-        const normalizedConfig = await normalizeUserCompilationConfig(config);
+        const normalizedConfig = await normalizeUserCompilationConfig(
+          config,
+          this._logger
+        );
         setProcessEnv(normalizedConfig.config.mode);
         const compiler = new Compiler(normalizedConfig);
         const devServer = new DevServer(compiler, this._logger, config);

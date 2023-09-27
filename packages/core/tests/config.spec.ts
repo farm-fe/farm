@@ -1,7 +1,7 @@
 import { builtinModules } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { test, expect, describe } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
@@ -26,10 +26,15 @@ test('resolveUserConfig', async () => {
       external: builtinModules
     },
     root: path.join(filePath, 'fixtures', 'config'),
+    resolveConfigPath: path.join(
+      filePath,
+      'fixtures',
+      'config',
+      'farm.config.ts'
+    ),
     inlineConfig: {
       configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
     },
-    configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     server: normalizeDevServerOptions(config.server, 'development')
   });
 });

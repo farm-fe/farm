@@ -16,18 +16,21 @@ import {
   normalizePublicPath,
   DevServerPlugin,
   UserConfig,
-  DEFAULT_HMR_OPTIONS
+  DEFAULT_HMR_OPTIONS,
+  urlRegex
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { brandColor, clearScreen, Logger } from '../utils/index.js';
-import { lazyCompilationPlugin } from './middlewares/lazy-compilation.js';
-import { resourcesPlugin } from './middlewares/resources.js';
-import { hmrPlugin } from './middlewares/hmr.js';
-import { proxyPlugin } from './middlewares/proxy.js';
-import { corsPlugin } from './middlewares/cors.js';
 import { openBrowser } from './openBrowser.js';
-import { recordsPlugin } from './middlewares/records.js';
-import { headersPlugin } from './middlewares/headers.js';
+import { brandColor, clearScreen, Logger } from '../utils/index.js';
+import {
+  lazyCompilationPlugin,
+  resourcesPlugin,
+  hmrPlugin,
+  proxyPlugin,
+  corsPlugin,
+  recordsPlugin,
+  headersPlugin
+} from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 
 /**
@@ -76,8 +79,11 @@ export class DevServer implements ImplDevServer {
     );
 
     this.publicPath =
-      normalizePublicPath(options?.compilation?.output?.publicPath, logger) ||
-      '/';
+      normalizePublicPath(
+        options?.compilation?.output?.publicPath,
+        logger,
+        false
+      ) || '/';
 
     this.userConfig = options;
     this.createFarmServer(options.server);
@@ -96,10 +102,15 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     const { port, open, protocol, hostname, host } = this.config;
-    const publicPath = this.publicPath.startsWith('/')
-      ? this.publicPath
-      : `/${this.publicPath}`;
     const start = Date.now();
+    let publicPath;
+    if (urlRegex.test(this.publicPath)) {
+      publicPath = '/';
+    } else {
+      publicPath = this.publicPath.startsWith('/')
+        ? this.publicPath
+        : `/${this.publicPath}`;
+    }
     // compile the project and start the dev server
     if (process.env.FARM_PROFILE) {
       this._compiler.compileSync();
@@ -204,24 +215,24 @@ export class DevServer implements ImplDevServer {
         const onError = async (error: { code: string }) => {
           if (error.code === 'EADDRINUSE') {
             clearScreen();
-            logger.warn(`Port ${devPort} is in use, trying another one...`);
-            httpServer.removeListener('error', onError);
-            resolve(false);
+            if (strictPort) {
+              httpServer.removeListener('error', onError);
+              reject(new Error(`Port ${devPort} is already in use`));
+            } else {
+              logger.warn(`Port ${devPort} is in use, trying another one...`);
+              httpServer.removeListener('error', onError);
+              resolve(false);
+            }
           } else {
             reject(true);
           }
         };
-        if (strictPort) {
-          httpServer.removeListener('error', onError);
-          reject(new Error(`Port ${devPort} is already in use`));
-        } else {
-          httpServer.on('error', onError);
-          httpServer.on('listening', () => {
-            httpServer.close();
-            resolve(true);
-          });
-          httpServer.listen(portToCheck, host);
-        }
+        httpServer.on('error', onError);
+        httpServer.on('listening', () => {
+          httpServer.close();
+          resolve(true);
+        });
+        httpServer.listen(portToCheck, host);
       });
     };
 
@@ -263,15 +274,20 @@ export class DevServer implements ImplDevServer {
 
   private startDevLogger(start: number, end: number) {
     const { port, protocol, hostname } = this.config;
-    const publicPath = this.publicPath.startsWith('/')
-      ? this.publicPath
-      : `/${this.publicPath}`;
     const version = JSON.parse(
       readFileSync(
         join(fileURLToPath(import.meta.url), '../../../package.json'),
         'utf-8'
       )
     ).version;
+    let publicPath;
+    if (urlRegex.test(this.publicPath)) {
+      publicPath = '/';
+    } else {
+      publicPath = this.publicPath.startsWith('/')
+        ? this.publicPath
+        : `/${this.publicPath}`;
+    }
     this.logger.info(
       boxen(
         `${brandColor(

@@ -1,5 +1,17 @@
 # create-farm
 
+## 1.2.14
+
+### Patch Changes
+
+- 904ecb0: optimize core package update template version
+
+## 1.2.13
+
+### Patch Changes
+
+- c12536a: fix: strictPort error
+
 ## 1.2.12
 
 ### Patch Changes

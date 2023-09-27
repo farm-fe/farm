@@ -3,17 +3,24 @@ use std::{any::Any, sync::Arc};
 use dashmap::DashMap;
 use hashbrown::HashMap;
 use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
 use swc_common::{FilePathMapping, Globals, SourceMap};
 
 use crate::{
   cache::CacheManager,
   config::Config,
   error::Result,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph},
+  module::{
+    module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
+  },
   plugin::{plugin_driver::PluginDriver, Plugin},
-  resource::{resource_pot_map::ResourcePotMap, Resource},
   record::RecordManager,
+  resource::{resource_pot_map::ResourcePotMap, Resource, ResourceOrigin, ResourceType},
 };
+
+use self::log_store::LogStore;
+
+pub mod log_store;
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
@@ -26,7 +33,8 @@ pub struct CompilationContext {
   pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
   pub cache_manager: Box<CacheManager>,
   pub meta: Box<ContextMetaData>,
-  pub record_manager: Box<RecordManager>
+  pub record_manager: Box<RecordManager>,
+  pub log_store: Box<RwLock<LogStore>>,
 }
 
 impl CompilationContext {
@@ -42,6 +50,7 @@ impl CompilationContext {
       cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),
+      log_store: Box::new(RwLock::new(LogStore::new())),
     })
   }
 
@@ -59,6 +68,21 @@ impl CompilationContext {
     }
 
     Ok(())
+  }
+
+  pub fn emit_file(&self, params: EmitFileParams) {
+    let mut resources_map = self.resources_map.lock();
+
+    resources_map.insert(
+      params.name.clone(),
+      Resource {
+        name: params.name,
+        bytes: params.content,
+        emitted: false,
+        resource_type: params.resource_type,
+        origin: ResourceOrigin::Module(ModuleId::new(&params.resolved_path, "", &self.config.root)),
+      },
+    );
   }
 }
 
@@ -157,6 +181,15 @@ impl Default for HtmlContextMetaData {
   fn default() -> Self {
     Self::new()
   }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EmitFileParams {
+  pub resolved_path: String,
+  pub name: String,
+  pub content: Vec<u8>,
+  pub resource_type: ResourceType,
 }
 
 #[cfg(test)]

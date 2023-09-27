@@ -17,7 +17,7 @@ export default defineConfig({
     },
     output: {
       path: './build',
-      publicPath: '/public-path'
+      publicPath: '/public-path/'
     },
     // sourcemap: true,
     css: {

@@ -53,7 +53,7 @@
     "source-map": "^0.7.4"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.12.8",
+    "@farmfe/core": "^0.12.11",
     "less": "*",
     "sass": "*",
     "stylus": "*"

@@ -1,5 +1,5 @@
 #![deny(clippy::all)]
-
+#![allow(clippy::redundant_allocation)]
 use std::{
   collections::HashMap,
   path::{Path, PathBuf},
@@ -16,7 +16,7 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
-  plugin::UpdateType
+  plugin::UpdateType,
 };
 
 use napi::{
@@ -75,7 +75,7 @@ pub struct JsAnalyzeDep {
 #[napi(object, js_name = "AnalyzeDepsRecord")]
 pub struct JsAnalyzeDepsRecord {
   pub name: String,
-  pub deps: Vec<JsAnalyzeDep>
+  pub deps: Vec<JsAnalyzeDep>,
 }
 
 #[napi(object, js_name = "ModuleId")]
@@ -88,7 +88,7 @@ pub struct JsResourcePotRecord {
   pub name: String,
   pub hook: String,
   pub modules: Vec<String>,
-  pub resources: Vec<String>
+  pub resources: Vec<String>,
 }
 
 #[napi(js_name = "Compiler")]
@@ -388,9 +388,7 @@ impl JsCompiler {
     let process_records = record_manager.get_process_records_by_id(&id);
     let js_process_records: Vec<JsModuleRecord> = process_records
       .into_iter()
-      .map(|record| JsModuleRecord {
-        name: record.name,
-      })
+      .map(|record| JsModuleRecord { name: record.name })
       .collect();
     js_process_records
   }
@@ -404,10 +402,14 @@ impl JsCompiler {
       .into_iter()
       .map(|record| JsAnalyzeDepsRecord {
         name: record.name,
-        deps: record.deps.into_iter().map(|dep| JsAnalyzeDep {
-          source: dep.source,
-          kind: String::from(dep.kind)
-        }).collect()
+        deps: record
+          .deps
+          .into_iter()
+          .map(|dep| JsAnalyzeDep {
+            source: dep.source,
+            kind: String::from(dep.kind),
+          })
+          .collect(),
       })
       .collect();
     js_analyze_deps_records
@@ -423,8 +425,12 @@ impl JsCompiler {
       .map(|record| JsResourcePotRecord {
         name: record.name,
         hook: record.hook,
-        modules: record.modules.into_iter().map(|id| id.to_string()).collect(),
-        resources: record.resources
+        modules: record
+          .modules
+          .into_iter()
+          .map(|id| id.to_string())
+          .collect(),
+        resources: record.resources,
       })
       .collect();
     js_resource_pot_records

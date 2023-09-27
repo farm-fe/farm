@@ -52,6 +52,8 @@ export interface UserConfig {
   envPrefix?: string | string[];
   publicDir?: string;
   inlineConfig?: FarmCLIOptions;
+  configPath?: string;
+  resolveConfigPath?: string;
   configFileDependencies?: string[];
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin)[];
