@@ -7,9 +7,9 @@ import merge from 'lodash.merge';
 import chalk from 'chalk';
 
 import { bindingPath, Config } from '../../binding/index.js';
-import { JsPlugin } from '../plugin/index.js';
+import { JsPlugin } from '../plugin/type.js';
 import { DevServer } from '../server/index.js';
-import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
+import { rustPluginResolver } from '../plugin/rust/index.js';
 import { parseUserConfig } from './schema.js';
 import {
   clearScreen,
