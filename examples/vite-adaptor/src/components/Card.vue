@@ -1,0 +1,74 @@
+<template>
+  <div class="card">
+    <div class="card-content">
+      <slot></slot>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup></script>
+
+<style scoped>
+.card {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 10px;
+  box-sizing: content-box;
+  width: 100%;
+  color: var(--color-text);
+  background: var(--color-background) !important;
+}
+.card-content {
+  padding: 1.25rem;
+}
+.card:hover:before {
+  content: '';
+  background: linear-gradient(45deg, #8d0c67, #710a4e, #550834, #39051b);
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  animation: glowing 20s linear infinite;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+  border-radius: 10px;
+  transition: all 0.1s ease-in;
+}
+
+.card:after {
+  z-index: -1;
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+}
+
+.card:hover:after {
+  background: var(--accent-background-card-gradient);
+}
+
+@keyframes glowing {
+  0% {
+    background-position: 0 0;
+  }
+
+  50% {
+    background-position: 400% 0;
+  }
+
+  100% {
+    background-position: 0 0;
+  }
+}
+</style>
