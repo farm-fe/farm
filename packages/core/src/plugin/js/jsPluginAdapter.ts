@@ -1,13 +1,11 @@
-import { toArray } from "../../utils/index.js";
+import { toArray } from '../../utils/index.js';
 
-export function adaptorVitePlugin<
-  UserOptions = Record<string, never>,
->(
-  factory: any,
+export function adaptorVitePlugin<UserOptions = Record<string, never>>(
+  factory: any
 ) {
-  return ((userOptions?: UserOptions) => {
+  return (userOptions?: UserOptions) => {
     const meta: any = {
-      framework: "vite",
+      framework: 'vite'
     };
     const rawPlugins = toArray(factory(userOptions!, meta));
 
@@ -18,11 +16,11 @@ export function adaptorVitePlugin<
     });
 
     return plugins.length === 1 ? plugins[0] : plugins;
-  });
+  };
 }
 
 function transformFarmPlugin(plugin: any) {
   console.log(plugin);
-  
+
   return {};
 }

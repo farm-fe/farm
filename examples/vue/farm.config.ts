@@ -21,5 +21,5 @@ export default defineConfig({
     port: 6654,
     // strictPort: true,
   },
-  plugins: [farmJsPluginVue()],
+  plugins: [farmJsPluginVue({ framework: "vite" })],
 });
