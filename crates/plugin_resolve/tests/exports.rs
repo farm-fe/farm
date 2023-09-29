@@ -38,7 +38,8 @@ fn resolve_exports_basic() {
 fn resolve_exports_replace() {
   fixture!(
     "tests/fixtures/resolve-node-modules/exports/index.ts",
-    |file, _| {      let cwd = file.parent().unwrap().to_path_buf();
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
       let start_time = Instant::now();
 
@@ -358,11 +359,34 @@ fn resolve_exports_import_require() {
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
+      let start_time = Instant::now();
+      // 执行您的方法
+      // let resolved = resolver.resolve(
+      //   "require-import/config",
+      //   cwd.clone(),
+      //   &ResolveKind::Import,
+      //   &Arc::new(CompilationContext::default()),
+      // );
+      // let end_time = Instant::now();
+      // let elapsed_time = end_time.duration_since(start_time);
+      // println!("方法执行时间: {} 毫秒", elapsed_time.as_millis());
+      // assert!(resolved.is_some());
+      // let resolved = resolved.unwrap();
+      // assert_eq!(
+      //   resolved.resolved_path,
+      //   cwd
+      //     .join("node_modules")
+      //     .join("require-import")
+      //     .join("lib")
+      //     .join("base-import.js")
+      //     .to_string_lossy()
+      //     .to_string()
+      // );
 
       let resolved = resolver.resolve(
         "require-import/config",
         cwd.clone(),
-        &ResolveKind::Import,
+        &ResolveKind::Require,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -373,29 +397,10 @@ fn resolve_exports_import_require() {
           .join("node_modules")
           .join("require-import")
           .join("lib")
-          .join("base-import.js")
+          .join("base-require.cjs")
           .to_string_lossy()
           .to_string()
       );
-
-      // let resolved = resolver.resolve(
-      //   "require-import/config",
-      //   cwd.clone(),
-      //   &ResolveKind::Require,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("require-import")
-      //     .join("lib")
-      //     .join("base-require.cjs")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
     }
   );
 }

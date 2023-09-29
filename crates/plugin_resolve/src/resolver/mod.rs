@@ -609,112 +609,71 @@ impl Resolver {
 
     println!("resolved_field: {:?}", resolved_field);
     println!("exports_field: {:?}", exports_field);
-    println!(
-      "findMapping {:?}",
-      find_mapping(resolved_field.as_str(), &exports_field.clone().unwrap())
-    );
     let binding = exports_field.clone().unwrap();
     println!("resolve_path {:?}", resolved_path);
-    let mut full_path = String::from("");
-    match find_mapping(resolved_field.as_str(), &binding) {
-      Some(value) => {
-        match value {
-          Value::String(string_value) => {
-            full_path = get_key_path(&string_value.as_str(), import_full_path);
-            println!("full_path {:?}", full_path);
-            return Some(full_path);
-          }
-          Value::Object(object_value) => {
-            println!("object_value {:?}", object_value);
-          }
-          _ => {
-            println!("res is not a string");
-          }
-        }
+    match binding {
+      Value::String(string_value) => {
+        println!("走着里面来的");
+        return Some(get_key_path(&string_value.as_str(), import_full_path));
       }
-      None => {
-        println!("res is None");
-      }
-    }
-    if let Some(exports_field) = exports_field {
-      let path = Path::new(resolved_path);
-      if let Value::Object(field) = exports_field {
-        let mut result_value: Option<String> = None;
-        'find_field_loop: for (key, value) in field {
-          let key_path = get_key_path(&key, import_full_path);
-          if key_path.ends_with("*") || key_path.ends_with("**") {
-            continue; // skip
-          }
-          if are_values_equal(&key_path, resolved_path) {
+      Value::Object(object_value) => {
+        // TODO resolved_field.as_str() e.g: node deno browser development
+        match find_mapping(resolved_field.as_str(), &object_value) {
+          Some(value) => {
             match value {
-              Value::String(current_field_value) => {
-                if path.is_absolute() {
-                  if are_values_equal(&key_path, resolved_path) {
-                    let value_path = get_key_path(&current_field_value, import_full_path);
-                    result_value = Some(value_path);
-                    break 'find_field_loop;
-                  }
-                }
+              Value::String(string_value) => {
+                return Some(get_key_path(&string_value.as_str(), import_full_path));
               }
-              Value::Object(current_field_value) => {
-                for (key_word, key_value) in current_field_value {
+              Value::Object(object_value) => {
+                for (key_word, key_value) in object_value {
+                  println!("object_value {:?}", object_value);
                   match kind {
                     // import with node default
                     ResolveKind::Import => {
-                      if are_values_equal(&key_word, "default") && path.is_absolute() {
+                      if are_values_equal(&key_word, "default") {
                         match &key_value {
                           Value::String(key_value_string) => {
-                            let value_path = get_key_path(key_value_string, import_full_path);
-                            result_value = Some(value_path);
-                            break 'find_field_loop;
+                            // let value_path = get_key_path(key_value_string, import_full_path);
+                            // result_value = Some(value_path);
                           }
-                          Value::Object(key_value_object) => {
-                            if let Some(Value::String(default_str)) =
-                              key_value_object.get("default")
-                            {
-                              let value_path = get_key_path(default_str, import_full_path);
-                              result_value = Some(value_path);
-                              break 'find_field_loop;
-                            }
-                          }
+                          // Value::Object(key_value_object) => {
+                          //   if let Some(Value::String(default_str)) = key_value_object.get("default") {
+                          //     let value_path = get_key_path(default_str, import_full_path);
+                          //     result_value = Some(value_path);
+                          //   }
+                          // }
                           _ => {}
                         }
                       }
                       if are_values_equal(&key_word, "import") {
                         match key_value {
                           Value::String(import_value) => {
-                            if path.is_absolute() {
-                              let value_path = get_key_path(&import_value, import_full_path);
-                              result_value = Some(value_path);
-                              break 'find_field_loop;
-                            }
+                            return Some(get_key_path(&import_value.as_str(), import_full_path));
                           }
-                          Value::Object(import_value) => {
-                            for (key_word, key_value) in import_value {
-                              match context.config.output.target_env {
-                                TargetEnv::Node => {
-                                  if are_values_equal(&key_word, "node") && path.is_absolute() {
-                                    let value_path = get_key_path(
-                                      key_value.as_str().unwrap(),
-                                      package_json_info.dir(),
-                                    );
-                                    result_value = Some(value_path);
-                                    break 'find_field_loop;
-                                  }
-                                }
-                                TargetEnv::Browser => {
-                                  if are_values_equal(key_word, "default") && path.is_absolute() {
-                                    let value_path = get_key_path(
-                                      key_value.as_str().unwrap(),
-                                      package_json_info.dir(),
-                                    );
-                                    result_value = Some(value_path);
-                                    break 'find_field_loop;
-                                  }
-                                }
-                              }
-                            }
-                          }
+                          // Value::Object(import_value) => {
+                          //   for (key_word, key_value) in import_value {
+                          //     match context.config.output.target_env {
+                          //       TargetEnv::Node => {
+                          //         if are_values_equal(&key_word, "node") && path.is_absolute() {
+                          //           let value_path = get_key_path(
+                          //             key_value.as_str().unwrap(),
+                          //             package_json_info.dir(),
+                          //           );
+                          //           result_value = Some(value_path);
+                          //         }
+                          //       }
+                          //       TargetEnv::Browser => {
+                          //         if are_values_equal(key_word, "default") && path.is_absolute() {
+                          //           let value_path = get_key_path(
+                          //             key_value.as_str().unwrap(),
+                          //             package_json_info.dir(),
+                          //           );
+                          //           result_value = Some(value_path);
+                          //         }
+                          //       }
+                          //     }
+                          //   }
+                          // }
                           _ => {}
                         }
                       }
@@ -725,100 +684,270 @@ impl Resolver {
                         match key_value {
                           Value::String(key_value) => {
                             if path.is_absolute() {
-                              let value_path = get_key_path(&key_value, import_full_path);
-                              result_value = Some(value_path);
-                              break 'find_field_loop;
+                              return Some(get_key_path(&key_value.as_str(), import_full_path));
                             }
                           }
-                          Value::Object(key_value) => {
-                            if path.is_absolute() {
-                              for (key, value) in key_value {
-                                match context.config.output.target_env {
-                                  TargetEnv::Node => {
-                                    if are_values_equal(key, "default") && path.is_absolute() {
-                                      let value_path = get_key_path(
-                                        value.as_str().unwrap(),
-                                        package_json_info.dir(),
-                                      );
-                                      result_value = Some(value_path);
-                                      break 'find_field_loop;
-                                    }
-                                  }
-                                  TargetEnv::Browser => {
-                                    if are_values_equal(key, "default") && path.is_absolute() {
-                                      let value_path = get_key_path(
-                                        value.as_str().unwrap(),
-                                        package_json_info.dir(),
-                                      );
-                                      result_value = Some(value_path);
-                                      break 'find_field_loop;
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          }
+                          // Value::Object(key_value) => {
+                          //   if path.is_absolute() {
+                          //     for (key, value) in key_value {
+                          //       match context.config.output.target_env {
+                          //         TargetEnv::Node => {
+                          //           if are_values_equal(key, "default") && path.is_absolute() {
+                          //             let value_path =
+                          //               get_key_path(value.as_str().unwrap(), package_json_info.dir());
+                          //             result_value = Some(value_path);
+                          //           }
+                          //         }
+                          //         TargetEnv::Browser => {
+                          //           if are_values_equal(key, "default") && path.is_absolute() {
+                          //             let value_path =
+                          //               get_key_path(value.as_str().unwrap(), package_json_info.dir());
+                          //             result_value = Some(value_path);
+                          //           }
+                          //         }
+                          //       }
+                          //     }
+                          //   }
+                          // }
                           _ => {}
                         }
                       }
                     }
-                    ResolveKind::ExportFrom => {
-                      if are_values_equal(&key_word, "import") {
-                        match key_value {
-                          Value::String(import_value) => {
-                            if path.is_absolute() {
-                              let value_path = get_key_path(&import_value, import_full_path);
-                              result_value = Some(value_path);
-                              break 'find_field_loop;
-                            }
-                          }
-                          Value::Object(import_value) => {
-                            for (key_word, key_value) in import_value {
-                              match context.config.output.target_env {
-                                TargetEnv::Node => {
-                                  if are_values_equal(&key_word, "node") && path.is_absolute() {
-                                    let value_path = get_key_path(
-                                      key_value.as_str().unwrap(),
-                                      package_json_info.dir(),
-                                    );
-                                    result_value = Some(value_path);
-                                    break 'find_field_loop;
-                                  }
-                                }
-                                TargetEnv::Browser => {
-                                  if are_values_equal(key_word, "default") && path.is_absolute() {
-                                    let value_path =
-                                      get_key_path(key_value.as_str().unwrap(), import_full_path);
-                                    result_value = Some(value_path);
-                                    break 'find_field_loop;
-                                  }
-                                }
-                              }
-                            }
-                          }
-                          _ => {}
-                        }
-                      }
-                    }
+                    // ResolveKind::ExportFrom => {
+                    //   if are_values_equal(&key_word, "import") {
+                    //     match key_value {
+                    //       Value::String(import_value) => {
+                    //         if path.is_absolute() {
+                    //           let value_path = get_key_path(&import_value, import_full_path);
+                    //           result_value = Some(value_path);
+                    //         }
+                    //       }
+                    //       Value::Object(import_value) => {
+                    //         for (key_word, key_value) in import_value {
+                    //           match context.config.output.target_env {
+                    //             TargetEnv::Node => {
+                    //               if are_values_equal(&key_word, "node") && path.is_absolute() {
+                    //                 let value_path = get_key_path(
+                    //                   key_value.as_str().unwrap(),
+                    //                   package_json_info.dir(),
+                    //                 );
+                    //                 result_value = Some(value_path);
+                    //               }
+                    //             }
+                    //             TargetEnv::Browser => {
+                    //               if are_values_equal(key_word, "default") && path.is_absolute() {
+                    //                 let value_path =
+                    //                   get_key_path(key_value.as_str().unwrap(), import_full_path);
+                    //                 result_value = Some(value_path);
+                    //               }
+                    //             }
+                    //           }
+                    //         }
+                    //       }
+                    //       _ => {}
+                    //     }
+                    //   }
+                    // }
                     _ => {}
                   }
                 }
               }
               _ => {
-                // TODO strict_exports config with error
+                println!("res is not a string");
               }
             }
-          } else {
-            continue;
+          }
+          None => {
+            println!("res is None");
           }
         }
-        return result_value;
       }
-      if let Value::String(str) = exports_field {
-        let value_path = get_key_path(&str, package_json_info.dir());
-        return Some(value_path);
-      }
+      _ => {}
     }
+
+    // if let Some(exports_field) = exports_field {
+    //   let path = Path::new(resolved_path);
+    //   if let Value::Object(field) = exports_field {
+    //     let mut result_value: Option<String> = None;
+    //     'find_field_loop: for (key, value) in field {
+    //       let key_path = get_key_path(&key, import_full_path);
+    //       if key_path.ends_with("*") || key_path.ends_with("**") {
+    //         continue; // skip
+    //       }
+    //       if are_values_equal(&key_path, resolved_path) {
+    //         match value {
+    //           Value::String(current_field_value) => {
+    //             if path.is_absolute() {
+    //               if are_values_equal(&key_path, resolved_path) {
+    //                 let value_path = get_key_path(&current_field_value, import_full_path);
+    //                 result_value = Some(value_path);
+    //                 break 'find_field_loop;
+    //               }
+    //             }
+    //           }
+    //           Value::Object(current_field_value) => {
+    //             for (key_word, key_value) in current_field_value {
+    //               match kind {
+    //                 // import with node default
+    //                 ResolveKind::Import => {
+    //                   if are_values_equal(&key_word, "default") && path.is_absolute() {
+    //                     match &key_value {
+    //                       Value::String(key_value_string) => {
+    //                         let value_path = get_key_path(key_value_string, import_full_path);
+    //                         result_value = Some(value_path);
+    //                         break 'find_field_loop;
+    //                       }
+    //                       Value::Object(key_value_object) => {
+    //                         if let Some(Value::String(default_str)) =
+    //                           key_value_object.get("default")
+    //                         {
+    //                           let value_path = get_key_path(default_str, import_full_path);
+    //                           result_value = Some(value_path);
+    //                           break 'find_field_loop;
+    //                         }
+    //                       }
+    //                       _ => {}
+    //                     }
+    //                   }
+    //                   if are_values_equal(&key_word, "import") {
+    //                     match key_value {
+    //                       Value::String(import_value) => {
+    //                         if path.is_absolute() {
+    //                           let value_path = get_key_path(&import_value, import_full_path);
+    //                           result_value = Some(value_path);
+    //                           break 'find_field_loop;
+    //                         }
+    //                       }
+    //                       Value::Object(import_value) => {
+    //                         for (key_word, key_value) in import_value {
+    //                           match context.config.output.target_env {
+    //                             TargetEnv::Node => {
+    //                               if are_values_equal(&key_word, "node") && path.is_absolute() {
+    //                                 let value_path = get_key_path(
+    //                                   key_value.as_str().unwrap(),
+    //                                   package_json_info.dir(),
+    //                                 );
+    //                                 result_value = Some(value_path);
+    //                                 break 'find_field_loop;
+    //                               }
+    //                             }
+    //                             TargetEnv::Browser => {
+    //                               if are_values_equal(key_word, "default") && path.is_absolute() {
+    //                                 let value_path = get_key_path(
+    //                                   key_value.as_str().unwrap(),
+    //                                   package_json_info.dir(),
+    //                                 );
+    //                                 result_value = Some(value_path);
+    //                                 break 'find_field_loop;
+    //                               }
+    //                             }
+    //                           }
+    //                         }
+    //                       }
+    //                       _ => {}
+    //                     }
+    //                   }
+    //                 }
+    //                 ResolveKind::Require => {
+    //                   if key_word.to_lowercase() == "require" {
+    //                     let path = Path::new(resolved_path);
+    //                     match key_value {
+    //                       Value::String(key_value) => {
+    //                         if path.is_absolute() {
+    //                           let value_path = get_key_path(&key_value, import_full_path);
+    //                           result_value = Some(value_path);
+    //                           break 'find_field_loop;
+    //                         }
+    //                       }
+    //                       Value::Object(key_value) => {
+    //                         if path.is_absolute() {
+    //                           for (key, value) in key_value {
+    //                             match context.config.output.target_env {
+    //                               TargetEnv::Node => {
+    //                                 if are_values_equal(key, "default") && path.is_absolute() {
+    //                                   let value_path = get_key_path(
+    //                                     value.as_str().unwrap(),
+    //                                     package_json_info.dir(),
+    //                                   );
+    //                                   result_value = Some(value_path);
+    //                                   break 'find_field_loop;
+    //                                 }
+    //                               }
+    //                               TargetEnv::Browser => {
+    //                                 if are_values_equal(key, "default") && path.is_absolute() {
+    //                                   let value_path = get_key_path(
+    //                                     value.as_str().unwrap(),
+    //                                     package_json_info.dir(),
+    //                                   );
+    //                                   result_value = Some(value_path);
+    //                                   break 'find_field_loop;
+    //                                 }
+    //                               }
+    //                             }
+    //                           }
+    //                         }
+    //                       }
+    //                       _ => {}
+    //                     }
+    //                   }
+    //                 }
+    //                 ResolveKind::ExportFrom => {
+    //                   if are_values_equal(&key_word, "import") {
+    //                     match key_value {
+    //                       Value::String(import_value) => {
+    //                         if path.is_absolute() {
+    //                           let value_path = get_key_path(&import_value, import_full_path);
+    //                           result_value = Some(value_path);
+    //                           break 'find_field_loop;
+    //                         }
+    //                       }
+    //                       Value::Object(import_value) => {
+    //                         for (key_word, key_value) in import_value {
+    //                           match context.config.output.target_env {
+    //                             TargetEnv::Node => {
+    //                               if are_values_equal(&key_word, "node") && path.is_absolute() {
+    //                                 let value_path = get_key_path(
+    //                                   key_value.as_str().unwrap(),
+    //                                   package_json_info.dir(),
+    //                                 );
+    //                                 result_value = Some(value_path);
+    //                                 break 'find_field_loop;
+    //                               }
+    //                             }
+    //                             TargetEnv::Browser => {
+    //                               if are_values_equal(key_word, "default") && path.is_absolute() {
+    //                                 let value_path =
+    //                                   get_key_path(key_value.as_str().unwrap(), import_full_path);
+    //                                 result_value = Some(value_path);
+    //                                 break 'find_field_loop;
+    //                               }
+    //                             }
+    //                           }
+    //                         }
+    //                       }
+    //                       _ => {}
+    //                     }
+    //                   }
+    //                 }
+    //                 _ => {}
+    //               }
+    //             }
+    //           }
+    //           _ => {
+    //             // TODO strict_exports config with error
+    //           }
+    //         }
+    //       } else {
+    //         continue;
+    //       }
+    //     }
+    //     return result_value;
+    //   }
+    //   if let Value::String(str) = exports_field {
+    //     let value_path = get_key_path(&str, package_json_info.dir());
+    //     return Some(value_path);
+    //   }
+    // }
 
     None
   }
