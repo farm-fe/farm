@@ -1,4 +1,5 @@
 use farmfe_core::{
+  config::partial_bundling::PartialBundlingGroupConfigResourceType,
   hashbrown::HashMap,
   module::{
     module_graph::ModuleGraph,
@@ -9,15 +10,37 @@ use farmfe_core::{
 
 use crate::module_bucket::ModuleBucket;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ResourceType {
+  Initial,
+  Async,
+}
+
+impl ResourceType {
+  pub fn is_match(&self, ty: PartialBundlingGroupConfigResourceType) -> bool {
+    match ty {
+      PartialBundlingGroupConfigResourceType::All => true,
+      PartialBundlingGroupConfigResourceType::Initial => matches!(self, Self::Initial),
+      PartialBundlingGroupConfigResourceType::Async => matches!(self, Self::Async),
+    }
+  }
+}
+
 pub struct ModuleGroupBuckets {
   pub module_group_id: ModuleGroupId,
+  pub resource_type: ResourceType,
   pub buckets: Vec<String>,
 }
 
 impl ModuleGroupBuckets {
-  pub fn new(module_group_id: ModuleGroupId, buckets: Vec<String>) -> Self {
+  pub fn new(
+    module_group_id: ModuleGroupId,
+    resource_type: ResourceType,
+    buckets: Vec<String>,
+  ) -> Self {
     Self {
       module_group_id,
+      resource_type,
       buckets,
     }
   }
@@ -82,7 +105,16 @@ pub fn group_module_buckets_by_module_group(
   for module_group_id in sorted_module_group_ids {
     if module_group_buckets_map.contains_key(&module_group_id) {
       let buckets = module_group_buckets_map.remove(&module_group_id).unwrap();
-      module_group_buckets.push(ModuleGroupBuckets::new(module_group_id, buckets));
+      let resource_type = if module_graph.entries.contains_key(&module_group_id) {
+        ResourceType::Initial
+      } else {
+        ResourceType::Async
+      };
+      module_group_buckets.push(ModuleGroupBuckets::new(
+        module_group_id,
+        resource_type,
+        buckets,
+      ));
     }
   }
 
@@ -195,6 +227,7 @@ mod tests {
     assert_eq!(module_group_buckets.len(), 5);
 
     assert_eq!(module_group_buckets[0].module_group_id, "B".into());
+    assert_eq!(module_group_buckets[0].resource_type, ResourceType::Initial);
     assert_eq!(module_group_buckets[0].buckets.len(), 3);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[0].buckets.clone().into_iter()),
@@ -206,6 +239,7 @@ mod tests {
     );
 
     assert_eq!(module_group_buckets[1].module_group_id, "G".into());
+    assert_eq!(module_group_buckets[1].resource_type, ResourceType::Async);
     assert_eq!(module_group_buckets[1].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[1].buckets.clone().into_iter()),
@@ -216,6 +250,7 @@ mod tests {
     );
 
     assert_eq!(module_group_buckets[2].module_group_id, "A".into());
+    assert_eq!(module_group_buckets[2].resource_type, ResourceType::Initial);
     assert_eq!(module_group_buckets[2].buckets.len(), 1);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[2].buckets.clone().into_iter()),
@@ -223,6 +258,7 @@ mod tests {
     );
 
     assert_eq!(module_group_buckets[3].module_group_id, "F".into());
+    assert_eq!(module_group_buckets[3].resource_type, ResourceType::Async);
     assert_eq!(module_group_buckets[3].buckets.len(), 3);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[3].buckets.clone().into_iter()),
@@ -234,6 +270,7 @@ mod tests {
     );
 
     assert_eq!(module_group_buckets[4].module_group_id, "D".into());
+    assert_eq!(module_group_buckets[4].resource_type, ResourceType::Async);
     assert_eq!(module_group_buckets[4].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[4].buckets.clone().into_iter()),

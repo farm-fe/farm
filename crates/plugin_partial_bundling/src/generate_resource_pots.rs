@@ -1,13 +1,19 @@
 use std::path::PathBuf;
 
 use farmfe_core::{
+  config::partial_bundling::PartialBundlingConfig,
   hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
 };
 
 use crate::{
-  generate_module_buckets::ModuleGroupBuckets, module_bucket::ModuleBucket, utils::try_get_filename,
+  generate_module_buckets::ModuleGroupBuckets,
+  generate_module_pots::generate_module_pots,
+  merge_module_pots::{merge_module_pots, ModuleGroupModulePots},
+  module_bucket::ModuleBucket,
+  module_pot::ModulePot,
+  utils::{get_sorted_module_ids_str, hash_module_ids, try_get_filename},
 };
 
 /// Generate resource pots from module group buckets.
@@ -17,8 +23,10 @@ pub fn generate_resource_pots(
   module_group_buckets: Vec<ModuleGroupBuckets>,
   mut module_buckets_map: HashMap<String, ModuleBucket>,
   module_graph: &ModuleGraph,
+  root: &str,
+  config: &PartialBundlingConfig,
 ) -> Vec<ResourcePot> {
-  let mut resource_pot_map = HashMap::<ResourcePotId, ResourcePot>::new();
+  let mut resource_pots = vec![];
   let mut handled_module_group_buckets = HashSet::new();
   let mut used_resource_pot_names = HashSet::new();
 
@@ -31,43 +39,41 @@ pub fn generate_resource_pots(
     );
     used_resource_pot_names.insert(base_resource_pot_name.clone());
 
+    let mut module_group_module_pots = ModuleGroupModulePots::new(module_group_id);
+
     // Sort the buckets to make sure it is stable.
     module_group_bucket.buckets.sort();
 
-    for (index, module_bucket_id) in module_group_bucket.buckets.into_iter().enumerate() {
+    for module_bucket_id in module_group_bucket.buckets {
       if handled_module_group_buckets.contains(&module_bucket_id) {
         continue;
       }
 
       let module_bucket = module_buckets_map.get_mut(&module_bucket_id).unwrap();
 
-      // TODO merge the modules in module bucket to module pots.
-
-      let resource_pot_id = ResourcePotId::new(format!("{}_{}", base_resource_pot_name, index));
-      let mut resource_pot = ResourcePot::new(
-        resource_pot_id,
-        ResourcePotType::from(module_bucket.module_type.clone()),
+      let module_pots: Vec<ModulePot> = generate_module_pots(
+        &module_bucket.modules(),
+        module_graph,
+        config,
+        root,
+        module_group_bucket.resource_type.clone(),
       );
-      resource_pot.immutable = module_bucket.immutable;
-      // println!(
-      //   "resource pot: {:?}. resource pot type: {:?}, module type: {:?}",
-      //   resource_pot.id, resource_pot.resource_pot_type, module_bucket.module_type,
-      // );
 
-      for module_id in module_bucket.modules() {
-        resource_pot.add_module(module_id.clone());
-      }
-
-      resource_pot_map.insert(resource_pot.id.clone(), resource_pot);
-
+      module_group_module_pots.add_module_pots(module_bucket_id.clone(), module_pots);
       handled_module_group_buckets.insert(module_bucket_id);
     }
+
+    let merged_resource_pots = merge_module_pots(
+      module_group_module_pots,
+      config,
+      &base_resource_pot_name,
+      module_graph,
+    );
+
+    resource_pots.extend(merged_resource_pots);
   }
 
-  resource_pot_map
-    .into_iter()
-    .map(|item| item.1)
-    .collect::<Vec<_>>()
+  resource_pots
 }
 
 /// Generate resource pot id from module group id.

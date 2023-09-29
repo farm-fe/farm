@@ -282,18 +282,23 @@ pub fn patch_module_group_graph(
   let affected_module_groups = affected_module_groups
     .into_iter()
     .filter(|g_id| module_group_graph.has(g_id))
-    .collect::<HashSet<_>>();
+    .collect::<Vec<_>>();
 
   let mut final_affected_module_groups = HashSet::new();
-
-  for module_group_id in affected_module_groups {
+  let mut queue = VecDeque::from(affected_module_groups);
+  // makes sure that all module groups that are affected are included
+  while !queue.is_empty() {
+    let module_group_id = queue.pop_front().unwrap();
     let module_group = module_group_graph.module_group(&module_group_id).unwrap();
 
     for module_id in module_group.modules() {
       let module = module_graph.module(module_id).unwrap();
 
       for module_group_id in &module.module_groups {
-        final_affected_module_groups.insert(module_group_id.clone());
+        if !final_affected_module_groups.contains(module_group_id) {
+          final_affected_module_groups.insert(module_group_id.clone());
+          queue.push_back(module_group_id.clone());
+        }
       }
     }
   }

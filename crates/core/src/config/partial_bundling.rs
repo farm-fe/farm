@@ -24,6 +24,9 @@ pub struct PartialBundlingConfig {
   pub enforce_target_min_size: bool,
   /// immutable module paths, set to empty array to disable
   pub immutable_modules: Vec<ConfigRegex>,
+  /// Default to 0.8, immutable module will have 80% request numbers.
+  /// TODO check if it is between 0 and 1
+  pub immutable_modules_weight: f32,
 }
 
 impl Default for PartialBundlingConfig {
@@ -37,6 +40,7 @@ impl Default for PartialBundlingConfig {
       enforce_target_concurrent_requests: false,
       enforce_target_min_size: false,
       immutable_modules: vec![ConfigRegex::default()],
+      immutable_modules_weight: 0.8,
     }
   }
 }
@@ -47,10 +51,54 @@ pub struct PartialBundlingGroupConfig {
   pub name: String,
   /// Regex vec to match the modules in the module bucket
   pub test: Vec<ConfigRegex>,
-  /// mutable or immutable
-  pub group_type: String,
+  /// all, mutable or immutable
+  pub group_type: PartialBundlingGroupConfigGroupType,
   /// all, initial, async
-  pub resource_type: String,
+  pub resource_type: PartialBundlingGroupConfigResourceType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum PartialBundlingGroupConfigGroupType {
+  #[serde(rename = "all")]
+  All,
+  #[serde(rename = "mutable")]
+  Mutable,
+  #[serde(rename = "immutable")]
+  Immutable,
+}
+
+impl PartialBundlingGroupConfigGroupType {
+  pub fn is_match(&self, immutable: bool) -> bool {
+    match self {
+      Self::All => true,
+      Self::Mutable => !immutable,
+      Self::Immutable => immutable,
+    }
+  }
+}
+
+impl Default for PartialBundlingGroupConfigGroupType {
+  fn default() -> Self {
+    Self::All
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum PartialBundlingGroupConfigResourceType {
+  #[serde(rename = "all")]
+  All,
+  #[serde(rename = "initial")]
+  Initial,
+  #[serde(rename = "async")]
+  Async,
+}
+
+impl Default for PartialBundlingGroupConfigResourceType {
+  fn default() -> Self {
+    Self::All
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

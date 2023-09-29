@@ -5,9 +5,7 @@ use farmfe_core::{
   hashbrown::HashSet,
   module::{module_group::ModuleGroupId, ModuleId, ModuleType},
   resource::{
-    resource_pot::{
-      JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
-    },
+    resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     ResourceType,
   },
   swc_common::DUMMY_SP,
@@ -32,12 +30,10 @@ pub fn render_and_generate_update_resource(
   diff_result: &DiffResult,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<String> {
-  let mut update_resource_pot = ResourcePot::new(
-    ResourcePotId::new(String::from("__UPDATE_RESOURCE_POT__")),
-    ResourcePotType::Js,
-  );
+  let mut update_resource_pot =
+    ResourcePot::new(String::from("__UPDATE_RESOURCE_POT__"), ResourcePotType::Js);
   let mut update_css_resource_pot = ResourcePot::new(
-    ResourcePotId::new(String::from("__UPDATE_CSS_RESOURCE_POT__")),
+    String::from("__UPDATE_CSS_RESOURCE_POT__"),
     ResourcePotType::Css,
   );
   update_resource_pot.immutable = true;
@@ -113,6 +109,12 @@ pub fn regenerate_resources_for_affected_module_groups(
   updated_module_ids: &Vec<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
+  // if there are deps changes, update execution order
+  {
+    let mut module_graph = context.module_graph.write();
+    module_graph.update_execution_order_for_modules();
+  }
+
   clear_resource_pot_of_modules_in_module_groups(&affected_module_groups, context);
 
   let mut affected_resource_pots_ids = generate_and_diff_resource_pots(

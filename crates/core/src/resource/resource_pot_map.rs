@@ -2,7 +2,6 @@ use hashbrown::HashMap;
 
 use super::resource_pot::{ResourcePot, ResourcePotId};
 
-// TODO: Change Graph to Map, as the resource pot should be related to module group, and we already have resource group graph
 pub struct ResourcePotMap {
   map: HashMap<ResourcePotId, ResourcePot>,
 }

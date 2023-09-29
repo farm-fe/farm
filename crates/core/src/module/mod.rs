@@ -68,7 +68,8 @@ impl Module {
       source_map_chain: vec![],
       external: false,
       immutable: false,
-      execution_order: 0,
+      // default to the last
+      execution_order: usize::MAX,
       size: 0,
     }
   }

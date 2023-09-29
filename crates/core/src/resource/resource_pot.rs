@@ -1,4 +1,4 @@
-use std::{any::Any, char::ToLowercase};
+use std::any::Any;
 
 use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
@@ -15,6 +15,7 @@ use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 #[cache_item]
 pub struct ResourcePot {
   pub id: ResourcePotId,
+  pub name: String,
   pub resource_pot_type: ResourcePotType,
   modules: HashSet<ModuleId>,
   pub meta: ResourcePotMetaData,
@@ -32,9 +33,10 @@ pub struct ResourcePot {
 }
 
 impl ResourcePot {
-  pub fn new(id: ResourcePotId, ty: ResourcePotType) -> Self {
+  pub fn new(name: String, ty: ResourcePotType) -> Self {
     Self {
-      id,
+      id: Self::gen_id(&name, ty.clone()),
+      name,
       resource_pot_type: ty,
       modules: HashSet::new(),
       meta: ResourcePotMetaData::default(),
@@ -43,6 +45,10 @@ impl ResourcePot {
       module_groups: HashSet::new(),
       immutable: false,
     }
+  }
+
+  pub fn gen_id(name: &str, ty: ResourcePotType) -> String {
+    format!("{}_{}", name, ty.to_string())
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
@@ -82,34 +88,10 @@ impl ResourcePot {
   }
 }
 
-#[cache_item]
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
-pub struct ResourcePotId {
-  name: String,
-}
-
-impl ToString for ResourcePotId {
-  fn to_string(&self) -> String {
-    self.name.clone()
-  }
-}
-
-impl From<&str> for ResourcePotId {
-  fn from(n: &str) -> Self {
-    Self {
-      name: n.to_string(),
-    }
-  }
-}
-
-impl ResourcePotId {
-  pub fn new(name: String) -> Self {
-    Self { name }
-  }
-}
+pub type ResourcePotId = String;
 
 #[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ResourcePotType {
   Runtime,
   Js,

@@ -10,8 +10,8 @@ use farmfe_core::{
 
 use crate::{
   generate::partial_bundling::{
-    call_partial_bundling_hook, get_enforce_resource_name_for_module,
-    get_resource_pot_id_for_enforce_resources,
+    call_partial_bundling_hook, fill_necessary_fields_for_resource_pot,
+    get_enforce_resource_name_for_module, get_resource_pot_id_for_enforce_resources,
   },
   update::diff_and_patch_module_graph::DiffResult,
 };
@@ -37,6 +37,153 @@ pub fn generate_and_diff_resource_pots(
   // for enforce resource pots, only rerender it when it's modules are changed, added or removed.
   let resources_pots =
     call_partial_bundling_hook(&modules, context, &PluginHookContext::default())?;
+
+  // fill necessary fields for enforce resource pots
+  {
+    let mut resource_pot_map = context.resource_pot_map.write();
+
+    enforce_resource_pot_ids.iter().for_each(|id| {
+      let resource_pot = resource_pot_map.resource_pot_mut(&id).unwrap();
+      fill_necessary_fields_for_resource_pot(vec![resource_pot], context);
+    });
+  }
+
+  let mut new_resource_pot_ids = diff_and_patch_resource_pot_map(resources_pots, context);
+
+  {
+    let mut resource_pot_map = context.resource_pot_map.write();
+
+    // fill necessary fields for new resource pots
+    new_resource_pot_ids.iter().for_each(|id| {
+      let resource_pot = resource_pot_map.resource_pot_mut(&id).unwrap();
+      fill_necessary_fields_for_resource_pot(vec![resource_pot], context);
+    });
+  }
+
+  let hash_new_resource_pot_ids = new_resource_pot_ids
+    .iter()
+    .map(|id| id.clone())
+    .collect::<HashSet<_>>();
+  // alway render affected resource pots resource pots
+  enforce_resource_pot_ids.into_iter().for_each(|id| {
+    if !hash_new_resource_pot_ids.contains(&id) {
+      new_resource_pot_ids.insert(id);
+    }
+  });
+
+  Ok(new_resource_pot_ids.into_iter().collect())
+}
+
+fn get_affected_modules(
+  module_groups: &HashSet<ModuleGroupId>,
+  context: &Arc<CompilationContext>,
+) -> Vec<ModuleId> {
+  let module_group_graph = context.module_group_graph.read();
+  // let mut enforce_resource_pots = HashSet::new();
+  module_groups
+    .iter()
+    .fold(HashSet::new(), |mut acc, module_group_id| {
+      let module_group = module_group_graph.module_group(module_group_id).unwrap();
+      acc.extend(module_group.modules().clone());
+      acc
+    })
+    .into_iter()
+    .collect::<Vec<_>>()
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum ChangedModuleType {
+  Added,
+  Removed,
+  Updated,
+}
+
+/// Handle the enforce resource pots.
+/// return (enforce_resource_pot_ids, un_enforced_modules)
+fn handle_enforce_resource_pots(
+  affected_modules: &Vec<ModuleId>,
+  diff_result: &DiffResult,
+  updated_module_ids: &Vec<ModuleId>,
+  context: &Arc<CompilationContext>,
+) -> (Vec<ResourcePotId>, Vec<ModuleId>) {
+  let module_graph = context.module_graph.read();
+  let mut resource_pot_map = context.resource_pot_map.write();
+  let mut un_enforced_modules = HashSet::new();
+  let mut affected_resource_pot_ids = HashSet::new();
+
+  let mut handle_changed_modules = |module_ids: &HashSet<ModuleId>, ty: ChangedModuleType| {
+    for module_id in module_ids {
+      if let Some(name) = get_enforce_resource_name_for_module(
+        &module_id,
+        &context.config.partial_bundling.enforce_resources,
+      ) {
+        let (resource_pot_type, resource_pot_name, resource_pot_id) =
+          get_resource_pot_id_for_enforce_resources(name, &module_id, &module_graph);
+        affected_resource_pot_ids.insert(resource_pot_id.clone());
+
+        if let Some(resource_pot) = resource_pot_map.resource_pot_mut(&resource_pot_id) {
+          if ty == ChangedModuleType::Added {
+            resource_pot.add_module(module_id.clone());
+          } else if ty == ChangedModuleType::Removed {
+            resource_pot.remove_module(module_id);
+          }
+        } else if ty != ChangedModuleType::Removed {
+          let mut resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
+          resource_pot.add_module(module_id.clone());
+          resource_pot_map.add_resource_pot(resource_pot);
+        }
+      }
+    }
+  };
+
+  handle_changed_modules(
+    &updated_module_ids
+      .clone()
+      .into_iter()
+      .collect::<HashSet<_>>(),
+    ChangedModuleType::Updated,
+  );
+  handle_changed_modules(&diff_result.added_modules, ChangedModuleType::Added);
+  handle_changed_modules(&diff_result.removed_modules, ChangedModuleType::Removed);
+
+  // Filter out the modules that are not in any enforce resource pot
+  for module_id in affected_modules {
+    if let Some(name) = get_enforce_resource_name_for_module(
+      &module_id,
+      &context.config.partial_bundling.enforce_resources,
+    ) {
+      let (_, _, resource_pot_id) =
+        get_resource_pot_id_for_enforce_resources(name, &module_id, &module_graph);
+      // check if the module is in any enforce resource pot
+      assert!(
+        affected_resource_pot_ids.contains(&resource_pot_id),
+        "The module {:?} matches enforceResources config, but not in any enforce resource pot",
+        module_id
+      );
+    } else {
+      un_enforced_modules.insert(module_id.clone());
+    }
+  }
+
+  // remove the resource pot if it's modules are empty
+  for id in &affected_resource_pot_ids {
+    let resource_pot = resource_pot_map.resource_pot_mut(&id).unwrap();
+
+    if resource_pot.modules().is_empty() {
+      resource_pot_map.remove_resource_pot(&id);
+    }
+  }
+
+  (
+    affected_resource_pot_ids.into_iter().collect::<Vec<_>>(),
+    un_enforced_modules.into_iter().collect::<Vec<_>>(),
+  )
+}
+
+fn diff_and_patch_resource_pot_map(
+  resources_pots: Vec<ResourcePot>,
+  context: &Arc<CompilationContext>,
+) -> HashSet<ResourcePotId> {
   let resources_pots_ids = resources_pots
     .iter()
     .map(|rp| rp.id.clone())
@@ -46,7 +193,7 @@ pub fn generate_and_diff_resource_pots(
   let mut resource_pot_map = context.resource_pot_map.write();
   let mut module_group_graph = context.module_group_graph.write();
 
-  let mut new_resource_pot_ids = vec![];
+  let mut new_resource_pot_ids = HashSet::new();
 
   for mut resource_pot in resources_pots {
     let mut module_groups = HashSet::new();
@@ -97,118 +244,22 @@ pub fn generate_and_diff_resource_pots(
         // the resource pot is already in the module group
         continue;
       } else {
-        new_resource_pot_ids.push(resource_pot.id.clone());
+        new_resource_pot_ids.insert(resource_pot.id.clone());
         module_group.add_resource_pot(resource_pot.id.clone());
       }
     }
 
     if !resource_pot_map.has_resource_pot(&resource_pot.id) {
-      new_resource_pot_ids.push(resource_pot.id.clone());
+      new_resource_pot_ids.insert(resource_pot.id.clone());
       resource_pot_map.add_resource_pot(resource_pot);
     }
   }
 
-  Ok(new_resource_pot_ids)
+  new_resource_pot_ids
 }
 
-fn get_affected_modules(
-  module_groups: &HashSet<ModuleGroupId>,
-  context: &Arc<CompilationContext>,
-) -> Vec<ModuleId> {
-  let module_group_graph = context.module_group_graph.read();
-  let module_graph = context.module_graph.read();
-  // let mut enforce_resource_pots = HashSet::new();
-  module_groups
-    .iter()
-    .fold(HashSet::new(), |mut acc, module_group_id| {
-      let module_group = module_group_graph.module_group(module_group_id).unwrap();
-      acc.extend(module_group.modules().clone());
-      acc
-    })
-    .into_iter()
-    .collect::<Vec<_>>()
-}
+#[cfg(test)]
+mod test_handle_enforce_resource_pots;
 
-#[derive(Debug, PartialEq, Eq)]
-enum ChangedModuleType {
-  Added,
-  Removed,
-  Updated,
-}
-
-/// Handle the enforce resource pots.
-/// return (enforce_resource_pot_ids, un_enforced_modules)
-fn handle_enforce_resource_pots(
-  affected_modules: &Vec<ModuleId>,
-  diff_result: &DiffResult,
-  updated_module_ids: &Vec<ModuleId>,
-  context: &Arc<CompilationContext>,
-) -> (Vec<ResourcePotId>, Vec<ModuleId>) {
-  let module_graph = context.module_graph.read();
-  let mut resource_pot_map = context.resource_pot_map.write();
-  let mut un_enforced_modules = HashSet::new();
-  let mut affected_resource_pot_ids = HashSet::new();
-
-  let mut handle_changed_modules = |module_ids: &HashSet<ModuleId>, ty: ChangedModuleType| {
-    for module_id in module_ids {
-      if let Some(name) = get_enforce_resource_name_for_module(
-        &module_id,
-        &context.config.partial_bundling.enforce_resources,
-      ) {
-        let (resource_pot_type, resource_pot_id) =
-          get_resource_pot_id_for_enforce_resources(name, &module_id, &module_graph);
-        affected_resource_pot_ids.insert(resource_pot_id.clone());
-
-        if let Some(resource_pot) = resource_pot_map.resource_pot_mut(&resource_pot_id) {
-          if ty == ChangedModuleType::Added {
-            resource_pot.add_module(module_id.clone());
-          } else if ty == ChangedModuleType::Removed {
-            resource_pot.remove_module(module_id);
-          }
-        } else if ty != ChangedModuleType::Removed {
-          let mut resource_pot = ResourcePot::new(resource_pot_id, resource_pot_type);
-          resource_pot.add_module(module_id.clone());
-          resource_pot_map.add_resource_pot(resource_pot);
-        }
-      }
-    }
-  };
-
-  handle_changed_modules(
-    &updated_module_ids
-      .clone()
-      .into_iter()
-      .collect::<HashSet<_>>(),
-    ChangedModuleType::Updated,
-  );
-  handle_changed_modules(&diff_result.added_modules, ChangedModuleType::Added);
-  handle_changed_modules(&diff_result.removed_modules, ChangedModuleType::Removed);
-
-  // Filter out the modules that are not in any enforce resource pot
-  for module_id in affected_modules {
-    if let Some(name) = get_enforce_resource_name_for_module(
-      &module_id,
-      &context.config.partial_bundling.enforce_resources,
-    ) {
-      let (_, resource_pot_id) =
-        get_resource_pot_id_for_enforce_resources(name, &module_id, &module_graph);
-      // check if the module is in any enforce resource pot
-      assert!(
-        affected_resource_pot_ids.contains(&resource_pot_id),
-        "The module {:?} matches enforceResources config, but not in any enforce resource pot",
-        module_id
-      );
-    } else {
-      un_enforced_modules.insert(module_id.clone());
-    }
-  }
-
-  (
-    affected_resource_pot_ids.into_iter().collect::<Vec<_>>(),
-    un_enforced_modules.into_iter().collect::<Vec<_>>(),
-  )
-}
-
-fn diff_and_patch_resource_pot_map() -> Vec<ResourcePotId> {
-  vec![]
-}
+#[cfg(test)]
+mod test_generate_and_diff_resource_pots;

@@ -193,7 +193,7 @@ impl Compiler {
       watch_diff_result.remove.extend(old_watch_extra_resources);
     }
 
-    // If the module type is not script, we should skip render and generate update resource.
+    // If the module type is not script or css, we should skip render and generate update resource.
     // and just return `window.location.reload()`
     let should_reload_page = updated_module_ids.iter().any(|id| {
       let module_graph = self.context.module_graph.read();

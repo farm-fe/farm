@@ -8,7 +8,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId},
   plugin::PluginHookContext,
   resource::{
-    resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
+    resource_pot::{ResourcePot, ResourcePotType},
     resource_pot_map::ResourcePotMap,
   },
 };
@@ -50,7 +50,7 @@ fn analyze_module_graph(
   Ok(module_group_graph)
 }
 
-fn generate_resource_pot_map(
+pub fn generate_resource_pot_map(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotMap> {
@@ -59,8 +59,7 @@ fn generate_resource_pot_map(
     call_partial_bundling_hook(&modules.into_iter().collect(), context, hook_context)?;
   // extends enforce resource pots
   resources_pots.extend(enforce_resource_pots);
-
-  resources_pots = fill_necessary_fields_for_resource_pot(resources_pots, context);
+  fill_necessary_fields_for_resource_pot(resources_pots.iter_mut().collect(), context);
 
   let mut resource_pot_map = ResourcePotMap::new();
 
@@ -104,13 +103,13 @@ pub fn call_partial_bundling_hook(
 }
 
 pub fn fill_necessary_fields_for_resource_pot(
-  mut resources_pots: Vec<ResourcePot>,
+  resources_pots: Vec<&mut ResourcePot>,
   context: &Arc<CompilationContext>,
-) -> Vec<ResourcePot> {
+) {
   let mut module_graph = context.module_graph.write();
   let mut module_group_graph = context.module_group_graph.write();
 
-  for resource_pot in &mut resources_pots {
+  for resource_pot in resources_pots {
     let mut module_groups = HashSet::new();
     let mut entry_module = None;
 
@@ -137,20 +136,18 @@ pub fn fill_necessary_fields_for_resource_pot(
       module_group.add_resource_pot(resource_pot.id.clone());
     }
   }
-
-  resources_pots
 }
 
 pub fn get_resource_pot_id_for_enforce_resources(
   name: String,
   module_id: &ModuleId,
   module_graph: &ModuleGraph,
-) -> (ResourcePotType, ResourcePotId) {
+) -> (ResourcePotType, String, String) {
   let module = module_graph.module(module_id).unwrap();
   let resource_pot_type = ResourcePotType::from(module.module_type.clone());
-  let resource_pot_id = ResourcePotId::new(format!("{}_{}", name, resource_pot_type.to_string()));
+  let id = ResourcePot::gen_id(&name, resource_pot_type.clone());
 
-  (resource_pot_type, resource_pot_id)
+  (resource_pot_type, name, id)
 }
 
 fn generate_enforce_resource_pots(
@@ -168,7 +165,7 @@ fn generate_enforce_resource_pots(
         module_id,
         &context.config.partial_bundling.enforce_resources,
       ) {
-        let (resource_pot_type, resource_pot_id) =
+        let (resource_pot_type, resource_pot_name, resource_pot_id) =
           get_resource_pot_id_for_enforce_resources(name.clone(), module_id, &module_graph);
 
         let resource_pot = enforce_resource_pot_map.resource_pot_mut(&resource_pot_id);
@@ -176,7 +173,7 @@ fn generate_enforce_resource_pots(
         if let Some(resource_pot) = resource_pot {
           resource_pot.add_module(module_id.clone());
         } else {
-          let mut resource_pot = ResourcePot::new(resource_pot_id, resource_pot_type);
+          let mut resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
           resource_pot.add_module(module_id.clone());
           enforce_resource_pot_map.add_resource_pot(resource_pot);
         }
@@ -192,4 +189,80 @@ fn generate_enforce_resource_pots(
     modules.into_iter().collect(),
   )
 }
+
 // TODO test generate_resource_pot_map
+#[cfg(test)]
+mod tests {
+  use std::sync::Arc;
+
+  use farmfe_core::{
+    config::{
+      config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+    },
+    context::CompilationContext,
+    plugin::{Plugin, PluginHookContext},
+    resource::resource_pot::{ResourcePot, ResourcePotType},
+  };
+  use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
+  use farmfe_testing_helpers::construct_test_module_graph_complex;
+
+  use super::generate_resource_pot_map;
+
+  #[test]
+  fn test_generate_resource_pot_map() {
+    let mut module_graph = construct_test_module_graph_complex();
+    let module_group_graph = module_group_graph_from_entries(
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
+      &mut module_graph,
+    );
+
+    let mut config = Config::default();
+    config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
+      name: "test".into(),
+      test: vec![ConfigRegex::new("F"), ConfigRegex::new("H")],
+    }];
+    let plugins: Vec<Arc<dyn Plugin + 'static>> = vec![Arc::new(
+      farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config),
+    )];
+    let context = Arc::new(CompilationContext::new(config, plugins).unwrap());
+
+    {
+      let mut mg = context.module_graph.write();
+      *mg = module_graph;
+    }
+
+    {
+      let mut mgg = context.module_group_graph.write();
+      *mgg = module_group_graph;
+    }
+
+    let resource_pot_map =
+      generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
+    println!(
+      "{:?}",
+      resource_pot_map
+        .resource_pots()
+        .iter()
+        .map(|i| i.id.clone())
+        .collect::<Vec<_>>()
+    );
+    assert_eq!(resource_pot_map.resource_pots().len(), 5);
+    assert_eq!(
+      resource_pot_map
+        .resource_pot(&ResourcePot::gen_id(
+          "test",
+          ResourcePotType::Custom("__farm_unknown".to_string())
+        ))
+        .unwrap()
+        .modules()
+        .len(),
+      2
+    );
+    // TODO test the other resource pots
+  }
+}

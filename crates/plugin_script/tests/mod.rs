@@ -3,6 +3,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
+  hashbrown::HashSet,
   module::{Module, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
@@ -120,8 +121,7 @@ fn load_parse_and_analyze_deps() {
         ]
       );
 
-      let mut resource_pot =
-        ResourcePot::new(ResourcePotId::new("index".to_string()), ResourcePotType::Js);
+      let mut resource_pot = ResourcePot::new(ResourcePotId::from("index"), ResourcePotType::Js);
 
       resource_pot.resource_pot_type = ResourcePotType::Js;
       resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {

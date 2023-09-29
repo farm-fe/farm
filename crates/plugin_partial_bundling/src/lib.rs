@@ -18,14 +18,12 @@ use module_bucket::ModuleBucket;
 
 // mod module_bucket;
 mod generate_module_buckets;
+mod generate_module_pots;
 mod generate_resource_pots;
+mod merge_module_pots;
 mod module_bucket;
+mod module_pot;
 mod utils;
-// mod resource_group;
-// mod split_resource_unit;
-
-// use resource_group::{ids_to_string, is_subset, ResourceGroup, ResourceUnit, ResourceUnitId};
-
 /// Partial Bundling implementation for Farm.
 /// See https://github.com/farm-fe/rfcs/pull/9
 pub struct FarmPluginPartialBundling {}
@@ -60,7 +58,7 @@ impl Plugin for FarmPluginPartialBundling {
 
   /// The partial bundling algorithm's result should not be related to the order of the module group.
   /// Whatever the order of the module group is, the result should be the same.
-  /// See https://github.com/farm-fe/rfcs/pull/9 for more design details.
+  /// See https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md for more design details.
   fn partial_bundling(
     &self,
     modules: &Vec<ModuleId>,
@@ -70,16 +68,21 @@ impl Plugin for FarmPluginPartialBundling {
     // 0. handle enforceResources in separate hook
 
     // 1. get module group graph and module graph
-    let mut module_graph = context.module_graph.write();
-    let mut module_group_graph = context.module_group_graph.write();
+    let module_graph = context.module_graph.read();
+    let module_group_graph = context.module_group_graph.read();
     // 2. generate module buckets and group by module group
     let module_buckets_map = generate_module_buckets_map(modules, &module_graph);
     let module_group_buckets =
       group_module_buckets_by_module_group(&module_buckets_map, &module_group_graph, &module_graph);
 
     // 3. generate resource pots
-    let resource_pots =
-      generate_resource_pots(module_group_buckets, module_buckets_map, &module_graph);
+    let resource_pots = generate_resource_pots(
+      module_group_buckets,
+      module_buckets_map,
+      &module_graph,
+      &context.config.root,
+      &context.config.partial_bundling,
+    );
 
     Ok(Some(resource_pots))
   }
