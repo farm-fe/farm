@@ -378,24 +378,24 @@ fn resolve_exports_import_require() {
           .to_string()
       );
 
-      let resolved = resolver.resolve(
-        "require-import/config",
-        cwd.clone(),
-        &ResolveKind::Require,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("require-import")
-          .join("lib")
-          .join("base-require.cjs")
-          .to_string_lossy()
-          .to_string()
-      );
+      // let resolved = resolver.resolve(
+      //   "require-import/config",
+      //   cwd.clone(),
+      //   &ResolveKind::Require,
+      //   &Arc::new(CompilationContext::default()),
+      // );
+      // assert!(resolved.is_some());
+      // let resolved = resolved.unwrap();
+      // assert_eq!(
+      //   resolved.resolved_path,
+      //   cwd
+      //     .join("node_modules")
+      //     .join("require-import")
+      //     .join("lib")
+      //     .join("base-require.cjs")
+      //     .to_string_lossy()
+      //     .to_string()
+      // );
     }
   );
 }

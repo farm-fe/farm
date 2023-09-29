@@ -620,23 +620,22 @@ impl Resolver {
       Some(value) => {
         match value {
           Value::String(string_value) => {
-            // 如果是字符串类型
             full_path = get_key_path(&string_value.as_str(), import_full_path);
             println!("full_path {:?}", full_path);
             return Some(full_path);
           }
+          Value::Object(object_value) => {
+            println!("object_value {:?}", object_value);
+          }
           _ => {
-            // 如果不是字符串类型
             println!("res is not a string");
           }
         }
       }
       None => {
-        // 如果是 None
         println!("res is None");
       }
     }
-    return full_path.parse().ok();
     if let Some(exports_field) = exports_field {
       let path = Path::new(resolved_path);
       if let Value::Object(field) = exports_field {
