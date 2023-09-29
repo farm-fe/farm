@@ -1,4 +1,6 @@
 use std::{
+  collections::HashMap,
+  fmt,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -11,6 +13,12 @@ use farmfe_core::{
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
+
+pub const SLASH_CODE: char = '/';
+
+pub const DOT_CODE: char = '.';
+
+pub const HASH_CODE: char = '#';
 
 pub const NODE_MODULES: &str = "node_modules";
 
@@ -168,6 +176,72 @@ pub fn get_file_name_form_path(path: &str) -> Option<String> {
   let path = Path::new(path);
   match path.file_name() {
     Some(file_name) => Some(file_name.to_string_lossy().to_string()),
+    None => None,
+  }
+}
+
+pub struct PathDifference {
+  pub origin_request: String,
+  pub remaining_request: String,
+  pub query_params: HashMap<String, String>,
+}
+
+pub fn find_request_diff_entry_path(path_str1: &str, path_str2: &str) -> Option<PathDifference> {
+  let origin_request = path_difference(path_str1, path_str2)?;
+
+  let query_params = extract_query_params(path_str1);
+  let remaining_request = if query_params.is_empty() {
+    origin_request.to_string()
+  } else {
+    let result = if origin_request == "." {
+      format!("./{}", origin_request.clone())
+    } else {
+      if let Some(query_start) = path_str1.find('?') {
+        let query_string = &path_str1[(query_start)..];
+        origin_request.to_string() + query_string
+      } else {
+        origin_request.to_string()
+      }
+    };
+    result
+  };
+
+  Some(PathDifference {
+    origin_request,
+    remaining_request,
+    query_params,
+  })
+}
+
+pub fn path_difference(path_str1: &str, path_str2: &str) -> Option<String> {
+  let path1 = PathBuf::from(path_str1.split('?').next().unwrap_or(""));
+  let path2 = PathBuf::from(path_str2.split('?').next().unwrap_or(""));
+
+  let relative_path1 = path1.strip_prefix(&path2).ok()?;
+
+  Some(relative_path1.to_string_lossy().to_string())
+}
+
+pub fn extract_query_params(path_str: &str) -> HashMap<String, String> {
+  let mut query_params_map = HashMap::new();
+
+  if let Some(query_start) = path_str.find('?') {
+    let query_string = &path_str[(query_start + 1)..];
+
+    for param in query_string.split('&') {
+      let parts: Vec<&str> = param.split('=').collect();
+      if parts.len() == 2 {
+        query_params_map.insert(parts[0].to_string(), parts[1].to_string());
+      }
+    }
+  }
+
+  query_params_map
+}
+
+pub fn find_mapping<'a>(key: &str, json_data: &'a Value) -> Option<&'a Value> {
+  match json_data.get(key) {
+    Some(value) => Some(value),
     None => None,
   }
 }

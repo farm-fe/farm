@@ -16,11 +16,14 @@ use std::{
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
-use crate::resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey};
 use crate::resolver_common::{
-  are_values_equal, get_field_value_from_package_json_info, get_key_path, get_string_value_path,
-  is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
-  is_source_dot, is_source_relative, try_file, NODE_MODULES,
+  are_values_equal, find_mapping, get_field_value_from_package_json_info, get_key_path,
+  get_string_value_path, is_double_source_dot, is_module_external, is_module_side_effects,
+  is_source_absolute, is_source_dot, is_source_relative, try_file, NODE_MODULES,
+};
+use crate::{
+  resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
+  resolver_common::find_request_diff_entry_path,
 };
 
 pub struct Resolver {
@@ -591,9 +594,50 @@ impl Resolver {
     farm_profile_function!("try_exports_replace".to_string());
     // resolve exports field
     // TODO: add all cases from https://nodejs.org/api/packages.html
+    let import_full_path = package_json_info.dir();
     let exports_field = get_field_value_from_package_json_info(package_json_info, "exports");
+    let resolved_field = match find_request_diff_entry_path(&resolved_path, import_full_path) {
+      Some(diff) => {
+        if diff.origin_request.is_empty() {
+          ".".to_string()
+        } else {
+          format!("./{}", diff.origin_request)
+        }
+      }
+      None => "".to_string(), // 或者其他默认值，取决于您的需求
+    };
+
+    println!("resolved_field: {:?}", resolved_field);
+    println!("exports_field: {:?}", exports_field);
+    println!(
+      "findMapping {:?}",
+      find_mapping(resolved_field.as_str(), &exports_field.clone().unwrap())
+    );
+    let binding = exports_field.clone().unwrap();
+    println!("resolve_path {:?}", resolved_path);
+    let mut full_path = String::from("");
+    match find_mapping(resolved_field.as_str(), &binding) {
+      Some(value) => {
+        match value {
+          Value::String(string_value) => {
+            // 如果是字符串类型
+            full_path = get_key_path(&string_value.as_str(), import_full_path);
+            println!("full_path {:?}", full_path);
+            return Some(full_path);
+          }
+          _ => {
+            // 如果不是字符串类型
+            println!("res is not a string");
+          }
+        }
+      }
+      None => {
+        // 如果是 None
+        println!("res is None");
+      }
+    }
+    return full_path.parse().ok();
     if let Some(exports_field) = exports_field {
-      let import_full_path = package_json_info.dir();
       let path = Path::new(resolved_path);
       if let Value::Object(field) = exports_field {
         let mut result_value: Option<String> = None;
