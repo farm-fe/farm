@@ -2,7 +2,7 @@ use farmfe_core::{context::CompilationContext, plugin::ResolveKind};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 #[test]
 fn resolve_exports_basic() {
