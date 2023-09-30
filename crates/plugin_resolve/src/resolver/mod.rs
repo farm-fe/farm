@@ -609,162 +609,170 @@ impl Resolver {
 
     println!("resolved_field: {:?}", resolved_field);
     println!("exports_field: {:?}", exports_field);
-    let binding = exports_field.clone().unwrap();
-    println!("resolve_path {:?}", resolved_path);
-    match binding {
-      // export field is a string
-      Value::String(string_value) => {
-        return Some(get_key_path(&string_value.as_str(), import_full_path));
-      }
-      // export field is a object
-      Value::Object(object_value) => {
-        // TODO resolved_field.as_str() e.g: node deno browser development
-        match find_mapping(resolved_field.as_str(), &object_value) {
-          Some(value) => {
-            match value {
-              Value::String(string_value) => {
-                println!("string_value {:?}", get_key_path(&string_value.as_str(), import_full_path));
-                return Some(get_key_path(&string_value.as_str(), import_full_path));
-              }
-              Value::Object(object_value) => {
-                for (key_word, key_value) in object_value {
-                  println!("object_value {:?}", object_value);
-                  match kind {
-                    // import with node default
-                    ResolveKind::Import => {
-                      if are_values_equal(&key_word, "default") {
-                        match &key_value {
-                          Value::String(key_value_string) => {
-                            // let value_path = get_key_path(key_value_string, import_full_path);
-                            // result_value = Some(value_path);
-                          }
-                          // Value::Object(key_value_object) => {
-                          //   if let Some(Value::String(default_str)) = key_value_object.get("default") {
-                          //     let value_path = get_key_path(default_str, import_full_path);
-                          //     result_value = Some(value_path);
-                          //   }
-                          // }
-                          _ => {}
-                        }
-                      }
-                      if are_values_equal(&key_word, "import") {
-                        match key_value {
-                          Value::String(import_value) => {
-                            return Some(get_key_path(&import_value.as_str(), import_full_path));
-                          }
-                          // Value::Object(import_value) => {
-                          //   for (key_word, key_value) in import_value {
-                          //     match context.config.output.target_env {
-                          //       TargetEnv::Node => {
-                          //         if are_values_equal(&key_word, "node") && path.is_absolute() {
-                          //           let value_path = get_key_path(
-                          //             key_value.as_str().unwrap(),
-                          //             package_json_info.dir(),
-                          //           );
-                          //           result_value = Some(value_path);
-                          //         }
-                          //       }
-                          //       TargetEnv::Browser => {
-                          //         if are_values_equal(key_word, "default") && path.is_absolute() {
-                          //           let value_path = get_key_path(
-                          //             key_value.as_str().unwrap(),
-                          //             package_json_info.dir(),
-                          //           );
-                          //           result_value = Some(value_path);
-                          //         }
-                          //       }
-                          //     }
-                          //   }
-                          // }
-                          _ => {}
-                        }
-                      }
-                    }
-                    ResolveKind::Require => {
-                      if key_word.to_lowercase() == "require" {
-                        let path = Path::new(resolved_path);
-                        match key_value {
-                          Value::String(key_value) => {
-                            if path.is_absolute() {
-                              return Some(get_key_path(&key_value.as_str(), import_full_path));
+    if let Some(exports_field) = exports_field {
+      match exports_field {
+        // export field is a string
+        Value::String(string_value) => {
+          return Some(get_key_path(&string_value.as_str(), import_full_path));
+        }
+        // export field is a object
+        Value::Object(object_value) => {
+          // TODO resolved_field.as_str() e.g: node deno browser development
+          match find_mapping(resolved_field.as_str(), &object_value) {
+            Some(value) => {
+              match value {
+                Value::String(string_value) => {
+                  println!(
+                    "string_value {:?}",
+                    get_key_path(&string_value.as_str(), import_full_path)
+                  );
+                  return Some(get_key_path(&string_value.as_str(), import_full_path));
+                }
+                Value::Object(object_value) => {
+                  for (key_word, key_value) in object_value {
+                    println!("object_value {:?}", object_value);
+                    match kind {
+                      // import with node default
+                      ResolveKind::Import => {
+                        if are_values_equal(&key_word, "default") {
+                          match &key_value {
+                            Value::String(key_value_string) => {
+                              let value_path = get_key_path(key_value_string, import_full_path);
+                              return Some(value_path);
                             }
+                            // Value::Object(key_value_object) => {
+                            //   if let Some(Value::String(default_str)) = key_value_object.get("default") {
+                            //     let value_path = get_key_path(default_str, import_full_path);
+                            //     result_value = Some(value_path);
+                            //   }
+                            // }
+                            _ => {}
                           }
-                          // Value::Object(key_value) => {
-                          //   if path.is_absolute() {
-                          //     for (key, value) in key_value {
-                          //       match context.config.output.target_env {
-                          //         TargetEnv::Node => {
-                          //           if are_values_equal(key, "default") && path.is_absolute() {
-                          //             let value_path =
-                          //               get_key_path(value.as_str().unwrap(), package_json_info.dir());
-                          //             result_value = Some(value_path);
-                          //           }
-                          //         }
-                          //         TargetEnv::Browser => {
-                          //           if are_values_equal(key, "default") && path.is_absolute() {
-                          //             let value_path =
-                          //               get_key_path(value.as_str().unwrap(), package_json_info.dir());
-                          //             result_value = Some(value_path);
-                          //           }
-                          //         }
-                          //       }
-                          //     }
-                          //   }
-                          // }
-                          _ => {}
+                        }
+                        if are_values_equal(&key_word, "import") {
+                          match key_value {
+                            Value::String(import_value) => {
+                              return Some(get_key_path(&import_value.as_str(), import_full_path));
+                            }
+                            Value::Object(import_value) => {
+                              for (key_word, key_value) in import_value {
+                                println!("target_env {:?}", context.config.output.target_env);
+                                match context.config.output.target_env {
+                                  // TODO other targetEnv deno development
+                                  TargetEnv::Node => {
+                                    if are_values_equal(&key_word, "node") {
+                                      return Some(get_key_path(
+                                        key_value.as_str().unwrap(),
+                                        import_full_path,
+                                      ));
+                                    }
+                                  }
+                                  TargetEnv::Browser => {
+                                    if are_values_equal(key_word, "default")
+                                      || are_values_equal(key_word, "browser")
+                                    {
+                                      let value_path = get_key_path(
+                                        key_value.as_str().unwrap(),
+                                        import_full_path,
+                                      );
+                                      return Some(value_path);
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            _ => {}
+                          }
                         }
                       }
+                      ResolveKind::Require => {
+                        if key_word.to_lowercase() == "require" {
+                          let path = Path::new(resolved_path);
+                          match key_value {
+                            Value::String(key_value) => {
+                              if path.is_absolute() {
+                                return Some(get_key_path(&key_value.as_str(), import_full_path));
+                              }
+                            }
+                            Value::Object(key_value) => {
+                              for (key, value) in key_value {
+                                match context.config.output.target_env {
+                                  TargetEnv::Node => {
+                                    if are_values_equal(key, "default") && path.is_absolute() {
+                                      let value_path = get_key_path(
+                                        value.as_str().unwrap(),
+                                        import_full_path,
+                                      );
+                                      return Some(value_path);
+                                    }
+                                  }
+                                  TargetEnv::Browser => {
+                                    if are_values_equal(key, "default") && path.is_absolute() {
+                                      let value_path = get_key_path(
+                                        value.as_str().unwrap(),
+                                        import_full_path,
+                                      );
+                                      return Some(value_path);
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            _ => {}
+                          }
+                        }
+                      }
+                      // ResolveKind::ExportFrom => {
+                      //   if are_values_equal(&key_word, "import") {
+                      //     match key_value {
+                      //       Value::String(import_value) => {
+                      //         if path.is_absolute() {
+                      //           let value_path = get_key_path(&import_value, import_full_path);
+                      //           result_value = Some(value_path);
+                      //         }
+                      //       }
+                      //       Value::Object(import_value) => {
+                      //         for (key_word, key_value) in import_value {
+                      //           match context.config.output.target_env {
+                      //             TargetEnv::Node => {
+                      //               if are_values_equal(&key_word, "node") && path.is_absolute() {
+                      //                 let value_path = get_key_path(
+                      //                   key_value.as_str().unwrap(),
+                      //                   package_json_info.dir(),
+                      //                 );
+                      //                 result_value = Some(value_path);
+                      //               }
+                      //             }
+                      //             TargetEnv::Browser => {
+                      //               if are_values_equal(key_word, "default") && path.is_absolute() {
+                      //                 let value_path =
+                      //                   get_key_path(key_value.as_str().unwrap(), import_full_path);
+                      //                 result_value = Some(value_path);
+                      //               }
+                      //             }
+                      //           }
+                      //         }
+                      //       }
+                      //       _ => {}
+                      //     }
+                      //   }
+                      // }
+                      _ => {}
                     }
-                    // ResolveKind::ExportFrom => {
-                    //   if are_values_equal(&key_word, "import") {
-                    //     match key_value {
-                    //       Value::String(import_value) => {
-                    //         if path.is_absolute() {
-                    //           let value_path = get_key_path(&import_value, import_full_path);
-                    //           result_value = Some(value_path);
-                    //         }
-                    //       }
-                    //       Value::Object(import_value) => {
-                    //         for (key_word, key_value) in import_value {
-                    //           match context.config.output.target_env {
-                    //             TargetEnv::Node => {
-                    //               if are_values_equal(&key_word, "node") && path.is_absolute() {
-                    //                 let value_path = get_key_path(
-                    //                   key_value.as_str().unwrap(),
-                    //                   package_json_info.dir(),
-                    //                 );
-                    //                 result_value = Some(value_path);
-                    //               }
-                    //             }
-                    //             TargetEnv::Browser => {
-                    //               if are_values_equal(key_word, "default") && path.is_absolute() {
-                    //                 let value_path =
-                    //                   get_key_path(key_value.as_str().unwrap(), import_full_path);
-                    //                 result_value = Some(value_path);
-                    //               }
-                    //             }
-                    //           }
-                    //         }
-                    //       }
-                    //       _ => {}
-                    //     }
-                    //   }
-                    // }
-                    _ => {}
                   }
                 }
-              }
-              _ => {
-                println!("res is not a string");
+                _ => {
+                  println!("res is not a string");
+                }
               }
             }
-          }
-          None => {
-            println!("res is None");
+            None => {
+              println!("res is None");
+            }
           }
         }
+        _ => {}
       }
-      _ => {}
     }
 
     // if let Some(exports_field) = exports_field {

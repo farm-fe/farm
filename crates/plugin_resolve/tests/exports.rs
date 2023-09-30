@@ -1,3 +1,4 @@
+use farmfe_core::config::{Config, OutputConfig, TargetEnv};
 use farmfe_core::{context::CompilationContext, plugin::ResolveKind};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
@@ -60,6 +61,7 @@ fn resolve_exports_replace() {
           .to_string_lossy()
           .to_string()
       );
+
       let resolved = resolver.resolve(
         "replace/submodule.js",
         cwd.clone(),
@@ -143,6 +145,47 @@ fn resolve_exports_nesting() {
           .join("nesting")
           .join("dist")
           .join("esm-bundler.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn export_nesting_node_env() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let context = CompilationContext::new(
+        Config {
+          output: OutputConfig {
+            target_env: TargetEnv::Node,
+            ..Default::default()
+          },
+          ..Default::default()
+        },
+        vec![],
+      )
+      .unwrap();
+      let resolved_1 = resolver.resolve(
+        "nesting/config",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(context),
+      );
+      assert!(resolved_1.is_some());
+      let resolved_1 = resolved_1.unwrap();
+      assert_eq!(
+        resolved_1.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("nesting")
+          .join("dist")
+          .join("index.mjs")
           .to_string_lossy()
           .to_string()
       );
