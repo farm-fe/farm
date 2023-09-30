@@ -41,9 +41,6 @@ fn resolve_exports_replace() {
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
-      let start_time = Instant::now();
-
-      // 执行您的方法
       let resolved = resolver.resolve(
         "replace/feature",
         cwd.clone(),
@@ -51,9 +48,6 @@ fn resolve_exports_replace() {
         &Arc::new(CompilationContext::default()),
       );
 
-      let end_time = Instant::now();
-      let elapsed_time = end_time.duration_since(start_time);
-      println!("方法执行时间: {} 毫秒", elapsed_time.as_millis());
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -66,62 +60,62 @@ fn resolve_exports_replace() {
           .to_string_lossy()
           .to_string()
       );
-      // let resolved = resolver.resolve(
-      //   "replace/submodule.js",
-      //   cwd.clone(),
-      //   &ResolveKind::Import,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("replace")
-      //     .join("lib")
-      //     .join("submodule.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve(
+        "replace/submodule.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("submodule.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
-      // let resolved = resolver.resolve(
-      //   "replace/lib/basic-exports.js",
-      //   cwd.clone(),
-      //   &ResolveKind::Import,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("replace")
-      //     .join("lib")
-      //     .join("basic-exports.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve(
+        "replace/lib/basic-exports.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("basic-exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
-      // let resolved = resolver.resolve(
-      //   "replace",
-      //   cwd.clone(),
-      //   &ResolveKind::Import,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("replace")
-      //     .join("lib")
-      //     .join("basic-exports.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve(
+        "replace",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("replace")
+          .join("lib")
+          .join("basic-exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
