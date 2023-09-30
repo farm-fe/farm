@@ -11,7 +11,7 @@ use farmfe_core::{
   context::CompilationContext,
   farm_profile_function,
   relative_path::RelativePath,
-  serde_json::{from_str, Map, Value, self},
+  serde_json::{self, from_str, Map, Value},
 };
 
 pub const SLASH_CODE: char = '/';
@@ -239,9 +239,16 @@ pub fn extract_query_params(path_str: &str) -> HashMap<String, String> {
   query_params_map
 }
 
-pub fn find_mapping<'a>(key: &str, json_data: &'a serde_json::Map<String, Value>) -> Option<&'a Value> {
+pub fn find_mapping<'a>(
+  key: &str,
+  json_data: &'a serde_json::Map<String, Value>,
+) -> Option<&'a Value> {
   match json_data.get(key) {
     Some(value) => Some(value),
     None => None,
   }
+}
+
+pub fn get_result_path(value: &str, current_resolve_base_dir: &String) -> Option<String> {
+  Some(get_key_path(value, current_resolve_base_dir))
 }

@@ -18,8 +18,9 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 
 use crate::resolver_common::{
   are_values_equal, find_mapping, get_field_value_from_package_json_info, get_key_path,
-  get_string_value_path, is_double_source_dot, is_module_external, is_module_side_effects,
-  is_source_absolute, is_source_dot, is_source_relative, try_file, NODE_MODULES,
+  get_result_path, get_string_value_path, is_double_source_dot, is_module_external,
+  is_module_side_effects, is_source_absolute, is_source_dot, is_source_relative, try_file,
+  NODE_MODULES,
 };
 use crate::{
   resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
@@ -594,26 +595,25 @@ impl Resolver {
     farm_profile_function!("try_exports_replace".to_string());
     // resolve exports field
     // TODO: add all cases from https://nodejs.org/api/packages.html
-    let import_full_path = package_json_info.dir();
+    let current_resolve_base_dir = package_json_info.dir();
     let exports_field = get_field_value_from_package_json_info(package_json_info, "exports");
-    let resolved_field = match find_request_diff_entry_path(&resolved_path, import_full_path) {
-      Some(diff) => {
-        if diff.origin_request.is_empty() {
-          ".".to_string()
-        } else {
-          format!("./{}", diff.origin_request)
+    let resolved_field =
+      match find_request_diff_entry_path(&resolved_path, current_resolve_base_dir) {
+        Some(diff) => {
+          if diff.origin_request.is_empty() {
+            ".".to_string()
+          } else {
+            format!("./{}", diff.origin_request)
+          }
         }
-      }
-      None => "".to_string(),
-    };
+        None => "".to_string(),
+      };
 
-    println!("resolved_field: {:?}", resolved_field);
-    println!("exports_field: {:?}", exports_field);
     if let Some(exports_field) = exports_field {
       match exports_field {
         // export field is a string
         Value::String(string_value) => {
-          return Some(get_key_path(&string_value.as_str(), import_full_path));
+          return get_result_path(&string_value.as_str(), current_resolve_base_dir);
         }
         // export field is a object
         Value::Object(object_value) => {
@@ -622,62 +622,42 @@ impl Resolver {
             Some(value) => {
               match value {
                 Value::String(string_value) => {
-                  println!(
-                    "string_value {:?}",
-                    get_key_path(&string_value.as_str(), import_full_path)
-                  );
-                  return Some(get_key_path(&string_value.as_str(), import_full_path));
+                  return get_result_path(&string_value.as_str(), current_resolve_base_dir);
                 }
                 Value::Object(object_value) => {
                   for (key_word, key_value) in object_value {
-                    println!("object_value {:?}", object_value);
                     match kind {
                       // import with node default
                       ResolveKind::Import => {
                         if are_values_equal(&key_word, "default") {
                           match &key_value {
                             Value::String(key_value_string) => {
-                              let value_path = get_key_path(key_value_string, import_full_path);
-                              return Some(value_path);
+                              return get_result_path(
+                                &key_value_string.as_str(),
+                                current_resolve_base_dir,
+                              );
                             }
-                            // Value::Object(key_value_object) => {
-                            //   if let Some(Value::String(default_str)) = key_value_object.get("default") {
-                            //     let value_path = get_key_path(default_str, import_full_path);
-                            //     result_value = Some(value_path);
-                            //   }
-                            // }
                             _ => {}
                           }
                         }
                         if are_values_equal(&key_word, "import") {
                           match key_value {
                             Value::String(import_value) => {
-                              return Some(get_key_path(&import_value.as_str(), import_full_path));
+                              return get_result_path(
+                                &import_value.as_str(),
+                                current_resolve_base_dir,
+                              );
                             }
                             Value::Object(import_value) => {
                               for (key_word, key_value) in import_value {
-                                println!("target_env {:?}", context.config.output.target_env);
-                                match context.config.output.target_env {
-                                  // TODO other targetEnv deno development
-                                  TargetEnv::Node => {
-                                    if are_values_equal(&key_word, "node") {
-                                      return Some(get_key_path(
-                                        key_value.as_str().unwrap(),
-                                        import_full_path,
-                                      ));
-                                    }
-                                  }
-                                  TargetEnv::Browser => {
-                                    if are_values_equal(key_word, "default")
-                                      || are_values_equal(key_word, "browser")
-                                    {
-                                      let value_path = get_key_path(
-                                        key_value.as_str().unwrap(),
-                                        import_full_path,
-                                      );
-                                      return Some(value_path);
-                                    }
-                                  }
+                                if let Some(result) = self.process_target_env_logic(
+                                  kind.clone(),
+                                  key_word,
+                                  key_value,
+                                  current_resolve_base_dir,
+                                  context,
+                                ) {
+                                  return Some(result);
                                 }
                               }
                             }
@@ -691,30 +671,22 @@ impl Resolver {
                           match key_value {
                             Value::String(key_value) => {
                               if path.is_absolute() {
-                                return Some(get_key_path(&key_value.as_str(), import_full_path));
+                                return Some(get_key_path(
+                                  &key_value.as_str(),
+                                  current_resolve_base_dir,
+                                ));
                               }
                             }
                             Value::Object(key_value) => {
-                              for (key, value) in key_value {
-                                match context.config.output.target_env {
-                                  TargetEnv::Node => {
-                                    if are_values_equal(key, "default") && path.is_absolute() {
-                                      let value_path = get_key_path(
-                                        value.as_str().unwrap(),
-                                        import_full_path,
-                                      );
-                                      return Some(value_path);
-                                    }
-                                  }
-                                  TargetEnv::Browser => {
-                                    if are_values_equal(key, "default") && path.is_absolute() {
-                                      let value_path = get_key_path(
-                                        value.as_str().unwrap(),
-                                        import_full_path,
-                                      );
-                                      return Some(value_path);
-                                    }
-                                  }
+                              for (key_word, key_value) in key_value {
+                                if let Some(result) = self.process_target_env_logic(
+                                  kind.clone(),
+                                  key_word,
+                                  key_value,
+                                  current_resolve_base_dir,
+                                  context,
+                                ) {
+                                  return Some(result);
                                 }
                               }
                             }
@@ -722,53 +694,40 @@ impl Resolver {
                           }
                         }
                       }
-                      // ResolveKind::ExportFrom => {
-                      //   if are_values_equal(&key_word, "import") {
-                      //     match key_value {
-                      //       Value::String(import_value) => {
-                      //         if path.is_absolute() {
-                      //           let value_path = get_key_path(&import_value, import_full_path);
-                      //           result_value = Some(value_path);
-                      //         }
-                      //       }
-                      //       Value::Object(import_value) => {
-                      //         for (key_word, key_value) in import_value {
-                      //           match context.config.output.target_env {
-                      //             TargetEnv::Node => {
-                      //               if are_values_equal(&key_word, "node") && path.is_absolute() {
-                      //                 let value_path = get_key_path(
-                      //                   key_value.as_str().unwrap(),
-                      //                   package_json_info.dir(),
-                      //                 );
-                      //                 result_value = Some(value_path);
-                      //               }
-                      //             }
-                      //             TargetEnv::Browser => {
-                      //               if are_values_equal(key_word, "default") && path.is_absolute() {
-                      //                 let value_path =
-                      //                   get_key_path(key_value.as_str().unwrap(), import_full_path);
-                      //                 result_value = Some(value_path);
-                      //               }
-                      //             }
-                      //           }
-                      //         }
-                      //       }
-                      //       _ => {}
-                      //     }
-                      //   }
-                      // }
+                      ResolveKind::ExportFrom => {
+                        if are_values_equal(&key_word, "import") {
+                          match key_value {
+                            Value::String(import_value) => {
+                              return get_result_path(
+                                &import_value.as_str(),
+                                current_resolve_base_dir,
+                              );
+                            }
+                            Value::Object(import_value) => {
+                              for (key_word, key_value) in import_value {
+                                if let Some(result) = self.process_target_env_logic(
+                                  kind.clone(),
+                                  key_word,
+                                  key_value,
+                                  current_resolve_base_dir,
+                                  context,
+                                ) {
+                                  return Some(result);
+                                }
+                              }
+                            }
+                            _ => {}
+                          }
+                        }
+                      }
                       _ => {}
                     }
                   }
                 }
-                _ => {
-                  println!("res is not a string");
-                }
+                _ => {}
               }
             }
-            None => {
-              println!("res is None");
-            }
+            None => {}
           }
         }
         _ => {}
@@ -780,7 +739,7 @@ impl Resolver {
     //   if let Value::Object(field) = exports_field {
     //     let mut result_value: Option<String> = None;
     //     'find_field_loop: for (key, value) in field {
-    //       let key_path = get_key_path(&key, import_full_path);
+    //       let key_path = get_key_path(&key, current_resolve_base_dir);
     //       if key_path.ends_with("*") || key_path.ends_with("**") {
     //         continue; // skip
     //       }
@@ -789,7 +748,7 @@ impl Resolver {
     //           Value::String(current_field_value) => {
     //             if path.is_absolute() {
     //               if are_values_equal(&key_path, resolved_path) {
-    //                 let value_path = get_key_path(&current_field_value, import_full_path);
+    //                 let value_path = get_key_path(&current_field_value, current_resolve_base_dir);
     //                 result_value = Some(value_path);
     //                 break 'find_field_loop;
     //               }
@@ -803,7 +762,7 @@ impl Resolver {
     //                   if are_values_equal(&key_word, "default") && path.is_absolute() {
     //                     match &key_value {
     //                       Value::String(key_value_string) => {
-    //                         let value_path = get_key_path(key_value_string, import_full_path);
+    //                         let value_path = get_key_path(key_value_string, current_resolve_base_dir);
     //                         result_value = Some(value_path);
     //                         break 'find_field_loop;
     //                       }
@@ -811,7 +770,7 @@ impl Resolver {
     //                         if let Some(Value::String(default_str)) =
     //                           key_value_object.get("default")
     //                         {
-    //                           let value_path = get_key_path(default_str, import_full_path);
+    //                           let value_path = get_key_path(default_str, current_resolve_base_dir);
     //                           result_value = Some(value_path);
     //                           break 'find_field_loop;
     //                         }
@@ -823,7 +782,7 @@ impl Resolver {
     //                     match key_value {
     //                       Value::String(import_value) => {
     //                         if path.is_absolute() {
-    //                           let value_path = get_key_path(&import_value, import_full_path);
+    //                           let value_path = get_key_path(&import_value, current_resolve_base_dir);
     //                           result_value = Some(value_path);
     //                           break 'find_field_loop;
     //                         }
@@ -864,7 +823,7 @@ impl Resolver {
     //                     match key_value {
     //                       Value::String(key_value) => {
     //                         if path.is_absolute() {
-    //                           let value_path = get_key_path(&key_value, import_full_path);
+    //                           let value_path = get_key_path(&key_value, current_resolve_base_dir);
     //                           result_value = Some(value_path);
     //                           break 'find_field_loop;
     //                         }
@@ -906,7 +865,7 @@ impl Resolver {
     //                     match key_value {
     //                       Value::String(import_value) => {
     //                         if path.is_absolute() {
-    //                           let value_path = get_key_path(&import_value, import_full_path);
+    //                           let value_path = get_key_path(&import_value, current_resolve_base_dir);
     //                           result_value = Some(value_path);
     //                           break 'find_field_loop;
     //                         }
@@ -927,7 +886,7 @@ impl Resolver {
     //                             TargetEnv::Browser => {
     //                               if are_values_equal(key_word, "default") && path.is_absolute() {
     //                                 let value_path =
-    //                                   get_key_path(key_value.as_str().unwrap(), import_full_path);
+    //                                   get_key_path(key_value.as_str().unwrap(), current_resolve_base_dir);
     //                                 result_value = Some(value_path);
     //                                 break 'find_field_loop;
     //                               }
@@ -1044,6 +1003,39 @@ impl Resolver {
       }
     }
 
+    None
+  }
+
+  fn process_target_env_logic(
+    self: &Self,
+    kind: ResolveKind,
+    key: &str,
+    value: &Value,
+    current_resolve_base_dir: &String,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    match kind {
+      ResolveKind::Import | ResolveKind::Require => match context.config.output.target_env {
+        TargetEnv::Node => {
+          if are_values_equal(key, "node") {
+            return Some(get_key_path(
+              value.as_str().unwrap(),
+              current_resolve_base_dir,
+            ));
+          }
+        }
+        TargetEnv::Browser => {
+          if are_values_equal(key, "default") || are_values_equal(key, "browser") {
+            return Some(get_key_path(
+              value.as_str().unwrap(),
+              current_resolve_base_dir,
+            ));
+          }
+        }
+      },
+      // 处理其他 ResolveKind 的逻辑
+      _ => {}
+    }
     None
   }
 }
