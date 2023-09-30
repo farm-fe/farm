@@ -174,6 +174,8 @@ pub fn construct_test_module_graph_complex() -> ModuleGraph {
       .unwrap();
   }
 
+  test_module_graph.update_execution_order_for_modules();
+
   test_module_graph
 }
 

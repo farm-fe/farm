@@ -1,7 +1,7 @@
 //! Merge module pots to resource pots in the same ModuleGroup.
 //! See https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md#merge-module-pots-into-resource-pot
 
-use std::usize;
+use std::{cmp::Ordering, usize};
 
 use farmfe_core::{
   config::partial_bundling::PartialBundlingConfig,
@@ -108,9 +108,15 @@ pub fn merge_module_pots(
   base_resource_pot_name: &str,
   module_graph: &ModuleGraph,
 ) -> Vec<ResourcePot> {
-  let mutable_request_numbers =
-    (config.target_concurrent_requests as f32 * config.immutable_modules_weight).round() as usize;
-  let immutable_request_numbers = config.target_concurrent_requests - mutable_request_numbers;
+  // at least one request
+  let mutable_request_numbers = std::cmp::max(
+    (config.target_concurrent_requests as f32 * config.immutable_modules_weight).round() as usize,
+    1,
+  );
+  let immutable_request_numbers = std::cmp::max(
+    config.target_concurrent_requests - mutable_request_numbers,
+    1,
+  );
 
   let mutable_target_size = std::cmp::max(
     module_group_module_pots.get_mutable_size() / mutable_request_numbers,
@@ -319,6 +325,8 @@ fn handle_enforce_target_min_size(
       // remove the merged resource pots and add the new merged resource pot
       let merged_resource_pot = create_merged_resource_pot(
         &merged_resource_pot_ids,
+        resource_pot.resource_pot_type.clone(),
+        resource_pot.immutable,
         base_resource_pot_name,
         &mut resource_pot_map,
       );
@@ -348,7 +356,10 @@ fn handle_enforce_target_min_size(
           )
         };
 
-        if f_resource_pot_type == ty && f_immutable == immutable {
+        if f_resource_pot_type == ty
+          && f_immutable == immutable
+          && !merged_resource_pot_ids.contains(final_resource_pot_id)
+        {
           for resource_pot_id in &merged_resource_pot_ids {
             let removed_resource_pot = resource_pot_map.remove(resource_pot_id).unwrap();
             let final_resource_pot = resource_pot_map.get_mut(final_resource_pot_id).unwrap();
@@ -367,6 +378,8 @@ fn handle_enforce_target_min_size(
       if !found {
         let merged_resource_pot = create_merged_resource_pot(
           &merged_resource_pot_ids,
+          ty,
+          immutable,
           base_resource_pot_name,
           &mut resource_pot_map,
         );
@@ -378,12 +391,14 @@ fn handle_enforce_target_min_size(
 
   final_resource_pot_ids
     .into_iter()
-    .map(|id| resource_pot_map.remove(&id).unwrap())
+    .filter_map(|id| resource_pot_map.remove(&id))
     .collect()
 }
 
 fn create_merged_resource_pot(
   merged_resource_pot_ids: &Vec<String>,
+  resource_pot_type: ResourcePotType,
+  immutable: bool,
   base_resource_pot_name: &str,
   resource_pot_map: &mut HashMap<String, ResourcePot>,
 ) -> ResourcePot {
@@ -396,16 +411,6 @@ fn create_merged_resource_pot(
       modules.insert(module_id.clone());
     }
   }
-
-  let resource_pot_type = resource_pot_map
-    .get(&merged_resource_pot_ids[0])
-    .unwrap()
-    .resource_pot_type
-    .clone();
-  let immutable = resource_pot_map
-    .get(&merged_resource_pot_ids[0])
-    .unwrap()
-    .immutable;
 
   let resource_pot_name = format!(
     "{}_{}",
@@ -442,7 +447,21 @@ fn handle_enforce_target_concurrent_requests(
     let b_size = *resource_pots_size_mp
       .get(&b.id)
       .expect("resource pot size should be calculated");
-    a_size.cmp(&b_size)
+    let result = a_size.cmp(&b_size);
+
+    // if size is equal, sort by id to make sure it is stable
+    // Note: immutable resource pots are always smaller than mutable resource pots
+    if matches!(result, Ordering::Equal) {
+      if a.immutable && !b.immutable {
+        return Ordering::Less;
+      } else if !a.immutable && b.immutable {
+        return Ordering::Greater;
+      }
+
+      return a.id.cmp(&b.id);
+    }
+
+    result
   });
 
   let len_to_merge = resource_pots.len() - target_concurrent_requests + 1;
@@ -456,6 +475,7 @@ fn handle_enforce_target_concurrent_requests(
     let value = resource_pots_to_merge.entry(key).or_insert(vec![]);
     value.push(resource_pots[i].id.clone());
   }
+  println!("resource_pots_to_merge: {:?}", resource_pots_to_merge);
   let resource_pot_ids = resource_pots
     .iter()
     .map(|resource_pot| resource_pot.id.clone())
@@ -479,6 +499,22 @@ fn handle_enforce_target_concurrent_requests(
       resource_pot_ids.push(resource_pot.id.clone());
       let merged_resource_pot = create_merged_resource_pot(
         &resource_pot_ids,
+        resource_pot.resource_pot_type.clone(),
+        resource_pot.immutable,
+        base_resource_pot_name,
+        &mut resource_pot_map,
+      );
+      resource_pot_map.insert(merged_resource_pot.id.clone(), merged_resource_pot);
+    }
+  }
+
+  // if resource_pots_to_merge is not empty, it means that there are some resource pots that have not been merged.
+  if !resource_pots_to_merge.is_empty() {
+    for ((ty, immutable), resource_pot_ids) in resource_pots_to_merge {
+      let merged_resource_pot = create_merged_resource_pot(
+        &resource_pot_ids,
+        ty,
+        immutable,
         base_resource_pot_name,
         &mut resource_pot_map,
       );
@@ -495,6 +531,8 @@ fn handle_enforce_target_concurrent_requests(
   resource_pots
 }
 
+#[cfg(test)]
+mod common;
 #[cfg(test)]
 mod test_boundaries;
 #[cfg(test)]
