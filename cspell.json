@@ -27,6 +27,7 @@
     "dashmap",
     "Deque",
     "deserializers",
+    "deno",
     "dylib",
     "eabi",
     "eframe",
