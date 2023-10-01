@@ -1,9 +1,9 @@
-import { JsPlugin, UserConfig, DevServer } from '@farmfe/core';
+import { DevServer, JsPlugin, UserConfig } from '@farmfe/core';
 import {
   getLessImplementation,
-  tryRead,
   pluginName,
-  throwError
+  throwError,
+  tryRead
 } from './utils.js';
 import path from 'path';
 
@@ -74,7 +74,7 @@ export default function farmLessPlugin(
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
             }
           );
-          if (imports) {
+          if (imports && process.env.NODE_ENV !== 'production') {
             for (const dep of imports) {
               devServer.addWatchFile(param.resolvedPath, [
                 path.resolve(fileRoot, dep)
