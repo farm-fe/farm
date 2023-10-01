@@ -663,7 +663,9 @@ impl Resolver {
                 _ => {}
               }
             }
-            None => {}
+            None => {
+              // Handle wildcard matching here
+            }
           }
         }
         _ => {}
