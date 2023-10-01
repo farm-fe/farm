@@ -110,6 +110,7 @@ impl Resolver {
     self.resolve_strategy(source, base_dir, kind, context, package_json_info)
   }
 
+  /// Resolve a module source code path based on the provided parameters and strategies.
   fn resolve_strategy(
     &self,
     source: &str,
@@ -470,7 +471,6 @@ impl Resolver {
         continue;
       }
 
-      // solve 问题的关键 exports 字段没有找到对应的 路径 会返回 None 然后没有return 就去循环了
       if let Some(field_value) = raw_package_json_info.get(main_field) {
         if let Value::Object(_) = field_value {
           let resolved_path = Some(self.get_resolve_node_modules_result(
@@ -665,6 +665,7 @@ impl Resolver {
             }
             None => {
               // Handle wildcard matching here
+              // TODO Whether to consider supporting e.g:. / dist/*:. / dist/*
             }
           }
         }
@@ -750,7 +751,6 @@ impl Resolver {
                   }
                 }
               }
-              // }
             }
           }
         }

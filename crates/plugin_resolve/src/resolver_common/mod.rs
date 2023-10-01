@@ -1,6 +1,5 @@
 use std::{
   collections::HashMap,
-  fmt,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -22,11 +21,29 @@ pub const HASH_CODE: char = '#';
 
 pub const NODE_MODULES: &str = "node_modules";
 
+pub struct PathDifference {
+  pub origin_request: String,
+  pub remaining_request: String,
+  pub query_params: HashMap<String, String>,
+}
+
+/**
+ * Checks if a source string is a relative path.
+ *
+ * @param {string} source - The source string to check.
+ * @returns {boolean} True if the source is a relative path starting with ./ or ../, false otherwise.
+ */
 pub fn is_source_relative(source: &str) -> bool {
   // fix: relative path start with .. or ../
   source.starts_with("./") || source.starts_with("../")
 }
 
+/**
+ * Checks if a source string is an absolute path.
+ *
+ * @param {string} source - The source string to check.
+ * @returns {boolean} True if the source can be converted to an absolute PathBuf, false otherwise.
+ */
 pub fn is_source_absolute(source: &str) -> bool {
   if let Ok(sp) = PathBuf::from_str(source) {
     sp.is_absolute()
@@ -35,13 +52,35 @@ pub fn is_source_absolute(source: &str) -> bool {
   }
 }
 
+/**
+ * Checks if the source string is ".".
+ *
+ * @param {string} source - The source string to check.
+ * @returns {boolean} True if source is ".", false otherwise.
+ */
+
 pub fn is_source_dot(source: &str) -> bool {
   source == "."
 }
 
+/**
+ * Checks if the source string is "..".
+ *
+ * @param {string} source - The source string to check.
+ * @returns {boolean} True if source is "..", false otherwise.
+*/
+
 pub fn is_double_source_dot(source: &str) -> bool {
   source == ".."
 }
+
+/**
+ * Checks if a module has side effects based on package.json#sideEffects.
+ *
+ * @param {PackageJsonInfo} packageJsonInfo - The package.json information.
+ * @param {string} resolvedPath - The resolved path of the module.
+ * @returns {boolean} True if module has side effects, false otherwise.
+ */
 
 pub fn is_module_side_effects(package_json_info: &PackageJsonInfo, resolved_path: &str) -> bool {
   farm_profile_function!("is_module_side_effects".to_string());
@@ -50,6 +89,14 @@ pub fn is_module_side_effects(package_json_info: &PackageJsonInfo, resolved_path
     farmfe_core::common::ParsedSideEffects::Array(arr) => arr.iter().any(|s| s == resolved_path),
   }
 }
+
+/**
+ * Checks if a module is marked as external in package.json#browser field.
+ *
+ * @param {PackageJsonInfo} packageJsonInfo - The package.json information.
+ * @param {string} resolvedPath - The resolved path of the module.
+ * @returns {boolean} True if module is marked as external, false otherwise.
+*/
 
 pub fn is_module_external(package_json_info: &PackageJsonInfo, resolved_path: &str) -> bool {
   farm_profile_function!("is_module_external".to_string());
@@ -81,6 +128,17 @@ pub fn is_module_external(package_json_info: &PackageJsonInfo, resolved_path: &s
 
 /// Try resolve as a file with the configured extensions.
 /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
+
+/**
+ * Attempts to locate a file based on the provided file path. If the file exists, it returns
+ * the string representation of the file path. If the file does not exist, it appends configured
+ * file extensions to the original path in an attempt to find a matching file with an extension.
+ *
+ * @param {PathBuf} file - The file path to try locating.
+ * @param {CompilationContext} context - The compilation context object.
+ * @returns {string|null} The string representation of the found file path, or null if not found.
+ */
+
 pub fn try_file(file: &PathBuf, context: &Arc<CompilationContext>) -> Option<String> {
   // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
   if file.exists() && file.is_file() {
@@ -99,6 +157,14 @@ pub fn try_file(file: &PathBuf, context: &Arc<CompilationContext>) -> Option<Str
   }
 }
 
+/**
+ * Get the value of a specific field from the given `PackageJsonInfo` object.
+ *
+ * @param {PackageJsonInfo} packageJsonInfo - The `PackageJsonInfo` object containing the original JSON data.
+ * @param {string} field - The name of the field to retrieve its value.
+ * @returns {Value|null} The value of the specified field if found, or `null` if the field is not present.
+ */
+
 pub fn get_field_value_from_package_json_info(
   package_json_info: &PackageJsonInfo,
   field: &str,
@@ -113,8 +179,11 @@ pub fn get_field_value_from_package_json_info(
 }
 
 /**
- * check if two paths are equal
- * Prevent path carrying / cause path resolution to fail
+ * Compare two paths for equality.
+ *
+ * @param {string|Path} path1 - The first path to compare.
+ * @param {string|Path} path2 - The second path to compare.
+ * @returns {boolean} `true` if the paths are equal, `false` otherwise.
  */
 
 pub fn are_values_equal<P1: AsRef<Path>, P2: AsRef<Path>>(path1: P1, path2: P2) -> bool {
@@ -131,6 +200,14 @@ pub fn are_values_equal<P1: AsRef<Path>, P2: AsRef<Path>>(path1: P1, path2: P2) 
  * TODO need add a argument (default | node) to determine the key
  */
 
+/**
+ * Generate a path based on the given key and directory.
+ *
+ * @param {string} key - The key used to generate the path.
+ * @param {string} dir - The base directory for path generation.
+ * @returns {string} The generated path.
+ */
+
 pub fn get_key_path(key: &str, dir: &String) -> String {
   farm_profile_function!("get_key_path".to_string());
   let key_path = match Path::new(&key).is_relative() {
@@ -144,8 +221,13 @@ pub fn get_key_path(key: &str, dir: &String) -> String {
 }
 
 /**
- * get normal path_value
+ * Generate a path based on the given string and PackageJsonInfo.
+ *
+ * @param {string} str - The string used to generate the path.
+ * @param {PackageJsonInfo} package_json_info - Information related to the project, including the 'dir' field.
+ * @returns {string|null} The generated path or null if the string does not have an extension.
  */
+
 pub fn get_string_value_path(str: &str, package_json_info: &PackageJsonInfo) -> Option<String> {
   farm_profile_function!("get_string_value_path".to_string());
   let path = Path::new(&str);
@@ -157,6 +239,14 @@ pub fn get_string_value_path(str: &str, package_json_info: &PackageJsonInfo) -> 
     Some(value_path)
   }
 }
+
+/**
+ * Generate a path based on the given Value and PackageJsonInfo.
+ *
+ * @param {Value} value - The Value representing a configuration item's value.
+ * @param {PackageJsonInfo} package_json_info - Information related to the project, including the 'dir' field.
+ * @returns {string|null} The generated path or null if unable to generate a path from the Value.
+ */
 
 pub fn get_path_from_value(value: &Value, package_json_info: &PackageJsonInfo) -> Option<String> {
   match value {
@@ -171,6 +261,13 @@ pub fn get_path_from_value(value: &Value, package_json_info: &PackageJsonInfo) -
   }
 }
 
+/**
+ * Extract the file name from a given path.
+ *
+ * @param {string} path - The path from which to extract the file name.
+ * @returns {string|null} The extracted file name or null if unable to extract it.
+ */
+
 pub fn get_file_name_form_path(path: &str) -> Option<String> {
   farm_profile_function!("get_file_name_form_path".to_string());
   let path = Path::new(path);
@@ -180,11 +277,13 @@ pub fn get_file_name_form_path(path: &str) -> Option<String> {
   }
 }
 
-pub struct PathDifference {
-  pub origin_request: String,
-  pub remaining_request: String,
-  pub query_params: HashMap<String, String>,
-}
+/**
+ * Compare two path strings and find the difference between them.
+ *
+ * @param {string} path_str1 - The first path string to compare.
+ * @param {string} path_str2 - The second path string to compare.
+ * @returns {PathDifference|null} An object containing the difference between the paths, or null if they are identical.
+ */
 
 pub fn find_request_diff_entry_path(path_str1: &str, path_str2: &str) -> Option<PathDifference> {
   let origin_request = path_difference(path_str1, path_str2)?;
@@ -213,6 +312,14 @@ pub fn find_request_diff_entry_path(path_str1: &str, path_str2: &str) -> Option<
   })
 }
 
+/**
+ * Compare two path strings and find the difference between them.
+ *
+ * @param {string} path_str1 - The first path string to compare.
+ * @param {string} path_str2 - The second path string to compare.
+ * @returns {string|null} The difference between the paths, or null if they are identical.
+ */
+
 pub fn path_difference(path_str1: &str, path_str2: &str) -> Option<String> {
   let path1 = PathBuf::from(path_str1.split('?').next().unwrap_or(""));
   let path2 = PathBuf::from(path_str2.split('?').next().unwrap_or(""));
@@ -221,6 +328,13 @@ pub fn path_difference(path_str1: &str, path_str2: &str) -> Option<String> {
 
   Some(relative_path1.to_string_lossy().to_string())
 }
+
+/**
+ * Extract query parameters from a given path string and store them in a HashMap.
+ *
+ * @param {string} path_str - The path string containing query parameters.
+ * @returns {Map<string, string>} A HashMap containing the query parameters as key-value pairs.
+ */
 
 pub fn extract_query_params(path_str: &str) -> HashMap<String, String> {
   let mut query_params_map = HashMap::new();
@@ -239,6 +353,14 @@ pub fn extract_query_params(path_str: &str) -> HashMap<String, String> {
   query_params_map
 }
 
+/**
+ * Find a mapping with a specified key in a JSON data.
+ *
+ * @param {string} key - The key to search for in the JSON data.
+ * @param {Object.<string, any>} json_data - The JSON data containing the mappings.
+ * @returns {any | null} The value associated with the specified key, or null if the key is not found.
+ */
+
 pub fn find_mapping<'a>(
   key: &str,
   json_data: &'a serde_json::Map<String, Value>,
@@ -248,6 +370,14 @@ pub fn find_mapping<'a>(
     None => None,
   }
 }
+
+/**
+ * Get a result path based on the provided value and current resolve base directory.
+ *
+ * @param {string} value - The value for which to generate a path.
+ * @param {string} current_resolve_base_dir - The current base directory for resolution.
+ * @returns {string | null} The resulting path or null if it cannot be determined.
+ */
 
 pub fn get_result_path(value: &str, current_resolve_base_dir: &String) -> Option<String> {
   Some(get_key_path(value, current_resolve_base_dir))
