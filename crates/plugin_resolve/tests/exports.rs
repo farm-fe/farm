@@ -3,7 +3,6 @@ use farmfe_core::{context::CompilationContext, plugin::ResolveKind};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
 use std::sync::Arc;
-use std::time::Instant;
 
 #[test]
 fn resolve_exports_basic() {
@@ -396,29 +395,24 @@ fn resolve_exports_import_require() {
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
-      let start_time = Instant::now();
-      // 执行您的方法
-      // let resolved = resolver.resolve(
-      //   "require-import/config",
-      //   cwd.clone(),
-      //   &ResolveKind::Import,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // let end_time = Instant::now();
-      // let elapsed_time = end_time.duration_since(start_time);
-      // println!("方法执行时间: {} 毫秒", elapsed_time.as_millis());
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("node_modules")
-      //     .join("require-import")
-      //     .join("lib")
-      //     .join("base-import.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolver.resolve(
+        "require-import/config",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("require-import")
+          .join("lib")
+          .join("base-import.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
       let resolved = resolver.resolve(
         "require-import/config",
@@ -445,7 +439,7 @@ fn resolve_exports_import_require() {
 #[test]
 fn resolve_exports_nesting_dot_fields() {
   fixture!(
-    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
@@ -464,7 +458,26 @@ fn resolve_exports_nesting_dot_fields() {
           .join("node_modules")
           .join("solid-js")
           .join("dist")
-          .join("solid.js")
+          .join("test-exports.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      let resolved = resolver.resolve(
+        "solid-js",
+        cwd.clone(),
+        &ResolveKind::Require,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("dist")
+          .join("test-exports.cjs")
           .to_string_lossy()
           .to_string()
       );
@@ -475,7 +488,7 @@ fn resolve_exports_nesting_dot_fields() {
 #[test]
 fn resolve_exports_nesting_dot_value() {
   fixture!(
-    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
@@ -494,7 +507,7 @@ fn resolve_exports_nesting_dot_value() {
           .join("node_modules")
           .join("solid-js")
           .join("dist")
-          .join("solid.js")
+          .join("test-exports.js")
           .to_string_lossy()
           .to_string()
       );
@@ -505,7 +518,7 @@ fn resolve_exports_nesting_dot_value() {
 #[test]
 fn resolve_exports_nesting_base_path() {
   fixture!(
-    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
@@ -533,41 +546,41 @@ fn resolve_exports_nesting_base_path() {
   );
 }
 
-// #[test]
-// fn resolve_exports_nesting_path() {
-//   fixture!(
-//     "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
-//     |file, _| {
-//       let cwd = file.parent().unwrap().to_path_buf();
-//       let resolver = Resolver::new();
+#[test]
+fn resolve_exports_nesting_path() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
 
-//       let resolved = resolver.resolve(
-//         "solid-js/store/worker",
-//         cwd.clone(),
-//         &ResolveKind::Import,
-//         &Arc::new(CompilationContext::default()),
-//       );
-//       assert!(resolved.is_some());
-//       let resolved = resolved.unwrap();
-//       assert_eq!(
-//         resolved.resolved_path,
-//         cwd
-//           .join("node_modules")
-//           .join("solid-js")
-//           .join("store")
-//           .join("dist")
-//           .join("server.js")
-//           .to_string_lossy()
-//           .to_string()
-//       );
-//     }
-//   );
-// }
+      let resolved = resolver.resolve(
+        "solid-js/store",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("store")
+          .join("dist")
+          .join("store.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
 
 #[test]
 fn resolve_exports_nesting_base() {
   fixture!(
-    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
@@ -597,7 +610,7 @@ fn resolve_exports_nesting_base() {
 #[test]
 fn resolve_exports_string_fields() {
   fixture!(
-    "tests/fixtures/resolve-nesting-fields/nesting/index.ts",
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
@@ -632,7 +645,7 @@ fn resolve_exports_string_fields() {
 //       let resolver = Resolver::new();
 
 //       let resolved = resolver.resolve(
-//         "exports-extension/a",
+//         "exports-extension/extension",
 //         cwd.clone(),
 //         &ResolveKind::Import,
 //         &Arc::new(CompilationContext::default()),
@@ -644,8 +657,8 @@ fn resolve_exports_string_fields() {
 //         cwd
 //           .join("node_modules")
 //           .join("exports-extension")
-//           .join("a")
-//           .join("index.js")
+//           .join("dist")
+//           .join("extension.js")
 //           .to_string_lossy()
 //           .to_string()
 //       );
