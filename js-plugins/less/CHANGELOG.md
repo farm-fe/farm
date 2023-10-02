@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-less
 
+## 1.1.1
+
+### Patch Changes
+
+- f93050c: fix:config hook type error
+
 ## 1.1.0
 
 ### Minor Changes
