@@ -13,7 +13,7 @@ export type PostcssPluginOptions = ProcessOptionsPreload & {
 export default function farmPostcssPlugin(
   options: PostcssPluginOptions = {}
 ): JsPlugin {
-  let farmConfig: UserConfig;
+  let farmConfig: UserConfig['compilation'];
   let postcssProcessor: Processor;
   let postcssOptions: ProcessOptions;
   let devServer: DevServer;
@@ -49,9 +49,7 @@ export default function farmPostcssPlugin(
             {
               ...postcssOptions,
               from: param.resolvedPath,
-              map: Boolean(
-                options.sourceMap ?? farmConfig?.compilation?.sourcemap
-              )
+              map: Boolean(options.sourceMap ?? farmConfig?.sourcemap)
             }
           );
           // record CSS dependencies from @imports
