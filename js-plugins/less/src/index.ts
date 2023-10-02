@@ -1,9 +1,9 @@
-import { JsPlugin, UserConfig, DevServer } from '@farmfe/core';
+import { DevServer, JsPlugin, UserConfig } from '@farmfe/core';
 import {
   getLessImplementation,
-  tryRead,
   pluginName,
-  throwError
+  throwError,
+  tryRead
 } from './utils.js';
 import path from 'path';
 
