@@ -40,7 +40,6 @@ export default function farmLessPlugin(
       filters: { resolvedPaths: ['\\.less$'] },
       async executor(param) {
         try {
-          const isProd = farmConfig.mode === 'production';
           let relData = '';
           const fileRoot = path.dirname(param.resolvedPath);
           const configPaths = options.paths;
@@ -75,7 +74,7 @@ export default function farmLessPlugin(
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
             }
           );
-          if (imports && !isProd) {
+          if (imports) {
             for (const dep of imports) {
               devServer.addWatchFile(param.resolvedPath, [
                 path.resolve(fileRoot, dep)
