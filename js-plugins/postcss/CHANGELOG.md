@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-postcss
 
+## 1.0.2
+
+### Patch Changes
+
+- f93050c: fix:config hook type error
+
 ## 1.0.1
 
 ### Patch Changes
