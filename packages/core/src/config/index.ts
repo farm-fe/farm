@@ -230,6 +230,7 @@ export async function normalizeUserCompilationConfig(
       config.presetEnv = false;
     }
   }
+
   const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
     config,
     userConfig
@@ -537,6 +538,8 @@ export async function resolveAllPlugins(
   finalConfig: Config['config'],
   userConfig: UserConfig
 ) {
+  console.log(userConfig.vitePlugins);
+
   const plugins = userConfig.plugins ?? [];
   if (!plugins.length) {
     return {

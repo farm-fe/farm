@@ -57,6 +57,8 @@ export interface UserConfig {
   configFileDependencies?: string[];
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin)[];
+  /** vite plugins */
+  vitePlugins?: any[];
   /** config related to compilation */
   compilation?: Config['config'];
   /** config related to dev server */
