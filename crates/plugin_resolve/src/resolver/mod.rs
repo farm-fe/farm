@@ -44,6 +44,14 @@ impl Resolver {
   ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports), if source is end with '.js', also try to find '.ts' file
   ///   * **browser**: refer to [package-browser-field-spec](https://github.com/defunctzombie/package-browser-field-spec)
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
+
+  /// check current env
+  /// 1. browser(object)
+  /// 2. exports
+  /// 3. browser(string)
+  /// 4. module
+  /// 5. main
+  /// browser is string instead main field
   pub fn resolve(
     &self,
     source: &str,
@@ -60,6 +68,7 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
+    // TODO check browser fields
     // check if module is external
     if let Ok(package_json_info) = &package_json_info {
       farm_profile_scope!("resolve.check_external".to_string());
