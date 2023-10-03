@@ -11,6 +11,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-vue": "workspace:*",
+    "@vitejs/plugin-vue": "^4.4.0",
     "sass": "^1.62.1"
   },
   "scripts": {
