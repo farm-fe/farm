@@ -16,8 +16,14 @@ export function parseVueRequest(id: string): {
 } {
   const [filename, rawQuery] = id.split(`?`, 2);
   const query = Object.fromEntries(new URLSearchParams(rawQuery)) as VueQuery;
-  console.log(query);
-
+  const langMap = new Map([
+    ['css', 'style'],
+    ['scss', 'style'],
+    ['less', 'style']
+  ]);
+  if (query.lang != null) {
+    query.type = langMap.get(query.lang) as VueQuery['type'];
+  }
   if (query.vue != null) {
     query.vue = true;
   }

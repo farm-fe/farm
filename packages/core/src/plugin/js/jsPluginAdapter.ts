@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { mergeObjects } from '../../index.js';
 import { JsPlugin } from '../type.js';
 import * as querystring from 'querystring';
@@ -9,8 +10,11 @@ import {
   guessIdLoader,
   isObject,
   isString
+  // transformQuery,
+  // isObject,
+  // isString
 } from './utils.js';
-import { parseVueRequest } from './parsequery.js';
+// import { parseVueRequest } from "./parsequery.js";
 
 // export function adaptorVitePlugin<UserOptions = Record<string, never>>(
 export function adaptorVitePlugin(rawPlugins: any) {
@@ -113,34 +117,102 @@ export function adaptorVitePlugin(rawPlugins: any) {
           ) {
             return null;
           }
-          if (!params.query.length) return null;
-          const loader = guessIdLoader(params.resolvedPath);
-          const shouldLoadInclude =
-            rawPlugin.loadInclude && rawPlugin.loadInclude(params.resolvedPath);
-          const queryString = querystring.stringify(
-            Object.fromEntries(params.query)
-          );
+          const qw = Object.fromEntries(params.query);
+          console.log(qw);
 
-          // 将查询字符串附加到resolvedPath中
-          const resolvedPathWithQuery = `${params.resolvedPath}?${queryString}`;
-          console.log(resolvedPathWithQuery);
-          parseVueRequest(resolvedPathWithQuery);
-          const content: any = await _load(resolvedPathWithQuery, {
-            ssr: false
-          });
+          const { vue } = qw;
+          console.log(vue);
 
-          const loadFarmResult: any = {
-            content: getContentValue(content),
-            moduleType: loader
-          };
-          if (shouldLoadInclude) {
+          if (vue) {
+            const loader = guessIdLoader(params.resolvedPath);
+            const shouldLoadInclude =
+              rawPlugin.loadInclude &&
+              rawPlugin.loadInclude(params.resolvedPath);
+
+            const langMap = new Map([
+              ['css', 'style'],
+              ['scss', 'style'],
+              ['less', 'style']
+            ]);
+            const queryString = `${querystring.stringify(
+              Object.fromEntries(params.query)
+            )}&type=${langMap.get(params.query[0][1]) ?? 'script'}`;
+
+            const resolvedPathWithQuery = `${params.resolvedPath}?${queryString}`;
+
+            const content: any = await _load(resolvedPathWithQuery, {
+              ssr: false
+            });
+
+            const loadFarmResult: any = {
+              content: getContentValue(content),
+              moduleType: loader
+            };
+            if (shouldLoadInclude) {
+              return loadFarmResult;
+            }
+
             return loadFarmResult;
           }
-
-          return loadFarmResult;
+          const resolvedPath = params.resolvedPath;
+          let source = '';
+          try {
+            source = await fs.promises.readFile(resolvedPath, 'utf-8');
+          } catch (err) {
+            console.log('报错了');
+          }
+          return {
+            content: source,
+            moduleType: 'vue'
+          };
         }
       } as JsPlugin['load'];
     }
+
+    // if (rawPlugin.transform) {
+    //   const _transform = rawPlugin.transform;
+    //   farmPlugin.transform = {
+    //     filters: { resolvedPaths: [".*$"], moduleTypes: [".*$"] },
+    //     async executor(
+    //       params: any,
+    //     ) {
+    //       if (params.query.length) {
+    //         transformQuery(params);
+    //       }
+
+    //       if (
+    //         rawPlugin.transformInclude &&
+    //         !rawPlugin.transformInclude(params.resolvedPath)
+    //       ) {
+    //         return null;
+    //       }
+
+    //       const loader = params.moduleType ??
+    //         guessIdLoader(params.resolvedPath);
+
+    //       const shouldTransformInclude = rawPlugin.transformInclude &&
+    //         rawPlugin.transformInclude(params.resolvedPath);
+    //       const resource: any = await _transform(
+    //         params.content,
+    //         params.resolvedPath,
+    //         { ssr: false },
+    //       );
+
+    //       if (resource && typeof resource !== "string") {
+    //         const transformFarmResult: any = {
+    //           content: getContentValue(resource),
+    //           moduleType: loader,
+    //           sourceMap: JSON.stringify(resource.map),
+    //         };
+    //         if (shouldTransformInclude) {
+    //           return transformFarmResult;
+    //         }
+
+    //         return transformFarmResult;
+    //       }
+    //     },
+    //   } as JsPlugin["transform"];
+    // }
 
     return farmPlugin;
   });

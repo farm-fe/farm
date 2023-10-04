@@ -20,6 +20,6 @@ export default defineConfig({
   server: {
     port: 6654,
   },
-  plugins: [farmJsPluginVue()],
+  // plugins: [farmJsPluginVue()],
   vitePlugins: [vue()]
 });
