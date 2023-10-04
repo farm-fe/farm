@@ -4,13 +4,13 @@ import { parse } from '@vue/compiler-sfc';
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { handleHmr } from './farm-vue-hmr.js';
 import {
-  StylesCodeCache,
   CacheDescriptor,
+  FarmVuePluginOptions,
   PreProcessors,
-  PreProcessorsType,
   PreProcessorsOptions,
-  ValueOf,
-  FarmVuePluginOptions
+  PreProcessorsType,
+  StylesCodeCache,
+  ValueOf
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 import {
@@ -129,8 +129,9 @@ export default function farmVuePlugin(
         try {
           // If path in exclude,skip transform.
           for (const reg of exclude) {
-            if (reg.test(params.resolvedPath))
+            if (reg.test(params.resolvedPath)) {
               return { content: params.content, moduleType: params.moduleType };
+            }
           }
 
           const query = parseQuery(params.query);
@@ -153,12 +154,13 @@ export default function farmVuePlugin(
               resolvedPath,
               farmConfig.mode
             );
-            if (isHmr)
+            if (isHmr) {
               return {
                 content: isHmr.source,
                 moduleType: isHmr.moduleType,
                 sourceMap: isHmr.map
               };
+            }
 
             const {
               source: mainCode,
@@ -176,9 +178,7 @@ export default function farmVuePlugin(
               moduleType,
               sourceMap: map
             };
-          }
-
-          // default
+          } // default
           else {
             console.error(
               `[farm-vue-plugin]:there is no path can be match,please check!`

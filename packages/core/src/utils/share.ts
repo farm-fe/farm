@@ -85,3 +85,23 @@ export function toArray<T>(array?: Nullable<Arrayable<T>>): Array<T> {
   }
   return [array];
 }
+
+export function mergeObjects(obj1: any, obj2: any) {
+  const merged = { ...obj1 };
+
+  for (const key in obj2) {
+    if (obj2.hasOwnProperty(key)) {
+      if (merged.hasOwnProperty(key)) {
+        if (typeof obj2[key] === 'object' && !Array.isArray(obj2[key])) {
+          merged[key] = mergeObjects(merged[key], obj2[key]);
+        } else {
+          merged[key] = obj1[key];
+        }
+      } else {
+        merged[key] = obj2[key];
+      }
+    }
+  }
+
+  return merged;
+}

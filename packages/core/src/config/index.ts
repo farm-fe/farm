@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 
+import { adaptorVitePlugin } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/type.js';
 import { DevServer } from '../server/index.js';
@@ -456,7 +457,6 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
 }
 
 /**
- *
  * @param publicPath  publicPath option
  * @param logger  logger instance
  * @param isPrefixNeeded  whether to add a prefix to the publicPath
@@ -538,18 +538,24 @@ export async function resolveAllPlugins(
   finalConfig: Config['config'],
   userConfig: UserConfig
 ) {
-  console.log(userConfig.vitePlugins);
-
   const plugins = userConfig.plugins ?? [];
-  if (!plugins.length) {
+  const vitePlugins = userConfig.vitePlugins ?? [];
+
+  if (!plugins.length && !vitePlugins?.length) {
     return {
       rustPlugins: [],
       jsPlugins: [],
       finalConfig
     };
   }
+  const resolveVitePlugins = adaptorVitePlugin(vitePlugins);
+
   const rustPlugins = [];
   const jsPlugins: JsPlugin[] = [];
+
+  if (resolveVitePlugins) {
+    jsPlugins.push(...resolveVitePlugins);
+  }
 
   for (const plugin of plugins) {
     if (
