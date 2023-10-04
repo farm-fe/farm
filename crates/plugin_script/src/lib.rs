@@ -308,7 +308,7 @@ impl Plugin for FarmPluginScript {
 
       let mut resources = vec![Resource {
         bytes: buf,
-        name: resource_pot.id.to_string(),
+        name: resource_pot.name.to_string(),
         emitted: false,
         resource_type: ResourceType::Js,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
@@ -327,7 +327,7 @@ impl Plugin for FarmPluginScript {
 
         resources.push(Resource {
           bytes: src_map,
-          name: format!("{:?}.map", resource_pot.id.to_string()),
+          name: format!("{}.map", resource_pot.name.to_string()),
           emitted: false,
           resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),

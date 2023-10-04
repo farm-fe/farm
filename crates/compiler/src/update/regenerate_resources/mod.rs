@@ -115,14 +115,21 @@ pub fn regenerate_resources_for_affected_module_groups(
     module_graph.update_execution_order_for_modules();
   }
 
-  clear_resource_pot_of_modules_in_module_groups(&affected_module_groups, context);
-
-  let mut affected_resource_pots_ids = generate_and_diff_resource_pots(
-    &affected_module_groups,
-    &diff_result,
-    updated_module_ids,
-    context,
-  )?;
+  // skip diff resource pots if diff_result is empty
+  let mut affected_resource_pots_ids = if diff_result.added_modules.is_empty()
+    && diff_result.removed_modules.is_empty()
+    && diff_result.deps_changes.is_empty()
+  {
+    vec![]
+  } else {
+    clear_resource_pot_of_modules_in_module_groups(&affected_module_groups, context);
+    generate_and_diff_resource_pots(
+      &affected_module_groups,
+      &diff_result,
+      updated_module_ids,
+      context,
+    )?
+  };
 
   let mut resource_pot_map = context.resource_pot_map.write();
   // always rerender the updated module's resource pot

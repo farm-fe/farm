@@ -5,10 +5,12 @@ use super::config_regex::ConfigRegex;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PartialBundlingConfig {
-  // target concurrent requests for every resource loading
+  /// target concurrent requests for every resource loading
   pub target_concurrent_requests: usize,
-  // target min size for every resource loading
+  /// target min size for every resource loading
   pub target_min_size: usize,
+  /// target max size for every resource loading
+  pub target_max_size: usize,
   /// A group of modules that should be placed together.
   /// Note that this group config is only a hit to the compiler that these modules should be placed together,
   /// it may produce multiple resources, if you want to enforce modules in only one resource, you should use `enforceResources`.
@@ -33,8 +35,10 @@ impl Default for PartialBundlingConfig {
   fn default() -> Self {
     Self {
       target_concurrent_requests: 25,
-      // 20KB
-      target_min_size: 1024 * 20,
+      // 100KB before minimize and gzip
+      target_min_size: 1024 * 100,
+      // 1.5 MB before minimize and gzip
+      target_max_size: 1024 * 1500,
       groups: vec![],
       enforce_resources: vec![],
       enforce_target_concurrent_requests: false,

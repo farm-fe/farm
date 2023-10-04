@@ -12,6 +12,7 @@ use farmfe_core::{
 
 use crate::{module_pot::ModulePot, utils::hash_module_ids};
 
+#[derive(Debug, Clone)]
 pub struct ModuleGroupModulePots {
   pub module_group_id: ModuleGroupId,
   /// module bucket name -> module pots
@@ -108,15 +109,20 @@ pub fn merge_module_pots(
   base_resource_pot_name: &str,
   module_graph: &ModuleGraph,
 ) -> Vec<ResourcePot> {
+  // target_concurrent_requests = 0 means no limit
+  let target_concurrent_requests = if config.target_concurrent_requests == 0 {
+    usize::MAX
+  } else {
+    config.target_concurrent_requests
+  };
+
   // at least one request
-  let mutable_request_numbers = std::cmp::max(
-    (config.target_concurrent_requests as f32 * config.immutable_modules_weight).round() as usize,
-    1,
-  );
   let immutable_request_numbers = std::cmp::max(
-    config.target_concurrent_requests - mutable_request_numbers,
+    (target_concurrent_requests as f32 * config.immutable_modules_weight).round() as usize,
     1,
   );
+  let mutable_request_numbers =
+    std::cmp::max(target_concurrent_requests - immutable_request_numbers, 1);
 
   let mutable_target_size = std::cmp::max(
     module_group_module_pots.get_mutable_size() / mutable_request_numbers,
@@ -157,7 +163,7 @@ pub fn merge_module_pots(
     resource_pots = handle_enforce_target_concurrent_requests(
       resource_pots,
       &resource_pots_size_mp,
-      config.target_concurrent_requests,
+      target_concurrent_requests,
       base_resource_pot_name,
     );
   }
@@ -189,30 +195,19 @@ fn merge_resource_pots_by_buckets(
     };
 
     for module_pot in module_pots {
-      let mut is_create_new_resource_pot = false;
+      let key = (module_pot.module_type.clone(), module_pot.immutable);
 
-      if let Some(current_generation) =
-        current_generation_map.get_mut(&(module_pot.module_type.clone(), module_pot.immutable))
-      {
-        // create a new resource pot if the size of the resource pot is too large
-        if current_generation.size >= target_size {
-          is_create_new_resource_pot = true;
-        } else {
-          current_generation.add_module_pot(module_pot);
-        }
+      if let Some(current_generation) = current_generation_map.get_mut(&key) {
+        current_generation.add_module_pot(module_pot);
       } else {
         let mut current_generation = CurrentGeneration::new();
         current_generation.add_module_pot(module_pot);
-        current_generation_map.insert(
-          (module_pot.module_type.clone(), module_pot.immutable),
-          current_generation,
-        );
+        current_generation_map.insert(key.clone(), current_generation);
       }
 
-      if is_create_new_resource_pot {
-        let current_generation = current_generation_map
-          .remove(&(module_pot.module_type.clone(), module_pot.immutable))
-          .unwrap();
+      // create a new resource pot if the size of the resource pot is too large
+      if current_generation_map[&key].size >= target_size {
+        let current_generation = current_generation_map.remove(&key).unwrap();
         let modules = current_generation.modules();
 
         let resource_pot_name = format!(
@@ -475,7 +470,7 @@ fn handle_enforce_target_concurrent_requests(
     let value = resource_pots_to_merge.entry(key).or_insert(vec![]);
     value.push(resource_pots[i].id.clone());
   }
-  println!("resource_pots_to_merge: {:?}", resource_pots_to_merge);
+
   let resource_pot_ids = resource_pots
     .iter()
     .map(|resource_pot| resource_pot.id.clone())

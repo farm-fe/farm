@@ -412,3 +412,8 @@ pub struct EmptyPluginHookParam {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmptyPluginHookResult {}
+
+// pub struct PluginGenerateResourcesHookResult {
+//   pub resource: Resource,
+//   pub source_map: Option<Resource>,
+// }

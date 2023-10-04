@@ -3,6 +3,7 @@ use farmfe_core::{
   module::{ModuleId, ModuleType},
 };
 
+#[derive(Debug, Clone)]
 /// A ModulePot is a collection of modules in the same ModuleBucket that satisfy following rules:
 /// 1. Modules matched partialBundling.groups will be in the same ModulePot.
 /// 2. Modules in the same immutable package are in the same ModulePot. For example, A, B are both in ModuleBucket_A_B and they are also in the same immutable package, then A, B would be in the same Module Pot.
@@ -41,5 +42,9 @@ impl ModulePot {
 
   pub fn modules(&self) -> &HashSet<ModuleId> {
     &self.modules
+  }
+
+  pub fn take_modules(self) -> HashSet<ModuleId> {
+    self.modules
   }
 }

@@ -10,12 +10,13 @@ export default defineConfig({
     input: {
       index: "./index.html",
     },
-    lazyCompilation: false,
+    lazyCompilation: true,
+    presetEnv: false,
     resolve: {
       symlinks: true,
       alias: {
         "@": resolve(process.cwd(), "./src"),
-        mockjs: resolve(process.cwd(), "./patches/mock.js"),
+        // mockjs: resolve(process.cwd(), "./patches/mock.js"),
       },
     },
     output: {

@@ -13,7 +13,7 @@ use crate::{
   merge_module_pots::{merge_module_pots, ModuleGroupModulePots},
   module_bucket::ModuleBucket,
   module_pot::ModulePot,
-  utils::{get_sorted_module_ids_str, hash_module_ids, try_get_filename},
+  utils::try_get_filename,
 };
 
 /// Generate resource pots from module group buckets.
@@ -39,7 +39,7 @@ pub fn generate_resource_pots(
     );
     used_resource_pot_names.insert(base_resource_pot_name.clone());
 
-    let mut module_group_module_pots = ModuleGroupModulePots::new(module_group_id);
+    let mut module_group_module_pots = ModuleGroupModulePots::new(module_group_id.clone());
 
     // Sort the buckets to make sure it is stable.
     module_group_bucket.buckets.sort();
@@ -62,6 +62,14 @@ pub fn generate_resource_pots(
       module_group_module_pots.add_module_pots(module_bucket_id.clone(), module_pots);
       handled_module_group_buckets.insert(module_bucket_id);
     }
+
+    // sort the module pots by size to make sure bigger module pots are merged first.
+    module_group_module_pots
+      .module_pots
+      .values_mut()
+      .for_each(|pots| {
+        pots.sort_by(|a, b| b.size.cmp(&a.size));
+      });
 
     let merged_resource_pots = merge_module_pots(
       module_group_module_pots,

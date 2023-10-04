@@ -204,6 +204,7 @@ export interface Config {
     partialBundling?: {
       targetConcurrentRequest?: number;
       targetMinSize?: number;
+      targetMaxSize?: number;
       groups?: {
         name: string;
         test: string[];

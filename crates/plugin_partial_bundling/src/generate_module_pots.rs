@@ -38,6 +38,45 @@ pub fn generate_module_pots(
     module_pot.add_module(module_id.clone(), module.size, module.execution_order);
   }
 
+  // split module_pots from module_pot_map that its size larger that target_max_size
+  let exceed_size_module_pot_ids = module_pot_map
+    .iter()
+    .filter(|(_, module_pot)| module_pot.size > config.target_max_size)
+    .map(|(module_pot_id, _)| module_pot_id.clone())
+    .collect::<HashSet<_>>();
+
+  for exceed_size_module_pot_id in exceed_size_module_pot_ids {
+    let module_pot = module_pot_map.remove(&exceed_size_module_pot_id).unwrap();
+    let new_module_pot_numbers = (module_pot.size / config.target_max_size) + 1;
+    let module_pot_name = module_pot.name.clone();
+    let immutable = module_pot.immutable;
+    let ty = module_pot.module_type.clone();
+    let mut modules = module_pot.take_modules().into_iter().collect::<Vec<_>>();
+    modules.sort_by_key(|m| m.to_string());
+    let page_size = modules.len() / new_module_pot_numbers;
+
+    for i in 0..new_module_pot_numbers {
+      let new_module_pot_name = format!("{}-{}", module_pot_name, i);
+      let new_module_pot_id = ModulePot::gen_id(&new_module_pot_name, ty.clone(), immutable);
+
+      let new_module_pot = module_pot_map
+        .entry(new_module_pot_id)
+        .or_insert_with(|| ModulePot::new(new_module_pot_name, ty.clone(), immutable));
+
+      let start = i * page_size;
+      let end = if i == new_module_pot_numbers - 1 {
+        modules.len()
+      } else {
+        (i + 1) * page_size
+      };
+
+      for module_id in &modules[start..end] {
+        let module = module_graph.module(module_id).unwrap();
+        new_module_pot.add_module(module_id.clone(), module.size, module.execution_order);
+      }
+    }
+  }
+
   let mut module_pots = module_pot_map
     .into_iter()
     .map(|(_, module_pot)| module_pot)

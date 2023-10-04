@@ -448,7 +448,7 @@ impl Plugin for FarmPluginCss {
         // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
         if let Some(bytes) = src_map {
           resources.push(Resource {
-            name: format!("{}.map", resource_pot.id.to_string()),
+            name: format!("{}.map", resource_pot.name.to_string()),
             bytes,
             emitted: false,
             resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
@@ -458,7 +458,7 @@ impl Plugin for FarmPluginCss {
       }
 
       resources.push(Resource {
-        name: resource_pot.id.to_string(),
+        name: resource_pot.name.to_string(),
         bytes: css_code.as_bytes().to_vec(),
         emitted: false,
         resource_type: ResourceType::Css,

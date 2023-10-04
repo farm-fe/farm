@@ -130,18 +130,25 @@ export class ModuleSystem {
     // loading all required resources, and return the exports of the entry module
     return Promise.all(
       resources.map((resource) => this.resourceLoader.load(resource))
-    ).then(() => {
-      const result = this.require(moduleId);
-      // if the module is async, return the default export, the default export should be a promise
-      if (result.__farm_async) {
-        return result.default;
-      } else {
-        return result;
-      }
-    });
+    )
+      .then(() => {
+        const result = this.require(moduleId);
+        // if the module is async, return the default export, the default export should be a promise
+        if (result.__farm_async) {
+          return result.default;
+        } else {
+          return result;
+        }
+      })
+      .catch((err) => {
+        console.error(`[Farm] Error loading dynamic module "${moduleId}"`, err);
+        // reload the page if the dynamic module loading failed
+        window.location.reload();
+      });
   }
 
   register(moduleId: string, initializer: ModuleInitialization): void {
+    // console.log(`[Farm] register module "${moduleId}"`, console.trace());
     if (this.modules[moduleId]) {
       // throw new Error(
       //   `Module "${moduleId}" has registered! It should not be registered twice`

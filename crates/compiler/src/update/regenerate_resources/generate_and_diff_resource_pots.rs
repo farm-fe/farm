@@ -35,10 +35,10 @@ pub fn generate_and_diff_resource_pots(
     handle_enforce_resource_pots(&affected_modules, diff_result, updated_module_ids, context);
 
   // for enforce resource pots, only rerender it when it's modules are changed, added or removed.
-  let resources_pots =
+  let mut resources_pots =
     call_partial_bundling_hook(&modules, context, &PluginHookContext::default())?;
 
-  // fill necessary fields for enforce resource pots
+  // fill necessary fields for all resource pots
   {
     let mut resource_pot_map = context.resource_pot_map.write();
 
@@ -46,19 +46,13 @@ pub fn generate_and_diff_resource_pots(
       let resource_pot = resource_pot_map.resource_pot_mut(&id).unwrap();
       fill_necessary_fields_for_resource_pot(vec![resource_pot], context);
     });
-  }
-
-  let mut new_resource_pot_ids = diff_and_patch_resource_pot_map(resources_pots, context);
-
-  {
-    let mut resource_pot_map = context.resource_pot_map.write();
-
-    // fill necessary fields for new resource pots
-    new_resource_pot_ids.iter().for_each(|id| {
-      let resource_pot = resource_pot_map.resource_pot_mut(&id).unwrap();
-      fill_necessary_fields_for_resource_pot(vec![resource_pot], context);
+    resources_pots.iter_mut().for_each(|rp| {
+      fill_necessary_fields_for_resource_pot(vec![rp], context);
     });
   }
+
+  let mut new_resource_pot_ids =
+    diff_and_patch_resource_pot_map(resources_pots, &enforce_resource_pot_ids, context);
 
   let hash_new_resource_pot_ids = new_resource_pot_ids
     .iter()
@@ -182,6 +176,7 @@ fn handle_enforce_resource_pots(
 
 fn diff_and_patch_resource_pot_map(
   resources_pots: Vec<ResourcePot>,
+  enforce_resource_pot_ids: &Vec<String>,
   context: &Arc<CompilationContext>,
 ) -> HashSet<ResourcePotId> {
   let resources_pots_ids = resources_pots
@@ -213,7 +208,9 @@ fn diff_and_patch_resource_pot_map(
 
       // Remove the old resource pots
       for resource_pot in module_group.resource_pots() {
-        if !resources_pots_ids.contains(resource_pot) {
+        if !resources_pots_ids.contains(resource_pot)
+          && !enforce_resource_pot_ids.contains(resource_pot)
+        {
           resources_pots_to_remove.push(resource_pot.clone());
 
           if resource_pot_map.has_resource_pot(resource_pot) {

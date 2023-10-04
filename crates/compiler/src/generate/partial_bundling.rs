@@ -55,6 +55,7 @@ pub fn generate_resource_pot_map(
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotMap> {
   let (enforce_resource_pots, modules) = generate_enforce_resource_pots(context);
+
   let mut resources_pots =
     call_partial_bundling_hook(&modules.into_iter().collect(), context, hook_context)?;
   // extends enforce resource pots
@@ -161,6 +162,11 @@ fn generate_enforce_resource_pots(
   // generate enforce resource pots first
   for g in module_group_graph.module_groups() {
     for module_id in g.modules() {
+      // ignore external module
+      if module_graph.module(module_id).unwrap().external {
+        continue;
+      }
+
       if let Some(name) = get_enforce_resource_name_for_module(
         module_id,
         &context.config.partial_bundling.enforce_resources,
@@ -190,7 +196,6 @@ fn generate_enforce_resource_pots(
   )
 }
 
-// TODO test generate_resource_pot_map
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;
@@ -200,8 +205,8 @@ mod tests {
       config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
     },
     context::CompilationContext,
+    hashbrown::HashSet,
     plugin::{Plugin, PluginHookContext},
-    resource::resource_pot::{ResourcePot, ResourcePotType},
   };
   use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
   use farmfe_testing_helpers::construct_test_module_graph_complex;
@@ -243,26 +248,122 @@ mod tests {
 
     let resource_pot_map =
       generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
-    println!(
-      "{:?}",
-      resource_pot_map
-        .resource_pots()
-        .iter()
-        .map(|i| i.id.clone())
-        .collect::<Vec<_>>()
-    );
-    assert_eq!(resource_pot_map.resource_pots().len(), 5);
+
+    let mut resource_pots = resource_pot_map.take_resource_pots();
+    resource_pots.sort_by_key(|p| p.id.clone());
+
+    assert_eq!(resource_pots.len(), 5);
+    // A, C
+    assert_eq!(resource_pots[0].modules(), vec![&"A".into(), &"C".into()]);
+    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
+    // B, E
+    assert_eq!(resource_pots[1].modules(), vec![&"B".into(), &"E".into()]);
+    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
+    // D
+    assert_eq!(resource_pots[2].modules(), vec![&"D".into()]);
+    // G
+    assert_eq!(resource_pots[3].modules(), vec![&"G".into()]);
+    // F, H
+    assert_eq!(resource_pots[4].modules(), vec![&"F".into(), &"H".into()]);
+
+    // assert necessary fields are filled
     assert_eq!(
-      resource_pot_map
-        .resource_pot(&ResourcePot::gen_id(
-          "test",
-          ResourcePotType::Custom("__farm_unknown".to_string())
-        ))
-        .unwrap()
-        .modules()
-        .len(),
-      2
+      resource_pots[0].module_groups,
+      HashSet::from(["A".into(), "F".into()])
     );
-    // TODO test the other resource pots
+    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
+
+    assert_eq!(resource_pots[1].module_groups, HashSet::from(["B".into()]));
+    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
+
+    assert_eq!(
+      resource_pots[2].module_groups,
+      HashSet::from(["D".into(), "B".into()])
+    );
+    assert_eq!(resource_pots[2].entry_module, None);
+
+    assert_eq!(resource_pots[3].module_groups, HashSet::from(["G".into()]));
+    assert_eq!(resource_pots[3].entry_module, None);
+
+    assert_eq!(
+      resource_pots[4].module_groups,
+      HashSet::from(["F".into(), "G".into(), "B".into(), "D".into()])
+    );
+    assert_eq!(resource_pots[4].entry_module, None);
+  }
+
+  #[test]
+  fn test_generate_resource_pot_map_external() {
+    let mut module_graph = construct_test_module_graph_complex();
+    // mark H as external
+    module_graph.module_mut(&"H".into()).unwrap().external = true;
+
+    let module_group_graph = module_group_graph_from_entries(
+      &module_graph
+        .entries
+        .clone()
+        .into_iter()
+        .map(|(entry, _)| entry)
+        .collect(),
+      &mut module_graph,
+    );
+
+    let config = Config::default();
+    let plugins: Vec<Arc<dyn Plugin + 'static>> = vec![Arc::new(
+      farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config),
+    )];
+    let context = Arc::new(CompilationContext::new(config, plugins).unwrap());
+
+    {
+      let mut mg = context.module_graph.write();
+      *mg = module_graph;
+    }
+
+    {
+      let mut mgg = context.module_group_graph.write();
+      *mgg = module_group_graph;
+    }
+
+    let resource_pot_map =
+      generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
+
+    let mut resource_pots = resource_pot_map.take_resource_pots();
+    resource_pots.sort_by_key(|p| p.id.clone());
+
+    assert_eq!(resource_pots.len(), 5);
+    // A, C
+    assert_eq!(resource_pots[0].modules(), vec![&"A".into(), &"C".into()]);
+    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
+    // B, E
+    assert_eq!(resource_pots[1].modules(), vec![&"B".into(), &"E".into()]);
+    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
+    // D
+    assert_eq!(resource_pots[2].modules(), vec![&"D".into()]);
+    // F, H
+    assert_eq!(resource_pots[3].modules(), vec![&"F".into()]);
+    // G
+    assert_eq!(resource_pots[4].modules(), vec![&"G".into()]);
+
+    // assert necessary fields are filled
+    assert_eq!(
+      resource_pots[0].module_groups,
+      HashSet::from(["A".into(), "F".into()])
+    );
+    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
+
+    assert_eq!(resource_pots[1].module_groups, HashSet::from(["B".into()]));
+    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
+
+    assert_eq!(
+      resource_pots[2].module_groups,
+      HashSet::from(["D".into(), "B".into()])
+    );
+    assert_eq!(resource_pots[2].entry_module, None);
+
+    assert_eq!(resource_pots[3].module_groups, HashSet::from(["F".into()]));
+    assert_eq!(resource_pots[3].entry_module, None);
+
+    assert_eq!(resource_pots[4].module_groups, HashSet::from(["G".into()]));
+    assert_eq!(resource_pots[4].entry_module, None);
   }
 }
