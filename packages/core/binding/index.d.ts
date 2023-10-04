@@ -202,7 +202,7 @@ export interface Config {
     };
     sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
     partialBundling?: {
-      targetConcurrentRequest?: number;
+      targetConcurrentRequests?: number;
       targetMinSize?: number;
       targetMaxSize?: number;
       groups?: {
@@ -215,7 +215,7 @@ export interface Config {
         name: string;
         test: string[];
       }[];
-      enforceTargetConcurrentRequest?: boolean;
+      enforceTargetConcurrentRequests?: boolean;
       enforceTargetMinSize?: boolean;
       immutableModules?: string[];
     };

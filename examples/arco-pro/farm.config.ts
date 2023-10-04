@@ -24,6 +24,9 @@ export default defineConfig({
       filename: "assets/[resourceName].[contentHash].[ext]",
       assetsFilename: "static/[resourceName].[contentHash].[ext]",
     },
+    partialBundling: {
+      targetMinSize: 1024 * 2
+    }
   },
   server: {
     cors: true,

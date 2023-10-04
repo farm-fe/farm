@@ -20,7 +20,7 @@ export default {
     minify: false,
     presetEnv: false,
     // partialBundling: {
-    //   moduleBuckets: [
+    //   enforceResources: [
     //     {
     //       name: 'node.bundle.js',
     //       test: ['.+']

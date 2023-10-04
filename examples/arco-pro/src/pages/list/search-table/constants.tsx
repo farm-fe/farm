@@ -13,9 +13,9 @@ export const FilterType = ['规则筛选', '人工']
 export const Status = ['未上线', '已上线']
 
 const ContentIcon = [
-  <IconText key={0} />,
-  <IconHorizontalVideo key={1} />,
-  <IconVerticalVideo key={2} />,
+  // <IconText key={0} />,
+  // <IconHorizontalVideo key={1} />,
+  // <IconVerticalVideo key={2} />,
 ]
 
 export function getColumns(

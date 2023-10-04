@@ -13,7 +13,8 @@ function Login() {
   return (
     <div className={styles.container}>
       <div className={styles.logo}>
-        <Logo />
+        {/* <Logo /> */}
+        <img src={Logo} alt="" />
         <div className={styles['logo-text']}>Arco Design Pro</div>
       </div>
       <div className={styles.banner}>
