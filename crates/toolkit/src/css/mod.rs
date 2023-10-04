@@ -29,7 +29,7 @@ pub fn parse_css_stylesheet(
   let source_file = cm.new_source_file(FileName::Real(PathBuf::from(id)), content.to_string());
   let config = ParserConfig {
     allow_wrong_line_comments: true,
-    // TODO support css modules
+    css_modules: true,
     ..Default::default()
   };
 
