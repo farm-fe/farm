@@ -1,4 +1,4 @@
-import Logo from '@/assets/logo.svg'
+import Logo from '@/assets/logo.svg?url'
 import MessageBox from '@/components/MessageBox'
 import { GlobalContext } from '@/context'
 import defaultLocale from '@/locale'

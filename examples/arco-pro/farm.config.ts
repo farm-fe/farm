@@ -1,6 +1,8 @@
 import { resolve } from "node:path";
 import type { UserConfig } from "@farmfe/core";
 import farmJsPluginLess from "@farmfe/js-plugin-less";
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
 function defineConfig(config: UserConfig) {
   return config;
 }
@@ -36,5 +38,6 @@ export default defineConfig({
   plugins: [
     "@farmfe/plugin-react",
     farmJsPluginLess(),
+    farmJsPluginSvgr(),
   ],
 });

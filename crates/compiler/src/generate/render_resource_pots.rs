@@ -60,7 +60,7 @@ pub fn render_resource_pots_and_generate_resources(
     // to make sure the source map can be found.
     if let Some(mut source_map) = res.source_map {
       source_map.name = format!("{}.{}", r.name, source_map.resource_type.to_ext());
-      let source_mapping_url = format!("\n//# sourceMappingURL={}", source_map.name);
+      let source_mapping_url = format!("\n//# sourceMappingURL=/{}", source_map.name);
       r.bytes.append(&mut source_mapping_url.as_bytes().to_vec());
 
       resource_pot.add_resource(source_map.name.clone());

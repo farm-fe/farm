@@ -103,7 +103,8 @@
     "chpos",
     "linechpos",
     "bpos",
-    "multibyte"
+    "multibyte",
+    "svgr"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
