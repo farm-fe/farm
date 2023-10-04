@@ -21,6 +21,8 @@ export default defineConfig({
     },
     output: {
       path: "./build",
+      filename: "assets/[resourceName].[contentHash].[ext]",
+      assetsFilename: "static/[resourceName].[contentHash].[ext]",
     },
   },
   server: {

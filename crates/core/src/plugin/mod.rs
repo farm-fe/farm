@@ -166,7 +166,7 @@ pub trait Plugin: Any + Send + Sync {
     _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> Result<Option<Vec<Resource>>> {
+  ) -> Result<Option<PluginGenerateResourcesHookResult>> {
     Ok(None)
   }
 
@@ -413,7 +413,7 @@ pub struct EmptyPluginHookParam {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmptyPluginHookResult {}
 
-// pub struct PluginGenerateResourcesHookResult {
-//   pub resource: Resource,
-//   pub source_map: Option<Resource>,
-// }
+pub struct PluginGenerateResourcesHookResult {
+  pub resource: Resource,
+  pub source_map: Option<Resource>,
+}

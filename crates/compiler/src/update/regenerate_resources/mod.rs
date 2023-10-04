@@ -4,9 +4,8 @@ use farmfe_core::{
   context::CompilationContext,
   hashbrown::HashSet,
   module::{module_group::ModuleGroupId, ModuleId, ModuleType},
-  resource::{
-    resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
-    ResourceType,
+  resource::resource_pot::{
+    JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType,
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
@@ -94,10 +93,7 @@ pub fn render_and_generate_update_resource(
     true,
   )?;
 
-  let js_resource = update_resources
-    .into_iter()
-    .find(|r| matches!(r.resource_type, ResourceType::Js))
-    .unwrap();
+  let js_resource = update_resources.resource;
 
   // TODO: also return sourcemap
   Ok(String::from_utf8(js_resource.bytes).unwrap())

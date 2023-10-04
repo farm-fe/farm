@@ -4,10 +4,10 @@ use hashbrown::HashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
-  PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
-  PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
-  PluginUpdateModulesHookParams,
+  Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
+  PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
+  PluginParseHookParam, PluginProcessModuleHookParam, PluginResolveHookParam,
+  PluginResolveHookResult, PluginTransformHookParam, PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
@@ -361,8 +361,8 @@ impl PluginDriver {
 
   hook_first!(
     generate_resources,
-    Result<Option<Vec<Resource>>>,
-    |result: &Option<Vec<Resource>>,
+    Result<Option<PluginGenerateResourcesHookResult>>,
+    |result: &Option<PluginGenerateResourcesHookResult>,
      plugin_name: String,
      resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>,
@@ -375,7 +375,16 @@ impl PluginDriver {
               name: plugin_name,
               hook: "generate_resources".to_string(),
               modules: resource_pot.modules().into_iter().cloned().collect(),
-              resources: resources.iter().map(|item| item.name.clone()).collect(),
+              resources: vec![
+                resources.resource.name.clone(),
+                resources
+                  .source_map
+                  .as_ref()
+                  .map_or(String::new(), |r| r.name.clone()),
+              ]
+              .into_iter()
+              .filter(|r| !r.is_empty())
+              .collect(),
             },
           );
         }

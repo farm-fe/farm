@@ -136,9 +136,9 @@ fn load_parse_and_analyze_deps() {
         .generate_resources(&mut resource_pot, &context, &hook_context)
         .unwrap()
         .unwrap();
-      assert_eq!(resources.len(), 2);
+      assert!(resources.source_map.is_some());
 
-      let code = String::from_utf8(resources[0].bytes.clone()).unwrap();
+      let code = String::from_utf8(resources.resource.bytes.clone()).unwrap();
 
       let lines: Vec<&str> = code.lines().collect();
       assert_eq!(
