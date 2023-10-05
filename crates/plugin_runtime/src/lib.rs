@@ -3,13 +3,16 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config, PartialBundlingModuleBucketsConfig},
+  config::{
+    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+  },
   context::CompilationContext,
   error::CompilationError,
   module::{ModuleMetaData, ModuleSystem, ModuleType},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
+    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
   },
   regex::Regex,
@@ -45,7 +48,6 @@ pub mod render_resource_pot;
 /// when entry is script, the runtime will be injected into the entry module's head, makes sure the runtime execute before all other code.
 ///
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
-/// ```
 pub struct FarmPluginRuntime {}
 
 impl Plugin for FarmPluginRuntime {
@@ -64,9 +66,9 @@ impl Plugin for FarmPluginRuntime {
       config.runtime.swc_helpers_path.clone(),
     );
 
-    config.partial_bundling.module_buckets.insert(
+    config.partial_bundling.enforce_resources.insert(
       0,
-      PartialBundlingModuleBucketsConfig {
+      PartialBundlingEnforceResourceConfig {
         name: "FARM_RUNTIME".to_string(),
         test: vec![ConfigRegex(
           Regex::new(&format!(".+{}", RUNTIME_SUFFIX)).unwrap(),
@@ -364,7 +366,7 @@ impl Plugin for FarmPluginRuntime {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
+  ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(&hook_context.caller, Some(c) if c == self.name()) {
       return Ok(None);
     }
@@ -387,13 +389,16 @@ impl Plugin for FarmPluginRuntime {
       })?;
       // set emitted property of Runtime to true by default, as it will be generated and injected when generating entry resources,
       // other plugins wants to modify this behavior in write_resources hook.
-      Ok(Some(vec![Resource {
-        name: resource_pot.id.to_string(),
-        bytes,
-        emitted: true, // do not emit runtime resource by default
-        resource_type: ResourceType::Runtime,
-        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-      }]))
+      Ok(Some(PluginGenerateResourcesHookResult {
+        resource: Resource {
+          name: resource_pot.id.to_string(),
+          bytes,
+          emitted: true, // do not emit runtime resource by default
+          resource_type: ResourceType::Runtime,
+          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+        },
+        source_map: None,
+      }))
     } else {
       Ok(None)
     }

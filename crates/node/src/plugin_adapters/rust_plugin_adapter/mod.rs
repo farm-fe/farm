@@ -7,9 +7,9 @@ use farmfe_core::{
   hashbrown::HashMap,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   plugin::{
-    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, PluginTransformHookResult,
+    Plugin, PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginProcessModuleHookParam, PluginResolveHookParam,
+    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
   },
   resource::resource_pot::ResourcePot,
 };
@@ -169,7 +169,7 @@ impl Plugin for RustPluginAdapter {
     resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
-  ) -> Result<Option<Vec<farmfe_core::resource::Resource>>> {
+  ) -> Result<Option<PluginGenerateResourcesHookResult>> {
     self
       .plugin
       .generate_resources(resource_pot, context, hook_context)

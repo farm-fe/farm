@@ -1,6 +1,8 @@
 import { resolve } from "node:path";
 import type { UserConfig } from "@farmfe/core";
 import farmJsPluginLess from "@farmfe/js-plugin-less";
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
 function defineConfig(config: UserConfig) {
   return config;
 }
@@ -10,17 +12,23 @@ export default defineConfig({
     input: {
       index: "./index.html",
     },
-    lazyCompilation: false,
+    lazyCompilation: true,
+    presetEnv: false,
     resolve: {
       symlinks: true,
       alias: {
         "@": resolve(process.cwd(), "./src"),
-        mockjs: resolve(process.cwd(), "./patches/mock.js"),
+        // mockjs: resolve(process.cwd(), "./patches/mock.js"),
       },
     },
     output: {
       path: "./build",
+      filename: "assets/[resourceName].[contentHash].[ext]",
+      assetsFilename: "static/[resourceName].[contentHash].[ext]",
     },
+    partialBundling: {
+      targetMinSize: 1024 * 2
+    }
   },
   server: {
     cors: true,
@@ -30,5 +38,6 @@ export default defineConfig({
   plugins: [
     "@farmfe/plugin-react",
     farmJsPluginLess(),
+    farmJsPluginSvgr(),
   ],
 });

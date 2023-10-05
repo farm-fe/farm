@@ -10,8 +10,9 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
+    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -285,7 +286,7 @@ impl Plugin for FarmPluginScript {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> Result<Option<Vec<Resource>>> {
+  ) -> Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       // handle js entry resource pot
       // handle_entry_resource_pot::handle_entry_resource_pot(resource_pot, context)?;
@@ -306,13 +307,14 @@ impl Plugin for FarmPluginScript {
         source: Some(Box::new(e)),
       })?;
 
-      let mut resources = vec![Resource {
+      let resource = Resource {
         bytes: buf,
-        name: resource_pot.id.to_string(),
+        name: resource_pot.name.to_string(),
         emitted: false,
         resource_type: ResourceType::Js,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-      }];
+      };
+      let mut source_map = None;
 
       if context.config.sourcemap.enabled()
         && (context.config.sourcemap.is_all() || !resource_pot.immutable)
@@ -325,16 +327,19 @@ impl Plugin for FarmPluginScript {
           &module_graph,
         );
 
-        resources.push(Resource {
+        source_map = Some(Resource {
           bytes: src_map,
-          name: format!("{:?}.map", resource_pot.id.to_string()),
+          name: format!("{}.map", resource_pot.name.to_string()),
           emitted: false,
           resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         });
       }
 
-      Ok(Some(resources))
+      Ok(Some(PluginGenerateResourcesHookResult {
+        resource,
+        source_map,
+      }))
     } else {
       Ok(None)
     }

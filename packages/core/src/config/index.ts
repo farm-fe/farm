@@ -138,7 +138,9 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.lazyCompilation === undefined) {
+  if (isProduction) {
+    config.lazyCompilation = false;
+  } else if (config.lazyCompilation === undefined) {
     if (isDevelopment) {
       config.lazyCompilation = true;
     } else {
@@ -377,7 +379,7 @@ async function readConfigFile(
               '^[^./].*'
             ],
             partialBundling: {
-              moduleBuckets: [
+              enforceResources: [
                 {
                   name: fileName,
                   test: ['.+']

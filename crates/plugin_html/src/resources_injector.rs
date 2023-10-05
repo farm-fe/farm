@@ -59,6 +59,7 @@ impl ResourcesInjector {
     let mut initial_resources = vec![];
     initial_resources.extend(self.script_resources.clone());
     initial_resources.extend(self.css_resources.clone());
+    initial_resources.sort();
 
     let initial_resources_code = initial_resources
       .into_iter()

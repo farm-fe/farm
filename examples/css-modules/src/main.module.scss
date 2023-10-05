@@ -1,9 +1,13 @@
 .child {
-  color: yellowgreen;
-  // background-color: whitesmoke;
+  color: black;
 }
 
-:global .child-global {
+.child, :global(.child-global) {
+  color: yellowgreen;
+  background-color: whitesmoke;
+}
+
+.child, :global(.child-global2) {
   color: yellowgreen;
   background-color: whitesmoke;
 }

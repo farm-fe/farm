@@ -126,9 +126,9 @@ function Navbar({ show }: { show: boolean }) {
     <div className={styles.navbar}>
       <div className={styles.left}>
         <div className={styles.logo}>
-          {/* <Logo /> */}
+          <Logo />
           {/* <Logo /> todo svgr implementation */}
-          <img src={Logo as any as string} />
+          {/* <img src={Logo as any as string} /> */}
           <div className={styles['logo-name']}>Arco Pro</div>
         </div>
       </div>

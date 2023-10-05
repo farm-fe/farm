@@ -59,11 +59,10 @@ impl CompilationContext {
     // @import './variable.scss'
     let mut watch_graph = self.watch_graph.write();
 
+    watch_graph.add_node(from.clone());
+
     for dep in deps {
-      watch_graph.add_node(from.clone());
-
       watch_graph.add_node(dep.clone());
-
       watch_graph.add_edge(&from, dep)?;
     }
 

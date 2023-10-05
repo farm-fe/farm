@@ -16,7 +16,7 @@ export default {
       format: 'cjs'
     },
     partialBundling: {
-      moduleBuckets: [
+      enforceResources: [
         {
           name: 'index.js',
           test: ['.+']

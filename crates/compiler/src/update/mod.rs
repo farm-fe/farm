@@ -167,11 +167,12 @@ impl Compiler {
 
     let (affected_module_groups, updated_module_ids, diff_result) =
       self.diff_and_patch_context(paths, &update_context);
-
+    // TODO only regenerate one resource if there are not deps changes.
     let dynamic_resources_map = self.regenerate_resources(
       affected_module_groups,
       previous_module_groups,
       &updated_module_ids,
+      diff_result.clone(),
       callback,
       sync,
     );
@@ -192,7 +193,7 @@ impl Compiler {
       watch_diff_result.remove.extend(old_watch_extra_resources);
     }
 
-    // If the module type is not script, we should skip render and generate update resource.
+    // If the module type is not script or css, we should skip render and generate update resource.
     // and just return `window.location.reload()`
     let should_reload_page = updated_module_ids.iter().any(|id| {
       let module_graph = self.context.module_graph.read();
@@ -399,6 +400,7 @@ impl Compiler {
     affected_module_groups: HashSet<ModuleGroupId>,
     previous_module_groups: HashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
+    diff_result: DiffResult,
     callback: F,
     sync: bool,
   ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
@@ -417,6 +419,7 @@ impl Compiler {
     {
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
+        diff_result,
         &cloned_updated_module_ids,
         &cloned_context,
       )
@@ -457,6 +460,7 @@ impl Compiler {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
           affected_module_groups,
+          diff_result,
           &cloned_updated_module_ids,
           &cloned_context,
         ) {

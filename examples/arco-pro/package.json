@@ -1,5 +1,5 @@
 {
-  "name": "example-arco-design-pro",
+  "name": "@farmfe-examples/arco-design-pro",
   "version": "1.0.0",
   "description": "Arco Design Pro",
   "private": true,
@@ -38,6 +38,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:*",
+    "@farmfe/js-plugin-svgr": "workspace:^",
     "@farmfe/plugin-react": "workspace:*",
     "core-js": "^3.30.1",
     "react-refresh": "^0.14.0",

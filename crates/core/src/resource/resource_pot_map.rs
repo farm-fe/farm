@@ -2,7 +2,6 @@ use hashbrown::HashMap;
 
 use super::resource_pot::{ResourcePot, ResourcePotId};
 
-// TODO: Change Graph to Map, as the resource pot should be related to module group, and we already have resource group graph
 pub struct ResourcePotMap {
   map: HashMap<ResourcePotId, ResourcePot>,
 }
@@ -45,6 +44,10 @@ impl ResourcePotMap {
 
   pub fn has_resource_pot(&self, id: &ResourcePotId) -> bool {
     self.map.contains_key(id)
+  }
+
+  pub fn take_resource_pots(self) -> Vec<ResourcePot> {
+    self.map.into_iter().map(|(_, v)| v).collect()
   }
 }
 

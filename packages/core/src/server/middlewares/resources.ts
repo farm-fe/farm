@@ -52,31 +52,40 @@ export function resources(
     const resource = compiler.resources()[finalResourcePath];
 
     // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
-    if (!resource && config.spa !== false) {
-      const pathComps = resourcePath.split('/');
-
-      while (pathComps.length > 0) {
-        const pathStr = pathComps.join('/') + '.html';
-        const resource = compiler.resources()[pathStr];
-
-        if (resource) {
-          ctx.type = '.html';
-          ctx.body = resource;
-          return;
-        }
-
-        pathComps.pop();
-      }
-
-      const indexHtml = compiler.resources()['index.html'];
-
-      if (indexHtml) {
-        ctx.type = '.html';
-        ctx.body = indexHtml;
+    if (!resource) {
+      // if request mime is not html, return 404
+      if (!ctx.accepts('html')) {
+        ctx.status = 404;
         return;
       }
-      // cannot find index.html, return 404
-      ctx.status = 404;
+
+      if (config.spa !== false) {
+        const pathComps = resourcePath.split('/');
+
+        while (pathComps.length > 0) {
+          const pathStr = pathComps.join('/') + '.html';
+          const resource = compiler.resources()[pathStr];
+
+          if (resource) {
+            ctx.type = '.html';
+            ctx.body = resource;
+            return;
+          }
+
+          pathComps.pop();
+        }
+
+        const indexHtml = compiler.resources()['index.html'];
+
+        if (indexHtml) {
+          ctx.type = '.html';
+          ctx.body = indexHtml;
+          return;
+        }
+      } else {
+        // cannot find index.html, return 404
+        ctx.status = 404;
+      }
     } else {
       ctx.type = extname(resourcePath);
       ctx.body = resource;

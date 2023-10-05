@@ -6,8 +6,8 @@ use farmfe_core::{
   hashbrown::HashMap,
   module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
+    Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
   },
   relative_path::RelativePath,
   resource::{
@@ -189,15 +189,18 @@ impl Plugin for FarmPluginHtml {
     resource_pot: &mut ResourcePot,
     _context: &std::sync::Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
+  ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
-      Ok(Some(vec![Resource {
-        name: resource_pot.id.to_string(),
-        bytes: vec![],
-        emitted: false,
-        resource_type: ResourceType::Html,
-        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-      }]))
+      Ok(Some(PluginGenerateResourcesHookResult {
+        resource: Resource {
+          name: resource_pot.id.to_string(),
+          bytes: vec![],
+          emitted: false,
+          resource_type: ResourceType::Html,
+          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+        },
+        source_map: None,
+      }))
     } else {
       Ok(None)
     }

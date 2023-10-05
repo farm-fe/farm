@@ -163,7 +163,7 @@ pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> 
     }
 
     result.push(match entry_name {
-      Some(entry_name) if name.starts_with(entry_name) => (
+      Some(entry_name) if name == entry_name => (
         "1".into(),
         format!("//{}.{}:\n ", entry_name, resource.resource_type.to_ext()),
         String::from_utf8_lossy(&resource.bytes),
@@ -188,7 +188,6 @@ pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> 
 }
 
 pub fn load_expected_result(cwd: PathBuf) -> String {
-  
   std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string())
 }
 

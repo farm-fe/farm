@@ -21,6 +21,7 @@ export const targetEnv = __farm_global_this__.__FARM_TARGET_ENV__ || 'node';
  */
 export class ResourceLoader {
   private _loadedResources: Record<string, boolean> = {};
+  private _loadingResources: Record<string, Promise<void>> = {};
 
   publicPaths: string[];
 
@@ -45,7 +46,10 @@ export class ResourceLoader {
 
       if (this._loadedResources[resource.path]) {
         return;
+      } else if (this._loadingResources[resource.path]) {
+        return this._loadingResources[resource.path];
       }
+
       let promise = Promise.resolve();
       try {
         if (resource.type === 'script') {
@@ -53,6 +57,8 @@ export class ResourceLoader {
         } else if (resource.type === 'link') {
           promise = this._loadLink(url);
         }
+
+        this._loadingResources[resource.path] = promise;
 
         promise.then(() => {
           this._loadedResources[resource.path] = true;

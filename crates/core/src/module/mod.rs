@@ -52,6 +52,8 @@ pub struct Module {
   /// Execution order of this module in the module graph
   /// updated after the module graph is built
   pub execution_order: usize,
+  /// Source size of this module
+  pub size: usize,
 }
 
 impl Module {
@@ -66,7 +68,9 @@ impl Module {
       source_map_chain: vec![],
       external: false,
       immutable: false,
-      execution_order: 0,
+      // default to the last
+      execution_order: usize::MAX,
+      size: 0,
     }
   }
 }
