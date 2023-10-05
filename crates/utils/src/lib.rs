@@ -45,7 +45,7 @@ pub fn stringify_query(query: &Vec<(String, String)>) -> String {
   let mut qs = vec![];
 
   for (k, v) in query {
-    if v == PARSE_QUERY_TRUE {
+    if v == PARSE_QUERY_TRUE || v.is_empty() {
       qs.push(k.to_string());
     } else {
       qs.push(format!("{}={}", k, v));

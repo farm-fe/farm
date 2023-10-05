@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 
-import { adaptorVitePlugin } from '../plugin/index.js';
+import { VitePluginAdapter } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/type.js';
 import { DevServer } from '../server/index.js';
@@ -31,6 +31,7 @@ import type {
 import { CompilationMode, loadEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import { importFresh } from '../utils/share.js';
+import { VITE_PLUGIN_DEFAULT_MODULE_TYPE } from '../plugin/js/utils.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -548,14 +549,10 @@ export async function resolveAllPlugins(
       finalConfig
     };
   }
-  const resolveVitePlugins = adaptorVitePlugin(vitePlugins);
+  // const resolveVitePlugins = adaptorVitePlugin(vitePlugins);
 
   const rustPlugins = [];
-  const jsPlugins: JsPlugin[] = [];
-
-  if (resolveVitePlugins) {
-    jsPlugins.push(...resolveVitePlugins);
-  }
+  const jsPlugins: JsPlugin[] = handleVitePlugins(vitePlugins, userConfig);
 
   for (const plugin of plugins) {
     if (
@@ -595,4 +592,50 @@ export function filterUserConfig(
   userConfig.inlineConfig = inlineConfig;
   delete userConfig.configPath;
   return userConfig;
+}
+
+function handleVitePlugins(
+  vitePlugins: any[],
+  userConfig: UserConfig
+): JsPlugin[] {
+  const jsPlugins: JsPlugin[] = [];
+
+  for (const vitePlugin of vitePlugins) {
+    const vitePluginAdapter = new VitePluginAdapter(
+      vitePlugin as any,
+      userConfig
+    );
+    convertPlugin(vitePluginAdapter);
+    jsPlugins.push(vitePluginAdapter);
+  }
+
+  // if vitePlugins is not empty, append a load plugin to load files as js
+  if (vitePlugins.length) {
+    jsPlugins.push({
+      name: 'farm:load',
+      // has to be the last one
+      priority: 0,
+      load: {
+        filters: {
+          resolvedPaths: ['.*']
+        },
+        executor: async (params) => {
+          const { resolvedPath } = params;
+
+          if (!fs.existsSync(resolvedPath)) {
+            console.log('load', params);
+          }
+
+          const content = fs.readFileSync(resolvedPath, 'utf-8');
+
+          return {
+            content,
+            moduleType: VITE_PLUGIN_DEFAULT_MODULE_TYPE
+          };
+        }
+      }
+    });
+  }
+
+  return jsPlugins;
 }

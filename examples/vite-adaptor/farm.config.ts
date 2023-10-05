@@ -1,6 +1,7 @@
 import type { UserConfig } from "@farmfe/core";
-import farmJsPluginVue from "@farmfe/js-plugin-vue";
+// import farmJsPluginVue from "@farmfe/js-plugin-vue";
 import vue from '@vitejs/plugin-vue'
+
 function defineConfig(config: UserConfig) {
   return config;
 }
@@ -20,6 +21,9 @@ export default defineConfig({
   server: {
     port: 6654,
   },
+  plugins: [
+    '@farmfe/plugin-sass'
+  ],
   // plugins: [farmJsPluginVue()],
   vitePlugins: [vue()]
 });

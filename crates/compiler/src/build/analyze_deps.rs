@@ -28,5 +28,16 @@ pub fn analyze_deps(
     });
   };
 
+  if analyze_deps_param
+    .deps
+    .iter()
+    .any(|dep| dep.source.is_empty())
+  {
+    println!(
+      "Warning: module {} has empty source in analyze_deps",
+      module.id.to_string()
+    );
+  }
+
   Ok(analyze_deps_param.deps)
 }

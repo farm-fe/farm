@@ -135,7 +135,7 @@ impl JsCompiler {
     for js_plugin_object in js_plugins {
       let js_plugin = Arc::new(
         JsPluginAdapter::new(&env, js_plugin_object)
-          .unwrap_or_else(|e| panic!("load rust plugin error: {:?}", e)),
+          .unwrap_or_else(|e| panic!("load js plugin error: {:?}", e)),
       ) as _;
       plugins_adapters.push(js_plugin);
     }

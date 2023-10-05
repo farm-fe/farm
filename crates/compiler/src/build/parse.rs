@@ -15,6 +15,16 @@ pub fn parse(
   #[cfg(feature = "profile")]
   farmfe_core::puffin::profile_function!();
 
+  if (parse_param
+    .resolved_path
+    .contains("src/components/Card.vue"))
+  {
+    println!(
+      "parse_param.resolved_path: {} content: {}",
+      parse_param.resolved_path, parse_param.content
+    );
+  }
+
   match context
     .plugin_driver
     .parse(parse_param, context, hook_context)
