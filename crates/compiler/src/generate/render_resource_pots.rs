@@ -66,7 +66,6 @@ pub fn render_resource_pots_and_generate_resources(
       resource_pot.add_resource(source_map.name.clone());
       resources.lock().push(source_map);
     }
-    drop(r);
 
     resource_pot.add_resource(res.resource.name.clone());
     resources.lock().push(res.resource);
