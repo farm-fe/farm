@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-vue
 
+## 2.0.2
+
+### Patch Changes
+
+- 562d4c7: fix css variable does not work as expected
+
 ## 2.0.1
 
 ### Patch Changes
