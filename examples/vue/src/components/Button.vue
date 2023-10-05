@@ -14,6 +14,7 @@ export default defineComponent({
   setup(props) {
     return {
       props,
+      backgroundColor: '#9f1a8f'
     };
   },
 });
@@ -21,7 +22,7 @@ export default defineComponent({
 
 <style>
 .farm-button {
-  background-color: #9f1a8f;
+  background-color: v-bind(backgroundColor);
   color: #fff;
   padding: 10px 25px;
   border-radius: 10px;

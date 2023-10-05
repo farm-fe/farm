@@ -21,9 +21,11 @@
   color: var(--color-text);
   background: var(--color-background) !important;
 }
+
 .card-content {
   padding: 1.25rem;
 }
+
 .card:hover:before {
   content: '';
   background: linear-gradient(45deg, #8d0c67, #710a4e, #550834, #39051b);
