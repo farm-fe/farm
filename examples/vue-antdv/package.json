@@ -6,7 +6,7 @@
     "@ant-design/icons-vue": "^6.1.0",
     "ant-design-vue": "^4.0.3",
     "core-js": "^3.30.1",
-    "vue": "^3.2.45",
+    "vue": "^3.3.0",
     "vue-router": "^4.2.1",
     "xlsx": "^0.18.5"
   },

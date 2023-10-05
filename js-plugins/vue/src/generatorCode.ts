@@ -76,7 +76,7 @@ export function genTemplateCode(
     const result = compileTemplate({
       source: template.content,
       filename,
-      id: filename,
+      id: hash,
       compilerOptions: {
         ...templateCompilerOptions?.compilerOptions,
         bindingMetadata: bindings ? bindings : undefined,
@@ -116,7 +116,7 @@ export function genTemplateCode(
 export function genScriptCode(
   scriptCompilerOptions: ResolvedOptions['script'],
   descriptor: SFCDescriptor,
-  filename: string
+  hash: string
 ): Union<SFCScriptBlock, { code: string; moduleType: string }> {
   let moduleType = 'js';
   let code = '';
@@ -138,7 +138,7 @@ export function genScriptCode(
   // if script exist, add transformed code
   if (script) {
     const { content } = (result = compileScript(descriptor, {
-      id: filename,
+      id: hash,
       ...scriptCompilerOptions,
       babelParserPlugins
     }));
@@ -311,7 +311,7 @@ export function genMainCode(
     map: scriptMap,
     moduleType,
     bindings
-  } = genScriptCode(scriptCompilerOptions, descriptor, filename);
+  } = genScriptCode(scriptCompilerOptions, descriptor, hash);
 
   const { code: templateCode, map: templateMap } = genTemplateCode(
     templateCompilerOptions,
