@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "vue": "^3.2.45"
+    "vue": "^3.3.0"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
