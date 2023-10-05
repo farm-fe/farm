@@ -14,7 +14,6 @@ import {
   // isObject,
   // isString
 } from './utils.js';
-// import { parseVueRequest } from "./parsequery.js";
 
 // export function adaptorVitePlugin<UserOptions = Record<string, never>>(
 export function adaptorVitePlugin(rawPlugins: any) {
