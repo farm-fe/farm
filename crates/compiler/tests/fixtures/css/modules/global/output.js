@@ -50,7 +50,7 @@
 });
 var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
-//53f5ad15.css:
+//index_5f97.css:
   .base {
   font-size: 20px;
 }

@@ -35,7 +35,7 @@
 });
 var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
-//92a5e8c3.css:
+//index_337c.css:
  body {
   color: red;
 }
