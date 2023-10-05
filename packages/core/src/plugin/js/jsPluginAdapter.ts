@@ -75,8 +75,11 @@ export function adaptorVitePlugin(rawPlugins: any) {
             process.cwd(),
             params.importer?.relativePath ?? ''
           );
-
-          const resolveIdResult = await _resolveId(resolvedIdPath ?? null);
+          const resolveIdResult = await _resolveId(
+            params.source,
+            resolvedIdPath ?? null
+            // { isEntry },
+          );
           if (isString(resolveIdResult)) {
             return {
               resolvedPath: resolveIdResult,
@@ -117,10 +120,8 @@ export function adaptorVitePlugin(rawPlugins: any) {
             return null;
           }
           const qw = Object.fromEntries(params.query);
-          console.log(qw);
 
           const { vue } = qw;
-          console.log(vue);
 
           if (vue) {
             const loader = guessIdLoader(params.resolvedPath);
@@ -158,7 +159,7 @@ export function adaptorVitePlugin(rawPlugins: any) {
           try {
             source = await fs.promises.readFile(resolvedPath, 'utf-8');
           } catch (err) {
-            console.log('报错了');
+            console.log('error');
           }
           return {
             content: source,
