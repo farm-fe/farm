@@ -1,6 +1,5 @@
 import {
   Config,
-  JsUpdateResult,
   PluginLoadHookParam,
   PluginLoadHookResult,
   PluginResolveHookParam,
@@ -28,6 +27,19 @@ export interface CompilationContext {
   getWatchFiles(): string[];
   warn(message: string): void;
   error(message: string): void;
+
+  viteGetModulesByFile(file: string): {
+    url: string;
+    id: string;
+    file: string;
+    type: 'js' | 'css';
+  }[];
+  viteGetImporters(file: string): {
+    url: string;
+    id: string;
+    file: string;
+    type: 'js' | 'css';
+  }[];
 }
 
 type Callback<P, R> = (
@@ -79,8 +91,8 @@ export interface JsPlugin {
 
   updateModules?: {
     executor: Callback<
-      { updateResult: JsUpdateResult; paths: [string, string][] },
-      JsUpdateResult | undefined | null | void
+      { paths: [string, string][] },
+      string[] | undefined | null | void
     >;
   };
 }

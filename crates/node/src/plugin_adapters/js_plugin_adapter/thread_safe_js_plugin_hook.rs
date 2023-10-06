@@ -17,7 +17,6 @@ use farmfe_core::{
     EmptyPluginHookParam, EmptyPluginHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult, PluginUpdateModulesHookParams,
-    UpdateResult,
   },
   serde::{de::DeserializeOwned, Serialize},
 };
@@ -375,7 +374,7 @@ impl JsPluginUpdateModulesHook {
       .expect("executor should be checked in js side");
 
     Self {
-      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParams, UpdateResult>(env, func),
+      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParams, Vec<String>>(env, func),
     }
   }
 
@@ -383,10 +382,10 @@ impl JsPluginUpdateModulesHook {
     &self,
     param: PluginUpdateModulesHookParams,
     ctx: Arc<CompilationContext>,
-  ) -> Result<Option<UpdateResult>> {
+  ) -> Result<Option<Vec<String>>> {
     self
       .tsfn
-      .call::<PluginUpdateModulesHookParams, UpdateResult>(param, ctx, None)
+      .call::<PluginUpdateModulesHookParams, Vec<String>>(param, ctx, None)
   }
 }
 

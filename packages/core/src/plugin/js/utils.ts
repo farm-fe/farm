@@ -3,36 +3,6 @@ import * as querystring from 'node:querystring';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
-// const ExtToLoader: Record<string, string> = {
-//   '.js': 'js',
-//   '.mjs': 'js',
-//   '.cjs': 'js',
-//   '.jsx': 'jsx',
-//   '.ts': 'ts',
-//   '.cts': 'ts',
-//   '.mts': 'ts',
-//   '.tsx': 'tsx',
-//   '.json': 'json',
-//   '.toml': 'toml',
-//   '.text': 'text',
-//   '.wasm': 'wasm',
-//   '.napi': 'napi',
-//   '.node': 'napi'
-// };
-
-// export function guessIdLoader(id: string): string {
-//   return ExtToLoader[path.extname(id).toLowerCase()] || 'js';
-// }
-
-// export function transformQuery(context: any) {
-//   const queryParamsObject: Record<string, string | boolean> = {};
-//   context.query.forEach(([param, value]: string[]) => {
-//     queryParamsObject[param] = value;
-//   });
-//   const transformQuery = querystring.stringify(queryParamsObject);
-//   context.resolvedPath = `${context.resolvedPath}?${transformQuery}`;
-// }
-
 export function convertEnforceToPriority(value: 'pre' | 'post' | undefined) {
   const defaultPriority = 100;
   const enforceToPriority = {
@@ -185,4 +155,24 @@ export function encodeStr(str: string): string {
 
 export function decodeStr(str: string): string {
   return str.replace(/\\0/g, '\0');
+}
+
+export function deleteUndefinedPropertyDeeply(obj: any) {
+  if (typeof obj !== 'object') {
+    return;
+  }
+
+  for (const key in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+      continue;
+    }
+
+    if (Array.isArray(obj[key])) {
+      obj[key] = obj[key].filter((item: any) => item !== undefined);
+    } else if (obj[key] === undefined) {
+      delete obj[key];
+    } else if (typeof obj[key] === 'object') {
+      deleteUndefinedPropertyDeeply(obj[key]);
+    }
+  }
 }

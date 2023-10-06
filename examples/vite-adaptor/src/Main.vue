@@ -4,9 +4,6 @@
 
 <script lang="ts" setup>
 import Welcome from './components/Welcome.vue';
-fetch('/api')
-  .then((response) => response.json())
-  .then((json) => console.log(json));
 </script>
 
 <style lang="scss">

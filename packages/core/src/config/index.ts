@@ -549,10 +549,14 @@ export async function resolveAllPlugins(
       finalConfig
     };
   }
-  // const resolveVitePlugins = adaptorVitePlugin(vitePlugins);
 
   const rustPlugins = [];
-  const jsPlugins: JsPlugin[] = handleVitePlugins(vitePlugins, userConfig);
+
+  const jsPlugins: JsPlugin[] = handleVitePlugins(
+    vitePlugins,
+    userConfig,
+    finalConfig
+  );
 
   for (const plugin of plugins) {
     if (
@@ -578,6 +582,7 @@ export async function resolveAllPlugins(
   for (const jsPlugin of jsPlugins) {
     finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
   }
+
   return {
     rustPlugins,
     jsPlugins,
@@ -596,9 +601,17 @@ export function filterUserConfig(
 
 function handleVitePlugins(
   vitePlugins: any[],
-  userConfig: UserConfig
+  userConfig: UserConfig,
+  finalConfig: Config['config']
 ): JsPlugin[] {
   const jsPlugins: JsPlugin[] = [];
+
+  if (vitePlugins.length) {
+    userConfig = merge({}, userConfig, {
+      compilation: finalConfig,
+      server: normalizeDevServerOptions(userConfig.server, finalConfig.mode)
+    });
+  }
 
   for (const vitePlugin of vitePlugins) {
     const vitePluginAdapter = new VitePluginAdapter(

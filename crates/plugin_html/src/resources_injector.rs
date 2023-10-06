@@ -3,6 +3,7 @@ use farmfe_core::{
   hashbrown::HashMap,
   module::ModuleId,
   resource::ResourceType,
+  serde_json,
   swc_html_ast::{Child, Document, Element},
 };
 use farmfe_toolkit::{
@@ -18,7 +19,7 @@ use crate::utils::{
 pub struct ResourcesInjectorOptions {
   pub mode: Mode,
   pub public_path: String,
-  pub define: std::collections::HashMap<String, String>,
+  pub define: std::collections::HashMap<String, serde_json::Value>,
   pub namespace: String,
 }
 
@@ -100,8 +101,16 @@ impl ResourcesInjector {
       .options
       .define
       .iter()
-      .fold(String::new(), |mut acc, (key, value)| {
-        acc += &format!(r#"window.{} = '{}';"#, key, value);
+      .fold(String::new(), |mut acc, (key, v)| {
+        let value = match v {
+          serde_json::Value::Null => "null".to_string(),
+          serde_json::Value::Bool(b) => (if *b { "true" } else { "false" }).to_string(),
+          serde_json::Value::Number(num) => num.to_string(),
+          serde_json::Value::String(str) => format!("'{}'", str),
+          serde_json::Value::Array(arr) => serde_json::to_string(arr).unwrap(),
+          serde_json::Value::Object(obj) => serde_json::to_string(obj).unwrap(),
+        };
+        acc += &format!(r#"window.{} = {};"#, key, value);
         acc
       });
 

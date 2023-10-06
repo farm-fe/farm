@@ -1,4 +1,5 @@
 use std::{
+  collections::HashMap,
   ffi::{c_void, CString},
   ptr,
   sync::Arc,
@@ -15,8 +16,10 @@ use napi::{
 
 use farmfe_core::{
   context::{CompilationContext, EmitFileParams},
-  plugin::{PluginHookContext, PluginResolveHookParam},
+  module::{ModuleId, ModuleType},
   // swc_ecma_ast::EsVersion,
+  plugin::{PluginHookContext, PluginResolveHookParam},
+  relative_path::RelativePath,
 };
 
 const RESOLVE: &str = "resolve";
@@ -25,6 +28,17 @@ const EMIT_FILE: &str = "emitFile";
 const GET_WATCH_FILES: &str = "getWatchFiles";
 const WARN: &str = "warn";
 const ERROR: &str = "error";
+
+/// These functions are used to make farm js plugin compatible with Vite plugin
+const VITE_GET_MODULES_BY_FILE: &str = "viteGetModulesByFile";
+const VITE_GET_IMPORTERS: &str = "viteGetImporters";
+
+pub struct GetModulesByFileResultItem {
+  pub url: String,
+  pub id: String,
+  pub file: String,
+  pub ty: String,
+}
 
 /// create a js object context that wraps [Arc<CompilationContext>]
 /// # Safety
@@ -54,7 +68,22 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     ctx.clone(),
   );
   js_context = attach_context_method(raw_env, js_context, WARN, Some(warn), ctx.clone());
-  js_context = attach_context_method(raw_env, js_context, ERROR, Some(error), ctx);
+  js_context = attach_context_method(raw_env, js_context, ERROR, Some(error), ctx.clone());
+
+  js_context = attach_context_method(
+    raw_env,
+    js_context,
+    VITE_GET_MODULES_BY_FILE,
+    Some(vite_get_modules_by_file),
+    ctx.clone(),
+  );
+  js_context = attach_context_method(
+    raw_env,
+    js_context,
+    VITE_GET_IMPORTERS,
+    Some(vite_get_importers),
+    ctx.clone(),
+  );
 
   js_context
 }
@@ -216,4 +245,81 @@ unsafe extern "C" fn error(env: napi_env, info: napi_callback_info) -> napi_valu
   ctx.log_store.write().add_error(message);
 
   Env::from_raw(env).get_undefined().unwrap().raw()
+}
+
+unsafe extern "C" fn vite_get_modules_by_file(
+  env: napi_env,
+  info: napi_callback_info,
+) -> napi_value {
+  let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
+
+  let file: String = Env::from_raw(env)
+    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .expect("Argument 0 should be a string when calling get_modules_by_file");
+
+  let module_graph = ctx.module_graph.read();
+  let modules = module_graph
+    .modules()
+    .into_iter()
+    .filter(|m| m.id.resolved_path(&ctx.config.root) == file)
+    .map(|m| {
+      let id = RelativePath::new(&m.id.to_string())
+        .to_logical_path(&ctx.config.root)
+        .to_string_lossy()
+        .to_string();
+      HashMap::from([
+        ("url".to_string(), id.clone()),
+        ("id".to_string(), id),
+        ("file".to_string(), m.id.resolved_path(&ctx.config.root)),
+        (
+          "type".to_string(),
+          if m.module_type == ModuleType::Css {
+            "css".to_string()
+          } else {
+            "js".to_string()
+          },
+        ),
+      ])
+    })
+    .collect::<Vec<_>>();
+
+  Env::from_raw(env).to_js_value(&modules).unwrap().raw()
+}
+
+unsafe extern "C" fn vite_get_importers(env: napi_env, info: napi_callback_info) -> napi_value {
+  let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
+
+  let id: String = Env::from_raw(env)
+    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .expect("Argument 0 should be a string when calling get_modules_by_file");
+
+  let module_graph = ctx.module_graph.read();
+  let module_id: ModuleId = id.into();
+  let dependents = module_graph.dependents_ids(&module_id);
+
+  let importers = dependents
+    .into_iter()
+    .map(|id| {
+      let m = module_graph.module(&id).unwrap();
+      let id = RelativePath::new(&m.id.to_string())
+        .to_logical_path(&ctx.config.root)
+        .to_string_lossy()
+        .to_string();
+      HashMap::from([
+        ("url".to_string(), id.clone()),
+        ("id".to_string(), id),
+        ("file".to_string(), m.id.resolved_path(&ctx.config.root)),
+        (
+          "type".to_string(),
+          if m.module_type == ModuleType::Css {
+            "css".to_string()
+          } else {
+            "js".to_string()
+          },
+        ),
+      ])
+    })
+    .collect::<Vec<_>>();
+
+  Env::from_raw(env).to_js_value(&importers).unwrap().raw()
 }
