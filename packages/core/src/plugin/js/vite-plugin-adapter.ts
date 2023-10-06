@@ -180,7 +180,6 @@ export class VitePluginAdapter implements JsPlugin {
         const result = await hook?.(id);
 
         if (result) {
-          console.log('load', id, result);
           return {
             content: getContentValue(result),
             // only support css as first class citizen for vite plugins
@@ -215,8 +214,6 @@ export class VitePluginAdapter implements JsPlugin {
         });
 
         if (result) {
-          console.log('transform', id, result);
-
           return {
             content: getContentValue(result),
             sourceMap:

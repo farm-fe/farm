@@ -1,6 +1,5 @@
 // import path from 'node:path';
 import * as querystring from 'node:querystring';
-import { addSlashes, removeSlashes } from 'slashes';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -181,29 +180,9 @@ export function formatTransformModuleType(id: string): string {
 // normalize invalid characters in id, for example: \0
 // because characters like \0 have issues when passing to Farm's rust compiler
 export function encodeStr(str: string): string {
-  const result = addSlashes(str);
-
-  // revert \\n to \n and \\t to \t and \" to ".
-  return result
-    .replace(/\\([ntrbf"])/g, (_, char) => {
-      switch (char) {
-        case 'n':
-          return '\n';
-        case 't':
-          return '\t';
-        case 'r':
-          return '\r';
-        case 'b':
-          return '\b';
-        case 'f':
-          return '\f';
-        default:
-          return char;
-      }
-    })
-    .replace(/\\(")/g, '$1');
+  return str.replace(/\0/g, '\\0');
 }
 
 export function decodeStr(str: string): string {
-  return removeSlashes(str);
+  return str.replace(/\\0/g, '\0');
 }
