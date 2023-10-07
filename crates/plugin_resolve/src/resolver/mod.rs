@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
-  hashbrown::HashSet,
+  hashbrown::{HashSet, HashMap},
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
@@ -22,7 +22,7 @@ use crate::resolver_common::{
   are_values_equal, find_mapping, find_request_diff_entry_path,
   get_field_value_from_package_json_info, get_key_path, get_result_path, get_string_value_path,
   is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
-  is_source_dot, is_source_relative, try_file, NODE_MODULES,
+  is_source_dot, is_source_relative, try_file, walk, ConditionOptions, NODE_MODULES,
 };
 
 pub struct Resolver {
@@ -883,7 +883,7 @@ impl Resolver {
     field_type: &str,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
-  ) -> Option<String> {
+  ) -> Option<Vec<String>> {
     farm_profile_function!("resolve_exports_or_imports".to_string());
     let additional_conditions: HashSet<String> = context
       .config
@@ -914,10 +914,11 @@ impl Resolver {
       ResolveKind::Require => true,
       _ => false,
     };
-    let condition_config = ConditionConfig {
+    let condition_config = ConditionOptions {
       browser: is_browser && !additional_conditions.contains("node"),
       require: is_require && !additional_conditions.contains("import"),
       conditions: filtered_conditions,
+      unsafe_flag: false,
     };
 
     let result = if field_type == "imports" {
@@ -932,25 +933,50 @@ impl Resolver {
     &self,
     package_json_info: &PackageJsonInfo,
     source: &str,
-    config: &ConditionConfig,
-  ) -> Option<String> {
+    config: &ConditionOptions,
+  ) -> Option<Vec<String>> {
     // 在这里实现imports方法的逻辑
-    Some("TODO".to_string())
+    Some(vec![String::from("")])
   }
 
   fn exports(
-    &self,
     package_json_info: &PackageJsonInfo,
     source: &str,
-    config: &ConditionConfig,
-  ) -> Option<String> {
-    // 在这里实现exports方法的逻辑
-    Some("TODO".to_string())
-  }
-}
+    config: &ConditionOptions,
+  ) -> Option<Vec<String>> {
+    let mut map = HashMap::new();
+    let name = get_field_value_from_package_json_info(package_json_info, "name");
 
-struct ConditionConfig {
-  browser: bool,
-  require: bool,
-  conditions: Vec<String>,
+    if let Some(exports_field) =
+      get_field_value_from_package_json_info(package_json_info, "exports")
+    {
+      match exports_field {
+        Value::String(string_value) => {
+          map.insert(".".to_string(), string_value.clone());
+        }
+        Value::Object(obj) => {
+          let mut should_convert = true;
+
+          for (k, _v) in &obj {
+            if !k.starts_with('.') {
+              should_convert = false;
+              break;
+            }
+          }
+
+          if should_convert {
+            map = obj.clone();
+            map.insert(".".to_string(), Value::Object(obj.clone()));
+          }
+        }
+        _ => {}
+      }
+
+      if !map.is_empty() {
+        return Some(walk(name, &map, source, config));
+      }
+    }
+
+    None
+  }
 }

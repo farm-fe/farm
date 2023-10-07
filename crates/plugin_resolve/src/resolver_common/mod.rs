@@ -37,11 +37,11 @@ pub enum Condition {
 }
 
 #[derive(Debug)]
-pub struct Options {
-  unsafe_flag: bool,
-  require: bool,
-  browser: bool,
-  conditions: Vec<String>,
+pub struct ConditionOptions {
+  pub unsafe_flag: bool,
+  pub require: bool,
+  pub browser: bool,
+  pub conditions: Vec<String>,
 }
 
 /**
@@ -400,7 +400,7 @@ pub fn get_result_path(value: &str, current_resolve_base_dir: &String) -> Option
   Some(get_key_path(value, current_resolve_base_dir))
 }
 
-pub fn conditions(options: &Options) -> HashSet<Condition> {
+pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
   let mut out: HashSet<Condition> = HashSet::new();
   out.insert(Condition::Default);
 
@@ -583,7 +583,7 @@ pub fn walk(
   name: &str,
   mapping: &HashMap<String, Value>,
   input: &str,
-  options: &Options,
+  options: &ConditionOptions,
 ) -> Vec<String> {
   let entry_result: Result<String, String> = to_entry(name, input, None);
   let entry: String = match entry_result {
