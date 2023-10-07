@@ -2,13 +2,14 @@
  * Serve resources that stored in memory. This middleware will be enabled when server.writeToDisk is false.
  */
 
-import { extname } from 'node:path';
+import path, { extname } from 'node:path';
 import { Context, Next } from 'koa';
 import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
 import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
+import { existsSync, readFileSync } from 'node:fs';
 
 export function resources(
   compiler: Compiler,
@@ -50,6 +51,17 @@ export function resources(
     }
 
     const resource = compiler.resources()[finalResourcePath];
+
+    if (!resource) {
+      // try local file system
+      const absPath = path.join(compiler.config.config.root, finalResourcePath);
+
+      if (existsSync(absPath)) {
+        ctx.type = extname(resourcePath);
+        ctx.body = readFileSync(absPath);
+        return;
+      }
+    }
 
     // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
     if (!resource) {

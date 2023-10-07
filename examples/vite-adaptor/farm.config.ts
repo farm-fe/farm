@@ -8,5 +8,5 @@ function defineConfig(config: UserConfig) {
 
 export default defineConfig({
   // plugins: [vue()],
-  vitePlugins: [vue()]
+  vitePlugins: [() => ({ vitePlugin: vue(), filters: ['.vue$', '.*plugin-vue:export-helper'] })]
 });

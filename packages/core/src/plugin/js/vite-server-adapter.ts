@@ -29,7 +29,6 @@ export class ViteModuleGraphAdapter {
       const proxy = new Proxy(item, {
         get(target, key) {
           if (key === 'importers') {
-            console.log('get importers', target.id);
             return _content.viteGetImporters(target.id);
           }
 

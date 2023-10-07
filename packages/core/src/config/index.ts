@@ -6,11 +6,10 @@ import crypto from 'node:crypto';
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 
-import { VitePluginAdapter } from '../plugin/index.js';
+import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { JsPlugin } from '../plugin/type.js';
 import { DevServer } from '../server/index.js';
-import { rustPluginResolver } from '../plugin/rust/index.js';
 import { parseUserConfig } from './schema.js';
 import {
   clearScreen,
@@ -31,7 +30,6 @@ import type {
 import { CompilationMode, loadEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import { importFresh } from '../utils/share.js';
-import { VITE_PLUGIN_DEFAULT_MODULE_TYPE } from '../plugin/js/utils.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -69,8 +67,10 @@ export async function normalizeUserCompilationConfig(
         index: './index.html'
       },
       output: {
-        path: './dist'
-      }
+        path: './dist',
+        publicPath: '/'
+      },
+      sourcemap: true
     },
     compilation
   );
@@ -531,65 +531,6 @@ export function convertPlugin(plugin: JsPlugin): void {
   }
 }
 
-/**
- * resolvePlugins split / jsPlugins / rustPlugins
- * @param config
- */
-export async function resolveAllPlugins(
-  finalConfig: Config['config'],
-  userConfig: UserConfig
-) {
-  const plugins = userConfig.plugins ?? [];
-  const vitePlugins = userConfig.vitePlugins ?? [];
-
-  if (!plugins.length && !vitePlugins?.length) {
-    return {
-      rustPlugins: [],
-      jsPlugins: [],
-      finalConfig
-    };
-  }
-
-  const rustPlugins = [];
-
-  const jsPlugins: JsPlugin[] = handleVitePlugins(
-    vitePlugins,
-    userConfig,
-    finalConfig
-  );
-
-  for (const plugin of plugins) {
-    if (
-      typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
-    ) {
-      rustPlugins.push(await rustPluginResolver(plugin, finalConfig.root));
-    } else if (isObject(plugin)) {
-      convertPlugin(plugin as unknown as JsPlugin);
-      jsPlugins.push(plugin as unknown as JsPlugin);
-    } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin) {
-        convertPlugin(pluginNestItem as JsPlugin);
-        jsPlugins.push(pluginNestItem as JsPlugin);
-      }
-    } else {
-      throw new Error(
-        `plugin ${plugin} is not supported, Please pass the correct plugin type`
-      );
-    }
-  }
-  // call user config hooks
-  for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
-  }
-
-  return {
-    rustPlugins,
-    jsPlugins,
-    finalConfig
-  };
-}
-
 export function filterUserConfig(
   userConfig: UserConfig,
   inlineConfig: FarmCLIOptions
@@ -597,58 +538,4 @@ export function filterUserConfig(
   userConfig.inlineConfig = inlineConfig;
   delete userConfig.configPath;
   return userConfig;
-}
-
-function handleVitePlugins(
-  vitePlugins: any[],
-  userConfig: UserConfig,
-  finalConfig: Config['config']
-): JsPlugin[] {
-  const jsPlugins: JsPlugin[] = [];
-
-  if (vitePlugins.length) {
-    userConfig = merge({}, userConfig, {
-      compilation: finalConfig,
-      server: normalizeDevServerOptions(userConfig.server, finalConfig.mode)
-    });
-  }
-
-  for (const vitePlugin of vitePlugins) {
-    const vitePluginAdapter = new VitePluginAdapter(
-      vitePlugin as any,
-      userConfig
-    );
-    convertPlugin(vitePluginAdapter);
-    jsPlugins.push(vitePluginAdapter);
-  }
-
-  // if vitePlugins is not empty, append a load plugin to load files as js
-  if (vitePlugins.length) {
-    jsPlugins.push({
-      name: 'farm:load',
-      // has to be the last one
-      priority: 0,
-      load: {
-        filters: {
-          resolvedPaths: ['.*']
-        },
-        executor: async (params) => {
-          const { resolvedPath } = params;
-
-          if (!fs.existsSync(resolvedPath)) {
-            console.log('load', params);
-          }
-
-          const content = fs.readFileSync(resolvedPath, 'utf-8');
-
-          return {
-            content,
-            moduleType: VITE_PLUGIN_DEFAULT_MODULE_TYPE
-          };
-        }
-      }
-    });
-  }
-
-  return jsPlugins;
 }

@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 defineProps<{ msg: string }>()
-
+debugger
 const count = ref(0)
 </script>
 

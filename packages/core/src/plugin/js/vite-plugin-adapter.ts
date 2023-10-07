@@ -56,13 +56,17 @@ export class VitePluginAdapter implements JsPlugin {
   buildEnd: JsPlugin['buildEnd'];
   finish: JsPlugin['finish'];
   updateModules: JsPlugin['updateModules'];
+  // filter for js plugin to improve performance
+  filters: string[];
 
-  constructor(rawPlugin: Plugin, _farmConfig: UserConfig) {
+  constructor(rawPlugin: Plugin, farmConfig: UserConfig, filters: string[]) {
     this.name = rawPlugin.name;
     this.priority = convertEnforceToPriority(rawPlugin.enforce);
     this._rawPlugin = rawPlugin;
-    this._farmConfig = _farmConfig;
-    this._viteConfig = farmConfigToViteConfig(_farmConfig);
+    this._farmConfig = farmConfig;
+    this._viteConfig = farmConfigToViteConfig(farmConfig);
+
+    this.filters = filters;
 
     // convert hooks
     this.buildStart = this.viteBuildStartToFarmBuildStart();
@@ -77,7 +81,7 @@ export class VitePluginAdapter implements JsPlugin {
   // call both config and configResolved
   config(config: UserConfig['compilation']) {
     this._farmConfig.compilation = config;
-    this._viteConfig = farmConfigToViteConfig(config);
+    this._viteConfig = farmConfigToViteConfig(this._farmConfig);
 
     const configHook = this.wrap_raw_plugin_hook(
       'config',
@@ -193,7 +197,7 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteResolveIdToFarmResolve(): JsPlugin['resolve'] {
     return {
-      filters: { sources: ['.*'], importers: ['.*'] },
+      filters: { sources: ['.*'], importers: this.filters },
       executor: this.wrap_executor(
         async (
           params: PluginResolveHookParam,
@@ -249,7 +253,7 @@ export class VitePluginAdapter implements JsPlugin {
     return {
       filters: {
         // TODO support internal filter optimization for common plugins like @vitejs/plugin-vue
-        resolvedPaths: ['.*']
+        resolvedPaths: this.filters
       },
       executor: this.wrap_executor(
         async (
@@ -284,7 +288,7 @@ export class VitePluginAdapter implements JsPlugin {
   private viteTransformToFarmTransform(): JsPlugin['transform'] {
     return {
       filters: {
-        resolvedPaths: ['.*']
+        resolvedPaths: this.filters
       },
       executor: this.wrap_executor(
         async (
@@ -362,7 +366,6 @@ export class VitePluginAdapter implements JsPlugin {
             const mods = this._viteDevServer.moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
-            console.log('mods', mods);
 
             const ctx: HmrContext = {
               file: file,
@@ -374,7 +377,7 @@ export class VitePluginAdapter implements JsPlugin {
               server: this._viteDevServer as unknown as ViteDevServer
             };
             const updateMods: ModuleNode[] = await hook?.(ctx);
-            console.log('updateMods', updateMods);
+
             if (updateMods) {
               result.push(...updateMods.map((mod) => mod.id));
             } else {
@@ -556,7 +559,7 @@ function farmConfigToViteConfig(config: UserConfig): ViteUserConfig {
   return {
     root: config.root,
     base: config.compilation?.output?.publicPath,
-    publicDir: config.publicDir,
+    publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
     define: config.compilation?.define,
     resolve: {
@@ -567,7 +570,7 @@ function farmConfigToViteConfig(config: UserConfig): ViteUserConfig {
       preserveSymlinks: config.compilation?.resolve?.symlinks === false
     },
     server: {
-      hmr: config.server?.hmr,
+      hmr: Boolean(config.server?.hmr),
       port: config.server?.port,
       host: config.server?.host,
       strictPort: config.server?.strictPort,

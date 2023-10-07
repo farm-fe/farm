@@ -101,7 +101,7 @@ impl Compiler {
 
     let mut update_result = UpdateResult::default();
     let paths = handle_update_modules(paths, &self.context, &mut update_result)?;
-    println!("paths: {:?} {:?}", paths, update_result);
+
     for (path, update_type) in paths.clone() {
       match update_type {
         UpdateType::Added => {

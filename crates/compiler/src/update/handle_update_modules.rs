@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -19,7 +19,7 @@ pub fn handle_update_modules(
     .update_modules(&mut plugin_update_modules_hook_params, context)?;
 
   let paths = plugin_update_modules_hook_params.paths;
-  println!("handle paths: {:?}", paths);
+
   // group the paths by same resolved_path
   let grouped_paths = paths.iter().fold(HashMap::new(), |mut acc, (path, _)| {
     let resolved_path = path.split('?').next().unwrap().to_string();
@@ -31,8 +31,6 @@ pub fn handle_update_modules(
 
     acc
   });
-
-  println!("grouped_paths: {:?}", grouped_paths);
 
   let mut module_graph = context.module_graph.write();
 
@@ -51,7 +49,7 @@ pub fn handle_update_modules(
         if path != resolved_path {
           let child_module_id: ModuleId = relative(&context.config.root, &path).into();
           let dependents = module_graph.dependents_ids(&child_module_id);
-          println!("{:?}'s dependents: {:?}", child_module_id, dependents);
+
           if dependents.contains(&module_id) && dependents.len() == 1 {
             module_graph.remove_module(&child_module_id);
             update_result.removed_module_ids.push(child_module_id)
