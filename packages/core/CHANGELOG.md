@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.13.1
+
+### Patch Changes
+
+- Fix bugs that dev server should only try read local file system resources for images and fonts
+- Updated dependencies
+  - @farmfe/runtime@0.7.1
+
 ## 0.13.0
 
 ### Minor Changes
