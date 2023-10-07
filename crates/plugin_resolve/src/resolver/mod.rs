@@ -1,9 +1,10 @@
 use farmfe_core::{
   common::PackageJsonInfo,
-  config::TargetEnv,
+  config::{Mode, TargetEnv},
   context::CompilationContext,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
+  hashbrown::HashSet,
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
@@ -95,7 +96,7 @@ impl Resolver {
           });
         }
         if let Some(resolved_path) =
-          self.resolve_sub_path_imports(package_json_info, source, context)
+          self.resolve_sub_path_imports(package_json_info, source, kind, context)
         {
           println!("resolved_path: {:?}", resolved_path);
         }
@@ -858,12 +859,13 @@ impl Resolver {
     &self,
     package_json_info: &PackageJsonInfo,
     source: &str,
+    kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_imports_replace".to_string());
     if source.starts_with('#') {
       if let Some(resolved_path) =
-        self.resolve_exports_or_imports(package_json_info, source, "imports", context)
+        self.resolve_exports_or_imports(package_json_info, source, "imports", kind, context)
       {
         println!("resolved_path: {:?}", resolved_path);
       }
@@ -877,12 +879,87 @@ impl Resolver {
   fn resolve_exports_or_imports(
     &self,
     package_json_info: &PackageJsonInfo,
-    resolved_path: &str,
+    source: &str,
     field_type: &str,
+    kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    farm_profile_function!("try_exports_replace".to_string());
+    farm_profile_function!("resolve_exports_or_imports".to_string());
+    let mut additional_conditions: HashSet<String> = context
+      .config
+      .resolve
+      .conditions
+      .clone()
+      .into_iter()
+      .collect();
+
+    let filtered_conditions: Vec<String> = additional_conditions
+      .into_iter()
+      .filter(|condition| match condition.as_str() {
+        "production" => {
+          let mode = &context.config.mode;
+          matches!(mode, Mode::Production)
+        }
+        "development" => {
+          let mode = &context.config.mode;
+          matches!(mode, Mode::Development)
+        }
+        _ => true,
+      })
+      .collect();
     // resolve exports field
+    let is_browser = TargetEnv::Browser == context.config.output.target_env;
+    let is_require = match kind {
+      ResolveKind::Require => true,
+      _ => false,
+    };
+    let result = if field_type == "imports" {
+      self.imports(
+        package_json_info,
+        source,
+        &ConditionConfig {
+          browser: is_browser && !additional_conditions.contains("node"),
+          require: is_require && !additional_conditions.contains("import"),
+          conditions: filtered_conditions,
+        },
+      )
+    } else {
+      self.exports(
+        package_json_info,
+        source,
+        &ConditionConfig {
+          browser: is_browser && !additional_conditions.contains("node"),
+          require: is_require && !additional_conditions.contains("import"),
+          conditions: filtered_conditions,
+        },
+      )
+    };
     return "TODO".to_string().into();
   }
+
+  fn imports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    config: &ConditionConfig,
+  ) -> Option<String> {
+    // 在这里实现imports方法的逻辑
+    Some("TODO".to_string())
+  }
+
+  fn exports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    config: &ConditionConfig,
+  ) -> Option<String> {
+    // 在这里实现exports方法的逻辑
+    Some("TODO".to_string())
+  }
+}
+
+struct ConditionConfig {
+  browser: bool,
+  require: bool,
+  conditions: Vec<String>,
 }
