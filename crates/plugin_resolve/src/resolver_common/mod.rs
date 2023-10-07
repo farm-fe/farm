@@ -1,5 +1,4 @@
 use std::{
-  collections::{HashMap, HashSet},
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -8,7 +7,9 @@ use std::{
 use farmfe_core::{
   common::PackageJsonInfo,
   context::CompilationContext,
-  farm_profile_function, regex,
+  farm_profile_function,
+  hashbrown::{HashMap, HashSet},
+  regex,
   relative_path::RelativePath,
   serde_json::{self, from_str, Map, Value},
 };

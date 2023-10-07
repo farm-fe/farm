@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
-  hashbrown::{HashSet, HashMap},
+  hashbrown::{HashMap, HashSet},
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
@@ -95,11 +95,11 @@ impl Resolver {
             ..Default::default()
           });
         }
-        if let Some(resolved_path) =
-          self.resolve_sub_path_imports(package_json_info, source, kind, context)
-        {
-          println!("resolved_path: {:?}", resolved_path);
-        }
+        // if let Some(resolved_path) =
+        //   self.resolve_sub_path_imports(package_json_info, source, kind, context)
+        // {
+        //   println!("resolved_path: {:?}", resolved_path);
+        // }
         // check imports replace
         if let Some(resolved_path) = self.try_imports_replace(package_json_info, source, context) {
           if Path::new(&resolved_path).extension().is_none() {
@@ -935,29 +935,57 @@ impl Resolver {
     source: &str,
     config: &ConditionOptions,
   ) -> Option<Vec<String>> {
-    // 在这里实现imports方法的逻辑
-    Some(vec![String::from("")])
+    let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+      Some(n) => n,
+      None => {
+        eprintln!("Missing \"name\" field in package.json");
+        return None;
+      }
+    };
+    if let Some(imports_field) =
+      get_field_value_from_package_json_info(package_json_info, "imports")
+    {
+      let mut imports_map: HashMap<String, Value> = HashMap::new();
+
+      match imports_field {
+        Value::Object(object_value) => {
+          imports_map.extend(object_value.clone());
+        }
+        _ => {
+          eprintln!("Unexpected imports field format");
+          return None;
+        }
+      }
+      return Some(walk(name.as_str().unwrap(), &imports_map, source, config));
+    }
+    None
   }
 
   fn exports(
+    self: &Self,
     package_json_info: &PackageJsonInfo,
     source: &str,
     config: &ConditionOptions,
   ) -> Option<Vec<String>> {
-    let mut map = HashMap::new();
-    let name = get_field_value_from_package_json_info(package_json_info, "name");
-
+    let mut map: HashMap<String, Value> = HashMap::new();
+    let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+      Some(n) => n,
+      None => {
+        eprintln!("Missing \"name\" field in package.json");
+        return None;
+      }
+    };
     if let Some(exports_field) =
       get_field_value_from_package_json_info(package_json_info, "exports")
     {
       match exports_field {
         Value::String(string_value) => {
-          map.insert(".".to_string(), string_value.clone());
+          map.insert(".".to_string(), Value::String(string_value.clone()));
         }
-        Value::Object(obj) => {
+        Value::Object(object_value) => {
           let mut should_convert = true;
 
-          for (k, _v) in &obj {
+          for (k, _v) in &object_value {
             if !k.starts_with('.') {
               should_convert = false;
               break;
@@ -965,15 +993,14 @@ impl Resolver {
           }
 
           if should_convert {
-            map = obj.clone();
-            map.insert(".".to_string(), Value::Object(obj.clone()));
+            map.insert(".".to_string(), Value::Object(object_value.clone()));
           }
         }
         _ => {}
       }
 
       if !map.is_empty() {
-        return Some(walk(name, &map, source, config));
+        return Some(walk(name.as_str().unwrap(), &map, source, config));
       }
     }
 
