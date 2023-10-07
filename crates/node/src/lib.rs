@@ -447,6 +447,7 @@ impl FsWatcher {
   where
     F: FnMut(Vec<String>) + Send + Sync + 'static,
   {
+    // TODO support other kind of events
     let watcher = RecommendedWatcher::new(
       move |result: std::result::Result<notify::Event, notify::Error>| {
         let event = result.unwrap();

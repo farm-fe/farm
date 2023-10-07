@@ -1,14 +1,17 @@
+import { watch } from 'chokidar';
 import { CompilationContext } from '../type.js';
 
 export class ViteDevServerAdapter {
   moduleGraph: ViteModuleGraphAdapter;
   config: any;
   pluginName: string;
+  watcher: any;
 
   constructor(pluginName: string, config: any) {
     this.moduleGraph = createViteModuleGraphAdapter(pluginName);
     this.config = config;
     this.pluginName = pluginName;
+    this.watcher = watch(config.root);
   }
 }
 
@@ -58,7 +61,7 @@ export class ViteModuleGraphAdapter {
 export function createViteDevServerAdapter(pluginName: string, config: any) {
   const proxy = new Proxy(new ViteDevServerAdapter(pluginName, config), {
     get(target, key) {
-      const allowedKeys = ['moduleGraph', 'config'];
+      const allowedKeys = ['moduleGraph', 'config', 'watcher'];
       if (allowedKeys.includes(String(key))) {
         return target[key as keyof typeof target];
       } else {

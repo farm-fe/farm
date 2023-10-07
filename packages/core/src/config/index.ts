@@ -8,7 +8,6 @@ import chalk from 'chalk';
 
 import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
-import { JsPlugin } from '../plugin/type.js';
 import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import {
@@ -510,25 +509,6 @@ export function normalizePublicPath(
     );
 
   return normalizedPublicPath;
-}
-
-export function convertPlugin(plugin: JsPlugin): void {
-  if (
-    plugin.transform &&
-    !plugin.transform.filters?.moduleTypes &&
-    !plugin.transform.filters?.resolvedPaths
-  ) {
-    throw new Error(
-      `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
-    );
-  }
-  if (plugin.transform) {
-    if (!plugin.transform.filters.moduleTypes) {
-      plugin.transform.filters.moduleTypes = [];
-    } else if (!plugin.transform.filters.resolvedPaths) {
-      plugin.transform.filters.resolvedPaths = [];
-    }
-  }
 }
 
 export function filterUserConfig(
