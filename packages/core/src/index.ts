@@ -1,7 +1,7 @@
 export * from './compiler/index.js';
 export * from './config/index.js';
 export * from './server/index.js';
-export * from './plugin/index.js';
+export * from './plugin/type.js';
 export * from './utils/index.js';
 
 import path from 'node:path';
@@ -27,7 +27,7 @@ import { compilerHandler } from './utils/build.js';
 
 import type { FarmCLIOptions } from './config/types.js';
 import { setProcessEnv } from './config/env.js';
-import { JsPlugin } from './plugin/index.js';
+import { JsPlugin } from './plugin/type.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig

@@ -241,6 +241,7 @@ impl Plugin for FarmPluginCss {
           },
           FARM_CSS_MODULES_SUFFIX,
           // add hash to avoid cache, make sure hmr works
+          // TODO use updateModules hook to invalidate cache instead of hash
           sha256(param.content.replace("\r\n", "\n").as_bytes(), 8),
           dynamic_import_of_composes
             .into_iter()

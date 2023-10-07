@@ -192,6 +192,7 @@ const FarmConfigSchema = z
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
     plugins: z.array(z.any()).optional(),
+    vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
     server: z
       .object({

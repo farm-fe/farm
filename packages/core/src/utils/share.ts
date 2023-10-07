@@ -1,3 +1,4 @@
+/* eslint-disable no-prototype-builtins */
 import os from 'node:os';
 import readline from 'node:readline';
 import fs from 'node:fs';
@@ -66,4 +67,42 @@ export async function importFresh(modulePath: string) {
   fs.unlinkSync(newFilepath);
 
   return module;
+}
+
+/**
+ * Null or whatever
+ */
+export type Nullable<T> = T | null | undefined;
+
+/**
+ * Array, or not yet
+ */
+export type ArrayAble<T> = T | Array<T>;
+
+export function toArray<T>(array?: Nullable<ArrayAble<T>>): Array<T> {
+  array = array || [];
+  if (Array.isArray(array)) {
+    return array;
+  }
+  return [array];
+}
+
+export function mergeObjects(obj1: any, obj2: any) {
+  const merged = { ...obj1 };
+
+  for (const key in obj2) {
+    if (obj2.hasOwnProperty(key)) {
+      if (merged.hasOwnProperty(key)) {
+        if (typeof obj2[key] === 'object' && !Array.isArray(obj2[key])) {
+          merged[key] = mergeObjects(merged[key], obj2[key]);
+        } else {
+          merged[key] = obj1[key];
+        }
+      } else {
+        merged[key] = obj2[key];
+      }
+    }
+  }
+
+  return merged;
 }

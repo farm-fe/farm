@@ -30,7 +30,7 @@ pub struct Config {
   pub mode: Mode,
   pub resolve: ResolveConfig,
   pub external: Vec<ConfigRegex>,
-  pub define: HashMap<String, String>,
+  pub define: HashMap<String, serde_json::Value>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
@@ -43,7 +43,6 @@ pub struct Config {
   pub tree_shaking: bool,
   // TODO: support minify options
   pub minify: bool,
-  // TODO: support preset env options
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
 }
@@ -73,7 +72,7 @@ impl Default for Config {
       tree_shaking: true,
       minify: true,
       preset_env: Box::<PresetEnvConfig>::default(),
-      record: false
+      record: false,
     }
   }
 }

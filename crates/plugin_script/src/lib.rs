@@ -37,10 +37,12 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
+use import_meta_visitor::ImportMetaVisitor;
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
 mod handle_entry_resources;
+mod import_meta_visitor;
 mod swc_plugins;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
@@ -239,6 +241,10 @@ impl Plugin for FarmPluginScript {
         }
       }
     }
+
+    // transform `import.meta.xxx` to `module.meta.xxx`
+    let ast = &mut param.module.meta.as_script_mut().ast;
+    ast.visit_mut_with(&mut ImportMetaVisitor {});
 
     let ast = &param.module.meta.as_script().ast;
     // detect hmr based on `module.meta.hot.accept()`

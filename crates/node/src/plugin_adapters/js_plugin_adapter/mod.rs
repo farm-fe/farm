@@ -3,10 +3,11 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
+  hashbrown::HashSet,
   plugin::{
     EmptyPluginHookParam, Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
-    PluginTransformHookResult, DEFAULT_PRIORITY,
+    PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
@@ -139,9 +140,19 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<()>> {
     if let Some(js_update_modules_hook) = &self.js_update_modules_hook {
       let update_result = js_update_modules_hook.call(params.clone(), context.clone())?;
+      let mut updating_modules = params
+        .paths
+        .iter()
+        .map(|p| p.0.to_string())
+        .collect::<HashSet<_>>();
 
       if let Some(result) = update_result {
-        params.update_result = result;
+        for item in result {
+          if !updating_modules.contains(&item) {
+            params.paths.push((item.clone(), UpdateType::Updated));
+            updating_modules.insert(item);
+          }
+        }
       }
 
       Ok(Some(()))

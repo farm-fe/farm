@@ -403,7 +403,6 @@ pub enum UpdateType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginUpdateModulesHookParams {
-  pub update_result: UpdateResult,
   pub paths: Vec<(String, UpdateType)>,
 }
 

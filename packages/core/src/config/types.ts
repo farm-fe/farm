@@ -2,8 +2,8 @@ import type cors from '@koa/cors';
 import type { OutgoingHttpHeaders } from 'http';
 import type { Logger } from '../utils/index.js';
 import type { ProxiesOptions } from '../server/middlewares/proxy.js';
-import type { JsPlugin } from '../plugin/index.js';
-import type { RustPlugin } from '../plugin/rustPluginResolver.js';
+import type { JsPlugin } from '../plugin/type.js';
+import type { RustPlugin } from '../plugin/rust/index.js';
 import type { Config } from '../../binding/index.js';
 import { DevServer } from '../index.js';
 
@@ -56,7 +56,9 @@ export interface UserConfig {
   resolveConfigPath?: string;
   configFileDependencies?: string[];
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
-  plugins?: (RustPlugin | JsPlugin)[];
+  plugins?: (RustPlugin | JsPlugin)[] | JsPlugin[][];
+  /** vite plugins */
+  vitePlugins?: (object | (() => { vitePlugin: any; filters: string[] }))[];
   /** config related to compilation */
   compilation?: Config['config'];
   /** config related to dev server */
