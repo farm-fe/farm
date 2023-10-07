@@ -134,8 +134,7 @@ export class VitePluginAdapter implements JsPlugin {
       return this._rawPlugin.apply(this._viteConfig, {
         mode: this._farmConfig.compilation.mode,
         command,
-        // TODO: ssr build
-        ssrBuild: false
+        ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node'
       });
     } else if (this._rawPlugin.apply === undefined) {
       return true;
@@ -304,8 +303,7 @@ export class VitePluginAdapter implements JsPlugin {
           // append query
           const id = formatId(resolvedPath, params.query);
           const result = await hook?.(params.content, id, {
-            // TODO: support ssr
-            ssr: false
+            ssr: this._farmConfig.compilation.output.targetEnv === 'node'
           });
 
           if (result) {
