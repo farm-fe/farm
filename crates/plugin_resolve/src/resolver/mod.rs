@@ -94,7 +94,11 @@ impl Resolver {
             ..Default::default()
           });
         }
-
+        if let Some(resolved_path) =
+          self.resolve_sub_path_imports(package_json_info, source, context)
+        {
+          println!("resolved_path: {:?}", resolved_path);
+        }
         // check imports replace
         if let Some(resolved_path) = self.try_imports_replace(package_json_info, source, context) {
           if Path::new(&resolved_path).extension().is_none() {
@@ -152,7 +156,6 @@ impl Resolver {
         // if it starts with './' or '../, it is a relative path
         let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
         let normalized_path = normalized_path.as_path();
-
         let normalized_path = if context.config.resolve.symlinks {
           follow_symlinks(normalized_path.to_path_buf())
         } else {
@@ -849,5 +852,37 @@ impl Resolver {
       _ => {}
     }
     None
+  }
+
+  fn resolve_sub_path_imports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    farm_profile_function!("try_imports_replace".to_string());
+    if source.starts_with('#') {
+      if let Some(resolved_path) =
+        self.resolve_exports_or_imports(package_json_info, source, "imports", context)
+      {
+        println!("resolved_path: {:?}", resolved_path);
+      }
+      let imports_field = get_field_value_from_package_json_info(package_json_info, "imports");
+      println!("imports_field: {:?}", imports_field);
+    }
+
+    None
+  }
+
+  fn resolve_exports_or_imports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    resolved_path: &str,
+    field_type: &str,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    farm_profile_function!("try_exports_replace".to_string());
+    // resolve exports field
+    return "TODO".to_string().into();
   }
 }
