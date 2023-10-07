@@ -1124,6 +1124,9 @@ importers:
       loglevel:
         specifier: ^1.8.1
         version: 1.8.1
+      mime-types:
+        specifier: ^2.1.35
+        version: 2.1.35
       open:
         specifier: ^9.1.0
         version: 9.1.0
@@ -1170,6 +1173,9 @@ importers:
       '@types/lodash.merge':
         specifier: ^4.6.7
         version: 4.6.7
+      '@types/mime-types':
+        specifier: ^2.1.2
+        version: 2.1.2
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.4
@@ -4721,6 +4727,10 @@ packages:
 
   /@types/lodash@4.14.191:
     resolution: {integrity: sha512-BdZ5BCCvho3EIXw6wUCXHe7rS53AIDPLE+JzwgT+OsJk53oBfbSmZZ7CX4VaRoN78N+TJpFi9QPlfIVNmJYWxQ==}
+    dev: true
+
+  /@types/mime-types@2.1.2:
+    resolution: {integrity: sha512-q9QGHMGCiBJCHEvd4ZLdasdqXv570agPsUW0CeIm/B8DzhxsYMerD0l3IlI+EQ1A2RWHY2mmM9x1YIuuWxisCg==}
     dev: true
 
   /@types/mime@1.3.2:
