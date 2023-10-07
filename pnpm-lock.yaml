@@ -1068,10 +1068,10 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.7.0
+        specifier: workspace:^0.7.1
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.2.2
+        specifier: workspace:^3.2.3
         version: link:../runtime-plugin-hmr
       '@koa/cors':
         specifier: ^4.0.0
