@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe-examples/vue",
+  "name": "@farmfe-examples/vite-adapter-vue",
   "version": "0.0.1",
   "private": true,
   "dependencies": {
