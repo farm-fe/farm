@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.13.0
+
+### Minor Changes
+
+- f7b1b9d: Support vite plugins out of box
+- 5be3aab: Implement RFC-003 New Partial Bundling Algorithm
+
 ## 0.12.11
 
 ### Patch Changes
