@@ -54,7 +54,7 @@ impl Compiler {
 
     plugins.append(&mut plugin_adapters);
     // sort plugins by priority to make larger priority plugin run first
-    plugins.sort_by(|a, b| b.priority().cmp(&a.priority()));
+    plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
 
     let mut context = CompilationContext::new(config, plugins)?;
     context.plugin_driver.config(&mut context.config)?;

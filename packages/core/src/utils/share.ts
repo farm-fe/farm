@@ -1,3 +1,4 @@
+/* eslint-disable no-prototype-builtins */
 import os from 'node:os';
 import readline from 'node:readline';
 import fs from 'node:fs';
@@ -76,9 +77,9 @@ export type Nullable<T> = T | null | undefined;
 /**
  * Array, or not yet
  */
-export type Arrayable<T> = T | Array<T>;
+export type ArrayAble<T> = T | Array<T>;
 
-export function toArray<T>(array?: Nullable<Arrayable<T>>): Array<T> {
+export function toArray<T>(array?: Nullable<ArrayAble<T>>): Array<T> {
   array = array || [];
   if (Array.isArray(array)) {
     return array;

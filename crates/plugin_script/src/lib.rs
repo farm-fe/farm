@@ -37,12 +37,12 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use import_meta_vistor::ImportMetaVisitor;
+use import_meta_visitor::ImportMetaVisitor;
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
 mod handle_entry_resources;
-mod import_meta_vistor;
+mod import_meta_visitor;
 mod swc_plugins;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";

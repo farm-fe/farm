@@ -82,7 +82,7 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     js_context,
     VITE_GET_IMPORTERS,
     Some(vite_get_importers),
-    ctx.clone(),
+    ctx,
   );
 
   js_context
