@@ -1,5 +1,5 @@
 use std::{
-  collections::HashMap,
+  collections::{HashMap, HashSet},
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -8,7 +8,7 @@ use std::{
 use farmfe_core::{
   common::PackageJsonInfo,
   context::CompilationContext,
-  farm_profile_function,
+  farm_profile_function, regex,
   relative_path::RelativePath,
   serde_json::{self, from_str, Map, Value},
 };
@@ -25,6 +25,23 @@ pub struct PathDifference {
   pub origin_request: String,
   pub remaining_request: String,
   pub query_params: HashMap<String, String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum Condition {
+  Default,
+  Require,
+  Import,
+  Browser,
+  Node,
+}
+
+#[derive(Debug)]
+pub struct Options {
+  unsafe_flag: bool,
+  require: bool,
+  browser: bool,
+  conditions: Vec<String>,
 }
 
 /**
@@ -381,4 +398,273 @@ pub fn find_mapping<'a>(
 
 pub fn get_result_path(value: &str, current_resolve_base_dir: &String) -> Option<String> {
   Some(get_key_path(value, current_resolve_base_dir))
+}
+
+pub fn conditions(options: &Options) -> HashSet<Condition> {
+  let mut out: HashSet<Condition> = HashSet::new();
+  out.insert(Condition::Default);
+
+  if !options.unsafe_flag {
+    if options.require {
+      out.insert(Condition::Require);
+    } else {
+      out.insert(Condition::Import);
+    }
+
+    if options.browser {
+      out.insert(Condition::Browser);
+    } else {
+      out.insert(Condition::Node);
+    }
+  }
+
+  out.extend(
+    options
+      .conditions
+      .iter()
+      .cloned()
+      .map(|s| match s.as_str() {
+        "default" => Condition::Default,
+        "require" => Condition::Require,
+        "import" => Condition::Import,
+        "browser" => Condition::Browser,
+        "node" => Condition::Node,
+        _ => panic!("Unknown condition: {}", s),
+      }),
+  );
+
+  out
+}
+
+pub fn injects(items: &mut Vec<String>, value: &str) {
+  let rgx1 = regex::Regex::new(r#"\*"#).unwrap();
+  let rgx2 = regex::Regex::new(r#"/$"#).unwrap();
+
+  for item in items.iter_mut() {
+    let tmp = item.clone();
+    if rgx1.is_match(&tmp) {
+      *item = rgx1.replace_all(&tmp, value).to_string();
+    } else if rgx2.is_match(&tmp) {
+      *item += value;
+    }
+  }
+}
+
+pub fn loop_value(
+  m: Value,
+  keys: &HashSet<Condition>,
+  mut result: Option<&mut HashSet<String>>,
+) -> Option<Vec<String>> {
+  match m {
+    Value::String(s) => {
+      if let Some(result_set) = result {
+        result_set.insert(s.clone());
+      }
+      Some(vec![s])
+    }
+    Value::Array(values) => {
+      let result_vec: Vec<String> = Vec::new();
+      for v in values {
+        if let Some(result_ref) = result.as_mut() {
+          if let Some(arr_clone) = loop_value(v, keys, Some(result_ref)) {
+            result_ref.extend(arr_clone);
+          }
+        }
+      }
+      if result.is_none() && !result_vec.is_empty() {
+        Some(result_vec)
+      } else {
+        None
+      }
+    }
+    Value::Object(map) => {
+      for (key, value) in map {
+        if let Ok(condition) = Condition::from_str(&key) {
+          if keys.contains(&condition) {
+            return loop_value(value, keys, result);
+          }
+        }
+      }
+      None
+    }
+    Value::Null => None,
+    _ => None,
+  }
+}
+
+pub fn to_entry(name: &str, ident: &str, externals: Option<bool>) -> Result<String, String> {
+  if name == ident || ident == "." {
+    return Ok(".".to_string());
+  }
+
+  let root = format!("{}/", name);
+  let len = root.len();
+  let bool = ident.starts_with(&root);
+
+  let output = if bool {
+    ident[len..].to_string()
+  } else {
+    ident.to_string()
+  };
+
+  if output.starts_with('#') {
+    return Ok(output);
+  }
+
+  if bool || externals.unwrap_or(false) {
+    if output.starts_with("./") {
+      Ok(output)
+    } else {
+      Ok(format!("./{}", output))
+    }
+  } else {
+    Err(output)
+  }
+}
+
+enum Entry {
+  Exports(String),
+  Imports(String),
+}
+pub fn throws(name: &str, entry: &str, condition: Option<i32>) {
+  let message = if let Some(cond) = condition {
+    if cond != 0 {
+      format!(
+        "No known conditions for \"{}\" specifier in \"{}\" package",
+        entry, name
+      )
+    } else {
+      format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
+    }
+  } else {
+    format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
+  };
+  panic!("{}", message);
+}
+
+#[derive(Hash)]
+pub enum EntryKey {
+  Normal(String),
+  Dot(String),
+  Hash(String),
+}
+
+impl EntryKey {
+  fn from_string(input: &str) -> Self {
+    let re = regex::Regex::new(r"^(?P<type>[.#])(?P<value>.+)$").unwrap();
+    if let Some(caps) = re.captures(input) {
+      match &caps["type"] {
+        "." => EntryKey::Dot(caps["value"].to_string()),
+        "#" => EntryKey::Hash(caps["value"].to_string()),
+        _ => EntryKey::Normal(input.to_string()),
+      }
+    } else {
+      EntryKey::Normal(input.to_string())
+    }
+  }
+
+  fn as_str(&self) -> &str {
+    match self {
+      EntryKey::Normal(s) | EntryKey::Dot(s) | EntryKey::Hash(s) => s.as_str(),
+    }
+  }
+}
+
+// 实现 Eq 和 PartialEq trait
+impl Eq for EntryKey {}
+
+impl PartialEq for EntryKey {
+  fn eq(&self, other: &Self) -> bool {
+    self.as_str() == other.as_str()
+  }
+}
+
+pub fn walk(
+  name: &str,
+  mapping: &HashMap<String, Value>,
+  input: &str,
+  options: &Options,
+) -> Vec<String> {
+  let entry_result: Result<String, String> = to_entry(name, input, None);
+  let entry: String = match entry_result {
+    Ok(entry) => entry.to_string(),
+    Err(error) => {
+      // 处理错误情况，例如打印错误信息
+      eprintln!("Error getting entry: {}", error);
+      // 返回一个默认值
+      String::from("default_entry")
+    }
+  };
+  let c: HashSet<Condition> = conditions(options);
+
+  let mut m: Option<&Value> = mapping.get(&entry);
+  let mut result: Option<Vec<String>> = None;
+  let mut replace: Option<String> = None;
+  if m.is_none() {
+    let mut longest: Option<&str> = None;
+
+    for (key, value) in mapping.iter() {
+      if let Some(cur_longest) = &longest {
+        if key.len() < cur_longest.len() {
+          // do not allow "./" to match if already matched "./foo*" key
+          continue;
+        }
+      }
+
+      if key.ends_with('/') && entry.starts_with(key) {
+        replace = Some(entry[key.len()..].to_string());
+        longest = Some(key.as_str().clone());
+      } else if key.len() > 1 {
+        if let Some(tmp) = key.find('*') {
+          let pattern = format!("^{}(.*){}", &key[..tmp], &key[tmp + 1..]);
+          let regex = regex::Regex::new(&pattern).unwrap();
+
+          if let Some(captures) = regex.captures(&entry) {
+            if let Some(match_group) = captures.get(1) {
+              replace = Some(match_group.as_str().to_string());
+              longest = Some(key.as_str().clone());
+            }
+          }
+        }
+      }
+    }
+
+    if let Some(longest_key) = longest {
+      m = mapping.get(&longest_key.to_string());
+    }
+  }
+  if m.is_none() {
+    throws(name, &entry, None);
+    return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
+  }
+
+  let v = loop_value(m.unwrap().clone(), &c, None);
+
+  if v.is_none() {
+    throws(name, &entry, Some(1));
+    return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
+  }
+
+  if let Some(replace) = replace {
+    let mut cloned_v = v.clone();
+    injects(&mut cloned_v.unwrap(), &replace);
+    // injects(&mut v.unwrap(), &replace);
+  }
+
+  v.unwrap()
+}
+
+impl FromStr for Condition {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "default" => Ok(Condition::Default),
+      "require" => Ok(Condition::Require),
+      "import" => Ok(Condition::Import),
+      "browser" => Ok(Condition::Browser),
+      "node" => Ok(Condition::Node),
+      _ => Err(format!("Invalid Condition: {}", s)),
+    }
+  }
 }

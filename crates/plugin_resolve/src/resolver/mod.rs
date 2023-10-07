@@ -885,7 +885,7 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("resolve_exports_or_imports".to_string());
-    let mut additional_conditions: HashSet<String> = context
+    let additional_conditions: HashSet<String> = context
       .config
       .resolve
       .conditions
@@ -894,6 +894,7 @@ impl Resolver {
       .collect();
 
     let filtered_conditions: Vec<String> = additional_conditions
+      .clone()
       .into_iter()
       .filter(|condition| match condition.as_str() {
         "production" => {
@@ -913,28 +914,18 @@ impl Resolver {
       ResolveKind::Require => true,
       _ => false,
     };
-    let result = if field_type == "imports" {
-      self.imports(
-        package_json_info,
-        source,
-        &ConditionConfig {
-          browser: is_browser && !additional_conditions.contains("node"),
-          require: is_require && !additional_conditions.contains("import"),
-          conditions: filtered_conditions,
-        },
-      )
-    } else {
-      self.exports(
-        package_json_info,
-        source,
-        &ConditionConfig {
-          browser: is_browser && !additional_conditions.contains("node"),
-          require: is_require && !additional_conditions.contains("import"),
-          conditions: filtered_conditions,
-        },
-      )
+    let condition_config = ConditionConfig {
+      browser: is_browser && !additional_conditions.contains("node"),
+      require: is_require && !additional_conditions.contains("import"),
+      conditions: filtered_conditions,
     };
-    return "TODO".to_string().into();
+
+    let result = if field_type == "imports" {
+      self.imports(package_json_info, source, &condition_config)
+    } else {
+      self.exports(package_json_info, source, &condition_config)
+    };
+    return result;
   }
 
   fn imports(
