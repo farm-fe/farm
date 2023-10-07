@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-svgr",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "support svgr compile for farm.",
   "main": "./build/index.cjs",
   "types": "./build/index.d.ts",
