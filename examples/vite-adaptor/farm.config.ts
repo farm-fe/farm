@@ -1,5 +1,5 @@
 import type { UserConfig } from '@farmfe/core';
-import farmJsPluginVue from '@farmfe/js-plugin-vue';
+// import vue from '@farmfe/js-plugin-vue';
 import vue from '@vitejs/plugin-vue';
 
 function defineConfig(config: UserConfig) {
@@ -7,20 +7,6 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
-  compilation: {
-    input: {
-      index: './index.html'
-    },
-    output: {
-      path: './build'
-    },
-    resolve: {
-      strictExports: true
-    }
-  },
-  server: {
-    port: 6654
-  },
-  plugins: ['@farmfe/plugin-sass'],
+  // plugins: [vue()],
   vitePlugins: [vue()]
 });
