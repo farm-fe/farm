@@ -13,7 +13,7 @@ fn resolve_exports_basic() {
       let resolver = Resolver::new();
       // Parsing packages in node_modules
       let resolved = resolver.resolve(
-        "basic",
+        "basic/base",
         cwd.clone(),
         &ResolveKind::Import,
         &Arc::new(CompilationContext::default()),

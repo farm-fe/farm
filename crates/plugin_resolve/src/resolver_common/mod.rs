@@ -473,10 +473,8 @@ pub fn loop_value(
       let has_default = map.contains_key("default");
 
       if has_default {
-        // 如果存在 "default" 键，进行顺序修改
         let mut new_mapping = BTreeMap::new();
         if let Some(default_value) = map.remove("default") {
-          // 重新构建对象，将 "default" 放在最后
           new_mapping.extend(map);
           new_mapping.insert("zzz_default".to_string(), default_value); // 设置一个更大的键名
           for (key, value) in new_mapping {
@@ -494,7 +492,6 @@ pub fn loop_value(
           }
         }
       } else {
-        // 如果不存在 "default" 键，直接使用原始的 map 继续循环
         for (key, value) in map {
           if let Ok(condition) = Condition::from_str(&key) {
             if keys.contains(&condition) {
@@ -540,7 +537,7 @@ pub fn to_entry(name: &str, ident: &str, externals: Option<bool>) -> Result<Stri
   }
 }
 
-enum Entry {
+pub enum Entry {
   Exports(String),
   Imports(String),
 }

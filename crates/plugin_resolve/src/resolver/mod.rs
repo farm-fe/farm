@@ -165,7 +165,7 @@ impl Resolver {
         let path_buf = PathBuf::from_str(source).unwrap();
 
         return try_file(&path_buf, context)
-          .or_else(|| self.try_directory(&path_buf, kind, false, context))
+          .or_else(|| self.try_directory(&path_buf, source, kind, false, context))
           .map(|resolved_path| {
             self.get_resolve_result(&package_json_info, resolved_path, kind, context)
           });
@@ -183,7 +183,7 @@ impl Resolver {
 
         // TODO try read symlink from the resolved path step by step to its parent util the root
         let resolved_path = try_file(&normalized_path, context)
-          .or_else(|| self.try_directory(&normalized_path, kind, false, context))
+          .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
           .ok_or(CompilationError::GenericError(format!(
             "File `{:?}` does not exist",
             normalized_path
@@ -198,7 +198,7 @@ impl Resolver {
       _source if is_source_dot(source) => {
         // import xx from '.'
         return self
-          .try_directory(&base_dir, kind, false, context)
+          .try_directory(&base_dir, source, kind, false, context)
           .map(|resolved_path| {
             self.get_resolve_result(&package_json_info, resolved_path, kind, context)
           });
@@ -207,7 +207,7 @@ impl Resolver {
         // import xx from '..'
         let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
         return self
-          .try_directory(&parent_path, kind, false, context)
+          .try_directory(&parent_path, source, kind, false, context)
           .map(|resolved_path| {
             self.get_resolve_result(&package_json_info, resolved_path, kind, context)
           });
@@ -252,6 +252,7 @@ impl Resolver {
   fn try_directory(
     &self,
     dir: &Path,
+    source: &str,
     kind: &ResolveKind,
     skip_try_package: bool,
     context: &Arc<CompilationContext>,
@@ -280,7 +281,7 @@ impl Resolver {
       );
 
       if let Ok(package_json_info) = package_json_info {
-        let (res, _) = self.try_package(&package_json_info, kind, vec![], context);
+        let (res, _) = self.try_package(&package_json_info, source, kind, vec![], context);
 
         if let Some(res) = res {
           return Some(res.resolved_path);
@@ -373,11 +374,12 @@ impl Resolver {
           // check if the source is a directory or file can be resolved
           if matches!(&package_path, package_path if package_path.exists()) {
             if let Some(resolved_path) = try_file(&package_path, context)
-              .or_else(|| self.try_directory(&package_path, kind, true, context))
+              .or_else(|| self.try_directory(&package_path, source, kind, true, context))
             {
               return (
                 Some(self.get_resolve_node_modules_result(
                   package_json_info.ok().as_ref(),
+                  source,
                   resolved_path,
                   kind,
                   context,
@@ -427,6 +429,7 @@ impl Resolver {
                 return (
                   Some(self.get_resolve_node_modules_result(
                     package_json_info.ok().as_ref(),
+                    source,
                     package_path.to_str().unwrap().to_string(),
                     kind,
                     context,
@@ -437,11 +440,12 @@ impl Resolver {
             }
           }
           if let Some(resolved_path) = try_file(&package_path, context)
-            .or_else(|| self.try_directory(&package_path, kind, true, context))
+            .or_else(|| self.try_directory(&package_path, source, kind, true, context))
           {
             return (
               Some(self.get_resolve_node_modules_result(
                 package_json_info.ok().as_ref(),
+                source,
                 resolved_path,
                 kind,
                 context,
@@ -456,7 +460,7 @@ impl Resolver {
           let package_json_info = package_json_info.unwrap();
 
           let (result, tried_paths) =
-            self.try_package(&package_json_info, kind, tried_paths, context);
+            self.try_package(&package_json_info, source, kind, tried_paths, context);
 
           if result.is_some() {
             return (result, tried_paths);
@@ -467,6 +471,7 @@ impl Resolver {
             try_file(&package_path.join("index"), context).map(|resolved_path| {
               self.get_resolve_node_modules_result(
                 Some(&package_json_info),
+                source,
                 resolved_path,
                 kind,
                 context,
@@ -487,6 +492,7 @@ impl Resolver {
   fn try_package(
     &self,
     package_json_info: &PackageJsonInfo,
+    source: &str,
     kind: &ResolveKind,
     tried_paths: Vec<PathBuf>,
     context: &Arc<CompilationContext>,
@@ -506,6 +512,7 @@ impl Resolver {
         if let Value::Object(_) = field_value {
           let resolved_path = Some(self.get_resolve_node_modules_result(
             Some(package_json_info),
+            source,
             package_json_info.dir().to_string(),
             kind,
             context,
@@ -524,6 +531,7 @@ impl Resolver {
               {
                 Some(self.get_resolve_node_modules_result(
                   Some(package_json_info),
+                  source,
                   resolved_path,
                   kind,
                   context,
@@ -533,10 +541,11 @@ impl Resolver {
             ),
             None => (
               self
-                .try_directory(&full_path, kind, true, context)
+                .try_directory(&full_path, source, kind, true, context)
                 .map(|resolved_path| {
                   self.get_resolve_node_modules_result(
                     Some(package_json_info),
+                    source,
                     resolved_path,
                     kind,
                     context,
@@ -583,26 +592,36 @@ impl Resolver {
   fn get_resolve_node_modules_result(
     &self,
     package_json_info: Option<&PackageJsonInfo>,
+    source: &str,
     resolved_path: String,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> PluginResolveHookResult {
     farm_profile_function!("get_resolve_node_modules_result".to_string());
+    println!("开始解析");
     if let Some(package_json_info) = package_json_info {
       let side_effects = is_module_side_effects(package_json_info, &resolved_path);
+      if let Some(resolved_path) =
+        self.resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
+      {
+        println!("resolved_path 最后拿到的: {:?}", resolved_path);
+        let current_resolve_base_dir = package_json_info.dir();
+        if let Some(first_item) = resolved_path.get(0) {
+          let resolved_path = get_result_path(&first_item, current_resolve_base_dir);
+          let resolved_path_buf = PathBuf::from(resolved_path.clone().unwrap());
+          let resolved_path_result = try_file(&resolved_path_buf, context)
+            .or_else(|| self.try_directory(&resolved_path_buf, source, kind, true, context))
+            .unwrap_or(resolved_path.unwrap());
 
-      let resolved_path = self
-        .try_exports_replace(package_json_info, &resolved_path, kind, context)
-        .unwrap_or(resolved_path);
-      // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
-      let resolved_path_buf = PathBuf::from(&resolved_path);
-      let resolved_path = try_file(&resolved_path_buf, context)
-        .or_else(|| self.try_directory(&resolved_path_buf, kind, true, context))
-        .unwrap_or(resolved_path);
-
+          return PluginResolveHookResult {
+            resolved_path: resolved_path_result,
+            side_effects,
+            ..Default::default()
+          };
+        }
+      }
       PluginResolveHookResult {
         resolved_path,
-        side_effects,
         ..Default::default()
       }
     } else {
@@ -985,7 +1004,6 @@ impl Resolver {
     source: &str,
     config: &ConditionOptions,
   ) -> Option<Vec<String>> {
-    let mut map: HashMap<String, Value> = HashMap::new();
     let name = match get_field_value_from_package_json_info(package_json_info, "name") {
       Some(n) => n,
       None => {
@@ -996,27 +1014,25 @@ impl Resolver {
     if let Some(exports_field) =
       get_field_value_from_package_json_info(package_json_info, "exports")
     {
+      let mut map: HashMap<String, Value> = HashMap::new();
       match exports_field {
         Value::String(string_value) => {
           map.insert(".".to_string(), Value::String(string_value.clone()));
         }
         Value::Object(object_value) => {
-          let mut should_convert = true;
-
-          for (k, _v) in &object_value {
+          println!("object_value: {:?}", object_value);
+          for (k, v) in &object_value {
             if !k.starts_with('.') {
-              should_convert = false;
+              map.insert(".".to_string(), Value::Object(object_value.clone()));
               break;
+            } else {
+              map.insert(k.to_string(), v.clone());
             }
-          }
-
-          if should_convert {
-            map.insert(".".to_string(), Value::Object(object_value.clone()));
           }
         }
         _ => {}
       }
-
+      println!("map: {:?}", map);
       if !map.is_empty() {
         return Some(walk(name.as_str().unwrap(), &map, source, config));
       }
