@@ -257,7 +257,7 @@ impl Default for ResolveConfig {
         String::from("css"),
       ],
       conditions: vec![
-        String::from("import"),
+        // String::from("import"),
         String::from("require"),
         String::from("browser"),
         String::from("development"),

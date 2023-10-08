@@ -445,7 +445,7 @@ pub fn injects(items: &mut Vec<String>, value: &str) {
 pub fn loop_value(
   m: Value,
   keys: &HashSet<Condition>,
-  mut result: Option<&mut HashSet<String>>,
+  mut result: &mut Option<HashSet<String>>,
 ) -> Option<Vec<String>> {
   match m {
     Value::String(s) => {
@@ -455,16 +455,17 @@ pub fn loop_value(
       Some(vec![s])
     }
     Value::Array(values) => {
-      let result_vec: Vec<String> = Vec::new();
-      for v in values {
-        if let Some(result_ref) = result.as_mut() {
-          if let Some(arr_clone) = loop_value(v, keys, Some(result_ref)) {
-            result_ref.extend(arr_clone);
-          }
+      println!("走到这里来了 拿到的是一个数组");
+      let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
+      for item in values {
+        if let Some(item_result) = loop_value(item, keys, &mut Some(arr_result.clone())) {
+          return Some(item_result);
         }
       }
-      if result.is_none() && !result_vec.is_empty() {
-        Some(result_vec)
+
+      // 如果使用了初始化的结果集，返回结果
+      if result.is_none() && !arr_result.is_empty() {
+        return Some(arr_result.into_iter().collect());
       } else {
         None
       }
@@ -608,6 +609,7 @@ pub fn walk(
       String::from("default_entry")
     }
   };
+  println!("拿到的 options {:?}", options);
   let c: HashSet<Condition> = conditions(options);
   let mut m: Option<&Value> = mapping.get(&entry);
   let mut result: Option<Vec<String>> = None;
@@ -649,7 +651,7 @@ pub fn walk(
     throws(name, &entry, None);
     return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
   }
-  let v = loop_value(m.unwrap().clone(), &c, None);
+  let v = loop_value(m.unwrap().clone(), &c, &mut None);
 
   if v.is_none() {
     throws(name, &entry, Some(1));

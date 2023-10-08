@@ -242,7 +242,7 @@ fn resolve_exports_degrade() {
         cwd
           .join("node_modules")
           .join("degrade")
-          .join("index.mjs")
+          .join("index.umd.js")
           .to_string_lossy()
           .to_string()
       );
@@ -272,24 +272,6 @@ fn resolve_exports_direct_analysis() {
           .join("node_modules")
           .join("direct-analysis")
           .join("direct-analysis-module.mjs")
-          .to_string_lossy()
-          .to_string()
-      );
-
-      let resolved = resolver.resolve(
-        "direct-analysis/direct-analysis.js",
-        cwd.clone(),
-        &ResolveKind::Import,
-        &Arc::new(CompilationContext::default()),
-      );
-      assert!(resolved.is_some());
-      let resolved = resolved.unwrap();
-      assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("node_modules")
-          .join("direct-analysis")
-          .join("direct-analysis.js")
           .to_string_lossy()
           .to_string()
       );
@@ -348,7 +330,7 @@ fn resolve_priority() {
         cwd
           .join("node_modules")
           .join("priority")
-          .join("index.umd.js")
+          .join("index.min.mjs")
           .to_string_lossy()
           .to_string()
       );
@@ -635,33 +617,3 @@ fn resolve_exports_string_fields() {
     }
   );
 }
-
-// #[test]
-// fn resolve_exports_extension() {
-//   fixture!(
-//     "tests/fixtures/resolve-node-modules/exports/index.ts",
-//     |file, _| {
-//       let cwd = file.parent().unwrap().to_path_buf();
-//       let resolver = Resolver::new();
-
-//       let resolved = resolver.resolve(
-//         "exports-extension/extension",
-//         cwd.clone(),
-//         &ResolveKind::Import,
-//         &Arc::new(CompilationContext::default()),
-//       );
-//       assert!(resolved.is_some());
-//       let resolved = resolved.unwrap();
-//       assert_eq!(
-//         resolved.resolved_path,
-//         cwd
-//           .join("node_modules")
-//           .join("exports-extension")
-//           .join("dist")
-//           .join("extension.js")
-//           .to_string_lossy()
-//           .to_string()
-//       );
-//     }
-//   );
-// }

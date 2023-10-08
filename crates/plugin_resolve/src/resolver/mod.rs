@@ -951,6 +951,8 @@ impl Resolver {
       ResolveKind::Require => true,
       _ => false,
     };
+    println!("is_require: {:?}", is_require);
+    println!("additional_conditions: {:?}", additional_conditions);
     let condition_config = ConditionOptions {
       browser: is_browser && !additional_conditions.contains("node"),
       require: is_require && !additional_conditions.contains("import"),
