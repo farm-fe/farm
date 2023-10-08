@@ -30,8 +30,8 @@ fn create_update_compiler(
       },
       mode: Mode::Development,
       external: vec![
-        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
-        ConfigRegex(Regex::new("^module$").unwrap()),
+        ConfigRegex::new("^react-refresh$"),
+        ConfigRegex::new("^module$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
@@ -68,11 +68,7 @@ fn update_without_dependencies_change() {
         .to_string_lossy()
         .to_string();
       let result = compiler
-        .update(
-          vec![(update_file, UpdateType::Updated)],
-          || {},
-          true,
-        )
+        .update(vec![(update_file, UpdateType::Updated)], || {}, true)
         .unwrap();
 
       assert_eq!(result.added_module_ids.len(), 0);
@@ -120,11 +116,7 @@ fn update_without_dependencies_change_css() {
       assert_eq!(result.resources, "{\n    \"index.css\": function(module, exports, farmRequire, dynamicRequire) {\n        \"use strict\";\n        const cssCode = `body {\n  color: red;\n}`;\n        const farmId = \"index.css\";\n        const previousStyle = document.querySelector(`style[data-farm-id=\"${farmId}\"]`);\n        const style = document.createElement(\"style\");\n        style.setAttribute(\"data-farm-id\", farmId);\n        style.innerHTML = cssCode;\n        if (previousStyle) {\n            previousStyle.replaceWith(style);\n        } else {\n            document.head.appendChild(style);\n        }\n        module.meta.hot.accept();\n        module.onDispose(()=>{\n            style.remove();\n        });\n    }\n};\n");
 
       let result = compiler
-        .update(
-          vec![(update_file, UpdateType::Updated)],
-          || {},
-          false,
-        )
+        .update(vec![(update_file, UpdateType::Updated)], || {}, false)
         .unwrap();
 
       assert_eq!(result.added_module_ids.len(), 0);
@@ -227,11 +219,7 @@ fn update_with_dependencies_change_css_modules() {
       let mut original_ts_file = File::create(&update_file).unwrap();
       original_ts_file.write_all(original_ts.as_bytes()).unwrap();
       let result = compiler
-        .update(
-          vec![(update_file, UpdateType::Updated)],
-          || {},
-          false,
-        )
+        .update(vec![(update_file, UpdateType::Updated)], || {}, false)
         .unwrap();
 
       assert_eq!(result.added_module_ids.len(), 0);

@@ -53,8 +53,8 @@ pub fn create_css_compiler(
       },
       mode: Mode::Production,
       external: vec![
-        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
-        ConfigRegex(Regex::new("^module$").unwrap()),
+        ConfigRegex::new("^react-refresh$"),
+        ConfigRegex::new("^module$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
       css: css_config,
@@ -87,8 +87,8 @@ pub fn create_compiler(
       },
       mode: Mode::Production,
       external: vec![
-        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
-        ConfigRegex(Regex::new("^module$").unwrap()),
+        ConfigRegex::new("^react-refresh$"),
+        ConfigRegex::new("^module$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
@@ -137,8 +137,8 @@ pub fn create_compiler_with_plugins(
         ..Default::default()
       },
       external: vec![
-        ConfigRegex(Regex::new("^react-refresh$").unwrap()),
-        ConfigRegex(Regex::new("^module$").unwrap()),
+        ConfigRegex::new("^react-refresh$"),
+        ConfigRegex::new("^module$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,

@@ -118,10 +118,7 @@ export function getJsModuleType(id: string): string | null {
   return null;
 }
 
-export function formatLoadModuleType(
-  id: string,
-  defaultModuleType = 'js'
-): string {
+export function formatLoadModuleType(id: string): string {
   const cssModuleType = getCssModuleType(id);
 
   if (cssModuleType) {
@@ -134,7 +131,7 @@ export function formatLoadModuleType(
     return jsModuleType;
   }
 
-  return defaultModuleType;
+  return 'js';
 }
 
 export function formatTransformModuleType(id: string): string {
@@ -175,4 +172,19 @@ export function deleteUndefinedPropertyDeeply(obj: any) {
       deleteUndefinedPropertyDeeply(obj[key]);
     }
   }
+}
+
+export function throwIncompatibleError(
+  pluginName: string,
+  readingObject: string,
+  allowedKeys: string[],
+  key: string | number | symbol
+): never {
+  throw new Error(
+    `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses ${readingObject}['${String(
+      key
+    )}'] which is not supported by Farm. Current supported keys are: ${allowedKeys.join(
+      ','
+    )}`
+  );
 }

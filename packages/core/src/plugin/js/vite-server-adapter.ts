@@ -1,5 +1,6 @@
 import { watch } from 'chokidar';
 import { CompilationContext } from '../type.js';
+import { throwIncompatibleError } from './utils.js';
 
 export class ViteDevServerAdapter {
   moduleGraph: ViteModuleGraphAdapter;
@@ -64,15 +65,9 @@ export function createViteDevServerAdapter(pluginName: string, config: any) {
       const allowedKeys = ['moduleGraph', 'config', 'watcher'];
       if (allowedKeys.includes(String(key))) {
         return target[key as keyof typeof target];
-      } else {
-        throw new Error(
-          `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses viteModuleGraph['${String(
-            key
-          )}'] which is not supported by Farm. \n Current supported keys are: ${allowedKeys.join(
-            ','
-          )}`
-        );
       }
+
+      throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
     }
   });
 
@@ -88,13 +83,7 @@ export function createViteModuleGraphAdapter(pluginName: string) {
         return target[key as keyof typeof target];
       }
 
-      throw new Error(
-        `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses viteModuleGraph['${String(
-          key
-        )}'] which is not supported by Farm. \n Current supported keys are: ${allowedKeys.join(
-          ','
-        )}`
-      );
+      throwIncompatibleError(pluginName, 'viteModuleGraph', allowedKeys, key);
     },
     set(target, p, newValue, _receiver) {
       if (p === 'context') {

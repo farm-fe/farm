@@ -34,7 +34,7 @@ pub struct CompilationContext {
   pub cache_manager: Box<CacheManager>,
   pub meta: Box<ContextMetaData>,
   pub record_manager: Box<RecordManager>,
-  pub log_store: Box<RwLock<LogStore>>,
+  pub log_store: Box<Mutex<LogStore>>,
 }
 
 impl CompilationContext {
@@ -50,7 +50,7 @@ impl CompilationContext {
       cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),
-      log_store: Box::new(RwLock::new(LogStore::new())),
+      log_store: Box::new(Mutex::new(LogStore::new())),
     })
   }
 

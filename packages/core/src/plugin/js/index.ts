@@ -28,7 +28,7 @@ export function handleVitePlugins(
 
   for (const vitePluginObj of vitePlugins) {
     let vitePlugin = vitePluginObj,
-      filters = ['.*'];
+      filters = ['!node_modules'];
 
     if (typeof vitePluginObj === 'function') {
       const { vitePlugin: plugin, filters: f } = vitePluginObj();
@@ -36,13 +36,25 @@ export function handleVitePlugins(
       filters = f;
     }
 
-    const vitePluginAdapter = new VitePluginAdapter(
-      vitePlugin as any,
-      userConfig,
-      filters
-    );
-    convertPlugin(vitePluginAdapter);
-    jsPlugins.push(vitePluginAdapter);
+    if (Array.isArray(vitePlugin)) {
+      for (const plugin of vitePlugin) {
+        const vitePluginAdapter = new VitePluginAdapter(
+          plugin as any,
+          userConfig,
+          filters
+        );
+        convertPlugin(vitePluginAdapter);
+        jsPlugins.push(vitePluginAdapter);
+      }
+    } else {
+      const vitePluginAdapter = new VitePluginAdapter(
+        vitePlugin as any,
+        userConfig,
+        filters
+      );
+      convertPlugin(vitePluginAdapter);
+      jsPlugins.push(vitePluginAdapter);
+    }
   }
 
   // if vitePlugins is not empty, append a load plugin to load files as js

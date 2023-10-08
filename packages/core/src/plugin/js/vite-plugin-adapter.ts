@@ -9,8 +9,7 @@ import {
   isObject,
   isString,
   encodeStr,
-  decodeStr,
-  deleteUndefinedPropertyDeeply
+  decodeStr
 } from './utils.js';
 import { DevServer, UserConfig } from '../../index.js';
 
@@ -20,10 +19,11 @@ import type {
   UserConfig as ViteUserConfig,
   HmrContext,
   ViteDevServer,
-  ModuleNode
+  ModuleNode,
+  ConfigEnv
 } from 'vite';
-import type { PluginContext, ResolveIdResult } from 'rollup';
-import path, { relative } from 'path';
+import type { ResolveIdResult } from 'rollup';
+import path from 'path';
 import {
   PluginLoadHookParam,
   PluginLoadHookResult,
@@ -38,6 +38,13 @@ import {
   ViteDevServerAdapter,
   createViteDevServerAdapter
 } from './vite-server-adapter.js';
+import { farmContextToViteContext } from './farm-to-vite-context.js';
+import {
+  farmConfigToViteConfig,
+  proxyViteConfig,
+  viteConfigToFarmConfig
+} from './farm-to-vite-config.js';
+import { VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX } from '../../compiler/index.js';
 
 /// turn a vite plugin to farm js plugin
 export class VitePluginAdapter implements JsPlugin {
@@ -61,6 +68,13 @@ export class VitePluginAdapter implements JsPlugin {
 
   constructor(rawPlugin: Plugin, farmConfig: UserConfig, filters: string[]) {
     this.name = rawPlugin.name;
+
+    if (!rawPlugin.name) {
+      throw new Error(
+        `Vite plugin ${rawPlugin} is not compatible with Farm for now. Because plugin name is required in Farm.`
+      );
+    }
+
     this.priority = convertEnforceToPriority(rawPlugin.enforce);
     this._rawPlugin = rawPlugin;
     this._farmConfig = farmConfig;
@@ -89,7 +103,16 @@ export class VitePluginAdapter implements JsPlugin {
     );
 
     if (configHook) {
-      this._viteConfig = merge(this._viteConfig, configHook(this._viteConfig));
+      this._viteConfig = proxyViteConfig(
+        merge(
+          this._viteConfig,
+          configHook(
+            proxyViteConfig(this._viteConfig, this.name),
+            this.get_vite_config_env()
+          )
+        ),
+        this.name
+      );
       this._farmConfig = viteConfigToFarmConfig(
         this._viteConfig,
         this._farmConfig,
@@ -125,8 +148,16 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
+  private get_vite_config_env(): ConfigEnv {
+    return {
+      ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node',
+      command:
+        this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
+      mode: this._farmConfig.compilation.mode
+    };
+  }
+
   private should_execute_plugin() {
-    // TODO add command config
     const command =
       this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve';
 
@@ -202,6 +233,15 @@ export class VitePluginAdapter implements JsPlugin {
           params: PluginResolveHookParam,
           context: CompilationContext
         ): Promise<PluginResolveHookResult> => {
+          if (
+            params.importer &&
+            this.isFarmLazyCompilationVirtualModule(
+              params.importer.relativePath
+            )
+          ) {
+            return null;
+          }
+
           const hook = this.wrap_raw_plugin_hook(
             'resolveId',
             this._rawPlugin.resolveId,
@@ -259,17 +299,23 @@ export class VitePluginAdapter implements JsPlugin {
           params: PluginLoadHookParam,
           context: CompilationContext
         ): Promise<PluginLoadHookResult> => {
+          if (this.isFarmLazyCompilationVirtualModule(params.resolvedPath)) {
+            return null;
+          }
+
           const hook = this.wrap_raw_plugin_hook(
             'load',
             this._rawPlugin.load,
             context
           );
 
+          const isSSR =
+            this._farmConfig.compilation.output.targetEnv === 'node';
           const resolvedPath = decodeStr(params.resolvedPath);
 
           // append query
           const id = formatId(resolvedPath, params.query);
-          const result = await hook?.(id);
+          const result = await hook?.(id, isSSR ? { ssr: true } : undefined);
 
           if (result) {
             return {
@@ -294,17 +340,25 @@ export class VitePluginAdapter implements JsPlugin {
           params: PluginTransformHookParam,
           context: CompilationContext
         ): Promise<PluginTransformHookResult> => {
+          if (this.isFarmLazyCompilationVirtualModule(params.resolvedPath)) {
+            return null;
+          }
+          console.log('transform', params.resolvedPath);
           const hook = this.wrap_raw_plugin_hook(
             'transform',
             this._rawPlugin.transform,
             context
           );
+          const isSSR =
+            this._farmConfig.compilation.output.targetEnv === 'node';
           const resolvedPath = decodeStr(params.resolvedPath);
           // append query
           const id = formatId(resolvedPath, params.query);
-          const result = await hook?.(params.content, id, {
-            ssr: this._farmConfig.compilation.output.targetEnv === 'node'
-          });
+          const result = await hook?.(
+            params.content,
+            id,
+            isSSR ? { ssr: true } : undefined
+          );
 
           if (result) {
             return {
@@ -388,302 +442,9 @@ export class VitePluginAdapter implements JsPlugin {
       )
     };
   }
-}
 
-function farmContextToViteContext(
-  farmContext: CompilationContext,
-  currentHandlingFile?: string,
-  pluginName?: string,
-  hookName?: string,
-  config?: UserConfig
-): PluginContext {
-  const log = (message: any) => {
-    if (typeof message === 'function') {
-      message = message();
-    }
-
-    console.log(message);
-  };
-
-  const cacheError = () => {
-    throw new Error(
-      `Vite plugin ${pluginName} is not compatible with Farm for now. Because cache(called by hook ${pluginName}.${hookName}) is not supported in Farm`
-    );
-  };
-
-  const viteContext: PluginContext = {
-    addWatchFile: (id) => {
-      if (!currentHandlingFile) {
-        throw new Error(
-          `Vite plugin ${pluginName} is not compatible with Farm for now. Because addWatchFile(called by hook ${pluginName}.${hookName}) can only be called in load hook or transform hook in Farm.`
-        );
-      }
-      farmContext.addWatchFile(currentHandlingFile, id);
-    },
-    debug: log,
-    emitFile: (params) => {
-      if (params.type === 'asset') {
-        let content: number[] = [];
-
-        if (typeof params.source === 'string') {
-          content = [...Buffer.from(params.source)];
-        } else {
-          content = [...params.source];
-        }
-
-        farmContext.emitFile({
-          resolvedPath: currentHandlingFile ?? 'vite-plugin-adapter',
-          name: params.fileName ?? params.name,
-          content,
-          resourceType: 'asset'
-        });
-
-        return 'vite-plugin-adapter-unsupported-reference-id';
-      } else {
-        throw new Error(
-          `Vite plugin ${pluginName} is not compatible with Farm for now. Because emitFile(called by hook ${pluginName}.${hookName}) can only emit asset in Farm.`
-        );
-      }
-    },
-    error: (message): never => {
-      if (typeof message === 'object') {
-        farmContext.error(JSON.stringify(message));
-      } else {
-        farmContext.error(message);
-      }
-
-      return undefined as unknown as never;
-    },
-    getFileName: () => {
-      throw new Error(
-        `Vite plugin ${pluginName} is not compatible with Farm for now. Because getFileName(called by hook ${pluginName}.${hookName}) is not supported in Farm`
-      );
-    },
-    getModuleIds: () => {
-      throw new Error(
-        `Vite plugin ${pluginName} is not compatible with Farm for now. Because getModuleIds(called by hook ${pluginName}.${hookName}) is not supported in Farm`
-      );
-    },
-    getModuleInfo: () => {
-      throw new Error(
-        `Vite plugin ${pluginName} is not compatible with Farm for now. Because getModuleInfo(called by hook ${pluginName}.${hookName}) is not supported in Farm`
-      );
-    },
-    getWatchFiles: () => {
-      return farmContext.getWatchFiles();
-    },
-    info: log,
-    load: (_) => {
-      throw new Error(
-        `Vite plugin ${pluginName} is not compatible with Farm for now. Because load(called by hook ${pluginName}.${hookName}) is not supported in Farm`
-      );
-    },
-    meta: {
-      rollupVersion: '3.29.4',
-      watchMode: config.compilation.mode !== 'production'
-    },
-    parse: (_) => {
-      throw new Error(
-        `Vite plugin ${pluginName} is not compatible with Farm for now. Because parse(called by hook ${pluginName}.${hookName}) is not supported in Farm`
-      );
-    },
-    resolve: async (source, importer, options) => {
-      if (options.custom.caller === `${pluginName}.${hookName}`) {
-        return null;
-      }
-
-      const farmResolveResult = await farmContext.resolve(
-        {
-          source,
-          importer: {
-            relativePath: relative(importer, config.compilation.root),
-            queryString: importer.split('?')[1] ?? ''
-          },
-          kind: options.isEntry ? 'entry' : 'import'
-        },
-        {
-          meta: {},
-          caller: `${pluginName}.${hookName}`
-        }
-      );
-
-      if (farmResolveResult) {
-        return {
-          id: farmResolveResult.resolvedPath,
-          external: farmResolveResult.external,
-          resolvedBy: 'vite-plugin-adapter-farm-resolve',
-          moduleSideEffects: farmResolveResult.sideEffects,
-          meta: {
-            ...farmResolveResult.meta,
-            caller: `${pluginName}.${hookName}`
-          },
-          // TODO these 2 options are not supported in farm
-          assertions: {},
-          syntheticNamedExports: false
-        };
-      }
-
-      return null;
-    },
-    setAssetSource(assetReferenceId, source) {
-      this.emitFile({
-        type: 'asset',
-        source,
-        name: assetReferenceId
-      });
-    },
-    warn: (message) => {
-      if (typeof message === 'object') {
-        farmContext.warn(JSON.stringify(message));
-      } else if (typeof message === 'function') {
-        farmContext.warn(JSON.stringify(message()));
-      } else {
-        farmContext.warn(message);
-      }
-    },
-    cache: {
-      set: cacheError,
-      get: cacheError,
-      delete: cacheError,
-      has: cacheError
-    },
-    moduleIds: new Set<string>()[Symbol.iterator]()
-  };
-
-  return viteContext;
-}
-
-function farmConfigToViteConfig(config: UserConfig): ViteUserConfig {
-  return {
-    root: config.root,
-    base: config.compilation?.output?.publicPath,
-    publicDir: config.publicDir ?? 'public',
-    mode: config.compilation?.mode,
-    define: config.compilation?.define,
-    resolve: {
-      alias: config.compilation?.resolve?.alias,
-      extensions: config.compilation?.resolve?.extensions,
-      mainFields: config.compilation?.resolve?.mainFields,
-      conditions: config.compilation?.resolve?.conditions,
-      preserveSymlinks: config.compilation?.resolve?.symlinks === false
-    },
-    server: {
-      hmr: Boolean(config.server?.hmr),
-      port: config.server?.port,
-      host: config.server?.host,
-      strictPort: config.server?.strictPort,
-      https: config.server?.https,
-      proxy: config.server?.proxy as any,
-      open: config.server?.open
-      // other options are not supported in farm
-    },
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
-    isProduction: config.compilation?.mode === 'production',
-    css: {
-      devSourcemap: false
-    },
-    build: {
-      outDir: config.compilation?.output?.path,
-      sourcemap: Boolean(config.compilation?.sourcemap),
-      minify: config.compilation?.minify,
-      cssMinify: config.compilation?.minify
-      // other options are not supported in farm
-    }
-  };
-}
-
-function viteConfigToFarmConfig(
-  config: ViteUserConfig,
-  origFarmConfig: UserConfig,
-  pluginName: string
-): UserConfig {
-  const farmConfig: UserConfig = {};
-
-  if (config.root) {
-    farmConfig.root = config.root;
+  // skip farm lazy compilation virtual module for vite plugin
+  private isFarmLazyCompilationVirtualModule(id: string) {
+    return id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX);
   }
-  if (config.base) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    if (!farmConfig.compilation.output) {
-      farmConfig.compilation.output = {};
-    }
-    farmConfig.compilation.output.publicPath = config.base;
-  }
-  if (config.publicDir) {
-    farmConfig.publicDir = config.publicDir;
-  }
-  if (config.mode === 'development' || config.mode === 'production') {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    farmConfig.compilation.mode = config.mode;
-  }
-  if (config.define) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    farmConfig.compilation.define = config.define;
-  }
-  if (config.resolve) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    if (!farmConfig.compilation.resolve) {
-      farmConfig.compilation.resolve = {};
-    }
-    if (config.resolve.alias) {
-      if (!Array.isArray(config.resolve.alias)) {
-        farmConfig.compilation.resolve.alias = config.resolve.alias as Record<
-          string,
-          any
-        >;
-      } else {
-        throw new Error(
-          `Vite plugin ${pluginName} is not compatible with Farm for now. Because resolve.alias(called by hook ${pluginName}.config) is not supported in Farm`
-        );
-      }
-    }
-
-    farmConfig.compilation.resolve.extensions = config.resolve.extensions;
-    farmConfig.compilation.resolve.mainFields = config.resolve.mainFields;
-    farmConfig.compilation.resolve.conditions = config.resolve.conditions;
-    farmConfig.compilation.resolve.symlinks =
-      config.resolve.preserveSymlinks != true;
-  }
-
-  if (config.server) {
-    if (!farmConfig.server) {
-      farmConfig.server = {};
-    }
-    farmConfig.server.hmr = config.server.hmr;
-    farmConfig.server.port = config.server.port;
-
-    if (typeof config.server.host === 'string') {
-      farmConfig.server.host = config.server.host;
-    }
-
-    farmConfig.server.strictPort = config.server.strictPort;
-    farmConfig.server.https = Boolean(config.server.https);
-    farmConfig.server.proxy = config.server.proxy as any;
-    farmConfig.server.open = Boolean(config.server.open);
-  }
-
-  if (config.build) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    if (!farmConfig.compilation.output) {
-      farmConfig.compilation.output = {};
-    }
-    farmConfig.compilation.output.path = config.build.outDir;
-    farmConfig.compilation.sourcemap = Boolean(config.build.sourcemap);
-    farmConfig.compilation.minify = Boolean(config.build.minify);
-  }
-
-  deleteUndefinedPropertyDeeply(farmConfig);
-
-  return merge({}, origFarmConfig, farmConfig);
 }

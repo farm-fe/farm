@@ -141,9 +141,12 @@ unsafe extern "C" fn get_argv_and_context_from_cb_info(
     &mut data,
   );
 
-  let ctx: Box<Arc<CompilationContext>> = Box::from_raw(data.cast());
+  let ctx = data.cast::<Arc<CompilationContext>>();
 
-  ArgvAndContext { argv, ctx }
+  ArgvAndContext {
+    argv,
+    ctx: Box::new((*ctx).clone()),
+  }
 }
 
 unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_value {
@@ -230,7 +233,7 @@ unsafe extern "C" fn warn(env: napi_env, info: napi_callback_info) -> napi_value
     .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling warn");
 
-  ctx.log_store.write().add_warning(message);
+  ctx.log_store.lock().add_warning(message);
 
   Env::from_raw(env).get_undefined().unwrap().raw()
 }
@@ -242,7 +245,7 @@ unsafe extern "C" fn error(env: napi_env, info: napi_callback_info) -> napi_valu
     .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling error");
 
-  ctx.log_store.write().add_error(message);
+  ctx.log_store.lock().add_error(message);
 
   Env::from_raw(env).get_undefined().unwrap().raw()
 }

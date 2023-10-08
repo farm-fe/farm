@@ -10,6 +10,7 @@ use std::{
 };
 
 use farmfe_core::{
+  config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::{CompilationError, Result},
   module::ModuleType,
@@ -32,7 +33,6 @@ use napi::{
   threadsafe_function::ThreadsafeFunctionCallMode,
   Env, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
 };
-use regex::Regex;
 
 use super::context::create_js_context;
 
@@ -132,7 +132,26 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
     Sender<Result<Option<T>>>,
   )> = Box::from_raw(data.cast());
   let (param, ctx, hook_context, sender) = *data;
-  let js_context = create_js_context(raw_env, ctx);
+  // let js_context = create_js_context(raw_env, ctx);
+  let mut js_func = JsObject::from_napi_value(raw_env, func).unwrap();
+  let mut js_context = js_func
+    .get_named_property::<JsObject>("farm_js_plugin_context")
+    .unwrap();
+
+  if JsUnknown::from_raw(raw_env, js_context.raw())
+    .unwrap()
+    .get_type()
+    .unwrap()
+    == ValueType::Undefined
+  {
+    let new_js_context = create_js_context(raw_env, ctx);
+    js_func
+      .set_named_property("farm_js_plugin_context", new_js_context)
+      .unwrap();
+    js_context = js_func
+      .get_named_property::<JsObject>("farm_js_plugin_context")
+      .unwrap();
+  }
 
   unsafe fn to_napi_value<T: Serialize>(arg: T, raw_env: napi_env) -> napi_value {
     Env::from_raw(raw_env).to_js_value(&arg).unwrap().raw()
@@ -398,8 +417,8 @@ struct JsPluginResolveHookFilters {
 
 #[derive(Debug)]
 struct PluginResolveHookFilters {
-  pub importers: Vec<Regex>,
-  pub sources: Vec<Regex>,
+  pub importers: Vec<ConfigRegex>,
+  pub sources: Vec<ConfigRegex>,
 }
 
 impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
@@ -408,12 +427,12 @@ impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
       importers: f
         .importers
         .into_iter()
-        .map(|f| Regex::new(&f).unwrap())
+        .map(|f| ConfigRegex::new(&f))
         .collect(),
       sources: f
         .sources
         .into_iter()
-        .map(|f| Regex::new(&f).unwrap())
+        .map(|f| ConfigRegex::new(&f))
         .collect(),
     }
   }
@@ -426,7 +445,7 @@ pub struct JsPluginLoadHookFilters {
 
 #[derive(Debug)]
 pub struct PluginLoadHookFilters {
-  pub resolved_paths: Vec<Regex>,
+  pub resolved_paths: Vec<ConfigRegex>,
 }
 
 impl From<JsPluginLoadHookFilters> for PluginLoadHookFilters {
@@ -435,7 +454,7 @@ impl From<JsPluginLoadHookFilters> for PluginLoadHookFilters {
       resolved_paths: f
         .resolved_paths
         .into_iter()
-        .map(|f| Regex::new(&f).unwrap())
+        .map(|f| ConfigRegex::new(&f))
         .collect(),
     }
   }
@@ -449,7 +468,7 @@ pub struct JsPluginTransformHookFilters {
 
 #[derive(Debug)]
 pub struct PluginTransformHookFilters {
-  pub resolved_paths: Vec<Regex>,
+  pub resolved_paths: Vec<ConfigRegex>,
   pub module_types: Vec<ModuleType>,
 }
 
@@ -459,7 +478,7 @@ impl From<JsPluginTransformHookFilters> for PluginTransformHookFilters {
       resolved_paths: f
         .resolved_paths
         .into_iter()
-        .map(|f| Regex::new(&f).unwrap())
+        .map(|f| ConfigRegex::new(&f))
         .collect(),
       module_types: f.module_types.into_iter().map(|ty| ty.into()).collect(),
     }
