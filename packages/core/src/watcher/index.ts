@@ -71,6 +71,7 @@ export class FileWatcher implements ImplFileWatcher {
         if (this.serverOrCompiler instanceof DevServer) {
           await this.serverOrCompiler.close();
         }
+
         const config: UserConfig = await resolveUserConfig(
           this.options.inlineConfig,
           'serve',
