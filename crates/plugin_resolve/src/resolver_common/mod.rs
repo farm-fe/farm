@@ -424,7 +424,6 @@ pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
       out.insert(Condition::Node);
     }
   }
-  println!("conditions: {:?}", out);
   out
 }
 
@@ -455,7 +454,6 @@ pub fn loop_value(
       Some(vec![s])
     }
     Value::Array(values) => {
-      println!("走到这里来了 拿到的是一个数组");
       let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
       for item in values {
         if let Some(item_result) = loop_value(item, keys, &mut Some(arr_result.clone())) {
@@ -606,10 +604,9 @@ pub fn walk(
     Ok(entry) => entry.to_string(),
     Err(error) => {
       eprintln!("Error resolve {} package error: {}", name, error);
-      String::from("default_entry")
+      String::from(name)
     }
   };
-  println!("拿到的 options {:?}", options);
   let c: HashSet<Condition> = conditions(options);
   let mut m: Option<&Value> = mapping.get(&entry);
   let mut result: Option<Vec<String>> = None;

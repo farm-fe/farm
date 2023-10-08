@@ -109,7 +109,6 @@ impl Resolver {
           if let Some(resolved_path) = get_result_path(&resolved_path, current_resolve_base_dir) {
             let external = is_module_external(package_json_info, &resolved_path);
             let side_effects = is_module_side_effects(package_json_info, &resolved_path);
-            println!("resolved_path 最后拿到的: {:?}", resolved_path);
             return Some(PluginResolveHookResult {
               resolved_path,
               external,
@@ -598,13 +597,11 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> PluginResolveHookResult {
     farm_profile_function!("get_resolve_node_modules_result".to_string());
-    println!("开始解析");
     if let Some(package_json_info) = package_json_info {
       let side_effects = is_module_side_effects(package_json_info, &resolved_path);
       if let Some(resolved_path) =
         self.resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
       {
-        println!("resolved_path 最后拿到的: {:?}", resolved_path);
         let current_resolve_base_dir = package_json_info.dir();
         if let Some(first_item) = resolved_path.get(0) {
           let resolved_path = get_result_path(&first_item, current_resolve_base_dir);
@@ -951,8 +948,6 @@ impl Resolver {
       ResolveKind::Require => true,
       _ => false,
     };
-    println!("is_require: {:?}", is_require);
-    println!("additional_conditions: {:?}", additional_conditions);
     let condition_config = ConditionOptions {
       browser: is_browser && !additional_conditions.contains("node"),
       require: is_require && !additional_conditions.contains("import"),
@@ -1022,7 +1017,6 @@ impl Resolver {
           map.insert(".".to_string(), Value::String(string_value.clone()));
         }
         Value::Object(object_value) => {
-          println!("object_value: {:?}", object_value);
           for (k, v) in &object_value {
             if !k.starts_with('.') {
               map.insert(".".to_string(), Value::Object(object_value.clone()));
@@ -1034,7 +1028,6 @@ impl Resolver {
         }
         _ => {}
       }
-      println!("map: {:?}", map);
       if !map.is_empty() {
         return Some(walk(name.as_str().unwrap(), &map, source, config));
       }
