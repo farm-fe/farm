@@ -73,6 +73,7 @@ export class FileWatcher implements ImplFileWatcher {
         }
         const config: UserConfig = await resolveUserConfig(
           this.options.inlineConfig,
+          'serve',
           this._logger
         );
         const normalizedConfig = await normalizeUserCompilationConfig(
