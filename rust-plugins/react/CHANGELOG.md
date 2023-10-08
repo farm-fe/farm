@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.3.1
+
+### Patch Changes
+
+- 5be3aab: Bump version due to update of @farmfe/core
+
 ## 0.3.0
 
 ### Minor Changes

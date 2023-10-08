@@ -10,6 +10,7 @@ import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
 import { existsSync, readFileSync } from 'node:fs';
+import mime from 'mime-types';
 
 export function resources(
   compiler: Compiler,
@@ -52,11 +53,17 @@ export function resources(
 
     const resource = compiler.resources()[finalResourcePath];
 
+    // if resource is image or font, try it in local file system to be compatible with vue
     if (!resource) {
       // try local file system
       const absPath = path.join(compiler.config.config.root, finalResourcePath);
+      const mimeStr = mime.lookup(absPath);
 
-      if (existsSync(absPath)) {
+      if (
+        existsSync(absPath) &&
+        mimeStr &&
+        (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
+      ) {
         ctx.type = extname(resourcePath);
         ctx.body = readFileSync(absPath);
         return;
