@@ -1,4 +1,5 @@
 use std::{
+  collections::BTreeMap,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -35,6 +36,8 @@ pub enum Condition {
   Import,
   Browser,
   Node,
+  Development,
+  Production,
 }
 
 #[derive(Debug)]
@@ -404,7 +407,10 @@ pub fn get_result_path(value: &str, current_resolve_base_dir: &String) -> Option
 pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
   let mut out: HashSet<Condition> = HashSet::new();
   out.insert(Condition::Default);
-
+  // TODO resolver other conditions
+  // for condition in options.conditions.iter() {
+  //   out.insert(condition);
+  // }
   if !options.unsafe_flag {
     if options.require {
       out.insert(Condition::Require);
@@ -418,22 +424,7 @@ pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
       out.insert(Condition::Node);
     }
   }
-
-  out.extend(
-    options
-      .conditions
-      .iter()
-      .cloned()
-      .map(|s| match s.as_str() {
-        "default" => Condition::Default,
-        "require" => Condition::Require,
-        "import" => Condition::Import,
-        "browser" => Condition::Browser,
-        "node" => Condition::Node,
-        _ => panic!("Unknown condition: {}", s),
-      }),
-  );
-
+  println!("conditions: {:?}", out);
   out
 }
 
@@ -478,11 +469,37 @@ pub fn loop_value(
         None
       }
     }
-    Value::Object(map) => {
-      for (key, value) in map {
-        if let Ok(condition) = Condition::from_str(&key) {
-          if keys.contains(&condition) {
-            return loop_value(value, keys, result);
+    Value::Object(mut map) => {
+      let has_default = map.contains_key("default");
+
+      if has_default {
+        // 如果存在 "default" 键，进行顺序修改
+        let mut new_mapping = BTreeMap::new();
+        if let Some(default_value) = map.remove("default") {
+          // 重新构建对象，将 "default" 放在最后
+          new_mapping.extend(map);
+          new_mapping.insert("zzz_default".to_string(), default_value); // 设置一个更大的键名
+          for (key, value) in new_mapping {
+            if key == "zzz_default" {
+              if let Ok(condition) = Condition::from_str(&"default".to_string()) {
+                if keys.contains(&condition) {
+                  return loop_value(value, keys, result);
+                }
+              }
+            } else if let Ok(condition) = Condition::from_str(&key) {
+              if keys.contains(&condition) {
+                return loop_value(value, keys, result);
+              }
+            }
+          }
+        }
+      } else {
+        // 如果不存在 "default" 键，直接使用原始的 map 继续循环
+        for (key, value) in map {
+          if let Ok(condition) = Condition::from_str(&key) {
+            if keys.contains(&condition) {
+              return loop_value(value, keys, result);
+            }
           }
         }
       }
@@ -590,14 +607,11 @@ pub fn walk(
   let entry: String = match entry_result {
     Ok(entry) => entry.to_string(),
     Err(error) => {
-      // 处理错误情况，例如打印错误信息
-      eprintln!("Error getting entry: {}", error);
-      // 返回一个默认值
+      eprintln!("Error resolve {} package error: {}", name, error);
       String::from("default_entry")
     }
   };
   let c: HashSet<Condition> = conditions(options);
-
   let mut m: Option<&Value> = mapping.get(&entry);
   let mut result: Option<Vec<String>> = None;
   let mut replace: Option<String> = None;
@@ -638,18 +652,15 @@ pub fn walk(
     throws(name, &entry, None);
     return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
   }
-
   let v = loop_value(m.unwrap().clone(), &c, None);
 
   if v.is_none() {
     throws(name, &entry, Some(1));
     return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
   }
-
   if let Some(replace) = replace {
     let mut cloned_v = v.clone();
     injects(&mut cloned_v.unwrap(), &replace);
-    // injects(&mut v.unwrap(), &replace);
   }
 
   v.unwrap()

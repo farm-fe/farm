@@ -95,13 +95,9 @@ impl Resolver {
             ..Default::default()
           });
         }
-        // if let Some(resolved_path) =
-        //   self.resolve_sub_path_imports(package_json_info, source, kind, context)
-        // {
-        //   println!("resolved_path: {:?}", resolved_path);
-        // }
-        // check imports replace
-        if let Some(resolved_path) = self.try_imports_replace(package_json_info, source, context) {
+        if let Some(resolved_path) =
+          self.resolve_sub_path_imports(package_json_info, source, kind, context)
+        {
           if Path::new(&resolved_path).extension().is_none() {
             let parent_path = Path::new(&package_json_info.dir())
               .parent()
@@ -109,15 +105,37 @@ impl Resolver {
               .to_path_buf();
             return self.resolve(&resolved_path, parent_path, kind, context);
           }
-          let external = is_module_external(package_json_info, &resolved_path);
-          let side_effects = is_module_side_effects(package_json_info, &resolved_path);
-          return Some(PluginResolveHookResult {
-            resolved_path,
-            external,
-            side_effects,
-            ..Default::default()
-          });
+          let current_resolve_base_dir = package_json_info.dir();
+          if let Some(resolved_path) = get_result_path(&resolved_path, current_resolve_base_dir) {
+            let external = is_module_external(package_json_info, &resolved_path);
+            let side_effects = is_module_side_effects(package_json_info, &resolved_path);
+            println!("resolved_path 最后拿到的: {:?}", resolved_path);
+            return Some(PluginResolveHookResult {
+              resolved_path,
+              external,
+              side_effects,
+              ..Default::default()
+            });
+          }
         }
+        // check imports replace
+        // if let Some(resolved_path) = self.try_imports_replace(package_json_info, source, context) {
+        //   if Path::new(&resolved_path).extension().is_none() {
+        //     let parent_path = Path::new(&package_json_info.dir())
+        //       .parent()
+        //       .unwrap()
+        //       .to_path_buf();
+        //     return self.resolve(&resolved_path, parent_path, kind, context);
+        //   }
+        //   let external = is_module_external(package_json_info, &resolved_path);
+        //   let side_effects = is_module_side_effects(package_json_info, &resolved_path);
+        //   return Some(PluginResolveHookResult {
+        //     resolved_path,
+        //     external,
+        //     side_effects,
+        //     ..Default::default()
+        //   });
+        // }
       }
     }
     // Execution resolve strategy
@@ -862,15 +880,15 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    farm_profile_function!("try_imports_replace".to_string());
+    farm_profile_function!("resolve_sub_path_imports".to_string());
     if source.starts_with('#') {
       if let Some(resolved_path) =
         self.resolve_exports_or_imports(package_json_info, source, "imports", kind, context)
       {
-        println!("resolved_path: {:?}", resolved_path);
+        if let Some(first_item) = resolved_path.into_iter().next() {
+          return Some(first_item);
+        }
       }
-      let imports_field = get_field_value_from_package_json_info(package_json_info, "imports");
-      println!("imports_field: {:?}", imports_field);
     }
 
     None
