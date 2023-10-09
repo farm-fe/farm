@@ -53,6 +53,8 @@ export interface UserConfig {
   publicDir?: string;
   inlineConfig?: FarmCLIOptions;
   configPath?: string;
+  isBuild?: boolean;
+  command?: 'serve' | 'build';
   resolveConfigPath?: string;
   configFileDependencies?: string[];
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */

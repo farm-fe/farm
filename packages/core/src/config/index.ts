@@ -294,11 +294,11 @@ export function normalizeDevServerOptions(
  */
 export async function resolveUserConfig(
   inlineOptions: FarmCLIOptions,
+  command: 'serve' | 'build',
   logger: Logger
 ): Promise<UserConfig> {
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
-
   const { configPath } = inlineOptions;
   if (
     inlineOptions.clearScreen &&
@@ -341,8 +341,14 @@ export async function resolveUserConfig(
     userConfig.root = root;
   }
 
+  userConfig.isBuild = command === 'build';
+  userConfig.command = command;
+
   // check port availability: auto increment the port if a conflict occurs
-  await DevServer.resolvePortConflict(userConfig, logger);
+  const targetWeb =
+    userConfig.compilation?.output?.targetEnv !== 'node' || !userConfig.isBuild;
+
+  targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
   const config = filterUserConfig(userConfig, inlineOptions);
   return config;
