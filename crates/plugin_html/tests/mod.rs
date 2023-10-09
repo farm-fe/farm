@@ -27,6 +27,7 @@ fn html_build_stage() {
           resolved_path: file.to_str().unwrap(),
           query: vec![],
           meta: HashMap::new(),
+          module_id: file.to_string_lossy().to_string(),
         },
         &context,
         &hook_context,

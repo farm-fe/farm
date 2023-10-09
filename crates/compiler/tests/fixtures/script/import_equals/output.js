@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "d2214aaa": function(module, exports, farmRequire, dynamicRequire) {
+    "d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -24,10 +24,10 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "363fc137": function(module, exports, farmRequire, dynamicRequire) {
+    "363fc137": function(module, exports, farmRequire, farmDynamicRequire) {
         console.log("utils.js");
     },
-    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -46,7 +46,7 @@ var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "e4b1dea3": function(module, exports, farmRequire, dynamicRequire) {
+    "e4b1dea3": function(module, exports, farmRequire, farmDynamicRequire) {
         console.log("fs-extra");
     }
 });

@@ -22,8 +22,11 @@ pub fn parse(
     Ok(meta) => match meta {
       Some(meta) => Ok(meta),
       None => Err(CompilationError::ParseError {
-        resolved_path: parse_param.resolved_path.clone(),
-        msg: "No plugins handle this kind of module".to_string(),
+        resolved_path: parse_param.module_id.to_string(),
+        msg: format!(
+          "No plugins handle this kind of module: {:?}",
+          parse_param.module_type
+        ),
       }),
     },
     Err(e) => Err(e),

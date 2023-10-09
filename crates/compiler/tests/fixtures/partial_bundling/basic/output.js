@@ -5,7 +5,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "01609b59": function(module, exports, farmRequire, dynamicRequire) {
+    "01609b59": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -40,7 +40,7 @@
     }
     require(entryModule);
 })({
-    "d2214aaa": function(module, exports, farmRequire, dynamicRequire) {
+    "d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -51,7 +51,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -76,7 +76,7 @@
             });
             return config;
         }
-        dynamicRequire("01609b59").then((debounce)=>{
+        farmDynamicRequire("01609b59").then((debounce)=>{
             console.log(debounce);
         });
         var _default = defineConfig({});
@@ -91,7 +91,7 @@ var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "a5831d05": function(module, exports, farmRequire, dynamicRequire) {
+    "a5831d05": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -116,7 +116,7 @@ var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "726cd210": function(module, exports, farmRequire, dynamicRequire) {
+    "726cd210": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true

@@ -51,7 +51,7 @@ export function resources(
       finalResourcePath = resourcePath.slice(base.length);
     }
 
-    const resource = compiler.resources()[finalResourcePath];
+    const resource = compiler.resource(finalResourcePath);
 
     // if resource is image or font, try it in local file system to be compatible with vue
     if (!resource) {

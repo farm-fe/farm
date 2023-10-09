@@ -5,7 +5,11 @@ import {
   type UserConfig,
   normalizeDevServerOptions
 } from '../../index.js';
-import { VITE_PLUGIN_DEFAULT_MODULE_TYPE } from './utils.js';
+import {
+  DEFAULT_FILTERS,
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
+  getCssModuleType
+} from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 import { existsSync, readFileSync } from 'node:fs';
 
@@ -28,7 +32,7 @@ export function handleVitePlugins(
 
   for (const vitePluginObj of vitePlugins) {
     let vitePlugin = vitePluginObj,
-      filters = ['.*'];
+      filters = DEFAULT_FILTERS;
 
     if (typeof vitePluginObj === 'function') {
       const { vitePlugin: plugin, filters: f } = vitePluginObj();
@@ -36,16 +40,29 @@ export function handleVitePlugins(
       filters = f;
     }
 
-    const vitePluginAdapter = new VitePluginAdapter(
-      vitePlugin as any,
-      userConfig,
-      filters
-    );
-    convertPlugin(vitePluginAdapter);
-    jsPlugins.push(vitePluginAdapter);
+    if (Array.isArray(vitePlugin)) {
+      for (const plugin of vitePlugin) {
+        const vitePluginAdapter = new VitePluginAdapter(
+          plugin as any,
+          userConfig,
+          filters
+        );
+        convertPlugin(vitePluginAdapter);
+        jsPlugins.push(vitePluginAdapter);
+      }
+    } else {
+      const vitePluginAdapter = new VitePluginAdapter(
+        vitePlugin as any,
+        userConfig,
+        filters
+      );
+      convertPlugin(vitePluginAdapter);
+      jsPlugins.push(vitePluginAdapter);
+    }
   }
 
-  // if vitePlugins is not empty, append a load plugin to load files as js
+  // if vitePlugins is not empty, append a load plugin to load file
+  // this plugin is only for compatibility
   if (vitePlugins.length) {
     jsPlugins.push({
       name: 'farm:load',
@@ -53,13 +70,17 @@ export function handleVitePlugins(
       priority: 0,
       load: {
         filters: {
-          resolvedPaths: ['.*']
+          resolvedPaths: DEFAULT_FILTERS
         },
         executor: async (params) => {
-          const { resolvedPath } = params;
+          const { resolvedPath, meta } = params;
 
-          if (!existsSync(resolvedPath)) {
-            console.log('load', params);
+          // skip lazy compiled module and non-exist file
+          if (
+            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath, meta) ||
+            !existsSync(resolvedPath)
+          ) {
+            return null;
           }
 
           const content = readFileSync(resolvedPath, 'utf-8');
@@ -67,6 +88,43 @@ export function handleVitePlugins(
           return {
             content,
             moduleType: VITE_PLUGIN_DEFAULT_MODULE_TYPE
+          };
+        }
+      },
+      transform: {
+        filters: {
+          resolvedPaths: DEFAULT_FILTERS,
+          moduleTypes: []
+        },
+        executor: async (params) => {
+          const { content, moduleId, moduleType, resolvedPath, meta } = params;
+
+          // skip lazy compiled module and non-exist file
+          if (
+            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath, meta)
+          ) {
+            return null;
+          }
+          const cssModules = finalConfig?.css?.modules?.paths ?? [
+            '\\.module\\.(css|less|sass|scss)$'
+          ];
+          // skip css module because it will be handled by Farm
+          const isCssModules = cssModules.some((reg) =>
+            new RegExp(reg).test(moduleId)
+          );
+
+          // treat all scss/less/.etc lang as css
+          // plugin should handle css module by itself
+          if (getCssModuleType(moduleId) && !isCssModules) {
+            return {
+              content,
+              moduleType: 'css'
+            };
+          }
+
+          return {
+            content,
+            moduleType
           };
         }
       }

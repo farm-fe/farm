@@ -15,7 +15,6 @@ use farmfe_core::{
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
   },
-  regex::Regex,
   resource::{
     resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -70,9 +69,7 @@ impl Plugin for FarmPluginRuntime {
       0,
       PartialBundlingEnforceResourceConfig {
         name: "FARM_RUNTIME".to_string(),
-        test: vec![ConfigRegex(
-          Regex::new(&format!(".+{}", RUNTIME_SUFFIX)).unwrap(),
-        )],
+        test: vec![ConfigRegex::new(&format!(".+{}", RUNTIME_SUFFIX))],
       },
     );
 

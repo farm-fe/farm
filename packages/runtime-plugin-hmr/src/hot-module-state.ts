@@ -9,7 +9,7 @@ const REGISTERED_HOT_MODULES = new Map<string, HotModuleState>();
 
 export class HotModuleState {
   acceptCallbacks: Array<() => void> = [];
-
+  data = {};
   id: string;
 
   constructor(id: string) {

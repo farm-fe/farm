@@ -7,10 +7,7 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
   hashbrown::HashMap,
-  module::{
-    module_graph::{self, ModuleGraph},
-    CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
@@ -34,7 +31,7 @@ use farmfe_toolkit::{
   swc_css_prefixer,
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
-use farmfe_utils::{parse_query, stringify_query};
+use farmfe_utils::parse_query;
 use source_replacer::SourceReplacer;
 use transform_resource_pot::transform_css_resource_pot;
 
@@ -149,11 +146,7 @@ impl Plugin for FarmPluginCss {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let module_id = ModuleId::new(
-        param.resolved_path,
-        &stringify_query(&param.query),
-        &context.config.root,
-      );
+      let module_id: ModuleId = param.module_id.clone().into();
       let enable_css_modules = context.config.css.modules.is_some();
 
       // real css modules code
