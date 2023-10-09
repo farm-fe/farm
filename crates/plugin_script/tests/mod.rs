@@ -36,6 +36,7 @@ fn load_parse_and_analyze_deps() {
           resolved_path: &id,
           query: vec![],
           meta: HashMap::new(),
+          module_id: id.clone(),
         },
         &context,
         &hook_context,

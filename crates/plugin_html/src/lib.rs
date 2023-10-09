@@ -83,6 +83,7 @@ impl Plugin for FarmPluginHtml {
               .unwrap(),
             query: vec![],
             meta: std::collections::HashMap::new(),
+            module_id: param.module_id.clone(),
           },
           context,
           &PluginHookContext::default(),

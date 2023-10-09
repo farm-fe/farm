@@ -85,8 +85,9 @@ export class ModuleSystem {
       if (targetEnv === 'node') {
         return __farmNodeRequire(moduleId);
       }
-
-      throw new Error(`Module "${moduleId}" is not registered`);
+      // return a empty module if the module is not registered
+      return {};
+      // throw new Error(`Module "${moduleId}" is not registered`);
     }
 
     // create a full new module instance and store it in cache to avoid cyclic initializing
@@ -142,8 +143,13 @@ export class ModuleSystem {
       })
       .catch((err) => {
         console.error(`[Farm] Error loading dynamic module "${moduleId}"`, err);
-        // reload the page if the dynamic module loading failed
-        window.location.reload();
+
+        if (process.env.NODE_ENV === 'production') {
+          // reload the page if the dynamic module loading failed
+          window.location.reload();
+        } else {
+          throw err;
+        }
       });
   }
 

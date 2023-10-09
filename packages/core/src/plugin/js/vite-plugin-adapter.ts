@@ -11,7 +11,8 @@ import {
   encodeStr,
   decodeStr
 } from './utils.js';
-import { DevServer, UserConfig } from '../../index.js';
+import type { UserConfig } from '../../config/types.js';
+import type { DevServer } from '../../server/index.js';
 
 // only use types from vite and we do not install vite as a dependency
 import type {
@@ -90,10 +91,37 @@ export class VitePluginAdapter implements JsPlugin {
     this.buildEnd = this.viteBuildEndToFarmBuildEnd();
     this.finish = this.viteCloseBundleToFarmFinish();
     this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules();
+
+    // if other unsupported vite plugins hooks are used, throw error
+    const unsupportedHooks = [
+      'transformIndexHtml',
+      'renderChunk',
+      'argumentChunkHash',
+      'generateBundle',
+      'writeBundle',
+      'renderError',
+      'resolveDynamicImport',
+      'resolveFileUrl',
+      'resolveImportMeta',
+      'transformIndexHtml',
+      'shouldTransformCachedModule',
+      'banner',
+      'footer',
+      'watchChange',
+      'renderStart'
+    ];
+
+    for (const hookName of unsupportedHooks) {
+      if (this._rawPlugin[hookName as keyof Plugin]) {
+        throw new Error(
+          `Vite plugin ${this.name} is not compatible with Farm for now. Because it uses hook "${hookName}" which is not supported by Farm.`
+        );
+      }
+    }
   }
 
   // call both config and configResolved
-  config(config: UserConfig['compilation']) {
+  async config(config: UserConfig['compilation']) {
     this._farmConfig.compilation = config;
     this._viteConfig = farmConfigToViteConfig(this._farmConfig);
 
@@ -106,7 +134,7 @@ export class VitePluginAdapter implements JsPlugin {
       this._viteConfig = proxyViteConfig(
         merge(
           this._viteConfig,
-          configHook(
+          await configHook(
             proxyViteConfig(this._viteConfig, this.name),
             this.get_vite_config_env()
           )
@@ -126,13 +154,13 @@ export class VitePluginAdapter implements JsPlugin {
     );
 
     if (configResolvedHook) {
-      configResolvedHook(this._viteConfig);
+      await configResolvedHook(this._viteConfig);
     }
 
     return this._farmConfig.compilation;
   }
 
-  configDevServer(_: DevServer) {
+  async configDevServer(devServer: DevServer) {
     const hook = this.wrap_raw_plugin_hook(
       'configureServer',
       this._rawPlugin.configureServer
@@ -144,7 +172,12 @@ export class VitePluginAdapter implements JsPlugin {
     );
 
     if (hook) {
-      hook(this._viteDevServer);
+      await hook(this._viteDevServer);
+      this._viteDevServer.middlewareCallbacks.forEach((cb) => {
+        devServer.app().use((ctx, next) => {
+          return cb(ctx.req, ctx.res, next);
+        });
+      });
     }
   }
 
@@ -220,7 +253,7 @@ export class VitePluginAdapter implements JsPlugin {
           this._rawPlugin.buildStart,
           context
         );
-        hook?.();
+        return hook?.();
       })
     };
   }
@@ -235,8 +268,9 @@ export class VitePluginAdapter implements JsPlugin {
         ): Promise<PluginResolveHookResult> => {
           if (
             params.importer &&
-            this.isFarmLazyCompilationVirtualModule(
-              params.importer.relativePath
+            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
+              params.importer.relativePath,
+              null
             )
           ) {
             return null;
@@ -269,7 +303,6 @@ export class VitePluginAdapter implements JsPlugin {
               query: customParseQueryString(resolveIdResult),
               sideEffects: false,
               external: false,
-              // TODO support meta
               meta: {}
             };
           } else if (isObject(resolveIdResult)) {
@@ -279,7 +312,7 @@ export class VitePluginAdapter implements JsPlugin {
               sideEffects: Boolean(resolveIdResult?.moduleSideEffects),
               // TODO support relative and absolute external
               external: Boolean(resolveIdResult?.external),
-              meta: {}
+              meta: resolveIdResult.meta ?? {}
             };
           }
           return null;
@@ -299,7 +332,12 @@ export class VitePluginAdapter implements JsPlugin {
           params: PluginLoadHookParam,
           context: CompilationContext
         ): Promise<PluginLoadHookResult> => {
-          if (this.isFarmLazyCompilationVirtualModule(params.resolvedPath)) {
+          if (
+            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
+              params.resolvedPath,
+              params.meta
+            )
+          ) {
             return null;
           }
 
@@ -340,10 +378,15 @@ export class VitePluginAdapter implements JsPlugin {
           params: PluginTransformHookParam,
           context: CompilationContext
         ): Promise<PluginTransformHookResult> => {
-          if (this.isFarmLazyCompilationVirtualModule(params.resolvedPath)) {
+          if (
+            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
+              params.resolvedPath,
+              params.meta
+            )
+          ) {
             return null;
           }
-          console.log('transform', params.resolvedPath);
+
           const hook = this.wrap_raw_plugin_hook(
             'transform',
             this._rawPlugin.transform,
@@ -354,6 +397,7 @@ export class VitePluginAdapter implements JsPlugin {
           const resolvedPath = decodeStr(params.resolvedPath);
           // append query
           const id = formatId(resolvedPath, params.query);
+
           const result = await hook?.(
             params.content,
             id,
@@ -368,7 +412,7 @@ export class VitePluginAdapter implements JsPlugin {
                   ? JSON.stringify(result.map)
                   : undefined,
               moduleType: formatTransformModuleType(id)
-              // TODO support meta, sourcemap and sideEffects
+              // TODO support meta and sideEffects
             };
           }
         }
@@ -384,7 +428,7 @@ export class VitePluginAdapter implements JsPlugin {
           this._rawPlugin.buildEnd,
           context
         );
-        hook?.();
+        return hook?.();
       })
     };
   }
@@ -396,7 +440,7 @@ export class VitePluginAdapter implements JsPlugin {
           'closeBundle',
           this._rawPlugin.closeBundle
         );
-        hook?.();
+        return hook?.();
       })
     };
   }
@@ -444,7 +488,13 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // skip farm lazy compilation virtual module for vite plugin
-  private isFarmLazyCompilationVirtualModule(id: string) {
-    return id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX);
+  public static isFarmLazyCompilationVirtualModule(
+    id: string,
+    meta: Record<string, string> | null
+  ) {
+    return (
+      id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) &&
+      !meta?.FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH
+    );
   }
 }

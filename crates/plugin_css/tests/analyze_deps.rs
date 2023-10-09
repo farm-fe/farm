@@ -23,6 +23,7 @@ fn analyze_deps() {
           resolved_path: &file.to_string_lossy(),
           query: vec![],
           meta: HashMap::new(),
+          module_id: file.to_string_lossy().to_string(),
         },
         &context,
         &PluginHookContext::default(),

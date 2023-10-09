@@ -53,6 +53,7 @@ export interface PluginResolveHookResult {
 }
 
 export interface PluginLoadHookParam {
+  moduleId: string;
   resolvedPath: string;
   query: [string, string][];
   meta: Record<string, string> | null;
@@ -67,6 +68,7 @@ export interface PluginLoadHookResult {
 }
 
 export interface PluginTransformHookParam {
+  moduleId: string;
   /// source content after load or transformed result of previous plugin
   content: string;
   /// module type after load

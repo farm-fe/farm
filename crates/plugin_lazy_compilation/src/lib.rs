@@ -8,6 +8,7 @@ use farmfe_core::{
 use farmfe_utils::stringify_query;
 
 const DYNAMIC_VIRTUAL_PREFIX: &str = "virtual:FARMFE_DYNAMIC_IMPORT:";
+const ORIGINAL_RESOLVED_PATH: &str = "FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH";
 
 pub struct FarmPluginLazyCompilation {}
 
@@ -76,11 +77,12 @@ impl Plugin for FarmPluginLazyCompilation {
       )?;
 
       if let Some(mut resolve_result) = resolve_result {
+        resolve_result.meta.insert(
+          ORIGINAL_RESOLVED_PATH.to_string(),
+          resolve_result.resolved_path.clone(),
+        );
         resolve_result.resolved_path =
           format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resolve_result.resolved_path);
-        resolve_result
-          .meta
-          .insert("original".to_string(), original_path);
 
         return Ok(Some(resolve_result));
       } else {
@@ -89,10 +91,7 @@ impl Plugin for FarmPluginLazyCompilation {
           external: false,
           side_effects: false,
           query: vec![],
-          meta: HashMap::from([(
-            "original".to_string(),
-            param.source.replace(DYNAMIC_VIRTUAL_PREFIX, ""),
-          )]),
+          meta: HashMap::from([(ORIGINAL_RESOLVED_PATH.to_string(), original_path)]),
         }));
       }
     }
@@ -136,7 +135,7 @@ impl Plugin for FarmPluginLazyCompilation {
     }
 
     if param.resolved_path.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
-      if param.meta.get("original").is_none() {
+      if param.meta.get(ORIGINAL_RESOLVED_PATH).is_none() {
         let resolved_path = param.resolved_path;
         let dynamic_code = include_str!("dynamic_module.ts")
           .replace("MODULE_PATH", &resolved_path.replace('\\', r"\\"))
@@ -160,10 +159,11 @@ impl Plugin for FarmPluginLazyCompilation {
           module_type: farmfe_core::module::ModuleType::Ts,
         }))
       } else {
-        let resolved_path = param.meta.get("original").unwrap();
+        let resolved_path = param.meta.get(ORIGINAL_RESOLVED_PATH).unwrap();
         context.plugin_driver.load(
           &farmfe_core::plugin::PluginLoadHookParam {
             resolved_path,
+            module_id: param.module_id.clone(),
             query: param.query.clone(),
             meta: param.meta.clone(),
           },

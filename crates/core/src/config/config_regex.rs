@@ -53,11 +53,11 @@ impl ConfigRegex {
 
   fn parse_str(ss: &str) -> (&str, bool) {
     let mut is_not = false;
-    let s = if ss.starts_with("!") {
+    let s = if let Some(stripped) = ss.strip_prefix('!') {
       is_not = true;
-      &ss[1..]
+      stripped
     } else {
-      &ss
+      ss
     };
     (s, is_not)
   }

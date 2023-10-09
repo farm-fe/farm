@@ -25,6 +25,7 @@ fn load_json() {
           resolved_path: &id,
           query: vec![],
           meta: HashMap::new(),
+          module_id: id.clone(),
         },
         &context,
         &hook_context,

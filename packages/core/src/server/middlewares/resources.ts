@@ -51,11 +51,8 @@ export function resources(
       finalResourcePath = resourcePath.slice(base.length);
     }
 
-    console.log('serve', finalResourcePath);
-    const start = Date.now();
     const resource = compiler.resource(finalResourcePath);
 
-    console.log('done in', Date.now() - start, 'ms', 'serve');
     // if resource is image or font, try it in local file system to be compatible with vue
     if (!resource) {
       // try local file system

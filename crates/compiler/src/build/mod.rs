@@ -184,6 +184,7 @@ impl Compiler {
       resolved_path: &resolve_result.resolved_path,
       query: resolve_result.query.clone(),
       meta: resolve_result.meta.clone(),
+      module_id: module.id.to_string(),
     };
 
     let load_result = call_and_catch_error!(load, &load_param, context, &hook_context);
@@ -232,6 +233,7 @@ impl Compiler {
       module_type: load_result.module_type.clone(),
       query: resolve_result.query.clone(),
       meta: resolve_result.meta.clone(),
+      module_id: module.id.to_string(),
     };
 
     let mut transform_result = call_and_catch_error!(transform, transform_param, context);

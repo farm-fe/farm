@@ -7,6 +7,15 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
-  // plugins: [vue()],
-  vitePlugins: [() => ({ vitePlugin: vue(), filters: ['.vue$', '.*plugin-vue:export-helper'] })]
+  // plugins: [vue(), {
+  //   name: 'test-plugin',
+  //   load: {
+  //     filters: { resolvedPaths: ['.*'] },
+  //     executor(params, context) {
+  //       console.log(params.resolvedPath);
+  //       console.log(context?.viteGetModulesByFile(params.resolvedPath));
+  //     }
+  //   }
+  // }],
+  vitePlugins: [vue()]
 });

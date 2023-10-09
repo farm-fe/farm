@@ -76,6 +76,8 @@ export const JS_LANGS_RES: [RegExp, string][] = [
   [/\.(tsx)(?:$|\?)/, 'tsx']
 ];
 
+export const DEFAULT_FILTERS = ['!node_modules'];
+
 export const stringifyQuery = (query: [string, string][]) => {
   if (!query.length) {
     return '';

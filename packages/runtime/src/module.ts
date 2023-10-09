@@ -9,7 +9,9 @@ export class Module {
   constructor(id: string) {
     this.id = id;
     this.exports = {};
-    this.meta = {};
+    this.meta = {
+      env: {}
+    };
   }
 
   onDispose(callback: () => void) {

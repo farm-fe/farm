@@ -1,4 +1,4 @@
-import { watch } from 'chokidar';
+// import { watch } from 'chokidar';
 import { CompilationContext } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
@@ -7,12 +7,49 @@ export class ViteDevServerAdapter {
   config: any;
   pluginName: string;
   watcher: any;
+  middlewares: any;
+  middlewareCallbacks: any[];
 
   constructor(pluginName: string, config: any) {
     this.moduleGraph = createViteModuleGraphAdapter(pluginName);
     this.config = config;
     this.pluginName = pluginName;
-    this.watcher = watch(config.root);
+    // watcher is not used in Farm vite plugin for now
+    // it's only for compatibility
+    // this.watcher = watch(config.root);
+    this.watcher = {
+      add: () => {
+        // do nothing
+      },
+      on: () => {
+        // do nothing
+      },
+      close: () => {
+        // do nothing
+      }
+    };
+    this.middlewareCallbacks = [];
+    this.middlewares = new Proxy(
+      {
+        use: (cb: (...args: any[]) => any) => {
+          this.middlewareCallbacks.push(cb);
+        }
+      },
+      {
+        get(target, key) {
+          if (key === 'use') {
+            return target[key as keyof typeof target];
+          }
+
+          throwIncompatibleError(
+            pluginName,
+            'viteDevServer.middlewares',
+            ['use'],
+            key
+          );
+        }
+      }
+    );
   }
 }
 
@@ -27,30 +64,27 @@ export class ViteModuleGraphAdapter {
     file: string
   ): ReturnType<CompilationContext['viteGetModulesByFile']> {
     const raw = this.context.viteGetModulesByFile(file);
-    const _content = this.context;
+    const _context = this.context;
 
     return raw.map((item) => {
       const proxy = new Proxy(item, {
         get(target, key) {
           if (key === 'importers') {
-            return _content.viteGetImporters(target.id);
+            return _context.viteGetImporters(target.id);
           }
 
           const allowedKeys = ['url', 'id', 'file', 'type'];
 
           if (allowedKeys.includes(String(key))) {
             return target[key as keyof typeof target];
-          } else {
-            throw new Error(
-              `Vite plugin '${
-                this.pluginName
-              }' is not compatible with Farm for now. Because it uses viteModuleNode['${String(
-                key
-              )}'] which is not supported by Farm. \n Current supported keys are: ${allowedKeys.join(
-                ','
-              )}`
-            );
           }
+
+          throwIncompatibleError(
+            this.pluginName,
+            'viteModuleNode',
+            allowedKeys,
+            key
+          );
         }
       });
 
@@ -62,7 +96,13 @@ export class ViteModuleGraphAdapter {
 export function createViteDevServerAdapter(pluginName: string, config: any) {
   const proxy = new Proxy(new ViteDevServerAdapter(pluginName, config), {
     get(target, key) {
-      const allowedKeys = ['moduleGraph', 'config', 'watcher'];
+      const allowedKeys = [
+        'moduleGraph',
+        'config',
+        'watcher',
+        'middlewares',
+        'middlewareCallbacks'
+      ];
       if (allowedKeys.includes(String(key))) {
         return target[key as keyof typeof target];
       }
