@@ -107,7 +107,6 @@ export class VitePluginAdapter implements JsPlugin {
       'shouldTransformCachedModule',
       'banner',
       'footer',
-      'watchChange',
       'renderStart'
     ];
 
