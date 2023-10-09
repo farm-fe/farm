@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 0.13.2
+
+### Patch Changes
+
+- 509bac0: Fix that vite plugin is not compatible with Farm's lazy compilation
+- Updated dependencies [509bac0]
+- Updated dependencies [509bac0]
+  - @farmfe/runtime@0.7.2
+  - @farmfe/runtime-plugin-hmr@3.2.4
+
 ## 0.13.1
 
 ### Patch Changes

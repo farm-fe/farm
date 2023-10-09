@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-postcss
 
+## 1.0.4
+
+### Patch Changes
+
+- 509bac0: Fix HMR runtime does not has 'data' property
+- Updated dependencies [509bac0]
+  - @farmfe/core@0.13.2
+
 ## 1.0.3
 
 ### Patch Changes
