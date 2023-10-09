@@ -9,7 +9,8 @@ import {
   isObject,
   isString,
   encodeStr,
-  decodeStr
+  decodeStr,
+  FARM_CSS_MODULE_SUFFIX
 } from './utils.js';
 import type { UserConfig } from '../../config/types.js';
 import type { DevServer } from '../../server/index.js';
@@ -267,7 +268,7 @@ export class VitePluginAdapter implements JsPlugin {
         ): Promise<PluginResolveHookResult> => {
           if (
             params.importer &&
-            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
+            VitePluginAdapter.isFarmInternalVirtualModule(
               params.importer.relativePath,
               null
             )
@@ -332,7 +333,7 @@ export class VitePluginAdapter implements JsPlugin {
           context: CompilationContext
         ): Promise<PluginLoadHookResult> => {
           if (
-            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
+            VitePluginAdapter.isFarmInternalVirtualModule(
               params.resolvedPath,
               params.meta
             )
@@ -378,7 +379,7 @@ export class VitePluginAdapter implements JsPlugin {
           context: CompilationContext
         ): Promise<PluginTransformHookResult> => {
           if (
-            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
+            VitePluginAdapter.isFarmInternalVirtualModule(
               params.resolvedPath,
               params.meta
             )
@@ -487,13 +488,14 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // skip farm lazy compilation virtual module for vite plugin
-  public static isFarmLazyCompilationVirtualModule(
+  public static isFarmInternalVirtualModule(
     id: string,
     meta: Record<string, string> | null
   ) {
     return (
-      id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) &&
-      !meta?.FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH
+      (id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) &&
+        !meta?.FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH) ||
+      FARM_CSS_MODULE_SUFFIX.test(id)
     );
   }
 }

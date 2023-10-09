@@ -77,10 +77,7 @@ export function handleVitePlugins(
 
           // skip lazy compiled module and non-exist file
           if (
-            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
-              resolvedPath,
-              meta
-            ) ||
+            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath, meta) ||
             !existsSync(resolvedPath)
           ) {
             return null;
@@ -104,17 +101,21 @@ export function handleVitePlugins(
 
           // skip lazy compiled module and non-exist file
           if (
-            VitePluginAdapter.isFarmLazyCompilationVirtualModule(
-              resolvedPath,
-              meta
-            )
+            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath, meta)
           ) {
             return null;
           }
+          const cssModules = finalConfig?.css?.modules?.paths ?? [
+            '\\.module\\.(css|less|sass|scss)$'
+          ];
+          // skip css module because it will be handled by Farm
+          const isCssModules = cssModules.some((reg) =>
+            new RegExp(reg).test(moduleId)
+          );
 
           // treat all scss/less/.etc lang as css
           // plugin should handle css module by itself
-          if (getCssModuleType(moduleId)) {
+          if (getCssModuleType(moduleId) && !isCssModules) {
             return {
               content,
               moduleType: 'css'

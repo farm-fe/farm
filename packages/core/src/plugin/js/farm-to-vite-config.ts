@@ -84,8 +84,11 @@ export function proxyViteConfig(
         'isProduction',
         'css',
         'build',
-        // farm do not set any thing for legacy, it should always be undefined
-        'legacy'
+        // these fields are always undefined in farm
+        // they are only used for compatibility
+        'legacy',
+        'optimizeDeps',
+        'ssr'
       ];
 
       if (allowedKeys.includes(String(key))) {
@@ -254,8 +257,9 @@ export function viteConfigToFarmConfig(
           any
         >;
       } else {
-        throw new Error(
-          `Vite plugin ${pluginName} is not compatible with Farm for now. Because resolve.alias(called by hook ${pluginName}.config) is not supported in Farm`
+        // TODO support array alias
+        console.warn(
+          `[vite-plugin] ${pluginName}: farm do not support array 'resolve.alias', it will be ignored. you should transform it to farm's alias manually for now.`
         );
       }
     }

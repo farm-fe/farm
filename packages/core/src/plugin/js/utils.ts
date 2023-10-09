@@ -78,6 +78,8 @@ export const JS_LANGS_RES: [RegExp, string][] = [
 
 export const DEFAULT_FILTERS = ['!node_modules'];
 
+export const FARM_CSS_MODULE_SUFFIX = /\.FARM_CSS_MODULES(?:$|\?)/;
+
 export const stringifyQuery = (query: [string, string][]) => {
   if (!query.length) {
     return '';

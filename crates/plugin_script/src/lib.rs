@@ -19,9 +19,7 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{comments::NoopComments, Mark, GLOBALS},
-  swc_ecma_ast::{
-    CallExpr, Callee, Expr, ExprStmt, Ident, MemberExpr, MemberProp, ModuleItem, Stmt,
-  },
+  swc_ecma_ast::ModuleItem,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -244,45 +242,18 @@ impl Plugin for FarmPluginScript {
 
     // transform `import.meta.xxx` to `module.meta.xxx`
     let ast = &mut param.module.meta.as_script_mut().ast;
-    ast.visit_mut_with(&mut ImportMetaVisitor {});
+    let mut import_meta_v = ImportMetaVisitor::new();
+    ast.visit_mut_with(&mut import_meta_v);
 
-    let ast = &param.module.meta.as_script().ast;
-    // detect hmr based on `module.meta.hot.accept()`
-    for item in ast.body.iter() {
-      if let ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-        expr:
-          box Expr::Call(CallExpr {
-            callee:
-              Callee::Expr(box Expr::Member(MemberExpr {
-                obj:
-                  box Expr::Member(MemberExpr {
-                    obj:
-                      box Expr::Member(MemberExpr {
-                        obj: box Expr::Ident(Ident { sym: module, .. }),
-                        prop: MemberProp::Ident(Ident { sym: meta, .. }),
-                        ..
-                      }),
-                    prop: MemberProp::Ident(Ident { sym: hot, .. }),
-                    ..
-                  }),
-                prop: MemberProp::Ident(Ident { sym: accept, .. }),
-                ..
-              })),
-            ..
-          }),
-        ..
-      })) = item
-      {
-        if &module.to_string() == "module"
-          && &meta.to_string() == "meta"
-          && &hot.to_string() == "hot"
-          && &accept.to_string() == "accept"
-        {
-          param.module.meta.as_script_mut().hmr_accepted = true;
-          break;
-        }
-      }
-    }
+    let mut hmr_accepted_v = import_meta_visitor::HmrAcceptedVisitor::new();
+    ast.visit_mut_with(&mut hmr_accepted_v);
+    param.module.meta.as_script_mut().hmr_accepted = hmr_accepted_v.is_hmr_accepted;
+
+    println!(
+      "hmr_accepted: {:?} {}",
+      param.module.id.to_string(),
+      hmr_accepted_v.is_hmr_accepted
+    );
 
     Ok(None)
   }
