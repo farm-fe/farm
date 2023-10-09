@@ -69,13 +69,36 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
-    // TODO check browser fields
-    // check if module is external
     if let Ok(package_json_info) = &package_json_info {
-      farm_profile_scope!("resolve.check_external".to_string());
+      // check source start_with "#" prepare resolve imports fields
+      if let Some(resolved_path) =
+        self.resolve_sub_path_imports(package_json_info, source, kind, context)
+      {
+        if Path::new(&resolved_path).extension().is_none() {
+          let parent_path = Path::new(&package_json_info.dir())
+            .parent()
+            .unwrap()
+            .to_path_buf();
+          return self.resolve(&resolved_path, parent_path, kind, context);
+        }
+        let current_resolve_base_dir = package_json_info.dir();
+        if let Some(resolved_path) = get_result_path(&resolved_path, current_resolve_base_dir) {
+          let external = is_module_external(package_json_info, &resolved_path);
+          let side_effects = is_module_side_effects(package_json_info, &resolved_path);
+          return Some(PluginResolveHookResult {
+            resolved_path,
+            external,
+            side_effects,
+            ..Default::default()
+          });
+        }
+      }
+
+      // check if module is external
       let is_source_module_external = is_module_external(package_json_info, source);
       if !is_source_absolute(source) && !is_source_relative(source) && is_source_module_external {
         // this is an external module
+        farm_profile_scope!("resolve.check_external".to_string());
         return Some(PluginResolveHookResult {
           resolved_path: String::from(source),
           external: true,
@@ -95,46 +118,6 @@ impl Resolver {
             ..Default::default()
           });
         }
-        if let Some(resolved_path) =
-          self.resolve_sub_path_imports(package_json_info, source, kind, context)
-        {
-          if Path::new(&resolved_path).extension().is_none() {
-            let parent_path = Path::new(&package_json_info.dir())
-              .parent()
-              .unwrap()
-              .to_path_buf();
-            return self.resolve(&resolved_path, parent_path, kind, context);
-          }
-          let current_resolve_base_dir = package_json_info.dir();
-          if let Some(resolved_path) = get_result_path(&resolved_path, current_resolve_base_dir) {
-            let external = is_module_external(package_json_info, &resolved_path);
-            let side_effects = is_module_side_effects(package_json_info, &resolved_path);
-            return Some(PluginResolveHookResult {
-              resolved_path,
-              external,
-              side_effects,
-              ..Default::default()
-            });
-          }
-        }
-        // check imports replace
-        // if let Some(resolved_path) = self.try_imports_replace(package_json_info, source, context) {
-        //   if Path::new(&resolved_path).extension().is_none() {
-        //     let parent_path = Path::new(&package_json_info.dir())
-        //       .parent()
-        //       .unwrap()
-        //       .to_path_buf();
-        //     return self.resolve(&resolved_path, parent_path, kind, context);
-        //   }
-        //   let external = is_module_external(package_json_info, &resolved_path);
-        //   let side_effects = is_module_side_effects(package_json_info, &resolved_path);
-        //   return Some(PluginResolveHookResult {
-        //     resolved_path,
-        //     external,
-        //     side_effects,
-        //     ..Default::default()
-        //   });
-        // }
       }
     }
     // Execution resolve strategy
@@ -599,42 +582,26 @@ impl Resolver {
     farm_profile_function!("get_resolve_node_modules_result".to_string());
     if let Some(package_json_info) = package_json_info {
       let side_effects = is_module_side_effects(package_json_info, &resolved_path);
-      if let Some(resolved_path) =
-        self.resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
-      {
-        let current_resolve_base_dir = package_json_info.dir();
-        if let Some(first_item) = resolved_path.get(0) {
-          let resolved_path = get_result_path(&first_item, current_resolve_base_dir);
-          let resolved_path_buf = PathBuf::from(resolved_path.clone().unwrap());
-          let resolved_path_result = try_file(&resolved_path_buf, context)
-            .or_else(|| self.try_directory(&resolved_path_buf, source, kind, true, context))
-            .unwrap_or(resolved_path.unwrap());
-
-          return PluginResolveHookResult {
-            resolved_path: resolved_path_result,
-            side_effects,
-            ..Default::default()
-          };
-        }
+      let resolve_exports_path = self
+        .resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
+        .unwrap_or(vec![resolved_path.clone()]);
+      let current_resolve_base_dir = package_json_info.dir();
+      let resolved_path_buf: PathBuf;
+      let resolved_id = resolve_exports_path.get(0).unwrap();
+      if is_source_absolute(&resolved_id) {
+        resolved_path_buf = PathBuf::from(resolved_id);
+      } else {
+        let resolved_full_id = get_result_path(&resolved_id, current_resolve_base_dir);
+        resolved_path_buf = PathBuf::from(resolved_full_id.clone().unwrap());
       }
-      PluginResolveHookResult {
+      let resolved_path = try_file(&resolved_path_buf, context)
+        .or_else(|| self.try_directory(&resolved_path_buf, source, kind, true, context))
+        .unwrap_or(resolved_path);
+      return PluginResolveHookResult {
         resolved_path,
+        side_effects,
         ..Default::default()
-      }
-      // let resolved_path = self
-      //   .try_exports_replace(package_json_info, &resolved_path, kind, context)
-      //   .unwrap_or(resolved_path);
-      // // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
-      // let resolved_path_buf = PathBuf::from(&resolved_path);
-      // let resolved_path = try_file(&resolved_path_buf, context)
-      //   .or_else(|| self.try_directory(&resolved_path_buf, source, kind, true, context))
-      //   .unwrap_or(resolved_path);
-
-      // PluginResolveHookResult {
-      //   resolved_path,
-      //   side_effects,
-      //   ..Default::default()
-      // }
+      };
     } else {
       PluginResolveHookResult {
         resolved_path,
@@ -948,7 +915,6 @@ impl Resolver {
       .clone()
       .into_iter()
       .collect();
-
     additional_conditions.extend(resolve_conditions);
 
     let filtered_conditions: Vec<String> = additional_conditions
@@ -981,8 +947,6 @@ impl Resolver {
       unsafe_flag: false,
     };
 
-    println!("condition_config: {:?}", condition_config);
-
     let result = if field_type == "imports" {
       self.imports(package_json_info, source, &condition_config)
     } else {
@@ -997,19 +961,20 @@ impl Resolver {
     source: &str,
     config: &ConditionOptions,
   ) -> Option<Vec<String>> {
-    let name = match get_field_value_from_package_json_info(package_json_info, "name") {
-      Some(n) => n,
-      None => {
-        eprintln!(
-          "Missing \"name\" field in package.json {:?}",
-          package_json_info
-        );
-        return None;
-      }
-    };
     if let Some(imports_field) =
       get_field_value_from_package_json_info(package_json_info, "imports")
     {
+      // TODO If the current package does not have a name, then look up for the name of the folder
+      let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+        Some(n) => n,
+        None => {
+          eprintln!(
+            "Missing \"name\" field in package.json {:?}",
+            package_json_info
+          );
+          return None;
+        }
+      };
       let mut imports_map: HashMap<String, Value> = HashMap::new();
 
       match imports_field {
@@ -1032,19 +997,20 @@ impl Resolver {
     source: &str,
     config: &ConditionOptions,
   ) -> Option<Vec<String>> {
-    let name = match get_field_value_from_package_json_info(package_json_info, "name") {
-      Some(n) => n,
-      None => {
-        eprintln!(
-          "Missing \"name\" field in package.json {:?}",
-          package_json_info
-        );
-        return None;
-      }
-    };
     if let Some(exports_field) =
       get_field_value_from_package_json_info(package_json_info, "exports")
     {
+      // TODO If the current package does not have a name, then look up for the name of the folder
+      let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+        Some(n) => n,
+        None => {
+          eprintln!(
+            "Missing \"name\" field in package.json {:?}",
+            package_json_info
+          );
+          return None;
+        }
+      };
       let mut map: HashMap<String, Value> = HashMap::new();
       match exports_field {
         Value::String(string_value) => {

@@ -440,7 +440,7 @@ fn resolve_exports_nesting_dot_fields() {
           .join("node_modules")
           .join("solid-js")
           .join("dist")
-          .join("test-exports.js")
+          .join("dev.js")
           .to_string_lossy()
           .to_string()
       );
@@ -459,7 +459,7 @@ fn resolve_exports_nesting_dot_fields() {
           .join("node_modules")
           .join("solid-js")
           .join("dist")
-          .join("test-exports.cjs")
+          .join("dev.cjs")
           .to_string_lossy()
           .to_string()
       );
@@ -520,7 +520,7 @@ fn resolve_exports_nesting_base_path() {
           .join("solid-js")
           .join("store")
           .join("dist")
-          .join("store.js")
+          .join("dev.js")
           .to_string_lossy()
           .to_string()
       );
@@ -551,7 +551,7 @@ fn resolve_exports_nesting_path() {
           .join("solid-js")
           .join("store")
           .join("dist")
-          .join("store.js")
+          .join("dev.js")
           .to_string_lossy()
           .to_string()
       );
