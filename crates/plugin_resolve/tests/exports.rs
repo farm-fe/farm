@@ -330,7 +330,7 @@ fn resolve_priority() {
         cwd
           .join("node_modules")
           .join("priority")
-          .join("index.min.mjs")
+          .join("index.mjs")
           .to_string_lossy()
           .to_string()
       );

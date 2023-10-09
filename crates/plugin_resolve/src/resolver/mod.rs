@@ -621,6 +621,20 @@ impl Resolver {
         resolved_path,
         ..Default::default()
       }
+      // let resolved_path = self
+      //   .try_exports_replace(package_json_info, &resolved_path, kind, context)
+      //   .unwrap_or(resolved_path);
+      // // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
+      // let resolved_path_buf = PathBuf::from(&resolved_path);
+      // let resolved_path = try_file(&resolved_path_buf, context)
+      //   .or_else(|| self.try_directory(&resolved_path_buf, source, kind, true, context))
+      //   .unwrap_or(resolved_path);
+
+      // PluginResolveHookResult {
+      //   resolved_path,
+      //   side_effects,
+      //   ..Default::default()
+      // }
     } else {
       PluginResolveHookResult {
         resolved_path,
@@ -919,13 +933,23 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<Vec<String>> {
     farm_profile_function!("resolve_exports_or_imports".to_string());
-    let additional_conditions: HashSet<String> = context
+    let mut additional_conditions: HashSet<String> = vec![
+      String::from("development"),
+      String::from("production"),
+      String::from("module"),
+    ]
+    .into_iter()
+    .collect();
+
+    let resolve_conditions: HashSet<String> = context
       .config
       .resolve
       .conditions
       .clone()
       .into_iter()
       .collect();
+
+    additional_conditions.extend(resolve_conditions);
 
     let filtered_conditions: Vec<String> = additional_conditions
       .clone()
@@ -942,6 +966,7 @@ impl Resolver {
         _ => true,
       })
       .collect();
+
     // resolve exports field
     let is_browser = TargetEnv::Browser == context.config.output.target_env;
     let is_require = match kind {
@@ -952,8 +977,11 @@ impl Resolver {
       browser: is_browser && !additional_conditions.contains("node"),
       require: is_require && !additional_conditions.contains("import"),
       conditions: filtered_conditions,
+      // set default unsafe_flag to insert require & import field
       unsafe_flag: false,
     };
+
+    println!("condition_config: {:?}", condition_config);
 
     let result = if field_type == "imports" {
       self.imports(package_json_info, source, &condition_config)
@@ -972,7 +1000,10 @@ impl Resolver {
     let name = match get_field_value_from_package_json_info(package_json_info, "name") {
       Some(n) => n,
       None => {
-        eprintln!("Missing \"name\" field in package.json");
+        eprintln!(
+          "Missing \"name\" field in package.json {:?}",
+          package_json_info
+        );
         return None;
       }
     };
@@ -1004,7 +1035,10 @@ impl Resolver {
     let name = match get_field_value_from_package_json_info(package_json_info, "name") {
       Some(n) => n,
       None => {
-        eprintln!("Missing \"name\" field in package.json");
+        eprintln!(
+          "Missing \"name\" field in package.json {:?}",
+          package_json_info
+        );
         return None;
       }
     };

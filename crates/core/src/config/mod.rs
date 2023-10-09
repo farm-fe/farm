@@ -69,7 +69,7 @@ impl Default for Config {
       tree_shaking: true,
       minify: true,
       preset_env: Box::<PresetEnvConfig>::default(),
-      record: false
+      record: false,
     }
   }
 }
@@ -256,14 +256,7 @@ impl Default for ResolveConfig {
         String::from("html"),
         String::from("css"),
       ],
-      conditions: vec![
-        // String::from("import"),
-        String::from("require"),
-        String::from("browser"),
-        String::from("development"),
-        String::from("production"),
-        String::from("default"),
-      ],
+      conditions: vec![],
       symlinks: true,
       strict_exports: false,
     }

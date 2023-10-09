@@ -37,6 +37,7 @@ pub enum Condition {
   Browser,
   Node,
   Development,
+  Module,
   Production,
 }
 
@@ -408,9 +409,20 @@ pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
   let mut out: HashSet<Condition> = HashSet::new();
   out.insert(Condition::Default);
   // TODO resolver other conditions
-  // for condition in options.conditions.iter() {
-  //   out.insert(condition);
-  // }
+  for condition in options.conditions.iter() {
+    out.insert(condition.parse().unwrap());
+  }
+
+  for condition_str in &options.conditions {
+    match Condition::from_str(condition_str) {
+      Ok(condition_enum) => {
+        out.insert(condition_enum);
+      }
+      Err(error) => {
+        eprintln!("Error: {}", error);
+      }
+    }
+  }
   if !options.unsafe_flag {
     if options.require {
       out.insert(Condition::Require);
@@ -424,6 +436,7 @@ pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
       out.insert(Condition::Node);
     }
   }
+  println!("conditions: {:?}", out);
   out
 }
 
@@ -607,6 +620,7 @@ pub fn walk(
       String::from(name)
     }
   };
+  println!("options: {:?}", options);
   let c: HashSet<Condition> = conditions(options);
   let mut m: Option<&Value> = mapping.get(&entry);
   let mut result: Option<Vec<String>> = None;
@@ -672,6 +686,9 @@ impl FromStr for Condition {
       "import" => Ok(Condition::Import),
       "browser" => Ok(Condition::Browser),
       "node" => Ok(Condition::Node),
+      "development" => Ok(Condition::Development),
+      "production" => Ok(Condition::Production),
+      "module" => Ok(Condition::Module),
       _ => Err(format!("Invalid Condition: {}", s)),
     }
   }
