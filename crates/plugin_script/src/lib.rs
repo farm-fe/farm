@@ -249,12 +249,6 @@ impl Plugin for FarmPluginScript {
     ast.visit_mut_with(&mut hmr_accepted_v);
     param.module.meta.as_script_mut().hmr_accepted = hmr_accepted_v.is_hmr_accepted;
 
-    println!(
-      "hmr_accepted: {:?} {}",
-      param.module.id.to_string(),
-      hmr_accepted_v.is_hmr_accepted
-    );
-
     Ok(None)
   }
 

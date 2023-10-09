@@ -70,7 +70,7 @@ impl FileImporter for FileImporterCollection {
           &PluginHookContext::default(),
         )
         .unwrap();
-      println!("url: {}, resolve_result: {:?}", url, resolve_result);
+
       if let Some(resolve_result) = resolve_result {
         let mut paths = self.paths.write();
         paths.push(resolve_result.resolved_path.clone());
