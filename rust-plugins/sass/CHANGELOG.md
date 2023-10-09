@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.2.2
+
+### Patch Changes
+
+- 509bac0: Fix that vite plugin is not compatible with Farm's lazy compilation
+
 ## 0.2.1
 
 ### Patch Changes
