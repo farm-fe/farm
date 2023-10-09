@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "d2214aaa": function(module, exports, farmRequire, dynamicRequire) {
+    "d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -24,7 +24,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "05ee5ec7": function(module, exports, farmRequire, dynamicRequire) {
+    "05ee5ec7": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -32,7 +32,7 @@
         var _export_star = farmRequire("@swc/helpers/_/_export_star");
         _export_star._(farmRequire("ef0c4c9d"), exports);
     },
-    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -47,7 +47,7 @@
         _export_star._(farmRequire("05ee5ec7"), exports);
         var _default = 2;
     },
-    "ef0c4c9d": function(module, exports, farmRequire, dynamicRequire) {
+    "ef0c4c9d": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true

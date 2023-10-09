@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "../../_internal/runtime/index.js.farm-runtime": function(module, exports, farmRequire, dynamicRequire) {
+    "../../_internal/runtime/index.js.farm-runtime": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -24,7 +24,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "comp.tsx": function(module, exports, farmRequire, dynamicRequire) {
+    "comp.tsx": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -72,7 +72,7 @@
         $RefreshReg$(_c, "LazyComp");
         $RefreshReg$(_c1, "Description");
     },
-    "dep.ts": function(module, exports, farmRequire, dynamicRequire) {
+    "dep.ts": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -103,7 +103,7 @@
             }
         };
     },
-    "entry.ts": function(module, exports, farmRequire, dynamicRequire) {
+    "entry.ts": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true

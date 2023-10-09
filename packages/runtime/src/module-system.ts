@@ -91,7 +91,7 @@ export class ModuleSystem {
     }
 
     // create a full new module instance and store it in cache to avoid cyclic initializing
-    const module = new Module(moduleId);
+    const module = new Module(moduleId, this.require.bind(this));
     // call the module created hook
     this.pluginContainer.hookSerial('moduleCreated', module);
 
@@ -101,7 +101,7 @@ export class ModuleSystem {
       module,
       module.exports,
       this.require.bind(this),
-      this.dynamicRequire.bind(this)
+      this.farmDynamicRequire.bind(this)
     );
     // call the module initialized hook
     this.pluginContainer.hookSerial('moduleInitialized', module);
@@ -109,7 +109,7 @@ export class ModuleSystem {
     return module.exports;
   }
 
-  dynamicRequire(moduleId: string): Promise<any> {
+  farmDynamicRequire(moduleId: string): Promise<any> {
     if (this.modules[moduleId]) {
       const exports = this.require(moduleId);
 

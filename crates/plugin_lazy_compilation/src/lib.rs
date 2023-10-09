@@ -40,7 +40,7 @@ impl Plugin for FarmPluginLazyCompilation {
       }
     }
 
-    // If importer is dynamic virtual, we should resolve the dependency using the original importer
+    // If importer is a dynamic virtual module, we should resolve the dependency using the original importer
     if let Some(importer) = &param.importer {
       if importer.to_string().starts_with(DYNAMIC_VIRTUAL_PREFIX) {
         let original_importer = importer.to_string().replace(DYNAMIC_VIRTUAL_PREFIX, "");
@@ -50,13 +50,19 @@ impl Plugin for FarmPluginLazyCompilation {
             ..param.clone()
           },
           context,
-          &PluginHookContext {
-            caller: Some("FarmPluginLazyCompilation".to_string()),
-            ..hook_context.clone()
-          },
+          &hook_context,
         )?;
 
-        if let Some(resolve_result) = resolve_result {
+        if let Some(mut resolve_result) = resolve_result {
+          // if dependency is also a dynamic virtual module, we should remove the dynamic prefix
+          if resolve_result.meta.contains_key(ORIGINAL_RESOLVED_PATH) {
+            resolve_result.resolved_path = resolve_result
+              .meta
+              .get(ORIGINAL_RESOLVED_PATH)
+              .unwrap()
+              .to_string();
+          }
+
           return Ok(Some(resolve_result));
         }
       }

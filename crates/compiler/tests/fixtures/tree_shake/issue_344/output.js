@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "d2214aaa": function(module, exports, farmRequire, dynamicRequire) {
+    "d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -24,12 +24,12 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "4ef5be87": function(module, exports, farmRequire, dynamicRequire) {
+    "4ef5be87": function(module, exports, farmRequire, farmDynamicRequire) {
         module.exports = {
             program: function() {}
         };
     },
-    "abc9a879": function(module, exports, farmRequire, dynamicRequire) {
+    "abc9a879": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -79,7 +79,7 @@
         var _command = _interop_require_default._(farmRequire("4ef5be87"));
         const { program, createCommand, createArgument, createOption, CommanderError, InvalidArgumentError, InvalidOptionArgumentError, Command, Argument, Option, Help } = _command.default;
     },
-    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
