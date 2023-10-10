@@ -19,10 +19,10 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 
 use crate::resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey};
 use crate::resolver_common::{
-  are_values_equal, find_mapping, find_request_diff_entry_path,
-  get_field_value_from_package_json_info, get_key_path, get_result_path, get_string_value_path,
-  is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
-  is_source_dot, is_source_relative, try_file, walk, ConditionOptions, NODE_MODULES,
+  are_values_equal, find_request_diff_entry_path, get_field_value_from_package_json_info,
+  get_key_path, get_result_path, is_double_source_dot, is_module_external, is_module_side_effects,
+  is_source_absolute, is_source_dot, is_source_relative, try_file, walk, ConditionOptions,
+  NODE_MODULES,
 };
 
 pub struct Resolver {
@@ -610,100 +610,6 @@ impl Resolver {
     }
   }
 
-  fn try_exports_replace(
-    &self,
-    package_json_info: &PackageJsonInfo,
-    resolved_path: &str,
-    kind: &ResolveKind,
-    context: &Arc<CompilationContext>,
-  ) -> Option<String> {
-    farm_profile_function!("try_exports_replace".to_string());
-    // resolve exports field
-    // TODO: add all cases from https://nodejs.org/api/packages.html
-    // resolve current package.json Catalogue
-    let current_resolve_base_dir = package_json_info.dir();
-    // find user defined imports exports field
-    let resolved_field = self.resolve_request_result(&resolved_path, current_resolve_base_dir);
-    // resolve current exports fields mapping
-    let exports_field = get_field_value_from_package_json_info(package_json_info, "exports");
-    // if has exports fields
-    if let Some(exports_field) = exports_field {
-      match exports_field {
-        // export field is a string
-        Value::String(string_value) => {
-          return get_result_path(&string_value.as_str(), current_resolve_base_dir);
-        }
-        // export field is a object
-        Value::Object(object_value) => {
-          // TODO resolved_field.as_str() e.g: node deno browser development
-          match find_mapping(resolved_field.as_str(), &object_value) {
-            Some(value) => {
-              match value {
-                Value::String(string_value) => {
-                  return get_result_path(&string_value.as_str(), current_resolve_base_dir);
-                }
-                Value::Object(object_value) => {
-                  for (key_word, key_value) in object_value {
-                    match kind {
-                      // import with node default
-                      ResolveKind::Import => {
-                        if are_values_equal(key_word, "default")
-                          || are_values_equal(key_word, "import")
-                        {
-                          return self.process_mapping_value(
-                            key_value,
-                            current_resolve_base_dir,
-                            kind,
-                            context,
-                          );
-                        }
-                      }
-                      ResolveKind::Require => {
-                        if are_values_equal(key_word, "default")
-                          || are_values_equal(key_word, "require")
-                        {
-                          return self.process_mapping_value(
-                            key_value,
-                            current_resolve_base_dir,
-                            kind,
-                            context,
-                          );
-                        }
-                      }
-                      ResolveKind::ExportFrom => {
-                        if are_values_equal(key_word, "default")
-                          || are_values_equal(key_word, "import")
-                        {
-                          return self.process_mapping_value(
-                            key_value,
-                            current_resolve_base_dir,
-                            kind,
-                            context,
-                          );
-                        }
-                      }
-                      _ => {
-                        // TODO resolve other kind
-                      }
-                    }
-                  }
-                }
-                _ => {}
-              }
-            }
-            None => {
-              // Handle wildcard matching here
-              // TODO Whether to consider supporting e.g:. / dist/*:. / dist/*
-            }
-          }
-        }
-        _ => {}
-      }
-    }
-
-    None
-  }
-
   fn try_browser_replace(
     &self,
     package_json_info: &PackageJsonInfo,
@@ -741,132 +647,6 @@ impl Resolver {
       }
     }
 
-    None
-  }
-
-  fn try_imports_replace(
-    &self,
-    package_json_info: &PackageJsonInfo,
-    resolved_path: &str,
-    context: &Arc<CompilationContext>,
-  ) -> Option<String> {
-    farm_profile_function!("try_imports_replace".to_string());
-    if resolved_path.starts_with('#') {
-      let imports_field = get_field_value_from_package_json_info(package_json_info, "imports");
-      if let Some(Value::Object(imports_field_map)) = imports_field {
-        for (key, value) in imports_field_map {
-          if are_values_equal(&key, resolved_path) {
-            if let Value::String(str) = &value {
-              return get_string_value_path(str, package_json_info);
-            }
-
-            if let Value::Object(str) = &value {
-              for (key, value) in str {
-                match context.config.output.target_env {
-                  TargetEnv::Browser => {
-                    if are_values_equal(key, "default") {
-                      if let Value::String(str) = value {
-                        return get_string_value_path(str, package_json_info);
-                      }
-                    }
-                  }
-                  TargetEnv::Node => {
-                    if are_values_equal(key, "node") {
-                      if let Value::String(str) = value {
-                        return get_string_value_path(str, package_json_info);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    None
-  }
-
-  fn process_target_env_logic(
-    self: &Self,
-    kind: ResolveKind,
-    key: &str,
-    value: &Value,
-    current_resolve_base_dir: &String,
-    context: &Arc<CompilationContext>,
-  ) -> Option<String> {
-    match kind {
-      ResolveKind::Import | ResolveKind::Require => {
-        let value_str = if let Value::String(s) = value {
-          s
-        } else {
-          return None;
-        };
-
-        match context.config.output.target_env {
-          TargetEnv::Node if are_values_equal(key, "node") => {
-            Some(get_key_path(value_str, current_resolve_base_dir))
-          }
-          TargetEnv::Browser
-            if are_values_equal(key, "default") || are_values_equal(key, "browser") =>
-          {
-            Some(get_key_path(value_str, current_resolve_base_dir))
-          }
-          _ => None,
-        }
-      }
-      // TODO resolve other ResolveKind logic
-      _ => None,
-    }
-  }
-
-  fn resolve_request_result(
-    self: &Self,
-    resolved_path: &str,
-    current_resolve_base_dir: &String,
-  ) -> String {
-    match find_request_diff_entry_path(&resolved_path, current_resolve_base_dir) {
-      Some(diff) => {
-        if diff.origin_request.is_empty() {
-          ".".to_string()
-        } else {
-          format!("./{}", diff.origin_request)
-        }
-      }
-      None => "".to_string(),
-    }
-  }
-
-  fn process_mapping_value(
-    self: &Self,
-    key_value: &Value,
-    current_resolve_base_dir: &String,
-    kind: &ResolveKind,
-    context: &Arc<CompilationContext>,
-  ) -> Option<String> {
-    match key_value {
-      Value::String(string_value) => {
-        return Some(get_result_path(
-          string_value.as_str(),
-          current_resolve_base_dir,
-        )?);
-      }
-      Value::Object(import_value) => {
-        for (key_word, key_value) in import_value {
-          if let Some(result) = self.process_target_env_logic(
-            kind.clone(),
-            key_word,
-            key_value,
-            current_resolve_base_dir,
-            context,
-          ) {
-            return Some(result);
-          }
-        }
-      }
-      _ => {}
-    }
     None
   }
 
