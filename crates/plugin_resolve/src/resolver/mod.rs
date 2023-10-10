@@ -19,10 +19,9 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 
 use crate::resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey};
 use crate::resolver_common::{
-  are_values_equal, find_request_diff_entry_path, get_field_value_from_package_json_info,
-  get_key_path, get_result_path, is_double_source_dot, is_module_external, is_module_side_effects,
-  is_source_absolute, is_source_dot, is_source_relative, try_file, walk, ConditionOptions,
-  NODE_MODULES,
+  are_values_equal, get_field_value_from_package_json_info, get_key_path, get_result_path,
+  is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
+  is_source_dot, is_source_relative, try_file, walk, ConditionOptions, NODE_MODULES,
 };
 
 pub struct Resolver {
@@ -53,6 +52,10 @@ impl Resolver {
   /// 4. module
   /// 5. main
   /// browser is string instead main field
+  
+
+  // TODO BUILTINS NODE BUN DENO 
+  // TODO /fs/ actions 
   pub fn resolve(
     &self,
     source: &str,
@@ -156,6 +159,7 @@ impl Resolver {
         farm_profile_scope!("resolve.relative".to_string());
         // if it starts with './' or '../, it is a relative path
         let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
+        println!("normalized_path: {:?}", normalized_path);
         let normalized_path = normalized_path.as_path();
         let normalized_path = if context.config.resolve.symlinks {
           follow_symlinks(normalized_path.to_path_buf())

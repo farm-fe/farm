@@ -339,6 +339,37 @@ fn resolve_priority() {
 }
 
 #[test]
+fn resolve_try_file() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "priority/es/ans",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("priority")
+          .join("es")
+          .join("ans")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
 fn resolve_exports_require() {
   fixture!(
     "tests/fixtures/resolve-node-modules/exports/index.ts",
