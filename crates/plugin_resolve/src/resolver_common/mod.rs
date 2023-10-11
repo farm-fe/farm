@@ -42,6 +42,10 @@ lazy_static! {
     regex::Regex::new(r"^(?![a-zA-Z]:)[\w@](?!.*:\/\/)").unwrap();
 }
 
+lazy_static! {
+  static ref POSTFIX_RE: regex::Regex = regex::Regex::new(r"[?#].*").unwrap();
+}
+
 pub fn is_external_url(url: &str) -> bool {
   EXTERNAL_RE.is_match(url)
 }
@@ -99,6 +103,10 @@ pub fn is_source_absolute(source: &str) -> bool {
   } else {
     false
   }
+}
+
+fn clean_url(url: &str) -> String {
+  POSTFIX_RE.replace_all(url, "").to_string()
 }
 
 /**

@@ -2,6 +2,7 @@ use farmfe_core::{
   common::PackageJsonInfo,
   config::{Mode, TargetEnv},
   context::CompilationContext,
+  dashmap::mapref::entry,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
@@ -17,12 +18,15 @@ use std::{
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
-use crate::resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey};
 use crate::resolver_common::{
   are_values_equal, get_field_value_from_package_json_info, get_key_path, get_result_path,
   is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
   is_source_dot, is_source_relative, map_with_browser_field, try_file, walk, ConditionOptions,
   NODE_MODULES,
+};
+use crate::{
+  resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
+  resolver_common::DEEP_IMPORT_RE,
 };
 
 pub struct Resolver {
@@ -241,6 +245,7 @@ impl Resolver {
     if !dir.is_dir() {
       return None;
     }
+    let deep_match = DEEP_IMPORT_RE.is_match(source);
 
     for main_file in &context.config.resolve.main_files {
       let file = dir.join(main_file);
@@ -262,7 +267,15 @@ impl Resolver {
       );
 
       if let Ok(package_json_info) = package_json_info {
-        let (res, _) = self.try_package(&package_json_info, source, kind, vec![], context);
+        let (res, _) = self.try_package(
+          "",
+          deep_match,
+          &package_json_info,
+          source,
+          kind,
+          vec![],
+          context,
+        );
 
         if let Some(res) = res {
           return Some(res.resolved_path);
@@ -313,6 +326,7 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     farm_profile_function!("try_node_resolve".to_string());
+    println!("肯定要从这里进吧");
     // find node_modules until root
     let mut current = base_dir;
     // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
@@ -332,11 +346,22 @@ impl Resolver {
       tried_paths.push(current.clone());
 
       let maybe_node_modules_path = current.join(NODE_MODULES);
+      // check deepImport source
+      let deep_match = DEEP_IMPORT_RE.is_match(source);
+      let mut packageId = source;
+      println!("source {:?}", source);
+      if let Some(captures) = DEEP_IMPORT_RE.captures(source) {
+        if let Some(matched_value) = captures.get(1) {
+          let matched_string = matched_value.as_str();
+          println!("Matched: {}", matched_string);
+          packageId = matched_string;
+        }
+      }
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if context.config.resolve.symlinks {
-          follow_symlinks(RelativePath::new(source).to_logical_path(&maybe_node_modules_path))
+          follow_symlinks(RelativePath::new(packageId).to_logical_path(&maybe_node_modules_path))
         } else {
-          RelativePath::new(source).to_logical_path(&maybe_node_modules_path)
+          RelativePath::new(packageId).to_logical_path(&maybe_node_modules_path)
         };
         let package_json_info = load_package_json(
           package_path.clone(),
@@ -351,6 +376,9 @@ impl Resolver {
          * Refer to https://github.com/npm/validate-npm-package-name/blob/main/lib/index.js#L3 for the package name recognition and determine the sub path,
          * instead of judging the existence of package.json.
          */
+        println!("都要查一遍 packagepath 吧 {:?}", package_path);
+
+        println!("到底匹配没有匹配到 deepImport {:?}", deep_match);
         if !package_path.join("package.json").exists() {
           // check if the source is a directory or file can be resolved
           if matches!(&package_path, package_path if package_path.exists()) {
@@ -440,8 +468,15 @@ impl Resolver {
           }
           let package_json_info = package_json_info.unwrap();
 
-          let (result, tried_paths) =
-            self.try_package(&package_json_info, source, kind, tried_paths, context);
+          let (result, tried_paths) = self.try_package(
+            packageId,
+            deep_match,
+            &package_json_info,
+            source,
+            kind,
+            tried_paths,
+            context,
+          );
 
           if result.is_some() {
             return (result, tried_paths);
@@ -472,6 +507,8 @@ impl Resolver {
 
   fn try_package(
     &self,
+    packageId: &str,
+    deep_match: bool,
     package_json_info: &PackageJsonInfo,
     source: &str,
     kind: &ResolveKind,
@@ -480,11 +517,11 @@ impl Resolver {
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     farm_profile_function!("try_package".to_string());
     // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
-
     // search normal entry, based on self.config.main_fields, e.g. module/main
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
     println!("raw_package_json_info: {:?}", raw_package_json_info);
-
+    let resolve_id = self.unresolved_id(deep_match, source, packageId);
+    self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context);
     // for main_field in &context.config.resolve.main_fields {
     //   if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
     //     continue;
@@ -899,7 +936,7 @@ impl Resolver {
     };
     println!("entry_point: 这把多少都拿到点吧 {:?}", entry_point);
 
-    let entry_points: Vec<String> = if let Some(entry_point) = entry_point {
+    let entry_points: Vec<String> = if let Some(entry_point) = entry_point.clone() {
       vec![entry_point]
     } else {
       vec![String::from("index.js"), String::from("index.json")]
@@ -915,15 +952,65 @@ impl Resolver {
       }
       let entry_point_path = Path::new(package_json_info.dir()).join(&entry);
       if entry_point_path.exists() {
-        entry_point = Some(entry);
+        // entry_point = Some(entry);
         break;
       }
     }
-    if let Some(ep) = &entry_point.take() {
-      // 在这里可以修改 ep 的值
-      // 然后将它放回 entry_point
-      return Some(ep.to_string());
+    match entry_point {
+      Some(entry) => {
+        return Some(entry);
+      }
+      None => return None,
     }
-    None
+  }
+
+  fn resolve_deep_import(
+    self: &Self,
+    resolve_id: String,
+    package_json_info: &PackageJsonInfo,
+    kind: &ResolveKind,
+    context: &Arc<CompilationContext>,
+  ) {
+    println!("resolve_deep_import: 拿到的 resolveId {:?}", resolve_id);
+    let relative_id = Some(resolve_id.clone());
+    let exports_data = get_field_value_from_package_json_info(package_json_info, "exports");
+    let browser_data = get_field_value_from_package_json_info(package_json_info, "browser");
+    let is_browser = TargetEnv::Browser == context.config.output.target_env;
+    let is_require = matches!(kind, ResolveKind::Require);
+    println!("exports_data {:#?}", exports_data);
+    if let Some(export_data) = exports_data {
+      if export_data.is_object() && !export_data.is_array() {
+        println!("我要开始 deep_imports 解析 exports 字段啦");
+        if let Some(resolve_id) =
+          self.resolve_exports_or_imports(package_json_info, resolve_id.as_str(), "exports", kind, context)
+        {
+          println!("拿到值啦 {:?}", resolve_id);
+        }
+      }
+    }
+  }
+
+  fn resolve_id_logic(
+    self: &Self,
+    deep_match: bool,
+    resolve_id: String,
+    package_json_info: &PackageJsonInfo,
+    kind: &ResolveKind,
+    context: &Arc<CompilationContext>,
+  ) {
+    if deep_match {
+      self.resolve_deep_import(resolve_id, package_json_info, kind, context) // 调用 resolveDeepImport 函数
+    } else {
+      if let Some(entry_point) = self.find_entry_package_point(package_json_info, kind, context) {
+        println!("拿到的 entry_point {:?}", entry_point);
+      }
+    }
+  }
+  fn unresolved_id(self: &Self, deep_match: bool, id: &str, pkg_id: &str) -> String {
+    if deep_match {
+      format!(".{}", &id[pkg_id.len()..])
+    } else {
+      id.to_string()
+    }
   }
 }
