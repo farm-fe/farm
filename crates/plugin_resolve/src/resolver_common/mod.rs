@@ -561,7 +561,6 @@ pub fn to_entry(name: &str, ident: &str, externals: Option<bool>) -> Result<Stri
   let root = format!("{}/", name);
   let len = root.len();
   let bool = ident.starts_with(&root);
-
   let output = if bool {
     ident[len..].to_string()
   } else {
@@ -646,7 +645,9 @@ pub fn walk(
   input: &str,
   options: &ConditionOptions,
 ) -> Vec<String> {
+  println!("walk: name: {}, input: {}", name, input);
   let entry_result: Result<String, String> = to_entry(name, input, None);
+  println!("entry_result: {:?}", entry_result);
   let entry: String = match entry_result {
     Ok(entry) => entry.to_string(),
     Err(error) => {

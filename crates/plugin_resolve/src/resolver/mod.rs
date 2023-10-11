@@ -619,6 +619,7 @@ impl Resolver {
     farm_profile_function!("get_resolve_node_modules_result".to_string());
     if let Some(package_json_info) = package_json_info {
       let side_effects = is_module_side_effects(package_json_info, &resolved_path);
+      println!("这个是之前的 source {:?}", source);
       let resolve_exports_path = self
         .resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
         .unwrap_or(vec![resolved_path.clone()]);
@@ -763,8 +764,9 @@ impl Resolver {
       // set default unsafe_flag to insert require & import field
       unsafe_flag: false,
     };
-
-    let result = if field_type == "imports" {
+    println!("package_json_info 456456456123: {:#?}", package_json_info.raw());
+    println!("source: {:?}", source);
+    let result: Option<Vec<String>> = if field_type == "imports" {
       self.imports(package_json_info, source, &condition_config)
     } else {
       self.exports(package_json_info, source, &condition_config)
@@ -845,6 +847,7 @@ impl Resolver {
         }
         _ => {}
       }
+      println!("进来的 map: {:?}", map);
       if !map.is_empty() {
         return Some(walk(name.as_str().unwrap(), &map, source, config));
       }
@@ -980,9 +983,10 @@ impl Resolver {
     println!("exports_data {:#?}", exports_data);
     if let Some(export_data) = exports_data {
       if export_data.is_object() && !export_data.is_array() {
+        println!("我要开始解析 exports 字段啦 resolve_id {:?}", resolve_id.as_str());
         println!("我要开始 deep_imports 解析 exports 字段啦");
         if let Some(resolve_id) =
-          self.resolve_exports_or_imports(package_json_info, resolve_id.as_str(), "exports", kind, context)
+          self.resolve_exports_or_imports(package_json_info, "basic/base", "exports", kind, context)
         {
           println!("拿到值啦 {:?}", resolve_id);
         }
