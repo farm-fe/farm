@@ -14,6 +14,7 @@ use farmfe_core::{
   relative_path::RelativePath,
   serde_json::{self, from_str, Map, Value},
 };
+use farmfe_toolkit::lazy_static::lazy_static;
 
 pub const SLASH_CODE: char = '/';
 
@@ -22,6 +23,32 @@ pub const DOT_CODE: char = '.';
 pub const HASH_CODE: char = '#';
 
 pub const NODE_MODULES: &str = "node_modules";
+
+lazy_static! {
+  pub static ref EXTERNAL_RE: regex::Regex = regex::Regex::new(r#"^(https?:)?//"#).unwrap();
+}
+
+lazy_static! {
+  pub static ref DATA_URL_RE: regex::Regex = regex::Regex::new(r#"^[\s]*data:"#).unwrap();
+}
+
+lazy_static! {
+  pub static ref DEEP_IMPORT_RE: regex::Regex =
+    regex::Regex::new(r"^([^@][^/]*)/|^(@[^/]+/[^/]+)").unwrap();
+}
+
+lazy_static! {
+  pub static ref BARE_IMPORT_RE: regex::Regex =
+    regex::Regex::new(r"^(?![a-zA-Z]:)[\w@](?!.*:\/\/)").unwrap();
+}
+
+pub fn is_external_url(url: &str) -> bool {
+  EXTERNAL_RE.is_match(url)
+}
+
+pub fn is_data_url(url: &str) -> bool {
+  DATA_URL_RE.is_match(url)
+}
 
 pub struct PathDifference {
   pub origin_request: String,
@@ -440,8 +467,8 @@ pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
 }
 
 pub fn injects(items: &mut Vec<String>, value: &str) {
-  let rgx1 = regex::Regex::new(r#"\*"#).unwrap();
-  let rgx2 = regex::Regex::new(r#"/$"#).unwrap();
+  let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
+  let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
 
   for item in items.iter_mut() {
     let tmp = item.clone();
@@ -690,4 +717,31 @@ impl FromStr for Condition {
       _ => Err(format!("Invalid Condition: {}", s)),
     }
   }
+}
+
+pub fn map_with_browser_field<'a>(
+  relative_path_in_pkg_dir: &'a str,
+  map: &'a Value,
+) -> Option<String> {
+  let normalized_path = Path::new(relative_path_in_pkg_dir).to_str().unwrap();
+
+  if let Some(map_object) = map.as_object() {
+    for (key, value) in map_object {
+      let normalized_key = Path::new(key).to_str().unwrap();
+      if normalized_path == normalized_key
+        || equal_without_suffix(normalized_path, normalized_key, ".js")
+        || equal_without_suffix(normalized_path, normalized_key, "/index.js")
+      {
+        if let Some(value_str) = value.as_str() {
+          return Some(value_str.to_string());
+        }
+      }
+    }
+  }
+
+  None
+}
+
+pub fn equal_without_suffix(path: &str, key: &str, suffix: &str) -> bool {
+  key.ends_with(suffix) && &key[..key.len() - suffix.len()] == path
 }

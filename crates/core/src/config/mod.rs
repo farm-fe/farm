@@ -240,10 +240,7 @@ impl Default for ResolveConfig {
     Self {
       alias: HashMap::new(),
       main_fields: vec![
-        String::from("exports"),
-        String::from("browser"),
-        String::from("module"),
-        String::from("main"),
+        String::from("module")
       ],
       main_files: vec![String::from("index")],
       extensions: vec![
