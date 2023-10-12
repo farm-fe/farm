@@ -267,10 +267,10 @@ fn diff_module_deps(
         for (added_dep, _) in &added_deps {
           all_added_deps_reverse
             .entry(added_dep.clone())
-            .or_insert_with(|| HashSet::new())
+            .or_insert_with(HashSet::new)
             .insert(module_id.clone());
 
-          if !module_graph.has_module(&added_dep) {
+          if !module_graph.has_module(added_dep) {
             added_modules.insert(added_dep.clone());
           }
         }
@@ -281,7 +281,7 @@ fn diff_module_deps(
         for (removed_dep, _) in &removed_deps {
           all_removed_deps_reverse
             .entry(removed_dep.clone())
-            .or_insert_with(|| HashSet::new())
+            .or_insert_with(HashSet::new)
             .insert(module_id.clone());
         }
         // all_removed_deps.insert(module_id.clone(), removed_deps.clone());
@@ -360,7 +360,7 @@ fn diff_module_deps(
       children_added.push((child.clone(), edge_info.clone()));
       all_added_deps_reverse
         .entry(child.clone())
-        .or_insert_with(|| HashSet::new())
+        .or_insert_with(HashSet::new)
         .insert(dep.clone());
 
       if !module_graph.has_module(&child) {

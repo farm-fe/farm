@@ -98,7 +98,7 @@ pub fn patch_module_group_graph(
             for module_group_id in &previous_parent_groups {
               let current_module = module_graph
                 .module(&current_module_id)
-                .expect(&format!("module {:?} not found", current_module_id));
+                .unwrap_or_else(|| panic!("module {:?} not found", current_module_id));
 
               if current_module.module_groups.contains(module_group_id) {
                 continue;
