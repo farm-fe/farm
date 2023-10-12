@@ -46,6 +46,7 @@ pub fn handle_update_modules(
       let mut result = vec![resolved_path.clone()];
 
       for path in paths {
+        // if /root/index.vue and /root/index.vue?foo=bar are both in paths, we should remove /root/index.vue?foo=bar
         if path != resolved_path {
           let child_module_id: ModuleId = relative(&context.config.root, &path).into();
           let dependents = module_graph.dependents_ids(&child_module_id);

@@ -72,17 +72,18 @@ fn test_diff_module_graph_complex_2() {
   assert_eq!(update_module_graph.edge_count(), 3);
 
   let diff_result = super::diff_module_graph(
-    vec!["B".into(), "A".into()],
+    vec!["B".into(), "A".into(), "C".into(), "F".into()],
     &module_graph,
     &update_module_graph,
   );
+
+  diff_result.readable_print();
 
   let added_modules = diff_result.added_modules;
   let removed_modules = diff_result.removed_modules;
   let diff_result = diff_result.deps_changes;
 
   assert_eq!(added_modules, HashSet::from(["H".into()]));
-
   assert_eq!(
     removed_modules,
     HashSet::from(["D".into(), "E".into(), "G".into()])
@@ -115,27 +116,6 @@ fn test_diff_module_graph_complex_2() {
         }
       ),
       (
-        "H".into(),
-        ModuleDepsDiffResult {
-          added: vec![("F".into(), Default::default())],
-          removed: vec![],
-        }
-      ),
-      (
-        "E".into(),
-        ModuleDepsDiffResult {
-          added: vec![],
-          removed: vec![(
-            "G".into(),
-            ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
-              source: "./G".to_string(),
-              kind: ResolveKind::DynamicImport,
-              ..Default::default()
-            }])
-          )],
-        }
-      ),
-      (
         "A".into(),
         ModuleDepsDiffResult {
           added: vec![],
@@ -150,6 +130,41 @@ fn test_diff_module_graph_complex_2() {
         }
       ),
       (
+        "C".into(),
+        ModuleDepsDiffResult {
+          added: vec![],
+          removed: vec![(
+            "F".into(),
+            ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+              kind: ResolveKind::DynamicImport,
+              source: "./F".to_string(),
+              order: 0,
+            }])
+          )],
+        }
+      ),
+      (
+        "F".into(),
+        ModuleDepsDiffResult {
+          added: vec![],
+          removed: vec![(
+            "A".into(),
+            ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+              kind: ResolveKind::Import,
+              source: "./A".to_string(),
+              order: 0,
+            }])
+          )],
+        }
+      ),
+      (
+        "H".into(),
+        ModuleDepsDiffResult {
+          added: vec![("F".into(), Default::default())],
+          removed: vec![],
+        }
+      ),
+      (
         "D".into(),
         ModuleDepsDiffResult {
           added: vec![],
@@ -157,6 +172,20 @@ fn test_diff_module_graph_complex_2() {
             "F".into(),
             ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
               source: "./F".to_string(),
+              kind: ResolveKind::DynamicImport,
+              ..Default::default()
+            }])
+          )],
+        }
+      ),
+      (
+        "E".into(),
+        ModuleDepsDiffResult {
+          added: vec![],
+          removed: vec![(
+            "G".into(),
+            ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+              source: "./G".to_string(),
               kind: ResolveKind::DynamicImport,
               ..Default::default()
             }])

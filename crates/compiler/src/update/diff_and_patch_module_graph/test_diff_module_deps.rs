@@ -1,5 +1,5 @@
 use farmfe_core::{
-  hashbrown::HashSet,
+  hashbrown::{HashMap, HashSet},
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,
@@ -34,6 +34,7 @@ pub fn create_basic_graph() -> ModuleGraph {
   module_graph
     .add_edge(&"b".into(), &"c".into(), ModuleGraphEdge::default())
     .unwrap();
+  module_graph.entries = HashMap::from([("a".into(), "a".to_string())]);
 
   module_graph
 }
@@ -62,12 +63,8 @@ fn test_diff_module_deps_1() {
   update_module_graph
     .add_edge(&"a".into(), &"d".into(), ModuleGraphEdge::default())
     .unwrap();
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"a".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
 
   assert!(added_modules.is_empty());
   assert!(removed_modules.is_empty());
@@ -103,12 +100,8 @@ fn test_diff_module_deps_2() {
     .add_edge(&"a".into(), &"f".into(), ModuleGraphEdge::default())
     .unwrap();
 
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"a".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
   assert_eq!(added_modules, HashSet::from(["f".into()]));
   assert_eq!(removed_modules, HashSet::from(["b".into(), "c".into()]));
 
@@ -159,12 +152,8 @@ fn test_diff_module_deps_3() {
     .remove_edge(&"b".into(), &"c".into())
     .unwrap();
 
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"a".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
   assert_eq!(added_modules, HashSet::from(["d".into()]));
   assert!(removed_modules.is_empty());
 
@@ -217,12 +206,8 @@ fn test_diff_module_deps_4() {
     .add_edge(&"a".into(), &"b".into(), ModuleGraphEdge::default())
     .unwrap();
 
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"a".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
   assert!(added_modules.is_empty());
   assert_eq!(removed_modules, HashSet::from(["d".into()]));
 
@@ -257,12 +242,8 @@ fn test_diff_module_deps_complex_1() {
   update_module_graph.remove_module(&"G".into());
   assert_eq!(update_module_graph.modules().len(), 3);
 
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"A".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["A".into()], &module_graph, &update_module_graph);
   assert!(added_modules.is_empty());
   assert!(removed_modules.is_empty());
   assert_eq!(
@@ -302,12 +283,8 @@ fn test_diff_module_deps_complex_2() {
     .add_edge(&"H".into(), &"F".into(), Default::default())
     .unwrap();
 
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"B".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["B".into()], &module_graph, &update_module_graph);
   assert_eq!(added_modules, HashSet::from(["H".into()]));
   assert_eq!(removed_modules, HashSet::from(["E".into(), "G".into()]));
 
@@ -379,12 +356,8 @@ fn test_diff_module_deps_complex_3() {
     .add_edge(&"H".into(), &"B".into(), Default::default())
     .unwrap();
 
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"F".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["F".into()], &module_graph, &update_module_graph);
   assert_eq!(added_modules, HashSet::from(["H".into()]));
   assert!(removed_modules.is_empty());
   assert_eq!(
@@ -430,12 +403,8 @@ fn test_diff_module_deps_complex_4() {
   assert_eq!(update_module_graph.modules().len(), 2);
   assert_eq!(update_module_graph.edge_count(), 1);
 
-  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
-    &"E".into(),
-    &module_graph,
-    &update_module_graph,
-    &Default::default(),
-  );
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["E".into()], &module_graph, &update_module_graph);
   assert!(added_modules.is_empty());
   assert_eq!(removed_modules, HashSet::from(["G".into()]));
   assert_eq!(
@@ -454,5 +423,147 @@ fn test_diff_module_deps_complex_4() {
         )],
       }
     )])
+  );
+}
+
+#[test]
+fn test_diff_module_deps_add_and_remove() {
+  let module_graph = create_basic_graph();
+  let mut update_module_graph = create_basic_graph();
+  let module_e = Module::new("e".into());
+  update_module_graph.add_module(module_e);
+  update_module_graph
+    .add_edge(&"a".into(), &"e".into(), Default::default())
+    .unwrap();
+  // remove a -> b and add e -> b
+  update_module_graph
+    .remove_edge(&"a".into(), &"b".into())
+    .unwrap();
+  update_module_graph
+    .add_edge(&"e".into(), &"b".into(), Default::default())
+    .unwrap();
+
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
+  assert_eq!(added_modules, HashSet::from(["e".into()]));
+  assert_eq!(removed_modules, HashSet::from([]));
+  assert_eq!(
+    diff_result,
+    Vec::from([
+      (
+        "a".into(),
+        ModuleDepsDiffResult {
+          added: vec![("e".into(), ModuleGraphEdge::default())],
+          removed: vec![("b".into(), ModuleGraphEdge::default())],
+        }
+      ),
+      (
+        "e".into(),
+        ModuleDepsDiffResult {
+          added: vec![("b".into(), ModuleGraphEdge::default())],
+          removed: vec![],
+        }
+      ),
+    ])
+  );
+}
+
+#[test]
+fn test_diff_module_deps_remove_and_add() {
+  let update_module_graph = create_basic_graph();
+  let mut module_graph = create_basic_graph();
+  let module_e = Module::new("e".into());
+  module_graph.add_module(module_e);
+  module_graph
+    .add_edge(&"a".into(), &"e".into(), Default::default())
+    .unwrap();
+  // remove a -> b and add e -> b
+  module_graph.remove_edge(&"a".into(), &"b".into()).unwrap();
+  module_graph
+    .add_edge(&"e".into(), &"b".into(), Default::default())
+    .unwrap();
+
+  let (diff_result, added_modules, removed_modules) =
+    super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
+  assert_eq!(removed_modules, HashSet::from(["e".into()]));
+  assert_eq!(added_modules, HashSet::from([]));
+  assert_eq!(
+    diff_result,
+    Vec::from([
+      (
+        "a".into(),
+        ModuleDepsDiffResult {
+          added: vec![("b".into(), ModuleGraphEdge::default())],
+          removed: vec![("e".into(), ModuleGraphEdge::default())],
+        }
+      ),
+      (
+        "e".into(),
+        ModuleDepsDiffResult {
+          added: vec![],
+          removed: vec![("b".into(), ModuleGraphEdge::default())],
+        }
+      )
+    ])
+  );
+}
+
+#[test]
+fn test_diff_module_deps_remove_and_add_complex() {
+  let mut update_module_graph = create_basic_graph();
+  let module_e = Module::new("e".into());
+  update_module_graph.add_module(module_e);
+  update_module_graph
+    .remove_edge(&"a".into(), &"d".into())
+    .unwrap();
+  update_module_graph
+    .add_edge(&"c".into(), &"e".into(), Default::default())
+    .unwrap();
+  // add edge e -> d
+  update_module_graph
+    .add_edge(&"e".into(), &"d".into(), Default::default())
+    .unwrap();
+  let mut module_graph = create_basic_graph();
+  module_graph.remove_module(&"c".into());
+
+  let (diff_result, added_modules, removed_modules) = super::diff_module_deps(
+    &vec!["a".into(), "b".into()],
+    &module_graph,
+    &update_module_graph,
+  );
+  assert_eq!(added_modules, HashSet::from(["e".into(), "c".into()]));
+  assert_eq!(removed_modules, HashSet::from([]));
+  assert_eq!(
+    diff_result,
+    Vec::from([
+      (
+        "a".into(),
+        ModuleDepsDiffResult {
+          added: vec![],
+          removed: vec![("d".into(), ModuleGraphEdge::default())],
+        }
+      ),
+      (
+        "b".into(),
+        ModuleDepsDiffResult {
+          added: vec![("c".into(), ModuleGraphEdge::default())],
+          removed: vec![],
+        }
+      ),
+      (
+        "c".into(),
+        ModuleDepsDiffResult {
+          added: vec![("e".into(), ModuleGraphEdge::default())],
+          removed: vec![],
+        }
+      ),
+      (
+        "e".into(),
+        ModuleDepsDiffResult {
+          added: vec![("d".into(), ModuleGraphEdge::default())],
+          removed: vec![],
+        }
+      )
+    ])
   );
 }
