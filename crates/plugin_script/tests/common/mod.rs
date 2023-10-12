@@ -10,7 +10,6 @@ use farmfe_core::{
   },
 };
 
-
 pub fn build_module_deps(
   path: PathBuf,
   base: PathBuf,
@@ -30,6 +29,7 @@ pub fn build_module_deps(
         resolved_path: &path.to_string_lossy(),
         query: vec![],
         meta: HashMap::new(),
+        module_id: path.to_string_lossy().to_string(),
       },
       &context,
       &hook_context,
@@ -40,11 +40,7 @@ pub fn build_module_deps(
   let mut parse_result = script_plugin
     .parse(
       &PluginParseHookParam {
-        module_id: ModuleId::new(
-          &path.to_string_lossy(),
-          "",
-          base.to_str().unwrap(),
-        ),
+        module_id: ModuleId::new(&path.to_string_lossy(), "", base.to_str().unwrap()),
         resolved_path: path.to_string_lossy().to_string(),
         query: vec![],
         module_type: load_result.module_type.clone(),

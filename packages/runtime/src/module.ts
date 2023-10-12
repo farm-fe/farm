@@ -3,13 +3,17 @@ export class Module {
   id: string;
   exports: any;
   meta: Record<string, any>;
+  require: (id: string) => any;
 
   dispose?: () => void;
 
-  constructor(id: string) {
+  constructor(id: string, require: (id: string) => any) {
     this.id = id;
     this.exports = {};
-    this.meta = {};
+    this.meta = {
+      env: {}
+    };
+    this.require = require;
   }
 
   onDispose(callback: () => void) {

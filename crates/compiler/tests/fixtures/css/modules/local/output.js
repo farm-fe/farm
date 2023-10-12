@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "ec853507": function(module, exports, farmRequire, dynamicRequire) {
+    "ec853507": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -24,7 +24,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "95fe6ac5": function(module, exports, farmRequire, dynamicRequire) {
+    "95fe6ac5": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -43,7 +43,7 @@
             "show": `farm-show`
         };
     },
-    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -55,7 +55,7 @@
 });
 var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
-//a7dba609.css:
+//index_64d1.css:
  .farm-base {
   font-size: 20px;
 }

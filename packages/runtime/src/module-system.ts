@@ -85,12 +85,13 @@ export class ModuleSystem {
       if (targetEnv === 'node') {
         return __farmNodeRequire(moduleId);
       }
-
-      throw new Error(`Module "${moduleId}" is not registered`);
+      // return a empty module if the module is not registered
+      return {};
+      // throw new Error(`Module "${moduleId}" is not registered`);
     }
 
     // create a full new module instance and store it in cache to avoid cyclic initializing
-    const module = new Module(moduleId);
+    const module = new Module(moduleId, this.require.bind(this));
     // call the module created hook
     this.pluginContainer.hookSerial('moduleCreated', module);
 
@@ -100,7 +101,7 @@ export class ModuleSystem {
       module,
       module.exports,
       this.require.bind(this),
-      this.dynamicRequire.bind(this)
+      this.farmDynamicRequire.bind(this)
     );
     // call the module initialized hook
     this.pluginContainer.hookSerial('moduleInitialized', module);
@@ -108,7 +109,7 @@ export class ModuleSystem {
     return module.exports;
   }
 
-  dynamicRequire(moduleId: string): Promise<any> {
+  farmDynamicRequire(moduleId: string): Promise<any> {
     if (this.modules[moduleId]) {
       const exports = this.require(moduleId);
 
@@ -130,18 +131,30 @@ export class ModuleSystem {
     // loading all required resources, and return the exports of the entry module
     return Promise.all(
       resources.map((resource) => this.resourceLoader.load(resource))
-    ).then(() => {
-      const result = this.require(moduleId);
-      // if the module is async, return the default export, the default export should be a promise
-      if (result.__farm_async) {
-        return result.default;
-      } else {
-        return result;
-      }
-    });
+    )
+      .then(() => {
+        const result = this.require(moduleId);
+        // if the module is async, return the default export, the default export should be a promise
+        if (result.__farm_async) {
+          return result.default;
+        } else {
+          return result;
+        }
+      })
+      .catch((err) => {
+        console.error(`[Farm] Error loading dynamic module "${moduleId}"`, err);
+
+        if (process.env.NODE_ENV === 'production') {
+          // reload the page if the dynamic module loading failed
+          window.location.reload();
+        } else {
+          throw err;
+        }
+      });
   }
 
   register(moduleId: string, initializer: ModuleInitialization): void {
+    // console.log(`[Farm] register module "${moduleId}"`, console.trace());
     if (this.modules[moduleId]) {
       // throw new Error(
       //   `Module "${moduleId}" has registered! It should not be registered twice`

@@ -1,5 +1,30 @@
 # @farmfe/core
 
+## 0.13.2
+
+### Patch Changes
+
+- 509bac0: Fix that vite plugin is not compatible with Farm's lazy compilation
+- Updated dependencies [509bac0]
+- Updated dependencies [509bac0]
+  - @farmfe/runtime@0.7.2
+  - @farmfe/runtime-plugin-hmr@3.2.4
+
+## 0.13.1
+
+### Patch Changes
+
+- Fix bugs that dev server should only try read local file system resources for images and fonts
+- Updated dependencies
+  - @farmfe/runtime@0.7.1
+
+## 0.13.0
+
+### Minor Changes
+
+- f7b1b9d: Support vite plugins out of box
+- 5be3aab: Implement RFC-003 New Partial Bundling Algorithm
+
 ## 0.12.11
 
 ### Patch Changes

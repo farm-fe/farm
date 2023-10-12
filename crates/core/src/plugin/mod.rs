@@ -166,7 +166,7 @@ pub trait Plugin: Any + Send + Sync {
     _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> Result<Option<Vec<Resource>>> {
+  ) -> Result<Option<PluginGenerateResourcesHookResult>> {
     Ok(None)
   }
 
@@ -290,6 +290,8 @@ pub struct PluginResolveHookResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginLoadHookParam<'a> {
+  /// the module id string
+  pub module_id: String,
   /// the resolved path from resolve hook
   pub resolved_path: &'a str,
   /// the query map
@@ -311,6 +313,8 @@ pub struct PluginLoadHookResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginTransformHookParam<'a> {
+  /// the module id string
+  pub module_id: String,
   /// source content after load or transformed result of previous plugin
   pub content: String,
   /// module type after load
@@ -403,7 +407,6 @@ pub enum UpdateType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginUpdateModulesHookParams {
-  pub update_result: UpdateResult,
   pub paths: Vec<(String, UpdateType)>,
 }
 
@@ -412,3 +415,8 @@ pub struct EmptyPluginHookParam {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmptyPluginHookResult {}
+
+pub struct PluginGenerateResourcesHookResult {
+  pub resource: Resource,
+  pub source_map: Option<Resource>,
+}

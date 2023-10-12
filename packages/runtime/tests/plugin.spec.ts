@@ -14,17 +14,22 @@ test('plugin hooks serial execution', async () => {
       name: 'test-1',
       moduleCreated: () => {
         calledPlugins.push('test-1');
-      },
+      }
     },
     {
       name: 'test-2',
       moduleCreated: () => {
         calledPlugins.push('test-2');
-      },
-    },
+      }
+    }
   ]);
 
-  await pluginContainer.hookSerial('moduleCreated', new Module('test-module'));
+  await pluginContainer.hookSerial(
+    'moduleCreated',
+    new Module('test-module', () => {
+      /** */
+    })
+  );
   expect(calledPlugins).toEqual(['test-1', 'test-2']);
 });
 
@@ -36,27 +41,29 @@ test('plugin hook bail execution', async () => {
       readModuleCache: () => {
         calledPlugins.push('test-0');
         return false;
-      },
+      }
     },
     {
       name: 'test-1',
       readModuleCache: () => {
         calledPlugins.push('test-1');
         return true;
-      },
+      }
     },
     {
       name: 'test-2',
       readModuleCache: () => {
         calledPlugins.push('test-2');
         return true;
-      },
-    },
+      }
+    }
   ]);
 
   const res = await pluginContainer.hookBail(
     'readModuleCache',
-    new Module('test-module')
+    new Module('test-module', () => {
+      /** */
+    })
   );
   expect(res).toBe(true);
   expect(calledPlugins).toEqual(['test-0', 'test-1']);

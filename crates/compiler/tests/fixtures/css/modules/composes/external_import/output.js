@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "0b3bded0": function(module, exports, farmRequire, dynamicRequire) {
+    "0b3bded0": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -24,7 +24,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "8b6840d6": function(module, exports, farmRequire, dynamicRequire) {
+    "8b6840d6": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -40,7 +40,7 @@
             "action": `farm-action`
         };
     },
-    "95fe6ac5": function(module, exports, farmRequire, dynamicRequire) {
+    "95fe6ac5": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -58,7 +58,7 @@
             "base": `farm-base ${_actioncss.default["action"]}`
         };
     },
-    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -70,7 +70,7 @@
 });
 var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
-//3694941a.css:
+//index_ac98.css:
  .farm-base {
   font-size: 18px;
 }

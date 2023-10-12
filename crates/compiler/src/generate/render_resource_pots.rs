@@ -5,7 +5,7 @@ use farmfe_core::{
   error::{CompilationError, Result},
   hashbrown::HashMap,
   parking_lot::Mutex,
-  plugin::PluginHookContext,
+  plugin::{PluginGenerateResourcesHookResult, PluginHookContext},
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
   resource::{resource_pot::ResourcePot, Resource, ResourceType},
 };
@@ -34,77 +34,41 @@ pub fn render_resource_pots_and_generate_resources(
 
     let mut res =
       render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
-
-    let mut res_map = HashMap::new();
-
-    for r in &res {
-      // deal source map resource
-      if let ResourceType::SourceMap(original_resource_name) = &r.resource_type {
-        if let Some(orig) = res.iter().find(|item| &item.name == original_resource_name) {
-          res_map.insert(orig.name.to_string(), r.name.to_string());
-        }
+    let r = &mut res.resource;
+    // ignore runtime resource
+    if !matches!(r.resource_type, ResourceType::Runtime) {
+      if let Some(name) = resource_pot.entry_module.as_ref() {
+        let entry_name = entries.get(name).unwrap();
+        r.name = transform_output_entry_filename(
+          context.config.output.entry_filename.clone(),
+          resource_pot.id.to_string().as_str(),
+          entry_name,
+          &r.bytes,
+          &r.resource_type.to_ext(),
+        );
+      } else {
+        r.name = transform_output_filename(
+          context.config.output.filename.clone(),
+          &r.name,
+          &r.bytes,
+          &r.resource_type.to_ext(),
+        );
       }
     }
 
-    // deal with non-sourcemap resources
-    for r in &mut res {
-      if !matches!(r.resource_type, ResourceType::SourceMap(_)) {
-        let name_before_update = r.name.clone();
-        // ignore runtime resource
-        if !matches!(r.resource_type, ResourceType::Runtime) {
-          if let Some(name) = resource_pot.entry_module.as_ref() {
-            let entry_name = entries.get(name).unwrap();
-            r.name = transform_output_entry_filename(
-              context.config.output.entry_filename.clone(),
-              resource_pot.id.to_string().as_str(),
-              entry_name,
-              &r.bytes,
-              &r.resource_type.to_ext(),
-            );
-          } else {
-            r.name = transform_output_filename(
-              context.config.output.filename.clone(),
-              &r.name,
-              &r.bytes,
-              &r.resource_type.to_ext(),
-            );
-          }
-        }
+    // if source map is generated, we need to update the resource name and the content of the resource
+    // to make sure the source map can be found.
+    if let Some(mut source_map) = res.source_map {
+      source_map.name = format!("{}.{}", r.name, source_map.resource_type.to_ext());
+      let source_mapping_url = format!("\n//# sourceMappingURL=/{}", source_map.name);
+      r.bytes.append(&mut source_mapping_url.as_bytes().to_vec());
 
-        // TODO support inline source map.
-        // generate_resources hook may need to be refactored to make sure the resource and it's sourcemap be returned together.
-        if res_map.contains_key(&name_before_update) {
-          let source_mapping_url = format!(
-            "\n//# sourceMappingURL={}.{}",
-            r.name,
-            ResourceType::SourceMap("".to_string()).to_ext()
-          );
-          r.bytes.append(&mut source_mapping_url.as_bytes().to_vec());
-
-          let v = res_map.remove(&name_before_update).unwrap();
-          // reverse the map to speed up the lookup
-          res_map.insert(v, r.name.to_string());
-        }
-      }
+      resource_pot.add_resource(source_map.name.clone());
+      resources.lock().push(source_map);
     }
 
-    // replace sourcemap resource
-    for r in &mut res {
-      // deal source map resource
-      if let ResourceType::SourceMap(_) = &r.resource_type {
-        if let Some(orig_name) = res_map.get(&r.name) {
-          r.name = format!("{}.{}", orig_name, r.resource_type.to_ext());
-        }
-      }
-    }
-
-    let mut resources = resources.lock();
-
-    for r in &res {
-      resource_pot.add_resource(r.name.clone());
-    }
-
-    resources.extend(res);
+    resource_pot.add_resource(res.resource.name.clone());
+    resources.lock().push(res.resource);
 
     Ok(())
   })?;
@@ -123,7 +87,7 @@ pub fn render_resource_pot_generate_resources(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
   skip_render: bool,
-) -> Result<Vec<Resource>> {
+) -> Result<PluginGenerateResourcesHookResult> {
   if !skip_render {
     #[cfg(feature = "profile")]
     let id = farmfe_utils::transform_string_to_static_str(format!(

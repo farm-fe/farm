@@ -2,21 +2,28 @@
 
 use farmfe_core::{
   config::Config,
-  module::ModuleType,
+  context::CompilationContext,
+  hashbrown::HashMap,
+  module::{ModuleId, ModuleType},
   parking_lot::RwLock,
-  plugin::Plugin,
+  plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},
   relative_path::RelativePath,
   serde_json::{self, Value},
 };
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::{fs, regex::Regex, resolve::follow_symlinks};
+use farmfe_toolkit::{fs, lazy_static::lazy_static, regex::Regex, resolve::follow_symlinks};
 use sass_embedded::{FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
+use std::env;
 use std::env::consts::{ARCH, OS};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::{env, path::Path};
 
 const PKG_NAME: &str = "@farmfe/plugin-sass";
+
+// global context
+lazy_static! {
+  static ref CONTEXT: RwLock<Option<Arc<CompilationContext>>> = RwLock::new(None);
+}
 
 #[farm_plugin]
 pub struct FarmPluginSass {
@@ -32,7 +39,7 @@ impl FarmPluginSass {
     }
   }
 
-  pub fn get_sass_options(&self, resolve_path: String) -> StringOptions {
+  pub fn get_sass_options(&self, resolve_path: String) -> (StringOptions, HashMap<String, String>) {
     let options = serde_json::from_str(&self.sass_options).unwrap_or_default();
     get_options(options, resolve_path)
   }
@@ -41,7 +48,7 @@ impl FarmPluginSass {
 #[derive(Debug)]
 struct FileImporterCollection {
   paths: Arc<RwLock<Vec<String>>>,
-  cwd: String,
+  importer: ModuleId,
 }
 
 impl FileImporter for FileImporterCollection {
@@ -50,18 +57,30 @@ impl FileImporter for FileImporterCollection {
     url: &str,
     _options: &sass_embedded::ImporterOptions,
   ) -> sass_embedded::Result<Option<Url>> {
-    let resolved_path: String = if !Path::new(url).is_absolute() {
-      RelativePath::new(url)
-        .to_logical_path(&self.cwd)
-        .to_string_lossy()
-        .to_string()
-    } else {
-      url.to_string()
-    };
+    if let Some(context) = &*CONTEXT.read() {
+      let resolve_result = context
+        .plugin_driver
+        .resolve(
+          &PluginResolveHookParam {
+            source: url.to_string(),
+            importer: Some(self.importer.clone()),
+            kind: ResolveKind::CssAtImport,
+          },
+          context,
+          &PluginHookContext::default(),
+        )
+        .unwrap();
 
-    self.paths.write().push(resolved_path.clone());
+      if let Some(resolve_result) = resolve_result {
+        let mut paths = self.paths.write();
+        paths.push(resolve_result.resolved_path.clone());
+        return Ok(Some(
+          Url::from_file_path(resolve_result.resolved_path).unwrap(),
+        ));
+      }
+    }
 
-    sass_embedded::Result::Ok(Some(Url::from_file_path(resolved_path).unwrap()))
+    sass_embedded::Result::Ok(None)
   }
 }
 
@@ -102,18 +121,25 @@ impl Plugin for FarmPluginSass {
         )
       });
 
-      let mut string_options = self.get_sass_options(param.resolved_path.to_string());
+      let (mut string_options, additional_options) =
+        self.get_sass_options(param.resolved_path.to_string());
 
       let paths = Arc::new(RwLock::new(vec![]));
 
+      if CONTEXT.read().is_none() {
+        CONTEXT.write().replace(context.clone());
+      }
+
       let import_collection = Box::new(FileImporterCollection {
         paths: paths.clone(),
-        cwd: Path::new(param.resolved_path)
-          .parent()
-          .unwrap()
-          .to_string_lossy()
-          .to_string(),
+        importer: param.module_id.clone().into(),
       });
+      // TODO support source map for additionalData
+      let content = if let Some(additional_data) = additional_options.get("additionalData") {
+        format!("{}\n{}", additional_data, param.content)
+      } else {
+        param.content.clone()
+      };
 
       string_options
         .common
@@ -121,12 +147,12 @@ impl Plugin for FarmPluginSass {
         .push(sass_embedded::SassImporter::FileImporter(import_collection));
       string_options.url = None;
 
-      let compile_result = sass
-        .compile_string(&param.content, string_options)
-        .map_err(|e| farmfe_core::error::CompilationError::TransformError {
+      let compile_result = sass.compile_string(&content, string_options).map_err(|e| {
+        farmfe_core::error::CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
           msg: e.message().to_string(),
-        })?;
+        }
+      })?;
 
       let paths = paths.read();
 
@@ -208,7 +234,7 @@ fn get_exe_path() -> PathBuf {
   }
 }
 
-fn get_options(options: Value, resolve_path: String) -> StringOptions {
+fn get_options(options: Value, resolve_path: String) -> (StringOptions, HashMap<String, String>) {
   let mut builder = StringOptionsBuilder::new();
   builder = builder.url(Url::from_file_path(resolve_path).unwrap());
   if let Some(source_map) = options.get("sourceMap") {
@@ -241,7 +267,16 @@ fn get_options(options: Value, resolve_path: String) -> StringOptions {
     builder = builder.style(output_style);
   }
 
+  let mut additional_data = HashMap::new();
+
+  if let Some(additional_date) = options.get("additionalData") {
+    additional_data.insert(
+      "additionalData".to_string(),
+      additional_date.as_str().unwrap().to_string(),
+    );
+  }
+
   // TODO support more options
 
-  builder.build()
+  (builder.build(), additional_data)
 }

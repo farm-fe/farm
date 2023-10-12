@@ -7,14 +7,11 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
   hashbrown::HashMap,
-  module::{
-    module_graph::{self, ModuleGraph},
-    CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
+    Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
   },
   resource::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -34,7 +31,7 @@ use farmfe_toolkit::{
   swc_css_prefixer,
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
-use farmfe_utils::{parse_query, stringify_query};
+use farmfe_utils::parse_query;
 use source_replacer::SourceReplacer;
 use transform_resource_pot::transform_css_resource_pot;
 
@@ -149,11 +146,7 @@ impl Plugin for FarmPluginCss {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let module_id = ModuleId::new(
-        param.resolved_path,
-        &stringify_query(&param.query),
-        &context.config.root,
-      );
+      let module_id: ModuleId = param.module_id.clone().into();
       let enable_css_modules = context.config.css.modules.is_some();
 
       // real css modules code
@@ -241,6 +234,7 @@ impl Plugin for FarmPluginCss {
           },
           FARM_CSS_MODULES_SUFFIX,
           // add hash to avoid cache, make sure hmr works
+          // TODO use updateModules hook to invalidate cache instead of hash
           sha256(param.content.replace("\r\n", "\n").as_bytes(), 8),
           dynamic_import_of_composes
             .into_iter()
@@ -424,7 +418,7 @@ impl Plugin for FarmPluginCss {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<Vec<Resource>>> {
+  ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       let stylesheet = &resource_pot.meta.as_css().ast;
       let source_map_enabled = context.config.sourcemap.enabled();
@@ -440,32 +434,34 @@ impl Plugin for FarmPluginCss {
         &module_graph,
       );
 
-      let mut resources = vec![];
+      let resource = Resource {
+        name: resource_pot.name.to_string(),
+        bytes: css_code.as_bytes().to_vec(),
+        emitted: false,
+        resource_type: ResourceType::Css,
+        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+      };
+      let mut source_map = None;
 
       if context.config.sourcemap.enabled()
         && (context.config.sourcemap.is_all() || !resource_pot.immutable)
       {
         // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
         if let Some(bytes) = src_map {
-          resources.push(Resource {
-            name: format!("{}.map", resource_pot.id.to_string()),
+          source_map = Some(Resource {
+            name: resource_pot.name.to_string(),
             bytes,
             emitted: false,
             resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
             origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          })
+          });
         }
       }
 
-      resources.push(Resource {
-        name: resource_pot.id.to_string(),
-        bytes: css_code.as_bytes().to_vec(),
-        emitted: false,
-        resource_type: ResourceType::Css,
-        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-      });
-
-      Ok(Some(resources))
+      Ok(Some(PluginGenerateResourcesHookResult {
+        resource,
+        source_map,
+      }))
     } else {
       Ok(None)
     }

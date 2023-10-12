@@ -1,9 +1,9 @@
-import { JsPlugin, UserConfig, DevServer } from '@farmfe/core';
+import { DevServer, JsPlugin, UserConfig } from '@farmfe/core';
 import {
   getLessImplementation,
-  tryRead,
   pluginName,
-  throwError
+  throwError,
+  tryRead
 } from './utils.js';
 import path from 'path';
 
@@ -17,7 +17,7 @@ export type LessPluginOptions = Less.Options & {
 export default function farmLessPlugin(
   options: LessPluginOptions = {}
 ): JsPlugin {
-  let farmConfig: UserConfig;
+  let farmConfig: UserConfig['compilation'];
   let devServer: DevServer;
   const implementation = getLessImplementation(options?.implementation);
   return {
@@ -40,6 +40,7 @@ export default function farmLessPlugin(
       filters: { resolvedPaths: ['\\.less$'] },
       async executor(param) {
         try {
+          const isProd = farmConfig.mode === 'production';
           let relData = '';
           const fileRoot = path.dirname(param.resolvedPath);
           const configPaths = options.paths;
@@ -68,13 +69,13 @@ export default function farmLessPlugin(
               ...options,
               sourceMap: {
                 outputSourceFiles: Boolean(
-                  options.sourceMap ?? farmConfig?.compilation?.sourcemap
+                  options.sourceMap ?? farmConfig?.sourcemap
                 )
               },
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
             }
           );
-          if (imports) {
+          if (imports && !isProd) {
             for (const dep of imports) {
               devServer.addWatchFile(param.resolvedPath, [
                 path.resolve(fileRoot, dep)

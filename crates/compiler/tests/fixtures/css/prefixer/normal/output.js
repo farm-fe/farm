@@ -13,7 +13,7 @@
     }
     require(entryModule);
 })({
-    "ec853507": function(module, exports, farmRequire, dynamicRequire) {
+    "ec853507": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
     }
@@ -24,7 +24,7 @@
         __farm_global_this__.__farm_module_system__.register(key, modules[key]);
     }
 })({
-    "b5d64806": function(module, exports, farmRequire, dynamicRequire) {
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -34,7 +34,7 @@
 });
 var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
-//92a5e8c3.css:
+//index_337c.css:
  @-webkit-keyframes anim {}
 @-moz-keyframes anim {}
 @-o-keyframes anim {}

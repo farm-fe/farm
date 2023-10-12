@@ -2,13 +2,15 @@
  * Serve resources that stored in memory. This middleware will be enabled when server.writeToDisk is false.
  */
 
-import { extname } from 'node:path';
+import path, { extname } from 'node:path';
 import { Context, Next } from 'koa';
 import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
 import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
+import { existsSync, readFileSync } from 'node:fs';
+import mime from 'mime-types';
 
 export function resources(
   compiler: Compiler,
@@ -49,34 +51,60 @@ export function resources(
       finalResourcePath = resourcePath.slice(base.length);
     }
 
-    const resource = compiler.resources()[finalResourcePath];
+    const resource = compiler.resource(finalResourcePath);
 
-    // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
-    if (!resource && config.spa !== false) {
-      const pathComps = resourcePath.split('/');
+    // if resource is image or font, try it in local file system to be compatible with vue
+    if (!resource) {
+      // try local file system
+      const absPath = path.join(compiler.config.config.root, finalResourcePath);
+      const mimeStr = mime.lookup(absPath);
 
-      while (pathComps.length > 0) {
-        const pathStr = pathComps.join('/') + '.html';
-        const resource = compiler.resources()[pathStr];
-
-        if (resource) {
-          ctx.type = '.html';
-          ctx.body = resource;
-          return;
-        }
-
-        pathComps.pop();
-      }
-
-      const indexHtml = compiler.resources()['index.html'];
-
-      if (indexHtml) {
-        ctx.type = '.html';
-        ctx.body = indexHtml;
+      if (
+        existsSync(absPath) &&
+        mimeStr &&
+        (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
+      ) {
+        ctx.type = extname(resourcePath);
+        ctx.body = readFileSync(absPath);
         return;
       }
-      // cannot find index.html, return 404
-      ctx.status = 404;
+    }
+
+    // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
+    if (!resource) {
+      // if request mime is not html, return 404
+      if (!ctx.accepts('html')) {
+        ctx.status = 404;
+        return;
+      }
+
+      if (config.spa !== false) {
+        const pathComps = resourcePath.split('/');
+
+        while (pathComps.length > 0) {
+          const pathStr = pathComps.join('/') + '.html';
+          const resource = compiler.resources()[pathStr];
+
+          if (resource) {
+            ctx.type = '.html';
+            ctx.body = resource;
+            return;
+          }
+
+          pathComps.pop();
+        }
+
+        const indexHtml = compiler.resources()['index.html'];
+
+        if (indexHtml) {
+          ctx.type = '.html';
+          ctx.body = indexHtml;
+          return;
+        }
+      } else {
+        // cannot find index.html, return 404
+        ctx.status = 404;
+      }
     } else {
       ctx.type = extname(resourcePath);
       ctx.body = resource;

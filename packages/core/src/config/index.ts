@@ -6,10 +6,9 @@ import crypto from 'node:crypto';
 import merge from 'lodash.merge';
 import chalk from 'chalk';
 
+import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
-import { JsPlugin } from '../plugin/index.js';
 import { DevServer } from '../server/index.js';
-import { rustPluginResolver } from '../plugin/rustPluginResolver.js';
 import { parseUserConfig } from './schema.js';
 import {
   clearScreen,
@@ -67,8 +66,10 @@ export async function normalizeUserCompilationConfig(
         index: './index.html'
       },
       output: {
-        path: './dist'
-      }
+        path: './dist',
+        publicPath: '/'
+      },
+      sourcemap: true
     },
     compilation
   );
@@ -138,7 +139,9 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.lazyCompilation === undefined) {
+  if (isProduction) {
+    config.lazyCompilation = false;
+  } else if (config.lazyCompilation === undefined) {
     if (isDevelopment) {
       config.lazyCompilation = true;
     } else {
@@ -228,6 +231,7 @@ export async function normalizeUserCompilationConfig(
       config.presetEnv = false;
     }
   }
+
   const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
     config,
     userConfig
@@ -290,11 +294,11 @@ export function normalizeDevServerOptions(
  */
 export async function resolveUserConfig(
   inlineOptions: FarmCLIOptions,
+  command: 'serve' | 'build',
   logger: Logger
 ): Promise<UserConfig> {
   let userConfig: UserConfig = {};
   let root: string = process.cwd();
-
   const { configPath } = inlineOptions;
   if (
     inlineOptions.clearScreen &&
@@ -337,8 +341,14 @@ export async function resolveUserConfig(
     userConfig.root = root;
   }
 
+  userConfig.isBuild = command === 'build';
+  userConfig.command = command;
+
   // check port availability: auto increment the port if a conflict occurs
-  await DevServer.resolvePortConflict(userConfig, logger);
+  const targetWeb =
+    userConfig.compilation?.output?.targetEnv !== 'node' || !userConfig.isBuild;
+
+  targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
   const config = filterUserConfig(userConfig, inlineOptions);
   return config;
@@ -377,7 +387,7 @@ async function readConfigFile(
               '^[^./].*'
             ],
             partialBundling: {
-              moduleBuckets: [
+              enforceResources: [
                 {
                   name: fileName,
                   test: ['.+']
@@ -453,7 +463,6 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
 }
 
 /**
- *
  * @param publicPath  publicPath option
  * @param logger  logger instance
  * @param isPrefixNeeded  whether to add a prefix to the publicPath
@@ -506,75 +515,6 @@ export function normalizePublicPath(
     );
 
   return normalizedPublicPath;
-}
-
-export function convertPlugin(plugin: JsPlugin): void {
-  if (
-    plugin.transform &&
-    !plugin.transform.filters?.moduleTypes &&
-    !plugin.transform.filters?.resolvedPaths
-  ) {
-    throw new Error(
-      `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
-    );
-  }
-  if (plugin.transform) {
-    if (!plugin.transform.filters.moduleTypes) {
-      plugin.transform.filters.moduleTypes = [];
-    } else if (!plugin.transform.filters.resolvedPaths) {
-      plugin.transform.filters.resolvedPaths = [];
-    }
-  }
-}
-
-/**
- * resolvePlugins split / jsPlugins / rustPlugins
- * @param config
- */
-export async function resolveAllPlugins(
-  finalConfig: Config['config'],
-  userConfig: UserConfig
-) {
-  const plugins = userConfig.plugins ?? [];
-  if (!plugins.length) {
-    return {
-      rustPlugins: [],
-      jsPlugins: [],
-      finalConfig
-    };
-  }
-  const rustPlugins = [];
-  const jsPlugins: JsPlugin[] = [];
-
-  for (const plugin of plugins) {
-    if (
-      typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
-    ) {
-      rustPlugins.push(await rustPluginResolver(plugin, finalConfig.root));
-    } else if (isObject(plugin)) {
-      convertPlugin(plugin as unknown as JsPlugin);
-      jsPlugins.push(plugin as unknown as JsPlugin);
-    } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin) {
-        convertPlugin(pluginNestItem as JsPlugin);
-        jsPlugins.push(pluginNestItem as JsPlugin);
-      }
-    } else {
-      throw new Error(
-        `plugin ${plugin} is not supported, Please pass the correct plugin type`
-      );
-    }
-  }
-  // call user config hooks
-  for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
-  }
-  return {
-    rustPlugins,
-    jsPlugins,
-    finalConfig
-  };
 }
 
 export function filterUserConfig(

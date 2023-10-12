@@ -122,6 +122,7 @@ fn test_patch_module_graph_2() {
   assert!(edge_info.is_dynamic());
 }
 
+// TODO update these complex 1 2 3 tests
 #[test]
 fn test_patch_module_graph_complex_1() {
   let mut module_graph = construct_test_module_graph();

@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.2.4
+
+### Patch Changes
+
+- 509bac0: Fix HMR runtime does not has 'data' property
+
 ## 3.2.3
 
 ### Patch Changes

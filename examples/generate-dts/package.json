@@ -1,6 +1,6 @@
 {
-  "name": "ts",
-  "version": "1.0.0",
+  "name": "@farmfe-examples/generate-dts",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "dependencies": {

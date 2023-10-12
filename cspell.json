@@ -104,7 +104,9 @@
     "chpos",
     "linechpos",
     "bpos",
-    "multibyte"
+    "multibyte",
+    "svgr",
+    "vite"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

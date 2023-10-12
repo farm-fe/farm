@@ -34,7 +34,7 @@ pub struct CompilationContext {
   pub cache_manager: Box<CacheManager>,
   pub meta: Box<ContextMetaData>,
   pub record_manager: Box<RecordManager>,
-  pub log_store: Box<RwLock<LogStore>>,
+  pub log_store: Box<Mutex<LogStore>>,
 }
 
 impl CompilationContext {
@@ -50,7 +50,7 @@ impl CompilationContext {
       cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),
-      log_store: Box::new(RwLock::new(LogStore::new())),
+      log_store: Box::new(Mutex::new(LogStore::new())),
     })
   }
 
@@ -59,11 +59,10 @@ impl CompilationContext {
     // @import './variable.scss'
     let mut watch_graph = self.watch_graph.write();
 
+    watch_graph.add_node(from.clone());
+
     for dep in deps {
-      watch_graph.add_node(from.clone());
-
       watch_graph.add_node(dep.clone());
-
       watch_graph.add_edge(&from, dep)?;
     }
 

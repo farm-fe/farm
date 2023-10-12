@@ -7,3 +7,6 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
+
+[features]
+profile = ["farmfe_core/profile"]

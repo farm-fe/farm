@@ -67,6 +67,11 @@ pub fn get_dynamic_resources_map(
         dynamic_resources_map.insert(mg_id.clone(), resources);
       }
     }
+
+    // sort resources
+    if let Some(resources) = dynamic_resources_map.get_mut(&mg_id) {
+      resources.sort_by_key(|(name, _)| name.clone());
+    }
   }
 
   dynamic_resources_map
@@ -76,7 +81,7 @@ pub fn get_dynamic_resources_code(
   dynamic_resources_map: &HashMap<ModuleId, Vec<(String, ResourceType)>>,
   mode: Mode,
 ) -> String {
-  let mut dynamic_resources_code = String::new();
+  let mut dynamic_resources_code_vec = vec![];
 
   // inject dynamic resources
   for (module_id, resources) in dynamic_resources_map {
@@ -100,8 +105,16 @@ pub fn get_dynamic_resources_code(
     }
 
     let id = module_id.id(mode.clone()).replace(r"\", r"\\");
-    dynamic_resources_code += &format!(r#"'{}': [{}],"#, id, resources_code);
+    dynamic_resources_code_vec.push((id, resources_code));
   }
+
+  dynamic_resources_code_vec.sort_by_key(|(id, _)| id.clone());
+
+  let mut dynamic_resources_code = dynamic_resources_code_vec
+    .into_iter()
+    .map(|(id, resources_code)| format!(r#"'{}': [{}]"#, id, resources_code))
+    .collect::<Vec<_>>()
+    .join(",");
 
   dynamic_resources_code = format!("{{ {} }}", dynamic_resources_code);
 

@@ -24,7 +24,7 @@ const defaultMatch = ['\\.(s[ac]ss)$'];
 export default function farmSassPlugin(
   options: SassPluginOptions = {}
 ): JsPlugin {
-  let farmConfig!: UserConfig;
+  let farmConfig!: UserConfig['compilation'];
   let cacheAdditionContext: string | null;
   const implementation = getSassImplementation(options.implementation);
   const cwd = () => farmConfig.root ?? process.cwd();
@@ -57,9 +57,7 @@ export default function farmSassPlugin(
           const { css, sourceMap } = await (
             await implementation
           ).compileStringAsync(`${additionContext}\n${param.content}`, {
-            sourceMap: Boolean(
-              options.sourceMap ?? farmConfig?.compilation?.sourcemap
-            ),
+            sourceMap: Boolean(options.sourceMap ?? farmConfig?.sourcemap),
             url: pathToFileURL(param.resolvedPath)
           });
 

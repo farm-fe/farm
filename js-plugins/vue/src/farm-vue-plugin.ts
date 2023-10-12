@@ -4,18 +4,19 @@ import { parse } from '@vue/compiler-sfc';
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { handleHmr } from './farm-vue-hmr.js';
 import {
-  StylesCodeCache,
   CacheDescriptor,
+  FarmVuePluginOptions,
   PreProcessors,
-  PreProcessorsType,
   PreProcessorsOptions,
-  ValueOf,
-  FarmVuePluginOptions
+  PreProcessorsType,
+  StylesCodeCache,
+  ValueOf
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 import {
   callWithErrorHandle,
   error,
+  getHash,
   getResolvedOptions,
   handleExclude,
   handleInclude,
@@ -64,42 +65,42 @@ export default function farmVuePlugin(
         let source = '';
 
         const query = parseQuery(params.query);
-        const { vue, lang, hash, scoped } = query;
+        const { vue, lang, hash, scoped, index } = query;
 
         // handle .vue file
         if (vue === 'true' && hash) {
-          const cssCode = stylesCodeCache[hash];
+          let cssCode = stylesCodeCache[hash];
           // if lang is not "css", use preProcessor to handle
           if (applyStyleLangs.includes(lang)) {
             const { css } = await preProcession(cssCode, lang, {
               paths: [path.dirname(resolvedPath)]
             });
-
-            const { code: styleCode, errors } = compileStyle({
-              source: css,
-              id: `data-v-${scoped}`,
-              scoped: Boolean(scoped),
-              filename: resolvedPath,
-              // preprocessLang: lang !== 'css' ? lang as 'less' | 'sass' | 'scss' | 'stylus' : undefined,
-              // preprocessCustomRequire: loadPreProcessor,
-              ...resolvedOptions.style
-            });
-            if (errors.length) {
-              errors.forEach((err) => {
-                error({ id: err.name, message: err.message });
-              });
-              return;
-            }
-            return {
-              content: styleCode,
-              moduleType: 'css'
-            };
-          } else {
-            return {
-              content: cssCode,
-              moduleType: 'css'
-            };
+            cssCode = css;
           }
+          const descriptor = cacheDescriptor[resolvedPath];
+          const block = descriptor.styles[Number(index)];
+
+          const { code: styleCode, errors } = compileStyle({
+            source: cssCode,
+            id: `data-v-${scoped ?? getHash(resolvedPath)}`,
+            scoped: block.scoped,
+            filename: descriptor.filename,
+            isProd: farmConfig.mode === 'production',
+            // preprocessLang: lang !== 'css' ? lang as 'less' | 'sass' | 'scss' | 'stylus' : undefined,
+            // preprocessCustomRequire: loadPreProcessor,
+            ...resolvedOptions.style
+          });
+
+          if (errors.length) {
+            errors.forEach((err) => {
+              error({ id: err.name, message: err.message });
+            });
+            return;
+          }
+          return {
+            content: styleCode,
+            moduleType: 'css'
+          };
         }
 
         try {
@@ -128,8 +129,9 @@ export default function farmVuePlugin(
         try {
           // If path in exclude,skip transform.
           for (const reg of exclude) {
-            if (reg.test(params.resolvedPath))
+            if (reg.test(params.resolvedPath)) {
               return { content: params.content, moduleType: params.moduleType };
+            }
           }
 
           const query = parseQuery(params.query);
@@ -152,12 +154,13 @@ export default function farmVuePlugin(
               resolvedPath,
               farmConfig.mode
             );
-            if (isHmr)
+            if (isHmr) {
               return {
                 content: isHmr.source,
                 moduleType: isHmr.moduleType,
                 sourceMap: isHmr.map
               };
+            }
 
             const {
               source: mainCode,
@@ -175,9 +178,7 @@ export default function farmVuePlugin(
               moduleType,
               sourceMap: map
             };
-          }
-
-          // default
+          } // default
           else {
             console.error(
               `[farm-vue-plugin]:there is no path can be match,please check!`

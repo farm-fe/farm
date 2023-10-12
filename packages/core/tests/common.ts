@@ -1,6 +1,6 @@
 import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
-import { JsPlugin } from '../src/plugin/index.js';
+import { JsPlugin } from '../src/plugin/type.js';
 import { normalizeUserCompilationConfig } from '../src/config/index.js';
 import { fileURLToPath } from 'node:url';
 

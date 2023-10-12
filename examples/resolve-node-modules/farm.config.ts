@@ -18,7 +18,7 @@ export default {
       ...builtinModules.map((m) => `^node:${m}$`)
     ],
     partialBundling: {
-      moduleBuckets: [
+      enforceResources: [
         {
           name: 'node.bundle.js',
           test: ['.+']

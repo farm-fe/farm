@@ -1,5 +1,19 @@
 # @farmfe/js-plugin-less
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [f7b1b9d]
+- Updated dependencies [5be3aab]
+  - @farmfe/core@0.13.0
+
+## 1.1.1
+
+### Patch Changes
+
+- f93050c: fix:config hook type error
+
 ## 1.1.0
 
 ### Minor Changes

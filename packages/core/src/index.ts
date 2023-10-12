@@ -1,7 +1,7 @@
 export * from './compiler/index.js';
 export * from './config/index.js';
 export * from './server/index.js';
-export * from './plugin/index.js';
+export * from './plugin/type.js';
 export * from './utils/index.js';
 
 import path from 'node:path';
@@ -19,7 +19,7 @@ import {
   resolveUserConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger, Logger } from './utils/logger.js';
+import { DefaultLogger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { Config } from '../binding/index.js';
@@ -27,7 +27,7 @@ import { compilerHandler } from './utils/build.js';
 
 import type { FarmCLIOptions } from './config/types.js';
 import { setProcessEnv } from './config/env.js';
-import { JsPlugin } from './plugin/index.js';
+import { JsPlugin } from './plugin/type.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -35,7 +35,11 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
 
   setProcessEnv('development');
-  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
+  const config: UserConfig = await resolveUserConfig(
+    inlineConfig,
+    'serve',
+    logger
+  );
   const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   setProcessEnv(normalizedConfig.config.mode);
@@ -74,7 +78,11 @@ export async function build(
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   setProcessEnv('production');
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    'build',
+    logger
+  );
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     logger,
@@ -98,7 +106,11 @@ export async function build(
 export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    'serve',
+    logger
+  );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
@@ -165,7 +177,11 @@ export async function watch(
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   setProcessEnv('development');
-  const userConfig: UserConfig = await resolveUserConfig(options, logger);
+  const userConfig: UserConfig = await resolveUserConfig(
+    options,
+    'build',
+    logger
+  );
   const normalizedConfig = await normalizeUserCompilationConfig(
     userConfig,
     logger,
@@ -185,36 +201,36 @@ export async function createBundleHandler(
     compiler.removeOutputPathDir();
     await compiler.compile();
     compiler.writeResourcesToDisk();
+
+    // const maxFileNameLength = Math.max(
+    //   ...Object.keys(compiler.resources()).map((name) => name.length)
+    // );
+    // const fileSizeMap = Object.entries(compiler.resources())
+    //   .filter(([name]) => !name.endsWith('.map'))
+    //   .map(([resourceName, resource]) => {
+    //     let c = chalk.green;
+    //     const size = Buffer.byteLength(resource) / 1024;
+
+    //     if (size > 500) {
+    //       c = chalk.yellow;
+    //     }
+
+    //     const sizeStr = c(size.toFixed(0)) + chalk.cyan(' KB');
+
+    //     return {
+    //       resourceName: resourceName.padEnd(maxFileNameLength + 4, ' '),
+    //       size: sizeStr
+    //     };
+    //   });
+
+    // console.log(`\n${chalk.green('Output Files:')}`);
+    // fileSizeMap.forEach(({ resourceName, size }) =>
+    //   console.log(`\t${chalk.cyan(resourceName)}\t${size}`)
+    // );
   }, normalizedConfig);
 
   if (normalizedConfig.config?.watch || watchMode) {
     const watcher = new FileWatcher(compiler, normalizedConfig);
     watcher.watch();
   }
-}
-
-export async function resolveCompiler(
-  inlineConfig: FarmCLIOptions & UserConfig & Config,
-  logger: Logger
-) {
-  setProcessEnv('development');
-  const config: UserConfig = await resolveUserConfig(inlineConfig, logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
-
-  setProcessEnv(normalizedConfig.config.mode);
-
-  const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, config);
-
-  if (normalizedConfig.config.mode === 'development') {
-    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configDevServer?.(devServer)
-    );
-  }
-  await devServer.listen();
-  return {
-    devServer,
-    normalizedConfig,
-    config
-  };
 }

@@ -3,6 +3,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
+  hashbrown::HashSet,
   module::{Module, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
@@ -35,6 +36,7 @@ fn load_parse_and_analyze_deps() {
           resolved_path: &id,
           query: vec![],
           meta: HashMap::new(),
+          module_id: id.clone(),
         },
         &context,
         &hook_context,
@@ -120,8 +122,7 @@ fn load_parse_and_analyze_deps() {
         ]
       );
 
-      let mut resource_pot =
-        ResourcePot::new(ResourcePotId::new("index".to_string()), ResourcePotType::Js);
+      let mut resource_pot = ResourcePot::new(ResourcePotId::from("index"), ResourcePotType::Js);
 
       resource_pot.resource_pot_type = ResourcePotType::Js;
       resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
@@ -136,9 +137,9 @@ fn load_parse_and_analyze_deps() {
         .generate_resources(&mut resource_pot, &context, &hook_context)
         .unwrap()
         .unwrap();
-      assert_eq!(resources.len(), 2);
+      assert!(resources.source_map.is_some());
 
-      let code = String::from_utf8(resources[0].bytes.clone()).unwrap();
+      let code = String::from_utf8(resources.resource.bytes.clone()).unwrap();
 
       let lines: Vec<&str> = code.lines().collect();
       assert_eq!(

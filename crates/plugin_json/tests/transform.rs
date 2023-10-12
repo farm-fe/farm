@@ -21,6 +21,7 @@ fn generate_transform_fn(
     resolved_path: &id,
     query: vec![],
     meta: HashMap::new(),
+    module_id: id.clone(),
   };
   let hook_context = PluginHookContext {
     caller: None,
@@ -33,6 +34,7 @@ fn generate_transform_fn(
     .unwrap();
 
   let transform_param = PluginTransformHookParam {
+    module_id: id.clone(),
     content: loaded.content,
     module_type: loaded.module_type,
     resolved_path: &id,

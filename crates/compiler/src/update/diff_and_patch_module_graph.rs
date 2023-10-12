@@ -11,7 +11,7 @@ use farmfe_core::{
 };
 
 /// the diff result of a module's dependencies
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ModuleDepsDiffResult {
   /// added dependencies
   pub added: Vec<(ModuleId, ModuleGraphEdge)>,
@@ -22,7 +22,7 @@ pub struct ModuleDepsDiffResult {
 pub type ModuleDepsDiffResultMap = Vec<(ModuleId, ModuleDepsDiffResult)>;
 /// the diff result of a module, this records all related changes of the module graph
 /// for example, deeply added or removed dependencies also be recorded here
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DiffResult {
   pub deps_changes: ModuleDepsDiffResultMap,
   pub added_modules: HashSet<ModuleId>,
@@ -58,7 +58,7 @@ pub fn diff_module_graph(
   res
 }
 
-/// patch the module_graph according to the diff result, return [PatchModuleGraphResult] after patching, as patching may discover new changes
+/// patch the module_graph according to the diff result
 pub fn patch_module_graph(
   start_points: Vec<ModuleId>,
   diff_result: &DiffResult,
@@ -92,7 +92,7 @@ pub fn patch_module_graph(
     module_graph.add_edge(&from, &to, edge_info).unwrap();
   }
 
-  // remove removed modules later, as petgraph will remove edges when remove node
+  // remove removed modules
   for removed in &diff_result.removed_modules {
     let removed_module = module_graph.remove_module(removed);
     removed_modules.insert(removed.clone(), removed_module);

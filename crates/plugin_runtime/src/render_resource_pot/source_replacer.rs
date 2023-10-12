@@ -18,7 +18,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 
-pub const DYNAMIC_REQUIRE: &str = "dynamicRequire";
+pub const DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
 pub const FARM_REQUIRE: &str = "farmRequire";
 /// replace all `require('./xxx')` to the actual id and transform require('./xxx'). for example:
 /// ```js

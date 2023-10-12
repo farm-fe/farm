@@ -1,5 +1,19 @@
 # @farmfe/js-plugin-sass
 
+## 2.0.4
+
+### Patch Changes
+
+- Updated dependencies [f7b1b9d]
+- Updated dependencies [5be3aab]
+  - @farmfe/core@0.13.0
+
+## 2.0.3
+
+### Patch Changes
+
+- f93050c: fix:config hook type error
+
 ## 2.0.2
 
 ### Patch Changes

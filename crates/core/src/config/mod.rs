@@ -7,7 +7,10 @@ use swc_ecma_parser::{EsConfig, TsConfig};
 
 use crate::module::ModuleType;
 
-use self::{config_regex::ConfigRegex, html::HtmlConfig, preset_env::PresetEnvConfig};
+use self::{
+  config_regex::ConfigRegex, html::HtmlConfig, partial_bundling::PartialBundlingConfig,
+  preset_env::PresetEnvConfig,
+};
 
 pub const FARM_GLOBAL_THIS: &str = "(globalThis || window || global || self)[__farm_namespace__]";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
@@ -15,6 +18,7 @@ pub const FARM_NAMESPACE: &str = "__farm_namespace__";
 
 pub mod config_regex;
 pub mod html;
+pub mod partial_bundling;
 pub mod preset_env;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,7 +30,7 @@ pub struct Config {
   pub mode: Mode,
   pub resolve: ResolveConfig,
   pub external: Vec<ConfigRegex>,
-  pub define: HashMap<String, String>,
+  pub define: HashMap<String, serde_json::Value>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
   pub assets: AssetsConfig,
@@ -39,7 +43,6 @@ pub struct Config {
   pub tree_shaking: bool,
   // TODO: support minify options
   pub minify: bool,
-  // TODO: support preset env options
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
 }
@@ -280,41 +283,6 @@ impl Default for RuntimeConfig {
       plugins: vec![],
       swc_helpers_path: String::from(""),
       namespace: String::from("__farm_default_namespace__"),
-    }
-  }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PartialBundlingModuleBucketsConfig {
-  pub name: String,
-  /// Regex vec to match the modules in the module bucket
-  pub test: Vec<ConfigRegex>,
-}
-
-impl Default for PartialBundlingModuleBucketsConfig {
-  fn default() -> Self {
-    Self {
-      name: "".to_string(),
-      test: vec![],
-    }
-  }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PartialBundlingConfig {
-  /// custom module buckets
-  pub module_buckets: Vec<PartialBundlingModuleBucketsConfig>,
-  /// immutable module paths
-  pub immutable_modules: Vec<ConfigRegex>,
-}
-
-impl Default for PartialBundlingConfig {
-  fn default() -> Self {
-    Self {
-      module_buckets: vec![],
-      immutable_modules: vec![ConfigRegex::default()],
     }
   }
 }

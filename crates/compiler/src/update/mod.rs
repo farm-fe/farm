@@ -11,9 +11,7 @@ use farmfe_core::{
     module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId,
     ModuleType,
   },
-  plugin::{
-    PluginResolveHookParam, PluginUpdateModulesHookParams, ResolveKind, UpdateResult, UpdateType,
-  },
+  plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   rayon::ThreadPool,
   resource::ResourceType,
 };
@@ -26,6 +24,7 @@ use farmfe_core::error::Result;
 
 use self::{
   diff_and_patch_module_graph::{diff_module_graph, patch_module_graph, DiffResult},
+  handle_update_modules::handle_update_modules,
   patch_module_group_graph::patch_module_group_graph,
   regenerate_resources::{
     regenerate_resources_for_affected_module_groups, render_and_generate_update_resource,
@@ -35,6 +34,7 @@ use self::{
 
 mod diff_and_patch_module_graph;
 mod find_hmr_boundaries;
+mod handle_update_modules;
 mod patch_module_group_graph;
 mod regenerate_resources;
 mod update_context;
@@ -90,19 +90,6 @@ impl Compiler {
     drop(watch_graph);
     drop(module_graph);
 
-    let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams {
-      paths,
-      update_result: UpdateResult::default(),
-    };
-
-    self
-      .context
-      .plugin_driver
-      .update_modules(&mut plugin_update_modules_hook_params, &self.context)?;
-
-    let paths = plugin_update_modules_hook_params.paths;
-    let mut update_result = plugin_update_modules_hook_params.update_result;
-
     let mut old_watch_extra_resources: HashSet<String> = self
       .context
       .watch_graph
@@ -111,6 +98,9 @@ impl Compiler {
       .into_iter()
       .cloned()
       .collect();
+
+    let mut update_result = UpdateResult::default();
+    let paths = handle_update_modules(paths, &self.context, &mut update_result)?;
 
     for (path, update_type) in paths.clone() {
       match update_type {
@@ -167,11 +157,12 @@ impl Compiler {
 
     let (affected_module_groups, updated_module_ids, diff_result) =
       self.diff_and_patch_context(paths, &update_context);
-
+    // TODO only regenerate one resource if there are not deps changes.
     let dynamic_resources_map = self.regenerate_resources(
       affected_module_groups,
       previous_module_groups,
       &updated_module_ids,
+      diff_result.clone(),
       callback,
       sync,
     );
@@ -192,7 +183,7 @@ impl Compiler {
       watch_diff_result.remove.extend(old_watch_extra_resources);
     }
 
-    // If the module type is not script, we should skip render and generate update resource.
+    // If the module type is not script or css, we should skip render and generate update resource.
     // and just return `window.location.reload()`
     let should_reload_page = updated_module_ids.iter().any(|id| {
       let module_graph = self.context.module_graph.read();
@@ -202,7 +193,6 @@ impl Compiler {
     let resources = if should_reload_page {
       "window.location.reload()".to_string()
     } else {
-      // TODO1: only regenerate the resources for script modules.
       // TODO3: cover it with tests
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?
     };
@@ -399,6 +389,7 @@ impl Compiler {
     affected_module_groups: HashSet<ModuleGroupId>,
     previous_module_groups: HashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
+    diff_result: DiffResult,
     callback: F,
     sync: bool,
   ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
@@ -417,6 +408,7 @@ impl Compiler {
     {
       regenerate_resources_for_affected_module_groups(
         affected_module_groups,
+        diff_result,
         &cloned_updated_module_ids,
         &cloned_context,
       )
@@ -457,6 +449,7 @@ impl Compiler {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
           affected_module_groups,
+          diff_result,
           &cloned_updated_module_ids,
           &cloned_context,
         ) {

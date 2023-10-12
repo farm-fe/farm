@@ -16,10 +16,10 @@ export default {
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`)
+      ...builtinModules.map((m) => `^node:${m}$`),
     ],
     partialBundling: {
-      moduleBuckets: [
+      enforceResources: [
         {
           name: 'index.js',
           test: ['.+']

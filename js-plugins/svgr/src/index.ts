@@ -1,0 +1,46 @@
+import type { JsPlugin } from '@farmfe/core';
+import fs from 'fs';
+import type { ConfigPlugin, Config as SvgrOptions } from '@svgr/core';
+
+export interface FarmSvgrPluginOptions {
+  svgrOptions?: SvgrOptions;
+  filters?: string[];
+}
+
+export default function farmSvgrPlugin(
+  options: FarmSvgrPluginOptions = {}
+): JsPlugin {
+  const { svgrOptions, filters = ['\\.svg$'] } = options;
+
+  return {
+    name: 'farm-js-plugin-svgr',
+    load: {
+      filters: { resolvedPaths: filters },
+      async executor(param) {
+        if (
+          param.query.some(
+            ([key, _]) => key === 'raw' || key === 'url' || key === 'inline'
+          )
+        ) {
+          return null;
+        }
+
+        const { transform } = await import('@svgr/core');
+        const mod = await import('@svgr/plugin-jsx');
+        const jsx = mod.default ?? mod;
+
+        const svgCode = await fs.promises.readFile(param.resolvedPath, 'utf8');
+        const componentCode = await transform(svgCode, svgrOptions, {
+          filePath: param.resolvedPath,
+          caller: {
+            defaultPlugins: [jsx as unknown as ConfigPlugin]
+          }
+        });
+        return {
+          content: componentCode,
+          moduleType: 'jsx'
+        };
+      }
+    }
+  };
+}

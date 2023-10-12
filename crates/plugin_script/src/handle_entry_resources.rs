@@ -161,7 +161,7 @@ pub fn handle_entry_resources(
 
     // find entry resource and other resources that is required by entry resource
     if module.module_type.is_script() {
-      let (entry_js_resource_name, dep_resources, dynamic_resources_code) =
+      let (entry_js_resource_name, mut dep_resources, dynamic_resources_code) =
         get_entry_resource_and_dep_resources_name(
           entry,
           module,
@@ -169,6 +169,7 @@ pub fn handle_entry_resources(
           resources_map,
           context,
         );
+      dep_resources.sort();
 
       // 1. node specific code.
       // TODO: support async module for node, using dynamic require to load external module instead of createRequire. createRequire does not support load ESM module.

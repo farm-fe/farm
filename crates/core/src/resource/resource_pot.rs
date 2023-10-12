@@ -15,6 +15,7 @@ use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 #[cache_item]
 pub struct ResourcePot {
   pub id: ResourcePotId,
+  pub name: String,
   pub resource_pot_type: ResourcePotType,
   modules: HashSet<ModuleId>,
   pub meta: ResourcePotMetaData,
@@ -23,14 +24,19 @@ pub struct ResourcePot {
   pub entry_module: Option<ModuleId>,
   /// the resources generated in this [ResourcePot]
   resources: HashSet<String>,
+
+  /// This field should be filled in partial_bundling_hooks.
+  /// the module groups that this [ResourcePot] belongs to.
+  /// A [ResourcePot] can belong to multiple module groups.
   pub module_groups: HashSet<ModuleGroupId>,
   pub immutable: bool,
 }
 
 impl ResourcePot {
-  pub fn new(id: ResourcePotId, ty: ResourcePotType) -> Self {
+  pub fn new(name: String, ty: ResourcePotType) -> Self {
     Self {
-      id,
+      id: Self::gen_id(&name, ty.clone()),
+      name,
       resource_pot_type: ty,
       modules: HashSet::new(),
       meta: ResourcePotMetaData::default(),
@@ -39,6 +45,10 @@ impl ResourcePot {
       module_groups: HashSet::new(),
       immutable: false,
     }
+  }
+
+  pub fn gen_id(name: &str, ty: ResourcePotType) -> String {
+    format!("{}_{}", name, ty.to_string())
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
@@ -78,34 +88,10 @@ impl ResourcePot {
   }
 }
 
-#[cache_item]
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
-pub struct ResourcePotId {
-  name: String,
-}
-
-impl ToString for ResourcePotId {
-  fn to_string(&self) -> String {
-    self.name.clone()
-  }
-}
-
-impl From<&str> for ResourcePotId {
-  fn from(n: &str) -> Self {
-    Self {
-      name: n.to_string(),
-    }
-  }
-}
-
-impl ResourcePotId {
-  pub fn new(name: String) -> Self {
-    Self { name }
-  }
-}
+pub type ResourcePotId = String;
 
 #[cache_item]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ResourcePotType {
   Runtime,
   Js,
@@ -125,6 +111,12 @@ impl From<ModuleType> for ResourcePotType {
       ModuleType::Runtime => Self::Runtime,
       ModuleType::Custom(c) => Self::Custom(c),
     }
+  }
+}
+
+impl ToString for ResourcePotType {
+  fn to_string(&self) -> String {
+    format!("{:?}", self).to_lowercase()
   }
 }
 

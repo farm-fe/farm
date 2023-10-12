@@ -27,7 +27,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: cargo-test-code-coverage-grcov
-          
+
       - uses: actions/setup-node@v3
         with:
           node-version: 16
@@ -40,7 +40,7 @@ jobs:
 
       - run: rustup component add llvm-tools-preview
       - run: cargo install grcov
-      - run: CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='cargo-test-%p-%m.profraw' cargo test
+      - run: CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='cargo-test-%p-%m.profraw' cargo test --tests
       - run: grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/tests.lcov
 
       - name: Upload to codecov.io

@@ -53,6 +53,7 @@ export interface PluginResolveHookResult {
 }
 
 export interface PluginLoadHookParam {
+  moduleId: string;
   resolvedPath: string;
   query: [string, string][];
   meta: Record<string, string> | null;
@@ -67,6 +68,7 @@ export interface PluginLoadHookResult {
 }
 
 export interface PluginTransformHookParam {
+  moduleId: string;
   /// source content after load or transformed result of previous plugin
   content: string;
   /// module type after load
@@ -202,10 +204,22 @@ export interface Config {
     };
     sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
     partialBundling?: {
-      moduleBuckets?: {
+      targetConcurrentRequests?: number;
+      targetMinSize?: number;
+      targetMaxSize?: number;
+      groups?: {
+        name: string;
+        test: string[];
+        groupType?: 'mutable' | 'immutable',
+        resourceType?: 'all' | 'initial' | 'async'
+      }[];
+      enforceResources?: {
         name: string;
         test: string[];
       }[];
+      enforceTargetConcurrentRequests?: boolean;
+      enforceTargetMinSize?: boolean;
+      immutableModules?: string[];
     };
     lazyCompilation?: boolean;
     treeShaking?: boolean;

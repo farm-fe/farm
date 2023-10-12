@@ -115,14 +115,33 @@ const compilationConfigSchema = z
       .optional(),
     partialBundling: z
       .object({
-        moduleBuckets: z.array(
-          z
-            .object({
+        targetConcurrentRequests: z.number().positive().int().optional(),
+        targetMinSize: z.number().positive().int().optional(),
+        targetMaxSize: z.number().positive().int().optional(),
+        groups: z
+          .array(
+            z.object({
               name: z.string(),
-              test: z.array(z.string())
+              test: z.array(z.string()),
+              groupType: z.enum(['mutable', 'immutable']),
+              resourceType: z.enum(['all', 'initial', 'async'])
             })
-            .strict()
-        )
+          )
+          .optional(),
+        enforceResources: z
+          .array(
+            z
+              .object({
+                name: z.string(),
+                test: z.array(z.string())
+              })
+              .strict()
+          )
+          .optional(),
+        enforceTargetConcurrentRequests: z.boolean().optional(),
+        enforceTargetMinSize: z.boolean().optional(),
+        immutableModules: z.array(z.string()).optional(),
+        immutableModulesWeight: z.number().optional()
       })
       .strict()
       .optional(),
@@ -173,6 +192,7 @@ const FarmConfigSchema = z
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
     plugins: z.array(z.any()).optional(),
+    vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
     server: z
       .object({

@@ -38,6 +38,7 @@ fn test() {
           module_type: ModuleType::Custom(String::from("sass")),
           query: vec![],
           meta: HashMap::from([]),
+          module_id: resolved_path.clone(),
         },
         &Arc::new(context),
       )

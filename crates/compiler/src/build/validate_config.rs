@@ -12,7 +12,7 @@ pub fn validate_config(config: &Config) {
     ));
   }
 
-  if config.partial_bundling.module_buckets.len() <= 1
+  if config.partial_bundling.enforce_resources.len() <= 1
     && !config.output.filename.contains(RESOURCE_NAME)
   {
     errors.push(format!(
