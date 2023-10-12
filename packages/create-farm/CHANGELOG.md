@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.15
+
+### Patch Changes
+
+- 6dd919e: Bump version for Farm core and plugins
+
 ## 1.2.14
 
 ### Patch Changes

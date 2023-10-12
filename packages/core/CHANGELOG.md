@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.3
+
+### Patch Changes
+
+- 6dd919e: Fix HMR Update fail when there are deep dependencies changed
+
 ## 0.13.2
 
 ### Patch Changes
