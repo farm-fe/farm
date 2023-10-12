@@ -228,6 +228,7 @@ impl Resolver {
             }
           }
         }
+        println!("为什么没出来啊 怎么还一直在里面循环呢 ? {:?}", result);
         result
       }
     }
@@ -477,6 +478,8 @@ impl Resolver {
             tried_paths,
             context,
           );
+
+          println!("我是拿到了 最后的 result了 {:?}", result);
 
           if result.is_some() {
             return (result, tried_paths);
@@ -782,7 +785,7 @@ impl Resolver {
       "package_json_info 456456456123: {:#?}",
       package_json_info.raw()
     );
-    println!("source: {:?}", source);
+    println!("wqeqwewqesource: {:?}", source);
     let result: Option<Vec<String>> = if field_type == "imports" {
       self.imports(package_json_info, source, &condition_config)
     } else {

@@ -291,7 +291,7 @@ fn resolve_package_dir() {
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
-
+      println!("{:?}", cwd.to_str().unwrap());
       let resolved = resolver.resolve(
         cwd.to_str().unwrap(),
         cwd.clone(),
