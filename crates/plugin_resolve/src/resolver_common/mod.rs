@@ -483,18 +483,22 @@ pub fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
   out
 }
 
-pub fn injects(items: &mut Vec<String>, value: &str) {
+pub fn injects(items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
   let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
   let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
 
   for item in items.iter_mut() {
     let tmp = item.clone();
     if rgx1.is_match(&tmp) {
-      *item = rgx1.replace_all(&tmp, value).to_string();
+      *item = rgx1.replace(&tmp, value).to_string();
     } else if rgx2.is_match(&tmp) {
       *item += value;
     }
+    println!("拿到结果的 item {:?}", item);
   }
+
+  println!("拿到结果的 items {:?}", items);
+  return items.clone().into_iter().map(|s| Some(s)).collect();
 }
 
 pub fn loop_value(
@@ -701,21 +705,26 @@ pub fn walk(
       m = mapping.get(&longest_key.to_string());
     }
   }
+  println!("我是 m: {:?}", m);
   if m.is_none() {
     throws(name, &entry, None);
     return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
   }
   let v = loop_value(m.unwrap().clone(), &c, &mut None);
-
+  println!("我是 一开始的 v: {:?}", v);
   if v.is_none() {
     throws(name, &entry, Some(1));
     return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
   }
+  let mut cloned_v = v.clone();
+  println!("我是一开始的 replace {:?}", replace);
   if let Some(replace) = replace {
-    let mut cloned_v = v.clone();
-    injects(&mut cloned_v.unwrap(), &replace);
+    if let Some(v1) = injects(&mut cloned_v.unwrap(), &replace) {
+      println!("walk result: {:?}", v1);
+      return v1;
+    }
   }
-
+  println!("walk result: {:?}", v);
   v.unwrap()
 }
 
