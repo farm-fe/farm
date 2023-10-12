@@ -521,7 +521,21 @@ impl Resolver {
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
     println!("raw_package_json_info: {:?}", raw_package_json_info);
     let resolve_id = self.unresolved_id(deep_match, source, packageId);
-    self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context);
+    if let Some(resolved_path) =
+      self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context)
+    {
+      let resolved_path = get_result_path(&resolved_path, package_json_info.dir());
+      println!("这是最后拿到的 resolved_path {:?}", resolved_path);
+      return (
+        Some(PluginResolveHookResult {
+          resolved_path: resolved_path.unwrap(),
+          // external,
+          // side_effects,
+          ..Default::default()
+        }),
+        tried_paths,
+      );
+    }
     // for main_field in &context.config.resolve.main_fields {
     //   if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
     //     continue;
@@ -764,11 +778,17 @@ impl Resolver {
       // set default unsafe_flag to insert require & import field
       unsafe_flag: false,
     };
-    println!("package_json_info 456456456123: {:#?}", package_json_info.raw());
+    println!(
+      "package_json_info 456456456123: {:#?}",
+      package_json_info.raw()
+    );
     println!("source: {:?}", source);
     let result: Option<Vec<String>> = if field_type == "imports" {
       self.imports(package_json_info, source, &condition_config)
     } else {
+      println!("进来了吗");
+      println!("我是 package_json_info: {:?}", package_json_info);
+      println!("我是 source: {:?}", source);
       self.exports(package_json_info, source, &condition_config)
     };
     return result;
@@ -866,6 +886,13 @@ impl Resolver {
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
     if let Some(exports) = raw_package_json_info.get("exports") {
       println!("包含 exports 属性: {:?}", exports);
+      if let Some(point) =
+        self.resolve_exports_or_imports(package_json_info, ".", "exports", kind, context)
+      {
+        if !point.is_empty() {
+          entry_point = Some(point[0].clone());
+        }
+      }
     }
     let resolved_from_exports = entry_point.is_some();
     let is_browser = TargetEnv::Browser == context.config.output.target_env;
@@ -973,25 +1000,54 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
-  ) {
+  ) -> Option<String> {
     println!("resolve_deep_import: 拿到的 resolveId {:?}", resolve_id);
-    let relative_id = Some(resolve_id.clone());
+    let mut relative_id = Some(resolve_id.clone());
     let exports_data = get_field_value_from_package_json_info(package_json_info, "exports");
     let browser_data = get_field_value_from_package_json_info(package_json_info, "browser");
     let is_browser = TargetEnv::Browser == context.config.output.target_env;
-    let is_require = matches!(kind, ResolveKind::Require);
-    println!("exports_data {:#?}", exports_data);
     if let Some(export_data) = exports_data {
       if export_data.is_object() && !export_data.is_array() {
-        println!("我要开始解析 exports 字段啦 resolve_id {:?}", resolve_id.as_str());
-        println!("我要开始 deep_imports 解析 exports 字段啦");
+        println!("我是 pkg {:?}", package_json_info);
+        println!("我是 key {:?}", resolve_id);
         if let Some(resolve_id) =
-          self.resolve_exports_or_imports(package_json_info, "basic/base", "exports", kind, context)
+          self.resolve_exports_or_imports(package_json_info, &resolve_id, "exports", kind, context)
         {
-          println!("拿到值啦 {:?}", resolve_id);
+          println!("resolve_id: {:?}", resolve_id);
+          if let Some(value) = resolve_id.get(0) {
+            relative_id = Some(value.to_string());
+            println!("relative_id: {:?}", relative_id)
+          } else {
+            relative_id = None;
+          }
+        } else {
+          relative_id = None;
+        }
+        if relative_id.is_none() {
+          let error_message = format!(
+            "Package subpath '{:?}' is not defined by \"exports\" in {}.",
+            relative_id,
+            package_json_info.dir()
+          );
+
+          eprintln!("{}", error_message);
         }
       }
+    } else if is_browser && browser_data.clone().unwrap().is_object() {
+      let mapped = map_with_browser_field(
+        relative_id.clone().unwrap().as_str(),
+        &browser_data.unwrap(),
+      );
+      if mapped.is_some() {
+        relative_id = mapped;
+      }
     }
+
+    if let Some(relative_id) = &relative_id {
+      println!("relative_id: {:?}", relative_id);
+      return Some(relative_id.clone());
+    }
+    None
   }
 
   fn resolve_id_logic(
@@ -1001,15 +1057,14 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
-  ) {
+  ) -> Option<String> {
     if deep_match {
-      self.resolve_deep_import(resolve_id, package_json_info, kind, context) // 调用 resolveDeepImport 函数
+      return self.resolve_deep_import(resolve_id, package_json_info, kind, context);
     } else {
-      if let Some(entry_point) = self.find_entry_package_point(package_json_info, kind, context) {
-        println!("拿到的 entry_point {:?}", entry_point);
-      }
+      return self.find_entry_package_point(package_json_info, kind, context);
     }
   }
+
   fn unresolved_id(self: &Self, deep_match: bool, id: &str, pkg_id: &str) -> String {
     if deep_match {
       format!(".{}", &id[pkg_id.len()..])

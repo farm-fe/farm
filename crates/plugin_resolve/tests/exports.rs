@@ -26,7 +26,7 @@ fn resolve_exports_basic() {
           .join("node_modules")
           .join("basic")
           .join("lib")
-          .join("basic-exports.js")
+          .join("basic-base-exports.js")
           .to_string_lossy()
           .to_string()
       );
