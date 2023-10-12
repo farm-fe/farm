@@ -2,7 +2,6 @@ use farmfe_core::{
   common::PackageJsonInfo,
   config::{Mode, TargetEnv},
   context::CompilationContext,
-  dashmap::mapref::entry,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
@@ -20,9 +19,9 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 
 use crate::resolver_common::{
   are_values_equal, get_field_value_from_package_json_info, get_key_path, get_result_path,
-  is_double_source_dot, is_module_external, is_module_side_effects, is_source_absolute,
-  is_source_dot, is_source_relative, map_with_browser_field, try_file, walk, ConditionOptions,
-  NODE_MODULES,
+  is_bare_import_path, is_double_source_dot, is_module_external, is_module_side_effects,
+  is_source_absolute, is_source_dot, is_source_relative, map_with_browser_field, try_file, walk,
+  ConditionOptions, NODE_MODULES,
 };
 use crate::{
   resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
@@ -247,7 +246,7 @@ impl Resolver {
     if !dir.is_dir() {
       return None;
     }
-    let deep_match = DEEP_IMPORT_RE.is_match(source);
+    println!("try_directory source {:?}", source);
 
     for main_file in &context.config.resolve.main_files {
       let file = dir.join(main_file);
@@ -269,9 +268,10 @@ impl Resolver {
       );
 
       if let Ok(package_json_info) = package_json_info {
-        println!("package_json_info {:?}", package_json_info.raw());
-        println!("deep_match {:?}", deep_match);
-        println!("source {:?}", source);
+        let mut deep_match = DEEP_IMPORT_RE.is_match(source);
+        if !is_bare_import_path(source) && is_source_absolute(source) {
+          deep_match = false;
+        }
         let (res, _) = self.try_package(
           "",
           deep_match,
@@ -331,7 +331,6 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     farm_profile_function!("try_node_resolve".to_string());
-    println!("肯定要从这里进吧");
     // find node_modules until root
     let mut current = base_dir;
     // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
@@ -353,20 +352,18 @@ impl Resolver {
       let maybe_node_modules_path = current.join(NODE_MODULES);
       // check deepImport source
       let deep_match = DEEP_IMPORT_RE.is_match(source);
-      let mut packageId = source;
-      println!("source {:?}", source);
+      let mut package_id = source;
       if let Some(captures) = DEEP_IMPORT_RE.captures(source) {
         if let Some(matched_value) = captures.get(1) {
           let matched_string = matched_value.as_str();
-          println!("Matched: {}", matched_string);
-          packageId = matched_string;
+          package_id = matched_string;
         }
       }
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if context.config.resolve.symlinks {
-          follow_symlinks(RelativePath::new(packageId).to_logical_path(&maybe_node_modules_path))
+          follow_symlinks(RelativePath::new(package_id).to_logical_path(&maybe_node_modules_path))
         } else {
-          RelativePath::new(packageId).to_logical_path(&maybe_node_modules_path)
+          RelativePath::new(package_id).to_logical_path(&maybe_node_modules_path)
         };
         let package_json_info = load_package_json(
           package_path.clone(),
@@ -381,9 +378,7 @@ impl Resolver {
          * Refer to https://github.com/npm/validate-npm-package-name/blob/main/lib/index.js#L3 for the package name recognition and determine the sub path,
          * instead of judging the existence of package.json.
          */
-        println!("都要查一遍 packagepath 吧 {:?}", package_path);
 
-        println!("到底匹配没有匹配到 deepImport {:?}", deep_match);
         if !package_path.join("package.json").exists() {
           // check if the source is a directory or file can be resolved
           if matches!(&package_path, package_path if package_path.exists()) {
@@ -474,7 +469,7 @@ impl Resolver {
           let package_json_info = package_json_info.unwrap();
 
           let (result, tried_paths) = self.try_package(
-            packageId,
+            package_id,
             deep_match,
             &package_json_info,
             source,
@@ -514,7 +509,7 @@ impl Resolver {
 
   fn try_package(
     &self,
-    packageId: &str,
+    package_id: &str,
     deep_match: bool,
     package_json_info: &PackageJsonInfo,
     source: &str,
@@ -526,8 +521,8 @@ impl Resolver {
     // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
     // search normal entry, based on self.config.main_fields, e.g. module/main
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
-    println!("raw_package_json_info: {:?}", raw_package_json_info);
-    let resolve_id = self.unresolved_id(deep_match, source, packageId);
+    let resolve_id = self.unresolved_id(deep_match, source, package_id);
+    println!("resolve_id: {:?}", resolve_id);
     if let Some(resolved_path) =
       self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context)
     {
@@ -785,16 +780,10 @@ impl Resolver {
       // set default unsafe_flag to insert require & import field
       unsafe_flag: false,
     };
-    println!(
-      "package_json_info 456456456123: {:#?}",
-      package_json_info.raw()
-    );
-    println!("wqeqwewqesource: {:?}", source);
     let result: Option<Vec<String>> = if field_type == "imports" {
       self.imports(package_json_info, source, &condition_config)
     } else {
       println!("进来了吗");
-      println!("我是 package_json_info: {:?}", package_json_info);
       println!("我是 source: {:?}", source);
       self.exports(package_json_info, source, &condition_config)
     };

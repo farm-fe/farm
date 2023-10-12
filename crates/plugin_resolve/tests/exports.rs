@@ -590,35 +590,35 @@ fn resolve_exports_nesting_path() {
   );
 }
 
-// #[test]
-// fn resolve_exports_nesting_base() {
-//   fixture!(
-//     "tests/fixtures/resolve-node-modules/exports/index.ts",
-//     |file, _| {
-//       let cwd = file.parent().unwrap().to_path_buf();
-//       let resolver = Resolver::new();
+#[test]
+fn resolve_exports_nesting_base() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
 
-//       let resolved = resolver.resolve(
-//         "solid-js/dist/dev.js",
-//         cwd.clone(),
-//         &ResolveKind::Import,
-//         &Arc::new(CompilationContext::default()),
-//       );
-//       assert!(resolved.is_some());
-//       let resolved = resolved.unwrap();
-//       assert_eq!(
-//         resolved.resolved_path,
-//         cwd
-//           .join("node_modules")
-//           .join("solid-js")
-//           .join("dist")
-//           .join("dev.js")
-//           .to_string_lossy()
-//           .to_string()
-//       );
-//     }
-//   );
-// }
+      let resolved = resolver.resolve(
+        "solid-js/dist/dev.js",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("dist")
+          .join("dev.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
 
 #[test]
 fn resolve_exports_string_fields() {
