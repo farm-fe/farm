@@ -145,6 +145,7 @@ impl Resolver {
         self.try_alias(source, base_dir.clone(), kind, context)
       }
       source if is_source_absolute(source) => {
+        println!("这个不算是绝对路径么 {:?}", source);
         // Handle the absolute source case
         let path_buf = PathBuf::from_str(source).unwrap();
 
@@ -268,6 +269,9 @@ impl Resolver {
       );
 
       if let Ok(package_json_info) = package_json_info {
+        println!("package_json_info {:?}", package_json_info.raw());
+        println!("deep_match {:?}", deep_match);
+        println!("source {:?}", source);
         let (res, _) = self.try_package(
           "",
           deep_match,
