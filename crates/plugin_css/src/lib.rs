@@ -146,7 +146,6 @@ impl Plugin for FarmPluginCss {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let module_id: ModuleId = param.module_id.clone().into();
       let enable_css_modules = context.config.css.modules.is_some();
 
       // real css modules code
@@ -168,10 +167,30 @@ impl Plugin for FarmPluginCss {
 
       // css modules
       if enable_css_modules && self.is_path_match_css_modules(param.resolved_path) {
+        // add hash to avoid cache, make sure hmr works
+        // TODO use updateModules hook to invalidate cache instead of hash
+        let query_string = format!(
+          "?{}",
+          sha256(param.content.replace("\r\n", "\n").as_bytes(), 8)
+        );
+        let css_modules_resolved_path = format!(
+          "{}{}",
+          if cfg!(windows) {
+            param.resolved_path.replace('\\', "\\\\")
+          } else {
+            param.resolved_path.to_string()
+          },
+          FARM_CSS_MODULES_SUFFIX,
+        );
+        let css_modules_module_id = ModuleId::new(
+          &css_modules_resolved_path,
+          &query_string,
+          &context.config.root,
+        );
         let mut css_stylesheet = parse_css_stylesheet(
-          &module_id.to_string(),
+          &css_modules_module_id.to_string(),
           &param.content,
-          Arc::new(SourceMap::new(FilePathMapping::empty())),
+          context.meta.css.cm.clone(),
         )?;
 
         // js code for css modules
@@ -187,7 +206,7 @@ impl Plugin for FarmPluginCss {
               .unwrap()
               .indent_name
               .clone(),
-            hash: sha256(module_id.to_string().as_bytes(), 8),
+            hash: sha256(css_modules_module_id.to_string().as_bytes(), 8),
           },
         );
 
@@ -223,19 +242,12 @@ impl Plugin for FarmPluginCss {
 
         let code = format!(
           r#"
-    import "{}{}?{}";
+    import "{}{}";
     {}
     export default {{{}}}
     "#,
-          if cfg!(windows) {
-            param.resolved_path.replace('\\', "\\\\")
-          } else {
-            param.resolved_path.to_string()
-          },
-          FARM_CSS_MODULES_SUFFIX,
-          // add hash to avoid cache, make sure hmr works
-          // TODO use updateModules hook to invalidate cache instead of hash
-          sha256(param.content.replace("\r\n", "\n").as_bytes(), 8),
+          css_modules_resolved_path,
+          query_string,
           dynamic_import_of_composes
             .into_iter()
             .fold(Vec::new(), |mut acc, (from, name)| {

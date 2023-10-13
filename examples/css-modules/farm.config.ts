@@ -12,7 +12,7 @@ export default defineConfig({
     output: {
       path: './build',
     },
-    sourcemap: false
+    sourcemap: true
     // treeShaking: true,
     // minify: true,
   },
