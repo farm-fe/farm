@@ -49,16 +49,16 @@ pub fn is_data_url(url: &str) -> bool {
   DATA_URL_RE.is_match(url)
 }
 
-pub fn is_bare_import_path(path: &str) -> bool {
-  if path.starts_with('@') {
+pub fn is_bare_import_path(id: &str) -> bool {
+  if id.starts_with('@') {
     // Check if it's an "@"-based path
-    if let Some(rest) = path.strip_prefix('@') {
+    if let Some(rest) = id.strip_prefix('@') {
       let parts: Vec<&str> = rest.split('/').collect();
       return parts.len() == 2 && !parts[1].contains("://");
     }
   } else {
     // Check if it's a non-Windows absolute path
-    return !path.contains(':') && !path.contains("://");
+    return !id.contains(':') && !id.contains("://");
   }
   false
 }

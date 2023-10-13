@@ -35,6 +35,38 @@ fn resolve_exports_basic() {
 }
 
 #[test]
+fn resolve_exports_deep_import() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+      // Parsing packages in node_modules
+      let resolved = resolver.resolve(
+        "solid-js/runtime/helper/esm/transform",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("solid-js")
+          .join("runtime")
+          .join("helper")
+          .join("esm")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
 fn resolve_exports_replace() {
   fixture!(
     "tests/fixtures/resolve-node-modules/exports/index.ts",
