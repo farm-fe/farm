@@ -1,13 +1,15 @@
+$color: skyblue;
+
 .child {
   color: black;
 }
 
-.child, :global(.child-global) {
+.child:global(.child-global) {
   color: yellowgreen;
   background-color: whitesmoke;
 }
 
-.child, :global(.child-global2) {
-  color: yellowgreen;
+.child:global(.child-global2) {
+  color: $color;
   background-color: whitesmoke;
 }

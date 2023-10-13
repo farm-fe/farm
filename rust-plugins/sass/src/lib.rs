@@ -162,7 +162,7 @@ impl Plugin for FarmPluginSass {
 
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content: compile_result.css,
-        source_map: None,
+        source_map: compile_result.source_map,
         module_type: Some(farmfe_core::module::ModuleType::Css),
       }));
     }

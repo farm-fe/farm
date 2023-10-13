@@ -13,6 +13,46 @@ use crate::update::diff_and_patch_module_graph::{
 
 use super::{diff_module_graph, patch_module_graph};
 
+fn is_module_graph_equals(g1: &ModuleGraph, g2: &ModuleGraph) -> bool {
+  if g1.modules().len() != g2.modules().len() {
+    return false;
+  }
+
+  if g1.edge_count() != g2.edge_count() {
+    return false;
+  }
+
+  for module in g1.modules() {
+    if !g2.has_module(&module.id) {
+      return false;
+    }
+  }
+
+  for module in g2.modules() {
+    if !g1.has_module(&module.id) {
+      return false;
+    }
+  }
+
+  for a in g1.modules() {
+    for b in g1.modules() {
+      if g1.has_edge(&a.id, &b.id) != g2.has_edge(&a.id, &b.id) {
+        return false;
+      }
+    }
+  }
+
+  for a in g2.modules() {
+    for b in g2.modules() {
+      if g1.has_edge(&a.id, &b.id) != g2.has_edge(&a.id, &b.id) {
+        return false;
+      }
+    }
+  }
+
+  true
+}
+
 #[test]
 fn test_patch_module_graph_1() {
   let mut module_graph = create_basic_graph();
@@ -274,4 +314,105 @@ fn test_patch_module_graph_complex_4() {
   assert_eq!(module_graph.edge_count(), 2);
   assert!(module_graph.has_edge(&"A".into(), &"B".into()));
   assert!(module_graph.has_edge(&"B".into(), &"C".into()));
+}
+
+#[test]
+fn test_patch_module_graph_add_and_remove() {
+  let mut module_graph = create_basic_graph();
+  let mut update_module_graph = create_basic_graph();
+  let module_e = Module::new("e".into());
+  update_module_graph.add_module(module_e);
+  update_module_graph
+    .add_edge(&"a".into(), &"e".into(), Default::default())
+    .unwrap();
+  // remove a -> b and add e -> b
+  update_module_graph
+    .remove_edge(&"a".into(), &"b".into())
+    .unwrap();
+  update_module_graph
+    .add_edge(&"e".into(), &"b".into(), Default::default())
+    .unwrap();
+
+  let diff_result = super::diff_module_graph(vec!["a".into()], &module_graph, &update_module_graph);
+
+  patch_module_graph(
+    vec!["a".into()],
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  assert_eq!(module_graph.modules().len(), 5);
+  assert_eq!(module_graph.edge_count(), 4);
+  assert!(module_graph.has_edge(&"a".into(), &"e".into()));
+  assert!(module_graph.has_edge(&"e".into(), &"b".into()));
+  assert!(module_graph.has_edge(&"a".into(), &"d".into()));
+  assert!(module_graph.has_edge(&"b".into(), &"c".into()));
+  assert!(!module_graph.has_edge(&"a".into(), &"b".into()));
+}
+
+#[test]
+fn test_patch_module_graph_remove_and_add() {
+  let mut update_module_graph = create_basic_graph();
+  let mut module_graph = create_basic_graph();
+  let module_e = Module::new("e".into());
+  module_graph.add_module(module_e);
+  module_graph
+    .add_edge(&"a".into(), &"e".into(), Default::default())
+    .unwrap();
+  // remove a -> b and add e -> b
+  module_graph.remove_edge(&"a".into(), &"b".into()).unwrap();
+  module_graph
+    .add_edge(&"e".into(), &"b".into(), Default::default())
+    .unwrap();
+
+  let diff_result = super::diff_module_graph(vec!["a".into()], &module_graph, &update_module_graph);
+
+  patch_module_graph(
+    vec!["a".into()],
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  is_module_graph_equals(&module_graph, &create_basic_graph());
+}
+
+#[test]
+fn test_diff_module_deps_remove_and_add_complex() {
+  let create_update_module_graph = || {
+    let mut update_module_graph = create_basic_graph();
+    let module_e = Module::new("e".into());
+    update_module_graph.add_module(module_e);
+    update_module_graph
+      .remove_edge(&"a".into(), &"d".into())
+      .unwrap();
+    update_module_graph
+      .add_edge(&"c".into(), &"e".into(), Default::default())
+      .unwrap();
+    // add edge e -> d
+    update_module_graph
+      .add_edge(&"e".into(), &"d".into(), Default::default())
+      .unwrap();
+    update_module_graph
+  };
+  let mut update_module_graph = create_update_module_graph();
+
+  let mut module_graph = create_basic_graph();
+  module_graph.remove_module(&"c".into());
+
+  let diff_result = super::diff_module_graph(
+    vec!["a".into(), "b".into()],
+    &module_graph,
+    &update_module_graph,
+  );
+
+  patch_module_graph(
+    vec!["a".into(), "b".into()],
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  is_module_graph_equals(&module_graph, &create_update_module_graph());
 }

@@ -12,9 +12,9 @@ pub mod context;
 pub mod error;
 pub mod module;
 pub mod plugin;
+pub mod record;
 pub mod resource;
 pub mod stats;
-pub mod record;
 
 pub use farmfe_macro_cache_item::cache_item;
 

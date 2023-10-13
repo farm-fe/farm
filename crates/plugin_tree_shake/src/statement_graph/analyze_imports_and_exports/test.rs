@@ -591,10 +591,7 @@ fn for_stmt() {
 
   assert_eq!(defined_idents.len(), 0);
   assert_eq!(used_idents.len(), 5);
-  let mut used_idents = used_idents
-    .into_iter()
-    .map(|item| item)
-    .collect::<Vec<_>>();
+  let mut used_idents = used_idents.into_iter().map(|item| item).collect::<Vec<_>>();
   used_idents.sort();
   // treat a as used for now as it does not affect the result.
   assert_eq!(used_idents[0], "a#0".to_string());
@@ -653,10 +650,7 @@ fn var_decl_pat() {
   assert_eq!(defined_idents[3], "g#0".to_string());
   assert_eq!(defined_idents[4], "h#0".to_string());
 
-  let mut used_idents = used_idents
-    .into_iter()
-    .map(|item| item)
-    .collect::<Vec<_>>();
+  let mut used_idents = used_idents.into_iter().map(|item| item).collect::<Vec<_>>();
   used_idents.sort();
   assert_eq!(used_idents.len(), 2);
   assert_eq!(used_idents[0], "d#0".to_string());

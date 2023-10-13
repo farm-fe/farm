@@ -1,7 +1,3 @@
-
-
-
-
 use farmfe_testing_helpers::fixture;
 
 #[test]
