@@ -152,11 +152,7 @@ impl TreeShakeModule {
             let used_idents = stmt_used_idents_map
               .entry(dep_stmt.id)
               .or_insert(HashSet::new());
-            used_idents.extend(
-              referred_idents
-                .into_iter()
-                .map(UsedIdent::SwcIdent),
-            );
+            used_idents.extend(referred_idents.into_iter().map(UsedIdent::SwcIdent));
           }
           // stmt.used_idents.iter().for_each(|used_ident| {
           //   // find the defined ident
@@ -189,7 +185,6 @@ impl TreeShakeModule {
     }
 
     // 2. analyze used statements starting from used exports
-    
 
     self
       .stmt_graph
@@ -280,7 +275,11 @@ impl TreeShakeModule {
           } else {
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
             for export_info in self.exports() {
-              if export_info.specifiers.iter().any(|sp| matches!(sp, ExportSpecifierInfo::All(_))) {
+              if export_info
+                .specifiers
+                .iter()
+                .any(|sp| matches!(sp, ExportSpecifierInfo::All(_)))
+              {
                 let stmt_id = export_info.stmt_id;
                 used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
               }

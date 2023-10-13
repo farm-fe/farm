@@ -2,8 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use hashbrown::{HashMap, HashSet};
 
-
-use crate::{plugin::PluginAnalyzeDepsHookResultEntry, module::ModuleId};
+use crate::{module::ModuleId, plugin::PluginAnalyzeDepsHookResultEntry};
 
 /// All hook operation record are write down by [RecordManager]
 pub struct RecordManager {
@@ -66,7 +65,7 @@ impl RecordManager {
     let mut analyze_deps_map = self.analyze_deps_map.write().unwrap();
     if let Some(records) = analyze_deps_map.get_mut(&id) {
       records.push(record);
-    }else {
+    } else {
       analyze_deps_map.insert(id, vec![record]);
     }
   }
@@ -75,7 +74,7 @@ impl RecordManager {
     let mut resource_pot_map = self.resource_pot_map.write().unwrap();
     if let Some(records) = resource_pot_map.get_mut(&id) {
       records.push(record);
-    }else {
+    } else {
       resource_pot_map.insert(id, vec![record]);
     }
   }
@@ -110,7 +109,8 @@ impl RecordManager {
   }
 
   pub fn get_analyze_deps_records_by_id(&self, id: &str) -> Vec<AnalyzeDepsRecord> {
-    let analyze_deps_map: std::sync::RwLockReadGuard<'_, HashMap<String, Vec<AnalyzeDepsRecord>>> = self.analyze_deps_map.read().unwrap();
+    let analyze_deps_map: std::sync::RwLockReadGuard<'_, HashMap<String, Vec<AnalyzeDepsRecord>>> =
+      self.analyze_deps_map.read().unwrap();
     match analyze_deps_map.get(id) {
       Some(records) => records.clone(),
       None => Vec::new(),
@@ -153,7 +153,7 @@ pub struct ModuleRecord {
 #[derive(Debug, Clone)]
 pub struct AnalyzeDepsRecord {
   pub name: String,
-  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>
+  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
 #[derive(Debug, Clone)]
@@ -161,5 +161,5 @@ pub struct ResourcePotRecord {
   pub name: String,
   pub hook: String,
   pub modules: Vec<ModuleId>,
-  pub resources: Vec<String>
+  pub resources: Vec<String>,
 }
