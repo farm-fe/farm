@@ -257,7 +257,7 @@ impl Resolver {
     }
 
     let package_path = dir.join("package.json");
-
+    println!("dir {:?}", dir);
     if package_path.exists() && package_path.is_file() && !skip_try_package {
       let package_json_info = load_package_json(
         package_path,
@@ -348,7 +348,7 @@ impl Resolver {
       }
 
       tried_paths.push(current.clone());
-
+      println!("current {:?}", current);
       let maybe_node_modules_path = current.join(NODE_MODULES);
       // check deepImport source
       let deep_match = DEEP_IMPORT_RE.is_match(source);
@@ -378,7 +378,8 @@ impl Resolver {
          * Refer to https://github.com/npm/validate-npm-package-name/blob/main/lib/index.js#L3 for the package name recognition and determine the sub path,
          * instead of judging the existence of package.json.
          */
-
+        println!("base_dir {:?}", &maybe_node_modules_path);
+        println!("package_path {:?}", package_path);
         if !package_path.join("package.json").exists() {
           // check if the source is a directory or file can be resolved
           if matches!(&package_path, package_path if package_path.exists()) {
@@ -463,6 +464,7 @@ impl Resolver {
             );
           }
         } else if package_path.exists() && package_path.is_dir() {
+          println!("package_path {:?}", package_path);
           if package_json_info.is_err() {
             return (None, tried_paths);
           }
@@ -915,7 +917,7 @@ impl Resolver {
       }
 
       println!("解析 之后browser_entry: {:?}", browser_entry);
-
+      let module_fields = raw_package_json_info.get("module");
       if let Some(browser_entry) = browser_entry {
         if !is_require
           && context
@@ -923,11 +925,7 @@ impl Resolver {
             .resolve
             .main_fields
             .contains(&"module".to_string())
-          && raw_package_json_info
-            .get("module")
-            .unwrap()
-            .as_str()
-            .is_some()
+          && module_fields.is_some()
         {
           println!("进来了 开始解析了 browserEntry {:?}", browser_entry);
         } else {
@@ -1029,7 +1027,7 @@ impl Resolver {
           eprintln!("{}", error_message);
         }
       }
-    } else if is_browser && browser_data.clone().unwrap().is_object() {
+    } else if is_browser && browser_data.is_some() && browser_data.clone().unwrap().is_object() {
       let mapped = map_with_browser_field(
         relative_id.clone().unwrap().as_str(),
         &browser_data.unwrap(),
@@ -1038,7 +1036,7 @@ impl Resolver {
         relative_id = mapped;
       }
     }
-
+    println!("走到这里了 relative_id {:?}", relative_id);
     if let Some(relative_id) = &relative_id {
       println!("relative_id: {:?}", relative_id);
       return Some(relative_id.clone());
@@ -1054,6 +1052,9 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
+    println!("resolve_id_logic: 拿到的 resolveId {:?}", resolve_id);
+    println!("resolve_id_logic: 拿到的 deep_match {:?}", deep_match);
+    // if deep_match && is_source_absolute(&resolve_id) {
     if deep_match {
       return self.resolve_deep_import(resolve_id, package_json_info, kind, context);
     } else {

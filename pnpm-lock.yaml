@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: false
@@ -11956,6 +11956,13 @@ packages:
       yargs: 15.4.1
     dev: true
 
+  /snake-case@3.0.4:
+    resolution: {integrity: sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==}
+    dependencies:
+      dot-case: 3.0.4
+      tslib: 2.5.0
+    dev: true
+
   /solid-element@1.7.1(solid-js@1.7.8):
     resolution: {integrity: sha512-VtG3kg3HRUkq6QN4iyZKX1qmXYCEHMO3yH1DfakifaO+ncxHa56jU8SLtEgD55zR230pXQyPTWaEDDS0hTlmpg==}
     peerDependencies:
@@ -11964,12 +11971,6 @@ packages:
       component-register: 0.8.3
       solid-js: 1.7.8
     dev: false
-  /snake-case@3.0.4:
-    resolution: {integrity: sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==}
-    dependencies:
-      dot-case: 3.0.4
-      tslib: 2.5.0
-    dev: true
 
   /solid-js@1.7.8:
     resolution: {integrity: sha512-XHBWk1FvFd0JMKljko7FfhefJMTSgYEuVKcQ2a8hzRXfiuSJAGsrPPafqEo+f6l+e8Oe3cROSpIL6kbzjC1fjQ==}
