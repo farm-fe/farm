@@ -408,7 +408,7 @@ export class VitePluginAdapter implements JsPlugin {
             return {
               content: getContentValue(result),
               sourceMap:
-                typeof result.map === 'object'
+                typeof result.map === 'object' && result.map !== null
                   ? JSON.stringify(result.map)
                   : undefined,
               moduleType: formatTransformModuleType(id)

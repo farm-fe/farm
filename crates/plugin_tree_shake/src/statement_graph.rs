@@ -322,4 +322,8 @@ impl StatementGraph {
 
     used_statements
   }
+
+  pub fn contains_self_executed_stmt(&self) -> bool {
+    self.stmts().iter().any(|stmt| stmt.is_self_executed)
+  }
 }
