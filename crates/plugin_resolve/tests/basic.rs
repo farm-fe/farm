@@ -306,3 +306,87 @@ fn resolve_package_dir() {
     }
   );
 }
+
+#[test]
+fn resolve_node_modules_deep_import() {
+  farmfe_testing_helpers::fixture!(
+    "tests/fixtures/resolve-node-modules/normal/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "pkg-b/versions",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("pkg-b")
+          .join("versions.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+
+      // let resolved = resolver.resolve(
+      //   "dir-main",
+      //   cwd.clone(),
+      //   &ResolveKind::Import,
+      //   &Arc::new(CompilationContext::default()),
+      // );
+      // assert!(resolved.is_some());
+      // let resolved = resolved.unwrap();
+
+      // assert_eq!(
+      //   resolved.resolved_path,
+      //   cwd
+      //     .join("node_modules")
+      //     .join("dir-main")
+      //     .join("lib")
+      //     .join("index.js")
+      //     .to_string_lossy()
+      //     .to_string()
+      // );
+    }
+  );
+}
+
+#[test]
+fn resolve_node_modules_main_fields_without_extension() {
+  farmfe_testing_helpers::fixture!(
+    "tests/fixtures/resolve-node-modules/normal/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "pkg-c",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("pkg-c")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+    }
+  );
+}

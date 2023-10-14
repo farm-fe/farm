@@ -227,7 +227,6 @@ impl Resolver {
             }
           }
         }
-        println!("result: {:?}", result);
         result
       }
       _ => {
@@ -373,6 +372,7 @@ impl Resolver {
           .map_or_else(|| captures.get(2).unwrap().as_str(), |m| m.as_str()),
         None => source,
       };
+      println!("我是 pkgId: {:?}", package_id);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if context.config.resolve.symlinks {
           follow_symlinks(RelativePath::new(package_id).to_logical_path(&maybe_node_modules_path))
@@ -536,10 +536,16 @@ impl Resolver {
     if let Some(resolved_path) =
       self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context)
     {
-      let resolved_path = get_result_path(&resolved_path, package_json_info.dir());
+      println!("我是 resolved_path: {:?}", resolved_path);
+      let resolved_path = if is_source_absolute(&resolved_path) {
+        resolved_path
+      } else {
+        get_result_path(&resolved_path, package_json_info.dir()).unwrap()
+      };
+      println!("我是 resolved_path: {:?}", resolved_path);
       return (
         Some(PluginResolveHookResult {
-          resolved_path: resolved_path.unwrap(),
+          resolved_path,
           // external,
           // side_effects,
           ..Default::default()
@@ -974,8 +980,17 @@ impl Resolver {
         break;
       }
     }
+
     match entry_point {
       Some(entry) => {
+        let dir = PathBuf::from(package_json_info.dir());
+        let normalized_key = Path::new(&entry)
+          .file_name()
+          .and_then(|f| f.to_str())
+          .unwrap_or("");
+        if PathBuf::from(&entry).extension().is_none() {
+          return try_file(&dir.join(Path::new(&normalized_key)), context);
+        }
         return Some(entry);
       }
       None => return None,
@@ -1025,8 +1040,14 @@ impl Resolver {
         relative_id = mapped;
       }
     }
+    let dir = PathBuf::from(package_json_info.dir());
+    println!("我是 dir {:?}", dir);
+    println!("最后拿到的 relative_id {:?}", relative_id);
     if let Some(relative_id) = &relative_id {
-      return Some(relative_id.clone());
+      if PathBuf::from(relative_id).extension().is_none() {
+        return try_file(&dir.join(&relative_id), context);
+      }
+      return Some(relative_id.to_string());
     }
     None
   }
