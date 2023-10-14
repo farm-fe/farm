@@ -174,7 +174,7 @@ fn resolve_exports_nesting() {
         cwd
           .join("node_modules")
           .join("nesting")
-          .join("dist")
+          .join("server")
           .join("esm-bundler.js")
           .to_string_lossy()
           .to_string()
@@ -215,7 +215,7 @@ fn export_nesting_node_env() {
         cwd
           .join("node_modules")
           .join("nesting")
-          .join("dist")
+          .join("server")
           .join("index.mjs")
           .to_string_lossy()
           .to_string()

@@ -5,8 +5,6 @@ use std::{
   sync::Arc,
 };
 
-use dunce::canonicalize;
-
 use farmfe_core::{
   common::PackageJsonInfo,
   context::CompilationContext,
@@ -36,7 +34,7 @@ lazy_static! {
 
 lazy_static! {
   pub static ref DEEP_IMPORT_RE: regex::Regex =
-    regex::Regex::new(r#"^([^@][^/]*)/|^(@[^/]+/[^/]+)//"#).unwrap();
+    regex::Regex::new(r"^([^@][^/]*)/|^(@[^/]+/[^/]+)").unwrap();
 }
 
 lazy_static! {
@@ -439,6 +437,10 @@ pub fn find_mapping<'a>(
   }
 }
 
+pub fn is_in_node_modules(id: &str) -> bool {
+  id.contains("node_modules")
+}
+
 /**
  * Get a result path based on the provided value and current resolve base directory.
  *
@@ -749,7 +751,10 @@ pub fn map_with_browser_field<'a>(relative_path: &'a str, map: &'a Value) -> Opt
   if let Some(map_object) = map.as_object() {
     for (key, value) in map_object {
       // TODO 这快不对 规范化路径这快不对
-      let normalized_key = Path::new(key).file_name().and_then(|f| f.to_str()).unwrap_or("");
+      let normalized_key = Path::new(key)
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or("");
       if normalized_path == normalized_key
         || equal_without_suffix(normalized_path, normalized_key, ".js")
         || equal_without_suffix(normalized_path, normalized_key, "/index.js")

@@ -1,7 +1,7 @@
 use farmfe_core::{
   common::PackageJsonInfo,
   config::{Mode, TargetEnv},
-  context::CompilationContext,
+  context::{self, CompilationContext},
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
@@ -20,9 +20,9 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 
 use crate::resolver_common::{
   are_values_equal, get_field_value_from_package_json_info, get_key_path, get_result_path,
-  is_bare_import_path, is_double_source_dot, is_module_external, is_module_side_effects,
-  is_source_absolute, is_source_dot, is_source_relative, map_with_browser_field, try_file, walk,
-  ConditionOptions, NODE_MODULES,
+  is_bare_import_path, is_double_source_dot, is_in_node_modules, is_module_external,
+  is_module_side_effects, is_source_absolute, is_source_dot, is_source_relative,
+  map_with_browser_field, try_file, walk, ConditionOptions, NODE_MODULES,
 };
 use crate::{
   resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
@@ -197,7 +197,6 @@ impl Resolver {
           });
       }
       _source if is_bare_import_path(source) => {
-        println!("bare import path: {}", source);
         // check if the result is cached
         if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
           source: source.to_string(),
@@ -267,7 +266,6 @@ impl Resolver {
           resolve_ancestor_dir: true, // only look for current directory
         },
       );
-
       if let Ok(package_json_info) = package_json_info {
         let mut deep_match = DEEP_IMPORT_RE.is_match(source);
         if !is_bare_import_path(source) && is_source_absolute(source) {
@@ -282,7 +280,7 @@ impl Resolver {
             return resolved_path;
           }
         }
-
+        println!("try_package {:#?}", package_json_info.raw());
         let (res, _) = self.try_package(
           "",
           deep_match,
@@ -342,6 +340,7 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     farm_profile_function!("try_node_resolve".to_string());
+    println!("try_node_resolve {:#?}", source);
     // find node_modules until root
     let mut current = base_dir;
     // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
@@ -361,8 +360,11 @@ impl Resolver {
       let maybe_node_modules_path = current.join(NODE_MODULES);
       // check deepImport source
       let deep_match = DEEP_IMPORT_RE.is_match(source);
+      println!("source {:#?}", source);
+      println!("deep_match 请问请问我 {:#?}", deep_match);
       let mut package_id = source;
       let captures = DEEP_IMPORT_RE.captures(source);
+      println!("captures {:#?}", captures);
       package_id = match captures {
         Some(captures) => captures
           .get(1)
@@ -947,7 +949,6 @@ impl Resolver {
       }
     }
 
-
     entry_point = match entry_point {
       Some(ep) => Some(ep), // 如果 entry_point 有值，直接使用它
       None => raw_package_json_info
@@ -1044,12 +1045,65 @@ impl Resolver {
       }
     }
     let dir = PathBuf::from(package_json_info.dir());
-    if let Some(relative_id) = &relative_id {
-      if PathBuf::from(relative_id).extension().is_none() {
-        return try_file(&dir.join(&relative_id), context);
-      }
-      return Some(relative_id.to_string());
+    let dir_path = get_result_path(&relative_id.unwrap(), &dir.to_str().unwrap().to_string());
+    // if let Some(relative_id) = &relative_id {
+    //   if PathBuf::from(relative_id).extension().is_none() {
+    //     return try_file(&dir.join(&relative_id), context);
+    //   }
+    //   return Some(relative_id.to_string());
+    // }
+    if let Some(resolved_path) =
+      self.resolve_fs(PathBuf::from(dir_path.unwrap()), is_browser, kind, context)
+    {
+      return Some(resolved_path);
     }
+
+    None
+  }
+
+  fn resolve_fs(
+    self: &Self,
+    path: PathBuf,
+    is_browser: bool,
+    kind: &ResolveKind,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    println!("resolveFs path {:?}", path);
+    let hash_index = path.to_str().unwrap().find('#');
+    if let Some(hash_index) = hash_index {
+      if is_in_node_modules(&path.to_str().unwrap()) {
+        let query_index = path.to_str().unwrap().find('?');
+
+        if let Some(query_index) = query_index {
+          if query_index < hash_index {
+            let file = &path.to_str().unwrap()[..query_index];
+            // TODO  Dependencies like es5-ext use `#` in their paths.
+          }
+        }
+      }
+    }
+    println!("path is file {:?}", PathBuf::from(&path).is_file());
+    println!("path is exists {:?}", PathBuf::from(&path).exists());
+    if PathBuf::from(&path).is_file() && PathBuf::from(&path).exists() {
+      println!("走这里了");
+      return Some(path.to_str().unwrap().to_string());
+    }
+    return try_file(&path, context)
+      .or_else(|| self.try_directory(&path, "", &kind, false, context))
+      .map(|resolved_path| {
+        println!("resolved_path {:?}", resolved_path);
+        return resolved_path;
+      });
+    // get_result_path(&resolved_id, current_resolve_base_dir);
+  }
+
+  fn try_clean_fs_resolve(
+    self: &Self,
+    path: &PathBuf,
+    is_browser: bool,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    println!("try_clean_fs_resolve path {:?}", path);
     None
   }
 
@@ -1061,6 +1115,7 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
+    println!("没走进来么 deepmatch {:?}", deep_match);
     // if deep_match && is_source_absolute(&resolve_id) {
     if deep_match {
       return self.resolve_deep_import(resolve_id, package_json_info, kind, context);
