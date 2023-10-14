@@ -140,9 +140,7 @@ impl Plugin for FarmPluginScript {
           let ast = &mut param.meta.as_script_mut().ast;
 
           match param.module_type {
-            farmfe_core::module::ModuleType::Js => {
-              // TODO downgrade syntax
-            }
+            farmfe_core::module::ModuleType::Js => {}
             farmfe_core::module::ModuleType::Jsx => {
               // Do nothing, jsx should be handled by other plugins
             }

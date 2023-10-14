@@ -1,5 +1,8 @@
-use farmfe_core::swc_ecma_ast::{
-  ImportDecl, ImportSpecifier, Module as SwcModule, ModuleExportName,
+use std::collections::HashMap;
+
+use farmfe_core::{
+  module::{module_graph::ModuleGraph, ModuleId},
+  swc_ecma_ast::{ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem},
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith};
 
@@ -13,13 +16,19 @@ use crate::{
 };
 
 pub fn remove_useless_stmts(
-  tree_shake_module: &mut TreeShakeModule,
-  swc_module: &mut SwcModule,
+  tree_shake_module_id: &ModuleId,
+  module_graph: &mut ModuleGraph,
+  tree_shake_module_map: &HashMap<ModuleId, TreeShakeModule>,
 ) -> (Vec<ImportInfo>, Vec<ExportInfo>) {
   farmfe_core::farm_profile_function!(format!(
     "remove_useless_stmts {:?}",
     tree_shake_module.module_id.to_string()
   ));
+  let tree_shake_module = tree_shake_module_map
+    .get(tree_shake_module_id)
+    .expect("tree shake module should exist");
+  let module = module_graph.module_mut(tree_shake_module_id).unwrap();
+  let swc_module = &mut module.meta.as_script_mut().ast;
   // analyze the statement graph start from the used statements
   let mut used_stmts = tree_shake_module
     .used_statements()
@@ -85,14 +94,122 @@ pub fn remove_useless_stmts(
     }
   }
 
+  drop(module);
   // remove from the end to the start
   stmts_to_remove.reverse();
+  let (stmts_to_remove, pending_transform_stmts) = filter_stmts_to_remove(
+    stmts_to_remove,
+    tree_shake_module_id,
+    module_graph,
+    tree_shake_module_map,
+  );
 
-  for stmt in stmts_to_remove {
-    swc_module.body.remove(stmt);
+  let module = module_graph.module_mut(tree_shake_module_id).unwrap();
+  let swc_module = &mut module.meta.as_script_mut().ast;
+
+  // transform the import statement to import 'xxx'
+  for (stmt_index, ty) in pending_transform_stmts {
+    if matches!(ty, PendingTransformType::Import) {
+      let module_item = &mut swc_module.body[stmt_index];
+
+      if let ModuleItem::ModuleDecl(module_decl) = module_item {
+        if let ModuleDecl::Import(import_decl) = module_decl {
+          import_decl.specifiers.clear();
+        }
+      }
+    }
+    // leave the export statement as it is
+  }
+
+  for index in stmts_to_remove {
+    swc_module.body.remove(index);
   }
 
   (used_import_infos, used_export_from_infos)
+}
+
+enum PendingTransformType {
+  Import,
+  ExportFrom,
+  ExportAll,
+}
+
+fn filter_stmts_to_remove(
+  stmts_to_remove: Vec<usize>,
+  tree_shake_module_id: &ModuleId,
+  module_graph: &ModuleGraph,
+  tree_shake_module_map: &HashMap<ModuleId, TreeShakeModule>,
+) -> (Vec<usize>, Vec<(usize, PendingTransformType)>) {
+  let mut filtered_stmts_to_remove = vec![];
+  let mut pending_transforms = vec![];
+
+  let module = module_graph.module(tree_shake_module_id).unwrap();
+  let swc_module = &module.meta.as_script().ast;
+
+  for stmt_index in stmts_to_remove {
+    // fix https://github.com/farm-fe/farm/issues/625
+    // 1. if statement is `import xxx from 'dep' or `import { xxx } from 'dep'`, and dep has side effects or contains self-executed statements. it should not be removed, and it should be transformed to `import 'dep'`
+    // 2. if statement is `export xxx from 'dep'`, and dep has side effects or contains self-executed statements. it should not be removed.
+
+    match &swc_module.body[stmt_index] {
+      ModuleItem::ModuleDecl(module_decl) => match module_decl {
+        ModuleDecl::Import(import_decl) => {
+          let source = import_decl.src.value.to_string();
+          pending_transforms.push((stmt_index, PendingTransformType::Import, source));
+        }
+        ModuleDecl::ExportNamed(named) => {
+          if let Some(source) = &named.src {
+            let source = source.value.to_string();
+            pending_transforms.push((stmt_index, PendingTransformType::ExportFrom, source));
+          } else {
+            filtered_stmts_to_remove.push(stmt_index);
+          }
+        }
+        ModuleDecl::ExportAll(export_all) => {
+          let source = export_all.src.value.to_string();
+          pending_transforms.push((stmt_index, PendingTransformType::ExportAll, source));
+        }
+        _ => {
+          filtered_stmts_to_remove.push(stmt_index);
+        }
+      },
+      ModuleItem::Stmt(_) => {
+        filtered_stmts_to_remove.push(stmt_index);
+      }
+    }
+  }
+
+  let mut pending_transform_stmts = vec![];
+  // determine whether to remove the statement
+  // if the dep has side effects or contains self-executed statements, it should not be removed
+  for (stmt_index, ty, source) in pending_transforms {
+    let dep_module_id = module_graph.get_dep_by_source_optional(tree_shake_module_id, &source);
+
+    if let Some(dep_module_id) = dep_module_id {
+      if let Some(tree_shake_module) = tree_shake_module_map.get(&dep_module_id) {
+        if tree_shake_module.side_effects || tree_shake_module.contains_self_executed_stmt {
+          match ty {
+            PendingTransformType::Import => {
+              pending_transform_stmts.push((stmt_index, PendingTransformType::Import));
+            }
+            PendingTransformType::ExportFrom | PendingTransformType::ExportAll => { /* do nothing, just preserve this statement */
+            }
+          }
+        } else {
+          filtered_stmts_to_remove.push(stmt_index);
+        }
+      } else {
+        filtered_stmts_to_remove.push(stmt_index);
+      }
+    } else {
+      filtered_stmts_to_remove.push(stmt_index);
+    }
+  }
+  // make sure the stmts_to_remove is sorted from the end to the start
+  filtered_stmts_to_remove.sort();
+  filtered_stmts_to_remove.reverse();
+
+  (filtered_stmts_to_remove, pending_transform_stmts)
 }
 
 pub struct UselessImportStmtsRemover {

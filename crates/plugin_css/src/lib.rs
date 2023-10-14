@@ -168,7 +168,7 @@ impl Plugin for FarmPluginCss {
       // css modules
       if enable_css_modules && self.is_path_match_css_modules(param.resolved_path) {
         // add hash to avoid cache, make sure hmr works
-        // TODO use updateModules hook to invalidate cache instead of hash
+        // TODO use updateModules hook to invalidate cache instead of hash.
         let query_string = format!(
           "?{}",
           sha256(param.content.replace("\r\n", "\n").as_bytes(), 8)
