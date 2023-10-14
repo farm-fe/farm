@@ -94,7 +94,6 @@ pub fn remove_useless_stmts(
     }
   }
 
-  drop(module);
   // remove from the end to the start
   stmts_to_remove.reverse();
   let (stmts_to_remove, pending_transform_stmts) = filter_stmts_to_remove(
