@@ -197,6 +197,7 @@ impl Resolver {
           });
       }
       _source if is_bare_import_path(source) => {
+        println!("bare import path: {}", source);
         // check if the result is cached
         if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
           source: source.to_string(),
@@ -360,10 +361,6 @@ impl Resolver {
       let maybe_node_modules_path = current.join(NODE_MODULES);
       // check deepImport source
       let deep_match = DEEP_IMPORT_RE.is_match(source);
-      println!(
-        "我是  deep_match: {:?} 我是 source {:?}",
-        deep_match, source
-      );
       let mut package_id = source;
       let captures = DEEP_IMPORT_RE.captures(source);
       package_id = match captures {
@@ -372,7 +369,6 @@ impl Resolver {
           .map_or_else(|| captures.get(2).unwrap().as_str(), |m| m.as_str()),
         None => source,
       };
-      println!("我是 pkgId: {:?}", package_id);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if context.config.resolve.symlinks {
           follow_symlinks(RelativePath::new(package_id).to_logical_path(&maybe_node_modules_path))
@@ -536,13 +532,11 @@ impl Resolver {
     if let Some(resolved_path) =
       self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context)
     {
-      println!("我是 resolved_path: {:?}", resolved_path);
       let resolved_path = if is_source_absolute(&resolved_path) {
         resolved_path
       } else {
         get_result_path(&resolved_path, package_json_info.dir()).unwrap()
       };
-      println!("我是 resolved_path: {:?}", resolved_path);
       return (
         Some(PluginResolveHookResult {
           resolved_path,
@@ -953,6 +947,7 @@ impl Resolver {
       }
     }
 
+
     entry_point = match entry_point {
       Some(ep) => Some(ep), // 如果 entry_point 有值，直接使用它
       None => raw_package_json_info
@@ -984,12 +979,19 @@ impl Resolver {
     match entry_point {
       Some(entry) => {
         let dir = PathBuf::from(package_json_info.dir());
-        let normalized_key = Path::new(&entry)
-          .file_name()
-          .and_then(|f| f.to_str())
-          .unwrap_or("");
+        let normalized_key = get_key_path(&entry, package_json_info.dir());
         if PathBuf::from(&entry).extension().is_none() {
-          return try_file(&dir.join(Path::new(&normalized_key)), context);
+          return try_file(&dir.join(Path::new(&normalized_key)), context).or_else(|| {
+            self.try_directory(
+              &dir.join(Path::new(&normalized_key)),
+              // TODO  NO SOURCE
+              "",
+              kind,
+              false,
+              context,
+            )
+          });
+          // return try_file(&dir.join(Path::new(&normalized_key)), context);
         }
         return Some(entry);
       }
@@ -1041,8 +1043,6 @@ impl Resolver {
       }
     }
     let dir = PathBuf::from(package_json_info.dir());
-    println!("我是 dir {:?}", dir);
-    println!("最后拿到的 relative_id {:?}", relative_id);
     if let Some(relative_id) = &relative_id {
       if PathBuf::from(relative_id).extension().is_none() {
         return try_file(&dir.join(&relative_id), context);

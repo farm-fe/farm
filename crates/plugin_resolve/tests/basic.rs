@@ -390,3 +390,102 @@ fn resolve_node_modules_main_fields_without_extension() {
     }
   );
 }
+
+#[test]
+fn resolve_node_modules_main_fields_deep_without_extension() {
+  farmfe_testing_helpers::fixture!(
+    "tests/fixtures/resolve-node-modules/normal/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "pkg-d",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("pkg-d")
+          .join("es")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+    }
+  );
+}
+
+#[test]
+fn resolve_node_modules_main_fields_deep_module_without_extension() {
+  farmfe_testing_helpers::fixture!(
+    "tests/fixtures/resolve-node-modules/normal/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "pkg-e",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("pkg-e")
+          .join("es")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+    }
+  );
+}
+
+#[test]
+fn resolve_node_modules_main_fields_deep_find_package_json_file() {
+  farmfe_testing_helpers::fixture!(
+    "tests/fixtures/resolve-node-modules/normal/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "pkg-f/constants",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("pkg-f")
+          .join("es")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+    }
+  );
+}
