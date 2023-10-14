@@ -5,6 +5,8 @@ use std::{
   sync::Arc,
 };
 
+use dunce::canonicalize;
+
 use farmfe_core::{
   common::PackageJsonInfo,
   context::CompilationContext,
@@ -34,7 +36,7 @@ lazy_static! {
 
 lazy_static! {
   pub static ref DEEP_IMPORT_RE: regex::Regex =
-    regex::Regex::new(r"^([^@][^/]*)/|^(@[^/]+/[^/]+)").unwrap();
+    regex::Regex::new(r#"^([^@][^/]*)/|^(@[^/]+/[^/]+)//"#).unwrap();
 }
 
 lazy_static! {
@@ -54,7 +56,7 @@ pub fn is_bare_import_path(id: &str) -> bool {
     // Check if it's an "@"-based path
     if let Some(rest) = id.strip_prefix('@') {
       let parts: Vec<&str> = rest.split('/').collect();
-      return parts.len() == 2 && !parts[1].contains("://");
+      return !parts[1].contains("://");
     }
   } else {
     // Check if it's a non-Windows absolute path
@@ -494,10 +496,8 @@ pub fn injects(items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
     } else if rgx2.is_match(&tmp) {
       *item += value;
     }
-    println!("拿到结果的 item {:?}", item);
   }
 
-  println!("拿到结果的 items {:?}", items);
   return items.clone().into_iter().map(|s| Some(s)).collect();
 }
 
@@ -658,9 +658,7 @@ pub fn walk(
   input: &str,
   options: &ConditionOptions,
 ) -> Vec<String> {
-  println!("walk: name: {}, input: {}", name, input);
   let entry_result: Result<String, String> = to_entry(name, input, Some(true));
-  println!("entry_result: {:?}", entry_result);
   let entry: String = match entry_result {
     Ok(entry) => entry.to_string(),
     Err(error) => {
@@ -705,26 +703,21 @@ pub fn walk(
       m = mapping.get(&longest_key.to_string());
     }
   }
-  println!("我是 m: {:?}", m);
   if m.is_none() {
     throws(name, &entry, None);
     return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
   }
   let v = loop_value(m.unwrap().clone(), &c, &mut None);
-  println!("我是 一开始的 v: {:?}", v);
   if v.is_none() {
     throws(name, &entry, Some(1));
     return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
   }
   let mut cloned_v = v.clone();
-  println!("我是一开始的 replace {:?}", replace);
   if let Some(replace) = replace {
     if let Some(v1) = injects(&mut cloned_v.unwrap(), &replace) {
-      println!("walk result: {:?}", v1);
       return v1;
     }
   }
-  println!("walk result: {:?}", v);
   v.unwrap()
 }
 
@@ -746,15 +739,17 @@ impl FromStr for Condition {
   }
 }
 
-pub fn map_with_browser_field<'a>(
-  relative_path_in_pkg_dir: &'a str,
-  map: &'a Value,
-) -> Option<String> {
-  let normalized_path = Path::new(relative_path_in_pkg_dir).to_str().unwrap();
+pub fn map_with_browser_field<'a>(relative_path: &'a str, map: &'a Value) -> Option<String> {
+  // 使用 Path::new 来创建一个路径对象
+  let path = Path::new(relative_path);
+
+  // 使用 file_name() 方法来获取路径中的文件名部分
+  let normalized_path = path.file_name().and_then(|f| f.to_str()).unwrap_or("");
 
   if let Some(map_object) = map.as_object() {
     for (key, value) in map_object {
-      let normalized_key = Path::new(key).to_str().unwrap();
+      // TODO 这快不对 规范化路径这快不对
+      let normalized_key = Path::new(key).file_name().and_then(|f| f.to_str()).unwrap_or("");
       if normalized_path == normalized_key
         || equal_without_suffix(normalized_path, normalized_key, ".js")
         || equal_without_suffix(normalized_path, normalized_key, "/index.js")

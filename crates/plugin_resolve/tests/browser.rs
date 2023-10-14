@@ -159,6 +159,8 @@ fn resolve_browser_replace() {
       assert_eq!(
         resolved.resolved_path,
         cwd
+          .join("node_modules")
+          .join("replace")
           .join("shims")
           .join("module-a.js")
           .to_string_lossy()
@@ -304,6 +306,57 @@ fn resolve_browser_target_env_node() {
           .to_string_lossy()
           .to_string()
       );
+    }
+  );
+}
+
+#[test]
+fn resolve_browser_replace_mapping() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/browser/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "@farm/resolve-browser-field/no-ext",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("@farm")
+          .join("resolve-browser-field")
+          .join("out")
+          .join("esm.browser.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      // normal resolve
+      // let resolved = resolver.resolve(
+      //   "./module-a.js",
+      //   cwd.join("shims"),
+      //   &ResolveKind::Import,
+      //   &Arc::new(CompilationContext::default()),
+      // );
+      // assert!(resolved.is_some());
+      // let resolved = resolved.unwrap();
+
+      // assert_eq!(
+      //   resolved.resolved_path,
+      //   cwd
+      //     .join("shims")
+      //     .join("module-a.js")
+      //     .to_string_lossy()
+      //     .to_string()
+      // );
     }
   );
 }

@@ -8,6 +8,7 @@ farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
+dunce = "1.0.2"
 
 [features]
 profile = ["farmfe_core/profile"]

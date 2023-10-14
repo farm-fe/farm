@@ -6,6 +6,7 @@ use farmfe_core::{
   farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
   plugin::{PluginResolveHookResult, ResolveKind},
+  regex,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
@@ -140,13 +141,10 @@ impl Resolver {
           .try_alias(source, base_dir.clone(), kind, context)
           .is_some() =>
       {
-        println!("走进来了么 先跑一遍 alias");
         // Handle the alias case
         self.try_alias(source, base_dir.clone(), kind, context)
       }
       source if is_source_absolute(source) => {
-        println!("走进来了么 跑一个 absolute {:?}", source);
-
         // Handle the absolute source case
         let path_buf = PathBuf::from_str(source).unwrap();
 
@@ -157,7 +155,6 @@ impl Resolver {
           });
       }
       source if is_source_relative(source) => {
-        println!("走进来了么 跑一个 relative {:?}", source);
         farm_profile_scope!("resolve.relative".to_string());
         // if it starts with './' or '../, it is a relative path
         let normalized_path = RelativePath::new(source).to_logical_path(&base_dir);
@@ -167,8 +164,6 @@ impl Resolver {
         } else {
           normalized_path.to_path_buf()
         };
-        println!("normalized_path {:?}", normalized_path);
-        println!("base_dir {:?}", base_dir);
 
         // TODO try read symlink from the resolved path step by step to its parent util the root
         let resolved_path = try_file(&normalized_path, context)
@@ -185,7 +180,6 @@ impl Resolver {
         }
       }
       _source if is_source_dot(source) => {
-        println!("走进来了么 跑一个 dot {:?}", source);
         // import xx from '.'
         return self
           .try_directory(&base_dir, source, kind, false, context)
@@ -195,7 +189,6 @@ impl Resolver {
       }
       _source if is_double_source_dot(source) => {
         // import xx from '..'
-        println!("走进来了么 跑一个 double dot {:?}", source);
         let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
         return self
           .try_directory(&parent_path, source, kind, false, context)
@@ -205,7 +198,6 @@ impl Resolver {
       }
       _source if is_bare_import_path(source) => {
         // check if the result is cached
-        println!("上面几个策略都没找到 该 source 我了 {:?}", source);
         if let Ok(Some(result)) = self.resolve_module_cache.get(&ResolveNodeModuleCacheKey {
           source: source.to_string(),
           base_dir: base_dir.to_string_lossy().to_string(),
@@ -231,11 +223,11 @@ impl Resolver {
               let _ = resolve_module_cache.insert(key, result.clone());
             }
             Err(err) => {
-              println!("{}", format!("Error checking cache: {:?}", err));
+              eprintln!("{}", format!("Error checking cache: {:?}", err));
             }
           }
         }
-        println!("为什么没出来啊 怎么还一直在里面循环呢 ? {:?}", result);
+        println!("result: {:?}", result);
         result
       }
       _ => {
@@ -257,7 +249,6 @@ impl Resolver {
     if !dir.is_dir() {
       return None;
     }
-    println!("try_directory source {:?}", source);
 
     for main_file in &context.config.resolve.main_files {
       let file = dir.join(main_file);
@@ -268,7 +259,6 @@ impl Resolver {
     }
 
     let package_path = dir.join("package.json");
-    println!("dir {:?}", dir);
     if package_path.exists() && package_path.is_file() && !skip_try_package {
       let package_json_info = load_package_json(
         package_path,
@@ -283,6 +273,16 @@ impl Resolver {
         if !is_bare_import_path(source) && is_source_absolute(source) {
           deep_match = false;
         }
+
+        if is_source_absolute(dir.to_str().unwrap()) {
+          if let Some(resolved_path) =
+            self.find_entry_package_point(&package_json_info, kind, context)
+          {
+            let resolved_path = get_result_path(&resolved_path, package_json_info.dir());
+            return resolved_path;
+          }
+        }
+
         let (res, _) = self.try_package(
           "",
           deep_match,
@@ -346,7 +346,6 @@ impl Resolver {
     let mut current = base_dir;
     // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     let mut tried_paths = vec![];
-
     while current.parent().is_some() {
       let key = ResolveNodeModuleCacheKey {
         source: source.to_string(),
@@ -359,17 +358,21 @@ impl Resolver {
       }
 
       tried_paths.push(current.clone());
-      println!("current {:?}", current);
       let maybe_node_modules_path = current.join(NODE_MODULES);
       // check deepImport source
       let deep_match = DEEP_IMPORT_RE.is_match(source);
+      println!(
+        "我是  deep_match: {:?} 我是 source {:?}",
+        deep_match, source
+      );
       let mut package_id = source;
-      if let Some(captures) = DEEP_IMPORT_RE.captures(source) {
-        if let Some(matched_value) = captures.get(1) {
-          let matched_string = matched_value.as_str();
-          package_id = matched_string;
-        }
-      }
+      let captures = DEEP_IMPORT_RE.captures(source);
+      package_id = match captures {
+        Some(captures) => captures
+          .get(1)
+          .map_or_else(|| captures.get(2).unwrap().as_str(), |m| m.as_str()),
+        None => source,
+      };
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if context.config.resolve.symlinks {
           follow_symlinks(RelativePath::new(package_id).to_logical_path(&maybe_node_modules_path))
@@ -389,8 +392,6 @@ impl Resolver {
          * Refer to https://github.com/npm/validate-npm-package-name/blob/main/lib/index.js#L3 for the package name recognition and determine the sub path,
          * instead of judging the existence of package.json.
          */
-        println!("base_dir {:?}", &maybe_node_modules_path);
-        // println!("package_path {:?}", package_path);
         if !package_path.join("package.json").exists() {
           // check if the source is a directory or file can be resolved
           if matches!(&package_path, package_path if package_path.exists()) {
@@ -475,7 +476,6 @@ impl Resolver {
             );
           }
         } else if package_path.exists() && package_path.is_dir() {
-          // println!("package_path {:?}", package_path);
           if package_json_info.is_err() {
             return (None, tried_paths);
           }
@@ -490,8 +490,6 @@ impl Resolver {
             tried_paths,
             context,
           );
-
-          println!("我是拿到了 最后的 result了 {:?}", result);
 
           if result.is_some() {
             return (result, tried_paths);
@@ -535,12 +533,10 @@ impl Resolver {
     // search normal entry, based on self.config.main_fields, e.g. module/main
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
     let resolve_id = self.unresolved_id(deep_match, source, package_id);
-    println!("resolve_id: {:?}", resolve_id);
     if let Some(resolved_path) =
       self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context)
     {
       let resolved_path = get_result_path(&resolved_path, package_json_info.dir());
-      println!("这是最后拿到的 resolved_path {:?}", resolved_path);
       return (
         Some(PluginResolveHookResult {
           resolved_path: resolved_path.unwrap(),
@@ -648,7 +644,6 @@ impl Resolver {
     farm_profile_function!("get_resolve_node_modules_result".to_string());
     if let Some(package_json_info) = package_json_info {
       let side_effects = is_module_side_effects(package_json_info, &resolved_path);
-      println!("这个是之前的 source {:?}", source);
       let resolve_exports_path = self
         .resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
         .unwrap_or(vec![resolved_path.clone()]);
@@ -796,8 +791,6 @@ impl Resolver {
     let result: Option<Vec<String>> = if field_type == "imports" {
       self.imports(package_json_info, source, &condition_config)
     } else {
-      println!("进来了吗");
-      println!("我是 source: {:?}", source);
       self.exports(package_json_info, source, &condition_config)
     };
     return result;
@@ -877,7 +870,6 @@ impl Resolver {
         }
         _ => {}
       }
-      // println!("进来的 map: {:?}", map);
       if !map.is_empty() {
         return Some(walk(name.as_str().unwrap(), &map, source, config));
       }
@@ -895,7 +887,6 @@ impl Resolver {
     let mut entry_point: Option<String> = None;
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
     if let Some(exports) = raw_package_json_info.get("exports") {
-      println!("包含 exports 属性: {:?}", exports);
       if let Some(point) =
         self.resolve_exports_or_imports(package_json_info, ".", "exports", kind, context)
       {
@@ -908,10 +899,6 @@ impl Resolver {
     let is_browser = TargetEnv::Browser == context.config.output.target_env;
     let is_require = matches!(kind, ResolveKind::Require);
     if is_browser && entry_point.is_none() {
-      println!(
-        "exports 字段没有 准备检查 browser 字段啦: {:?}",
-        entry_point
-      );
       let mut browser_entry: Option<String> = None;
 
       if let Some(browser_value) = raw_package_json_info.get("browser") {
@@ -928,7 +915,6 @@ impl Resolver {
         }
       }
 
-      println!("解析 之后browser_entry: {:?}", browser_entry);
       let module_fields = raw_package_json_info.get("module");
       if let Some(browser_entry) = browser_entry {
         if !is_require
@@ -948,8 +934,6 @@ impl Resolver {
     if !resolved_from_exports && entry_point.is_none() {
       // If browser_entry is not present, try to resolve the main field
       for field in &context.config.resolve.main_fields {
-        println!("当前 package 的 field 是 {:?}", field);
-
         if field == "browser" {
           // 已在上面检查过，跳过
           continue;
@@ -970,7 +954,6 @@ impl Resolver {
         .and_then(|v| v.as_str())
         .map(|s| s.to_string()), // 如果 entry_point 为 None，使用 data.main
     };
-    println!("entry_point: 这把多少都拿到点吧 {:?}", entry_point);
 
     let entry_points: Vec<String> = if let Some(entry_point) = entry_point.clone() {
       vec![entry_point]
@@ -983,7 +966,6 @@ impl Resolver {
           entry = map_with_browser_field(&entry, browser_data)
             .map(|s| s.to_string())
             .unwrap_or_else(|| entry.to_string());
-          println!("entry: {:?}", entry);
         }
       }
       let entry_point_path = Path::new(package_json_info.dir()).join(&entry);
@@ -1007,22 +989,17 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    println!("resolve_deep_import: 拿到的 resolveId {:?}", resolve_id);
     let mut relative_id = Some(resolve_id.clone());
     let exports_data = get_field_value_from_package_json_info(package_json_info, "exports");
     let browser_data = get_field_value_from_package_json_info(package_json_info, "browser");
     let is_browser = TargetEnv::Browser == context.config.output.target_env;
     if let Some(export_data) = exports_data {
       if export_data.is_object() && !export_data.is_array() {
-        // println!("我是 pkg {:?}", package_json_info);
-        println!("我是 key {:?}", resolve_id);
         if let Some(resolve_id) =
           self.resolve_exports_or_imports(package_json_info, &resolve_id, "exports", kind, context)
         {
-          println!("resolve_id: {:?}", resolve_id);
           if let Some(value) = resolve_id.get(0) {
             relative_id = Some(value.to_string());
-            println!("relative_id: {:?}", relative_id)
           } else {
             relative_id = None;
           }
@@ -1048,9 +1025,7 @@ impl Resolver {
         relative_id = mapped;
       }
     }
-    println!("走到这里了 relative_id {:?}", relative_id);
     if let Some(relative_id) = &relative_id {
-      println!("relative_id: {:?}", relative_id);
       return Some(relative_id.clone());
     }
     None
@@ -1064,8 +1039,6 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    println!("resolve_id_logic: 拿到的 resolveId {:?}", resolve_id);
-    println!("resolve_id_logic: 拿到的 deep_match {:?}", deep_match);
     // if deep_match && is_source_absolute(&resolve_id) {
     if deep_match {
       return self.resolve_deep_import(resolve_id, package_json_info, kind, context);
