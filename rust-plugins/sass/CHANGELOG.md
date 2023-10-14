@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.2.3
+
+### Patch Changes
+
+- 0ee1751: Fix css modules sourcemap gen fail
+
 ## 0.2.2
 
 ### Patch Changes

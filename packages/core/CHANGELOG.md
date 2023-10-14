@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.4
+
+### Patch Changes
+
+- 0ee1751: Fix css modules sourcemap gen fail
+
 ## 0.13.3
 
 ### Patch Changes
