@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.5
+
+### Patch Changes
+
+- db461dc: Fix tree-shake self-executed module issue && vite plugin adapter issue
+
 ## 0.13.4
 
 ### Patch Changes
