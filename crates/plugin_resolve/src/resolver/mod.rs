@@ -1006,6 +1006,7 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
+    println!("resolve_deep_import resolve_id {:?}", resolve_id);
     let mut relative_id = Some(resolve_id.clone());
     let exports_data = get_field_value_from_package_json_info(package_json_info, "exports");
     let browser_data = get_field_value_from_package_json_info(package_json_info, "browser");
