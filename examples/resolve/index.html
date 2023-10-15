@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .pre {
+        display: block;
+        unicode-bidi: embed;
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Resolve</h1>
+
+    <h2>Utf8-bom import</h2>
+    <p class="utf8-bom">fail</p>
+
+    <h2>Deep import</h2>
+    <p>Should show [2,4]:<span class="pre deep-import">fail</span></p>
+
+    <h2>Exports and a nested package scope with a different type</h2>
+    <p class="exports-and-nested-scope">fail</p>
+
+    <h2>Entry resolving with exports field</h2>
+    <p class="exports-entry">fail</p>
+
+    <h2>Deep import with exports field</h2>
+    <p class="exports-deep">fail</p>
+
+    <h2>Deep import with query with exports field</h2>
+    <p class="exports-deep-query">fail</p>
+
+    <h2>Deep import with exports field + exposed directory</h2>
+    <p class="exports-deep-exposed-dir">fail</p>
+
+    <h2>Deep import with exports field + mapped directory</h2>
+    <p class="exports-deep-mapped-dir">fail</p>
+
+    <h2>Exports field env priority</h2>
+    <p class="exports-env">fail</p>
+
+    <h2>Exports field read only from the root package.json</h2>
+    <p class="exports-from-root">fail</p>
+
+    <h2>Exports with legacy fallback</h2>
+    <p class="exports-legacy-fallback">fail</p>
+
+    <h2>Exports with module</h2>
+    <p class="exports-with-module">fail</p>
+
+    <h2>
+      Both import and require resolve using module condition (avoids dual
+      package hazard)
+    </h2>
+    <p class="exports-with-module-condition">fail</p>
+    <p class="exports-with-module-condition-required">fail</p>
+
+    <h2>Resolving top level with imports field</h2>
+    <p class="imports-top-level">fail</p>
+
+    <h2>Resolving same level with imports field</h2>
+    <p class="imports-same-level">fail</p>
+
+    <h2>Resolving nested path with imports field</h2>
+    <p class="imports-nested">fail</p>
+
+    <h2>Resolving star with imports filed</h2>
+    <p class="imports-star">fail</p>
+
+    <h2>Resolving slash with imports filed</h2>
+    <p class="imports-slash">fail</p>
+
+    <h2>Resolving from other package with imports field</h2>
+    <p class="imports-pkg-slash">fail</p>
+
+    <h2>Resolve /index.*</h2>
+    <p class="index">fail</p>
+
+    <h2>Resolve dir and file of the same name (should prioritize file)</h2>
+    <p class="dir-vs-file">fail</p>
+
+    <h2>Resolve to non-duplicated file extension</h2>
+    <p class="exact-extension">fail</p>
+
+    <h2>Resolve nested file extension</h2>
+    <p class="nested-extension">fail</p>
+
+    <h2>Don't add extensions to directory names</h2>
+    <p class="dir-with-ext">fail</p>
+
+    <h2>
+      A ts module can import another ts module using its corresponding js file
+      name
+    </h2>
+    <p class="ts-extension">fail</p>
+
+    <h2>
+      A ts module can import another tsx module using its corresponding jsx file
+      name
+    </h2>
+    <p class="jsx-extension">fail</p>
+
+    <h2>
+      A ts module can import another tsx module using its corresponding js file
+      name
+    </h2>
+    <p class="tsx-extension">fail</p>
+
+    <h2>
+      A ts module can import another ESM module using its corresponding mjs file
+      name
+    </h2>
+    <p class="mjs-extension">fail</p>
+
+    <h2>
+      A ts module can import another ESM module using its corresponding mjs file
+      name with query parameters
+    </h2>
+    <p class="mjs-extension-with-query">fail</p>
+
+    <h2>
+      A ts module can import another CommonJS module using its corresponding cjs
+      file name
+    </h2>
+    <p class="cjs-extension">fail</p>
+
+    <h2>Resolve file name containing dot</h2>
+    <p class="dot">fail</p>
+
+    <h2>Resolve drive-relative path (Windows only)</h2>
+    <p class="drive-relative">fail</p>
+
+    <h2>Resolve absolute path</h2>
+    <p class="absolute">fail</p>
+
+    <h2>Browser Field</h2>
+    <p class="browser">fail</p>
+
+    <h2>Resolve browser field even if module field exists</h2>
+    <p class="browser-module1">fail</p>
+
+    <h2>Resolve module field if browser field is likely UMD or CJS</h2>
+    <p class="browser-module2">fail</p>
+
+    <h2>Resolve module field if browser field is likely IIFE</h2>
+    <p class="browser-module3">fail</p>
+
+    <h2>
+      Don't resolve to the `module` field if the importer is a `require` call
+    </h2>
+    <p class="require-pkg-with-module-field">fail</p>
+
+    <h2>CSS Entry</h2>
+    <p class="css"></p>
+
+    <h2>Monorepo linked dep</h2>
+    <p class="monorepo"></p>
+
+    <h2>Plugin resolved virtual file</h2>
+    <p class="virtual"></p>
+
+    <h2>Plugin resolved virtual file (#9036)</h2>
+    <p class="virtual-9036"></p>
+
+    <h2>Plugin resolved custom virtual file</h2>
+    <p class="custom-virtual"></p>
+
+    <h2>Inline package</h2>
+    <p class="inline-pkg"></p>
+
+    <h2>resolve.extensions</h2>
+    <p class="custom-ext"></p>
+
+    <h2>resolve.mainFields</h2>
+    <p class="custom-main-fields"></p>
+
+    <h2>resolve.conditions</h2>
+    <p class="custom-condition"></p>
+
+    <h2>resolve package that contains # in path</h2>
+    <p class="path-contains-sharp-symbol"></p>
+
+    <script src="./test.js"></script>
+  </body>
+</html>

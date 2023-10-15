@@ -1039,10 +1039,8 @@ impl Resolver {
       }
     }
     let dir = PathBuf::from(package_json_info.dir());
-    println!("我是 relative_id {:?}", relative_id);
     if relative_id.clone().unwrap().len() < 2 {
       let info: Value = from_str(package_json_info.raw()).unwrap();
-      println!("我是 pack {:?}", info);
       relative_id = Some(info.get("module").unwrap().to_string())
     }
     let dir_path = get_result_path(&relative_id.unwrap(), &dir.to_str().unwrap().to_string());
