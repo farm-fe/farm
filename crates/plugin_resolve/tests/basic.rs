@@ -489,3 +489,71 @@ fn resolve_node_modules_main_fields_deep_find_package_json_file() {
     }
   );
 }
+
+#[test]
+fn resolve_node_modules_main_fields_try_files() {
+  farmfe_testing_helpers::fixture!(
+    "tests/fixtures/resolve-node-modules/normal/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "@farm/utils/lib/set",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("@farm")
+          .join("utils")
+          .join("lib")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+    }
+  );
+}
+
+#[test]
+fn resolve_node_modules_without_extension() {
+  farmfe_testing_helpers::fixture!(
+    "tests/fixtures/resolve-node-modules/normal/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "@farm/color",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("@farm")
+          .join("color")
+          .join("es")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
+    }
+  );
+}

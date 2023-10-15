@@ -33,7 +33,7 @@ export default {
   server: {
     hmr: false
   },
-  // plugins: [farmDtsPlugin({
-  //   tsConfigPath: './tsconfig.json',
-  // })]
+  plugins: [farmDtsPlugin({
+    tsConfigPath: './tsconfig.json',
+  })]
 };

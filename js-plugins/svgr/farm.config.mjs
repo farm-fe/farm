@@ -35,8 +35,8 @@ export default {
     hmr: false
   },
   plugins: [
-    // farmDtsPlugin({
-    //   tsConfigPath: './tsconfig.build.json'
-    // })
+    farmDtsPlugin({
+      tsConfigPath: './tsconfig.build.json'
+    })
   ]
 };

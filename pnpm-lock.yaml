@@ -838,6 +838,9 @@ importers:
       '@farmfe/js-plugin-vue':
         specifier: workspace:*
         version: link:../../js-plugins/vue
+      '@vitejs/plugin-vue':
+        specifier: ^4.4.0
+        version: 4.4.0(vite@4.4.11)(vue@3.3.0)
       xlsx-js-style:
         specifier: ^1.2.0
         version: 1.2.0
