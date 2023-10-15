@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.2.4
+
+### Patch Changes
+
+- 7daeb2a: Fix configure validation error and sass import resolve error
+
 ## 0.2.3
 
 ### Patch Changes

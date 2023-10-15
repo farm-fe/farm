@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.6
+
+### Patch Changes
+
+- 7daeb2a: Fix configure validation error and sass import resolve error
+
 ## 0.13.5
 
 ### Patch Changes
