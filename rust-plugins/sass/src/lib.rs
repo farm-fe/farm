@@ -58,8 +58,8 @@ impl FileImporter for FileImporterCollection {
     _options: &sass_embedded::ImporterOptions,
   ) -> sass_embedded::Result<Option<Url>> {
     if let Some(context) = &*CONTEXT.read() {
-      let url = if url.starts_with("~") {
-        url.replacen("~", "", 1)
+      let url = if url.starts_with('~') {
+        url.replacen('~', "", 1)
       } else if !url.starts_with("./") && !url.starts_with("../") {
         format!("./{}", url)
       } else {
@@ -70,7 +70,7 @@ impl FileImporter for FileImporterCollection {
         .plugin_driver
         .resolve(
           &PluginResolveHookParam {
-            source: url.to_string(),
+            source: url,
             importer: Some(self.importer.clone()),
             kind: ResolveKind::CssAtImport,
           },
@@ -78,15 +78,7 @@ impl FileImporter for FileImporterCollection {
           &PluginHookContext::default(),
         )
         .unwrap();
-      println!(
-        "resolve_result: {:?}, {:?}",
-        PluginResolveHookParam {
-          source: url.to_string(),
-          importer: Some(self.importer.clone()),
-          kind: ResolveKind::CssAtImport,
-        },
-        resolve_result
-      );
+
       if let Some(resolve_result) = resolve_result {
         let mut paths = self.paths.write();
         paths.push(resolve_result.resolved_path.clone());
