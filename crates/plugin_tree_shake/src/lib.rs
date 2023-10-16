@@ -133,20 +133,21 @@ impl Plugin for FarmPluginTreeShake {
             .get_mut(&tree_shake_module_id)
             .unwrap();
 
-          if tree_shake_module.used_exports.is_empty() {
-            // if the module's used_exports is empty, means this module is not used and should be removed
+          if tree_shake_module.used_exports.is_empty()
+            && !tree_shake_module.contains_self_executed_stmt
+          {
+            // if the module's used_exports is empty, and this module does not have self-executed statements, then this module is useless
+            // which means this module is not used and should be removed
             modules_to_remove.push(tree_shake_module_id.clone());
             continue;
           }
 
-          let module = module_graph
-            .module_mut(&tree_shake_module.module_id)
-            .unwrap();
-          let swc_module = &mut module.meta.as_script_mut().ast;
-
           // remove useless statements and useless imports/exports identifiers, then all preserved import info and export info will be added to the used_exports.
-          let (used_imports, used_exports_from) =
-            remove_useless_stmts::remove_useless_stmts(tree_shake_module, swc_module);
+          let (used_imports, used_exports_from) = remove_useless_stmts::remove_useless_stmts(
+            &tree_shake_module_id,
+            module_graph,
+            &tree_shake_modules_map,
+          );
 
           for import_info in used_imports {
             add_used_exports_by_import_info(
@@ -183,7 +184,7 @@ impl Plugin for FarmPluginTreeShake {
       module_graph.remove_module(&module_id);
     }
 
-    Ok(None)
+    Ok(Some(()))
   }
 }
 

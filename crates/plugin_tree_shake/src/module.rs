@@ -58,6 +58,7 @@ pub struct TreeShakeModule {
   pub module_id: ModuleId,
   pub side_effects: bool,
   pub stmt_graph: StatementGraph,
+  pub contains_self_executed_stmt: bool,
   // used exports will be analyzed when tree shaking
   pub used_exports: UsedExports,
   pub module_system: ModuleSystem,
@@ -88,6 +89,7 @@ impl TreeShakeModule {
 
     Self {
       module_id: module.id.clone(),
+      contains_self_executed_stmt: stmt_graph.contains_self_executed_stmt(),
       stmt_graph,
       used_exports,
       side_effects: module.side_effects,
@@ -154,32 +156,6 @@ impl TreeShakeModule {
               .or_insert(HashSet::new());
             used_idents.extend(referred_idents.into_iter().map(UsedIdent::SwcIdent));
           }
-          // stmt.used_idents.iter().for_each(|used_ident| {
-          //   // find the defined ident
-          //   stmt_used_idents_map
-          //   .entry(stmt.id)
-          //   .or_insert(HashSet::new());
-
-          //   for stmt_inner in self.stmt_graph.stmts() {
-          //     if stmt_inner.id == stmt.id {
-          //       continue;
-          //     }
-
-          //     if stmt_inner
-          //       .defined_idents_map
-          //       .contains_key(&used_ident.to_string())
-          //       || stmt_inner
-          //         .defined_idents
-          //         .iter()
-          //         .any(|ident| ident.to_string() == used_ident.to_string())
-          //     {
-          //       let used_idents = stmt_used_idents_map
-          //         .entry(stmt_inner.id)
-          //         .or_insert(HashSet::new());
-          //       used_idents.insert(UsedIdent::SwcIdent(used_ident.clone()));
-          //     }
-          //   }
-          // });
         }
       }
     }

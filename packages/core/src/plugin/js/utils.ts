@@ -139,13 +139,7 @@ export function formatLoadModuleType(id: string): string {
 }
 
 export function formatTransformModuleType(id: string): string {
-  const cssModuleType = getCssModuleType(id);
-
-  if (cssModuleType) {
-    return cssModuleType;
-  }
-
-  return 'js';
+  return formatLoadModuleType(id);
 }
 
 // normalize invalid characters in id, for example: \0

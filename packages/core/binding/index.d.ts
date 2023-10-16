@@ -127,12 +127,12 @@ export interface Config {
       symlinks?: boolean;
       strictExports?: boolean;
     };
-    define?: Record<string, string>;
+    define?: Record<string, any>;
     external?: string[];
     mode?: 'development' | 'production';
     root?: string;
     runtime?: {
-      path: string;
+      path?: string;
       plugins?: string[];
       swcHelpersPath?: string;
       namespace?: string;

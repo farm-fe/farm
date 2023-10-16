@@ -30,7 +30,7 @@ const compilationConfigSchema = z
       })
       .strict()
       .optional(),
-    define: z.record(z.string()).optional(),
+    define: z.record(z.any()).optional(),
     external: z.array(z.string()).optional(),
     mode: z.string().optional(),
     watch: z
@@ -123,8 +123,8 @@ const compilationConfigSchema = z
             z.object({
               name: z.string(),
               test: z.array(z.string()),
-              groupType: z.enum(['mutable', 'immutable']),
-              resourceType: z.enum(['all', 'initial', 'async'])
+              groupType: z.enum(['mutable', 'immutable']).optional(),
+              resourceType: z.enum(['all', 'initial', 'async']).optional()
             })
           )
           .optional(),

@@ -1,5 +1,23 @@
 # @farmfe/core
 
+## 0.13.7
+
+### Patch Changes
+
+- preserve import.meta when targetEnv is Node
+
+## 0.13.6
+
+### Patch Changes
+
+- 7daeb2a: Fix configure validation error and sass import resolve error
+
+## 0.13.5
+
+### Patch Changes
+
+- db461dc: Fix tree-shake self-executed module issue && vite plugin adapter issue
+
 ## 0.13.4
 
 ### Patch Changes
