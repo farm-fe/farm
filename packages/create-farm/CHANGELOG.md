@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.17
+
+### Patch Changes
+
+- bump @farmfe/core to 0.13.7
+
 ## 1.2.16
 
 ### Patch Changes
