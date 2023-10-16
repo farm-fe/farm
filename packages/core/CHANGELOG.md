@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.7
+
+### Patch Changes
+
+- preserve import.meta when targetEnv is Node
+
 ## 0.13.6
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.16
+
+### Patch Changes
+
+- preserve import.meta when targetEnv is Node
+
 ## 1.2.15
 
 ### Patch Changes
