@@ -1,4 +1,5 @@
 use std::{
+  collections::BTreeMap,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -6,13 +7,14 @@ use std::{
 
 use farmfe_core::{
   common::PackageJsonInfo,
-  config::TargetEnv,
+  config::{Mode, TargetEnv},
   context::CompilationContext,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
-  hashbrown::HashMap,
+  hashbrown::{HashMap, HashSet},
   parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
+  regex,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
@@ -21,6 +23,43 @@ use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_l
 enum Entry {
   Exports(String),
   Imports(String),
+}
+
+enum Condition {
+  Default,
+  Require,
+  Import,
+  Browser,
+  Node,
+  Development,
+  Module,
+  Production,
+}
+
+impl FromStr for Condition {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "default" => Ok(Condition::Default),
+      "require" => Ok(Condition::Require),
+      "import" => Ok(Condition::Import),
+      "browser" => Ok(Condition::Browser),
+      "node" => Ok(Condition::Node),
+      "development" => Ok(Condition::Development),
+      "production" => Ok(Condition::Production),
+      "module" => Ok(Condition::Module),
+      _ => Err(format!("Invalid Condition: {}", s)),
+    }
+  }
+}
+
+#[derive(Debug)]
+struct ConditionOptions {
+  pub unsafe_flag: bool,
+  pub require: bool,
+  pub browser: bool,
+  pub conditions: Vec<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -959,10 +998,10 @@ impl Resolver {
     config: &ConditionOptions,
   ) -> Option<Vec<String>> {
     if let Some(exports_field) =
-      get_field_value_from_package_json_info(package_json_info, "exports")
+      self.get_field_value_from_package_json_info(package_json_info, "exports")
     {
       // TODO If the current package does not have a name, then look up for the name of the folder
-      let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+      let name = match self.get_field_value_from_package_json_info(package_json_info, "name") {
         Some(n) => n,
         None => {
           eprintln!(
@@ -990,7 +1029,7 @@ impl Resolver {
         _ => {}
       }
       if !map.is_empty() {
-        return Some(walk(name.as_str().unwrap(), &map, source, config));
+        return Some(self.walk(name.as_str().unwrap(), &map, source, config));
       }
     }
 
@@ -1004,10 +1043,10 @@ impl Resolver {
     config: &ConditionOptions,
   ) -> Option<Vec<String>> {
     if let Some(imports_field) =
-      get_field_value_from_package_json_info(package_json_info, "imports")
+      self.get_field_value_from_package_json_info(package_json_info, "imports")
     {
       // TODO If the current package does not have a name, then look up for the name of the folder
-      let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+      let name = match self.get_field_value_from_package_json_info(package_json_info, "name") {
         Some(n) => n,
         None => {
           // 如果 name 找不到 也要解析一下错误情况处理返回
@@ -1029,7 +1068,7 @@ impl Resolver {
           return None;
         }
       }
-      return Some(walk(name.as_str().unwrap(), &imports_map, source, config));
+      return Some(self.walk(name.as_str().unwrap(), &imports_map, source, config));
     }
     None
   }
@@ -1097,9 +1136,8 @@ impl Resolver {
     return result;
   }
 
-
   // TODO ---------------------------------------------
-  fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
+  fn conditions(self: &Self, options: &ConditionOptions) -> HashSet<Condition> {
     let mut out: HashSet<Condition> = HashSet::new();
     out.insert(Condition::Default);
     // TODO resolver other conditions
@@ -1133,7 +1171,7 @@ impl Resolver {
     out
   }
 
-  pub fn injects(items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
+  fn injects(self: &Self, items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
     let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
     let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
 
@@ -1150,6 +1188,7 @@ impl Resolver {
   }
 
   fn loop_value(
+    self: &Self,
     m: Value,
     keys: &HashSet<Condition>,
     mut result: &mut Option<HashSet<String>>,
@@ -1164,7 +1203,7 @@ impl Resolver {
       Value::Array(values) => {
         let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
         for item in values {
-          if let Some(item_result) = loop_value(item, keys, &mut Some(arr_result.clone())) {
+          if let Some(item_result) = self.loop_value(item, keys, &mut Some(arr_result.clone())) {
             return Some(item_result);
           }
         }
@@ -1188,12 +1227,12 @@ impl Resolver {
               if key == "zzz_default" {
                 if let Ok(condition) = Condition::from_str(&"default".to_string()) {
                   if keys.contains(&condition) {
-                    return loop_value(value, keys, result);
+                    return self.loop_value(value, keys, result);
                   }
                 }
               } else if let Ok(condition) = Condition::from_str(&key) {
                 if keys.contains(&condition) {
-                  return loop_value(value, keys, result);
+                  return self.loop_value(value, keys, result);
                 }
               }
             }
@@ -1202,7 +1241,7 @@ impl Resolver {
           for (key, value) in map {
             if let Ok(condition) = Condition::from_str(&key) {
               if keys.contains(&condition) {
-                return loop_value(value, keys, result);
+                return self.loop_value(value, keys, result);
               }
             }
           }
@@ -1214,7 +1253,12 @@ impl Resolver {
     }
   }
 
-  fn to_entry(name: &str, ident: &str, externals: Option<bool>) -> Result<String, String> {
+  fn to_entry(
+    self: &Self,
+    name: &str,
+    ident: &str,
+    externals: Option<bool>,
+  ) -> Result<String, String> {
     if name == ident || ident == "." {
       return Ok(".".to_string());
     }
@@ -1243,7 +1287,7 @@ impl Resolver {
     }
   }
 
-  fn throws(name: &str, entry: &str, condition: Option<i32>) {
+  fn throws(self: &Self, name: &str, entry: &str, condition: Option<i32>) {
     let message = if let Some(cond) = condition {
       if cond != 0 {
         format!(
@@ -1259,13 +1303,14 @@ impl Resolver {
     eprintln!("{}", message);
   }
 
-   fn walk(
+  fn walk(
+    self: &Self,
     name: &str,
     mapping: &HashMap<String, Value>,
     input: &str,
     options: &ConditionOptions,
   ) -> Vec<String> {
-    let entry_result: Result<String, String> = to_entry(name, input, Some(true));
+    let entry_result: Result<String, String> = self.to_entry(name, input, Some(true));
     let entry: String = match entry_result {
       Ok(entry) => entry.to_string(),
       Err(error) => {
@@ -1273,13 +1318,13 @@ impl Resolver {
         String::from(name)
       }
     };
-    let c: HashSet<Condition> = conditions(options);
+    let c: HashSet<Condition> = self.conditions(options);
     let mut m: Option<&Value> = mapping.get(&entry);
     let mut result: Option<Vec<String>> = None;
     let mut replace: Option<String> = None;
     if m.is_none() {
       let mut longest: Option<&str> = None;
-  
+
       for (key, value) in mapping.iter() {
         if let Some(cur_longest) = &longest {
           if key.len() < cur_longest.len() {
@@ -1287,7 +1332,7 @@ impl Resolver {
             continue;
           }
         }
-  
+
         if key.ends_with('/') && entry.starts_with(key) {
           replace = Some(entry[key.len()..].to_string());
           longest = Some(key.as_str().clone());
@@ -1295,7 +1340,7 @@ impl Resolver {
           if let Some(tmp) = key.find('*') {
             let pattern = format!("^{}(.*){}", &key[..tmp], &key[tmp + 1..]);
             let regex = regex::Regex::new(&pattern).unwrap();
-  
+
             if let Some(captures) = regex.captures(&entry) {
               if let Some(match_group) = captures.get(1) {
                 replace = Some(match_group.as_str().to_string());
@@ -1305,44 +1350,26 @@ impl Resolver {
           }
         }
       }
-  
+
       if let Some(longest_key) = longest {
         m = mapping.get(&longest_key.to_string());
       }
     }
     if m.is_none() {
-      throws(name, &entry, None);
+      self.throws(name, &entry, None);
       return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
     }
-    let v = loop_value(m.unwrap().clone(), &c, &mut None);
+    let v = self.loop_value(m.unwrap().clone(), &c, &mut None);
     if v.is_none() {
-      throws(name, &entry, Some(1));
+      self.throws(name, &entry, Some(1));
       return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
     }
     let mut cloned_v = v.clone();
     if let Some(replace) = replace {
-      if let Some(v1) = injects(&mut cloned_v.unwrap(), &replace) {
+      if let Some(v1) = self.injects(&mut cloned_v.unwrap(), &replace) {
         return v1;
       }
     }
     v.unwrap()
-  }
-  
-  impl FromStr for Condition {
-    type Err = String;
-  
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-      match s {
-        "default" => Ok(Condition::Default),
-        "require" => Ok(Condition::Require),
-        "import" => Ok(Condition::Import),
-        "browser" => Ok(Condition::Browser),
-        "node" => Ok(Condition::Node),
-        "development" => Ok(Condition::Development),
-        "production" => Ok(Condition::Production),
-        "module" => Ok(Condition::Module),
-        _ => Err(format!("Invalid Condition: {}", s)),
-      }
-    }
   }
 }
