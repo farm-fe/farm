@@ -18,6 +18,11 @@ use farmfe_core::{
 };
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
+enum Entry {
+  Exports(String),
+  Imports(String),
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ResolveNodeModuleCacheKey {
   pub source: String,
@@ -944,6 +949,400 @@ impl Resolver {
     } else {
       let value_path = self.get_key_path(str, package_json_info.dir());
       Some(value_path)
+    }
+  }
+
+  fn exports(
+    self: &Self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    config: &ConditionOptions,
+  ) -> Option<Vec<String>> {
+    if let Some(exports_field) =
+      get_field_value_from_package_json_info(package_json_info, "exports")
+    {
+      // TODO If the current package does not have a name, then look up for the name of the folder
+      let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+        Some(n) => n,
+        None => {
+          eprintln!(
+            "Missing \"name\" field in package.json {:?}",
+            package_json_info
+          );
+          return None;
+        }
+      };
+      let mut map: HashMap<String, Value> = HashMap::new();
+      match exports_field {
+        Value::String(string_value) => {
+          map.insert(".".to_string(), Value::String(string_value.clone()));
+        }
+        Value::Object(object_value) => {
+          for (k, v) in &object_value {
+            if !k.starts_with('.') {
+              map.insert(".".to_string(), Value::Object(object_value.clone()));
+              break;
+            } else {
+              map.insert(k.to_string(), v.clone());
+            }
+          }
+        }
+        _ => {}
+      }
+      if !map.is_empty() {
+        return Some(walk(name.as_str().unwrap(), &map, source, config));
+      }
+    }
+
+    None
+  }
+
+  fn imports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    config: &ConditionOptions,
+  ) -> Option<Vec<String>> {
+    if let Some(imports_field) =
+      get_field_value_from_package_json_info(package_json_info, "imports")
+    {
+      // TODO If the current package does not have a name, then look up for the name of the folder
+      let name = match get_field_value_from_package_json_info(package_json_info, "name") {
+        Some(n) => n,
+        None => {
+          // 如果 name 找不到 也要解析一下错误情况处理返回
+          eprintln!(
+            "Missing \"name\" field in package.json {:?}",
+            package_json_info
+          );
+          return None;
+        }
+      };
+      let mut imports_map: HashMap<String, Value> = HashMap::new();
+
+      match imports_field {
+        Value::Object(object_value) => {
+          imports_map.extend(object_value.clone());
+        }
+        _ => {
+          eprintln!("Unexpected imports field format");
+          return None;
+        }
+      }
+      return Some(walk(name.as_str().unwrap(), &imports_map, source, config));
+    }
+    None
+  }
+
+  fn resolve_exports_or_imports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    field_type: &str,
+    kind: &ResolveKind,
+    context: &Arc<CompilationContext>,
+  ) -> Option<Vec<String>> {
+    farm_profile_function!("resolve_exports_or_imports".to_string());
+    let mut additional_conditions: HashSet<String> = vec![
+      String::from("development"),
+      String::from("production"),
+      String::from("module"),
+    ]
+    .into_iter()
+    .collect();
+
+    let resolve_conditions: HashSet<String> = context
+      .config
+      .resolve
+      .conditions
+      .clone()
+      .into_iter()
+      .collect();
+    additional_conditions.extend(resolve_conditions);
+
+    let filtered_conditions: Vec<String> = additional_conditions
+      .clone()
+      .into_iter()
+      .filter(|condition| match condition.as_str() {
+        "production" => {
+          let mode = &context.config.mode;
+          matches!(mode, Mode::Production)
+        }
+        "development" => {
+          let mode = &context.config.mode;
+          matches!(mode, Mode::Development)
+        }
+        _ => true,
+      })
+      .collect();
+
+    // resolve exports field
+    let is_browser = TargetEnv::Browser == context.config.output.target_env;
+    let is_require = match kind {
+      ResolveKind::Require => true,
+      _ => false,
+    };
+    let condition_config = ConditionOptions {
+      browser: is_browser && !additional_conditions.contains("node"),
+      require: is_require && !additional_conditions.contains("import"),
+      conditions: filtered_conditions,
+      // set default unsafe_flag to insert require & import field
+      unsafe_flag: false,
+    };
+    let result: Option<Vec<String>> = if field_type == "imports" {
+      self.imports(package_json_info, source, &condition_config)
+    } else {
+      self.exports(package_json_info, source, &condition_config)
+    };
+    return result;
+  }
+
+
+  // TODO ---------------------------------------------
+  fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
+    let mut out: HashSet<Condition> = HashSet::new();
+    out.insert(Condition::Default);
+    // TODO resolver other conditions
+    // for condition in options.conditions.iter() {
+    //   out.insert(condition.parse().unwrap());
+    // }
+    for condition_str in &options.conditions {
+      match Condition::from_str(condition_str) {
+        Ok(condition_enum) => {
+          out.insert(condition_enum);
+        }
+        Err(error) => {
+          // TODO resolve error
+          eprintln!("Error: {}", error);
+        }
+      }
+    }
+    if !options.unsafe_flag {
+      if options.require {
+        out.insert(Condition::Require);
+      } else {
+        out.insert(Condition::Import);
+      }
+
+      if options.browser {
+        out.insert(Condition::Browser);
+      } else {
+        out.insert(Condition::Node);
+      }
+    }
+    out
+  }
+
+  pub fn injects(items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
+    let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
+    let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
+
+    for item in items.iter_mut() {
+      let tmp = item.clone();
+      if rgx1.is_match(&tmp) {
+        *item = rgx1.replace(&tmp, value).to_string();
+      } else if rgx2.is_match(&tmp) {
+        *item += value;
+      }
+    }
+
+    return items.clone().into_iter().map(|s| Some(s)).collect();
+  }
+
+  fn loop_value(
+    m: Value,
+    keys: &HashSet<Condition>,
+    mut result: &mut Option<HashSet<String>>,
+  ) -> Option<Vec<String>> {
+    match m {
+      Value::String(s) => {
+        if let Some(result_set) = result {
+          result_set.insert(s.clone());
+        }
+        Some(vec![s])
+      }
+      Value::Array(values) => {
+        let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
+        for item in values {
+          if let Some(item_result) = loop_value(item, keys, &mut Some(arr_result.clone())) {
+            return Some(item_result);
+          }
+        }
+
+        // 如果使用了初始化的结果集，返回结果
+        if result.is_none() && !arr_result.is_empty() {
+          return Some(arr_result.into_iter().collect());
+        } else {
+          None
+        }
+      }
+      Value::Object(mut map) => {
+        let has_default = map.contains_key("default");
+
+        if has_default {
+          let mut new_mapping = BTreeMap::new();
+          if let Some(default_value) = map.remove("default") {
+            new_mapping.extend(map);
+            new_mapping.insert("zzz_default".to_string(), default_value); // 设置一个更大的键名
+            for (key, value) in new_mapping {
+              if key == "zzz_default" {
+                if let Ok(condition) = Condition::from_str(&"default".to_string()) {
+                  if keys.contains(&condition) {
+                    return loop_value(value, keys, result);
+                  }
+                }
+              } else if let Ok(condition) = Condition::from_str(&key) {
+                if keys.contains(&condition) {
+                  return loop_value(value, keys, result);
+                }
+              }
+            }
+          }
+        } else {
+          for (key, value) in map {
+            if let Ok(condition) = Condition::from_str(&key) {
+              if keys.contains(&condition) {
+                return loop_value(value, keys, result);
+              }
+            }
+          }
+        }
+        None
+      }
+      Value::Null => None,
+      _ => None,
+    }
+  }
+
+  fn to_entry(name: &str, ident: &str, externals: Option<bool>) -> Result<String, String> {
+    if name == ident || ident == "." {
+      return Ok(".".to_string());
+    }
+
+    let root = format!("{}/", name);
+    let len = root.len();
+    let bool = ident.starts_with(&root);
+    let output = if bool {
+      ident[len..].to_string()
+    } else {
+      ident.to_string()
+    };
+
+    if output.starts_with('#') {
+      return Ok(output);
+    }
+
+    if bool || externals.unwrap_or(false) {
+      if output.starts_with("./") {
+        Ok(output)
+      } else {
+        Ok(format!("./{}", output))
+      }
+    } else {
+      Err(output)
+    }
+  }
+
+  fn throws(name: &str, entry: &str, condition: Option<i32>) {
+    let message = if let Some(cond) = condition {
+      if cond != 0 {
+        format!(
+          "No known conditions for \"{}\" specifier in \"{}\" package",
+          entry, name
+        )
+      } else {
+        format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
+      }
+    } else {
+      format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
+    };
+    eprintln!("{}", message);
+  }
+
+   fn walk(
+    name: &str,
+    mapping: &HashMap<String, Value>,
+    input: &str,
+    options: &ConditionOptions,
+  ) -> Vec<String> {
+    let entry_result: Result<String, String> = to_entry(name, input, Some(true));
+    let entry: String = match entry_result {
+      Ok(entry) => entry.to_string(),
+      Err(error) => {
+        eprintln!("Error resolve {} package error: {}", name, error);
+        String::from(name)
+      }
+    };
+    let c: HashSet<Condition> = conditions(options);
+    let mut m: Option<&Value> = mapping.get(&entry);
+    let mut result: Option<Vec<String>> = None;
+    let mut replace: Option<String> = None;
+    if m.is_none() {
+      let mut longest: Option<&str> = None;
+  
+      for (key, value) in mapping.iter() {
+        if let Some(cur_longest) = &longest {
+          if key.len() < cur_longest.len() {
+            // do not allow "./" to match if already matched "./foo*" key
+            continue;
+          }
+        }
+  
+        if key.ends_with('/') && entry.starts_with(key) {
+          replace = Some(entry[key.len()..].to_string());
+          longest = Some(key.as_str().clone());
+        } else if key.len() > 1 {
+          if let Some(tmp) = key.find('*') {
+            let pattern = format!("^{}(.*){}", &key[..tmp], &key[tmp + 1..]);
+            let regex = regex::Regex::new(&pattern).unwrap();
+  
+            if let Some(captures) = regex.captures(&entry) {
+              if let Some(match_group) = captures.get(1) {
+                replace = Some(match_group.as_str().to_string());
+                longest = Some(key.as_str().clone());
+              }
+            }
+          }
+        }
+      }
+  
+      if let Some(longest_key) = longest {
+        m = mapping.get(&longest_key.to_string());
+      }
+    }
+    if m.is_none() {
+      throws(name, &entry, None);
+      return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
+    }
+    let v = loop_value(m.unwrap().clone(), &c, &mut None);
+    if v.is_none() {
+      throws(name, &entry, Some(1));
+      return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
+    }
+    let mut cloned_v = v.clone();
+    if let Some(replace) = replace {
+      if let Some(v1) = injects(&mut cloned_v.unwrap(), &replace) {
+        return v1;
+      }
+    }
+    v.unwrap()
+  }
+  
+  impl FromStr for Condition {
+    type Err = String;
+  
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "default" => Ok(Condition::Default),
+        "require" => Ok(Condition::Require),
+        "import" => Ok(Condition::Import),
+        "browser" => Ok(Condition::Browser),
+        "node" => Ok(Condition::Node),
+        "development" => Ok(Condition::Development),
+        "production" => Ok(Condition::Production),
+        "module" => Ok(Condition::Module),
+        _ => Err(format!("Invalid Condition: {}", s)),
+      }
     }
   }
 }
