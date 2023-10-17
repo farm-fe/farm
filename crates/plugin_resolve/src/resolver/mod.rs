@@ -357,8 +357,6 @@ impl Resolver {
       let maybe_node_modules_path = current.join(NODE_MODULES);
       // check deepImport source
       let deep_match = DEEP_IMPORT_RE.is_match(source);
-      println!("source {:#?}", source);
-      println!("deep_match  {:#?}", deep_match);
       let mut package_id = source;
       let captures = DEEP_IMPORT_RE.captures(source);
       package_id = match captures {
@@ -922,7 +920,7 @@ impl Resolver {
             .contains(&"module".to_string())
           && module_fields.is_some()
         {
-          println!("进来了 开始解析了 browserEntry {:?}", browser_entry);
+          // println!("进来了 开始解析了 browserEntry {:?}", browser_entry);
         } else {
           entry_point = Some(browser_entry);
         }
@@ -1039,29 +1037,23 @@ impl Resolver {
       }
     }
     let dir = PathBuf::from(package_json_info.dir());
-    if relative_id.clone().unwrap().len() < 2 {
-      let info: Value = from_str(package_json_info.raw()).unwrap();
-      relative_id = Some(info.get("module").unwrap().to_string())
-    }
+    // if relative_id.clone().unwrap().len() < 2 {
+    //   let info: Value = from_str(package_json_info.raw()).unwrap();
+    //   relative_id = Some(info.get("module").unwrap().to_string())
+    // }
     let dir_path = get_result_path(&relative_id.unwrap(), &dir.to_str().unwrap().to_string());
-    println!("我是 dir_path {:?}", dir_path);
     if let Some(resolved_path) = self.resolve_fs(
       &PathBuf::from(dir_path.clone().unwrap()),
       is_browser,
       kind,
       context,
     ) {
-      println!(
-        "最后拿到的 可以找到路径的 resolved_path {:?}",
-        resolved_path
-      );
       return Some(resolved_path);
     } else {
       if let Some(dir_path) = self.find_existing_directory(&PathBuf::from(dir_path.unwrap())) {
         if let Some(resolved_path) =
           self.resolve_fs(&PathBuf::from(dir_path), is_browser, kind, context)
         {
-          println!("最后拿到的 resolved_path {:?}", resolved_path);
           return Some(resolved_path);
         }
       }
@@ -1113,7 +1105,6 @@ impl Resolver {
     is_browser: bool,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    println!("try_clean_fs_resolve path {:?}", path);
     None
   }
 
@@ -1125,7 +1116,6 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    println!("deepmatch {:?}", deep_match);
     // if deep_match && is_source_absolute(&resolve_id) {
     if deep_match {
       return self.resolve_deep_import(resolve_id, package_json_info, kind, context);
