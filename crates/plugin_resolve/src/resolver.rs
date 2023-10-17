@@ -651,13 +651,154 @@ impl Resolver {
   ) -> Option<String> {
     farm_profile_function!("try_exports_replace".to_string());
     // TODO: add all cases from https://nodejs.org/api/packages.html
-    if let Some(resolve_exports_path) =
-      self.resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
-    {
-      let resolved_id = resolve_exports_path.get(0).unwrap();
-      let value_path = self.get_key_path(resolved_id, package_json_info.dir());
-      return Some(value_path);
+    // if let Some(resolve_exports_path) =
+    //   self.resolve_exports_or_imports(package_json_info, source, "exports", kind, context)
+    // {
+    //   let resolved_id = resolve_exports_path.get(0).unwrap();
+    //   let value_path = self.get_key_path(resolved_id, package_json_info.dir());
+    //   return Some(value_path);
+    // }
+
+    // old code
+
+    let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
+    if let Some(exports_field) = exports_field {
+      let dir = package_json_info.dir();
+      let path = Path::new(resolved_path);
+      if let Value::Object(obj) = exports_field {
+        for (key, value) in obj {
+          let key_path = self.get_key_path(&key, dir);
+          if self.are_paths_equal(key_path, resolved_path) {
+            match value {
+              Value::String(current_field_value) => {
+                let dir = package_json_info.dir();
+                let path = Path::new(resolved_path);
+                if path.is_absolute() {
+                  let key_path = self.get_key_path(&key, dir);
+
+                  if self.are_paths_equal(&key_path, resolved_path) {
+                    let value_path =
+                      self.get_key_path(&current_field_value, package_json_info.dir());
+                    return Some(value_path);
+                  }
+                }
+              }
+              Value::Object(current_field_obj) => {
+                for (key_word, key_value) in current_field_obj {
+                  match kind {
+                    // import with node default
+                    ResolveKind::Import => {
+                      if self.are_paths_equal(&key_word, "default") && path.is_absolute() {
+                        match &key_value {
+                          Value::String(key_value_string) => {
+                            let value_path =
+                              self.get_key_path(key_value_string, package_json_info.dir());
+                            return Some(value_path);
+                          }
+                          Value::Object(key_value_object) => {
+                            if let Some(Value::String(default_str)) =
+                              key_value_object.get("default")
+                            {
+                              let value_path =
+                                self.get_key_path(default_str, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                          }
+                          _ => {}
+                        }
+                      }
+                      if self.are_paths_equal(&key_word, "import") {
+                        match key_value {
+                          Value::String(import_value) => {
+                            if path.is_absolute() {
+                              let value_path =
+                                self.get_key_path(&import_value, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                          }
+                          Value::Object(import_value) => {
+                            for (key_word, key_value) in import_value {
+                              match context.config.output.target_env {
+                                TargetEnv::Node => {
+                                  if self.are_paths_equal(&key_word, "node") && path.is_absolute() {
+                                    let value_path = self.get_key_path(
+                                      key_value.as_str().unwrap(),
+                                      package_json_info.dir(),
+                                    );
+                                    return Some(value_path);
+                                  }
+                                }
+                                TargetEnv::Browser => {
+                                  if self.are_paths_equal(key_word, "default") && path.is_absolute()
+                                  {
+                                    let value_path = self.get_key_path(
+                                      key_value.as_str().unwrap(),
+                                      package_json_info.dir(),
+                                    );
+                                    return Some(value_path);
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          _ => {}
+                        }
+                      }
+                    }
+                    ResolveKind::Require => {
+                      if key_word.to_lowercase() == "require" {
+                        let path = Path::new(resolved_path);
+                        match key_value {
+                          Value::String(key_value) => {
+                            if path.is_absolute() {
+                              let value_path =
+                                self.get_key_path(&key_value, package_json_info.dir());
+                              return Some(value_path);
+                            }
+                          }
+                          Value::Object(key_value) => {
+                            if path.is_absolute() {
+                              for (key, value) in key_value {
+                                match context.config.output.target_env {
+                                  TargetEnv::Node => {
+                                    if self.are_paths_equal(key, "default") && path.is_absolute() {
+                                      let value_path = self.get_key_path(
+                                        value.as_str().unwrap(),
+                                        package_json_info.dir(),
+                                      );
+                                      return Some(value_path);
+                                    }
+                                  }
+                                  TargetEnv::Browser => {
+                                    if self.are_paths_equal(key, "default") && path.is_absolute() {
+                                      let value_path = self.get_key_path(
+                                        value.as_str().unwrap(),
+                                        package_json_info.dir(),
+                                      );
+                                      return Some(value_path);
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          _ => {}
+                        }
+                      }
+                    }
+                    _ => {}
+                  }
+                }
+              }
+              _ => {
+                // TODO strict_exports config with error
+              }
+            }
+          }
+        }
+      }
     }
+
     None
   }
 
