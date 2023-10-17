@@ -201,7 +201,7 @@ fn resolve_exports_degrade() {
         cwd
           .join("node_modules")
           .join("degrade")
-          .join("index.mjs")
+          .join("index.umd.js")
           .to_string_lossy()
           .to_string()
       );
@@ -236,7 +236,7 @@ fn resolve_exports_direct_analysis() {
       );
 
       let resolved = resolver.resolve(
-        "direct-analysis/direct-analysis.js",
+        "direct-analysis",
         cwd.clone(),
         &ResolveKind::Import,
         &Arc::new(CompilationContext::default()),
@@ -307,7 +307,7 @@ fn resolve_priority() {
         cwd
           .join("node_modules")
           .join("priority")
-          .join("index.umd.js")
+          .join("index.mjs")
           .to_string_lossy()
           .to_string()
       );
