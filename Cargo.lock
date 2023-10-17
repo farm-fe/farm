@@ -1477,6 +1477,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_swc_transformer_import_glob"
+version = "0.0.1"
+dependencies = [
+ "glob",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_visit",
+]
+
+[[package]]
 name = "farmfe_testing_helpers"
 version = "0.0.1"
 dependencies = [

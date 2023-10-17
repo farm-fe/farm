@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use common::create_module;
 use farmfe_core::{
+  module::module_graph::ModuleGraph,
   swc_common::{Globals, GLOBALS},
   swc_ecma_ast::EsVersion,
 };
@@ -35,7 +38,7 @@ export default 'default';
   "#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (mut module, cm) = create_module(code);
+    let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
     tree_shake_module.used_exports = UsedExports::Partial(vec![
       "default".to_string(),
@@ -44,13 +47,18 @@ export default 'default';
       "f".to_string(),
       "a".to_string(),
     ]);
+    let module_id = module.id.clone();
+    let mut module_graph = ModuleGraph::new();
+    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    module_graph.add_module(module);
 
-    let swc_module = &mut module.meta.as_script_mut().ast;
-
-    let (import_info, export_info) = remove_useless_stmts(&mut tree_shake_module, swc_module);
+    let (import_info, export_info) =
+      remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
 
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
+    let module = module_graph.module(&module_id).unwrap();
+    let swc_module = &module.meta.as_script().ast;
 
     let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
     let result = String::from_utf8(bytes).unwrap();
@@ -116,17 +124,21 @@ export * from './src/foo';
 "#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (mut module, cm) = create_module(code);
+    let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
     tree_shake_module.used_exports =
       UsedExports::Partial(vec!["a".to_string(), "c".to_string(), "d".to_string()]);
+    let module_id = module.id.clone();
+    let mut module_graph = ModuleGraph::new();
+    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    module_graph.add_module(module);
 
-    let swc_module = &mut module.meta.as_script_mut().ast;
-
-    let (import_info, export_info) = remove_useless_stmts(&mut tree_shake_module, swc_module);
-
+    let (import_info, export_info) =
+      remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
+    let module = module_graph.module(&module_id).unwrap();
+    let swc_module = &module.meta.as_script().ast;
 
     let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
     let result = String::from_utf8(bytes).unwrap();
@@ -176,16 +188,21 @@ export * from './src/bar';
 "#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (mut module, cm) = create_module(code);
+    let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
     tree_shake_module.used_exports = UsedExports::Partial(vec!["c".to_string(), "d".to_string()]);
 
-    let swc_module = &mut module.meta.as_script_mut().ast;
+    let module_id = module.id.clone();
+    let mut module_graph = ModuleGraph::new();
+    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    module_graph.add_module(module);
 
-    let (import_info, export_info) = remove_useless_stmts(&mut tree_shake_module, swc_module);
-
+    let (import_info, export_info) =
+      remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
+    let module = module_graph.module(&module_id).unwrap();
+    let swc_module = &module.meta.as_script().ast;
 
     let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
     let result = String::from_utf8(bytes).unwrap();

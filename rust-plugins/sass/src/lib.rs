@@ -58,11 +58,19 @@ impl FileImporter for FileImporterCollection {
     _options: &sass_embedded::ImporterOptions,
   ) -> sass_embedded::Result<Option<Url>> {
     if let Some(context) = &*CONTEXT.read() {
+      let url = if url.starts_with('~') {
+        url.replacen('~', "", 1)
+      } else if !url.starts_with("./") && !url.starts_with("../") {
+        format!("./{}", url)
+      } else {
+        url.to_string()
+      };
+
       let resolve_result = context
         .plugin_driver
         .resolve(
           &PluginResolveHookParam {
-            source: url.to_string(),
+            source: url,
             importer: Some(self.importer.clone()),
             kind: ResolveKind::CssAtImport,
           },

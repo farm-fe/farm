@@ -17,7 +17,7 @@ export async function resolveAllPlugins(
   userConfig: UserConfig
 ) {
   const plugins = userConfig.plugins ?? [];
-  const vitePlugins = userConfig.vitePlugins ?? [];
+  const vitePlugins = (userConfig.vitePlugins ?? []).filter(Boolean);
 
   if (!plugins.length && !vitePlugins?.length) {
     return {

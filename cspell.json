@@ -106,7 +106,8 @@
     "bpos",
     "multibyte",
     "svgr",
-    "vite"
+    "vite",
+    "replacen"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

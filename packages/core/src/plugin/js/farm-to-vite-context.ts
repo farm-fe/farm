@@ -2,6 +2,7 @@ import type { PluginContext } from 'rollup';
 import type { UserConfig } from '../../config/types.js';
 import type { CompilationContext } from '../type.js';
 import { relative } from 'path';
+import { DefaultLogger } from '../../utils/logger.js';
 
 const contextCache = new Map<string, PluginContext>();
 
@@ -16,6 +17,7 @@ export function farmContextToViteContext(
   if (contextCache.has(cacheKey)) {
     return contextCache.get(cacheKey) as PluginContext;
   }
+  const logger = new DefaultLogger();
 
   const log = (message: any) => {
     if (typeof message === 'function') {
@@ -168,7 +170,15 @@ export function farmContextToViteContext(
       delete: cacheError,
       has: cacheError
     },
-    moduleIds: new Set<string>()[Symbol.iterator]()
+    moduleIds: new Set<string>()[Symbol.iterator](),
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore Vite specific property
+    getCombinedSourcemap() {
+      logger.warn(
+        '`vite-plugin-adapter`: getCombinedSourcemap is not supported in Farm for now. It will always return undefined.'
+      );
+      return undefined;
+    }
   };
 
   contextCache.set(cacheKey, viteContext);

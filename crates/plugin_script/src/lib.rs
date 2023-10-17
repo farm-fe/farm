@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
-  config::Config,
+  config::{Config, TargetEnv},
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
@@ -140,9 +140,7 @@ impl Plugin for FarmPluginScript {
           let ast = &mut param.meta.as_script_mut().ast;
 
           match param.module_type {
-            farmfe_core::module::ModuleType::Js => {
-              // TODO downgrade syntax
-            }
+            farmfe_core::module::ModuleType::Js => {}
             farmfe_core::module::ModuleType::Jsx => {
               // Do nothing, jsx should be handled by other plugins
             }
@@ -208,7 +206,7 @@ impl Plugin for FarmPluginScript {
   fn finalize_module(
     &self,
     param: &mut PluginFinalizeModuleHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if !param.module.module_type.is_script() {
       return Ok(None);
@@ -240,14 +238,18 @@ impl Plugin for FarmPluginScript {
       }
     }
 
-    // transform `import.meta.xxx` to `module.meta.xxx`
-    let ast = &mut param.module.meta.as_script_mut().ast;
-    let mut import_meta_v = ImportMetaVisitor::new();
-    ast.visit_mut_with(&mut import_meta_v);
+    // skip transform import.meta when targetEnv is node
+    // TODO: transform import.meta.url to __filename when format is cjs
+    if matches!(context.config.output.target_env, TargetEnv::Browser) {
+      // transform `import.meta.xxx` to `module.meta.xxx`
+      let ast = &mut param.module.meta.as_script_mut().ast;
+      let mut import_meta_v = ImportMetaVisitor::new();
+      ast.visit_mut_with(&mut import_meta_v);
 
-    let mut hmr_accepted_v = import_meta_visitor::HmrAcceptedVisitor::new();
-    ast.visit_mut_with(&mut hmr_accepted_v);
-    param.module.meta.as_script_mut().hmr_accepted = hmr_accepted_v.is_hmr_accepted;
+      let mut hmr_accepted_v = import_meta_visitor::HmrAcceptedVisitor::new();
+      ast.visit_mut_with(&mut hmr_accepted_v);
+      param.module.meta.as_script_mut().hmr_accepted = hmr_accepted_v.is_hmr_accepted;
+    }
 
     Ok(None)
   }
