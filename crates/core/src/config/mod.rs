@@ -261,7 +261,11 @@ impl Default for ResolveConfig {
         String::from("html"),
         String::from("css"),
       ],
-      conditions: vec![],
+      conditions: vec![
+        String::from("development"),
+        String::from("production"),
+        String::from("module"),
+      ],
       symlinks: true,
       strict_exports: false,
     }
