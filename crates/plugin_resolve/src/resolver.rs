@@ -1215,7 +1215,7 @@ impl Resolver {
 
         if key.ends_with('/') && entry.starts_with(key) {
           replace = Some(entry[key.len()..].to_string());
-          longest = Some(key.as_str().clone());
+          longest = Some(key.as_str());
         } else if key.len() > 1 {
           if let Some(tmp) = key.find('*') {
             let pattern = format!("^{}(.*){}", &key[..tmp], &key[tmp + 1..]);
@@ -1224,7 +1224,7 @@ impl Resolver {
             if let Some(captures) = regex.captures(&entry) {
               if let Some(match_group) = captures.get(1) {
                 replace = Some(match_group.as_str().to_string());
-                longest = Some(key.as_str().clone());
+                longest = Some(key.as_str());
               }
             }
           }
