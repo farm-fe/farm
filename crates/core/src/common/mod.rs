@@ -1,6 +1,5 @@
 use farmfe_macro_cache_item::cache_item;
 use relative_path::RelativePath;
-use rkyv::{Archive, Deserialize, Serialize};
 use serde_json::Value;
 
 #[cache_item]

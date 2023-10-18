@@ -8,11 +8,13 @@ use std::{
 };
 
 use farmfe_core::{
+  cache::module_cache::CachedModule,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId},
+  module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId, ModuleType},
   plugin::{
-    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, PluginAnalyzeDepsHookResultEntry,
+    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND,
+    plugin_driver::PluginDriverTransformHookResult, PluginAnalyzeDepsHookResultEntry,
     PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
@@ -32,9 +34,23 @@ use crate::{
   Compiler,
 };
 
+use self::module_cache::{get_cache_key, try_read_module_cache, write_module_cache};
+
+macro_rules! call_and_catch_error {
+  ($func:ident, $($args:expr),+) => {
+    match $func($($args),+) {
+      Ok(r) => r,
+      Err(e) => {
+        return Err(e);
+      }
+    }
+  };
+}
+
 pub(crate) mod analyze_deps;
 pub(crate) mod finalize_module;
 pub(crate) mod load;
+pub(crate) mod module_cache;
 pub(crate) mod parse;
 pub(crate) mod resolve;
 pub(crate) mod transform;
@@ -173,17 +189,6 @@ impl Compiler {
       meta: HashMap::new(),
     };
 
-    macro_rules! call_and_catch_error {
-      ($func:ident, $($args:expr),+) => {
-        match $func($($args),+) {
-          Ok(r) => r,
-          Err(e) => {
-            return Err(e);
-          }
-        }
-      };
-    }
-
     // ================ Load Start ===============
     let load_param = PluginLoadHookParam {
       resolved_path: &resolve_result.resolved_path,
@@ -233,12 +238,12 @@ impl Compiler {
       }
     }
     // ================ Load End ===============
-
     // ================ Transform Start ===============
+    let load_module_type = load_result.module_type.clone();
     let transform_param = PluginTransformHookParam {
       content: load_result.content,
       resolved_path: &resolve_result.resolved_path,
-      module_type: load_result.module_type.clone(),
+      module_type: load_module_type.clone(),
       query: resolve_result.query.clone(),
       meta: resolve_result.meta.clone(),
       module_id: module.id.to_string(),
@@ -248,14 +253,57 @@ impl Compiler {
     let transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
 
+    // skip building if the module is already built and the cache is enabled
+    let cache_key = get_cache_key(&module.id, &transform_result.content);
+    if let Some(cached_module) = try_read_module_cache(&cache_key, context)? {
+      *module = cached_module.module;
+      return Ok(cached_module.deps);
+    } else {
+      let deps = Self::build_module_after_transform(
+        resolve_result,
+        load_module_type,
+        transform_result,
+        module,
+        context,
+        &hook_context,
+      )?;
+      // Replace the module with a placeholder module to prevent the module from being cloned
+      let module_id = module.id.clone();
+      let placeholder_module = Module::new(module_id.clone());
+      let built_module = std::mem::replace(module, placeholder_module);
+
+      if context.config.persistent_cache.enabled() {
+        let mut cached_module = CachedModule {
+          module: built_module,
+          deps,
+        };
+
+        write_module_cache(&cache_key, &mut cached_module, context)?;
+
+        *module = cached_module.module;
+        return Ok(cached_module.deps);
+      } else {
+        *module = built_module;
+      }
+
+      Ok(deps)
+    }
+  }
+
+  fn build_module_after_transform(
+    resolve_result: PluginResolveHookResult,
+    load_module_type: ModuleType,
+    mut transform_result: PluginDriverTransformHookResult,
+    module: &mut Module,
+    context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
+  ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
     // ================ Parse Start ===============
     let parse_param = PluginParseHookParam {
       module_id: module.id.clone(),
       resolved_path: resolve_result.resolved_path.clone(),
       query: resolve_result.query.clone(),
-      module_type: transform_result
-        .module_type
-        .unwrap_or(load_result.module_type),
+      module_type: transform_result.module_type.unwrap_or(load_module_type),
       content: Arc::new(transform_result.content),
     };
 
@@ -348,13 +396,9 @@ impl Compiler {
             Ok(deps) => {
               let module_id = module.id.clone();
               // add module to the graph
-              let status = Self::add_module(module, &resolve_param.kind, &context);
+              Self::add_module(module, &resolve_param.kind, &context);
               // add edge to the graph
               Self::add_edge(&resolve_param, module_id.clone(), order, &context);
-              // if status is false, means the module is handled and is already in the graph, no need to resolve its dependencies again
-              if !status {
-                return;
-              }
 
               // resolving dependencies recursively in the thread pool
               for (order, dep) in deps.into_iter().enumerate() {
@@ -400,12 +444,7 @@ impl Compiler {
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  /// if the module is already in the graph, return false
-  pub(crate) fn add_module(
-    module: Module,
-    kind: &ResolveKind,
-    context: &CompilationContext,
-  ) -> bool {
+  pub(crate) fn add_module(module: Module, kind: &ResolveKind, context: &CompilationContext) {
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
@@ -421,8 +460,6 @@ impl Compiler {
     } else {
       module_graph.add_module(module);
     }
-
-    true
   }
 
   pub(crate) fn create_thread_pool() -> (

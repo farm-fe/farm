@@ -21,6 +21,7 @@ use crate::{
 use self::log_store::LogStore;
 
 pub mod log_store;
+pub(crate) const EMPTY_STR: &str = "";
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
@@ -39,6 +40,15 @@ pub struct CompilationContext {
 
 impl CompilationContext {
   pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    let cache_config = config.persistent_cache.as_ref();
+
+    let (cache_dir, namespace) = if cache_config.enabled() {
+      let cache_config_obj = cache_config.as_obj(&config.root);
+      (cache_config_obj.cache_dir, cache_config_obj.namespace)
+    } else {
+      (EMPTY_STR.to_string(), EMPTY_STR.to_string())
+    };
+
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
@@ -46,8 +56,12 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::new())),
       plugin_driver: Box::new(PluginDriver::new(plugins, config.record)),
+      cache_manager: Box::new(CacheManager::new(
+        &cache_dir,
+        &namespace,
+        config.mode.clone(),
+      )),
       config: Box::new(config),
-      cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),

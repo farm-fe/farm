@@ -2,7 +2,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use hashbrown::HashSet;
-use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 

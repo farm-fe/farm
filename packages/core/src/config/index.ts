@@ -438,7 +438,8 @@ async function readConfigFile(
             treeShaking: false,
             minify: false,
             presetEnv: false,
-            lazyCompilation: false
+            lazyCompilation: false,
+            persistentCache: false
           },
           server: {
             hmr: false

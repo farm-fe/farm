@@ -177,7 +177,16 @@ const compilationConfigSchema = z
           .optional()
       })
       .optional(),
-    html: z.object({ base: z.string().optional() }).optional()
+    html: z.object({ base: z.string().optional() }).optional(),
+    persistentCache: z.union([
+      z.boolean(),
+      z
+        .object({
+          namespace: z.string().optional(),
+          cacheDir: z.string().optional()
+        })
+        .optional()
+    ])
   })
   .strict();
 

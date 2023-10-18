@@ -1,5 +1,6 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
+use farmfe_macro_cache_item::cache_item;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -213,8 +214,9 @@ pub trait Plugin: Any + Send + Sync {
   }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[cache_item]
 pub enum ResolveKind {
   /// entry input in the config
   Entry(String),
@@ -383,6 +385,7 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+#[cache_item]
 pub struct PluginAnalyzeDepsHookResultEntry {
   pub source: String,
   pub kind: ResolveKind,

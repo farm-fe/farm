@@ -14,6 +14,7 @@ export default defineConfig({
     },
     lazyCompilation: true,
     presetEnv: false,
+    sourcemap: false,
     resolve: {
       symlinks: true,
       alias: {

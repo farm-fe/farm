@@ -19,6 +19,7 @@ pub const FARM_NAMESPACE: &str = "__farm_namespace__";
 pub mod config_regex;
 pub mod html;
 pub mod partial_bundling;
+pub mod persistent_cache;
 pub mod preset_env;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -45,16 +46,19 @@ pub struct Config {
   pub minify: bool,
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
+  pub persistent_cache: Box<persistent_cache::PersistentCacheConfig>,
 }
 
 impl Default for Config {
   fn default() -> Self {
+    let root = std::env::current_dir()
+      .unwrap()
+      .to_string_lossy()
+      .to_string();
+
     Self {
       input: HashMap::from([("index".to_string(), "./index.html".to_string())]),
-      root: std::env::current_dir()
-        .unwrap()
-        .to_string_lossy()
-        .to_string(),
+      root: root.clone(),
       output: OutputConfig::default(),
       mode: Mode::Development,
       resolve: ResolveConfig::default(),
@@ -73,6 +77,9 @@ impl Default for Config {
       minify: true,
       preset_env: Box::<PresetEnvConfig>::default(),
       record: false,
+      persistent_cache: Box::<persistent_cache::PersistentCacheConfig>::new(
+        persistent_cache::PersistentCacheConfig::get_default_config(&root),
+      ),
     }
   }
 }

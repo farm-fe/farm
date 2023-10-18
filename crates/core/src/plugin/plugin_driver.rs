@@ -530,7 +530,7 @@ impl PluginDriver {
   );
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PluginDriverTransformHookResult {
   pub content: String,
   pub source_map_chain: Vec<Arc<String>>,

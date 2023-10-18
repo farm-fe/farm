@@ -237,7 +237,11 @@ export interface Config {
           options?: any;
           assumptions?: any;
         };
-  };
+    persistentCache?: boolean | {
+      namespace?: string;
+      cacheDir?: string;
+    };
+};
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]
   rustPlugins?: [string, string][];

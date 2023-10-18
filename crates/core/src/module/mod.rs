@@ -10,7 +10,6 @@ use farmfe_utils::relative;
 use hashbrown::HashSet;
 use heck::AsLowerCamelCase;
 use relative_path::RelativePath;
-use rkyv::{Archive, Archived, Deserialize, Serialize};
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
 use swc_common::DUMMY_SP;
@@ -56,6 +55,8 @@ pub struct Module {
   pub size: usize,
   /// Source content after load and transform
   pub content: Arc<String>,
+  /// Used exports of this module. Set by the tree-shake plugin
+  pub used_exports: Vec<String>,
 }
 
 impl Module {
@@ -74,6 +75,7 @@ impl Module {
       execution_order: usize::MAX,
       size: 0,
       content: Arc::new("".to_string()),
+      used_exports: vec![],
     }
   }
 }
