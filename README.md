@@ -2,7 +2,7 @@
   <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
-  <h3>Super fast web building tool written in Rust</h3>
+  <h3>Extremely fast Vite-compatible web building tool written in Rust</h3>
   <p>
     <span>English</span> |
     <a href="https://github.com/farm-fe/farm/blob/main/README.zh-CN.md">简体中文</a>  
@@ -30,7 +30,7 @@
 
 ## Intro
 
-Farm is a super-fast vite-compatible web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
+Farm is a extremely fast vite-compatible web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
 ![performance](./assets/benchmark.jpg)
 
