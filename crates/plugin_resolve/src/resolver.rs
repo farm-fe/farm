@@ -666,146 +666,6 @@ impl Resolver {
       return Some(value_path);
     }
 
-    // old code
-
-    // let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
-    // if let Some(exports_field) = exports_field {
-    //   let dir = package_json_info.dir();
-    //   let path = Path::new(resolved_path);
-    //   if let Value::Object(obj) = exports_field {
-    //     for (key, value) in obj {
-    //       let key_path = self.get_key_path(&key, dir);
-    //       if self.are_paths_equal(key_path, resolved_path) {
-    //         match value {
-    //           Value::String(current_field_value) => {
-    //             let dir = package_json_info.dir();
-    //             let path = Path::new(resolved_path);
-    //             if path.is_absolute() {
-    //               let key_path = self.get_key_path(&key, dir);
-
-    //               if self.are_paths_equal(&key_path, resolved_path) {
-    //                 let value_path =
-    //                   self.get_key_path(&current_field_value, package_json_info.dir());
-    //                 return Some(value_path);
-    //               }
-    //             }
-    //           }
-    //           Value::Object(current_field_obj) => {
-    //             for (key_word, key_value) in current_field_obj {
-    //               match kind {
-    //                 // import with node default
-    //                 ResolveKind::Import => {
-    //                   if self.are_paths_equal(&key_word, "default") && path.is_absolute() {
-    //                     match &key_value {
-    //                       Value::String(key_value_string) => {
-    //                         let value_path =
-    //                           self.get_key_path(key_value_string, package_json_info.dir());
-    //                         return Some(value_path);
-    //                       }
-    //                       Value::Object(key_value_object) => {
-    //                         if let Some(Value::String(default_str)) =
-    //                           key_value_object.get("default")
-    //                         {
-    //                           let value_path =
-    //                             self.get_key_path(default_str, package_json_info.dir());
-    //                           return Some(value_path);
-    //                         }
-    //                       }
-    //                       _ => {}
-    //                     }
-    //                   }
-    //                   if self.are_paths_equal(&key_word, "import") {
-    //                     match key_value {
-    //                       Value::String(import_value) => {
-    //                         if path.is_absolute() {
-    //                           let value_path =
-    //                             self.get_key_path(&import_value, package_json_info.dir());
-    //                           return Some(value_path);
-    //                         }
-    //                       }
-    //                       Value::Object(import_value) => {
-    //                         for (key_word, key_value) in import_value {
-    //                           match context.config.output.target_env {
-    //                             TargetEnv::Node => {
-    //                               if self.are_paths_equal(&key_word, "node") && path.is_absolute() {
-    //                                 let value_path = self.get_key_path(
-    //                                   key_value.as_str().unwrap(),
-    //                                   package_json_info.dir(),
-    //                                 );
-    //                                 return Some(value_path);
-    //                               }
-    //                             }
-    //                             TargetEnv::Browser => {
-    //                               if self.are_paths_equal(key_word, "default") && path.is_absolute()
-    //                               {
-    //                                 let value_path = self.get_key_path(
-    //                                   key_value.as_str().unwrap(),
-    //                                   package_json_info.dir(),
-    //                                 );
-    //                                 return Some(value_path);
-    //                               }
-    //                             }
-    //                           }
-    //                         }
-    //                       }
-    //                       _ => {}
-    //                     }
-    //                   }
-    //                 }
-    //                 ResolveKind::Require => {
-    //                   if key_word.to_lowercase() == "require" {
-    //                     let path = Path::new(resolved_path);
-    //                     match key_value {
-    //                       Value::String(key_value) => {
-    //                         if path.is_absolute() {
-    //                           let value_path =
-    //                             self.get_key_path(&key_value, package_json_info.dir());
-    //                           return Some(value_path);
-    //                         }
-    //                       }
-    //                       Value::Object(key_value) => {
-    //                         if path.is_absolute() {
-    //                           for (key, value) in key_value {
-    //                             match context.config.output.target_env {
-    //                               TargetEnv::Node => {
-    //                                 if self.are_paths_equal(key, "default") && path.is_absolute() {
-    //                                   let value_path = self.get_key_path(
-    //                                     value.as_str().unwrap(),
-    //                                     package_json_info.dir(),
-    //                                   );
-    //                                   return Some(value_path);
-    //                                 }
-    //                               }
-    //                               TargetEnv::Browser => {
-    //                                 if self.are_paths_equal(key, "default") && path.is_absolute() {
-    //                                   let value_path = self.get_key_path(
-    //                                     value.as_str().unwrap(),
-    //                                     package_json_info.dir(),
-    //                                   );
-    //                                   return Some(value_path);
-    //                                 }
-    //                               }
-    //                             }
-    //                           }
-    //                         }
-    //                       }
-    //                       _ => {}
-    //                     }
-    //                   }
-    //                 }
-    //                 _ => {}
-    //               }
-    //             }
-    //           }
-    //           _ => {
-    //             // TODO strict_exports config with error
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-
     None
   }
 
@@ -1246,38 +1106,7 @@ impl Resolver {
           None
         }
       }
-      Value::Object(mut map) => {
-        // let has_default = map.contains_key("default");
-
-        // if has_default {
-        //   let mut new_mapping = BTreeMap::new();
-        //   if let Some(default_value) = map.remove("default") {
-        //     new_mapping.extend(map);
-        //     new_mapping.insert("default".to_string(), default_value); // 设置一个更大的键名
-        //     for (key, value) in new_mapping {
-        //       if key == "default" {
-        //         if let Ok(condition) = Condition::from_str(&"default".to_string()) {
-        //           if keys.contains(&condition) {
-        //             return self.loop_value(value, keys, result);
-        //           }
-        //         }
-        //       } else if let Ok(condition) = Condition::from_str(&key) {
-        //         if keys.contains(&condition) {
-        //           return self.loop_value(value, keys, result);
-        //         }
-        //       }
-        //     }
-        //   }
-        // } else {
-        //   for (key, value) in map {
-        //     if let Ok(condition) = Condition::from_str(&key) {
-        //       if keys.contains(&condition) {
-        //         return self.loop_value(value, keys, result);
-        //       }
-        //     }
-        //   }
-        // }
-        // None
+      Value::Object(map) => {
         // TODO Temporarily define the order problem
         let property_order: Vec<String> = vec![
           String::from("browser"),
@@ -1287,13 +1116,7 @@ impl Resolver {
           String::from("require"),
           String::from("default"),
         ];
-        // for (key, value) in map {
-        //   if let Ok(condition) = Condition::from_str(&key) {
-        //     if keys.contains(&condition) {
-        //       return self.loop_value(value, keys, result);
-        //     }
-        //   }
-        // }
+
         for key in &property_order {
           if let Some(value) = map.get(key) {
             if let Ok(condition) = Condition::from_str(&key) {
