@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.8
+
+### Patch Changes
+
+- 6a73829: fix: reolve exports filed resolve error
+
 ## 0.13.7
 
 ### Patch Changes
