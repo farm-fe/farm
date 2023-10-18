@@ -201,7 +201,7 @@ fn resolve_exports_degrade() {
         cwd
           .join("node_modules")
           .join("degrade")
-          .join("index.mjs")
+          .join("index.umd.js")
           .to_string_lossy()
           .to_string()
       );
@@ -236,7 +236,7 @@ fn resolve_exports_direct_analysis() {
       );
 
       let resolved = resolver.resolve(
-        "direct-analysis/direct-analysis.js",
+        "direct-analysis",
         cwd.clone(),
         &ResolveKind::Import,
         &Arc::new(CompilationContext::default()),
@@ -307,7 +307,7 @@ fn resolve_priority() {
         cwd
           .join("node_modules")
           .join("priority")
-          .join("index.umd.js")
+          .join("index.mjs")
           .to_string_lossy()
           .to_string()
       );
@@ -389,6 +389,35 @@ fn resolve_exports_import_require() {
           .join("require-import")
           .join("lib")
           .join("base-require.cjs")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_exports_jsnext() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+      // Parsing packages in node_modules
+      let resolved = resolver.resolve(
+        "resolve-jsnext",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("resolve-jsnext")
+          .join("tslib.es6.js")
           .to_string_lossy()
           .to_string()
       );
