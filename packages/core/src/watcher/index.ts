@@ -5,14 +5,14 @@ import chalk from 'chalk';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
-import { Config, JsFileWatcher } from '../../binding/index.js';
-import { compilerHandler, DefaultLogger, clearScreen } from '../utils/index.js';
+import { Config, JsFileWatcher } from '../../binding';
+import { compilerHandler, DefaultLogger, clearScreen } from '../utils';
 import {
   DEFAULT_HMR_OPTIONS,
   JsPlugin,
   normalizeUserCompilationConfig,
   resolveUserConfig
-} from '../index.js';
+} from '../index.ts';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 
 import type { UserConfig } from '../config/index.js';
