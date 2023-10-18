@@ -1,5 +1,4 @@
 use std::{
-  collections::BTreeMap,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -20,11 +19,6 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
-
-enum Entry {
-  Exports(String),
-  Imports(String),
-}
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 enum Condition {
@@ -620,7 +614,7 @@ impl Resolver {
     if let Some(package_json_info) = package_json_info {
       let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
       let resolved_path = self
-        .try_exports_replace(source, package_json_info, &resolved_path, kind, context)
+        .try_exports_replace(source, package_json_info, kind, context)
         .unwrap_or(resolved_path);
       // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
       let resolved_path_buf = PathBuf::from(&resolved_path);
@@ -645,7 +639,6 @@ impl Resolver {
     &self,
     source: &str,
     package_json_info: &PackageJsonInfo,
-    resolved_path: &str,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
@@ -938,7 +931,6 @@ impl Resolver {
       let name = match self.get_field_value_from_package_json_info(package_json_info, "name") {
         Some(n) => n,
         None => {
-          // 如果 name 找不到 也要解析一下错误情况处理返回
           eprintln!(
             "Missing \"name\" field in package.json {:?}",
             package_json_info
@@ -1027,14 +1019,10 @@ impl Resolver {
     return result;
   }
 
-  // TODO ---------------------------------------------
   fn conditions(self: &Self, options: &ConditionOptions) -> HashSet<Condition> {
     let mut out: HashSet<Condition> = HashSet::new();
     out.insert(Condition::Default);
-    // TODO resolver other conditions
-    // for condition in options.conditions.iter() {
-    //   out.insert(condition.parse().unwrap());
-    // }
+
     for condition_str in &options.conditions {
       match Condition::from_str(condition_str) {
         Ok(condition_enum) => {
@@ -1082,7 +1070,7 @@ impl Resolver {
     self: &Self,
     m: Value,
     keys: &HashSet<Condition>,
-    mut result: &mut Option<HashSet<String>>,
+    result: &mut Option<HashSet<String>>,
   ) -> Option<Vec<String>> {
     match m {
       Value::String(s) => {
@@ -1099,7 +1087,6 @@ impl Resolver {
           }
         }
 
-        // 如果使用了初始化的结果集，返回结果
         if result.is_none() && !arr_result.is_empty() {
           return Some(arr_result.into_iter().collect());
         } else {
@@ -1200,12 +1187,11 @@ impl Resolver {
     };
     let c: HashSet<Condition> = self.conditions(options);
     let mut m: Option<&Value> = mapping.get(&entry);
-    let mut result: Option<Vec<String>> = None;
     let mut replace: Option<String> = None;
     if m.is_none() {
       let mut longest: Option<&str> = None;
 
-      for (key, value) in mapping.iter() {
+      for (key, _value) in mapping.iter() {
         if let Some(cur_longest) = &longest {
           if key.len() < cur_longest.len() {
             // do not allow "./" to match if already matched "./foo*" key
@@ -1237,14 +1223,14 @@ impl Resolver {
     }
     if m.is_none() {
       self.throws(name, &entry, None);
-      return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
+      return Vec::new();
     }
     let v = self.loop_value(m.unwrap().clone(), &c, &mut None);
     if v.is_none() {
       self.throws(name, &entry, Some(1));
-      return Vec::new(); // 返回一个空 Vec 作为错误处理的默认值
+      return Vec::new();
     }
-    let mut cloned_v = v.clone();
+    let cloned_v = v.clone();
     if let Some(replace) = replace {
       if let Some(v1) = self.injects(&mut cloned_v.unwrap(), &replace) {
         return v1;
