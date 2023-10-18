@@ -143,13 +143,7 @@ export class ModuleSystem {
       })
       .catch((err) => {
         console.error(`[Farm] Error loading dynamic module "${moduleId}"`, err);
-
-        if (process.env.NODE_ENV === 'production') {
-          // reload the page if the dynamic module loading failed
-          window.location.reload();
-        } else {
-          throw err;
-        }
+        throw err;
       });
   }
 

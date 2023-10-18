@@ -29,7 +29,7 @@ export class ResourceLoader {
     this.publicPaths = publicPaths;
   }
 
-  load(resource: Resource): Promise<void> {
+  load(resource: Resource, index = 0): Promise<void> {
     if (targetEnv === 'node') {
       if (resource.type === 'script') {
         return this._loadScript(`./${resource.path}`);
@@ -38,37 +38,44 @@ export class ResourceLoader {
       }
     }
 
-    let index = 0;
+    const publicPath = this.publicPaths[index];
+    const url = `${publicPath === '/' ? '' : publicPath}/${resource.path}`;
 
-    while (index < this.publicPaths.length) {
-      const publicPath = this.publicPaths[index];
-      const url = `${publicPath === '/' ? '' : publicPath}/${resource.path}`;
-
-      if (this._loadedResources[resource.path]) {
-        return;
-      } else if (this._loadingResources[resource.path]) {
-        return this._loadingResources[resource.path];
-      }
-
-      let promise = Promise.resolve();
-      try {
-        if (resource.type === 'script') {
-          promise = this._loadScript(url);
-        } else if (resource.type === 'link') {
-          promise = this._loadLink(url);
-        }
-
-        this._loadingResources[resource.path] = promise;
-
-        promise.then(() => {
-          this._loadedResources[resource.path] = true;
-        });
-        return promise;
-      } catch (e) {
-        console.error(`[Farm] Failed to load resource "${url}"`, e);
-        index++;
-      }
+    if (this._loadedResources[resource.path]) {
+      return;
+    } else if (this._loadingResources[resource.path]) {
+      return this._loadingResources[resource.path];
     }
+
+    let promise = Promise.resolve();
+
+    if (resource.type === 'script') {
+      promise = this._loadScript(url);
+    } else if (resource.type === 'link') {
+      promise = this._loadLink(url);
+    }
+
+    this._loadingResources[resource.path] = promise;
+
+    promise
+      .then(() => {
+        this._loadedResources[resource.path] = true;
+      })
+      .catch((e) => {
+        console.warn(
+          `[Farm] Failed to load resource "${url}" using publicPath: ${this.publicPaths[index]}`
+        );
+        index++;
+
+        if (index < this.publicPaths.length) {
+          return this.load(resource, index);
+        } else {
+          throw new Error(
+            `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". ${e}`
+          );
+        }
+      });
+    return promise;
   }
 
   setLoadedResource(path: string) {
