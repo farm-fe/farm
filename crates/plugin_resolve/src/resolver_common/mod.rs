@@ -530,33 +530,21 @@ pub fn loop_value(
         None
       }
     }
-    Value::Object(mut map) => {
-      let has_default = map.contains_key("default");
+    Value::Object(map) => {
+      let property_order: Vec<String> = vec![
+        String::from("browser"),
+        String::from("development"),
+        String::from("module"),
+        String::from("import"),
+        String::from("require"),
+        String::from("default"),
+      ];
 
-      if has_default {
-        let mut new_mapping = BTreeMap::new();
-        if let Some(default_value) = map.remove("default") {
-          new_mapping.extend(map);
-          new_mapping.insert("zzz_default".to_string(), default_value); // 设置一个更大的键名
-          for (key, value) in new_mapping {
-            if key == "zzz_default" {
-              if let Ok(condition) = Condition::from_str(&"default".to_string()) {
-                if keys.contains(&condition) {
-                  return loop_value(value, keys, result);
-                }
-              }
-            } else if let Ok(condition) = Condition::from_str(&key) {
-              if keys.contains(&condition) {
-                return loop_value(value, keys, result);
-              }
-            }
-          }
-        }
-      } else {
-        for (key, value) in map {
+      for key in &property_order {
+        if let Some(value) = map.get(key) {
           if let Ok(condition) = Condition::from_str(&key) {
             if keys.contains(&condition) {
-              return loop_value(value, keys, result);
+              return loop_value(value.clone(), keys, result);
             }
           }
         }
