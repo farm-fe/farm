@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: false
@@ -208,7 +208,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.2.4
@@ -248,7 +248,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
         specifier: ^2.5.70
@@ -312,7 +312,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -361,7 +361,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.2.4
@@ -466,7 +466,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.2.4
@@ -515,7 +515,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.2.4
@@ -555,7 +555,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.2.4
@@ -1093,7 +1093,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.7.2
+        specifier: workspace:^0.7.3
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.2.4

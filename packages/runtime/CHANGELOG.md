@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.7.3
+
+### Patch Changes
+
+- 62e6630: Fix error of runtime dynamic resource loading
+
 ## 0.7.2
 
 ### Patch Changes
