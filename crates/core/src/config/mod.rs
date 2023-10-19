@@ -247,6 +247,8 @@ impl Default for ResolveConfig {
         String::from("browser"),
         String::from("module"),
         String::from("main"),
+        String::from("jsnext:main"),
+        String::from("jsnext")
       ],
       main_files: vec![String::from("index")],
       extensions: vec![
@@ -260,12 +262,9 @@ impl Default for ResolveConfig {
         String::from("css"),
       ],
       conditions: vec![
-        String::from("import"),
-        String::from("require"),
-        String::from("browser"),
         String::from("development"),
         String::from("production"),
-        String::from("default"),
+        String::from("module"),
       ],
       symlinks: true,
       strict_exports: false,

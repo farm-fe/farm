@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: false
@@ -658,6 +658,9 @@ importers:
 
   examples/solid:
     dependencies:
+      solid-element:
+        specifier: ^1.8.0
+        version: 1.8.0(solid-js@1.7.8)
       solid-js:
         specifier: ^1.7.8
         version: 1.7.8
@@ -6312,6 +6315,10 @@ packages:
       dot-prop: 5.3.0
     dev: true
 
+  /component-register@0.8.3:
+    resolution: {integrity: sha512-/0u8ov0WPWi2FL78rgB9aFOcfY8pJT4jP/l9NTOukGNLVQ6hk35sEJE1RkEnNQU3yk48Qr7HlDQjRQKEVfgeWg==}
+    dev: false
+
   /compressible@2.0.18:
     resolution: {integrity: sha512-AF3r7P5dWxL8MxyITRMlORQNaOA2IkAFaTr4k7BUumjPtRpGDTZpl0Pb1XCO6JeDCBdp126Cgs9sMxqSjgYyRg==}
     engines: {node: '>= 0.6'}
@@ -11955,6 +11962,15 @@ packages:
       dot-case: 3.0.4
       tslib: 2.5.0
     dev: true
+
+  /solid-element@1.8.0(solid-js@1.7.8):
+    resolution: {integrity: sha512-DG8HBCej5kNExUiFbVG8OFZojMGcLF8keXdGLEcHXBYtJ7zhm+a8HJnl5lfmBlTYGRk4ApgoBvlwH1ibg7quaQ==}
+    peerDependencies:
+      solid-js: ^1.8.0
+    dependencies:
+      component-register: 0.8.3
+      solid-js: 1.7.8
+    dev: false
 
   /solid-js@1.7.8:
     resolution: {integrity: sha512-XHBWk1FvFd0JMKljko7FfhefJMTSgYEuVKcQ2a8hzRXfiuSJAGsrPPafqEo+f6l+e8Oe3cROSpIL6kbzjC1fjQ==}

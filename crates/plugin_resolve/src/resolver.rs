@@ -6,17 +6,58 @@ use std::{
 
 use farmfe_core::{
   common::PackageJsonInfo,
-  config::TargetEnv,
+  config::{Mode, TargetEnv},
   context::CompilationContext,
-  error::{CompilationError, Result},
+  error::{CompilationError, Result as CompResult},
   farm_profile_function, farm_profile_scope,
-  hashbrown::HashMap,
+  hashbrown::{HashMap, HashSet},
   parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
+  regex,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
+
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+enum Condition {
+  Default,
+  Require,
+  Import,
+  Browser,
+  Node,
+  Development,
+  Module,
+  Production,
+}
+
+impl FromStr for Condition {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "default" => Ok(Condition::Default),
+      "require" => Ok(Condition::Require),
+      "import" => Ok(Condition::Import),
+      "browser" => Ok(Condition::Browser),
+      "node" => Ok(Condition::Node),
+      "development" => Ok(Condition::Development),
+      "production" => Ok(Condition::Production),
+      "module" => Ok(Condition::Module),
+      _ => Err(format!("Invalid Condition: {}", s)),
+      // _ => {}
+    }
+  }
+}
+
+#[derive(Debug)]
+struct ConditionOptions {
+  pub unsafe_flag: bool,
+  pub require: bool,
+  pub browser: bool,
+  pub conditions: Vec<String>,
+}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ResolveNodeModuleCacheKey {
@@ -120,7 +161,7 @@ impl Resolver {
 
       return self
         .try_file(&path_buf, context)
-        .or_else(|| self.try_directory(&path_buf, kind, false, context))
+        .or_else(|| self.try_directory(source, &path_buf, kind, false, context))
         .map(|resolved_path| {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
@@ -139,7 +180,7 @@ impl Resolver {
       // TODO try read symlink from the resolved path step by step to its parent util the root
       let resolved_path = self
         .try_file(&normalized_path, context)
-        .or_else(|| self.try_directory(&normalized_path, kind, false, context))
+        .or_else(|| self.try_directory(source, &normalized_path, kind, false, context))
         .ok_or(CompilationError::GenericError(format!(
           "File `{:?}` does not exist",
           normalized_path
@@ -153,7 +194,7 @@ impl Resolver {
     } else if self.is_source_dot(source) {
       // import xx from '.'
       return self
-        .try_directory(&base_dir, kind, false, context)
+        .try_directory(source, &base_dir, kind, false, context)
         .map(|resolved_path| {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
@@ -161,7 +202,7 @@ impl Resolver {
       // import xx from '..'
       let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
       return self
-        .try_directory(&parent_path, kind, false, context)
+        .try_directory(source, &parent_path, kind, false, context)
         .map(|resolved_path| {
           self.get_resolve_result(&package_json_info, resolved_path, kind, context)
         });
@@ -201,6 +242,7 @@ impl Resolver {
   /// Try resolve as a file with the configured main fields.
   fn try_directory(
     &self,
+    source: &str,
     dir: &Path,
     kind: &ResolveKind,
     skip_try_package: bool,
@@ -230,7 +272,7 @@ impl Resolver {
       );
 
       if let Ok(package_json_info) = package_json_info {
-        let (res, _) = self.try_package(&package_json_info, kind, vec![], context);
+        let (res, _) = self.try_package(source, &package_json_info, kind, vec![], context);
 
         if let Some(res) = res {
           return Some(res.resolved_path);
@@ -344,10 +386,11 @@ impl Resolver {
           if matches!(&package_path, package_path if package_path.exists()) {
             if let Some(resolved_path) = self
               .try_file(&package_path, context)
-              .or_else(|| self.try_directory(&package_path, kind, true, context))
+              .or_else(|| self.try_directory(source, &package_path, kind, true, context))
             {
               return (
                 Some(self.get_resolve_node_modules_result(
+                  source,
                   package_json_info.ok().as_ref(),
                   resolved_path,
                   kind,
@@ -397,6 +440,7 @@ impl Resolver {
               if package_json_info.is_ok() {
                 return (
                   Some(self.get_resolve_node_modules_result(
+                    source,
                     package_json_info.ok().as_ref(),
                     package_path.to_str().unwrap().to_string(),
                     kind,
@@ -409,10 +453,11 @@ impl Resolver {
           }
           if let Some(resolved_path) = self
             .try_file(&package_path, context)
-            .or_else(|| self.try_directory(&package_path, kind, true, context))
+            .or_else(|| self.try_directory(source, &package_path, kind, true, context))
           {
             return (
               Some(self.get_resolve_node_modules_result(
+                source,
                 package_json_info.ok().as_ref(),
                 resolved_path,
                 kind,
@@ -428,7 +473,7 @@ impl Resolver {
           let package_json_info = package_json_info.unwrap();
 
           let (result, tried_paths) =
-            self.try_package(&package_json_info, kind, tried_paths, context);
+            self.try_package(source, &package_json_info, kind, tried_paths, context);
 
           if result.is_some() {
             return (result, tried_paths);
@@ -440,6 +485,7 @@ impl Resolver {
               .try_file(&package_path.join("index"), context)
               .map(|resolved_path| {
                 self.get_resolve_node_modules_result(
+                  source,
                   Some(&package_json_info),
                   resolved_path,
                   kind,
@@ -460,6 +506,7 @@ impl Resolver {
 
   fn try_package(
     &self,
+    source: &str,
     package_json_info: &PackageJsonInfo,
     kind: &ResolveKind,
     tried_paths: Vec<PathBuf>,
@@ -479,6 +526,7 @@ impl Resolver {
       if let Some(field_value) = raw_package_json_info.get(main_field) {
         if let Value::Object(_) = field_value {
           let resolved_path = Some(self.get_resolve_node_modules_result(
+            source,
             Some(package_json_info),
             package_json_info.dir().to_string(),
             kind,
@@ -496,6 +544,7 @@ impl Resolver {
           return match self.try_file(&full_path, context) {
             Some(resolved_path) => (
               Some(self.get_resolve_node_modules_result(
+                source,
                 Some(package_json_info),
                 resolved_path,
                 kind,
@@ -505,9 +554,10 @@ impl Resolver {
             ),
             None => (
               self
-                .try_directory(&full_path, kind, true, context)
+                .try_directory(source, &full_path, kind, true, context)
                 .map(|resolved_path| {
                   self.get_resolve_node_modules_result(
+                    source,
                     Some(package_json_info),
                     resolved_path,
                     kind,
@@ -526,7 +576,7 @@ impl Resolver {
 
   fn get_resolve_result(
     &self,
-    package_json_info: &Result<PackageJsonInfo>,
+    package_json_info: &CompResult<PackageJsonInfo>,
     resolved_path: String,
     _kind: &ResolveKind,
     context: &Arc<CompilationContext>,
@@ -554,6 +604,7 @@ impl Resolver {
 
   fn get_resolve_node_modules_result(
     &self,
+    source: &str,
     package_json_info: Option<&PackageJsonInfo>,
     resolved_path: String,
     kind: &ResolveKind,
@@ -563,15 +614,14 @@ impl Resolver {
     if let Some(package_json_info) = package_json_info {
       let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
       let resolved_path = self
-        .try_exports_replace(package_json_info, &resolved_path, kind, context)
+        .try_exports_replace(source, package_json_info, kind, context)
         .unwrap_or(resolved_path);
       // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
       let resolved_path_buf = PathBuf::from(&resolved_path);
       let resolved_path = self
         .try_file(&resolved_path_buf, context)
-        .or_else(|| self.try_directory(&resolved_path_buf, kind, true, context))
+        .or_else(|| self.try_directory(source, &resolved_path_buf, kind, true, context))
         .unwrap_or(resolved_path);
-
       PluginResolveHookResult {
         resolved_path,
         side_effects,
@@ -587,150 +637,26 @@ impl Resolver {
 
   fn try_exports_replace(
     &self,
+    source: &str,
     package_json_info: &PackageJsonInfo,
-    resolved_path: &str,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_exports_replace".to_string());
-    // resolve exports field
     // TODO: add all cases from https://nodejs.org/api/packages.html
-    let exports_field = self.get_field_value_from_package_json_info(package_json_info, "exports");
-    if let Some(exports_field) = exports_field {
-      let dir = package_json_info.dir();
-      let path = Path::new(resolved_path);
-      if let Value::Object(obj) = exports_field {
-        for (key, value) in obj {
-          let key_path = self.get_key_path(&key, dir);
-          if self.are_paths_equal(key_path, resolved_path) {
-            match value {
-              Value::String(current_field_value) => {
-                let dir = package_json_info.dir();
-                let path = Path::new(resolved_path);
-                if path.is_absolute() {
-                  let key_path = self.get_key_path(&key, dir);
-
-                  if self.are_paths_equal(&key_path, resolved_path) {
-                    let value_path =
-                      self.get_key_path(&current_field_value, package_json_info.dir());
-                    return Some(value_path);
-                  }
-                }
-              }
-              Value::Object(current_field_obj) => {
-                for (key_word, key_value) in current_field_obj {
-                  match kind {
-                    // import with node default
-                    ResolveKind::Import => {
-                      if self.are_paths_equal(&key_word, "default") && path.is_absolute() {
-                        match &key_value {
-                          Value::String(key_value_string) => {
-                            let value_path =
-                              self.get_key_path(key_value_string, package_json_info.dir());
-                            return Some(value_path);
-                          }
-                          Value::Object(key_value_object) => {
-                            if let Some(Value::String(default_str)) =
-                              key_value_object.get("default")
-                            {
-                              let value_path =
-                                self.get_key_path(default_str, package_json_info.dir());
-                              return Some(value_path);
-                            }
-                          }
-                          _ => {}
-                        }
-                      }
-                      if self.are_paths_equal(&key_word, "import") {
-                        match key_value {
-                          Value::String(import_value) => {
-                            if path.is_absolute() {
-                              let value_path =
-                                self.get_key_path(&import_value, package_json_info.dir());
-                              return Some(value_path);
-                            }
-                          }
-                          Value::Object(import_value) => {
-                            for (key_word, key_value) in import_value {
-                              match context.config.output.target_env {
-                                TargetEnv::Node => {
-                                  if self.are_paths_equal(&key_word, "node") && path.is_absolute() {
-                                    let value_path = self.get_key_path(
-                                      key_value.as_str().unwrap(),
-                                      package_json_info.dir(),
-                                    );
-                                    return Some(value_path);
-                                  }
-                                }
-                                TargetEnv::Browser => {
-                                  if self.are_paths_equal(key_word, "default") && path.is_absolute()
-                                  {
-                                    let value_path = self.get_key_path(
-                                      key_value.as_str().unwrap(),
-                                      package_json_info.dir(),
-                                    );
-                                    return Some(value_path);
-                                  }
-                                }
-                              }
-                            }
-                          }
-                          _ => {}
-                        }
-                      }
-                    }
-                    ResolveKind::Require => {
-                      if key_word.to_lowercase() == "require" {
-                        let path = Path::new(resolved_path);
-                        match key_value {
-                          Value::String(key_value) => {
-                            if path.is_absolute() {
-                              let value_path =
-                                self.get_key_path(&key_value, package_json_info.dir());
-                              return Some(value_path);
-                            }
-                          }
-                          Value::Object(key_value) => {
-                            if path.is_absolute() {
-                              for (key, value) in key_value {
-                                match context.config.output.target_env {
-                                  TargetEnv::Node => {
-                                    if self.are_paths_equal(key, "default") && path.is_absolute() {
-                                      let value_path = self.get_key_path(
-                                        value.as_str().unwrap(),
-                                        package_json_info.dir(),
-                                      );
-                                      return Some(value_path);
-                                    }
-                                  }
-                                  TargetEnv::Browser => {
-                                    if self.are_paths_equal(key, "default") && path.is_absolute() {
-                                      let value_path = self.get_key_path(
-                                        value.as_str().unwrap(),
-                                        package_json_info.dir(),
-                                      );
-                                      return Some(value_path);
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          }
-                          _ => {}
-                        }
-                      }
-                    }
-                    _ => {}
-                  }
-                }
-              }
-              _ => {
-                // TODO strict_exports config with error
-              }
-            }
-          }
-        }
-      }
+    let re = regex::Regex::new(r"^(?P<group1>[^@][^/]*)/|^(?P<group2>@[^/]+/[^/]+)/").unwrap();
+    let is_matched = re.is_match(source);
+    if let Some(resolve_exports_path) = self.resolve_exports_or_imports(
+      package_json_info,
+      source,
+      "exports",
+      kind,
+      context,
+      is_matched,
+    ) {
+      let resolved_id = resolve_exports_path.get(0).unwrap();
+      let value_path = self.get_key_path(resolved_id, package_json_info.dir());
+      return Some(value_path);
     }
 
     None
@@ -945,5 +871,371 @@ impl Resolver {
       let value_path = self.get_key_path(str, package_json_info.dir());
       Some(value_path)
     }
+  }
+
+  fn exports(
+    self: &Self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    config: &ConditionOptions,
+  ) -> Option<Vec<String>> {
+    if let Some(exports_field) =
+      self.get_field_value_from_package_json_info(package_json_info, "exports")
+    {
+      // TODO If the current package does not have a name, then look up for the name of the folder
+      let name = match self.get_field_value_from_package_json_info(package_json_info, "name") {
+        Some(n) => n,
+        None => {
+          eprintln!(
+            "Missing \"name\" field in package.json {:?}",
+            package_json_info
+          );
+          return None;
+        }
+      };
+      let mut map: HashMap<String, Value> = HashMap::new();
+      match exports_field {
+        Value::String(string_value) => {
+          map.insert(".".to_string(), Value::String(string_value.clone()));
+        }
+        Value::Object(object_value) => {
+          for (k, v) in &object_value {
+            if !k.starts_with('.') {
+              map.insert(".".to_string(), Value::Object(object_value.clone()));
+              break;
+            } else {
+              map.insert(k.to_string(), v.clone());
+            }
+          }
+        }
+        _ => {}
+      }
+      if !map.is_empty() {
+        return Some(self.walk(name.as_str().unwrap(), &map, source, config));
+      }
+    }
+
+    None
+  }
+
+  fn imports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    config: &ConditionOptions,
+  ) -> Option<Vec<String>> {
+    if let Some(imports_field) =
+      self.get_field_value_from_package_json_info(package_json_info, "imports")
+    {
+      // TODO If the current package does not have a name, then look up for the name of the folder
+      let name = match self.get_field_value_from_package_json_info(package_json_info, "name") {
+        Some(n) => n,
+        None => {
+          eprintln!(
+            "Missing \"name\" field in package.json {:?}",
+            package_json_info
+          );
+          return None;
+        }
+      };
+      let mut imports_map: HashMap<String, Value> = HashMap::new();
+
+      match imports_field {
+        Value::Object(object_value) => {
+          imports_map.extend(object_value.clone());
+        }
+        _ => {
+          eprintln!("Unexpected imports field format");
+          return None;
+        }
+      }
+      return Some(self.walk(name.as_str().unwrap(), &imports_map, source, config));
+    }
+    None
+  }
+
+  fn resolve_exports_or_imports(
+    &self,
+    package_json_info: &PackageJsonInfo,
+    source: &str,
+    field_type: &str,
+    kind: &ResolveKind,
+    context: &Arc<CompilationContext>,
+    is_matched: bool,
+  ) -> Option<Vec<String>> {
+    farm_profile_function!("resolve_exports_or_imports".to_string());
+    let mut additional_conditions: HashSet<String> = vec![
+      String::from("development"),
+      String::from("production"),
+      String::from("module"),
+    ]
+    .into_iter()
+    .collect();
+
+    let resolve_conditions: HashSet<String> = context
+      .config
+      .resolve
+      .conditions
+      .clone()
+      .into_iter()
+      .collect();
+    additional_conditions.extend(resolve_conditions);
+
+    let filtered_conditions: Vec<String> = additional_conditions
+      .clone()
+      .into_iter()
+      .filter(|condition| match condition.as_str() {
+        "production" => {
+          let mode = &context.config.mode;
+          matches!(mode, Mode::Production)
+        }
+        "development" => {
+          let mode = &context.config.mode;
+          matches!(mode, Mode::Development)
+        }
+        _ => true,
+      })
+      .collect();
+
+    // resolve exports field
+    let is_browser = TargetEnv::Browser == context.config.output.target_env;
+    let is_require = match kind {
+      ResolveKind::Require => true,
+      _ => false,
+    };
+    let condition_config = ConditionOptions {
+      browser: is_browser && !additional_conditions.contains("node"),
+      require: is_require && !additional_conditions.contains("import"),
+      conditions: filtered_conditions,
+      // set default unsafe_flag to insert require & import field
+      unsafe_flag: false,
+    };
+    let id: &str = if is_matched { source } else { "." };
+    let result: Option<Vec<String>> = if field_type == "imports" {
+      self.imports(package_json_info, source, &condition_config)
+    } else {
+      self.exports(package_json_info, id, &condition_config)
+    };
+    return result;
+  }
+
+  fn conditions(self: &Self, options: &ConditionOptions) -> HashSet<Condition> {
+    let mut out: HashSet<Condition> = HashSet::new();
+    out.insert(Condition::Default);
+
+    for condition_str in &options.conditions {
+      match Condition::from_str(condition_str) {
+        Ok(condition_enum) => {
+          out.insert(condition_enum);
+        }
+        Err(error) => {
+          // TODO resolve error
+          eprintln!("Error: {}", error);
+        }
+      }
+    }
+    if !options.unsafe_flag {
+      if options.require {
+        out.insert(Condition::Require);
+      } else {
+        out.insert(Condition::Import);
+      }
+
+      if options.browser {
+        out.insert(Condition::Browser);
+      } else {
+        out.insert(Condition::Node);
+      }
+    }
+    out
+  }
+
+  fn injects(self: &Self, items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
+    let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
+    let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
+
+    for item in items.iter_mut() {
+      let tmp = item.clone();
+      if rgx1.is_match(&tmp) {
+        *item = rgx1.replace(&tmp, value).to_string();
+      } else if rgx2.is_match(&tmp) {
+        *item += value;
+      }
+    }
+
+    return items.clone().into_iter().map(|s| Some(s)).collect();
+  }
+
+  fn loop_value(
+    self: &Self,
+    m: Value,
+    keys: &HashSet<Condition>,
+    result: &mut Option<HashSet<String>>,
+  ) -> Option<Vec<String>> {
+    match m {
+      Value::String(s) => {
+        if let Some(result_set) = result {
+          result_set.insert(s.clone());
+        }
+        Some(vec![s])
+      }
+      Value::Array(values) => {
+        let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
+        for item in values {
+          if let Some(item_result) = self.loop_value(item, keys, &mut Some(arr_result.clone())) {
+            return Some(item_result);
+          }
+        }
+
+        if result.is_none() && !arr_result.is_empty() {
+          return Some(arr_result.into_iter().collect());
+        } else {
+          None
+        }
+      }
+      Value::Object(map) => {
+        // TODO Temporarily define the order problem
+        let property_order: Vec<String> = vec![
+          String::from("browser"),
+          String::from("development"),
+          String::from("module"),
+          String::from("import"),
+          String::from("require"),
+          String::from("default"),
+        ];
+
+        for key in &property_order {
+          if let Some(value) = map.get(key) {
+            if let Ok(condition) = Condition::from_str(&key) {
+              if keys.contains(&condition) {
+                return self.loop_value(value.clone(), keys, result);
+              }
+            }
+          }
+        }
+        None
+      }
+      Value::Null => None,
+      _ => None,
+    }
+  }
+
+  fn to_entry(
+    self: &Self,
+    name: &str,
+    ident: &str,
+    externals: Option<bool>,
+  ) -> Result<String, String> {
+    if name == ident || ident == "." {
+      return Ok(".".to_string());
+    }
+
+    let root = format!("{}/", name);
+    let len = root.len();
+    let bool = ident.starts_with(&root);
+    let output = if bool {
+      ident[len..].to_string()
+    } else {
+      ident.to_string()
+    };
+
+    if output.starts_with('#') {
+      return Ok(output);
+    }
+
+    if bool || externals.unwrap_or(false) {
+      if output.starts_with("./") {
+        Ok(output)
+      } else {
+        Ok(format!("./{}", output))
+      }
+    } else {
+      Err(output)
+    }
+  }
+
+  fn throws(self: &Self, name: &str, entry: &str, condition: Option<i32>) {
+    let message = if let Some(cond) = condition {
+      if cond != 0 {
+        format!(
+          "No known conditions for \"{}\" specifier in \"{}\" package",
+          entry, name
+        )
+      } else {
+        format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
+      }
+    } else {
+      format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
+    };
+    eprintln!("{}", message);
+  }
+
+  fn walk(
+    self: &Self,
+    name: &str,
+    mapping: &HashMap<String, Value>,
+    input: &str,
+    options: &ConditionOptions,
+  ) -> Vec<String> {
+    let entry_result: Result<String, String> = self.to_entry(name, input, Some(true));
+    let entry: String = match entry_result {
+      Ok(entry) => entry.to_string(),
+      Err(error) => {
+        eprintln!("Error resolve {} package error: {}", name, error);
+        String::from(name)
+      }
+    };
+    let c: HashSet<Condition> = self.conditions(options);
+    let mut m: Option<&Value> = mapping.get(&entry);
+    let mut replace: Option<String> = None;
+    if m.is_none() {
+      let mut longest: Option<&str> = None;
+
+      for (key, _value) in mapping.iter() {
+        if let Some(cur_longest) = &longest {
+          if key.len() < cur_longest.len() {
+            // do not allow "./" to match if already matched "./foo*" key
+            continue;
+          }
+        }
+
+        if key.ends_with('/') && entry.starts_with(key) {
+          replace = Some(entry[key.len()..].to_string());
+          longest = Some(key.as_str());
+        } else if key.len() > 1 {
+          if let Some(tmp) = key.find('*') {
+            let pattern = format!("^{}(.*){}", &key[..tmp], &key[tmp + 1..]);
+            let regex = regex::Regex::new(&pattern).unwrap();
+
+            if let Some(captures) = regex.captures(&entry) {
+              if let Some(match_group) = captures.get(1) {
+                replace = Some(match_group.as_str().to_string());
+                longest = Some(key.as_str());
+              }
+            }
+          }
+        }
+      }
+
+      if let Some(longest_key) = longest {
+        m = mapping.get(&longest_key.to_string());
+      }
+    }
+    if m.is_none() {
+      self.throws(name, &entry, None);
+      return Vec::new();
+    }
+    let v = self.loop_value(m.unwrap().clone(), &c, &mut None);
+    if v.is_none() {
+      self.throws(name, &entry, Some(1));
+      return Vec::new();
+    }
+    let cloned_v = v.clone();
+    if let Some(replace) = replace {
+      if let Some(v1) = self.injects(&mut cloned_v.unwrap(), &replace) {
+        return v1;
+      }
+    }
+    v.unwrap()
   }
 }
