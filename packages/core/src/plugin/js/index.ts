@@ -2,13 +2,13 @@ import merge from 'lodash.merge';
 import { Config } from '../../../binding/index.js';
 import {
   type JsPlugin,
-  type UserConfig,
-  normalizeDevServerOptions
+  normalizeDevServerOptions,
+  type UserConfig
 } from '../../index.js';
 import {
   DEFAULT_FILTERS,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
-  getCssModuleType
+  getCssModuleType,
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE
 } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 import { existsSync, readFileSync } from 'node:fs';
@@ -16,8 +16,11 @@ import { existsSync, readFileSync } from 'node:fs';
 // export * from './jsPluginAdapter.js';
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
 
+type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
+type VitePluginsType = VitePluginType[];
+
 export function handleVitePlugins(
-  vitePlugins: (object | (() => { vitePlugin: any; filters: string[] }))[],
+  vitePlugins: VitePluginsType,
   userConfig: UserConfig,
   finalConfig: Config['config']
 ): JsPlugin[] {
@@ -39,26 +42,7 @@ export function handleVitePlugins(
       vitePlugin = plugin;
       filters = f;
     }
-
-    if (Array.isArray(vitePlugin)) {
-      for (const plugin of vitePlugin) {
-        const vitePluginAdapter = new VitePluginAdapter(
-          plugin as any,
-          userConfig,
-          filters
-        );
-        convertPlugin(vitePluginAdapter);
-        jsPlugins.push(vitePluginAdapter);
-      }
-    } else {
-      const vitePluginAdapter = new VitePluginAdapter(
-        vitePlugin as any,
-        userConfig,
-        filters
-      );
-      convertPlugin(vitePluginAdapter);
-      jsPlugins.push(vitePluginAdapter);
-    }
+    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins);
   }
 
   // if vitePlugins is not empty, append a load plugin to load file
@@ -130,6 +114,29 @@ export function handleVitePlugins(
   }
 
   return jsPlugins;
+}
+
+export function processVitePlugin(
+  vitePlugin: VitePluginType,
+  userConfig: UserConfig,
+  filters: string[],
+  jsPlugins: JsPlugin[]
+) {
+  const processPlugin = (plugin: any) => {
+    const vitePluginAdapter = new VitePluginAdapter(
+      plugin as any,
+      userConfig,
+      filters
+    );
+    convertPlugin(vitePluginAdapter);
+    jsPlugins.push(vitePluginAdapter);
+  };
+
+  if (Array.isArray(vitePlugin)) {
+    vitePlugin.forEach((plugin) => processPlugin(plugin));
+  } else {
+    processPlugin(vitePlugin);
+  }
 }
 
 export function convertPlugin(plugin: JsPlugin): void {
