@@ -49,7 +49,6 @@ export default function farmPostcssPlugin(
               map: Boolean(options.sourceMap ?? farmConfig?.sourcemap)
             }
           );
-          console.log(css);
 
           // record CSS dependencies from @imports
           if (process.env.NODE_ENV === 'development') {

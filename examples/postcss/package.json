@@ -14,7 +14,7 @@
     "tailwindcss": "^3.3.2"
   },
   "scripts": {
-    "start": "farm start -c test/src/config.ts",
+    "start": "farm start",
     "build": "farm build",
     "preview": "farm preview"
   }
