@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 62e6630: fix that prodcution build contains react dev code #618
+- 62e6630: fix that production build contains react dev code #618
 
 ## 0.3.2
 
