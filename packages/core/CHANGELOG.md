@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.13.9
+
+### Patch Changes
+
+- 62e6630: Fix lazy compilation error when working with virtual module
+- Updated dependencies [62e6630]
+  - @farmfe/runtime@0.7.3
+
 ## 0.13.8
 
 ### Patch Changes
