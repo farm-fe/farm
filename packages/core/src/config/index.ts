@@ -298,7 +298,7 @@ export async function resolveUserConfig(
   logger: Logger
 ): Promise<UserConfig> {
   let userConfig: UserConfig = {};
-  let root: string = process.cwd();
+  const root: string = process.cwd();
   const { configPath } = inlineOptions;
   if (
     inlineOptions.clearScreen &&
@@ -313,8 +313,6 @@ export async function resolveUserConfig(
 
   // if configPath points to a directory, try to find a config file in it using default config
   if (fs.statSync(configPath).isDirectory()) {
-    root = configPath;
-
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
       const config = await readConfigFile(resolvedPath, logger);
@@ -327,7 +325,6 @@ export async function resolveUserConfig(
       }
     }
   } else if (fs.statSync(configPath).isFile()) {
-    root = path.dirname(configPath);
     const config = await readConfigFile(configPath, logger);
     const farmConfig = mergeUserConfig(config, inlineOptions);
 
