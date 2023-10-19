@@ -3,7 +3,9 @@ use farmfe_core::error::{CompilationError, Result};
 use crate::hash::sha256;
 
 pub const RESOURCE_NAME: &str = "[resourceName]";
+pub const RESOURCE_NAME_NEW: &str = "[name]";
 pub const CONTENT_HASH: &str = "[contentHash]";
+pub const CONTENT_HASH_NEW: &str = "[hash]";
 pub const EXT: &str = "[ext]";
 pub const ENTRY_NAME: &str = "[entryName]";
 
@@ -33,11 +35,16 @@ pub fn transform_output_filename(
 
   if res.contains(RESOURCE_NAME) {
     res = res.replace(RESOURCE_NAME, name);
+  } else if res.contains(RESOURCE_NAME_NEW) {
+    res = res.replace(RESOURCE_NAME_NEW, name);
   }
 
   if res.contains(CONTENT_HASH) {
     let content_hash = sha256(bytes, 8);
     res = res.replace(CONTENT_HASH, &content_hash);
+  } else if res.contains(CONTENT_HASH_NEW) {
+    let content_hash = sha256(bytes, 8);
+    res = res.replace(CONTENT_HASH_NEW, &content_hash);
   }
 
   if res.contains(EXT) {

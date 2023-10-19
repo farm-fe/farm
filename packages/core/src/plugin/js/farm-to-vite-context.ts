@@ -68,7 +68,6 @@ export function farmContextToViteContext(
       }
     },
     error: (message): never => {
-      console.log('error called by', pluginName, hookName);
       if (typeof message === 'object') {
         farmContext.error(JSON.stringify(message));
       } else {

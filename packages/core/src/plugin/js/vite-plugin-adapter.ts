@@ -266,8 +266,7 @@ export class VitePluginAdapter implements JsPlugin {
           if (
             params.importer &&
             VitePluginAdapter.isFarmInternalVirtualModule(
-              params.importer.relativePath,
-              null
+              params.importer.relativePath
             )
           ) {
             return null;
@@ -330,10 +329,7 @@ export class VitePluginAdapter implements JsPlugin {
           context: CompilationContext
         ): Promise<PluginLoadHookResult> => {
           if (
-            VitePluginAdapter.isFarmInternalVirtualModule(
-              params.resolvedPath,
-              params.meta
-            )
+            VitePluginAdapter.isFarmInternalVirtualModule(params.resolvedPath)
           ) {
             return null;
           }
@@ -376,10 +372,7 @@ export class VitePluginAdapter implements JsPlugin {
           context: CompilationContext
         ): Promise<PluginTransformHookResult> => {
           if (
-            VitePluginAdapter.isFarmInternalVirtualModule(
-              params.resolvedPath,
-              params.meta
-            )
+            VitePluginAdapter.isFarmInternalVirtualModule(params.resolvedPath)
           ) {
             return null;
           }
@@ -485,13 +478,10 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // skip farm lazy compilation virtual module for vite plugin
-  public static isFarmInternalVirtualModule(
-    id: string,
-    meta: Record<string, string> | null
-  ) {
+  public static isFarmInternalVirtualModule(id: string) {
     return (
-      (id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) &&
-        !meta?.FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH) ||
+      id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) ||
+      // css has been handled before the virtual module is created
       FARM_CSS_MODULE_SUFFIX.test(id)
     );
   }

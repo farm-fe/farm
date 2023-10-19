@@ -7,7 +7,7 @@ export const routes = [
   },
   {
     path: '/test',
-    component: () => import('/@/test.vue')
+    component: () => import('/@/async-test.vue')
   },
   {
     path: '/test1',

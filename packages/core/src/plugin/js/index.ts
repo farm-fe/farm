@@ -73,11 +73,11 @@ export function handleVitePlugins(
           resolvedPaths: DEFAULT_FILTERS
         },
         executor: async (params) => {
-          const { resolvedPath, meta } = params;
+          const { resolvedPath } = params;
 
           // skip lazy compiled module and non-exist file
           if (
-            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath, meta) ||
+            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath) ||
             !existsSync(resolvedPath)
           ) {
             return null;
@@ -97,12 +97,10 @@ export function handleVitePlugins(
           moduleTypes: []
         },
         executor: async (params) => {
-          const { content, moduleId, moduleType, resolvedPath, meta } = params;
+          const { content, moduleId, moduleType, resolvedPath } = params;
 
           // skip lazy compiled module and non-exist file
-          if (
-            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath, meta)
-          ) {
+          if (VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath)) {
             return null;
           }
           const cssModules = finalConfig?.css?.modules?.paths ?? [
