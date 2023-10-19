@@ -4,10 +4,7 @@ import { isAbsolute, relative } from 'node:path';
 import chalk from 'chalk';
 // import debounce from 'lodash.debounce';
 
-import {
-  Compiler,
-  VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX
-} from '../compiler/index.js';
+import { Compiler } from '../compiler/index.js';
 import { DevServer } from './index.js';
 import { Logger } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
@@ -139,15 +136,6 @@ export class HmrEngine {
   async hmrUpdate(path: string) {
     // if lazy compilation is enabled, we need to update the virtual module
     if (this._compiler.config.config.lazyCompilation) {
-      const lazyCompiledModule = `${VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX}${path}`;
-
-      if (
-        this._compiler.hasModule(lazyCompiledModule) &&
-        !this._updateQueue.includes(lazyCompiledModule)
-      ) {
-        this._updateQueue.push(lazyCompiledModule);
-      }
-
       if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
         this._updateQueue.push(path);
       }

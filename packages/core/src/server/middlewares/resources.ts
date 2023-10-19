@@ -9,8 +9,8 @@ import { DevServer } from '../index.js';
 import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
-import { existsSync, readFileSync } from 'node:fs';
-import mime from 'mime-types';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+// import mime from 'mime-types';
 
 export function resources(
   compiler: Compiler,
@@ -57,12 +57,13 @@ export function resources(
     if (!resource) {
       // try local file system
       const absPath = path.join(compiler.config.config.root, finalResourcePath);
-      const mimeStr = mime.lookup(absPath);
+      // const mimeStr = mime.lookup(absPath);
 
       if (
         existsSync(absPath) &&
-        mimeStr &&
-        (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
+        statSync(absPath).isFile()
+        // mimeStr &&
+        // (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
       ) {
         ctx.type = extname(resourcePath);
         ctx.body = readFileSync(absPath);
@@ -75,10 +76,7 @@ export function resources(
       // if request mime is not html, return 404
       if (!ctx.accepts('html')) {
         ctx.status = 404;
-        return;
-      }
-
-      if (config.spa !== false) {
+      } else if (config.spa !== false) {
         const pathComps = resourcePath.split('/');
 
         while (pathComps.length > 0) {

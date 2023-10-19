@@ -30,7 +30,6 @@ export default defineConfig({
       }
     },
     treeShaking: true,
-    minify: false
   },
   server: {
     cors: true,

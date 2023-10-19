@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 6a73829: fix: reolve exports filed resolve error
+- 6a73829: fix: resolve exports filed resolve error
 
 ## 0.13.7
 

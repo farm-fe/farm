@@ -86,15 +86,7 @@ impl Compiler {
       errors.push(err);
     }
 
-    for err in self.context.log_store.lock().errors() {
-      errors.push(CompilationError::GenericError(err.to_string()));
-    }
-
-    if !self.context.log_store.lock().warnings().is_empty() {
-      for warning in self.context.log_store.lock().warnings() {
-        println!("[warn] {}", warning);
-      }
-    }
+    self.handle_global_log(&mut errors);
 
     if !errors.is_empty() {
       let mut error_messages = vec![];
@@ -116,6 +108,18 @@ impl Compiler {
     module_graph.update_execution_order_for_modules();
 
     self.context.plugin_driver.build_end(&self.context)
+  }
+
+  pub(crate) fn handle_global_log(&self, errors: &mut Vec<CompilationError>) {
+    for err in self.context.log_store.lock().errors() {
+      errors.push(CompilationError::GenericError(err.to_string()));
+    }
+
+    if !self.context.log_store.lock().warnings().is_empty() {
+      for warning in self.context.log_store.lock().warnings() {
+        println!("[warn] {}", warning);
+      }
+    }
   }
 
   pub(crate) fn resolve_module_id(

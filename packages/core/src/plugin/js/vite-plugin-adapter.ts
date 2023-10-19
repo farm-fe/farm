@@ -125,10 +125,7 @@ export class VitePluginAdapter implements JsPlugin {
     this._farmConfig.compilation = config;
     this._viteConfig = farmConfigToViteConfig(this._farmConfig);
 
-    const configHook = this.wrap_raw_plugin_hook(
-      'config',
-      this._rawPlugin.config
-    );
+    const configHook = this.wrapRawPluginHook('config', this._rawPlugin.config);
 
     if (configHook) {
       this._viteConfig = proxyViteConfig(
@@ -136,7 +133,7 @@ export class VitePluginAdapter implements JsPlugin {
           this._viteConfig,
           await configHook(
             proxyViteConfig(this._viteConfig, this.name),
-            this.get_vite_config_env()
+            this.getViteConfigEnv()
           )
         ),
         this.name
@@ -148,7 +145,7 @@ export class VitePluginAdapter implements JsPlugin {
       );
     }
 
-    const configResolvedHook = this.wrap_raw_plugin_hook(
+    const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
       this._rawPlugin.configResolved
     );
@@ -161,7 +158,7 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   async configDevServer(devServer: DevServer) {
-    const hook = this.wrap_raw_plugin_hook(
+    const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer
     );
@@ -181,7 +178,7 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  private get_vite_config_env(): ConfigEnv {
+  private getViteConfigEnv(): ConfigEnv {
     return {
       ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node',
       command:
@@ -190,7 +187,7 @@ export class VitePluginAdapter implements JsPlugin {
     };
   }
 
-  private should_execute_plugin() {
+  private shouldExecutePlugin() {
     const command =
       this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve';
 
@@ -207,15 +204,15 @@ export class VitePluginAdapter implements JsPlugin {
     return this._rawPlugin.apply === command;
   }
 
-  private wrap_executor(executor: (...args: any[]) => any) {
+  private wrapExecutor(executor: (...args: any[]) => any) {
     return async (...args: any[]) => {
-      if (this.should_execute_plugin()) {
+      if (this.shouldExecutePlugin()) {
         return await executor(...args);
       }
     };
   }
 
-  private wrap_raw_plugin_hook(
+  private wrapRawPluginHook(
     hookName: string,
     hook: object | undefined | ((...args: any[]) => any),
     farmContext?: CompilationContext,
@@ -247,8 +244,8 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteBuildStartToFarmBuildStart(): JsPlugin['buildStart'] {
     return {
-      executor: this.wrap_executor((_, context) => {
-        const hook = this.wrap_raw_plugin_hook(
+      executor: this.wrapExecutor((_, context) => {
+        const hook = this.wrapRawPluginHook(
           'buildStart',
           this._rawPlugin.buildStart,
           context
@@ -261,7 +258,7 @@ export class VitePluginAdapter implements JsPlugin {
   private viteResolveIdToFarmResolve(): JsPlugin['resolve'] {
     return {
       filters: { sources: ['.*'], importers: this.filters },
-      executor: this.wrap_executor(
+      executor: this.wrapExecutor(
         async (
           params: PluginResolveHookParam,
           context: CompilationContext
@@ -269,14 +266,13 @@ export class VitePluginAdapter implements JsPlugin {
           if (
             params.importer &&
             VitePluginAdapter.isFarmInternalVirtualModule(
-              params.importer.relativePath,
-              null
+              params.importer.relativePath
             )
           ) {
             return null;
           }
 
-          const hook = this.wrap_raw_plugin_hook(
+          const hook = this.wrapRawPluginHook(
             'resolveId',
             this._rawPlugin.resolveId,
             context
@@ -327,21 +323,18 @@ export class VitePluginAdapter implements JsPlugin {
         // TODO support internal filter optimization for common plugins like @vitejs/plugin-vue
         resolvedPaths: this.filters
       },
-      executor: this.wrap_executor(
+      executor: this.wrapExecutor(
         async (
           params: PluginLoadHookParam,
           context: CompilationContext
         ): Promise<PluginLoadHookResult> => {
           if (
-            VitePluginAdapter.isFarmInternalVirtualModule(
-              params.resolvedPath,
-              params.meta
-            )
+            VitePluginAdapter.isFarmInternalVirtualModule(params.resolvedPath)
           ) {
             return null;
           }
 
-          const hook = this.wrap_raw_plugin_hook(
+          const hook = this.wrapRawPluginHook(
             'load',
             this._rawPlugin.load,
             context
@@ -373,21 +366,18 @@ export class VitePluginAdapter implements JsPlugin {
       filters: {
         resolvedPaths: this.filters
       },
-      executor: this.wrap_executor(
+      executor: this.wrapExecutor(
         async (
           params: PluginTransformHookParam,
           context: CompilationContext
         ): Promise<PluginTransformHookResult> => {
           if (
-            VitePluginAdapter.isFarmInternalVirtualModule(
-              params.resolvedPath,
-              params.meta
-            )
+            VitePluginAdapter.isFarmInternalVirtualModule(params.resolvedPath)
           ) {
             return null;
           }
 
-          const hook = this.wrap_raw_plugin_hook(
+          const hook = this.wrapRawPluginHook(
             'transform',
             this._rawPlugin.transform,
             context
@@ -422,8 +412,8 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteBuildEndToFarmBuildEnd(): JsPlugin['buildEnd'] {
     return {
-      executor: this.wrap_executor((_, context) => {
-        const hook = this.wrap_raw_plugin_hook(
+      executor: this.wrapExecutor((_, context) => {
+        const hook = this.wrapRawPluginHook(
           'buildEnd',
           this._rawPlugin.buildEnd,
           context
@@ -435,8 +425,8 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteCloseBundleToFarmFinish(): JsPlugin['finish'] {
     return {
-      executor: this.wrap_executor(() => {
-        const hook = this.wrap_raw_plugin_hook(
+      executor: this.wrapExecutor(() => {
+        const hook = this.wrapRawPluginHook(
           'closeBundle',
           this._rawPlugin.closeBundle
         );
@@ -447,9 +437,9 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteHandleHotUpdateToFarmUpdateModules(): JsPlugin['updateModules'] {
     return {
-      executor: this.wrap_executor(
+      executor: this.wrapExecutor(
         async ({ paths }: { paths: [string, string][] }, ctx) => {
-          const hook = this.wrap_raw_plugin_hook(
+          const hook = this.wrapRawPluginHook(
             'handleHotUpdate',
             this._rawPlugin.handleHotUpdate,
             ctx
@@ -488,13 +478,10 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // skip farm lazy compilation virtual module for vite plugin
-  public static isFarmInternalVirtualModule(
-    id: string,
-    meta: Record<string, string> | null
-  ) {
+  public static isFarmInternalVirtualModule(id: string) {
     return (
-      (id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) &&
-        !meta?.FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH) ||
+      id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) ||
+      // css has been handled before the virtual module is created
       FARM_CSS_MODULE_SUFFIX.test(id)
     );
   }
