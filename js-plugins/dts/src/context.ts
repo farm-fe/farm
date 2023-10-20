@@ -1,5 +1,5 @@
 import type { UserConfig } from '@farmfe/core';
-import { DefaultLogger } from '@farmfe/core';
+// import { DefaultLogger } from '@farmfe/core';
 import { green } from 'kolorist';
 import glob from 'fast-glob';
 import os from 'node:os';
@@ -25,7 +25,7 @@ export default class Context {
   project: Project | undefined;
   include: string[];
   exclude: string[];
-  logger = new DefaultLogger({ name: 'FarmDtsPlugin' });
+  // logger = new DefaultLogger({ name: 'FarmDtsPlugin' });
   handleResolveOptions(options: any = {}, config: UserConfig) {
     this.config = config;
     let libFolderPath: string;
@@ -182,10 +182,10 @@ export default class Context {
     });
     const endTime = performance.now();
     const elapsedTime = Math.floor(endTime - startTime);
-    this.logger.info(
-      `⚡️ Dts Plugin Build completed in ${green(
-        `${elapsedTime}ms`
-      )}! Resources emitted to ${green(this.config.output.path)}.`
-    );
+    // this.logger.info(
+    //   `⚡️ Dts Plugin Build completed in ${green(
+    //     `${elapsedTime}ms`
+    //   )}! Resources emitted to ${green(this.config.output.path)}.`
+    // );
   }
 }
