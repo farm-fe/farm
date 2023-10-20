@@ -7,15 +7,6 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
-  // plugins: [vue(), {
-  //   name: 'test-plugin',
-  //   load: {
-  //     filters: { resolvedPaths: ['.*'] },
-  //     executor(params, context) {
-  //       console.log(params.resolvedPath);
-  //       console.log(context?.viteGetModulesByFile(params.resolvedPath));
-  //     }
-  //   }
-  // }],
+  plugins: ['@farmfe/plugin-sass'],
   vitePlugins: [vue()]
 });
