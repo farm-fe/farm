@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.2.5
+
+### Patch Changes
+
+- 0f93f94: Fix alias @import fail
+
 ## 0.2.4
 
 ### Patch Changes
