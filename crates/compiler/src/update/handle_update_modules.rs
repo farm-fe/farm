@@ -33,6 +33,7 @@ pub fn handle_update_modules(
   });
 
   let mut module_graph = context.module_graph.write();
+  let mut module_group_graph = context.module_group_graph.write();
 
   // if there are multiple paths for the same resolved_path and one of them is a ancestor of another, we should remove child module in module graph
   let filtered_paths = grouped_paths
@@ -52,7 +53,15 @@ pub fn handle_update_modules(
           let dependents = module_graph.dependents_ids(&child_module_id);
 
           if dependents.contains(&module_id) && dependents.len() == 1 {
-            module_graph.remove_module(&child_module_id);
+            let removed_module = module_graph.remove_module(&child_module_id);
+
+            for module_group_id in removed_module.module_groups {
+              let module_group = module_group_graph
+                .module_group_mut(&module_group_id)
+                .unwrap();
+              module_group.remove_module(&child_module_id);
+            }
+
             update_result.removed_module_ids.push(child_module_id)
           } else {
             result.push(path);
