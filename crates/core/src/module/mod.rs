@@ -57,6 +57,8 @@ pub struct Module {
   pub content: Arc<String>,
   /// Used exports of this module. Set by the tree-shake plugin
   pub used_exports: Vec<String>,
+  /// source content after load and transform hook
+  pub source_content: String,
 }
 
 impl Module {
@@ -76,6 +78,7 @@ impl Module {
       size: 0,
       content: Arc::new("".to_string()),
       used_exports: vec![],
+      source_content: String::new(),
     }
   }
 }

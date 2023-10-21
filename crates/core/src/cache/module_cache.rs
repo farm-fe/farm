@@ -1,17 +1,21 @@
+use dashmap::{DashMap, DashSet};
 use rkyv::Deserialize;
-use std::path::{Path, PathBuf};
+use std::collections::HashMap;
 
 use farmfe_macro_cache_item::cache_item;
 
 use crate::config::Mode;
-use crate::module::Module;
+use crate::module::{Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
 use crate::{deserialize, serialize};
 
-pub const FARM_MODULE_CACHE_VERSION: &str = "0.0.1";
+use super::cache_store::CacheStore;
 
 pub struct ModuleCacheManager {
-  cache_dir: PathBuf,
+  store: CacheStore,
+  cache: DashMap<String, Vec<u8>>,
+  initial_cache_modules: DashSet<ModuleId>,
+  new_cache_modules: DashSet<ModuleId>,
 }
 
 #[cache_item]
@@ -22,36 +26,86 @@ pub struct CachedModule {
 
 impl ModuleCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
-    let mut cache_dir = Path::new(cache_dir_str).to_path_buf();
-    cache_dir.push(namespace.to_string() + "-" + FARM_MODULE_CACHE_VERSION);
+    let store = CacheStore::new(cache_dir_str, namespace, mode);
+    let cache = store.read_cache("module");
+    let start = std::time::Instant::now();
+    let cache = cache
+      .into_iter()
+      .map(|(key, value)| (key, value.to_vec()))
+      .collect::<DashMap<String, Vec<u8>>>();
+    println!("read cache time: {:?}", start.elapsed());
 
-    if matches!(mode, Mode::Development) {
-      cache_dir.push("development");
-    } else {
-      cache_dir.push("production");
+    Self {
+      store,
+      cache,
+      initial_cache_modules: DashSet::new(),
+      new_cache_modules: DashSet::new(),
     }
-
-    if cache_dir_str.len() > 0 && !cache_dir.exists() {
-      std::fs::create_dir_all(&cache_dir).unwrap();
-    }
-
-    Self { cache_dir }
   }
 
-  pub fn has_module_cache(&self, code_hash: &str) -> bool {
-    let path = self.cache_dir.join(code_hash);
-    path.exists()
+  pub fn cache(&self) -> &DashMap<String, Vec<u8>> {
+    &self.cache
   }
 
-  pub fn set_module_cache(&self, code_hash: &str, module: &CachedModule) {
+  pub fn initial_cache_modules(&self) -> &DashSet<ModuleId> {
+    &self.initial_cache_modules
+  }
+
+  pub fn new_cache_modules(&self) -> &DashSet<ModuleId> {
+    &self.new_cache_modules
+  }
+
+  pub fn has_cache(&self, key: &str) -> bool {
+    self.cache.contains_key(key)
+  }
+
+  pub fn set_cache(&self, key: &str, module: &CachedModule) {
+    self.new_cache_modules.insert(module.module.id.clone());
     let bytes = serialize!(module);
-    let path = self.cache_dir.join(code_hash);
-    std::fs::write(path, bytes).unwrap();
+    self.cache.insert(key.to_string(), bytes);
   }
 
-  pub fn get_module_cache(&self, code_hash: &str) -> CachedModule {
-    let path = self.cache_dir.join(code_hash);
-    let bytes = std::fs::read(path).unwrap();
-    deserialize!(&bytes, CachedModule)
+  pub fn get_cache(&self, key: &str) -> CachedModule {
+    let start = std::time::Instant::now();
+    if let Some(bytes) = self.cache.get(key) {
+      let cached_module = deserialize!(&bytes, CachedModule);
+      if cached_module
+        .module
+        .id
+        .to_string()
+        .contains("node_modules/react-dom/")
+      {
+        println!(
+          "deserialize time: {:?}, size: {} -> {:?}",
+          cached_module.module.id,
+          cached_module.module.size,
+          start.elapsed()
+        );
+      }
+      if !self.new_cache_modules.contains(&cached_module.module.id) {
+        self
+          .initial_cache_modules
+          .insert(cached_module.module.id.clone());
+      }
+
+      cached_module
+    } else {
+      panic!("Module cache not found: {}", key);
+    }
+  }
+
+  /// Write the cache map to the disk.
+  pub fn write_cache(&self) {
+    let mut cache_map = HashMap::new();
+
+    for item in self.cache.iter() {
+      cache_map.insert(item.key().to_string(), item.value().to_vec());
+    }
+
+    self.store.write_cache(cache_map, "module");
+  }
+
+  pub fn is_initial_cache(&self, module_id: &ModuleId) -> bool {
+    self.initial_cache_modules.contains(module_id)
   }
 }

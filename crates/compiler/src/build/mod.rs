@@ -34,7 +34,7 @@ use crate::{
   Compiler,
 };
 
-use self::module_cache::{get_cache_key, try_read_module_cache, write_module_cache};
+use self::module_cache::{get_module_cache_key, set_module_cache, try_get_module_cache};
 
 macro_rules! call_and_catch_error {
   ($func:ident, $($args:expr),+) => {
@@ -252,10 +252,11 @@ impl Compiler {
 
     let transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
+    module.source_content = transform_result.content.clone();
 
     // skip building if the module is already built and the cache is enabled
-    let cache_key = get_cache_key(&module.id, &transform_result.content);
-    if let Some(cached_module) = try_read_module_cache(&cache_key, context)? {
+    let cache_key = get_module_cache_key(&module.id, &transform_result.content);
+    if let Some(cached_module) = try_get_module_cache(&cache_key, module.immutable, context)? {
       *module = cached_module.module;
       return Ok(cached_module.deps);
     } else {
@@ -278,7 +279,7 @@ impl Compiler {
           deps,
         };
 
-        write_module_cache(&cache_key, &mut cached_module, context)?;
+        set_module_cache(&cache_key, module.immutable, &mut cached_module, context)?;
 
         *module = cached_module.module;
         return Ok(cached_module.deps);

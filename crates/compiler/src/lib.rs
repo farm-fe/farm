@@ -70,13 +70,39 @@ impl Compiler {
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
+      let start = std::time::Instant::now();
       self.build()?;
+      println!("Build cost {:?}", start.elapsed());
     }
 
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Generate Stage");
+      let start = std::time::Instant::now();
       self.generate()?;
+      println!("Generate cost {:?}", start.elapsed());
+    }
+
+    if self.context.config.persistent_cache.enabled() {
+      // Does not support write cache in update mode for now
+      let start = std::time::Instant::now();
+      self.context.cache_manager.write_cache();
+      println!("Write cache cost {:?}", start.elapsed());
+
+      let module_graph = self.context.module_graph.read();
+      let modules_len = module_graph.modules().len();
+      let cached_modules_len = self
+        .context
+        .cache_manager
+        .module_cache
+        .initial_cache_modules()
+        .len();
+      println!(
+        "{} / {}, Cache hit rate: {}%",
+        cached_modules_len,
+        modules_len,
+        cached_modules_len as f64 / modules_len as f64 * 100.0
+      );
     }
 
     self.context.plugin_driver.finish(&Stats {}, &self.context)

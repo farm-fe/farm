@@ -16,6 +16,8 @@ use farmfe_toolkit::{
   fs::{transform_output_entry_filename, transform_output_filename},
 };
 
+use crate::generate::resource_cache::{set_resource_cache, try_get_resource_cache};
+
 pub fn render_resource_pots_and_generate_resources(
   resource_pots: Vec<&mut ResourcePot>,
   context: &Arc<CompilationContext>,
@@ -27,56 +29,76 @@ pub fn render_resource_pots_and_generate_resources(
   let resources = Mutex::new(vec![]);
   let entries = context.module_graph.read().entries.clone();
 
+  let mut resource_pots_need_render = vec![];
+
+  for resource_pot in resource_pots {
+    let cached_resource = try_get_resource_cache(resource_pot, context)?;
+
+    if let Some((meta, cached_resource)) = cached_resource {
+      println!("Using cached resource {:?}", cached_resource.name);
+      resource_pot.add_resource(cached_resource.name.clone());
+      resource_pot.meta = meta;
+      resources.lock().push(cached_resource);
+    } else {
+      println!("Resource {:?} is not cached", resource_pot.name);
+      resource_pots_need_render.push(resource_pot);
+    }
+  }
+
   // Note: Plugins should not using context.resource_pot_map, as it may cause deadlock
-  resource_pots.into_par_iter().try_for_each(|resource_pot| {
-    #[cfg(feature = "profile")]
-    let id = farmfe_utils::transform_string_to_static_str(format!(
-      "Render and generate resources for {:?}",
-      resource_pot.id
-    ));
-    #[cfg(feature = "profile")]
-    farmfe_core::puffin::profile_scope!(id);
+  resource_pots_need_render
+    .into_par_iter()
+    .try_for_each(|resource_pot| {
+      #[cfg(feature = "profile")]
+      let id = farmfe_utils::transform_string_to_static_str(format!(
+        "Render and generate resources for {:?}",
+        resource_pot.id
+      ));
+      #[cfg(feature = "profile")]
+      farmfe_core::puffin::profile_scope!(id);
 
-    let mut res =
-      render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
-    let r = &mut res.resource;
+      let mut res =
+        render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
+      let r = &mut res.resource;
 
-    // ignore runtime resource
-    if !matches!(r.resource_type, ResourceType::Runtime) {
-      if let Some(name) = resource_pot.entry_module.as_ref() {
-        let entry_name = entries.get(name).unwrap();
-        r.name = transform_output_entry_filename(
-          context.config.output.entry_filename.clone(),
-          resource_pot.id.to_string().as_str(),
-          entry_name,
-          &r.bytes,
-          &r.resource_type.to_ext(),
-        );
-      } else {
-        r.name = transform_output_filename(
-          context.config.output.filename.clone(),
-          &r.name,
-          &r.bytes,
-          &r.resource_type.to_ext(),
-        );
+      // ignore runtime resource
+      if !matches!(r.resource_type, ResourceType::Runtime) {
+        if let Some(name) = resource_pot.entry_module.as_ref() {
+          let entry_name = entries.get(name).unwrap();
+          r.name = transform_output_entry_filename(
+            context.config.output.entry_filename.clone(),
+            resource_pot.id.to_string().as_str(),
+            entry_name,
+            &r.bytes,
+            &r.resource_type.to_ext(),
+          );
+        } else {
+          r.name = transform_output_filename(
+            context.config.output.filename.clone(),
+            &r.name,
+            &r.bytes,
+            &r.resource_type.to_ext(),
+          );
+        }
       }
-    }
 
-    // if source map is generated, we need to update the resource name and the content of the resource
-    // to make sure the source map can be found.
-    if let Some(mut source_map) = res.source_map {
-      source_map.name = format!("{}.{}", r.name, source_map.resource_type.to_ext());
-      append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
+      // if source map is generated, we need to update the resource name and the content of the resource
+      // to make sure the source map can be found.
+      if let Some(mut source_map) = res.source_map {
+        source_map.name = format!("{}.{}", r.name, source_map.resource_type.to_ext());
+        append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
 
-      resource_pot.add_resource(source_map.name.clone());
-      resources.lock().push(source_map);
-    }
+        resource_pot.add_resource(source_map.name.clone());
+        resources.lock().push(source_map);
+      }
 
-    resource_pot.add_resource(res.resource.name.clone());
-    resources.lock().push(res.resource);
+      set_resource_cache(resource_pot, &res.resource, context);
 
-    Ok(())
-  })?;
+      resource_pot.add_resource(res.resource.name.clone());
+      resources.lock().push(res.resource);
+
+      Ok(())
+    })?;
 
   let mut resources_map = context.resources_map.lock();
 
