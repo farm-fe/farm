@@ -1,6 +1,6 @@
 import module from 'node:module';
 import fs from 'node:fs';
-import path, { dirname } from 'node:path';
+import path from 'node:path';
 import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
@@ -29,7 +29,6 @@ import type {
 import { CompilationMode, loadEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import { importFresh } from '../utils/share.js';
-import { fileURLToPath } from 'node:url';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -102,8 +101,7 @@ export async function normalizeUserCompilationConfig(
     }, {})
   );
 
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const require = module.createRequire(__dirname);
+  const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
 
   if (!config.runtime) {
