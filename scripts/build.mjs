@@ -26,6 +26,8 @@ const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 // Build js_plugin_path
 const PKG_JS_PLUGIN = resolve(CWD, './js-plugins');
 
+export const externalJsPlugin = ['dts'];
+
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
@@ -120,9 +122,12 @@ export function batchBuildPlugins(
   command = 'build',
   packageManager = 'pnpm'
 ) {
-  const pluginNameMap = fs
-    .readdirSync(baseDir)
-    .filter((file) => fs.statSync(join(baseDir, file)).isDirectory());
+  const pluginNameMap = fs.readdirSync(baseDir).filter((file) => {
+    return (
+      fs.statSync(join(baseDir, file)).isDirectory() &&
+      !excludedPlugins.includes(file)
+    );
+  });
   const path = pluginNameMap.map((subDir) => resolve(baseDir, subDir));
   return path.map((item) => {
     return execa(packageManager, [command], { cwd: item });

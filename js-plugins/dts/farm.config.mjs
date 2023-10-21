@@ -1,4 +1,4 @@
-import { builtinModules } from 'module';
+import { builtinModules } from "module";
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -6,31 +6,32 @@ import { builtinModules } from 'module';
 export default {
   compilation: {
     input: {
-      index: './src/index.ts'
+      index: "./src/index.ts",
     },
     output: {
-      path: 'build',
-      filename: 'index.[ext]',
-      targetEnv: 'node'
+      path: "build",
+      entryFilename: "[entryName].cjs",
+      targetEnv: "node",
+      format: "cjs",
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`)
+      ...builtinModules.map((m) => `^node:${m}$`),
+      "@farmfe/core",
     ],
     partialBundling: {
       enforceResources: [
         {
-          name: 'node.bundle.js',
-          test: ['.+']
-        }
-      ]
+          name: "index.js",
+          test: [".+"],
+        },
+      ],
     },
     minify: false,
     sourcemap: false,
     presetEnv: false,
-    treeShaking: false
   },
   server: {
-    hmr: false
-  }
+    hmr: false,
+  },
 };
