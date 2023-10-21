@@ -11,19 +11,17 @@ use farmfe_core::{
   serde_json::{self, Value},
 };
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::{fs, lazy_static::lazy_static, regex::Regex, resolve::follow_symlinks};
+use farmfe_toolkit::{fs, regex::Regex, resolve::follow_symlinks};
 use sass_embedded::{FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
-use std::env;
-use std::env::consts::{ARCH, OS};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::{env, fmt::Debug};
+use std::{
+  env::consts::{ARCH, OS},
+  fmt::Formatter,
+};
 
 const PKG_NAME: &str = "@farmfe/plugin-sass";
-
-// global context
-lazy_static! {
-  static ref CONTEXT: RwLock<Option<Arc<CompilationContext>>> = RwLock::new(None);
-}
 
 #[farm_plugin]
 pub struct FarmPluginSass {
@@ -45,10 +43,19 @@ impl FarmPluginSass {
   }
 }
 
-#[derive(Debug)]
 struct FileImporterCollection {
   paths: Arc<RwLock<Vec<String>>>,
   importer: ModuleId,
+  context: Arc<CompilationContext>,
+}
+
+impl Debug for FileImporterCollection {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("FileImporterCollection")
+      .field("paths", &self.paths)
+      .field("importer", &self.importer)
+      .finish()
+  }
 }
 
 impl FileImporter for FileImporterCollection {
@@ -57,35 +64,44 @@ impl FileImporter for FileImporterCollection {
     url: &str,
     _options: &sass_embedded::ImporterOptions,
   ) -> sass_embedded::Result<Option<Url>> {
-    if let Some(context) = &*CONTEXT.read() {
-      let url = if url.starts_with('~') {
-        url.replacen('~', "", 1)
-      } else if !url.starts_with("./") && !url.starts_with("../") {
-        format!("./{}", url)
-      } else {
-        url.to_string()
-      };
+    let context = &self.context;
+    // try to resolve url using relative path first
+    let importer_path = PathBuf::from(self.importer.resolved_path(&context.config.root));
+    let importer_dir = importer_path.parent().unwrap();
+    let relative_url = RelativePath::new(url);
+    let resolved_url = relative_url.to_logical_path(importer_dir);
 
-      let resolve_result = context
-        .plugin_driver
-        .resolve(
-          &PluginResolveHookParam {
-            source: url,
-            importer: Some(self.importer.clone()),
-            kind: ResolveKind::CssAtImport,
-          },
-          context,
-          &PluginHookContext::default(),
-        )
-        .unwrap();
+    if resolved_url.exists() {
+      let mut paths = self.paths.write();
+      paths.push(resolved_url.to_string_lossy().to_string());
+      return Ok(Some(Url::from_file_path(resolved_url).unwrap()));
+    }
 
-      if let Some(resolve_result) = resolve_result {
-        let mut paths = self.paths.write();
-        paths.push(resolve_result.resolved_path.clone());
-        return Ok(Some(
-          Url::from_file_path(resolve_result.resolved_path).unwrap(),
-        ));
-      }
+    let url = if url.starts_with('~') {
+      url.replacen('~', "", 1)
+    } else {
+      url.to_string()
+    };
+
+    let resolve_result = context
+      .plugin_driver
+      .resolve(
+        &PluginResolveHookParam {
+          source: url,
+          importer: Some(self.importer.clone()),
+          kind: ResolveKind::CssAtImport,
+        },
+        context,
+        &PluginHookContext::default(),
+      )
+      .unwrap();
+
+    if let Some(resolve_result) = resolve_result {
+      let mut paths = self.paths.write();
+      paths.push(resolve_result.resolved_path.clone());
+      return Ok(Some(
+        Url::from_file_path(resolve_result.resolved_path).unwrap(),
+      ));
     }
 
     sass_embedded::Result::Ok(None)
@@ -133,14 +149,12 @@ impl Plugin for FarmPluginSass {
         self.get_sass_options(param.resolved_path.to_string());
 
       let paths = Arc::new(RwLock::new(vec![]));
-
-      if CONTEXT.read().is_none() {
-        CONTEXT.write().replace(context.clone());
-      }
+      let cloned_context = context.clone();
 
       let import_collection = Box::new(FileImporterCollection {
         paths: paths.clone(),
         importer: param.module_id.clone().into(),
+        context: cloned_context,
       });
       // TODO support source map for additionalData
       let content = if let Some(additional_data) = additional_options.get("additionalData") {
