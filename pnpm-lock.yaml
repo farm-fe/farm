@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: false
@@ -882,6 +882,9 @@ importers:
 
   js-plugins/dts:
     dependencies:
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       fast-glob:
         specifier: ^3.2.12
         version: 3.2.12
@@ -898,9 +901,6 @@ importers:
       '@farmfe/cli':
         specifier: workspace:*
         version: link:../../packages/cli
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@types/fs-extra':
         specifier: ^11.0.1
         version: 11.0.1
@@ -12897,7 +12897,7 @@ packages:
     resolution: {integrity: sha512-6z3GW9x8G1gd+JIIgQQQxXuiJtCXeAjp6RaPEPLv62mH3iPHPxV6W3robxtCzNErRo6ZwTmzWhsbNvjyEBKzKA==}
     engines: {node: '>=10.12.0'}
     dependencies:
-      '@jridgewell/trace-mapping': 0.3.17
+      '@jridgewell/trace-mapping': 0.3.18
       '@types/istanbul-lib-coverage': 2.0.4
       convert-source-map: 1.9.0
     dev: true

@@ -18,7 +18,7 @@
     "build": "farm build && pnpm build:tsc",
     "start": "pnpm run build -w",
     "watch": "farm watch",
-    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

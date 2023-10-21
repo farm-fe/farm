@@ -120,9 +120,9 @@ export function batchBuildPlugins(
   command = 'build',
   packageManager = 'pnpm'
 ) {
-  const pluginNameMap = fs
-    .readdirSync(baseDir)
-    .filter((file) => fs.statSync(join(baseDir, file)).isDirectory());
+  const pluginNameMap = fs.readdirSync(baseDir).filter((file) => {
+    return fs.statSync(join(baseDir, file)).isDirectory() && file !== 'dts';
+  });
   const path = pluginNameMap.map((subDir) => resolve(baseDir, subDir));
   return path.map((item) => {
     return execa(packageManager, [command], { cwd: item });
