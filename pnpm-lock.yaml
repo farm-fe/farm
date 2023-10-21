@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: false
@@ -882,15 +882,15 @@ importers:
 
   js-plugins/dts:
     dependencies:
+      chalk:
+        specifier: ^5.2.0
+        version: 5.2.0
       fast-glob:
         specifier: ^3.2.12
         version: 3.2.12
       fs-extra:
         specifier: ^11.1.1
         version: 11.1.1
-      kolorist:
-        specifier: ^1.8.0
-        version: 1.8.0
       ts-morph:
         specifier: ^19.0.0
         version: 19.0.0
@@ -8976,10 +8976,6 @@ packages:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
-    dev: false
-
-  /kolorist@1.8.0:
-    resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
     dev: false
 
   /lazy-cache@1.0.4:
