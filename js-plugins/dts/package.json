@@ -27,8 +27,8 @@
   "license": "ISC",
   "dependencies": {
     "fast-glob": "^3.2.12",
+    "chalk": "^5.2.0",
     "fs-extra": "^11.1.1",
-    "kolorist": "^1.8.0",
     "ts-morph": "^19.0.0"
   },
   "devDependencies": {

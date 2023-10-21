@@ -882,9 +882,6 @@ importers:
 
   js-plugins/dts:
     dependencies:
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       fast-glob:
         specifier: ^3.2.12
         version: 3.2.12
@@ -901,6 +898,9 @@ importers:
       '@farmfe/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@types/fs-extra':
         specifier: ^11.0.1
         version: 11.0.1

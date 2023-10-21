@@ -1,6 +1,6 @@
 import type { UserConfig } from '@farmfe/core';
-import { DefaultLogger } from '@farmfe/core';
-import { green } from 'kolorist';
+import { DefaultLogger } from './logger.js';
+import { green } from 'chalk';
 import glob from 'fast-glob';
 import os from 'node:os';
 import { relative, resolve } from 'node:path';
