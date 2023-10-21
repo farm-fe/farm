@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.10
+
+### Patch Changes
+
+- 0f93f94: Fix panic when scoped changed using vite plugin. #646
+
 ## 0.13.9
 
 ### Patch Changes
