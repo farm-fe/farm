@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.2.0
+
+### Minor Changes
+
+- dcce5f6: support cjs output
+
 ## 0.1.2
 
 ### Patch Changes
