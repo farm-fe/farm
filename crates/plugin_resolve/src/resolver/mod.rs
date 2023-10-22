@@ -6,7 +6,6 @@ use farmfe_core::{
   farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
   plugin::{PluginResolveHookResult, ResolveKind},
-  regex,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
