@@ -533,9 +533,18 @@ impl Resolver {
     // search normal entry, based on self.config.main_fields, e.g. module/main
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
     let resolve_id = self.unresolved_id(deep_match, source, package_id);
-    if let Some(resolved_path) =
-      self.resolve_id_logic(deep_match, resolve_id, package_json_info, kind, context)
-    {
+    if let Some(resolved_path) = self.resolve_id_logic(
+      deep_match,
+      resolve_id,
+      package_json_info,
+      kind,
+      context,
+      source,
+    ) {
+      if resolved_path.contains("@antv/util/lib/index.js") {
+        println!("source: {}", source);
+        println!("resolved_path: {}", resolved_path);
+      }
       let resolved_path = if is_source_absolute(&resolved_path) {
         resolved_path
       } else {
@@ -1008,6 +1017,7 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
+    source: &str,
   ) -> Option<String> {
     let mut relative_id = Some(resolve_id.clone());
     let exports_data = get_field_value_from_package_json_info(package_json_info, "exports");
@@ -1119,10 +1129,11 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
+    source: &str,
   ) -> Option<String> {
     // if deep_match && is_source_absolute(&resolve_id) {
     if deep_match {
-      return self.resolve_deep_import(resolve_id, package_json_info, kind, context);
+      return self.resolve_deep_import(resolve_id, package_json_info, kind, context, source);
     } else {
       return self.find_entry_package_point(package_json_info, kind, context);
     }

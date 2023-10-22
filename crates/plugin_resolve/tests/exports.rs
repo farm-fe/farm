@@ -712,3 +712,35 @@ fn resolve_exports_no_fields() {
     }
   );
 }
+
+#[test]
+
+fn resolve_exports_nesting_no_fields() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "@dev/util",
+        cwd.clone(),
+        &ResolveKind::Require,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("@dev")
+          .join("util")
+          .join("esm")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
