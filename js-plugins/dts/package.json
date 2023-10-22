@@ -4,7 +4,6 @@
   "description": "",
   "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",
-  "type": "module",
   "exports": {
     ".": {
       "default": "./build/index.cjs",
