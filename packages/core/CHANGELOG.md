@@ -1,5 +1,25 @@
 # @farmfe/core
 
+## 0.13.10
+
+### Patch Changes
+
+- 0f93f94: Fix panic when scoped changed using vite plugin. #646
+
+## 0.13.9
+
+### Patch Changes
+
+- 62e6630: Fix lazy compilation error when working with virtual module
+- Updated dependencies [62e6630]
+  - @farmfe/runtime@0.7.3
+
+## 0.13.8
+
+### Patch Changes
+
+- 6a73829: fix: resolve exports filed resolve error
+
 ## 0.13.7
 
 ### Patch Changes

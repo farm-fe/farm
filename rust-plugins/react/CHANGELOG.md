@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.3.3
+
+### Patch Changes
+
+- 62e6630: fix that production build contains react dev code #618
+
 ## 0.3.2
 
 ### Patch Changes

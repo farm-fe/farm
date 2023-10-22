@@ -6,7 +6,7 @@ export * from './utils/index.js';
 
 import path from 'node:path';
 import os from 'node:os';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
@@ -119,7 +119,15 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   );
   const { root, output } = normalizedConfig.config;
   const distDir = path.resolve(root, output.path);
-
+  try {
+    statSync(distDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw new Error(
+        `The directory "${distDir}" does not exist. Did you build your project?`
+      );
+    }
+  }
   function StaticFilesHandler(ctx: Context) {
     const staticFilesServer = sirv(distDir, {
       etag: true,

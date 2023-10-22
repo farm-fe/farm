@@ -1,6 +1,6 @@
 import type { UserConfig } from '@farmfe/core';
-import { DefaultLogger } from '@farmfe/core';
-import { green } from 'kolorist';
+import { DefaultLogger } from './logger.js';
+import chalk from 'chalk';
 import glob from 'fast-glob';
 import os from 'node:os';
 import { relative, resolve } from 'node:path';
@@ -18,7 +18,6 @@ import {
   tryToReadFileSync,
   writeFileWithCheck
 } from './utils.js';
-import { DtsPluginOptions } from './types.js';
 export default class Context {
   config: UserConfig['compilation'];
   options: any;
@@ -182,10 +181,11 @@ export default class Context {
     });
     const endTime = performance.now();
     const elapsedTime = Math.floor(endTime - startTime);
+
     this.logger.info(
-      `⚡️ Dts Plugin Build completed in ${green(
+      `⚡️ Dts Plugin Build completed in ${chalk.green(
         `${elapsedTime}ms`
-      )}! Resources emitted to ${green(this.config.output.path)}.`
+      )}! Resources emitted to ${chalk.green(this.config.output.path)}.`
     );
   }
 }

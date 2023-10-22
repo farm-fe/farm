@@ -28,7 +28,7 @@ test('resolveUserConfig', async () => {
     },
     isBuild: false,
     command: 'serve',
-    root: path.join(filePath, 'fixtures', 'config'),
+    root: process.cwd(),
     resolveConfigPath: path.join(
       filePath,
       'fixtures',

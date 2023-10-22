@@ -208,10 +208,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.4
+        specifier: workspace:^0.2.5
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -248,7 +248,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
         specifier: ^2.5.70
@@ -312,7 +312,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -361,10 +361,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.4
+        specifier: workspace:^0.2.5
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -466,10 +466,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.4
+        specifier: workspace:^0.2.5
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -515,10 +515,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.4
+        specifier: workspace:^0.2.5
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -555,10 +555,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.3.2
+        specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.4
+        specifier: workspace:^0.2.5
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -740,8 +740,13 @@ importers:
   examples/solid:
     dependencies:
       solid-element:
+<<<<<<< HEAD
         specifier: ^1.7.1
         version: 1.7.1(solid-js@1.7.8)
+=======
+        specifier: ^1.8.0
+        version: 1.8.0(solid-js@1.7.8)
+>>>>>>> origin/main
       solid-js:
         specifier: ^1.7.8
         version: 1.7.8
@@ -966,15 +971,15 @@ importers:
 
   js-plugins/dts:
     dependencies:
+      chalk:
+        specifier: ^5.2.0
+        version: 5.2.0
       fast-glob:
         specifier: ^3.2.12
         version: 3.2.12
       fs-extra:
         specifier: ^11.1.1
         version: 11.1.1
-      kolorist:
-        specifier: ^1.8.0
-        version: 1.8.0
       ts-morph:
         specifier: ^19.0.0
         version: 19.0.0
@@ -1177,7 +1182,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.7.2
+        specifier: workspace:^0.7.3
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.2.4
@@ -9124,10 +9129,6 @@ packages:
       - supports-color
     dev: false
 
-  /kolorist@1.8.0:
-    resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
-    dev: false
-
   /lazy-cache@1.0.4:
     resolution: {integrity: sha512-RE2g0b5VGZsOCFOCgP7omTRYFqydmZkBwl5oNnQ1lDYC57uyO9KqNnNVxT7COSHTxrRCWVcAVOcbjk+tvh/rgQ==}
     engines: {node: '>=0.10.0'}
@@ -12126,10 +12127,17 @@ packages:
       tslib: 2.5.0
     dev: true
 
+<<<<<<< HEAD
   /solid-element@1.7.1(solid-js@1.7.8):
     resolution: {integrity: sha512-VtG3kg3HRUkq6QN4iyZKX1qmXYCEHMO3yH1DfakifaO+ncxHa56jU8SLtEgD55zR230pXQyPTWaEDDS0hTlmpg==}
     peerDependencies:
       solid-js: ^1.7.6
+=======
+  /solid-element@1.8.0(solid-js@1.7.8):
+    resolution: {integrity: sha512-DG8HBCej5kNExUiFbVG8OFZojMGcLF8keXdGLEcHXBYtJ7zhm+a8HJnl5lfmBlTYGRk4ApgoBvlwH1ibg7quaQ==}
+    peerDependencies:
+      solid-js: ^1.8.0
+>>>>>>> origin/main
     dependencies:
       component-register: 0.8.3
       solid-js: 1.7.8
@@ -13075,7 +13083,7 @@ packages:
     resolution: {integrity: sha512-6z3GW9x8G1gd+JIIgQQQxXuiJtCXeAjp6RaPEPLv62mH3iPHPxV6W3robxtCzNErRo6ZwTmzWhsbNvjyEBKzKA==}
     engines: {node: '>=10.12.0'}
     dependencies:
-      '@jridgewell/trace-mapping': 0.3.17
+      '@jridgewell/trace-mapping': 0.3.18
       '@types/istanbul-lib-coverage': 2.0.4
       convert-source-map: 1.9.0
     dev: true

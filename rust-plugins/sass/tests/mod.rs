@@ -1,7 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
+use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::Config,
+  config::{preset_env::PresetEnvConfig, Config, ResolveConfig, RuntimeConfig, SourcemapConfig},
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookParam},
@@ -47,5 +48,63 @@ fn test() {
     let expected =
       "body {\n  color: #000;\n}\nbody .description:hover {\n  background-color: #f8f9fa;\n}";
     assert_eq!(transformed.content, expected);
+  });
+}
+
+#[test]
+fn test_with_compiler() {
+  fixture!("tests/fixtures/**/*/index.scss", |file, crate_path| {
+    println!("testing: {:?}", file);
+    let resolved_path = file.to_string_lossy().to_string();
+    let cwd = file.parent().unwrap();
+    let runtime_path = crate_path
+      .join("tests")
+      .join("fixtures")
+      .join("_internal")
+      .join("runtime")
+      .join("index.js")
+      .to_string_lossy()
+      .to_string();
+    let config = Config {
+      input: HashMap::from([("index".to_string(), resolved_path.clone())]),
+      root: cwd.to_string_lossy().to_string(),
+      runtime: RuntimeConfig {
+        path: runtime_path,
+        ..Default::default()
+      },
+      mode: farmfe_core::config::Mode::Production,
+      sourcemap: SourcemapConfig::Bool(false),
+      preset_env: Box::new(PresetEnvConfig::Bool(false)),
+      minify: false,
+      tree_shaking: false,
+      resolve: ResolveConfig {
+        alias: std::collections::HashMap::from([(
+          "@".to_string(),
+          cwd.to_string_lossy().to_string(),
+        )]),
+        ..Default::default()
+      },
+      ..Default::default()
+    };
+
+    let plugin_sass = FarmPluginSass::new(
+      &config,
+      r#"
+      {
+        "sourceMap": true,
+        "style":"expanded"
+      }
+    "#
+      .to_string(),
+    );
+    let compiler = Compiler::new(config, vec![Arc::new(plugin_sass) as _]).unwrap();
+    compiler.compile().unwrap();
+
+    let resources_map = compiler.context().resources_map.lock();
+    let css = resources_map.get("index.css").unwrap();
+    let css_code = String::from_utf8(css.bytes.clone()).unwrap();
+
+    let expected = "body {\n  color: red;\n}";
+    assert_eq!(css_code, expected);
   });
 }

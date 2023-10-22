@@ -139,11 +139,19 @@ impl Compiler {
     let mut errors = vec![];
 
     while let Ok(err) = err_receiver.recv() {
-      errors.push(err.to_string());
+      errors.push(err);
     }
 
+    self.handle_global_log(&mut errors);
+
     if !errors.is_empty() {
-      return Err(CompilationError::GenericError(errors.join("\n")));
+      return Err(CompilationError::GenericError(
+        errors
+          .into_iter()
+          .map(|e| e.to_string())
+          .collect::<Vec<_>>()
+          .join("\n"),
+      ));
     }
 
     let previous_module_groups = {

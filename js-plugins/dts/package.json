@@ -1,16 +1,24 @@
 {
   "name": "@farmfe/js-plugin-dts",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "",
-  "main": "./dist/index.js",
+  "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "default": "./build/index.cjs",
+      "require": "./build/index.cjs",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "build": "tsc -p ./tsconfig.build.json",
-    "build:farm": "farm build",
+    "build:tsc": "tsc -p ./tsconfig.build.json",
+    "build": "farm build && pnpm build:tsc",
     "start": "pnpm run build -w",
     "watch": "farm watch",
-    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,8 +27,8 @@
   "license": "ISC",
   "dependencies": {
     "fast-glob": "^3.2.12",
+    "chalk": "^5.2.0",
     "fs-extra": "^11.1.1",
-    "kolorist": "^1.8.0",
     "ts-morph": "^19.0.0"
   },
   "devDependencies": {
@@ -29,6 +37,7 @@
     "@types/fs-extra": "^11.0.1"
   },
   "files": [
-    "dist"
+    "dist",
+    "build"
   ]
 }

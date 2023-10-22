@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   config::{Config, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
-  module::ModuleId,
-  plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},
+  module::{ModuleId, ModuleType},
+  plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
 use farmfe_utils::stringify_query;
 
@@ -44,27 +44,30 @@ impl Plugin for FarmPluginLazyCompilation {
     if let Some(importer) = &param.importer {
       if importer.to_string().starts_with(DYNAMIC_VIRTUAL_PREFIX) {
         let original_importer = importer.to_string().replace(DYNAMIC_VIRTUAL_PREFIX, "");
-        let resolve_result = context.plugin_driver.resolve(
+        return context.plugin_driver.resolve(
           &PluginResolveHookParam {
             importer: Some(original_importer.into()),
             ..param.clone()
           },
           context,
-          &hook_context,
-        )?;
+          &PluginHookContext {
+            caller: Some("FarmPluginLazyCompilation".to_string()),
+            ..hook_context.clone()
+          },
+        );
 
-        if let Some(mut resolve_result) = resolve_result {
-          // if dependency is also a dynamic virtual module, we should remove the dynamic prefix
-          if resolve_result.meta.contains_key(ORIGINAL_RESOLVED_PATH) {
-            resolve_result.resolved_path = resolve_result
-              .meta
-              .get(ORIGINAL_RESOLVED_PATH)
-              .unwrap()
-              .to_string();
-          }
+        // if let Some(mut resolve_result) = resolve_result {
+        //   // if dependency is also a dynamic virtual module, we should remove the dynamic prefix
+        //   if resolve_result.meta.contains_key(ORIGINAL_RESOLVED_PATH) {
+        //     resolve_result.resolved_path = resolve_result
+        //       .meta
+        //       .get(ORIGINAL_RESOLVED_PATH)
+        //       .unwrap()
+        //       .to_string();
+        //   }
 
-          return Ok(Some(resolve_result));
-        }
+        //   return Ok(Some(resolve_result));
+        // }
       }
     }
 
@@ -166,19 +169,32 @@ impl Plugin for FarmPluginLazyCompilation {
         }))
       } else {
         let resolved_path = param.meta.get(ORIGINAL_RESOLVED_PATH).unwrap();
-        context.plugin_driver.load(
-          &farmfe_core::plugin::PluginLoadHookParam {
-            resolved_path,
-            module_id: param.module_id.clone(),
-            query: param.query.clone(),
-            meta: param.meta.clone(),
-          },
-          context,
-          &farmfe_core::plugin::PluginHookContext {
-            caller: Some("FarmPluginLazyCompilation".to_string()),
-            .._hook_context.clone()
-          },
-        )
+        let content = format!(
+          r#"
+          import _default_import from "{0}";
+          export default _default_import;
+          export * from "{0}";
+        "#,
+          resolved_path.replace('\\', r"\\")
+        );
+        Ok(Some(PluginLoadHookResult {
+          content,
+          module_type: ModuleType::Js,
+        }))
+        // let resolved_path = param.meta.get(ORIGINAL_RESOLVED_PATH).unwrap();
+        // context.plugin_driver.load(
+        //   &farmfe_core::plugin::PluginLoadHookParam {
+        //     resolved_path,
+        //     module_id: param.module_id.clone(),
+        //     query: param.query.clone(),
+        //     meta: param.meta.clone(),
+        //   },
+        //   context,
+        //   &farmfe_core::plugin::PluginHookContext {
+        //     caller: Some("FarmPluginLazyCompilation".to_string()),
+        //     .._hook_context.clone()
+        //   },
+        // )
       }
     } else {
       Ok(None)
