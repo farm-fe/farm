@@ -1,5 +1,6 @@
 use std::{
   collections::BTreeMap,
+  fs,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -32,9 +33,14 @@ lazy_static! {
   pub static ref DATA_URL_RE: regex::Regex = regex::Regex::new(r#"^[\s]*data:"#).unwrap();
 }
 
+// lazy_static! {
+//   pub static ref DEEP_IMPORT_RE: regex::Regex =
+//     regex::Regex::new(r"^([^@][^/]*)/|^(@[^/]+/[^/]+)").unwrap();
+// }
+
 lazy_static! {
   pub static ref DEEP_IMPORT_RE: regex::Regex =
-    regex::Regex::new(r"^([^@][^/]*)/|^(@[^/]+/[^/]+)").unwrap();
+    regex::Regex::new(r"([^@][^/]*)/|(@[^/]+/[^/]+)").unwrap();
 }
 
 lazy_static! {
@@ -535,6 +541,7 @@ pub fn loop_value(
         String::from("browser"),
         String::from("development"),
         String::from("module"),
+        String::from("node"),
         String::from("import"),
         String::from("require"),
         String::from("default"),
@@ -759,4 +766,41 @@ pub fn map_with_browser_field<'a>(relative_path: &'a str, map: &'a Value) -> Opt
 
 pub fn equal_without_suffix(path: &str, key: &str, suffix: &str) -> bool {
   key.ends_with(suffix) && &key[..key.len() - suffix.len()] == path
+}
+
+pub fn split_file_and_postfix(path: &str) -> (String, String) {
+  let file = clean_url(path);
+  let postfix = path[file.len()..].to_string();
+  (file, postfix)
+}
+
+pub fn get_real_path(resolved: &str, preserve_symlinks: bool) -> String {
+  let mut resolved_path = resolved.to_string();
+
+  if !preserve_symlinks {
+    if let Ok(real_path) = safe_real_path_sync(&resolved) {
+      resolved_path = real_path.to_string_lossy().to_string();
+    }
+  }
+
+  normalize_path(&resolved_path)
+}
+
+pub fn safe_real_path_sync(resolved: &str) -> Result<PathBuf, std::io::Error> {
+  fs::canonicalize(resolved)
+}
+
+pub fn normalize_path(resolved: &str) -> String {
+  let path = Path::new(resolved);
+  let normalized_path = path.to_string_lossy().to_string();
+  normalized_path
+}
+
+pub fn get_directory_path(file: &str) -> String {
+  let file_path = Path::new(file);
+  if let Some(parent) = file_path.parent() {
+    // Use .to_str().unwrap() to convert the path to a string
+    return parent.to_str().unwrap().to_string();
+  }
+  "".to_string()
 }

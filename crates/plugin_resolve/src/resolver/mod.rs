@@ -6,10 +6,12 @@ use farmfe_core::{
   farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
   plugin::{PluginResolveHookResult, ResolveKind},
+  regex,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
 use std::{
+  fs,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -18,10 +20,11 @@ use std::{
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
 use crate::resolver_common::{
-  are_values_equal, get_field_value_from_package_json_info, get_key_path, get_result_path,
-  is_bare_import_path, is_double_source_dot, is_in_node_modules, is_module_external,
-  is_module_side_effects, is_source_absolute, is_source_dot, is_source_relative,
-  map_with_browser_field, try_file, walk, ConditionOptions, NODE_MODULES,
+  are_values_equal, get_directory_path, get_field_value_from_package_json_info, get_key_path,
+  get_real_path, get_result_path, is_bare_import_path, is_double_source_dot, is_in_node_modules,
+  is_module_external, is_module_side_effects, is_source_absolute, is_source_dot,
+  is_source_relative, map_with_browser_field, split_file_and_postfix, try_file, walk,
+  ConditionOptions, NODE_MODULES,
 };
 use crate::{
   resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
@@ -67,7 +70,7 @@ impl Resolver {
   pub fn resolve(
     &self,
     id: &str,
-    base_dir: PathBuf,
+    importer: PathBuf,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
@@ -75,7 +78,7 @@ impl Resolver {
     let mut source: String = id.to_string();
     // Load the package.json file located under base_dir
     let package_json_info = load_package_json(
-      base_dir.clone(),
+      importer.clone(),
       Options {
         follow_symlinks: context.config.resolve.symlinks,
         resolve_ancestor_dir: true, // only look for current directory
@@ -85,7 +88,6 @@ impl Resolver {
       // check source start_with "#" prepare resolve imports fields
       let resolved_imports_path =
         self.resolve_sub_path_imports(package_json_info, id, kind, context);
-
       if let Some(resolved_imports_path) = resolved_imports_path {
         // TODO need base dir to check the relative path
         // Combine pkg_dir and imports_path
@@ -122,7 +124,7 @@ impl Resolver {
       // }
     }
     // Execution resolve strategy
-    self.resolve_strategy(source.as_str(), base_dir, kind, context, package_json_info)
+    self.resolve_strategy(source.as_str(), importer, kind, context, package_json_info)
   }
 
   /// Resolve a module source code path based on the provided parameters and strategies.
@@ -165,6 +167,13 @@ impl Resolver {
         };
 
         // TODO try read symlink from the resolved path step by step to its parent util the root
+        // if let Some(normalized_path) =
+        //   self.try_fs_resolve(normalized_path.to_string_lossy().to_string(), true, context)
+        // {
+        //   return Some(self.get_resolve_result(&package_json_info, normalized_path, kind, context));
+        // }
+        // None
+
         let resolved_path = try_file(&normalized_path, context)
           .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
           .ok_or(CompilationError::GenericError(format!(
@@ -1003,6 +1012,7 @@ impl Resolver {
     let mut relative_id = Some(resolve_id.clone());
     let exports_data = get_field_value_from_package_json_info(package_json_info, "exports");
     let browser_data = get_field_value_from_package_json_info(package_json_info, "browser");
+    let module_data = get_field_value_from_package_json_info(package_json_info, "module");
     let is_browser = TargetEnv::Browser == context.config.output.target_env;
     if let Some(export_data) = exports_data {
       if export_data.is_object() && !export_data.is_array() {
@@ -1041,6 +1051,9 @@ impl Resolver {
     //   let info: Value = from_str(package_json_info.raw()).unwrap();
     //   relative_id = Some(info.get("module").unwrap().to_string())
     // }
+    if relative_id.clone().unwrap() == "." && module_data.is_some() {
+      relative_id = module_data.map(|s| s.to_string());
+    }
     let dir_path = get_result_path(&relative_id.unwrap(), &dir.to_str().unwrap().to_string());
     if let Some(resolved_path) = self.resolve_fs(
       &PathBuf::from(dir_path.clone().unwrap()),
@@ -1099,15 +1112,6 @@ impl Resolver {
     // get_result_path(&resolved_id, current_resolve_base_dir);
   }
 
-  fn try_clean_fs_resolve(
-    self: &Self,
-    path: &PathBuf,
-    is_browser: bool,
-    context: &Arc<CompilationContext>,
-  ) -> Option<String> {
-    None
-  }
-
   fn resolve_id_logic(
     self: &Self,
     deep_match: bool,
@@ -1148,5 +1152,75 @@ impl Resolver {
       let parent = path.parent()?;
       self.find_existing_directory(parent)
     }
+  }
+
+  fn try_fs_resolve(
+    self: &Self,
+    base_fs_path: String,
+    skip_try_package: bool,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    let (file, postfix) = split_file_and_postfix(&base_fs_path);
+    if let Some(resolved_path) = self.try_clean_fs_resolve(&file, context) {
+      return Some(resolved_path);
+    }
+    None
+  }
+
+  fn try_clean_fs_resolve(
+    self: &Self,
+    path: &String,
+    // is_browser: bool,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    // let resolved_path = try_file(&normalized_path, context)
+    //   .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
+    //   .ok_or(CompilationError::GenericError(format!(
+    //     "File `{:?}` does not exist",
+    //     normalized_path
+    //   )));
+    if let Ok(metadata) = fs::metadata(path) {
+      if metadata.is_file() {
+        let real_path = get_real_path(path, context.config.resolve.symlinks);
+        return Some(real_path);
+      }
+    }
+    let dir_path = get_directory_path(path);
+
+    if let Some(resolved_path) =
+      self.try_resolve_real_file_with_extensions(PathBuf::from(path), context)
+    {
+      return Some(resolved_path);
+    }
+    None
+  }
+
+  fn try_resolve_real_file_with_extensions(
+    self: &Self,
+    file: PathBuf,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
+    let extensions = context.config.resolve.extensions.clone();
+    let resolved_path: Option<String> = None;
+    for extension in extensions {
+      let mut file_path = file.clone();
+      file_path.set_extension(extension);
+      // self.try_resolve_real_file(file_path, context.config.resolve.symlinks);
+      if let Some(resolved_path) = self.try_resolve_real_file(
+        &file_path.to_str().unwrap(),
+        context.config.resolve.symlinks,
+      ) {
+        return Some(resolved_path);
+      }
+    }
+    resolved_path
+  }
+  fn try_resolve_real_file(self: &Self, file: &str, preserve_symlinks: bool) -> Option<String> {
+    if let Ok(metadata) = fs::metadata(file) {
+      if metadata.is_file() {
+        return Some(get_real_path(file, preserve_symlinks));
+      }
+    }
+    None
   }
 }
