@@ -723,7 +723,7 @@ fn resolve_exports_nesting_no_fields() {
       let resolver = Resolver::new();
 
       let resolved = resolver.resolve(
-        "@dev/util",
+        "@dev/util/lib/is-string",
         cwd.clone(),
         &ResolveKind::Require,
         &Arc::new(CompilationContext::default()),
@@ -736,8 +736,8 @@ fn resolve_exports_nesting_no_fields() {
           .join("node_modules")
           .join("@dev")
           .join("util")
-          .join("esm")
-          .join("index.js")
+          .join("lib")
+          .join("is-string.js")
           .to_string_lossy()
           .to_string()
       );

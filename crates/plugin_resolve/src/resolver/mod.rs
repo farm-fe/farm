@@ -541,7 +541,7 @@ impl Resolver {
       context,
       source,
     ) {
-      if resolved_path.contains("@antv/util/lib/index.js") {
+      if source.contains("is-string") {
         println!("source: {}", source);
         println!("resolved_path: {}", resolved_path);
       }
@@ -1019,6 +1019,10 @@ impl Resolver {
     context: &Arc<CompilationContext>,
     source: &str,
   ) -> Option<String> {
+    if source.contains("is-string") {
+      println!("source: {}", source);
+      println!("resolve_id: {}", resolve_id);
+    }
     let mut relative_id = Some(resolve_id.clone());
     let exports_data = get_field_value_from_package_json_info(package_json_info, "exports");
     let browser_data = get_field_value_from_package_json_info(package_json_info, "browser");
@@ -1064,6 +1068,11 @@ impl Resolver {
     if relative_id.clone().unwrap() == "." && module_data.is_some() {
       relative_id = module_data.map(|s| s.to_string());
     }
+    if source.contains("is-string") {
+      println!("relative_id: {:?}", relative_id);
+      println!("dir: {:?}", dir);
+      println!("package_json_info: {:#?}", package_json_info);
+    }
     let dir_path = get_result_path(&relative_id.unwrap(), &dir.to_str().unwrap().to_string());
     if let Some(resolved_path) = self.resolve_fs(
       &PathBuf::from(dir_path.clone().unwrap()),
@@ -1075,8 +1084,12 @@ impl Resolver {
     } else {
       if let Some(dir_path) = self.find_existing_directory(&PathBuf::from(dir_path.unwrap())) {
         if let Some(resolved_path) =
-          self.resolve_fs(&PathBuf::from(dir_path), is_browser, kind, context)
+          self.resolve_fs(&PathBuf::from(&dir_path), is_browser, kind, context)
         {
+          // if source.contains("is-string") {
+          //   println!("&PathBuf::from(dir_path): {:?}", &PathBuf::from(dir_path));
+          //   println!("resolved_path 213: {}", resolved_path);
+          // }
           return Some(resolved_path);
         }
       }

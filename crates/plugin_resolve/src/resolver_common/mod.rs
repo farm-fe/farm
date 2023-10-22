@@ -212,6 +212,9 @@ pub fn is_module_external(package_json_info: &PackageJsonInfo, resolved_path: &s
  */
 
 pub fn try_file(file: &PathBuf, context: &Arc<CompilationContext>) -> Option<String> {
+  // if file.to_string_lossy().contains("/esm/is-string") {
+  //   println!("开始搞 file: {:?}", file);
+  // }
   // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
   if file.exists() && file.is_file() {
     Some(file.to_string_lossy().to_string())
@@ -224,7 +227,9 @@ pub fn try_file(file: &PathBuf, context: &Arc<CompilationContext>) -> Option<Str
       let new_file = append_extension(file, ext);
       new_file.exists() && new_file.is_file()
     });
-
+    // if file.to_string_lossy().contains("/esm/is-string") {
+    //   println!("ext: {:?}", ext.map(|ext| append_extension(file, ext).to_string_lossy().to_string()));
+    // }
     ext.map(|ext| append_extension(file, ext).to_string_lossy().to_string())
   }
 }
