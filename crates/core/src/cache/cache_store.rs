@@ -11,17 +11,17 @@ use farmfe_macro_cache_item::cache_item;
 use crate::{config::Mode, deserialize, serialize};
 
 const FARM_CACHE_VERSION: &str = "0.0.1";
-
+// TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
 pub struct CacheStore {
   cache_dir: PathBuf,
+  namespace: String,
   /// The maximum number of items per cache file. default: 1000
   items_per_cache_file: usize,
 }
 
 impl CacheStore {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
-    let mut cache_dir = Path::new(cache_dir_str).to_path_buf();
-    cache_dir.push(namespace.to_string() + "-" + FARM_CACHE_VERSION);
+    let mut cache_dir = Path::new(&format!("{cache_dir_str}-{FARM_CACHE_VERSION}")).to_path_buf();
 
     if matches!(mode, Mode::Development) {
       cache_dir.push("development");
@@ -35,7 +35,9 @@ impl CacheStore {
 
     Self {
       cache_dir,
-      items_per_cache_file: 1000,
+      namespace: namespace.to_string(),
+      // only generate one cache file for now.
+      items_per_cache_file: usize::MAX,
     }
   }
 
@@ -66,7 +68,7 @@ impl CacheStore {
 
       if (i + 1) % self.items_per_cache_file == 0 {
         // write cache file
-        let file_name = cache_content.file_name(cache_file_index);
+        let file_name = cache_content.file_name(&self.namespace, cache_file_index);
         let file_path = cache_file_dir.join(file_name);
 
         let bytes = serialize!(&cache_content);
@@ -79,7 +81,7 @@ impl CacheStore {
     // write the last cache file
     if cache_content.list.len() > 0 {
       // write cache file
-      let file_name = cache_content.file_name(cache_file_index);
+      let file_name = cache_content.file_name(&self.namespace, cache_file_index);
       let file_path = cache_file_dir.join(file_name);
 
       let bytes = serialize!(&cache_content);
@@ -138,7 +140,7 @@ impl CacheContentFile {
     self.list.clear();
   }
 
-  pub fn file_name(&self, index: usize) -> String {
-    format!("farm-cache-part-{}", index)
+  pub fn file_name(&self, namespace: &str, index: usize) -> String {
+    format!("{namespace}-{}", index)
   }
 }

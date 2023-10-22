@@ -22,7 +22,7 @@ import {
 import { setProcessEnv } from '../config/env.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 
-import type { UserConfig } from '../config/index.js';
+import type { ResolvedUserConfig, UserConfig } from '../config/index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -36,7 +36,7 @@ export class FileWatcher implements ImplFileWatcher {
 
   constructor(
     public serverOrCompiler: DevServer | Compiler,
-    public options?: Config & UserConfig
+    public options?: Config & ResolvedUserConfig
   ) {
     this._root = options.config.root;
     this._awaitWriteFinish = DEFAULT_HMR_OPTIONS.watchOptions.awaitWriteFinish;

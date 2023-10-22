@@ -34,7 +34,10 @@ use crate::{
   Compiler,
 };
 
-use self::module_cache::{get_module_cache_key, set_module_cache, try_get_module_cache};
+use self::module_cache::{
+  clear_unused_cached_modules, load_module_graph_cache_into_context, set_module_graph_cache,
+  try_get_module_cache,
+};
 
 macro_rules! call_and_catch_error {
   ($func:ident, $($args:expr),+) => {
@@ -78,6 +81,11 @@ impl Compiler {
     self.context.plugin_driver.build_start(&self.context)?;
     validate_config::validate_config(&self.context.config);
 
+    if self.context.config.persistent_cache.enabled() {
+      // load module graph cache
+      load_module_graph_cache_into_context(&self.context)?;
+    }
+
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
 
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
@@ -117,6 +125,14 @@ impl Compiler {
       // TODO Temporarily exit the process with exit
       std::process::exit(1);
       // return Err(CompilationError::GenericError(error_messages.join(", ")));
+    }
+
+    // set module graph cache
+    if self.context.config.persistent_cache.enabled() {
+      // clear unused cached modules
+      clear_unused_cached_modules(&self.context);
+      // set new module cache
+      set_module_graph_cache(&self.context);
     }
 
     // Topo sort the module graph
@@ -184,6 +200,8 @@ impl Compiler {
     module: &mut Module,
     context: &Arc<CompilationContext>,
   ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
+    // return the cached module if cache found using timestamp
+
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::new(),
@@ -255,10 +273,9 @@ impl Compiler {
     module.source_content = transform_result.content.clone();
 
     // skip building if the module is already built and the cache is enabled
-    let cache_key = get_module_cache_key(&module.id, &transform_result.content);
     if let Some(cached_module) = try_get_module_cache(&cache_key, module.immutable, context)? {
       *module = cached_module.module;
-      return Ok(cached_module.deps);
+      return Ok(CachedModule::dep_sources(cached_module.dependencies));
     } else {
       let deps = Self::build_module_after_transform(
         resolve_result,
@@ -268,24 +285,6 @@ impl Compiler {
         context,
         &hook_context,
       )?;
-      // Replace the module with a placeholder module to prevent the module from being cloned
-      let module_id = module.id.clone();
-      let placeholder_module = Module::new(module_id.clone());
-      let built_module = std::mem::replace(module, placeholder_module);
-
-      if context.config.persistent_cache.enabled() {
-        let mut cached_module = CachedModule {
-          module: built_module,
-          deps,
-        };
-
-        set_module_cache(&cache_key, module.immutable, &mut cached_module, context)?;
-
-        *module = cached_module.module;
-        return Ok(cached_module.deps);
-      } else {
-        *module = built_module;
-      }
 
       Ok(deps)
     }

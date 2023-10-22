@@ -20,8 +20,6 @@ impl ResourceCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     let mut store = CacheStore::new(cache_dir_str, namespace, mode.clone());
     let mut resource_pot_meta_store = CacheStore::new(cache_dir_str, namespace, mode);
-    store.set_items_per_cache_file(5);
-    resource_pot_meta_store.set_items_per_cache_file(5);
 
     let cache = store.read_cache("resource");
     let resource_pot_meta_cache = store.read_cache("resource_pot_meta");

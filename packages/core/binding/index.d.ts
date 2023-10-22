@@ -140,6 +140,7 @@ export interface Config {
       swcHelpersPath?: string;
       namespace?: string;
     };
+    configFilePath?: string;
     watch?: boolean | WatcherOptions;
     assets?: {
       include?: string[];
@@ -240,6 +241,11 @@ export interface Config {
     persistentCache?: boolean | {
       namespace?: string;
       cacheDir?: string;
+      buildDependencies?: string[];
+      moduleCacheKeyStrategy?: {
+        timestamp?: boolean,
+        hash?: boolean,
+      }
     };
 };
   jsPlugins?: JsPlugin[];

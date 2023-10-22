@@ -1,10 +1,13 @@
+use dashmap::mapref::one::Ref;
 use dashmap::{DashMap, DashSet};
+use rayon::prelude::*;
 use rkyv::Deserialize;
 use std::collections::HashMap;
 
 use farmfe_macro_cache_item::cache_item;
 
 use crate::config::Mode;
+use crate::module::module_graph::ModuleGraphEdge;
 use crate::module::{Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
 use crate::{deserialize, serialize};
@@ -12,85 +15,98 @@ use crate::{deserialize, serialize};
 use super::cache_store::CacheStore;
 
 pub struct ModuleCacheManager {
+  /// Store is responsible for how to read and load cache from disk.
   store: CacheStore,
-  cache: DashMap<String, Vec<u8>>,
-  initial_cache_modules: DashSet<ModuleId>,
-  new_cache_modules: DashSet<ModuleId>,
+  /// cache map for cache_key -> serialized CachedModule.
+  /// It's used for writing or reading data from store. New added cache will be also inserted into it directly.
+  cache: DashMap<ModuleId, Vec<u8>>,
+  initial_cached_modules_map: DashMap<ModuleId, CachedModule>,
+  invalidated_cached_modules: DashSet<ModuleId>,
+}
+
+#[cache_item]
+pub struct CachedModuleDependency {
+  pub dependency: ModuleId,
+  pub edge_info: ModuleGraphEdge,
 }
 
 #[cache_item]
 pub struct CachedModule {
   pub module: Module,
-  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
+  pub dependencies: Vec<CachedModuleDependency>,
+  pub last_update_timestamp: u64,
+  pub content_hash: String,
+}
+
+impl CachedModule {
+  pub fn dep_sources(
+    dependencies: Vec<CachedModuleDependency>,
+  ) -> Vec<PluginAnalyzeDepsHookResultEntry> {
+    dependencies
+      .into_iter()
+      .flat_map(|dep| {
+        dep
+          .edge_info
+          .0
+          .into_iter()
+          .map(|item| PluginAnalyzeDepsHookResultEntry {
+            source: item.source,
+            kind: item.kind,
+          })
+      })
+      .collect()
+  }
 }
 
 impl ModuleCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+    let start = std::time::Instant::now();
+
     let store = CacheStore::new(cache_dir_str, namespace, mode);
     let cache = store.read_cache("module");
-    let start = std::time::Instant::now();
-    let cache = cache
-      .into_iter()
-      .map(|(key, value)| (key, value.to_vec()))
-      .collect::<DashMap<String, Vec<u8>>>();
+
+    let initial_cached_modules_map = cache
+      .par_iter()
+      .map(|(key, bytes)| {
+        let cached_module = deserialize!(bytes, CachedModule);
+        (ModuleId::from(key.as_str()), cached_module)
+      })
+      .collect::<HashMap<ModuleId, CachedModule>>();
+
+    let cache = cache.into_iter().map(|(k, v)| (k.into(), v)).collect();
+
     println!("read cache time: {:?}", start.elapsed());
 
     Self {
       store,
       cache,
-      initial_cache_modules: DashSet::new(),
-      new_cache_modules: DashSet::new(),
+      initial_cached_modules_map: initial_cached_modules_map.into_iter().collect(),
+      invalidated_cached_modules: DashSet::new(),
     }
   }
 
-  pub fn cache(&self) -> &DashMap<String, Vec<u8>> {
-    &self.cache
+  pub fn has_cache(&self, key: &ModuleId) -> bool {
+    self.initial_cached_modules_map.contains_key(key)
   }
 
-  pub fn initial_cache_modules(&self) -> &DashSet<ModuleId> {
-    &self.initial_cache_modules
-  }
-
-  pub fn new_cache_modules(&self) -> &DashSet<ModuleId> {
-    &self.new_cache_modules
-  }
-
-  pub fn has_cache(&self, key: &str) -> bool {
-    self.cache.contains_key(key)
-  }
-
-  pub fn set_cache(&self, key: &str, module: &CachedModule) {
-    self.new_cache_modules.insert(module.module.id.clone());
+  pub fn set_cache(&self, key: ModuleId, module: &CachedModule) {
     let bytes = serialize!(module);
-    self.cache.insert(key.to_string(), bytes);
+    self.cache.insert(key, bytes);
   }
 
-  pub fn get_cache(&self, key: &str) -> CachedModule {
-    let start = std::time::Instant::now();
-    if let Some(bytes) = self.cache.get(key) {
-      let cached_module = deserialize!(&bytes, CachedModule);
-      if cached_module
-        .module
-        .id
-        .to_string()
-        .contains("node_modules/react-dom/")
-      {
-        println!(
-          "deserialize time: {:?}, size: {} -> {:?}",
-          cached_module.module.id,
-          cached_module.module.size,
-          start.elapsed()
-        );
-      }
-      if !self.new_cache_modules.contains(&cached_module.module.id) {
-        self
-          .initial_cache_modules
-          .insert(cached_module.module.id.clone());
-      }
-
+  pub fn get_cache(&self, key: &ModuleId) -> CachedModule {
+    if let Some((_, cached_module)) = self.initial_cached_modules_map.remove(key) {
       cached_module
     } else {
-      panic!("Module cache not found: {}", key);
+      panic!("Module cache not found: {:?}", key);
+    }
+  }
+
+  pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {
+    if let Some(m_ref) = self.initial_cached_modules_map.get(key) {
+      m_ref
+    } else {
+      panic!("Module cache not found: {:?}", key);
     }
   }
 
@@ -106,6 +122,14 @@ impl ModuleCacheManager {
   }
 
   pub fn is_initial_cache(&self, module_id: &ModuleId) -> bool {
-    self.initial_cache_modules.contains(module_id)
+    self.initial_cached_modules_map.contains_key(module_id)
+  }
+
+  pub fn get_initial_cached_modules(&self) -> Vec<ModuleId> {
+    self
+      .initial_cached_modules_map
+      .iter()
+      .map(|item| item.key().clone())
+      .collect()
   }
 }

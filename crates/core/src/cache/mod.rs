@@ -18,10 +18,6 @@ impl CacheManager {
     }
   }
 
-  pub fn has_module_cache(&self, code_hash: &str) -> bool {
-    self.module_cache.has_cache(code_hash)
-  }
-
   pub fn write_cache(&self) {
     self.module_cache.write_cache();
     self.resource_cache.write_cache();

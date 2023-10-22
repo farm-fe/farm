@@ -25,6 +25,7 @@ import {
 import type {
   FarmCLIOptions,
   NormalizedServerConfig,
+  ResolvedUserConfig,
   UserConfig,
   UserHmrConfig,
   UserServerConfig
@@ -44,7 +45,7 @@ export const urlRegex = /^(https?:)?\/\/([^/]+)/;
  * @returns resolved config that parsed to rust compiler
  */
 export async function normalizeUserCompilationConfig(
-  userConfig: UserConfig,
+  userConfig: ResolvedUserConfig,
   logger: Logger,
   mode: CompilationMode = 'development'
 ): Promise<Config> {
@@ -84,6 +85,7 @@ export async function normalizeUserCompilationConfig(
   const isDevelopment = config.mode === 'development';
 
   config.coreLibPath = bindingPath;
+  config.configFilePath = userConfig.resolveConfigPath;
 
   const resolvedEnvPath = envDir ? envDir : resolvedRootPath;
 
@@ -337,8 +339,8 @@ export async function resolveUserConfig(
   inlineOptions: FarmCLIOptions,
   command: 'serve' | 'build',
   logger: Logger
-): Promise<UserConfig> {
-  let userConfig: UserConfig = {};
+): Promise<ResolvedUserConfig> {
+  let userConfig: ResolvedUserConfig = {};
   const root: string = process.cwd();
   const { configPath } = inlineOptions;
   if (
@@ -558,9 +560,9 @@ export function normalizePublicPath(
 }
 
 export function filterUserConfig(
-  userConfig: UserConfig,
+  userConfig: ResolvedUserConfig,
   inlineConfig: FarmCLIOptions
-): UserConfig {
+): ResolvedUserConfig {
   userConfig.inlineConfig = inlineConfig;
   delete userConfig.configPath;
   return userConfig;

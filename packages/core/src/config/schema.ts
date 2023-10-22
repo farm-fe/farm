@@ -183,7 +183,14 @@ const compilationConfigSchema = z
       z
         .object({
           namespace: z.string().optional(),
-          cacheDir: z.string().optional()
+          cacheDir: z.string().optional(),
+          buildDependencies: z.array(z.string()).optional(),
+          moduleCacheKeyStrategy: z
+            .object({
+              timestamp: z.boolean().optional(),
+              hash: z.boolean().optional()
+            })
+            .optional()
         })
         .optional()
     ])

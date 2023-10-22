@@ -8,7 +8,7 @@ use swc_common::Globals;
 
 use crate::{
   cache::CacheManager,
-  config::Config,
+  config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
@@ -39,12 +39,18 @@ pub struct CompilationContext {
 }
 
 impl CompilationContext {
-  pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
-    let cache_config = config.persistent_cache.as_ref();
+  pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    let (cache_dir, namespace) = if config.persistent_cache.enabled() {
+      let cache_config_obj = config
+        .persistent_cache
+        .as_obj(&config.root, config.config_file_path.as_ref().unwrap());
+      let (cache_dir, namespace) = (
+        cache_config_obj.cache_dir.clone(),
+        cache_config_obj.namespace.clone(),
+      );
+      config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
 
-    let (cache_dir, namespace) = if cache_config.enabled() {
-      let cache_config_obj = cache_config.as_obj(&config.root);
-      (cache_config_obj.cache_dir, cache_config_obj.namespace)
+      (cache_dir, namespace)
     } else {
       (EMPTY_STR.to_string(), EMPTY_STR.to_string())
     };

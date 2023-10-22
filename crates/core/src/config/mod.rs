@@ -41,6 +41,7 @@ pub struct Config {
   pub partial_bundling: PartialBundlingConfig,
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
+  pub config_file_path: Option<String>,
   pub tree_shaking: bool,
   // TODO: support minify options
   pub minify: bool,
@@ -73,12 +74,14 @@ impl Default for Config {
       partial_bundling: PartialBundlingConfig::default(),
       lazy_compilation: true,
       core_lib_path: None,
+      config_file_path: None,
       tree_shaking: true,
       minify: true,
       preset_env: Box::<PresetEnvConfig>::default(),
       record: false,
       persistent_cache: Box::<persistent_cache::PersistentCacheConfig>::new(
-        persistent_cache::PersistentCacheConfig::get_default_config(&root),
+        // the config file path will be set after the Config is initialized
+        persistent_cache::PersistentCacheConfig::get_default_config(&root, ""),
       ),
     }
   }

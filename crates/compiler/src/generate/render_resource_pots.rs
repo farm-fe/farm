@@ -92,7 +92,9 @@ pub fn render_resource_pots_and_generate_resources(
         resources.lock().push(source_map);
       }
 
-      set_resource_cache(resource_pot, &res.resource, context);
+      if context.config.persistent_cache.enabled() {
+        set_resource_cache(resource_pot, &res.resource, context);
+      }
 
       resource_pot.add_resource(res.resource.name.clone());
       resources.lock().push(res.resource);

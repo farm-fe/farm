@@ -34,7 +34,7 @@ pub fn try_get_resource_cache(
   resource_pot: &ResourcePot,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<(ResourcePotMetaData, Resource)>> {
-  if !is_cache_enabled(resource_pot.immutable, context) {
+  if !is_cache_enabled(resource_pot.immutable, &context.config) {
     return Ok(None);
   }
 
