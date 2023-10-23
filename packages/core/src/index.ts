@@ -53,6 +53,7 @@ export async function start(
     );
   }
   await devServer.listen();
+
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     logger.info(

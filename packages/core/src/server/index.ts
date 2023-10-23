@@ -9,29 +9,30 @@ import boxen from 'boxen';
 import figlet from 'figlet';
 import { Compiler } from '../compiler/index.js';
 import {
-  UserServerConfig,
-  NormalizedServerConfig,
+  DEFAULT_HMR_OPTIONS,
+  DevServerPlugin,
   normalizeDevServerOptions,
+  NormalizedServerConfig,
   normalizePublicDir,
   normalizePublicPath,
-  DevServerPlugin,
+  urlRegex,
   UserConfig,
-  DEFAULT_HMR_OPTIONS,
-  urlRegex
+  UserServerConfig
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { openBrowser } from './openBrowser.js';
 import { brandColor, clearScreen, Logger } from '../utils/index.js';
 import {
-  lazyCompilationPlugin,
-  resourcesPlugin,
-  hmrPlugin,
-  proxyPlugin,
   corsPlugin,
+  headersPlugin,
+  hmrPlugin,
+  lazyCompilationPlugin,
+  proxyPlugin,
   recordsPlugin,
-  headersPlugin
+  resourcesPlugin
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
+// import { resolveServerUrls } from "../utils/utils.js";
 
 /**
  * Farm Dev Server, responsible for:
@@ -47,6 +48,7 @@ interface FarmServerContext {
   server: http.Server;
   compiler: Compiler;
   logger: Logger;
+  serverOptions?: any;
 }
 
 interface ImplDevServer {
@@ -102,7 +104,6 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     const { port, open, protocol, hostname, host } = this.config;
-    const start = Date.now();
     let publicPath;
     if (urlRegex.test(this.publicPath)) {
       publicPath = '/';
@@ -111,6 +112,8 @@ export class DevServer implements ImplDevServer {
         ? this.publicPath
         : `/${this.publicPath}`;
     }
+
+    const start = Date.now();
     // compile the project and start the dev server
     if (process.env.FARM_PROFILE) {
       this._compiler.compileSync();
@@ -122,15 +125,40 @@ export class DevServer implements ImplDevServer {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this._compiler.writeResourcesToDisk(base);
     }
-
     const end = Date.now();
-    this.server.listen(port, host);
+    await this.startServer(this.config);
+    this.printUrls();
+    // await new Promise((resolve) => {
+    //   this.server.listen(port, host, () => {
+    //     resolve(true);
+    //   });
+    // });
     this.error(port, host);
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       this.startDevLogger(start, end);
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
     }
+  }
+
+  async startServer(serverOptions: NormalizedServerConfig) {
+    const { port, host } = serverOptions;
+    await new Promise((resolve) => {
+      this.server.listen(port, host, () => {
+        resolve(true);
+      });
+    });
+  }
+
+  async printUrls() {
+    // this._context.serverOptions.resolvedUrls =
+    const res = this.server.address();
+    console.log(res, '我是 res');
+    // await resolveServerUrls(
+    //   this.server,
+    //   this.config,
+    //   this.userConfig,
+    // );
   }
 
   async error(port: number, ip: string | boolean) {
@@ -245,7 +273,6 @@ export class DevServer implements ImplDevServer {
   }
 
   /**
-   *
    * Add listening files for root manually
    *
    * > listening file with root must as file.
