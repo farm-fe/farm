@@ -138,7 +138,7 @@ See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 - Wechat group
 
-<img src="./assets/wechat-group.png" width="30%" />
+<img src="https://github.com/farm-fe/farm/assets/66500121/695a05f2-14a3-4608-bc47-07a29006004a" width="30%" />
 
 ## Contributors
 
