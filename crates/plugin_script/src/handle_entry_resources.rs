@@ -4,9 +4,11 @@ use farmfe_core::{
   config::{ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
   context::CompilationContext,
   hashbrown::HashMap,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId},
+  module::{
+    module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleSystem,
+  },
   resource::{Resource, ResourceType},
-  swc_ecma_ast::{ModuleDecl, ModuleItem},
+  swc_ecma_ast::{self, Decl, ModuleDecl, ModuleItem, Pat},
 };
 use farmfe_toolkit::get_dynamic_resources_map::{
   get_dynamic_resources_code, get_dynamic_resources_map,
@@ -14,14 +16,31 @@ use farmfe_toolkit::get_dynamic_resources_map::{
 
 use crate::FARM_NODE_MODULE;
 
+pub enum ExportInfoOfEntryModule {
+  Default,
+  Named {
+    name: String,
+    import_as: Option<String>,
+  },
+  All,
+  CJS,
+}
+
 pub fn get_export_info_of_entry_module(
   entry_module_id: &ModuleId,
   module_graph: &ModuleGraph,
   _context: &Arc<CompilationContext>,
-) -> Vec<String> {
+) -> Vec<ExportInfoOfEntryModule> {
   let entry_module = module_graph
     .module(entry_module_id)
     .expect("entry module is not found");
+
+  if matches!(
+    entry_module.meta.as_script().module_system,
+    ModuleSystem::CommonJs
+  ) {
+    return vec![ExportInfoOfEntryModule::CJS];
+  }
 
   let ast = &entry_module.meta.as_script().ast;
   let mut export_info = vec![];
@@ -29,25 +48,78 @@ pub fn get_export_info_of_entry_module(
   for item in ast.body.iter() {
     match item {
       ModuleItem::ModuleDecl(module_decl) => match module_decl {
-        // TODO: support more export syntax
-
-        // ModuleDecl::ExportDecl(export_decl) => {
-        //   if let Decl::Class(class_decl) = &export_decl.decl {
-        //     export_info.push(class_decl.ident.sym.to_string());
-        //   }
-        // }
-        // ModuleDecl::ExportNamed(named_export) => {
-        //   for specifier in named_export.specifiers.iter() {
-        //     match specifier {
-        //       ExportSpecifier::Named(named_specifier) => {
-        //         export_info.push(named_specifier.orig.sym.to_string());
-        //       }
-        //       _ => {}
-        //     }
-        //   }
-        // }
+        ModuleDecl::ExportDecl(export_decl) => match &export_decl.decl {
+          Decl::Class(class) => {
+            export_info.push(ExportInfoOfEntryModule::Named {
+              name: class.ident.sym.to_string(),
+              import_as: None,
+            });
+          }
+          Decl::Fn(func) => {
+            export_info.push(ExportInfoOfEntryModule::Named {
+              name: func.ident.sym.to_string(),
+              import_as: None,
+            });
+          }
+          Decl::Var(var) => {
+            for decl in var.decls.iter() {
+              match &decl.name {
+                Pat::Ident(ident) => {
+                  export_info.push(ExportInfoOfEntryModule::Named {
+                    name: ident.sym.to_string(),
+                    import_as: None,
+                  });
+                }
+                _ => {}
+              }
+            }
+          }
+          Decl::Using(_)
+          | Decl::TsInterface(_)
+          | Decl::TsTypeAlias(_)
+          | Decl::TsEnum(_)
+          | Decl::TsModule(_) => {
+            panic!("export type is not supported")
+          }
+        },
+        ModuleDecl::ExportNamed(named_export) => {
+          for spec in named_export.specifiers.iter() {
+            match spec {
+              swc_ecma_ast::ExportSpecifier::Named(named_spec) => {
+                export_info.push(ExportInfoOfEntryModule::Named {
+                  name: match &named_spec.orig {
+                    swc_ecma_ast::ModuleExportName::Ident(ident) => ident.sym.to_string(),
+                    swc_ecma_ast::ModuleExportName::Str(str) => str.value.to_string(),
+                  },
+                  import_as: named_spec.exported.as_ref().map(|exported| match exported {
+                    swc_ecma_ast::ModuleExportName::Ident(ident) => ident.sym.to_string(),
+                    swc_ecma_ast::ModuleExportName::Str(str) => str.value.to_string(),
+                  }),
+                });
+              }
+              swc_ecma_ast::ExportSpecifier::Default(default) => {
+                export_info.push(ExportInfoOfEntryModule::Named {
+                  name: default.exported.sym.to_string(),
+                  import_as: None,
+                });
+              }
+              swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
+                export_info.push(ExportInfoOfEntryModule::Named {
+                  name: match &ns.name {
+                    swc_ecma_ast::ModuleExportName::Ident(ident) => ident.sym.to_string(),
+                    swc_ecma_ast::ModuleExportName::Str(str) => str.value.to_string(),
+                  },
+                  import_as: None,
+                });
+              }
+            }
+          }
+        }
+        ModuleDecl::ExportAll(_) => {
+          export_info.push(ExportInfoOfEntryModule::All);
+        }
         ModuleDecl::ExportDefaultDecl(_) | ModuleDecl::ExportDefaultExpr(_) => {
-          export_info.push("default".to_string());
+          export_info.push(ExportInfoOfEntryModule::Default);
         }
         _ => {}
       },
@@ -65,19 +137,41 @@ fn get_export_info_code(
 ) -> String {
   let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, context);
 
+  // TODO cover it with test
   if !export_info.is_empty() {
     export_info
       .iter()
-      .map(|export| {
-        if export == "default" {
-          match context.config.output.format {
-            ModuleFormat::CommonJs => "module.exports = entry.default;".to_string(),
-            ModuleFormat::EsModule => "export default entry.default;".to_string(),
+      .map(|export| match export {
+        ExportInfoOfEntryModule::Default => match context.config.output.format {
+          ModuleFormat::CommonJs => "module.exports = entry.default || entry;".to_string(),
+          ModuleFormat::EsModule => "export default entry.default || entry;".to_string(),
+        },
+        ExportInfoOfEntryModule::Named { name, import_as } => {
+          if let Some(import_as) = import_as {
+            match context.config.output.format {
+              ModuleFormat::CommonJs => format!("exports.{} = entry.{}", import_as, name),
+              ModuleFormat::EsModule => format!(
+                "var {name}=entry.{name};export {{ {} as {} }}",
+                name, import_as
+              ),
+            }
+          } else {
+            match context.config.output.format {
+              ModuleFormat::CommonJs => format!("exports.{} = entry.{}", name, name),
+              ModuleFormat::EsModule => format!("var {name}=entry.{name};export {{ {} }}", name),
+            }
           }
-        } else {
-          // format!("export {{ {}: entry.{} }};", export, export)
-          panic!("named export is not supported");
         }
+        ExportInfoOfEntryModule::All => match context.config.output.format {
+          ModuleFormat::CommonJs => "module.exports = entry".to_string(),
+          ModuleFormat::EsModule => {
+            panic!("`export * from` is not supported in your entry module when target env is node")
+          }
+        },
+        ExportInfoOfEntryModule::CJS => match context.config.output.format {
+          ModuleFormat::CommonJs => "module.exports = entry;".to_string(),
+          ModuleFormat::EsModule => "export default entry;".to_string(),
+        },
       })
       .collect::<Vec<String>>()
       .join("")
