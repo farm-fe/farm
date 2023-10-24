@@ -38,11 +38,13 @@ export async function resolveServerUrls(
 
   const local: string[] = [];
   const network: string[] = [];
+  console.log(options.host);
+
   const hostname = await resolveHostname(options.host);
+
   const protocol = options.https ? 'https' : 'http';
   const port = address.port;
-  const base =
-    config.rawBase === './' || config.rawBase === '' ? '/' : config.rawBase;
+  const base = config.compilation.output.publicPath;
 
   if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
     let hostnameName = hostname.name;
@@ -99,7 +101,8 @@ export async function resolveHostname(
   }
 
   // Set host name to localhost when possible
-  const name = host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
+  const name =
+    host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
 
   return { host, name };
 }

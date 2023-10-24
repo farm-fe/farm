@@ -1,5 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
-import path from 'path';
+import type { UserConfig } from "@farmfe/core";
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -8,17 +7,17 @@ function defineConfig(config: UserConfig) {
 export default defineConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: "./index.html",
     },
     resolve: {
-      symlinks: true
+      symlinks: true,
     },
     define: {
-      BTN: 'Click me'
+      BTN: "Click me",
     },
     output: {
-      path: './build',
-      publicPath: 'public'
+      path: "./build",
+      publicPath: "public",
     },
     // sourcemap: true,
     css: {
@@ -26,34 +25,34 @@ export default defineConfig({
       //   indentName: 'farm-[name]-[hash]'
       // },
       prefixer: {
-        targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
-      }
+        targets: ["last 2 versions", "Firefox ESR", "> 1%", "ie >= 11"],
+      },
     },
     treeShaking: true,
   },
   server: {
     cors: true,
     port: 6260,
-    host: 'localhost'
+    host: true,
   },
   plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass',
+    "@farmfe/plugin-react",
+    "@farmfe/plugin-sass",
     {
-      name: 'plugin-finish-hook-test',
+      name: "plugin-finish-hook-test",
       finish: {
         executor(param, context, hookContext) {
           // console.log('plugin-finish-hook-test', param, context, hookContext);
-        }
-      }
+        },
+      },
     },
     {
-      name: 'plugin-hook-context-test',
+      name: "plugin-hook-context-test",
       load: {
         filters: {
           resolvedPaths: [
-            '.+main.tsx'
-          ]
+            ".+main.tsx",
+          ],
         },
         executor(param, context, hookContext) {
           // console.log('plugin-hook-context-test', param, context, hookContext);
@@ -62,7 +61,7 @@ export default defineConfig({
           //   resolvedPath: param.resolvedPath,
           //   name: "test.txt",
           //   // Buffer to number[]
-            
+
           //   content: [...Buffer.from("test")],
           //   resourceType: "txt"
           // });
@@ -71,17 +70,17 @@ export default defineConfig({
           // context.error('test');
           return null;
         },
-      }
+      },
     },
     {
-      name: 'plugin-update-modules-hook-test',
+      name: "plugin-update-modules-hook-test",
       updateModules: {
         executor(param, context, hookContext) {
           // console.log("params", param);
           // console.log("context", context);
           // console.log("hookContext", hookContext);
-        }
-      }
-    }
-  ]
+        },
+      },
+    },
+  ],
 });

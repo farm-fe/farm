@@ -19,6 +19,7 @@ import {
   UserConfig,
   UserServerConfig
 } from '../config/index.js';
+import { printServerUrls } from '../utils/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { openBrowser } from './openBrowser.js';
 import { brandColor, clearScreen, Logger } from '../utils/index.js';
@@ -32,8 +33,9 @@ import {
   resourcesPlugin
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-// import { resolveServerUrls } from "../utils/utils.js";
+import { resolveServerUrls } from '../utils/utils.js';
 
+// import type { IServerOptions } from "../config/types.js";
 /**
  * Farm Dev Server, responsible for:
  * * parse and normalize dev server options
@@ -103,7 +105,7 @@ export class DevServer implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
-    const { port, open, protocol, hostname, host } = this.config;
+    const { port, open, protocol, hostname } = this.config;
     let publicPath;
     if (urlRegex.test(this.publicPath)) {
       publicPath = '/';
@@ -128,12 +130,6 @@ export class DevServer implements ImplDevServer {
     const end = Date.now();
     await this.startServer(this.config);
     this.printUrls();
-    // await new Promise((resolve) => {
-    //   this.server.listen(port, host, () => {
-    //     resolve(true);
-    //   });
-    // });
-    this.error(port, host);
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       this.startDevLogger(start, end);
     if (open) {
@@ -141,24 +137,33 @@ export class DevServer implements ImplDevServer {
     }
   }
 
-  async startServer(serverOptions: NormalizedServerConfig) {
+  async startServer(serverOptions: UserServerConfig) {
     const { port, host } = serverOptions;
     await new Promise((resolve) => {
-      this.server.listen(port, host, () => {
-        resolve(true);
+      this.server.listen(port, host as string, () => {
+        resolve(port);
       });
+      this.error(port, host);
     });
   }
 
   async printUrls() {
-    // this._context.serverOptions.resolvedUrls =
-    const res = this.server.address();
-    console.log(res, '我是 res');
-    // await resolveServerUrls(
-    //   this.server,
-    //   this.config,
-    //   this.userConfig,
-    // );
+    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
+      this.server,
+      this.config,
+      this.userConfig
+    );
+    if (this._context.serverOptions.resolvedUrls) {
+      printServerUrls(
+        this._context.serverOptions.resolvedUrls,
+        this.config.host,
+        this.logger
+      );
+    } else {
+      throw new Error(
+        'cannot print server URLs before server.listen is called.'
+      );
+    }
   }
 
   async error(port: number, ip: string | boolean) {
@@ -206,7 +211,12 @@ export class DevServer implements ImplDevServer {
   createFarmServer(options: UserServerConfig) {
     const { https = false, host = 'localhost', plugins = [] } = options;
     const protocol = https ? 'https' : 'http';
-    const hostname = host === '0.0.0.0' ? 'localhost' : host;
+    let hostname;
+    if (typeof host !== 'boolean') {
+      hostname = host === '0.0.0.0' ? 'localhost' : host;
+    } else {
+      hostname = 'localhost';
+    }
     this.config = normalizeDevServerOptions(
       { ...options, protocol, hostname },
       'development'
@@ -219,7 +229,8 @@ export class DevServer implements ImplDevServer {
       app: this._app,
       server: this.server,
       compiler: this._compiler,
-      logger: this.logger
+      logger: this.logger,
+      serverOptions: this.config
     };
     this.resolvedFarmServerPlugins(plugins);
   }
@@ -260,7 +271,7 @@ export class DevServer implements ImplDevServer {
           httpServer.close();
           resolve(true);
         });
-        httpServer.listen(portToCheck, host);
+        httpServer.listen(portToCheck, host as string);
       });
     };
 

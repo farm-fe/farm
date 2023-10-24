@@ -5,6 +5,7 @@ import type { UserConfig } from './types.js';
 
 const compilationConfigSchema = z
   .object({
+    base: z.string().optional(),
     root: z.string().optional(),
     input: z.record(z.string()).optional(),
     output: z
@@ -38,7 +39,6 @@ const compilationConfigSchema = z
         z.boolean(),
         z.object({
           // TODO watcher config schema
-          /* your watcher config schema */
           ignored: z.array(z.string()).optional(),
           watchOptions: z
             .object({

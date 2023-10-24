@@ -110,18 +110,22 @@ export class DefaultLogger implements Logger {
 export function printServerUrls(
   urls: any,
   optionsHost: string | boolean | undefined,
-  info: Logger['info']
+  logger: Logger
 ): void {
   const colorUrl = (url: string) =>
     chalk.cyan(url.replace(/:(\d+)\//, (_, port) => `:${chalk.bold(port)}/`));
   for (const url of urls.local) {
-    info(`  ${chalk.green('➜')}  ${chalk.bold('Local')}:   ${colorUrl(url)}`);
+    logger.info(
+      `  ${chalk.green('➜')}  ${chalk.bold('Local')}:   ${colorUrl(url)}`
+    );
   }
   for (const url of urls.network) {
-    info(`  ${chalk.green('➜')}  ${chalk.bold('Network')}: ${colorUrl(url)}`);
+    logger.info(
+      `  ${chalk.green('➜')}  ${chalk.bold('Network')}: ${colorUrl(url)}`
+    );
   }
   if (urls.network.length === 0 && optionsHost === undefined) {
-    info(
+    logger.info(
       chalk.dim(`  ${chalk.green('➜')}  ${chalk.bold('Network')}: use `) +
         chalk.bold('--host') +
         chalk.dim(' to expose')

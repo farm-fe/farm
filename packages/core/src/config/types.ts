@@ -18,7 +18,7 @@ export interface UserServerConfig {
   proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
   open?: boolean;
-  host?: string;
+  host?: string | boolean;
   cors?: boolean | cors.Options;
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
@@ -31,6 +31,13 @@ export type NormalizedServerConfig = Required<
     hmr: Required<UserHmrConfig>;
   }
 >;
+
+export interface IServerOptions {
+  port?: number;
+  strictPort?: boolean | undefined;
+  host?: string | undefined;
+  logger?: Logger;
+}
 
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
@@ -81,6 +88,7 @@ export interface FarmCLIServerOptions {
   open?: boolean;
   https?: boolean;
   hmr?: boolean;
+  host?: any;
   strictPort?: boolean;
 }
 
