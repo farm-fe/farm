@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.11
+
+### Patch Changes
+
+- ac56943: Fix issues #652
+
 ## 0.13.10
 
 ### Patch Changes
