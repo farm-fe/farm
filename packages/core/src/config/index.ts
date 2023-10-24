@@ -342,8 +342,9 @@ export async function resolveUserConfig(
   userConfig.command = command;
 
   // check port availability: auto increment the port if a conflict occurs
-  const targetWeb =
-    userConfig.compilation?.output?.targetEnv !== 'node' || !userConfig.isBuild;
+  const targetWeb = !(
+    userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
+  );
 
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
