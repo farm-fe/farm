@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::Arc, time::SystemTime};
+use std::{collections::VecDeque, path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency},
@@ -6,13 +6,14 @@ use farmfe_core::{
   context::CompilationContext,
   dashmap::DashMap,
   hashbrown::HashSet,
-  module::{module_graph::ModuleGraph, Module, ModuleId},
+  module::{module_graph::ModuleGraph, ModuleId},
   parking_lot::Mutex,
   rayon::prelude::*,
   swc_common::{Mark, Span, SyntaxContext},
 };
 
 use farmfe_toolkit::{
+  resolve::load_package_json,
   script::swc_try_with::try_with,
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::{VisitMut, VisitMutWith},
@@ -20,7 +21,17 @@ use farmfe_toolkit::{
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   let resolved_path = module_id.resolved_path(root);
-  let file_meta = std::fs::metadata(resolved_path).unwrap();
+
+  if !PathBuf::from(&resolved_path).exists() {
+    return std::time::Instant::now().elapsed().as_nanos();
+  }
+
+  let file_meta = std::fs::metadata(resolved_path).unwrap_or_else(|_| {
+    panic!(
+      "Failed to get metadata of module {:?}",
+      module_id.resolved_path(root)
+    )
+  });
   let timestamp = file_meta
     .modified()
     .unwrap()
@@ -51,9 +62,8 @@ pub fn is_cache_enabled(immutable: bool, config: &Config) -> bool {
   false
 }
 
-pub fn try_get_module_cache_by_content_hash(
+pub fn try_get_module_cache(
   module_id: &ModuleId,
-  content: &str,
   immutable: bool,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
@@ -61,9 +71,14 @@ pub fn try_get_module_cache_by_content_hash(
     return Ok(None);
   }
 
+  println!(
+    "try get module cache: {:?} {}",
+    module_id,
+    context.cache_manager.module_cache.has_cache(module_id)
+  );
+
   if context.cache_manager.module_cache.has_cache(module_id) {
     let cached_module = context.cache_manager.module_cache.get_cache(module_id);
-
     return Ok(Some(cached_module));
   }
 
@@ -84,17 +99,9 @@ pub fn set_module_graph_cache(context: &Arc<CompilationContext>) {
   let mut cacheable_modules = HashSet::new();
 
   for module in module_graph.modules() {
-    let cache_key: String = get_module_cache_key(
-      &module.id,
-      if module.immutable {
-        None
-      } else {
-        Some(&module.source_content)
-      },
-    );
     // if cache is disabled for this kind of module or the module has already in the cache, skip it.
     if !is_cache_enabled(module.immutable, &context.config)
-      || context.cache_manager.module_cache.has_cache(&cache_key)
+      || context.cache_manager.module_cache.has_cache(&module.id)
     {
       continue;
     }
@@ -121,33 +128,40 @@ pub fn set_module_graph_cache(context: &Arc<CompilationContext>) {
     .into_par_iter()
     .filter(|module| cacheable_modules.contains(&module.id))
     .for_each(|module| {
-      let cache_key: String = get_module_cache_key(
-        &module.id,
-        if module.immutable {
-          None
-        } else {
-          Some(&module.source_content)
-        },
-      );
-
       // Replace the module with a placeholder module to prevent the module from being cloned
-      let module_id = module.id.clone();
-      let placeholder_module = Module::new(module_id.clone());
-      let built_module = std::mem::replace(module, placeholder_module);
-
-      let dependencies = cached_dependency_map.remove(&module_id).unwrap().1;
+      let cloned_module = module.clone();
+      let dependencies = cached_dependency_map.remove(&module.id).unwrap().1;
+      let package_info = load_package_json(
+        PathBuf::from(module.id.resolved_path(&context.config.root))
+          .parent()
+          .unwrap()
+          .to_path_buf(),
+        Default::default(),
+      );
+      let package_name = package_info
+        .as_ref()
+        .map(|info| info.name.clone())
+        .unwrap_or_default()
+        .unwrap_or_default();
+      let package_version = package_info
+        .as_ref()
+        .map(|info| info.version.clone())
+        .unwrap_or_default()
+        .unwrap_or_default();
 
       let cached_module = CachedModule {
-        module: built_module,
+        module: cloned_module,
         dependencies,
+        last_update_timestamp: get_timestamp_of_module(&module.id, &context.config.root),
+        content_hash: get_content_hash_of_module(&module.source_content),
+        package_name,
+        package_version,
       };
 
       context
         .cache_manager
         .module_cache
-        .set_cache(&cache_key, &cached_module);
-
-      *module = cached_module.module;
+        .set_cache(module.id.clone(), cached_module);
     });
 
   println!("set module graph cache costs {:?}", start.elapsed());
@@ -166,52 +180,60 @@ pub fn load_module_graph_cache_into_context(
   // 2. make module, resource pot, resource clone-able and call handle_cached_modules when write cache
   // 3. make write cache async in dev mode
   // 4. read and parse cache files in parallel
+
+  // TODO: ensure all dependencies of immutable modules are immutable too
   context
     .cache_manager
     .module_cache
     .get_initial_cached_modules()
     .into_par_iter()
     .try_for_each(|cached_module_id| {
-      let mut cached_module = context
-        .cache_manager
-        .module_cache
-        .get_cache_by_module_id(&cached_module_id);
+      let immutable = {
+        let mut cached_module = context
+          .cache_manager
+          .module_cache
+          .get_cache_mut_ref(&cached_module_id);
 
-      handle_cached_modules(&mut cached_module, context)?;
+        handle_cached_modules(cached_module.value_mut(), context)?;
+        cached_module.module.immutable
+      };
 
-      if cached_module.module.immutable {
-        let deps = &cached_module.dependencies;
+      if immutable {
+        let cached_module = context
+          .cache_manager
+          .module_cache
+          .get_cache(&cached_module_id);
+        // let deps = &cached_module.dependencies;
 
-        for dep in deps {
-          if context
-            .cache_manager
-            .module_cache
-            .has_cache(&dep.dependency)
-          {
-            let dep_cached_module_ref = context
-              .cache_manager
-              .module_cache
-              .get_cache_ref(&dep.dependency);
-            // mutable modules that are dependency of immutable modules should also be force cached.
-            // its content will not be checked neither.
-            let should_load_dep = !dep_cached_module_ref.module.immutable;
-
-            if should_load_dep {
-              let dep_cached_module = context
-                .cache_manager
-                .module_cache
-                .get_cache(&dep.dependency);
-              edges.lock().push((
-                dep_cached_module.module.id.clone(),
-                dep_cached_module.dependencies,
-              ));
-              context
-                .module_graph
-                .write()
-                .add_module(dep_cached_module.module);
-            }
-          }
-        }
+        // for dep in deps {
+        //   if context
+        //     .cache_manager
+        //     .module_cache
+        //     .has_cache(&dep.dependency)
+        //   {
+        //     let dep_cached_module_ref = context
+        //       .cache_manager
+        //       .module_cache
+        //       .get_cache_ref(&dep.dependency);
+        //     // mutable modules that are dependency of immutable modules should also be force cached.
+        //     // its content will not be checked neither.
+        //     if !dep_cached_module_ref.module.immutable {
+        //       println!("[warn] mutable module {:?} is dependency of immutable module {:?}, that's not expected, it will be force cached", dep.dependency, cached_module.module.id);
+        //       let dep_cached_module = context
+        //         .cache_manager
+        //         .module_cache
+        //         .get_cache(&dep.dependency);
+        //       edges.lock().push((
+        //         dep_cached_module.module.id.clone(),
+        //         dep_cached_module.dependencies,
+        //       ));
+        //       context
+        //         .module_graph
+        //         .write()
+        //         .add_module(dep_cached_module.module);
+        //     }
+        //   }
+        // }
         edges
           .lock()
           .push((cached_module.module.id.clone(), cached_module.dependencies));

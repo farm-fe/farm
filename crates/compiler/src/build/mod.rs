@@ -35,8 +35,8 @@ use crate::{
 };
 
 use self::module_cache::{
-  clear_unused_cached_modules, load_module_graph_cache_into_context, set_module_graph_cache,
-  try_get_module_cache,
+  clear_unused_cached_modules, get_content_hash_of_module, get_timestamp_of_module,
+  load_module_graph_cache_into_context, set_module_graph_cache, try_get_module_cache,
 };
 
 macro_rules! call_and_catch_error {
@@ -201,6 +201,44 @@ impl Compiler {
     context: &Arc<CompilationContext>,
   ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
     // return the cached module if cache found using timestamp
+    let mut cached_module = try_get_module_cache(&module.id, module.immutable, context)?;
+    // println!(
+    //   "cached module size: {:?} {:?}",
+    //   context
+    //     .cache_manager
+    //     .module_cache
+    //     .get_initial_cached_modules()
+    //     .len(),
+    //   context
+    //     .cache_manager
+    //     .module_cache
+    //     .get_initial_cached_modules()
+    //     .get(0)
+    // );
+    if let Some(cached_module_ref) = &cached_module {
+      println!(
+        "{}, use cached module: {:?} by timestamp. {} : {}",
+        context.config.persistent_cache.timestamp_enabled(),
+        module.id,
+        cached_module_ref.last_update_timestamp,
+        get_timestamp_of_module(&module.id, &context.config.root)
+      );
+      // if timestamp is not changed, return the cached module
+      if context.config.persistent_cache.timestamp_enabled()
+        && cached_module_ref.last_update_timestamp
+          == get_timestamp_of_module(&module.id, &context.config.root)
+      {
+        println!("use cached module: {:?} by timestamp", module.id);
+        let cached_module = cached_module.take().unwrap();
+        *module = cached_module.module;
+        return Ok(CachedModule::dep_sources(cached_module.dependencies));
+      } else {
+        context
+          .cache_manager
+          .module_cache
+          .invalidate_cache(&module.id);
+      }
+    }
 
     let hook_context = PluginHookContext {
       caller: None,
@@ -273,21 +311,30 @@ impl Compiler {
     module.source_content = transform_result.content.clone();
 
     // skip building if the module is already built and the cache is enabled
-    if let Some(cached_module) = try_get_module_cache(&cache_key, module.immutable, context)? {
-      *module = cached_module.module;
-      return Ok(CachedModule::dep_sources(cached_module.dependencies));
-    } else {
-      let deps = Self::build_module_after_transform(
-        resolve_result,
-        load_module_type,
-        transform_result,
-        module,
-        context,
-        &hook_context,
-      )?;
-
-      Ok(deps)
+    if let Some(cached_module) = cached_module {
+      if context.config.persistent_cache.hash_enabled()
+        && cached_module.content_hash == get_content_hash_of_module(&transform_result.content)
+      {
+        *module = cached_module.module;
+        return Ok(CachedModule::dep_sources(cached_module.dependencies));
+      } else {
+        context
+          .cache_manager
+          .module_cache
+          .invalidate_cache(&module.id);
+      }
     }
+
+    let deps = Self::build_module_after_transform(
+      resolve_result,
+      load_module_type,
+      transform_result,
+      module,
+      context,
+      &hook_context,
+    )?;
+
+    Ok(deps)
   }
 
   fn build_module_after_transform(

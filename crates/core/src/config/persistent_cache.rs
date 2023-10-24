@@ -16,6 +16,20 @@ impl PersistentCacheConfig {
     }
   }
 
+  pub fn timestamp_enabled(&self) -> bool {
+    match self {
+      PersistentCacheConfig::Bool(b) => *b,
+      PersistentCacheConfig::Obj(obj) => obj.module_cache_key_strategy.timestamp,
+    }
+  }
+
+  pub fn hash_enabled(&self) -> bool {
+    match self {
+      PersistentCacheConfig::Bool(b) => *b,
+      PersistentCacheConfig::Obj(obj) => obj.module_cache_key_strategy.hash,
+    }
+  }
+
   pub fn get_default_config(root: &str, config_file_path: &str) -> Self {
     let cache_dir = RelativePath::new("node_modules/.farm/cache")
       .to_logical_path(&root)

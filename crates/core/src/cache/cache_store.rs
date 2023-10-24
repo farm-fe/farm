@@ -29,10 +29,6 @@ impl CacheStore {
       cache_dir.push("production");
     }
 
-    if cache_dir_str.len() > 0 && !cache_dir.exists() {
-      std::fs::create_dir_all(&cache_dir).unwrap();
-    }
-
     Self {
       cache_dir,
       namespace: namespace.to_string(),
@@ -48,6 +44,7 @@ impl CacheStore {
   /// Write the cache map to the disk.
   /// A cache file will be created for every 1000 items.
   pub fn write_cache(&self, cache_map: HashMap<String, Vec<u8>>, cache_type: &str) {
+    let start = std::time::Instant::now();
     let cache_file_dir = self.cache_dir.join(cache_type);
     // clear the cache file dir
     if cache_file_dir.exists() {
@@ -87,9 +84,11 @@ impl CacheStore {
       let bytes = serialize!(&cache_content);
       std::fs::write(file_path, bytes).unwrap();
     }
+    println!("[store] write cache time: {:?}", start.elapsed());
   }
 
   pub fn read_cache(&self, cache_type: &str) -> HashMap<String, Vec<u8>> {
+    let start = std::time::Instant::now();
     let cache_file_dir = self.cache_dir.join(cache_type);
     // read all cache files from the cache file dir
     let mut cache_map = HashMap::new();
@@ -104,7 +103,7 @@ impl CacheStore {
               .file_name()
               .to_string_lossy()
               .to_string()
-              .starts_with("farm-cache-part-")
+              .starts_with(self.namespace.as_str())
           {
             let bytes = std::fs::read(file_path).unwrap();
             let cache_content: CacheContentFile = deserialize!(&bytes, CacheContentFile);
@@ -115,6 +114,8 @@ impl CacheStore {
         }
       }
     }
+
+    println!("[store] read cache time: {:?}", start.elapsed());
 
     cache_map
   }
