@@ -1474,6 +1474,7 @@ name = "farmfe_swc_transformer_import_glob"
 version = "0.0.1"
 dependencies = [
  "glob",
+ "relative-path",
  "swc_common",
  "swc_ecma_ast",
  "swc_ecma_visit",
