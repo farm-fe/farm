@@ -38,8 +38,6 @@ export async function resolveServerUrls(
 
   const local: string[] = [];
   const network: string[] = [];
-  console.log(options.host);
-
   const hostname = await resolveHostname(options.host);
 
   const protocol = options.https ? 'https' : 'http';

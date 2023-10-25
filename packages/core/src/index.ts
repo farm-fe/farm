@@ -56,9 +56,9 @@ export async function start(
 
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
-    logger.info(
-      'HMR enabled, watching for file changes under ' + chalk.green(config.root)
-    );
+    // logger.info(
+    //   'HMR enabled, watching for file changes under ' + chalk.green(config.root)
+    // );
 
     if (normalizedConfig.config.mode === 'production') {
       logger.error(

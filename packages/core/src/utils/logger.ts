@@ -116,17 +116,17 @@ export function printServerUrls(
     chalk.cyan(url.replace(/:(\d+)\//, (_, port) => `:${chalk.bold(port)}/`));
   for (const url of urls.local) {
     logger.info(
-      `  ${chalk.green('➜')}  ${chalk.bold('Local')}:   ${colorUrl(url)}`
+      `${chalk.magenta('➡️')} ${chalk.bold('Local')}:   ${colorUrl(url)}`
     );
   }
   for (const url of urls.network) {
     logger.info(
-      `  ${chalk.green('➜')}  ${chalk.bold('Network')}: ${colorUrl(url)}`
+      `${chalk.magenta('➡️')} ${chalk.bold('Network')}: ${colorUrl(url)}`
     );
   }
   if (urls.network.length === 0 && optionsHost === undefined) {
     logger.info(
-      chalk.dim(`  ${chalk.green('➜')}  ${chalk.bold('Network')}: use `) +
+      chalk.dim(`${chalk.magenta('➡️')} ${chalk.bold('Network')}: use `) +
         chalk.bold('--host') +
         chalk.dim(' to expose')
     );

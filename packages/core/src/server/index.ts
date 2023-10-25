@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import Koa from 'koa';
 import { WebSocketServer } from 'ws';
 import chalk from 'chalk';
-import boxen from 'boxen';
-import figlet from 'figlet';
+// import boxen from "boxen";
+// import figlet from "figlet";
 import { Compiler } from '../compiler/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
@@ -34,8 +34,8 @@ import {
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/utils.js';
-
 // import type { IServerOptions } from "../config/types.js";
+
 /**
  * Farm Dev Server, responsible for:
  * * parse and normalize dev server options
@@ -127,11 +127,28 @@ export class DevServer implements ImplDevServer {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this._compiler.writeResourcesToDisk(base);
     }
+
+    const version = JSON.parse(
+      readFileSync(
+        join(fileURLToPath(import.meta.url), '../../../package.json'),
+        'utf-8'
+      )
+    ).version;
     const end = Date.now();
     await this.startServer(this.config);
-    this.printUrls();
+    console.log('\n', chalk.bold(brandColor(`${'🗲'}  Farm  v${version}`)));
+    console.log(
+      `${chalk.green.bold(` ✓`)}  Ready in ${chalk.green.bold(
+        `${end - start}ms`
+      )}`,
+      '\n'
+    );
+
+    // this.printUrls();
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      this.startDevLogger(start, end);
+      // this.startDevLogger(start, end);
+      this.printUrls();
+
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
     }
@@ -310,44 +327,48 @@ export class DevServer implements ImplDevServer {
     resolvedPlugins.forEach((plugin) => plugin(this));
   }
 
-  private startDevLogger(start: number, end: number) {
-    const { port, protocol, hostname } = this.config;
-    const version = JSON.parse(
-      readFileSync(
-        join(fileURLToPath(import.meta.url), '../../../package.json'),
-        'utf-8'
-      )
-    ).version;
-    let publicPath;
-    if (urlRegex.test(this.publicPath)) {
-      publicPath = '/';
-    } else {
-      publicPath = this.publicPath.startsWith('/')
-        ? this.publicPath
-        : `/${this.publicPath}`;
-    }
-    this.logger.info(
-      boxen(
-        `${brandColor(
-          figlet.textSync('FARM', {
-            width: 40
-          })
-        )}
-  Version ${chalk.green.bold(version)}
+  // private startDevLogger(start: number, end: number) {
+  //   const { port, protocol, hostname } = this.config;
+  //   const version = JSON.parse(
+  //     readFileSync(
+  //       join(fileURLToPath(import.meta.url), "../../../package.json"),
+  //       "utf-8",
+  //     ),
+  //   ).version;
+  //   let publicPath;
+  //   if (urlRegex.test(this.publicPath)) {
+  //     publicPath = "/";
+  //   } else {
+  //     publicPath = this.publicPath.startsWith("/")
+  //       ? this.publicPath
+  //       : `/${this.publicPath}`;
+  //   }
+  //   this.logger.info(
+  //     boxen(
+  //       `${
+  //         brandColor(
+  //           figlet.textSync("FARM", {
+  //             width: 40,
+  //           }),
+  //         )
+  //       }
+  // Version ${chalk.green.bold(version)}
 
-  🔥 Ready on ${chalk.green.bold(
-    `${protocol}://${hostname}:${port}${publicPath}`
-  )} in ${chalk.green.bold(`${end - start}ms`)}.
-    `,
-        {
-          padding: 1,
-          margin: 1,
-          align: 'center',
-          borderColor: 'cyan',
-          borderStyle: 'round'
-        }
-      ),
-      false
-    );
-  }
+  // 🔥 Ready on ${
+  //         chalk.green.bold(
+  //           `${protocol}://${hostname}:${port}${publicPath}`,
+  //         )
+  //       } in ${chalk.green.bold(`${end - start}ms`)}.
+  //   `,
+  //       {
+  //         padding: 1,
+  //         margin: 1,
+  //         align: "center",
+  //         borderColor: "cyan",
+  //         borderStyle: "round",
+  //       },
+  //     ),
+  //     false,
+  //   );
+  // }
 }
