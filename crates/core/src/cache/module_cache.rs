@@ -2,7 +2,7 @@ use dashmap::mapref::one::{Ref, RefMut};
 use dashmap::{DashMap, DashSet};
 use rayon::prelude::*;
 use rkyv::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use farmfe_macro_cache_item::cache_item;
 
@@ -17,15 +17,17 @@ use super::cache_store::CacheStore;
 pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   store: CacheStore,
-  /// cache map for cache_key -> serialized CachedModule.
+  /// cache map for cache_key -> CachedModule.
   /// It's used for writing or reading data from store. New added cache will be also inserted into it directly.
   cache: DashMap<ModuleId, CachedModule>,
+  initial_cached_bytes: DashMap<String, Vec<u8>>,
   initial_cached_modules_map: DashMap<ModuleId, CachedModule>,
+  initial_cached_modules: HashSet<ModuleId>,
   invalidated_cached_modules: DashSet<ModuleId>,
 }
 
 #[cache_item]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CachedModuleDependency {
   pub dependency: ModuleId,
   pub edge_info: ModuleGraphEdge,
@@ -67,9 +69,10 @@ impl ModuleCacheManager {
     let start = std::time::Instant::now();
 
     let store = CacheStore::new(cache_dir_str, namespace, mode);
-    let cache = store
-      .read_cache("module")
-      .into_par_iter()
+    let initial_cached_bytes = store.read_cache("module");
+
+    let cache = initial_cached_bytes
+      .par_iter()
       .map(|item| {
         let (key, value) = item;
         let cached_module = deserialize!(&value, CachedModule);
@@ -79,15 +82,21 @@ impl ModuleCacheManager {
 
     let initial_cached_modules_map = cache.clone();
 
+    let initial_cached_modules = cache
+      .iter()
+      .map(|item| item.0.clone())
+      .collect::<HashSet<_>>();
     let cache = cache.into_iter().collect();
     let initial_cached_modules_map = initial_cached_modules_map.into_iter().collect();
-
-    println!("read cache time: {:?}", start.elapsed());
+    let initial_cached_bytes = initial_cached_bytes.into_iter().collect();
+    println!("read module cache time: {:?}", start.elapsed());
 
     Self {
       store,
       cache,
+      initial_cached_bytes,
       initial_cached_modules_map,
+      initial_cached_modules,
       invalidated_cached_modules: DashSet::new(),
     }
   }
@@ -129,26 +138,30 @@ impl ModuleCacheManager {
     let mut cache_map = HashMap::new();
 
     for item in self.cache.iter() {
-      let bytes = crate::serialize!(item.value());
-      cache_map.insert(item.key().to_string(), bytes);
+      let key_str = item.key().to_string();
+
+      if let Some((key, bytes)) = self.initial_cached_bytes.remove(&key_str) {
+        cache_map.insert(key, bytes);
+      } else {
+        let bytes = crate::serialize!(item.value());
+        cache_map.insert(key_str, bytes);
+      }
     }
 
     self.store.write_cache(cache_map, "module");
   }
 
   pub fn is_initial_cache(&self, module_id: &ModuleId) -> bool {
-    self.initial_cached_modules_map.contains_key(module_id)
+    self.initial_cached_modules.contains(module_id)
+      && !self.invalidated_cached_modules.contains(module_id)
   }
 
   pub fn get_initial_cached_modules(&self) -> Vec<ModuleId> {
-    self
-      .initial_cached_modules_map
-      .iter()
-      .map(|item| item.key().clone())
-      .collect()
+    self.initial_cached_modules.iter().cloned().collect()
   }
 
   pub fn invalidate_cache(&self, module_id: &ModuleId) {
+    self.cache.remove(module_id);
     self.invalidated_cached_modules.insert(module_id.clone());
   }
 }

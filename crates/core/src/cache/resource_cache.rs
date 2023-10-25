@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use rayon::prelude::*;
 use rkyv::Deserialize;
 use std::collections::HashMap;
 
@@ -18,20 +19,33 @@ pub struct ResourceCacheManager {
 
 impl ResourceCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
-    let mut store = CacheStore::new(cache_dir_str, namespace, mode.clone());
-    let mut resource_pot_meta_store = CacheStore::new(cache_dir_str, namespace, mode);
+    let start = std::time::Instant::now();
+    let store = CacheStore::new(cache_dir_str, namespace, mode.clone());
+    let resource_pot_meta_store = CacheStore::new(cache_dir_str, namespace, mode);
 
-    let cache = store.read_cache("resource");
-    let resource_pot_meta_cache = store.read_cache("resource_pot_meta");
+    let mut res = vec!["resource", "resource_pot_meta"]
+      .into_par_iter()
+      .map(|key| {
+        store
+          .read_cache(key)
+          .into_iter()
+          .map(|(key, value)| (key, value))
+          .collect::<DashMap<String, Vec<u8>>>()
+      })
+      .collect::<Vec<_>>();
+    let resource_pot_meta_cache = res.remove(1);
+    let cache = res.remove(0);
 
     let cache = cache
       .into_iter()
-      .map(|(key, value)| (key, value.to_vec()))
+      .map(|(key, value)| (key, value))
       .collect::<DashMap<String, Vec<u8>>>();
     let resource_pot_meta_cache = resource_pot_meta_cache
       .into_iter()
-      .map(|(key, value)| (key, value.to_vec()))
+      .map(|(key, value)| (key, value))
       .collect::<DashMap<String, Vec<u8>>>();
+
+    println!("read resource cache time: {:?}", start.elapsed());
 
     Self {
       store,
@@ -75,8 +89,7 @@ impl ResourceCacheManager {
     }
   }
 
-  /// Write the cache map to the disk.
-  pub fn write_cache(&self) {
+  pub fn write_resource_cache(&self) {
     let mut cache_map = HashMap::new();
 
     for item in self.cache.iter() {
@@ -84,7 +97,9 @@ impl ResourceCacheManager {
     }
 
     self.store.write_cache(cache_map, "resource");
+  }
 
+  pub fn write_resource_pot_meta_cache(&self) {
     let mut resource_pot_meta_cache_map = HashMap::new();
 
     for item in self.resource_pot_meta_cache.iter() {
@@ -94,5 +109,20 @@ impl ResourceCacheManager {
     self
       .resource_pot_meta_store
       .write_cache(resource_pot_meta_cache_map, "resource_pot_meta");
+  }
+
+  /// Write the cache map to the disk.
+  pub fn write_cache(&self) {
+    // write cache in parallel
+    let thread_pool = rayon::ThreadPoolBuilder::new()
+      .num_threads(2)
+      .build()
+      .unwrap();
+    thread_pool.install(|| {
+      rayon::join(
+        || self.write_resource_cache(),
+        || self.write_resource_pot_meta_cache(),
+      );
+    });
   }
 }

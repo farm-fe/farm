@@ -17,17 +17,21 @@ pub fn get_resource_cache_key(
   resource_pot: &ResourcePot,
   context: &Arc<CompilationContext>,
 ) -> String {
-  let module_graph = context.module_graph.read();
-  let mut code = String::new();
+  // if tree shaking is not enabled, we don't need to cache used_exports
+  if !context.config.tree_shaking {
+    resource_pot.id.to_string()
+  } else {
+    let module_graph = context.module_graph.read();
+    let mut code = resource_pot.id.to_string();
 
-  for module_id in &resource_pot.modules() {
-    let module = module_graph.module(module_id).unwrap();
-    code.push_str(&module.id.to_string());
-    // make sure cache is correct when tree shaking is enabled
-    code.push_str(&module.used_exports.join(","));
+    for module_id in &resource_pot.modules() {
+      let module = module_graph.module(module_id).unwrap();
+      // make sure cache is correct when tree shaking is enabled
+      code.push_str(&module.used_exports.join(","));
+    }
+
+    farmfe_toolkit::hash::sha256(&code.as_bytes(), 32)
   }
-
-  farmfe_toolkit::hash::sha256(&code.as_bytes(), 32)
 }
 
 pub fn try_get_resource_cache(
@@ -35,6 +39,7 @@ pub fn try_get_resource_cache(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<(ResourcePotMetaData, Resource)>> {
   if !is_cache_enabled(resource_pot.immutable, &context.config) {
+    println!("cache disabled : {:?}", resource_pot.id);
     return Ok(None);
   }
 
@@ -52,6 +57,7 @@ pub fn try_get_resource_cache(
       .resource_cache
       .has_resource_pot_meta_cache(&cache_key)
   {
+    println!("cache not found : {:?}", resource_pot.id);
     return Ok(None);
   }
 
@@ -61,6 +67,10 @@ pub fn try_get_resource_cache(
       .module_cache
       .is_initial_cache(module_id)
     {
+      println!(
+        "cache not found as module {module_id:?} does not been cached : {:?}",
+        resource_pot.id
+      );
       return Ok(None);
     }
   }

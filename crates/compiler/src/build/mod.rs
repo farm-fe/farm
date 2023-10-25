@@ -202,37 +202,18 @@ impl Compiler {
   ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
     // return the cached module if cache found using timestamp
     let mut cached_module = try_get_module_cache(&module.id, module.immutable, context)?;
-    // println!(
-    //   "cached module size: {:?} {:?}",
-    //   context
-    //     .cache_manager
-    //     .module_cache
-    //     .get_initial_cached_modules()
-    //     .len(),
-    //   context
-    //     .cache_manager
-    //     .module_cache
-    //     .get_initial_cached_modules()
-    //     .get(0)
-    // );
+
     if let Some(cached_module_ref) = &cached_module {
-      println!(
-        "{}, use cached module: {:?} by timestamp. {} : {}",
-        context.config.persistent_cache.timestamp_enabled(),
-        module.id,
-        cached_module_ref.last_update_timestamp,
-        get_timestamp_of_module(&module.id, &context.config.root)
-      );
       // if timestamp is not changed, return the cached module
       if context.config.persistent_cache.timestamp_enabled()
         && cached_module_ref.last_update_timestamp
           == get_timestamp_of_module(&module.id, &context.config.root)
       {
-        println!("use cached module: {:?} by timestamp", module.id);
         let cached_module = cached_module.take().unwrap();
         *module = cached_module.module;
         return Ok(CachedModule::dep_sources(cached_module.dependencies));
-      } else {
+      } else if !context.config.persistent_cache.hash_enabled() {
+        // invalidate cache if hash is not enabled
         context
           .cache_manager
           .module_cache

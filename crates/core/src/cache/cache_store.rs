@@ -105,7 +105,12 @@ impl CacheStore {
               .to_string()
               .starts_with(self.namespace.as_str())
           {
+            let start = std::time::Instant::now();
             let bytes = std::fs::read(file_path).unwrap();
+            println!(
+              "[store] read {cache_type} cache file time: {:?}",
+              start.elapsed()
+            );
             let cache_content: CacheContentFile = deserialize!(&bytes, CacheContentFile);
             cache_map.extend(cache_content.list);
           }
@@ -115,7 +120,10 @@ impl CacheStore {
       }
     }
 
-    println!("[store] read cache time: {:?}", start.elapsed());
+    println!(
+      "[store] read {cache_type} cache time: {:?}",
+      start.elapsed()
+    );
 
     cache_map
   }

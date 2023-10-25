@@ -5,9 +5,8 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   dashmap::DashMap,
-  hashbrown::HashSet,
+  hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, ModuleId},
-  parking_lot::Mutex,
   rayon::prelude::*,
   swc_common::{Mark, Span, SyntaxContext},
 };
@@ -71,12 +70,6 @@ pub fn try_get_module_cache(
     return Ok(None);
   }
 
-  println!(
-    "try get module cache: {:?} {}",
-    module_id,
-    context.cache_manager.module_cache.has_cache(module_id)
-  );
-
   if context.cache_manager.module_cache.has_cache(module_id) {
     let cached_module = context.cache_manager.module_cache.get_cache(module_id);
     return Ok(Some(cached_module));
@@ -101,7 +94,10 @@ pub fn set_module_graph_cache(context: &Arc<CompilationContext>) {
   for module in module_graph.modules() {
     // if cache is disabled for this kind of module or the module has already in the cache, skip it.
     if !is_cache_enabled(module.immutable, &context.config)
-      || context.cache_manager.module_cache.has_cache(&module.id)
+      || context
+        .cache_manager
+        .module_cache
+        .is_initial_cache(&module.id)
     {
       continue;
     }
@@ -167,13 +163,53 @@ pub fn set_module_graph_cache(context: &Arc<CompilationContext>) {
   println!("set module graph cache costs {:?}", start.elapsed());
 }
 
+fn load_module_cache_into_context(
+  cached_module_id: &ModuleId,
+  visited: &mut HashMap<ModuleId, bool>,
+  context: &Arc<CompilationContext>,
+) -> bool {
+  if visited.contains_key(cached_module_id) {
+    return visited[cached_module_id];
+  }
+
+  if !context
+    .cache_manager
+    .module_cache
+    .has_cache(cached_module_id)
+  {
+    visited.insert(cached_module_id.clone(), false);
+    return false;
+  }
+  // if cycle detected, return true to skip this module
+  visited.insert(cached_module_id.clone(), true);
+
+  let cached_module = context
+    .cache_manager
+    .module_cache
+    .get_cache_ref(&cached_module_id);
+
+  if !cached_module.module.immutable {
+    visited.insert(cached_module_id.clone(), false);
+    return false;
+  }
+  for dep in &cached_module.dependencies {
+    if !load_module_cache_into_context(&dep.dependency, visited, context) {
+      visited.insert(cached_module_id.clone(), false);
+      return false;
+    }
+  }
+
+  visited.insert(cached_module_id.clone(), true);
+
+  true
+}
+
 /// Load module graph cache to context.
-/// All immutable modules and all of its dependencies (including mutable modules) will be loaded into context.module_graph
+/// All immutable modules and all of its immutable dependencies will be loaded into context.module_graph
 pub fn load_module_graph_cache_into_context(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
   let start = std::time::Instant::now();
-  let edges = Mutex::new(vec![]);
 
   // TODO: Optimize:
   // 1. skip load and transform when then the modified time stamp is not changed. add system info as part of its cache key
@@ -181,74 +217,48 @@ pub fn load_module_graph_cache_into_context(
   // 3. make write cache async in dev mode
   // 4. read and parse cache files in parallel
 
-  // TODO: ensure all dependencies of immutable modules are immutable too
   context
     .cache_manager
     .module_cache
     .get_initial_cached_modules()
-    .into_par_iter()
+    .into_iter()
     .try_for_each(|cached_module_id| {
-      let immutable = {
-        let mut cached_module = context
-          .cache_manager
-          .module_cache
-          .get_cache_mut_ref(&cached_module_id);
+      let mut cached_module = context
+        .cache_manager
+        .module_cache
+        .get_cache_mut_ref(&cached_module_id);
 
-        handle_cached_modules(cached_module.value_mut(), context)?;
-        cached_module.module.immutable
-      };
+      handle_cached_modules(cached_module.value_mut(), context)
+    })?;
 
-      if immutable {
+  let mut visited = HashMap::new();
+
+  context
+    .cache_manager
+    .module_cache
+    .get_initial_cached_modules()
+    .into_iter()
+    .for_each(|cached_module_id| {
+      load_module_cache_into_context(&cached_module_id, &mut visited, context);
+    });
+
+  let mut module_graph = context.module_graph.write();
+  let mut edges = vec![];
+
+  visited
+    .into_iter()
+    .for_each(|(cached_module_id, is_cached)| {
+      if is_cached {
         let cached_module = context
           .cache_manager
           .module_cache
           .get_cache(&cached_module_id);
-        // let deps = &cached_module.dependencies;
-
-        // for dep in deps {
-        //   if context
-        //     .cache_manager
-        //     .module_cache
-        //     .has_cache(&dep.dependency)
-        //   {
-        //     let dep_cached_module_ref = context
-        //       .cache_manager
-        //       .module_cache
-        //       .get_cache_ref(&dep.dependency);
-        //     // mutable modules that are dependency of immutable modules should also be force cached.
-        //     // its content will not be checked neither.
-        //     if !dep_cached_module_ref.module.immutable {
-        //       println!("[warn] mutable module {:?} is dependency of immutable module {:?}, that's not expected, it will be force cached", dep.dependency, cached_module.module.id);
-        //       let dep_cached_module = context
-        //         .cache_manager
-        //         .module_cache
-        //         .get_cache(&dep.dependency);
-        //       edges.lock().push((
-        //         dep_cached_module.module.id.clone(),
-        //         dep_cached_module.dependencies,
-        //       ));
-        //       context
-        //         .module_graph
-        //         .write()
-        //         .add_module(dep_cached_module.module);
-        //     }
-        //   }
-        // }
-        edges
-          .lock()
-          .push((cached_module.module.id.clone(), cached_module.dependencies));
-        context
-          .module_graph
-          .write()
-          .add_module(cached_module.module);
+        module_graph.add_module(cached_module.module);
+        edges.push((cached_module_id, cached_module.dependencies));
       }
+    });
 
-      Ok(())
-    })?;
-
-  let mut module_graph = context.module_graph.write();
-
-  for (from, edges) in edges.lock().drain(..) {
+  for (from, edges) in edges {
     {
       for edge in edges {
         module_graph
