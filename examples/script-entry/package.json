@@ -1,6 +1,6 @@
 {
   "name": "@farmfe-examples/script-entry",
-  "version": "0.0.76",
+  "version": "0.0.77",
   "private": true,
   "dependencies": {
     "@farmfe/cli": "workspace:*",
