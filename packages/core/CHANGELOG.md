@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.12
+
+### Patch Changes
+
+- 228ca7e: Support Vite-style `import.meta.glob`
+
 ## 0.13.11
 
 ### Patch Changes
