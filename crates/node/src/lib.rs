@@ -54,11 +54,22 @@ pub struct JsUpdateResult {
   pub extra_watch_result: WatchDiffResult,
 }
 
+#[napi(object, js_name = "ResolveRecord")]
+pub struct JsResolveRecord {
+  pub plugin: String,
+  pub hook: String,
+  pub source: String,
+  pub importer: Option<String>,
+  pub kind: String,
+}
+
 #[napi(object, js_name = "TransformRecord")]
 pub struct JsTransformRecord {
-  pub name: String,
-  pub result: String,
+  pub plugin: String,
+  pub hook: String,
+  pub content: String,
   pub source_maps: Option<String>,
+  pub module_type: String,
 }
 
 #[napi(object, js_name = "ModuleRecord")]
@@ -78,11 +89,20 @@ pub struct JsAnalyzeDepsRecord {
   pub deps: Vec<JsAnalyzeDep>,
 }
 
-#[napi(object, js_name = "ModuleId")]
-pub struct JsModuleId {
-  pub relative_path: String,
-  pub query: String,
+#[derive(Debug)]
+#[napi(object, js_name = "Module")]
+pub struct JsModule {
+  pub id: String,
+  pub module_type: String,
+  // todo
+  // pub module_groups: Vec<String>,
+  // pub resource_pot: Option<String>,
+  pub side_effects: bool,
+  pub source_map_chain: Vec<String>,
+  pub external: bool,
+  pub immutable: bool,
 }
+
 #[napi(object, js_name = "ResourcePotRecord")]
 pub struct JsResourcePotRecord {
   pub name: String,
@@ -359,10 +379,39 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn get_resolve_records(&self) -> Vec<String> {
+  pub fn modules(&self) -> Vec<JsModule> {
+    let context = self.compiler.context();
+    let module_graph = context.module_graph.read();
+    module_graph
+      .modules()
+      .into_iter()
+      .map(|m| JsModule {
+        id: m.id.resolved_path(&context.config.root) + m.id.query_string(),
+        module_type: m.module_type.to_string(),
+        side_effects: m.side_effects,
+        source_map_chain: m.source_map_chain.clone(),
+        external: m.external,
+        immutable: m.immutable,
+      })
+      .collect()
+  }
+
+  #[napi]
+  pub fn get_resolve_records_by_id(&self, id: String) -> Vec<JsResolveRecord> {
     let context = self.compiler.context();
     let record_manager = &context.record_manager;
-    record_manager.get_resolve_records()
+    let resolve_records = record_manager.get_resolve_records_by_id(&id);
+    let js_resolve_records: Vec<JsResolveRecord> = resolve_records
+      .into_iter()
+      .map(|record| JsResolveRecord {
+        plugin: record.plugin,
+        hook: record.hook,
+        source: record.source,
+        importer: record.importer,
+        kind: record.kind,
+      })
+      .collect();
+    js_resolve_records
   }
 
   #[napi]
@@ -373,8 +422,10 @@ impl JsCompiler {
     let js_transform_records: Vec<JsTransformRecord> = transform_records
       .into_iter()
       .map(|record| JsTransformRecord {
-        name: record.name,
-        result: record.result,
+        plugin: record.plugin,
+        hook: record.hook,
+        content: record.content,
+        module_type: record.module_type.to_string(),
         source_maps: record.source_maps,
       })
       .collect();

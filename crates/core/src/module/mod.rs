@@ -392,6 +392,10 @@ impl ModuleId {
     &self.relative_path
   }
 
+  pub fn query_string(&self) -> &str {
+    &self.query_string
+  }
+
   /// transform the id back to resolved path
   pub fn resolved_path(&self, root: &str) -> String {
     // if self.relative_path is absolute path, return it directly
