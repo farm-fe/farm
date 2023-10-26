@@ -28,9 +28,9 @@ export function lazyCompilation(server: DevServer) {
       const start = Date.now();
       const result = await compiler.update(paths);
       server.logger.info(
-        `Lazy compilation done for ${chalk.cyan(pathsStr)} in ${chalk.green(
-          `${Date.now() - start}ms`
-        )}.`
+        `${chalk.green.bold(`✓`)} Lazy compilation done for ${chalk.cyan(
+          pathsStr
+        )} in ${chalk.green(`${Date.now() - start}ms`)}.`
       );
 
       server.hmrEngine.callUpdates(result);

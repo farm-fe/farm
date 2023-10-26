@@ -136,7 +136,7 @@ export class DevServer implements ImplDevServer {
     ).version;
     const end = Date.now();
     await this.startServer(this.config);
-    console.log('\n', chalk.bold(brandColor(`${'🗲'}  Farm  v${version}`)));
+    console.log('\n', chalk.bold(brandColor(`${'ϟ'}  Farm  v${version}`)));
     console.log(
       `${chalk.green.bold(` ✓`)}  Ready in ${chalk.green.bold(
         `${end - start}ms`
