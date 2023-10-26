@@ -7,8 +7,9 @@ description = "farm utils"
 license = "MIT"
 
 [dependencies]
-glob = "0.3"
-relative-path = "1.7"
-swc_ecma_ast = { version = "0.107.2", features = ["rkyv-impl", "serde-impl"] }
-swc_common = { version = "0.31.18", features = ["concurrent", "sourcemap"] }
-swc_ecma_visit = { version = "0.93.2" }
+farmfe_core = { path = "../core" }
+farmfe_toolkit = { path = "../toolkit" }
+farmfe_utils = { path = "../utils" }
+
+[dev-dependencies]
+farmfe_testing_helpers = { path = "../testing_helpers" }
