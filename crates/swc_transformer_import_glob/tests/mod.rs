@@ -30,7 +30,7 @@ fn test_import_meta_glob() {
       std::fs::write(&expected_file, code).unwrap();
     } else {
       let expected = std::fs::read_to_string(&expected_file).unwrap();
-      assert_eq!(code, expected);
+      assert_eq!(code, expected.replace("\r\n", "\n"));
     }
   });
 }

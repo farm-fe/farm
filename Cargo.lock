@@ -1440,6 +1440,7 @@ name = "farmfe_plugin_script"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "farmfe_swc_transformer_import_glob",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "once_cell",
