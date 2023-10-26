@@ -4,14 +4,15 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
-import chalk from 'chalk';
 
 import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import {
+  bold,
   clearScreen,
+  green,
   isArray,
   isObject,
   Logger,
@@ -358,7 +359,7 @@ async function readConfigFile(
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      logger.info(`Using config file at ${chalk.green(configFilePath)}`);
+      logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;

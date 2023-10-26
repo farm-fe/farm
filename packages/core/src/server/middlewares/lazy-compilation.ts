@@ -4,10 +4,10 @@
 
 import { relative } from 'node:path';
 import { Context } from 'koa';
-import chalk from 'chalk';
 
 import { DevServer } from '../index.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import { bold, clearScreen, cyan, green } from '../../index.js';
 
 export function lazyCompilation(server: DevServer) {
   const compiler = server.getCompiler();
@@ -24,13 +24,14 @@ export function lazyCompilation(server: DevServer) {
           return relative(compiler.config.config.root, resolvedPath);
         })
         .join(', ');
-      server.logger.info(`Lazy compiling ${chalk.cyan(pathsStr)}...`);
+      clearScreen();
+      server.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
       const result = await compiler.update(paths);
       server.logger.info(
-        `${chalk.green.bold(`✓`)} Lazy compilation done for ${chalk.cyan(
-          pathsStr
-        )} in ${chalk.green(`${Date.now() - start}ms`)}.`
+        `${bold(green(`✓`))} Lazy compilation done in ${bold(
+          green(`${Date.now() - start}ms`)
+        )}.`
       );
 
       server.hmrEngine.callUpdates(result);

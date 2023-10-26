@@ -7,7 +7,6 @@ export * from './utils/index.js';
 import path from 'node:path';
 import os from 'node:os';
 import { existsSync, statSync } from 'node:fs';
-import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
@@ -28,6 +27,7 @@ import { compilerHandler } from './utils/build.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { setProcessEnv } from './config/env.js';
 import { JsPlugin } from './plugin/type.js';
+import { bold, cyan, green, magenta } from './utils/color.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -57,7 +57,9 @@ export async function start(
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
     // logger.info(
-    //   'HMR enabled, watching for file changes under ' + chalk.green(config.root)
+    //   "HMR enabled, watching for file changes under " +
+    //     green(config.root),
+    //   "\n",
     // );
 
     if (normalizedConfig.config.mode === 'production') {
@@ -158,7 +160,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   });
 
   app.listen(port, () => {
-    logger.info(chalk.green(`preview server running at:\n`));
+    logger.info(green(`preview server running at:\n`));
     const interfaces = os.networkInterfaces();
     Object.keys(interfaces).forEach((key) =>
       (interfaces[key] || [])
@@ -172,10 +174,10 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${chalk.bold(port)}${
+          const url = `${'http'}://${host}:${bold(port)}${
             output.publicPath ?? ''
           }`;
-          logger.info(`${chalk.magenta('>')} ${type} ${chalk.cyan(url)}`);
+          logger.info(`${magenta('>')} ${type} ${cyan(url)}`);
         })
     );
   });

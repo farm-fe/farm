@@ -42,7 +42,7 @@ export async function resolveServerUrls(
 
   const protocol = options.https ? 'https' : 'http';
   const port = address.port;
-  const base = config.compilation.output.publicPath;
+  const base = config.compilation.output.publicPath ?? '';
 
   if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
     let hostnameName = hostname.name;

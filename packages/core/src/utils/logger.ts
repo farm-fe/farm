@@ -1,6 +1,15 @@
-import chalk, { ChalkInstance } from 'chalk';
-
-export const brandColor = chalk.rgb(113, 26, 95);
+import {
+  blue,
+  bold,
+  brandColor,
+  cyan,
+  debugColor,
+  dim,
+  green,
+  magenta,
+  red,
+  yellow
+} from './color.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -13,11 +22,11 @@ enum LogLevel {
 }
 
 export interface Logger {
-  trace(message: string): void;
-  debug(message: string): void;
-  info(message: string, showBanner?: boolean): void;
-  warn(message: string): void;
-  error(message: string | Error, options?: ErrorOptions): void;
+  trace(message: string | string[]): void;
+  debug(message: string | string[]): void;
+  info(message: string | string[]): void;
+  warn(message: string | string[]): void;
+  error(message: string | string[] | Error[], options?: ErrorOptions): void;
 }
 
 export interface ErrorOptions {
@@ -25,9 +34,20 @@ export interface ErrorOptions {
 }
 interface LoggerOptions {
   name?: string;
-  brandColor?: ChalkInstanceKeys;
+  brandColor?: any;
+  exit?: boolean;
 }
-type ChalkInstanceKeys = keyof ChalkInstance;
+
+const LOGGING_METHOD = {
+  info: 'log',
+  warn: 'warn',
+  error: 'error'
+} as const;
+
+const warnOnceMessages = new Set();
+const infoOnceMessages = new Set();
+const errorOnceMessages = new Set();
+
 export class DefaultLogger implements Logger {
   constructor(
     public options?: LoggerOptions,
@@ -44,65 +64,75 @@ export class DefaultLogger implements Logger {
     this.brandPrefix();
   }
 
-  private brandPrefix(color?: string | ChalkInstance) {
+  private brandPrefix(color?: (s: string | string[]) => string): void {
     const { name = 'Farm' } = this.options;
-
-    let prefixColor: string | ChalkInstance | undefined;
-    if (typeof this.options.brandColor === 'string') {
-      prefixColor = this.options.brandColor;
-    } else if (typeof color !== 'undefined') {
-      prefixColor = color;
-    }
-
-    this.prefix = prefixColor
-      ? typeof prefixColor === 'string'
-        ? chalk.hex(prefixColor)(`[ ${name} ] `)
-        : prefixColor(`[ ${name} ] `)
-      : brandColor(`[ ${name} ] `);
+    const formattedName = bold(name);
+    const formattedPrefix = bold(`[ ${formattedName} ]`);
+    this.prefix = color ? color(formattedPrefix) : formattedPrefix;
   }
 
   private logMessage(
     level: LogLevelNames,
-    message: string,
-    color?: ChalkInstance,
+    message: any[],
+    color?: any,
     showBanner = true
   ): void {
+    const loggerMethod =
+      level in LOGGING_METHOD
+        ? LOGGING_METHOD[level as keyof typeof LOGGING_METHOD]
+        : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
       const loggerMessage = color
-        ? color(`${showBanner ? this.prefix : ''}${message}`)
-        : `${showBanner ? this.prefix : ''}${message}`;
-      console.log(loggerMessage);
+        ? color(`${showBanner ? this.prefix : ''} ${message}`)
+        : `${showBanner ? this.prefix : ''} ${message}`;
+      console[loggerMethod](loggerMessage);
     }
   }
 
-  trace(message: string): void {
-    this.brandPrefix(chalk.green);
-    this.logMessage(LogLevel.Trace, message, chalk.magenta);
+  trace(...message: any[]): void {
+    this.brandPrefix(green);
+    this.logMessage(LogLevel.Trace, message, magenta);
   }
 
-  debug(message: string): void {
-    this.brandPrefix('#ff8c00');
-    this.logMessage(LogLevel.Debug, message, chalk.blue);
+  debug(...message: any[]): void {
+    this.brandPrefix(debugColor);
+    this.logMessage(LogLevel.Debug, message, blue);
   }
 
-  info(message: string, showBanner?: boolean): void {
-    this.brandPrefix();
-    this.logMessage(LogLevel.Info, message, null, showBanner);
+  info(...message: any[]): void {
+    this.brandPrefix(brandColor);
+    this.logMessage(LogLevel.Info, message, null);
   }
 
-  warn(message: string): void {
-    this.brandPrefix(chalk.yellowBright);
-    this.logMessage(LogLevel.Warn, message, chalk.yellow);
+  warn(...message: any[]): void {
+    this.brandPrefix(yellow);
+    this.logMessage(LogLevel.Warn, message, yellow);
   }
 
-  error(message: string | Error, options?: ErrorOptions): void {
-    this.brandPrefix(chalk.red);
-    const errorMessage =
-      message instanceof Error ? message.stack : `${message}`;
-    this.logMessage(LogLevel.Error, errorMessage, chalk.red);
+  error(...message: any[]): void {
+    this.brandPrefix(red);
+    this.logMessage(LogLevel.Error, message, red);
 
-    if (options?.exit) {
+    if (this.options?.exit) {
       process.exit(1);
+    }
+  }
+  infoOnce(...message: any[]) {
+    if (!warnOnceMessages.has(message[0])) {
+      infoOnceMessages.add(message.join(' '));
+      this.info(...message);
+    }
+  }
+  warnOnce(...message: any[]) {
+    if (!warnOnceMessages.has(message[0])) {
+      warnOnceMessages.add(message.join(' '));
+      this.warn(...message);
+    }
+  }
+  errorOnce(...message: any[]) {
+    if (!warnOnceMessages.has(message[0])) {
+      errorOnceMessages.add(message.join(' '));
+      this.error(...message);
     }
   }
 }
@@ -113,22 +143,18 @@ export function printServerUrls(
   logger: Logger
 ): void {
   const colorUrl = (url: string) =>
-    chalk.cyan(url.replace(/:(\d+)\//, (_, port) => `:${chalk.bold(port)}/`));
+    cyan(url.replace(/:(\d+)\//, (_, port) => `:${bold(port)}/`));
   for (const url of urls.local) {
-    logger.info(
-      `${chalk.magenta('➡️')} ${chalk.bold('Local')}:   ${colorUrl(url)}`
-    );
+    logger.info(`${magenta('➡️')} ${bold('Local')}:   ${bold(colorUrl(url))}`);
   }
   for (const url of urls.network) {
-    logger.info(
-      `${chalk.magenta('➡️')} ${chalk.bold('Network')}: ${colorUrl(url)}`
-    );
+    logger.info(`${magenta('➡️')} ${bold('Network')}: ${bold(colorUrl(url))}`);
   }
   if (urls.network.length === 0 && optionsHost === undefined) {
     logger.info(
-      chalk.dim(`${chalk.magenta('➡️')} ${chalk.bold('Network')}: use `) +
-        chalk.bold('--host') +
-        chalk.dim(' to expose')
+      dim(`${magenta('➡️')} ${bold('Network')}: use `) +
+        bold('--host') +
+        dim(' to expose')
     );
   }
 }

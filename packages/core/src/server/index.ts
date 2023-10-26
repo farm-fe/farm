@@ -4,9 +4,6 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Koa from 'koa';
 import { WebSocketServer } from 'ws';
-import chalk from 'chalk';
-// import boxen from "boxen";
-// import figlet from "figlet";
 import { Compiler } from '../compiler/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
@@ -19,10 +16,16 @@ import {
   UserConfig,
   UserServerConfig
 } from '../config/index.js';
-import { printServerUrls } from '../utils/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { openBrowser } from './openBrowser.js';
-import { brandColor, clearScreen, Logger } from '../utils/index.js';
+import {
+  bold,
+  brandColor,
+  clearScreen,
+  green,
+  Logger,
+  printServerUrls
+} from '../utils/index.js';
 import {
   corsPlugin,
   headersPlugin,
@@ -135,11 +138,12 @@ export class DevServer implements ImplDevServer {
       )
     ).version;
     const end = Date.now();
+
     await this.startServer(this.config);
-    console.log('\n', chalk.bold(brandColor(`${'ϟ'}  Farm  v${version}`)));
+    console.log('\n', bold(brandColor(`${'ϟ'}  Farm  v${version}`)));
     console.log(
-      `${chalk.green.bold(` ✓`)}  Ready in ${chalk.green.bold(
-        `${end - start}ms`
+      `${bold(green(` ✓`))}  ${bold('Ready in')} ${bold(
+        green(`${end - start}ms`)
       )}`,
       '\n'
     );
@@ -326,49 +330,4 @@ export class DevServer implements ImplDevServer {
     // this._app.use(serve(this._dist));
     resolvedPlugins.forEach((plugin) => plugin(this));
   }
-
-  // private startDevLogger(start: number, end: number) {
-  //   const { port, protocol, hostname } = this.config;
-  //   const version = JSON.parse(
-  //     readFileSync(
-  //       join(fileURLToPath(import.meta.url), "../../../package.json"),
-  //       "utf-8",
-  //     ),
-  //   ).version;
-  //   let publicPath;
-  //   if (urlRegex.test(this.publicPath)) {
-  //     publicPath = "/";
-  //   } else {
-  //     publicPath = this.publicPath.startsWith("/")
-  //       ? this.publicPath
-  //       : `/${this.publicPath}`;
-  //   }
-  //   this.logger.info(
-  //     boxen(
-  //       `${
-  //         brandColor(
-  //           figlet.textSync("FARM", {
-  //             width: 40,
-  //           }),
-  //         )
-  //       }
-  // Version ${chalk.green.bold(version)}
-
-  // 🔥 Ready on ${
-  //         chalk.green.bold(
-  //           `${protocol}://${hostname}:${port}${publicPath}`,
-  //         )
-  //       } in ${chalk.green.bold(`${end - start}ms`)}.
-  //   `,
-  //       {
-  //         padding: 1,
-  //         margin: 1,
-  //         align: "center",
-  //         borderColor: "cyan",
-  //         borderStyle: "round",
-  //       },
-  //     ),
-  //     false,
-  //   );
-  // }
 }

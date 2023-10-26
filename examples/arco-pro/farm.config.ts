@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import type { UserConfig } from "@farmfe/core";
 import farmJsPluginLess from "@farmfe/js-plugin-less";
-import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+import farmJsPluginSvgr from "@farmfe/js-plugin-svgr";
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -27,13 +27,13 @@ export default defineConfig({
       assetsFilename: "static/[resourceName].[contentHash].[ext]",
     },
     partialBundling: {
-      targetMinSize: 1024 * 2
-    }
+      targetMinSize: 1024 * 2,
+    },
   },
   server: {
     cors: true,
     port: 6260,
-    host: "localhost",
+    host: true,
   },
   plugins: [
     "@farmfe/plugin-react",
