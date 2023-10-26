@@ -3,11 +3,13 @@ name = "farmfe_swc_transformer_import_glob"
 version = "0.0.1"
 edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
-description = "farm utils"
+description = "farm swc tranformer for vite-style import.meta.glob"
 license = "MIT"
 
 [dependencies]
-glob = "0.3"
-swc_ecma_ast = { version = "0.107.2", features = ["rkyv-impl", "serde-impl"] }
-swc_common = { version = "0.31.18", features = ["concurrent", "sourcemap"] }
-swc_ecma_visit = { version = "0.93.2" }
+farmfe_core = { path = "../core" }
+farmfe_toolkit = { path = "../toolkit" }
+farmfe_utils = { path = "../utils" }
+
+[dev-dependencies]
+farmfe_testing_helpers = { path = "../testing_helpers" }

@@ -119,6 +119,7 @@
     "**/tests/**",
     "**/examples/**",
     "rust-plugins/sass/ext/sass/**",
-    "assets/**"
+    "assets/**",
+    "**/*.d.ts"
   ]
 }
