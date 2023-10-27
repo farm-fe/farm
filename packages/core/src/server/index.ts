@@ -148,10 +148,7 @@ export class DevServer implements ImplDevServer {
       '\n'
     );
 
-    // this.printUrls();
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      // this.startDevLogger(start, end);
-      this.printUrls();
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printUrls();
 
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);

@@ -14,6 +14,10 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
 const argv = process.argv || [],
   env = process.env;
 

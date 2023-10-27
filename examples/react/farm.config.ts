@@ -17,7 +17,7 @@ export default defineConfig({
     },
     output: {
       path: "./build",
-      publicPath: "public",
+      // publicPath: "public",
     },
     // sourcemap: true,
     css: {
@@ -33,7 +33,8 @@ export default defineConfig({
   server: {
     cors: true,
     port: 6260,
-    // host: true,
+    host: true,
+    open: true,
   },
   plugins: [
     "@farmfe/plugin-react",
