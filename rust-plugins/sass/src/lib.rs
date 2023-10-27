@@ -267,7 +267,7 @@ fn get_exe_path(context: &Arc<CompilationContext>) -> PathBuf {
     .join(format!("dart-sass-embedded/{entry_file}"))
     .to_logical_path(&cur_dir);
 
-  return default_path;
+  default_path
 }
 
 fn get_options(options: Value, resolve_path: String) -> (StringOptions, HashMap<String, String>) {
