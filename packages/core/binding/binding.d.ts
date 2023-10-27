@@ -28,10 +28,19 @@ export interface JsUpdateResult {
   dynamicResourcesMap?: Record<string, Array<Array<string>>>
   extraWatchResult: WatchDiffResult
 }
+export interface ResolveRecord {
+  plugin: string
+  hook: string
+  source: string
+  importer?: string
+  kind: string
+}
 export interface TransformRecord {
-  name: string
-  result: string
+  plugin: string
+  hook: string
+  content: string
   sourceMaps?: string
+  moduleType: string
 }
 export interface ModuleRecord {
   name: string
@@ -44,9 +53,13 @@ export interface AnalyzeDepsRecord {
   name: string
   deps: Array<AnalyzeDep>
 }
-export interface ModuleId {
-  relativePath: string
-  query: string
+export interface Module {
+  id: string
+  moduleType: string
+  sideEffects: boolean
+  sourceMapChain: Array<string>
+  external: boolean
+  immutable: boolean
 }
 export interface ResourcePotRecord {
   name: string
@@ -73,7 +86,8 @@ export class Compiler {
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
-  getResolveRecords(): Array<string>
+  modules(): Array<Module>
+  getResolveRecordsById(id: string): Array<ResolveRecord>
   getTransformRecordsById(id: string): Array<TransformRecord>
   getProcessRecordsById(id: string): Array<ModuleRecord>
   getAnalyzeDepsRecordsById(id: string): Array<AnalyzeDepsRecord>

@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use hashbrown::{HashMap, HashSet};
 
-use crate::{module::ModuleId, plugin::PluginAnalyzeDepsHookResultEntry};
+use crate::{module::{ModuleId, ModuleType}, plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind}};
 
 /// All hook operation record are write down by [RecordManager]
 pub struct RecordManager {
@@ -79,17 +79,12 @@ impl RecordManager {
     }
   }
 
-  pub fn get_resolve_records(&self) -> Vec<String> {
-    let resolve_id_map = self.resolve_id_map.read().unwrap();
-    let mut resolve_id_set = HashSet::new();
-    for records in resolve_id_map.values() {
-      for record in records {
-        resolve_id_set.insert(record.result.clone());
-      }
+  pub fn get_resolve_records_by_id(&self, id: &str) -> Vec<ResolveRecord> {
+    let resolve_map = self.resolve_id_map.read().unwrap();
+    match resolve_map.get(id) {
+      Some(records) => records.clone(),
+      None => Vec::new(),
     }
-
-    let resolve_ids: Vec<String> = resolve_id_set.into_iter().collect();
-    resolve_ids
   }
 
   pub fn get_transform_records_by_id(&self, id: &str) -> Vec<TransformRecord> {
@@ -132,17 +127,22 @@ impl Default for RecordManager {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ResolveRecord {
-  pub name: String,
-  pub result: String,
+  pub plugin: String,
+  pub hook: String,
+  pub source: String,
+  pub importer: Option<String>,
+  pub kind: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct TransformRecord {
-  pub name: String,
-  pub result: String,
+  pub plugin: String,
+  pub hook: String,
+  pub content: String,
   pub source_maps: Option<String>,
+  pub module_type: ModuleType,
 }
 
 #[derive(Debug, Clone)]
