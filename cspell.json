@@ -89,6 +89,7 @@
     "stylesheet",
     "Stylesheet",
     "svgr",
+    "tailwindcss",
     "Tencent",
     "thiserror",
     "threadsafe",

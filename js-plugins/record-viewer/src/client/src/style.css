@@ -185,10 +185,6 @@ button,
   background-image: none; /* 2 */
 }
 
-/*
-Use the modern Firefox focus style for all focusable elements.
-*/
-
 :-moz-focusring {
   outline: auto;
 }
@@ -290,10 +286,6 @@ menu {
   margin: 0;
   padding: 0;
 }
-
-/*
-Prevent resizing textareas horizontally by default.
-*/
 
 textarea {
   resize: vertical;
