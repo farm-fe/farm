@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-less
 
+## 1.1.3
+
+### Patch Changes
+
+- Fix incorrect filters of transform hook of js plugin less
+
 ## 1.1.2
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.2.6
+
+### Patch Changes
+
+- Fix incorrect sass binary resolve for default path
+
 ## 0.2.5
 
 ### Patch Changes
