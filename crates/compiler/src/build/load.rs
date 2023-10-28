@@ -22,14 +22,14 @@ pub fn load(
       Some(loaded) => loaded,
       None => {
         return Err(CompilationError::LoadError {
-          resolved_path: load_param.resolved_path.to_string(),
+          resolved_path: load_param.module_id.to_string(),
           source: None,
         });
       }
     },
     Err(e) => {
       return Err(CompilationError::LoadError {
-        resolved_path: load_param.resolved_path.to_string(),
+        resolved_path: load_param.module_id.to_string(),
         source: Some(Box::new(e)),
       });
     }

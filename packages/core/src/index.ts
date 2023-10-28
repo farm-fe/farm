@@ -14,6 +14,7 @@ import Koa, { Context } from 'koa';
 import fse from 'fs-extra';
 import { Compiler } from './compiler/index.js';
 import {
+  normalizeDevServerOptions,
   normalizePublicDir,
   normalizeUserCompilationConfig,
   resolveUserConfig,
@@ -28,6 +29,7 @@ import { compilerHandler } from './utils/build.js';
 import type { FarmCLIOptions } from './config/types.js';
 import { setProcessEnv } from './config/env.js';
 import { JsPlugin } from './plugin/type.js';
+import { useProxy } from './server/middlewares/index.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -117,6 +119,11 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
     logger,
     'production'
   );
+  const normalizedDevServerConfig = normalizeDevServerOptions(
+    userConfig.server,
+    'production'
+  );
+
   const { root, output } = normalizedConfig.config;
   const distDir = path.resolve(root, output.path);
   try {
@@ -128,6 +135,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
       );
     }
   }
+
   function StaticFilesHandler(ctx: Context) {
     const staticFilesServer = sirv(distDir, {
       etag: true,
@@ -140,6 +148,10 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
     });
   }
   const app = new Koa();
+
+  // support proxy
+  useProxy(normalizedDevServerConfig.proxy, app, logger);
+
   app.use(compression());
   app.use(async (ctx) => {
     const requestPath = ctx.request.path;
