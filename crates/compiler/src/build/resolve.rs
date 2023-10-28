@@ -17,7 +17,7 @@ pub fn resolve(
   let importer = resolve_param
     .importer
     .clone()
-    .map(|p| p.relative_path().to_string())
+    .map(|p| p.to_string())
     .unwrap_or_else(|| context.config.root.clone());
 
   let resolved = {

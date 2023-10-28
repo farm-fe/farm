@@ -13,7 +13,7 @@ export function farmContextToViteContext(
   hookName?: string,
   config?: UserConfig
 ): PluginContext {
-  const cacheKey = pluginName + hookName;
+  const cacheKey = pluginName + hookName + currentHandlingFile;
   if (contextCache.has(cacheKey)) {
     return contextCache.get(cacheKey) as PluginContext;
   }
@@ -68,11 +68,24 @@ export function farmContextToViteContext(
       }
     },
     error: (message): never => {
-      if (typeof message === 'object') {
-        farmContext.error(JSON.stringify(message));
-      } else {
-        farmContext.error(message);
+      let msgObj = message as any;
+      if (typeof msgObj !== 'object') {
+        msgObj = {
+          message: message as string
+        };
       }
+
+      if (msgObj.code && !msgObj.code.startsWith('PLUGIN_')) {
+        msgObj.pluginCode = 'PLUGIN_ERROR';
+      } else {
+        msgObj.code = 'PLUGIN_ERROR';
+      }
+
+      msgObj.plugin = pluginName;
+      msgObj.id = currentHandlingFile;
+      msgObj.hook = hookName;
+
+      farmContext.error(JSON.stringify(msgObj));
 
       return undefined as unknown as never;
     },

@@ -77,17 +77,11 @@ impl FileImporter for FileImporterCollection {
       return Ok(Some(Url::from_file_path(resolved_url).unwrap()));
     }
 
-    let url = if url.starts_with('~') {
-      url.replacen('~', "", 1)
-    } else {
-      url.to_string()
-    };
-
     let resolve_result = context
       .plugin_driver
       .resolve(
         &PluginResolveHookParam {
-          source: url,
+          source: url.to_string(),
           importer: Some(self.importer.clone()),
           kind: ResolveKind::CssAtImport,
         },

@@ -23,7 +23,7 @@ pub fn analyze_deps(
     .analyze_deps(&mut analyze_deps_param, context)
   {
     return Err(CompilationError::AnalyzeDepsError {
-      resolved_path: module.id.resolved_path(&context.config.root),
+      resolved_path: module.id.to_string(),
       source: Some(Box::new(e)),
     });
   };
