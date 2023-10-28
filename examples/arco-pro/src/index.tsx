@@ -83,6 +83,7 @@ function Index() {
           <Provider store={store}>
             <GlobalContext.Provider value={contextValue}>
               <Switch>
+                <Route path="/login" component={Login} />
                 <Route path="/" component={PageLayout} />
               </Switch>
             </GlobalContext.Provider>

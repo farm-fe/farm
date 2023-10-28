@@ -21,7 +21,6 @@ import {
 
 import type {
   FarmCLIOptions,
-  // IServerOptions,
   NormalizedServerConfig,
   UserConfig,
   UserHmrConfig,

@@ -32,13 +32,6 @@ export type NormalizedServerConfig = Required<
   }
 >;
 
-export interface IServerOptions {
-  port?: number;
-  strictPort?: boolean | undefined;
-  host?: string | undefined;
-  logger?: Logger;
-}
-
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
   ignores?: string[];
@@ -88,7 +81,7 @@ export interface FarmCLIServerOptions {
   open?: boolean;
   https?: boolean;
   hmr?: boolean;
-  host?: any;
+  host?: boolean | string;
   strictPort?: boolean;
 }
 

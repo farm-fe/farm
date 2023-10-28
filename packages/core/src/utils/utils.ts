@@ -96,7 +96,6 @@ export async function resolveHostname(
   return { host, name };
 }
 
-// 返回服务器地址的主机名和端口
 function getAddressHostnamePort(server: AddressInfo): {
   host: string;
   port: number;
@@ -106,7 +105,6 @@ function getAddressHostnamePort(server: AddressInfo): {
   return { host: hostname, port };
 }
 
-// 根据主机名创建服务器URL
 function createServerUrl(
   protocol: string,
   hostname: string,
