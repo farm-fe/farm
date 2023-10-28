@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use farmfe_utils::stringify_query;
 use hashbrown::HashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -111,13 +112,24 @@ impl PluginDriver {
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
       // TODO skip record manager if it is not enabled.
-      context.record_manager.add_resolve_record(
-        param.source.clone(),
-        ResolveRecord {
-          name: plugin_name,
-          result: result.as_ref().unwrap().resolved_path.clone(),
-        },
-      );
+      match result {
+        Some(resolve_result) => {
+          context.record_manager.add_resolve_record(
+            resolve_result.resolved_path.clone() + stringify_query(&resolve_result.query).as_str(),
+            ResolveRecord {
+              plugin: plugin_name,
+              hook: "resolve".to_string(),
+              source: param.source.clone(),
+              importer: param
+                .importer
+                .clone()
+                .map(|module_id| module_id.relative_path().to_string()),
+              kind: String::from(param.kind.clone()),
+            },
+          );
+        }
+        None => {}
+      }
     },
     param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
@@ -127,19 +139,26 @@ impl PluginDriver {
   hook_first!(
     load,
     Result<Option<PluginLoadHookResult>>,
-    |_result: &Option<PluginLoadHookResult>,
+    |result: &Option<PluginLoadHookResult>,
      plugin_name: String,
      param: &PluginLoadHookParam,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
-      context.record_manager.add_load_record(
-        param.resolved_path.to_string(),
-        TransformRecord {
-          name: plugin_name,
-          result: _result.as_ref().unwrap().content.clone(),
-          source_maps: None,
+      match result {
+        Some(load_result) => {
+          context.record_manager.add_load_record(
+            param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
+            TransformRecord {
+              plugin: plugin_name,
+              hook: "load".to_string(),
+              content: load_result.content.clone(),
+              source_maps: None,
+              module_type: load_result.module_type.clone(),
+            },
+          );
         },
-      );
+        None => {}
+      }
     },
     param: &PluginLoadHookParam,
     context: &Arc<CompilationContext>,
@@ -173,11 +192,13 @@ impl PluginDriver {
           };
 
           context.record_manager.add_transform_record(
-            param.resolved_path.to_string(),
+            param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
             TransformRecord {
-              name: plugin_name,
-              result: param.content.clone(),
+              plugin: plugin_name,
+              hook: "transform".to_string(),
+              content: param.content.clone(),
               source_maps,
+              module_type: param.module_type.clone()
             },
           );
 

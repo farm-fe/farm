@@ -6,10 +6,10 @@ function defineConfig(config: UserConfig) {
   lodashMerge(config, {
     compilation: {
       input: {
-        main: './main.tsx',
+        main: './main.tsx'
       },
-      external: module.builtinModules,
-    },
+      external: module.builtinModules
+    }
   });
   return config;
 }
@@ -19,3 +19,5 @@ import('lodash/debounce').then((debounce) => {
 });
 
 export default defineConfig({});
+
+export { lodashMerge };

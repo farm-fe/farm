@@ -248,7 +248,7 @@ impl Default for ResolveConfig {
         String::from("module"),
         String::from("main"),
         String::from("jsnext:main"),
-        String::from("jsnext")
+        String::from("jsnext"),
       ],
       main_files: vec![String::from("index")],
       extensions: vec![
@@ -297,8 +297,11 @@ impl Default for RuntimeConfig {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct AssetsConfig {
   pub include: Vec<String>,
+  /// Used internally, this option will be not exposed to user.
+  pub public_dir: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

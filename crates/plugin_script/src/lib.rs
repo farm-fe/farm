@@ -1,7 +1,7 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -21,6 +21,7 @@ use farmfe_core::{
   swc_common::{comments::NoopComments, Mark, GLOBALS},
   swc_ecma_ast::ModuleItem,
 };
+use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
@@ -168,6 +169,17 @@ impl Plugin for FarmPluginScript {
         context.meta.script.cm.clone(),
         &context.meta.script.globals,
         || transform_by_swc_plugins(param, context).unwrap(),
+      )?;
+    }
+
+    if param.module_type.is_script() {
+      // transform vite-style `import.meta.glob`
+      let ast = &mut param.meta.as_script_mut().ast;
+      let cur_dir = PathBuf::from(&param.module_id.resolved_path(&context.config.root));
+      transform_import_meta_glob(
+        ast,
+        context.config.root.clone(),
+        cur_dir.parent().unwrap().to_string_lossy().to_string(),
       )?;
     }
 

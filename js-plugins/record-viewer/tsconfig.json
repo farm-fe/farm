@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "exclude": ["node_modules"],
+  "include": [
+    "src/**/*.ts",
+     "src/**/*.d.ts",
+     "src/**/*.vue", 
+     "farm.config.mjs"
+  ],
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "lib": ["ESNext", "DOM"],
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+}

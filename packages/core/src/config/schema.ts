@@ -213,6 +213,9 @@ const FarmConfigSchema = z
             z.object({
               target: z.string(),
               changeOrigin: z.boolean(),
+              agent: z.any().optional(),
+              secure: z.boolean().optional(),
+              logs: z.any().optional(),
               rewrite: z
                 .function(z.tuple([z.string(), z.object({})]))
                 .optional()

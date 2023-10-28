@@ -93,6 +93,7 @@
     "stylesheet",
     "Stylesheet",
     "svgr",
+    "tailwindcss",
     "Tencent",
     "thiserror",
     "threadsafe",
@@ -124,6 +125,7 @@
     "**/tests/**",
     "**/examples/**",
     "rust-plugins/sass/ext/sass/**",
-    "assets/**"
+    "assets/**",
+    "**/*.d.ts"
   ]
 }
