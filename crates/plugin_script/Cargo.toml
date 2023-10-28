@@ -7,6 +7,7 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
+farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob" }
 swc_plugin_proxy = { version = "0.36.2", features = ["plugin-rt"] }
 swc_plugin_runner = { version = "0.98.5", features = [
   "ecma",

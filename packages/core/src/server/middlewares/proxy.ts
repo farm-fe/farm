@@ -1,14 +1,16 @@
 import proxy, { IKoaProxiesOptions, IBaseKoaProxiesOptions } from 'koa-proxies';
 import type { DevServer } from '../index.js';
+import { UserConfig } from '../../config/types.js';
+import Application from 'koa';
+import { Logger } from '../../utils/logger.js';
 
 export type ProxiesOptions = IKoaProxiesOptions;
 
-export function proxyPlugin(devServer: DevServer) {
-  const { app, config, logger } = devServer._context;
-  if (!config.proxy) {
-    return;
-  }
-  const options = config.proxy;
+export function useProxy(
+  options: UserConfig['server']['proxy'],
+  app: Application,
+  logger: Logger
+) {
   for (const path of Object.keys(options)) {
     let opts = options[path] as IBaseKoaProxiesOptions;
 
@@ -23,9 +25,20 @@ export function proxyPlugin(devServer: DevServer) {
     });
 
     try {
-      app.use(proxy(path, opts));
+      if (path.length > 0) {
+        app.use(proxy(path[0] === '^' ? new RegExp(path) : path, opts));
+      }
     } catch (err) {
       logger.error(`Error setting proxy for path ${path}: ${err.message}`);
     }
   }
+}
+
+export function proxyPlugin(devServer: DevServer) {
+  const { app, config, logger } = devServer._context;
+  if (!config.proxy) {
+    return;
+  }
+  const options = config.proxy;
+  useProxy(options, app, logger);
 }

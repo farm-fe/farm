@@ -176,8 +176,12 @@ export class Compiler {
     this._bindingCompiler.addWatchFiles(root, paths);
   }
 
-  getResolveRecords() {
-    return this._bindingCompiler.getResolveRecords();
+  modules() {
+    return this._bindingCompiler.modules();
+  }
+
+  getResolveRecords(id: string) {
+    return this._bindingCompiler.getResolveRecordsById(id);
   }
 
   getTransformRecords(id: string) {

@@ -11,7 +11,7 @@ export default {
     output: {
       path: 'dist',
       targetEnv: 'node',
-      entryFilename: '[entryName].mjs'
+      entryFilename: '[entryName].mjs',
     },
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),

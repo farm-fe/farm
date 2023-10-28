@@ -1,6 +1,6 @@
 import module from 'node:module';
 import fs from 'node:fs';
-import path from 'node:path';
+import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
@@ -55,6 +55,7 @@ export async function normalizeUserCompilationConfig(
   const resolvedRootPath = normalizePath(
     root ? path.resolve(root) : process.cwd()
   );
+
   // resolve public path
   if (compilation?.output?.publicPath) {
     compilation.output.publicPath = normalizePublicPath(
@@ -75,6 +76,11 @@ export async function normalizeUserCompilationConfig(
     },
     compilation
   );
+
+  if (!config.root) {
+    config.root = resolvedRootPath;
+  }
+
   config.mode = config.mode ?? mode;
   const isProduction = config.mode === 'production';
   const isDevelopment = config.mode === 'development';
@@ -88,6 +94,28 @@ export async function normalizeUserCompilationConfig(
     resolvedEnvPath,
     envPrefix
   );
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore do not check type for this internal option
+  if (!config.assets?.publicDir) {
+    if (!config.assets) {
+      config.assets = {};
+    }
+
+    const userPublicDir = userConfig.publicDir
+      ? userConfig.publicDir
+      : join(config.root, 'public');
+
+    if (isAbsolute(userPublicDir)) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore do not check type for this internal option
+      config.assets.publicDir = userPublicDir;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore do not check type for this internal option
+      config.assets.publicDir = join(config.root, userPublicDir);
+    }
+  }
 
   config.env = {
     ...userEnv,
@@ -204,10 +232,6 @@ export async function normalizeUserCompilationConfig(
     }
 
     config.input = input;
-  }
-
-  if (!config.root) {
-    config.root = root ?? process.cwd();
   }
 
   if (config.treeShaking === undefined) {
@@ -344,8 +368,9 @@ export async function resolveUserConfig(
   userConfig.command = command;
 
   // check port availability: auto increment the port if a conflict occurs
-  const targetWeb =
-    userConfig.compilation?.output?.targetEnv !== 'node' || !userConfig.isBuild;
+  const targetWeb = !(
+    userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
+  );
 
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service

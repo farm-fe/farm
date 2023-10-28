@@ -1,13 +1,15 @@
 #![feature(path_file_prefix)]
 
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   config::Config,
+  context::CompilationContext,
   module::{ModuleId, ModuleType},
   // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
-  plugin::Plugin,
+  plugin::{Plugin, PluginResolveHookResult},
+  relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
 };
 use farmfe_toolkit::{
@@ -25,12 +27,25 @@ lazy_static! {
 }
 
 const PLUGIN_NAME: &str = "FarmPluginStaticAssets";
+const PUBLIC_ASSET_PREFIX: &str = "virtual:__FARM_PUBLIC_ASSET__:";
 
 pub struct FarmPluginStaticAssets {}
 
 impl FarmPluginStaticAssets {
   pub fn new(_: &Config) -> Self {
     Self {}
+  }
+
+  fn is_asset(&self, ext: &str, context: &Arc<CompilationContext>) -> bool {
+    DEFAULT_STATIC_ASSETS
+      .iter()
+      .any(|a| a.eq_ignore_ascii_case(ext))
+      || context
+        .config
+        .assets
+        .include
+        .iter()
+        .any(|a| a.eq_ignore_ascii_case(ext))
   }
 }
 
@@ -43,6 +58,37 @@ impl Plugin for FarmPluginStaticAssets {
     99
   }
 
+  fn resolve(
+    &self,
+    param: &farmfe_core::plugin::PluginResolveHookParam,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
+    let path = Path::new(&param.source);
+    let extension = path.extension().and_then(|s| s.to_str());
+
+    if let Some(ext) = extension {
+      if self.is_asset(ext, context)
+        && context.config.assets.public_dir.is_some()
+        && param.source.starts_with('/')
+      {
+        let public_dir = context.config.assets.public_dir.as_ref().unwrap();
+        let resolved_public_path =
+          RelativePath::new(&param.source[1..]).to_logical_path(public_dir);
+
+        if resolved_public_path.exists() {
+          return Ok(Some(PluginResolveHookResult {
+            resolved_path: format!("{PUBLIC_ASSET_PREFIX}{}", param.source),
+            external: false,
+            side_effects: false,
+            ..Default::default()
+          }));
+        }
+      }
+    }
+
+    Ok(None)
+  }
   fn load(
     &self,
     param: &farmfe_core::plugin::PluginLoadHookParam,
@@ -52,17 +98,13 @@ impl Plugin for FarmPluginStaticAssets {
     let path = Path::new(param.resolved_path);
     let extension = path.extension().and_then(|s| s.to_str());
 
-    if let Some(ext) = extension {
-      if DEFAULT_STATIC_ASSETS
-        .iter()
-        .any(|a| a.eq_ignore_ascii_case(ext))
-        || context
-          .config
-          .assets
-          .include
-          .iter()
-          .any(|a| a.eq_ignore_ascii_case(ext))
-      {
+    if let Some(source) = param.resolved_path.strip_prefix(PUBLIC_ASSET_PREFIX) {
+      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+        content: format!("export default '{source}';"),
+        module_type: ModuleType::Js,
+      }));
+    } else if let Some(ext) = extension {
+      if self.is_asset(ext, context) {
         return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
           content: String::new(), // just return empty string, we don't need to load the file content, we will handle it in the transform hook
           module_type: ModuleType::Asset,
@@ -105,7 +147,7 @@ impl Plugin for FarmPluginStaticAssets {
         }));
       } else if param.query.iter().any(|(k, _)| k == "raw") {
         let file_utf8 = read_file_utf8(param.resolved_path)?;
-        let content = format!("export default \"{}\"", file_utf8);
+        let content = format!("export default `{}`", file_utf8);
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,

@@ -37,7 +37,7 @@ export default function farmLessPlugin(
       }
     },
     transform: {
-      filters: { resolvedPaths: ['\\.less$'] },
+      filters: { moduleTypes: ['less'] },
       async executor(param) {
         try {
           const isProd = farmConfig.mode === 'production';

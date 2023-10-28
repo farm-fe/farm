@@ -1,11 +1,24 @@
 import React from 'react';
 import { FarmCard } from '../card/index';
 import { ButtonAction } from '../button/index';
-import feature from '../../../assets/feature.svg';
-import logo from '../../../assets/logo.png';
-import light from '../../../assets/light.svg';
-import plugin from '../../../assets/plugin.svg';
 import './index.css';
+
+const images = import.meta.glob(
+  ['../../../assets/*.svg', '../../../assets/*.png'],
+  { as: 'url', eager: true }
+);
+const normalizedImages: Record<string, string> = Object.fromEntries(
+  Object.entries(images).map(([key, value]) => {
+    const regex = new RegExp('../../../assets/(.+)\\.(svg|png)');
+    const newKey = key.match(regex)?.[1];
+    if (newKey) {
+      return [newKey, value as string];
+    } else {
+      return [key, value as string];
+    }
+  })
+);
+const { logo, feature, light, plugin } = normalizedImages;
 
 export function Welcome() {
   return (
