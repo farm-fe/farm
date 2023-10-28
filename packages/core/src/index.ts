@@ -45,6 +45,7 @@ export async function start(
   const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   setProcessEnv(normalizedConfig.config.mode);
+  console.log('normalizedConfig', normalizedConfig);
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config);

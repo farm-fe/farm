@@ -109,8 +109,8 @@ function createServerUrl(
   protocol: string,
   hostname: string,
   port: number,
-  base: string
+  publicPath: string
 ): string {
   const hostnameName = hostname.includes(':') ? `[${hostname}]` : hostname;
-  return `${protocol}://${hostnameName}:${port}${base}`;
+  return `${protocol}://${hostnameName}:${port}${publicPath}`;
 }

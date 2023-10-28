@@ -5,7 +5,6 @@ import type { UserConfig } from './types.js';
 
 const compilationConfigSchema = z
   .object({
-    base: z.string().optional(),
     root: z.string().optional(),
     input: z.record(z.string()).optional(),
     output: z
@@ -185,7 +184,6 @@ const compilationConfigSchema = z
 const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
-    base: z.string().optional(),
     clearScreen: z.boolean().optional(),
     configPath: z.string().optional(),
     envDir: z.string().optional(),
