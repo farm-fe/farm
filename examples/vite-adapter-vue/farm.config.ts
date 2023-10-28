@@ -6,5 +6,8 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
-  vitePlugins: [vue()]
+  vitePlugins: [vue()],
+  server: {
+    host: true
+  }
 });

@@ -6,8 +6,9 @@ import { relative } from 'node:path';
 import { Context } from 'koa';
 
 import { DevServer } from '../index.js';
+import { bold, cyan, green } from '../../index.js';
+
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { bold, clearScreen, cyan, green } from '../../index.js';
 
 export function lazyCompilation(server: DevServer) {
   const compiler = server.getCompiler();
@@ -24,7 +25,6 @@ export function lazyCompilation(server: DevServer) {
           return relative(compiler.config.config.root, resolvedPath);
         })
         .join(', ');
-      clearScreen();
       server.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
       const result = await compiler.update(paths);

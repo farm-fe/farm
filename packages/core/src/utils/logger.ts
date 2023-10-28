@@ -1,15 +1,17 @@
+import { fileURLToPath } from 'node:url';
 import {
   blue,
   bold,
   brandColor,
   cyan,
   debugColor,
-  dim,
   green,
   magenta,
   red,
   yellow
 } from './color.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -137,24 +139,31 @@ export class DefaultLogger implements Logger {
   }
 }
 
-export function printServerUrls(
-  urls: any,
-  optionsHost: string | boolean | undefined,
-  logger: Logger
-): void {
+export function printServerUrls(urls: any, logger: Logger): void {
   const colorUrl = (url: string) =>
     cyan(url.replace(/:(\d+)\//, (_, port) => `:${bold(port)}/`));
-  for (const url of urls.local) {
-    logger.info(`${magenta('➡️')} ${bold('Local')}:   ${bold(colorUrl(url))}`);
-  }
-  for (const url of urls.network) {
-    logger.info(`${magenta('➡️')} ${bold('Network')}: ${bold(colorUrl(url))}`);
-  }
-  if (urls.network.length === 0 && optionsHost === undefined) {
-    logger.info(
-      dim(`${magenta('➡️')} ${bold('Network')}: use `) +
-        bold('--host') +
-        dim(' to expose')
-    );
-  }
+
+  const logUrl = (url: string, type: string) =>
+    logger.info(`${magenta('➡️')} ${bold(type)}${bold(colorUrl(url))}`);
+
+  urls.local.map((url: string) => logUrl(url, 'Local:   '));
+  urls.network.map((url: string) => logUrl(url, 'Network: '));
+}
+
+export function bootstrapLogger(options?: LoggerOptions): Logger {
+  return new DefaultLogger(options);
+}
+
+export function bootstrap(times: number) {
+  const version = JSON.parse(
+    readFileSync(
+      join(fileURLToPath(import.meta.url), '../../../package.json'),
+      'utf-8'
+    )
+  ).version;
+  console.log('\n', bold(brandColor(`${'ϟ'}  Farm  v${version}`)));
+  console.log(
+    `${bold(green(` ✓`))}  ${bold('Ready in')} ${bold(green(`${times}ms`))}`,
+    '\n'
+  );
 }

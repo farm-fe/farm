@@ -1,7 +1,4 @@
-import { readFileSync } from 'node:fs';
 import http from 'node:http';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import Koa from 'koa';
 import { WebSocketServer } from 'ws';
 import { Compiler } from '../compiler/index.js';
@@ -19,10 +16,8 @@ import {
 import { HmrEngine } from './hmr-engine.js';
 import { openBrowser } from './openBrowser.js';
 import {
-  bold,
-  brandColor,
+  bootstrap,
   clearScreen,
-  green,
   Logger,
   printServerUrls
 } from '../utils/index.js';
@@ -37,7 +32,6 @@ import {
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/utils.js';
-// import type { IServerOptions } from "../config/types.js";
 
 /**
  * Farm Dev Server, responsible for:
@@ -53,7 +47,13 @@ interface FarmServerContext {
   server: http.Server;
   compiler: Compiler;
   logger: Logger;
-  serverOptions?: any;
+  serverOptions?: {
+    resolvedUrls?: ServerUrls;
+  };
+}
+interface ServerUrls {
+  local: string[];
+  network: string[];
 }
 
 interface ImplDevServer {
@@ -131,23 +131,10 @@ export class DevServer implements ImplDevServer {
       this._compiler.writeResourcesToDisk(base);
     }
 
-    const version = JSON.parse(
-      readFileSync(
-        join(fileURLToPath(import.meta.url), '../../../package.json'),
-        'utf-8'
-      )
-    ).version;
     const end = Date.now();
 
     await this.startServer(this.config);
-    console.log('\n', bold(brandColor(`${'ϟ'}  Farm  v${version}`)));
-    console.log(
-      `${bold(green(` ✓`))}  ${bold('Ready in')} ${bold(
-        green(`${end - start}ms`)
-      )}`,
-      '\n'
-    );
-
+    bootstrap(end - start);
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printUrls();
 
     if (open) {
@@ -172,15 +159,9 @@ export class DevServer implements ImplDevServer {
       this.userConfig
     );
     if (this._context.serverOptions.resolvedUrls) {
-      printServerUrls(
-        this._context.serverOptions.resolvedUrls,
-        this.config.host,
-        this.logger
-      );
+      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
     } else {
-      throw new Error(
-        'cannot print server URLs before server.listen is called.'
-      );
+      throw new Error('cannot print server URLs with Server Error.');
     }
   }
 
@@ -248,7 +229,7 @@ export class DevServer implements ImplDevServer {
       server: this.server,
       compiler: this._compiler,
       logger: this.logger,
-      serverOptions: this.config
+      serverOptions: {}
     };
     this.resolvedFarmServerPlugins(plugins);
   }

@@ -39,26 +39,22 @@ export async function resolveServerUrls(
   const local: string[] = [];
   const network: string[] = [];
   const hostname = await resolveHostname(options.host);
-
   const protocol = options.https ? 'https' : 'http';
-  const port = address.port;
-  const base = config.compilation.output.publicPath ?? '';
+  const { host, port } = getAddressHostnamePort(address);
+  const base = config.compilation?.output?.publicPath || '';
 
-  if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
-    let hostnameName = hostname.name;
-    // ipv6 host
-    if (hostnameName.includes(':')) {
-      hostnameName = `[${hostnameName}]`;
-    }
-    const address = `${protocol}://${hostnameName}:${port}${base}`;
-    if (loopbackHosts.has(hostname.host)) {
-      local.push(address);
+  if (host !== undefined && !wildcardHosts.has(host)) {
+    const url = createServerUrl(protocol, hostname.name, port, base);
+    if (loopbackHosts.has(host)) {
+      local.push(url);
     } else {
-      network.push(address);
+      network.push(url);
     }
   } else {
-    Object.values(os.networkInterfaces())
-      .flatMap((nInterface) => nInterface ?? [])
+    const networkInterfaces = Object.values(os.networkInterfaces()).flatMap(
+      (nInterface) => nInterface || []
+    );
+    networkInterfaces
       .filter(
         (detail) =>
           detail &&
@@ -69,16 +65,11 @@ export async function resolveServerUrls(
       )
       .forEach((detail) => {
         let host = detail.address.replace('127.0.0.1', hostname.name);
-        // ipv6 host
-        if (host.includes(':')) {
-          host = `[${host}]`;
-        }
-        const url = `${protocol}://${host}:${port}${base}`;
-        if (detail.address.includes('127.0.0.1')) {
-          local.push(url);
-        } else {
-          network.push(url);
-        }
+        host = host.includes(':') ? `[${host}]` : host;
+        const url = createServerUrl(protocol, host, port, base);
+        detail.address.includes('127.0.0.1')
+          ? local.push(url)
+          : network.push(url);
       });
   }
   return { local, network };
@@ -103,4 +94,25 @@ export async function resolveHostname(
     host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
 
   return { host, name };
+}
+
+// 返回服务器地址的主机名和端口
+function getAddressHostnamePort(server: AddressInfo): {
+  host: string;
+  port: number;
+} {
+  const hostname = server.address || 'localhost';
+  const port = server.port || 80;
+  return { host: hostname, port };
+}
+
+// 根据主机名创建服务器URL
+function createServerUrl(
+  protocol: string,
+  hostname: string,
+  port: number,
+  base: string
+): string {
+  const hostnameName = hostname.includes(':') ? `[${hostname}]` : hostname;
+  return `${protocol}://${hostnameName}:${port}${base}`;
 }
