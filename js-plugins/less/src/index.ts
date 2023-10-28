@@ -7,19 +7,25 @@ import {
 } from './utils.js';
 import path from 'path';
 
-export type LessPluginOptions = Less.Options & {
+export type LessPluginOptions = {
+  lessOptions?: Less.Options;
   implementation?: string;
-  sourceMap?: boolean;
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
   additionalData?:
     | string
-    | ((context?: string, resolvePath?: string) => string | Promise<string>);
+    | ((content?: string, resolvePath?: string) => string | Promise<string>);
 };
+
 export default function farmLessPlugin(
   options: LessPluginOptions = {}
 ): JsPlugin {
   let farmConfig: UserConfig['compilation'];
   let devServer: DevServer;
   const implementation = getLessImplementation(options?.implementation);
+
   return {
     name: pluginName,
     config: (param) => (farmConfig = param),
@@ -27,7 +33,7 @@ export default function farmLessPlugin(
       devServer = server;
     },
     load: {
-      filters: { resolvedPaths: ['\\.less$'] },
+      filters: { resolvedPaths: options.filters.resolvedPaths ?? ['\\.less$'] },
       async executor(param) {
         const data = await tryRead(param.resolvedPath);
         return {
@@ -37,13 +43,16 @@ export default function farmLessPlugin(
       }
     },
     transform: {
-      filters: { moduleTypes: ['less'] },
+      filters: {
+        resolvedPaths: options.filters?.resolvedPaths,
+        moduleTypes: options.filters.moduleTypes ?? ['less']
+      },
       async executor(param) {
         try {
           const isProd = farmConfig.mode === 'production';
           let relData = '';
           const fileRoot = path.dirname(param.resolvedPath);
-          const configPaths = options.paths;
+          const configPaths = options.lessOptions.paths;
           if (
             typeof options.additionalData !== 'undefined' &&
             options.additionalData
@@ -66,17 +75,16 @@ export default function farmLessPlugin(
           const { css, sourceMap, imports } = await implementation.render(
             relData,
             {
-              ...options,
-              sourceMap: {
-                outputSourceFiles: Boolean(
-                  options.sourceMap ?? farmConfig?.sourcemap
-                )
-              },
+              ...(options?.lessOptions ?? {}),
+              filename: param.resolvedPath,
+              sourceMap:
+                options.lessOptions.sourceMap ?? Boolean(farmConfig.sourcemap),
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
-            }
+            } as Less.Options
           );
           if (imports && !isProd) {
             for (const dep of imports) {
+              // TODO add a compilerCreated hook to farmfe/core and get the compiler instead of using devServer
               devServer.addWatchFile(param.resolvedPath, [
                 path.resolve(fileRoot, dep)
               ]);

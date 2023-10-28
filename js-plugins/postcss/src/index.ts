@@ -1,12 +1,24 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import postcssLoadConfig, { ProcessOptionsPreload } from 'postcss-load-config';
+import postcssLoadConfig from 'postcss-load-config';
 import { ProcessOptions, Processor } from 'postcss';
 import path from 'path';
 import glob from 'fast-glob';
 import { getPostcssImplementation, pluginName } from './utils.js';
 
-export type PostcssPluginOptions = ProcessOptionsPreload & {
-  sourceMap?: boolean;
+export type PostcssPluginOptions = {
+  /**
+   * @default undefined
+   * postcss-load-config options. path default to farm.config.js root.
+   */
+  postcssLoadConfig?: {
+    ctx?: postcssLoadConfig.ConfigContext;
+    path?: string;
+    options?: Parameters<typeof postcssLoadConfig>[2];
+  };
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
   implementation?: string;
 };
 
@@ -26,8 +38,9 @@ export default function farmPostcssPlugin(
 
     config: async (config: UserConfig) => {
       const { plugins, options: _options } = await postcssLoadConfig(
-        options,
-        config.root
+        options.postcssLoadConfig?.ctx,
+        options.postcssLoadConfig?.path ?? config.root,
+        options.postcssLoadConfig?.options
       );
       postcssOptions = _options;
       postcssProcessor = implementation(plugins);
@@ -36,15 +49,21 @@ export default function farmPostcssPlugin(
     },
 
     transform: {
-      filters: { moduleTypes: ['css'] },
+      filters: {
+        resolvedPaths: options.filters?.resolvedPaths,
+        moduleTypes: options.filters?.moduleTypes ?? ['css']
+      },
       async executor(param, context) {
         try {
+          const sourcemap =
+            postcssOptions.map ?? Boolean(farmConfig?.sourcemap);
+
           const { css, map, messages } = await postcssProcessor.process(
             param.content,
             {
               ...postcssOptions,
               from: param.resolvedPath,
-              map: Boolean(options.sourceMap ?? farmConfig?.sourcemap)
+              map: sourcemap
             }
           );
           // record CSS dependencies from @imports
@@ -72,7 +91,7 @@ export default function farmPostcssPlugin(
           return {
             content: css,
             moduleType: 'css',
-            sourceMap: options.sourceMap && JSON.stringify(map.toJSON())
+            sourceMap: sourcemap ? JSON.stringify(map.toJSON()) : undefined
           };
         } catch (error) {
           context.error(`[${pluginName}] ${error}`);
