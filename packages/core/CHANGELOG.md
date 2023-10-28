@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.13.13
+
+### Patch Changes
+
+- 032bd4a: Fix bugs:
+  1. `server.proxy` does not work as expected
+  2. `plugin-css` should treat `xxx.png` as relative path
+  3. `assets` like `/logo.png` under publicDir should be resolved to `publicDir/logo.png`
+
 ## 0.13.12
 
 ### Patch Changes
