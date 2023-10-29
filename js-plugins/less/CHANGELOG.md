@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-less
 
+## 1.2.1
+
+### Patch Changes
+
+- 0ffc1e4: fix: less watchFile server undefined
+
 ## 1.2.0
 
 ### Minor Changes
