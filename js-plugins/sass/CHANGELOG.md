@@ -1,5 +1,16 @@
 # @farmfe/js-plugin-sass
 
+## 2.1.0
+
+### Minor Changes
+
+- 7e17e0b: Normalize plugin options
+
+### Patch Changes
+
+- Updated dependencies [7e17e0b]
+  - @farmfe/core@0.13.14
+
 ## 2.0.4
 
 ### Patch Changes

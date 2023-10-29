@@ -1,5 +1,16 @@
 # @farmfe/js-plugin-less
 
+## 1.2.0
+
+### Minor Changes
+
+- 7e17e0b: Normalize plugin options
+
+### Patch Changes
+
+- Updated dependencies [7e17e0b]
+  - @farmfe/core@0.13.14
+
 ## 1.1.3
 
 ### Patch Changes
