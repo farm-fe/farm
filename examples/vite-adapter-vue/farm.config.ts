@@ -6,8 +6,8 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
-  vitePlugins: [vue()],
-  server: {
-    host: true
-  }
+  compilation: {
+    presetEnv: false
+  },
+  vitePlugins: [vue()]
 });

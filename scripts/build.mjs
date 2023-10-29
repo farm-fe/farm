@@ -71,16 +71,20 @@ export const buildDts = () =>
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
-// build js plugins
-export const jsPlugins = () => batchBuildPlugins(PKG_JS_PLUGIN);
+// // build js plugins
+// export const jsPlugins = () => batchBuildPlugins(PKG_JS_PLUGIN);
 
 // build chain
 export const buildJsPlugins = async () => {
-  // First, build Dts
-  await buildDts();
+  await execa(DEFAULT_PACKAGE_MANAGER, ['--filter', './js-plugins/**', 'build'], {
+    cwd: CWD,
+  });
 
-  // Then, build other js plugins
-  await Promise.all(jsPlugins());
+  // // First, build Dts
+  // await buildDts();
+
+  // // Then, build other js plugins
+  // await Promise.all(jsPlugins());
 };
 
 export const buildRustPlugins = () => Promise.all(rustPlugins());
