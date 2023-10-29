@@ -33,7 +33,9 @@ export default function farmLessPlugin(
       devServer = server;
     },
     load: {
-      filters: { resolvedPaths: options.filters.resolvedPaths ?? ['\\.less$'] },
+      filters: {
+        resolvedPaths: options.filters?.resolvedPaths ?? ['\\.less$']
+      },
       async executor(param) {
         const data = await tryRead(param.resolvedPath);
         return {
@@ -45,14 +47,14 @@ export default function farmLessPlugin(
     transform: {
       filters: {
         resolvedPaths: options.filters?.resolvedPaths,
-        moduleTypes: options.filters.moduleTypes ?? ['less']
+        moduleTypes: options.filters?.moduleTypes ?? ['less']
       },
       async executor(param) {
         try {
           const isProd = farmConfig.mode === 'production';
           let relData = '';
           const fileRoot = path.dirname(param.resolvedPath);
-          const configPaths = options.lessOptions.paths;
+          const configPaths = options.lessOptions?.paths;
           if (
             typeof options.additionalData !== 'undefined' &&
             options.additionalData
@@ -78,7 +80,7 @@ export default function farmLessPlugin(
               ...(options?.lessOptions ?? {}),
               filename: param.resolvedPath,
               sourceMap:
-                options.lessOptions.sourceMap ?? Boolean(farmConfig.sourcemap),
+                options.lessOptions?.sourceMap ?? Boolean(farmConfig.sourcemap),
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
             } as Less.Options
           );

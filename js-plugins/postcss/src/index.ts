@@ -91,7 +91,7 @@ export default function farmPostcssPlugin(
           return {
             content: css,
             moduleType: 'css',
-            sourceMap: sourcemap ? JSON.stringify(map.toJSON()) : undefined
+            sourceMap: map && JSON.stringify(map.toJSON())
           };
         } catch (error) {
           context.error(`[${pluginName}] ${error}`);

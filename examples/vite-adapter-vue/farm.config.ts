@@ -6,5 +6,8 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
+  compilation: {
+    presetEnv: false
+  },
   vitePlugins: [vue()]
 });

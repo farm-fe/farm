@@ -1,6 +1,11 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
 import { StringOptions } from 'sass';
-import { getAdditionContext, pluginName, tryRead } from './options.js';
+import {
+  getAdditionContext,
+  pluginName,
+  throwError,
+  tryRead
+} from './options.js';
 import { pathToFileURL } from 'url';
 import { getSassImplementation } from './utils.js';
 
@@ -31,7 +36,6 @@ export default function farmSassPlugin(
   options: SassPluginOptions = {}
 ): JsPlugin {
   let farmConfig!: UserConfig['compilation'];
-  let cacheAdditionContext: string | null;
   const implementation = getSassImplementation(options.implementation);
   const cwd = () => farmConfig.root ?? process.cwd();
 
@@ -53,19 +57,17 @@ export default function farmSassPlugin(
     transform: {
       filters: {
         resolvedPaths: options.filters?.resolvedPaths,
-        moduleTypes: options.filters.moduleTypes ?? ['sass']
+        moduleTypes: options.filters?.moduleTypes ?? ['sass']
       },
       async executor(param, ctx) {
         try {
-          const additionContext =
-            cacheAdditionContext ??
-            (cacheAdditionContext = await getAdditionContext(
-              cwd(),
-              options,
-              param.resolvedPath,
-              param.content,
-              ctx
-            ));
+          const additionContext = await getAdditionContext(
+            cwd(),
+            options,
+            param.resolvedPath,
+            param.content,
+            ctx
+          );
 
           const { css, sourceMap } = await (
             await implementation
@@ -81,7 +83,7 @@ export default function farmSassPlugin(
             sourceMap: sourceMap && JSON.stringify(sourceMap)
           };
         } catch (error) {
-          console.error(error);
+          throwError('transform', error);
         }
 
         return {

@@ -46,7 +46,7 @@ export const getAdditionContext = async (
 };
 
 export function throwError(type: string, error: Error) {
-  console.error(`[${pluginName} ${type} Error] ${error}`);
+  throw new Error(`[${pluginName} ${type} Error] ${error}`);
 }
 
 export async function tryRead(filename: string) {

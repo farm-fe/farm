@@ -14,6 +14,7 @@ export default {
     resolve: {
       strictExports: true,
     },
+    presetEnv: false,
     script: {
       plugins: [{
         name: 'swc-plugin-vue-jsx',

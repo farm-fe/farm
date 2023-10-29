@@ -17,7 +17,7 @@ export default function farmSvgrPlugin(
   return {
     name: 'farm-js-plugin-svgr',
     load: {
-      filters: { resolvedPaths: filters.resolvedPaths ?? ['\\.svg$'] },
+      filters: { resolvedPaths: filters?.resolvedPaths ?? ['\\.svg$'] },
       async executor(param) {
         if (
           param.query.some(
