@@ -1,4 +1,4 @@
 // test that the script is working
-import config from './dist/index.js';
+import config, { lodashMerge } from './dist/index.mjs';
 
-console.log(config);
+console.log(config, lodashMerge({}, { a: 1 }));

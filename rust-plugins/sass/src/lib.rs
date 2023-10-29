@@ -11,7 +11,7 @@ use farmfe_core::{
   serde_json::{self, Value},
 };
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::{fs, regex::Regex, resolve::follow_symlinks};
+use farmfe_toolkit::{fs, regex::Regex};
 use sass_embedded::{FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -77,17 +77,11 @@ impl FileImporter for FileImporterCollection {
       return Ok(Some(Url::from_file_path(resolved_url).unwrap()));
     }
 
-    let url = if url.starts_with('~') {
-      url.replacen('~', "", 1)
-    } else {
-      url.to_string()
-    };
-
     let resolve_result = context
       .plugin_driver
       .resolve(
         &PluginResolveHookParam {
-          source: url,
+          source: url.to_string(),
           importer: Some(self.importer.clone()),
           kind: ResolveKind::CssAtImport,
         },
@@ -135,7 +129,7 @@ impl Plugin for FarmPluginSass {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
-      let exe_path: PathBuf = get_exe_path();
+      let exe_path: PathBuf = get_exe_path(context);
       let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
         panic!(
           "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{} \n",
@@ -210,7 +204,7 @@ fn get_arch() -> &'static str {
   }
 }
 
-fn get_exe_path() -> PathBuf {
+fn get_exe_path(context: &Arc<CompilationContext>) -> PathBuf {
   let os = get_os();
   let arch = get_arch();
   let entry_file = if let "win32" = os {
@@ -227,14 +221,32 @@ fn get_exe_path() -> PathBuf {
   ))
   .to_logical_path(&cur_dir);
 
-  let pkg_dir = follow_symlinks(
-    RelativePath::new("node_modules")
-      .join(PKG_NAME)
-      .to_logical_path(&cur_dir),
-  );
+  if manual_installation_path.exists() {
+    return manual_installation_path;
+  }
+
+  let pkg_dir = context
+    .plugin_driver
+    .resolve(
+      &PluginResolveHookParam {
+        source: PKG_NAME.to_string(),
+        importer: None,
+        kind: ResolveKind::Import,
+      },
+      context,
+      &PluginHookContext::default(),
+    )
+    .unwrap()
+    .unwrap_or_else(|| {
+      panic!(
+        "can not resolve @farmfe/plugin-sass start from {}",
+        cur_dir.to_string_lossy()
+      )
+    })
+    .resolved_path;
 
   // find closest node_modules start from pkg_dir
-  let mut cur_dir = pkg_dir;
+  let mut cur_dir = PathBuf::from(pkg_dir).parent().unwrap().to_path_buf();
 
   while !cur_dir.join("node_modules").exists() {
     if cur_dir.parent().is_none() {
@@ -249,11 +261,7 @@ fn get_exe_path() -> PathBuf {
     .join(format!("dart-sass-embedded/{entry_file}"))
     .to_logical_path(&cur_dir);
 
-  if manual_installation_path.exists() {
-    manual_installation_path
-  } else {
-    default_path
-  }
+  default_path
 }
 
 fn get_options(options: Value, resolve_path: String) -> (StringOptions, HashMap<String, String>) {

@@ -11,13 +11,14 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
+    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginResolveHookParam,
+    PluginTransformHookResult, ResolveKind,
   },
   resource::{
     resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_common::{FilePathMapping, SourceMap, DUMMY_SP},
+  swc_common::DUMMY_SP,
   swc_css_ast::Stylesheet,
 };
 use farmfe_toolkit::{
@@ -92,9 +93,15 @@ impl Plugin for FarmPluginCss {
   fn resolve(
     &self,
     param: &farmfe_core::plugin::PluginResolveHookParam,
-    _context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
+    context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
+    if let Some(caller) = &hook_context.caller {
+      if caller.as_str() == "FarmPluginCss" {
+        return Ok(None);
+      }
+    }
+
     if is_farm_css_modules(&param.source) {
       let split = param.source.split('?').collect::<Vec<&str>>();
       let strip_query_path = split[0].to_string();
@@ -105,6 +112,28 @@ impl Plugin for FarmPluginCss {
         query,
         ..Default::default()
       }));
+    } else if matches!(param.kind, ResolveKind::CssAtImport | ResolveKind::CssUrl) {
+      // if dep starts with '~', means it's from node_modules.
+      // otherwise it's always relative
+      let source = if let Some(striped_source) = param.source.strip_suffix('~') {
+        striped_source.to_string()
+      } else if !param.source.starts_with('.') {
+        format!("./{}", param.source)
+      } else {
+        param.source.clone()
+      };
+
+      return context.plugin_driver.resolve(
+        &PluginResolveHookParam {
+          source,
+          ..param.clone()
+        },
+        context,
+        &PluginHookContext {
+          caller: Some("FarmPluginCss".to_string()),
+          meta: Default::default(),
+        },
+      );
     }
 
     Ok(None)

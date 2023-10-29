@@ -337,7 +337,8 @@ export class VitePluginAdapter implements JsPlugin {
           const hook = this.wrapRawPluginHook(
             'load',
             this._rawPlugin.load,
-            context
+            context,
+            params.moduleId
           );
 
           const isSSR =
@@ -380,7 +381,8 @@ export class VitePluginAdapter implements JsPlugin {
           const hook = this.wrapRawPluginHook(
             'transform',
             this._rawPlugin.transform,
-            context
+            context,
+            params.moduleId
           );
           const isSSR =
             this._farmConfig.compilation.output.targetEnv === 'node';

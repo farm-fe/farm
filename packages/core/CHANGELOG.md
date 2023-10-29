@@ -1,5 +1,26 @@
 # @farmfe/core
 
+## 0.13.13
+
+### Patch Changes
+
+- 032bd4a: Fix bugs:
+  1. `server.proxy` does not work as expected
+  2. `plugin-css` should treat `xxx.png` as relative path
+  3. `assets` like `/logo.png` under publicDir should be resolved to `publicDir/logo.png`
+
+## 0.13.12
+
+### Patch Changes
+
+- 228ca7e: Support Vite-style `import.meta.glob`
+
+## 0.13.11
+
+### Patch Changes
+
+- ac56943: Fix issues #652
+
 ## 0.13.10
 
 ### Patch Changes

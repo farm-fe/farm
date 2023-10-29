@@ -29,11 +29,12 @@ export async function resolveAllPlugins(
 
   const rustPlugins = [];
 
-  const jsPlugins: JsPlugin[] = handleVitePlugins(
+  const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
     vitePlugins,
     userConfig,
     finalConfig
   );
+  const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
     if (
@@ -57,6 +58,9 @@ export async function resolveAllPlugins(
       );
     }
   }
+  // vite plugins execute after farm plugins by default.
+  jsPlugins.push(...vitePluginAdapters);
+
   // call user config hooks
   for (const jsPlugin of jsPlugins) {
     finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;

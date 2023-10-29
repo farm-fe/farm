@@ -1447,6 +1447,7 @@ name = "farmfe_plugin_script"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "farmfe_swc_transformer_import_glob",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "once_cell",
@@ -1480,10 +1481,10 @@ dependencies = [
 name = "farmfe_swc_transformer_import_glob"
 version = "0.0.1"
 dependencies = [
- "glob",
- "swc_common",
- "swc_ecma_ast",
- "swc_ecma_visit",
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils",
 ]
 
 [[package]]

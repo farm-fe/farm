@@ -5,7 +5,8 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "noEmit": true,
-    "jsx": "react"
+    "jsx": "react",
+    "types": ["@farmfe/core/client"]
   },
   "include": ["src", "farm.config.ts", "farm.config-test.ts"]
 }
