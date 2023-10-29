@@ -4,13 +4,15 @@
 import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
 import { applyHotUpdates, createHotContext } from './hot-module-state';
 import { HmrUpdateResult } from './types';
-
 declare const FARM_HMR_PORT: string | undefined;
 declare const FARM_HMR_HOST: string | undefined;
 declare const FARM_HMR_PATH: string | undefined;
 
 const port = Number(FARM_HMR_PORT || 9000);
-const host = FARM_HMR_HOST || 'localhost';
+const host =
+  typeof FARM_HMR_HOST === 'boolean'
+    ? window.location.hostname
+    : FARM_HMR_HOST || 'localhost';
 const path = FARM_HMR_PATH || '/__hmr';
 
 export default <FarmRuntimePlugin>{

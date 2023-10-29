@@ -1,9 +1,10 @@
+import { isArray, isObject } from '../utils/index.js';
+import { convertPlugin, handleVitePlugins } from './js/index.js';
+import { rustPluginResolver } from './rust/index.js';
+
+import type { JsPlugin } from './type.js';
 import type { Config } from '../../binding/index.js';
 import type { UserConfig } from '../config/index.js';
-import { isArray, isObject } from '../utils/share.js';
-import { convertPlugin, handleVitePlugins } from './js/index.js';
-import { type JsPlugin } from './type.js';
-import { rustPluginResolver } from './rust/index.js';
 
 export * from './js/index.js';
 export * from './rust/index.js';

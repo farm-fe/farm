@@ -1,12 +1,10 @@
 // queue all updates and compile them one by one
 
 import { isAbsolute, relative } from 'node:path';
-import chalk from 'chalk';
-// import debounce from 'lodash.debounce';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from './index.js';
-import { Logger } from '../utils/index.js';
+import { Logger, bold, cyan, green } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
@@ -68,8 +66,8 @@ export class HmrEngine {
     const start = Date.now();
     const result = await this._compiler.update(queue);
     this._logger.info(
-      `${chalk.cyan(updatedFilesStr)} updated in ${chalk.green.bold(
-        `${Date.now() - start}ms`
+      `${cyan(updatedFilesStr)} updated in ${bold(
+        green(`${Date.now() - start}ms`)
       )}`
     );
     // TODO: write resources to disk when hmr finished in incremental mode

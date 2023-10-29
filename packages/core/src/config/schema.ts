@@ -38,7 +38,6 @@ const compilationConfigSchema = z
         z.boolean(),
         z.object({
           // TODO watcher config schema
-          /* your watcher config schema */
           ignored: z.array(z.string()).optional(),
           watchOptions: z
             .object({
@@ -185,7 +184,6 @@ const compilationConfigSchema = z
 const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
-    base: z.string().optional(),
     clearScreen: z.boolean().optional(),
     configPath: z.string().optional(),
     envDir: z.string().optional(),

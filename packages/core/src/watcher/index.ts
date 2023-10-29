@@ -1,22 +1,28 @@
 import { basename, relative } from 'node:path';
 import { createRequire } from 'node:module';
+
 import debounce from 'lodash.debounce';
-import chalk from 'chalk';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
 import { Config, JsFileWatcher } from '../../binding/index.js';
-import { compilerHandler, DefaultLogger, clearScreen } from '../utils/index.js';
+import {
+  bold,
+  clearScreen,
+  compilerHandler,
+  DefaultLogger,
+  green
+} from '../utils/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
   JsPlugin,
   normalizeUserCompilationConfig,
   resolveUserConfig
 } from '../index.js';
+import { setProcessEnv } from '../config/env.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 
 import type { UserConfig } from '../config/index.js';
-import { setProcessEnv } from '../config/env.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -64,8 +70,8 @@ export class FileWatcher implements ImplFileWatcher {
         clearScreen();
         __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = false;
         this._logger.info(
-          `restarting server due to ${chalk.green(
-            relative(process.cwd(), path)
+          `restarting server due to ${bold(
+            green(relative(process.cwd(), path))
           )} change`
         );
         if (this.serverOrCompiler instanceof DevServer) {

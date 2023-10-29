@@ -1,5 +1,4 @@
 import type { UserConfig } from '@farmfe/core';
-import path from 'path';
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -18,7 +17,7 @@ export default defineConfig({
     },
     output: {
       path: './build',
-      publicPath: 'public'
+      publicPath: "public",
     },
     // sourcemap: true,
     css: {
@@ -29,12 +28,11 @@ export default defineConfig({
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
-    treeShaking: true,
+    treeShaking: true
   },
   server: {
     cors: true,
-    port: 6260,
-    host: 'localhost'
+    port: 8260
   },
   plugins: [
     '@farmfe/plugin-react',
@@ -51,9 +49,7 @@ export default defineConfig({
       name: 'plugin-hook-context-test',
       load: {
         filters: {
-          resolvedPaths: [
-            '.+main.tsx'
-          ]
+          resolvedPaths: ['.+main.tsx']
         },
         executor(param, context, hookContext) {
           // console.log('plugin-hook-context-test', param, context, hookContext);
@@ -62,7 +58,7 @@ export default defineConfig({
           //   resolvedPath: param.resolvedPath,
           //   name: "test.txt",
           //   // Buffer to number[]
-            
+
           //   content: [...Buffer.from("test")],
           //   resourceType: "txt"
           // });
@@ -70,7 +66,7 @@ export default defineConfig({
           // context.warn('test');
           // context.error('test');
           return null;
-        },
+        }
       }
     },
     {
