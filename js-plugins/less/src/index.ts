@@ -75,7 +75,7 @@ export default function farmLessPlugin(
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
             }
           );
-          if (imports && !isProd) {
+          if (devServer && imports && !isProd) {
             for (const dep of imports) {
               devServer.addWatchFile(param.resolvedPath, [
                 path.resolve(fileRoot, dep)
