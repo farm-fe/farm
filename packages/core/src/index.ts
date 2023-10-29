@@ -11,6 +11,7 @@ import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
 import fse from 'fs-extra';
+
 import { Compiler } from './compiler/index.js';
 import {
   normalizeDevServerOptions,
@@ -24,12 +25,12 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
-
-import type { FarmCLIOptions } from './config/types.js';
 import { setProcessEnv } from './config/env.js';
 import { JsPlugin } from './plugin/type.js';
 import { bold, cyan, green, magenta } from './utils/color.js';
 import { useProxy } from './server/middlewares/index.js';
+
+import type { FarmCLIOptions } from './config/types.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -43,9 +44,6 @@ export async function start(
     logger
   );
   const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
-
-  setProcessEnv(normalizedConfig.config.mode);
-  console.log('normalizedConfig', normalizedConfig);
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config);

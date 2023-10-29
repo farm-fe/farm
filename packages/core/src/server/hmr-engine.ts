@@ -1,7 +1,6 @@
 // queue all updates and compile them one by one
 
 import { isAbsolute, relative } from 'node:path';
-// import debounce from 'lodash.debounce';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from './index.js';

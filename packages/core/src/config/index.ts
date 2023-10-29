@@ -9,6 +9,9 @@ import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
+import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
+import { __FARM_GLOBAL__ } from './_global.js';
+import { importFresh } from '../utils/share.js';
 import {
   bold,
   clearScreen,
@@ -26,10 +29,6 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-
-import { CompilationMode, loadEnv } from './env.js';
-import { __FARM_GLOBAL__ } from './_global.js';
-import { importFresh } from '../utils/share.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -181,6 +180,8 @@ export async function normalizeUserCompilationConfig(
   if (config.mode === undefined) {
     config.mode = mode;
   }
+
+  setProcessEnv(config.mode);
 
   if (isProduction) {
     if (!config.output) {

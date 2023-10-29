@@ -2,7 +2,7 @@ import { performance } from 'node:perf_hooks';
 import { DefaultLogger } from './logger.js';
 
 import type { Config } from '../../binding/index.js';
-import { green } from './color.js';
+import { bold, green } from './color.js';
 
 export async function compilerHandler(
   callback: () => Promise<void>,
@@ -20,6 +20,6 @@ export async function compilerHandler(
   logger.info(
     `⚡️ Build completed in ${green(
       `${elapsedTime}ms`
-    )}! Resources emitted to ${green(config.config.output.path)}.`
+    )}! Resources emitted to ${bold(green(config.config.output.path))}.`
   );
 }

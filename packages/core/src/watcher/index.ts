@@ -1,5 +1,6 @@
 import { basename, relative } from 'node:path';
 import { createRequire } from 'node:module';
+
 import debounce from 'lodash.debounce';
 
 import { Compiler } from '../compiler/index.js';

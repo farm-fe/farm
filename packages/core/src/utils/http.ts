@@ -1,5 +1,6 @@
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
+import { UserServerConfig } from '../index.js';
 
 export interface ResolvedServerUrls {
   local: string[];
@@ -26,7 +27,7 @@ export const wildcardHosts = new Set([
 
 export async function resolveServerUrls(
   server: Server,
-  options: any,
+  options: UserServerConfig,
   config: any
 ): Promise<ResolvedServerUrls> {
   const address = server.address();

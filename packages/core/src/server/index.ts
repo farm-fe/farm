@@ -1,6 +1,7 @@
 import http from 'node:http';
 import Koa from 'koa';
 import { WebSocketServer } from 'ws';
+
 import { Compiler } from '../compiler/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
@@ -31,7 +32,7 @@ import {
   resourcesPlugin
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { resolveServerUrls } from '../utils/utils.js';
+import { resolveServerUrls } from '../utils/http.js';
 
 /**
  * Farm Dev Server, responsible for:
