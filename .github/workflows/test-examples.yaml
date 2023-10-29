@@ -49,13 +49,13 @@ jobs:
           path: ./packages/core/binding
 
       - uses: actions/download-artifact@v3
-        id: download-plugin-sass-${{ matrix.settings.abi }}
+        id: download-plugin-sass
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v3
-        id: download-plugin-react-${{ matrix.settings.abi }}
+        id: download-plugin-react
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
