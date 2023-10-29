@@ -40,6 +40,18 @@ Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件�
 
 <br />
 
+## 为什么选择 Farm？
+
+> 详情请参阅[Why Farm](https://farm-fe.github.io/docs/why-farm)。
+
+总之，像 webpack 这样的工具太慢了，但像 Vite 这样的新工具也不完美，Vite 在大型项目上有很多缺点：
+
+- **开发过程中请求量巨大**：当每个页面有成百上千个模块时，加载性能严重下降，刷新页面可能需要几秒或更长时间。
+- **开发和生产不一致**：开发和生产使用不同的策略和工具，设计和实现上非常不一致，且难以调试线上问题。
+- **不灵活的代码分割**：很难细粒度地控制控制产物的生成。
+
+Farm 可以完美解决这些问题，而且速度非常快。 Farm 的目标是提供一个快速、一致、灵活的构建工具，这是真正的下一代构建工具。
+
 ## 特性
 
 > 从 0.13 起，Vite 插件可以直接在 Farm 中使用.
@@ -51,6 +63,8 @@ Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件�
 - 📦 **局部打包**: 自动根据依赖关系、资源大小，将项目打包成若干个资源，提升资源加载性能的同时，保证缓存命中率。参考 [RFC-003 Partial Bundling](https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md)
 - 🔒 **一致性**: 开发环境和生产环境的表现一致，所见即所得。
 - 🌳 **兼容性**: 同时支持传统(ES5)和现代浏览器。
+
+> 目前 Farm 已经实现了构建引擎的所有能力，包括生产环境优化如 Tree Shake、压缩、Polyfill 等，已有企业级项目迁移到 Farm，并且效果非常好！
 
 <br/>
 
@@ -82,6 +96,43 @@ cd farm-project && npm start
 https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3173
 
 请参考[文档](https://farm-fe.github.io) 进一步了解 Farm。
+
+- **[Farm 教程](https://farm-fe.github.io/docs/quick-start)**
+- **[Farm 配置](https://farm-fe.github.io/docs/config/farm-config)**
+- **[Farm 插件](https://farm-fe.github.io/docs/plugins/overview)**
+
+## Farm Plugins
+
+在 Farm 中使用插件请参考文档 [Using Plugins](https://farm-fe.github.io/docs/using-plugins)
+
+### Rust Plugins
+
+- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/official-plugins/react)**
+- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/sass)**
+
+### Js Plugins
+
+- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/official-plugins/js-postcss)**
+- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/official-plugins/js-less)**
+- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/official-plugins/js-svgr)**
+- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/official-plugins/js-dts)**
+- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/js-sass)**
+
+### Community Plugins
+
+Plugins of Vite/Rollup/Unplugin can be directly used in Farm.
+
+- **[`@vitejs/plugin-vue`](https://github.com/vitejs/vite-plugin-vue/blob/main/packages/plugin-vue/README.md)**
+- **[`@vitejs/plugin-vue-jsx`](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue-jsx)**
+- **[`vite-plugin-solid`](https://www.npmjs.com/package/vite-plugin-solid)**
+- **[`vite-plugin-mock`](https://www.npmjs.com/package/vite-plugin-solid)**
+- **[unplugin-auto-import](https://github.com/antfu/unplugin-auto-import)**
+- **[unplugin-vue2-script-setup](https://github.com/antfu/unplugin-vue2-script-setup)**
+- **[unplugin-icons](https://github.com/antfu/unplugin-icons)**
+- **[unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)**
+- ...
+
+更多插件请参考文档 [Community Plugins](https://farm-fe.github.io/docs/plugins/community-plugins)
 
 ## 贡献
 
@@ -125,12 +176,6 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场
     </td>
   </tbody>
 </table>
-
-## 开发计划
-
-Farm 目前已经实现了一个编译引擎的所有能力，包括生产环境优化如 tree shake 以及产物压缩。我们已经将企业级 web 应用成功迁移到 Farm，极大提升了构建速度以及开发体验。
-
-查看 [开发计划](https://github.com/farm-fe/farm/blob/main/ROADMAP.zh-CN.md)
 
 ## 交流群
 

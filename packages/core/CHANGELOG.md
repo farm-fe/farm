@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.14
+
+### Patch Changes
+
+- 7e17e0b: Fix multiple exports issue when targetEnv is node
+
 ## 0.13.13
 
 ### Patch Changes
