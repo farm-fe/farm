@@ -33,7 +33,6 @@ export default defineConfig({
   server: {
     cors: true,
     port: 6260,
-    host: true,
   },
   plugins: [
     "@farmfe/plugin-react",
