@@ -54,6 +54,8 @@ pub struct Module {
   pub execution_order: usize,
   /// Source size of this module
   pub size: usize,
+  /// Rendered size of this module, set after render_resource_pot_meta hook
+  pub rendered_size: usize,
 }
 
 impl Module {
@@ -71,6 +73,7 @@ impl Module {
       // default to the last
       execution_order: usize::MAX,
       size: 0,
+      rendered_size: 0,
     }
   }
 }
