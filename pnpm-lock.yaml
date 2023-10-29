@@ -443,6 +443,9 @@ importers:
 
   examples/react:
     dependencies:
+      '@antv/util':
+        specifier: ^3.3.5
+        version: 3.3.5
       clsx:
         specifier: ^1.2.1
         version: 1.2.1
@@ -1735,14 +1738,6 @@ packages:
     resolution: {integrity: sha512-o6I9hi5CIUvLGDhth0RxNSFDRwXeywmt6ExR4+RmVAzIi48ps6HUy+svxOCayvrPBN37uE6TAc2KDofRo0nK9Q==}
     dependencies:
       csstype: 3.1.2
-      tslib: 2.5.0
-    dev: false
-
-  /@antv/util@3.3.4:
-    resolution: {integrity: sha512-NGRjPCPje8GIC14Ye7sjebamFIjxoZ+mCIqfXz6wD/M6fA9SgJivzmLB3Ry01Wq8PI36oOVv9BwrAGV1JD8vjA==}
-    dependencies:
-      fast-deep-equal: 3.1.3
-      gl-matrix: 3.4.3
       tslib: 2.5.0
     dev: false
 
@@ -5964,7 +5959,7 @@ packages:
       '@antv/component': 0.8.35
       '@antv/g2': 4.1.32
       '@antv/g2plot': 2.3.39
-      '@antv/util': 3.3.4
+      '@antv/util': 3.3.5
       '@babel/plugin-transform-modules-commonjs': 7.22.5(@babel/core@7.22.9)
       '@babel/plugin-transform-runtime': 7.22.15
       '@juggle/resize-observer': 3.4.0

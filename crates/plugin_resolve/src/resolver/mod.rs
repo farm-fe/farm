@@ -19,11 +19,11 @@ use std::{
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
 use crate::resolver_common::{
-  are_values_equal, find_package_dir, get_directory_path, get_field_value_from_package_json_info,
-  get_key_path, get_real_path, get_result_path, is_bare_import_path, is_double_source_dot,
-  is_in_node_modules, is_module_external, is_module_side_effects, is_source_absolute,
-  is_source_dot, is_source_relative, map_with_browser_field, split_file_and_postfix, try_file,
-  walk, ConditionOptions, NODE_MODULES,
+  are_values_equal, get_directory_path, get_field_value_from_package_json_info, get_key_path,
+  get_real_path, get_result_path, is_bare_import_path, is_double_source_dot, is_in_node_modules,
+  is_module_external, is_module_side_effects, is_source_absolute, is_source_dot,
+  is_source_relative, map_with_browser_field, split_file_and_postfix, try_file, walk,
+  ConditionOptions, NODE_MODULES,
 };
 use crate::{
   resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},

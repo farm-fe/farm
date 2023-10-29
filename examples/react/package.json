@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@antv/util": "^3.3.5",
     "clsx": "^1.2.1",
     "core-js": "^3.30.1",
     "react": "18",

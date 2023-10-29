@@ -90,7 +90,17 @@ impl Plugin for FarmPluginResolve {
 
     let resolver = &self.resolver;
     let result = resolver.resolve(source, basedir.clone(), &param.kind, context);
-
+    if result.is_some()
+      && result
+        .clone()
+        .unwrap()
+        .resolved_path
+        .contains("/node_modules/@antv/util/lib/index.js")
+    {
+      println!("source: {:#?}", &source);
+      println!("importer: {:#?}", &basedir);
+      println!("result: {:#?}", &result);
+    }
     // remove the .js if the result is not found to support using native esm with typescript
     if result.is_none() && source.ends_with(".js") {
       farm_profile_scope!("plugin_resolve::resolve::remove_dot_js".to_string());
