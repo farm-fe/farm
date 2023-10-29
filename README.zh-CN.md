@@ -40,6 +40,18 @@ Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件�
 
 <br />
 
+## 为什么选择 Farm？
+
+> 详情请参阅[Why Farm](https://farm-fe.github.io/docs/why-farm)。
+
+总之，像 webpack 这样的工具太慢了，但像 Vite 这样的新工具也不完美，Vite 在大型项目上有很多缺点：
+
+- **开发过程中请求量巨大**：当每个页面有成百上千个模块时，加载性能严重下降，刷新页面可能需要几秒或更长时间。
+- **开发和生产不一致**：开发和生产使用不同的策略和工具，设计和实现上非常不一致，且难以调试线上问题。
+- **不灵活的代码分割**：很难细粒度地控制控制产物的生成。
+
+Farm 可以完美解决这些问题，而且速度非常快。 Farm 的目标是提供一个快速、一致、灵活的构建工具，这是真正的下一代构建工具。
+
 ## 特性
 
 > 从 0.13 起，Vite 插件可以直接在 Farm 中使用.
@@ -52,23 +64,13 @@ Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件�
 - 🔒 **一致性**: 开发环境和生产环境的表现一致，所见即所得。
 - 🌳 **兼容性**: 同时支持传统(ES5)和现代浏览器。
 
+> 目前 Farm 已经实现了构建引擎的所有能力，包括生产环境优化如 Tree Shake、压缩、Polyfill 等，已有企业级项目迁移到 Farm，并且效果非常好！
+
 <br/>
 
 Farm 设计动机和理念请看 [RFC-001](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation)。。
 
 <br/>
-
-## 为什么选择 Farm？
-
-> 详情请参阅[Why Farm](https://farm-fe.github.io/docs/why-farm)。
-
-总之，像 webpack 这样的工具太慢了，但像 Vite 这样的新工具也不是完美的，Vite 在大型项目上有很多缺点：
-
-- **开发过程中请求量巨大**：当每页有成百上千个模块时，加载性能严重下降，刷新页面可能需要几秒或更长时间。
-- **开发和产品不一致**：开发和生产使用不同的策略和工具，设计和实现上非常不一致，且难以调试线上问题。
-- **不灵活的代码分割**：很难细粒度地控制控制产物的生成。
-
-Farm 可以完美解决这些问题，而且速度非常快。 Farm 的目标是提供一个快速、一致、灵活的构建工具，这是真正的下一代构建工具。
 
 ## 快速开始
 
@@ -105,16 +107,16 @@ https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3
 
 ### Rust Plugins
 
-- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/react)**
-- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/sass)**
+- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/official-plugins/react)**
+- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/sass)**
 
 ### Js Plugins
 
-- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/js-postcss)**
-- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/js-less)**
-- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/js-svgr)**
-- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/js-dts)**
-- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/js-sass)**
+- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/official-plugins/js-postcss)**
+- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/official-plugins/js-less)**
+- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/official-plugins/js-svgr)**
+- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/official-plugins/js-dts)**
+- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/js-sass)**
 
 ### Community Plugins
 

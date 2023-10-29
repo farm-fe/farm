@@ -107,16 +107,16 @@ See [Using Plugins](https://farm-fe.github.io/docs/using-plugins) for how to use
 
 ### Rust Plugins
 
-- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/react)**
-- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/sass)**
+- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/official-plugins/react)**
+- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/sass)**
 
 ### Js Plugins
 
-- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/js-postcss)**
-- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/js-less)**
-- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/js-svgr)**
-- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/js-dts)**
-- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/js-sass)**
+- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/official-plugins/js-postcss)**
+- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/official-plugins/js-less)**
+- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/official-plugins/js-svgr)**
+- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/official-plugins/js-dts)**
+- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/js-sass)**
 
 ### Community Plugins
 
