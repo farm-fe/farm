@@ -86,7 +86,7 @@ impl Resolver {
     if let Ok(package_json_info) = &package_json_info {
       // check source start_with "#" prepare resolve imports fields
       let resolved_imports_path =
-        self.resolve_sub_path_imports(package_json_info, id, kind, context);
+        self.resolve_sub_path_imports(package_json_info, id, &importer, kind, context);
       if let Some(resolved_imports_path) = resolved_imports_path {
         // TODO need base dir to check the relative path
         // Combine pkg_dir and imports_path
@@ -179,7 +179,7 @@ impl Resolver {
         // None
 
         let resolved_path = try_file(&normalized_path, context)
-          .or_else(|| self.try_directory(&base_dir, source, kind, false, context))
+          .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
           .ok_or(CompilationError::GenericError(format!(
             "File `{:?}` does not exist",
             normalized_path
@@ -723,21 +723,70 @@ impl Resolver {
     &self,
     package_json_info: &PackageJsonInfo,
     source: &str,
+    importer: &PathBuf,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("resolve_sub_path_imports".to_string());
     if source.starts_with('#') {
+      let base_dir = importer.parent().unwrap_or(Path::new(""));
       if let Some(resolved_path) =
         self.resolve_exports_or_imports(package_json_info, source, "imports", kind, context)
       {
-        if let Some(first_item) = resolved_path.into_iter().next() {
-          return Some(first_item);
-        }
+        // if (importsPath?.[0] === '.') {
+        //   importsPath = path.relative(basedir, path.join(pkgData.dir, importsPath))
+
+        //   if (importsPath[0] !== '.') {
+        //     importsPath = `./${importsPath}`
+        //   }
+        // }
+
+        let res = self.process_imports_path(
+          resolved_path.into_iter().next().unwrap().as_str(),
+          importer.to_str().unwrap(),
+          package_json_info.dir(),
+        );
+        return Some(res);
       }
     }
 
     None
+  }
+
+  fn process_imports_path(self: &Self, imports_path: &str, basedir: &str, pkg_dir: &str) -> String {
+    let mut imports_path = imports_path.to_string();
+    if imports_path.starts_with('.') {
+      // let relative_path = pkg_dir_path.join(&imports_path);
+
+      let p: String = get_key_path(&imports_path, &pkg_dir.to_string());
+      let res = self.calculate_relative_path(basedir, &p);
+      imports_path = res;
+    }
+
+    imports_path
+  }
+
+  fn calculate_relative_path(self: &Self, from_path: &str, to_path: &str) -> String {
+    let from_path = Path::new(from_path);
+    let to_path = Path::new(to_path);
+
+    // Calculate the relative path from 'from_path' to 'to_path'
+    let relative_path = to_path.strip_prefix(from_path);
+
+    match relative_path {
+      Ok(relative) => {
+        let mut path = relative.to_string_lossy().to_string();
+        if !path.starts_with("./") {
+          path = format!("./{}", path);
+        }
+        path
+      }
+      Err(_) => {
+        // Handle the case where 'from_path' is not a prefix of 'to_path'
+        // In this example, return the original 'to_path' as-is
+        to_path.to_string_lossy().to_string()
+      }
+    }
   }
 
   fn resolve_exports_or_imports(
