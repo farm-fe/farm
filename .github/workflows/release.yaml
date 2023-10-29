@@ -28,7 +28,7 @@ jobs:
       [
         call-rust-build,
         call-rust-plugin-react-build,
-        call-rust-plugin-sass-build,
+        call-rust-plugin-sass-build
       ]
     runs-on: ubuntu-latest
     steps:
@@ -154,3 +154,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Test create farm and make sure it works after release
+      - name: Test Create Farm React
+        run: pnpm create farm my-test-app-react --template react && cd my-test-app-react && pnpm build
+      - name: Test Create Farm Vue
+        run: pnpm create farm my-test-app-vue --template vue && cd my-test-app-vue && pnpm build
+      - name: Test Create Farm Solid
+        run: pnpm create farm my-test-app-solid --template solid && cd my-test-app-solid && pnpm build
