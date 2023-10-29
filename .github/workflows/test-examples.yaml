@@ -20,8 +20,8 @@ jobs:
       root: rust-plugins/sass
       name: plugin-sass
 
-  ts-test:
-    name: Typescript Test
+  examples-test:
+    name: Examples Test
     runs-on: ${{ matrix.settings.os }}
     needs: call-rust-build
     strategy:

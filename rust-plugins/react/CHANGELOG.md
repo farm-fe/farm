@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.3.4
+
+### Patch Changes
+
+- Bump version as Farm core changed
+
 ## 0.3.3
 
 ### Patch Changes
