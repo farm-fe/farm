@@ -84,7 +84,7 @@ export default function farmLessPlugin(
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
             } as Less.Options
           );
-          if (imports && !isProd) {
+          if (devServer && imports && !isProd) {
             for (const dep of imports) {
               // TODO add a compilerCreated hook to farmfe/core and get the compiler instead of using devServer
               devServer.addWatchFile(param.resolvedPath, [

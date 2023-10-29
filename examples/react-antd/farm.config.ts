@@ -19,7 +19,7 @@ export default defineConfig({
     // headers: {
     //   'Access-Control-Allow-Origin': '*'
     // },
-    port: 7880,
+    port: 5580,
     hmr: true,
     writeToDisk: false,
     cors: true,
