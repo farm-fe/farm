@@ -6,7 +6,6 @@ use farmfe_core::{
   farm_profile_function, farm_profile_scope,
   hashbrown::{HashMap, HashSet},
   plugin::{PluginResolveHookResult, ResolveKind},
-  regex,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
@@ -20,11 +19,11 @@ use std::{
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 
 use crate::resolver_common::{
-  are_values_equal, get_directory_path, get_field_value_from_package_json_info, get_key_path,
-  get_real_path, get_result_path, is_bare_import_path, is_double_source_dot, is_in_node_modules,
-  is_module_external, is_module_side_effects, is_source_absolute, is_source_dot,
-  is_source_relative, map_with_browser_field, split_file_and_postfix, try_file, walk,
-  ConditionOptions, NODE_MODULES,
+  are_values_equal, find_package_dir, get_directory_path, get_field_value_from_package_json_info,
+  get_key_path, get_real_path, get_result_path, is_bare_import_path, is_double_source_dot,
+  is_in_node_modules, is_module_external, is_module_side_effects, is_source_absolute,
+  is_source_dot, is_source_relative, map_with_browser_field, split_file_and_postfix, try_file,
+  walk, ConditionOptions, NODE_MODULES,
 };
 use crate::{
   resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
@@ -156,6 +155,11 @@ impl Resolver {
           });
       }
       source if is_source_relative(source) => {
+        // let mut current_dir = PathBuf::from(&base_dir);
+        // if let Some(result_dir) = find_package_dir(&current_dir) {
+        //   current_dir = result_dir
+        // }
+
         farm_profile_scope!("resolve.relative".to_string());
         // if it starts with './' or '../, it is a relative path
         let normalized_path = RelativePath::new(source).to_logical_path(&base_dir);
@@ -175,12 +179,11 @@ impl Resolver {
         // None
 
         let resolved_path = try_file(&normalized_path, context)
-          .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
+          .or_else(|| self.try_directory(&base_dir, source, kind, false, context))
           .ok_or(CompilationError::GenericError(format!(
             "File `{:?}` does not exist",
             normalized_path
           )));
-
         if let Ok(resolved_path) = resolved_path {
           return Some(self.get_resolve_result(&package_json_info, resolved_path, kind, context));
         } else {
@@ -813,7 +816,6 @@ impl Resolver {
       let name = match get_field_value_from_package_json_info(package_json_info, "name") {
         Some(n) => n,
         None => {
-          // 如果 name 找不到 也要解析一下错误情况处理返回
           eprintln!(
             "Missing \"name\" field in package.json {:?}",
             package_json_info

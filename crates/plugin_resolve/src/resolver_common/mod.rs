@@ -823,3 +823,23 @@ pub fn find_package_json_dir(start_dir: PathBuf) -> Option<PathBuf> {
     }
   }
 }
+
+pub fn find_package_dir(basedir: &PathBuf) -> Option<PathBuf> {
+  let mut current_dir = basedir.clone(); // 创建 basedir 的克隆
+
+  loop {
+    let package_json_path = current_dir.join("package.json");
+
+    if package_json_path.exists() {
+      return Some(current_dir);
+    }
+
+    if let Some(parent_dir) = current_dir.parent() {
+      current_dir = parent_dir.to_path_buf(); // 更新为父目录的克隆
+    } else {
+      break;
+    }
+  }
+
+  None
+}
