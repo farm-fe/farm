@@ -14,9 +14,10 @@ export default defineFarmConfig({
       path: "build",
     },
     define: {
-      __DEV__: "true",
+      __DEV__: true,
     },
     sourcemap: false,
+    presetEnv: false,
   },
   server: {
     open: true,

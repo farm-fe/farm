@@ -11,7 +11,8 @@ export default defineConfig({
       alias: {
         'stream$': 'readable-stream'
       }
-    }
+    },
+    presetEnv: false,
   },
   server: {
     port: 6699,

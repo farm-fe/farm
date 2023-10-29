@@ -40,6 +40,18 @@ Farm is a extremely fast vite-compatible web-building tool written in Rust. Benc
 
 <br />
 
+## Why Farm?
+
+> See [Why Farm](https://farm-fe.github.io/docs/why-farm) for details.
+
+In short, tools like webpack are too slow, but new tools like Vite are not perfect, Vite has a lot of drawbacks when comes to a large project:
+
+- **A huge number of requests during development**：when there are hundreds or thousands module per page, loading performance severely degraded, it may takes seconds or more when refresh the page.
+- **Inconsistency between development and product**: Using different strategy and tools in development and production, it's really inconsistent and it's hard to debug online issues.
+- **Inflexible Code Splitting**: It's hard to control the output of your bundles.
+
+Farm can solve these problems perfectly, and it's really fast cause it's written in Rust. Farm aims to be fast, consistent, flexible, which is the real next generation build tool.
+
 ## Features
 
 > Since Farm v0.13, Vite plugins can be used directly in Farm. Refer to [Using vite plugins in Farm](https://farm-fe.github.io/docs/using-plugins#using-vite-plugins-in-farm)
@@ -53,6 +65,8 @@ Farm is a extremely fast vite-compatible web-building tool written in Rust. Benc
 - 🌳 **Compatibility**: Supports both legacy (ES5) and modern browsers.
 
 <br/>
+
+> Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
 
 See [RFC-001 Architecture](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation) for design motivation and architecture.
 
@@ -82,6 +96,43 @@ See our 1 minute quick start video:
 https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3173
 
 Refer to the [Documentation](https://farm-fe.github.io) to learn more about Farm.
+
+- **[Farm Guide](https://farm-fe.github.io/docs/quick-start)**
+- **[Farm Config](https://farm-fe.github.io/docs/config/farm-config)**
+- **[Farm Plugins](https://farm-fe.github.io/docs/plugins/overview)**
+
+## Farm Plugins
+
+See [Using Plugins](https://farm-fe.github.io/docs/using-plugins) for how to use plugins in Farm.
+
+### Rust Plugins
+
+- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/official-plugins/react)**
+- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/sass)**
+
+### Js Plugins
+
+- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/official-plugins/js-postcss)**
+- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/official-plugins/js-less)**
+- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/official-plugins/js-svgr)**
+- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/official-plugins/js-dts)**
+- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/js-sass)**
+
+### Community Plugins
+
+Plugins of Vite/Rollup/Unplugin can be directly used in Farm.
+
+- **[`@vitejs/plugin-vue`](https://github.com/vitejs/vite-plugin-vue/blob/main/packages/plugin-vue/README.md)**
+- **[`@vitejs/plugin-vue-jsx`](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue-jsx)**
+- **[`vite-plugin-solid`](https://www.npmjs.com/package/vite-plugin-solid)**
+- **[`vite-plugin-mock`](https://www.npmjs.com/package/vite-plugin-solid)**
+- **[unplugin-auto-import](https://github.com/antfu/unplugin-auto-import)**
+- **[unplugin-vue2-script-setup](https://github.com/antfu/unplugin-vue2-script-setup)**
+- **[unplugin-icons](https://github.com/antfu/unplugin-icons)**
+- **[unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)**
+- ...
+
+See [Community Plugins](https://farm-fe.github.io/docs/plugins/community-plugins) for more available plugins.
 
 ## Contribution
 
@@ -125,12 +176,6 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
     </td>
   </tbody>
 </table>
-
-## RoadMap
-
-The Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. We have already migrated enterprise projects to Farm, and it works great!
-
-See [RoadMap](https://github.com/farm-fe/farm/blob/main/ROADMAP.md).
 
 ## Chat With Us
 

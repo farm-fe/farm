@@ -4,18 +4,20 @@ import type { ConfigPlugin, Config as SvgrOptions } from '@svgr/core';
 
 export interface FarmSvgrPluginOptions {
   svgrOptions?: SvgrOptions;
-  filters?: string[];
+  filters?: {
+    resolvedPaths?: string[];
+  };
 }
 
 export default function farmSvgrPlugin(
   options: FarmSvgrPluginOptions = {}
 ): JsPlugin {
-  const { svgrOptions, filters = ['\\.svg$'] } = options;
+  const { svgrOptions, filters } = options;
 
   return {
     name: 'farm-js-plugin-svgr',
     load: {
-      filters: { resolvedPaths: filters },
+      filters: { resolvedPaths: filters?.resolvedPaths ?? ['\\.svg$'] },
       async executor(param) {
         if (
           param.query.some(
