@@ -106,6 +106,7 @@ impl Compiler {
     // Topo sort the module graph
     let mut module_graph = self.context.module_graph.write();
     module_graph.update_execution_order_for_modules();
+    drop(module_graph);
 
     self.context.plugin_driver.build_end(&self.context)
   }

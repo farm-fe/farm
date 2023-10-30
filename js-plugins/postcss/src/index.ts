@@ -56,7 +56,12 @@ export default function farmPostcssPlugin(
       async executor(param, context) {
         try {
           const sourcemap =
-            postcssOptions.map ?? Boolean(farmConfig?.sourcemap);
+            postcssOptions.map ??
+            Boolean(
+              farmConfig?.sourcemap === true
+                ? !param.resolvedPath.includes('node_modules/')
+                : farmConfig?.sourcemap
+            );
 
           const { css, map, messages } = await postcssProcessor.process(
             param.content,

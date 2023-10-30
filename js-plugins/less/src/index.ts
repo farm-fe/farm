@@ -80,7 +80,12 @@ export default function farmLessPlugin(
               ...(options?.lessOptions ?? {}),
               filename: param.resolvedPath,
               sourceMap:
-                options.lessOptions?.sourceMap ?? Boolean(farmConfig.sourcemap),
+                options.lessOptions?.sourceMap ??
+                Boolean(
+                  farmConfig?.sourcemap === true
+                    ? !param.resolvedPath.includes('node_modules/')
+                    : farmConfig?.sourcemap
+                ),
               paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
             } as Less.Options
           );
