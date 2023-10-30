@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.18
+
+### Patch Changes
+
+- cc124a0: bump version
+
 ## 1.2.17
 
 ### Patch Changes

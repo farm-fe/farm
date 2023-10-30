@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.15
+
+### Patch Changes
+
+- cc124a0: remove unless package rewrite logger and server banner
+
 ## 0.13.14
 
 ### Patch Changes
