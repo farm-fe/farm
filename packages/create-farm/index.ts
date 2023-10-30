@@ -152,7 +152,12 @@ async function installationDeps(
   const currentPkgManager = pkgInfo ? pkgManager : packageManager;
   if (autoInstall) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir));
-    await cmdInherit(currentPkgManager, ['install']);
+    await cmdInherit(
+      currentPkgManager,
+      currentPkgManager === 'pnpm'
+        ? ['install', '--no-frozen-lockfile']
+        : ['install']
+    );
   }
   logger('> Initial Farm Project created successfully ✨ ✨');
   logger(`  cd ${targetDir}`);
