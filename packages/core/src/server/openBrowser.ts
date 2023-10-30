@@ -5,15 +5,13 @@
  * MIT Licensed
  * Copyright (c) 2015-present, Facebook, Inc.
  * https://github.com/facebook/create-react-app/blob/master/LICENSE
- *
  */
 
 import path from 'node:path';
 import open from 'open';
 import { execa } from 'execa';
-import chalk from 'chalk';
 import { execSync } from 'child_process';
-import { DefaultLogger } from '../utils/index.js';
+import { cyan, DefaultLogger, red } from '../utils/index.js';
 
 // https://github.com/sindresorhus/open#app
 const OSX_CHROME = 'google chrome';
@@ -52,11 +50,9 @@ function executeNodeScript(scriptPath: string, url: string) {
     if (code !== 0) {
       console.log();
       console.log(
-        chalk.red(
-          'The script specified as BROWSER environment variable failed.'
-        )
+        red('The script specified as BROWSER environment variable failed.')
       );
-      console.log(chalk.cyan(scriptPath) + ' exited with code ' + code + '.');
+      console.log(cyan(scriptPath) + ' exited with code ' + code + '.');
       console.log();
       return;
     }

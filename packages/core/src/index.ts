@@ -7,11 +7,11 @@ export * from './utils/index.js';
 import path from 'node:path';
 import os from 'node:os';
 import { existsSync, statSync } from 'node:fs';
-import chalk from 'chalk';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
 import fse from 'fs-extra';
+
 import { Compiler } from './compiler/index.js';
 import {
   normalizeDevServerOptions,
@@ -25,11 +25,12 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
-
-import type { FarmCLIOptions } from './config/types.js';
 import { setProcessEnv } from './config/env.js';
 import { JsPlugin } from './plugin/type.js';
+import { bold, cyan, green, magenta } from './utils/color.js';
 import { useProxy } from './server/middlewares/index.js';
+
+import type { FarmCLIOptions } from './config/types.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -44,8 +45,6 @@ export async function start(
   );
   const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
-  setProcessEnv(normalizedConfig.config.mode);
-
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config);
 
@@ -55,12 +54,9 @@ export async function start(
     );
   }
   await devServer.listen();
+
   // Make sure the server is listening before we watch for file changes
   if (devServer.config.hmr) {
-    logger.info(
-      'HMR enabled, watching for file changes under ' + chalk.green(config.root)
-    );
-
     if (normalizedConfig.config.mode === 'production') {
       logger.error(
         'HMR can not be enabled in production mode. Please set the mode option to "development" in your config file.'
@@ -169,7 +165,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   });
 
   app.listen(port, () => {
-    logger.info(chalk.green(`preview server running at:\n`));
+    logger.info(green(`preview server running at:\n`));
     const interfaces = os.networkInterfaces();
     Object.keys(interfaces).forEach((key) =>
       (interfaces[key] || [])
@@ -183,10 +179,10 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${chalk.bold(port)}${
+          const url = `${'http'}://${host}:${bold(port)}${
             output.publicPath ?? ''
           }`;
-          logger.info(`${chalk.magenta('>')} ${type} ${chalk.cyan(url)}`);
+          logger.info(`${magenta('>')} ${type} ${cyan(url)}`);
         })
     );
   });

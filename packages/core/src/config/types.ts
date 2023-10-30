@@ -1,3 +1,5 @@
+import { DevServer } from '../index.js';
+
 import type cors from '@koa/cors';
 import type { OutgoingHttpHeaders } from 'http';
 import type { Logger } from '../utils/index.js';
@@ -5,7 +7,6 @@ import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/type.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { Config } from '../../binding/index.js';
-import { DevServer } from '../index.js';
 
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
@@ -18,7 +19,7 @@ export interface UserServerConfig {
   proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
   open?: boolean;
-  host?: string;
+  host?: string | boolean;
   cors?: boolean | cors.Options;
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
@@ -81,6 +82,7 @@ export interface FarmCLIServerOptions {
   open?: boolean;
   https?: boolean;
   hmr?: boolean;
+  host?: boolean | string;
   strictPort?: boolean;
 }
 

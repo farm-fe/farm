@@ -15,6 +15,7 @@ use farmfe_core::{
   rayon::ThreadPool,
   resource::ResourceType,
 };
+use farmfe_plugin_css::transform_css_to_script::transform_css_to_script_modules;
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
 
 use crate::{
@@ -166,6 +167,11 @@ impl Compiler {
     let (affected_module_groups, updated_module_ids, diff_result) =
       self.diff_and_patch_context(paths, &update_context);
 
+    // TODO Add a separate hook after module graph are updated
+    let mut module_ids = updated_module_ids.clone();
+    module_ids.extend(diff_result.added_modules.clone().into_iter());
+    transform_css_to_script_modules(module_ids, &self.context)?;
+
     let dynamic_resources_map = self.regenerate_resources(
       affected_module_groups,
       previous_module_groups,
@@ -191,12 +197,12 @@ impl Compiler {
       watch_diff_result.remove.extend(old_watch_extra_resources);
     }
 
-    // If the module type is not script or css, we should skip render and generate update resource.
+    // If the module type is not script, we should skip render and generate update resource.
     // and just return `window.location.reload()`
     let should_reload_page = updated_module_ids.iter().any(|id| {
       let module_graph = self.context.module_graph.read();
       let module = module_graph.module(id).unwrap();
-      !module.module_type.is_script() && module.module_type != ModuleType::Css
+      !module.module_type.is_script()
     });
     let resources = if should_reload_page {
       "window.location.reload()".to_string()

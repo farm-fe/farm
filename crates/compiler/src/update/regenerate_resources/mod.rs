@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   hashbrown::HashSet,
-  module::{module_group::ModuleGroupId, ModuleId, ModuleType},
+  module::{module_group::ModuleGroupId, ModuleId},
   resource::resource_pot::{
     JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType,
   },
@@ -11,7 +11,6 @@ use farmfe_core::{
   swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
 };
 
-use farmfe_plugin_css::transform_resource_pot::transform_css_resource_pot;
 use farmfe_plugin_runtime::render_resource_pot::resource_pot_to_runtime_object_lit;
 
 use crate::generate::render_resource_pots::{
@@ -31,13 +30,9 @@ pub fn render_and_generate_update_resource(
 ) -> farmfe_core::error::Result<String> {
   let mut update_resource_pot =
     ResourcePot::new(String::from("__UPDATE_RESOURCE_POT__"), ResourcePotType::Js);
-  let mut update_css_resource_pot = ResourcePot::new(
-    String::from("__UPDATE_CSS_RESOURCE_POT__"),
-    ResourcePotType::Css,
-  );
   update_resource_pot.immutable = true;
 
-  let mut module_graph = context.module_graph.write();
+  let module_graph = context.module_graph.read();
 
   for added in &diff_result.added_modules {
     let module = module_graph.module(added).unwrap();
@@ -46,11 +41,7 @@ pub fn render_and_generate_update_resource(
       continue;
     }
 
-    if module.module_type == ModuleType::Css {
-      update_css_resource_pot.add_module(added.clone());
-    } else {
-      update_resource_pot.add_module(added.clone());
-    }
+    update_resource_pot.add_module(added.clone());
   }
 
   for updated in updated_module_ids {
@@ -60,17 +51,7 @@ pub fn render_and_generate_update_resource(
       continue;
     }
 
-    if matches!(module.module_type, ModuleType::Css) {
-      update_css_resource_pot.add_module(updated.clone());
-    } else {
-      update_resource_pot.add_module(updated.clone());
-    }
-  }
-
-  transform_css_resource_pot(&mut update_css_resource_pot, &mut module_graph, context)?;
-
-  for module_id in update_css_resource_pot.modules() {
-    update_resource_pot.add_module(module_id.clone());
+    update_resource_pot.add_module(updated.clone());
   }
 
   let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &module_graph, context)?;

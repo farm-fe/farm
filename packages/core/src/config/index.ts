@@ -4,14 +4,18 @@ import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
-import chalk from 'chalk';
 
 import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
+import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
+import { __FARM_GLOBAL__ } from './_global.js';
+import { importFresh } from '../utils/share.js';
 import {
+  bold,
   clearScreen,
+  green,
   isArray,
   isObject,
   Logger,
@@ -25,10 +29,6 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-
-import { CompilationMode, loadEnv } from './env.js';
-import { __FARM_GLOBAL__ } from './_global.js';
-import { importFresh } from '../utils/share.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -180,6 +180,8 @@ export async function normalizeUserCompilationConfig(
   if (config.mode === undefined) {
     config.mode = mode;
   }
+
+  setProcessEnv(config.mode);
 
   if (isProduction) {
     if (!config.output) {
@@ -382,7 +384,7 @@ async function readConfigFile(
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      logger.info(`Using config file at ${chalk.green(configFilePath)}`);
+      logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {
       const Compiler = (await import('../compiler/index.js')).Compiler;

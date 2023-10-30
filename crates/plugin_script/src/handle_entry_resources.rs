@@ -157,13 +157,13 @@ fn get_export_info_code(
             }
           } else {
             match context.config.output.format {
-              ModuleFormat::CommonJs => format!("exports.{} = entry.{}", name, name),
+              ModuleFormat::CommonJs => format!("exports.{} = entry.{};", name, name),
               ModuleFormat::EsModule => format!("var {name}=entry.{name};export {{ {} }};", name),
             }
           }
         }
         ExportInfoOfEntryModule::All => match context.config.output.format {
-          ModuleFormat::CommonJs => "module.exports = entry".to_string(),
+          ModuleFormat::CommonJs => "module.exports = entry;".to_string(),
           ModuleFormat::EsModule => {
             println!("[warn] `export * from` is not supported in your entry module when target env is node");
             "".to_string()
