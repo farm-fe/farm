@@ -33,7 +33,7 @@
     "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.13.15"
+    "@farmfe/core": "^0.13.16"
   },
   "files": [
     "dist"
