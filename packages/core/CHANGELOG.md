@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.16
+
+### Patch Changes
+
+- ddc3b40: fix enforceResources panic when lazy compile
+
 ## 0.13.15
 
 ### Patch Changes
