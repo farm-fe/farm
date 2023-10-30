@@ -117,7 +117,7 @@ pub fn fill_necessary_fields_for_resource_pot(
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module_mut(module_id).unwrap();
-      module.resource_pot = Some(resource_pot.id.clone());
+      module.resource_pot.push(resource_pot.id.clone());
       module_groups.extend(module.module_groups.clone());
 
       if module_graph.entries.contains_key(module_id) {

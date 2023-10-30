@@ -1,6 +1,6 @@
 #![feature(is_some_and)]
 
-use std::{collections::VecDeque, fs, path::PathBuf, sync::Arc};
+use std::{collections::VecDeque, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   config::{config_regex::ConfigRegex, Config},
@@ -13,7 +13,7 @@ use farmfe_core::{
     ModuleId, ModuleType,
   },
   plugin::{Plugin, PluginHookContext},
-  resource::resource_pot::ResourcePot,
+  resource::resource_pot::{ResourcePot, ResourcePotType},
 };
 use generate_module_buckets::{generate_module_buckets_map, group_module_buckets_by_module_group};
 use generate_resource_pots::generate_resource_pots;
