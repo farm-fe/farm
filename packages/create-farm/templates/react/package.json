@@ -10,7 +10,7 @@
   "devDependencies": {
     "@farmfe/cli": "^0.5.8",
     "@farmfe/core": "^0.13.15",
-    "@farmfe/plugin-react": "^0.3.3",
+    "@farmfe/plugin-react": "^0.3.4",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"
