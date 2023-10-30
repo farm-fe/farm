@@ -144,12 +144,10 @@ fn handle_enforce_resource_pots(
     ) {
       let (_, _, resource_pot_id) =
         get_resource_pot_id_for_enforce_resources(name, module_id, &module_graph);
-      // check if the module is in any enforce resource pot
-      assert!(
-        affected_resource_pot_ids.contains(&resource_pot_id),
-        "The module {:?} matches enforceResources config, but not in any enforce resource pot",
-        module_id
-      );
+
+      if !affected_resource_pot_ids.contains(&resource_pot_id) {
+        affected_resource_pot_ids.insert(resource_pot_id);
+      }
     } else {
       un_enforced_modules.insert(module_id.clone());
     }
@@ -157,7 +155,9 @@ fn handle_enforce_resource_pots(
 
   // remove the resource pot if it's modules are empty
   for id in &affected_resource_pot_ids {
-    let resource_pot = resource_pot_map.resource_pot_mut(id).unwrap();
+    let resource_pot = resource_pot_map.resource_pot_mut(id).unwrap_or_else(|| {
+      panic!("resource pot not found: {:?}", id);
+    });
 
     if resource_pot.modules().is_empty() {
       resource_pot_map.remove_resource_pot(id);

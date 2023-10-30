@@ -34,13 +34,12 @@ use farmfe_toolkit::{
 };
 use farmfe_utils::parse_query;
 use source_replacer::SourceReplacer;
-use transform_resource_pot::transform_css_resource_pot;
 
 const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
 
 mod dep_analyzer;
 mod source_replacer;
-pub mod transform_resource_pot;
+pub mod transform_css_to_script;
 
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
@@ -385,23 +384,29 @@ impl Plugin for FarmPluginCss {
     Ok(None)
   }
 
-  fn process_resource_pots(
-    &self,
-    resource_pots: &mut Vec<&mut ResourcePot>,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
+  fn build_end(&self, context: &Arc<CompilationContext>) -> farmfe_core::error::Result<Option<()>> {
     if !matches!(context.config.mode, farmfe_core::config::Mode::Development)
       || !matches!(context.config.output.target_env, TargetEnv::Browser)
     {
       return Ok(None);
     }
 
-    let mut module_graph = context.module_graph.write();
+    // transform all css to script
+    let css_modules = context
+      .module_graph
+      .write()
+      .modules()
+      .into_iter()
+      .filter_map(|m| {
+        if matches!(m.module_type, ModuleType::Css) {
+          Some(m.id.clone())
+        } else {
+          None
+        }
+      })
+      .collect::<Vec<ModuleId>>();
 
-    // transform css resource pot to js resource pot in development mode
-    for resource_pot in resource_pots {
-      transform_css_resource_pot(resource_pot, &mut module_graph, context)?;
-    }
+    transform_css_to_script::transform_css_to_script_modules(css_modules, context)?;
 
     Ok(Some(()))
   }
