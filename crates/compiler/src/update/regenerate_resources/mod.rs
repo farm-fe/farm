@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
-  hashbrown::HashSet,
-  module::{module_group::ModuleGroupId, ModuleId},
+  hashbrown::{HashMap, HashSet},
+  module::{module_group::ModuleGroupId, Module, ModuleId},
   resource::resource_pot::{
     JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType,
   },
@@ -84,6 +84,7 @@ pub fn regenerate_resources_for_affected_module_groups(
   affected_module_groups: HashSet<ModuleGroupId>,
   diff_result: DiffResult,
   updated_module_ids: &Vec<ModuleId>,
+  removed_modules: &HashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
   // if there are deps changes, update execution order
@@ -104,6 +105,7 @@ pub fn regenerate_resources_for_affected_module_groups(
       &affected_module_groups,
       &diff_result,
       updated_module_ids,
+      removed_modules,
       context,
     )?
   };
