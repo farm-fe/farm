@@ -97,7 +97,11 @@ fn test_handle_enforce_resource_pots() {
   let mut config = Config::default();
   config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
     name: "test".into(),
-    test: vec![ConfigRegex::new("F"), ConfigRegex::new("H")],
+    test: vec![
+      ConfigRegex::new("F"),
+      ConfigRegex::new("H"),
+      ConfigRegex::new("G"),
+    ],
   }];
   let plugins: Vec<Arc<dyn Plugin + 'static>> = vec![Arc::new(
     farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config),
@@ -118,8 +122,13 @@ fn test_handle_enforce_resource_pots() {
     generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
   context.resource_pot_map.write().replace(resource_pot_map);
 
-  let (enforce_resource_pots, mut un_enforce_resource_pots) =
-    handle_enforce_resource_pots(&affected_modules, &diff_result, &updated_modules, &context);
+  let (enforce_resource_pots, mut un_enforce_resource_pots) = handle_enforce_resource_pots(
+    &affected_modules,
+    &diff_result,
+    &updated_modules,
+    &removed_modules,
+    &context,
+  );
 
   assert_eq!(
     enforce_resource_pots,
@@ -224,8 +233,13 @@ fn test_handle_enforce_resource_pots_one_module_changed() {
     generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
   context.resource_pot_map.write().replace(resource_pot_map);
 
-  let (enforce_resource_pots, un_enforce_resource_pots) =
-    handle_enforce_resource_pots(&affected_modules, &diff_result, &updated_modules, &context);
+  let (enforce_resource_pots, un_enforce_resource_pots) = handle_enforce_resource_pots(
+    &affected_modules,
+    &diff_result,
+    &updated_modules,
+    &removed_modules,
+    &context,
+  );
 
   assert!(enforce_resource_pots.is_empty());
   assert_eq!(un_enforce_resource_pots, vec!["I".into()]);

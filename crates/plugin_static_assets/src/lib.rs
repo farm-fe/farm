@@ -85,6 +85,8 @@ impl Plugin for FarmPluginStaticAssets {
           }));
         }
       }
+      // TODO make css imported asset only handled by static assets to avoid issue: background: url(xx.svg),
+      // and xx.svg are transformed to js module by plugin like svgr. which would lead to a error for css.
     }
 
     Ok(None)

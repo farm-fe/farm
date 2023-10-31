@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
-  hashbrown::HashSet,
-  module::{module_group::ModuleGroupId, ModuleId},
+  hashbrown::{HashMap, HashSet},
+  module::{module_group::ModuleGroupId, Module, ModuleId},
   plugin::PluginHookContext,
   resource::resource_pot::{ResourcePot, ResourcePotId},
 };
@@ -12,6 +12,7 @@ use crate::{
   generate::partial_bundling::{
     call_partial_bundling_hook, fill_necessary_fields_for_resource_pot,
     get_enforce_resource_name_for_module, get_resource_pot_id_for_enforce_resources,
+    get_resource_pot_id_for_enforce_resources_by_removed_module,
   },
   update::diff_and_patch_module_graph::DiffResult,
 };
@@ -27,12 +28,18 @@ pub fn generate_and_diff_resource_pots(
   module_groups: &HashSet<ModuleGroupId>,
   diff_result: &DiffResult,
   updated_module_ids: &Vec<ModuleId>,
+  removed_modules: &HashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Vec<ResourcePotId>> {
   let affected_modules = get_affected_modules(module_groups, context);
 
-  let (enforce_resource_pot_ids, modules) =
-    handle_enforce_resource_pots(&affected_modules, diff_result, updated_module_ids, context);
+  let (enforce_resource_pot_ids, modules) = handle_enforce_resource_pots(
+    &affected_modules,
+    diff_result,
+    updated_module_ids,
+    removed_modules,
+    context,
+  );
 
   // for enforce resource pots, only rerender it when it's modules are changed, added or removed.
   let mut resources_pots =
@@ -94,6 +101,7 @@ fn handle_enforce_resource_pots(
   affected_modules: &Vec<ModuleId>,
   diff_result: &DiffResult,
   updated_module_ids: &Vec<ModuleId>,
+  removed_modules: &HashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> (Vec<ResourcePotId>, Vec<ModuleId>) {
   let module_graph = context.module_graph.read();
@@ -108,7 +116,14 @@ fn handle_enforce_resource_pots(
         &context.config.partial_bundling.enforce_resources,
       ) {
         let (resource_pot_type, resource_pot_name, resource_pot_id) =
-          get_resource_pot_id_for_enforce_resources(name, module_id, &module_graph);
+          if ty != ChangedModuleType::Removed {
+            get_resource_pot_id_for_enforce_resources(name, module_id, &module_graph)
+          } else {
+            let module = removed_modules.get(module_id).unwrap_or_else(|| {
+              panic!("can not find module {:?}", module_id);
+            });
+            get_resource_pot_id_for_enforce_resources_by_removed_module(name, module)
+          };
         affected_resource_pot_ids.insert(resource_pot_id.clone());
 
         if let Some(resource_pot) = resource_pot_map.resource_pot_mut(&resource_pot_id) {

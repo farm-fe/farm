@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
   hashbrown::HashSet,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId},
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId},
   plugin::PluginHookContext,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -145,6 +145,16 @@ pub fn get_resource_pot_id_for_enforce_resources(
   module_graph: &ModuleGraph,
 ) -> (ResourcePotType, String, String) {
   let module = module_graph.module(module_id).unwrap();
+  let resource_pot_type = ResourcePotType::from(module.module_type.clone());
+  let id = ResourcePot::gen_id(&name, resource_pot_type.clone());
+
+  (resource_pot_type, name, id)
+}
+
+pub fn get_resource_pot_id_for_enforce_resources_by_removed_module(
+  name: String,
+  module: &Module,
+) -> (ResourcePotType, String, String) {
   let resource_pot_type = ResourcePotType::from(module.module_type.clone());
   let id = ResourcePot::gen_id(&name, resource_pot_type.clone());
 
