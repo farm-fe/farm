@@ -16,6 +16,7 @@
     "react-refresh": "^0.14.0"
   },
   "scripts": {
+    "dev": "farm start",
     "start": "farm start",
     "build": "farm build",
     "preview": "farm preview"
