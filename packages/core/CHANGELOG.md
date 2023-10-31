@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.13.17
+
+### Patch Changes
+
+- 35d294e: server host options default true
+- 822c281: Fix #685
+- Updated dependencies [35d294e]
+  - @farmfe/runtime-plugin-hmr@3.2.5
+
 ## 0.13.16
 
 ### Patch Changes
