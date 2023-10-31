@@ -11,7 +11,9 @@ import HelloWorld from './components/HelloWorld.vue'
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
   </div>
-  <HelloWorld msg="Farm + Vue" />
+  <el-config-provider :size="'large'" :z-index="3000">
+    <HelloWorld msg="Farm + Vue" />
+  </el-config-provider>
 </template>
 
 <style scoped>
@@ -21,9 +23,11 @@ import HelloWorld from './components/HelloWorld.vue'
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #9F1A8Faa);
 }
+
 .logo.vue:hover {
   filter: drop-shadow(0 0 2em #42b883aa);
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 defineProps<{ msg: string }>()
 const count = ref(0)
@@ -10,7 +10,8 @@ console.log(count.value);
   <h1>{{ msg }}</h1>
 
   <div class="card">
-    <button type="button" @click="count++">count is {{ count }}</button>
+    <el-button type="primary" @click="count++">count is {{ count }}</el-button>
+
     <p>
       Edit
       <code>components/HelloWorld.vue</code> to test HMR
@@ -25,7 +26,9 @@ console.log(count.value);
   <p class="read-the-docs">Click on the Farm and Vue logos to learn more</p>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@forward 'element-plus/theme-chalk/src/mixins/config.scss';
+
 .read-the-docs {
   color: #888;
 }
