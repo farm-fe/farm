@@ -8,6 +8,8 @@ import {
 } from './options.js';
 import { pathToFileURL } from 'url';
 import { getSassImplementation } from './utils.js';
+import path, { isAbsolute } from 'path';
+import { existsSync } from 'fs';
 
 export type SassPluginOptions = {
   sassOptions?: StringOptions<'async'>;
@@ -72,10 +74,46 @@ export default function farmSassPlugin(
           const { css, sourceMap } = await (
             await implementation
           ).compileStringAsync(`${additionContext}\n${param.content}`, {
+            ...(options?.sassOptions ?? {}),
             sourceMap:
               options.sassOptions?.sourceMap ?? Boolean(farmConfig?.sourcemap),
-            url: pathToFileURL(param.resolvedPath)
-          });
+            url: pathToFileURL(param.resolvedPath),
+            importers: [
+              {
+                async findFileUrl(url) {
+                  if (!isAbsolute(url)) {
+                    const relPath = path.join(
+                      path.dirname(param.resolvedPath),
+                      url
+                    );
+
+                    if (existsSync(relPath)) {
+                      return pathToFileURL(relPath);
+                    }
+                  }
+                  const splits = param.moduleId.split('?');
+                  const result = await ctx.resolve(
+                    {
+                      source: url,
+                      importer: {
+                        relativePath: splits[0],
+                        queryString: splits[1] ?? ''
+                      },
+                      kind: 'cssAtImport'
+                    },
+                    {
+                      meta: {},
+                      caller: '@farmfe/js-plugin-sass'
+                    }
+                  );
+
+                  if (result?.resolvedPath) {
+                    return pathToFileURL(result.resolvedPath);
+                  }
+                }
+              }
+            ]
+          } as StringOptions<'async'>);
 
           return {
             content: css,
