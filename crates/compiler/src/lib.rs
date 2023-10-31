@@ -1,6 +1,7 @@
 #![deny(clippy::all)]
 #![allow(clippy::needless_collect)]
 #![allow(clippy::ptr_arg)]
+#![allow(clippy::too_many_arguments)]
 #![feature(box_patterns)]
 
 use std::sync::Arc;
