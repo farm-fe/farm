@@ -140,22 +140,22 @@ fn test_generate_and_diff_resource_pots() {
   // F, E, B, H
   let module_f = module_graph.module(&"F".into()).unwrap();
   assert_eq!(
-    module_f.resource_pot.as_ref().unwrap(),
+    module_f.resource_pot[0],
     "test_custom(\"__farm_unknown\")"
   );
   let module_e = module_graph.module(&"E".into()).unwrap();
   assert_eq!(
-    module_e.resource_pot.as_ref().unwrap(),
+    module_e.resource_pot[0],
     "B_2f5d_custom(\"__farm_unknown\")"
   );
   let module_b = module_graph.module(&"B".into()).unwrap();
   assert_eq!(
-    module_b.resource_pot.as_ref().unwrap(),
+    module_b.resource_pot[0],
     "B_2f5d_custom(\"__farm_unknown\")"
   );
   let module_h = module_graph.module(&"H".into()).unwrap();
   assert_eq!(
-    module_h.resource_pot.as_ref().unwrap(),
+    module_h.resource_pot[0],
     "test_custom(\"__farm_unknown\")"
   );
 

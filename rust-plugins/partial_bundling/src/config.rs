@@ -1,0 +1,33 @@
+use farmfe_core::{config::config_regex::ConfigRegex, serde::Deserialize, serde::Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", default, crate = "farmfe_core::serde")]
+pub struct PartialBundlingModuleBucketsConfig {
+  pub name: String,
+  /// Regex vec to match the modules in the module bucket
+  pub test: Vec<ConfigRegex>,
+  pub min_size: Option<usize>,
+  pub max_concurrent_requests: Option<u32>,
+  pub weight: isize,
+  pub reuse_existing_resource_pot: bool,
+}
+
+impl Default for PartialBundlingModuleBucketsConfig {
+  fn default() -> Self {
+    Self {
+      reuse_existing_resource_pot: false,
+      name: "".to_string(),
+      test: vec![],
+      max_concurrent_requests: None,
+      min_size: None,
+      weight: 0,
+    }
+  }
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
+pub struct PartialBundlingConfig {
+  pub module_bucket: Vec<PartialBundlingModuleBucketsConfig>
+}
