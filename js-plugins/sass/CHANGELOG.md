@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-sass
 
+## 2.1.1
+
+### Patch Changes
+
+- Support resolve files under node_modules for js plugin sass
+
 ## 2.1.0
 
 ### Minor Changes
