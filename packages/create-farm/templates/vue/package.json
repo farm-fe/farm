@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.8",
-    "@farmfe/core": "^0.13.15",
+    "@farmfe/core": "^0.13.17",
     "@farmfe/js-plugin-vue": "^3.0.0"
   },
   "scripts": {
