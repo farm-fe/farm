@@ -9,6 +9,7 @@ declare const FARM_HMR_HOST: string | undefined;
 declare const FARM_HMR_PATH: string | undefined;
 
 const port = Number(FARM_HMR_PORT || 9000);
+// TODO use import.meta to get hostname
 const host =
   typeof FARM_HMR_HOST === 'boolean'
     ? window.location.hostname
