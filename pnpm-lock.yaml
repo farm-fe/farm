@@ -1160,7 +1160,7 @@ importers:
         specifier: workspace:^0.7.3
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.2.4
+        specifier: workspace:^3.2.5
         version: link:../runtime-plugin-hmr
       '@koa/cors':
         specifier: ^4.0.0
