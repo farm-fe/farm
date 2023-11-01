@@ -59,7 +59,7 @@ export function hmrPlugin(context: DevServer) {
       });
     } else {
       logger.error(
-        "If configure different host in server.host and hmr.host, then HMR host must be a string or same as dev server's host when establishing a websocket connection"
+        'If configure different host in server.host and hmr.host, then HMR host must be a string or same as dev server host when establishing a websocket connection'
       );
     }
 
