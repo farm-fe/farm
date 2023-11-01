@@ -34,6 +34,7 @@ export interface ResolveRecord {
   source: string
   importer?: string
   kind: string
+  isHmr: boolean
 }
 export interface TransformRecord {
   plugin: string
@@ -41,6 +42,7 @@ export interface TransformRecord {
   content: string
   sourceMaps?: string
   moduleType: string
+  isHmr: boolean
 }
 export interface ModuleRecord {
   name: string
