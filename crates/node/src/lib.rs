@@ -16,7 +16,7 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
-  plugin::UpdateType,
+  plugin::UpdateType, record::Stage,
 };
 
 use napi::{
@@ -61,6 +61,7 @@ pub struct JsResolveRecord {
   pub source: String,
   pub importer: Option<String>,
   pub kind: String,
+  pub is_hmr: bool
 }
 
 #[napi(object, js_name = "TransformRecord")]
@@ -70,6 +71,7 @@ pub struct JsTransformRecord {
   pub content: String,
   pub source_maps: Option<String>,
   pub module_type: String,
+  pub is_hmr: bool
 }
 
 #[napi(object, js_name = "ModuleRecord")]
@@ -409,6 +411,10 @@ impl JsCompiler {
         source: record.source,
         importer: record.importer,
         kind: record.kind,
+        is_hmr: match record.stage {
+          Stage::Update => true,
+          _ => false,
+        },
       })
       .collect();
     js_resolve_records
@@ -427,6 +433,10 @@ impl JsCompiler {
         content: record.content,
         module_type: record.module_type.to_string(),
         source_maps: record.source_maps,
+        is_hmr: match record.stage {
+          Stage::Update => true,
+          _ => false,
+        },
       })
       .collect();
     js_transform_records
