@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.18
+
+### Patch Changes
+
+- 219d91f: fix #691 #689 server error
+
 ## 0.13.17
 
 ### Patch Changes

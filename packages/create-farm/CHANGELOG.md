@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.2.20
+
+### Patch Changes
+
+- 219d91f: bump version
+
 ## 1.2.19
 
 ### Patch Changes
