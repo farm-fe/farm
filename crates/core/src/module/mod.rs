@@ -409,6 +409,11 @@ impl ModuleId {
       .to_string()
   }
 
+  /// transform the id back to resolved path, with additional query
+  pub fn resolved_path_with_query(&self, root: &str) -> String {
+    format!("{}{}", self.resolved_path(root), self.query_string)
+  }
+
   pub fn hash(&self) -> String {
     let mut hasher = Blake2bVar::new(LEN).unwrap();
     hasher.update(self.to_string().as_bytes());

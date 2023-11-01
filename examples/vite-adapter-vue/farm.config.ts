@@ -15,7 +15,21 @@ export default defineConfig({
   },
   plugins: [
     // farmJsPluginSass()
-    '@farmfe/plugin-sass'
+    '@farmfe/plugin-sass',
+    {
+      name: 'remove-css-filter-plugin',
+      priority: 0,
+      transform: {
+        filters: {
+          resolvedPaths: ['src/components/HelloWorld.vue\\?vue&(.+)&lang\\.scss']
+        },
+        executor({ content }) {
+          return {
+            content: content.replace('filter: alpha(opacity=0);', ''),
+          }
+        }
+      }
+    }
   ],
   vitePlugins: [
     vue(),

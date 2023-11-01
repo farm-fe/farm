@@ -86,7 +86,7 @@ impl Plugin for FarmPluginCss {
   }
   /// This plugin should be executed at last
   fn priority(&self) -> i32 {
-    i32::MIN
+    -99
   }
 
   fn resolve(
