@@ -113,13 +113,17 @@ impl Plugin for FarmPluginSass {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
-    if self.regex.is_match(param.resolved_path) {
-      let content = fs::read_file_utf8(param.resolved_path).unwrap();
-      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
-        content,
-        module_type: ModuleType::Custom(String::from("sass")),
-      }));
+    if param.query.is_empty() && self.regex.is_match(param.resolved_path) {
+      let content = fs::read_file_utf8(param.resolved_path);
+
+      if let Ok(content) = content {
+        return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+          content,
+          module_type: ModuleType::Custom(String::from("sass")),
+        }));
+      }
     }
+
     Ok(None)
   }
 
