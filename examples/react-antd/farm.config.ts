@@ -20,8 +20,10 @@ export default defineConfig({
     //   'Access-Control-Allow-Origin': '*'
     // },
     port: 5580,
+    hmr: true,
     writeToDisk: false,
-    cors: true
+    cors: true,
+    host: '127.0.0.1'
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 });
