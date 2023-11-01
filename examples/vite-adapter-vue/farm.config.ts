@@ -14,16 +14,17 @@ export default defineConfig({
     presetEnv: false
   },
   plugins: [
-    farmJsPluginSass()
+    // farmJsPluginSass()
+    '@farmfe/plugin-sass'
   ],
   vitePlugins: [
     vue(),
     // ...
     AutoImport({
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
     }),
     Components({
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
     }),
   ]
 });

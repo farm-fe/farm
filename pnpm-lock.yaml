@@ -224,7 +224,7 @@ importers:
         version: 18.0.0
       postcss-pxtorem:
         specifier: ^6.0.0
-        version: 6.0.0
+        version: 6.0.0(postcss@8.4.24)
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
@@ -10387,12 +10387,6 @@ packages:
     dependencies:
       postcss: 8.4.31
       postcss-selector-parser: 6.0.13
-    dev: true
-
-  /postcss-pxtorem@6.0.0:
-    resolution: {integrity: sha512-ZRXrD7MLLjLk2RNGV6UA4f5Y7gy+a/j1EqjAfp9NdcNYVjUMvg5HTYduTjSkKBkRkfqbg/iKrjMO70V4g1LZeg==}
-    peerDependencies:
-      postcss: ^8.0.0
     dev: true
 
   /postcss-pxtorem@6.0.0(postcss@8.4.24):

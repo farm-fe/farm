@@ -161,7 +161,7 @@ impl Plugin for FarmPluginSass {
         .common
         .importers
         .push(sass_embedded::SassImporter::FileImporter(import_collection));
-      string_options.url = None;
+      string_options.url = Some(Url::from_file_path(param.resolved_path).unwrap());
 
       let compile_result = sass.compile_string(&content, string_options).map_err(|e| {
         farmfe_core::error::CompilationError::TransformError {
