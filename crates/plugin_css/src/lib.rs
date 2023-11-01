@@ -86,7 +86,7 @@ impl Plugin for FarmPluginCss {
   }
   /// This plugin should be executed at last
   fn priority(&self) -> i32 {
-    99
+    i32::MIN
   }
 
   fn resolve(
@@ -148,7 +148,7 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginLoadHookResult {
         // return empty content as we don't need to load the module, it is already parsed and stored in the ast_map
         content: "".to_string(),
-        module_type: ModuleType::Css,
+        module_type: ModuleType::Custom(FARM_CSS_MODULES_SUFFIX.to_string()),
       }));
     };
 
@@ -173,25 +173,16 @@ impl Plugin for FarmPluginCss {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+    if is_farm_css_modules_type(&param.module_type) {
+      return Ok(Some(PluginTransformHookResult {
+        content: param.content.clone(),
+        module_type: Some(ModuleType::Css),
+        source_map: None,
+      }));
+    }
+
     if matches!(param.module_type, ModuleType::Css) {
       let enable_css_modules = context.config.css.modules.is_some();
-
-      // real css modules code
-      if is_farm_css_modules(param.resolved_path) {
-        // if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-        //   let ast = self.ast_map.lock().remove(param.resolved_path).unwrap();
-        //   let (css_code, _) = codegen_css_stylesheet(&ast, None, context.config.minify);
-        //   let js_code = wrapper_style_load(&css_code, module_id.to_string());
-
-        //   return Ok(Some(PluginTransformHookResult {
-        //     content: js_code,
-        //     module_type: Some(ModuleType::Js),
-        //     source_map: None,
-        //   }));
-        // } else {
-        return Ok(None);
-        // }
-      }
 
       // css modules
       if enable_css_modules && self.is_path_match_css_modules(param.resolved_path) {
@@ -571,6 +562,14 @@ fn is_farm_css_modules(path: &str) -> bool {
     .next()
     .unwrap()
     .ends_with(FARM_CSS_MODULES_SUFFIX)
+}
+
+fn is_farm_css_modules_type(module_type: &ModuleType) -> bool {
+  if let ModuleType::Custom(c) = module_type {
+    return c.as_str() == FARM_CSS_MODULES_SUFFIX;
+  }
+
+  false
 }
 
 pub fn source_replace(

@@ -12,4 +12,5 @@ $color: skyblue;
 .child:global(.child-global2) {
   color: $color;
   background-color: whitesmoke;
+  height: 100px;
 }
