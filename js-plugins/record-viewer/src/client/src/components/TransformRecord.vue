@@ -1,6 +1,6 @@
 <template>
   <div class="w-full h-full flex p-2 gap-3 box-border overflow-hidden">
-    <div class="w-fit flex flex-col border rounded-lg box-border">
+    <div class="min-w-fit flex flex-col border rounded-lg box-border">
       <div v-for="(item, index) in records" class="flex flex-col item-start justify-center cursor-pointer text-base font-semibold text-gray-900 px-3 py-4 border-b" :class="{'text-purple-500': current === index}" @click="current = index">
         <div class="flex">
         <div>{{ item.plugin }}</div>
