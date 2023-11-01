@@ -51,12 +51,16 @@ export function hmrPlugin(context: DevServer) {
           });
         }
       });
-    } else {
+    } else if (typeof config.hmr.host === 'string') {
       context.ws = new WebSocketServer({
         port: config.hmr.port,
         host: config.hmr.host,
         path: config.hmr.path
       });
+    } else {
+      logger.error(
+        'If configure different host in server.host and hmr.host, then HMR host must be a string or same as dev server host when establishing a websocket connection'
+      );
     }
 
     // _context.app.use(hmr(context));

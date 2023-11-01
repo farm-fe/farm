@@ -227,7 +227,7 @@ const FarmConfigSchema = z
             z
               .object({
                 ignores: z.array(z.string()).optional(),
-                host: z.string().nonempty().optional(),
+                host: z.union([z.string().nonempty(), z.boolean()]).optional(),
                 port: z.number().positive().int().optional(),
                 watchOptions: z
                   .object({

@@ -169,11 +169,11 @@ export class DevServer implements ImplDevServer {
   async error(port: number, ip: string | boolean) {
     // TODO error
     // TODO Callback handling of all errors extracted from the function
-    function handleError(
+    const handleError = (
       error: Error & { code?: string },
       port: number,
       ip: string | boolean
-    ) {
+    ) => {
       // TODO ip boolean type true ... false
       const errorMap: any = {
         EADDRINUSE: `Port ${port} is already in use`,
@@ -184,7 +184,7 @@ export class DevServer implements ImplDevServer {
       const errorMessage =
         errorMap[error.code] || `An error occurred: ${error}`;
       this.logger.error(errorMessage);
-    }
+    };
     this.server.on('error', (error: Error & { code?: string }) => {
       handleError(error, port, ip);
       this.server.close(() => {
