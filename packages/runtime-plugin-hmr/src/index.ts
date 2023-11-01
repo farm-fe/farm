@@ -12,8 +12,9 @@ const port = Number(FARM_HMR_PORT || 9000);
 // TODO use import.meta to get hostname
 const host =
   typeof FARM_HMR_HOST === 'boolean'
-    ? window.location.hostname
+    ? window.location.hostname || 'localhost'
     : FARM_HMR_HOST || 'localhost';
+
 const path = FARM_HMR_PATH || '/__hmr';
 
 export default <FarmRuntimePlugin>{

@@ -36,7 +36,7 @@ export type NormalizedServerConfig = Required<
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
   ignores?: string[];
-  host?: string;
+  host?: string | boolean;
   port?: number;
   path?: string;
   watchOptions?: {
