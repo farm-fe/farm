@@ -30,6 +30,7 @@ enum Condition {
   Development,
   Module,
   Production,
+  Custom(String),
 }
 
 impl FromStr for Condition {
@@ -45,7 +46,7 @@ impl FromStr for Condition {
       "development" => Ok(Condition::Development),
       "production" => Ok(Condition::Production),
       "module" => Ok(Condition::Module),
-      _ => Err(format!("Invalid Condition: {}", s)),
+      c => Ok(Condition::Custom(c.to_string())),
       // _ => {}
     }
   }

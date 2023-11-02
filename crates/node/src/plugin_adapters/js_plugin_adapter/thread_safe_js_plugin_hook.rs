@@ -13,7 +13,7 @@ use farmfe_core::{
   config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::ModuleType,
+  module::{ModuleId, ModuleType},
   plugin::{
     EmptyPluginHookParam, EmptyPluginHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
@@ -252,7 +252,7 @@ impl JsPluginResolveHook {
   ) -> Result<Option<PluginResolveHookResult>> {
     let filtered = self.filters.importers.iter().any(|i| {
       if let Some(importer) = &param.importer {
-        i.is_match(&importer.resolved_path(&ctx.config.root))
+        i.is_match(&importer.resolved_path_with_query(&ctx.config.root))
       } else {
         i.is_match("None")
       }
@@ -291,12 +291,11 @@ impl JsPluginLoadHook {
     ctx: Arc<CompilationContext>,
     hook_context: PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
-    if self
-      .filters
-      .resolved_paths
-      .iter()
-      .any(|f| f.is_match(param.resolved_path))
-    {
+    if self.filters.resolved_paths.iter().any(|f| {
+      f.is_match(
+        &ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&ctx.config.root),
+      )
+    }) {
       self.tsfn.call::<PluginLoadHookParam, PluginLoadHookResult>(
         param.clone(),
         ctx,
@@ -326,16 +325,15 @@ impl JsPluginTransformHook {
     param: PluginTransformHookParam,
     ctx: Arc<CompilationContext>,
   ) -> Result<Option<PluginTransformHookResult>> {
-    if self
+    if self.filters.resolved_paths.iter().any(|f| {
+      f.is_match(
+        &ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&ctx.config.root),
+      )
+    }) || self
       .filters
-      .resolved_paths
+      .module_types
       .iter()
-      .any(|f| f.is_match(param.resolved_path))
-      || self
-        .filters
-        .module_types
-        .iter()
-        .any(|ty| &param.module_type == ty)
+      .any(|ty| &param.module_type == ty)
     {
       self
         .tsfn
