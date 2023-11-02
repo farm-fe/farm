@@ -39,7 +39,7 @@ impl RecordManager {
 
   pub fn set_stage(&self, stage: Stage) {
     let mut _stage = self.stage.write().unwrap();
-    *_stage = stage.clone();
+    *_stage = stage;
   }
 
   pub fn add_resolve_record(&self, source: String, mut record: ResolveRecord) {

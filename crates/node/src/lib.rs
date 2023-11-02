@@ -411,10 +411,7 @@ impl JsCompiler {
         source: record.source,
         importer: record.importer,
         kind: record.kind,
-        is_hmr: match record.stage {
-          Stage::Update => true,
-          _ => false,
-        },
+        is_hmr: matches!(record.stage, Stage::Update),
       })
       .collect();
     js_resolve_records
@@ -433,10 +430,7 @@ impl JsCompiler {
         content: record.content,
         module_type: record.module_type.to_string(),
         source_maps: record.source_maps,
-        is_hmr: match record.stage {
-          Stage::Update => true,
-          _ => false,
-        },
+        is_hmr: matches!(record.stage, Stage::Update),
       })
       .collect();
     js_transform_records
