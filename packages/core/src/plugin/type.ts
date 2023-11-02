@@ -46,7 +46,7 @@ type Callback<P, R> = (
   param: P,
   context?: CompilationContext,
   hookContext?: { caller?: string; meta: Record<string, unknown> }
-) => Promise<R> | R;
+) => Promise<R> | R | null | undefined;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
 export interface JsPlugin {

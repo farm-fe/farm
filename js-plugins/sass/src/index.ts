@@ -49,11 +49,15 @@ export default function farmSassPlugin(
     load: {
       filters: { resolvedPaths },
       async executor(param) {
-        const data = await tryRead(param.resolvedPath);
-        return {
-          content: data,
-          moduleType: 'sass'
-        };
+        if (param.query.length === 0 && existsSync(param.resolvedPath)) {
+          const data = await tryRead(param.resolvedPath);
+          return {
+            content: data,
+            moduleType: 'sass'
+          };
+        }
+
+        return null;
       }
     },
     transform: {

@@ -1,5 +1,14 @@
 # @farmfe/js-plugin-vue
 
+## 3.0.1
+
+### Patch Changes
+
+- a569977: Update filters to support resolved paths with query
+- Updated dependencies [a569977]
+- Updated dependencies [a569977]
+  - @farmfe/core@0.13.19
+
 ## 3.0.0
 
 ### Patch Changes

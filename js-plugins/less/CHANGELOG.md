@@ -1,5 +1,14 @@
 # @farmfe/js-plugin-less
 
+## 1.2.3
+
+### Patch Changes
+
+- a569977: only load file when query is empty and the file exists
+- Updated dependencies [a569977]
+- Updated dependencies [a569977]
+  - @farmfe/core@0.13.19
+
 ## 1.2.2
 
 ### Patch Changes

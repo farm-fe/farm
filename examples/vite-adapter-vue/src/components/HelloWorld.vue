@@ -28,6 +28,7 @@ console.log(count.value);
 
 <style scoped lang="scss">
 @forward 'element-plus/theme-chalk/src/mixins/config.scss';
+@import 'element-plus/theme-chalk/src/upload.scss';
 
 .read-the-docs {
   color: #888;
