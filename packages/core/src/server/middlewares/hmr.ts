@@ -41,6 +41,7 @@ export function hmrPlugin(context: DevServer) {
       context.ws = new WebSocketServer({
         noServer: true
       });
+
       context.server.on('upgrade', (request, socket, head) => {
         if (
           request.url === config.hmr.path &&
