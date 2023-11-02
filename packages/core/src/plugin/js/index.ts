@@ -161,7 +161,7 @@ export function convertPlugin(plugin: JsPlugin): void {
     if (process.platform === 'win32') {
       // replace / to \
       plugin.load.filters.resolvedPaths = plugin.load.filters.resolvedPaths.map(
-        (item) => item.replaceAll('/', '\\')
+        (item) => item.replaceAll('/', '\\\\')
       );
     }
   }
@@ -171,7 +171,7 @@ export function convertPlugin(plugin: JsPlugin): void {
       // replace / to \
       plugin.transform.filters.resolvedPaths =
         plugin.transform.filters.resolvedPaths.map((item) =>
-          item.replaceAll('/', '\\')
+          item.replaceAll('/', '\\\\')
         );
     }
   }
