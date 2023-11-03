@@ -1,4 +1,5 @@
 import type { UserConfig } from '@farmfe/core';
+import postcss from '@farmfe/js-plugin-postcss';
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -12,16 +13,13 @@ export default defineConfig({
     output: {
       path: './build',
     },
+    record: true,
     sourcemap: true
     // treeShaking: true,
     // minify: true,
   },
   server: {
-    hmr: {
-      port: 9802,
-    },
-    port: 9001,
     open: true,
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', postcss()],
 });

@@ -207,11 +207,14 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@farmfe/js-plugin-postcss':
+        specifier: workspace:^
+        version: link:../../js-plugins/postcss
       '@farmfe/plugin-react':
         specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.7
+        specifier: workspace:^0.2.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -219,6 +222,9 @@ importers:
       '@types/react-dom':
         specifier: '18'
         version: 18.0.0
+      postcss-pxtorem:
+        specifier: ^6.0.0
+        version: 6.0.0(postcss@8.4.24)
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
@@ -364,7 +370,7 @@ importers:
         specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.7
+        specifier: workspace:^0.2.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -469,7 +475,7 @@ importers:
         specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.7
+        specifier: workspace:^0.2.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -518,7 +524,7 @@ importers:
         specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.7
+        specifier: workspace:^0.2.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -558,7 +564,7 @@ importers:
         specifier: workspace:^0.3.3
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.2.7
+        specifier: workspace:^0.2.9
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'

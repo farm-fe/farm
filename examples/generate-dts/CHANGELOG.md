@@ -1,5 +1,15 @@
 # @farmfe-examples/generate-dts
 
+## 1.0.19
+
+### Patch Changes
+
+- Updated dependencies [a569977]
+- Updated dependencies [a569977]
+  - @farmfe/core@0.13.19
+  - @farmfe/js-plugin-dts@0.2.0
+  - @farmfe/cli@0.5.8
+
 ## 1.0.18
 
 ### Patch Changes

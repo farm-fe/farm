@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.13.19
+
+### Patch Changes
+
+- a569977: Fix #693
+- a569977: Optimize js plugin filters
+
 ## 0.13.18
 
 ### Patch Changes
