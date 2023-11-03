@@ -623,6 +623,11 @@ impl Resolver {
         .try_file(&resolved_path_buf, context)
         .or_else(|| self.try_directory(source, &resolved_path_buf, kind, true, context))
         .unwrap_or(resolved_path);
+
+      let resolved_path = self
+        .try_browser_replace(package_json_info, &resolved_path, context)
+        .unwrap_or(resolved_path);
+
       PluginResolveHookResult {
         resolved_path,
         side_effects,
