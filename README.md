@@ -179,6 +179,8 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
 
 ## Chat With Us
 
+- [Author Twitter](https://twitter.com/brightwwu46799), [Official Twitter](https://twitter.com/fe_farm)
+
 - With [Discord](https://discord.gg/mDErq9aFnF)
 
 - Wechat group
@@ -193,4 +195,4 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
 
 ## Author
 
-brightwu（吴明亮）, worked at Bytedance and Tencent.
+brightwu（吴明亮）, worked at Bytedance.
