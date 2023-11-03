@@ -8,10 +8,8 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub enum Stage {
-  Init,
-  Build,
-  Generate,
+pub enum Trigger {
+  Compiler,
   Update,
 }
 
@@ -22,7 +20,7 @@ pub struct RecordManager {
   process_map: Arc<RwLock<HashMap<String, Vec<ModuleRecord>>>>,
   analyze_deps_map: Arc<RwLock<HashMap<String, Vec<AnalyzeDepsRecord>>>>,
   resource_pot_map: Arc<RwLock<HashMap<String, Vec<ResourcePotRecord>>>>,
-  stage: Arc<RwLock<Stage>>,
+  trigger: Arc<RwLock<Trigger>>,
 }
 
 impl RecordManager {
@@ -33,19 +31,19 @@ impl RecordManager {
       process_map: Arc::new(RwLock::new(HashMap::new())),
       analyze_deps_map: Arc::new(RwLock::new(HashMap::new())),
       resource_pot_map: Arc::new(RwLock::new(HashMap::new())),
-      stage: Arc::new(RwLock::new(Stage::Init)),
+      trigger: Arc::new(RwLock::new(Trigger::Compiler)),
     }
   }
 
-  pub fn set_stage(&self, stage: Stage) {
-    let mut _stage = self.stage.write().unwrap();
-    *_stage = stage;
+  pub fn set_trigger(&self, trigger: Trigger) {
+    let mut _trigger = self.trigger.write().unwrap();
+    *_trigger = trigger;
   }
 
   pub fn add_resolve_record(&self, source: String, mut record: ResolveRecord) {
     let mut resolve_id_map = self.resolve_id_map.write().unwrap();
-    let stage = self.stage.read().unwrap().to_owned();
-    record.stage = stage;
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if let Some(records) = resolve_id_map.get_mut(&source) {
       records.push(record);
     } else {
@@ -55,8 +53,8 @@ impl RecordManager {
 
   pub fn add_load_record(&self, id: String,mut record: TransformRecord) {
     let mut transform_map = self.transform_map.write().unwrap();
-    let stage = self.stage.read().unwrap().to_owned();
-    record.stage = stage;
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if transform_map.get(&id).is_none() {
       transform_map.insert(id, vec![record]);
     }
@@ -64,8 +62,8 @@ impl RecordManager {
 
   pub fn add_transform_record(&self, id: String, mut record: TransformRecord) {
     let mut transform_map = self.transform_map.write().unwrap();
-    let stage = self.stage.read().unwrap().to_owned();
-    record.stage = stage;
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if let Some(records) = transform_map.get_mut(&id) {
       records.push(record);
     }
@@ -158,7 +156,7 @@ pub struct ResolveRecord {
   pub source: String,
   pub importer: Option<String>,
   pub kind: String,
-  pub stage: Stage
+  pub trigger: Trigger
 }
 
 #[derive(Debug, Clone)]
@@ -168,7 +166,7 @@ pub struct TransformRecord {
   pub content: String,
   pub source_maps: Option<String>,
   pub module_type: ModuleType,
-  pub stage: Stage
+  pub trigger: Trigger
 }
 
 #[derive(Debug, Clone)]

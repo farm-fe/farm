@@ -16,7 +16,7 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
-  plugin::UpdateType, record::Stage,
+  plugin::UpdateType, record::Trigger,
 };
 
 use napi::{
@@ -411,7 +411,7 @@ impl JsCompiler {
         source: record.source,
         importer: record.importer,
         kind: record.kind,
-        is_hmr: matches!(record.stage, Stage::Update),
+        is_hmr: matches!(record.trigger, Trigger::Update),
       })
       .collect();
     js_resolve_records
@@ -430,7 +430,7 @@ impl JsCompiler {
         content: record.content,
         module_type: record.module_type.to_string(),
         source_maps: record.source_maps,
-        is_hmr: matches!(record.stage, Stage::Update),
+        is_hmr: matches!(record.trigger, Trigger::Update),
       })
       .collect();
     js_transform_records

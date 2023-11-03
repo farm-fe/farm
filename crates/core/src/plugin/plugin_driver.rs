@@ -17,7 +17,7 @@ use crate::{
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
   },
-  record::{AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Stage},
+  record::{AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger},
   resource::{resource_pot::ResourcePot, Resource},
   stats::Stats,
 };
@@ -118,7 +118,7 @@ impl PluginDriver {
   hook_parallel!(
     build_start,
     |plugin_name: String, context: &Arc<CompilationContext>| {
-      context.record_manager.set_stage(Stage::Build);
+      // todo something
     }
   );
 
@@ -144,7 +144,7 @@ impl PluginDriver {
                 .clone()
                 .map(|module_id| module_id.relative_path().to_string()),
               kind: String::from(param.kind.clone()),
-              stage: Stage::Init
+              trigger: Trigger::Compiler
             },
           );
         }
@@ -174,7 +174,7 @@ impl PluginDriver {
               content: load_result.content.clone(),
               source_maps: None,
               module_type: load_result.module_type.clone(),
-              stage: Stage::Init
+              trigger: Trigger::Compiler
             },
           );
         }
@@ -220,7 +220,7 @@ impl PluginDriver {
               content: param.content.clone(),
               source_maps,
               module_type: param.module_type.clone(),
-              stage: Stage::Init
+              trigger: Trigger::Compiler
             },
           );
 
@@ -302,7 +302,7 @@ impl PluginDriver {
   hook_parallel!(
     generate_start,
     |plugin_name: String, context: &Arc<CompilationContext>| {
-      context.record_manager.set_stage(Stage::Generate);
+      // todo something
     }
   );
 
@@ -468,7 +468,7 @@ impl PluginDriver {
   hook_parallel!(
     finish,
     | plugin_name: String, context: &Arc<CompilationContext> | {
-      context.record_manager.set_stage(Stage::Update);
+      context.record_manager.set_trigger(Trigger::Update);
     },
     stat: &Stats
   );
