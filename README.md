@@ -46,8 +46,8 @@ Farm is a extremely fast vite-compatible web-building tool written in Rust. Benc
 
 In short, tools like webpack are too slow, but new tools like Vite are not perfect, Vite has a lot of drawbacks when comes to a large project:
 
-- **A huge number of requests during development**：when there are hundreds or thousands module per page, loading performance severely degraded, it may takes seconds or more when refresh the page.
-- **Inconsistency between development and product**: Using different strategy and tools in development and production, it's really inconsistent and it's hard to debug online issues.
+- **A huge number of requests during development**：when there are hundreds or thousands modules per page, loading performance severely degraded, it may takes seconds or more when refresh the page.
+- **Inconsistency between development and production**: Using different strategy and tools in development and production, it's really inconsistent and it's hard to debug online issues.
 - **Inflexible Code Splitting**: It's hard to control the output of your bundles.
 
 Farm can solve these problems perfectly, and it's really fast cause it's written in Rust. Farm aims to be fast, consistent, flexible, which is the real next generation build tool.
