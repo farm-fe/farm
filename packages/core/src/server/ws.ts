@@ -1,3 +1,4 @@
+import http from 'node:http';
 // import path from 'node:path';
 import { WebSocketServer as WebSocketServerRaw } from 'ws';
 // import type { WebSocket } from 'ws';
@@ -5,15 +6,15 @@ import { WebSocketServer as WebSocketServerRaw } from 'ws';
 
 // const HMR_PATH = '__/hmr';
 
-interface WebSocketServer {
-  clients: Set<WebSocketClient>;
-  listen(): void;
-  send(payload: any): void;
-  send<T extends string>(event: T, payload?: any): void;
-  close(): Promise<void>;
-  on(event: string, listener: any): void;
-  off(event: string, listener: any): void;
-}
+// interface WebSocketServer {
+//   clients: Set<WebSocketClient>;
+//   listen(): void;
+//   send(payload: any): void;
+//   send<T extends string>(event: T, payload?: any): void;
+//   close(): Promise<void>;
+//   on(event: string, listener: any): void;
+//   off(event: string, listener: any): void;
+// }
 
 export interface WebSocketClient {
   /**
@@ -32,34 +33,29 @@ export interface WebSocketClient {
 }
 
 // class WebSocketServerImpl implements WebSocketServer {
-export default class FarmWebSocketServer {
-  private wss: any;
+export default class createFarmWsServer {
+  public wss: any;
   // private hmr: any;
-  constructor(_httpServer: any, _config: any) {
-    // this.hmr = isObject(config.server.hmr) && config.server.hmr;
-    // this.wss = new WebSocketServerRaw({ noServer: true });
-    // httpServer.on('upgrade', (request: any, socket: any, head: any) => {
-    //   if (request.headers['sec-websocket-protocol'] === 'vite-hmr') {
-    //     this.wss.handleUpgrade(request, socket, head, (ws) => {
-    //       this.wss.emit('connection', ws, request);
-    //     });
-    //   }
-    // });
-    // this.wss.on('connection', (ws: any) => {
-    //   ws.on('message', (message: any) => {
-    //     // Handle incoming messages here
-    //     const data = JSON.parse(message.toString());
-    //     if (data.type === 'custom') {
-    //       // this.handleCustomEvent(data.event, data.data);
-    //     }
-    //   });
-    //   // Send a connected message to the client
-    //   ws.send(JSON.stringify({ type: 'connected' }));
-    // });
+  constructor(private httpServer: http.Server, _config: any) {
+    this.createWebSocketServer();
   }
 
   createWebSocketServer() {
     this.wss = new WebSocketServerRaw({ noServer: true });
+    this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+  }
+
+  upgradeWsServer(request: any, socket: any, head: any) {
+    if (
+      // request.url === config.hmr.path &&
+      request.headers['sec-websocket-protocol'] === 'farm_hmr'
+    ) {
+      console.log(this);
+
+      this.wss.handleUpgrade(request, socket, head, (ws: any) => {
+        this.wss.emit('connection', ws, request);
+      });
+    }
   }
 
   listen() {

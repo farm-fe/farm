@@ -7,6 +7,7 @@
 
 // import { Context } from 'koa';
 import { WebSocketServer } from 'ws';
+import createFarmWsServer from '../ws.js';
 import { HmrEngine } from '../hmr-engine.js';
 import { DevServer } from '../index.js';
 
@@ -38,20 +39,22 @@ export function hmrPlugin(context: DevServer) {
   const { config, _context, logger } = context;
   if (config.hmr) {
     if (config.hmr.host === config.host && config.hmr.port === config.port) {
-      context.ws = new WebSocketServer({
-        noServer: true
-      });
+      const wsServer = new createFarmWsServer(context.server, config);
+      context.ws = wsServer.wss;
 
-      context.server.on('upgrade', (request, socket, head) => {
-        if (
-          request.url === config.hmr.path &&
-          request.headers['sec-websocket-protocol'] === 'farm_hmr'
-        ) {
-          context.ws.handleUpgrade(request, socket, head, (ws) => {
-            context.ws.emit('connection', ws, request);
-          });
-        }
-      });
+      // context.ws = new WebSocketServer({
+      //   noServer: true
+      // });
+      // context.server.on('upgrade', (request, socket, head) => {
+      //   if (
+      //     request.url === config.hmr.path &&
+      //     request.headers['sec-websocket-protocol'] === 'farm_hmr'
+      //   ) {
+      //     context.ws.handleUpgrade(request, socket, head, (ws) => {
+      //       context.ws.emit('connection', ws, request);
+      //     });
+      //   }
+      // });
     } else if (typeof config.hmr.host === 'string') {
       context.ws = new WebSocketServer({
         port: config.hmr.port,
