@@ -1471,6 +1471,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_sourcemap"
+version = "0.0.1"
+dependencies = [
+ "base64 0.21.0",
+ "farmfe_testing_helpers",
+ "glob",
+ "sourcemap",
+]
+
+[[package]]
 name = "farmfe_swc_transformer_import_glob"
 version = "0.0.1"
 dependencies = [
