@@ -16,7 +16,8 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
-  plugin::UpdateType, record::Trigger,
+  plugin::UpdateType,
+  record::Trigger,
 };
 
 use napi::{
@@ -61,7 +62,7 @@ pub struct JsResolveRecord {
   pub source: String,
   pub importer: Option<String>,
   pub kind: String,
-  pub is_hmr: bool
+  pub is_hmr: bool,
 }
 
 #[napi(object, js_name = "TransformRecord")]
@@ -71,7 +72,7 @@ pub struct JsTransformRecord {
   pub content: String,
   pub source_maps: Option<String>,
   pub module_type: String,
-  pub is_hmr: bool
+  pub is_hmr: bool,
 }
 
 #[napi(object, js_name = "ModuleRecord")]

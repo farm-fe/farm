@@ -51,7 +51,7 @@ impl RecordManager {
     }
   }
 
-  pub fn add_load_record(&self, id: String,mut record: TransformRecord) {
+  pub fn add_load_record(&self, id: String, mut record: TransformRecord) {
     let mut transform_map = self.transform_map.write().unwrap();
     let trigger = self.trigger.read().unwrap().to_owned();
     record.trigger = trigger;
@@ -156,7 +156,7 @@ pub struct ResolveRecord {
   pub source: String,
   pub importer: Option<String>,
   pub kind: String,
-  pub trigger: Trigger
+  pub trigger: Trigger,
 }
 
 #[derive(Debug, Clone)]
@@ -166,7 +166,7 @@ pub struct TransformRecord {
   pub content: String,
   pub source_maps: Option<String>,
   pub module_type: ModuleType,
-  pub trigger: Trigger
+  pub trigger: Trigger,
 }
 
 #[derive(Debug, Clone)]
