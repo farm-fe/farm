@@ -1,5 +1,6 @@
 import { builtinModules } from 'module';
 import farmDtsPlugin from '@farmfe/js-plugin-dts';
+import path from 'path';
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -14,9 +15,14 @@ export default {
       targetEnv: 'node',
       format: 'cjs'
     },
+    resolve: {
+      alias: {
+        '@': path.resolve(process.cwd(), './src')
+      }
+    },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`),
+      ...builtinModules.map((m) => `^node:${m}$`)
     ],
     partialBundling: {
       enforceResources: [
@@ -33,7 +39,9 @@ export default {
   server: {
     hmr: false
   },
-  plugins: [farmDtsPlugin({
-    tsConfigPath: './tsconfig.json',
-  })]
+  plugins: [
+    farmDtsPlugin({
+      tsConfigPath: './tsconfig.json'
+    })
+  ]
 };

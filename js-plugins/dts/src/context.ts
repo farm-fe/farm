@@ -9,12 +9,15 @@ import {
   ensureAbsolute,
   ensureArray,
   getTsConfig,
+  isObject,
   isPromise,
+  isRegExp,
   mergeObjects,
   normalizeGlob,
   queryPublicPath,
   resolveAbsolutePath,
   runParallel,
+  transformAliasImport,
   tryToReadFileSync,
   writeFileWithCheck
 } from './utils.js';
@@ -50,7 +53,7 @@ export default class Context {
       options.outputDir ? options.outputDir : this.config.output.path,
       root
     );
-
+    const aliasesExclude = userOptions?.aliasesExclude ?? [];
     const tsConfigPath = resolveAbsolutePath(userOptions.tsconfigPath, root);
     libFolderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
     const compilerOptions = userOptions.compilerOptions ?? {};
@@ -82,6 +85,32 @@ export default class Context {
     this.exclude = ensureArray(
       options.exclude ?? tsConfigOptions.exclude ?? 'node_modules/**'
     ).map(normalizeGlob);
+
+    const aliasOptions: any = config?.compilation?.resolve?.alias ?? [];
+    let aliases: any[] = [];
+    if (isObject(aliasOptions)) {
+      aliases = Object.entries(aliasOptions).map(([key, value]) => {
+        return { find: key, replacement: value };
+      });
+    } else {
+      aliases = ensureArray(aliasOptions);
+    }
+
+    if (aliasesExclude.length > 0) {
+      aliases = aliases.filter(
+        ({ find }) =>
+          !aliasesExclude.some(
+            (alias: any) =>
+              alias &&
+              (isRegExp(find)
+                ? find.toString() === alias.toString()
+                : isRegExp(alias)
+                ? find.match(alias)?.[0]
+                : find === alias)
+          )
+      );
+    }
+    console.log(aliases);
 
     this.options = {
       ...userOptions,
@@ -177,14 +206,21 @@ export default class Context {
       let filePath = outputFile.path;
       filePath = resolve(this.options.outputDir, relative(entryRoot, filePath));
       let content = outputFile.content;
+      content = transformAliasImport(
+        filePath,
+        content,
+        this.options.aliases,
+        this.options.aliasesExclude
+      );
+
       writeFileWithCheck(filePath, content);
     });
     const endTime = performance.now();
     const elapsedTime = Math.floor(endTime - startTime);
 
     this.logger.info(
-      `⚡️ Dts Plugin Build completed in ${chalk.green(
-        `${elapsedTime}ms`
+      `⚡️ Dts Plugin Build completed in ${chalk.bold(
+        chalk.green(`${elapsedTime}ms`)
       )}! Resources emitted to ${chalk.green(this.config.output.path)}.`
     );
   }

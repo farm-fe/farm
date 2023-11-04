@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build:tsc": "tsc -p ./tsconfig.build.json",
-    "build": "farm build && pnpm build:tsc",
+    "build": "farm build",
     "start": "pnpm run build -w",
     "watch": "farm watch",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
