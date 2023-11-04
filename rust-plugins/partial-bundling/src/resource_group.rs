@@ -84,7 +84,7 @@ impl Clone for ResourceUnit {
     Self {
       modules: HashSet::new(),
       resource_pot_type: self.resource_pot_type.clone(),
-      immutable: self.immutable.clone(),
+      immutable: self.immutable,
       name: self.name.clone(),
       entry_module: None,
       id: random_id(),
@@ -92,19 +92,19 @@ impl Clone for ResourceUnit {
   }
 }
 
-impl Into<ResourcePot> for ResourceUnit {
-  fn into(self) -> ResourcePot {
-    let resource_pot_type = self.resource_pot_type.unwrap_or(ResourcePotType::Js);
+impl From<ResourceUnit> for ResourcePot {
+  fn from(value: ResourceUnit) -> Self {
+    let resource_pot_type = value.resource_pot_type.unwrap_or(ResourcePotType::Js);
 
     let resource_pot_id = format!(
       "{}-{}",
-      self.name,
+      value.name,
       sha256(
         format!(
           "{}-{:?}-{}",
-          self.immutable,
+          value.immutable,
           resource_pot_type,
-          ids_to_string(self.modules.iter())
+          ids_to_string(value.modules.iter())
         )
         .as_bytes(),
         8
@@ -113,9 +113,9 @@ impl Into<ResourcePot> for ResourceUnit {
 
     let mut resource_pot = ResourcePot::new(resource_pot_id, resource_pot_type);
 
-    resource_pot.immutable = self.immutable;
-    resource_pot.entry_module = self.entry_module;
-    resource_pot.replace_module(self.modules);
+    resource_pot.immutable = value.immutable;
+    resource_pot.entry_module = value.entry_module;
+    resource_pot.replace_module(value.modules);
 
     resource_pot
   }

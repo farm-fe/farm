@@ -2,7 +2,7 @@
 
 use config::{PartialBundlingConfig, PartialBundlingModuleBucketsConfig};
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
+  config::{config_regex::ConfigRegex, Config, Mode},
   context::CompilationContext,
   hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId},
@@ -22,10 +22,7 @@ mod utils;
 
 use resource_group::{ResourceGroup, ResourceUnit, ResourceUnitId};
 
-use crate::{
-  module_bucket::generate_module_buckets,
-  utils::{find_module_importer_chains, try_get_filename, ModuleChain},
-};
+use crate::utils::{find_module_importer_chains, try_get_filename, ModuleChain};
 
 #[farm_plugin]
 #[derive(Debug, Default)]
@@ -60,7 +57,6 @@ impl FarmPluginPartialBundling {
           test: vec![ConfigRegex::new("[\\/]node_modules[\\/]")],
           max_concurrent_requests: Some(20),
           weight: -20,
-          ..Default::default()
         });
     }
 
@@ -105,6 +101,10 @@ impl Plugin for FarmPluginPartialBundling {
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<Vec<ResourcePot>>> {
+    if !matches!(context.config.mode, Mode::Production) {
+      return Ok(None);
+    }
+
     let mut module_graph = context.module_graph.write();
     let module_group_graph = context.module_group_graph.read();
 
@@ -184,7 +184,7 @@ fn pre_process_module(
     .collect::<Vec<_>>();
   let dynamic_group_graph = group_graph_module_groups
     .iter()
-    .filter(|module_group| !module_graph.entries.contains_key(&module_group))
+    .filter(|module_group| !module_graph.entries.contains_key(module_group))
     .collect::<Vec<_>>();
 
   let mut module_group_map: HashMap<ModuleId, Vec<ModuleId>> = HashMap::new();
@@ -208,7 +208,7 @@ fn pre_process_module(
       .any(|item| module.module_groups.contains(item));
 
     let importer = if has_dynamic_module_group {
-      find_module_importer_chains(module_id, &module_graph)
+      find_module_importer_chains(module_id, module_graph)
     } else {
       vec![]
     };
@@ -228,7 +228,7 @@ fn pre_process_module(
       // partiation_map
       partiation_map
         .values()
-        .map(|importer| {
+        .flat_map(|importer| {
           let module_import_type = importer.iter().fold((false, false), |mut res, item| {
             if res.0 && res.1 {
               return res;
@@ -240,7 +240,7 @@ fn pre_process_module(
               res.1 = true;
             }
 
-            return res;
+            res
           });
 
           match module_import_type {
@@ -271,7 +271,6 @@ fn pre_process_module(
               .collect::<Vec<_>>(),
           }
         })
-        .flatten()
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>()

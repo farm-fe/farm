@@ -8,7 +8,8 @@ use farmfe_core::{
 use crate::{
   config::PartialBundlingModuleBucketsConfig,
   resource_group::{ResourceGroup, ResourceUnit},
-  ResourceUnitId, utils::{is_subset, ids_to_string},
+  utils::{ids_to_string, is_subset},
+  ResourceUnitId,
 };
 
 /// A ModuleBucket is a collection of modules in the same ModuleGroup.
@@ -179,7 +180,7 @@ pub fn add_module_to_bucket(
 pub fn generate_module_buckets(
   modules: &Vec<ModuleId>,
   module_graph: &ModuleGraph,
-  module_buckets: &Vec<PartialBundlingModuleBucketsConfig>,
+  module_buckets: &[PartialBundlingModuleBucketsConfig],
   group_redirect_resource_unit_map: &HashMap<ModuleId, String>,
   module_group_map: &HashMap<ModuleId, Vec<ModuleId>>,
   resource_pot_sets: Vec<Vec<String>>,
@@ -301,7 +302,7 @@ pub fn remove_module_bucket_by_size(
           })
           .collect();
 
-        module_bucket.replace_modules(&module_graph, new_modules);
+        module_bucket.replace_modules(module_graph, new_modules);
 
         if module_bucket.modules().is_empty() {
           return Some(module_bucket.id.clone());
@@ -327,7 +328,7 @@ pub fn gen_resource_unit_by_module_buckets(
   // gen resource unit by module_bucket
   while !module_bucket_ids.is_empty() {
     let cur_process_module_bucket_id =
-      find_best_process_bucket(&module_bucket_ids, &module_bucket_map);
+      find_best_process_bucket(&module_bucket_ids, module_bucket_map);
 
     let cur_process_module_bucket_id = module_bucket_ids
       .take(&cur_process_module_bucket_id)
@@ -417,7 +418,7 @@ pub fn gen_resource_unit_by_module_buckets(
       // delete in other resource_pot module
       for bucket_resource_unit in bucket_resource_units.iter() {
         resource_group
-          .resource_unit_mut(&bucket_resource_unit)
+          .resource_unit_mut(bucket_resource_unit)
           .unwrap()
           .remove_module(module_id);
       }

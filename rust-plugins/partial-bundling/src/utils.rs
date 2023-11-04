@@ -16,23 +16,19 @@ pub fn try_get_filename(module_id: &ModuleId, named_map: &HashMap<ModuleId, Stri
     filepath.set_extension("");
   }
 
-  loop {
-    if let Some(filename) = filepath.file_name() {
-      result.insert(0, filename.to_string_lossy().to_string());
+  while let Some(filename) = filepath.file_name() {
+    result.insert(0, filename.to_string_lossy().to_string());
 
-      filepath.pop();
+    filepath.pop();
 
-      let name = result.join("_").replace("/", "_");
+    let name = result.join("_").replace('/', "_");
 
-      if !named_map.values().any(|named| named == &name) {
-        return name;
-      }
-    } else {
-      break;
-    };
+    if !named_map.values().any(|named| named == &name) {
+      return name;
+    }
   }
 
-  return result.join("_").replace("/", "_");
+  result.join("_").replace('/', "_")
 }
 
 pub fn is_subset<T: PartialEq>(v1: &[T], v2: &[T]) -> bool {
@@ -97,7 +93,7 @@ pub fn find_module_importer_chains(
       .into_iter()
       .filter(|item| {
         module_graph
-          .edge_info(&item, last_import)
+          .edge_info(item, last_import)
           .is_some_and(|item| item.is_dynamic())
       })
       .collect::<HashSet<_>>();
@@ -115,10 +111,7 @@ pub fn find_module_importer_chains(
     }
 
     for module_groups_id in last_import_modules_groups {
-      let importer_module_groups = &module_graph
-        .module(&module_groups_id)
-        .unwrap()
-        .module_groups;
+      let importer_module_groups = &module_graph.module(module_groups_id).unwrap().module_groups;
 
       let hash = module_groups_id.hash();
 
@@ -136,12 +129,12 @@ pub fn find_module_importer_chains(
 
       new_module_chain.last = module_groups_id.clone();
 
-      if module_graph.entries.contains_key(&module_groups_id) {
+      if module_graph.entries.contains_key(module_groups_id) {
         new_module_chain
           .chains
           .push((false, module_groups_id.clone()));
         result.push(new_module_chain.clone());
-        module_groups.remove(&module_groups_id);
+        module_groups.remove(module_groups_id);
 
         if module_groups.is_empty() {
           break 'out;
