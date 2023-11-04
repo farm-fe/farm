@@ -179,6 +179,8 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场
 
 ## 交流群
 
+- [作者推特](https://twitter.com/brightwwu46799), [官方推特](https://twitter.com/fe_farm)
+
 - 加入 [Discord](https://discord.gg/mDErq9aFnF)
 
 - 微信群
@@ -193,4 +195,6 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场
 
 ## 作者
 
-brightwu（吴明亮）, 曾就职于字节跳动和腾讯。
+> Twitter: https://twitter.com/brightwwu46799
+
+brightwu（吴明亮）, 曾就职于字节跳动。
