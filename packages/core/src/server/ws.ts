@@ -1,7 +1,5 @@
 import http from 'node:http';
-// import path from 'node:path';
 import type { IncomingMessage } from 'node:http';
-// import type { Socket } from 'node:net'
 import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRawType } from 'ws';
 
@@ -12,10 +10,7 @@ import {
   NormalizedServerConfig,
   red
 } from '../index.js';
-// import type { WebSocket } from 'ws';
-// import { isObject } from '../index.js';
 
-// const HMR_PATH = '__/hmr';
 const HMR_HEADER = 'farm_hmr';
 
 export interface IWebSocketServer {
@@ -40,22 +35,11 @@ export type WebSocketCustomListener<T> = (
   client: WebSocketClient
 ) => void;
 export interface WebSocketClient {
-  /**
-   * Send event to the client
-   */
   send(payload: any): void;
-  /**
-   * Send custom event
-   */
   send(event: string, payload?: any['data']): void;
-  /**
-   * The raw WebSocket instance
-   * @advanced
-   */
   socket: WebSocketRawType;
 }
 
-// class WebSocketServerImpl implements WebSocketServer {
 export default class WsServer implements IWebSocketServer {
   public wss: WebSocketServerRaw;
   public customListeners = new Map<string, Set<WebSocketCustomListener<any>>>();
