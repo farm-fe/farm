@@ -35,15 +35,6 @@ impl FarmPluginPartialBundling {
     let mut partial_bundling_config: PartialBundlingConfig = serde_json::from_str(&options)
       .expect("failed parse option, please confirm to your options correct");
 
-    partial_bundling_config
-      .module_bucket
-      .push(PartialBundlingModuleBucketsConfig {
-        name: "i-vendor".into(),
-        test: config.partial_bundling.immutable_modules.clone(),
-        weight: isize::MAX,
-        ..Default::default()
-      });
-
     if partial_bundling_config
       .module_bucket
       .iter()
