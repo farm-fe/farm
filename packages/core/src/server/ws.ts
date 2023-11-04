@@ -72,6 +72,7 @@ export default class WsServer implements IWebSocketServer {
     this.wss = new WebSocketServerRaw({ noServer: true });
     // TODO IF not have httpServer
     this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+    this.error();
   }
 
   private upgradeWsServer(
@@ -90,8 +91,6 @@ export default class WsServer implements IWebSocketServer {
     // wsHttpServer?.listen(port, host);
     // TODO IF not have httpServer
   }
-
-  // clients: Set<any> = new Set();
 
   send(_payload: any) {
     // Broadcast the payload to all connected clients
@@ -119,35 +118,6 @@ export default class WsServer implements IWebSocketServer {
     });
   }
 
-  // sendCustomEvent<T extends string>(event: T, payload?: any) {
-  //   // Send a custom event to all clients
-  //   this.send({ type: 'custom', event, data: payload });
-  // }
-
-  // // close() {
-  // //   // Close the WebSocket server and terminate all client connections
-  // //   this.wss.close();
-  // // }
-
-  // on(event: string, listener: () => void) {
-  //   // Register an event listener
-  //   if (wsServerEvents.includes(event)) this.wss.on(event, listener);
-  //   else {
-  //     if (!this.customListeners.has(event)) {
-  //       this.customListeners.set(event, new Set());
-  //     }
-  //     this.customListeners.get(event).add(listener);
-  //   }
-  // }
-
-  // off(event: string, listener: () => void) {
-  //   if (wsServerEvents.includes(event)) {
-  //     this.wss.off(event, listener);
-  //   } else {
-  //     this.customListeners.get(event)?.delete(listener);
-  //   }
-  // }
-
   get clients(): Set<any> {
     return new Set(
       Array.from(this.wss.clients).map(this.getSocketClient.bind(this))
@@ -155,26 +125,7 @@ export default class WsServer implements IWebSocketServer {
   }
 
   // private handleCustomEvent(event: string, data: any) {
-  //   // TODO Handle custom events here
-  // }
-
-  // close() {
-  //   if (this.upgradeWsServer && this.httpServer) {
-  //     this.httpServer.off('upgrade', this.upgradeWsServer);
-  //   }
-  //   return new Promise((resolve, reject) => {
-  //     this.wss.clients.forEach((client) => {
-  //       client.terminate();
-  //     });
-  //     this.wss.close((err) => {
-  //       if (err) {
-  //         reject(err);
-  //       } else {
-  //         // TODO if not have httpServer
-  //         resolve(true);
-  //       }
-  //     });
-  //   });
+  // TODO Handle custom events here
   // }
 
   public sendCustomEvent<T extends string>(event: T, payload?: any) {
@@ -206,7 +157,7 @@ export default class WsServer implements IWebSocketServer {
         try {
           parsed = JSON.parse(String(raw));
         } catch {
-          // logger.error('Failed to parse WebSocket message: ' + raw);
+          this.logger.error('Failed to parse WebSocket message: ' + raw);
         }
         if (!parsed || parsed.type !== 'custom' || !parsed.event) return;
         const listeners = this.customListeners.get(parsed.event);
@@ -227,33 +178,6 @@ export default class WsServer implements IWebSocketServer {
       }
     });
   }
-
-  // getSocketClient(socket: WebSocketRawType) {
-  //   if (!this.clientsMap.has(socket)) {
-  //     this.clientsMap.set(socket, {
-  //       send: (...args) => {
-  //         // HMR payload
-  //         let payload: any;
-  //         if (typeof args[0] === 'string') {
-  //           payload = {
-  //             type: 'custom',
-  //             event: args[0],
-  //             data: args[1]
-  //           };
-  //         } else {
-  //           payload = args[0];
-  //         }
-  //         socket.send(JSON.stringify(payload));
-  //       },
-  //       socket
-  //     });
-  //   }
-  //   return this.clientsMap.get(socket);
-  // }
-
-  // public get clients() {
-  //   return new Set(Array.from(this.wss.clients).map(this.getSocketClient));
-  // }
 
   public async close() {
     if (this.upgradeWsServer && this.httpServer) {
@@ -327,23 +251,23 @@ export default class WsServer implements IWebSocketServer {
     socket.send(payload);
   }
 
-  // private error() {
-  //   this.wss.on('error', (e: Error & { code: string }) => {
-  //     if (e.code === 'EADDRINUSE') {
-  //       this.logger.error(
-  //         red(`WebSocket server error: Port is already in use`),
-  //         {
-  //           error: e
-  //         }
-  //       );
-  //     } else {
-  //       this.logger.error(
-  //         red(`WebSocket server error:\n${e.stack || e.message}`),
-  //         {
-  //           error: e
-  //         }
-  //       );
-  //     }
-  //   });
-  // }
+  private error() {
+    this.wss.on('error', (e: Error & { code: string }) => {
+      if (e.code === 'EADDRINUSE') {
+        this.logger.error(
+          red(`WebSocket server error: Port is already in use`),
+          {
+            error: e
+          }
+        );
+      } else {
+        this.logger.error(
+          red(`WebSocket server error:\n${e.stack || e.message}`),
+          {
+            error: e
+          }
+        );
+      }
+    });
+  }
 }
