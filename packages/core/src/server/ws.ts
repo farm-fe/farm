@@ -6,7 +6,12 @@ import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRawType } from 'ws';
 
 import { WebSocketServer as WebSocketServerRaw } from 'ws';
-import { DefaultLogger, Logger, red } from '../index.js';
+import {
+  DefaultLogger,
+  Logger,
+  NormalizedServerConfig,
+  red
+} from '../index.js';
 // import type { WebSocket } from 'ws';
 // import { isObject } from '../index.js';
 
@@ -60,7 +65,7 @@ export default class WsServer implements IWebSocketServer {
   // private hmr: any;
   constructor(
     private httpServer: http.Server,
-    private config: any,
+    private config: NormalizedServerConfig,
     public isFarmHmrEvent: boolean = false,
     logger?: Logger
   ) {
@@ -69,10 +74,13 @@ export default class WsServer implements IWebSocketServer {
   }
 
   private createWebSocketServer() {
-    this.wss = new WebSocketServerRaw({ noServer: true });
-    // TODO IF not have httpServer
-    this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
-    this.error();
+    try {
+      this.wss = new WebSocketServerRaw({ noServer: true });
+      // TODO IF not have httpServer
+      this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+    } catch (err) {
+      this.handleSocketError(err);
+    }
   }
 
   private upgradeWsServer(
@@ -86,10 +94,8 @@ export default class WsServer implements IWebSocketServer {
   }
 
   listen() {
+    // TODO alone with use httpServer we need start this function
     // Start listening for WebSocket connections
-    // if alone with use httpServer we need start this function
-    // wsHttpServer?.listen(port, host);
-    // TODO IF not have httpServer
   }
 
   send(_payload: any) {
@@ -118,15 +124,11 @@ export default class WsServer implements IWebSocketServer {
     });
   }
 
-  get clients(): Set<any> {
+  get clients(): Set<WebSocketClient> {
     return new Set(
       Array.from(this.wss.clients).map(this.getSocketClient.bind(this))
     );
   }
-
-  // private handleCustomEvent(event: string, data: any) {
-  // TODO Handle custom events here
-  // }
 
   public sendCustomEvent<T extends string>(event: T, payload?: any) {
     // Send a custom event to all clients
@@ -165,11 +167,8 @@ export default class WsServer implements IWebSocketServer {
         const client = this.getSocketClient(socket);
         listeners.forEach((listener) => listener(parsed.data, client));
       });
-      socket.on('error', (err) => {
-        this.logger.error(`${red(`ws error:`)}\n${err.stack}`, {
-          timestamp: true,
-          error: err
-        });
+      socket.on('error', (err: Error & { code: string }) => {
+        return this.handleSocketError(err);
       });
       socket.send(JSON.stringify({ type: 'connected' }));
       if (this.bufferedError) {
@@ -185,7 +184,7 @@ export default class WsServer implements IWebSocketServer {
     }
     await this.terminateAllClients();
     await this.closeWebSocketServer();
-    // TODO if not have httpServer
+    // TODO if not have httpServer we need close httpServer
   }
 
   private terminateAllClients() {
@@ -241,7 +240,7 @@ export default class WsServer implements IWebSocketServer {
     let payload: any;
     if (typeof args[0] === 'string' && !isFarmHmrEvent) {
       payload = {
-        type: 'cus撒打算大撒打算大tom',
+        type: 'custom',
         event: args[0],
         data: args[1]
       };
@@ -251,23 +250,18 @@ export default class WsServer implements IWebSocketServer {
     socket.send(payload);
   }
 
-  private error() {
-    this.wss.on('error', (e: Error & { code: string }) => {
-      if (e.code === 'EADDRINUSE') {
-        this.logger.error(
-          red(`WebSocket server error: Port is already in use`),
-          {
-            error: e
-          }
-        );
-      } else {
-        this.logger.error(
-          red(`WebSocket server error:\n${e.stack || e.message}`),
-          {
-            error: e
-          }
-        );
-      }
-    });
+  private handleSocketError(err: Error & { code: string }) {
+    if (err.code === 'EADDRINUSE') {
+      this.logger.error(red(`WebSocket server error: Port is already in use`), {
+        error: err
+      });
+    } else {
+      this.logger.error(
+        red(`WebSocket server error:\n${err.stack || err.message}`),
+        {
+          error: err
+        }
+      );
+    }
   }
 }

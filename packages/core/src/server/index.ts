@@ -75,7 +75,6 @@ export class DevServer implements ImplDevServer {
   public _context: FarmServerContext;
 
   ws: WsServer;
-  // ws: WebSocketServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
   server?: http.Server;
@@ -115,19 +114,26 @@ export class DevServer implements ImplDevServer {
   async listen(): Promise<void> {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
+      return;
     }
     const { port, open, protocol, hostname } = this.config;
-    let publicPath;
-    if (urlRegex.test(this.publicPath)) {
-      publicPath = '/';
-    } else {
-      publicPath = this.publicPath.startsWith('/')
-        ? this.publicPath
-        : `/${this.publicPath}`;
-    }
+    const publicPath = this.getNormalizedPublicPath();
 
     const start = Date.now();
     // compile the project and start the dev server
+    await this.compileAndStartServer(publicPath);
+
+    await this.startServer(this.config);
+    bootstrap(Date.now() - start);
+
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printServerUrls();
+
+    if (open) {
+      openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
+    }
+  }
+
+  private async compileAndStartServer(publicPath: string): Promise<void> {
     if (process.env.FARM_PROFILE) {
       this._compiler.compileSync();
     } else {
@@ -135,18 +141,20 @@ export class DevServer implements ImplDevServer {
     }
 
     if (this.config.writeToDisk) {
-      const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
+      const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
       this._compiler.writeResourcesToDisk(base);
     }
 
-    const end = Date.now();
-
     await this.startServer(this.config);
-    bootstrap(end - start);
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printServerUrls();
+  }
 
-    if (open) {
-      openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
+  private getNormalizedPublicPath(): string {
+    if (urlRegex.test(this.publicPath)) {
+      return '/';
+    } else {
+      return this.publicPath.startsWith('/')
+        ? this.publicPath
+        : `/${this.publicPath}`;
     }
   }
 
@@ -176,9 +184,7 @@ export class DevServer implements ImplDevServer {
     const errorMessage =
       errorMap[error.code as keyof ErrorMap] || `An error occurred: ${error}`;
     this.logger.error(errorMessage);
-    this.server.close(() => {
-      process.exit(1);
-    });
+    this.close();
   }
 
   async close() {
@@ -186,6 +192,7 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     await this.closeFarmServer();
+    process.exit(0);
   }
 
   async restart() {
@@ -206,7 +213,7 @@ export class DevServer implements ImplDevServer {
     Promise.all(promises);
   }
 
-  createFarmServer(options: UserServerConfig) {
+  public createFarmServer(options: UserServerConfig) {
     const { https = false, host = 'localhost', plugins = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
