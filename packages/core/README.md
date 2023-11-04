@@ -1,19 +1,15 @@
 # Farm Core
 
-Farm is a super-fast web build engine written in Rust. Farm can start a project in milliseconds and perform HMR within 5ms, making it much faster than similar tools like webpack and vite.
+Farm is a extremely fast web build tool written in Rust. Farm can start a project in milliseconds and perform HMR within 10ms, making it much faster than similar tools like webpack and vite.
 
-Visit https://github.com/farm-fe/farm for details
+Visit https://github.com/farm-fe/farm for details.
 
 ## Getting Started
 
 Install Farm CLI:
 
 ```sh
-npm install -g @farmfe/cli
+pnpm create farm && cd farm-project && pnpm start
 ```
 
-We provide an example React project for now. Use `farm create` to create a new project and `farm start` to start the project.
-
-```sh
-farm create && cd farm-react && npm i && npm start
-```
+visit [official document](https://farm-fe.github.io/) to learn more about Farm.
