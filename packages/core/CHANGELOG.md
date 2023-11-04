@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.20
+
+### Patch Changes
+
+- bump version for #704
+
 ## 0.13.19
 
 ### Patch Changes
