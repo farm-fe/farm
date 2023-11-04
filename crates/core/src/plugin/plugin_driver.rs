@@ -17,7 +17,9 @@ use crate::{
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
   },
-  record::{AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger},
+  record::{
+    AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger,
+  },
   resource::{resource_pot::ResourcePot, Resource},
   stats::Stats,
 };
@@ -144,7 +146,7 @@ impl PluginDriver {
                 .clone()
                 .map(|module_id| module_id.relative_path().to_string()),
               kind: String::from(param.kind.clone()),
-              trigger: Trigger::Compiler
+              trigger: Trigger::Compiler,
             },
           );
         }
@@ -174,7 +176,7 @@ impl PluginDriver {
               content: load_result.content.clone(),
               source_maps: None,
               module_type: load_result.module_type.clone(),
-              trigger: Trigger::Compiler
+              trigger: Trigger::Compiler,
             },
           );
         }
@@ -203,15 +205,9 @@ impl PluginDriver {
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
-        let plugin_name = plugin.name().to_string();
-
-        if let Some(source_map) = plugin_result.source_map {
-          let source_maps = if self.record {
-            Some(source_map.clone())
-          } else {
-            None
-          };
-
+        if self.record {
+          let plugin_name = plugin.name().to_string();
+          let source_maps = plugin_result.source_map.clone();
           context.record_manager.add_transform_record(
             param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
             TransformRecord {
@@ -220,10 +216,12 @@ impl PluginDriver {
               content: param.content.clone(),
               source_maps,
               module_type: param.module_type.clone(),
-              trigger: Trigger::Compiler
+              trigger: Trigger::Compiler,
             },
           );
+        };
 
+        if let Some(source_map) = plugin_result.source_map {
           result.source_map_chain.push(source_map);
         }
       }
@@ -467,7 +465,7 @@ impl PluginDriver {
 
   hook_parallel!(
     finish,
-    | plugin_name: String, context: &Arc<CompilationContext> | {
+    |plugin_name: String, context: &Arc<CompilationContext>| {
       context.record_manager.set_trigger(Trigger::Update);
     },
     stat: &Stats
