@@ -6,8 +6,8 @@
  */
 
 // import { Context } from 'koa';
-import { WebSocketServer } from 'ws';
-import createFarmWsServer from '../ws.js';
+// import { WebSocketServer } from 'ws';
+// import WsServer from '../ws.js';
 import { HmrEngine } from '../hmr-engine.js';
 import { DevServer } from '../index.js';
 
@@ -35,39 +35,41 @@ import { DevServer } from '../index.js';
 //   };
 // }
 
-export function hmrPlugin(context: DevServer) {
-  const { config, _context, logger } = context;
+export function hmrPlugin(devSeverContext: DevServer) {
+  const { config, _context, logger } = devSeverContext;
   if (config.hmr) {
-    if (config.hmr.host === config.host && config.hmr.port === config.port) {
-      const wsServer = new createFarmWsServer(context.server, config);
-      context.ws = wsServer.wss;
-
-      // context.ws = new WebSocketServer({
-      //   noServer: true
-      // });
-      // context.server.on('upgrade', (request, socket, head) => {
-      //   if (
-      //     request.url === config.hmr.path &&
-      //     request.headers['sec-websocket-protocol'] === 'farm_hmr'
-      //   ) {
-      //     context.ws.handleUpgrade(request, socket, head, (ws) => {
-      //       context.ws.emit('connection', ws, request);
-      //     });
-      //   }
-      // });
-    } else if (typeof config.hmr.host === 'string') {
-      context.ws = new WebSocketServer({
-        port: config.hmr.port,
-        host: config.hmr.host,
-        path: config.hmr.path
-      });
-    } else {
-      logger.error(
-        'If configure different host in server.host and hmr.host, then HMR host must be a string or same as dev server host when establishing a websocket connection'
-      );
-    }
-
+    // if (config.hmr.host === config.host && config.hmr.port === config.port) {
+    //   // const wsServer = new WsServer(context.server, config);
+    //   // context.ws = wsServer.wss;
+    //   // context.ws = new WebSocketServer({
+    //   //   noServer: true
+    //   // });
+    //   // context.server.on('upgrade', (request, socket, head) => {
+    //   //   if (
+    //   //     request.url === config.hmr.path &&
+    //   //     request.headers['sec-websocket-protocol'] === 'farm_hmr'
+    //   //   ) {
+    //   //     context.ws.handleUpgrade(request, socket, head, (ws) => {
+    //   //       context.ws.emit('connection', ws, request);
+    //   //     });
+    //   //   }
+    //   // });
+    // } else if (typeof config.hmr.host === 'string') {
+    //   // context.ws = new WebSocketServer({
+    //   //   port: config.hmr.port,
+    //   //   host: config.hmr.host,
+    //   //   path: config.hmr.path
+    //   // });
+    // } else {
+    //   logger.error(
+    //     'If configure different host in server.host and hmr.host, then HMR host must be a string or same as dev server host when establishing a websocket connection'
+    //   );
+    // }
     // _context.app.use(hmr(context));
-    context.hmrEngine = new HmrEngine(_context.compiler, context, logger);
+    devSeverContext.hmrEngine = new HmrEngine(
+      _context.compiler,
+      devSeverContext,
+      logger
+    );
   }
 }

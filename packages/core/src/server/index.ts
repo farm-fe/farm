@@ -1,6 +1,5 @@
 import http from 'node:http';
 import Koa from 'koa';
-import { WebSocketServer } from 'ws';
 
 import { Compiler } from '../compiler/index.js';
 import {
@@ -33,6 +32,7 @@ import {
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
+import WsServer from './ws.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -68,7 +68,7 @@ export class DevServer implements ImplDevServer {
   private _app: Koa;
   public _context: FarmServerContext;
 
-  ws: WebSocketServer;
+  ws: WsServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
   server?: http.Server;
@@ -224,6 +224,8 @@ export class DevServer implements ImplDevServer {
 
     this._app = new Koa();
     this.server = http.createServer(this._app.callback());
+    this.ws = new WsServer(this.server, this.config);
+
     this._context = {
       config: this.config,
       app: this._app,
@@ -306,7 +308,6 @@ export class DevServer implements ImplDevServer {
       recordsPlugin,
       proxyPlugin
     ];
-    // this._app.use(serve(this._dist));
     resolvedPlugins.forEach((plugin) => plugin(this));
   }
 }
