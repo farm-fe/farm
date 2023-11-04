@@ -33,7 +33,6 @@ import {
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
-// import { WebSocketServer } from 'ws';
 
 /**
  * Farm Dev Server, responsible for:
@@ -117,11 +116,11 @@ export class DevServer implements ImplDevServer {
       return;
     }
     const { port, open, protocol, hostname } = this.config;
-    const publicPath = this.getNormalizedPublicPath();
+    this.getNormalizedPublicPath();
 
     const start = Date.now();
     // compile the project and start the dev server
-    await this.compile(publicPath);
+    await this.compile();
 
     bootstrap(Date.now() - start);
 
@@ -130,11 +129,11 @@ export class DevServer implements ImplDevServer {
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printServerUrls();
 
     if (open) {
-      openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
+      openBrowser(`${protocol}://${hostname}:${port}${this.publicPath}`);
     }
   }
 
-  private async compile(publicPath: string): Promise<void> {
+  private async compile(): Promise<void> {
     if (process.env.FARM_PROFILE) {
       this._compiler.compileSync();
     } else {
@@ -142,7 +141,7 @@ export class DevServer implements ImplDevServer {
     }
 
     if (this.config.writeToDisk) {
-      const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
+      const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this._compiler.writeResourcesToDisk(base);
     }
   }

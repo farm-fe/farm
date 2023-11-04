@@ -39,6 +39,7 @@ export class HmrEngine {
 
   recompileAndSendResult = async (): Promise<JsUpdateResult> => {
     const queue = [...this._updateQueue];
+
     if (queue.length === 0) {
       return;
     }

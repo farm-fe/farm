@@ -5,10 +5,6 @@
  * and store the updated result with a unique id in a cache, the client will send a `/__hmr?id=xxx` import() request to fetch the updated modules and execute it.
  */
 
-// import { Context } from 'koa';
-// import { WebSocketServer } from 'ws';
-// import WsServer from '../ws.js';
-// import { WebSocketServer } from 'ws';
 import { HmrEngine } from '../hmr-engine.js';
 import { DevServer } from '../index.js';
 
