@@ -1475,6 +1475,7 @@ name = "farmfe_plugin_webpack_partial_bundling"
 version = "0.0.0"
 dependencies = [
  "farmfe_core",
+ "farmfe_macro_plugin",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
 ]

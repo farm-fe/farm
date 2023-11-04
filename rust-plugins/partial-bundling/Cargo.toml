@@ -1,12 +1,14 @@
 [package]
+edition = "2021"
 name = "farmfe_plugin_webpack_partial_bundling"
 version = "0.0.0"
-edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 
 [dependencies]
 farmfe_core = { path = "../../crates/core" }
 farmfe_toolkit = { path = "../../crates/toolkit" }
 farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
-
-[features]
-profile = ["farmfe_core/profile"]
+farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }

@@ -1,0 +1,39 @@
+{
+  "name": "@farmfe/plugin-webpack-partial-bundling",
+  "version": "0.0.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "napi": {
+    "name": "farm-plugin-webpack-partial-bundling",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin"
+      ]
+    }
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@napi-rs/cli": "^2.15.2"
+  },
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js",
+      "types": "./index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "npm run build && npm run copy-artifacts",
+    "build": "napi build --platform --cargo-name farmfe_plugin_webpack_partial_bundling -p farmfe_plugin_webpack_partial_bundling --release",
+    "copy-artifacts": "node scripts/copy-artifacts.mjs",
+    "type-check": "echo \"No type-checking configured.\"",
+    "prepublishOnly": "farm plugin prepublish"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ]
+}

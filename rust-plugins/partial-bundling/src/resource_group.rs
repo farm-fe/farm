@@ -1,32 +1,12 @@
 use farmfe_core::{
   hashbrown::{HashMap, HashSet},
-  module::{
-    module_graph::{self, ModuleGraph},
-    ModuleId,
-  },
-  resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
+  module::ModuleId,
+  resource::resource_pot::{ResourcePot, ResourcePotType},
 };
 use farmfe_toolkit::hash::sha256;
 use farmfe_toolkit::rand::{self, distributions::Alphanumeric, Rng};
 
-pub fn is_subset<T: PartialEq>(v1: &[T], v2: &[T]) -> bool {
-  v1.iter().all(|item| v2.contains(item))
-}
-
-pub fn ids_to_string<'a, I: Iterator<Item = &'a K>, K>(resources: I) -> String
-where
-  K: ToString + 'a,
-{
-  let mut module_group_ids = resources.map(|id| id.to_string()).collect::<Vec<String>>();
-
-  module_group_ids.sort();
-
-  module_group_ids
-    .clone()
-    .into_iter()
-    .collect::<Vec<String>>()
-    .join("_")
-}
+use crate::utils::ids_to_string;
 
 #[derive(Debug, Clone)]
 pub struct ResourceUnitGroup {
@@ -130,10 +110,7 @@ impl Into<ResourcePot> for ResourceUnit {
         8
       )
     );
-    println!(
-      "{}:{} to {}:{:?}",
-      self.name, self.id, resource_pot_id, resource_pot_type
-    );
+
     let mut resource_pot = ResourcePot::new(resource_pot_id, resource_pot_type);
 
     resource_pot.immutable = self.immutable;

@@ -29,15 +29,6 @@ pub fn split_resource_by_module_metadata(
       .push(module_id.clone());
   }
 
-  println!(
-    "resource unit: {}:{} entry: {:?} type: {:?} map len: {}",
-    resource_unit_id.to_string(),
-    resource_unit_group.resource_unit.id,
-    resource_unit_group.resource_unit.entry_module,
-    resource_unit_group.resource_unit.resource_pot_type,
-    resource_map.len()
-  );
-
   if resource_map.len() == 1 {
     let ((module_type, inmutable), modules) = resource_map.into_iter().next().unwrap();
     resource_unit_group
@@ -56,7 +47,6 @@ pub fn split_resource_by_module_metadata(
       unit_group.resource_unit.resource_pot_type = Some(module_type.into());
       unit_group.resource_unit.immutable = immutable;
 
-
       modules.into_iter().for_each(|module_id| {
         if module_graph.entries.contains_key(&module_id) {
           unit_group.resource_unit.entry_module = Some(module_id.clone());
@@ -64,15 +54,6 @@ pub fn split_resource_by_module_metadata(
 
         unit_group.resource_unit.add_module(module_id);
       });
-
-      println!(
-        "    split to: {}:{}\n        resource_pot_type: {:?}\n        immutable: {:?}\n        entry: {:?}",
-        unit_group.resource_unit.name,
-        unit_group.resource_unit.id,
-        unit_group.resource_unit.resource_pot_type,
-        unit_group.resource_unit.immutable,
-        unit_group.resource_unit.entry_module
-      );
 
       unit_group
     })

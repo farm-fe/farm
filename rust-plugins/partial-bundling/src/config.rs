@@ -9,13 +9,11 @@ pub struct PartialBundlingModuleBucketsConfig {
   pub min_size: Option<usize>,
   pub max_concurrent_requests: Option<u32>,
   pub weight: isize,
-  pub reuse_existing_resource_pot: bool,
 }
 
 impl Default for PartialBundlingModuleBucketsConfig {
   fn default() -> Self {
     Self {
-      reuse_existing_resource_pot: false,
       name: "".to_string(),
       test: vec![],
       max_concurrent_requests: None,
@@ -25,9 +23,9 @@ impl Default for PartialBundlingModuleBucketsConfig {
   }
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
 pub struct PartialBundlingConfig {
-  pub module_bucket: Vec<PartialBundlingModuleBucketsConfig>
+  #[serde(default)]
+  pub module_bucket: Vec<PartialBundlingModuleBucketsConfig>,
 }
