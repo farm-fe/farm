@@ -33,6 +33,7 @@ import {
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
+// import { WebSocketServer } from 'ws';
 
 /**
  * Farm Dev Server, responsible for:
@@ -69,6 +70,7 @@ export class DevServer implements ImplDevServer {
   public _context: FarmServerContext;
 
   ws: WsServer;
+  // ws: WebSocketServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
   server?: http.Server;
@@ -224,7 +226,7 @@ export class DevServer implements ImplDevServer {
 
     this._app = new Koa();
     this.server = http.createServer(this._app.callback());
-    this.ws = new WsServer(this.server, this.config);
+    this.ws = new WsServer(this.server, this.config, true);
 
     this._context = {
       config: this.config,

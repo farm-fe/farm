@@ -61,6 +61,7 @@ export default class WsServer implements IWebSocketServer {
   constructor(
     private httpServer: http.Server,
     private config: any,
+    public isFarmHmrEvent: boolean = false,
     logger?: Logger
   ) {
     this.logger = logger ?? new DefaultLogger();
@@ -147,9 +148,11 @@ export default class WsServer implements IWebSocketServer {
   //   }
   // }
 
-  // get clients() {
-  //   return new Set(Array.from(this.wss.clients).map(this.getSocketClient));
-  // }
+  get clients(): Set<any> {
+    return new Set(
+      Array.from(this.wss.clients).map(this.getSocketClient.bind(this))
+    );
+  }
 
   // private handleCustomEvent(event: string, data: any) {
   //   // TODO Handle custom events here
@@ -198,8 +201,6 @@ export default class WsServer implements IWebSocketServer {
   connection() {
     this.wss.on('connection', (socket: WebSocketRawType) => {
       socket.on('message', (raw) => {
-        console.log(raw);
-
         if (!this.customListeners.size) return;
         let parsed: any;
         try {
@@ -250,9 +251,9 @@ export default class WsServer implements IWebSocketServer {
   //   return this.clientsMap.get(socket);
   // }
 
-  public get clients() {
-    return new Set(Array.from(this.wss.clients).map(this.getSocketClient));
-  }
+  // public get clients() {
+  //   return new Set(Array.from(this.wss.clients).map(this.getSocketClient));
+  // }
 
   public async close() {
     if (this.upgradeWsServer && this.httpServer) {
@@ -300,21 +301,30 @@ export default class WsServer implements IWebSocketServer {
   private getSocketClient(socket: WebSocketRawType) {
     if (!this.clientsMap.has(socket)) {
       this.clientsMap.set(socket, {
-        send: (...args) => this.sendMessage(socket, ...args),
+        send: (...args) =>
+          this.sendMessage(socket, this.isFarmHmrEvent, ...args),
         socket
       });
     }
     return this.clientsMap.get(socket);
   }
 
-  private sendMessage(socket: WebSocketRawType, ...args: any[]) {
+  private sendMessage(
+    socket: WebSocketRawType,
+    isFarmHmrEvent: boolean,
+    ...args: any[]
+  ) {
     let payload: any;
-    if (typeof args[0] === 'string') {
-      payload = { type: 'custom', event: args[0], data: args[1] };
+    if (typeof args[0] === 'string' && !isFarmHmrEvent) {
+      payload = {
+        type: 'cus撒打算大撒打算大tom',
+        event: args[0],
+        data: args[1]
+      };
     } else {
       payload = args[0];
     }
-    socket.send(JSON.stringify(payload));
+    socket.send(payload);
   }
 
   // private error() {

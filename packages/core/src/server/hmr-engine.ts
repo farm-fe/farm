@@ -39,7 +39,6 @@ export class HmrEngine {
 
   recompileAndSendResult = async (): Promise<JsUpdateResult> => {
     const queue = [...this._updateQueue];
-
     if (queue.length === 0) {
       return;
     }
@@ -70,6 +69,7 @@ export class HmrEngine {
         green(`${Date.now() - start}ms`)
       )}`
     );
+
     // TODO: write resources to disk when hmr finished in incremental mode
     // if (this._devServer.config?.writeToDisk) {
     //   this._compiler.onUpdateFinish(() => {
@@ -120,8 +120,7 @@ export class HmrEngine {
     //   result: resultStr,
     //   count: this._devServer.ws.clients.size
     // });
-
-    this._devServer.ws.clients.forEach((client) => {
+    this._devServer.ws.clients.forEach((client: any) => {
       client.send(resultStr);
     });
 
