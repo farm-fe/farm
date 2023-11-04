@@ -98,13 +98,32 @@ export default class WsServer implements IWebSocketServer {
     // Start listening for WebSocket connections
   }
 
-  send(_payload: any) {
-    // Broadcast the payload to all connected clients
-    // this.wss.clients.forEach((client) => {
-    //   if (client.readyState === WebSocketServer.OPEN) {
-    //     client.send(JSON.stringify(payload));
-    //   }
-    // });
+  // Farm uses the `sendMessage` method in hmr and
+  // the send method is reserved for migration vite
+  send(...args: any[]) {
+    let payload: any;
+    if (typeof args[0] === 'string') {
+      payload = {
+        type: 'custom',
+        event: args[0],
+        data: args[1]
+      };
+    } else {
+      payload = args[0];
+    }
+
+    if (payload.type === 'error' && !this.wss.clients.size) {
+      this.bufferedError = payload;
+      return;
+    }
+
+    const stringified = JSON.stringify(payload);
+    this.wss.clients.forEach((client) => {
+      // readyState 1 means the connection is open
+      if (client.readyState === 1) {
+        client.send(stringified);
+      }
+    });
   }
 
   private isHMRRequest(request: IncomingMessage): boolean {
@@ -130,6 +149,7 @@ export default class WsServer implements IWebSocketServer {
     );
   }
 
+  // a custom method defined by farm to send custom events
   public sendCustomEvent<T extends string>(event: T, payload?: any) {
     // Send a custom event to all clients
     this.send({ type: 'custom', event, data: payload });

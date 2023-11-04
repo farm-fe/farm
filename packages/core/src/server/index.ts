@@ -121,10 +121,11 @@ export class DevServer implements ImplDevServer {
 
     const start = Date.now();
     // compile the project and start the dev server
-    await this.compileAndStartServer(publicPath);
+    await this.compile(publicPath);
+
+    bootstrap(Date.now() - start);
 
     await this.startServer(this.config);
-    bootstrap(Date.now() - start);
 
     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printServerUrls();
 
@@ -133,7 +134,7 @@ export class DevServer implements ImplDevServer {
     }
   }
 
-  private async compileAndStartServer(publicPath: string): Promise<void> {
+  private async compile(publicPath: string): Promise<void> {
     if (process.env.FARM_PROFILE) {
       this._compiler.compileSync();
     } else {
@@ -144,8 +145,6 @@ export class DevServer implements ImplDevServer {
       const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
       this._compiler.writeResourcesToDisk(base);
     }
-
-    await this.startServer(this.config);
   }
 
   private getNormalizedPublicPath(): string {
@@ -210,7 +209,7 @@ export class DevServer implements ImplDevServer {
       promises.push(new Promise((resolve) => this.server.close(resolve)));
     }
 
-    Promise.all(promises);
+    await Promise.all(promises);
   }
 
   public createFarmServer(options: UserServerConfig) {
