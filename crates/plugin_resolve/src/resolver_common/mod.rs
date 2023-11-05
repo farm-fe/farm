@@ -843,3 +843,21 @@ pub fn find_package_dir(basedir: &PathBuf) -> Option<PathBuf> {
 
   None
 }
+
+pub fn path_relative(basedir: &str, pkg_data_dir: &String, imports_path: String) -> String {
+  let pkg_data_dir_path = Path::new(pkg_data_dir);
+  let imports_path_path = Path::new(&imports_path);
+
+  if let Ok(relative_path) = imports_path_path.strip_prefix(pkg_data_dir_path) {
+    let relative_path_str = relative_path.to_str().unwrap_or("");
+    let basedir_path = Path::new(basedir);
+
+    return basedir_path
+      .join(relative_path_str)
+      .to_str()
+      .unwrap_or("")
+      .to_string();
+  }
+
+  imports_path
+}

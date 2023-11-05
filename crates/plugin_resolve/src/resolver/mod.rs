@@ -22,8 +22,8 @@ use crate::resolver_common::{
   are_values_equal, get_directory_path, get_field_value_from_package_json_info, get_key_path,
   get_real_path, get_result_path, is_bare_import_path, is_double_source_dot, is_in_node_modules,
   is_module_external, is_module_side_effects, is_source_absolute, is_source_dot,
-  is_source_relative, map_with_browser_field, split_file_and_postfix, try_file, walk,
-  ConditionOptions, NODE_MODULES,
+  is_source_relative, map_with_browser_field, path_relative, split_file_and_postfix, try_file,
+  walk, ConditionOptions, NODE_MODULES,
 };
 use crate::{
   resolver_cache::{ResolveCache, ResolveNodeModuleCacheKey},
@@ -169,6 +169,7 @@ impl Resolver {
         } else {
           normalized_path.to_path_buf()
         };
+        println!("normalized_path: {:?}", normalized_path);
 
         // TODO try read symlink from the resolved path step by step to its parent util the root
         // if let Some(normalized_path) =
@@ -177,7 +178,15 @@ impl Resolver {
         //   return Some(self.get_resolve_result(&package_json_info, normalized_path, kind, context));
         // }
         // None
-
+        if context
+          .config
+          .resolve
+          .main_fields
+          .contains(&String::from("browser"))
+          && context.config.output.target_env == TargetEnv::Browser
+        {
+          // self.try_browser_mapping(&normalized_path, base_dir, package_json_info, context)
+        }
         let resolved_path = try_file(&normalized_path, context)
           .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
           .ok_or(CompilationError::GenericError(format!(
@@ -369,9 +378,9 @@ impl Resolver {
       let maybe_node_modules_path = current.join(NODE_MODULES);
       // check deepImport source
       let deep_match = DEEP_IMPORT_RE.is_match(source);
-      let mut package_id = source;
+      let mut package_ide_id = source;
       let captures = DEEP_IMPORT_RE.captures(source);
-      package_id = match captures {
+      package_ide_id = match captures {
         Some(captures) => captures
           .get(1)
           .map_or_else(|| captures.get(2).unwrap().as_str(), |m| m.as_str()),
@@ -379,9 +388,11 @@ impl Resolver {
       };
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let package_path = if context.config.resolve.symlinks {
-          follow_symlinks(RelativePath::new(package_id).to_logical_path(&maybe_node_modules_path))
+          follow_symlinks(
+            RelativePath::new(package_ide_id).to_logical_path(&maybe_node_modules_path),
+          )
         } else {
-          RelativePath::new(package_id).to_logical_path(&maybe_node_modules_path)
+          RelativePath::new(package_ide_id).to_logical_path(&maybe_node_modules_path)
         };
         let package_json_info = load_package_json(
           package_path.clone(),
@@ -485,7 +496,7 @@ impl Resolver {
           }
           let package_json_info = package_json_info.unwrap();
           let (result, tried_paths) = self.try_package(
-            package_id,
+            package_ide_id,
             deep_match,
             &package_json_info,
             source,
@@ -519,6 +530,17 @@ impl Resolver {
 
     // unsupported node_modules resolving type
     (None, tried_paths)
+  }
+
+  fn try_browser_mapping(
+    self: &Self,
+    source: &str,
+    importer_dir: PathBuf,
+    package_json_info: &PackageJsonInfo,
+    context: Arc<CompilationContext>,
+  ) -> Option<PluginResolveHookResult> {
+    let mut res = String::new();
+    None
   }
 
   fn try_package(
@@ -733,16 +755,21 @@ impl Resolver {
       if let Some(resolved_path) =
         self.resolve_exports_or_imports(package_json_info, source, "imports", kind, context)
       {
-        // if (importsPath?.[0] === '.') {
-        //   importsPath = path.relative(basedir, path.join(pkgData.dir, importsPath))
-
-        //   if (importsPath[0] !== '.') {
-        //     importsPath = `./${importsPath}`
-        //   }
-        // }
+        let mut resolve_path = String::from(resolved_path.get(0).unwrap());
+        let resolved_path = resolved_path.get(0).unwrap().to_string();
+        if resolved_path.starts_with(".") {
+          resolve_path = path_relative(
+            &base_dir.to_str().unwrap(),
+            package_json_info.dir(),
+            resolved_path,
+          );
+          if !resolve_path.starts_with('.') {
+            resolve_path = format!("./{}", resolve_path);
+          }
+        }
 
         let res = self.process_imports_path(
-          resolved_path.into_iter().next().unwrap().as_str(),
+          resolve_path.as_str(),
           importer.to_str().unwrap(),
           package_json_info.dir(),
         );
@@ -1185,15 +1212,6 @@ impl Resolver {
     } else {
       id.to_string()
     }
-  }
-
-  fn try_browser_mapping(
-    source: &str,
-    importer_dir: PathBuf,
-    kind: ResolveKind,
-    context: Arc<CompilationContext>,
-  ) -> Option<PluginResolveHookResult> {
-    None
   }
 
   fn find_existing_directory(self: &Self, path: &Path) -> Option<PathBuf> {
