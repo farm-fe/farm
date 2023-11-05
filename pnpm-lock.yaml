@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: false
@@ -860,6 +860,9 @@ importers:
       core-js:
         specifier: ^3.30.1
         version: 3.30.1
+      dayjs:
+        specifier: ^1.10.7
+        version: 1.11.7
       element-plus:
         specifier: ^2.4.1
         version: 2.4.1(vue@3.3.0)
@@ -10061,13 +10064,12 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-<<<<<<< HEAD
-  /normalize.css@8.0.1:
-    resolution: {integrity: sha512-qizSNPO93t1YUuUhP22btGOo3chcvDFqFaj2TRybP0DMxkHOCTYwp3n34fel4a31ORXy4m1Xq0Gyqpb5m33qIg==}
-=======
   /normalize-wheel-es@1.2.0:
     resolution: {integrity: sha512-Wj7+EJQ8mSuXr2iWfnujrimU35R2W4FAErEyTmJoJ7ucwTn2hOUSsRehMb5RSYkxXGTM7Y9QpvPmp++w5ftoJw==}
->>>>>>> a5c31998581507d330b81b5e373d6f078b3372cd
+    dev: false
+
+  /normalize.css@8.0.1:
+    resolution: {integrity: sha512-qizSNPO93t1YUuUhP22btGOo3chcvDFqFaj2TRybP0DMxkHOCTYwp3n34fel4a31ORXy4m1Xq0Gyqpb5m33qIg==}
     dev: false
 
   /npm-run-path@4.0.1:
