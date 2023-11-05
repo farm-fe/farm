@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.2.1
+
+### Patch Changes
+
+- ec3e6ae: support alias
+
 ## 0.2.0
 
 ### Minor Changes
