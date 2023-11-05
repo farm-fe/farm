@@ -1,5 +1,6 @@
 import farmDtsPlugin from '@farmfe/js-plugin-dts';
 import { builtinModules } from 'module';
+import path from 'path';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -8,6 +9,11 @@ export default {
   compilation: {
     input: {
       index: 'src/index.ts'
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(process.cwd(), './src')
+      }
     },
     output: {
       path: 'dist',
@@ -33,7 +39,9 @@ export default {
   server: {
     hmr: false
   },
-  plugins: [farmDtsPlugin({
-    outputDir: 'build'
-  })]
+  plugins: [
+    farmDtsPlugin({
+      outputDir: 'build'
+    })
+  ]
 };

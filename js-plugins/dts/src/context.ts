@@ -28,7 +28,7 @@ export default class Context {
   include: string[];
   exclude: string[];
   logger = new DefaultLogger({ name: 'FarmDtsPlugin' });
-  handleResolveOptions(options: any = {}, config: UserConfig) {
+  handleResolveOptions(options: any = {}, config: UserConfig['compilation']) {
     this.config = config;
     let libFolderPath: string;
     const defaultOption: any = {
@@ -53,6 +53,9 @@ export default class Context {
       options.outputDir ? options.outputDir : this.config.output.path,
       root
     );
+    const outDir = options.outputDir
+      ? options.outputDir
+      : this.config.output.path;
     const aliasesExclude = userOptions?.aliasesExclude ?? [];
     const tsConfigPath = resolveAbsolutePath(userOptions.tsconfigPath, root);
     libFolderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
@@ -86,7 +89,7 @@ export default class Context {
       options.exclude ?? tsConfigOptions.exclude ?? 'node_modules/**'
     ).map(normalizeGlob);
 
-    const aliasOptions: any = config?.compilation?.resolve?.alias ?? [];
+    const aliasOptions: any = config?.resolve?.alias ?? [];
     let aliases: any[] = [];
     if (isObject(aliasOptions)) {
       aliases = Object.entries(aliasOptions).map(([key, value]) => {
@@ -110,18 +113,21 @@ export default class Context {
           )
       );
     }
-    console.log(aliases);
 
     this.options = {
       ...userOptions,
       isDev,
       root,
-      outputDir,
+      outputDir: outDir,
+      outputDirPath: outputDir,
       sourceDtsFiles,
       outputFiles,
       emittedFiles,
       tsConfigOptions,
-      tsConfigPath
+      tsConfigPath,
+      aliases,
+      aliasOptions,
+      aliasesExclude
     };
   }
 
@@ -221,7 +227,9 @@ export default class Context {
     this.logger.info(
       `⚡️ Dts Plugin Build completed in ${chalk.bold(
         chalk.green(`${elapsedTime}ms`)
-      )}! Resources emitted to ${chalk.green(this.config.output.path)}.`
+      )}! Resources emitted to ${chalk.bold(
+        chalk.green(this.options.outputDir)
+      )}.`
     );
   }
 }
