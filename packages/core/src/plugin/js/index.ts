@@ -51,7 +51,7 @@ export function handleVitePlugins(
     jsPlugins.push({
       name: 'farm:load',
       // has to be the last one
-      priority: 0,
+      priority: -100,
       load: {
         filters: {
           resolvedPaths: DEFAULT_FILTERS
@@ -154,6 +154,25 @@ export function convertPlugin(plugin: JsPlugin): void {
       plugin.transform.filters.moduleTypes = [];
     } else if (!plugin.transform.filters.resolvedPaths) {
       plugin.transform.filters.resolvedPaths = [];
+    }
+  }
+
+  if (plugin.load?.filters?.resolvedPaths?.length) {
+    if (process.platform === 'win32') {
+      // replace / to \
+      plugin.load.filters.resolvedPaths = plugin.load.filters.resolvedPaths.map(
+        (item) => item.replaceAll('/', '\\\\')
+      );
+    }
+  }
+
+  if (plugin.transform?.filters?.resolvedPaths?.length) {
+    if (process.platform === 'win32') {
+      // replace / to \
+      plugin.transform.filters.resolvedPaths =
+        plugin.transform.filters.resolvedPaths.map((item) =>
+          item.replaceAll('/', '\\\\')
+        );
     }
   }
 }

@@ -36,7 +36,7 @@ export type NormalizedServerConfig = Required<
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
   ignores?: string[];
-  host?: string;
+  host?: string | boolean;
   port?: number;
   path?: string;
   watchOptions?: {
@@ -59,7 +59,7 @@ export interface UserConfig {
   resolveConfigPath?: string;
   configFileDependencies?: string[];
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
-  plugins?: (RustPlugin | JsPlugin)[] | JsPlugin[][];
+  plugins?: (RustPlugin | JsPlugin | JsPlugin[])[];
   /** vite plugins */
   vitePlugins?: (object | (() => { vitePlugin: any; filters: string[] }))[];
   /** config related to compilation */

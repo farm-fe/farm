@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.2.5
+
+### Patch Changes
+
+- 35d294e: use windows in instead of import.meta
+
 ## 3.2.4
 
 ### Patch Changes

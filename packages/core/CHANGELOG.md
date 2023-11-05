@@ -1,5 +1,39 @@
 # @farmfe/core
 
+## 0.13.20
+
+### Patch Changes
+
+- bump version for #704
+
+## 0.13.19
+
+### Patch Changes
+
+- a569977: Fix #693
+- a569977: Optimize js plugin filters
+
+## 0.13.18
+
+### Patch Changes
+
+- 219d91f: fix #691 #689 server error
+
+## 0.13.17
+
+### Patch Changes
+
+- 35d294e: server host options default true
+- 822c281: Fix #685
+- Updated dependencies [35d294e]
+  - @farmfe/runtime-plugin-hmr@3.2.5
+
+## 0.13.16
+
+### Patch Changes
+
+- ddc3b40: fix enforceResources panic when lazy compile
+
 ## 0.13.15
 
 ### Patch Changes

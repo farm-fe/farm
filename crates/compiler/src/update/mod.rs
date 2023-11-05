@@ -164,7 +164,7 @@ impl Compiler {
         .collect::<HashSet<_>>()
     };
 
-    let (affected_module_groups, updated_module_ids, diff_result) =
+    let (affected_module_groups, updated_module_ids, diff_result, removed_modules) =
       self.diff_and_patch_context(paths, &update_context);
 
     // TODO Add a separate hook after module graph are updated
@@ -177,6 +177,7 @@ impl Compiler {
       previous_module_groups,
       &updated_module_ids,
       diff_result.clone(),
+      removed_modules,
       callback,
       sync,
     );
@@ -367,7 +368,12 @@ impl Compiler {
     &self,
     paths: Vec<(String, UpdateType)>,
     update_context: &Arc<UpdateContext>,
-  ) -> (HashSet<ModuleId>, Vec<ModuleId>, DiffResult) {
+  ) -> (
+    HashSet<ModuleId>,
+    Vec<ModuleId>,
+    DiffResult,
+    farmfe_core::hashbrown::HashMap<ModuleId, Module>,
+  ) {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
       // Note: HMR does not support the module with query
@@ -395,7 +401,12 @@ impl Compiler {
       &mut module_group_graph,
     );
 
-    (affected_module_groups, start_points, diff_result)
+    (
+      affected_module_groups,
+      start_points,
+      diff_result,
+      removed_modules,
+    )
   }
 
   fn regenerate_resources<F>(
@@ -404,6 +415,7 @@ impl Compiler {
     previous_module_groups: HashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
     diff_result: DiffResult,
+    removed_modules: farmfe_core::hashbrown::HashMap<ModuleId, Module>,
     callback: F,
     sync: bool,
   ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
@@ -424,6 +436,7 @@ impl Compiler {
         affected_module_groups,
         diff_result,
         &cloned_updated_module_ids,
+        &removed_modules,
         &cloned_context,
       )
       .unwrap();
@@ -465,6 +478,7 @@ impl Compiler {
           affected_module_groups,
           diff_result,
           &cloned_updated_module_ids,
+          &removed_modules,
           &cloned_context,
         ) {
           println!("Failed to regenerate resources: {}", e);

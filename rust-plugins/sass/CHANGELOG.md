@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.2.9
+
+### Patch Changes
+
+- a569977: Optimize js plugin filters
+
 ## 0.2.8
 
 ### Patch Changes

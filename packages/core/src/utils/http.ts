@@ -31,8 +31,8 @@ export async function resolveServerUrls(
   config: any
 ): Promise<ResolvedServerUrls> {
   const address = server.address();
-
   const isAddressInfo = (x: any): x is AddressInfo => x?.address;
+
   if (!isAddressInfo(address)) {
     return { local: [], network: [] };
   }
@@ -41,12 +41,12 @@ export async function resolveServerUrls(
   const network: string[] = [];
   const hostname = await resolveHostname(options.host);
   const protocol = options.https ? 'https' : 'http';
-  const { host, port } = getAddressHostnamePort(address);
+  const { port } = getAddressHostnamePort(address);
   const base = config.compilation?.output?.publicPath || '';
 
-  if (host !== undefined && !wildcardHosts.has(host)) {
+  if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
     const url = createServerUrl(protocol, hostname.name, port, base);
-    if (loopbackHosts.has(host)) {
+    if (loopbackHosts.has(hostname.host)) {
       local.push(url);
     } else {
       network.push(url);
@@ -73,6 +73,7 @@ export async function resolveServerUrls(
           : network.push(url);
       });
   }
+
   return { local, network };
 }
 
@@ -84,7 +85,6 @@ export async function resolveHostname(
     // Use a secure default
     host = 'localhost';
   } else if (optionsHost === true) {
-    // If passed --host in the CLI without arguments
     host = undefined; // undefined typically means 0.0.0.0 or :: (listen on all IPs)
   } else {
     host = optionsHost;
@@ -102,7 +102,7 @@ function getAddressHostnamePort(server: AddressInfo): {
   port: number;
 } {
   const hostname = server.address || 'localhost';
-  const port = server.port || 80;
+  const port = server.port;
   return { host: hostname, port };
 }
 

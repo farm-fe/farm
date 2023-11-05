@@ -1,5 +1,52 @@
 # @farmfe-examples/generate-dts
 
+## 1.0.20
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/core@0.13.20
+  - @farmfe/js-plugin-dts@0.2.0
+  - @farmfe/cli@0.5.8
+
+## 1.0.19
+
+### Patch Changes
+
+- Updated dependencies [a569977]
+- Updated dependencies [a569977]
+  - @farmfe/core@0.13.19
+  - @farmfe/js-plugin-dts@0.2.0
+  - @farmfe/cli@0.5.8
+
+## 1.0.18
+
+### Patch Changes
+
+- Updated dependencies [219d91f]
+  - @farmfe/core@0.13.18
+  - @farmfe/js-plugin-dts@0.2.0
+  - @farmfe/cli@0.5.8
+
+## 1.0.17
+
+### Patch Changes
+
+- Updated dependencies [35d294e]
+- Updated dependencies [822c281]
+  - @farmfe/core@0.13.17
+  - @farmfe/js-plugin-dts@0.2.0
+  - @farmfe/cli@0.5.8
+
+## 1.0.16
+
+### Patch Changes
+
+- Updated dependencies [ddc3b40]
+  - @farmfe/core@0.13.16
+  - @farmfe/js-plugin-dts@0.2.0
+  - @farmfe/cli@0.5.8
+
 ## 1.0.15
 
 ### Patch Changes

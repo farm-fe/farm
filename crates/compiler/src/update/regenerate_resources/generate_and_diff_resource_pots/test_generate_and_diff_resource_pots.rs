@@ -95,9 +95,14 @@ fn test_generate_and_diff_resource_pots() {
     generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
   context.resource_pot_map.write().replace(resource_pot_map);
 
-  let resource_pot_ids =
-    generate_and_diff_resource_pots(&affected_groups, &diff_result, &updated_modules, &context)
-      .unwrap();
+  let resource_pot_ids = generate_and_diff_resource_pots(
+    &affected_groups,
+    &diff_result,
+    &updated_modules,
+    &removed_modules,
+    &context,
+  )
+  .unwrap();
   println!("{:?}", resource_pot_ids);
   assert_eq!(
     resource_pot_ids,
@@ -293,9 +298,14 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
     generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
   context.resource_pot_map.write().replace(resource_pot_map);
 
-  let new_resource_pot_ids =
-    generate_and_diff_resource_pots(&affected_groups, &diff_result, &updated_modules, &context)
-      .unwrap();
+  let new_resource_pot_ids = generate_and_diff_resource_pots(
+    &affected_groups,
+    &diff_result,
+    &updated_modules,
+    &removed_modules,
+    &context,
+  )
+  .unwrap();
 
   assert!(new_resource_pot_ids.is_empty());
 }

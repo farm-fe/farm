@@ -1,5 +1,47 @@
 # @farmfe-examples/script-entry
 
+## 0.0.85
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/core@0.13.20
+  - @farmfe/cli@0.5.8
+
+## 0.0.84
+
+### Patch Changes
+
+- Updated dependencies [a569977]
+- Updated dependencies [a569977]
+  - @farmfe/core@0.13.19
+  - @farmfe/cli@0.5.8
+
+## 0.0.83
+
+### Patch Changes
+
+- Updated dependencies [219d91f]
+  - @farmfe/core@0.13.18
+  - @farmfe/cli@0.5.8
+
+## 0.0.82
+
+### Patch Changes
+
+- Updated dependencies [35d294e]
+- Updated dependencies [822c281]
+  - @farmfe/core@0.13.17
+  - @farmfe/cli@0.5.8
+
+## 0.0.81
+
+### Patch Changes
+
+- Updated dependencies [ddc3b40]
+  - @farmfe/core@0.13.16
+  - @farmfe/cli@0.5.8
+
 ## 0.0.80
 
 ### Patch Changes

@@ -7,10 +7,11 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.8",
-    "@farmfe/core": "^0.13.15",
+    "@farmfe/core": "^0.13.19",
     "@farmfe/js-plugin-solid": "^2.0.0"
   },
   "scripts": {
+    "dev": "farm start",
     "start": "farm start",
     "build": "farm build",
     "preview": "farm preview"

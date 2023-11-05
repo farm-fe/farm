@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "0.13.15",
+  "version": "0.13.20",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -78,7 +78,7 @@
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.7.3",
-    "@farmfe/runtime-plugin-hmr": "workspace:^3.2.4",
+    "@farmfe/runtime-plugin-hmr": "workspace:^3.2.5",
     "@koa/cors": "^4.0.0",
     "@swc/helpers": "^0.5.0",
     "dotenv": "^16.3.1",

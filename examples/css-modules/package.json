@@ -11,10 +11,12 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-postcss": "workspace:^",
     "@farmfe/plugin-react": "workspace:^0.3.3",
-    "@farmfe/plugin-sass": "workspace:^0.2.7",
+    "@farmfe/plugin-sass": "workspace:^0.2.9",
     "@types/react": "18",
     "@types/react-dom": "18",
+    "postcss-pxtorem": "^6.0.0",
     "react-refresh": "^0.14.0"
   },
   "scripts": {

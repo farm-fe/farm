@@ -6,6 +6,7 @@ import {
   tryRead
 } from './utils.js';
 import path from 'path';
+import { existsSync } from 'fs';
 
 export type LessPluginOptions = {
   lessOptions?: Less.Options;
@@ -37,11 +38,16 @@ export default function farmLessPlugin(
         resolvedPaths: options.filters?.resolvedPaths ?? ['\\.less$']
       },
       async executor(param) {
-        const data = await tryRead(param.resolvedPath);
-        return {
-          content: data,
-          moduleType: 'less'
-        };
+        if (param.query.length === 0 && existsSync(param.resolvedPath)) {
+          const data = await tryRead(param.resolvedPath);
+
+          return {
+            content: data,
+            moduleType: 'less'
+          };
+        }
+
+        return null;
       }
     },
     transform: {
