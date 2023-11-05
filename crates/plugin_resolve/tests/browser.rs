@@ -73,82 +73,16 @@ fn resolve_browser_basic() {
   );
 }
 
-// #[test]
-// fn resolve_browser_replace() {
-//   fixture!(
-//     "tests/fixtures/resolve-node-modules/browser/node_modules/replace/package.json",
-//     |file, _| {
-//       let cwd = file.parent().unwrap().to_path_buf();
-//       let resolver = Resolver::new();
-
-//       let resolved = resolver.resolve(
-//         "module-a",
-//         cwd.clone(),
-//         &ResolveKind::Import,
-//         &Arc::new(CompilationContext::default()),
-//       );
-//       assert!(resolved.is_some());
-//       let resolved = resolved.unwrap();
-
-//       assert_eq!(
-//         resolved.resolved_path,
-//         cwd
-//           .join("shims")
-//           .join("module-a.js")
-//           .to_string_lossy()
-//           .to_string()
-//       );
-
-//       // let resolved = resolver.resolve(
-//       //   "./only.js",
-//       //   cwd.join("server"),
-//       //   &ResolveKind::Import,
-//       //   &Arc::new(CompilationContext::default()),
-//       // );
-//       // assert!(resolved.is_some());
-
-//       // let resolved = resolved.unwrap();
-//       // assert_eq!(
-//       //   resolved.resolved_path,
-//       //   cwd
-//       //     .join("shims")
-//       //     .join("client-only.js")
-//       //     .to_string_lossy()
-//       //     .to_string()
-//       // );
-
-//       // // normal resolve
-//       // let resolved = resolver.resolve(
-//       //   "./module-a.js",
-//       //   cwd.join("shims"),
-//       //   &ResolveKind::Import,
-//       //   &Arc::new(CompilationContext::default()),
-//       // );
-//       // assert!(resolved.is_some());
-//       // let resolved = resolved.unwrap();
-
-//       // assert_eq!(
-//       //   resolved.resolved_path,
-//       //   cwd
-//       //     .join("shims")
-//       //     .join("module-a.js")
-//       //     .to_string_lossy()
-//       //     .to_string()
-//       // );
-//     }
-//   );
-// }
-
 #[test]
 fn resolve_browser_replace() {
   fixture!(
-    "tests/fixtures/resolve-node-modules/browser/index.ts",
+    "tests/fixtures/resolve-node-modules/browser/node_modules/replace/package.json",
     |file, _| {
       let cwd = file.parent().unwrap().to_path_buf();
       let resolver = Resolver::new();
 
       let resolved = resolver.resolve(
-        "replace/module-a",
+        "module-a",
         cwd.clone(),
         &ResolveKind::Import,
         &Arc::new(CompilationContext::default()),
@@ -159,50 +93,48 @@ fn resolve_browser_replace() {
       assert_eq!(
         resolved.resolved_path,
         cwd
-          .join("node_modules")
-          .join("replace")
           .join("shims")
           .join("module-a.js")
           .to_string_lossy()
           .to_string()
       );
 
-      // let resolved = resolver.resolve(
-      //   "./only.js",
-      //   cwd.join("server"),
-      //   &ResolveKind::Import,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // assert!(resolved.is_some());
+      let resolved = resolver.resolve(
+        "./only.js",
+        cwd.join("server"),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
 
-      // let resolved = resolved.unwrap();
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("shims")
-      //     .join("client-only.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("shims")
+          .join("client-only.js")
+          .to_string_lossy()
+          .to_string()
+      );
 
-      // // normal resolve
-      // let resolved = resolver.resolve(
-      //   "./module-a.js",
-      //   cwd.join("shims"),
-      //   &ResolveKind::Import,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
+      // normal resolve
+      let resolved = resolver.resolve(
+        "./module-a.js",
+        cwd.join("shims"),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
 
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("shims")
-      //     .join("module-a.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("shims")
+          .join("module-a.js")
+          .to_string_lossy()
+          .to_string()
+      );
     }
   );
 }
@@ -227,25 +159,25 @@ fn resolve_browser_ignore() {
       assert_eq!(resolved.resolved_path, "module-a".to_string());
       assert!(resolved.external);
 
-      // let resolved = resolver.resolve(
-      //   "./only.js",
-      //   cwd.join("server"),
-      //   &ResolveKind::Import,
-      //   &Arc::new(CompilationContext::default()),
-      // );
-      // assert!(resolved.is_some());
-      // let resolved = resolved.unwrap();
+      let resolved = resolver.resolve(
+        "./only.js",
+        cwd.join("server"),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
 
-      // assert_eq!(
-      //   resolved.resolved_path,
-      //   cwd
-      //     .join("shims")
-      //     .join("server-only.js")
-      //     .to_string_lossy()
-      //     .to_string()
-      // );
-      // assert!(!resolved.external);
-      // assert!(!resolved.side_effects);
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("shims")
+          .join("server-only.js")
+          .to_string_lossy()
+          .to_string()
+      );
+      assert!(!resolved.external);
+      assert!(!resolved.side_effects);
     }
   );
 }
