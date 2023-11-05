@@ -56,9 +56,9 @@ export class DefaultLogger implements Logger {
 
     this.prefix = prefixColor
       ? typeof prefixColor === 'string'
-        ? chalk.hex(prefixColor)(`[ ${name} ] `)
-        : prefixColor(`[ ${name} ] `)
-      : brandColor(`[ ${name} ] `);
+        ? chalk.bold(chalk.hex(prefixColor)(`[ ${name} ] `))
+        : chalk.bold(prefixColor(`[ ${name} ] `))
+      : chalk.bold(brandColor(`[ ${name} ] `));
   }
 
   private logMessage(

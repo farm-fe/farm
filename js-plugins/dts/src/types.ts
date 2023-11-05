@@ -68,4 +68,13 @@ export interface DtsPluginOptions {
    * According to the length to judge whether there is any type error
    */
   afterDiagnostic?: (diagnostics: Diagnostic[]) => void | Promise<void>;
+
+  /**
+   * Set which paths should exclude when transform aliases
+   *
+   * If it's regexp, it will test the original import path directly
+   *
+   * @default []
+   */
+  aliasesExclude?: (string | RegExp)[];
 }

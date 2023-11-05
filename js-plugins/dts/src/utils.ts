@@ -20,6 +20,14 @@ import { throwError } from './options.js';
 const windowsSlashRE = /\\+/g;
 const globSuffixRE = /^((?:.*\.[^.]+)|(?:\*+))$/;
 
+const globalImportRE =
+  /(?:(?:import|export)\s?(?:type)?\s?(?:(?:\{[^;\n]+\})|(?:[^;\n]+))\s?from\s?['"][^;\n]+['"])|(?:import\(['"][^;\n]+?['"]\))/g;
+const staticImportRE =
+  /(?:import|export)\s?(?:type)?\s?\{?.+\}?\s?from\s?['"](.+)['"]/;
+const dynamicImportRE = /import\(['"]([^;\n]+?)['"]\)/;
+const simpleStaticImportRE = /((?:import|export).+from\s?)['"](.+)['"]/;
+const simpleDynamicImportRE = /(import\()['"](.+)['"]\)/;
+
 // @ts-ignore
 export function warn({ id, message }) {
   console.warn(`[${id}:warn]:"${message}"`);
@@ -383,4 +391,73 @@ export async function writeFileWithCheck(filePath: string, content: string) {
 
   // 写文件
   await extra.writeFile(filePath, content, 'utf-8');
+}
+
+export function transformAliasImport(
+  filePath: string,
+  content: string,
+  aliases: any[],
+  exclude: (string | RegExp)[] = []
+) {
+  if (!aliases?.length) return content;
+
+  return content.replace(globalImportRE, (str) => {
+    let matchResult = str.match(staticImportRE);
+    let isDynamic = false;
+
+    if (!matchResult) {
+      matchResult = str.match(dynamicImportRE);
+      isDynamic = true;
+    }
+
+    if (matchResult?.[1]) {
+      const matchedAlias = aliases.find((alias) =>
+        isAliasMatch(alias, matchResult![1])
+      );
+
+      if (matchedAlias) {
+        if (
+          exclude.some((e) =>
+            isRegExp(e)
+              ? e.test(matchResult![1])
+              : String(e) === matchResult![1]
+          )
+        ) {
+          return str;
+        }
+
+        const truthPath = isAbsolute(matchedAlias.replacement)
+          ? normalizePath(
+              path.relative(dirname(filePath), matchedAlias.replacement)
+            )
+          : normalizePath(matchedAlias.replacement);
+
+        return str.replace(
+          isDynamic ? simpleDynamicImportRE : simpleStaticImportRE,
+          `$1'${matchResult[1].replace(
+            matchedAlias.find,
+            (truthPath.startsWith('.') ? truthPath : `./${truthPath}`) +
+              (typeof matchedAlias.find === 'string' &&
+              matchedAlias.find.endsWith('/')
+                ? '/'
+                : '')
+          )}'${isDynamic ? ')' : ''}`
+        );
+      }
+    }
+
+    return str;
+  });
+}
+
+function isAliasMatch(alias: any, importee: string) {
+  if (isRegExp(alias.find)) return alias.find.test(importee);
+  if (importee.length < alias.find.length) return false;
+  if (importee === alias.find) return true;
+
+  return (
+    importee.indexOf(alias.find) === 0 &&
+    (alias.find.endsWith('/') ||
+      importee.substring(alias.find.length)[0] === '/')
+  );
 }
