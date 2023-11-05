@@ -7,6 +7,7 @@ import { DevServer } from './index.js';
 import { Logger, bold, cyan, green } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import { WebSocketClient } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
@@ -121,7 +122,7 @@ export class HmrEngine {
     //   result: resultStr,
     //   count: this._devServer.ws.clients.size
     // });
-    this._devServer.ws.clients.forEach((client: any) => {
+    this._devServer.ws.clients.forEach((client: WebSocketClient) => {
       client.send(resultStr);
     });
 

@@ -35,34 +35,13 @@ import { DevServer } from '../index.js';
 export function hmrPlugin(devSeverContext: DevServer) {
   const { config, _context, logger } = devSeverContext;
   if (config.hmr) {
-    // if (config.hmr.host === config.host && config.hmr.port === config.port) {
-    //   // const wsServer = new WsServer(context.server, config);
-    //   // devSeverContext.ws = wsServer.wss;
-    //   devSeverContext.ws = new WebSocketServer({
-    //     noServer: true
-    //   });
-    //   devSeverContext.server.on('upgrade', (request, socket, head) => {
-    //     if (
-    //       request.url === config.hmr.path &&
-    //       request.headers['sec-websocket-protocol'] === 'farm_hmr'
-    //     ) {
-    //       devSeverContext.ws.handleUpgrade(request, socket, head, (ws) => {
-    //         devSeverContext.ws.emit('connection', ws, request);
-    //       });
-    //     }
-    //   });
-    // } else if (typeof config.hmr.host === 'string') {
-    //   devSeverContext.ws = new WebSocketServer({
-    //     port: config.hmr.port,
-    //     host: config.hmr.host,
-    //     path: config.hmr.path
-    //   });
-    // } else {
-    //   logger.error(
-    //     'If configure different host in server.host and hmr.host, then HMR host must be a string or same as dev server host when establishing a websocket connection'
-    //   );
-    // }
-    // _context.app.use(hmr(context));
+    if (!(config.hmr.host === config.host && config.hmr.port === config.port)) {
+      // devSeverContext.ws = new WebSocketServer({
+      //   port: config.hmr.port,
+      //   host: config.hmr.host as string,
+      //   path: config.hmr.path,
+      // });
+    }
     devSeverContext.hmrEngine = new HmrEngine(
       _context.compiler,
       devSeverContext,

@@ -1,0 +1,47 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebSocket Demo</title>
+  </head>
+  <body>
+    <h1>WebSocket Demo</h1>
+    <input type="text" id="messageInput" placeholder="Type a message" />
+    <button onclick="sendMessage()">Send Message</button>
+    <div id="messages"></div>
+
+    <script>
+      const httpPort = 8000; // HTTP server port
+      const messagesElement = document.getElementById('messages');
+      const messageInput = document.getElementById('messageInput');
+
+      const ws = new WebSocket(`ws://localhost:${8000}/websocket`); // 使用 HTTP 服务器端口 8000
+
+      ws.onopen = () => {
+        appendMessage('Connected to server');
+      };
+
+      ws.onmessage = (event) => {
+        appendMessage('Received from server: ' + event.data);
+      };
+
+      ws.onclose = () => {
+        appendMessage('Disconnected from server');
+      };
+
+      function sendMessage() {
+        const message = messageInput.value;
+        ws.send(message);
+        appendMessage('Sent to server: ' + message);
+        messageInput.value = '';
+      }
+
+      function appendMessage(message) {
+        const p = document.createElement('p');
+        p.innerText = message;
+        messagesElement.appendChild(p);
+      }
+    </script>
+  </body>
+</html>

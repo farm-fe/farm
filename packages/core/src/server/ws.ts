@@ -46,7 +46,6 @@ export default class WsServer implements IWebSocketServer {
   public clientsMap = new WeakMap<WebSocketRawType, WebSocketClient>();
   public bufferedError: any = null;
   public logger: Logger;
-  // private hmr: any;
   constructor(
     private httpServer: http.Server,
     private config: NormalizedServerConfig,
