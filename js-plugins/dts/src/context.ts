@@ -210,14 +210,16 @@ export default class Context {
     entryRoot = ensureAbsolute(entryRoot, this.options.root);
     await runParallel(os.cpus().length, outputFiles, async (outputFile) => {
       let filePath = outputFile.path;
-      filePath = resolve(this.options.outputDir, relative(entryRoot, filePath));
+
       let content = outputFile.content;
+
       content = transformAliasImport(
         filePath,
         content,
         this.options.aliases,
         this.options.aliasesExclude
       );
+      filePath = resolve(this.options.outputDir, relative(entryRoot, filePath));
 
       writeFileWithCheck(filePath, content);
     });
