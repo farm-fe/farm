@@ -15,11 +15,6 @@ export default {
       targetEnv: 'node',
       format: 'cjs'
     },
-    resolve: {
-      alias: {
-        '@': path.resolve(process.cwd(), './src')
-      }
-    },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
       ...builtinModules.map((m) => `^node:${m}$`)
