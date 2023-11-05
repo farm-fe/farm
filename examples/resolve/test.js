@@ -9,8 +9,8 @@ function text(selector, text) {
 // import * as ele from 'electron-to-chromium/versions'
 // console.log(ele)
 // import from a utf-8 bom file
-import { msg as bomMsg } from './utf8-bom/main.js';
-console.log(bomMsg);
+// import { msg as bomMsg } from './utf8-bom/main.js';
+import bomMsg from './rel';
 text('.utf8-bom', bomMsg);
 
 // deep import
