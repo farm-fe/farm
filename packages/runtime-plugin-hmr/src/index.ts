@@ -24,9 +24,7 @@ export default <FarmRuntimePlugin>{
 
     function connect() {
       // setup websocket connection
-      console.log(`ws://${host}:${port}${path}`);
-
-      const socket = new WebSocket(`ws://${host}:${9000}${path}`, 'farm_hmr');
+      const socket = new WebSocket(`ws://${host}:${port}${path}`, 'farm_hmr');
       // listen for the message from the server
       // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
       // after the file is recompiled, the server will generated a update resource and send its id to the client
