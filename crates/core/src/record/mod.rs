@@ -1,8 +1,17 @@
 use std::sync::{Arc, RwLock};
 
-use hashbrown::{HashMap, HashSet};
+use hashbrown::HashMap;
 
-use crate::{module::{ModuleId, ModuleType}, plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind}};
+use crate::{
+  module::{ModuleId, ModuleType},
+  plugin::PluginAnalyzeDepsHookResultEntry,
+};
+
+#[derive(Debug, Clone)]
+pub enum Trigger {
+  Compiler,
+  Update,
+}
 
 /// All hook operation record are write down by [RecordManager]
 pub struct RecordManager {
@@ -11,6 +20,7 @@ pub struct RecordManager {
   process_map: Arc<RwLock<HashMap<String, Vec<ModuleRecord>>>>,
   analyze_deps_map: Arc<RwLock<HashMap<String, Vec<AnalyzeDepsRecord>>>>,
   resource_pot_map: Arc<RwLock<HashMap<String, Vec<ResourcePotRecord>>>>,
+  trigger: Arc<RwLock<Trigger>>,
 }
 
 impl RecordManager {
@@ -21,11 +31,19 @@ impl RecordManager {
       process_map: Arc::new(RwLock::new(HashMap::new())),
       analyze_deps_map: Arc::new(RwLock::new(HashMap::new())),
       resource_pot_map: Arc::new(RwLock::new(HashMap::new())),
+      trigger: Arc::new(RwLock::new(Trigger::Compiler)),
     }
   }
 
-  pub fn add_resolve_record(&self, source: String, record: ResolveRecord) {
+  pub fn set_trigger(&self, trigger: Trigger) {
+    let mut _trigger = self.trigger.write().unwrap();
+    *_trigger = trigger;
+  }
+
+  pub fn add_resolve_record(&self, source: String, mut record: ResolveRecord) {
     let mut resolve_id_map = self.resolve_id_map.write().unwrap();
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if let Some(records) = resolve_id_map.get_mut(&source) {
       records.push(record);
     } else {
@@ -33,15 +51,19 @@ impl RecordManager {
     }
   }
 
-  pub fn add_load_record(&self, id: String, record: TransformRecord) {
+  pub fn add_load_record(&self, id: String, mut record: TransformRecord) {
     let mut transform_map = self.transform_map.write().unwrap();
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if transform_map.get(&id).is_none() {
       transform_map.insert(id, vec![record]);
     }
   }
 
-  pub fn add_transform_record(&self, id: String, record: TransformRecord) {
+  pub fn add_transform_record(&self, id: String, mut record: TransformRecord) {
     let mut transform_map = self.transform_map.write().unwrap();
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if let Some(records) = transform_map.get_mut(&id) {
       records.push(record);
     }
@@ -127,13 +149,14 @@ impl Default for RecordManager {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub struct ResolveRecord {
   pub plugin: String,
   pub hook: String,
   pub source: String,
   pub importer: Option<String>,
   pub kind: String,
+  pub trigger: Trigger,
 }
 
 #[derive(Debug, Clone)]
@@ -143,6 +166,7 @@ pub struct TransformRecord {
   pub content: String,
   pub source_maps: Option<String>,
   pub module_type: ModuleType,
+  pub trigger: Trigger,
 }
 
 #[derive(Debug, Clone)]

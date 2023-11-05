@@ -17,7 +17,9 @@ use crate::{
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
   },
-  record::{AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord},
+  record::{
+    AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger,
+  },
   resource::{resource_pot::ResourcePot, Resource},
   stats::Stats,
 };
@@ -38,8 +40,8 @@ macro_rules! hook_first {
           for plugin in &self.plugins {
               let ret = plugin.$func_name($($arg),*)?;
               if ret.is_some() {
-                let plugin_name = plugin.name().to_string();
                 if self.record {
+                  let plugin_name = plugin.name().to_string();
                   $callback(&ret, plugin_name, $($arg),*);
                 }
                 return Ok(ret);
@@ -56,8 +58,8 @@ macro_rules! hook_serial {
     pub fn $func_name(&self, param: $param_ty, context: &Arc<CompilationContext>) -> Result<()> {
       for plugin in &self.plugins {
         let ret = plugin.$func_name(param, context)?;
-        let plugin_name = plugin.name().to_string();
         if ret.is_some() && self.record {
+          let plugin_name = plugin.name().to_string();
           $callback(plugin_name, param, context);
         }
       }
@@ -68,21 +70,35 @@ macro_rules! hook_serial {
 }
 
 macro_rules! hook_parallel {
-  ($func_name:ident) => {
+  ($func_name:ident, $callback:expr) => {
     pub fn $func_name(&self, context: &Arc<CompilationContext>) -> Result<()> {
       self
         .plugins
         .par_iter()
-        .try_for_each(|plugin| plugin.$func_name(context).map(|_| ()))
+        .try_for_each(|plugin| {
+          let ret = plugin.$func_name(context).map(|_| ());
+          if self.record {
+            let plugin_name = plugin.name().to_string();
+            $callback(plugin_name, context);
+          }
+          return ret;
+        })
     }
   };
 
-  ($func_name:ident, $($arg:ident: $ty:ty),+) => {
+  ($func_name:ident, $callback:expr, $($arg:ident: $ty:ty),+) => {
     pub fn $func_name(&self, $($arg: $ty),+, context: &Arc<CompilationContext>) -> Result<()> {
       self
         .plugins
         .par_iter()
-        .try_for_each(|plugin| plugin.$func_name($($arg),+, context).map(|_| ()))
+        .try_for_each(|plugin| {
+          let ret = plugin.$func_name($($arg),+, context).map(|_| ());
+          if self.record {
+            let plugin_name = plugin.name().to_string();
+            $callback(plugin_name, context);
+          }
+          return ret;
+        })
     }
   };
 }
@@ -101,7 +117,12 @@ impl PluginDriver {
     Ok(())
   }
 
-  hook_parallel!(build_start);
+  hook_parallel!(
+    build_start,
+    |plugin_name: String, context: &Arc<CompilationContext>| {
+      // todo something
+    }
+  );
 
   hook_first!(
     resolve,
@@ -125,6 +146,7 @@ impl PluginDriver {
                 .clone()
                 .map(|module_id| module_id.relative_path().to_string()),
               kind: String::from(param.kind.clone()),
+              trigger: Trigger::Compiler,
             },
           );
         }
@@ -154,9 +176,10 @@ impl PluginDriver {
               content: load_result.content.clone(),
               source_maps: None,
               module_type: load_result.module_type.clone(),
+              trigger: Trigger::Compiler,
             },
           );
-        },
+        }
         None => {}
       }
     },
@@ -182,15 +205,9 @@ impl PluginDriver {
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
-        let plugin_name = plugin.name().to_string();
-
-        if let Some(source_map) = plugin_result.source_map {
-          let source_maps = if self.record {
-            Some(source_map.clone())
-          } else {
-            None
-          };
-
+        if self.record {
+          let plugin_name = plugin.name().to_string();
+          let source_maps = plugin_result.source_map.clone();
           context.record_manager.add_transform_record(
             param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
             TransformRecord {
@@ -198,10 +215,13 @@ impl PluginDriver {
               hook: "transform".to_string(),
               content: param.content.clone(),
               source_maps,
-              module_type: param.module_type.clone()
+              module_type: param.module_type.clone(),
+              trigger: Trigger::Compiler,
             },
           );
+        };
 
+        if let Some(source_map) = plugin_result.source_map {
           result.source_map_chain.push(source_map);
         }
       }
@@ -270,9 +290,19 @@ impl PluginDriver {
     }
   );
 
-  hook_parallel!(build_end);
+  hook_parallel!(
+    build_end,
+    |plugin_name: String, context: &Arc<CompilationContext>| {
+      // todo something
+    }
+  );
 
-  hook_parallel!(generate_start);
+  hook_parallel!(
+    generate_start,
+    |plugin_name: String, context: &Arc<CompilationContext>| {
+      // todo something
+    }
+  );
 
   hook_serial!(
     optimize_module_graph,
@@ -426,9 +456,20 @@ impl PluginDriver {
     // todo something
   });
 
-  hook_parallel!(generate_end);
+  hook_parallel!(
+    generate_end,
+    |plugin_name: String, context: &Arc<CompilationContext>| {
+      // todo something
+    }
+  );
 
-  hook_parallel!(finish, stat: &Stats);
+  hook_parallel!(
+    finish,
+    |plugin_name: String, context: &Arc<CompilationContext>| {
+      context.record_manager.set_trigger(Trigger::Update);
+    },
+    stat: &Stats
+  );
 
   hook_serial!(
     update_modules,
