@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.13.21
+
+### Patch Changes
+
+- 19447d7: support `export * from` for script entries and fix package.json browser resolve priority
+- Updated dependencies [19447d7]
+  - @farmfe/runtime@0.7.4
+
 ## 0.13.20
 
 ### Patch Changes
