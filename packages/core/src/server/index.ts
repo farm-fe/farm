@@ -1,6 +1,5 @@
 import http from 'node:http';
 import Koa from 'koa';
-import { WebSocketServer } from 'ws';
 
 import { Compiler } from '../compiler/index.js';
 import {
@@ -33,6 +32,7 @@ import {
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
+import WsServer from './ws.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -57,6 +57,11 @@ interface ServerUrls {
   network: string[];
 }
 
+type ErrorMap = {
+  EACCES: string;
+  EADDRNOTAVAIL: string;
+};
+
 interface ImplDevServer {
   createFarmServer(options: UserServerConfig): void;
   listen(): Promise<void>;
@@ -68,7 +73,7 @@ export class DevServer implements ImplDevServer {
   private _app: Koa;
   public _context: FarmServerContext;
 
-  ws: WebSocketServer;
+  ws: WsServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
   server?: http.Server;
@@ -108,19 +113,27 @@ export class DevServer implements ImplDevServer {
   async listen(): Promise<void> {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
+      return;
     }
     const { port, open, protocol, hostname } = this.config;
-    let publicPath;
-    if (urlRegex.test(this.publicPath)) {
-      publicPath = '/';
-    } else {
-      publicPath = this.publicPath.startsWith('/')
-        ? this.publicPath
-        : `/${this.publicPath}`;
-    }
+    this.getNormalizedPublicPath();
 
     const start = Date.now();
     // compile the project and start the dev server
+    await this.compile();
+
+    bootstrap(Date.now() - start);
+
+    await this.startServer(this.config);
+
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printServerUrls();
+
+    if (open) {
+      openBrowser(`${protocol}://${hostname}:${port}${this.publicPath}`);
+    }
+  }
+
+  private async compile(): Promise<void> {
     if (process.env.FARM_PROFILE) {
       this._compiler.compileSync();
     } else {
@@ -131,66 +144,45 @@ export class DevServer implements ImplDevServer {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this._compiler.writeResourcesToDisk(base);
     }
+  }
 
-    const end = Date.now();
-
-    await this.startServer(this.config);
-    bootstrap(end - start);
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printUrls();
-
-    if (open) {
-      openBrowser(`${protocol}://${hostname}:${port}${publicPath}`);
+  private getNormalizedPublicPath(): string {
+    if (urlRegex.test(this.publicPath)) {
+      return '/';
+    } else {
+      return this.publicPath.startsWith('/')
+        ? this.publicPath
+        : `/${this.publicPath}`;
     }
   }
 
   async startServer(serverOptions: UserServerConfig) {
     const { port, host } = serverOptions;
-    await new Promise((resolve) => {
-      this.server.listen(port, host as string, () => {
-        resolve(port);
+    try {
+      await new Promise((resolve) => {
+        this.server.listen(port, host as string, () => {
+          resolve(port);
+        });
       });
-      this.error(port, host);
-    });
-  }
-
-  async printUrls() {
-    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
-      this.server,
-      this.config,
-      this.userConfig
-    );
-    if (this._context.serverOptions.resolvedUrls) {
-      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
-    } else {
-      throw new Error('cannot print server URLs with Server Error.');
+    } catch (error) {
+      this.handleServerError(error, port, host);
     }
   }
 
-  async error(port: number, ip: string | boolean) {
-    // TODO error
-    // TODO Callback handling of all errors extracted from the function
-    const handleError = (
-      error: Error & { code?: string },
-      port: number,
-      ip: string | boolean
-    ) => {
-      // TODO ip boolean type true ... false
-      const errorMap: any = {
-        EADDRINUSE: `Port ${port} is already in use`,
-        EACCES: `Permission denied to use port ${port}`,
-        EADDRNOTAVAIL: `The IP address ${ip} is not available on this machine.`
-      };
-
-      const errorMessage =
-        errorMap[error.code] || `An error occurred: ${error}`;
-      this.logger.error(errorMessage);
+  handleServerError(
+    error: Error & { code?: string },
+    port: number,
+    ip: string | boolean
+  ) {
+    const errorMap: ErrorMap = {
+      EACCES: `Permission denied to use port ${port}`,
+      EADDRNOTAVAIL: `The IP address ${ip} is not available on this machine.`
     };
-    this.server.on('error', (error: Error & { code?: string }) => {
-      handleError(error, port, ip);
-      this.server.close(() => {
-        process.exit(1);
-      });
-    });
+
+    const errorMessage =
+      errorMap[error.code as keyof ErrorMap] || `An error occurred: ${error}`;
+    this.logger.error(errorMessage);
+    this.close();
   }
 
   async close() {
@@ -198,6 +190,7 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     await this.closeFarmServer();
+    process.exit(0);
   }
 
   async restart() {
@@ -205,10 +198,20 @@ export class DevServer implements ImplDevServer {
   }
 
   async closeFarmServer() {
-    await this.server.close();
+    const promises = [];
+
+    if (this.ws) {
+      promises.push(this.ws.close());
+    }
+
+    if (this.server) {
+      promises.push(new Promise((resolve) => this.server.close(resolve)));
+    }
+
+    await Promise.all(promises);
   }
 
-  createFarmServer(options: UserServerConfig) {
+  public createFarmServer(options: UserServerConfig) {
     const { https = false, host = 'localhost', plugins = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
@@ -224,6 +227,8 @@ export class DevServer implements ImplDevServer {
 
     this._app = new Koa();
     this.server = http.createServer(this._app.callback());
+    this.ws = new WsServer(this.server, this.config, true);
+
     this._context = {
       config: this.config,
       app: this._app,
@@ -291,13 +296,14 @@ export class DevServer implements ImplDevServer {
    * @param root
    * @param deps
    */
-  addWatchFile(root: string, deps: string[]) {
+
+  addWatchFile(root: string, deps: string[]): void {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]) {
+  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]): void {
     const resolvedPlugins = [
-      ...middlewares,
+      ...(middlewares || []),
       headersPlugin,
       lazyCompilationPlugin,
       hmrPlugin,
@@ -306,7 +312,20 @@ export class DevServer implements ImplDevServer {
       recordsPlugin,
       proxyPlugin
     ];
-    // this._app.use(serve(this._dist));
+
     resolvedPlugins.forEach((plugin) => plugin(this));
+  }
+
+  private async printServerUrls() {
+    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
+      this.server,
+      this.config,
+      this.userConfig
+    );
+    if (this._context.serverOptions.resolvedUrls) {
+      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
+    } else {
+      throw new Error('cannot print server URLs with Server Error.');
+    }
   }
 }

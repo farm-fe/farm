@@ -110,22 +110,22 @@ export function resources(
   };
 }
 
-export function resourcesPlugin(distance: DevServer) {
-  if (!distance.config.writeToDisk) {
-    distance._context.app.use(
+export function resourcesPlugin(devSeverContext: DevServer) {
+  if (!devSeverContext.config.writeToDisk) {
+    devSeverContext._context.app.use(
       resources(
-        distance._context.compiler,
-        distance.config,
-        distance.publicPath
+        devSeverContext._context.compiler,
+        devSeverContext.config,
+        devSeverContext.publicPath
       )
     );
   } else {
-    distance._context.app.use(
-      koaStatic(distance.getCompiler().config.config.output.path, {
+    devSeverContext._context.app.use(
+      koaStatic(devSeverContext.getCompiler().config.config.output.path, {
         extensions: ['html']
       })
     );
   }
 
-  distance._context.app.use(koaStatic(distance.publicDir));
+  devSeverContext._context.app.use(koaStatic(devSeverContext.publicDir));
 }

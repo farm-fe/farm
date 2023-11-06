@@ -34,8 +34,8 @@ export function useProxy(
   }
 }
 
-export function proxyPlugin(devServer: DevServer) {
-  const { app, config, logger } = devServer._context;
+export function proxyPlugin(devSeverContext: DevServer) {
+  const { app, config, logger } = devSeverContext._context;
   if (!config.proxy) {
     return;
   }

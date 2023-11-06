@@ -33,6 +33,9 @@ export interface Logger {
 
 export interface ErrorOptions {
   exit?: boolean;
+  e?: Error;
+  timestamp?: boolean;
+  error?: Error;
 }
 interface LoggerOptions {
   name?: string;
