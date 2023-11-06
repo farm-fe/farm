@@ -1,6 +1,7 @@
 {
   "name": "@farmfe-examples/qrcode",
   "version": "0.0.0",
+  "private": true,
   "scripts": {
     "start": "farm start",
     "build": "farm build"
