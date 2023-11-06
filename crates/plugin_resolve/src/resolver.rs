@@ -273,7 +273,7 @@ impl Resolver {
       );
 
       if let Ok(package_json_info) = package_json_info {
-        let (res, _) = self.try_package(source, &package_json_info, kind, vec![], context);
+        let (res, _) = self.try_package(source, package_json_info, kind, vec![], context);
 
         if let Some(res) = res {
           return Some(res.resolved_path);
@@ -473,8 +473,13 @@ impl Resolver {
           }
           let package_json_info = package_json_info.unwrap();
 
-          let (result, tried_paths) =
-            self.try_package(source, &package_json_info, kind, tried_paths, context);
+          let (result, tried_paths) = self.try_package(
+            source,
+            package_json_info.clone(),
+            kind,
+            tried_paths,
+            context,
+          );
 
           if result.is_some() {
             return (result, tried_paths);
@@ -508,7 +513,7 @@ impl Resolver {
   fn try_package(
     &self,
     source: &str,
-    package_json_info: &PackageJsonInfo,
+    package_json_info: PackageJsonInfo,
     kind: &ResolveKind,
     tried_paths: Vec<PathBuf>,
     context: &Arc<CompilationContext>,
@@ -528,7 +533,7 @@ impl Resolver {
         if let Value::Object(_) = field_value {
           let resolved_path = Some(self.get_resolve_node_modules_result(
             source,
-            Some(package_json_info),
+            Some(&package_json_info),
             package_json_info.dir().to_string(),
             kind,
             context,
@@ -544,26 +549,14 @@ impl Resolver {
           // the main fields can be a file or directory
           return match self.try_file(&full_path, context) {
             Some(resolved_path) => (
-              Some(self.get_resolve_node_modules_result(
-                source,
-                Some(package_json_info),
-                resolved_path,
-                kind,
-                context,
-              )),
+              Some(self.get_resolve_result(&Ok(package_json_info), resolved_path, kind, context)),
               tried_paths,
             ),
             None => (
               self
                 .try_directory(source, &full_path, kind, true, context)
                 .map(|resolved_path| {
-                  self.get_resolve_node_modules_result(
-                    source,
-                    Some(package_json_info),
-                    resolved_path,
-                    kind,
-                    context,
-                  )
+                  self.get_resolve_result(&Ok(package_json_info), resolved_path, kind, context)
                 }),
               tried_paths,
             ),
