@@ -22,6 +22,7 @@
   },
   "scripts": {
     "start": "farm start",
+    "dev": "farm start",
     "build": "farm build",
     "preview": "farm preview"
   }

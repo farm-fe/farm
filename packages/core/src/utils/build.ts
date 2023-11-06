@@ -18,8 +18,8 @@ export async function compilerHandler(
   const endTime = performance.now();
   const elapsedTime = Math.floor(endTime - startTime);
   logger.info(
-    `⚡️ Build completed in ${green(
-      `${elapsedTime}ms`
+    `⚡️ Build completed in ${bold(
+      green(`${elapsedTime}ms`)
     )}! Resources emitted to ${bold(green(config.config.output.path))}.`
   );
 }

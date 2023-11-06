@@ -10,8 +10,8 @@ import { bold, cyan, green } from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
-export function lazyCompilation(server: DevServer) {
-  const compiler = server.getCompiler();
+export function lazyCompilation(devSeverContext: DevServer) {
+  const compiler = devSeverContext.getCompiler();
 
   return async (ctx: Context, next: () => Promise<any>) => {
     if (ctx.path === '/__lazy_compile') {
@@ -25,16 +25,16 @@ export function lazyCompilation(server: DevServer) {
           return relative(compiler.config.config.root, resolvedPath);
         })
         .join(', ');
-      server.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
+      devSeverContext.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
       const result = await compiler.update(paths);
-      server.logger.info(
+      devSeverContext.logger.info(
         `${bold(green(`✓`))} Lazy compilation done in ${bold(
           green(`${Date.now() - start}ms`)
         )}.`
       );
 
-      server.hmrEngine.callUpdates(result);
+      devSeverContext.hmrEngine.callUpdates(result);
 
       if (result) {
         let dynamicResourcesMap: Record<string, Resource[]> = null;

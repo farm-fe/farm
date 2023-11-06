@@ -6,8 +6,8 @@ import { Context } from 'koa';
 
 import { DevServer } from '../index.js';
 
-export function records(server: DevServer) {
-  const compiler = server.getCompiler();
+export function records(devSeverContext: DevServer) {
+  const compiler = devSeverContext.getCompiler();
 
   return async (ctx: Context, next: () => Promise<any>) => {
     if (ctx.path === '/__record/modules') {
