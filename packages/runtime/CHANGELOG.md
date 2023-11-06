@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.7.4
+
+### Patch Changes
+
+- 19447d7: set globalThis.require when initial module for UMD modules
+
 ## 0.7.3
 
 ### Patch Changes
