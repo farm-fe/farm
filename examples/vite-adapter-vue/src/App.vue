@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HelloWorld from './components/HelloWorld.vue'
+import Formatter from './components/Formatter.vue';
 </script>
 
 <template>
@@ -13,6 +14,7 @@ import HelloWorld from './components/HelloWorld.vue'
   </div>
   <el-config-provider :size="'large'" :z-index="3000">
     <HelloWorld msg="Farm + Vue" />
+    <Formatter />
   </el-config-provider>
 </template>
 

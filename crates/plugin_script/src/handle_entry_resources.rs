@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::{ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
   context::CompilationContext,
-  hashbrown::HashMap,
+  hashbrown::{HashMap, HashSet},
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleSystem,
   },
@@ -22,18 +22,27 @@ pub enum ExportInfoOfEntryModule {
     name: String,
     import_as: Option<String>,
   },
-  All,
   CJS,
 }
 
 pub fn get_export_info_of_entry_module(
   entry_module_id: &ModuleId,
   module_graph: &ModuleGraph,
-  _context: &Arc<CompilationContext>,
+  visited: &mut HashSet<ModuleId>,
 ) -> Vec<ExportInfoOfEntryModule> {
+  if visited.contains(entry_module_id) {
+    return vec![];
+  }
+
+  visited.insert(entry_module_id.clone());
+
   let entry_module = module_graph
     .module(entry_module_id)
     .expect("entry module is not found");
+
+  if entry_module.external {
+    return vec![];
+  }
 
   if matches!(
     entry_module.meta.as_script().module_system,
@@ -115,8 +124,16 @@ pub fn get_export_info_of_entry_module(
             }
           }
         }
-        ModuleDecl::ExportAll(_) => {
-          export_info.push(ExportInfoOfEntryModule::All);
+        ModuleDecl::ExportAll(export_all) => {
+          let source = export_all.src.value.to_string();
+          let dep_module = module_graph.get_dep_by_source(entry_module_id, &source);
+          let mut dep_export_info =
+            get_export_info_of_entry_module(&dep_module, module_graph, visited)
+              .into_iter()
+              .filter(|e| !matches!(e, ExportInfoOfEntryModule::Default))
+              .collect();
+
+          export_info.append(&mut dep_export_info);
         }
         ModuleDecl::ExportDefaultDecl(_) | ModuleDecl::ExportDefaultExpr(_) => {
           export_info.push(ExportInfoOfEntryModule::Default);
@@ -135,7 +152,8 @@ fn get_export_info_code(
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> String {
-  let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, context);
+  let mut visited = HashSet::new();
+  let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, &mut visited);
 
   // TODO cover it with test
   if !export_info.is_empty() {
@@ -162,13 +180,6 @@ fn get_export_info_code(
             }
           }
         }
-        ExportInfoOfEntryModule::All => match context.config.output.format {
-          ModuleFormat::CommonJs => "module.exports = entry;".to_string(),
-          ModuleFormat::EsModule => {
-            println!("[warn] `export * from` is not supported in your entry module when target env is node");
-            "".to_string()
-          }
-        },
         ExportInfoOfEntryModule::CJS => match context.config.output.format {
           ModuleFormat::CommonJs => "module.exports = entry;".to_string(),
           ModuleFormat::EsModule => "export default entry;".to_string(),

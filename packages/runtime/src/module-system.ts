@@ -96,6 +96,11 @@ export class ModuleSystem {
     this.pluginContainer.hookSerial('moduleCreated', module);
 
     this.cache[moduleId] = module;
+
+    if (!(globalThis || global || window || {}).require) {
+      (globalThis || global || window || { require: undefined }).require =
+        this.require.bind(this);
+    }
     // initialize the new module
     initializer(
       module,

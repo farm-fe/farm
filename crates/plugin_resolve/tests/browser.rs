@@ -258,12 +258,31 @@ fn resolve_browser_entry_replace() {
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
-
       assert_eq!(
         resolved.resolved_path,
         cwd
           .join("node_modules")
           .join("entry-replace")
+          .join("lib")
+          .join("browser.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      let resolved1 = resolver.resolve(
+        "priority",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved1.is_some());
+      let resolved1 = resolved1.unwrap();
+
+      assert_eq!(
+        resolved1.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("priority")
           .join("lib")
           .join("browser.js")
           .to_string_lossy()

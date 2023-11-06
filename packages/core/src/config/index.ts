@@ -93,6 +93,21 @@ export async function normalizeUserCompilationConfig(
     envPrefix
   );
 
+  if (config.output?.targetEnv !== 'node') {
+    const defaultExternals = [
+      ...module.builtinModules,
+      ...module.builtinModules
+    ]
+      .filter((m) => !config.resolve?.alias?.[m])
+      .map((m) => `^${m}$`);
+
+    if (!config.external) {
+      config.external = defaultExternals;
+    } else {
+      config.external = [...config.external, ...defaultExternals];
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
   if (!config.assets?.publicDir) {
