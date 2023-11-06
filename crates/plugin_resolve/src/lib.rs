@@ -14,6 +14,8 @@ use farmfe_utils::parse_query;
 use resolver::Resolver;
 
 pub mod resolver;
+pub mod resolver_cache;
+pub mod resolver_common;
 
 pub struct FarmPluginResolve {
   root: String,

@@ -15,6 +15,7 @@
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:^",
     "@farmfe/js-plugin-vue": "workspace:*",
+    "@vitejs/plugin-vue": "^4.4.0",
     "xlsx-js-style": "^1.2.0"
   },
   "scripts": {

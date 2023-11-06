@@ -2,6 +2,8 @@
 import { UserConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
+import vue from '@vitejs/plugin-vue';
+
 import path from 'path';
 
 function defineConfig(config: UserConfig) {
@@ -11,10 +13,10 @@ function defineConfig(config: UserConfig) {
 export default defineConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: './index.html'
     },
     output: {
-      path: './build',
+      path: './build'
     },
     resolve: {
       strictExports: true,
@@ -28,10 +30,11 @@ export default defineConfig({
       '/api': {
         target: 'https://music-erkelost.vercel.app/banner',
         changeOrigin: true,
-        rewrite: (path: any) => path.replace(/^\/api/, ''),
-      },
+        rewrite: (path: any) => path.replace(/^\/api/, '')
+      }
     },
     cors: true
   },
-  plugins: [farmJsPluginVue(), farmJsPluginLess()],
+  plugins: [farmJsPluginLess()],
+  vitePlugins: [vue()]
 });

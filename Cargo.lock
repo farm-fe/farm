@@ -1018,6 +1018,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
+name = "dunce"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56ce8c6da7551ec6c462cbaf3bfbc75131ebbfa1c944aeaa9dab51ca1c5f0c3b"
+
+[[package]]
 name = "ecolor"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1406,6 +1412,7 @@ dependencies = [
 name = "farmfe_plugin_resolve"
 version = "0.0.1"
 dependencies = [
+ "dunce",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",

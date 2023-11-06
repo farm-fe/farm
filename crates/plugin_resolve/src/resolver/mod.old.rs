@@ -899,6 +899,7 @@ impl Resolver {
           return None;
         }
       };
+      
       let mut map: HashMap<String, Value> = HashMap::new();
       match exports_field {
         Value::String(string_value) => {

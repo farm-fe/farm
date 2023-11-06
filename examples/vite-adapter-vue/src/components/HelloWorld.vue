@@ -80,7 +80,6 @@ const defaultProps = {
 
 <template>
   <h1>{{ msg }}</h1>
-
   <div class="card">
     <el-button type="primary" @click="count++">count is {{ count }}</el-button>
 
