@@ -1,5 +1,7 @@
 #![deny(clippy::all)]
+#![feature(box_patterns)]
 
+use export_visitor::AllExportsReactComponentsVisitor;
 use farmfe_core::{
   config::Config,
   plugin::{Plugin, PluginAnalyzeDepsHookResultEntry, ResolveKind},
@@ -7,6 +9,7 @@ use farmfe_core::{
 };
 
 use farmfe_macro_plugin::farm_plugin;
+use farmfe_toolkit::swc_ecma_visit::VisitAllWith;
 use farmfe_toolkit_plugin_types::{
   libloading::Library,
   load_core_lib,
@@ -134,7 +137,7 @@ impl Plugin for FarmPluginReact {
       let top_level_mark = param.meta.as_script().top_level_mark;
       let unresolved_mark = param.meta.as_script().unresolved_mark;
       let ast = &mut param.meta.as_script_mut().ast;
-
+  
       swc_transform_react(
         &self.core_lib,
         ast,
@@ -149,7 +152,10 @@ impl Plugin for FarmPluginReact {
         },
       )?;
 
-      if self.enable_react_refresh {
+      let mut all_exports_react_component = AllExportsReactComponentsVisitor::new();
+      ast.visit_all_children_with(&mut all_exports_react_component);
+    
+      if self.enable_react_refresh && all_exports_react_component.are_all_exports_react_component {
         inject_react_refresh(&self.core_lib, ast);
       }
 
@@ -179,3 +185,5 @@ impl Plugin for FarmPluginReact {
     Ok(Some(()))
   }
 }
+
+mod export_visitor;
