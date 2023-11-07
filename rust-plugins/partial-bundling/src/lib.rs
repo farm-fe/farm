@@ -31,7 +31,7 @@ pub struct FarmPluginPartialBundling {
 }
 
 impl FarmPluginPartialBundling {
-  pub fn new(config: &Config, options: String) -> Self {
+  pub fn new(_config: &Config, options: String) -> Self {
     let mut partial_bundling_config: PartialBundlingConfig = serde_json::from_str(&options)
       .expect("failed parse option, please confirm to your options correct");
 
@@ -73,7 +73,7 @@ impl FarmPluginPartialBundling {
   }
 }
 
-type ModduleGroupRedirectResourceMap = HashMap<ModuleId, ResourceUnitId>;
+type ModuleGroupRedirectResourceMap = HashMap<ModuleId, ResourceUnitId>;
 
 impl Plugin for FarmPluginPartialBundling {
   fn name(&self) -> &str {
@@ -163,7 +163,7 @@ fn pre_process_module(
   module_group_graph: &ModuleGroupGraph,
   resource_group: &mut ResourceGroup,
 ) -> (
-  ModduleGroupRedirectResourceMap,
+  ModuleGroupRedirectResourceMap,
   Vec<Vec<ResourceUnitId>>,
   HashMap<ModuleId, Vec<ModuleId>>,
 ) {
@@ -179,7 +179,7 @@ fn pre_process_module(
     .collect::<Vec<_>>();
 
   let mut module_group_map: HashMap<ModuleId, Vec<ModuleId>> = HashMap::new();
-  let mut module_group_redirect_resource_unit_map: ModduleGroupRedirectResourceMap = HashMap::new();
+  let mut module_group_redirect_resource_unit_map: ModuleGroupRedirectResourceMap = HashMap::new();
   let mut named_map: HashMap<ModuleId, String> = HashMap::new();
   let mut resource_unit_sets: HashMap<String, Vec<ResourceUnitId>> = Default::default();
 
@@ -207,7 +207,7 @@ fn pre_process_module(
     let module_into_module_group: Vec<ModuleId> = if importer.is_empty() {
       module.module_groups.iter().cloned().collect()
     } else {
-      let partiation_map: HashMap<&ModuleId, Vec<&ModuleChain>> =
+      let partial_map: HashMap<&ModuleId, Vec<&ModuleChain>> =
         importer.iter().fold(HashMap::new(), |mut res, item| {
           res
             .entry(&item.chains.last().unwrap().1)
@@ -216,8 +216,7 @@ fn pre_process_module(
           res
         });
 
-      // partiation_map
-      partiation_map
+      partial_map
         .values()
         .flat_map(|importer| {
           let module_import_type = importer.iter().fold((false, false), |mut res, item| {

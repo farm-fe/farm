@@ -61,8 +61,6 @@ pub fn generate_resource_pot_map(
   resources_pots.extend(enforce_resource_pots);
   fill_necessary_fields_for_resource_pot(resources_pots.iter_mut().collect(), context);
 
-  let mut module_group_graph = context.module_group_graph.write();
-
   let mut resource_pot_map = ResourcePotMap::new();
 
   for resource_pot in resources_pots {
@@ -134,7 +132,7 @@ pub fn fill_necessary_fields_for_resource_pot(
 
     for module_group_id in &resource_pot.module_groups {
       let module_group = module_group_graph
-        .module_group_mut(&module_group_id)
+        .module_group_mut(module_group_id)
         .unwrap();
       module_group.add_resource_pot(resource_pot.id.clone());
     }
