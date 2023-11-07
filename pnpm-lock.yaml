@@ -1350,6 +1350,15 @@ importers:
         specifier: workspace:^0.7.2
         version: link:../runtime
 
+  rust-plugins/partial-bundling:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@napi-rs/cli':
+        specifier: ^2.15.2
+        version: 2.16.5
+
   rust-plugins/react:
     devDependencies:
       '@farmfe/cli':
