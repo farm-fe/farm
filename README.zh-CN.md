@@ -193,6 +193,18 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场
   <img src="https://contrib.rocks/image?repo=farm-fe/farm" />
 </a>
 
+## 致谢
+
+感谢:
+
+- [SWC](https://github.com/swc-project/swc) 项目 [@kdy1](https://github.com/kdy1), which powers Farm's code parsing, transformation and minification.
+
+- [NAPI-RS](https://github.com/napi-rs/napi-rs) project created by [@Brooooooklyn](https://github.com/Brooooooklyn), which powers Farm's node-binding implementation.
+
+- [Rollup](https://github.com/rollup/rollup) project created by [@lukastaegert](https://github.com/lukastaegert), which inspired Farm's plugin system implementation.
+
+- [Vite](https://github.com/vitejs/vite) project created by [Evan You](https://github.com/yyx990803) which inspired Farm's compatibility design of ecosystem.
+
 ## 作者
 
 > Twitter: https://twitter.com/brightwwu46799

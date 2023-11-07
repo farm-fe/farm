@@ -193,6 +193,18 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
   <img src="https://contrib.rocks/image?repo=farm-fe/farm" />
 </a>
 
+## Credits
+
+Thanks to:
+
+- The [SWC](https://github.com/swc-project/swc) project created by [@kdy1](https://github.com/kdy1), which powers Farm's code parsing, transformation and minification.
+
+- The [NAPI-RS](https://github.com/napi-rs/napi-rs) project created by [@Brooooooklyn](https://github.com/Brooooooklyn), which powers Farm's node-binding implementation.
+
+- The [Rollup](https://github.com/rollup/rollup) project created by [@lukastaegert](https://github.com/lukastaegert), which inspired Farm's plugin system implementation.
+
+- The [Vite](https://github.com/vitejs/vite) project created by [Evan You](https://github.com/yyx990803) which inspired Farm's compatibility design of ecosystem.
+
 ## Author
 
 brightwu（吴明亮）, worked at Bytedance.
