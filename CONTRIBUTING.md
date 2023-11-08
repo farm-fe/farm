@@ -30,6 +30,8 @@ Please feel free to open an issue using the [feature request template](https://g
   
 - If you've changed some packages And prepare for an updated version, you should output `npx changset` in the root directory.
 
+- When you are done with your work, verify that it works locally with `pnpm run ready`
+
 ## Setup
 
 - Fork and clone the repo.

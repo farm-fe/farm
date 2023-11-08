@@ -29,16 +29,16 @@ export default {
   plugins: [
     // If you comment, you will use the default partial bundling
     [
-      '@farmfe/plugin-webpack-partial-bundling'
-      // {
-      //   moduleBucket: [
-      //     {
-      //       name: 'common',
-      //       test: [],
-      //       // minSize: 1024
-      //     }
-      //   ]
-      // }
+      '@farmfe/plugin-webpack-partial-bundling',
+      {
+        // moduleBucket: [
+        //   {
+        //     name: 'common',
+        //     test: [],
+        //     // minSize: 1024
+        //   }
+        // ]
+      }
     ]
   ]
 };
