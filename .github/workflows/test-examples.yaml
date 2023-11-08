@@ -20,6 +20,12 @@ jobs:
       root: rust-plugins/sass
       name: plugin-sass
 
+  call-rust-plugin-webpack-partial-bundling-build:
+    uses: ./.github/workflows/rust-plugin-build.yaml
+    with:
+      root: rust-plugins/partial-bundling
+      name: plugin-webpack-partial-bundling
+
   examples-test:
     name: Examples Test
     runs-on: ${{ matrix.settings.os }}
@@ -59,6 +65,12 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v3
+        id: download-plugin-webpack-partial-bundling
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-webpack-partial-bundling
+          path: ./rust-plugins/partial-bundling/npm/${{ matrix.settings.abi }}
 
       - name: Test Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
