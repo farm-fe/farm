@@ -2,4 +2,4 @@
 '@farmfe/core': patch
 ---
 
-fix css resource pot laod sourcemap
+fix css resource pot load sourcemap
