@@ -110,9 +110,9 @@ pub fn fill_necessary_fields_for_resource_pot(
   let mut module_group_graph = context.module_group_graph.write();
 
   for resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
-    let mut entry_module = None;
     if resource_pot.module_groups.is_empty() {
+      let mut module_groups = HashSet::new();
+      let mut entry_module = None;
       for module_id in resource_pot.modules() {
         let module = module_graph.module_mut(module_id).unwrap();
         module.resource_pot.push(resource_pot.id.clone());
@@ -127,7 +127,7 @@ pub fn fill_necessary_fields_for_resource_pot(
       }
 
       resource_pot.entry_module = entry_module;
-      resource_pot.module_groups = module_groups.clone();
+      resource_pot.module_groups = module_groups;
     }
 
     for module_group_id in &resource_pot.module_groups {

@@ -29,3 +29,10 @@ pub struct PartialBundlingConfig {
   #[serde(default)]
   pub module_bucket: Vec<PartialBundlingModuleBucketsConfig>,
 }
+
+impl PartialBundlingConfig {
+  #[inline]
+  pub fn contains(&self, name: &str) -> bool {
+    self.module_bucket.iter().any(|bucket| bucket.name == name)
+  }
+}

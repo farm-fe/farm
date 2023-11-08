@@ -55,7 +55,7 @@ pub struct ModuleChain {
   pub has_dynamic: bool,
   pub chains: Vec<(bool, ModuleId)>,
   last: ModuleId,
-  visite: HashSet<String>,
+  visit: HashSet<String>,
 }
 
 pub fn find_module_importer_chains(
@@ -66,7 +66,7 @@ pub fn find_module_importer_chains(
     has_dynamic: false,
     chains: Vec::from([(false, module_id.clone())]),
     last: module_id.clone(),
-    visite: HashSet::new(),
+    visit: HashSet::new(),
   }]);
   let mut result: Vec<ModuleChain> = Vec::new();
 
@@ -118,12 +118,12 @@ pub fn find_module_importer_chains(
       if !module_groups
         .iter()
         .any(|item| importer_module_groups.contains(item))
-        || module_chain.visite.contains(&hash)
+        || module_chain.visit.contains(&hash)
       {
         continue;
       }
 
-      module_chain.visite.insert(hash);
+      module_chain.visit.insert(hash);
 
       let mut new_module_chain = module_chain.clone();
 

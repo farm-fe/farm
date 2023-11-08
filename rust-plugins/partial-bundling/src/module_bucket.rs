@@ -9,7 +9,7 @@ use crate::{
   config::PartialBundlingModuleBucketsConfig,
   resource_group::{ResourceGroup, ResourceUnit},
   utils::{ids_to_string, is_subset},
-  ResourceUnitId,
+  ModuleGroupRedirectResourceMap, ResourceUnitId,
 };
 
 /// A ModuleBucket is a collection of modules in the same ModuleGroup.
@@ -181,7 +181,7 @@ pub fn generate_module_buckets(
   modules: &Vec<ModuleId>,
   module_graph: &ModuleGraph,
   module_buckets: &[PartialBundlingModuleBucketsConfig],
-  group_redirect_resource_unit_map: &HashMap<ModuleId, String>,
+  group_redirect_resource_unit_map: &ModuleGroupRedirectResourceMap,
   module_group_map: &HashMap<ModuleId, Vec<ModuleId>>,
   resource_pot_sets: Vec<Vec<String>>,
 ) -> HashMap<ModuleBucketId, ModuleBucket> {
@@ -190,7 +190,6 @@ pub fn generate_module_buckets(
   // gen bucket map
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
-
     // Skip the external modules
     if module.external {
       continue;

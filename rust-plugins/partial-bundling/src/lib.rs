@@ -11,6 +11,7 @@ use farmfe_core::{
   serde_json,
 };
 use farmfe_macro_plugin::farm_plugin;
+use farmfe_toolkit::anyhow::anyhow;
 use std::sync::Arc;
 use utils::ids_to_string;
 
@@ -31,38 +32,37 @@ pub struct FarmPluginPartialBundling {
 }
 
 impl FarmPluginPartialBundling {
-  pub fn new(_config: &Config, options: String) -> Self {
+  pub fn new(config: &Config, options: String) -> Self {
     let mut partial_bundling_config: PartialBundlingConfig = serde_json::from_str(&options)
-      .expect("failed parse option, please confirm to your options correct");
+      .map_err(|err| anyhow!("failed parse option, cause: {}", err))
+      .unwrap();
 
-    if partial_bundling_config
-      .module_bucket
-      .iter()
-      .any(|bucket| bucket.name != "vendor")
-    {
+    let is_empty = partial_bundling_config.module_bucket.is_empty();
+
+    if is_empty || !partial_bundling_config.contains("vendor") {
       partial_bundling_config
         .module_bucket
         .push(PartialBundlingModuleBucketsConfig {
           name: "vendor".into(),
-          min_size: Some(1024 * 20),
-          test: vec![ConfigRegex::new("[\\/]node_modules[\\/]")],
-          max_concurrent_requests: Some(20),
+          test: if config.partial_bundling.immutable_modules.is_empty() {
+            vec![ConfigRegex::new("[\\/]node_modules[\\/]")]
+          } else {
+            config.partial_bundling.immutable_modules.clone()
+          },
           weight: -20,
+          min_size: Some(1024),
+          max_concurrent_requests: Some(10),
         });
     }
 
-    if partial_bundling_config
-      .module_bucket
-      .iter()
-      .any(|bucket| bucket.name != "common")
-    {
+    if is_empty || !partial_bundling_config.contains("common") {
       partial_bundling_config
         .module_bucket
         .push(PartialBundlingModuleBucketsConfig {
           name: "common".into(),
           min_size: Some(1024 * 20),
           max_concurrent_requests: Some(10),
-          weight: -20,
+          weight: -30,
           ..Default::default()
         });
     }
@@ -270,10 +270,13 @@ fn pre_process_module(
 
     module_into_module_group.iter().for_each(|module_group| {
       if let Some(resource_unit_id) = module_group_redirect_resource_unit_map.get(module_group) {
-        resource_group
-          .resource_unit_mut(resource_unit_id)
-          .unwrap()
-          .add_module(module_id.clone());
+        let mut resource_unit = resource_group.resource_unit_mut(resource_unit_id).unwrap();
+
+        if entries_modules.contains(&module.id) {
+          resource_unit.entry_module = Some(module_group.clone());
+        }
+
+        resource_unit.add_module(module_id.clone());
       } else {
         if !named_map.contains_key(module_group) {
           named_map.insert(
@@ -284,7 +287,7 @@ fn pre_process_module(
 
         let mut resource_unit = ResourceUnit::new(named_map[module_group].clone());
 
-        if entries_modules.contains(module_group) {
+        if entries_modules.contains(&module.id) {
           resource_unit.entry_module = Some(module_group.clone());
         }
 

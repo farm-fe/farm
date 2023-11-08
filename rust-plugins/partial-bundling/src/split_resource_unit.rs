@@ -18,34 +18,38 @@ pub fn split_resource_by_module_metadata(
   }
 
   let resource_unit_group = resource_group.group_mut(resource_unit_id).unwrap();
-  let mut resource_map: HashMap<(ModuleType, bool), Vec<ModuleId>> = HashMap::new();
+  let mut resource_map: HashMap<ModuleType, Vec<ModuleId>> = HashMap::new();
 
   for module_id in resource_unit_group.resource_unit.take_modules() {
     let module = module_graph.module(&module_id).unwrap();
 
     resource_map
-      .entry((module.module_type.clone(), module.immutable))
+      .entry(module.module_type.clone())
       .or_insert_with(Vec::new)
       .push(module_id.clone());
   }
 
   if resource_map.len() == 1 {
-    let ((module_type, inmutable), modules) = resource_map.into_iter().next().unwrap();
+    let (module_type, modules) = resource_map.into_iter().next().unwrap();
     resource_unit_group
       .resource_unit
       .replace_modules(modules.into_iter().collect());
     resource_unit_group.resource_unit.resource_pot_type = Some(module_type.into());
-    resource_unit_group.resource_unit.immutable = inmutable;
     return;
   }
 
   let new_resource_pots = resource_map
     .into_iter()
-    .map(|((module_type, immutable), modules)| {
+    .map(|(module_type, modules)| {
       let mut unit_group = resource_unit_group.clone();
 
+      if unit_group.groups.remove(resource_unit_id) {
+        unit_group
+          .groups
+          .insert(unit_group.resource_unit.id.clone());
+      };
+
       unit_group.resource_unit.resource_pot_type = Some(module_type.into());
-      unit_group.resource_unit.immutable = immutable;
 
       modules.into_iter().for_each(|module_id| {
         if module_graph.entries.contains_key(&module_id) {
