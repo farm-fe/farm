@@ -12,8 +12,11 @@ pub fn transform(
 ) -> Result<PluginDriverTransformHookResult> {
   #[cfg(feature = "profile")]
   farmfe_core::puffin::profile_function!();
-
+  let print = transform_param.resolved_path.ends_with("index.module.less")
+    || transform_param.resolved_path.ends_with("vue");
   let transformed = context.plugin_driver.transform(transform_param, context)?;
-
+  if print {
+    println!("transformed: {:?}", transformed);
+  }
   Ok(transformed)
 }

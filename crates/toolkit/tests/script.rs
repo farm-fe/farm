@@ -17,7 +17,7 @@ fn parse_and_codegen_module() {
     let module_type = module_type_from_id(&id).unwrap();
     let syntax = syntax_from_module_type(&module_type, Default::default()).unwrap();
     let cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
-    let ast = parse_module(&id, &content, syntax, Default::default(), cm.clone()).unwrap();
+    let ast = parse_module(&id, &content, syntax, Default::default()).unwrap();
 
     assert_eq!(ast.body.len(), 3);
 

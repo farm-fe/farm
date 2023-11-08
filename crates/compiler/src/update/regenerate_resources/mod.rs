@@ -2,16 +2,17 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
+  enhanced_magic_string::types::SourceMapOptions,
+  error::CompilationError,
   hashbrown::{HashMap, HashSet},
   module::{module_group::ModuleGroupId, Module, ModuleId},
-  resource::resource_pot::{
-    JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType,
-  },
-  swc_common::DUMMY_SP,
-  swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
+  resource::resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
 };
 
-use farmfe_plugin_runtime::render_resource_pot::resource_pot_to_runtime_object_lit;
+use farmfe_plugin_runtime::render_resource_pot::{
+  resource_pot_to_runtime_object, RenderedJsResourcePot,
+};
+use farmfe_toolkit::hash::base64_encode;
 
 use crate::generate::render_resource_pots::{
   render_resource_pot_generate_resources, render_resource_pots_and_generate_resources,
@@ -27,10 +28,18 @@ pub fn render_and_generate_update_resource(
   updated_module_ids: &Vec<ModuleId>,
   diff_result: &DiffResult,
   context: &Arc<CompilationContext>,
-) -> farmfe_core::error::Result<String> {
-  let mut update_resource_pot =
-    ResourcePot::new(String::from("__UPDATE_RESOURCE_POT__"), ResourcePotType::Js);
-  update_resource_pot.immutable = true;
+) -> farmfe_core::error::Result<(String, String)> {
+  let mut immutable_update_resource_pot = ResourcePot::new(
+    String::from("__IMMUTABLE_UPDATE_RESOURCE_POT__"),
+    ResourcePotType::Js,
+  );
+  immutable_update_resource_pot.immutable = true;
+
+  let mut mutable_update_resource_pot = ResourcePot::new(
+    String::from("__MUTABLE_UPDATE_RESOURCE_POT__"),
+    ResourcePotType::Js,
+  );
+  mutable_update_resource_pot.immutable = false;
 
   let module_graph = context.module_graph.read();
 
@@ -41,7 +50,11 @@ pub fn render_and_generate_update_resource(
       continue;
     }
 
-    update_resource_pot.add_module(added.clone());
+    if module.immutable {
+      immutable_update_resource_pot.add_module(added.clone());
+    } else {
+      mutable_update_resource_pot.add_module(added.clone());
+    }
   }
 
   for updated in updated_module_ids {
@@ -51,33 +64,71 @@ pub fn render_and_generate_update_resource(
       continue;
     }
 
-    update_resource_pot.add_module(updated.clone());
+    if module.immutable {
+      immutable_update_resource_pot.add_module(updated.clone());
+    } else {
+      mutable_update_resource_pot.add_module(updated.clone());
+    }
   }
 
-  let ast = resource_pot_to_runtime_object_lit(&mut update_resource_pot, &module_graph, context)?;
-  // The hmr result should alway be a js resource
-  update_resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
-    ast: SwcModule {
-      body: vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-        span: DUMMY_SP,
-        expr: Box::new(Expr::Object(ast)),
-      }))],
-      span: DUMMY_SP,
-      shebang: None,
-    },
-  });
+  let gen_resource_pot_code =
+    |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
+      if resource_pot.modules().len() > 0 {
+        let RenderedJsResourcePot {
+          mut bundle,
+          rendered_modules,
+        } = resource_pot_to_runtime_object(&resource_pot, &module_graph, context)?;
+        bundle.prepend("(");
+        bundle.append(")", None);
 
-  let update_resources = render_resource_pot_generate_resources(
-    &mut update_resource_pot,
-    context,
-    &Default::default(),
-    true,
-  )?;
+        let mut rendered_map_chain = vec![];
 
-  let js_resource = update_resources.resource;
+        if context.config.sourcemap.enabled(resource_pot.immutable) {
+          let map = bundle
+            .generate_map(SourceMapOptions {
+              include_content: Some(true),
+              ..Default::default()
+            })
+            .map_err(|_| CompilationError::GenerateSourceMapError {
+              id: resource_pot.id.clone(),
+            })?;
 
-  // TODO: also return sourcemap
-  Ok(String::from_utf8(js_resource.bytes).unwrap())
+          let mut buf = vec![];
+          map.to_writer(&mut buf).expect("failed to write sourcemap");
+          rendered_map_chain.push(Arc::new(String::from_utf8(buf).unwrap()));
+        }
+        // The hmr result should alway be a js resource
+        resource_pot.meta = ResourcePotMetaData {
+          rendered_modules,
+          rendered_content: Arc::new(bundle.to_string()),
+          rendered_map_chain,
+        };
+
+        let mut update_resources =
+          render_resource_pot_generate_resources(resource_pot, context, &Default::default(), true)?;
+
+        if let Some(map) = update_resources.source_map {
+          // inline source map
+          update_resources.resource.bytes.append(
+            &mut format!(
+              "\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
+              base64_encode(&map.bytes)
+            )
+            .into_bytes(),
+          );
+        }
+
+        let code = String::from_utf8(update_resources.resource.bytes).unwrap();
+        return Ok(code);
+      }
+
+      Ok("{}".to_string())
+    };
+
+  let immutable_update_resource = gen_resource_pot_code(&mut immutable_update_resource_pot)?;
+  let mutable_update_resource = gen_resource_pot_code(&mut mutable_update_resource_pot)?;
+
+  Ok((immutable_update_resource, mutable_update_resource))
 }
 
 pub fn regenerate_resources_for_affected_module_groups(

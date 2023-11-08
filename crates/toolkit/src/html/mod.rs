@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   error::CompilationError,
-  swc_common::{input::SourceFileInput, FileName, SourceMap, DUMMY_SP},
+  swc_common::{input::SourceFileInput, DUMMY_SP},
   swc_html_ast::{Attribute, Child, Document, Element, Namespace, Text},
 };
 use swc_error_reporters::handler::try_with_handler;
@@ -15,13 +15,14 @@ use swc_html_parser::{
   parser::{Parser, ParserConfig},
 };
 
+use crate::common::{create_swc_source_map, Source};
+
 /// Parse html content to swc_html_ast's [Document], present the ast of HTML.
-pub fn parse_html_document(
-  id: &str,
-  content: &str,
-  cm: Arc<SourceMap>,
-) -> farmfe_core::error::Result<Document> {
-  let source_file = cm.new_source_file(FileName::Real(PathBuf::from(id)), content.to_string());
+pub fn parse_html_document(id: &str, content: Arc<String>) -> farmfe_core::error::Result<Document> {
+  let (cm, source_file) = create_swc_source_map(Source {
+    path: PathBuf::from(id),
+    content,
+  });
   let html_lexer = Lexer::new(SourceFileInput::from(&*source_file));
   let mut parser = Parser::new(html_lexer, ParserConfig::default());
 

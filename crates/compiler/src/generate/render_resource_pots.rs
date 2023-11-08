@@ -3,13 +3,18 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
-  hashbrown::HashMap,
   parking_lot::Mutex,
-  plugin::{PluginGenerateResourcesHookResult, PluginHookContext},
+  plugin::{
+    PluginGenerateResourcesHookResult, PluginHookContext, PluginRenderResourcePotHookParam,
+    ResourcePotInfoOfPluginRenderResourcePotHookParam,
+  },
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{resource_pot::ResourcePot, Resource, ResourceType},
+  resource::{resource_pot::ResourcePot, ResourceType},
 };
-use farmfe_toolkit::fs::{transform_output_entry_filename, transform_output_filename};
+use farmfe_toolkit::{
+  common::append_source_map_comment,
+  fs::{transform_output_entry_filename, transform_output_filename},
+};
 
 pub fn render_resource_pots_and_generate_resources(
   resource_pots: Vec<&mut ResourcePot>,
@@ -35,6 +40,7 @@ pub fn render_resource_pots_and_generate_resources(
     let mut res =
       render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
     let r = &mut res.resource;
+
     // ignore runtime resource
     if !matches!(r.resource_type, ResourceType::Runtime) {
       if let Some(name) = resource_pot.entry_module.as_ref() {
@@ -60,13 +66,7 @@ pub fn render_resource_pots_and_generate_resources(
     // to make sure the source map can be found.
     if let Some(mut source_map) = res.source_map {
       source_map.name = format!("{}.{}", r.name, source_map.resource_type.to_ext());
-
-      let source_mapping_url = if matches!(r.resource_type, ResourceType::Css) {
-        format!("\n/*# sourceMappingURL=/{} */", source_map.name)
-      } else {
-        format!("\n//# sourceMappingURL=/{}", source_map.name)
-      };
-      r.bytes.append(&mut source_mapping_url.as_bytes().to_vec());
+      append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
 
       resource_pot.add_resource(source_map.name.clone());
       resources.lock().push(source_map);
@@ -101,10 +101,25 @@ pub fn render_resource_pot_generate_resources(
     ));
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_scope!(id);
+    let meta = context
+      .plugin_driver
+      .render_resource_pot_modules(resource_pot, context, hook_context)?
+      .ok_or(CompilationError::PluginHookResultCheckError {
+        hook_name: format!("render_resource_pot_modules({:?})", resource_pot.id),
+      })?;
 
+    resource_pot.meta = meta;
+
+    let mut param = PluginRenderResourcePotHookParam {
+      content: resource_pot.meta.rendered_content.clone(),
+      resource_pot_info: ResourcePotInfoOfPluginRenderResourcePotHookParam::new(
+        resource_pot,
+        context,
+      ),
+    };
     context
       .plugin_driver
-      .render_resource_pot(resource_pot, context)?;
+      .render_resource_pot(&mut param, context)?;
   }
 
   {

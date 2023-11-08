@@ -23,7 +23,12 @@ jobs:
   examples-test:
     name: Examples Test
     runs-on: ${{ matrix.settings.os }}
-    needs: call-rust-build
+    needs:
+      [
+        call-rust-build,
+        call-rust-plugin-react-build,
+        call-rust-plugin-sass-build
+      ]
     strategy:
       fail-fast: false
       matrix:

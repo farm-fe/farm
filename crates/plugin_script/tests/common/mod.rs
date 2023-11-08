@@ -44,7 +44,7 @@ pub fn build_module_deps(
         resolved_path: path.to_string_lossy().to_string(),
         query: vec![],
         module_type: load_result.module_type.clone(),
-        content: load_result.content,
+        content: load_result.content.clone(),
       },
       &context,
       &hook_context,
@@ -64,6 +64,7 @@ pub fn build_module_deps(
     module_id: &module.id,
     module_type: &module.module_type,
     meta: &mut parse_result,
+    content: Arc::new(load_result.content),
   };
   script_plugin.process_module(&mut process_module_param, &context);
 

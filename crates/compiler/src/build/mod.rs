@@ -195,7 +195,10 @@ impl Compiler {
     let load_result = call_and_catch_error!(load, &load_param, context, &hook_context);
 
     // try load source map after load module content.
-    if load_result.content.contains("//# sourceMappingURL") {
+    // TODO load source map in load hook and add a context.load_source_map method
+    if context.config.sourcemap.enabled(module.immutable)
+      && load_result.content.contains("//# sourceMappingURL")
+    {
       // detect that the source map is inline or not
       let source_map = if load_result
         .content
@@ -226,7 +229,7 @@ impl Compiler {
       };
 
       if let Some(source_map) = source_map {
-        module.source_map_chain.push(source_map);
+        module.source_map_chain.push(Arc::new(source_map));
       }
     }
     // ================ Load End ===============
@@ -241,7 +244,7 @@ impl Compiler {
       module_id: module.id.to_string(),
     };
 
-    let mut transform_result = call_and_catch_error!(transform, transform_param, context);
+    let transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
 
     // ================ Parse Start ===============
@@ -252,17 +255,19 @@ impl Compiler {
       module_type: transform_result
         .module_type
         .unwrap_or(load_result.module_type),
-      content: transform_result.content,
+      content: Arc::new(transform_result.content),
     };
 
     let mut module_meta = call_and_catch_error!(parse, &parse_param, context, &hook_context);
     // ================ Parse End ===============
 
+    module.content = parse_param.content.clone();
     // ================ Process Module Start ===============
     if let Err(e) = context.plugin_driver.process_module(
       &mut PluginProcessModuleHookParam {
         module_id: &parse_param.module_id,
         module_type: &parse_param.module_type,
+        content: module.content.clone(),
         meta: &mut module_meta,
       },
       context,
@@ -275,12 +280,15 @@ impl Compiler {
 
     // ================ Process Module End ===============
     module.size = parse_param.content.as_bytes().len();
+
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
-    module
+    module.source_map_chain = transform_result
       .source_map_chain
-      .append(&mut transform_result.source_map_chain);
+      .into_iter()
+      .map(|sourcemap| Arc::new(sourcemap))
+      .collect();
     module.meta = module_meta;
 
     // ================ Analyze Deps Start ===============

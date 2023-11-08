@@ -7,8 +7,10 @@ use farmfe_core::{
     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
   },
   context::CompilationContext,
+  enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
   module::{ModuleMetaData, ModuleSystem, ModuleType},
+  parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
@@ -16,19 +18,14 @@ use farmfe_core::{
     PluginTransformHookResult, ResolveKind,
   },
   resource::{
-    resource_pot::{JsResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
+    resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_common::DUMMY_SP,
-  swc_ecma_ast::{
-    CallExpr, ExportAll, Expr, ExprOrSpread, ExprStmt, ImportDecl, ImportSpecifier, Lit,
-    ModuleDecl, ModuleItem, Stmt, Str,
-  },
+  swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem},
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
-  script::{codegen_module, module_system_from_deps, module_type_from_id, parse_module},
-  swc_ecma_parser::Syntax,
+  script::{module_system_from_deps, module_type_from_id},
 };
 
 use insert_runtime_plugins::insert_runtime_plugins;
@@ -47,7 +44,9 @@ pub mod render_resource_pot;
 /// when entry is script, the runtime will be injected into the entry module's head, makes sure the runtime execute before all other code.
 ///
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
-pub struct FarmPluginRuntime {}
+pub struct FarmPluginRuntime {
+  runtime_code: Mutex<Arc<String>>,
+}
 
 impl Plugin for FarmPluginRuntime {
   fn name(&self) -> &str {
@@ -254,7 +253,7 @@ impl Plugin for FarmPluginRuntime {
     resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if context.meta.script.runtime_ast.read().is_some() {
+    if !self.runtime_code.lock().is_empty() {
       return Ok(None);
     }
 
@@ -262,52 +261,43 @@ impl Plugin for FarmPluginRuntime {
 
     for resource_pot in resource_pots {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-        let rendered_resource_pot_ast =
-          resource_pot_to_runtime_object_lit(resource_pot, &module_graph, context)?;
+        let RenderedJsResourcePot { mut bundle, .. } =
+          resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
 
-        #[cfg(not(windows))]
-        let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
-        #[cfg(windows)]
-        let minimal_runtime = include_str!(".\\js-runtime\\minimal-runtime.js");
+        bundle.prepend(
+          r#"(function (modules, entryModule) {
+            var cache = {};
+          
+            function require(id) {
+              if (cache[id]) return cache[id].exports;
+          
+              var module = {
+                id: id,
+                exports: {}
+              };
+          
+              modules[id](module, module.exports, require);
+              cache[id] = module;
+              return module.exports;
+            }
+          
+            require(entryModule);
+          })("#,
+        );
 
-        let mut runtime_ast = parse_module(
-          "farm_internal_minimal_runtime",
-          minimal_runtime,
-          Syntax::Es(context.config.script.parser.es_config),
-          context.config.script.target,
-          context.meta.script.cm.clone(),
-        )?;
+        bundle.append(
+          &format!(
+            ", {:?});",
+            resource_pot
+              .entry_module
+              .as_ref()
+              .unwrap()
+              .id(context.config.mode.clone())
+          ),
+          None,
+        );
 
-        if let ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-          expr: box Expr::Call(CallExpr { args, .. }),
-          ..
-        })) = &mut runtime_ast.body[0]
-        {
-          args[0] = ExprOrSpread {
-            spread: None,
-            expr: Box::new(Expr::Object(rendered_resource_pot_ast)),
-          };
-          args[1] = ExprOrSpread {
-            spread: None,
-            expr: Box::new(Expr::Lit(Lit::Str(Str {
-              span: DUMMY_SP,
-              value: resource_pot
-                .entry_module
-                .as_ref()
-                .unwrap()
-                .id(context.config.mode.clone())
-                .into(),
-              raw: None,
-            }))),
-          };
-        }
-
-        // TODO: minify runtime when minify is enabled
-
-        // TODO transform async function if target is lower than es2017, should not externalize swc helpers
-        // This may cause async generator duplicated but it's ok for now. We can fix it later.
-
-        context.meta.script.runtime_ast.write().replace(runtime_ast);
+        *self.runtime_code.lock() = Arc::new(bundle.to_string());
         break;
       }
     }
@@ -315,53 +305,71 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(()))
   }
 
-  fn render_resource_pot(
+  fn render_resource_pot_modules(
     &self,
-    resource_pot: &mut ResourcePot,
+    resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    // the runtime module and its plugins should be in the same resource pot
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+    _hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
+    if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
+      return Ok(Some(ResourcePotMetaData {
+        rendered_modules: HashMap::new(),
+        rendered_content: self.runtime_code.lock().clone(),
+        rendered_map_chain: vec![],
+      }));
+    } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
-      let rendered_resource_pot_ast =
-        resource_pot_to_runtime_object_lit(resource_pot, &module_graph, context)?;
+      let RenderedJsResourcePot {
+        mut bundle,
+        rendered_modules,
+      } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
 
-      #[cfg(not(windows))]
-      let wrapper = include_str!("./js-runtime/resource-wrapper.js");
-      #[cfg(windows)]
-      let wrapper = include_str!(".\\js-runtime\\resource-wrapper.js");
+      bundle.prepend(
+        r#"(function (modules) {
+        for (var key in modules) {
+          var __farm_global_this__ = (globalThis || window || global || self)[
+            __farm_namespace__
+          ];
+          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
+        }
+      })("#,
+      );
+      bundle.append(");", None);
 
-      let mut wrapper_ast = parse_module(
-        "farm_internal_resource_wrapper",
-        wrapper,
-        Syntax::Es(context.config.script.parser.es_config),
-        context.config.script.target,
-        context.meta.script.cm.clone(),
-      )?;
+      return Ok(Some(ResourcePotMetaData {
+        rendered_modules,
+        rendered_content: Arc::new(bundle.to_string()),
+        rendered_map_chain: if context.config.sourcemap.enabled(resource_pot.immutable) {
+          let map = bundle
+            .generate_map(SourceMapOptions {
+              include_content: Some(true),
+              ..Default::default()
+            })
+            .map_err(|_| CompilationError::GenerateSourceMapError {
+              id: resource_pot.id.to_string(),
+            })?;
+          let mut buf = vec![];
+          map
+            .to_writer(&mut buf)
+            .map_err(|e| CompilationError::RenderScriptModuleError {
+              id: resource_pot.id.to_string(),
+              source: Some(Box::new(e)),
+            })?;
 
-      if let ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-        expr: box Expr::Call(CallExpr { args, .. }),
-        ..
-      })) = &mut wrapper_ast.body[0]
-      {
-        args[0] = ExprOrSpread {
-          spread: None,
-          expr: Box::new(Expr::Object(rendered_resource_pot_ast)),
-        };
-      }
-
-      resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData { ast: wrapper_ast });
-
-      Ok(Some(()))
-    } else {
-      Ok(None)
+          vec![Arc::new(String::from_utf8(buf).unwrap())]
+        } else {
+          vec![]
+        },
+      }));
     }
+
+    Ok(None)
   }
 
   fn generate_resources(
     &self,
     resource_pot: &mut ResourcePot,
-    context: &Arc<CompilationContext>,
+    _context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(&hook_context.caller, Some(c) if c == self.name()) {
@@ -370,26 +378,12 @@ impl Plugin for FarmPluginRuntime {
 
     // only handle runtime resource pot
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      let runtime_ast = context.meta.script.runtime_ast.read();
-      let runtime_ast = runtime_ast.as_ref().unwrap();
-      let bytes = codegen_module(
-        runtime_ast,
-        context.config.script.target,
-        context.meta.script.cm.clone(),
-        None,
-        context.config.minify,
-      )
-      .map_err(|e| CompilationError::GenerateResourcesError {
-        name: resource_pot.id.to_string(),
-        ty: resource_pot.resource_pot_type.clone(),
-        source: Some(Box::new(e)),
-      })?;
       // set emitted property of Runtime to true by default, as it will be generated and injected when generating entry resources,
       // other plugins wants to modify this behavior in write_resources hook.
       Ok(Some(PluginGenerateResourcesHookResult {
         resource: Resource {
           name: resource_pot.id.to_string(),
-          bytes,
+          bytes: self.runtime_code.lock().as_bytes().to_vec(),
           emitted: true, // do not emit runtime resource by default
           resource_type: ResourceType::Runtime,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
@@ -404,6 +398,8 @@ impl Plugin for FarmPluginRuntime {
 
 impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
-    Self {}
+    Self {
+      runtime_code: Mutex::new(Arc::new(String::new())),
+    }
   }
 }

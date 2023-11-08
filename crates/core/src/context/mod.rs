@@ -4,7 +4,7 @@ use dashmap::DashMap;
 use hashbrown::HashMap;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
-use swc_common::{FilePathMapping, Globals, SourceMap};
+use swc_common::Globals;
 
 use crate::{
   cache::CacheManager,
@@ -121,17 +121,13 @@ impl Default for ContextMetaData {
 
 /// Shared script meta data used for [swc]
 pub struct ScriptContextMetaData {
-  pub cm: Arc<SourceMap>,
   pub globals: Globals,
-  pub runtime_ast: RwLock<Option<swc_ecma_ast::Module>>,
 }
 
 impl ScriptContextMetaData {
   pub fn new() -> Self {
     Self {
-      cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
       globals: Globals::new(),
-      runtime_ast: RwLock::new(None),
     }
   }
 }
@@ -143,14 +139,12 @@ impl Default for ScriptContextMetaData {
 }
 
 pub struct CssContextMetaData {
-  pub cm: Arc<SourceMap>,
   pub globals: Globals,
 }
 
 impl CssContextMetaData {
   pub fn new() -> Self {
     Self {
-      cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
       globals: Globals::new(),
     }
   }
@@ -163,14 +157,12 @@ impl Default for CssContextMetaData {
 }
 
 pub struct HtmlContextMetaData {
-  pub cm: Arc<SourceMap>,
   pub globals: Globals,
 }
 
 impl HtmlContextMetaData {
   pub fn new() -> Self {
     Self {
-      cm: Arc::new(SourceMap::new(FilePathMapping::empty())),
       globals: Globals::new(),
     }
   }

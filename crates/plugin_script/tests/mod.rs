@@ -9,9 +9,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  resource::resource_pot::{
-    JsResourcePotMetaData, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
-  },
+  resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType},
   swc_common::DUMMY_SP,
   swc_ecma_ast::Module as SwcModule,
 };
@@ -125,13 +123,11 @@ fn load_parse_and_analyze_deps() {
       let mut resource_pot = ResourcePot::new(ResourcePotId::from("index"), ResourcePotType::Js);
 
       resource_pot.resource_pot_type = ResourcePotType::Js;
-      resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
-        ast: SwcModule {
-          body: module.meta.as_script().ast.body.to_vec(),
-          shebang: None,
-          span: DUMMY_SP,
-        },
-      });
+      // resource_pot.meta = ResourcePotMetaData {
+      //   rendered_modules: todo!(),
+      //   rendered_content: todo!(),
+      //   rendered_map_chain: todo!(),
+      // };
 
       let resources = plugin_script
         .generate_resources(&mut resource_pot, &context, &hook_context)

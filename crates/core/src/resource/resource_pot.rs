@@ -1,14 +1,8 @@
-use std::any::Any;
+use std::{collections::HashMap, sync::Arc};
 
-use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
 use hashbrown::HashSet;
-use rkyv::{Archive, Archived, Deserialize, Serialize};
-use rkyv_dyn::archive_dyn;
-use rkyv_typename::TypeName;
-use swc_css_ast::Stylesheet;
-use swc_ecma_ast::Module as SwcModule;
-use swc_html_ast::Document;
+use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 
@@ -91,7 +85,7 @@ impl ResourcePot {
 pub type ResourcePotId = String;
 
 #[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ResourcePotType {
   Runtime,
   Js,
@@ -121,114 +115,28 @@ impl ToString for ResourcePotType {
 }
 
 #[cache_item]
-pub enum ResourcePotMetaData {
-  Js(JsResourcePotMetaData),
-  Css(CssResourcePotMetaData),
-  Html(HtmlResourcePotMetaData),
-  Custom(Box<dyn SerializeCustomResourcePotMetaData>),
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct RenderedModule {
+  pub id: ModuleId,
+  pub rendered_content: Arc<String>,
+  pub rendered_map: Option<Arc<String>>,
+  pub rendered_length: usize,
+  pub original_length: usize,
+}
+
+#[cache_item]
+pub struct ResourcePotMetaData {
+  pub rendered_modules: HashMap<ModuleId, RenderedModule>,
+  pub rendered_content: Arc<String>,
+  pub rendered_map_chain: Vec<Arc<String>>,
 }
 
 impl Default for ResourcePotMetaData {
   fn default() -> Self {
-    Self::Custom(Box::new(EmptyResourcePotMetaData) as _)
-  }
-}
-
-impl ResourcePotMetaData {
-  pub fn as_js(&self) -> &JsResourcePotMetaData {
-    match self {
-      ResourcePotMetaData::Js(r) => r,
-      _ => panic!("ResourcePotMetaData is not js!"),
-    }
-  }
-
-  pub fn as_js_mut(&mut self) -> &mut JsResourcePotMetaData {
-    match self {
-      ResourcePotMetaData::Js(r) => r,
-      _ => panic!("ResourcePotMetaData is not js!"),
-    }
-  }
-
-  pub fn take_js(self) -> JsResourcePotMetaData {
-    match self {
-      ResourcePotMetaData::Js(r) => r,
-      _ => panic!("ResourcePotMetaData is not js!"),
-    }
-  }
-
-  pub fn as_css(&self) -> &CssResourcePotMetaData {
-    match self {
-      ResourcePotMetaData::Css(r) => r,
-      _ => panic!("ResourcePotMetaData is not css!"),
-    }
-  }
-
-  pub fn as_css_mut(&mut self) -> &mut CssResourcePotMetaData {
-    match self {
-      ResourcePotMetaData::Css(r) => r,
-      _ => panic!("ResourcePotMetaData is not css!"),
-    }
-  }
-  pub fn as_html(&self) -> &HtmlResourcePotMetaData {
-    match self {
-      ResourcePotMetaData::Html(r) => r,
-      _ => panic!("ResourcePotMetaData is not html!"),
-    }
-  }
-
-  pub fn as_html_mut(&mut self) -> &mut HtmlResourcePotMetaData {
-    match self {
-      ResourcePotMetaData::Html(r) => r,
-      _ => panic!("ResourcePotMetaData is not html!"),
-    }
-  }
-
-  pub fn as_custom<T: SerializeCustomResourcePotMetaData>(&self) -> &T {
-    match self {
-      ResourcePotMetaData::Custom(c) => {
-        if let Some(c) = c.downcast_ref::<T>() {
-          c
-        } else {
-          panic!("Custom resource meta data is not serializable!");
-        }
-      }
-      _ => panic!("ResourcePotMetaData is not custom!"),
-    }
-  }
-
-  pub fn as_custom_mut<T: SerializeCustomResourcePotMetaData>(&mut self) -> &mut T {
-    match self {
-      ResourcePotMetaData::Custom(c) => {
-        if let Some(c) = c.downcast_mut::<T>() {
-          c
-        } else {
-          panic!("Custom resource meta data is not serializable!");
-        }
-      }
-      _ => panic!("ResourcePotMetaData is not custom!"),
+    Self {
+      rendered_modules: HashMap::new(),
+      rendered_content: Arc::new(String::new()),
+      rendered_map_chain: vec![],
     }
   }
 }
-
-#[cache_item]
-pub struct JsResourcePotMetaData {
-  pub ast: SwcModule,
-}
-
-#[cache_item]
-pub struct CssResourcePotMetaData {
-  pub ast: Stylesheet,
-}
-
-#[cache_item]
-pub struct HtmlResourcePotMetaData {
-  pub ast: Document,
-}
-
-#[archive_dyn(deserialize)]
-pub trait CustomResourcePotMetaData: Any + Send + Sync + Downcast {}
-
-impl_downcast!(SerializeCustomResourcePotMetaData);
-
-#[cache_item(CustomResourcePotMetaData)]
-pub struct EmptyResourcePotMetaData;

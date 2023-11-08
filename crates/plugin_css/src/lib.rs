@@ -1,11 +1,18 @@
 #![feature(box_patterns)]
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
+  enhanced_magic_string::{
+    bundle::{Bundle, BundleOptions},
+    collapse_sourcemap::collapse_sourcemap_chain,
+    magic_string::{MagicString, MagicStringOptions},
+    types::SourceMapOptions,
+  },
+  error::CompilationError,
   hashbrown::HashMap,
   module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
@@ -14,19 +21,21 @@ use farmfe_core::{
     PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginResolveHookParam,
     PluginTransformHookResult, ResolveKind,
   },
+  rayon::prelude::*,
   resource::{
-    resource_pot::{CssResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
+    resource_pot::{RenderedModule, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_common::DUMMY_SP,
   swc_css_ast::Stylesheet,
 };
 use farmfe_toolkit::{
+  common::Source,
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::read_file_utf8,
   hash::sha256,
   regex::Regex,
   script::module_type_from_id,
+  sourcemap::SourceMap,
   swc_atoms::JsWord,
   swc_css_modules::{compile, CssClassName, TransformConfig},
   swc_css_prefixer,
@@ -44,33 +53,7 @@ pub mod transform_css_to_script;
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
   ast_map: Mutex<HashMap<String, Stylesheet>>,
-}
-
-pub fn wrapper_style_load(code: &str, id: String, css_deps: &String) -> String {
-  format!(
-    r#"
-const cssCode = `{}`;
-const farmId = '{}';
-{}
-const previousStyle = document.querySelector(`style[data-farm-id="${{farmId}}"]`);
-const style = document.createElement('style');
-style.setAttribute('data-farm-id', farmId);
-style.innerHTML = cssCode;
-if (previousStyle) {{
-previousStyle.replaceWith(style);
-}} else {{
-document.head.appendChild(style);
-}}
-module.meta.hot.accept();
-
-module.onDispose(() => {{
-style.remove();
-}});
-"#,
-    code.replace('`', "'").replace('\\', "\\\\"),
-    id.replace('\\', "\\\\"),
-    css_deps
-  )
+  content_map: Mutex<HashMap<String, String>>,
 }
 
 fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
@@ -146,8 +129,7 @@ impl Plugin for FarmPluginCss {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if is_farm_css_modules(param.resolved_path) {
       return Ok(Some(PluginLoadHookResult {
-        // return empty content as we don't need to load the module, it is already parsed and stored in the ast_map
-        content: "".to_string(),
+        content: self.content_map.lock().remove(param.resolved_path).unwrap(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES_SUFFIX.to_string()),
       }));
     };
@@ -208,8 +190,7 @@ impl Plugin for FarmPluginCss {
         );
         let mut css_stylesheet = parse_css_stylesheet(
           &css_modules_module_id.to_string(),
-          &param.content,
-          context.meta.css.cm.clone(),
+          Arc::new(param.content.clone()),
         )?;
 
         // js code for css modules
@@ -229,10 +210,14 @@ impl Plugin for FarmPluginCss {
           },
         );
 
-        self.ast_map.lock().insert(
-          format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX),
-          css_stylesheet,
-        );
+        self
+          .ast_map
+          .lock()
+          .insert(css_modules_resolved_path.clone(), css_stylesheet);
+        self
+          .content_map
+          .lock()
+          .insert(css_modules_resolved_path.clone(), param.content.clone());
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::new();
@@ -286,14 +271,6 @@ impl Plugin for FarmPluginCss {
           module_type: Some(ModuleType::Js),
           source_map: None,
         }))
-      // } else if matches!(context.config.mode, farmfe_core::config::Mode::Development) {
-      //   let css_js_code = wrapper_style_load(&param.content, module_id.to_string());
-
-      //   Ok(Some(PluginTransformHookResult {
-      //     content: css_js_code,
-      //     module_type: Some(ModuleType::Js),
-      //     source_map: None,
-      //   }))
       } else {
         Ok(None)
       }
@@ -305,7 +282,7 @@ impl Plugin for FarmPluginCss {
   fn parse(
     &self,
     param: &PluginParseHookParam,
-    context: &Arc<CompilationContext>,
+    _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
@@ -316,11 +293,7 @@ impl Plugin for FarmPluginCss {
           .remove(&param.resolved_path)
           .unwrap_or_else(|| panic!("ast not found {:?}", param.resolved_path))
       } else {
-        parse_css_stylesheet(
-          &param.module_id.to_string(),
-          &param.content,
-          context.meta.css.cm.clone(),
-        )?
+        parse_css_stylesheet(&param.module_id.to_string(), param.content.clone())?
       };
 
       let meta = ModuleMetaData::Css(CssModuleMetaData {
@@ -402,17 +375,15 @@ impl Plugin for FarmPluginCss {
     Ok(Some(()))
   }
 
-  fn render_resource_pot(
+  fn render_resource_pot_modules(
     &self,
-    resource_pot: &mut ResourcePot,
+    resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
+    _hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
+      let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
       let module_graph = context.module_graph.read();
-      let mut merged_css_ast = Stylesheet {
-        span: DUMMY_SP,
-        rules: vec![],
-      };
 
       let mut modules = vec![];
 
@@ -424,27 +395,96 @@ impl Plugin for FarmPluginCss {
       modules.sort_by_key(|module| module.execution_order);
       let resources_map = context.resources_map.lock();
 
-      for module in modules {
-        let mut module_css_ast: Stylesheet = Stylesheet {
-          span: DUMMY_SP,
-          rules: module.meta.as_css().ast.rules.to_vec(),
-        };
+      let rendered_modules = modules
+        .into_par_iter()
+        .map(|module| {
+          let mut css_stylesheet = module.meta.as_css().ast.clone();
 
-        source_replace(
-          &mut module_css_ast,
-          &module.id,
-          &module_graph,
-          &resources_map,
-        );
+          source_replace(
+            &mut css_stylesheet,
+            &module.id,
+            &module_graph,
+            &resources_map,
+          );
 
-        merged_css_ast.rules.extend(module_css_ast.rules);
-      }
+          let (css_code, src_map) = codegen_css_stylesheet(
+            &css_stylesheet,
+            if source_map_enabled {
+              Some(Source {
+                path: PathBuf::from(&module.id.to_string()),
+                content: module.content.clone(),
+              })
+            } else {
+              None
+            },
+            false,
+          );
 
-      resource_pot.meta = ResourcePotMetaData::Css(CssResourcePotMetaData {
-        ast: merged_css_ast,
+          RenderedModule {
+            id: module.id.clone(),
+            rendered_length: css_code.len(),
+            original_length: module.size,
+            rendered_content: Arc::new(css_code),
+            rendered_map: src_map.map(|s| Arc::new(s)),
+          }
+        })
+        .collect::<Vec<_>>();
+
+      let mut bundle = Bundle::new(BundleOptions {
+        trace_source_map_chain: Some(true),
+        ..Default::default()
       });
 
-      Ok(Some(()))
+      for rendered in &rendered_modules {
+        let mut source_map_chain = vec![];
+
+        if source_map_enabled {
+          let module = module_graph.module(&rendered.id).unwrap();
+          source_map_chain = module.source_map_chain.clone();
+        }
+
+        let magic_module = MagicString::new(
+          rendered.rendered_content.as_str(),
+          Some(MagicStringOptions {
+            source_map_chain,
+            filename: Some(rendered.id.to_string()),
+            ..Default::default()
+          }),
+        );
+        bundle.add_source(magic_module, None).map_err(|e| {
+          CompilationError::GenericError(format!("failed to add source to bundle: {:?}", e))
+        })?;
+      }
+
+      let rendered_content = Arc::new(bundle.to_string());
+      let rendered_map = if source_map_enabled {
+        Some(
+          bundle
+            .generate_map(SourceMapOptions {
+              include_content: Some(true),
+              ..Default::default()
+            })
+            .map_err(|e| {
+              CompilationError::GenericError(format!("failed to generate source map: {:?}", e))
+            })?,
+        )
+        .map(|v| {
+          let mut buf = vec![];
+          v.to_writer(&mut buf).unwrap();
+          Arc::new(String::from_utf8(buf).unwrap())
+        })
+      } else {
+        None
+      };
+
+      Ok(Some(ResourcePotMetaData {
+        rendered_modules: rendered_modules
+          .into_iter()
+          .map(|m| (m.id.clone(), m))
+          .collect(),
+        rendered_content,
+        rendered_map_chain: rendered_map.map(|v| vec![v]).unwrap_or(vec![]),
+      }))
     } else {
       Ok(None)
     }
@@ -457,39 +497,37 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
-      let stylesheet = &resource_pot.meta.as_css().ast;
-      let source_map_enabled = context.config.sourcemap.enabled();
-      let module_graph = context.module_graph.read();
-      let (css_code, src_map) = codegen_css_stylesheet(
-        stylesheet,
-        if source_map_enabled {
-          Some(context.meta.css.cm.clone())
-        } else {
-          None
-        },
-        context.config.minify,
-        &module_graph,
-      );
-
       let resource = Resource {
         name: resource_pot.name.to_string(),
-        bytes: css_code.as_bytes().to_vec(),
+        bytes: resource_pot.meta.rendered_content.as_bytes().to_vec(),
         emitted: false,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
       };
       let mut source_map = None;
 
-      if context.config.sourcemap.enabled()
-        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
-      {
+      if context.config.sourcemap.enabled(resource_pot.immutable) {
         // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
-        if let Some(bytes) = src_map {
+        if !resource_pot.meta.rendered_map_chain.is_empty() {
+          let collapsed_sourcemap = collapse_sourcemap_chain(
+            resource_pot
+              .meta
+              .rendered_map_chain
+              .iter()
+              .map(|m| SourceMap::from_slice(m.as_bytes()).unwrap())
+              .collect(),
+            Default::default(),
+          );
+          let mut buf = vec![];
+          collapsed_sourcemap
+            .to_writer(&mut buf)
+            .expect("failed to write sourcemap");
+          let resource_type = ResourceType::SourceMap(resource_pot.id.to_string());
           source_map = Some(Resource {
-            name: resource_pot.name.to_string(),
-            bytes,
+            name: format!("{}.{}", resource_pot.name, resource_type.to_ext()),
+            bytes: buf,
             emitted: false,
-            resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
+            resource_type,
             origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
           });
         }
@@ -521,6 +559,7 @@ impl FarmPluginCss {
         })
         .unwrap_or_default(),
       ast_map: Mutex::new(Default::default()),
+      content_map: Mutex::new(Default::default()),
     }
   }
 

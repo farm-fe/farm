@@ -66,17 +66,20 @@ impl Compiler {
 
   /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
+    let start = std::time::Instant::now();
     // triggering build stage
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
       self.build()?;
+      println!("Build stage took {:?}", start.elapsed());
     }
 
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Generate Stage");
       self.generate()?;
+      println!("Generate stage took {:?}", start.elapsed());
     }
 
     self.context.plugin_driver.finish(&Stats {}, &self.context)

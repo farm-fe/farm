@@ -15,7 +15,6 @@ pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
     code,
     Syntax::Es(Default::default()),
     EsVersion::EsNext,
-    cm.clone(),
   )
   .unwrap();
 

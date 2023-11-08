@@ -148,11 +148,22 @@ impl Plugin for RustPluginAdapter {
     self.plugin.process_resource_pots(resource_pots, context)
   }
 
+  fn render_resource_pot_modules(
+    &self,
+    resource_pot: &ResourcePot,
+    context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
+  ) -> Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>> {
+    self
+      .plugin
+      .render_resource_pot_modules(resource_pot, context, hook_context)
+  }
+
   fn render_resource_pot(
     &self,
-    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    resource_pot: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
     context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
+  ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
     self.plugin.render_resource_pot(resource_pot, context)
   }
 

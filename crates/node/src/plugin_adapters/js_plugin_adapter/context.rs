@@ -32,6 +32,7 @@ const ERROR: &str = "error";
 /// These functions are used to make farm js plugin compatible with Vite plugin
 const VITE_GET_MODULES_BY_FILE: &str = "viteGetModulesByFile";
 const VITE_GET_IMPORTERS: &str = "viteGetImporters";
+const SOURCE_MAP_ENABLED: &str = "sourceMapEnabled";
 
 pub struct GetModulesByFileResultItem {
   pub url: String,
@@ -82,6 +83,13 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     js_context,
     VITE_GET_IMPORTERS,
     Some(vite_get_importers),
+    ctx.clone(),
+  );
+  js_context = attach_context_method(
+    raw_env,
+    js_context,
+    SOURCE_MAP_ENABLED,
+    Some(source_map_enabled),
     ctx,
   );
 
@@ -325,4 +333,24 @@ unsafe extern "C" fn vite_get_importers(env: napi_env, info: napi_callback_info)
     .collect::<Vec<_>>();
 
   Env::from_raw(env).to_js_value(&importers).unwrap().raw()
+}
+
+unsafe extern "C" fn source_map_enabled(env: napi_env, info: napi_callback_info) -> napi_value {
+  let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
+
+  let id: String = Env::from_raw(env)
+    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .expect("Argument 0 should be a string when calling get_modules_by_file");
+
+  let module_graph = ctx.module_graph.read();
+  let immutable = ctx
+    .config
+    .partial_bundling
+    .immutable_modules
+    .iter()
+    .any(|im| im.is_match(&id));
+
+  let enabled = ctx.config.sourcemap.enabled(immutable);
+
+  Env::from_raw(env).to_js_value(&enabled).unwrap().raw()
 }

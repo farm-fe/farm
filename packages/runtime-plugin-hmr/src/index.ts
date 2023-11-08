@@ -3,7 +3,7 @@
  */
 import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
 import { applyHotUpdates, createHotContext } from './hot-module-state';
-import { HmrUpdateResult } from './types';
+import { HmrUpdateResult, RawHmrUpdateResult } from './types';
 declare const FARM_HMR_PORT: string | undefined;
 declare const FARM_HMR_HOST: string | undefined;
 declare const FARM_HMR_PATH: string | undefined;
@@ -31,8 +31,21 @@ export default <FarmRuntimePlugin>{
       // the client will use the id to fetch the update resource and apply the update
       socket.addEventListener('message', (event) => {
         // const data = JSON.parse(event.data) as HmrUpdatePacket;
-        const result: HmrUpdateResult = eval(`(${event.data})`);
-        applyHotUpdates(result, moduleSystem);
+        const result: RawHmrUpdateResult = eval(`(${event.data})`);
+        const immutableModules = eval(result.immutableModules);
+        const mutableModules = eval(result.mutableModules);
+        const modules = { ...immutableModules, ...mutableModules };
+        applyHotUpdates(
+          {
+            added: result.added,
+            changed: result.changed,
+            removed: result.removed,
+            boundaries: result.boundaries,
+            modules,
+            dynamicResourcesMap: result.dynamicResourcesMap
+          },
+          moduleSystem
+        );
         // import(`/__hmr?id=${data.id}`).then(
         //   (result: { default: HmrUpdateResult }) => {
         //     applyHotUpdates(result.default, moduleSystem);

@@ -1,3 +1,9 @@
+interface RawLazyCompileResult {
+  mutableModules: string;
+  immutableModules: string;
+  dynamicResourcesMap: Record<string, any>;
+}
+
 interface LazyCompileResult {
   modules: Record<
     string,
@@ -60,10 +66,16 @@ if (compilingModules.has(modulePath)) {
       const url = '/__lazy_compile?paths=' + paths.join(',') + `&t=${Date.now()}`;
 
       promise = import(url).then((module: any) => {
-        const result: LazyCompileResult = module.default;
+        const result: RawLazyCompileResult = module.default;
+        
+        FarmModuleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
+        const mutableModules = eval(result.mutableModules);
+        const immutableModules = eval(result.immutableModules);
+        
+        const modules = { ...mutableModules, ...immutableModules };
 
-        for (const moduleId in result.modules) {
-          FarmModuleSystem.update(moduleId, result.modules[moduleId]);
+        for (const moduleId in modules) {
+          FarmModuleSystem.update(moduleId, modules[moduleId]);
         }
 
         FarmModuleSystem.lazyCompiling = false;

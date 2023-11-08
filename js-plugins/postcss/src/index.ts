@@ -25,7 +25,6 @@ export type PostcssPluginOptions = {
 export default function farmPostcssPlugin(
   options: PostcssPluginOptions = {}
 ): JsPlugin {
-  let farmConfig: UserConfig['compilation'];
   let postcssProcessor: Processor;
   let postcssOptions: ProcessOptions;
 
@@ -44,7 +43,6 @@ export default function farmPostcssPlugin(
       );
       postcssOptions = _options;
       postcssProcessor = implementation(plugins);
-      farmConfig = config;
       return config;
     },
 
@@ -55,20 +53,14 @@ export default function farmPostcssPlugin(
       },
       async executor(param, context) {
         try {
-          const sourcemap =
-            postcssOptions.map ??
-            Boolean(
-              farmConfig?.sourcemap === true
-                ? !param.resolvedPath.includes('node_modules/')
-                : farmConfig?.sourcemap
-            );
+          const sourceMapEnabled = context.sourceMapEnabled(param.moduleId);
 
           const { css, map, messages } = await postcssProcessor.process(
             param.content,
             {
               ...postcssOptions,
               from: param.resolvedPath,
-              map: sourcemap
+              map: sourceMapEnabled
             }
           );
           // record CSS dependencies from @imports

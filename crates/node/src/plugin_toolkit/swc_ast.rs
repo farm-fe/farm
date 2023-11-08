@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use farmfe_core::{
   error::Result,
-  swc_common::SourceMap,
+  swc_common::{SourceFile, SourceMap},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::Syntax,
 };
@@ -14,7 +14,19 @@ pub fn farm_swc_parse_module(
   content: &str,
   syntax: Syntax,
   target: EsVersion,
-  cm: Arc<SourceMap>,
 ) -> Result<SwcModule> {
-  parse_module(id, content, syntax, target, cm)
+  parse_module(id, content, syntax, target)
+}
+
+#[no_mangle]
+pub fn farm_create_swc_source_map(
+  id: &str,
+  content: Arc<String>,
+) -> Result<(Arc<SourceMap>, Arc<SourceFile>)> {
+  let (cm, source_file) =
+    farmfe_toolkit::common::create_swc_source_map(farmfe_toolkit::common::Source {
+      path: std::path::PathBuf::from(id),
+      content,
+    });
+  Ok((cm, source_file))
 }
