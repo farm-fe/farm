@@ -14,7 +14,6 @@ export default {
       path: 'dist',
       targetEnv: 'node',
       format: 'cjs'
-      // entryFilename: '[entryName].mjs'
     },
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
@@ -22,20 +21,24 @@ export default {
     ],
     minify: false,
     presetEnv: false,
-    sourcemap: false,
-    lazyCompilation: false,
-    partialBundling: {
-      moduleBuckets: [
-        {
-          name: 'common',
-          test: [],
-          minSize: 1024,
-          maxConcurrentRequests: 5
-        }
-      ]
-    }
+    sourcemap: false
   },
   server: {
     hmr: false
-  }
+  },
+  plugins: [
+    // If you comment, you will use the default partial bundling
+    [
+      '@farmfe/plugin-webpack-partial-bundling'
+      // {
+      //   moduleBucket: [
+      //     {
+      //       name: 'common',
+      //       test: [],
+      //       // minSize: 1024
+      //     }
+      //   ]
+      // }
+    ]
+  ]
 };

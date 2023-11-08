@@ -10,5 +10,7 @@
     "build": "farm build",
     "postinstall": "node bootstrap.js"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@farmfe/plugin-webpack-partial-bundling": "workspace:*"
+  }
 }

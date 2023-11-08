@@ -210,16 +210,12 @@ export interface Config {
       groups?: {
         name: string;
         test: string[];
-        groupType?: 'mutable' | 'immutable',
-        resourceType?: 'all' | 'initial' | 'async'
+        groupType?: 'mutable' | 'immutable';
+        resourceType?: 'all' | 'initial' | 'async';
       }[];
       enforceResources?: {
         name: string;
         test: string[];
-        reuseExistingResourcePot?: boolean,
-        maxConcurrentRequests?: number;
-        minSize?: number;
-        weight?: number;
       }[];
       enforceTargetConcurrentRequests?: boolean;
       enforceTargetMinSize?: boolean;

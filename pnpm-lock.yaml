@@ -390,6 +390,10 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+    devDependencies:
+      '@farmfe/plugin-webpack-partial-bundling':
+        specifier: workspace:*
+        version: link:../../rust-plugins/partial-bundling
 
   examples/postcss:
     dependencies:
