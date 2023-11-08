@@ -260,7 +260,7 @@ impl Plugin for FarmPluginRuntime {
 
     let module_graph = context.module_graph.write();
 
-    let (entry, runtimes) =
+    let (entry, runtime) =
       resource_pots
         .iter()
         .fold((None, vec![]), |(mut entry, mut runtime_pots), item| {
@@ -274,9 +274,9 @@ impl Plugin for FarmPluginRuntime {
           return (entry, runtime_pots);
         });
 
-    if !runtimes.is_empty() {
+    if !runtime.is_empty() {
       let rendered_resource_pot_ast =
-        resource_pot_to_runtime_object_lit(runtimes, &module_graph, context)?;
+        resource_pot_to_runtime_object_lit(runtime, &module_graph, context)?;
 
       #[cfg(not(windows))]
       let minimal_runtime = include_str!("./js-runtime/minimal-runtime.js");
