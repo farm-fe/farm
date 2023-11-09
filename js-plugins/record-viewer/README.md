@@ -6,7 +6,7 @@
 
 ---
 
-# Reocrd Viewer Plugin for Farm
+# Record Viewer Plugin for Farm
 
 ## Getting Started
 
