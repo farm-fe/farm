@@ -13,19 +13,19 @@
 To begin, you'll need to install `@farmfe/js-plugin-record-viewer`:
 
 ```console
-npm install postcss @farmfe/js-plugin-record-viewer --save-dev
+npm install @farmfe/js-plugin-record-viewer --save-dev
 ```
 
 or
 
 ```console
-yarn add -D postcss @farmfe/js-plugin-record-viewer
+yarn add -D @farmfe/js-plugin-record-viewer
 ```
 
 or
 
 ```console
-pnpm add -D postcss @farmfe/js-plugin-record-viewer
+pnpm add -D @farmfe/js-plugin-record-viewer
 ```
 
 Configuring the plugin in `farm.config.ts`:
