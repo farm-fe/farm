@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.13.22
+
+### Patch Changes
+
+- 45761df: fix css resource pot load sourcemap
+
 ## 0.13.21
 
 ### Patch Changes
