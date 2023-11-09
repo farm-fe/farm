@@ -37,7 +37,6 @@ watch(
   () => {
     current.value = 0
     getTransformRecordsById(props.moduleId).then((res) => {
-      console.log("res", res);
       records.value = res;
     });
   }

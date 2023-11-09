@@ -6,7 +6,13 @@
       :class="{ 'text-purple-600': props.moduleId === item.id }"
       @click="handleClick(item)"
     >
-      <div>{{ item.id }}</div>
+      <div class="text-lg">{{ item.id }}</div>
+      <!-- <div class="flex mt-2 text-gray-600">
+        resource pot:
+        <span class="w-fit-content ml-2 border text-purple-500 border-purple-500 px-2 rounded-md">
+          {{ item.resourcePot || 'None' }}
+        </span>
+      </div> -->
       <div class="text-sm font-normal text-gray-400">{{ item.moduleType }}</div>
     </div>
   </div>
@@ -32,9 +38,8 @@ function handleClick(item: Module) {
 }
 
 getModules().then((res) => {
-  console.log('modules:', res);
-  
+  console.log("modules:", res);
+
   moduleList.value = res;
 });
 </script>
-
