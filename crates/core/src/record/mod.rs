@@ -69,22 +69,28 @@ impl RecordManager {
     }
   }
 
-  pub fn add_parse_record(&self, id: String, record: ModuleRecord) {
+  pub fn add_parse_record(&self, id: String, mut record: ModuleRecord) {
     let mut process_map = self.process_map.write().unwrap();
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if process_map.get(&id).is_none() {
       process_map.insert(id, vec![record]);
     }
   }
 
-  pub fn add_process_record(&self, id: String, record: ModuleRecord) {
+  pub fn add_process_record(&self, id: String, mut record: ModuleRecord) {
     let mut process_map = self.process_map.write().unwrap();
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if let Some(records) = process_map.get_mut(&id) {
       records.push(record);
     }
   }
 
-  pub fn add_analyze_deps_record(&self, id: String, record: AnalyzeDepsRecord) {
+  pub fn add_analyze_deps_record(&self, id: String, mut record: AnalyzeDepsRecord) {
     let mut analyze_deps_map = self.analyze_deps_map.write().unwrap();
+    let trigger = self.trigger.read().unwrap().to_owned();
+    record.trigger = trigger;
     if let Some(records) = analyze_deps_map.get_mut(&id) {
       records.push(record);
     } else {
@@ -171,12 +177,18 @@ pub struct TransformRecord {
 
 #[derive(Debug, Clone)]
 pub struct ModuleRecord {
-  pub name: String,
+  pub plugin: String,
+  pub hook: String,
+  pub module_type: ModuleType,
+  pub trigger: Trigger,
 }
 
 #[derive(Debug, Clone)]
 pub struct AnalyzeDepsRecord {
-  pub name: String,
+  pub plugin: String,
+  pub hook: String,
+  pub module_type: ModuleType,
+  pub trigger: Trigger,
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
