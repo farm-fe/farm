@@ -1471,6 +1471,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_webpack_partial_bundling"
+version = "0.0.0"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+]
+
+[[package]]
 name = "farmfe_swc_transformer_import_glob"
 version = "0.0.1"
 dependencies = [
@@ -1498,6 +1508,7 @@ dependencies = [
  "farmfe_utils",
  "lazy_static",
  "preset_env_base",
+ "rand",
  "sha2",
  "sourcemap",
  "swc_atoms",

@@ -1,7 +1,6 @@
 use farmfe_core::{
   hashbrown::HashSet,
   module::{Module, ModuleId, ModuleType},
-  resource::resource_pot::ResourcePotId,
 };
 
 /// A ModuleBucket is a collection of modules whose module_groups field is equal.

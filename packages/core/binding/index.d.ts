@@ -210,8 +210,8 @@ export interface Config {
       groups?: {
         name: string;
         test: string[];
-        groupType?: 'mutable' | 'immutable',
-        resourceType?: 'all' | 'initial' | 'async'
+        groupType?: 'mutable' | 'immutable';
+        resourceType?: 'all' | 'initial' | 'async';
       }[];
       enforceResources?: {
         name: string;

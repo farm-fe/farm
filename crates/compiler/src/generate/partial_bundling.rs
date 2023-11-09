@@ -25,7 +25,6 @@ pub fn partial_bundling(
   let mut context_module_group_graph = context.module_group_graph.write();
   context_module_group_graph.replace(module_group_graph);
   drop(context_module_group_graph);
-
   let resource_pot_map = generate_resource_pot_map(context, hook_context)?;
   // insert the resource pot graph into the context
   let mut g = context.resource_pot_map.write();
@@ -111,28 +110,29 @@ pub fn fill_necessary_fields_for_resource_pot(
   let mut module_group_graph = context.module_group_graph.write();
 
   for resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
-    let mut entry_module = None;
+    if resource_pot.module_groups.is_empty() {
+      let mut module_groups = HashSet::new();
+      let mut entry_module = None;
+      for module_id in resource_pot.modules() {
+        let module = module_graph.module_mut(module_id).unwrap();
+        module.resource_pot.push(resource_pot.id.clone());
+        module_groups.extend(module.module_groups.clone());
 
-    for module_id in resource_pot.modules() {
-      let module = module_graph.module_mut(module_id).unwrap();
-      module.resource_pot = Some(resource_pot.id.clone());
-      module_groups.extend(module.module_groups.clone());
-
-      if module_graph.entries.contains_key(module_id) {
-        if entry_module.is_some() {
-          panic!("a resource pot can only have one entry module");
+        if module_graph.entries.contains_key(module_id) {
+          if entry_module.is_some() {
+            panic!("a resource pot can only have one entry module");
+          }
+          entry_module = Some(module_id.clone());
         }
-        entry_module = Some(module_id.clone());
       }
+
+      resource_pot.entry_module = entry_module;
+      resource_pot.module_groups = module_groups;
     }
 
-    resource_pot.entry_module = entry_module;
-    resource_pot.module_groups = module_groups.clone();
-
-    for module_group_id in module_groups {
+    for module_group_id in &resource_pot.module_groups {
       let module_group = module_group_graph
-        .module_group_mut(&module_group_id)
+        .module_group_mut(module_group_id)
         .unwrap();
       module_group.add_resource_pot(resource_pot.id.clone());
     }

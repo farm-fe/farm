@@ -294,6 +294,24 @@ impl ModuleGraph {
     self.g.edge_count()
   }
 
+  pub fn module_importer(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+    let to = self
+      .id_index_map
+      .get(module_id)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+    let mut walk = self
+      .g
+      .neighbors_directed(*to, EdgeDirection::Incoming)
+      .detach();
+    let mut res = Vec::new();
+
+    while let Some((_edge, node)) = walk.next(&self.g) {
+      res.push(self.g[node].id.clone());
+    }
+
+    res
+  }
+
   /// get dependencies of the specific module, sorted by the order of the edge.
   /// for example, for `module a`:
   /// ```js

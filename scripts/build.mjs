@@ -3,10 +3,11 @@ import { createSpinner } from 'nanospinner';
 import { resolve, join } from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
+import path from 'node:path';
 
 import { logger } from './logger.mjs';
 
-const DEFAULT_PACKAGE_MANAGER = 'pnpm';
+export const DEFAULT_PACKAGE_MANAGER = 'pnpm';
 const DEFAULT_HOMEBREW_PACKAGE_MANAGER = 'brew';
 const DEFAULT_LINUX_PACKAGE_MANAGER = 'apt';
 const CWD = process.cwd();
@@ -68,6 +69,22 @@ export const buildDts = () =>
     cwd: PKG_DTS
   });
 
+export const buildExamples = async () => {
+  const examples = fs.readdirSync('./examples');
+  console.log('Building', examples.length, 'examples...');
+
+  for (const example of examples) {
+    const examplePath = path.join('./examples', example);
+    console.log('Building', examplePath);
+
+    if (fs.statSync(examplePath).isDirectory()) {
+      await execa('npm', ['run', 'build'], {
+        cwd: examplePath
+      });
+    }
+  }
+};
+
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
@@ -76,9 +93,13 @@ export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
 // build chain
 export const buildJsPlugins = async () => {
-  await execa(DEFAULT_PACKAGE_MANAGER, ['--filter', './js-plugins/**', 'build'], {
-    cwd: CWD,
-  });
+  await execa(
+    DEFAULT_PACKAGE_MANAGER,
+    ['--filter', './js-plugins/**', 'build'],
+    {
+      cwd: CWD
+    }
+  );
 
   // // First, build Dts
   // await buildDts();

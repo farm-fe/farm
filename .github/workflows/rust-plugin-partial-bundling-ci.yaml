@@ -1,0 +1,50 @@
+name: Plugin Partial Bundling CI
+on:
+  pull_request:
+    paths:
+      - 'rust-plugins/**'
+
+jobs:
+  call-rust-plugin-webpack-partial-bundling-build:
+    uses: ./.github/workflows/rust-plugin-build.yaml
+    with:
+      root: rust-plugins/partial-bundling
+      name: plugin-webpack-partial-bundling
+
+  check-plugin-artifacts:
+    name: Check Plugin Artifacts
+    runs-on: ubuntu-latest
+    needs: call-rust-plugin-webpack-partial-bundling-build
+    steps:
+      # download rust plugin partial-bundling artifacts
+      - uses: actions/download-artifact@v3
+        id: download-plugin-webpack-partial-bundling-linux-x64-gnu
+        with:
+          name: ${{ github.sha }}-linux-x64-gnu-plugin-webpack-partial-bundling
+          path: ./rust-plugins/partial-bundling/npm/linux-x64-gnu
+      - name: List Files
+        run: ls -l ./rust-plugins/partial-bundling/npm/linux-x64-gnu/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-x64
+        with:
+          name: ${{ github.sha }}-darwin-x64-plugin-webpack-partial-bundling
+          path: ./rust-plugins/partial-bundling/npm/darwin-x64
+      - name: List Files
+        run: ls -l ./rust-plugins/partial-bundling/npm/darwin-x64/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-win32-x64-msvc
+        with:
+          name: ${{ github.sha }}-win32-x64-msvc-plugin-webpack-partial-bundling
+          path: ./rust-plugins/partial-bundling/npm/win32-x64-msvc
+      - name: List Files
+        run: ls -l ./rust-plugins/partial-bundling/npm/win32-x64-msvc/index.farm
+
+      - uses: actions/download-artifact@v3
+        id: download-darwin-arm64
+        with:
+          name: ${{ github.sha }}-darwin-arm64-plugin-webpack-partial-bundling
+          path: ./rust-plugins/partial-bundling/npm/darwin-arm64
+      - name: List Files
+        run: ls -l ./rust-plugins/partial-bundling/npm/darwin-arm64/index.farm

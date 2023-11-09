@@ -115,7 +115,9 @@
     "wasix",
     "wechat",
     "Brooooooklyn",
-    "lukastaegert"
+    "lukastaegert",
+    "prefixfree",
+    "clippy"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
