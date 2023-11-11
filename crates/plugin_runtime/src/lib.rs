@@ -152,6 +152,7 @@ impl Plugin for FarmPluginRuntime {
         content: insert_runtime_plugins(param.content.clone(), context),
         module_type: Some(param.module_type.clone()),
         source_map: None,
+        ignore_previous_source_map: false,
       }));
     }
 
@@ -340,9 +341,13 @@ impl Plugin for FarmPluginRuntime {
         rendered_modules,
         rendered_content: Arc::new(bundle.to_string()),
         rendered_map_chain: if context.config.sourcemap.enabled(resource_pot.immutable) {
+          let root = context.config.root.clone();
           let map = bundle
             .generate_map(SourceMapOptions {
               include_content: Some(true),
+              remap_source: Some(Box::new(move |src| {
+                format!("/{}", farmfe_utils::relative(&root, src))
+              })),
               ..Default::default()
             })
             .map_err(|_| CompilationError::GenerateSourceMapError {

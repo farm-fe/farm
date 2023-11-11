@@ -13,6 +13,7 @@ use farmfe_plugin_runtime::render_resource_pot::{
   resource_pot_to_runtime_object, RenderedJsResourcePot,
 };
 use farmfe_toolkit::hash::base64_encode;
+use farmfe_utils::relative;
 
 use crate::generate::render_resource_pots::{
   render_resource_pot_generate_resources, render_resource_pots_and_generate_resources,
@@ -73,20 +74,22 @@ pub fn render_and_generate_update_resource(
 
   let gen_resource_pot_code =
     |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
-      if resource_pot.modules().len() > 0 {
+      if !resource_pot.modules().is_empty() {
         let RenderedJsResourcePot {
           mut bundle,
           rendered_modules,
-        } = resource_pot_to_runtime_object(&resource_pot, &module_graph, context)?;
+        } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
         bundle.prepend("(");
         bundle.append(")", None);
 
         let mut rendered_map_chain = vec![];
 
         if context.config.sourcemap.enabled(resource_pot.immutable) {
+          let root = context.config.root.clone();
           let map = bundle
             .generate_map(SourceMapOptions {
               include_content: Some(true),
+              remap_source: Some(Box::new(move |src| format!("/{}", relative(&root, src)))),
               ..Default::default()
             })
             .map_err(|_| CompilationError::GenerateSourceMapError {

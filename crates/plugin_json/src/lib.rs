@@ -63,6 +63,7 @@ impl Plugin for FarmPluginJson {
         content: js,
         module_type: Some(ModuleType::Js),
         source_map: None,
+        ignore_previous_source_map: false,
       }))
     } else {
       Ok(None)

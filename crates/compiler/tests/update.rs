@@ -8,7 +8,6 @@ use farmfe_compiler::Compiler;
 use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
 use farmfe_core::plugin::UpdateType;
-use farmfe_core::regex::Regex;
 use farmfe_testing_helpers::fixture;
 
 mod common;
@@ -46,6 +45,36 @@ fn create_update_compiler(
   compiler
 }
 
+fn asset_update_result_code(
+  cwd: PathBuf,
+  result: &farmfe_core::plugin::UpdateResult,
+  name: Option<&str>,
+) {
+  let mutable_code = &result.mutable_resources;
+  let immutable_code = &result.immutable_resources;
+
+  let output = cwd.join(name.unwrap_or("").to_string() + ".output.js");
+  let code = format!("{}\n{}", mutable_code, immutable_code);
+  if !output.exists() {
+    std::fs::write(output, code).unwrap();
+  } else {
+    if std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() {
+      std::fs::write(output, code).unwrap();
+    } else {
+      let expected_code = std::fs::read_to_string(output).unwrap();
+      // assert lines are the same
+      let expected_lines = expected_code.trim().lines().collect::<Vec<&str>>();
+      let result_lines = code.trim().lines().collect::<Vec<&str>>();
+
+      for (expected, result) in expected_lines.iter().zip(result_lines.iter()) {
+        assert_eq!(expected.trim(), result.trim()); // ignore whitespace
+      }
+
+      assert_eq!(expected_lines.len(), result_lines.len());
+    }
+  }
+}
+
 #[test]
 fn update_without_dependencies_change() {
   fixture!(
@@ -54,7 +83,7 @@ fn update_without_dependencies_change() {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_update_compiler(
         HashMap::from([("index".to_string(), "./index.html".to_string())]),
-        cwd,
+        cwd.clone(),
         crate_path,
         false,
       );
@@ -75,7 +104,7 @@ fn update_without_dependencies_change() {
       assert_eq!(result.updated_module_ids, vec!["index.ts".into()]);
       assert_eq!(result.removed_module_ids.len(), 0);
 
-      assert_eq!(result.resources, "{\n    \"index.ts\": function(module, exports, farmRequire, farmDynamicRequire) {\n        \"use strict\";\n        Object.defineProperty(exports, \"__esModule\", {\n            value: true\n        });\n        farmRequire(\"index.css\");\n        console.log(\"Hello, world!\");\n    }\n};\n");
+      asset_update_result_code(cwd, &result, Some("update0"));
     }
   );
 }
@@ -88,7 +117,7 @@ fn update_without_dependencies_change_css() {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_update_compiler(
         HashMap::from([("index".to_string(), "./index.html".to_string())]),
-        cwd,
+        cwd.clone(),
         crate_path,
         false,
       );
@@ -113,7 +142,7 @@ fn update_without_dependencies_change_css() {
       assert_eq!(result.updated_module_ids, vec!["index.css".into()]);
       assert_eq!(result.removed_module_ids.len(), 0);
 
-      assert_eq!(result.resources, "{\n    \"index.css\": function(module, exports, farmRequire, farmDynamicRequire) {\n        \"use strict\";\n        const cssCode = `body {\n  color: red;\n}`;\n        const farmId = \"index.css\";\n        const previousStyle = document.querySelector(`style[data-farm-id=\"${farmId}\"]`);\n        const style = document.createElement(\"style\");\n        style.setAttribute(\"data-farm-id\", farmId);\n        style.innerHTML = cssCode;\n        if (previousStyle) {\n            previousStyle.replaceWith(style);\n        } else {\n            document.head.appendChild(style);\n        }\n        module.meta.hot.accept();\n        module.onDispose(()=>{\n            style.remove();\n        });\n    }\n};\n");
+      asset_update_result_code(cwd.clone(), &result, Some("update1"));
 
       let result = compiler
         .update(vec![(update_file, UpdateType::Updated)], || {}, false)
@@ -123,7 +152,7 @@ fn update_without_dependencies_change_css() {
       assert_eq!(result.updated_module_ids, vec!["index.css".into()]);
       assert_eq!(result.removed_module_ids.len(), 0);
 
-      assert_eq!(result.resources, "{\n    \"index.css\": function(module, exports, farmRequire, farmDynamicRequire) {\n        \"use strict\";\n        const cssCode = `body {\n  color: red;\n}`;\n        const farmId = \"index.css\";\n        const previousStyle = document.querySelector(`style[data-farm-id=\"${farmId}\"]`);\n        const style = document.createElement(\"style\");\n        style.setAttribute(\"data-farm-id\", farmId);\n        style.innerHTML = cssCode;\n        if (previousStyle) {\n            previousStyle.replaceWith(style);\n        } else {\n            document.head.appendChild(style);\n        }\n        module.meta.hot.accept();\n        module.onDispose(()=>{\n            style.remove();\n        });\n    }\n};\n");
+      asset_update_result_code(cwd, &result, Some("update2"));
     }
   );
 }
@@ -181,13 +210,7 @@ fn update_with_dependencies_change_css_modules() {
       assert_eq!(result.updated_module_ids, vec!["index.ts".into()]);
       assert_eq!(result.removed_module_ids.len(), 0);
 
-      let result_lines = result.resources.split("\n").into_iter().collect::<Vec<_>>();
-      let expect_lines = "{\n    \"index.module.css\": function(module, exports, farmRequire, farmDynamicRequire) {\n        \"use strict\";\n        Object.defineProperty(exports, \"__esModule\", {\n            value: true\n        });\n        Object.defineProperty(exports, \"default\", {\n            enumerable: true,\n            get: function() {\n                return _default;\n            }\n        });\n        farmRequire(\"index.module.css.FARM_CSS_MODULES?f1d5b6cc\");\n        var _default = {\n            \"className\": `className-47c35c9b`\n        };\n    },\n    \"index.module.css.FARM_CSS_MODULES?f1d5b6cc\": function(module, exports, farmRequire, farmDynamicRequire) {\n        \"use strict\";\n        const cssCode = `.className-47c35c9b {\n  color: red;\n}`;\n        const farmId = \"index.module.css.FARM_CSS_MODULES?f1d5b6cc\";\n        const previousStyle = document.querySelector(`style[data-farm-id=\"${farmId}\"]`);\n        const style = document.createElement(\"style\");\n        style.setAttribute(\"data-farm-id\", farmId);\n        style.innerHTML = cssCode;\n        if (previousStyle) {\n            previousStyle.replaceWith(style);\n        } else {\n            document.head.appendChild(style);\n        }\n        module.meta.hot.accept();\n        module.onDispose(()=>{\n            style.remove();\n        });\n    },\n    \"index.ts\": function(module, exports, farmRequire, farmDynamicRequire) {\n        \"use strict\";\n        Object.defineProperty(exports, \"__esModule\", {\n            value: true\n        });\n        var _interop_require_default = farmRequire(\"@swc/helpers/_/_interop_require_default\");\n        farmRequire(\"index.css\");\n        var _indexmodulecss = _interop_require_default._(farmRequire(\"index.module.css\"));\n        console.log(_indexmodulecss.default);\n    }\n};\n".split("\n").into_iter().collect::<Vec<_>>();
-      assert_eq!(result_lines.len(), expect_lines.len());
-      for (i, line) in result_lines.into_iter().enumerate() {
-        let expect_line = expect_lines[i];
-        assert_eq!(line, expect_line);
-      }
+      asset_update_result_code(cwd.clone(), &result, Some("update1"));
 
       let update_file_css = cwd.join("index.module.css").to_string_lossy().to_string();
       // read original index.module.css
@@ -237,8 +260,7 @@ fn update_with_dependencies_change_css_modules() {
       assert!(result
         .removed_module_ids
         .contains(&"index.module.css.FARM_CSS_MODULES?b2914899".into()));
-
-      assert_eq!(result.resources, "{\n    \"index.ts\": function(module, exports, farmRequire, farmDynamicRequire) {\n        \"use strict\";\n        Object.defineProperty(exports, \"__esModule\", {\n            value: true\n        });\n        farmRequire(\"index.css\");\n        console.log(\"Hello, world!\");\n    }\n};\n");
+      asset_update_result_code(cwd, &result, Some("update2"));
     }
   );
 }

@@ -8,7 +8,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
-    collapse_sourcemap::collapse_sourcemap_chain,
+    collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
     magic_string::{MagicString, MagicStringOptions},
     types::SourceMapOptions,
   },
@@ -41,7 +41,7 @@ use farmfe_toolkit::{
   swc_css_prefixer,
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
-use farmfe_utils::parse_query;
+use farmfe_utils::{parse_query, relative};
 use source_replacer::SourceReplacer;
 
 const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
@@ -54,6 +54,7 @@ pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
   ast_map: Mutex<HashMap<String, Stylesheet>>,
   content_map: Mutex<HashMap<String, String>>,
+  sourcemap_map: Mutex<HashMap<String, String>>,
 }
 
 fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
@@ -159,7 +160,8 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: None,
+        source_map: self.sourcemap_map.lock().remove(param.resolved_path),
+        ignore_previous_source_map: false,
       }));
     }
 
@@ -266,10 +268,37 @@ impl Plugin for FarmPluginCss {
             .join(",")
         );
 
+        // collapse sourcemap chain
+        if param.source_map_chain.len() > 0 {
+          let source_map_chain = param
+            .source_map_chain
+            .iter()
+            .map(|s| SourceMap::from_slice(s.as_bytes()).expect("failed to parse sourcemap"))
+            .collect::<Vec<_>>();
+          let root = context.config.root.clone();
+          let collapsed_sourcemap = collapse_sourcemap_chain(
+            source_map_chain,
+            CollapseSourcemapOptions {
+              remap_source: Some(Box::new(move |src| format!("/{}", relative(&root, src)))),
+              ..Default::default()
+            },
+          );
+          let mut buf = vec![];
+          collapsed_sourcemap
+            .to_writer(&mut buf)
+            .expect("failed to write sourcemap");
+          let map = String::from_utf8(buf).unwrap();
+          self
+            .sourcemap_map
+            .lock()
+            .insert(css_modules_resolved_path, map);
+        }
+
         Ok(Some(PluginTransformHookResult {
           content: code,
           module_type: Some(ModuleType::Js),
           source_map: None,
+          ignore_previous_source_map: true,
         }))
       } else {
         Ok(None)
@@ -411,7 +440,7 @@ impl Plugin for FarmPluginCss {
             &css_stylesheet,
             if source_map_enabled {
               Some(Source {
-                path: PathBuf::from(&module.id.to_string()),
+                path: PathBuf::from(&module.id.resolved_path_with_query(&context.config.root)),
                 content: module.content.clone(),
               })
             } else {
@@ -441,13 +470,17 @@ impl Plugin for FarmPluginCss {
         if source_map_enabled {
           let module = module_graph.module(&rendered.id).unwrap();
           source_map_chain = module.source_map_chain.clone();
+
+          if let Some(map) = &rendered.rendered_map {
+            source_map_chain.push(map.clone());
+          }
         }
 
         let magic_module = MagicString::new(
           rendered.rendered_content.as_str(),
           Some(MagicStringOptions {
             source_map_chain,
-            filename: Some(rendered.id.to_string()),
+            filename: Some(rendered.id.resolved_path_with_query(&context.config.root)),
             ..Default::default()
           }),
         );
@@ -458,10 +491,12 @@ impl Plugin for FarmPluginCss {
 
       let rendered_content = Arc::new(bundle.to_string());
       let rendered_map = if source_map_enabled {
+        let root = context.config.root.clone();
         Some(
           bundle
             .generate_map(SourceMapOptions {
               include_content: Some(true),
+              remap_source: Some(Box::new(move |src| format!("/{}", relative(&root, src)))),
               ..Default::default()
             })
             .map_err(|e| {
@@ -560,6 +595,7 @@ impl FarmPluginCss {
         .unwrap_or_default(),
       ast_map: Mutex::new(Default::default()),
       content_map: Mutex::new(Default::default()),
+      sourcemap_map: Mutex::new(Default::default()),
     }
   }
 

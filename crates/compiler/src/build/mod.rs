@@ -242,6 +242,7 @@ impl Compiler {
       query: resolve_result.query.clone(),
       meta: resolve_result.meta.clone(),
       module_id: module.id.to_string(),
+      source_map_chain: vec![],
     };
 
     let transform_result = call_and_catch_error!(transform, transform_param, context);
@@ -284,11 +285,7 @@ impl Compiler {
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
-    module.source_map_chain = transform_result
-      .source_map_chain
-      .into_iter()
-      .map(|sourcemap| Arc::new(sourcemap))
-      .collect();
+    module.source_map_chain = transform_result.source_map_chain;
     module.meta = module_meta;
 
     // ================ Analyze Deps Start ===============

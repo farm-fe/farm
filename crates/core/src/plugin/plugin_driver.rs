@@ -209,24 +209,30 @@ impl PluginDriver {
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
+        if plugin_result.ignore_previous_source_map {
+          result.source_map_chain.clear();
+        }
+
         if self.record {
           let plugin_name = plugin.name().to_string();
-          let source_maps = plugin_result.source_map.clone();
+
           context.record_manager.add_transform_record(
             param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
             TransformRecord {
               plugin: plugin_name,
               hook: "transform".to_string(),
               content: param.content.clone(),
-              source_maps,
+              source_maps: plugin_result.source_map.clone(),
               module_type: param.module_type.clone(),
               trigger: Trigger::Compiler,
             },
           );
-        };
+        }
 
         if let Some(source_map) = plugin_result.source_map {
-          result.source_map_chain.push(source_map);
+          let sourcemap = Arc::new(source_map);
+          result.source_map_chain.push(sourcemap.clone());
+          param.source_map_chain.push(sourcemap);
         }
       }
     }
@@ -514,7 +520,7 @@ impl PluginDriver {
 #[derive(Debug)]
 pub struct PluginDriverTransformHookResult {
   pub content: String,
-  pub source_map_chain: Vec<String>,
+  pub source_map_chain: Vec<Arc<String>>,
   pub module_type: Option<ModuleType>,
 }
 

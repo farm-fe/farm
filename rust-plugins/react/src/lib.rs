@@ -117,6 +117,7 @@ impl Plugin for FarmPluginReact {
         content,
         module_type: None,
         source_map: None,
+        ignore_previous_source_map: false,
       }));
     }
 
@@ -149,7 +150,7 @@ impl Plugin for FarmPluginReact {
           top_level_mark,
           unresolved_mark,
           inject_helpers: true,
-          cm: cm.clone(),
+          cm,
           globals: &context.meta.script.globals,
           mode: context.config.mode.clone(),
           options: self.options.clone(),

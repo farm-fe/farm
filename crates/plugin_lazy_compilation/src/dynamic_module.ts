@@ -68,7 +68,10 @@ if (compilingModules.has(modulePath)) {
       promise = import(url).then((module: any) => {
         const result: RawLazyCompileResult = module.default;
         
-        FarmModuleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
+        if (result.dynamicResourcesMap) {
+          FarmModuleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
+        }
+       
         const mutableModules = eval(result.mutableModules);
         const immutableModules = eval(result.immutableModules);
         

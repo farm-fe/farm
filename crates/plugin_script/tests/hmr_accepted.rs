@@ -45,7 +45,7 @@ fn hmr_accepted() {
           resolved_path: id,
           query: vec![],
           module_type: loaded.module_type.clone(),
-          content: loaded.content,
+          content: Arc::new(loaded.content),
         },
         &context,
         &hook_context,

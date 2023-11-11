@@ -342,15 +342,7 @@ unsafe extern "C" fn source_map_enabled(env: napi_env, info: napi_callback_info)
     .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling get_modules_by_file");
 
-  let module_graph = ctx.module_graph.read();
-  let immutable = ctx
-    .config
-    .partial_bundling
-    .immutable_modules
-    .iter()
-    .any(|im| im.is_match(&id));
-
-  let enabled = ctx.config.sourcemap.enabled(immutable);
+  let enabled = ctx.sourcemap_enabled(&id);
 
   Env::from_raw(env).to_js_value(&enabled).unwrap().raw()
 }

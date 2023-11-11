@@ -107,6 +107,7 @@ impl Plugin for FarmPluginHtml {
           .replace(BASE_HTML_CHILDREN_PLACEHOLDER, &param.content),
         module_type: None,
         source_map: None,
+        ignore_previous_source_map: false,
       }));
     }
 

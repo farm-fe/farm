@@ -339,6 +339,8 @@ pub struct PluginTransformHookParam<'a> {
   pub query: Vec<(String, String)>,
   /// the meta data passed between plugins and hooks
   pub meta: HashMap<String, String>,
+  /// source map chain of previous plugins
+  pub source_map_chain: Vec<Arc<String>>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -350,6 +352,8 @@ pub struct PluginTransformHookResult {
   pub module_type: Option<ModuleType>,
   /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
   pub source_map: Option<String>,
+  /// if true, the previous source map chain will be ignored, and the source map chain will be reset to [source_map] returned by this plugin.
+  pub ignore_previous_source_map: bool,
 }
 
 #[derive(Debug)]

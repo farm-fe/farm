@@ -76,7 +76,7 @@ pub fn resource_pot_to_runtime_object(
 
       let mut cloned_module = module.meta.as_script().ast.clone();
       let (cm, _) = create_swc_source_map(Source {
-        path: PathBuf::from(m_id.to_string()),
+        path: PathBuf::from(m_id.resolved_path_with_query(&context.config.root)),
         content: module.content.clone(),
       });
       try_with(cm.clone(), &context.meta.script.globals, || {
@@ -171,6 +171,7 @@ pub fn resource_pot_to_runtime_object(
           })?;
         let map = Arc::new(String::from_utf8(buf).unwrap());
         rendered_module.rendered_map = Some(map.clone());
+
         source_map_chain = module.source_map_chain.clone();
         source_map_chain.push(map);
       }
@@ -178,7 +179,7 @@ pub fn resource_pot_to_runtime_object(
       let mut module = MagicString::new(
         &code,
         Some(MagicStringOptions {
-          filename: Some(m_id.to_string()),
+          filename: Some(m_id.resolved_path_with_query(&context.config.root)),
           source_map_chain,
           ..Default::default()
         }),

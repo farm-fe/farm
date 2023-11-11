@@ -76,6 +76,7 @@ export interface PluginTransformHookParam {
   resolvedPath: string;
   query: [string, string][];
   meta: Record<string, string> | null;
+  sourceMapChain: string[];
 }
 
 export interface PluginTransformHookResult {
@@ -85,6 +86,8 @@ export interface PluginTransformHookResult {
   moduleType?: ModuleType;
   /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
   sourceMap?: string | null;
+  // ignore previous source map. if true, the source map chain will be cleared. and this result should return a new source map that combines all previous source map.
+  ignorePreviousSourceMap?: boolean;
 }
 
 type BrowserTargetsRecord = Partial<

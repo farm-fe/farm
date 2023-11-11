@@ -37,9 +37,13 @@ impl FarmPluginSass {
     }
   }
 
-  pub fn get_sass_options(&self, resolve_path: String) -> (StringOptions, HashMap<String, String>) {
+  pub fn get_sass_options(
+    &self,
+    resolve_path: String,
+    sourcemap_enabled: bool,
+  ) -> (StringOptions, HashMap<String, String>) {
     let options = serde_json::from_str(&self.sass_options).unwrap_or_default();
-    get_options(options, resolve_path)
+    get_options(options, resolve_path, sourcemap_enabled)
   }
 }
 
@@ -143,8 +147,10 @@ impl Plugin for FarmPluginSass {
         )
       });
 
-      let (mut string_options, additional_options) =
-        self.get_sass_options(param.resolved_path.to_string());
+      let (mut string_options, additional_options) = self.get_sass_options(
+        param.resolved_path.to_string(),
+        context.sourcemap_enabled(&param.module_id.to_string()),
+      );
 
       let paths = Arc::new(RwLock::new(vec![]));
       let cloned_context = context.clone();
@@ -184,6 +190,7 @@ impl Plugin for FarmPluginSass {
         content: compile_result.css,
         source_map: compile_result.source_map,
         module_type: Some(farmfe_core::module::ModuleType::Css),
+        ignore_previous_source_map: false,
       }));
     }
     Ok(None)
@@ -268,14 +275,23 @@ fn get_exe_path(context: &Arc<CompilationContext>) -> PathBuf {
   default_path
 }
 
-fn get_options(options: Value, resolve_path: String) -> (StringOptions, HashMap<String, String>) {
+fn get_options(
+  options: Value,
+  resolve_path: String,
+  sourcemap_enabled: bool,
+) -> (StringOptions, HashMap<String, String>) {
   let mut builder = StringOptionsBuilder::new();
   builder = builder.url(Url::from_file_path(resolve_path).unwrap());
   if let Some(source_map) = options.get("sourceMap") {
-    builder = builder.source_map(source_map.as_bool().unwrap());
+    builder = builder.source_map(source_map.as_bool().unwrap_or(sourcemap_enabled));
+  } else {
+    builder = builder.source_map(sourcemap_enabled);
   }
   if let Some(source_map_include_sources) = options.get("sourceMapIncludeSources") {
-    builder = builder.source_map(source_map_include_sources.as_bool().unwrap());
+    builder =
+      builder.source_map_include_sources(source_map_include_sources.as_bool().unwrap_or(true));
+  } else {
+    builder = builder.source_map_include_sources(true);
   }
   if let Some(alert_ascii) = options.get("alertAscii") {
     builder = builder.alert_ascii(alert_ascii.as_bool().unwrap());
@@ -302,7 +318,7 @@ fn get_options(options: Value, resolve_path: String) -> (StringOptions, HashMap<
   }
 
   let mut additional_data = HashMap::new();
-
+  // TODO support sourcemap for additionalData
   if let Some(additional_date) = options.get("additionalData") {
     additional_data.insert(
       "additionalData".to_string(),

@@ -76,7 +76,7 @@ fn load_parse_and_analyze_deps() {
             resolved_path: id,
             query: vec![],
             module_type: loaded.module_type.clone(),
-            content: loaded.content,
+            content: Arc::new(loaded.content),
           },
           &context,
           &hook_context,

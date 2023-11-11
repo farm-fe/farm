@@ -83,6 +83,19 @@ impl CompilationContext {
       },
     );
   }
+
+  pub fn sourcemap_enabled(&self, id: &str) -> bool {
+    let immutable = self
+      .config
+      .partial_bundling
+      .immutable_modules
+      .iter()
+      .any(|im| im.is_match(&id));
+
+    let enabled = self.config.sourcemap.enabled(immutable);
+
+    enabled
+  }
 }
 
 impl Default for CompilationContext {

@@ -55,10 +55,20 @@ pub fn stringify_query(query: &Vec<(String, String)>) -> String {
   format!("?{}", qs.join("&"))
 }
 
+pub fn file_url_to_path(url: &str) -> String {
+  let url = url.replace("file://", "");
+
+  if cfg!(windows) {
+    url.replace("/", "\\")
+  } else {
+    url
+  }
+}
+
 // get platform independent relative path
 pub fn relative(from: &str, to: &str) -> String {
-  let rp =
-    diff_paths(to, from).unwrap_or_else(|| panic!("{} or {} is not absolute path", from, to));
+  let rp = diff_paths(file_url_to_path(to), file_url_to_path(from))
+    .unwrap_or_else(|| panic!("{} or {} is not absolute path", from, to));
 
   // make sure the relative path is platform independent
   // this can ensure that the relative path and hash stable across platforms
