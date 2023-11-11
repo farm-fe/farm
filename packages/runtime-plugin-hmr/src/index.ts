@@ -3,7 +3,7 @@
  */
 import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
 import { applyHotUpdates, createHotContext } from './hot-module-state';
-import { HmrUpdateResult, RawHmrUpdateResult } from './types';
+import { RawHmrUpdateResult } from './types';
 declare const FARM_HMR_PORT: string | undefined;
 declare const FARM_HMR_HOST: string | undefined;
 declare const FARM_HMR_PATH: string | undefined;

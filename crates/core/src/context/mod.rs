@@ -90,11 +90,9 @@ impl CompilationContext {
       .partial_bundling
       .immutable_modules
       .iter()
-      .any(|im| im.is_match(&id));
+      .any(|im| im.is_match(id));
 
-    let enabled = self.config.sourcemap.enabled(immutable);
-
-    enabled
+    self.config.sourcemap.enabled(immutable)
   }
 }
 

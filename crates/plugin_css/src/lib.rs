@@ -212,14 +212,13 @@ impl Plugin for FarmPluginCss {
           },
         );
 
-        self
-          .ast_map
-          .lock()
-          .insert(css_modules_resolved_path.clone(), css_stylesheet);
+        // we can not use css_modules_resolved_path here because of the compatibility of windows. eg: \\ vs \\\\
+        let cache_id = format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX);
+        self.ast_map.lock().insert(cache_id.clone(), css_stylesheet);
         self
           .content_map
           .lock()
-          .insert(css_modules_resolved_path.clone(), param.content.clone());
+          .insert(cache_id, param.content.clone());
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::new();
