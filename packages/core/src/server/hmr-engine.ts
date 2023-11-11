@@ -104,11 +104,8 @@ export class HmrEngine {
       removed: [${result.removed
         .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
         .join(', ')}],
-      modules: ${
-        result.modules.trim().endsWith(';')
-          ? result.modules.trim().slice(0, -1)
-          : result.modules.trim()
-      },
+      immutableModules: ${JSON.stringify(result.immutableModules.trim())},
+      mutableModules: ${JSON.stringify(result.mutableModules.trim())},
       boundaries: ${JSON.stringify(result.boundaries)},
       dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
   config::Config,
@@ -11,10 +13,9 @@ use farmfe_core::{
   },
   relative_path::RelativePath,
   resource::{
-    resource_pot::{HtmlResourcePotMetaData, ResourcePot, ResourcePotMetaData, ResourcePotType},
+    resource_pot::{RenderedModule, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_html_ast::Document,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -106,6 +107,7 @@ impl Plugin for FarmPluginHtml {
           .replace(BASE_HTML_CHILDREN_PLACEHOLDER, &param.content),
         module_type: None,
         source_map: None,
+        ignore_previous_source_map: false,
       }));
     }
 
@@ -121,11 +123,8 @@ impl Plugin for FarmPluginHtml {
     if matches!(param.module_type, ModuleType::Html) {
       // Ignore query string when parsing html. HTML should not be affected by query string.
       let module_id = ModuleId::new(&param.resolved_path, "", &context.config.root);
-      let html_document = parse_html_document(
-        module_id.to_string().as_str(),
-        &param.content,
-        context.meta.html.cm.clone(),
-      )?;
+      let html_document =
+        parse_html_document(module_id.to_string().as_str(), param.content.clone())?;
 
       let meta = ModuleMetaData::Html(HtmlModuleMetaData { ast: html_document });
 
@@ -152,11 +151,12 @@ impl Plugin for FarmPluginHtml {
     }
   }
 
-  fn render_resource_pot(
+  fn render_resource_pot_modules(
     &self,
-    resource_pot: &mut ResourcePot,
+    resource_pot: &ResourcePot,
     context: &std::sync::Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
+    _hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
       let modules = resource_pot.modules();
 
@@ -171,15 +171,25 @@ impl Plugin for FarmPluginHtml {
       let html_module = module_graph.module(modules[0]).unwrap();
       let html_module_document = &html_module.meta.as_html().ast;
 
-      resource_pot.meta = ResourcePotMetaData::Html(HtmlResourcePotMetaData {
-        ast: Document {
-          span: html_module_document.span,
-          mode: html_module_document.mode,
-          children: html_module_document.children.to_vec(),
-        },
-      });
+      let code = Arc::new(codegen_html_document(
+        html_module_document,
+        context.config.minify,
+      ));
 
-      Ok(Some(()))
+      Ok(Some(ResourcePotMetaData {
+        rendered_modules: std::collections::HashMap::from([(
+          modules[0].clone(),
+          RenderedModule {
+            id: modules[0].clone(),
+            rendered_content: code.clone(),
+            rendered_map: None,
+            rendered_length: html_module.size,
+            original_length: code.len(),
+          },
+        )]),
+        rendered_content: code,
+        rendered_map_chain: vec![],
+      }))
     } else {
       Ok(None)
     }
@@ -356,10 +366,11 @@ impl Plugin for FarmPluginHtml {
       let resource_pot = resource_pot_map
         .resource_pot_mut(html_resource.origin.as_resource_pot())
         .unwrap();
-      let html_ast = &mut resource_pot.meta.as_html_mut().ast;
-      resources_injector.inject(html_ast);
+      let mut html_ast =
+        parse_html_document(&resource_pot.id, resource_pot.meta.rendered_content.clone())?;
+      resources_injector.inject(&mut html_ast);
 
-      let code = codegen_html_document(html_ast, context.config.minify);
+      let code = codegen_html_document(&html_ast, context.config.minify);
       html_resource.bytes = code.bytes().collect();
     }
 

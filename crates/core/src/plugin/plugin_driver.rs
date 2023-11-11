@@ -5,10 +5,11 @@ use hashbrown::HashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
-  PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-  PluginParseHookParam, PluginProcessModuleHookParam, PluginResolveHookParam,
-  PluginResolveHookResult, PluginTransformHookParam, PluginUpdateModulesHookParams,
+  Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
+  PluginFinalizeModuleHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
+  PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+  PluginRenderResourcePotHookParam, PluginResolveHookParam, PluginResolveHookResult,
+  PluginTransformHookParam, PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
@@ -20,7 +21,10 @@ use crate::{
   record::{
     AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger,
   },
-  resource::{resource_pot::ResourcePot, Resource},
+  resource::{
+    resource_pot::{ResourcePot, ResourcePotMetaData},
+    Resource,
+  },
   stats::Stats,
 };
 
@@ -205,24 +209,30 @@ impl PluginDriver {
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
+        if plugin_result.ignore_previous_source_map {
+          result.source_map_chain.clear();
+        }
+
         if self.record {
           let plugin_name = plugin.name().to_string();
-          let source_maps = plugin_result.source_map.clone();
+
           context.record_manager.add_transform_record(
             param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
             TransformRecord {
               plugin: plugin_name,
               hook: "transform".to_string(),
               content: param.content.clone(),
-              source_maps,
+              source_maps: plugin_result.source_map.clone(),
               module_type: param.module_type.clone(),
               trigger: Trigger::Compiler,
             },
           );
-        };
+        }
 
         if let Some(source_map) = plugin_result.source_map {
-          result.source_map_chain.push(source_map);
+          let sourcemap = Arc::new(source_map);
+          result.source_map_chain.push(sourcemap.clone());
+          param.source_map_chain.push(sourcemap);
         }
       }
     }
@@ -377,21 +387,46 @@ impl PluginDriver {
     }
   );
 
-  hook_serial!(
-    render_resource_pot,
-    &mut ResourcePot,
-    |plugin_name: String, resource_pot: &mut ResourcePot, context: &Arc<CompilationContext>| {
-      context.record_manager.add_resource_pot_record(
-        resource_pot.id.to_string(),
-        ResourcePotRecord {
-          name: plugin_name,
-          hook: "render_resource_pot".to_string(),
-          modules: resource_pot.modules().into_iter().cloned().collect(),
-          resources: vec![],
-        },
-      );
-    }
+  hook_first!(
+    render_resource_pot_modules,
+    Result<Option<ResourcePotMetaData>>,
+    |_result: &Option<ResourcePotMetaData>,
+     _plugin_name: String,
+     _resource_pot: &ResourcePot,
+     _context: &Arc<CompilationContext>,
+     _hook_context: &PluginHookContext| {
+      // todo something
+    },
+    resource_pot: &ResourcePot,
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext
   );
+
+  pub fn render_resource_pot(
+    &self,
+    param: &mut PluginRenderResourcePotHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<PluginDriverRenderResourcePotHookResult> {
+    let mut result = PluginDriverRenderResourcePotHookResult {
+      content: Arc::new(String::new()),
+      source_map_chain: vec![],
+    };
+
+    for plugin in &self.plugins {
+      // if the transform hook returns None, treat it as empty hook and ignore it
+      if let Some(plugin_result) = plugin.render_resource_pot(param, context)? {
+        param.content = Arc::new(plugin_result.content);
+
+        if let Some(source_map) = plugin_result.source_map {
+          result.source_map_chain.push(Arc::new(source_map));
+        }
+      }
+    }
+
+    result.content = param.content.clone();
+
+    Ok(result)
+  }
 
   hook_serial!(
     optimize_resource_pot,
@@ -485,7 +520,7 @@ impl PluginDriver {
 #[derive(Debug)]
 pub struct PluginDriverTransformHookResult {
   pub content: String,
-  pub source_map_chain: Vec<String>,
+  pub source_map_chain: Vec<Arc<String>>,
   pub module_type: Option<ModuleType>,
 }
 

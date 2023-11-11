@@ -40,6 +40,7 @@ fn generate_transform_fn(
     resolved_path: &id,
     query: vec![],
     meta: HashMap::new(),
+    source_map_chain: vec![],
   };
 
   json_plugin.transform(&transform_param, &context)

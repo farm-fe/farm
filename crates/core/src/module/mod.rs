@@ -1,4 +1,4 @@
-use std::{any::Any, hash::Hash, path::Path};
+use std::{any::Any, hash::Hash, path::Path, sync::Arc};
 
 use blake2::{
   digest::{Update, VariableOutput},
@@ -43,7 +43,7 @@ pub struct Module {
   /// whether this module has side_effects
   pub side_effects: bool,
   /// the transformed source map chain of this module
-  pub source_map_chain: Vec<String>,
+  pub source_map_chain: Vec<Arc<String>>,
   /// whether this module marked as external
   pub external: bool,
   /// whether this module is immutable, for example, the module is immutable if it is from node_modules.
@@ -54,6 +54,8 @@ pub struct Module {
   pub execution_order: usize,
   /// Source size of this module
   pub size: usize,
+  /// Source content after load and transform
+  pub content: Arc<String>,
 }
 
 impl Module {
@@ -71,6 +73,7 @@ impl Module {
       // default to the last
       execution_order: usize::MAX,
       size: 0,
+      content: Arc::new("".to_string()),
     }
   }
 }

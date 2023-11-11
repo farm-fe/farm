@@ -146,6 +146,7 @@ impl Plugin for FarmPluginStaticAssets {
           content,
           module_type: Some(ModuleType::Js),
           source_map: None,
+          ignore_previous_source_map: false,
         }));
       } else if param.query.iter().any(|(k, _)| k == "raw") {
         let file_utf8 = read_file_utf8(param.resolved_path)?;
@@ -155,6 +156,7 @@ impl Plugin for FarmPluginStaticAssets {
           content,
           module_type: Some(ModuleType::Js),
           source_map: None,
+          ignore_previous_source_map: false,
         }));
       } else {
         let filename = Path::new(param.resolved_path)
@@ -213,6 +215,7 @@ impl Plugin for FarmPluginStaticAssets {
           content,
           module_type: Some(ModuleType::Js),
           source_map: None,
+          ignore_previous_source_map: false,
         }));
       }
     }

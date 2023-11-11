@@ -10,7 +10,12 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
     ModuleType,
   },
-  resource::{resource_pot::ResourcePot, Resource, ResourceType},
+  resource::{
+    resource_pot::{
+      RenderedModule, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
+    },
+    Resource, ResourceType,
+  },
   stats::Stats,
 };
 
@@ -140,13 +145,22 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  fn render_resource_pot_modules(
+    &self,
+    _resource_pot: &ResourcePot,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
+  ) -> Result<Option<ResourcePotMetaData>> {
+    Ok(None)
+  }
+
   /// Render the [ResourcePot] in [ResourcePotMap].
   /// May merge the module's ast in the same resource to a single ast and transform the output format to custom module system and ESM
   fn render_resource_pot(
     &self,
-    _resource_pot: &mut ResourcePot,
+    _resource_pot: &PluginRenderResourcePotHookParam,
     _context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
+  ) -> Result<Option<PluginRenderResourcePotHookResult>> {
     Ok(None)
   }
 
@@ -325,6 +339,8 @@ pub struct PluginTransformHookParam<'a> {
   pub query: Vec<(String, String)>,
   /// the meta data passed between plugins and hooks
   pub meta: HashMap<String, String>,
+  /// source map chain of previous plugins
+  pub source_map_chain: Vec<Arc<String>>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -336,6 +352,8 @@ pub struct PluginTransformHookResult {
   pub module_type: Option<ModuleType>,
   /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
   pub source_map: Option<String>,
+  /// if true, the previous source map chain will be ignored, and the source map chain will be reset to [source_map] returned by this plugin.
+  pub ignore_previous_source_map: bool,
 }
 
 #[derive(Debug)]
@@ -348,12 +366,13 @@ pub struct PluginParseHookParam {
   pub query: Vec<(String, String)>,
   pub module_type: ModuleType,
   /// source content(after transform)
-  pub content: String,
+  pub content: Arc<String>,
 }
 
 pub struct PluginProcessModuleHookParam<'a> {
   pub module_id: &'a ModuleId,
   pub module_type: &'a ModuleType,
+  pub content: Arc<String>,
   pub meta: &'a mut ModuleMetaData,
 }
 
@@ -389,7 +408,8 @@ pub struct UpdateResult {
   pub removed_module_ids: Vec<ModuleId>,
   /// Javascript module map string, the key is the module id, the value is the module function
   /// This code string should be returned to the client side as MIME type `application/javascript`
-  pub resources: String,
+  pub immutable_resources: String,
+  pub mutable_resources: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
   pub extra_watch_result: WatchDiffResult,
@@ -419,4 +439,80 @@ pub struct EmptyPluginHookResult {}
 pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,
   pub source_map: Option<Resource>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ResourcePotInfoOfPluginRenderResourcePotHookParam {
+  pub id: ResourcePotId,
+  pub resource_pot_type: ResourcePotType,
+  pub content: Arc<String>,
+  pub dynamic_imports: Vec<String>,
+  pub exports: Vec<String>,
+  pub facade_module_id: Option<String>,
+  pub file_name: String,
+  pub implicitly_loaded_before: Vec<String>,
+  pub imports: Vec<String>,
+  pub imported_bindings: HashMap<String, Vec<String>>,
+  pub is_dynamic_entry: bool,
+  pub is_entry: bool,
+  pub is_implicit_entry: bool,
+  pub map: Option<Arc<String>>,
+  pub modules: HashMap<ModuleId, RenderedModule>,
+  pub module_ids: Vec<ModuleId>,
+  pub name: String,
+  pub preliminary_file_name: String,
+  pub referenced_files: Vec<String>,
+  pub ty: String,
+}
+
+impl ResourcePotInfoOfPluginRenderResourcePotHookParam {
+  pub fn new(resource_pot: &ResourcePot, context: &Arc<CompilationContext>) -> Self {
+    let is_dynamic_entry = resource_pot
+      .modules()
+      .into_iter()
+      .any(|m| context.module_group_graph.read().has(m));
+    Self {
+      id: resource_pot.id.clone(),
+      resource_pot_type: resource_pot.resource_pot_type.clone(),
+      content: resource_pot.meta.rendered_content.clone(),
+      dynamic_imports: vec![], // TODO
+      exports: vec![],         // TODO
+      facade_module_id: None,  // TODO
+      file_name: if resource_pot.entry_module.is_some() {
+        context.config.output.entry_filename.clone()
+      } else {
+        context.config.output.filename.clone()
+      },
+      implicitly_loaded_before: vec![],  // TODO
+      imports: vec![],                   // TODO
+      imported_bindings: HashMap::new(), // TODO
+      is_dynamic_entry,
+      is_entry: resource_pot.entry_module.is_some(),
+      is_implicit_entry: false, // TODO
+      map: None,
+      modules: resource_pot.meta.rendered_modules.clone(),
+      module_ids: resource_pot.modules().into_iter().cloned().collect(),
+      name: resource_pot.name.clone(),
+      preliminary_file_name: "".to_string(), // TODO
+      referenced_files: vec![],              // TODO
+      ty: "chunk".to_string(),               // TODO
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PluginRenderResourcePotHookParam {
+  pub content: Arc<String>,
+  pub resource_pot_info: ResourcePotInfoOfPluginRenderResourcePotHookParam,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PluginRenderResourcePotHookResult {
+  pub content: String,
+  pub source_map: Option<String>,
+}
+
+pub struct PluginDriverRenderResourcePotHookResult {
+  pub content: Arc<String>,
+  pub source_map_chain: Vec<Arc<String>>,
 }

@@ -1,5 +1,5 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import { StringOptions } from 'sass';
+import type { StringOptions, CompileResult } from 'sass';
 import {
   getAdditionContext,
   pluginName,
@@ -75,49 +75,51 @@ export default function farmSassPlugin(
             ctx
           );
 
-          const { css, sourceMap } = await (
-            await implementation
-          ).compileStringAsync(`${additionContext}\n${param.content}`, {
-            ...(options?.sassOptions ?? {}),
-            sourceMap:
-              options.sassOptions?.sourceMap ?? Boolean(farmConfig?.sourcemap),
-            url: pathToFileURL(param.resolvedPath),
-            importers: [
-              {
-                async findFileUrl(url) {
-                  if (!isAbsolute(url)) {
-                    const relPath = path.join(
-                      path.dirname(param.resolvedPath),
-                      url
+          const sourceMapEnabled = ctx.sourceMapEnabled(param.moduleId);
+          const sassImpl = await implementation;
+          const { css, sourceMap } = (await sassImpl.compileStringAsync(
+            `${additionContext}\n${param.content}`,
+            {
+              ...(options?.sassOptions ?? {}),
+              sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
+              url: pathToFileURL(param.resolvedPath),
+              importers: [
+                {
+                  async findFileUrl(url) {
+                    if (!isAbsolute(url)) {
+                      const relPath = path.join(
+                        path.dirname(param.resolvedPath),
+                        url
+                      );
+
+                      if (existsSync(relPath)) {
+                        return pathToFileURL(relPath);
+                      }
+                    }
+                    const splits = param.moduleId.split('?');
+                    const result = await ctx.resolve(
+                      {
+                        source: url,
+                        importer: {
+                          relativePath: splits[0],
+                          queryString: splits[1] ?? ''
+                        },
+                        kind: 'cssAtImport'
+                      },
+                      {
+                        meta: {},
+                        caller: '@farmfe/js-plugin-sass'
+                      }
                     );
 
-                    if (existsSync(relPath)) {
-                      return pathToFileURL(relPath);
+                    if (result?.resolvedPath) {
+                      return pathToFileURL(result.resolvedPath);
                     }
-                  }
-                  const splits = param.moduleId.split('?');
-                  const result = await ctx.resolve(
-                    {
-                      source: url,
-                      importer: {
-                        relativePath: splits[0],
-                        queryString: splits[1] ?? ''
-                      },
-                      kind: 'cssAtImport'
-                    },
-                    {
-                      meta: {},
-                      caller: '@farmfe/js-plugin-sass'
-                    }
-                  );
-
-                  if (result?.resolvedPath) {
-                    return pathToFileURL(result.resolvedPath);
                   }
                 }
-              }
-            ]
-          } as StringOptions<'async'>);
+              ]
+            } as StringOptions<'async'>
+          )) as CompileResult;
 
           return {
             content: css,

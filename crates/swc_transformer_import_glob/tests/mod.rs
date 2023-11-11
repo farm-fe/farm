@@ -15,7 +15,6 @@ fn test_import_meta_glob() {
       &file_content,
       Syntax::Es(Default::default()),
       EsVersion::EsNext,
-      cm.clone(),
     )
     .unwrap();
     let dir = file.parent().unwrap().to_str().unwrap();

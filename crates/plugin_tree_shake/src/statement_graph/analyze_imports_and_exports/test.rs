@@ -1,11 +1,4 @@
-use std::sync::Arc;
-
-use farmfe_core::{
-  hashbrown::HashSet,
-  swc_common::{FilePathMapping, SourceMap},
-  swc_ecma_ast::ModuleItem,
-  swc_ecma_parser::Syntax,
-};
+use farmfe_core::{hashbrown::HashSet, swc_ecma_ast::ModuleItem, swc_ecma_parser::Syntax};
 use farmfe_toolkit::script::parse_module;
 
 use crate::statement_graph::{ExportSpecifierInfo, ImportSpecifierInfo};
@@ -18,7 +11,6 @@ fn parse_module_item(stmt: &str) -> ModuleItem {
     stmt,
     Syntax::Es(Default::default()),
     farmfe_core::swc_ecma_ast::EsVersion::Es2015,
-    Arc::new(SourceMap::new(FilePathMapping::empty())),
   )
   .unwrap();
   module.body[0].clone()

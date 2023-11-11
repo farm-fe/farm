@@ -20,10 +20,11 @@ pub use farmfe_macro_cache_item::cache_item;
 
 /// Version of this core crate, if the core data structures changed, and the changes will affect the memory layout,
 /// like adding or removing a field, this version should be bumped. So plugin loader can recognize compatibility of the dynamic library plugins and the core.
-pub const VERSION: &str = "0.1.0";
+pub const VERSION: &str = "0.2.0";
 
 // re-export common external crates
 pub use dashmap;
+pub use enhanced_magic_string;
 pub use glob;
 pub use hashbrown;
 pub use parking_lot;

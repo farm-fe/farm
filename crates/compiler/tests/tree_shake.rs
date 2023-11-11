@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   module::ModuleType,
@@ -7,6 +7,7 @@ use farmfe_core::{
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
+  common::{create_swc_source_map, Source},
   script::swc_try_with::try_with,
   swc_ecma_transforms::{
     helpers::inject_helpers,
@@ -86,34 +87,34 @@ fn tree_shake_changed_ast() {
         return Ok(None);
       }
 
-      try_with(
-        context.meta.script.cm.clone(),
-        &context.meta.script.globals,
-        || {
-          let top_level_mark = Mark::from_u32(param.meta.as_script_mut().top_level_mark);
-          let unresolved_mark = Mark::from_u32(param.meta.as_script_mut().unresolved_mark);
+      let (cm, _) = create_swc_source_map(Source {
+        path: PathBuf::from(&param.module_id.to_string()),
+        content: param.content.clone(),
+      });
+      try_with(cm.clone(), &context.meta.script.globals, || {
+        let top_level_mark = Mark::from_u32(param.meta.as_script_mut().top_level_mark);
+        let unresolved_mark = Mark::from_u32(param.meta.as_script_mut().unresolved_mark);
 
-          let ast = &mut param.meta.as_script_mut().ast;
-          ast.visit_mut_with(&mut strip_with_jsx(
-            context.meta.script.cm.clone(),
-            Default::default(),
-            None as Option<NoopComments>,
-            top_level_mark,
-          ));
-          ast.visit_mut_with(&mut react::<NoopComments>(
-            context.meta.script.cm.clone(),
-            None,
-            Options {
-              refresh: Some(Default::default()),
-              development: Some(true),
-              ..Default::default()
-            },
-            top_level_mark,
-            unresolved_mark,
-          ));
-          ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
-        },
-      )
+        let ast = &mut param.meta.as_script_mut().ast;
+        ast.visit_mut_with(&mut strip_with_jsx(
+          cm.clone(),
+          Default::default(),
+          None as Option<NoopComments>,
+          top_level_mark,
+        ));
+        ast.visit_mut_with(&mut react::<NoopComments>(
+          cm.clone(),
+          None,
+          Options {
+            refresh: Some(Default::default()),
+            development: Some(true),
+            ..Default::default()
+          },
+          top_level_mark,
+          unresolved_mark,
+        ));
+        ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+      })
       .unwrap();
 
       Ok(Some(()))

@@ -27,6 +27,7 @@ export interface CompilationContext {
   getWatchFiles(): string[];
   warn(message: string): void;
   error(message: string): void;
+  sourceMapEnabled(id: string): boolean;
 
   viteGetModulesByFile(file: string): {
     url: string;

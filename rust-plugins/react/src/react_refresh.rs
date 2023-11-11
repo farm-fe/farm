@@ -1,7 +1,4 @@
-use std::sync::Arc;
-
 use farmfe_core::{
-  swc_common::SourceMap,
   swc_ecma_ast::{Module as SwcModule, ModuleDecl, ModuleItem},
   swc_ecma_parser::Syntax,
 };
@@ -36,7 +33,6 @@ fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
       REFRESH_RUNTIME_IMPORT,
       Syntax::Es(Default::default()),
       Default::default(),
-      Arc::new(SourceMap::default()),
     )
     .unwrap();
 
@@ -59,7 +55,6 @@ fn inject_pre_code(lib: &Library, ast: &mut SwcModule) {
     PRE_CODE,
     Syntax::Es(Default::default()),
     Default::default(),
-    Arc::new(SourceMap::default()),
   )
   .unwrap();
 
@@ -74,7 +69,6 @@ fn inject_post_code(lib: &Library, ast: &mut SwcModule) {
     POST_CODE,
     Syntax::Es(Default::default()),
     Default::default(),
-    Arc::new(SourceMap::default()),
   )
   .unwrap();
 
