@@ -199,7 +199,11 @@ pub fn resource_pot_to_runtime_object(
 
   // sort props by module id to make sure the order is stable
   let mut modules = modules.into_inner();
-  modules.sort_by(|a, b| a.id.cmp(&b.id));
+  modules.sort_by(|a, b| {
+    a.id
+      .id(context.config.mode.clone())
+      .cmp(&b.id.id(context.config.mode.clone()))
+  });
   // insert props to the object lit
 
   let mut bundle = Bundle::new(BundleOptions {

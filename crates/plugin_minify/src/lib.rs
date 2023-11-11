@@ -192,7 +192,10 @@ impl Plugin for FarmPluginMinify {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+    if matches!(
+      resource_pot.resource_pot_type,
+      ResourcePotType::Js | ResourcePotType::Runtime
+    ) {
       self.minify_js(resource_pot, context)?;
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       self.minify_css(resource_pot, context)?;

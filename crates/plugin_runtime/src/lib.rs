@@ -388,7 +388,7 @@ impl Plugin for FarmPluginRuntime {
       Ok(Some(PluginGenerateResourcesHookResult {
         resource: Resource {
           name: resource_pot.id.to_string(),
-          bytes: self.runtime_code.lock().as_bytes().to_vec(),
+          bytes: resource_pot.meta.rendered_content.as_bytes().to_vec(),
           emitted: true, // do not emit runtime resource by default
           resource_type: ResourceType::Runtime,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
