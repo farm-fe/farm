@@ -304,7 +304,7 @@ export function genMainCode(
   const { template, scriptSetup, script, styles } = descriptor;
   const hasScoped = styles.some((style) => style.scoped);
   const hash = getHash(resolvedPath);
-  const { filename } = parsePath(resolvedPath);
+  const { filePath } = parsePath(resolvedPath);
 
   const {
     code: scriptCode,
@@ -317,7 +317,7 @@ export function genMainCode(
     templateCompilerOptions,
     descriptor,
     template,
-    filename,
+    filePath,
     bindings || {},
     hasScoped,
     hash
@@ -338,7 +338,7 @@ export function genMainCode(
     stylesCodeCache,
     resolvedPath,
     hash,
-    filename,
+    filePath,
     isHmr,
     deleteStyles,
     addStyles
@@ -348,7 +348,7 @@ export function genMainCode(
     hash,
     isHmr,
     rerenderOnly,
-    filename,
+    filePath,
     mode
   );
 

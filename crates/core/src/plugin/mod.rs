@@ -441,7 +441,6 @@ pub struct PluginGenerateResourcesHookResult {
   pub source_map: Option<Resource>,
 }
 
-/// Compatible with Rollup's ChunkInfo
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResourcePotInfoOfPluginRenderResourcePotHookParam {
   pub id: ResourcePotId,

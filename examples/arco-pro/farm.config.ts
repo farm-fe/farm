@@ -18,6 +18,8 @@ export default defineConfig({
       symlinks: true,
       alias: {
         "@": resolve(process.cwd(), "./src"),
+        "react-dom": resolve(process.cwd(), "./node_modules/react-dom"),
+        "react": resolve(process.cwd(), "./node_modules/react"),
         // mockjs: resolve(process.cwd(), "./patches/mock.js"),
       },
     },
