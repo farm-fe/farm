@@ -1,6 +1,6 @@
 {
-  "name": "<FARM-JS-PLUGIN-NPM-NAME>",
-  "version": "0.0.0",
+  "name": "@farmfe/js-plugin-dts",
+  "version": "0.2.1",
   "description": "",
   "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",
