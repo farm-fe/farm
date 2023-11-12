@@ -214,7 +214,7 @@ impl Resolver {
           return Some(result.clone());
         }
 
-        let (result, tried_paths) = self.try_node_resolve(source, base_dir, kind, context);
+        let (result, tried_paths) = self.try_node_resolve(source, base_dir.clone(), kind, context);
         // cache the result
         for tried_path in tried_paths {
           let resolve_module_cache = &self.resolve_module_cache;
@@ -234,6 +234,16 @@ impl Resolver {
               eprintln!("{}", format!("Error checking cache: {:?}", err));
             }
           }
+        }
+        if result.clone().unwrap().resolved_path.contains("/Users/adny/rust/farm/node_modules/.pnpm/@antv+util@3.3.4/node_modules/@antv/util/lib/index.js") { 
+          println!("source: {:?}", source);
+          println!("importer: {:?}", base_dir.clone());
+          return Some(PluginResolveHookResult {
+            resolved_path: String::from("/Users/adny/rust/farm/node_modules/.pnpm/@antv+util@3.3.4/node_modules/@antv/util/esm/index.js"),
+            external: true,
+            side_effects: false,
+            ..Default::default()
+          });
         }
         result
       }
@@ -348,6 +358,7 @@ impl Resolver {
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     farm_profile_function!("try_node_resolve".to_string());
     // find node_modules until root
+
     let mut current = base_dir;
     // if a dependency is resolved, cache all paths from base_dir to the resolved node_modules
     let mut tried_paths = vec![];
