@@ -6,6 +6,7 @@ const npmDirMap = {
   darwin_arm64: 'darwin-arm64',
   linux_x64: 'linux-x64-gnu',
   win32_x64: 'win32-x64-msvc',
+  win32_ia32: 'win32-ia32-msvc',
 };
 
 let platformArch = `${process.platform}_${process.arch}`;

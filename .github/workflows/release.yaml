@@ -69,6 +69,14 @@ jobs:
         run: ls -l ./packages/core/npm/win32-x64-msvc
 
       - uses: actions/download-artifact@v3
+        id: download-win32-ia32-msvc
+        with:
+          name: ${{ github.sha }}-win32-ia32-msvc
+          path: ./packages/core/npm/win32-ia32-msvc
+      - name: List Files
+        run: ls -l ./packages/core/npm/win32-ia32-msvc
+
+      - uses: actions/download-artifact@v3
         id: download-darwin-arm64
         with:
           name: ${{ github.sha }}-darwin-arm64
@@ -102,6 +110,14 @@ jobs:
         run: ls -l ./rust-plugins/react/npm/win32-x64-msvc
 
       - uses: actions/download-artifact@v3
+        id: download-plugin-react-win32-ia32-msvc
+        with:
+          name: ${{ github.sha }}-win32-ia32-msvc-plugin-react
+          path: ./rust-plugins/react/npm/win32-ia32-msvc
+      - name: List Files
+        run: ls -l ./rust-plugins/react/npm/win32-ia32-msvc
+
+      - uses: actions/download-artifact@v3
         id: download-plugin-react-darwin-arm64
         with:
           name: ${{ github.sha }}-darwin-arm64-plugin-react
@@ -133,6 +149,14 @@ jobs:
           path: ./rust-plugins/sass/npm/win32-x64-msvc
       - name: List Files
         run: ls -l ./rust-plugins/sass/npm/win32-x64-msvc
+
+      - uses: actions/download-artifact@v3
+        id: download-plugin-sass-win32-ia32-msvc
+        with:
+          name: ${{ github.sha }}-win32-ia32-msvc-plugin-sass
+          path: ./rust-plugins/sass/npm/win32-ia32-msvc
+      - name: List Files
+        run: ls -l ./rust-plugins/sass/npm/win32-ia32-msvc
 
       - uses: actions/download-artifact@v3
         id: download-plugin-sass-darwin-arm64
