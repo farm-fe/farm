@@ -2,16 +2,10 @@
 function text(selector, text) {
   document.querySelector(selector).textContent = text;
 }
-// import set from '@antv/util/lib/set';
-// console.log(set);
-// import * as constants from 'focus-lock/constants'
-// console.log(constants)
-// import * as ele from 'electron-to-chromium/versions'
-// console.log(ele)
-// import from a utf-8 bom file
-// import { msg as bomMsg } from './utf8-bom/main.js';
-import bomMsg from './rel';
-text('.utf8-bom', bomMsg);
+
+import { msg as bomMsg } from './utf8-bom/main.js';
+// import { msg as res } from './utf8-bom/base';
+text('.utf8-bom', `${bomMsg} `);
 
 // deep import
 // import slicedToArray from '@babel/runtime/helpers/esm/slicedToArray'

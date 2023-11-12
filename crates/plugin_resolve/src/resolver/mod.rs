@@ -83,6 +83,7 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
+    println!("package_json_info: {:#?}", package_json_info);
     if let Ok(package_json_info) = &package_json_info {
       // check source start_with "#" prepare resolve imports fields
       let resolved_imports_path =
@@ -159,7 +160,6 @@ impl Resolver {
         // if let Some(result_dir) = find_package_dir(&current_dir) {
         //   current_dir = result_dir
         // }
-
         farm_profile_scope!("resolve.relative".to_string());
         // if it starts with './' or '../, it is a relative path
         let normalized_path = RelativePath::new(source).to_logical_path(&base_dir);
@@ -546,10 +546,6 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     if let Ok(package_json_info) = package_json_info {
-      if !source.contains("runtime") {
-        println!("package_json_info: {:?}", package_json_info.raw());
-        println!("source: {:?}", source);
-      }
       let mut res = String::new();
     }
 
