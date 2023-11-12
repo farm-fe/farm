@@ -121,6 +121,18 @@ impl PluginDriver {
     Ok(())
   }
 
+  pub fn plugin_cache_loaded(&self, context: &Arc<CompilationContext>) -> Result<()> {
+    let cache = context.cache_manager.plugin_cache.read_cache();
+
+    for plugin in &self.plugins {
+      if let Some(plugin_cache) = cache.get(plugin.name()) {
+        plugin.plugin_cache_loaded(plugin_cache, context)?;
+      }
+    }
+
+    Ok(())
+  }
+
   hook_parallel!(
     build_start,
     |plugin_name: String, context: &Arc<CompilationContext>| {
@@ -528,6 +540,25 @@ impl PluginDriver {
       // todo something
     }
   );
+
+  pub fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<()> {
+    let mut plugin_cache_map = std::collections::HashMap::new();
+
+    for plugin in &self.plugins {
+      let plugin_cache = plugin.write_plugin_cache(context)?;
+
+      if let Some(plugin_cache) = plugin_cache {
+        plugin_cache_map.insert(plugin.name().to_string(), plugin_cache);
+      }
+    }
+
+    context
+      .cache_manager
+      .plugin_cache
+      .write_cache(plugin_cache_map);
+
+    Ok(())
+  }
 }
 
 #[derive(Debug, Clone)]

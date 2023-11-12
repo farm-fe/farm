@@ -55,6 +55,12 @@ impl CompilationContext {
       (EMPTY_STR.to_string(), EMPTY_STR.to_string())
     };
 
+    let cache_manager = if config.persistent_cache.enabled() {
+      CacheManager::new(&cache_dir, &namespace, config.mode.clone())
+    } else {
+      Default::default()
+    };
+
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
@@ -62,11 +68,7 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::new())),
       plugin_driver: Box::new(PluginDriver::new(plugins, config.record)),
-      cache_manager: Box::new(CacheManager::new(
-        &cache_dir,
-        &namespace,
-        config.mode.clone(),
-      )),
+      cache_manager: Box::new(cache_manager),
       config: Box::new(config),
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),

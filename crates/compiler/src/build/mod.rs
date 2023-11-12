@@ -201,7 +201,7 @@ impl Compiler {
     context: &Arc<CompilationContext>,
   ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
     // return the cached module if cache found using timestamp
-    let mut cached_module = try_get_module_cache(&module.id, module.immutable, context)?;
+    let mut cached_module = try_get_module_cache(&module.id, context)?;
 
     if let Some(cached_module_ref) = &cached_module {
       // if timestamp is not changed, return the cached module

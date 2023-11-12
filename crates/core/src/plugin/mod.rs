@@ -36,6 +36,14 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  fn plugin_cache_loaded(
+    &self,
+    _cache: &Vec<u8>,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
   fn build_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     Ok(None)
   }
@@ -210,6 +218,10 @@ pub trait Plugin: Any + Send + Sync {
     _params: &mut PluginUpdateModulesHookParams,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn write_plugin_cache(&self, _context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
     Ok(None)
   }
 }

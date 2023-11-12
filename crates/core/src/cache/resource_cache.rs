@@ -10,6 +10,7 @@ use crate::{deserialize, serialize};
 
 use super::cache_store::CacheStore;
 
+#[derive(Default)]
 pub struct ResourceCacheManager {
   store: CacheStore,
   resource_pot_meta_store: CacheStore,

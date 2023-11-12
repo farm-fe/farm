@@ -66,6 +66,13 @@ impl Compiler {
 
   /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
+    if self.context.config.persistent_cache.enabled() {
+      self
+        .context
+        .plugin_driver
+        .plugin_cache_loaded(&self.context)?;
+    }
+
     // triggering build stage
     {
       #[cfg(feature = "profile")]
@@ -83,14 +90,24 @@ impl Compiler {
       println!("Generate cost {:?}", start.elapsed());
     }
 
+    self
+      .context
+      .plugin_driver
+      .finish(&Stats {}, &self.context)?;
+
     if self.context.config.persistent_cache.enabled() {
       // Does not support write cache in update mode for now
       let start = std::time::Instant::now();
       self.context.cache_manager.write_cache();
+
+      self
+        .context
+        .plugin_driver
+        .write_plugin_cache(&self.context)?;
       println!("Write cache cost {:?}", start.elapsed());
     }
 
-    self.context.plugin_driver.finish(&Stats {}, &self.context)
+    Ok(())
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {

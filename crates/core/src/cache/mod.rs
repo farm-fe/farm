@@ -1,13 +1,18 @@
 use crate::config::Mode;
 
+use self::plugin_cache::PluginCacheManager;
+
 pub mod cache_store;
 pub mod module_cache;
+pub mod plugin_cache;
 pub mod resource_cache;
 
 /// All cache related operation are charged by [CacheManager]
+#[derive(Default)]
 pub struct CacheManager {
   pub module_cache: module_cache::ModuleCacheManager,
   pub resource_cache: resource_cache::ResourceCacheManager,
+  pub plugin_cache: PluginCacheManager,
 }
 
 impl CacheManager {
@@ -28,7 +33,7 @@ impl CacheManager {
         },
         || {
           let resource_cache =
-            resource_cache::ResourceCacheManager::new(cache_dir, namespace, mode);
+            resource_cache::ResourceCacheManager::new(cache_dir, namespace, mode.clone());
           resource_cache
         },
       );
@@ -39,6 +44,7 @@ impl CacheManager {
     Self {
       module_cache,
       resource_cache,
+      plugin_cache: PluginCacheManager::new(cache_dir, namespace, mode),
     }
   }
 

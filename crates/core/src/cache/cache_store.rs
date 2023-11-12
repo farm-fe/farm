@@ -12,6 +12,7 @@ use crate::{config::Mode, deserialize, serialize};
 
 const FARM_CACHE_VERSION: &str = "0.0.1";
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
+#[derive(Default)]
 pub struct CacheStore {
   cache_dir: PathBuf,
   namespace: String,
@@ -44,6 +45,10 @@ impl CacheStore {
   /// Write the cache map to the disk.
   /// A cache file will be created for every 1000 items.
   pub fn write_cache(&self, cache_map: HashMap<String, Vec<u8>>, cache_type: &str) {
+    if self.namespace.is_empty() && self.items_per_cache_file == usize::default() {
+      return;
+    }
+
     let start = std::time::Instant::now();
     let cache_file_dir = self.cache_dir.join(cache_type);
     // clear the cache file dir
@@ -88,6 +93,10 @@ impl CacheStore {
   }
 
   pub fn read_cache(&self, cache_type: &str) -> HashMap<String, Vec<u8>> {
+    if self.namespace.is_empty() && self.items_per_cache_file == usize::default() {
+      return HashMap::new();
+    }
+
     let start = std::time::Instant::now();
     let cache_file_dir = self.cache_dir.join(cache_type);
     // read all cache files from the cache file dir

@@ -14,6 +14,7 @@ use crate::plugin::PluginAnalyzeDepsHookResultEntry;
 
 use super::cache_store::CacheStore;
 
+#[derive(Default)]
 pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   store: CacheStore,

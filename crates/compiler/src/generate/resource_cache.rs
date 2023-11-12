@@ -8,8 +8,6 @@ use farmfe_core::{
   },
 };
 
-use crate::build::module_cache::is_cache_enabled;
-
 /// Cache key of resource is consist of:
 /// - modules id
 /// - used_exports of modules
@@ -38,11 +36,6 @@ pub fn try_get_resource_cache(
   resource_pot: &ResourcePot,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<(ResourcePotMetaData, Resource)>> {
-  if !is_cache_enabled(resource_pot.immutable, &context.config) {
-    println!("cache disabled : {:?}", resource_pot.id);
-    return Ok(None);
-  }
-
   // Resource is cached only:
   // - cache key is cached
   // - all modules are cached initially

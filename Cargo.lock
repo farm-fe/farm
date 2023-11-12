@@ -1343,9 +1343,11 @@ name = "farmfe_plugin_css"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
+ "farmfe_macro_cache_item",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.0.4",
+ "rkyv",
 ]
 
 [[package]]
