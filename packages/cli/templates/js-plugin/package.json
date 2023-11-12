@@ -18,9 +18,7 @@
     "build": "farm build && npm run build:tsc",
     "start": "farm build -w",
     "dev": "farm build -w",
-    "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
-    "prepublishOnly": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepublishOnly": "npm run build"
   },
   "keywords": [],
   "author": "",
