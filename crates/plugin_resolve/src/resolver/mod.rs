@@ -83,7 +83,6 @@ impl Resolver {
         resolve_ancestor_dir: true, // only look for current directory
       },
     );
-    println!("package_json_info: {:#?}", package_json_info);
     if let Ok(package_json_info) = &package_json_info {
       // check source start_with "#" prepare resolve imports fields
       let resolved_imports_path =
@@ -108,20 +107,6 @@ impl Resolver {
           ..Default::default()
         });
       }
-
-      // if !is_source_absolute(source.as_str()) && !is_source_relative(source.as_str()) {
-      //   // check browser replace
-      //   if let Some(resolved_path) = self.try_browser_replace(package_json_info, source.as_str(), context) {
-      //     let external = is_module_external(package_json_info, &resolved_path);
-      //     let side_effects = is_module_side_effects(package_json_info, &resolved_path);
-      //     return Some(PluginResolveHookResult {
-      //       resolved_path,
-      //       external,
-      //       side_effects,
-      //       ..Default::default()
-      //     });
-      //   }
-      // }
     }
     // Execution resolve strategy
     self.resolve_strategy(source.as_str(), importer, kind, context, package_json_info)
@@ -146,6 +131,7 @@ impl Resolver {
         self.try_alias(source, base_dir.clone(), kind, context)
       }
       source if is_source_absolute(source) => {
+        farm_profile_scope!("resolve.absolute".to_string());
         // Handle the absolute source case
         let path_buf = PathBuf::from_str(source).unwrap();
 
@@ -156,10 +142,6 @@ impl Resolver {
           });
       }
       source if is_source_relative(source) => {
-        // let mut current_dir = PathBuf::from(&base_dir);
-        // if let Some(result_dir) = find_package_dir(&current_dir) {
-        //   current_dir = result_dir
-        // }
         farm_profile_scope!("resolve.relative".to_string());
         // if it starts with './' or '../, it is a relative path
         let normalized_path = RelativePath::new(source).to_logical_path(&base_dir);
@@ -171,12 +153,6 @@ impl Resolver {
         };
 
         // TODO try read symlink from the resolved path step by step to its parent util the root
-        // if let Some(normalized_path) =
-        //   self.try_fs_resolve(normalized_path.to_string_lossy().to_string(), true, context)
-        // {
-        //   return Some(self.get_resolve_result(&package_json_info, normalized_path, kind, context));
-        // }
-        // None
         if context
           .config
           .resolve
@@ -191,6 +167,13 @@ impl Resolver {
             true,
             context,
           );
+          // return res;
+        }
+
+        if let Some(normalized_path) =
+          self.try_fs_resolve(normalized_path.to_string_lossy().to_string(), true, context)
+        {
+          return Some(self.get_resolve_result(&package_json_info, normalized_path, kind, context));
         }
         let resolved_path = try_file(&normalized_path, context)
           .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
@@ -1234,36 +1217,30 @@ impl Resolver {
 
   fn try_fs_resolve(
     self: &Self,
-    base_fs_path: String,
-    skip_try_package: bool,
+    fs_path: String,
+    _skip_try_package: bool,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    let (file, postfix) = split_file_and_postfix(&base_fs_path);
+    let (file, postfix) = split_file_and_postfix(&fs_path);
     if let Some(resolved_path) = self.try_clean_fs_resolve(&file, context) {
       return Some(resolved_path);
     }
     None
   }
 
+  // TODO Other attributes e.g: skip_try_package try_index try_prefix
   fn try_clean_fs_resolve(
     self: &Self,
     path: &String,
     // is_browser: bool,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    // let resolved_path = try_file(&normalized_path, context)
-    //   .or_else(|| self.try_directory(&normalized_path, source, kind, false, context))
-    //   .ok_or(CompilationError::GenericError(format!(
-    //     "File `{:?}` does not exist",
-    //     normalized_path
-    //   )));
     if let Ok(metadata) = fs::metadata(path) {
       if metadata.is_file() {
         let real_path = get_real_path(path, context.config.resolve.symlinks);
         return Some(real_path);
       }
     }
-    let dir_path = get_directory_path(path);
 
     if let Some(resolved_path) =
       self.try_resolve_real_file_with_extensions(PathBuf::from(path), context)

@@ -3,9 +3,9 @@ function text(selector, text) {
   document.querySelector(selector).textContent = text;
 }
 
-import { msg as bomMsg } from './utf8-bom/main.js';
-// import { msg as res } from './utf8-bom/base';
-text('.utf8-bom', `${bomMsg} `);
+// import { msg as bomMsg } from './utf8-bom/main.js';
+import { msg as res } from './utf8-bom/base';
+text('.utf8-bom', `${res} `);
 
 // deep import
 // import slicedToArray from '@babel/runtime/helpers/esm/slicedToArray'
