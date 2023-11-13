@@ -1,3 +1,4 @@
+import { SecureServerOptions } from 'node:http2';
 import { DevServer } from '../index.js';
 
 import type cors from '@koa/cors';
@@ -11,7 +12,7 @@ import type { Config } from '../../binding/index.js';
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
-  https?: boolean;
+  https?: SecureServerOptions;
   protocol?: 'http' | 'https';
   hostname?: string;
   // http2?: boolean;
@@ -93,7 +94,7 @@ export interface GlobalFarmCLIOptions {
 export interface FarmCLIServerOptions {
   port?: number;
   open?: boolean;
-  https?: boolean;
+  https?: SecureServerOptions;
   hmr?: boolean;
   host?: boolean | string;
   strictPort?: boolean;
@@ -107,7 +108,7 @@ export interface FarmCLIBuildOptions {
 
 export interface FarmCLIPreviewOptions {
   open?: boolean;
-  https?: boolean;
+  https?: SecureServerOptions;
   port?: number;
 }
 

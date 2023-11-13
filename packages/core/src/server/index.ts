@@ -1,4 +1,5 @@
 import http from 'node:http';
+import http2 from 'node:http2';
 import Koa from 'koa';
 
 import { Compiler } from '../compiler/index.js';
@@ -34,6 +35,7 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Config } from '../../binding/index.js';
+import { Server } from './type.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -46,7 +48,7 @@ import { Config } from '../../binding/index.js';
 interface FarmServerContext {
   config: UserServerConfig;
   app: Koa;
-  server: http.Server;
+  server: Server;
   compiler: Compiler;
   logger: Logger;
   serverOptions?: {
@@ -77,7 +79,7 @@ export class DevServer implements ImplDevServer {
   ws: WsServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
-  server?: http.Server;
+  server?: Server;
   publicDir?: string;
   publicPath?: string;
   userConfig?: UserConfig;
@@ -211,7 +213,7 @@ export class DevServer implements ImplDevServer {
   }
 
   public createFarmServer(options: UserServerConfig) {
-    const { https = false, host = 'localhost', plugins = [] } = options;
+    const { https, host = 'localhost', plugins = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
     if (typeof host !== 'boolean') {
@@ -225,7 +227,18 @@ export class DevServer implements ImplDevServer {
     );
 
     this._app = new Koa();
-    this.server = http.createServer(this._app.callback());
+    if (https) {
+      this.server = http2.createSecureServer(
+        {
+          ...https,
+          allowHTTP1: true
+        },
+        this._app.callback()
+      );
+    } else {
+      this.server = http.createServer(this._app.callback());
+    }
+
     this.ws = new WsServer(this.server, this.config, true);
 
     this._context = {
