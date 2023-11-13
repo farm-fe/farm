@@ -40,6 +40,7 @@ fn test() {
           query: vec![],
           meta: HashMap::from([]),
           module_id: resolved_path.clone(),
+          source_map_chain: vec![],
         },
         &Arc::new(context),
       )

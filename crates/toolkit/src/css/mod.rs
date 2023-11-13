@@ -1,11 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  context::CompilationContext,
-  error::CompilationError,
-  module::module_graph::ModuleGraph,
-  swc_common::{input::SourceFileInput, FileName, SourceMap},
-  swc_css_ast::Stylesheet,
+  error::CompilationError, swc_common::input::SourceFileInput, swc_css_ast::Stylesheet,
 };
 use swc_css_codegen::{
   writer::basic::{BasicCssWriter, BasicCssWriterConfig},
@@ -17,16 +13,18 @@ use swc_css_parser::{
 };
 use swc_error_reporters::handler::try_with_handler;
 
-use crate::sourcemap::swc_gen::{build_source_map, AstModule};
+use crate::common::{build_source_map, create_swc_source_map, Source};
 
 /// parse the input css file content to [Stylesheet]
 pub fn parse_css_stylesheet(
   id: &str,
-  content: &str,
-  cm: Arc<SourceMap>,
+  content: Arc<String>,
 ) -> farmfe_core::error::Result<Stylesheet> {
-  // id must be relative path
-  let source_file = cm.new_source_file(FileName::Real(PathBuf::from(id)), content.to_string());
+  let (cm, source_file) = create_swc_source_map(Source {
+    path: PathBuf::from(id),
+    content,
+  });
+
   let config = ParserConfig {
     allow_wrong_line_comments: true,
     css_modules: true,
@@ -72,16 +70,15 @@ pub fn parse_css_stylesheet(
 /// generate css code from [Stylesheet], return css code and source map
 pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
-  cm: Option<Arc<SourceMap>>,
+  source: Option<Source>,
   minify: bool,
-  module_graph: &ModuleGraph,
-) -> (String, Option<Vec<u8>>) {
+) -> (String, Option<String>) {
   let mut css_code = String::new();
-  let mut source_map = Vec::new();
+  let mut mappings = Vec::new();
   let css_writer = BasicCssWriter::new(
     &mut css_code,
-    if cm.is_some() {
-      Some(&mut source_map)
+    if source.is_some() {
+      Some(&mut mappings)
     } else {
       None
     },
@@ -91,9 +88,13 @@ pub fn codegen_css_stylesheet(
 
   gen.emit(stylesheet).unwrap();
 
-  if let Some(cm) = cm {
-    let src_map = build_source_map(&source_map, cm, AstModule::Css(stylesheet), module_graph);
-    (css_code, Some(src_map))
+  if let Some(source) = source {
+    let (cm, _) = create_swc_source_map(source);
+    let map = build_source_map(cm, &mappings);
+    let mut src_map = vec![];
+    map.to_writer(&mut src_map).unwrap();
+
+    (css_code, Some(String::from_utf8(src_map).unwrap()))
   } else {
     (css_code, None)
   }

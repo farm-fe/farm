@@ -10,6 +10,7 @@ use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit_plugin_types::{
   libloading::Library,
   load_core_lib,
+  swc_ast::create_swc_source_map,
   swc_transforms::{swc_transform_react, FarmSwcTransformReactOptions},
 };
 
@@ -116,6 +117,7 @@ impl Plugin for FarmPluginReact {
         content,
         module_type: None,
         source_map: None,
+        ignore_previous_source_map: false,
       }));
     }
 
@@ -135,6 +137,12 @@ impl Plugin for FarmPluginReact {
       let unresolved_mark = param.meta.as_script().unresolved_mark;
       let ast = &mut param.meta.as_script_mut().ast;
 
+      let (cm, _) = create_swc_source_map(
+        &self.core_lib,
+        &param.module_id.to_string(),
+        param.content.clone(),
+      )?;
+
       swc_transform_react(
         &self.core_lib,
         ast,
@@ -142,7 +150,7 @@ impl Plugin for FarmPluginReact {
           top_level_mark,
           unresolved_mark,
           inject_helpers: true,
-          cm: context.meta.script.cm.clone(),
+          cm,
           globals: &context.meta.script.globals,
           mode: context.config.mode.clone(),
           options: self.options.clone(),

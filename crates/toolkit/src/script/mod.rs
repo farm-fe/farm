@@ -16,6 +16,8 @@ use farmfe_core::{
 };
 use swc_error_reporters::handler::try_with_handler;
 
+use crate::common::{create_swc_source_map, Source};
+
 pub mod swc_try_with;
 
 /// parse the content of a module to [SwcModule] ast.
@@ -24,9 +26,12 @@ pub fn parse_module(
   content: &str,
   syntax: Syntax,
   target: EsVersion,
-  cm: Arc<SourceMap>,
 ) -> Result<SwcModule> {
-  let source_file = cm.new_source_file(FileName::Real(PathBuf::from(id)), content.to_string());
+  let (cm, source_file) = create_swc_source_map(Source {
+    path: PathBuf::from(id),
+    content: Arc::new(content.to_string()),
+  });
+
   let input = StringInput::from(&*source_file);
   // TODO support parsing comments
   let lexer = Lexer::new(syntax, target, input, None);
@@ -99,7 +104,6 @@ pub fn codegen_module(
   let mut buf = vec![];
 
   {
-    // TODO support source map
     let wr = Box::new(JsWriter::new(cm.clone(), "\n", &mut buf, src_map)) as Box<dyn WriteJs>;
 
     let mut emitter = Emitter {

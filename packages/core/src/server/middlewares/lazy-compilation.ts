@@ -55,7 +55,8 @@ export function lazyCompilation(devSeverContext: DevServer) {
         }
 
         const code = `export default {
-          modules: ${result.modules.trim().slice(0, -1)},
+          immutableModules: ${JSON.stringify(result.immutableModules.trim())},
+          mutableModules: ${JSON.stringify(result.mutableModules.trim())},
           dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
         }`;
         ctx.type = 'application/javascript';

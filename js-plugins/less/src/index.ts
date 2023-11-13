@@ -25,7 +25,9 @@ export default function farmLessPlugin(
 ): JsPlugin {
   let farmConfig: UserConfig['compilation'];
   let devServer: DevServer;
-  const implementation = getLessImplementation(options?.implementation);
+  const implementation: LessStatic = getLessImplementation(
+    options?.implementation
+  );
 
   return {
     name: pluginName,
@@ -55,7 +57,7 @@ export default function farmLessPlugin(
         resolvedPaths: options.filters?.resolvedPaths,
         moduleTypes: options.filters?.moduleTypes ?? ['less']
       },
-      async executor(param) {
+      async executor(param, ctx) {
         try {
           const isProd = farmConfig.mode === 'production';
           let relData = '';
@@ -80,21 +82,16 @@ export default function farmLessPlugin(
             relData = param.content;
           }
 
-          const { css, sourceMap, imports } = await implementation.render(
-            relData,
-            {
-              ...(options?.lessOptions ?? {}),
-              filename: param.resolvedPath,
-              sourceMap:
-                options.lessOptions?.sourceMap ??
-                Boolean(
-                  farmConfig?.sourcemap === true
-                    ? !param.resolvedPath.includes('node_modules/')
-                    : farmConfig?.sourcemap
-                ),
-              paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
-            } as Less.Options
-          );
+          const sourceMapEnabled = ctx.sourceMapEnabled(param.moduleId);
+
+          const { css, map, imports } = await implementation.render(relData, {
+            ...(options?.lessOptions ?? {}),
+            filename: param.resolvedPath,
+            sourceMap:
+              (options.lessOptions?.sourceMap ?? sourceMapEnabled) && {},
+            paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
+          } as Less.Options);
+
           if (devServer && imports && !isProd) {
             for (const dep of imports) {
               // TODO add a compilerCreated hook to farmfe/core and get the compiler instead of using devServer
@@ -106,7 +103,7 @@ export default function farmLessPlugin(
           return {
             content: css,
             moduleType: 'css',
-            sourceMap: sourceMap && JSON.stringify(sourceMap)
+            sourceMap: map
           };
         } catch (error) {
           throwError('transform', error);

@@ -205,8 +205,8 @@ impl Compiler {
       let module = module_graph.module(id).unwrap();
       !module.module_type.is_script()
     });
-    let resources = if should_reload_page {
-      "window.location.reload()".to_string()
+    let (immutable_resources, mutable_resources) = if should_reload_page {
+      ("window.location.reload()".to_string(), "{}".to_string())
     } else {
       // TODO3: cover it with tests
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?
@@ -223,7 +223,8 @@ impl Compiler {
     update_result
       .removed_module_ids
       .extend(diff_result.removed_modules.into_iter());
-    update_result.resources = resources;
+    update_result.immutable_resources = immutable_resources;
+    update_result.mutable_resources = mutable_resources;
     update_result.boundaries = boundaries;
     update_result.dynamic_resources_map = dynamic_resources_map;
     Ok(update_result)

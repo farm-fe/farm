@@ -7,7 +7,8 @@ use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
   config::{Config, TargetEnv},
   context::CompilationContext,
-  error::{CompilationError, Result},
+  enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain,
+  error::Result,
   module::{ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
@@ -23,12 +24,13 @@ use farmfe_core::{
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
+  common::{create_swc_source_map, Source},
   fs::read_file_utf8,
   script::{
-    codegen_module, module_system_from_deps, module_type_from_id, parse_module,
-    swc_try_with::try_with, syntax_from_module_type,
+    module_system_from_deps, module_type_from_id, parse_module, swc_try_with::try_with,
+    syntax_from_module_type,
   },
-  sourcemap::swc_gen::{build_source_map, AstModule},
+  sourcemap::SourceMap,
   swc_ecma_transforms::{
     resolver,
     typescript::{strip, strip_with_jsx},
@@ -97,7 +99,6 @@ impl Plugin for FarmPluginScript {
         &param.content,
         syntax,
         context.config.script.target,
-        context.meta.script.cm.clone(),
       )?;
 
       GLOBALS.set(&context.meta.script.globals, || {
@@ -132,44 +133,47 @@ impl Plugin for FarmPluginScript {
     param: &mut PluginProcessModuleHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    if param.module_type.is_typescript() {
-      try_with(
-        context.meta.script.cm.clone(),
-        &context.meta.script.globals,
-        || {
-          let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
-          let ast = &mut param.meta.as_script_mut().ast;
+    if !param.module_type.is_script() {
+      return Ok(None);
+    }
 
-          match param.module_type {
-            farmfe_core::module::ModuleType::Js => {}
-            farmfe_core::module::ModuleType::Jsx => {
-              // Do nothing, jsx should be handled by other plugins
-            }
-            farmfe_core::module::ModuleType::Ts => {
-              ast.visit_mut_with(&mut strip(top_level_mark));
-            }
-            farmfe_core::module::ModuleType::Tsx => {
-              ast.visit_mut_with(&mut strip_with_jsx(
-                context.meta.script.cm.clone(),
-                // TODO make it configurable
-                Default::default(),
-                NoopComments, // TODO parse comments
-                top_level_mark,
-              ));
-            }
-            _ => {}
+    let (cm, _) = create_swc_source_map(Source {
+      path: PathBuf::from(&param.module_id.to_string()),
+      content: param.content.clone(),
+    });
+
+    if param.module_type.is_typescript() {
+      try_with(cm.clone(), &context.meta.script.globals, || {
+        let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
+        let ast = &mut param.meta.as_script_mut().ast;
+
+        match param.module_type {
+          farmfe_core::module::ModuleType::Js => {}
+          farmfe_core::module::ModuleType::Jsx => {
+            // Do nothing, jsx should be handled by other plugins
           }
-        },
-      )?;
+          farmfe_core::module::ModuleType::Ts => {
+            ast.visit_mut_with(&mut strip(top_level_mark));
+          }
+          farmfe_core::module::ModuleType::Tsx => {
+            ast.visit_mut_with(&mut strip_with_jsx(
+              cm.clone(),
+              // TODO make it configurable
+              Default::default(),
+              NoopComments, // TODO parse comments
+              top_level_mark,
+            ));
+          }
+          _ => {}
+        }
+      })?;
     }
 
     // execute swc plugins
     if param.module_type.is_script() && !context.config.script.plugins.is_empty() {
-      try_with(
-        context.meta.script.cm.clone(),
-        &context.meta.script.globals,
-        || transform_by_swc_plugins(param, context).unwrap(),
-      )?;
+      try_with(cm.clone(), &context.meta.script.globals, || {
+        transform_by_swc_plugins(param, context).unwrap()
+      })?;
     }
 
     if param.module_type.is_script() {
@@ -273,24 +277,7 @@ impl Plugin for FarmPluginScript {
     _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
-      // handle js entry resource pot
-      // handle_entry_resource_pot::handle_entry_resource_pot(resource_pot, context)?;
-
-      let ast = &resource_pot.meta.as_js().ast;
-      let mut src_map_buf = vec![];
-
-      let buf = codegen_module(
-        ast,
-        context.config.script.target,
-        context.meta.script.cm.clone(),
-        Some(&mut src_map_buf),
-        context.config.minify,
-      )
-      .map_err(|e| CompilationError::GenerateResourcesError {
-        name: resource_pot.id.to_string(),
-        ty: resource_pot.resource_pot_type.clone(),
-        source: Some(Box::new(e)),
-      })?;
+      let buf = resource_pot.meta.rendered_content.as_bytes().to_vec();
 
       let resource = Resource {
         bytes: buf,
@@ -301,24 +288,30 @@ impl Plugin for FarmPluginScript {
       };
       let mut source_map = None;
 
-      if context.config.sourcemap.enabled()
-        && (context.config.sourcemap.is_all() || !resource_pot.immutable)
+      if context.config.sourcemap.enabled(resource_pot.immutable)
+        && !resource_pot.meta.rendered_map_chain.is_empty()
       {
-        let module_graph = context.module_graph.read();
-        let src_map = build_source_map(
-          &src_map_buf,
-          context.meta.script.cm.clone(),
-          AstModule::Script(ast),
-          &module_graph,
-        );
-
-        source_map = Some(Resource {
+        // collapse source map chain
+        let source_map_chain = resource_pot
+          .meta
+          .rendered_map_chain
+          .iter()
+          .map(|s| SourceMap::from_slice(s.as_bytes()).unwrap())
+          .collect::<Vec<_>>();
+        let collapsed_sourcemap = collapse_sourcemap_chain(source_map_chain, Default::default());
+        let mut src_map = vec![];
+        collapsed_sourcemap
+          .to_writer(&mut src_map)
+          .expect("failed to write sourcemap");
+        let map = Resource {
           bytes: src_map,
-          name: format!("{}.map", resource_pot.name.to_string()),
+          name: resource.name.clone(),
           emitted: false,
           resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        });
+        };
+
+        source_map = Some(map);
       }
 
       Ok(Some(PluginGenerateResourcesHookResult {

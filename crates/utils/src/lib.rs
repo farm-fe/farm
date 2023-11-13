@@ -1,6 +1,8 @@
 //! This crate provides shared utilities that is not related to any core compilation flow or data structures.
 //! If you are a plugin author and look for internal helpers, [farmfe_toolkit] crate should be your first choice.
 
+use std::path::PathBuf;
+
 pub use pathdiff::diff_paths;
 
 pub const PARSE_QUERY_TRUE: &str = "true";
@@ -55,10 +57,30 @@ pub fn stringify_query(query: &Vec<(String, String)>) -> String {
   format!("?{}", qs.join("&"))
 }
 
+pub fn file_url_to_path(url: &str) -> String {
+  let url = url.replace("file://", "");
+
+  if cfg!(windows) {
+    if let Some(url) = url.strip_prefix("/") {
+      url.replace("/", "\\")
+    } else {
+      url.replace("/", "\\")
+    }
+  } else {
+    url
+  }
+}
+
 // get platform independent relative path
 pub fn relative(from: &str, to: &str) -> String {
-  let rp =
-    diff_paths(to, from).unwrap_or_else(|| panic!("{} or {} is not absolute path", from, to));
+  let from = file_url_to_path(from);
+  let to = file_url_to_path(to);
+  let rp = diff_paths(&to, &from).unwrap_or_else(|| {
+    if !PathBuf::from(&to).is_absolute() {
+      return PathBuf::from(&to);
+    }
+    panic!("failed to get relative path from {} to {}", from, to);
+  });
 
   // make sure the relative path is platform independent
   // this can ensure that the relative path and hash stable across platforms

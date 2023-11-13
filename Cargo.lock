@@ -1118,6 +1118,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "enhanced-magic-string"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a684841d843325b2f8afe0caffcc037e91b74b3a9299944a1b86ba6de506763b"
+dependencies = [
+ "base64 0.21.0",
+ "farmfe_utils 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parking_lot",
+ "regex",
+ "sourcemap",
+]
+
+[[package]]
 name = "enum-iterator"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1248,7 +1261,7 @@ dependencies = [
  "farmfe_plugin_tree_shake",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1259,8 +1272,9 @@ dependencies = [
  "bytecheck 0.7.0",
  "dashmap",
  "downcast-rs",
+ "enhanced-magic-string",
  "farmfe_macro_cache_item",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
  "glob",
  "hashbrown 0.12.3",
  "heck 0.4.1",
@@ -1331,7 +1345,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1359,7 +1373,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1409,7 +1423,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1419,6 +1433,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1457,7 +1472,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1467,7 +1482,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1477,7 +1492,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]
@@ -1495,7 +1510,7 @@ dependencies = [
  "base64 0.21.0",
  "farmfe_core",
  "farmfe_testing_helpers",
- "farmfe_utils",
+ "farmfe_utils 0.0.4",
  "lazy_static",
  "preset_env_base",
  "sha2",
@@ -1532,7 +1547,16 @@ dependencies = [
 
 [[package]]
 name = "farmfe_utils"
-version = "0.0.3"
+version = "0.0.4"
+dependencies = [
+ "pathdiff",
+]
+
+[[package]]
+name = "farmfe_utils"
+version = "0.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a644a3efe2ab7f9a01a3ca3303c0b4e7ffd9c1cf8c9b8278fd4c37103e41d50"
 dependencies = [
  "pathdiff",
 ]
@@ -2432,9 +2456,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.5.0"
+version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
 
 [[package]]
 name = "memmap2"
@@ -3383,9 +3407,21 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.8.1"
+version = "1.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af83e617f331cc6ae2da5443c602dfa5af81e517212d9d611a5b3ba1777b5370"
+checksum = "380b951a9c5e80ddfd6136919eef32310721aa4aacd4889a8d39124b026ab343"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-automata"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f804c7828047e88b2d32e2d7fe5a105da8ee3264f01902f796c8e067dc2483f"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -3394,9 +3430,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.7.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
+checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "region"

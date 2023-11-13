@@ -75,6 +75,20 @@ pub enum CompilationError {
     package_json_path: String,
     err_message: String,
   },
+
+  #[error("render script module `{id}` failed. Original error: {source:?}")]
+  RenderScriptModuleError {
+    id: String,
+    #[source]
+    source: Option<Box<dyn Error + Send + Sync>>,
+  },
+
+  #[error("generate sourcemap for module `{id}` failed")]
+  GenerateSourceMapError {
+    id: String,
+    // #[source]
+    // source: Option<Box<dyn Error + Send + Sync>>,
+  },
 }
 
 pub type Result<T> = core::result::Result<T, CompilationError>;

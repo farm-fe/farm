@@ -326,12 +326,14 @@ impl Default for SourcemapConfig {
 }
 
 impl SourcemapConfig {
-  pub fn enabled(&self) -> bool {
+  pub fn enabled(&self, immutable: bool) -> bool {
     match self {
-      Self::Bool(b) => *b,
+      Self::Bool(b) => *b && !immutable,
+      Self::Inline => !immutable,
       _ => true,
     }
   }
+
   pub fn is_inline(&self) -> bool {
     match self {
       Self::Bool(_) => false,

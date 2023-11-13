@@ -49,7 +49,8 @@ pub struct JsUpdateResult {
   pub added: Vec<String>,
   pub changed: Vec<String>,
   pub removed: Vec<String>,
-  pub modules: String,
+  pub immutable_modules: String,
+  pub mutable_modules: String,
   pub boundaries: HashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<String, Vec<Vec<String>>>>,
   pub extra_watch_result: WatchDiffResult,
@@ -271,7 +272,8 @@ impl JsCompiler {
             .into_iter()
             .map(|id| id.id(Mode::Development))
             .collect(),
-          modules: res.resources,
+          immutable_modules: res.immutable_resources,
+          mutable_modules: res.mutable_resources,
           boundaries: res.boundaries,
           dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
             dynamic_resources_map
@@ -399,7 +401,12 @@ impl JsCompiler {
         module_groups: m.module_groups.clone().into_iter().map(|group| group.resolved_path(&context.config.root) + group.query_string()).collect(),
         resource_pot: m.resource_pot.clone(),
         side_effects: m.side_effects,
-        source_map_chain: m.source_map_chain.clone(),
+        source_map_chain: m
+          .source_map_chain
+          .clone()
+          .into_iter()
+          .map(|s| s.to_string())
+          .collect(),
         external: m.external,
         immutable: m.immutable,
       })

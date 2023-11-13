@@ -45,7 +45,7 @@ fn analyze_deps() {
           resolved_path: file.to_string_lossy().to_string(),
           query: vec![],
           module_type: load_result.module_type.clone(),
-          content: load_result.content,
+          content: Arc::new(load_result.content),
         },
         &context,
         &PluginHookContext::default(),

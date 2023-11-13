@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex,
@@ -9,6 +11,7 @@ use farmfe_core::{
   swc_common::{comments::NoopComments, Mark},
 };
 use farmfe_toolkit::{
+  common::{create_swc_source_map, Source},
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
   swc_ecma_preset_env::{self, preset_env, Mode, Targets, Version},
@@ -110,28 +113,28 @@ impl Plugin for FarmPluginPolyfill {
       return Ok(None);
     }
 
-    try_with(
-      context.meta.script.cm.clone(),
-      &context.meta.script.globals,
-      || {
-        let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
-        let mut ast = param.meta.as_script_mut().take_ast();
-        // TODO: store feature flags in module meta and use them when transform the module system
-        let mut feature_flag = FeatureFlag::empty();
+    let (cm, _) = create_swc_source_map(Source {
+      path: PathBuf::from(&param.module_id.to_string()),
+      content: param.content.clone(),
+    });
+    try_with(cm, &context.meta.script.globals, || {
+      let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
+      let mut ast = param.meta.as_script_mut().take_ast();
+      // TODO: store feature flags in module meta and use them when transform the module system
+      let mut feature_flag = FeatureFlag::empty();
 
-        ast = ast.fold_with(&mut preset_env(
-          unresolved_mark,
-          // TODO: support comments
-          None as Option<NoopComments>,
-          self.config.clone(),
-          self.assumptions,
-          &mut feature_flag,
-        ));
-        ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+      ast = ast.fold_with(&mut preset_env(
+        unresolved_mark,
+        // TODO: support comments
+        None as Option<NoopComments>,
+        self.config.clone(),
+        self.assumptions,
+        &mut feature_flag,
+      ));
+      ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
 
-        param.meta.as_script_mut().set_ast(ast);
-      },
-    )?;
+      param.meta.as_script_mut().set_ast(ast);
+    })?;
 
     Ok(Some(()))
   }

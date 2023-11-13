@@ -23,7 +23,8 @@ export interface JsUpdateResult {
   added: Array<string>
   changed: Array<string>
   removed: Array<string>
-  modules: string
+  immutableModules: string
+  mutableModules: string
   boundaries: Record<string, Array<Array<string>>>
   dynamicResourcesMap?: Record<string, Array<Array<string>>>
   extraWatchResult: WatchDiffResult

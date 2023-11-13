@@ -6,16 +6,22 @@ use farmfe_core::{
   swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::Syntax,
 };
-use farmfe_toolkit::{swc_ecma_transforms::resolver, swc_ecma_visit::VisitMutWith};
+use farmfe_toolkit::{
+  common::{create_swc_source_map, Source},
+  swc_ecma_transforms::resolver,
+  swc_ecma_visit::VisitMutWith,
+};
 
 pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
-  let cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
+  let (cm, _) = create_swc_source_map(Source {
+    path: "any".into(),
+    content: Arc::new(code.to_string()),
+  });
   let mut swc_module = farmfe_toolkit::script::parse_module(
     "any",
     code,
     Syntax::Es(Default::default()),
     EsVersion::EsNext,
-    cm.clone(),
   )
   .unwrap();
 

@@ -140,7 +140,7 @@ Plugins of Vite/Rollup/Unplugin can be directly used in Farm.
 
 ## 示例
 
-Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景场景，具体可以查看我们的示例:
+Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景，具体可以查看我们的示例:
 
 <table>
   <thead>

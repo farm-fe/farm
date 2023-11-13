@@ -11,7 +11,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: pnpm install
+        run: pnpm install
       - name: Run Spell Check
         shell: bash
         run: npx cspell "**" --gitignore

@@ -41,7 +41,7 @@ fn html_build_stage() {
         &PluginParseHookParam {
           module_id: module_id.clone(),
           resolved_path: file.to_string_lossy().to_string(),
-          content: file_content.content,
+          content: Arc::new(file_content.content),
           module_type: file_content.module_type.clone(),
           query: vec![],
         },
