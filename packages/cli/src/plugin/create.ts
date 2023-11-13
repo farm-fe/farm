@@ -76,7 +76,11 @@ export async function create(args: CreateArgs): Promise<void> {
       args.language = languageChoice.language;
     }
   }
-  const selectedPrompts = args.language === 'rust' ? rustPrompts : jsPrompts;
+  const CHOOSE_PROMPTS = new Map([
+    ['rust', rustPrompts],
+    ['js', jsPrompts]
+  ]);
+  const selectedPrompts = CHOOSE_PROMPTS.get(args.language);
 
   for (const prompt of selectedPrompts) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
