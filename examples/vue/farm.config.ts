@@ -21,5 +21,19 @@ export default defineConfig({
     port: 8674,
     // strictPort: true,
   },
-  plugins: [farmJsPluginVue()],
+  plugins: [farmJsPluginVue(), {
+    name: "test",
+    priority: 100,
+    config(config) {
+      // console.log(config);
+      config.aaa = 123123;
+    },
+  }, {
+    name: "wwww",
+    priority: 100,
+    config(config) {
+      // console.log(config);
+      config.bbb = 789789456146546;
+    },
+  }],
 });

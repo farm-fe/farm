@@ -273,13 +273,13 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
+  const { jsPlugins, rustPlugins, resolvedConfig } = await resolveAllPlugins(
     config,
     userConfig
   );
 
   const normalizedConfig: Config = {
-    config: finalConfig,
+    config: resolvedConfig,
     rustPlugins,
     jsPlugins
   };

@@ -1,6 +1,7 @@
 import { isArray, isObject } from '../utils/index.js';
 import { convertPlugin, handleVitePlugins } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
+import { mergeConfiguration } from '../config/index.js';
 
 import type { JsPlugin } from './type.js';
 import type { Config } from '../../binding/index.js';
@@ -14,7 +15,7 @@ export * from './rust/index.js';
  * @param config
  */
 export async function resolveAllPlugins(
-  finalConfig: Config['config'],
+  resolvedConfig: Config['config'],
   userConfig: UserConfig
 ) {
   const plugins = userConfig.plugins ?? [];
@@ -24,7 +25,7 @@ export async function resolveAllPlugins(
     return {
       rustPlugins: [],
       jsPlugins: [],
-      finalConfig
+      resolvedConfig
     };
   }
 
@@ -33,7 +34,7 @@ export async function resolveAllPlugins(
   const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
     vitePlugins,
     userConfig,
-    finalConfig
+    resolvedConfig
   );
   const jsPlugins: JsPlugin[] = [];
 
@@ -43,7 +44,7 @@ export async function resolveAllPlugins(
       (isArray(plugin) && typeof plugin[0] === 'string')
     ) {
       rustPlugins.push(
-        await rustPluginResolver(plugin as string, finalConfig.root)
+        await rustPluginResolver(plugin as string, resolvedConfig.root)
       );
     } else if (isObject(plugin)) {
       convertPlugin(plugin as unknown as JsPlugin);
@@ -61,15 +62,60 @@ export async function resolveAllPlugins(
   }
   // vite plugins execute after farm plugins by default.
   jsPlugins.push(...vitePluginAdapters);
+  const config = await resolveConfigHook(resolvedConfig, jsPlugins);
+  console.log(config);
 
   // call user config hooks
   for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
+    resolvedConfig =
+      (await jsPlugin.config?.(resolvedConfig)) ?? resolvedConfig;
   }
 
   return {
     rustPlugins,
     jsPlugins,
-    finalConfig
+    resolvedConfig
   };
+}
+
+async function resolveConfigHook(
+  config: UserConfig,
+  plugins: JsPlugin[]
+): Promise<UserConfig> {
+  let conf = config;
+
+  for (const p of getSortedPlugins(plugins)) {
+    const hook = p.config;
+    if (hook) {
+      const res = await hook(conf);
+      if (res) {
+        conf = mergeConfiguration(conf, res);
+      }
+    }
+  }
+
+  return conf;
+}
+
+export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
+  const priorityPre: JsPlugin[] = [];
+  const normal: JsPlugin[] = [];
+  const priorityPost: JsPlugin[] = [];
+  for (const plugin of plugins) {
+    if (plugin) {
+      if (typeof plugin === 'object') {
+        if (plugin.priority > 99) {
+          priorityPre.push(plugin);
+          continue;
+        }
+        if (plugin.priority < 99) {
+          priorityPost.push(plugin);
+          continue;
+        }
+      }
+      normal.push(plugin);
+    }
+  }
+
+  return [...priorityPre, ...normal, ...priorityPost] as JsPlugin[];
 }
