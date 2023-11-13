@@ -101,6 +101,7 @@
     "toposort",
     "treeshake",
     "tsfn",
+    "tsbuildinfo",
     "tsup",
     "Turbopack",
     "unplugin",
