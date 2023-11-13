@@ -1,6 +1,6 @@
 {
-  "name": "<FARM-JS-PLUGIN-NPM-NAME>",
-  "version": "0.0.0",
+  "name": "@farmfe/js-plugin-dts",
+  "version": "0.2.1",
   "description": "",
   "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",
@@ -18,7 +18,9 @@
     "build": "farm build && npm run build:tsc",
     "start": "farm build -w",
     "dev": "farm build -w",
-    "prepublishOnly": "npm run build"
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
