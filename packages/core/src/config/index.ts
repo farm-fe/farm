@@ -7,7 +7,7 @@ import merge from 'lodash.merge';
 
 import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
-import { DevServer } from '../server/index.js';
+// import { DevServer } from "../server/index.js";
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
@@ -78,7 +78,6 @@ export async function normalizeUserCompilationConfig(
   if (!config.root) {
     config.root = resolvedRootPath;
   }
-
   config.mode = config.mode ?? mode;
   const isProduction = config.mode === 'production';
   const isDevelopment = config.mode === 'development';
@@ -329,6 +328,11 @@ export function normalizeDevServerOptions(
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, { hmr });
 }
 
+export interface ConfigEnv {
+  command: 'build' | 'serve';
+  mode: string;
+}
+
 /**
  * Resolve and load user config from the specified path
  * @param configPath
@@ -336,6 +340,7 @@ export function normalizeDevServerOptions(
 export async function resolveUserConfig(
   inlineOptions: FarmCLIOptions,
   command: 'serve' | 'build',
+  mode: CompilationMode,
   logger: Logger
 ): Promise<UserConfig> {
   let userConfig: UserConfig = {};
@@ -351,7 +356,10 @@ export async function resolveUserConfig(
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
-
+  const configEnv: ConfigEnv = {
+    command,
+    mode
+  };
   // if configPath points to a directory, try to find a config file in it using default config
   if (fs.statSync(configPath).isDirectory()) {
     for (const name of DEFAULT_CONFIG_NAMES) {
@@ -383,13 +391,19 @@ export async function resolveUserConfig(
   userConfig.command = command;
 
   // check port availability: auto increment the port if a conflict occurs
-  const targetWeb = !(
-    userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
-  );
+  // const targetWeb = !(
+  //   userConfig.compilation?.output?.targetEnv === "node" || userConfig.isBuild
+  // );
 
-  targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
+  // TODO WARNING this should be called after resolveAllPlugins
+  // targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
+  console.log(configEnv);
   const config = filterUserConfig(userConfig, inlineOptions);
+  console.log('我是userConfig', config);
+  const { resolvedConfig } = await resolveAllPlugins({}, config);
+  console.log('我是jsPlugins', resolvedConfig);
+
   return config;
 }
 
@@ -563,4 +577,20 @@ export function filterUserConfig(
   userConfig.inlineConfig = inlineConfig;
   delete userConfig.configPath;
   return userConfig;
+}
+
+export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
+  return arr.reduce<Promise<T[]>>(async (acc, current) => {
+    const flattenedAcc = await acc;
+
+    if (current instanceof Promise) {
+      const resolvedElement = await current;
+      return flattenedAcc.concat(resolvedElement);
+    } else if (Array.isArray(current)) {
+      const flattenedArray = await resolveAsyncPlugins(current);
+      return flattenedAcc.concat(flattenedArray);
+    } else {
+      return flattenedAcc.concat(current);
+    }
+  }, Promise.resolve([]));
 }

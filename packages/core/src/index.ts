@@ -41,6 +41,7 @@ export async function start(
   const config: UserConfig = await resolveUserConfig(
     inlineConfig,
     'serve',
+    'development',
     logger
   );
   const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
@@ -79,6 +80,7 @@ export async function build(
   const userConfig: UserConfig = await resolveUserConfig(
     options,
     'build',
+    'production',
     logger
   );
   const normalizedConfig = await normalizeUserCompilationConfig(
@@ -107,6 +109,7 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
   const userConfig: UserConfig = await resolveUserConfig(
     options,
     'serve',
+    'production',
     logger
   );
 
@@ -196,6 +199,7 @@ export async function watch(
   const userConfig: UserConfig = await resolveUserConfig(
     options,
     'build',
+    'production',
     logger
   );
   const normalizedConfig = await normalizeUserCompilationConfig(

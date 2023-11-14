@@ -1,28 +1,28 @@
-import { JsPlugin, CompilationContext } from '../type.js';
+import { CompilationContext, JsPlugin } from '../type.js';
 import {
   convertEnforceToPriority,
   customParseQueryString,
+  decodeStr,
+  encodeStr,
+  FARM_CSS_MODULE_SUFFIX,
   formatId,
   formatLoadModuleType,
   formatTransformModuleType,
   getContentValue,
   isObject,
-  isString,
-  encodeStr,
-  decodeStr,
-  FARM_CSS_MODULE_SUFFIX
+  isString
 } from './utils.js';
 import type { UserConfig } from '../../config/types.js';
 import type { DevServer } from '../../server/index.js';
 
 // only use types from vite and we do not install vite as a dependency
 import type {
+  ConfigEnv,
+  HmrContext,
+  ModuleNode,
   Plugin,
   UserConfig as ViteUserConfig,
-  HmrContext,
-  ViteDevServer,
-  ModuleNode,
-  ConfigEnv
+  ViteDevServer
 } from 'vite';
 import type { ResolveIdResult } from 'rollup';
 import path from 'path';
@@ -37,8 +37,8 @@ import {
 import merge from 'lodash.merge';
 import { readFile } from 'fs/promises';
 import {
-  ViteDevServerAdapter,
-  createViteDevServerAdapter
+  createViteDevServerAdapter,
+  ViteDevServerAdapter
 } from './vite-server-adapter.js';
 import { farmContextToViteContext } from './farm-to-vite-context.js';
 import {
@@ -180,7 +180,7 @@ export class VitePluginAdapter implements JsPlugin {
 
   private getViteConfigEnv(): ConfigEnv {
     return {
-      ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node',
+      ssrBuild: this._farmConfig.compilation.output?.targetEnv === 'node',
       command:
         this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
       mode: this._farmConfig.compilation.mode
@@ -195,7 +195,7 @@ export class VitePluginAdapter implements JsPlugin {
       return this._rawPlugin.apply(this._viteConfig, {
         mode: this._farmConfig.compilation.mode,
         command,
-        ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node'
+        ssrBuild: this._farmConfig.compilation.output?.targetEnv === 'node'
       });
     } else if (this._rawPlugin.apply === undefined) {
       return true;
@@ -342,7 +342,7 @@ export class VitePluginAdapter implements JsPlugin {
           );
 
           const isSSR =
-            this._farmConfig.compilation.output.targetEnv === 'node';
+            this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = decodeStr(params.resolvedPath);
 
           // append query
@@ -385,7 +385,7 @@ export class VitePluginAdapter implements JsPlugin {
             params.moduleId
           );
           const isSSR =
-            this._farmConfig.compilation.output.targetEnv === 'node';
+            this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = decodeStr(params.resolvedPath);
           // append query
           const id = formatId(resolvedPath, params.query);

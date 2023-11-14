@@ -17,6 +17,7 @@ test('resolveUserConfig', async () => {
   const config = await resolveUserConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
     'serve',
+    'development',
     new DefaultLogger()
   );
   expect(config).toEqual({
