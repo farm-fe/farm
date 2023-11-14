@@ -78,7 +78,10 @@ pub struct JsTransformRecord {
 
 #[napi(object, js_name = "ModuleRecord")]
 pub struct JsModuleRecord {
-  pub name: String,
+  pub plugin: String,
+  pub hook: String,
+  pub module_type: String,
+  pub is_hmr: bool,
 }
 
 #[napi(object, js_name = "AnalyzeDep")]
@@ -89,7 +92,10 @@ pub struct JsAnalyzeDep {
 
 #[napi(object, js_name = "AnalyzeDepsRecord")]
 pub struct JsAnalyzeDepsRecord {
-  pub name: String,
+  pub plugin: String,
+  pub hook: String,
+  pub module_type: String,
+  pub is_hmr: bool,
   pub deps: Vec<JsAnalyzeDep>,
 }
 
@@ -98,9 +104,8 @@ pub struct JsAnalyzeDepsRecord {
 pub struct JsModule {
   pub id: String,
   pub module_type: String,
-  // todo
-  // pub module_groups: Vec<String>,
-  // pub resource_pot: Option<String>,
+  pub module_groups: Vec<String>,
+  pub resource_pot: Option<String>,
   pub side_effects: bool,
   pub source_map_chain: Vec<String>,
   pub external: bool,
@@ -393,6 +398,8 @@ impl JsCompiler {
       .map(|m| JsModule {
         id: m.id.resolved_path(&context.config.root) + m.id.query_string(),
         module_type: m.module_type.to_string(),
+        module_groups: m.module_groups.clone().into_iter().map(|group| group.resolved_path(&context.config.root) + group.query_string()).collect(),
+        resource_pot: m.resource_pot.clone(),
         side_effects: m.side_effects,
         source_map_chain: m
           .source_map_chain
@@ -451,7 +458,12 @@ impl JsCompiler {
     let process_records = record_manager.get_process_records_by_id(&id);
     let js_process_records: Vec<JsModuleRecord> = process_records
       .into_iter()
-      .map(|record| JsModuleRecord { name: record.name })
+      .map(|record| JsModuleRecord { 
+        plugin: record.plugin,
+        hook: record.hook,
+        module_type: record.module_type.to_string(),
+        is_hmr: matches!(record.trigger, Trigger::Update),
+       })
       .collect();
     js_process_records
   }
@@ -464,7 +476,10 @@ impl JsCompiler {
     let js_analyze_deps_records: Vec<JsAnalyzeDepsRecord> = analyze_deps_records
       .into_iter()
       .map(|record| JsAnalyzeDepsRecord {
-        name: record.name,
+        plugin: record.plugin,
+        hook: record.hook,
+        module_type: record.module_type.to_string(),
+        is_hmr: matches!(record.trigger, Trigger::Update),
         deps: record
           .deps
           .into_iter()
