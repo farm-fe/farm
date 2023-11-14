@@ -5,7 +5,7 @@ import Koa from 'koa';
 import { Compiler } from '../compiler/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
-  DevServerPlugin,
+  DevServerMiddleware,
   normalizeDevServerOptions,
   NormalizedServerConfig,
   normalizePublicDir,
@@ -213,7 +213,7 @@ export class DevServer implements ImplDevServer {
   }
 
   public createFarmServer(options: UserServerConfig) {
-    const { https, host = 'localhost', plugins = [] } = options;
+    const { https, host = 'localhost', middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
     if (typeof host !== 'boolean') {
@@ -249,7 +249,7 @@ export class DevServer implements ImplDevServer {
       logger: this.logger,
       serverOptions: {}
     };
-    this.resolvedFarmServerPlugins(plugins);
+    this.resolvedFarmServerMiddleware(middlewares);
   }
 
   static async resolvePortConflict(
@@ -313,7 +313,9 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]): void {
+  private resolvedFarmServerMiddleware(
+    middlewares?: DevServerMiddleware[]
+  ): void {
     const resolvedPlugins = [
       ...(middlewares || []),
       headersPlugin,

@@ -24,7 +24,7 @@ export interface UserServerConfig {
   cors?: boolean | cors.Options;
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
-  plugins?: DevServerPlugin[];
+  middlewares?: DevServerMiddleware[];
   writeToDisk?: boolean;
 }
 
@@ -123,4 +123,4 @@ export interface FarmCLIOptions
   clearScreen?: boolean;
 }
 
-export type DevServerPlugin = (context: DevServer) => void;
+export type DevServerMiddleware = (context: DevServer) => void;

@@ -258,7 +258,7 @@ const FarmConfigSchema = z
               .strict()
           ])
           .optional(),
-        plugins: z.array(z.any()).optional(),
+        middlewares: z.array(z.any()).optional(),
         writeToDisk: z.boolean().optional()
       })
       .strict()

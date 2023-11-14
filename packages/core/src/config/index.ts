@@ -303,7 +303,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   strictPort: false,
   cors: false,
   spa: true,
-  plugins: [],
+  middlewares: [],
   writeToDisk: false
 };
 
@@ -320,7 +320,7 @@ export function normalizeDevServerOptions(
   options: UserServerConfig | undefined,
   mode: string
 ): NormalizedServerConfig {
-  const { host, port, hmr: hmrConfig } = options || {};
+  const { host, port, hmr: hmrConfig, https } = options || {};
   const isProductionMode = mode === 'production';
   const hmr =
     isProductionMode || hmrConfig === false
@@ -329,9 +329,9 @@ export function normalizeDevServerOptions(
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
     hmr,
-    https: options.https
+    https: https
       ? {
-          ...options.https,
+          ...https,
           ca: tryAsFileRead(options.https.ca),
           cert: tryAsFileRead(options.https.cert),
           key: tryAsFileRead(options.https.key),
