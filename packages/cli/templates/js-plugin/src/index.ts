@@ -1,11 +1,10 @@
 import { readFileSync } from 'node:fs';
 import type { JsPlugin } from '@farmfe/core';
 
-export default function farmDtsPlugin(options: any): JsPlugin {
+export default function farmPlugin(options: any): JsPlugin {
   return {
     name: '<FARM-JS-PLUGIN-NPM-NAME>',
-    priority: 1000,
-    config(config: any) {
+    config(config) {
       return config;
     },
     load: {
