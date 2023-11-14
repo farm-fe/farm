@@ -37,10 +37,16 @@ pub fn render_resource_pots_and_generate_resources(
     println!("try_get_resource_cache time: {:?}", start.elapsed());
 
     if let Some((meta, cached_resource)) = cached_resource {
-      println!("cached_resource: {:?}", cached_resource.name);
-      resource_pot.add_resource(cached_resource.name.clone());
+      println!("cached_resource: {:?}", cached_resource.resource.name);
       resource_pot.meta = meta;
-      resources.lock().push(cached_resource);
+
+      resource_pot.add_resource(cached_resource.resource.name.clone());
+      resources.lock().push(cached_resource.resource);
+
+      if let Some(map) = cached_resource.source_map {
+        resource_pot.add_resource(map.name.clone());
+        resources.lock().push(map);
+      }
     } else {
       resource_pots_need_render.push(resource_pot);
     }
@@ -84,18 +90,27 @@ pub fn render_resource_pots_and_generate_resources(
         }
       }
 
+      let mut cached_result = PluginGenerateResourcesHookResult {
+        resource: Default::default(),
+        source_map: None,
+      };
       // if source map is generated, we need to update the resource name and the content of the resource
       // to make sure the source map can be found.
       if let Some(mut source_map) = res.source_map {
         source_map.name = format!("{}.{}", r.name, source_map.resource_type.to_ext());
         append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
 
+        if context.config.persistent_cache.enabled() {
+          cached_result.source_map = Some(source_map.clone());
+        }
+
         resource_pot.add_resource(source_map.name.clone());
         resources.lock().push(source_map);
       }
 
       if context.config.persistent_cache.enabled() {
-        set_resource_cache(resource_pot, &res.resource, context);
+        cached_result.resource = res.resource.clone();
+        set_resource_cache(resource_pot, &cached_result, context);
       }
 
       resource_pot.add_resource(res.resource.name.clone());

@@ -555,7 +555,7 @@ impl PluginDriver {
     context
       .cache_manager
       .plugin_cache
-      .write_cache(plugin_cache_map);
+      .set_cache(plugin_cache_map);
 
     Ok(())
   }

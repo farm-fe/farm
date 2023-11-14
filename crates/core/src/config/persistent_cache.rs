@@ -58,10 +58,20 @@ impl PersistentCacheConfig {
       }
       PersistentCacheConfig::Obj(obj) => {
         let mut cloned_obj = obj.clone();
-        let config_file_path = config_file_path.to_string();
+        let c = config_file_path.to_string();
 
-        if !cloned_obj.build_dependencies.contains(&config_file_path) {
-          cloned_obj.build_dependencies.push(config_file_path);
+        if !cloned_obj.build_dependencies.contains(&c) {
+          cloned_obj.build_dependencies.push(c);
+        }
+
+        let default_config = Self::get_default_config(root, &config_file_path);
+
+        if cloned_obj.cache_dir.is_empty() {
+          cloned_obj.cache_dir = default_config.as_obj(root, config_file_path).cache_dir;
+        }
+
+        if cloned_obj.namespace.is_empty() {
+          cloned_obj.namespace = default_config.as_obj(root, config_file_path).namespace;
         }
 
         return cloned_obj;
@@ -76,8 +86,8 @@ impl Default for PersistentCacheConfig {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct PersistentCacheConfigObj {
   pub namespace: String,
   pub cache_dir: String,
@@ -89,8 +99,17 @@ pub struct PersistentCacheConfigObj {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct PersistentModuleCacheKeyStrategy {
   pub timestamp: bool,
   pub hash: bool,
+}
+
+impl Default for PersistentModuleCacheKeyStrategy {
+  fn default() -> Self {
+    Self {
+      timestamp: true,
+      hash: true,
+    }
+  }
 }

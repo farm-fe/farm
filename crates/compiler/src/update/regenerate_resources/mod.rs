@@ -15,8 +15,11 @@ use farmfe_plugin_runtime::render_resource_pot::{
 use farmfe_toolkit::hash::base64_encode;
 use farmfe_utils::relative;
 
-use crate::generate::render_resource_pots::{
-  render_resource_pot_generate_resources, render_resource_pots_and_generate_resources,
+use crate::{
+  generate::render_resource_pots::{
+    render_resource_pot_generate_resources, render_resource_pots_and_generate_resources,
+  },
+  write_cache_async,
 };
 
 use super::diff_and_patch_module_graph::DiffResult;
@@ -105,6 +108,7 @@ pub fn render_and_generate_update_resource(
           rendered_modules,
           rendered_content: Arc::new(bundle.to_string()),
           rendered_map_chain,
+          ..Default::default()
         };
 
         let mut update_resources =
@@ -200,7 +204,18 @@ pub fn regenerate_resources_for_affected_module_groups(
     .plugin_driver
     .process_resource_pots(&mut resource_pots, context)?;
 
-  render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())
+  render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())?;
+
+  context
+    .plugin_driver
+    .write_plugin_cache(context)
+    .unwrap_or_else(|err| {
+      eprintln!("write plugin cache error: {:?}", err);
+    });
+
+  write_cache_async(context.clone());
+
+  Ok(())
 }
 
 fn clear_resource_pot_of_modules_in_module_groups(

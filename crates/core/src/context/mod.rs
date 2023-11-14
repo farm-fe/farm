@@ -1,4 +1,4 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, path::PathBuf, sync::Arc};
 
 use dashmap::DashMap;
 use hashbrown::HashMap;
@@ -36,6 +36,7 @@ pub struct CompilationContext {
   pub meta: Box<ContextMetaData>,
   pub record_manager: Box<RecordManager>,
   pub log_store: Box<Mutex<LogStore>>,
+  pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
 }
 
 impl CompilationContext {
@@ -73,6 +74,7 @@ impl CompilationContext {
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
+      custom: Box::new(DashMap::new()),
     })
   }
 
@@ -91,8 +93,24 @@ impl CompilationContext {
     Ok(())
   }
 
+  /// get module id from string
+  /// 1. if resolved_path is a absolute path, try generate module id from it
+  /// 2. if resolved_path is a relative path, treat it as module id
+  pub fn str_to_module_id(&self, id: &str) -> ModuleId {
+    if PathBuf::from(id).is_absolute() {
+      let splits = id.split('?').collect::<Vec<_>>();
+      let resolved_path = splits[0];
+      let query = splits.get(1).unwrap_or(&EMPTY_STR);
+      ModuleId::new(resolved_path, *query, &self.config.root)
+    } else {
+      id.into()
+    }
+  }
+
   pub fn emit_file(&self, params: EmitFileParams) {
     let mut resources_map = self.resources_map.lock();
+
+    let module_id = self.str_to_module_id(&params.resolved_path);
 
     resources_map.insert(
       params.name.clone(),
@@ -101,7 +119,7 @@ impl CompilationContext {
         bytes: params.content,
         emitted: false,
         resource_type: params.resource_type,
-        origin: ResourceOrigin::Module(ModuleId::new(&params.resolved_path, "", &self.config.root)),
+        origin: ResourceOrigin::Module(module_id),
       },
     );
   }

@@ -86,11 +86,37 @@ impl Plugin for FarmPluginCss {
   fn plugin_cache_loaded(
     &self,
     cache: &Vec<u8>,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let cache = deserialize!(cache, CssModulesCache);
-    self.content_map.lock().extend(cache.content_map);
-    self.sourcemap_map.lock().extend(cache.sourcemap_map);
+    let mut content_map = self.content_map.lock();
+
+    for (k, v) in cache.content_map {
+      let resolved_path = k.replace(FARM_CSS_MODULES_SUFFIX, "");
+
+      if context
+        .cache_manager
+        .module_cache
+        .is_initial_cache(&ModuleId::new(&resolved_path, "", &context.config.root))
+      {
+        content_map.insert(k, v);
+      }
+    }
+
+    let mut sourcemap_map = self.sourcemap_map.lock();
+
+    for (k, v) in cache.sourcemap_map {
+      let resolved_path = k.replace(FARM_CSS_MODULES_SUFFIX, "");
+
+      if context
+        .cache_manager
+        .module_cache
+        .is_initial_cache(&ModuleId::new(&resolved_path, "", &context.config.root))
+      {
+        sourcemap_map.insert(k, v);
+      }
+    }
+
     Ok(Some(()))
   }
 
@@ -544,6 +570,7 @@ impl Plugin for FarmPluginCss {
           .collect(),
         rendered_content,
         rendered_map_chain: rendered_map.map(|v| vec![v]).unwrap_or(vec![]),
+        ..Default::default()
       }))
     } else {
       Ok(None)

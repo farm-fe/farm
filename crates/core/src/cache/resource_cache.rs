@@ -1,11 +1,12 @@
-use dashmap::DashMap;
+use dashmap::{DashMap, DashSet};
 use rayon::prelude::*;
 use rkyv::Deserialize;
 use std::collections::HashMap;
 
 use crate::config::Mode;
+use crate::plugin::PluginGenerateResourcesHookResult;
 use crate::resource::resource_pot::ResourcePotMetaData;
-use crate::resource::Resource;
+
 use crate::{deserialize, serialize};
 
 use super::cache_store::CacheStore;
@@ -16,6 +17,7 @@ pub struct ResourceCacheManager {
   resource_pot_meta_store: CacheStore,
   cache: DashMap<String, Vec<u8>>,
   resource_pot_meta_cache: DashMap<String, Vec<u8>>,
+  used_cached_resources: DashSet<String>,
 }
 
 impl ResourceCacheManager {
@@ -53,6 +55,7 @@ impl ResourceCacheManager {
       cache,
       resource_pot_meta_store,
       resource_pot_meta_cache,
+      used_cached_resources: DashSet::new(),
     }
   }
 
@@ -64,7 +67,8 @@ impl ResourceCacheManager {
     self.resource_pot_meta_cache.contains_key(key)
   }
 
-  pub fn set_resource_cache(&self, key: &str, resource: &Resource) {
+  pub fn set_resource_cache(&self, key: &str, resource: &PluginGenerateResourcesHookResult) {
+    self.add_used_resource(key.to_string());
     let bytes = serialize!(resource);
     self.cache.insert(key.to_string(), bytes);
   }
@@ -74,9 +78,10 @@ impl ResourceCacheManager {
     self.resource_pot_meta_cache.insert(key.to_string(), bytes);
   }
 
-  pub fn get_resource_cache(&self, key: &str) -> Resource {
+  pub fn get_resource_cache(&self, key: &str) -> PluginGenerateResourcesHookResult {
     if let Some(bytes) = self.cache.get(key) {
-      deserialize!(&bytes, Resource)
+      self.add_used_resource(key.to_string());
+      deserialize!(&bytes, PluginGenerateResourcesHookResult)
     } else {
       panic!("Resource cache not found: {}", key);
     }
@@ -84,6 +89,7 @@ impl ResourceCacheManager {
 
   pub fn get_resource_pot_meta_cache(&self, key: &str) -> ResourcePotMetaData {
     if let Some(bytes) = self.resource_pot_meta_cache.get(key) {
+      self.add_used_resource(key.to_string());
       deserialize!(&bytes, ResourcePotMetaData)
     } else {
       panic!("Resource cache not found: {}", key);
@@ -94,6 +100,10 @@ impl ResourceCacheManager {
     let mut cache_map = HashMap::new();
 
     for item in self.cache.iter() {
+      if !self.used_cached_resources.contains(item.key()) {
+        continue;
+      }
+
       cache_map.insert(item.key().to_string(), item.value().to_vec());
     }
 
@@ -104,6 +114,10 @@ impl ResourceCacheManager {
     let mut resource_pot_meta_cache_map = HashMap::new();
 
     for item in self.resource_pot_meta_cache.iter() {
+      if !self.used_cached_resources.contains(item.key()) {
+        continue;
+      }
+
       resource_pot_meta_cache_map.insert(item.key().to_string(), item.value().to_vec());
     }
 
@@ -125,5 +139,9 @@ impl ResourceCacheManager {
         || self.write_resource_pot_meta_cache(),
       );
     });
+  }
+
+  pub fn add_used_resource(&self, key: String) {
+    self.used_cached_resources.insert(key);
   }
 }

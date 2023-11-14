@@ -317,6 +317,7 @@ impl Plugin for FarmPluginRuntime {
         rendered_modules: HashMap::new(),
         rendered_content: self.runtime_code.lock().clone(),
         rendered_map_chain: vec![],
+        ..Default::default()
       }));
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
@@ -365,6 +366,7 @@ impl Plugin for FarmPluginRuntime {
         } else {
           vec![]
         },
+        ..Default::default()
       }));
     }
 

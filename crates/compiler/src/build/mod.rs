@@ -131,8 +131,16 @@ impl Compiler {
     if self.context.config.persistent_cache.enabled() {
       // clear unused cached modules
       clear_unused_cached_modules(&self.context);
+      let module_ids = self
+        .context
+        .module_graph
+        .read()
+        .modules()
+        .into_iter()
+        .map(|m| m.id.clone())
+        .collect();
       // set new module cache
-      set_module_graph_cache(&self.context);
+      set_module_graph_cache(module_ids, true, &self.context);
     }
 
     // Topo sort the module graph
@@ -321,7 +329,7 @@ impl Compiler {
   fn build_module_after_transform(
     resolve_result: PluginResolveHookResult,
     load_module_type: ModuleType,
-    mut transform_result: PluginDriverTransformHookResult,
+    transform_result: PluginDriverTransformHookResult,
     module: &mut Module,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,

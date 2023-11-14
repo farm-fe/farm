@@ -16,7 +16,7 @@ const FARM_CACHE_VERSION: &str = "0.0.1";
 pub struct CacheStore {
   cache_dir: PathBuf,
   namespace: String,
-  /// The maximum number of items per cache file. default: 1000
+  /// The maximum number of items per cache file.
   items_per_cache_file: usize,
 }
 

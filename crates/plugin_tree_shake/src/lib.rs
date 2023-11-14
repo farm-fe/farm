@@ -187,7 +187,9 @@ impl Plugin for FarmPluginTreeShake {
     // update used_exports in module_graph
     for module in module_graph.modules_mut() {
       if let Some(tree_shake_module) = tree_shake_modules_map.get(&module.id) {
-        module.used_exports = tree_shake_module.used_exports.to_string_vec();
+        let mut used_exports = tree_shake_module.used_exports.to_string_vec();
+        used_exports.sort();
+        module.used_exports = used_exports;
       }
     }
 

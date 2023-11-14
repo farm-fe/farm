@@ -24,11 +24,20 @@ use farmfe_core::{
 use napi::{
   bindgen_prelude::FromNapiValue,
   sys::{
-    napi_call_function, napi_call_threadsafe_function, napi_callback_info, napi_create_function,
-    napi_create_string_utf8, napi_create_threadsafe_function, napi_env, napi_get_cb_info,
-    napi_get_named_property, napi_get_undefined, napi_release_threadsafe_function,
-    napi_threadsafe_function, napi_unref_threadsafe_function, napi_value,
-    ThreadsafeFunctionReleaseMode,
+    napi_call_function,
+    napi_call_threadsafe_function,
+    napi_callback_info,
+    napi_create_function,
+    napi_create_string_utf8,
+    napi_create_threadsafe_function,
+    napi_env,
+    napi_get_cb_info,
+    napi_get_named_property,
+    napi_get_undefined,
+    napi_threadsafe_function,
+    napi_unref_threadsafe_function,
+    napi_value,
+    // ThreadsafeFunctionReleaseMode,napi_release_threadsafe_function,
   },
   threadsafe_function::ThreadsafeFunctionCallMode,
   Env, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
@@ -99,13 +108,13 @@ impl ThreadSafeJsPluginHook {
   }
 }
 
-impl Drop for ThreadSafeJsPluginHook {
-  fn drop(&mut self) {
-    unsafe {
-      napi_release_threadsafe_function(self.raw_tsfn, ThreadsafeFunctionReleaseMode::release);
-    }
-  }
-}
+// impl Drop for ThreadSafeJsPluginHook {
+//   fn drop(&mut self) {
+//     unsafe {
+//       napi_release_threadsafe_function(self.raw_tsfn, ThreadsafeFunctionReleaseMode::release);
+//     }
+//   }
+// }
 
 /// empty callback does nothing, just used as a parameter
 unsafe extern "C" fn thread_finalize_cb(

@@ -7,7 +7,11 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
+  config::{Config, Mode},
+  context::CompilationContext,
+  error::Result,
+  plugin::Plugin,
+  stats::Stats,
 };
 
 pub mod build;
@@ -96,15 +100,19 @@ impl Compiler {
       .finish(&Stats {}, &self.context)?;
 
     if self.context.config.persistent_cache.enabled() {
-      // Does not support write cache in update mode for now
-      let start = std::time::Instant::now();
-      self.context.cache_manager.write_cache();
-
       self
         .context
         .plugin_driver
-        .write_plugin_cache(&self.context)?;
-      println!("Write cache cost {:?}", start.elapsed());
+        .write_plugin_cache(&self.context)
+        .unwrap_or_else(|err| {
+          eprintln!("write plugin cache error: {:?}", err);
+        });
+
+      if matches!(self.context.config.mode, Mode::Development) {
+        write_cache_async(self.context.clone());
+      } else {
+        write_cache(self.context.clone());
+      }
     }
 
     Ok(())
@@ -113,4 +121,16 @@ impl Compiler {
   pub fn context(&self) -> &Arc<CompilationContext> {
     &self.context
   }
+}
+
+fn write_cache(context: Arc<CompilationContext>) {
+  let start = std::time::Instant::now();
+  context.cache_manager.write_cache();
+  println!("Write cache cost {:?}", start.elapsed());
+}
+
+pub fn write_cache_async(context: Arc<CompilationContext>) {
+  std::thread::spawn(move || {
+    write_cache(context);
+  });
 }

@@ -26,6 +26,7 @@ use farmfe_core::error::Result;
 use self::{
   diff_and_patch_module_graph::{diff_module_graph, patch_module_graph, DiffResult},
   handle_update_modules::handle_update_modules,
+  module_cache::set_updated_modules_cache,
   patch_module_group_graph::patch_module_group_graph,
   regenerate_resources::{
     regenerate_resources_for_affected_module_groups, render_and_generate_update_resource,
@@ -36,6 +37,7 @@ use self::{
 mod diff_and_patch_module_graph;
 mod find_hmr_boundaries;
 mod handle_update_modules;
+mod module_cache;
 mod patch_module_group_graph;
 mod regenerate_resources;
 mod update_context;
@@ -166,6 +168,9 @@ impl Compiler {
 
     let (affected_module_groups, updated_module_ids, diff_result, removed_modules) =
       self.diff_and_patch_context(paths, &update_context);
+
+    // update cache
+    set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
 
     // TODO Add a separate hook after module graph are updated
     let mut module_ids = updated_module_ids.clone();

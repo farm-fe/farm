@@ -11,8 +11,6 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::{
-  resolve::load_package_json,
-  script::swc_try_with::try_with,
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
@@ -65,17 +63,27 @@ impl VisitMut for ResetSpanVisitMut {
   }
 }
 
-pub fn set_module_graph_cache(context: &Arc<CompilationContext>) {
+pub fn set_module_graph_cache(
+  module_ids: Vec<ModuleId>,
+  check_initial_cache: bool,
+  context: &Arc<CompilationContext>,
+) {
   let start = std::time::Instant::now();
-  let mut module_graph = context.module_graph.write();
+  let module_graph = context.module_graph.read();
   let mut cacheable_modules = HashSet::new();
 
-  for module in module_graph.modules() {
-    // if cache is disabled for this kind of module or the module has already in the cache, skip it.
-    if context
-      .cache_manager
-      .module_cache
-      .is_initial_cache(&module.id)
+  let modules = module_ids
+    .iter()
+    .map(|id| module_graph.module(id).unwrap())
+    .collect::<Vec<_>>();
+
+  for module in &modules {
+    // if the module has already in the cache, skip it.
+    if check_initial_cache
+      && context
+        .cache_manager
+        .module_cache
+        .is_initial_cache(&module.id)
     {
       continue;
     }
@@ -97,39 +105,19 @@ pub fn set_module_graph_cache(context: &Arc<CompilationContext>) {
     cached_dependency_map.insert(module_id.clone(), dependencies);
   }
 
-  module_graph
-    .modules_mut()
+  modules
     .into_par_iter()
     .filter(|module| cacheable_modules.contains(&module.id))
     .for_each(|module| {
       // Replace the module with a placeholder module to prevent the module from being cloned
       let cloned_module = module.clone();
       let dependencies = cached_dependency_map.remove(&module.id).unwrap().1;
-      let package_info = load_package_json(
-        PathBuf::from(module.id.resolved_path(&context.config.root))
-          .parent()
-          .unwrap()
-          .to_path_buf(),
-        Default::default(),
-      );
-      let package_name = package_info
-        .as_ref()
-        .map(|info| info.name.clone())
-        .unwrap_or_default()
-        .unwrap_or_default();
-      let package_version = package_info
-        .as_ref()
-        .map(|info| info.version.clone())
-        .unwrap_or_default()
-        .unwrap_or_default();
 
       let cached_module = CachedModule {
         module: cloned_module,
         dependencies,
         last_update_timestamp: get_timestamp_of_module(&module.id, &context.config.root),
         content_hash: get_content_hash_of_module(&module.source_content),
-        package_name,
-        package_version,
       };
 
       context

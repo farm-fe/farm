@@ -128,6 +128,7 @@ pub struct ResourcePotMetaData {
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
   pub rendered_content: Arc<String>,
   pub rendered_map_chain: Vec<Arc<String>>,
+  pub custom_data: HashMap<String, String>,
 }
 
 impl Default for ResourcePotMetaData {
@@ -136,6 +137,7 @@ impl Default for ResourcePotMetaData {
       rendered_modules: HashMap::new(),
       rendered_content: Arc::new(String::new()),
       rendered_map_chain: vec![],
+      custom_data: HashMap::new(),
     }
   }
 }

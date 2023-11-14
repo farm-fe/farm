@@ -25,6 +25,8 @@ pub struct ModuleCacheManager {
   initial_cached_modules_map: DashMap<ModuleId, CachedModule>,
   initial_cached_modules: HashSet<ModuleId>,
   invalidated_cached_modules: DashSet<ModuleId>,
+
+  used_cached_modules: DashSet<ModuleId>,
 }
 
 #[cache_item]
@@ -41,8 +43,6 @@ pub struct CachedModule {
   pub dependencies: Vec<CachedModuleDependency>,
   pub last_update_timestamp: u128,
   pub content_hash: String,
-  pub package_name: String,
-  pub package_version: String,
 }
 
 impl CachedModule {
@@ -90,7 +90,11 @@ impl ModuleCacheManager {
     let cache = cache.into_iter().collect();
     let initial_cached_modules_map = initial_cached_modules_map.into_iter().collect();
     let initial_cached_bytes = initial_cached_bytes.into_iter().collect();
-    println!("read module cache time: {:?}", start.elapsed());
+    println!(
+      "read {} modules cache time: {:?}",
+      initial_cached_modules.len(),
+      start.elapsed()
+    );
 
     Self {
       store,
@@ -99,7 +103,16 @@ impl ModuleCacheManager {
       initial_cached_modules_map,
       initial_cached_modules,
       invalidated_cached_modules: DashSet::new(),
+      used_cached_modules: DashSet::new(),
     }
+  }
+
+  pub fn add_used_module(&self, module_id: &ModuleId) {
+    self.used_cached_modules.insert(module_id.clone());
+  }
+
+  pub fn remove_used_module(&self, module_id: &ModuleId) {
+    self.used_cached_modules.remove(module_id);
   }
 
   pub fn has_cache(&self, key: &ModuleId) -> bool {
@@ -107,11 +120,13 @@ impl ModuleCacheManager {
   }
 
   pub fn set_cache(&self, key: ModuleId, module: CachedModule) {
+    self.add_used_module(&key);
     self.cache.insert(key, module);
   }
 
   pub fn get_cache(&self, key: &ModuleId) -> CachedModule {
     if let Some((_, cached_module)) = self.initial_cached_modules_map.remove(key) {
+      self.add_used_module(key);
       cached_module
     } else {
       panic!("Module cache not found: {:?}", key);
@@ -120,6 +135,7 @@ impl ModuleCacheManager {
 
   pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {
     if let Some(m_ref) = self.initial_cached_modules_map.get(key) {
+      self.add_used_module(key);
       m_ref
     } else {
       panic!("Module cache not found: {:?}", key);
@@ -128,6 +144,7 @@ impl ModuleCacheManager {
 
   pub fn get_cache_mut_ref(&self, key: &ModuleId) -> RefMut<'_, ModuleId, CachedModule> {
     if let Some(m_ref) = self.initial_cached_modules_map.get_mut(key) {
+      self.add_used_module(key);
       m_ref
     } else {
       panic!("Module cache not found: {:?}", key);
@@ -139,14 +156,21 @@ impl ModuleCacheManager {
     let mut cache_map = HashMap::new();
 
     for item in self.cache.iter() {
+      if !self.used_cached_modules.contains(&item.key()) {
+        continue;
+      }
+
       let key_str = item.key().to_string();
 
-      if let Some((key, bytes)) = self.initial_cached_bytes.remove(&key_str) {
-        cache_map.insert(key, bytes);
-      } else {
-        let bytes = crate::serialize!(item.value());
-        cache_map.insert(key_str, bytes);
+      if let Some(entry) = self.initial_cached_bytes.get(&key_str) {
+        if !self.invalidated_cached_modules.contains(item.key()) {
+          cache_map.insert(entry.key().clone(), entry.value().to_vec());
+          continue;
+        }
       }
+
+      let bytes = crate::serialize!(item.value());
+      cache_map.insert(key_str, bytes);
     }
 
     self.store.write_cache(cache_map, "module");

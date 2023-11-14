@@ -2,10 +2,8 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
-  resource::{
-    resource_pot::{ResourcePot, ResourcePotMetaData},
-    Resource,
-  },
+  plugin::PluginGenerateResourcesHookResult,
+  resource::resource_pot::{ResourcePot, ResourcePotMetaData},
 };
 
 /// Cache key of resource is consist of:
@@ -24,8 +22,10 @@ pub fn get_resource_cache_key(
 
     for module_id in &resource_pot.modules() {
       let module = module_graph.module(module_id).unwrap();
+
       // make sure cache is correct when tree shaking is enabled
       code.push_str(&module.used_exports.join(","));
+      code.push_str("#");
     }
 
     farmfe_toolkit::hash::sha256(&code.as_bytes(), 32)
@@ -35,7 +35,7 @@ pub fn get_resource_cache_key(
 pub fn try_get_resource_cache(
   resource_pot: &ResourcePot,
   context: &Arc<CompilationContext>,
-) -> farmfe_core::error::Result<Option<(ResourcePotMetaData, Resource)>> {
+) -> farmfe_core::error::Result<Option<(ResourcePotMetaData, PluginGenerateResourcesHookResult)>> {
   // Resource is cached only:
   // - cache key is cached
   // - all modules are cached initially
@@ -82,10 +82,11 @@ pub fn try_get_resource_cache(
 
 pub fn set_resource_cache(
   resource_pot: &ResourcePot,
-  resource: &Resource,
+  resource: &PluginGenerateResourcesHookResult,
   context: &Arc<CompilationContext>,
 ) {
   let cache_key = get_resource_cache_key(resource_pot, context);
+
   context
     .cache_manager
     .resource_cache
