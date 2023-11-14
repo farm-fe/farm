@@ -61,6 +61,10 @@ pub struct Module {
   pub used_exports: Vec<String>,
   /// source content after load and transform hook
   pub source_content: String,
+  /// last update timestamp, 0 if the module if not from disk
+  pub last_update_timestamp: u128,
+  /// content(after load and transform) hash
+  pub content_hash: String,
 }
 
 impl Module {
@@ -81,6 +85,8 @@ impl Module {
       content: Arc::new("".to_string()),
       used_exports: vec![],
       source_content: String::new(),
+      last_update_timestamp: 0,
+      content_hash: "".to_string(),
     }
   }
 }

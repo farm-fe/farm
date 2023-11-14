@@ -12,21 +12,18 @@ use crate::module::module_graph::ModuleGraphEdge;
 use crate::module::{Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
 
+use self::immutable_modules::ImmutableModulesMemoryStore;
+use self::mutable_modules::MutableModulesMemoryStore;
+
 use super::cache_store::CacheStore;
 
-#[derive(Default)]
+pub mod immutable_modules;
+pub mod mutable_modules;
+
 pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
-  store: CacheStore,
-  /// cache map for cache_key -> CachedModule.
-  /// It's used for writing or reading data from store. New added cache will be also inserted into it directly.
-  cache: DashMap<ModuleId, CachedModule>,
-  initial_cached_bytes: DashMap<String, Vec<u8>>,
-  initial_cached_modules_map: DashMap<ModuleId, CachedModule>,
-  initial_cached_modules: HashSet<ModuleId>,
-  invalidated_cached_modules: DashSet<ModuleId>,
-
-  used_cached_modules: DashSet<ModuleId>,
+  pub mutable_modules_store: MutableModulesMemoryStore,
+  pub immutable_modules_store: ImmutableModulesMemoryStore,
 }
 
 #[cache_item]
@@ -41,8 +38,8 @@ pub struct CachedModuleDependency {
 pub struct CachedModule {
   pub module: Module,
   pub dependencies: Vec<CachedModuleDependency>,
-  pub last_update_timestamp: u128,
-  pub content_hash: String,
+  // pub last_update_timestamp: u128,
+  // pub content_hash: String,
 }
 
 impl CachedModule {
@@ -67,61 +64,22 @@ impl CachedModule {
 
 impl ModuleCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
-    let start = std::time::Instant::now();
-
-    let store = CacheStore::new(cache_dir_str, namespace, mode);
-    let initial_cached_bytes = store.read_cache("module");
-
-    let cache = initial_cached_bytes
-      .par_iter()
-      .map(|item| {
-        let (key, value) = item;
-        let cached_module = deserialize!(&value, CachedModule);
-        (ModuleId::from(key.as_str()), cached_module)
-      })
-      .collect::<HashMap<_, _>>();
-
-    let initial_cached_modules_map = cache.clone();
-
-    let initial_cached_modules = cache
-      .iter()
-      .map(|item| item.0.clone())
-      .collect::<HashSet<_>>();
-    let cache = cache.into_iter().collect();
-    let initial_cached_modules_map = initial_cached_modules_map.into_iter().collect();
-    let initial_cached_bytes = initial_cached_bytes.into_iter().collect();
-    println!(
-      "read {} modules cache time: {:?}",
-      initial_cached_modules.len(),
-      start.elapsed()
-    );
-
     Self {
-      store,
-      cache,
-      initial_cached_bytes,
-      initial_cached_modules_map,
-      initial_cached_modules,
-      invalidated_cached_modules: DashSet::new(),
-      used_cached_modules: DashSet::new(),
+      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
+      immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
     }
   }
 
-  pub fn add_used_module(&self, module_id: &ModuleId) {
-    self.used_cached_modules.insert(module_id.clone());
-  }
-
-  pub fn remove_used_module(&self, module_id: &ModuleId) {
-    self.used_cached_modules.remove(module_id);
-  }
-
   pub fn has_cache(&self, key: &ModuleId) -> bool {
-    self.initial_cached_modules_map.contains_key(key)
+    self.mutable_modules_store.has_cache(key) || self.immutable_modules_store.has_cache(key)
   }
 
   pub fn set_cache(&self, key: ModuleId, module: CachedModule) {
-    self.add_used_module(&key);
-    self.cache.insert(key, module);
+    if module.module.immutable {
+      self.immutable_modules_store.set_cache(key, module);
+    } else {
+      self.mutable_modules_store.set_cache(key, module);
+    }
   }
 
   pub fn get_cache(&self, key: &ModuleId) -> CachedModule {
@@ -174,19 +132,5 @@ impl ModuleCacheManager {
     }
 
     self.store.write_cache(cache_map, "module");
-  }
-
-  pub fn is_initial_cache(&self, module_id: &ModuleId) -> bool {
-    self.initial_cached_modules.contains(module_id)
-      && !self.invalidated_cached_modules.contains(module_id)
-  }
-
-  pub fn get_initial_cached_modules(&self) -> Vec<ModuleId> {
-    self.initial_cached_modules.iter().cloned().collect()
-  }
-
-  pub fn invalidate_cache(&self, module_id: &ModuleId) {
-    self.cache.remove(module_id);
-    self.invalidated_cached_modules.insert(module_id.clone());
   }
 }
