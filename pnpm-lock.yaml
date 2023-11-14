@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: false
@@ -1153,9 +1153,6 @@ importers:
       cac:
         specifier: ^6.7.14
         version: 6.7.14
-      chalk:
-        specifier: ^5.2.0
-        version: 5.3.0
       cross-spawn:
         specifier: ^7.0.3
         version: 7.0.3

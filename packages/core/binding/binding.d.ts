@@ -46,19 +46,27 @@ export interface TransformRecord {
   isHmr: boolean
 }
 export interface ModuleRecord {
-  name: string
+  plugin: string
+  hook: string
+  moduleType: string
+  isHmr: boolean
 }
 export interface AnalyzeDep {
   source: string
   kind: string
 }
 export interface AnalyzeDepsRecord {
-  name: string
+  plugin: string
+  hook: string
+  moduleType: string
+  isHmr: boolean
   deps: Array<AnalyzeDep>
 }
 export interface Module {
   id: string
   moduleType: string
+  moduleGroups: Array<string>
+  resourcePot?: string
   sideEffects: boolean
   sourceMapChain: Array<string>
   external: boolean

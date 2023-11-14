@@ -252,8 +252,13 @@ impl PluginDriver {
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
       context.record_manager.add_parse_record(
-        param.resolved_path.to_string(),
-        ModuleRecord { name: plugin_name },
+        param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
+        ModuleRecord {
+          plugin: plugin_name,
+          hook: "parse".to_string(),
+          module_type: param.module_type.clone(),
+          trigger: Trigger::Compiler,
+        },
       );
     },
     param: &PluginParseHookParam,
@@ -268,8 +273,13 @@ impl PluginDriver {
      param: &mut PluginProcessModuleHookParam,
      context: &Arc<CompilationContext>| {
       context.record_manager.add_process_record(
-        param.module_id.resolved_path(&context.config.root),
-        ModuleRecord { name: plugin_name },
+        param.module_id.resolved_path(&context.config.root) + param.module_id.query_string(),
+        ModuleRecord {
+          plugin: plugin_name,
+          hook: "process".to_string(),
+          module_type: param.module_type.clone(),
+          trigger: Trigger::Compiler,
+        },
       );
     }
   );
@@ -281,9 +291,12 @@ impl PluginDriver {
      param: &mut PluginAnalyzeDepsHookParam,
      context: &Arc<CompilationContext>| {
       context.record_manager.add_analyze_deps_record(
-        param.module.id.resolved_path(&context.config.root),
+        param.module.id.resolved_path(&context.config.root) + param.module.id.query_string(),
         AnalyzeDepsRecord {
-          name: plugin_name,
+          plugin: plugin_name,
+          hook: "analyze_deps".to_string(),
+          module_type: param.module.module_type.clone(),
+          trigger: Trigger::Compiler,
           deps: param.deps.clone(),
         },
       );
