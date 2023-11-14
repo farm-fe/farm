@@ -47,12 +47,14 @@ export async function create(args: CreateArgs): Promise<void> {
     {
       type: 'input',
       name: 'npmName',
-      message: 'What is the npm name of the plugin? E.g. farm-plugin-xxx'
+      message: 'What is the npm name of the plugin? E.g. farm-plugin-xxx',
+      default: 'farm-plugin-xxx'
     },
     {
       type: 'input',
       name: 'structName',
-      message: 'What is the name struct of the plugin? E.g. FarmPluginXxx'
+      message: 'What is the name struct of the plugin? E.g. FarmPluginXxx',
+      default: 'FarmPluginXxx'
     }
   ];
 
@@ -66,7 +68,8 @@ export async function create(args: CreateArgs): Promise<void> {
     {
       type: 'input',
       name: 'npmName',
-      message: 'What is the npm name of the plugin? E.g. farm-js-plugin-xxx'
+      message: 'What is the npm name of the plugin? E.g. farm-js-plugin-xxx',
+      default: 'farm-js-plugin-xxx'
     }
   ];
 
