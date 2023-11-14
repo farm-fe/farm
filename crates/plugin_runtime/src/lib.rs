@@ -324,16 +324,20 @@ impl Plugin for FarmPluginRuntime {
         mut bundle,
         rendered_modules,
       } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
-
+      let str = format!(
+        r#"(function (modules) {{
+            const resourcePotName = '{}';
+            for (var key in modules) {{
+              var __farm_global_this__ = (globalThis || window || global || self)[
+                __farm_namespace__
+              ];
+                __farm_global_this__.__farm_module_system__.register(key, modules[key], resourcePotName);
+            }}
+        }})("#,
+        resource_pot.name.to_string() + ".js",
+    );
       bundle.prepend(
-        r#"(function (modules) {
-        for (var key in modules) {
-          var __farm_global_this__ = (globalThis || window || global || self)[
-            __farm_namespace__
-          ];
-          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
-        }
-      })("#,
+        &str,
       );
       bundle.append(");", None);
 

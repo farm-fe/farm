@@ -40,6 +40,8 @@ export class ModuleSystem {
   private modules: Record<string, ModuleInitialization>;
   // module cache after module initialized
   private cache: Record<string, Module>;
+  // all resources
+  private resources: Map<string, string[]>;
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
   // dynamic module entry and resources map
@@ -56,6 +58,7 @@ export class ModuleSystem {
     this.dynamicModuleResourcesMap = {};
     this.resourceLoader = new ResourceLoader(this.publicPaths);
     this.pluginContainer = new FarmRuntimePluginContainer([]);
+    this.resources = new Map();
   }
 
   // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
@@ -152,7 +155,11 @@ export class ModuleSystem {
       });
   }
 
-  register(moduleId: string, initializer: ModuleInitialization): void {
+  register(
+    moduleId: string,
+    initializer: ModuleInitialization,
+    resourcePotName: string
+  ): void {
     // console.log(`[Farm] register module "${moduleId}"`, console.trace());
     if (this.modules[moduleId]) {
       // throw new Error(
@@ -165,6 +172,13 @@ export class ModuleSystem {
     }
 
     this.modules[moduleId] = initializer;
+    if (this.resources.has(resourcePotName)) {
+      const modules = this.resources.get(resourcePotName);
+      modules.push(moduleId);
+      this.resources.set(resourcePotName, modules);
+    } else {
+      this.resources.set(resourcePotName, [moduleId]);
+    }
   }
 
   update(moduleId: string, init: ModuleInitialization): void {
@@ -181,6 +195,19 @@ export class ModuleSystem {
       return true;
     } else {
       return false;
+    }
+  }
+
+  getModuleUrl(moduleId: string): string {
+    for (const [resource, modules] of this.resources) {
+      if (modules.includes(moduleId)) {
+        const publicPath = this.publicPaths[0];
+        // @ts-ignore
+        const url = `${window.FARM_HOST}:${window.FARM_PORT}${
+          publicPath === '/' ? '' : publicPath
+        }/${resource}`;
+        return url;
+      }
     }
   }
 

@@ -146,6 +146,9 @@ export async function normalizeUserCompilationConfig(
 
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
+  const ImportMetaPluginPath = require.resolve(
+    '@farmfe/runtime-plugin-import-meta'
+  );
 
   if (!config.runtime) {
     config.runtime = {
@@ -231,6 +234,19 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_PORT = String(normalizedDevServerConfig.hmr.port);
     config.define.FARM_HMR_HOST = normalizedDevServerConfig.hmr.host;
     config.define.FARM_HMR_PATH = normalizedDevServerConfig.hmr.path;
+  }
+
+  if (
+    config.output.targetEnv !== 'node' &&
+    isArray(config.runtime.plugins) &&
+    !config.runtime.plugins.includes(ImportMetaPluginPath)
+  ) {
+    config.runtime.plugins.push(ImportMetaPluginPath);
+    config.define.FARM_PORT = String(normalizedDevServerConfig.port);
+    config.define.FARM_HOST =
+      normalizedDevServerConfig.host === true
+        ? normalizedDevServerConfig.hostname
+        : normalizedDevServerConfig.host;
   }
 
   // we should not deep merge compilation.input
