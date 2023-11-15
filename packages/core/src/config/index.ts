@@ -242,11 +242,6 @@ export async function normalizeUserCompilationConfig(
     !config.runtime.plugins.includes(ImportMetaPluginPath)
   ) {
     config.runtime.plugins.push(ImportMetaPluginPath);
-    config.define.FARM_PORT = String(normalizedDevServerConfig.port);
-    config.define.FARM_HOST =
-      normalizedDevServerConfig.host === true
-        ? normalizedDevServerConfig.hostname
-        : normalizedDevServerConfig.host;
   }
 
   // we should not deep merge compilation.input

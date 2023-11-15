@@ -202,8 +202,7 @@ export class ModuleSystem {
     for (const [resource, modules] of this.resources) {
       if (modules.includes(moduleId)) {
         const publicPath = this.publicPaths[0];
-        // @ts-ignore
-        const url = `${window.FARM_HOST}:${window.FARM_PORT}${
+        const url = `${location.host}${
           publicPath === '/' ? '' : publicPath
         }/${resource}`;
         return url;

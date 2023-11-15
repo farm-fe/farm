@@ -8,8 +8,6 @@ export default <FarmRuntimePlugin>{
     this._moduleSystem = system;
   },
   moduleCreated(module) {
-    console.log('module:', module);
-
     module.meta.env = {
       ...process.env,
       mode: process.env.NODE_ENV,
