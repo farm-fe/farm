@@ -46,12 +46,10 @@ pub struct ImmutableModulesMemoryStore {
 impl ImmutableModulesMemoryStore {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     let store = CacheStore::new(cache_dir_str, namespace, mode, "immutable-modules");
-    let manifest_bytes = store
-      .read_cache(MANIFEST_KEY)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
 
-    let manifest: HashMap<String, String> = serde_json::from_slice(&manifest_bytes)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
+    let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
+    let manifest: HashMap<String, String> =
+      serde_json::from_slice(&manifest_bytes).unwrap_or_default();
 
     Self {
       store,
@@ -69,6 +67,10 @@ impl ImmutableModulesMemoryStore {
       let store_keys = self.store.get_store_keys();
 
       store_keys.into_par_iter().for_each(|item| {
+        if item.key() == MANIFEST_KEY {
+          return;
+        }
+
         let cache = self
           .store
           .read_cache(item.key())
@@ -131,7 +133,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(self.cached_modules.get(key).unwrap().clone());
     }
 
-    if let Some(_) = self.read_package(key) {
+    if self.read_package(key).is_some() {
       return Some(
         self
           .cached_modules
@@ -152,7 +154,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(self.cached_modules.get(key).unwrap());
     }
 
-    if let Some(_) = self.read_package(key) {
+    if self.read_package(key).is_some() {
       return Some(
         self
           .cached_modules
@@ -172,7 +174,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(self.cached_modules.get_mut(key).unwrap());
     }
 
-    if let Some(_) = self.read_package(key) {
+    if self.read_package(key).is_some() {
       return Some(
         self
           .cached_modules
@@ -191,9 +193,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       let module = item.value();
       let package_key = CachedPackage::gen_key(&module.package_name, &module.package_version);
 
-      let package = packages
-        .entry(package_key.clone())
-        .or_insert_with(|| vec![]);
+      let package = packages.entry(package_key.clone()).or_insert_with(Vec::new);
 
       package.push(item.key().clone());
       self.manifest.insert(item.key().clone(), package_key);
@@ -220,7 +220,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
         let store_key = CacheStoreKey {
           name: key.clone(),
-          key: package_hash.clone(),
+          key: package_hash,
         };
         // skip clone if the cache is not changed
         if !self.store.is_cache_changed(&store_key) {

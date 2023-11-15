@@ -32,13 +32,13 @@ pub fn render_resource_pots_and_generate_resources(
   let mut resource_pots_need_render = vec![];
 
   for resource_pot in resource_pots {
-    let start = std::time::Instant::now();
-    let cached_resource = try_get_resource_cache(resource_pot, context)?;
-    println!("try_get_resource_cache time: {:?}", start.elapsed());
+    let cached_resource_pot = try_get_resource_cache(resource_pot, context)?;
 
-    if let Some((meta, cached_resource)) = cached_resource {
-      println!("cached_resource: {:?}", cached_resource.resource.name);
-      resource_pot.meta = meta;
+    if let Some(cached_resource_pot) = cached_resource_pot {
+      let cached_resource = cached_resource_pot.resources;
+      let cached_meta = cached_resource_pot.meta;
+
+      resource_pot.meta = cached_meta;
 
       resource_pot.add_resource(cached_resource.resource.name.clone());
       resources.lock().push(cached_resource.resource);
@@ -56,7 +56,6 @@ pub fn render_resource_pots_and_generate_resources(
   resource_pots_need_render
     .into_par_iter()
     .try_for_each(|resource_pot| {
-      let start = std::time::Instant::now();
       #[cfg(feature = "profile")]
       let id = farmfe_utils::transform_string_to_static_str(format!(
         "Render and generate resources for {:?}",
@@ -115,12 +114,6 @@ pub fn render_resource_pots_and_generate_resources(
 
       resource_pot.add_resource(res.resource.name.clone());
       resources.lock().push(res.resource);
-
-      println!(
-        "render_resource_pot_generate_resources {} time: {:?}",
-        resource_pot.name,
-        start.elapsed()
-      );
       Ok(())
     })?;
 

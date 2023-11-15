@@ -27,6 +27,12 @@ impl ResourcePotMemoryStore {
       cached_resources: DashMap::new(),
     }
   }
+
+  pub fn is_cache_changed(&self, name: String, hash: String) -> bool {
+    self
+      .store
+      .is_cache_changed(&CacheStoreKey { name, key: hash })
+  }
 }
 
 impl ResourceMemoryStore for ResourcePotMemoryStore {
@@ -35,7 +41,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
       return true;
     }
 
-    return self.store.has_cache(name);
+    self.store.has_cache(name)
   }
 
   fn set_cache(&self, name: &str, resource: CachedResourcePot) {

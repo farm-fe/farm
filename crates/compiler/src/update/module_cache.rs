@@ -25,7 +25,7 @@ pub fn get_affected_module_ids(
     context
       .cache_manager
       .module_cache
-      .remove_used_module(removed_id);
+      .invalidate_cache(removed_id);
   }
 
   affected_module_ids

@@ -99,7 +99,7 @@ impl CompilationContext {
       let splits = id.split('?').collect::<Vec<_>>();
       let resolved_path = splits[0];
       let query = splits.get(1).unwrap_or(&EMPTY_STR);
-      ModuleId::new(resolved_path, *query, &self.config.root)
+      ModuleId::new(resolved_path, query, &self.config.root)
     } else {
       id.into()
     }

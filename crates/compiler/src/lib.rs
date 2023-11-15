@@ -10,6 +10,7 @@ use farmfe_core::{
   config::{Config, Mode},
   context::CompilationContext,
   error::Result,
+  farm_profile_function,
   plugin::Plugin,
   stats::Stats,
 };
@@ -81,17 +82,13 @@ impl Compiler {
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      let start = std::time::Instant::now();
       self.build()?;
-      println!("Build cost {:?}", start.elapsed());
     }
 
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Generate Stage");
-      let start = std::time::Instant::now();
       self.generate()?;
-      println!("Generate cost {:?}", start.elapsed());
     }
 
     self
@@ -124,9 +121,8 @@ impl Compiler {
 }
 
 fn write_cache(context: Arc<CompilationContext>) {
-  let start = std::time::Instant::now();
+  farm_profile_function!("write_cache".to_string());
   context.cache_manager.write_cache();
-  println!("Write cache cost {:?}", start.elapsed());
 }
 
 pub fn write_cache_async(context: Arc<CompilationContext>) {

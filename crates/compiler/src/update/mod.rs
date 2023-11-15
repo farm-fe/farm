@@ -63,7 +63,6 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
-    let start = std::time::Instant::now();
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
     let update_context = Arc::new(UpdateContext::new());
 
@@ -148,8 +147,6 @@ impl Compiler {
 
     self.handle_global_log(&mut errors);
 
-    println!("build module graph costs {:?}", start.elapsed());
-
     if !errors.is_empty() {
       return Err(CompilationError::GenericError(
         errors
@@ -172,7 +169,6 @@ impl Compiler {
     let (affected_module_groups, updated_module_ids, diff_result, removed_modules) =
       self.diff_and_patch_context(paths, &update_context);
 
-    println!("diff_and_patch_context costs {:?}", start.elapsed());
     // update cache
     set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
 
@@ -190,8 +186,6 @@ impl Compiler {
       callback,
       sync,
     );
-
-    println!("regenerate_resources costs {:?}", start.elapsed());
 
     // after update_module, diff old_resource and new_resource
     {
@@ -219,19 +213,11 @@ impl Compiler {
     let (immutable_resources, mutable_resources) = if should_reload_page {
       ("window.location.reload()".to_string(), "{}".to_string())
     } else {
-      // TODO3: cover it with tests
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?
     };
 
-    println!(
-      "render_and_generate_update_resource costs {:?}",
-      start.elapsed()
-    );
-
     // find the boundaries. TODO: detect the boundaries in the client side.
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
-
-    println!("find_hmr_boundaries costs {:?}", start.elapsed());
 
     // TODO: support sourcemap for hmr. and should generate the hmr update response body in rust side.
     update_result

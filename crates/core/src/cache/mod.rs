@@ -2,7 +2,7 @@ use parking_lot::Mutex;
 
 use crate::config::Mode;
 
-use self::plugin_cache::PluginCacheManager;
+use self::{cache_store::CacheStore, plugin_cache::PluginCacheManager};
 
 pub mod cache_store;
 pub mod module_cache;
@@ -17,6 +17,9 @@ pub struct CacheManager {
   pub module_cache: module_cache::ModuleCacheManager,
   pub resource_cache: resource_cache::ResourceCacheManager,
   pub plugin_cache: PluginCacheManager,
+  pub lazy_compile_store: CacheStore,
+  /// cache store for custom caches
+  pub custom: CacheStore,
   /// lock for cache manager
   pub lock: Mutex<bool>,
 }
@@ -31,7 +34,9 @@ impl CacheManager {
       module_cache,
       resource_cache,
       // plugin cache is not initialized here. it will be initialized when compile starts.
-      plugin_cache: PluginCacheManager::new(cache_dir, namespace, mode),
+      plugin_cache: PluginCacheManager::new(cache_dir, namespace, mode.clone()),
+      custom: CacheStore::new(cache_dir, namespace, mode.clone(), "custom"),
+      lazy_compile_store: CacheStore::new(cache_dir, namespace, mode, "lazy-compilation"),
       lock: Mutex::new(false),
     }
   }
@@ -46,7 +51,7 @@ impl CacheManager {
     *lock = true;
     // write cache in parallel
     let thread_pool = rayon::ThreadPoolBuilder::new()
-      .num_threads(3)
+      .num_threads(4)
       .build()
       .unwrap();
     thread_pool.install(|| {

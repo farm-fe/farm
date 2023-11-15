@@ -48,6 +48,8 @@ pub struct Config {
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
   pub persistent_cache: Box<persistent_cache::PersistentCacheConfig>,
+  /// preserved for future compatibility usage when there are more config options
+  pub custom: Box<HashMap<String, String>>,
 }
 
 impl Default for Config {
@@ -83,6 +85,7 @@ impl Default for Config {
         // the config file path will be set after the Config is initialized
         persistent_cache::PersistentCacheConfig::get_default_config(&root, ""),
       ),
+      custom: Box::<HashMap<String, String>>::default(),
     }
   }
 }

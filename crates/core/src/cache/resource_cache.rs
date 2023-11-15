@@ -17,6 +17,10 @@ impl ResourceCacheManager {
     }
   }
 
+  pub fn is_cache_changed(&self, name: String, hash: String) -> bool {
+    self.resource_pot_store.is_cache_changed(name, hash)
+  }
+
   pub fn has_cache(&self, name: &str) -> bool {
     self.resource_pot_store.has_cache(name)
   }

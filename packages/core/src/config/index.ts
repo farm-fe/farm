@@ -451,7 +451,12 @@ async function readConfigFile(
       );
 
       const compiler = new Compiler(normalizedConfig);
+
+      // const previousProfileEnv = process.env.FARM_PROFILE;
+      // process.env.FARM_PROFILE = '';
       await compiler.compile();
+      // process.env.FARM_PROFILE = previousProfileEnv;
+
       compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);

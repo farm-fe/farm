@@ -11,6 +11,7 @@ use farmfe_core::{
   cache::module_cache::CachedModule,
   context::CompilationContext,
   error::{CompilationError, Result},
+  farm_profile_scope,
   module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId, ModuleType},
   plugin::{
     constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND,
@@ -149,7 +150,10 @@ impl Compiler {
     module_graph.update_execution_order_for_modules();
     drop(module_graph);
 
-    self.context.plugin_driver.build_end(&self.context)
+    {
+      farm_profile_scope!("call build_end hook".to_string());
+      self.context.plugin_driver.build_end(&self.context)
+    }
   }
 
   pub(crate) fn handle_global_log(&self, errors: &mut Vec<CompilationError>) {
@@ -216,11 +220,6 @@ impl Compiler {
     {
       *module = cached_module.module;
       return Ok(CachedModule::dep_sources(cached_module.dependencies));
-    } else if !context.config.persistent_cache.hash_enabled() {
-      context
-        .cache_manager
-        .module_cache
-        .invalidate_cache(&module.id);
     }
 
     let hook_context = PluginHookContext {
@@ -291,7 +290,7 @@ impl Compiler {
 
     let transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
-    module.source_content = transform_result.content.clone();
+    module.content = Arc::new(transform_result.content.clone());
     module.content_hash = get_content_hash_of_module(&transform_result.content);
 
     // skip building if the module is already built and the cache is enabled
@@ -300,11 +299,6 @@ impl Compiler {
     {
       *module = cached_module.module;
       return Ok(CachedModule::dep_sources(cached_module.dependencies));
-    } else {
-      context
-        .cache_manager
-        .module_cache
-        .invalidate_cache(&module.id);
     }
 
     let deps = Self::build_module_after_transform(
@@ -336,10 +330,9 @@ impl Compiler {
       content: Arc::new(transform_result.content),
     };
 
-    let mut module_meta = call_and_catch_error!(parse, &parse_param, context, &hook_context);
+    let mut module_meta = call_and_catch_error!(parse, &parse_param, context, hook_context);
     // ================ Parse End ===============
 
-    module.content = parse_param.content.clone();
     // ================ Process Module Start ===============
     if let Err(e) = context.plugin_driver.process_module(
       &mut PluginProcessModuleHookParam {
@@ -351,7 +344,7 @@ impl Compiler {
       context,
     ) {
       return Err(CompilationError::ProcessModuleError {
-        resolved_path: resolve_result.resolved_path.clone(),
+        resolved_path: resolve_result.resolved_path,
         source: Some(Box::new(e)),
       });
     }
@@ -423,6 +416,7 @@ impl Compiler {
               err_sender.send(e).unwrap();
             }
             Ok(deps) => {
+              farm_profile_scope!(format!("build module {:?}", module.id));
               let module_id = module.id.clone();
               // add module to the graph
               Self::add_module(module, &resolve_param.kind, &context);

@@ -59,8 +59,6 @@ pub struct Module {
   pub content: Arc<String>,
   /// Used exports of this module. Set by the tree-shake plugin
   pub used_exports: Vec<String>,
-  /// source content after load and transform hook
-  pub source_content: String,
   /// last update timestamp, 0 if the module if not from disk
   pub last_update_timestamp: u128,
   /// content(after load and transform) hash
@@ -84,7 +82,6 @@ impl Module {
       size: 0,
       content: Arc::new("".to_string()),
       used_exports: vec![],
-      source_content: String::new(),
       last_update_timestamp: 0,
       content_hash: "".to_string(),
     }

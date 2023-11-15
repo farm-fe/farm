@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  cache::cache_store::CacheStoreKey,
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
   hashbrown::{HashMap, HashSet},
-  module::{module_group::ModuleGroupId, Module, ModuleId},
+  module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
 };
 
@@ -13,7 +14,7 @@ use farmfe_plugin_runtime::render_resource_pot::{
   resource_pot_to_runtime_object, RenderedJsResourcePot,
 };
 use farmfe_toolkit::hash::base64_encode;
-use farmfe_utils::relative;
+use farmfe_utils::{hash::sha256, relative};
 
 use crate::{
   generate::render_resource_pots::{
@@ -27,6 +28,20 @@ use super::diff_and_patch_module_graph::DiffResult;
 mod generate_and_diff_resource_pots;
 
 use generate_and_diff_resource_pots::generate_and_diff_resource_pots;
+
+fn gen_cache_key_for_update_resource_pot(
+  update_resource_pot: &ResourcePot,
+  module_graph: &ModuleGraph,
+) -> String {
+  let mut str_to_hash = String::new();
+
+  for m in update_resource_pot.modules() {
+    str_to_hash.push_str(&m.to_string());
+    str_to_hash.push_str(&module_graph.module(m).unwrap().content_hash);
+  }
+
+  sha256(str_to_hash.as_bytes(), 32)
+}
 
 pub fn render_and_generate_update_resource(
   updated_module_ids: &Vec<ModuleId>,
@@ -75,8 +90,29 @@ pub fn render_and_generate_update_resource(
     }
   }
 
+  let is_lazy_compile = updated_module_ids.iter().any(|id| {
+    id.to_string()
+      .starts_with(farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX)
+  });
+
   let gen_resource_pot_code =
     |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
+      let mut cache_key = None;
+
+      if is_lazy_compile {
+        cache_key = Some(gen_cache_key_for_update_resource_pot(
+          resource_pot,
+          &module_graph,
+        ));
+        if let Some(result) = context
+          .cache_manager
+          .lazy_compile_store
+          .read_cache(cache_key.as_ref().unwrap())
+        {
+          return Ok(String::from_utf8(result).unwrap());
+        }
+      }
+
       if !resource_pot.modules().is_empty() {
         let RenderedJsResourcePot {
           mut bundle,
@@ -126,6 +162,28 @@ pub fn render_and_generate_update_resource(
         }
 
         let code = String::from_utf8(update_resources.resource.bytes).unwrap();
+
+        if is_lazy_compile {
+          let cache_key = cache_key.unwrap();
+          let store_key = CacheStoreKey {
+            name: cache_key.clone(),
+            key: cache_key,
+          };
+          if context
+            .cache_manager
+            .lazy_compile_store
+            .is_cache_changed(&store_key)
+          {
+            context
+              .cache_manager
+              .lazy_compile_store
+              .write_cache(std::collections::HashMap::from([(
+                store_key,
+                code.as_bytes().to_vec(),
+              )]));
+          }
+        }
+
         return Ok(code);
       }
 

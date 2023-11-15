@@ -455,7 +455,6 @@ impl PluginDriver {
     optimize_resource_pot,
     &mut ResourcePot,
     |plugin_name: String, resource_pot: &mut ResourcePot, context: &Arc<CompilationContext>| {
-      println!("resource_pot:{:?}", resource_pot.resources());
       context.record_manager.add_resource_pot_record(
         resource_pot.id.to_string(),
         ResourcePotRecord {
@@ -550,8 +549,6 @@ impl PluginDriver {
           .set_cache(plugin.name(), plugin_cache);
       }
     }
-
-    context.cache_manager.plugin_cache.write_cache_to_disk();
 
     Ok(())
   }

@@ -32,7 +32,7 @@ impl PluginCacheManager {
 
   pub fn read_cache(&self, plugin_name: &str) -> Option<Ref<'_, String, Vec<u8>>> {
     if self.cache.contains_key(plugin_name) {
-      return self.cache.get(plugin_name).map(|entry| entry);
+      return self.cache.get(plugin_name);
     }
 
     let cache = self
@@ -43,7 +43,7 @@ impl PluginCacheManager {
       self
         .cache
         .insert(self.normalize_plugin_name(plugin_name), cache);
-      return self.cache.get(plugin_name).map(|entry| entry);
+      return self.cache.get(plugin_name);
     }
 
     None
@@ -69,6 +69,9 @@ impl PluginCacheManager {
         )
       })
       .collect::<HashMap<_, _>>();
-    self.store.write_cache(cache);
+
+    if !cache.is_empty() {
+      self.store.write_cache(cache);
+    }
   }
 }

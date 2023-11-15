@@ -82,10 +82,10 @@ impl ModuleCacheManager {
       return module;
     }
 
-    return self
+    self
       .immutable_modules_store
       .get_cache(key)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
+      .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
   pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {

@@ -4,6 +4,7 @@ use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency},
   context::CompilationContext,
   dashmap::DashMap,
+  farm_profile_function,
   hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, ModuleId},
   rayon::prelude::*,
@@ -29,14 +30,12 @@ pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
       module_id.resolved_path(root)
     )
   });
-  let timestamp = file_meta
+  file_meta
     .modified()
     .unwrap()
     .duration_since(SystemTime::UNIX_EPOCH)
     .unwrap()
-    .as_nanos();
-
-  timestamp
+    .as_nanos()
 }
 
 pub fn get_content_hash_of_module(content: &str) -> String {
@@ -49,15 +48,22 @@ pub fn try_get_module_cache_by_timestamp(
   timestamp: u128,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
-  if context.cache_manager.module_cache.has_cache(module_id) {
+  if context.config.persistent_cache.enabled()
+    && context.cache_manager.module_cache.has_cache(module_id)
+  {
     let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);
-
     if cached_module.value().module.last_update_timestamp == timestamp {
       let mut cached_module = context.cache_manager.module_cache.get_cache(module_id);
 
       handle_cached_modules(&mut cached_module, context)?;
 
       return Ok(Some(cached_module));
+    } else if !context.config.persistent_cache.hash_enabled() {
+      drop(cached_module);
+      context
+        .cache_manager
+        .module_cache
+        .invalidate_cache(module_id);
     }
   }
 
@@ -69,7 +75,9 @@ pub fn try_get_module_cache_by_hash(
   content_hash: &str,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
-  if context.cache_manager.module_cache.has_cache(module_id) {
+  if context.config.persistent_cache.enabled()
+    && context.cache_manager.module_cache.has_cache(module_id)
+  {
     let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);
 
     if cached_module.value().module.content_hash == content_hash {
@@ -78,6 +86,13 @@ pub fn try_get_module_cache_by_hash(
       handle_cached_modules(&mut cached_module, context)?;
 
       return Ok(Some(cached_module));
+    } else {
+      drop(cached_module);
+
+      context
+        .cache_manager
+        .module_cache
+        .invalidate_cache(module_id);
     }
   }
 
@@ -97,19 +112,24 @@ pub fn set_module_graph_cache(
   check_initial_cache: bool,
   context: &Arc<CompilationContext>,
 ) {
-  let start = std::time::Instant::now();
+  farm_profile_function!("set_module_graph_cache".to_string());
   let module_graph = context.module_graph.read();
   let mut cacheable_modules = HashSet::new();
 
   let modules = module_ids
     .iter()
     .map(|id| module_graph.module(id).unwrap())
+    .filter(|m| !m.external)
     .collect::<Vec<_>>();
 
   for module in &modules {
     // if the module has already in the cache, skip it.
     if check_initial_cache && context.cache_manager.module_cache.has_cache(&module.id) {
-      continue;
+      let cached_ref = context.cache_manager.module_cache.get_cache_ref(&module.id);
+
+      if cached_ref.value().module.content_hash == module.content_hash {
+        continue;
+      }
     }
 
     cacheable_modules.insert(module.id.clone());
@@ -152,8 +172,6 @@ pub fn set_module_graph_cache(
         .module_cache
         .set_cache(module.id.clone(), cached_module);
     });
-
-  println!("set module graph cache costs {:?}", start.elapsed());
 }
 
 fn load_module_cache_into_context(
@@ -179,7 +197,7 @@ fn load_module_cache_into_context(
   let cached_module = context
     .cache_manager
     .module_cache
-    .get_cache_ref(&cached_module_id);
+    .get_cache_ref(cached_module_id);
 
   if !cached_module.module.immutable {
     visited.insert(cached_module_id.clone(), false);
@@ -202,38 +220,26 @@ fn load_module_cache_into_context(
 pub fn load_module_graph_cache_into_context(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
-  let start = std::time::Instant::now();
+  farm_profile_function!("load_module_graph_cache_into_context".to_string());
 
-  // TODO: Optimize:
-  // 1. skip load and transform when then the modified time stamp is not changed. add system info as part of its cache key
-  // 2. make module, resource pot, resource clone-able and call handle_cached_modules when write cache
-  // 3. make write cache async in dev mode
-  // 4. read and parse cache files in parallel
+  let immutable_modules = context.cache_manager.module_cache.get_immutable_modules();
 
-  context
-    .cache_manager
-    .module_cache
-    .get_immutable_modules()
-    .into_iter()
+  immutable_modules
+    .par_iter()
     .try_for_each(|cached_module_id| {
       let mut cached_module = context
         .cache_manager
         .module_cache
-        .get_cache_mut_ref(&cached_module_id);
+        .get_cache_mut_ref(cached_module_id);
 
       handle_cached_modules(cached_module.value_mut(), context)
     })?;
 
   let mut visited = HashMap::new();
 
-  context
-    .cache_manager
-    .module_cache
-    .get_immutable_modules()
-    .into_iter()
-    .for_each(|cached_module_id| {
-      load_module_cache_into_context(&cached_module_id, &mut visited, context);
-    });
+  immutable_modules.iter().for_each(|cached_module_id| {
+    load_module_cache_into_context(cached_module_id, &mut visited, context);
+  });
 
   let mut module_graph = context.module_graph.write();
   let mut edges = vec![];
@@ -262,7 +268,6 @@ pub fn load_module_graph_cache_into_context(
     }
   }
 
-  println!("load cache into module_graph costs: {:?}", start.elapsed());
   Ok(())
 }
 
@@ -301,6 +306,7 @@ fn handle_cached_modules(
 }
 
 pub fn clear_unused_cached_modules(context: &Arc<CompilationContext>) {
+  farm_profile_function!("clear_unused_cached_modules".to_string());
   let mut module_graph = context.module_graph.write();
   clear_unused_cached_modules_from_module_graph(&mut module_graph);
 }

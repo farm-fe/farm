@@ -32,7 +32,7 @@ impl PersistentCacheConfig {
 
   pub fn get_default_config(root: &str, config_file_path: &str) -> Self {
     let cache_dir = RelativePath::new("node_modules/.farm/cache")
-      .to_logical_path(&root)
+      .to_logical_path(root)
       .to_string_lossy()
       .to_string();
 
@@ -64,7 +64,7 @@ impl PersistentCacheConfig {
           cloned_obj.build_dependencies.push(c);
         }
 
-        let default_config = Self::get_default_config(root, &config_file_path);
+        let default_config = Self::get_default_config(root, config_file_path);
 
         if cloned_obj.cache_dir.is_empty() {
           cloned_obj.cache_dir = default_config.as_obj(root, config_file_path).cache_dir;
@@ -74,7 +74,7 @@ impl PersistentCacheConfig {
           cloned_obj.namespace = default_config.as_obj(root, config_file_path).namespace;
         }
 
-        return cloned_obj;
+        cloned_obj
       }
     }
   }
