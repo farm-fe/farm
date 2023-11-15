@@ -452,6 +452,7 @@ pub struct EmptyPluginHookParam {}
 pub struct EmptyPluginHookResult {}
 
 #[cache_item]
+#[derive(Clone)]
 pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,
   pub source_map: Option<Resource>,

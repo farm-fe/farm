@@ -11,6 +11,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::{
+  resolve::load_package_json,
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
@@ -43,13 +44,41 @@ pub fn get_content_hash_of_module(content: &str) -> String {
   module_content_hash
 }
 
-pub fn try_get_module_cache(
+pub fn try_get_module_cache_by_timestamp(
   module_id: &ModuleId,
+  timestamp: u128,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
   if context.cache_manager.module_cache.has_cache(module_id) {
-    let cached_module = context.cache_manager.module_cache.get_cache(module_id);
-    return Ok(Some(cached_module));
+    let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);
+
+    if cached_module.value().module.last_update_timestamp == timestamp {
+      let mut cached_module = context.cache_manager.module_cache.get_cache(module_id);
+
+      handle_cached_modules(&mut cached_module, context)?;
+
+      return Ok(Some(cached_module));
+    }
+  }
+
+  Ok(None)
+}
+
+pub fn try_get_module_cache_by_hash(
+  module_id: &ModuleId,
+  content_hash: &str,
+  context: &Arc<CompilationContext>,
+) -> farmfe_core::error::Result<Option<CachedModule>> {
+  if context.cache_manager.module_cache.has_cache(module_id) {
+    let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);
+
+    if cached_module.value().module.content_hash == content_hash {
+      let mut cached_module = context.cache_manager.module_cache.get_cache(module_id);
+
+      handle_cached_modules(&mut cached_module, context)?;
+
+      return Ok(Some(cached_module));
+    }
   }
 
   Ok(None)
@@ -79,12 +108,7 @@ pub fn set_module_graph_cache(
 
   for module in &modules {
     // if the module has already in the cache, skip it.
-    if check_initial_cache
-      && context
-        .cache_manager
-        .module_cache
-        .is_initial_cache(&module.id)
-    {
+    if check_initial_cache && context.cache_manager.module_cache.has_cache(&module.id) {
       continue;
     }
 
@@ -113,11 +137,14 @@ pub fn set_module_graph_cache(
       let cloned_module = module.clone();
       let dependencies = cached_dependency_map.remove(&module.id).unwrap().1;
 
+      let resolved_path = module.id.resolved_path(&context.config.root);
+      let package_info =
+        load_package_json(PathBuf::from(resolved_path), Default::default()).unwrap_or_default();
       let cached_module = CachedModule {
         module: cloned_module,
         dependencies,
-        last_update_timestamp: get_timestamp_of_module(&module.id, &context.config.root),
-        content_hash: get_content_hash_of_module(&module.source_content),
+        package_name: package_info.name.unwrap_or("default".to_string()),
+        package_version: package_info.version.unwrap_or("0.0.0".to_string()),
       };
 
       context
@@ -186,7 +213,7 @@ pub fn load_module_graph_cache_into_context(
   context
     .cache_manager
     .module_cache
-    .get_initial_cached_modules()
+    .get_immutable_modules()
     .into_iter()
     .try_for_each(|cached_module_id| {
       let mut cached_module = context
@@ -202,7 +229,7 @@ pub fn load_module_graph_cache_into_context(
   context
     .cache_manager
     .module_cache
-    .get_initial_cached_modules()
+    .get_immutable_modules()
     .into_iter()
     .for_each(|cached_module_id| {
       load_module_cache_into_context(&cached_module_id, &mut visited, context);
@@ -219,6 +246,7 @@ pub fn load_module_graph_cache_into_context(
           .cache_manager
           .module_cache
           .get_cache(&cached_module_id);
+
         module_graph.add_module(cached_module.module);
         edges.push((cached_module_id, cached_module.dependencies));
       }

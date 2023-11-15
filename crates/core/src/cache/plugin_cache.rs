@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-use dashmap::DashMap;
+use dashmap::{mapref::one::Ref, DashMap};
+use farmfe_utils::hash::sha256;
 
 use crate::config::Mode;
 
-use super::cache_store::CacheStore;
+use super::cache_store::{CacheStore, CacheStoreKey};
 
 #[derive(Default)]
 pub struct PluginCacheManager {
@@ -14,29 +15,60 @@ pub struct PluginCacheManager {
 
 impl PluginCacheManager {
   pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
-    let store = CacheStore::new(cache_dir, namespace, mode);
+    let store = CacheStore::new(cache_dir, namespace, mode, "plugin");
     Self {
       store,
       cache: DashMap::new(),
     }
   }
 
-  pub fn read_cache(&self) -> HashMap<String, Vec<u8>> {
-    self.store.read_cache("plugin")
+  fn normalize_plugin_name(&self, plugin_name: &str) -> String {
+    // replace all non-alphanumeric characters with _
+    plugin_name
+      .chars()
+      .map(|c| if c.is_alphanumeric() { c } else { '_' })
+      .collect::<String>()
   }
 
-  pub fn set_cache(&self, cache: HashMap<String, Vec<u8>>) {
-    for (key, value) in cache {
-      self.cache.insert(key, value);
+  pub fn read_cache(&self, plugin_name: &str) -> Option<Ref<'_, String, Vec<u8>>> {
+    if self.cache.contains_key(plugin_name) {
+      return self.cache.get(plugin_name).map(|entry| entry);
     }
+
+    let cache = self
+      .store
+      .read_cache(&self.normalize_plugin_name(plugin_name));
+
+    if let Some(cache) = cache {
+      self
+        .cache
+        .insert(self.normalize_plugin_name(plugin_name), cache);
+      return self.cache.get(plugin_name).map(|entry| entry);
+    }
+
+    None
+  }
+
+  pub fn set_cache(&self, plugin_name: &str, cache: Vec<u8>) {
+    self
+      .cache
+      .insert(self.normalize_plugin_name(plugin_name), cache);
   }
 
   pub fn write_cache_to_disk(&self) {
     let cache = self
       .cache
       .iter()
-      .map(|entry| (entry.key().clone(), entry.value().clone()))
+      .map(|entry| {
+        (
+          CacheStoreKey {
+            name: entry.key().clone(),
+            key: sha256(entry.value(), 32),
+          },
+          entry.value().clone(),
+        )
+      })
       .collect::<HashMap<_, _>>();
-    self.store.write_cache(cache, "plugin");
+    self.store.write_cache(cache);
   }
 }

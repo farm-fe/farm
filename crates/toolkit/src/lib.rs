@@ -33,7 +33,6 @@ pub use swc_html_visit;
 pub use swc_atoms;
 
 pub use anyhow;
-pub use base64;
 pub use farmfe_core::regex;
 pub use lazy_static;
 pub use sourcemap;

@@ -226,14 +226,12 @@ impl Plugin for FarmPluginStaticAssets {
 
     for asset in cached_static_assets.list {
       if let ResourceOrigin::Module(m) = asset.origin {
-        if context.cache_manager.module_cache.is_initial_cache(&m) {
-          context.emit_file(EmitFileParams {
-            resolved_path: m.to_string(),
-            name: asset.name,
-            content: asset.bytes,
-            resource_type: asset.resource_type,
-          });
-        }
+        context.emit_file(EmitFileParams {
+          resolved_path: m.to_string(),
+          name: asset.name,
+          content: asset.bytes,
+          resource_type: asset.resource_type,
+        });
       }
     }
 

@@ -1510,13 +1510,11 @@ name = "farmfe_toolkit"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "base64 0.21.0",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_utils 0.0.4",
  "lazy_static",
  "preset_env_base",
- "sha2",
  "sourcemap",
  "swc_atoms",
  "swc_css_codegen",
@@ -1552,7 +1550,9 @@ dependencies = [
 name = "farmfe_utils"
 version = "0.0.4"
 dependencies = [
+ "base64 0.21.0",
  "pathdiff",
+ "sha2",
 ]
 
 [[package]]

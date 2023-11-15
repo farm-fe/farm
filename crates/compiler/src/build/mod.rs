@@ -36,7 +36,8 @@ use crate::{
 
 use self::module_cache::{
   clear_unused_cached_modules, get_content_hash_of_module, get_timestamp_of_module,
-  load_module_graph_cache_into_context, set_module_graph_cache, try_get_module_cache,
+  load_module_graph_cache_into_context, set_module_graph_cache, try_get_module_cache_by_hash,
+  try_get_module_cache_by_timestamp,
 };
 
 macro_rules! call_and_catch_error {
@@ -208,25 +209,18 @@ impl Compiler {
     module: &mut Module,
     context: &Arc<CompilationContext>,
   ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
-    // return the cached module if cache found using timestamp
-    let mut cached_module = try_get_module_cache(&module.id, context)?;
+    module.last_update_timestamp = get_timestamp_of_module(&module.id, &context.config.root);
 
-    if let Some(cached_module_ref) = &cached_module {
-      // if timestamp is not changed, return the cached module
-      if context.config.persistent_cache.timestamp_enabled()
-        && cached_module_ref.last_update_timestamp
-          == get_timestamp_of_module(&module.id, &context.config.root)
-      {
-        let cached_module = cached_module.take().unwrap();
-        *module = cached_module.module;
-        return Ok(CachedModule::dep_sources(cached_module.dependencies));
-      } else if !context.config.persistent_cache.hash_enabled() {
-        // invalidate cache if hash is not enabled
-        context
-          .cache_manager
-          .module_cache
-          .invalidate_cache(&module.id);
-      }
+    if let Some(cached_module) =
+      try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, context)?
+    {
+      *module = cached_module.module;
+      return Ok(CachedModule::dep_sources(cached_module.dependencies));
+    } else if !context.config.persistent_cache.hash_enabled() {
+      context
+        .cache_manager
+        .module_cache
+        .invalidate_cache(&module.id);
     }
 
     let hook_context = PluginHookContext {
@@ -298,20 +292,19 @@ impl Compiler {
     let transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
     module.source_content = transform_result.content.clone();
+    module.content_hash = get_content_hash_of_module(&transform_result.content);
 
     // skip building if the module is already built and the cache is enabled
-    if let Some(cached_module) = cached_module {
-      if context.config.persistent_cache.hash_enabled()
-        && cached_module.content_hash == get_content_hash_of_module(&transform_result.content)
-      {
-        *module = cached_module.module;
-        return Ok(CachedModule::dep_sources(cached_module.dependencies));
-      } else {
-        context
-          .cache_manager
-          .module_cache
-          .invalidate_cache(&module.id);
-      }
+    if let Some(cached_module) =
+      try_get_module_cache_by_hash(&module.id, &module.content_hash, context)?
+    {
+      *module = cached_module.module;
+      return Ok(CachedModule::dep_sources(cached_module.dependencies));
+    } else {
+      context
+        .cache_manager
+        .module_cache
+        .invalidate_cache(&module.id);
     }
 
     let deps = Self::build_module_after_transform(

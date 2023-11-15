@@ -8,3 +8,5 @@ license = "MIT"
 
 [dependencies]
 pathdiff = "0.2"
+sha2 = "0.10.6"
+base64 = "0.21.0"

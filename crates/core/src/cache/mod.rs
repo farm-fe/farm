@@ -12,7 +12,7 @@ pub mod resource_cache;
 /// All cache related operation are charged by [CacheManager]
 /// Note: that you should use CacheManager::new to create a new instance so that the cache can be read from disk.
 /// It would do nothing if you create a new instance by CacheManager::default().
-#[derive(Default)]
+
 pub struct CacheManager {
   pub module_cache: module_cache::ModuleCacheManager,
   pub resource_cache: resource_cache::ResourceCacheManager,
@@ -23,30 +23,10 @@ pub struct CacheManager {
 
 impl CacheManager {
   pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
-    let start = std::time::Instant::now();
-    // initialize cache store in parallel
-    let thread_pool = rayon::ThreadPoolBuilder::new()
-      .num_threads(2)
-      .build()
-      .unwrap();
-    let (module_cache, resource_cache) = thread_pool.install(|| {
-      let cloned_mode = mode.clone();
-      let (module_cache, resource_cache) = rayon::join(
-        || {
-          let module_cache =
-            module_cache::ModuleCacheManager::new(cache_dir, namespace, cloned_mode);
-          module_cache
-        },
-        || {
-          let resource_cache =
-            resource_cache::ResourceCacheManager::new(cache_dir, namespace, mode.clone());
-          resource_cache
-        },
-      );
+    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, namespace, mode.clone());
+    let resource_cache =
+      resource_cache::ResourceCacheManager::new(cache_dir, namespace, mode.clone());
 
-      (module_cache, resource_cache)
-    });
-    println!("read cache time: {:?}", start.elapsed());
     Self {
       module_cache,
       resource_cache,

@@ -1,23 +1,18 @@
 use dashmap::mapref::one::{Ref, RefMut};
-use dashmap::{DashMap, DashSet};
-use rayon::prelude::*;
-use rkyv::Deserialize;
-use std::collections::{HashMap, HashSet};
 
 use farmfe_macro_cache_item::cache_item;
 
 use crate::config::Mode;
-use crate::deserialize;
 use crate::module::module_graph::ModuleGraphEdge;
 use crate::module::{Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
 
-use self::immutable_modules::ImmutableModulesMemoryStore;
-use self::mutable_modules::MutableModulesMemoryStore;
-
-use super::cache_store::CacheStore;
+use immutable_modules::ImmutableModulesMemoryStore;
+use module_memory_store::ModuleMemoryStore;
+use mutable_modules::MutableModulesMemoryStore;
 
 pub mod immutable_modules;
+pub mod module_memory_store;
 pub mod mutable_modules;
 
 pub struct ModuleCacheManager {
@@ -38,8 +33,8 @@ pub struct CachedModuleDependency {
 pub struct CachedModule {
   pub module: Module,
   pub dependencies: Vec<CachedModuleDependency>,
-  // pub last_update_timestamp: u128,
-  // pub content_hash: String,
+  pub package_name: String,
+  pub package_version: String,
 }
 
 impl CachedModule {
@@ -65,7 +60,7 @@ impl CachedModule {
 impl ModuleCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     Self {
-      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
+      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode.clone()),
       immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
     }
   }
@@ -83,54 +78,59 @@ impl ModuleCacheManager {
   }
 
   pub fn get_cache(&self, key: &ModuleId) -> CachedModule {
-    if let Some((_, cached_module)) = self.initial_cached_modules_map.remove(key) {
-      self.add_used_module(key);
-      cached_module
-    } else {
-      panic!("Module cache not found: {:?}", key);
+    if let Some(module) = self.mutable_modules_store.get_cache(key) {
+      return module;
     }
+
+    return self
+      .immutable_modules_store
+      .get_cache(key)
+      .expect("Cache broken, please remove node_modules/.farm and retry.");
   }
 
   pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {
-    if let Some(m_ref) = self.initial_cached_modules_map.get(key) {
-      self.add_used_module(key);
-      m_ref
-    } else {
-      panic!("Module cache not found: {:?}", key);
+    if let Some(module) = self.mutable_modules_store.get_cache_ref(key) {
+      return module;
     }
+
+    return self
+      .immutable_modules_store
+      .get_cache_ref(key)
+      .expect("Cache broken, please remove node_modules/.farm and retry.");
   }
 
   pub fn get_cache_mut_ref(&self, key: &ModuleId) -> RefMut<'_, ModuleId, CachedModule> {
-    if let Some(m_ref) = self.initial_cached_modules_map.get_mut(key) {
-      self.add_used_module(key);
-      m_ref
-    } else {
-      panic!("Module cache not found: {:?}", key);
+    if let Some(module) = self.mutable_modules_store.get_cache_mut_ref(key) {
+      return module;
     }
+
+    return self
+      .immutable_modules_store
+      .get_cache_mut_ref(key)
+      .expect("Cache broken, please remove node_modules/.farm and retry.");
   }
 
   /// Write the cache map to the disk.
   pub fn write_cache(&self) {
-    let mut cache_map = HashMap::new();
+    let thread_pool = rayon::ThreadPoolBuilder::new()
+      .num_threads(2)
+      .build()
+      .unwrap();
 
-    for item in self.cache.iter() {
-      if !self.used_cached_modules.contains(&item.key()) {
-        continue;
-      }
+    thread_pool.install(|| {
+      rayon::join(
+        || self.mutable_modules_store.write_cache(),
+        || self.immutable_modules_store.write_cache(),
+      );
+    });
+  }
 
-      let key_str = item.key().to_string();
+  pub fn invalidate_cache(&self, key: &ModuleId) {
+    self.mutable_modules_store.invalidate_cache(key);
+    self.immutable_modules_store.invalidate_cache(key);
+  }
 
-      if let Some(entry) = self.initial_cached_bytes.get(&key_str) {
-        if !self.invalidated_cached_modules.contains(item.key()) {
-          cache_map.insert(entry.key().clone(), entry.value().to_vec());
-          continue;
-        }
-      }
-
-      let bytes = crate::serialize!(item.value());
-      cache_map.insert(key_str, bytes);
-    }
-
-    self.store.write_cache(cache_map, "module");
+  pub fn get_immutable_modules(&self) -> Vec<ModuleId> {
+    self.immutable_modules_store.get_modules()
   }
 }

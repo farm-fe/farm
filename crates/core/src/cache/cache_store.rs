@@ -1,5 +1,5 @@
 //! Cache store of the persistent cache, responsible for reading and writing the cache from the disk.
-use dashmap::DashMap;
+use dashmap::{mapref::multiple::RefMulti, DashMap};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use std::{
@@ -9,14 +9,13 @@ use std::{
 
 use crate::config::Mode;
 
-const FARM_CACHE_VERSION: &str = "0.0.1";
+const FARM_CACHE_VERSION: &str = "0.0.2";
 const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
 #[derive(Default)]
 pub struct CacheStore {
   cache_dir: PathBuf,
-  namespace: String,
   /// name -> cache key manifest of this store.
   /// it will be stored in a separate file
   manifest: DashMap<String, String>,
@@ -25,6 +24,8 @@ pub struct CacheStore {
 impl CacheStore {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode, name: &str) -> Self {
     let mut cache_dir = Path::new(&format!("{cache_dir_str}-{FARM_CACHE_VERSION}")).to_path_buf();
+
+    cache_dir.push(namespace);
 
     if matches!(mode, Mode::Development) {
       cache_dir.push("development");
@@ -39,7 +40,7 @@ impl CacheStore {
     let manifest = if manifest_file_path.exists() && manifest_file_path.is_file() {
       let content = std::fs::read_to_string(manifest_file_path).unwrap();
       let map = serde_json::from_str::<HashMap<String, String>>(&content).unwrap();
-      let mut dashmap = DashMap::new();
+      let dashmap = DashMap::new();
 
       for (k, v) in map {
         dashmap.insert(k, v);
@@ -52,7 +53,6 @@ impl CacheStore {
 
     Self {
       cache_dir,
-      namespace: namespace.to_string(),
       manifest,
     }
   }
@@ -61,12 +61,8 @@ impl CacheStore {
     self.manifest.contains_key(name)
   }
 
-  pub fn get_cache_keys(&self) -> Vec<String> {
-    self
-      .manifest
-      .iter()
-      .map(|item| item.value().clone())
-      .collect()
+  pub fn get_store_keys(&self) -> Vec<RefMulti<String, String>> {
+    self.manifest.iter().map(|item| item).collect()
   }
 
   /// return true if the cache changed or it's a cache item

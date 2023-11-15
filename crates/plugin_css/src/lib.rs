@@ -83,38 +83,23 @@ impl Plugin for FarmPluginCss {
     -99
   }
 
+  /// Just load the cache, if the cache is invalidated, it will be reset when transform.
   fn plugin_cache_loaded(
     &self,
     cache: &Vec<u8>,
-    context: &Arc<CompilationContext>,
+    _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let cache = deserialize!(cache, CssModulesCache);
     let mut content_map = self.content_map.lock();
 
     for (k, v) in cache.content_map {
-      let resolved_path = k.replace(FARM_CSS_MODULES_SUFFIX, "");
-
-      if context
-        .cache_manager
-        .module_cache
-        .is_initial_cache(&ModuleId::new(&resolved_path, "", &context.config.root))
-      {
-        content_map.insert(k, v);
-      }
+      content_map.insert(k, v);
     }
 
     let mut sourcemap_map = self.sourcemap_map.lock();
 
     for (k, v) in cache.sourcemap_map {
-      let resolved_path = k.replace(FARM_CSS_MODULES_SUFFIX, "");
-
-      if context
-        .cache_manager
-        .module_cache
-        .is_initial_cache(&ModuleId::new(&resolved_path, "", &context.config.root))
-      {
-        sourcemap_map.insert(k, v);
-      }
+      sourcemap_map.insert(k, v);
     }
 
     Ok(Some(()))

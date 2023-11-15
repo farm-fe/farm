@@ -124,6 +124,7 @@ pub struct RenderedModule {
 }
 
 #[cache_item]
+#[derive(Clone)]
 pub struct ResourcePotMetaData {
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
   pub rendered_content: Arc<String>,

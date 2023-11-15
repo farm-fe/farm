@@ -122,11 +122,9 @@ impl PluginDriver {
   }
 
   pub fn plugin_cache_loaded(&self, context: &Arc<CompilationContext>) -> Result<()> {
-    let cache = context.cache_manager.plugin_cache.read_cache();
-
     for plugin in &self.plugins {
-      if let Some(plugin_cache) = cache.get(plugin.name()) {
-        plugin.plugin_cache_loaded(plugin_cache, context)?;
+      if let Some(plugin_cache) = context.cache_manager.plugin_cache.read_cache(plugin.name()) {
+        plugin.plugin_cache_loaded(plugin_cache.value(), context)?;
       }
     }
 
@@ -542,20 +540,18 @@ impl PluginDriver {
   );
 
   pub fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<()> {
-    let mut plugin_cache_map = std::collections::HashMap::new();
-
     for plugin in &self.plugins {
       let plugin_cache = plugin.write_plugin_cache(context)?;
 
       if let Some(plugin_cache) = plugin_cache {
-        plugin_cache_map.insert(plugin.name().to_string(), plugin_cache);
+        context
+          .cache_manager
+          .plugin_cache
+          .set_cache(plugin.name(), plugin_cache);
       }
     }
 
-    context
-      .cache_manager
-      .plugin_cache
-      .set_cache(plugin_cache_map);
+    context.cache_manager.plugin_cache.write_cache_to_disk();
 
     Ok(())
   }
