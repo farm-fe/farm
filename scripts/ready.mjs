@@ -3,7 +3,8 @@ import os from 'node:os';
 import {
   DEFAULT_PACKAGE_MANAGER,
   buildExamples,
-  runTaskQueue
+  runTaskQueue,
+  buildCoreCjs
 } from './build.mjs';
 
 const cwd = process.cwd();
@@ -16,6 +17,9 @@ await execa('node', ['./scripts/clean.mjs'], { cwd });
 
 console.log('Code Spell lint...');
 await execa('npx', ['cspell', '**', '--gitignore'], { cwd });
+
+console.log('build core、js/rust plugins、cli ...');
+await runTaskQueue();
 
 console.log('Cargo check');
 await execa('cargo', ['check', '--color', 'always', '--all', '--all-targets'], {
@@ -39,9 +43,6 @@ await execa(
   ['test', '-j', Math.max(Math.floor(os.cpus().length / 4), 1)],
   { cwd }
 );
-
-console.log('build core、js/rust plugins、cli ...');
-await runTaskQueue();
 
 console.log('Building core CJS...');
 await buildCoreCjs();

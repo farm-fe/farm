@@ -15,13 +15,15 @@ export function loadEnv(
   mode: string,
   envDir: string,
   prefixes: string | string[] = 'FARM_'
-): Record<string, string> {
+): [env: Record<string, string>, existsEnvFiles: string[]] {
   const env: Record<string, string> = {};
+  const existsEnvFiles: string[] = [];
   const envFiles = [`.env`, `.env.local`, `.env.${mode}`, `.env.${mode}.local`];
   const parsed = Object.fromEntries(
     envFiles.flatMap((file) => {
       const filePath = path.join(envDir, file);
       if (!getFileSystemStats(filePath)?.isFile()) return [];
+      existsEnvFiles.push(filePath);
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
   );
@@ -35,7 +37,7 @@ export function loadEnv(
     }
   }
 
-  return env;
+  return [env, existsEnvFiles];
 }
 
 export type CompilationMode = 'development' | 'production';

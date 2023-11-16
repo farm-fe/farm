@@ -10,7 +10,6 @@ import {
   NormalizedServerConfig,
   normalizePublicDir,
   normalizePublicPath,
-  urlRegex,
   UserConfig,
   UserServerConfig
 } from '../config/index.js';
@@ -74,6 +73,7 @@ interface ImplDevServer {
 
 export class DevServer implements ImplDevServer {
   private _app: Koa;
+  private restart_promise: Promise<void> | null = null;
   public _context: FarmServerContext;
 
   ws: WsServer;
@@ -104,7 +104,6 @@ export class DevServer implements ImplDevServer {
       ) || '/';
     this.compilationConfig = compilationConfig;
     this.userConfig = options;
-    this.createFarmServer(options.server);
   }
 
   getCompiler(): Compiler {
@@ -121,7 +120,6 @@ export class DevServer implements ImplDevServer {
       return;
     }
     const { port, open, protocol, hostname } = this.config;
-    this.getNormalizedPublicPath();
 
     const start = Date.now();
     // compile the project and start the dev server
@@ -131,7 +129,8 @@ export class DevServer implements ImplDevServer {
 
     await this.startServer(this.config);
 
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printServerUrls();
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      (await this.printServerUrls());
 
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}${this.publicPath}`);
@@ -144,16 +143,6 @@ export class DevServer implements ImplDevServer {
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this._compiler.writeResourcesToDisk(base);
-    }
-  }
-
-  private getNormalizedPublicPath(): string {
-    if (urlRegex.test(this.publicPath)) {
-      return '/';
-    } else {
-      return this.publicPath.startsWith('/')
-        ? this.publicPath
-        : `/${this.publicPath}`;
     }
   }
 
@@ -194,8 +183,11 @@ export class DevServer implements ImplDevServer {
     process.exit(0);
   }
 
-  async restart() {
-    // TODO restart
+  async restart(promise: () => Promise<void>) {
+    if (!this.restart_promise) {
+      this.restart_promise = promise();
+    }
+    return this.restart_promise;
   }
 
   async closeFarmServer() {

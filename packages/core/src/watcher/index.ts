@@ -1,4 +1,3 @@
-import { basename, relative } from 'node:path';
 import { createRequire } from 'node:module';
 
 import debounce from 'lodash.debounce';
@@ -6,23 +5,10 @@ import debounce from 'lodash.debounce';
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
 import { Config, JsFileWatcher } from '../../binding/index.js';
-import {
-  bold,
-  clearScreen,
-  compilerHandler,
-  DefaultLogger,
-  green
-} from '../utils/index.js';
-import {
-  DEFAULT_HMR_OPTIONS,
-  JsPlugin,
-  normalizeUserCompilationConfig,
-  resolveUserConfig
-} from '../index.js';
-import { setProcessEnv } from '../config/env.js';
-import { __FARM_GLOBAL__ } from '../config/_global.js';
+import { compilerHandler, DefaultLogger } from '../utils/index.js';
+import { DEFAULT_HMR_OPTIONS } from '../index.js';
 
-import type { ResolvedUserConfig, UserConfig } from '../config/index.js';
+import type { ResolvedUserConfig } from '../config/index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -33,6 +19,7 @@ export class FileWatcher implements ImplFileWatcher {
   private _watcher: JsFileWatcher;
   private _logger: DefaultLogger;
   private _awaitWriteFinish: number;
+  private _close = false;
 
   constructor(
     public serverOrCompiler: DevServer | Compiler,
@@ -61,45 +48,10 @@ export class FileWatcher implements ImplFileWatcher {
     );
 
     let handlePathChange = async (path: string): Promise<void> => {
-      const fileName = basename(path);
-      const isEnv = fileName === '.env' || fileName.startsWith('.env.');
-      const isConfig = path === this.options.resolveConfigPath;
-
-      // TODO configFileDependencies e.g: isDependencies = ["./farm.config.ts"]
-      if (isEnv || isConfig) {
-        clearScreen();
-        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = false;
-        this._logger.info(
-          `restarting server due to ${bold(
-            green(relative(process.cwd(), path))
-          )} change`
-        );
-        if (this.serverOrCompiler instanceof DevServer) {
-          await this.serverOrCompiler.close();
-        }
-
-        const config: UserConfig = await resolveUserConfig(
-          this.options.inlineConfig,
-          'serve',
-          this._logger
-        );
-        const normalizedConfig = await normalizeUserCompilationConfig(
-          this.options.inlineConfig,
-          config,
-          this._logger
-        );
-        setProcessEnv(normalizedConfig.config.mode);
-        const compiler = new Compiler(normalizedConfig);
-        const devServer = new DevServer(compiler, this._logger, config);
-        this.serverOrCompiler = devServer;
-        await devServer.listen();
-        if (normalizedConfig.config.mode === 'development') {
-          normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-            plugin.configDevServer?.(devServer)
-          );
-        }
+      if (this._close) {
         return;
       }
+
       try {
         if (this.serverOrCompiler instanceof DevServer) {
           await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
@@ -156,10 +108,12 @@ export class FileWatcher implements ImplFileWatcher {
       ? serverOrCompiler.getCompiler()
       : serverOrCompiler;
   }
-}
 
-export async function restartServer(server: DevServer) {
-  await server.close();
+  close() {
+    this._close = false;
+    this._watcher = null;
+    this.serverOrCompiler = null;
+  }
 }
 
 export function sleep(ms: number) {

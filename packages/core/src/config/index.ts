@@ -94,11 +94,16 @@ export async function normalizeUserCompilationConfig(
 
   const resolvedEnvPath = envDir ? envDir : resolvedRootPath;
 
-  const userEnv = loadEnv(
+  const [userEnv, existsEnvFiles] = loadEnv(
     inlineConfig?.mode ?? mode,
     resolvedEnvPath,
     envPrefix
   );
+
+  config.envFiles = [
+    ...(Array.isArray(config.envFiles) ? config.envFiles : []),
+    ...existsEnvFiles
+  ];
 
   normalizeOutput(config, isProduction);
 
@@ -355,7 +360,7 @@ export async function resolveUserConfig(
   const { configPath } = inlineOptions;
   if (
     inlineOptions.clearScreen &&
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
   ) {
     clearScreen();
   }
@@ -414,7 +419,7 @@ async function readConfigFile(
   logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {

@@ -52,7 +52,7 @@ type InternalConfig = Config['config'] extends undefined
 
 type AvailableUserConfigKeys = Exclude<
   keyof InternalConfig,
-  'configFilePath' | 'env' | 'envPrefix' | 'coreLibPath' | 'root'
+  'configFilePath' | 'env' | 'envPrefix' | 'envFiles' | 'coreLibPath' | 'root'
 >;
 
 export interface UserConfig {
