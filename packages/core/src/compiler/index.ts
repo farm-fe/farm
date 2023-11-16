@@ -35,10 +35,6 @@ export class Compiler {
     return this._bindingCompiler.traceDependencies();
   }
 
-  async traceDependenciesHash() {
-    return this._bindingCompiler.traceDependenciesHash();
-  }
-
   async compile() {
     if (this.compiling) {
       this.logger.error('Already compiling', {

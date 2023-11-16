@@ -9,13 +9,29 @@ function createCompiler(entry: string) {
       resolve: {
         autoExternalFailedResolve: true
       },
+      external: ['^[^./].*'],
       sourcemap: false,
       presetEnv: false,
       persistentCache: false,
       minify: false,
       lazyCompilation: false
     },
-    jsPlugins: [],
+    jsPlugins: [
+      {
+        name: 'trace-dependencies-ignore-node-file-plugin',
+        load: {
+          filters: {
+            resolvedPaths: ['\\.node$']
+          },
+          executor: () => {
+            return {
+              content: '',
+              moduleType: 'js'
+            };
+          }
+        }
+      }
+    ],
     rustPlugins: []
   });
 
@@ -25,13 +41,6 @@ function createCompiler(entry: string) {
 export async function traceDependencies(configFilePath: string) {
   const compiler = createCompiler(configFilePath);
   const files = await compiler.traceDependencies();
-
-  return files;
-}
-
-export async function traceDependenciesHash(configFilePath: string) {
-  const compiler = createCompiler(configFilePath);
-  const files = await compiler.traceDependenciesHash();
 
   return files;
 }

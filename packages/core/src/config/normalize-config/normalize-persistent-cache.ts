@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { Config } from '../../../binding/index.js';
 import { ResolvedUserConfig } from '../index.js';
 import { RustPlugin } from '../../plugin/index.js';
-import { traceDependenciesHash } from '../../utils/trace-dependencies.js';
+import { traceDependencies } from '../../utils/trace-dependencies.js';
 import path from 'node:path';
 
 export async function normalizePersistentCache(
@@ -19,24 +19,43 @@ export async function normalizePersistentCache(
 
   if (config.persistentCache === true || config.persistentCache == undefined) {
     config.persistentCache = {
-      buildDependencies: []
+      buildDependencies: [],
+      moduleCacheKeyStrategy: {}
     };
+  }
+
+  if (config?.output?.targetEnv === 'node') {
+    if (!config.persistentCache.moduleCacheKeyStrategy) {
+      config.persistentCache.moduleCacheKeyStrategy = {};
+    }
+
+    config.persistentCache.moduleCacheKeyStrategy.timestamp = false;
   }
 
   // trace all build dependencies of the config file
   if (config.configFilePath) {
-    config.persistentCache.buildDependencies = [
-      await traceDependenciesHash(config.configFilePath)
-    ];
+    const files = await traceDependencies(config.configFilePath);
+
+    const packages = [];
+
+    for (const file of files) {
+      if (path.isAbsolute(file)) {
+        config.persistentCache.buildDependencies.push(file);
+      } else {
+        packages.push(file);
+      }
+    }
 
     const rustPlugins = resolvedUserConfig.plugins?.filter(
       (plugin) => typeof plugin === 'string' || Array.isArray(plugin)
     ) as RustPlugin[];
 
-    if (rustPlugins?.length) {
+    packages.push(...(rustPlugins ?? []));
+
+    if (packages?.length) {
       const require = createRequire(path.join(config.root, 'package.json'));
 
-      for (const p of rustPlugins) {
+      for (const p of packages) {
         try {
           let packageJsonPath: string;
           if (typeof p === 'string') {
@@ -53,5 +72,7 @@ export async function normalizePersistentCache(
         }
       }
     }
+
+    config.persistentCache.buildDependencies.sort();
   }
 }

@@ -51,9 +51,17 @@ impl PersistentCacheConfig {
     })
   }
 
-  pub fn as_obj(&self, root: &str) -> PersistentCacheConfigObj {
+  pub fn as_raw_object(&self) -> &PersistentCacheConfigObj {
+    if let PersistentCacheConfig::Obj(obj) = self {
+      obj
+    } else {
+      panic!("PersistentCacheConfig is not a object");
+    }
+  }
+
+  pub fn as_obj(&self, root: &str, config_hash: String) -> PersistentCacheConfigObj {
     match self {
-      PersistentCacheConfig::Bool(true) => Self::get_default_config(root).as_obj(root),
+      PersistentCacheConfig::Bool(true) => Self::get_default_config(root).as_obj(root, config_hash),
       PersistentCacheConfig::Bool(false) => {
         panic!("should not call as_obj when PersistentCacheConfig is false")
       }
@@ -62,15 +70,19 @@ impl PersistentCacheConfig {
         let default_config = Self::get_default_config(root);
 
         if cloned_obj.cache_dir.is_empty() {
-          cloned_obj.cache_dir = default_config.as_obj(root).cache_dir;
+          cloned_obj.cache_dir = default_config.as_raw_object().cache_dir.clone();
         }
 
+        cloned_obj.build_dependencies.push(config_hash);
+
         if !cloned_obj.build_dependencies.is_empty() {
+          cloned_obj.build_dependencies.sort();
+
           let mut content = String::new();
 
           for dep in &cloned_obj.build_dependencies {
-            if !PathBuf::from(dep).exists() || PathBuf::from(dep).is_file() {
-              content.push_str(&dep);
+            if !PathBuf::from(dep).exists() || !PathBuf::from(dep).is_file() {
+              content.push_str(dep);
             } else {
               let c = std::fs::read_to_string(dep).unwrap();
               content.push_str(&c);
@@ -84,7 +96,7 @@ impl PersistentCacheConfig {
         }
 
         if cloned_obj.namespace.is_empty() {
-          cloned_obj.namespace = default_config.as_obj(root).namespace;
+          cloned_obj.namespace = default_config.as_raw_object().namespace.clone();
         }
 
         cloned_obj

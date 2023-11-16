@@ -19,13 +19,19 @@ pub struct CacheStore {
   /// name -> cache key manifest of this store.
   /// it will be stored in a separate file
   manifest: DashMap<String, String>,
-  #[cfg(feature = "profile")]
-  name: String,
 }
 
 impl CacheStore {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode, name: &str) -> Self {
-    let mut cache_dir = Path::new(&format!("{FARM_CACHE_VERSION}-{cache_dir_str}")).to_path_buf();
+    let mut cache_dir = Path::new(cache_dir_str).to_path_buf();
+    let last = cache_dir
+      .file_name()
+      .unwrap_or_default()
+      .to_string_lossy()
+      .to_string();
+    cache_dir.pop();
+
+    cache_dir.push(format!("{FARM_CACHE_VERSION}-{last}"));
 
     if !namespace.is_empty() {
       cache_dir.push(namespace);
@@ -60,8 +66,6 @@ impl CacheStore {
     Self {
       cache_dir,
       manifest,
-      #[cfg(feature = "profile")]
-      name: name.to_string(),
     }
   }
 

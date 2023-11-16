@@ -14,7 +14,6 @@ use farmfe_core::{
   plugin::Plugin,
   stats::Stats,
 };
-use farmfe_utils::hash::sha256;
 
 pub mod build;
 pub mod generate;
@@ -76,32 +75,19 @@ impl Compiler {
     let module_graph = self.context.module_graph.read();
     let mut dependencies = vec![];
 
-    for module in module_graph.modules().iter() {
+    for module in module_graph.modules() {
       if module.external {
-        continue;
+        dependencies.push(module.id.to_string());
+      } else {
+        dependencies.push(module.id.resolved_path(&self.context.config.root));
       }
+    }
 
-      dependencies.push(module.id.resolved_path(&self.context.config.root));
+    if self.context.config.persistent_cache.enabled() {
+      self.context.cache_manager.write_cache();
     }
 
     Ok(dependencies)
-  }
-
-  pub fn trace_dependencies_hash(&self) -> Result<String> {
-    self.build()?;
-
-    let module_graph = self.context.module_graph.read();
-    let mut dependencies = String::new();
-
-    for module in module_graph.modules().iter() {
-      if module.external {
-        continue;
-      }
-
-      dependencies.push_str(&module.content_hash);
-    }
-
-    Ok(sha256(dependencies.as_bytes(), 32))
   }
 
   /// Compile the project using the configuration
@@ -141,6 +127,9 @@ impl Compiler {
         });
 
       if matches!(self.context.config.mode, Mode::Development) {
+        #[cfg(feature = "profile")]
+        write_cache(self.context.clone());
+        #[cfg(not(feature = "profile"))]
         write_cache_async(self.context.clone());
       } else {
         write_cache(self.context.clone());

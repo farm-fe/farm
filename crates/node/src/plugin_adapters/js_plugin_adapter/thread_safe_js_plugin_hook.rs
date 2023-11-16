@@ -10,15 +10,9 @@ use std::{
 };
 
 use farmfe_core::{
-  config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{ModuleId, ModuleType},
-  plugin::{
-    EmptyPluginHookParam, EmptyPluginHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, PluginTransformHookResult, PluginUpdateModulesHookParams,
-  },
+  plugin::PluginHookContext,
   serde::{de::DeserializeOwned, Serialize},
 };
 use napi::{
@@ -45,7 +39,7 @@ use napi::{
 
 use super::context::create_js_context;
 
-struct ThreadSafeJsPluginHook {
+pub struct ThreadSafeJsPluginHook {
   raw_tsfn: napi_threadsafe_function,
 }
 
@@ -213,19 +207,15 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
   }
 }
 
-pub struct JsPluginResolveHook {
-  tsfn: ThreadSafeJsPluginHook,
-  filters: PluginResolveHookFilters,
-}
-
+#[macro_export]
 macro_rules! new_js_plugin_hook {
   ($filter:ident, $js_filter:ident, $param:ident, $ret:ident) => {
-    pub fn new(env: &Env, obj: JsObject) -> Self {
+    pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
       let filters: $filter = unsafe {
         $js_filter::from_napi_value(
           env.raw(),
           obj
-            .get_named_property::<JsObject>("filters")
+            .get_named_property::<napi::JsObject>("filters")
             .expect("filters should be checked in js side")
             .raw(),
         )
@@ -234,7 +224,7 @@ macro_rules! new_js_plugin_hook {
       };
 
       let func = obj
-        .get_named_property::<JsFunction>("executor")
+        .get_named_property::<napi::JsFunction>("executor")
         .expect("executor should be checked in js side");
 
       Self {
@@ -245,124 +235,20 @@ macro_rules! new_js_plugin_hook {
   };
 }
 
-impl JsPluginResolveHook {
-  new_js_plugin_hook!(
-    PluginResolveHookFilters,
-    JsPluginResolveHookFilters,
-    PluginResolveHookParam,
-    PluginResolveHookResult
-  );
-
-  pub fn call(
-    &self,
-    param: PluginResolveHookParam,
-    ctx: Arc<CompilationContext>,
-    hook_context: PluginHookContext,
-  ) -> Result<Option<PluginResolveHookResult>> {
-    let filtered = self.filters.importers.iter().any(|i| {
-      if let Some(importer) = &param.importer {
-        i.is_match(&importer.resolved_path_with_query(&ctx.config.root))
-      } else {
-        i.is_match("None")
-      }
-    }) && self
-      .filters
-      .sources
-      .iter()
-      .any(|f| f.is_match(&param.source));
-
-    if filtered {
-      self
-        .tsfn
-        .call::<PluginResolveHookParam, PluginResolveHookResult>(param, ctx, Some(hook_context))
-    } else {
-      Ok(None)
-    }
-  }
-}
-
-pub struct JsPluginLoadHook {
-  tsfn: ThreadSafeJsPluginHook,
-  filters: PluginLoadHookFilters,
-}
-
-impl JsPluginLoadHook {
-  new_js_plugin_hook!(
-    PluginLoadHookFilters,
-    JsPluginLoadHookFilters,
-    PluginLoadHookParam,
-    PluginLoadHookResult
-  );
-
-  pub fn call(
-    &self,
-    param: PluginLoadHookParam,
-    ctx: Arc<CompilationContext>,
-    hook_context: PluginHookContext,
-  ) -> Result<Option<PluginLoadHookResult>> {
-    if self.filters.resolved_paths.iter().any(|f| {
-      f.is_match(
-        &ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&ctx.config.root),
-      )
-    }) {
-      self.tsfn.call::<PluginLoadHookParam, PluginLoadHookResult>(
-        param.clone(),
-        ctx,
-        Some(hook_context),
-      )
-    } else {
-      Ok(None)
-    }
-  }
-}
-
-pub struct JsPluginTransformHook {
-  tsfn: ThreadSafeJsPluginHook,
-  filters: PluginTransformHookFilters,
-}
-
-impl JsPluginTransformHook {
-  new_js_plugin_hook!(
-    PluginTransformHookFilters,
-    JsPluginTransformHookFilters,
-    PluginTransformHookParam,
-    PluginTransformHookResult
-  );
-
-  pub fn call(
-    &self,
-    param: PluginTransformHookParam,
-    ctx: Arc<CompilationContext>,
-  ) -> Result<Option<PluginTransformHookResult>> {
-    if self.filters.resolved_paths.iter().any(|f| {
-      f.is_match(
-        &ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&ctx.config.root),
-      )
-    }) || self
-      .filters
-      .module_types
-      .iter()
-      .any(|ty| &param.module_type == ty)
-    {
-      self
-        .tsfn
-        .call::<PluginTransformHookParam, PluginTransformHookResult>(param, ctx, None)
-    } else {
-      Ok(None)
-    }
-  }
-}
-
+#[macro_export]
 macro_rules! define_empty_params_js_plugin_hook {
   ($name:ident) => {
+    use $crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
+    use farmfe_core::plugin::{EmptyPluginHookParam, EmptyPluginHookResult};
+
     pub struct $name {
       tsfn: ThreadSafeJsPluginHook,
     }
 
     impl $name {
-      pub fn new(env: &Env, obj: JsObject) -> Self {
+      pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
         let func = obj
-          .get_named_property::<JsFunction>("executor")
+          .get_named_property::<napi::JsFunction>("executor")
           .expect("executor should be checked in js side");
 
         Self {
@@ -375,121 +261,14 @@ macro_rules! define_empty_params_js_plugin_hook {
       pub fn call(
         &self,
         param: EmptyPluginHookParam,
-        ctx: Arc<CompilationContext>,
-      ) -> Result<Option<EmptyPluginHookResult>> {
+        ctx: std::sync::Arc<farmfe_core::context::CompilationContext>,
+      ) -> farmfe_core::error::Result<Option<EmptyPluginHookResult>> {
         self
           .tsfn
           .call::<EmptyPluginHookParam, EmptyPluginHookResult>(param, ctx, None)
       }
     }
   };
-}
-
-define_empty_params_js_plugin_hook!(JsPluginBuildStartHook);
-define_empty_params_js_plugin_hook!(JsPluginBuildEndHook);
-define_empty_params_js_plugin_hook!(JsPluginFinishHook);
-
-pub struct JsPluginUpdateModulesHook {
-  tsfn: ThreadSafeJsPluginHook,
-}
-
-impl JsPluginUpdateModulesHook {
-  pub fn new(env: &Env, obj: JsObject) -> Self {
-    let func = obj
-      .get_named_property::<JsFunction>("executor")
-      .expect("executor should be checked in js side");
-
-    Self {
-      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParams, Vec<String>>(env, func),
-    }
-  }
-
-  pub fn call(
-    &self,
-    param: PluginUpdateModulesHookParams,
-    ctx: Arc<CompilationContext>,
-  ) -> Result<Option<Vec<String>>> {
-    self
-      .tsfn
-      .call::<PluginUpdateModulesHookParams, Vec<String>>(param, ctx, None)
-  }
-}
-
-/// Resolve hook filters, works as `||`. If any importers or sources matches any regex item in the Vec, we treat it as filtered.
-#[napi(object)]
-struct JsPluginResolveHookFilters {
-  pub importers: Vec<String>,
-  pub sources: Vec<String>,
-}
-
-#[derive(Debug)]
-struct PluginResolveHookFilters {
-  pub importers: Vec<ConfigRegex>,
-  pub sources: Vec<ConfigRegex>,
-}
-
-impl From<JsPluginResolveHookFilters> for PluginResolveHookFilters {
-  fn from(f: JsPluginResolveHookFilters) -> Self {
-    Self {
-      importers: f
-        .importers
-        .into_iter()
-        .map(|f| ConfigRegex::new(&f))
-        .collect(),
-      sources: f
-        .sources
-        .into_iter()
-        .map(|f| ConfigRegex::new(&f))
-        .collect(),
-    }
-  }
-}
-
-#[napi(object)]
-pub struct JsPluginLoadHookFilters {
-  pub resolved_paths: Vec<String>,
-}
-
-#[derive(Debug)]
-pub struct PluginLoadHookFilters {
-  pub resolved_paths: Vec<ConfigRegex>,
-}
-
-impl From<JsPluginLoadHookFilters> for PluginLoadHookFilters {
-  fn from(f: JsPluginLoadHookFilters) -> Self {
-    Self {
-      resolved_paths: f
-        .resolved_paths
-        .into_iter()
-        .map(|f| ConfigRegex::new(&f))
-        .collect(),
-    }
-  }
-}
-
-#[napi(object)]
-pub struct JsPluginTransformHookFilters {
-  pub resolved_paths: Vec<String>,
-  pub module_types: Vec<String>,
-}
-
-#[derive(Debug)]
-pub struct PluginTransformHookFilters {
-  pub resolved_paths: Vec<ConfigRegex>,
-  pub module_types: Vec<ModuleType>,
-}
-
-impl From<JsPluginTransformHookFilters> for PluginTransformHookFilters {
-  fn from(f: JsPluginTransformHookFilters) -> Self {
-    Self {
-      resolved_paths: f
-        .resolved_paths
-        .into_iter()
-        .map(|f| ConfigRegex::new(&f))
-        .collect(),
-      module_types: f.module_types.into_iter().map(|ty| ty.into()).collect(),
-    }
-  }
 }
 
 /// retrieve result and catch error from the promise

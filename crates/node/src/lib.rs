@@ -196,14 +196,6 @@ impl JsCompiler {
       .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
   }
 
-  #[napi]
-  pub async fn trace_dependencies_hash(&self) -> napi::Result<String> {
-    self
-      .compiler
-      .trace_dependencies_hash()
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
-  }
-
   /// async compile, return promise
   ///
   /// TODO: usage example

@@ -3,11 +3,10 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
-    config_regex::ConfigRegex, preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig,
-    SourcemapConfig,
+    config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
+    preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
   },
   plugin::Plugin,
-  regex::Regex,
   resource::ResourceType,
 };
 
@@ -61,6 +60,7 @@ pub fn create_css_compiler(
       lazy_compilation: false,
       minify: false,
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
+      persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()
     },
     vec![],
@@ -94,6 +94,7 @@ pub fn create_compiler(
       lazy_compilation: false,
       minify,
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
+      persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()
     },
     vec![],
@@ -144,6 +145,7 @@ pub fn create_compiler_with_plugins(
       lazy_compilation: false,
       minify,
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
+      persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()
     },
     plugins,

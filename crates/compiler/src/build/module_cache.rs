@@ -48,13 +48,13 @@ pub fn try_get_module_cache_by_timestamp(
   timestamp: u128,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
-  if context.config.persistent_cache.enabled()
+  if context.config.persistent_cache.timestamp_enabled()
     && context.cache_manager.module_cache.has_cache(module_id)
   {
     let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);
+
     if cached_module.value().module.last_update_timestamp == timestamp {
       let mut cached_module = context.cache_manager.module_cache.get_cache(module_id);
-
       handle_cached_modules(&mut cached_module, context)?;
 
       return Ok(Some(cached_module));
@@ -75,7 +75,7 @@ pub fn try_get_module_cache_by_hash(
   content_hash: &str,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
-  if context.config.persistent_cache.enabled()
+  if context.config.persistent_cache.hash_enabled()
     && context.cache_manager.module_cache.has_cache(module_id)
   {
     let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);

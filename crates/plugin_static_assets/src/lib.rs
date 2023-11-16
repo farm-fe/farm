@@ -246,14 +246,20 @@ impl Plugin for FarmPluginStaticAssets {
     let resources_map = context.resources_map.lock();
 
     for (_, resource) in resources_map.iter() {
-      if let ResourceOrigin::Module(_) = resource.origin {
-        list.push(resource.clone());
+      if let ResourceOrigin::Module(m) = &resource.origin {
+        if context.module_graph.read().has_module(m) {
+          list.push(resource.clone());
+        }
       }
     }
 
-    let cached_static_assets = CachedStaticAssets { list };
+    if !list.is_empty() {
+      let cached_static_assets = CachedStaticAssets { list };
 
-    Ok(Some(serialize!(&cached_static_assets)))
+      Ok(Some(serialize!(&cached_static_assets)))
+    } else {
+      Ok(None)
+    }
   }
 }
 

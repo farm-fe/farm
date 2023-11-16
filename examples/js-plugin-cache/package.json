@@ -1,6 +1,6 @@
 {
-  "name": "@farmfe-examples/script-entry",
-  "version": "0.0.87",
+  "name": "@farmfe-examples/js-plugin-cache",
+  "version": "0.0.0",
   "private": true,
   "devDependencies": {
     "@farmfe/cli": "workspace:*",

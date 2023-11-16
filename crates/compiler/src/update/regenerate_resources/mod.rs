@@ -90,16 +90,17 @@ pub fn render_and_generate_update_resource(
     }
   }
 
-  let is_lazy_compile = updated_module_ids.iter().any(|id| {
+  let is_lazy = updated_module_ids.iter().any(|id| {
     id.to_string()
       .starts_with(farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX)
   });
+  let cached_enabled = context.config.persistent_cache.enabled() && is_lazy;
 
   let gen_resource_pot_code =
     |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
       let mut cache_key = None;
 
-      if is_lazy_compile {
+      if cached_enabled {
         cache_key = Some(gen_cache_key_for_update_resource_pot(
           resource_pot,
           &module_graph,
@@ -163,7 +164,7 @@ pub fn render_and_generate_update_resource(
 
         let code = String::from_utf8(update_resources.resource.bytes).unwrap();
 
-        if is_lazy_compile {
+        if cached_enabled {
           let cache_key = cache_key.unwrap();
           let store_key = CacheStoreKey {
             name: cache_key.clone(),
@@ -264,14 +265,16 @@ pub fn regenerate_resources_for_affected_module_groups(
 
   render_resource_pots_and_generate_resources(resource_pots, context, &Default::default())?;
 
-  context
-    .plugin_driver
-    .write_plugin_cache(context)
-    .unwrap_or_else(|err| {
-      eprintln!("write plugin cache error: {:?}", err);
-    });
+  if context.config.persistent_cache.enabled() {
+    context
+      .plugin_driver
+      .write_plugin_cache(context)
+      .unwrap_or_else(|err| {
+        eprintln!("write plugin cache error: {:?}", err);
+      });
 
-  write_cache_async(context.clone());
+    write_cache_async(context.clone());
+  }
 
   Ok(())
 }

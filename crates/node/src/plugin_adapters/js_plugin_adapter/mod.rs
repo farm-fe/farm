@@ -12,12 +12,15 @@ use farmfe_core::{
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
-use self::thread_safe_js_plugin_hook::{
-  JsPluginBuildEndHook, JsPluginBuildStartHook, JsPluginFinishHook, JsPluginLoadHook,
-  JsPluginResolveHook, JsPluginTransformHook, JsPluginUpdateModulesHook,
+use self::hooks::{
+  build_end::JsPluginBuildEndHook, build_start::JsPluginBuildStartHook, finish::JsPluginFinishHook,
+  load::JsPluginLoadHook, plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
+  resolve::JsPluginResolveHook, transform::JsPluginTransformHook,
+  update_modules::JsPluginUpdateModulesHook, write_plugin_cache::JsPluginWritePluginCacheHook,
 };
 
 pub mod context;
+mod hooks;
 mod thread_safe_js_plugin_hook;
 
 pub struct JsPluginAdapter {
@@ -30,6 +33,8 @@ pub struct JsPluginAdapter {
   js_build_end_hook: Option<JsPluginBuildEndHook>,
   js_finish_hook: Option<JsPluginFinishHook>,
   js_update_modules_hook: Option<JsPluginUpdateModulesHook>,
+  js_plugin_cache_loaded: Option<JsPluginPluginCacheLoadedHook>,
+  js_write_plugin_cache: Option<JsPluginWritePluginCacheHook>,
 }
 
 impl JsPluginAdapter {
@@ -49,6 +54,10 @@ impl JsPluginAdapter {
     let finish_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "finish").ok();
     let update_modules_hook_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "updateModules").ok();
+    let plugin_cache_loaded_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "pluginCacheLoaded").ok();
+    let write_plugin_cache_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "writePluginCache").ok();
 
     Ok(Self {
       name,
@@ -61,6 +70,10 @@ impl JsPluginAdapter {
       js_finish_hook: finish_hook_obj.map(|obj| JsPluginFinishHook::new(env, obj)),
       js_update_modules_hook: update_modules_hook_obj
         .map(|obj| JsPluginUpdateModulesHook::new(env, obj)),
+      js_plugin_cache_loaded: plugin_cache_loaded_obj
+        .map(|obj| JsPluginPluginCacheLoadedHook::new(env, obj)),
+      js_write_plugin_cache: write_plugin_cache_obj
+        .map(|obj| JsPluginWritePluginCacheHook::new(env, obj)),
     })
   }
 }
@@ -169,6 +182,27 @@ impl Plugin for JsPluginAdapter {
     if let Some(js_finish_hook) = &self.js_finish_hook {
       js_finish_hook.call(EmptyPluginHookParam {}, context.clone())?;
       Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn plugin_cache_loaded(
+    &self,
+    cache: &Vec<u8>,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(js_plugin_cache_loaded_hook) = &self.js_plugin_cache_loaded {
+      js_plugin_cache_loaded_hook.call(cache, context.clone())?;
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
+    if let Some(js_write_plugin_cache_hook) = &self.js_write_plugin_cache {
+      js_write_plugin_cache_hook.call(context.clone())
     } else {
       Ok(None)
     }

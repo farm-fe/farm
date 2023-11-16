@@ -618,12 +618,16 @@ impl Plugin for FarmPluginCss {
     &self,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
-    let cache = CssModulesCache {
-      content_map: self.content_map.lock().clone(),
-      sourcemap_map: self.sourcemap_map.lock().clone(),
-    };
+    if !self.content_map.lock().is_empty() || !self.sourcemap_map.lock().is_empty() {
+      let cache = CssModulesCache {
+        content_map: self.content_map.lock().clone(),
+        sourcemap_map: self.sourcemap_map.lock().clone(),
+      };
 
-    Ok(Some(serialize!(&cache)))
+      Ok(Some(serialize!(&cache)))
+    } else {
+      Ok(None)
+    }
   }
 }
 

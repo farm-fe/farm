@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use common::generate_runtime;
 use farmfe_compiler::Compiler;
 use farmfe_core::config::config_regex::ConfigRegex;
+use farmfe_core::config::persistent_cache::PersistentCacheConfig;
 use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
 use farmfe_core::plugin::UpdateType;
 use farmfe_testing_helpers::fixture;
@@ -36,6 +37,7 @@ fn create_update_compiler(
       lazy_compilation: false,
       minify,
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
+      persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()
     },
     vec![],
