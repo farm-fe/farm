@@ -24,6 +24,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_7d8a.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"363fc137": function(module, exports, farmRequire, farmDynamicRequire) {
@@ -45,6 +46,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_7ecc.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"e4b1dea3": function(module, exports, farmRequire, farmDynamicRequire) {

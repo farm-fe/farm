@@ -24,6 +24,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_dcdc.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
