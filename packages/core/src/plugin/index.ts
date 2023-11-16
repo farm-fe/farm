@@ -34,12 +34,15 @@ export async function resolveAllPlugins(
   }
 
   const rustPlugins = [];
+  console.log(userConfig);
 
   const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
     vitePlugins,
     userConfig,
     resolvedConfig
   );
+
+  console.log(vitePluginAdapters);
 
   const jsPlugins: JsPlugin[] = [];
 

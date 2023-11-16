@@ -32,6 +32,7 @@ export function handleVitePlugins(
       server: normalizeDevServerOptions(userConfig.server, finalConfig.mode)
     });
   }
+  console.log(userConfig);
 
   for (const vitePluginObj of vitePlugins) {
     let vitePlugin = vitePluginObj,
@@ -42,6 +43,7 @@ export function handleVitePlugins(
       vitePlugin = plugin;
       filters = f;
     }
+
     processVitePlugin(vitePlugin, userConfig, filters, jsPlugins);
   }
 
