@@ -4,19 +4,22 @@ use std::{path::Path, sync::Arc};
 
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
+  cache_item,
   config::Config,
-  context::CompilationContext,
-  module::{ModuleId, ModuleType},
+  context::{CompilationContext, EmitFileParams},
+  deserialize,
+  module::ModuleType,
   // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
+  rkyv::Deserialize,
+  serialize,
 };
 use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
   lazy_static::lazy_static,
 };
-use farmfe_utils::stringify_query;
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
@@ -55,7 +58,7 @@ impl Plugin for FarmPluginStaticAssets {
   }
   /// Make sure this plugin is executed last
   fn priority(&self) -> i32 {
-    99
+    -99
   }
 
   fn resolve(
@@ -194,22 +197,13 @@ impl Plugin for FarmPluginStaticAssets {
         } else {
           format!("export default \"/{}\"", resource_name)
         };
-
-        let mut resources_map = context.resources_map.lock();
-        resources_map.insert(
-          resource_name.clone(),
-          Resource {
-            name: resource_name,
-            bytes,
-            emitted: false,
-            resource_type: ResourceType::Asset(ext.to_string()),
-            origin: ResourceOrigin::Module(ModuleId::new(
-              param.resolved_path,
-              &stringify_query(&param.query),
-              &context.config.root,
-            )),
-          },
-        );
+        // TODO refactor this to support cache
+        context.emit_file(EmitFileParams {
+          resolved_path: param.module_id.clone(),
+          name: resource_name,
+          content: bytes,
+          resource_type: ResourceType::Asset(ext.to_string()),
+        });
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,
@@ -222,4 +216,54 @@ impl Plugin for FarmPluginStaticAssets {
 
     Ok(None)
   }
+
+  fn plugin_cache_loaded(
+    &self,
+    cache: &Vec<u8>,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let cached_static_assets = deserialize!(cache, CachedStaticAssets);
+
+    for asset in cached_static_assets.list {
+      if let ResourceOrigin::Module(m) = asset.origin {
+        context.emit_file(EmitFileParams {
+          resolved_path: m.to_string(),
+          name: asset.name,
+          content: asset.bytes,
+          resource_type: asset.resource_type,
+        });
+      }
+    }
+
+    Ok(Some(()))
+  }
+
+  fn write_plugin_cache(
+    &self,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
+    let mut list = vec![];
+    let resources_map = context.resources_map.lock();
+
+    for (_, resource) in resources_map.iter() {
+      if let ResourceOrigin::Module(m) = &resource.origin {
+        if context.module_graph.read().has_module(m) {
+          list.push(resource.clone());
+        }
+      }
+    }
+
+    if !list.is_empty() {
+      let cached_static_assets = CachedStaticAssets { list };
+
+      Ok(Some(serialize!(&cached_static_assets)))
+    } else {
+      Ok(None)
+    }
+  }
+}
+
+#[cache_item]
+struct CachedStaticAssets {
+  list: Vec<Resource>,
 }

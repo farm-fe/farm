@@ -2,7 +2,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use hashbrown::HashSet;
-use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 
@@ -125,10 +124,12 @@ pub struct RenderedModule {
 }
 
 #[cache_item]
+#[derive(Clone)]
 pub struct ResourcePotMetaData {
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
   pub rendered_content: Arc<String>,
   pub rendered_map_chain: Vec<Arc<String>>,
+  pub custom_data: HashMap<String, String>,
 }
 
 impl Default for ResourcePotMetaData {
@@ -137,6 +138,7 @@ impl Default for ResourcePotMetaData {
       rendered_modules: HashMap::new(),
       rendered_content: Arc::new(String::new()),
       rendered_map_chain: vec![],
+      custom_data: HashMap::new(),
     }
   }
 }

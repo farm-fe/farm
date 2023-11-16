@@ -1,6 +1,7 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, path::PathBuf, sync::Arc};
 
 use dashmap::DashMap;
+use farmfe_utils::hash::sha256;
 use hashbrown::HashMap;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
@@ -8,7 +9,7 @@ use swc_common::Globals;
 
 use crate::{
   cache::CacheManager,
-  config::Config,
+  config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
@@ -21,6 +22,7 @@ use crate::{
 use self::log_store::LogStore;
 
 pub mod log_store;
+pub(crate) const EMPTY_STR: &str = "";
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
@@ -35,10 +37,13 @@ pub struct CompilationContext {
   pub meta: Box<ContextMetaData>,
   pub record_manager: Box<RecordManager>,
   pub log_store: Box<Mutex<LogStore>>,
+  pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
 }
 
 impl CompilationContext {
-  pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+  pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    let (cache_dir, namespace) = Self::normalize_persistent_cache_config(&mut config);
+
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
@@ -46,12 +51,39 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::new())),
       plugin_driver: Box::new(PluginDriver::new(plugins, config.record)),
+      cache_manager: Box::new(CacheManager::new(
+        &cache_dir,
+        &namespace,
+        config.mode.clone(),
+      )),
       config: Box::new(config),
-      cache_manager: Box::new(CacheManager::new()),
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
+      custom: Box::new(DashMap::new()),
     })
+  }
+
+  pub fn normalize_persistent_cache_config(config: &mut Config) -> (String, String) {
+    if config.persistent_cache.enabled() {
+      let mut config_str_vec = serde_json::to_string(config)
+        .unwrap()
+        .chars()
+        .collect::<Vec<_>>();
+      config_str_vec.sort();
+      let config_str = config_str_vec.into_iter().collect::<String>();
+      let config_hash = sha256(config_str.as_bytes(), 32);
+      let cache_config_obj = config.persistent_cache.as_obj(&config.root, config_hash);
+      let (cache_dir, namespace) = (
+        cache_config_obj.cache_dir.clone(),
+        cache_config_obj.namespace.clone(),
+      );
+      config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
+
+      (cache_dir, namespace)
+    } else {
+      (EMPTY_STR.to_string(), EMPTY_STR.to_string())
+    }
   }
 
   pub fn add_watch_files(&self, from: String, deps: Vec<&String>) -> Result<()> {
@@ -69,8 +101,24 @@ impl CompilationContext {
     Ok(())
   }
 
+  /// get module id from string
+  /// 1. if resolved_path is a absolute path, try generate module id from it
+  /// 2. if resolved_path is a relative path, treat it as module id
+  pub fn str_to_module_id(&self, id: &str) -> ModuleId {
+    if PathBuf::from(id).is_absolute() {
+      let splits = id.split('?').collect::<Vec<_>>();
+      let resolved_path = splits[0];
+      let query = splits.get(1).unwrap_or(&EMPTY_STR);
+      ModuleId::new(resolved_path, query, &self.config.root)
+    } else {
+      id.into()
+    }
+  }
+
   pub fn emit_file(&self, params: EmitFileParams) {
     let mut resources_map = self.resources_map.lock();
+
+    let module_id = self.str_to_module_id(&params.resolved_path);
 
     resources_map.insert(
       params.name.clone(),
@@ -79,7 +127,7 @@ impl CompilationContext {
         bytes: params.content,
         emitted: false,
         resource_type: params.resource_type,
-        origin: ResourceOrigin::Module(ModuleId::new(&params.resolved_path, "", &self.config.root)),
+        origin: ResourceOrigin::Module(module_id),
       },
     );
   }

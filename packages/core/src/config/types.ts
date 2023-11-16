@@ -45,6 +45,11 @@ export interface UserHmrConfig {
   };
 }
 
+type AvailableUserConfigKeys = Exclude<
+  keyof Config['config'],
+  'configFilePath' | 'env' | 'envPrefix' | 'coreLibPath' | 'root'
+>;
+
 export interface UserConfig {
   /** current root of this project, default to current working directory */
   root?: string;
@@ -52,21 +57,25 @@ export interface UserConfig {
   envDir?: string;
   envPrefix?: string | string[];
   publicDir?: string;
-  inlineConfig?: FarmCLIOptions;
-  configPath?: string;
-  isBuild?: boolean;
-  command?: 'serve' | 'build';
-  resolveConfigPath?: string;
-  configFileDependencies?: string[];
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[])[];
   /** vite plugins */
   vitePlugins?: (object | (() => { vitePlugin: any; filters: string[] }))[];
   /** config related to compilation */
-  compilation?: Config['config'];
+  compilation?: Pick<Config['config'], AvailableUserConfigKeys>;
   /** config related to dev server */
   server?: UserServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
+}
+
+export interface ResolvedUserConfig extends UserConfig {
+  inlineConfig?: FarmCLIOptions;
+  configPath?: string;
+  isBuild?: boolean;
+  command?: 'serve' | 'build';
+  resolveConfigPath?: string;
+  // TODO set this field for persistent cache
+  configFileDependencies?: string[];
 }
 
 export interface GlobalFarmCLIOptions {

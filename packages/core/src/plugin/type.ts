@@ -96,6 +96,14 @@ export interface JsPlugin {
       string[] | undefined | null | void
     >;
   };
+
+  pluginCacheLoaded?: {
+    executor: Callback<number[], undefined | null | void>;
+  };
+
+  writePluginCache?: {
+    executor: Callback<undefined, number[]>;
+  };
 }
 
 export { rustPluginResolver } from './rust/rustPluginResolver.js';

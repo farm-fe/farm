@@ -121,6 +121,16 @@ impl PluginDriver {
     Ok(())
   }
 
+  pub fn plugin_cache_loaded(&self, context: &Arc<CompilationContext>) -> Result<()> {
+    for plugin in &self.plugins {
+      if let Some(plugin_cache) = context.cache_manager.plugin_cache.read_cache(plugin.name()) {
+        plugin.plugin_cache_loaded(plugin_cache.value(), context)?;
+      }
+    }
+
+    Ok(())
+  }
+
   hook_parallel!(
     build_start,
     |plugin_name: String, context: &Arc<CompilationContext>| {
@@ -445,7 +455,6 @@ impl PluginDriver {
     optimize_resource_pot,
     &mut ResourcePot,
     |plugin_name: String, resource_pot: &mut ResourcePot, context: &Arc<CompilationContext>| {
-      println!("resource_pot:{:?}", resource_pot.resources());
       context.record_manager.add_resource_pot_record(
         resource_pot.id.to_string(),
         ResourcePotRecord {
@@ -528,9 +537,24 @@ impl PluginDriver {
       // todo something
     }
   );
+
+  pub fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<()> {
+    for plugin in &self.plugins {
+      let plugin_cache = plugin.write_plugin_cache(context)?;
+
+      if let Some(plugin_cache) = plugin_cache {
+        context
+          .cache_manager
+          .plugin_cache
+          .set_cache(plugin.name(), plugin_cache);
+      }
+    }
+
+    Ok(())
+  }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PluginDriverTransformHookResult {
   pub content: String,
   pub source_map_chain: Vec<Arc<String>>,

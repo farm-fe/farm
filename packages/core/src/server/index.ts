@@ -134,11 +134,7 @@ export class DevServer implements ImplDevServer {
   }
 
   private async compile(): Promise<void> {
-    if (process.env.FARM_PROFILE) {
-      this._compiler.compileSync();
-    } else {
-      await this._compiler.compile();
-    }
+    await this._compiler.compile();
 
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;

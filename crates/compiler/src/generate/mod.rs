@@ -13,6 +13,7 @@ use crate::{
 pub(crate) mod finalize_resources;
 pub(crate) mod partial_bundling;
 pub(crate) mod render_resource_pots;
+pub(crate) mod resource_cache;
 
 impl Compiler {
   /// the generate stage

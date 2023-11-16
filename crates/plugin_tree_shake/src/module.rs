@@ -52,6 +52,13 @@ impl UsedExports {
       UsedExports::Partial(self_used_exports) => self_used_exports.is_empty(),
     }
   }
+
+  pub fn to_string_vec(&self) -> Vec<String> {
+    match self {
+      UsedExports::All => vec!["*".to_string()],
+      UsedExports::Partial(self_used_exports) => self_used_exports.clone(),
+    }
+  }
 }
 
 pub struct TreeShakeModule {

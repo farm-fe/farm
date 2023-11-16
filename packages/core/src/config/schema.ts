@@ -26,7 +26,8 @@ const compilationConfigSchema = z
         mainFields: z.array(z.string()).optional(),
         conditions: z.array(z.string()).optional(),
         symlinks: z.boolean().optional(),
-        strictExports: z.boolean().optional()
+        strictExports: z.boolean().optional(),
+        autoExternalFailedResolve: z.boolean().optional()
       })
       .strict()
       .optional(),
@@ -177,7 +178,23 @@ const compilationConfigSchema = z
           .optional()
       })
       .optional(),
-    html: z.object({ base: z.string().optional() }).optional()
+    html: z.object({ base: z.string().optional() }).optional(),
+    persistentCache: z.union([
+      z.boolean(),
+      z
+        .object({
+          namespace: z.string().optional(),
+          cacheDir: z.string().optional(),
+          buildDependencies: z.array(z.string()).optional(),
+          moduleCacheKeyStrategy: z
+            .object({
+              timestamp: z.boolean().optional(),
+              hash: z.boolean().optional()
+            })
+            .optional()
+        })
+        .optional()
+    ])
   })
   .strict();
 

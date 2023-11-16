@@ -7,7 +7,12 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::Config, context::CompilationContext, error::Result, plugin::Plugin, stats::Stats,
+  config::{Config, Mode},
+  context::CompilationContext,
+  error::Result,
+  farm_profile_function,
+  plugin::Plugin,
+  stats::Stats,
 };
 
 pub mod build;
@@ -64,8 +69,36 @@ impl Compiler {
     })
   }
 
+  pub fn trace_dependencies(&self) -> Result<Vec<String>> {
+    self.build()?;
+
+    let module_graph = self.context.module_graph.read();
+    let mut dependencies = vec![];
+
+    for module in module_graph.modules() {
+      if module.external {
+        dependencies.push(module.id.to_string());
+      } else {
+        dependencies.push(module.id.resolved_path(&self.context.config.root));
+      }
+    }
+
+    if self.context.config.persistent_cache.enabled() {
+      self.context.cache_manager.write_cache();
+    }
+
+    Ok(dependencies)
+  }
+
   /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
+    if self.context.config.persistent_cache.enabled() {
+      self
+        .context
+        .plugin_driver
+        .plugin_cache_loaded(&self.context)?;
+    }
+
     // triggering build stage
     {
       #[cfg(feature = "profile")]
@@ -79,10 +112,45 @@ impl Compiler {
       self.generate()?;
     }
 
-    self.context.plugin_driver.finish(&Stats {}, &self.context)
+    self
+      .context
+      .plugin_driver
+      .finish(&Stats {}, &self.context)?;
+
+    if self.context.config.persistent_cache.enabled() {
+      self
+        .context
+        .plugin_driver
+        .write_plugin_cache(&self.context)
+        .unwrap_or_else(|err| {
+          eprintln!("write plugin cache error: {:?}", err);
+        });
+
+      if matches!(self.context.config.mode, Mode::Development) {
+        #[cfg(feature = "profile")]
+        write_cache(self.context.clone());
+        #[cfg(not(feature = "profile"))]
+        write_cache_async(self.context.clone());
+      } else {
+        write_cache(self.context.clone());
+      }
+    }
+
+    Ok(())
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {
     &self.context
   }
+}
+
+fn write_cache(context: Arc<CompilationContext>) {
+  farm_profile_function!("write_cache".to_string());
+  context.cache_manager.write_cache();
+}
+
+pub fn write_cache_async(context: Arc<CompilationContext>) {
+  std::thread::spawn(move || {
+    write_cache(context);
+  });
 }

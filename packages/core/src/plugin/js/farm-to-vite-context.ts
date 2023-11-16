@@ -131,7 +131,7 @@ export function farmContextToViteContext(
         {
           source,
           importer: {
-            relativePath: relative(config.compilation.root, importer),
+            relativePath: relative(config.root, importer),
             queryString: importer.split('?')[1] ?? ''
           },
           kind: options.isEntry ? 'entry' : 'import'
