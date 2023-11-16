@@ -128,8 +128,8 @@ export function processVitePlugin(
       userConfig,
       filters
     );
-    convertPlugin(vitePluginAdapter);
-    jsPlugins.push(vitePluginAdapter);
+    convertPlugin(vitePluginAdapter as any);
+    jsPlugins.push(vitePluginAdapter as any);
   };
 
   if (Array.isArray(vitePlugin)) {

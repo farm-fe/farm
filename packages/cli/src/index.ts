@@ -6,7 +6,8 @@ import { DefaultLogger, isWindows } from '@farmfe/core';
 import { getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
-import type { start, build, preview, watch } from '@farmfe/core';
+// import type { start, build, preview, watch } from '@farmfe/core';
+import type { start } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
@@ -205,9 +206,12 @@ cli.parse();
 
 export function resolveCore(cwd: string = process.cwd()): Promise<{
   start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
+  // build: typeof build;
+  // watch: typeof watch;
+  // preview: typeof preview;
+  build: any;
+  watch: any;
+  preview: any;
 }> {
   const require = Module.createRequire(path.join(cwd, 'package.json'));
 

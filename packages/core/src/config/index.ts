@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 
 import merge from 'lodash.merge';
 
-import { resolveAllPlugins } from '../plugin/index.js';
+import { resolveAllPlugins, resolveConfigHook } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 // import { DevServer } from "../server/index.js";
 import { parseUserConfig } from './schema.js';
@@ -46,6 +46,7 @@ export const urlRegex = /^(https?:)?\/\/([^/]+)/;
 export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
   logger: Logger,
+  isRunConfigResolvedHook = false,
   mode: CompilationMode = 'development'
 ): Promise<Config> {
   const { compilation, root, server, envDir, envPrefix } = userConfig;
@@ -272,7 +273,7 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  const { jsPlugins, rustPlugins, resolvedConfig } = await resolveAllPlugins(
+  const { rawJsPlugins, rustPlugins, resolvedConfig } = await resolveAllPlugins(
     config,
     userConfig
   );
@@ -280,8 +281,15 @@ export async function normalizeUserCompilationConfig(
   const normalizedConfig: Config = {
     config: resolvedConfig,
     rustPlugins,
-    jsPlugins
+    jsPlugins: rawJsPlugins
   };
+
+  isRunConfigResolvedHook &&
+    (await Promise.all(
+      rawJsPlugins
+        .map((p) => p?.configResolved(normalizedConfig as any))
+        .filter(Boolean)
+    ));
 
   return normalizedConfig;
 }
@@ -337,12 +345,12 @@ export interface ConfigEnv {
  * Resolve and load user config from the specified path
  * @param configPath
  */
-export async function resolveUserConfig(
+export async function resolveConfig(
   inlineOptions: FarmCLIOptions,
   command: 'serve' | 'build',
   mode: CompilationMode,
   logger: Logger
-): Promise<UserConfig> {
+): Promise<any> {
   let userConfig: UserConfig = {};
   const root: string = process.cwd();
   const { configPath } = inlineOptions;
@@ -398,13 +406,23 @@ export async function resolveUserConfig(
   // TODO WARNING this should be called after resolveAllPlugins
   // targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
-  console.log(configEnv);
   const config = filterUserConfig(userConfig, inlineOptions);
-  console.log('我是userConfig', config);
-  const { resolvedConfig } = await resolveAllPlugins({}, config);
-  console.log('我是jsPlugins', resolvedConfig);
+  const { rawJsPlugins } = await resolveAllPlugins({}, config);
+  const resolveConfig = await resolveConfigHook(
+    config,
+    configEnv,
+    rawJsPlugins
+  );
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    resolveConfig,
+    logger,
+    true
+  );
 
-  return config;
+  return {
+    config: resolveConfig,
+    normalizedConfig
+  };
 }
 
 async function readConfigFile(
@@ -422,6 +440,7 @@ async function readConfigFile(
         'node_modules',
         '.farm'
       );
+
       const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig(
         {

@@ -1,11 +1,15 @@
 import { isArray, isObject } from '../utils/index.js';
 import { convertPlugin, handleVitePlugins } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
-// import { mergeConfiguration } from '../config/index.js';
 
 import type { JsPlugin } from './type.js';
 import type { Config } from '../../binding/index.js';
-import type { UserConfig } from '../config/index.js';
+import {
+  ConfigEnv,
+  mergeConfiguration,
+  resolveAsyncPlugins,
+  type UserConfig
+} from '../config/index.js';
 
 export * from './js/index.js';
 export * from './rust/index.js';
@@ -24,7 +28,7 @@ export async function resolveAllPlugins(
   if (!plugins.length && !vitePlugins?.length) {
     return {
       rustPlugins: [],
-      jsPlugins: [],
+      rawJsPlugins: [],
       resolvedConfig
     };
   }
@@ -36,7 +40,6 @@ export async function resolveAllPlugins(
     userConfig,
     resolvedConfig
   );
-  // console.log(vitePluginAdapters);
 
   const jsPlugins: JsPlugin[] = [];
 
@@ -67,60 +70,77 @@ export async function resolveAllPlugins(
   // const config = await resolveConfigHook(resolvedConfig, jsPlugins);
   // console.log(config);
 
+  const sortJsPlugins = getSortedPlugins(jsPlugins);
+  const rawJsPlugins = (await resolveAsyncPlugins(
+    sortJsPlugins || []
+  )) as JsPlugin[];
+
   // call user config hooks
-  for (const jsPlugin of jsPlugins) {
-    resolvedConfig =
-      (await jsPlugin.config?.(resolvedConfig)) ?? resolvedConfig;
-  }
+  // for (const jsPlugin of jsPlugins) {
+  //   resolvedConfig = (await jsPlugin.config?.(resolvedConfig)) ??
+  //     resolvedConfig;
+  // }
 
   return {
     rustPlugins,
-    jsPlugins,
+    rawJsPlugins,
     resolvedConfig
   };
 }
 
-// export function resolvePlugins(userConfig: UserConfig) {
-// }
+export async function resolveConfigHook(
+  config: UserConfig,
+  configEnv: ConfigEnv,
+  plugins: JsPlugin[]
+): Promise<UserConfig> {
+  let conf = config;
 
-// async function resolveConfigHook(
-//   config: UserConfig,
-//   plugins: JsPlugin[]
-// ): Promise<UserConfig> {
-//   let conf = config;
+  for (const p of plugins) {
+    const hook = p.config;
+    if (hook) {
+      const res = await hook(conf, configEnv);
+      if (res) {
+        conf = mergeConfiguration(conf, res);
+      }
+    }
+  }
+  return conf;
+}
 
-//   for (const p of getSortedPlugins(plugins)) {
-//     const hook = p.config;
-//     if (hook) {
-//       const res = await hook(conf);
-//       if (res) {
-//         conf = mergeConfiguration(conf, res);
-//       }
-//     }
-//   }
+export async function resolveConfigResolvedHook(
+  config: UserConfig,
+  plugins: JsPlugin[]
+): Promise<UserConfig> {
+  const conf = config;
 
-//   return conf;
-// }
+  for (const p of plugins) {
+    const hook = p.configResolved;
+    if (hook) {
+      await hook(conf);
+    }
+  }
+  return conf;
+}
 
-// export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
-//   const priorityPre: JsPlugin[] = [];
-//   const normal: JsPlugin[] = [];
-//   const priorityPost: JsPlugin[] = [];
-//   for (const plugin of plugins) {
-//     if (plugin) {
-//       if (typeof plugin === 'object') {
-//         if (plugin.priority > 99) {
-//           priorityPre.push(plugin);
-//           continue;
-//         }
-//         if (plugin.priority < 99) {
-//           priorityPost.push(plugin);
-//           continue;
-//         }
-//       }
-//       normal.push(plugin);
-//     }
-//   }
+export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
+  const DEFAULT_PRIORITY = 100;
 
-//   return [...priorityPre, ...normal, ...priorityPost] as JsPlugin[];
-// }
+  const sortedPlugins = plugins
+    .filter(
+      (plugin): plugin is JsPlugin & { priority: number } =>
+        typeof plugin === 'object' && typeof plugin.priority === 'number'
+    )
+    .sort((a, b) => b.priority - a.priority);
+
+  const prePlugins = sortedPlugins.filter(
+    (plugin) => plugin.priority > DEFAULT_PRIORITY
+  );
+  const postPlugins = sortedPlugins.filter(
+    (plugin) => plugin.priority < DEFAULT_PRIORITY
+  );
+  const normalPlugins = sortedPlugins.filter(
+    (plugin) => plugin.priority === DEFAULT_PRIORITY
+  );
+
+  return [...prePlugins, ...normalPlugins, ...postPlugins];
+}

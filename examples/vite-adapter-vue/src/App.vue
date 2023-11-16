@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import HelloWorld from './components/HelloWorld.vue'
 import Formatter from './components/Formatter.vue';
+function message() {
+  console.log('message');
+  ElMessage.success('This is a success message');
+  ElMessage.error('This is a success message');
+  ElMessage.warning('This is a success message');
+}
 </script>
 
 <template>
@@ -14,7 +20,7 @@ import Formatter from './components/Formatter.vue';
   </div>
   <el-config-provider :size="'large'" :z-index="3000">
     <HelloWorld msg="Farm + Vue" />
-    <Formatter />
+    <el-button @click="message">213</el-button>
   </el-config-provider>
 </template>
 

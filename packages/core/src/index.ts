@@ -4,20 +4,20 @@ export * from './server/index.js';
 export * from './plugin/type.js';
 export * from './utils/index.js';
 
-import path from 'node:path';
-import os from 'node:os';
-import { existsSync, statSync } from 'node:fs';
-import sirv from 'sirv';
-import compression from 'koa-compress';
-import Koa, { Context } from 'koa';
-import fse from 'fs-extra';
+// import path from "node:path";
+// import os from "node:os";
+// import { existsSync, statSync } from "node:fs";
+// import sirv from "sirv";
+// import compression from "koa-compress";
+// import Koa, { Context } from "koa";
+// import fse from "fs-extra";
 
 import { Compiler } from './compiler/index.js';
 import {
-  normalizeDevServerOptions,
-  normalizePublicDir,
-  normalizeUserCompilationConfig,
-  resolveUserConfig,
+  // normalizeDevServerOptions,
+  // normalizePublicDir,
+  // normalizeUserCompilationConfig,
+  resolveConfig,
   UserConfig
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
@@ -27,8 +27,8 @@ import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
 import { JsPlugin } from './plugin/type.js';
-import { bold, cyan, green, magenta } from './utils/color.js';
-import { useProxy } from './server/middlewares/index.js';
+// import { bold, cyan, green, magenta } from "./utils/color.js";
+// import { useProxy } from "./server/middlewares/index.js";
 
 import type { FarmCLIOptions } from './config/types.js';
 
@@ -38,13 +38,12 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
 
   setProcessEnv('development');
-  const config: UserConfig = await resolveUserConfig(
+  const { config, normalizedConfig }: any = await resolveConfig(
     inlineConfig,
     'serve',
     'development',
     logger
   );
-  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config);
@@ -72,145 +71,145 @@ export async function start(
   }
 }
 
-export async function build(
-  options: FarmCLIOptions & UserConfig
-): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  setProcessEnv('production');
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    'build',
-    'production',
-    logger
-  );
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    logger,
-    'production'
-  );
-  setProcessEnv(normalizedConfig.config.mode);
+// export async function build(
+//   options: FarmCLIOptions & UserConfig,
+// ): Promise<void> {
+//   const logger = options.logger ?? new DefaultLogger();
+//   setProcessEnv("production");
+//   const userConfig: UserConfig = await resolveUserConfig(
+//     options,
+//     "build",
+//     "production",
+//     logger,
+//   );
+//   const normalizedConfig = await normalizeUserCompilationConfig(
+//     userConfig,
+//     logger,
+//     "production",
+//   );
+//   setProcessEnv(normalizedConfig.config.mode);
 
-  await createBundleHandler(normalizedConfig);
+//   await createBundleHandler(normalizedConfig);
 
-  // copy resources under publicDir to output.path
-  const absPublicDirPath = normalizePublicDir(
-    normalizedConfig.config.root,
-    options.publicDir
-  );
+//   // copy resources under publicDir to output.path
+//   const absPublicDirPath = normalizePublicDir(
+//     normalizedConfig.config.root,
+//     options.publicDir,
+//   );
 
-  if (existsSync(absPublicDirPath)) {
-    fse.copySync(absPublicDirPath, normalizedConfig.config.output.path);
-  }
-}
+//   if (existsSync(absPublicDirPath)) {
+//     fse.copySync(absPublicDirPath, normalizedConfig.config.output.path);
+//   }
+// }
 
-export async function preview(options: FarmCLIOptions): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    'serve',
-    'production',
-    logger
-  );
+// export async function preview(options: FarmCLIOptions): Promise<void> {
+//   const logger = options.logger ?? new DefaultLogger();
+//   const port = options.port ?? 1911;
+//   const userConfig: UserConfig = await resolveUserConfig(
+//     options,
+//     "serve",
+//     "production",
+//     logger,
+//   );
 
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    logger,
-    'production'
-  );
-  const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server,
-    'production'
-  );
+//   const normalizedConfig = await normalizeUserCompilationConfig(
+//     userConfig,
+//     logger,
+//     "production",
+//   );
+//   const normalizedDevServerConfig = normalizeDevServerOptions(
+//     userConfig.server,
+//     "production",
+//   );
 
-  const { root, output } = normalizedConfig.config;
-  const distDir = path.resolve(root, output.path);
-  try {
-    statSync(distDir);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      throw new Error(
-        `The directory "${distDir}" does not exist. Did you build your project?`
-      );
-    }
-  }
+//   const { root, output } = normalizedConfig.config;
+//   const distDir = path.resolve(root, output.path);
+//   try {
+//     statSync(distDir);
+//   } catch (err) {
+//     if (err.code === "ENOENT") {
+//       throw new Error(
+//         `The directory "${distDir}" does not exist. Did you build your project?`,
+//       );
+//     }
+//   }
 
-  function StaticFilesHandler(ctx: Context) {
-    const staticFilesServer = sirv(distDir, {
-      etag: true,
-      single: true
-    });
-    return new Promise<void>((resolve) => {
-      staticFilesServer(ctx.req, ctx.res, () => {
-        resolve();
-      });
-    });
-  }
-  const app = new Koa();
+//   function StaticFilesHandler(ctx: Context) {
+//     const staticFilesServer = sirv(distDir, {
+//       etag: true,
+//       single: true,
+//     });
+//     return new Promise<void>((resolve) => {
+//       staticFilesServer(ctx.req, ctx.res, () => {
+//         resolve();
+//       });
+//     });
+//   }
+//   const app = new Koa();
 
-  // support proxy
-  useProxy(normalizedDevServerConfig.proxy, app, logger);
+//   // support proxy
+//   useProxy(normalizedDevServerConfig.proxy, app, logger);
 
-  app.use(compression());
-  app.use(async (ctx) => {
-    const requestPath = ctx.request.path;
+//   app.use(compression());
+//   app.use(async (ctx) => {
+//     const requestPath = ctx.request.path;
 
-    if (requestPath.startsWith(output.publicPath)) {
-      const modifiedPath = requestPath.substring(output.publicPath.length);
+//     if (requestPath.startsWith(output.publicPath)) {
+//       const modifiedPath = requestPath.substring(output.publicPath.length);
 
-      if (modifiedPath.startsWith('/')) {
-        ctx.request.path = modifiedPath;
-      } else {
-        ctx.request.path = `/${modifiedPath}`;
-      }
-    }
-    await StaticFilesHandler(ctx);
-  });
+//       if (modifiedPath.startsWith("/")) {
+//         ctx.request.path = modifiedPath;
+//       } else {
+//         ctx.request.path = `/${modifiedPath}`;
+//       }
+//     }
+//     await StaticFilesHandler(ctx);
+//   });
 
-  app.listen(port, () => {
-    logger.info(green(`preview server running at:\n`));
-    const interfaces = os.networkInterfaces();
-    Object.keys(interfaces).forEach((key) =>
-      (interfaces[key] || [])
-        .filter((details) => details.family === 'IPv4')
-        .map((detail) => {
-          return {
-            type: detail.address.includes('127.0.0.1')
-              ? 'Local:   '
-              : 'Network: ',
-            host: detail.address
-          };
-        })
-        .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${bold(port)}${
-            output.publicPath ?? ''
-          }`;
-          logger.info(`${magenta('>')} ${type} ${cyan(url)}`);
-        })
-    );
-  });
-}
+//   app.listen(port, () => {
+//     logger.info(green(`preview server running at:\n`));
+//     const interfaces = os.networkInterfaces();
+//     Object.keys(interfaces).forEach((key) =>
+//       (interfaces[key] || [])
+//         .filter((details) => details.family === "IPv4")
+//         .map((detail) => {
+//           return {
+//             type: detail.address.includes("127.0.0.1")
+//               ? "Local:   "
+//               : "Network: ",
+//             host: detail.address,
+//           };
+//         })
+//         .forEach(({ type, host }) => {
+//           const url = `${"http"}://${host}:${bold(port)}${
+//             output.publicPath ?? ""
+//           }`;
+//           logger.info(`${magenta(">")} ${type} ${cyan(url)}`);
+//         })
+//     );
+//   });
+// }
 
-export async function watch(
-  options: FarmCLIOptions & UserConfig
-): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  setProcessEnv('development');
-  const userConfig: UserConfig = await resolveUserConfig(
-    options,
-    'build',
-    'production',
-    logger
-  );
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    logger,
-    'development'
-  );
-  setProcessEnv(normalizedConfig.config.mode);
+// export async function watch(
+//   options: FarmCLIOptions & UserConfig,
+// ): Promise<void> {
+//   const logger = options.logger ?? new DefaultLogger();
+//   setProcessEnv("development");
+//   const userConfig: UserConfig = await resolveUserConfig(
+//     options,
+//     "build",
+//     "production",
+//     logger,
+//   );
+//   const normalizedConfig = await normalizeUserCompilationConfig(
+//     userConfig,
+//     logger,
+//     "development",
+//   );
+//   setProcessEnv(normalizedConfig.config.mode);
 
-  createBundleHandler(normalizedConfig, true);
-}
+//   createBundleHandler(normalizedConfig, true);
+// }
 
 export async function createBundleHandler(
   normalizedConfig: Config,

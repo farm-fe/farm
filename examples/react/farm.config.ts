@@ -8,21 +8,32 @@ export default defineConfig({
   plugins: [
     "@farmfe/plugin-react",
     "@farmfe/plugin-sass",
-  ],
-  vitePlugins: [
     {
-      name: "virtual-module",
-      config(config) {
+      name: "one-plugin",
+      priority: 700,
+      config(config, env) {
         console.log(config);
-        config.a = 123123;
+        console.log(env);
       },
-    },
-    {
-      name: "virtual-module2",
-      config(config) {
+      configResolved(config) {
         console.log(config);
-        config.b = 456456;
       },
     },
   ],
+  // vitePlugins: [
+  //   {
+  //     name: "virtual-module",
+  //     config(config) {
+  //       console.log(config);
+  //       config.a = 123123;
+  //     },
+  //   },
+  //   {
+  //     name: "virtual-module2",
+  //     config(config) {
+  //       console.log(config);
+  //       config.b = 456456;
+  //     },
+  //   },
+  // ],
 });

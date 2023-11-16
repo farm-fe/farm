@@ -67,7 +67,6 @@ export class VitePluginAdapter implements JsPlugin {
   updateModules: JsPlugin['updateModules'];
   // filter for js plugin to improve performance
   filters: string[];
-
   constructor(rawPlugin: Plugin, farmConfig: UserConfig, filters: string[]) {
     this.name = rawPlugin.name;
 
@@ -121,7 +120,8 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // call both config and configResolved
-  async config(config: UserConfig['compilation']) {
+  // @ts-ignore
+  async config(config: UserConfig['compilation'], _configEnv: ConfigEnv) {
     this._farmConfig.compilation = config;
     this._viteConfig = farmConfigToViteConfig(this._farmConfig);
 
