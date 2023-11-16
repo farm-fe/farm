@@ -13,5 +13,8 @@
   },
   "devDependencies": {
     "@farmfe/runtime": "workspace:^0.7.2"
+  },
+  "dependencies": {
+    "core-js": "^3.30.1"
   }
 }

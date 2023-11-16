@@ -28,20 +28,23 @@ const INTERNAL_MODULE_MAP: Record<string, any> = {
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type ModuleInitialization = (
+type ModuleInitializationFunction = (
   module: Module,
   exports: any,
   __farm_require__: (moduleId: string) => any,
   __farm_dynamic_require__: (moduleId: string) => any
 ) => void | Promise<void>;
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export type ModuleInitialization = ModuleInitializationFunction & {
+  __farm_resource_pot__?: string;
+};
+
 export class ModuleSystem {
   // all modules registered
   private modules: Record<string, ModuleInitialization>;
   // module cache after module initialized
   private cache: Record<string, Module>;
-  // all resources
-  private resources: Map<string, string[]>;
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
   // dynamic module entry and resources map
@@ -58,7 +61,6 @@ export class ModuleSystem {
     this.dynamicModuleResourcesMap = {};
     this.resourceLoader = new ResourceLoader(this.publicPaths);
     this.pluginContainer = new FarmRuntimePluginContainer([]);
-    this.resources = new Map();
   }
 
   // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
@@ -95,6 +97,7 @@ export class ModuleSystem {
 
     // create a full new module instance and store it in cache to avoid cyclic initializing
     const module = new Module(moduleId, this.require.bind(this));
+    module.resource_pot = initializer.__farm_resource_pot__;
     // call the module created hook
     this.pluginContainer.hookSerial('moduleCreated', module);
 
@@ -155,11 +158,7 @@ export class ModuleSystem {
       });
   }
 
-  register(
-    moduleId: string,
-    initializer: ModuleInitialization,
-    resourcePotName: string
-  ): void {
+  register(moduleId: string, initializer: ModuleInitialization): void {
     // console.log(`[Farm] register module "${moduleId}"`, console.trace());
     if (this.modules[moduleId]) {
       // throw new Error(
@@ -172,13 +171,6 @@ export class ModuleSystem {
     }
 
     this.modules[moduleId] = initializer;
-    if (this.resources.has(resourcePotName)) {
-      const modules = this.resources.get(resourcePotName);
-      modules.push(moduleId);
-      this.resources.set(resourcePotName, modules);
-    } else {
-      this.resources.set(resourcePotName, [moduleId]);
-    }
   }
 
   update(moduleId: string, init: ModuleInitialization): void {
@@ -199,15 +191,11 @@ export class ModuleSystem {
   }
 
   getModuleUrl(moduleId: string): string {
-    for (const [resource, modules] of this.resources) {
-      if (modules.includes(moduleId)) {
-        const publicPath = this.publicPaths[0];
-        const url = `${location.host}${
-          publicPath === '/' ? '' : publicPath
-        }/${resource}`;
-        return url;
-      }
-    }
+    const publicPath = this.publicPaths[0];
+    const url = `${location.host}${publicPath === '/' ? '' : publicPath}/${
+      this.modules[moduleId].__farm_resource_pot__
+    }`;
+    return url;
   }
 
   getCache(moduleId: string): Module | undefined {

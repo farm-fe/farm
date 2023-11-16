@@ -14,6 +14,10 @@ export default <FarmRuntimePlugin>{
       dev: process.env.NODE_ENV === 'development',
       prod: process.env.NODE_ENV === 'production'
     };
-    module.meta.url = this._moduleSystem.getModuleUrl(module.id);
+    const publicPath = this._moduleSystem.publicPaths[0];
+    const url = `${location.host}${publicPath === '/' ? '' : publicPath}/${
+      module.resource_pot
+    }`;
+    module.meta.url = url;
   }
 };
