@@ -90,17 +90,27 @@ impl Plugin for FarmPluginResolve {
     let result = resolver.resolve(source, basedir.clone(), &param.kind, context);
 
     // remove the .js if the result is not found to support using native esm with typescript
-    if result.is_none() && source.ends_with(".js") {
+    let mut resolve_result = if result.is_none() && source.ends_with(".js") {
       farm_profile_scope!("plugin_resolve::resolve::remove_dot_js".to_string());
       let source = source.replace(".js", "");
 
-      return Ok(
-        resolver
-          .resolve(&source, basedir, &param.kind, context)
-          .map(|result| PluginResolveHookResult { query, ..result }),
-      );
+      resolver
+        .resolve(&source, basedir, &param.kind, context)
+        .map(|result| PluginResolveHookResult { query, ..result })
+    } else {
+      result.map(|result| PluginResolveHookResult { query, ..result })
+    };
+
+    if resolve_result.is_none() && context.config.resolve.auto_external_failed_resolve {
+      resolve_result = Some(PluginResolveHookResult {
+        resolved_path: param.source.clone(),
+        external: true,
+        side_effects: false,
+        query: vec![],
+        meta: HashMap::new(),
+      });
     }
 
-    Ok(result.map(|result| PluginResolveHookResult { query, ..result }))
+    Ok(resolve_result)
   }
 }

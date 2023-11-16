@@ -129,6 +129,7 @@ export interface Config {
       conditions?: string[];
       symlinks?: boolean;
       strictExports?: boolean;
+      autoExternalFailedResolve?: boolean;
     };
     define?: Record<string, any>;
     external?: string[];
@@ -140,6 +141,7 @@ export interface Config {
       swcHelpersPath?: string;
       namespace?: string;
     };
+    configFilePath?: string;
     watch?: boolean | WatcherOptions;
     assets?: {
       include?: string[];
@@ -237,7 +239,16 @@ export interface Config {
           options?: any;
           assumptions?: any;
         };
-  };
+    persistentCache?: boolean | {
+      namespace?: string;
+      cacheDir?: string;
+      buildDependencies?: string[];
+      moduleCacheKeyStrategy?: {
+        timestamp?: boolean,
+        hash?: boolean,
+      }
+    };
+};
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]
   rustPlugins?: [string, string][];

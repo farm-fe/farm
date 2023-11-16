@@ -49,6 +49,14 @@ impl Plugin for RustPluginAdapter {
     self.plugin.priority()
   }
 
+  fn plugin_cache_loaded(
+    &self,
+    cache: &Vec<u8>,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.plugin_cache_loaded(cache, context)
+  }
+
   fn build_start(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
     self.plugin.build_start(context)
   }
@@ -204,5 +212,9 @@ impl Plugin for RustPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.finish(stat, context)
+  }
+
+  fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
+    self.plugin.write_plugin_cache(context)
   }
 }

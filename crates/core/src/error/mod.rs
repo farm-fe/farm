@@ -27,7 +27,7 @@ pub enum CompilationError {
   #[error("Parse `{resolved_path}` failed.\n Error: {msg}.\n\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
   ParseError { resolved_path: String, msg: String },
 
-  #[error("Hook `module_parsed` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}.")]
+  #[error("Hook `process_module` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}.")]
   ProcessModuleError {
     resolved_path: String,
     #[source]

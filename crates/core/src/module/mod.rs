@@ -10,7 +10,7 @@ use farmfe_utils::relative;
 use hashbrown::HashSet;
 use heck::AsLowerCamelCase;
 use relative_path::RelativePath;
-use rkyv::{Archive, Archived, Deserialize, Serialize};
+use rkyv::Deserialize;
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
 use swc_common::DUMMY_SP;
@@ -29,6 +29,7 @@ pub mod watch_graph;
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage
 #[cache_item]
+#[derive(Clone)]
 pub struct Module {
   /// the id of this module, generated from the resolved id.
   pub id: ModuleId,
@@ -56,6 +57,12 @@ pub struct Module {
   pub size: usize,
   /// Source content after load and transform
   pub content: Arc<String>,
+  /// Used exports of this module. Set by the tree-shake plugin
+  pub used_exports: Vec<String>,
+  /// last update timestamp, 0 if the module if not from disk
+  pub last_update_timestamp: u128,
+  /// content(after load and transform) hash
+  pub content_hash: String,
 }
 
 impl Module {
@@ -74,6 +81,9 @@ impl Module {
       execution_order: usize::MAX,
       size: 0,
       content: Arc::new("".to_string()),
+      used_exports: vec![],
+      last_update_timestamp: 0,
+      content_hash: "".to_string(),
     }
   }
 }
@@ -95,6 +105,22 @@ impl ToString for ModuleMetaData {
       Self::Css(_) => "css".to_string(),
       Self::Html(_) => "html".to_string(),
       Self::Custom(_) => "custom".to_string(),
+    }
+  }
+}
+
+impl Clone for ModuleMetaData {
+  fn clone(&self) -> Self {
+    match self {
+      Self::Script(script) => Self::Script(script.clone()),
+      Self::Css(css) => Self::Css(css.clone()),
+      Self::Html(html) => Self::Html(html.clone()),
+      Self::Custom(custom) => {
+        let cloned_data = crate::serialize!(custom);
+        let cloned_custom =
+          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        Self::Custom(cloned_custom)
+      }
     }
   }
 }
@@ -185,6 +211,7 @@ pub struct EmptyModuleMetaData;
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
+#[derive(Clone)]
 pub struct ScriptModuleMetaData {
   pub ast: SwcModule,
   pub top_level_mark: u32,
@@ -238,6 +265,7 @@ pub enum ModuleSystem {
 }
 
 #[cache_item]
+#[derive(Clone)]
 pub struct CssModuleMetaData {
   pub ast: Stylesheet,
 }
@@ -259,6 +287,7 @@ impl CssModuleMetaData {
 }
 
 #[cache_item]
+#[derive(Clone)]
 pub struct HtmlModuleMetaData {
   pub ast: Document,
 }

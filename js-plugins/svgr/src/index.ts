@@ -15,7 +15,7 @@ export default function farmSvgrPlugin(
   const { svgrOptions, filters } = options;
 
   return {
-    name: 'farm-js-plugin-svgr',
+    name: '@farmfe/js-plugin-svgr',
     load: {
       filters: { resolvedPaths: filters?.resolvedPaths ?? ['\\.svg$'] },
       async executor(param) {

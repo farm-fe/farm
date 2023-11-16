@@ -189,6 +189,7 @@ impl Plugin for FarmPluginHtml {
         )]),
         rendered_content: code,
         rendered_map_chain: vec![],
+        ..Default::default()
       }))
     } else {
       Ok(None)

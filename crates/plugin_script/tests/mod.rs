@@ -3,15 +3,12 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  hashbrown::HashSet,
   module::{Module, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType},
-  swc_common::DUMMY_SP,
-  swc_ecma_ast::Module as SwcModule,
 };
 use farmfe_testing_helpers::fixture;
 
@@ -136,6 +133,7 @@ fn load_parse_and_analyze_deps() {
           .join("\n"),
         ),
         rendered_map_chain: vec![],
+        ..Default::default()
       };
 
       let resources = plugin_script

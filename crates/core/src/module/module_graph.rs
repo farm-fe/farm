@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use farmfe_macro_cache_item::cache_item;
 use hashbrown::{HashMap, HashSet};
 
 use petgraph::{
@@ -17,6 +18,7 @@ use crate::{
 use super::{Module, ModuleId};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cache_item]
 pub struct ModuleGraphEdgeDataItem {
   /// the source of this edge, for example, `./index.css`
   pub source: String,
@@ -31,6 +33,7 @@ pub struct ModuleGraphEdgeDataItem {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cache_item]
 pub struct ModuleGraphEdge(pub(crate) Vec<ModuleGraphEdgeDataItem>);
 
 impl ModuleGraphEdge {

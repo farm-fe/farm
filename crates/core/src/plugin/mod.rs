@@ -1,5 +1,6 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
+use farmfe_macro_cache_item::cache_item;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -32,6 +33,14 @@ pub trait Plugin: Any + Send + Sync {
   }
 
   fn config(&self, _config: &mut Config) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn plugin_cache_loaded(
+    &self,
+    _cache: &Vec<u8>,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
     Ok(None)
   }
 
@@ -211,10 +220,15 @@ pub trait Plugin: Any + Send + Sync {
   ) -> Result<Option<()>> {
     Ok(None)
   }
+
+  fn write_plugin_cache(&self, _context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
+    Ok(None)
+  }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[cache_item]
 pub enum ResolveKind {
   /// entry input in the config
   Entry(String),
@@ -383,6 +397,7 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+#[cache_item]
 pub struct PluginAnalyzeDepsHookResultEntry {
   pub source: String,
   pub kind: ResolveKind,
@@ -436,6 +451,8 @@ pub struct EmptyPluginHookParam {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmptyPluginHookResult {}
 
+#[cache_item]
+#[derive(Clone)]
 pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,
   pub source_map: Option<Resource>,

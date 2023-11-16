@@ -116,7 +116,9 @@
     "wasix",
     "wechat",
     "Brooooooklyn",
-    "lukastaegert"
+    "lukastaegert",
+    "mapref",
+    "nanos"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

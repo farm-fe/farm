@@ -3,7 +3,7 @@
   "version": "1.0.23",
   "private": true,
   "type": "module",
-  "dependencies": {
+  "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",

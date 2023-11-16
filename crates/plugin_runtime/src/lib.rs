@@ -55,14 +55,19 @@ impl Plugin for FarmPluginRuntime {
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
     // runtime package entry file
-    config.input.insert(
-      "runtime".to_string(),
-      format!("{}{}", config.runtime.path, RUNTIME_SUFFIX),
-    );
-    config.resolve.alias.insert(
-      "@swc/helpers".to_string(),
-      config.runtime.swc_helpers_path.clone(),
-    );
+    if !config.runtime.path.is_empty() {
+      config.input.insert(
+        "runtime".to_string(),
+        format!("{}{}", config.runtime.path, RUNTIME_SUFFIX),
+      );
+    }
+
+    if !config.runtime.swc_helpers_path.is_empty() {
+      config.resolve.alias.insert(
+        "@swc/helpers".to_string(),
+        config.runtime.swc_helpers_path.clone(),
+      );
+    }
 
     config.partial_bundling.enforce_resources.insert(
       0,
@@ -317,6 +322,7 @@ impl Plugin for FarmPluginRuntime {
         rendered_modules: HashMap::new(),
         rendered_content: self.runtime_code.lock().clone(),
         rendered_map_chain: vec![],
+        ..Default::default()
       }));
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let module_graph = context.module_graph.read();
@@ -365,6 +371,7 @@ impl Plugin for FarmPluginRuntime {
         } else {
           vec![]
         },
+        ..Default::default()
       }));
     }
 

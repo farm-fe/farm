@@ -31,6 +31,10 @@ export class Compiler {
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 
+  async traceDependencies() {
+    return this._bindingCompiler.traceDependencies();
+  }
+
   async compile() {
     if (this.compiling) {
       this.logger.error('Already compiling', {

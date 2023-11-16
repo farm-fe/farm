@@ -21,20 +21,20 @@ pub fn cache_item(attr: TokenStream, input: TokenStream) -> TokenStream {
       }
     };
     let derives = quote! {
-      #[derive(Serialize, Deserialize, Archive)]
+      #[derive(rkyv::Serialize, rkyv::Deserialize, rkyv::Archive)]
       #[archive_attr(derive(TypeName))]
       #item
 
       #[archive_dyn(deserialize)]
       impl #args for #item_ident {}
-      impl #args for Archived<#item_ident> {}
+      impl #args for rkyv::Archived<#item_ident> {}
     };
 
     return derives.into();
   }
 
   let derives = quote! {
-    #[derive(Serialize, Deserialize, Archive)]
+    #[derive(rkyv::Serialize, rkyv::Deserialize, rkyv::Archive)]
     #item
   };
 

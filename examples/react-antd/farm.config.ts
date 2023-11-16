@@ -13,7 +13,8 @@ export default defineConfig({
       path: "./build",
       publicPath: "/admin/",
     },
-    sourcemap: true,
+    sourcemap: false,
+    persistentCache: true,
   },
   server: {
     // headers: {

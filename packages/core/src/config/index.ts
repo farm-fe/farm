@@ -25,10 +25,12 @@ import {
 import type {
   FarmCLIOptions,
   NormalizedServerConfig,
+  ResolvedUserConfig,
   UserConfig,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
+import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -44,7 +46,7 @@ export const urlRegex = /^(https?:)?\/\/([^/]+)/;
  * @returns resolved config that parsed to rust compiler
  */
 export async function normalizeUserCompilationConfig(
-  userConfig: UserConfig,
+  userConfig: ResolvedUserConfig,
   logger: Logger,
   mode: CompilationMode = 'development'
 ): Promise<Config> {
@@ -84,6 +86,7 @@ export async function normalizeUserCompilationConfig(
   const isDevelopment = config.mode === 'development';
 
   config.coreLibPath = bindingPath;
+  config.configFilePath = userConfig.resolveConfigPath;
 
   const resolvedEnvPath = envDir ? envDir : resolvedRootPath;
 
@@ -92,6 +95,8 @@ export async function normalizeUserCompilationConfig(
     resolvedEnvPath,
     envPrefix
   );
+
+  await normalizePersistentCache(config, userConfig);
 
   if (config.output?.targetEnv !== 'node') {
     const defaultExternals = [
@@ -337,8 +342,8 @@ export async function resolveUserConfig(
   inlineOptions: FarmCLIOptions,
   command: 'serve' | 'build',
   logger: Logger
-): Promise<UserConfig> {
-  let userConfig: UserConfig = {};
+): Promise<ResolvedUserConfig> {
+  let userConfig: ResolvedUserConfig = {};
   const root: string = process.cwd();
   const { configPath } = inlineOptions;
   if (
@@ -438,7 +443,8 @@ async function readConfigFile(
             treeShaking: false,
             minify: false,
             presetEnv: false,
-            lazyCompilation: false
+            lazyCompilation: false,
+            persistentCache: false
           },
           server: {
             hmr: false
@@ -448,7 +454,12 @@ async function readConfigFile(
       );
 
       const compiler = new Compiler(normalizedConfig);
+
+      // const previousProfileEnv = process.env.FARM_PROFILE;
+      // process.env.FARM_PROFILE = '';
       await compiler.compile();
+      // process.env.FARM_PROFILE = previousProfileEnv;
+
       compiler.writeResourcesToDisk();
 
       const filePath = path.join(outputPath, fileName);
@@ -557,9 +568,9 @@ export function normalizePublicPath(
 }
 
 export function filterUserConfig(
-  userConfig: UserConfig,
+  userConfig: ResolvedUserConfig,
   inlineConfig: FarmCLIOptions
-): UserConfig {
+): ResolvedUserConfig {
   userConfig.inlineConfig = inlineConfig;
   delete userConfig.configPath;
   return userConfig;

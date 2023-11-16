@@ -22,7 +22,7 @@ import {
   writeFileWithCheck
 } from './utils.js';
 export default class Context {
-  config: UserConfig['compilation'];
+  config: UserConfig['compilation'] & { root?: string };
   options: any;
   project: Project | undefined;
   include: string[];

@@ -8,11 +8,14 @@ use std::{
 };
 
 use farmfe_core::{
+  cache::module_cache::CachedModule,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId},
+  farm_profile_scope,
+  module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId, ModuleType},
   plugin::{
-    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, PluginAnalyzeDepsHookResultEntry,
+    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND,
+    plugin_driver::PluginDriverTransformHookResult, PluginAnalyzeDepsHookResultEntry,
     PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
@@ -32,9 +35,27 @@ use crate::{
   Compiler,
 };
 
+use self::module_cache::{
+  clear_unused_cached_modules, get_content_hash_of_module, get_timestamp_of_module,
+  load_module_graph_cache_into_context, set_module_graph_cache, try_get_module_cache_by_hash,
+  try_get_module_cache_by_timestamp,
+};
+
+macro_rules! call_and_catch_error {
+  ($func:ident, $($args:expr),+) => {
+    match $func($($args),+) {
+      Ok(r) => r,
+      Err(e) => {
+        return Err(e);
+      }
+    }
+  };
+}
+
 pub(crate) mod analyze_deps;
 pub(crate) mod finalize_module;
 pub(crate) mod load;
+pub(crate) mod module_cache;
 pub(crate) mod parse;
 pub(crate) mod resolve;
 pub(crate) mod transform;
@@ -61,6 +82,11 @@ impl Compiler {
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
     validate_config::validate_config(&self.context.config);
+
+    if self.context.config.persistent_cache.enabled() {
+      // load module graph cache
+      load_module_graph_cache_into_context(&self.context)?;
+    }
 
     let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
 
@@ -103,12 +129,31 @@ impl Compiler {
       // return Err(CompilationError::GenericError(error_messages.join(", ")));
     }
 
+    // set module graph cache
+    if self.context.config.persistent_cache.enabled() {
+      // clear unused cached modules
+      clear_unused_cached_modules(&self.context);
+      let module_ids = self
+        .context
+        .module_graph
+        .read()
+        .modules()
+        .into_iter()
+        .map(|m| m.id.clone())
+        .collect();
+      // set new module cache
+      set_module_graph_cache(module_ids, true, &self.context);
+    }
+
     // Topo sort the module graph
     let mut module_graph = self.context.module_graph.write();
     module_graph.update_execution_order_for_modules();
     drop(module_graph);
 
-    self.context.plugin_driver.build_end(&self.context)
+    {
+      farm_profile_scope!("call build_end hook".to_string());
+      self.context.plugin_driver.build_end(&self.context)
+    }
   }
 
   pub(crate) fn handle_global_log(&self, errors: &mut Vec<CompilationError>) {
@@ -168,21 +213,19 @@ impl Compiler {
     module: &mut Module,
     context: &Arc<CompilationContext>,
   ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
+    module.last_update_timestamp = get_timestamp_of_module(&module.id, &context.config.root);
+
+    if let Some(cached_module) =
+      try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, context)?
+    {
+      *module = cached_module.module;
+      return Ok(CachedModule::dep_sources(cached_module.dependencies));
+    }
+
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::new(),
     };
-
-    macro_rules! call_and_catch_error {
-      ($func:ident, $($args:expr),+) => {
-        match $func($($args),+) {
-          Ok(r) => r,
-          Err(e) => {
-            return Err(e);
-          }
-        }
-      };
-    }
 
     // ================ Load Start ===============
     let load_param = PluginLoadHookParam {
@@ -233,12 +276,12 @@ impl Compiler {
       }
     }
     // ================ Load End ===============
-
     // ================ Transform Start ===============
+    let load_module_type = load_result.module_type.clone();
     let transform_param = PluginTransformHookParam {
       content: load_result.content,
       resolved_path: &resolve_result.resolved_path,
-      module_type: load_result.module_type.clone(),
+      module_type: load_module_type.clone(),
       query: resolve_result.query.clone(),
       meta: resolve_result.meta.clone(),
       module_id: module.id.to_string(),
@@ -247,22 +290,49 @@ impl Compiler {
 
     let transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
+    module.content = Arc::new(transform_result.content.clone());
+    module.content_hash = get_content_hash_of_module(&transform_result.content);
 
+    // skip building if the module is already built and the cache is enabled
+    if let Some(cached_module) =
+      try_get_module_cache_by_hash(&module.id, &module.content_hash, context)?
+    {
+      *module = cached_module.module;
+      return Ok(CachedModule::dep_sources(cached_module.dependencies));
+    }
+
+    let deps = Self::build_module_after_transform(
+      resolve_result,
+      load_module_type,
+      transform_result,
+      module,
+      context,
+      &hook_context,
+    )?;
+
+    Ok(deps)
+  }
+
+  fn build_module_after_transform(
+    resolve_result: PluginResolveHookResult,
+    load_module_type: ModuleType,
+    transform_result: PluginDriverTransformHookResult,
+    module: &mut Module,
+    context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
+  ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
     // ================ Parse Start ===============
     let parse_param = PluginParseHookParam {
       module_id: module.id.clone(),
       resolved_path: resolve_result.resolved_path.clone(),
       query: resolve_result.query.clone(),
-      module_type: transform_result
-        .module_type
-        .unwrap_or(load_result.module_type),
+      module_type: transform_result.module_type.unwrap_or(load_module_type),
       content: Arc::new(transform_result.content),
     };
 
-    let mut module_meta = call_and_catch_error!(parse, &parse_param, context, &hook_context);
+    let mut module_meta = call_and_catch_error!(parse, &parse_param, context, hook_context);
     // ================ Parse End ===============
 
-    module.content = parse_param.content.clone();
     // ================ Process Module Start ===============
     if let Err(e) = context.plugin_driver.process_module(
       &mut PluginProcessModuleHookParam {
@@ -274,7 +344,7 @@ impl Compiler {
       context,
     ) {
       return Err(CompilationError::ProcessModuleError {
-        resolved_path: resolve_result.resolved_path.clone(),
+        resolved_path: resolve_result.resolved_path,
         source: Some(Box::new(e)),
       });
     }
@@ -346,15 +416,12 @@ impl Compiler {
               err_sender.send(e).unwrap();
             }
             Ok(deps) => {
+              farm_profile_scope!(format!("build module {:?}", module.id));
               let module_id = module.id.clone();
               // add module to the graph
-              let status = Self::add_module(module, &resolve_param.kind, &context);
+              Self::add_module(module, &resolve_param.kind, &context);
               // add edge to the graph
               Self::add_edge(&resolve_param, module_id.clone(), order, &context);
-              // if status is false, means the module is handled and is already in the graph, no need to resolve its dependencies again
-              if !status {
-                return;
-              }
 
               // resolving dependencies recursively in the thread pool
               for (order, dep) in deps.into_iter().enumerate() {
@@ -400,12 +467,7 @@ impl Compiler {
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  /// if the module is already in the graph, return false
-  pub(crate) fn add_module(
-    module: Module,
-    kind: &ResolveKind,
-    context: &CompilationContext,
-  ) -> bool {
+  pub(crate) fn add_module(module: Module, kind: &ResolveKind, context: &CompilationContext) {
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
@@ -421,8 +483,6 @@ impl Compiler {
     } else {
       module_graph.add_module(module);
     }
-
-    true
   }
 
   pub(crate) fn create_thread_pool() -> (

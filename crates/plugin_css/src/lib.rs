@@ -6,6 +6,7 @@ use dep_analyzer::DepAnalyzer;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
+  deserialize,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
     collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
@@ -26,8 +27,10 @@ use farmfe_core::{
     resource_pot::{RenderedModule, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
+  serialize,
   swc_css_ast::Stylesheet,
 };
+use farmfe_macro_cache_item::cache_item;
 use farmfe_toolkit::{
   common::Source,
   css::{codegen_css_stylesheet, parse_css_stylesheet},
@@ -42,6 +45,7 @@ use farmfe_toolkit::{
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
 use farmfe_utils::{parse_query, relative};
+use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
 
 const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
@@ -49,6 +53,12 @@ const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
 mod dep_analyzer;
 mod source_replacer;
 pub mod transform_css_to_script;
+
+#[cache_item]
+struct CssModulesCache {
+  content_map: HashMap<String, String>,
+  sourcemap_map: HashMap<String, String>,
+}
 
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
@@ -71,6 +81,28 @@ impl Plugin for FarmPluginCss {
   /// This plugin should be executed at last
   fn priority(&self) -> i32 {
     -99
+  }
+
+  /// Just load the cache, if the cache is invalidated, it will be reset when transform.
+  fn plugin_cache_loaded(
+    &self,
+    cache: &Vec<u8>,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let cache = deserialize!(cache, CssModulesCache);
+    let mut content_map = self.content_map.lock();
+
+    for (k, v) in cache.content_map {
+      content_map.insert(k, v);
+    }
+
+    let mut sourcemap_map = self.sourcemap_map.lock();
+
+    for (k, v) in cache.sourcemap_map {
+      sourcemap_map.insert(k, v);
+    }
+
+    Ok(Some(()))
   }
 
   fn resolve(
@@ -130,7 +162,12 @@ impl Plugin for FarmPluginCss {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if is_farm_css_modules(param.resolved_path) {
       return Ok(Some(PluginLoadHookResult {
-        content: self.content_map.lock().remove(param.resolved_path).unwrap(),
+        content: self
+          .content_map
+          .lock()
+          .get(param.resolved_path)
+          .unwrap()
+          .clone(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES_SUFFIX.to_string()),
       }));
     };
@@ -160,7 +197,7 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: self.sourcemap_map.lock().remove(param.resolved_path),
+        source_map: self.sourcemap_map.lock().get(param.resolved_path).cloned(),
         ignore_previous_source_map: false,
       }));
     }
@@ -518,6 +555,7 @@ impl Plugin for FarmPluginCss {
           .collect(),
         rendered_content,
         rendered_map_chain: rendered_map.map(|v| vec![v]).unwrap_or(vec![]),
+        ..Default::default()
       }))
     } else {
       Ok(None)
@@ -571,6 +609,22 @@ impl Plugin for FarmPluginCss {
         resource,
         source_map,
       }))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn write_plugin_cache(
+    &self,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
+    if !self.content_map.lock().is_empty() || !self.sourcemap_map.lock().is_empty() {
+      let cache = CssModulesCache {
+        content_map: self.content_map.lock().clone(),
+        sourcemap_map: self.sourcemap_map.lock().clone(),
+      };
+
+      Ok(Some(serialize!(&cache)))
     } else {
       Ok(None)
     }

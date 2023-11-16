@@ -7,7 +7,7 @@ use farmfe_core::{
 };
 use farmfe_utils::stringify_query;
 
-const DYNAMIC_VIRTUAL_PREFIX: &str = "virtual:FARMFE_DYNAMIC_IMPORT:";
+pub const DYNAMIC_VIRTUAL_PREFIX: &str = "virtual:FARMFE_DYNAMIC_IMPORT:";
 const ORIGINAL_RESOLVED_PATH: &str = "FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH";
 
 pub struct FarmPluginLazyCompilation {}

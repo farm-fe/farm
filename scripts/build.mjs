@@ -24,7 +24,8 @@ const PKG_DTS = resolve(CWD, './js-plugins/dts');
 const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 
 // Build js_plugin_path
-const PKG_JS_PLUGIN = resolve(CWD, './js-plugins');
+export const JS_PLUGINs_DIR = resolve(CWD, './js-plugins');
+export const EXAMPLES_DIR = resolve(CWD, './examples');
 
 export const excludedJsPlugin = ['dts'];
 
@@ -76,9 +77,13 @@ export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
 // build chain
 export const buildJsPlugins = async () => {
-  await execa(DEFAULT_PACKAGE_MANAGER, ['--filter', './js-plugins/**', 'build'], {
-    cwd: CWD,
-  });
+  await execa(
+    DEFAULT_PACKAGE_MANAGER,
+    ['--filter', './js-plugins/**', 'build'],
+    {
+      cwd: CWD
+    }
+  );
 
   // // First, build Dts
   // await buildDts();

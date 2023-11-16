@@ -22,7 +22,7 @@ pub fn remove_useless_stmts(
 ) -> (Vec<ImportInfo>, Vec<ExportInfo>) {
   farmfe_core::farm_profile_function!(format!(
     "remove_useless_stmts {:?}",
-    tree_shake_module.module_id.to_string()
+    tree_shake_module_id.to_string()
   ));
   let tree_shake_module = tree_shake_module_map
     .get(tree_shake_module_id)
