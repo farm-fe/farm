@@ -30,6 +30,7 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
+import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -94,6 +95,8 @@ export async function normalizeUserCompilationConfig(
     resolvedEnvPath,
     envPrefix
   );
+
+  await normalizePersistentCache(config, userConfig);
 
   if (config.output?.targetEnv !== 'node') {
     const defaultExternals = [

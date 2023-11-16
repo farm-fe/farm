@@ -129,6 +129,7 @@ export interface Config {
       conditions?: string[];
       symlinks?: boolean;
       strictExports?: boolean;
+      autoExternalFailedResolve?: boolean;
     };
     define?: Record<string, any>;
     external?: string[];

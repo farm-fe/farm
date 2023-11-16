@@ -26,7 +26,8 @@ const compilationConfigSchema = z
         mainFields: z.array(z.string()).optional(),
         conditions: z.array(z.string()).optional(),
         symlinks: z.boolean().optional(),
-        strictExports: z.boolean().optional()
+        strictExports: z.boolean().optional(),
+        autoExternalFailedResolve: z.boolean().optional()
       })
       .strict()
       .optional(),

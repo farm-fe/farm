@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+
+use farmfe_utils::hash::sha256;
 use relative_path::RelativePath;
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +33,7 @@ impl PersistentCacheConfig {
     }
   }
 
-  pub fn get_default_config(root: &str, config_file_path: &str) -> Self {
+  pub fn get_default_config(root: &str) -> Self {
     let cache_dir = RelativePath::new("node_modules/.farm/cache")
       .to_logical_path(root)
       .to_string_lossy()
@@ -44,34 +47,44 @@ impl PersistentCacheConfig {
         hash: true,
       },
       // build dependencies are set by node side
-      build_dependencies: vec![config_file_path.to_string()],
+      build_dependencies: vec![],
     })
   }
 
-  pub fn as_obj(&self, root: &str, config_file_path: &str) -> PersistentCacheConfigObj {
+  pub fn as_obj(&self, root: &str) -> PersistentCacheConfigObj {
     match self {
-      PersistentCacheConfig::Bool(true) => {
-        Self::get_default_config(root, config_file_path).as_obj(root, config_file_path)
-      }
+      PersistentCacheConfig::Bool(true) => Self::get_default_config(root).as_obj(root),
       PersistentCacheConfig::Bool(false) => {
         panic!("should not call as_obj when PersistentCacheConfig is false")
       }
       PersistentCacheConfig::Obj(obj) => {
         let mut cloned_obj = obj.clone();
-        let c = config_file_path.to_string();
-
-        if !cloned_obj.build_dependencies.contains(&c) {
-          cloned_obj.build_dependencies.push(c);
-        }
-
-        let default_config = Self::get_default_config(root, config_file_path);
+        let default_config = Self::get_default_config(root);
 
         if cloned_obj.cache_dir.is_empty() {
-          cloned_obj.cache_dir = default_config.as_obj(root, config_file_path).cache_dir;
+          cloned_obj.cache_dir = default_config.as_obj(root).cache_dir;
+        }
+
+        if !cloned_obj.build_dependencies.is_empty() {
+          let mut content = String::new();
+
+          for dep in &cloned_obj.build_dependencies {
+            if !PathBuf::from(dep).exists() || PathBuf::from(dep).is_file() {
+              content.push_str(&dep);
+            } else {
+              let c = std::fs::read_to_string(dep).unwrap();
+              content.push_str(&c);
+            }
+          }
+
+          let hash = sha256(content.as_bytes(), 32);
+          let mut cache_dir = PathBuf::from(&cloned_obj.cache_dir);
+          cache_dir.push(hash);
+          cloned_obj.cache_dir = cache_dir.to_string_lossy().to_string();
         }
 
         if cloned_obj.namespace.is_empty() {
-          cloned_obj.namespace = default_config.as_obj(root, config_file_path).namespace;
+          cloned_obj.namespace = default_config.as_obj(root).namespace;
         }
 
         cloned_obj

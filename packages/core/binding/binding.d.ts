@@ -81,6 +81,8 @@ export interface ResourcePotRecord {
 export type JsCompiler = Compiler
 export class Compiler {
   constructor(config: object)
+  traceDependencies(): Promise<Array<string>>
+  traceDependenciesHash(): Promise<string>
   /**
    * async compile, return promise
    *

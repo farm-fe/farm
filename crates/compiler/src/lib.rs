@@ -14,6 +14,7 @@ use farmfe_core::{
   plugin::Plugin,
   stats::Stats,
 };
+use farmfe_utils::hash::sha256;
 
 pub mod build;
 pub mod generate;
@@ -67,6 +68,40 @@ impl Compiler {
     Ok(Self {
       context: Arc::new(context),
     })
+  }
+
+  pub fn trace_dependencies(&self) -> Result<Vec<String>> {
+    self.build()?;
+
+    let module_graph = self.context.module_graph.read();
+    let mut dependencies = vec![];
+
+    for module in module_graph.modules().iter() {
+      if module.external {
+        continue;
+      }
+
+      dependencies.push(module.id.resolved_path(&self.context.config.root));
+    }
+
+    Ok(dependencies)
+  }
+
+  pub fn trace_dependencies_hash(&self) -> Result<String> {
+    self.build()?;
+
+    let module_graph = self.context.module_graph.read();
+    let mut dependencies = String::new();
+
+    for module in module_graph.modules().iter() {
+      if module.external {
+        continue;
+      }
+
+      dependencies.push_str(&module.content_hash);
+    }
+
+    Ok(sha256(dependencies.as_bytes(), 32))
   }
 
   /// Compile the project using the configuration

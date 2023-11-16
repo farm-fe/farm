@@ -39,6 +39,9 @@ export default function farmSassPlugin(
 ): JsPlugin {
   let farmConfig!: UserConfig['compilation'];
   const implementation = getSassImplementation(options.implementation);
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore TODO fix it
   const cwd = () => farmConfig.root ?? process.cwd();
 
   const resolvedPaths = options.filters?.resolvedPaths ?? DEFAULT_PATHS_REGEX;

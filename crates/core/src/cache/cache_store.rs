@@ -25,7 +25,7 @@ pub struct CacheStore {
 
 impl CacheStore {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode, name: &str) -> Self {
-    let mut cache_dir = Path::new(&format!("{cache_dir_str}-{FARM_CACHE_VERSION}")).to_path_buf();
+    let mut cache_dir = Path::new(&format!("{FARM_CACHE_VERSION}-{cache_dir_str}")).to_path_buf();
 
     if !namespace.is_empty() {
       cache_dir.push(namespace);

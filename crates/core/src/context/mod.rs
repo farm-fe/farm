@@ -41,20 +41,7 @@ pub struct CompilationContext {
 
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
-    let (cache_dir, namespace) = if config.persistent_cache.enabled() {
-      let cache_config_obj = config
-        .persistent_cache
-        .as_obj(&config.root, config.config_file_path.as_ref().unwrap());
-      let (cache_dir, namespace) = (
-        cache_config_obj.cache_dir.clone(),
-        cache_config_obj.namespace.clone(),
-      );
-      config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
-
-      (cache_dir, namespace)
-    } else {
-      (EMPTY_STR.to_string(), EMPTY_STR.to_string())
-    };
+    let (cache_dir, namespace) = Self::normalize_persistent_cache_config(&mut config);
 
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
@@ -74,6 +61,21 @@ impl CompilationContext {
       log_store: Box::new(Mutex::new(LogStore::new())),
       custom: Box::new(DashMap::new()),
     })
+  }
+
+  pub fn normalize_persistent_cache_config(config: &mut Config) -> (String, String) {
+    if config.persistent_cache.enabled() {
+      let cache_config_obj = config.persistent_cache.as_obj(&config.root);
+      let (cache_dir, namespace) = (
+        cache_config_obj.cache_dir.clone(),
+        cache_config_obj.namespace.clone(),
+      );
+      config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
+
+      (cache_dir, namespace)
+    } else {
+      (EMPTY_STR.to_string(), EMPTY_STR.to_string())
+    }
   }
 
   pub fn add_watch_files(&self, from: String, deps: Vec<&String>) -> Result<()> {
