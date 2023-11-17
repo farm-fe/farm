@@ -2,6 +2,7 @@
 export class Module {
   id: string;
   exports: any;
+  resource_pot: string;
   meta: Record<string, any>;
   require: (id: string) => any;
 

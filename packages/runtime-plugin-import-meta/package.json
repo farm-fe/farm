@@ -1,0 +1,20 @@
+{
+  "name": "@farmfe/runtime-plugin-import-meta",
+  "version": "0.0.1",
+  "description": "Runtime Import Meta plugin of Farm",
+  "author": {
+    "name": "Ming07",
+    "email": "q502489978@live.com"
+  },
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "type-check": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@farmfe/runtime": "workspace:^0.7.2"
+  },
+  "dependencies": {
+    "core-js": "^3.30.1"
+  }
+}

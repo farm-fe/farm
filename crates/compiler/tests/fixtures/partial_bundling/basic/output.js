@@ -4,6 +4,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'debounce_6f74.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"01609b59": function(module, exports, farmRequire, farmDynamicRequire) {
@@ -50,6 +51,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_dcdc.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
@@ -89,6 +91,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_2faa.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"a5831d05": function(module, exports, farmRequire, farmDynamicRequire) {
@@ -113,6 +116,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_64d2.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"726cd210": function(module, exports, farmRequire, farmDynamicRequire) {

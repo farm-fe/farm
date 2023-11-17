@@ -1199,6 +1199,9 @@ importers:
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.2.5
         version: link:../runtime-plugin-hmr
+      '@farmfe/runtime-plugin-import-meta':
+        specifier: workspace:*
+        version: link:../runtime-plugin-import-meta
       '@koa/cors':
         specifier: ^4.0.0
         version: 4.0.0
@@ -1348,6 +1351,16 @@ importers:
       core-js:
         specifier: ^3.30.1
         version: 3.33.2
+    devDependencies:
+      '@farmfe/runtime':
+        specifier: workspace:^0.7.2
+        version: link:../runtime
+
+  packages/runtime-plugin-import-meta:
+    dependencies:
+      core-js:
+        specifier: ^3.30.1
+        version: 3.30.1
     devDependencies:
       '@farmfe/runtime':
         specifier: workspace:^0.7.2
@@ -3376,7 +3389,7 @@ packages:
   /@simonwep/pickr@1.8.2:
     resolution: {integrity: sha512-/l5w8BIkrpP6n1xsetx9MWPWlU6OblN5YgZZphxan0Tq4BByTCETL6lyIeY8lagalS2Nbt4F2W034KHLIiunKA==}
     dependencies:
-      core-js: 3.33.2
+      core-js: 3.30.1
       nanopop: 2.3.0
     dev: false
 
@@ -6529,6 +6542,10 @@ packages:
     deprecated: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.
     requiresBuild: true
     dev: false
+
+  /core-js@3.30.1:
+    resolution: {integrity: sha512-ZNS5nbiSwDTq4hFosEDqm65izl2CWmLz0hARJMyNQBgkUZMIF51cQiMvIQKA6hvuaeWxQDP3hEedM1JZIgTldQ==}
+    requiresBuild: true
 
   /core-js@3.33.2:
     resolution: {integrity: sha512-XeBzWI6QL3nJQiHmdzbAOiMYqjrb7hwU7A39Qhvd/POSa/t9E1AeZyEZx3fNvp/vtM8zXwhoL0FsiS0hD0pruQ==}
@@ -10166,7 +10183,7 @@ packages:
       camelcase-keys: 7.0.2
       chalk: 4.1.2
       common-tags: 1.8.2
-      core-js: 3.33.2
+      core-js: 3.30.1
       eslint: 8.53.0
       find-up: 5.0.0
       get-stdin: 8.0.0
