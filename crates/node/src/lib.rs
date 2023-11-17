@@ -2,6 +2,7 @@
 #![allow(clippy::redundant_allocation)]
 use std::{
   collections::HashMap,
+  f32::consts::E,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -25,7 +26,7 @@ use napi::{
   threadsafe_function::{
     ErrorStrategy, ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
   },
-  Env, JsFunction, JsObject, NapiRaw, Status,
+  Env, JsFunction, JsObject, JsUndefined, NapiRaw, Status,
 };
 use notify::{
   event::{AccessKind, ModifyKind},
@@ -189,7 +190,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub async fn trace_dependencies(&self) -> napi::Result<Vec<String>> {
+  pub fn trace_dependencies(&self) -> napi::Result<Vec<String>> {
     self
       .compiler
       .trace_dependencies()
@@ -197,16 +198,27 @@ impl JsCompiler {
   }
 
   /// async compile, return promise
-  ///
-  /// TODO: usage example
   #[napi]
-  pub async fn compile(&self) -> napi::Result<()> {
-    self
-      .compiler
-      .compile()
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+  pub fn compile(&self, e: Env) -> napi::Result<JsObject> {
+    let (promise, result) =
+      e.create_deferred::<JsUndefined, Box<dyn FnOnce(Env) -> napi::Result<JsUndefined>>>()?;
 
-    Ok(())
+    let compiler = self.compiler.clone();
+    self.compiler.thread_pool.spawn(move || {
+      match compiler
+        .compile()
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+      {
+        Ok(_) => {
+          promise.resolve(Box::new(|e| e.get_undefined()));
+        }
+        Err(err) => {
+          promise.reject(err);
+        }
+      }
+    });
+
+    Ok(result)
   }
 
   /// sync compile
@@ -244,76 +256,86 @@ impl JsCompiler {
     sync: bool,
   ) -> napi::Result<JsObject> {
     let context = self.compiler.context().clone();
-    let compiler = self.compiler.clone();
     let thread_safe_callback: ThreadsafeFunction<(), ErrorStrategy::Fatal> =
       callback.create_threadsafe_function(0, |ctx| ctx.env.get_undefined().map(|v| vec![v]))?;
 
-    e.execute_tokio_future(
-      async move {
-        compiler
-          .update(
-            paths
-              .into_iter()
-              .map(|p| (p, UpdateType::Updated))
-              .collect(),
-            move || {
-              thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
-            },
-            sync,
-          )
-          .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
-      },
-      move |&mut _, res| {
-        Ok(JsUpdateResult {
-          added: res
-            .added_module_ids
-            .into_iter()
-            .map(|id| id.id(Mode::Development))
-            .collect(),
-          changed: res
-            .updated_module_ids
-            .into_iter()
-            .map(|id| id.id(Mode::Development))
-            .collect(),
-          removed: res
-            .removed_module_ids
-            .into_iter()
-            .map(|id| id.id(Mode::Development))
-            .collect(),
-          immutable_modules: res.immutable_resources,
-          mutable_modules: res.mutable_resources,
-          boundaries: res.boundaries,
-          dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
-            dynamic_resources_map
-              .into_iter()
-              .map(|(k, v)| {
-                (
-                  k.id(context.config.mode.clone()),
-                  v.into_iter()
-                    .map(|(path, ty)| vec![path, ty.to_html_tag()])
-                    .collect(),
-                )
-              })
-              .collect()
-          }),
+    let (promise, result) =
+      e.create_deferred::<JsUpdateResult, Box<dyn FnOnce(Env) -> napi::Result<JsUpdateResult>>>()?;
 
-          extra_watch_result: WatchDiffResult {
-            add: res
-              .extra_watch_result
-              .add
-              .into_iter()
-              .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
-              .collect(),
-            remove: res
-              .extra_watch_result
-              .remove
-              .into_iter()
-              .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
-              .collect(),
+    let compiler = self.compiler.clone();
+    self.compiler.thread_pool.spawn(move || {
+      match compiler
+        .update(
+          paths
+            .into_iter()
+            .map(|p| (p, UpdateType::Updated))
+            .collect(),
+          move || {
+            thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
           },
-        })
-      },
-    )
+          sync,
+        )
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+      {
+        Ok(res) => {
+          let js_update_result = JsUpdateResult {
+            added: res
+              .added_module_ids
+              .into_iter()
+              .map(|id| id.id(Mode::Development))
+              .collect(),
+            changed: res
+              .updated_module_ids
+              .into_iter()
+              .map(|id| id.id(Mode::Development))
+              .collect(),
+            removed: res
+              .removed_module_ids
+              .into_iter()
+              .map(|id| id.id(Mode::Development))
+              .collect(),
+            immutable_modules: res.immutable_resources,
+            mutable_modules: res.mutable_resources,
+            boundaries: res.boundaries,
+            dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
+              dynamic_resources_map
+                .into_iter()
+                .map(|(k, v)| {
+                  (
+                    k.id(context.config.mode.clone()),
+                    v.into_iter()
+                      .map(|(path, ty)| vec![path, ty.to_html_tag()])
+                      .collect(),
+                  )
+                })
+                .collect()
+            }),
+
+            extra_watch_result: WatchDiffResult {
+              add: res
+                .extra_watch_result
+                .add
+                .into_iter()
+                .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
+                .collect(),
+              remove: res
+                .extra_watch_result
+                .remove
+                .into_iter()
+                .map(|path| ModuleId::new(&path, "", &context.config.root).id(Mode::Development))
+                .collect(),
+            },
+          };
+
+          promise.resolve(Box::new(move |_| Ok(js_update_result)));
+        }
+        Err(err) => {
+          promise.reject(err);
+        }
+      }
+    });
+
+    Ok(result)
   }
 
   #[napi]
@@ -406,7 +428,12 @@ impl JsCompiler {
       .map(|m| JsModule {
         id: m.id.resolved_path(&context.config.root) + m.id.query_string(),
         module_type: m.module_type.to_string(),
-        module_groups: m.module_groups.clone().into_iter().map(|group| group.resolved_path(&context.config.root) + group.query_string()).collect(),
+        module_groups: m
+          .module_groups
+          .clone()
+          .into_iter()
+          .map(|group| group.resolved_path(&context.config.root) + group.query_string())
+          .collect(),
         resource_pot: m.resource_pot.clone(),
         side_effects: m.side_effects,
         source_map_chain: m
@@ -466,12 +493,12 @@ impl JsCompiler {
     let process_records = record_manager.get_process_records_by_id(&id);
     let js_process_records: Vec<JsModuleRecord> = process_records
       .into_iter()
-      .map(|record| JsModuleRecord { 
+      .map(|record| JsModuleRecord {
         plugin: record.plugin,
         hook: record.hook,
         module_type: record.module_type.to_string(),
         is_hmr: matches!(record.trigger, Trigger::Update),
-       })
+      })
       .collect();
     js_process_records
   }

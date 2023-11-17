@@ -14,7 +14,7 @@ serde_json = "1.0"
 parking_lot = { version = "0.12", features = ["deadlock_detection"] }
 relative-path = "1.7"
 dashmap = "5.0"
-hashbrown = "0.12"
+hashbrown = "0.14.2"
 blake2 = "0.10"
 hex = "0.4"
 rkyv = { version = "0.7.42", features = ["hashbrown"] }
@@ -27,16 +27,16 @@ petgraph = "0.6"
 bytecheck = "0.7.0"
 downcast-rs = "1.2"
 glob = "0.3"
-swc_ecma_ast = { version = "0.107.2", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "0.137.4" }
-swc_common = { version = "0.31.18", features = ["concurrent", "sourcemap"] }
-swc_css_ast = { version = "0.137.4", features = ["rkyv-impl"] }
-swc_css_prefixer = { version = "0.149.23" }
-swc_ecma_preset_env = { version = "0.198.14" }
+swc_ecma_ast = { version = "0.110.10", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "0.141.23" }
+swc_common = { version = "0.33.9", features = ["concurrent", "sourcemap"] }
+swc_css_ast = { version = "0.140.10", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "0.153.18" }
+swc_ecma_preset_env = { version = "0.203.46" }
 preset_env_base = { version = "0.4.5" }
-swc_html_ast = { version = "0.31.18", features = ["rkyv-impl"] }
+swc_html_ast = { version = "0.33.9", features = ["rkyv-impl"] }
 heck = "0.4.1"
-puffin = { version = "0.14.3", features = ["packing"], optional = true }
+puffin = { version = "0.17.0", features = ["packing"], optional = true }
 regex = "1.7.3"
 enhanced-magic-string = { version = "0.0.11" }
 

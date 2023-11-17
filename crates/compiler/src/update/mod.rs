@@ -63,7 +63,7 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
-    let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
+    let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
 
     let watch_graph = self.context.watch_graph.read();
@@ -121,7 +121,7 @@ impl Compiler {
           };
 
           Self::update_module_graph_threaded(
-            thread_pool.clone(),
+            self.thread_pool.clone(),
             resolve_param,
             self.context.clone(),
             update_context.clone(),

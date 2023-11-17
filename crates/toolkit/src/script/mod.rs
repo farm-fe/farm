@@ -112,6 +112,8 @@ pub fn codegen_module(
         ascii_only: false,
         minify,
         omit_last_semi: true,
+        emit_assert_for_import_attributes: false,
+        inline_script: false,
       },
       // TODO preserve comments
       comments: None,
