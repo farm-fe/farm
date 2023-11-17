@@ -49,7 +49,7 @@ impl WatchGraph {
     }
   }
 
-  pub fn add_edge(&mut self, from: &String, to: &String) -> Result<()> {
+  pub fn add_edge(&mut self, from: &str, to: &str) -> Result<()> {
     let from_index = self.id_index_map.get(from).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"from node "{}" does not exist in the module graph when add edge"#,
@@ -83,9 +83,13 @@ impl WatchGraph {
     // f -> [a]
     // g -> [a]
     // h -> []
-    let roots: Vec<String> = self.relation_roots(from).into_iter().cloned().collect();
+    let roots: Vec<String> = self
+      .relation_roots(from)
+      .into_iter()
+      .map(|i| i.to_string())
+      .collect();
 
-    let roots: Vec<String> = [roots, vec![from.clone()]].concat();
+    let roots: Vec<String> = [roots, vec![from.to_string()]].concat();
 
     for root in roots.into_iter() {
       let root_id = self.id_index_map.get(&root).unwrap();
@@ -102,13 +106,13 @@ impl WatchGraph {
     Ok(())
   }
 
-  pub fn modules(&self) -> Vec<&String> {
+  pub fn modules(&self) -> Vec<&str> {
     let mut res = HashSet::new();
 
     for node in self.g.edge_indices() {
       if matches!(self.g.edge_weight(node), Some(EdgeMode::WatchImport)) {
         if let Some((_root, to)) = self.g.edge_endpoints(node) {
-          res.insert(self.g.node_weight(to).unwrap());
+          res.insert(self.g.node_weight(to).unwrap().as_str());
         }
       }
     }
@@ -116,7 +120,7 @@ impl WatchGraph {
     res.into_iter().collect()
   }
 
-  pub fn relation_roots(&self, dep: &String) -> Vec<&String> {
+  pub fn relation_roots(&self, dep: &str) -> Vec<&str> {
     let mut result = HashSet::new();
 
     if let Some(index) = self.id_index_map.get(dep) {
@@ -130,18 +134,18 @@ impl WatchGraph {
           continue;
         };
 
-        result.insert(self.g.node_weight(node).unwrap());
+        result.insert(self.g.node_weight(node).unwrap().as_str());
       }
     };
 
     result.into_iter().collect()
   }
 
-  pub fn has_module(&self, module_id: &String) -> bool {
+  pub fn has_module(&self, module_id: &str) -> bool {
     self.id_index_map.contains_key(module_id)
   }
 
-  pub fn delete_module(&mut self, module_id: &String) {
+  pub fn delete_module(&mut self, module_id: &str) {
     if !self.id_index_map.contains_key(module_id) {
       return;
     }
@@ -205,9 +209,9 @@ mod tests {
     //          v_d
     let watch_graph = create_watch_graph_instance();
 
-    assert_eq!(watch_graph.relation_roots(&"v_c".into()), vec![&"a"]);
+    assert_eq!(watch_graph.relation_roots("v_c"), vec!["a"]);
 
-    let mut r = watch_graph.relation_roots(&"v_d".into());
+    let mut r = watch_graph.relation_roots("v_d");
     r.sort();
     assert_eq!(r, [&"a".to_string(), &"v_c".to_string()])
   }

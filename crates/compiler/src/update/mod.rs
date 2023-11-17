@@ -78,6 +78,8 @@ impl Compiler {
             .map(|item| (item.to_owned(), UpdateType::Updated))
             .collect();
 
+          println!("{:?}", r);
+
           if module_graph.has_module(&ModuleId::new(path.as_str(), "", &self.context.config.root)) {
             return [r, vec![(path, update_type)]].concat();
           };
@@ -98,7 +100,7 @@ impl Compiler {
       .read()
       .modules()
       .into_iter()
-      .cloned()
+      .map(|p| p.to_string())
       .collect();
 
     let mut update_result = UpdateResult::default();
@@ -189,13 +191,13 @@ impl Compiler {
     // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
-      let resources: HashSet<&String> = watch_graph.modules().into_iter().collect();
+      let resources: HashSet<&str> = watch_graph.modules().into_iter().collect();
 
       let watch_diff_result = &mut update_result.extra_watch_result;
 
       for resource in resources {
         if !old_watch_extra_resources.remove(resource) {
-          watch_diff_result.add.push(resource.clone());
+          watch_diff_result.add.push(resource.to_string());
         };
       }
 

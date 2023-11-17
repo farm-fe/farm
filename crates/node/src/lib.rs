@@ -342,7 +342,7 @@ impl JsCompiler {
   pub fn add_watch_files(&self, root: String, paths: Vec<String>) {
     let context = self.compiler.context().clone();
     context
-      .add_watch_files(root, paths.iter().collect())
+      .add_watch_files(root, paths.iter().map(|i| i.as_str()).collect())
       .expect("failed add extra files to watch list");
   }
 

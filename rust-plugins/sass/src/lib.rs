@@ -48,7 +48,6 @@ impl FarmPluginSass {
 }
 
 struct FileImporterCollection {
-  paths: Arc<RwLock<Vec<String>>>,
   importer: ModuleId,
   context: Arc<CompilationContext>,
 }
@@ -56,7 +55,6 @@ struct FileImporterCollection {
 impl Debug for FileImporterCollection {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("FileImporterCollection")
-      .field("paths", &self.paths)
       .field("importer", &self.importer)
       .finish()
   }
@@ -76,8 +74,6 @@ impl FileImporter for FileImporterCollection {
     let resolved_url = relative_url.to_logical_path(importer_dir);
 
     if resolved_url.exists() {
-      let mut paths = self.paths.write();
-      paths.push(resolved_url.to_string_lossy().to_string());
       return Ok(Some(Url::from_file_path(resolved_url).unwrap()));
     }
 
@@ -95,8 +91,6 @@ impl FileImporter for FileImporterCollection {
       .unwrap();
 
     if let Some(resolve_result) = resolve_result {
-      let mut paths = self.paths.write();
-      paths.push(resolve_result.resolved_path.clone());
       return Ok(Some(
         Url::from_file_path(resolve_result.resolved_path).unwrap(),
       ));
@@ -152,11 +146,9 @@ impl Plugin for FarmPluginSass {
         context.sourcemap_enabled(&param.module_id.to_string()),
       );
 
-      let paths = Arc::new(RwLock::new(vec![]));
       let cloned_context = context.clone();
 
       let import_collection = Box::new(FileImporterCollection {
-        paths: paths.clone(),
         importer: param.module_id.clone().into(),
         context: cloned_context,
       });
@@ -180,10 +172,15 @@ impl Plugin for FarmPluginSass {
         }
       })?;
 
-      let paths = paths.read();
+      let paths = compile_result
+        .loaded_urls
+        .iter()
+        .map(|url| url.path())
+        .filter(|p| p != &param.resolved_path)
+        .collect();
 
       context
-        .add_watch_files(param.resolved_path.to_string(), paths.iter().collect())
+        .add_watch_files(param.resolved_path.to_string(), paths)
         .expect("cannot add file to watch graph");
 
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {

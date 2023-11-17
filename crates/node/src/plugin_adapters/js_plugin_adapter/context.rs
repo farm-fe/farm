@@ -248,7 +248,7 @@ unsafe extern "C" fn get_watch_files(env: napi_env, info: napi_callback_info) ->
   let mut watched_files = watch_graph
     .modules()
     .into_iter()
-    .cloned()
+    .map(|p| p.to_string())
     .collect::<Vec<_>>();
   let module_graph = ctx.module_graph.read();
   let mut modules = module_graph
