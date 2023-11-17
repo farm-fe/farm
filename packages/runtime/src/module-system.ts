@@ -28,12 +28,17 @@ const INTERNAL_MODULE_MAP: Record<string, any> = {
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type ModuleInitialization = (
+type ModuleInitializationFunction = (
   module: Module,
   exports: any,
   __farm_require__: (moduleId: string) => any,
   __farm_dynamic_require__: (moduleId: string) => any
 ) => void | Promise<void>;
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export type ModuleInitialization = ModuleInitializationFunction & {
+  __farm_resource_pot__?: string;
+};
 
 export class ModuleSystem {
   // all modules registered
@@ -92,6 +97,7 @@ export class ModuleSystem {
 
     // create a full new module instance and store it in cache to avoid cyclic initializing
     const module = new Module(moduleId, this.require.bind(this));
+    module.resource_pot = initializer.__farm_resource_pot__;
     // call the module created hook
     this.pluginContainer.hookSerial('moduleCreated', module);
 
@@ -182,6 +188,14 @@ export class ModuleSystem {
     } else {
       return false;
     }
+  }
+
+  getModuleUrl(moduleId: string): string {
+    const publicPath = this.publicPaths[0];
+    const url = `${location.host}${publicPath === '/' ? '' : publicPath}/${
+      this.modules[moduleId].__farm_resource_pot__
+    }`;
+    return url;
   }
 
   getCache(moduleId: string): Module | undefined {

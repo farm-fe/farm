@@ -49,6 +49,7 @@ window.__farm_namespace__ = '__farm_default_namespace__';
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_564c.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"7c4a34c2": function(module, exports, farmRequire, farmDynamicRequire) {

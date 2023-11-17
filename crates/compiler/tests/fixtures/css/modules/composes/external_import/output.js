@@ -24,6 +24,7 @@
           var __farm_global_this__ = (globalThis || window || global || self)[
             __farm_namespace__
           ];
+          modules[key].__farm_resource_pot__ = 'index_0467.js';
           __farm_global_this__.__farm_module_system__.register(key, modules[key]);
         }
       })({"8b6840d6": function(module, exports, farmRequire, farmDynamicRequire) {

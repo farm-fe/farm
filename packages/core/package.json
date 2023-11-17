@@ -79,6 +79,7 @@
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.7.4",
     "@farmfe/runtime-plugin-hmr": "workspace:^3.2.5",
+    "@farmfe/runtime-plugin-import-meta": "workspace:*",
     "@koa/cors": "^4.0.0",
     "@swc/helpers": "^0.5.0",
     "dotenv": "^16.3.1",
