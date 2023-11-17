@@ -1,9 +1,9 @@
 #![deny(clippy::all)]
+use std::collections::HashMap;
 
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  hashbrown::HashMap,
   module::{ModuleId, ModuleType},
   parking_lot::RwLock,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},

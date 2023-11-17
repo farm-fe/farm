@@ -196,13 +196,9 @@ pub fn load_expected_result(cwd: PathBuf) -> String {
 pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) {
   let expected_result = load_expected_result(PathBuf::from(compiler.context().config.root.clone()));
   let result = get_compiler_result(compiler, entry_name);
-
-  if std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() {
-    std::fs::write(
-      PathBuf::from(compiler.context().config.root.clone()).join("output.js"),
-      result,
-    )
-    .unwrap();
+  let output_path = PathBuf::from(compiler.context().config.root.clone()).join("output.js");
+  if std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() || !output_path.exists() {
+    std::fs::write(output_path, result).unwrap();
   } else {
     // assert lines are the same
     let expected_lines = expected_result.trim().lines().collect::<Vec<&str>>();

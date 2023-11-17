@@ -1,4 +1,5 @@
-use farmfe_core::hashbrown::HashSet;
+use std::collections::HashSet;
+
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{
   construct_test_module_graph_complex, construct_test_module_group_graph_complex,

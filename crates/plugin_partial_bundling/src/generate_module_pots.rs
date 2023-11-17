@@ -1,8 +1,8 @@
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use farmfe_core::{
   config::partial_bundling::PartialBundlingConfig,
-  hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, Module, ModuleId},
 };
 use farmfe_toolkit::resolve::load_package_json;
@@ -140,10 +140,10 @@ mod tests {
         PartialBundlingGroupConfigResourceType,
       },
     },
-    hashbrown::HashSet,
     module::{module_graph::ModuleGraph, Module, ModuleType},
   };
   use farmfe_testing_helpers::fixture;
+  use std::collections::HashSet;
 
   use crate::{
     generate_module_buckets::ResourceType, generate_module_pots::generate_module_pots,

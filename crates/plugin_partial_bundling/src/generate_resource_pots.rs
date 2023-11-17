@@ -1,8 +1,8 @@
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use farmfe_core::{
   config::partial_bundling::PartialBundlingConfig,
-  hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
 };
@@ -123,10 +123,8 @@ fn generate_resource_pot_name(
 
 #[cfg(test)]
 mod tests {
-  use farmfe_core::{
-    hashbrown::HashSet,
-    module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module},
-  };
+  use farmfe_core::module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module};
+  use std::collections::HashSet;
 
   use crate::generate_resource_pots::generate_resource_pot_name;
 

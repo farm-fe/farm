@@ -1,13 +1,10 @@
 //! diff the module_graph and update_module_graph, analyze the changes and then patch the module_graph
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet, VecDeque};
 
-use farmfe_core::{
-  hashbrown::{HashMap, HashSet},
-  module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
-    Module, ModuleId,
-  },
+use farmfe_core::module::{
+  module_graph::{ModuleGraph, ModuleGraphEdge},
+  Module, ModuleId,
 };
 
 /// the diff result of a module's dependencies
@@ -301,12 +298,8 @@ fn diff_module_deps(
     return (diff_result, HashSet::new(), HashSet::new());
   }
 
-  let all_removed_deps = all_removed_deps_reverse
-    .iter()
-    .map(|(k, _)| k.clone())
-    .collect::<HashSet<_>>();
+  let all_removed_deps = all_removed_deps_reverse.keys().cloned();
   let mut removed_modules_vec = all_removed_deps
-    .into_iter()
     .filter_map(|id| {
       // entry should not be removed for any reason
       if module_graph.entries.contains_key(&id) {

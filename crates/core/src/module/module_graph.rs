@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use farmfe_macro_cache_item::cache_item;
-use hashbrown::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use petgraph::{
   graph::{DefaultIx, NodeIndex},
@@ -539,7 +539,7 @@ impl Default for ModuleGraph {
 
 #[cfg(test)]
 mod tests {
-  use hashbrown::HashMap;
+  use std::collections::HashMap;
 
   use crate::{
     module::{Module, ModuleId},

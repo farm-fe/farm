@@ -88,12 +88,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "allocator-api2"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
-
-[[package]]
 name = "android-activity"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1278,7 +1272,6 @@ dependencies = [
  "farmfe_macro_cache_item",
  "farmfe_utils 0.0.4",
  "glob",
- "hashbrown 0.14.2",
  "heck 0.4.1",
  "hex",
  "parking_lot",
@@ -1965,10 +1958,6 @@ name = "hashbrown"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f93e7192158dbcda357bdec5fb5788eebf8bbac027f3f33e719d29135ae84156"
-dependencies = [
- "ahash 0.8.6",
- "allocator-api2",
-]
 
 [[package]]
 name = "heapless"

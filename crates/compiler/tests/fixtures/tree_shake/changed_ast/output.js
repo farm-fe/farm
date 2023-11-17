@@ -53,7 +53,13 @@
     function Description() {
         console.trace("In Description, the sourcemap should be correct");
         return _dep.default.createElement(_dep.Suspense, {
-            fallback: _dep.default.createElement("div", null, "Loading..."),
+            fallback: _dep.default.createElement("div", {
+                __source: {
+                    fileName: "comp.tsx",
+                    lineNumber: 8,
+                    columnNumber: 30
+                }
+            }, "Loading..."),
             __source: {
                 fileName: "comp.tsx",
                 lineNumber: 8,

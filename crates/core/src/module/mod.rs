@@ -7,12 +7,12 @@ use blake2::{
 use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::relative;
-use hashbrown::HashSet;
 use heck::AsLowerCamelCase;
 use relative_path::RelativePath;
 use rkyv::Deserialize;
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
+use std::collections::HashSet;
 use swc_common::DUMMY_SP;
 use swc_css_ast::Stylesheet;
 use swc_ecma_ast::Module as SwcModule;
@@ -493,10 +493,10 @@ mod tests {
 
   use crate::config::Mode;
   use farmfe_macro_cache_item::cache_item;
-  use hashbrown::HashSet;
   use rkyv::{Archive, Archived, Deserialize, Serialize};
   use rkyv_dyn::archive_dyn;
   use rkyv_typename::TypeName;
+  use std::collections::HashSet;
 
   use super::{
     CustomModuleMetaData, DeserializeCustomModuleMetaData, Module, ModuleId, ModuleMetaData,

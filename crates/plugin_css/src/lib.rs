@@ -1,5 +1,6 @@
 #![feature(box_patterns)]
 
+use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
@@ -14,7 +15,6 @@ use farmfe_core::{
     types::SourceMapOptions,
   },
   error::CompilationError,
-  hashbrown::HashMap,
   module::{module_graph::ModuleGraph, CssModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
@@ -281,6 +281,8 @@ impl Plugin for FarmPluginCss {
           }
           export_names.push((name, after_transform_classes));
         }
+
+        export_names.sort_by_key(|e| e.0);
 
         let code = format!(
           r#"

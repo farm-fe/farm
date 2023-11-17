@@ -12,7 +12,7 @@ use farmfe_toolkit::{
   swc_ecma_transforms::{
     helpers::inject_helpers,
     react::{react, Options},
-    typescript::strip_with_jsx,
+    typescript::tsx,
   },
   swc_ecma_visit::VisitMutWith,
 };
@@ -96,8 +96,9 @@ fn tree_shake_changed_ast() {
         let unresolved_mark = Mark::from_u32(param.meta.as_script_mut().unresolved_mark);
 
         let ast = &mut param.meta.as_script_mut().ast;
-        ast.visit_mut_with(&mut strip_with_jsx(
+        ast.visit_mut_with(&mut tsx(
           cm.clone(),
+          Default::default(),
           Default::default(),
           None as Option<NoopComments>,
           top_level_mark,

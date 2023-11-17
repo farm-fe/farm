@@ -39,8 +39,8 @@
     });
     "";
     var _default = {
-        "hello": `farm-hello`,
         "base": `farm-base`,
+        "hello": `farm-hello`,
         "hide": `farm-hide`,
         "show": `farm-show`
     };

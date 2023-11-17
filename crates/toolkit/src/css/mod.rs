@@ -31,7 +31,8 @@ pub fn parse_css_stylesheet(
     ..Default::default()
   };
 
-  let lexer = Lexer::new(SourceFileInput::from(&*source_file), config);
+  // TODO support comments
+  let lexer = Lexer::new(SourceFileInput::from(&*source_file), None, config);
   let mut parser = Parser::new(lexer, config);
 
   let parse_result = parser.parse_all();

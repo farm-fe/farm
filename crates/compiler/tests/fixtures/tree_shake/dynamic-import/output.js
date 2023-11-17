@@ -18,11 +18,11 @@
         });
     }
     _export(exports, {
-        dep: function() {
-            return dep;
-        },
         default: function() {
             return _default;
+        },
+        dep: function() {
+            return dep;
         }
     });
     var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");

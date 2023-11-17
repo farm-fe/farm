@@ -1,7 +1,7 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -20,7 +20,7 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{comments::NoopComments, Mark, GLOBALS},
-  swc_ecma_ast::ModuleItem,
+  swc_ecma_ast::{ModuleItem, Program},
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
@@ -33,7 +33,7 @@ use farmfe_toolkit::{
   sourcemap::SourceMap,
   swc_ecma_transforms::{
     resolver,
-    typescript::{strip, strip_with_jsx},
+    typescript::{strip, tsx, Config as TsConfig, TsxConfig},
   },
   swc_ecma_visit::VisitMutWith,
 };
@@ -145,7 +145,8 @@ impl Plugin for FarmPluginScript {
     if param.module_type.is_typescript() {
       try_with(cm.clone(), &context.meta.script.globals, || {
         let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
-        let ast = &mut param.meta.as_script_mut().ast;
+        let ast = param.meta.as_script_mut().take_ast();
+        let mut program = Program::Module(ast);
 
         match param.module_type {
           farmfe_core::module::ModuleType::Js => {}
@@ -153,19 +154,24 @@ impl Plugin for FarmPluginScript {
             // Do nothing, jsx should be handled by other plugins
           }
           farmfe_core::module::ModuleType::Ts => {
-            ast.visit_mut_with(&mut strip(top_level_mark));
+            program.visit_mut_with(&mut strip(top_level_mark));
           }
           farmfe_core::module::ModuleType::Tsx => {
-            ast.visit_mut_with(&mut strip_with_jsx(
+            // TODO support comments
+            // TODO make it configurable
+            program.visit_mut_with(&mut tsx(
               cm.clone(),
-              // TODO make it configurable
-              Default::default(),
-              NoopComments, // TODO parse comments
+              TsConfig::default(),
+              TsxConfig::default(),
+              NoopComments,
               top_level_mark,
             ));
+            program.visit_mut_with(&mut strip(top_level_mark));
           }
           _ => {}
         }
+
+        param.meta.as_script_mut().set_ast(program.expect_module());
       })?;
     }
 
@@ -325,7 +331,7 @@ impl Plugin for FarmPluginScript {
 
   fn finalize_resources(
     &self,
-    resources_map: &mut farmfe_core::hashbrown::HashMap<String, Resource>,
+    resources_map: &mut HashMap<String, Resource>,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     handle_entry_resources::handle_entry_resources(resources_map, context);

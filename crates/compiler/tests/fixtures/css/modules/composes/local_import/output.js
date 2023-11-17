@@ -40,7 +40,7 @@
     "";
     var _default = {
         "action": `farm-action`,
-        "base": `farm-base`
+        "base": `farm-base farm-action`
     };
 },
 "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {

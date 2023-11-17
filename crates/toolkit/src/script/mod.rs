@@ -105,16 +105,14 @@ pub fn codegen_module(
 
   {
     let wr = Box::new(JsWriter::new(cm.clone(), "\n", &mut buf, src_map)) as Box<dyn WriteJs>;
+    let cfg = swc_ecma_codegen::Config::default()
+      .with_minify(minify)
+      .with_target(target)
+      .with_omit_last_semi(true)
+      .with_ascii_only(false);
 
     let mut emitter = Emitter {
-      cfg: swc_ecma_codegen::Config {
-        target,
-        ascii_only: false,
-        minify,
-        omit_last_semi: true,
-        emit_assert_for_import_attributes: false,
-        inline_script: false,
-      },
+      cfg,
       // TODO preserve comments
       comments: None,
       cm,

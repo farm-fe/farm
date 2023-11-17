@@ -43,6 +43,7 @@
   "scripts": {
     "dev": "npm run build && npm run copy-artifacts",
     "build": "napi build --platform --cargo-name farmfe_plugin_sass -p farmfe_plugin_sass --release",
+    "build:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z npm run build",
     "copy-artifacts": "node scripts/copy-artifacts.mjs",
     "type-check": "echo \"No type-checking configured.\"",
     "prepublishOnly": "farm plugin prepublish"

@@ -1,9 +1,9 @@
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use farmfe_core::{
   config::{ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
   context::CompilationContext,
-  hashbrown::{HashMap, HashSet},
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleSystem,
   },

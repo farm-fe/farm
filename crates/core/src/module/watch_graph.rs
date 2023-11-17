@@ -1,6 +1,6 @@
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
-use hashbrown::{HashMap, HashSet};
 use petgraph::{
   graph::{DefaultIx, NodeIndex},
   stable_graph::StableDiGraph,

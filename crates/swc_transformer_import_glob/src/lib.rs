@@ -15,8 +15,8 @@
 #![feature(box_patterns)]
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 
-use farmfe_core::hashbrown::HashSet;
 use farmfe_core::swc_common::DUMMY_SP;
 use farmfe_core::swc_ecma_ast::{
   self, ArrayLit, ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Callee, Expr, ExprOrSpread,
@@ -76,7 +76,7 @@ pub fn transform_import_meta_glob(
                     raw: None,
                   }),
                   type_only: false,
-                  asserts: None,
+                  with: None,
                 },
               ),
             ),
@@ -142,7 +142,7 @@ fn create_eager_named_import(
         raw: None,
       }),
       type_only: false,
-      asserts: None,
+      with: None,
     },
   ))
 }
@@ -170,7 +170,7 @@ fn create_eager_namespace_import(
         raw: None,
       }),
       type_only: false,
-      asserts: None,
+      with: None,
     },
   ))
 }
@@ -194,7 +194,7 @@ fn create_eager_default_import(index: usize, glob_index: usize, globed_source: &
         raw: None,
       }),
       type_only: false,
-      asserts: None,
+      with: None,
     },
   ))
 }

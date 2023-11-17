@@ -9,4 +9,4 @@ farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
 base64 = "0.21.0"
-rkyv = { version = "0.7.42", features = ["hashbrown"] }
+rkyv = { version = "0.7.42" }
