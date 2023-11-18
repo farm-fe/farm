@@ -14,7 +14,7 @@
     ".": {
       "default": "./build/cjs/index.cjs",
       "import": "./build/esm/index.cjs",
-      "types": "./build/esm/index.d.ts",
+      "types": "./build/cjs/index.d.ts",
       "require": "./build/cjs/index.cjs"
     },
     "./package.json": "./package.json"
