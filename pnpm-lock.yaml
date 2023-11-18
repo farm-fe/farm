@@ -1296,9 +1296,6 @@ importers:
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.8
-      cross-env:
-        specifier: ^7.0.3
-        version: 7.0.3
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0

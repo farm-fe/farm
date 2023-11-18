@@ -363,6 +363,10 @@ export async function resolveUserConfig(
     clearScreen();
   }
 
+  if (!configPath) {
+    return mergeUserConfig(userConfig, inlineOptions);
+  }
+
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }

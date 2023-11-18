@@ -5,7 +5,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
-  config::{Config, TargetEnv},
+  config::{Config, ModuleFormat, TargetEnv},
   context::CompilationContext,
   enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain,
   error::Result,
@@ -271,6 +271,11 @@ impl Plugin for FarmPluginScript {
       let mut hmr_accepted_v = import_meta_visitor::HmrAcceptedVisitor::new();
       ast.visit_mut_with(&mut hmr_accepted_v);
       param.module.meta.as_script_mut().hmr_accepted = hmr_accepted_v.is_hmr_accepted;
+    } else if matches!(context.config.output.format, ModuleFormat::CommonJs) {
+      // transform `import.meta.xxx` to `module.meta.xxx`
+      let ast = &mut param.module.meta.as_script_mut().ast;
+      let mut import_meta_v = ImportMetaVisitor::new();
+      ast.visit_mut_with(&mut import_meta_v);
     }
 
     Ok(None)

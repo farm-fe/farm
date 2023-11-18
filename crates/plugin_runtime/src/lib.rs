@@ -345,7 +345,7 @@ impl Plugin for FarmPluginRuntime {
         let mut source_to_names = vec![];
 
         for external_module in external_modules {
-          // replace all invalid charators
+          // replace all invalid characters with `_`
           let name = external_module
             .chars()
             .map(|c| if c.is_alphanumeric() { c } else { '_' })
@@ -372,14 +372,21 @@ impl Plugin for FarmPluginRuntime {
         external_modules_str = Some(prepend_str);
       }
 
+      let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node
+        && context.config.output.format == ModuleFormat::CommonJs;
+
       let str = format!(
         r#"(function (modules) {{
             for (var key in modules) {{
-              modules[key].__farm_resource_pot__ = '{}';
+              modules[key].__farm_resource_pot__ = {};
                 {FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.register(key, modules[key]);
             }}
         }})("#,
-        resource_pot.name.to_string() + ".js",
+        if is_target_node_and_cjs {
+          "__filename".to_string()
+        } else {
+          format!("{:?}", resource_pot.name.to_string() + ".js")
+        },
       );
 
       bundle.prepend(&str);

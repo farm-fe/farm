@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{
+  collections::{HashMap, HashSet},
+  path::PathBuf,
+  sync::Arc,
+};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -216,13 +220,16 @@ pub fn resource_pot_to_runtime_object(
     ..Default::default()
   });
   let mut rendered_modules = HashMap::new();
-  let mut external_modules = vec![];
+  let mut external_modules_set = HashSet::new();
 
   for m in modules {
     bundle.add_source(m.module, None).unwrap();
     rendered_modules.insert(m.id, m.rendered_module);
-    external_modules.extend(m.external_modules);
+    external_modules_set.extend(m.external_modules);
   }
+
+  let mut external_modules = external_modules_set.into_iter().collect::<Vec<_>>();
+  external_modules.sort();
 
   bundle.prepend("{");
   bundle.append("}", None);

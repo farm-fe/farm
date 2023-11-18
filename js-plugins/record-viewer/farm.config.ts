@@ -12,10 +12,10 @@ export default defineConfig({
       index: './src/index.ts'
     },
     output: {
-      path: 'build',
+      path: 'build/' + (process.env.FARM_FORMAT || 'cjs'),
       entryFilename: '[entryName].cjs',
       targetEnv: 'node',
-      format: 'cjs'
+      format: process.env.FARM_FORMAT || 'cjs'
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),

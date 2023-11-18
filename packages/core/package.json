@@ -7,12 +7,8 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
+      "require": "./cjs/index.cjs",
       "types": "./dist/index.d.ts"
-    },
-    "./config": {
-      "import": "./dist/config.js",
-      "types": "./dist/config.d.ts"
     },
     "./client": {
       "types": "./client.d.ts"
@@ -51,7 +47,6 @@
     "@types/lodash.merge": "^4.6.7",
     "@types/mime-types": "^2.1.2",
     "@types/ws": "^8.5.4",
-    "cross-env": "^7.0.3",
     "react-refresh": "^0.14.0"
   },
   "engines": {
@@ -67,7 +62,7 @@
   ],
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/build-cjs.mjs",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",

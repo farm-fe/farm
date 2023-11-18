@@ -119,7 +119,8 @@
     "lukastaegert",
     "mapref",
     "nanos",
-    "cpus"
+    "cpus",
+    "bufferutil"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

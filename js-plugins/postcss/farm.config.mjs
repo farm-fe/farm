@@ -9,11 +9,11 @@ export default {
       index: './src/index.ts'
     },
     output: {
-      path: 'build',
+      path: 'build/' + (process.env.FARM_FORMAT || 'cjs'),
       entryFilename: '[entryName].cjs',
       filename: '[resourceName].[contentHash].cjs',
       targetEnv: 'node',
-      format: 'cjs'
+      format: process.env.FARM_FORMAT || 'cjs'
     },
     partialBundling: {
       enforceResources: [
