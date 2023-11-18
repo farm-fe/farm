@@ -2,6 +2,7 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 
 import merge from 'lodash.merge';
 
@@ -18,6 +19,7 @@ import {
   green,
   isArray,
   isObject,
+  isWindows,
   Logger,
   normalizePath
 } from '../utils/index.js';
@@ -476,13 +478,18 @@ async function readConfigFile(
 
       compiler.writeResourcesToDisk();
 
-      const filePath = path.join(outputPath, fileName);
+      const filePath = isWindows
+        ? pathToFileURL(path.join(outputPath, fileName))
+        : path.join(outputPath, fileName);
 
       // Change to vm.module of node or loaders as far as it is stable
-      return (await import(filePath)).default;
+      return (await import(filePath as string)).default;
     } else {
+      const filePath = isWindows
+        ? pathToFileURL(configFilePath)
+        : configFilePath;
       // Change to vm.module of node or loaders as far as it is stable
-      return (await import(configFilePath)).default;
+      return (await import(filePath as string)).default;
     }
   }
 }
