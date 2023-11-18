@@ -1,9 +1,9 @@
 import fs from 'fs';
 import { createRequire } from 'module';
 
-const __require = createRequire(__filename);
+const __require = createRequire(import.meta.url);
 
-export const { name: pluginName } = __require('../package.json');
+export const { name: pluginName } = __require('../../package.json');
 
 export function getPostcssImplementation(implementation?: string) {
   let resolvedImplementation;

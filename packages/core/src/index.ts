@@ -250,3 +250,5 @@ export async function createBundleHandler(
     watcher.watch();
   }
 }
+
+export { defineFarmConfig as defineConfig } from './config.js';

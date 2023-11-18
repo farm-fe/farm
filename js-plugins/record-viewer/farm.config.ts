@@ -1,10 +1,9 @@
 import { builtinModules } from 'module';
 // import type { UserConfig } from '@farmfe/core';
 import farmDtsPlugin from '@farmfe/js-plugin-dts';
+import { defineConfig } from '@farmfe/core';
 
-function defineConfig(config) {
-  return config;
-}
+console.log(farmDtsPlugin, defineConfig);
 
 export default defineConfig({
   compilation: {

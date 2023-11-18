@@ -71,7 +71,7 @@
     "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",
-    "type-check": "npm run build"
+    "type-check": "tsc -p tsconfig.build.json --noEmit"
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:^0.7.4",

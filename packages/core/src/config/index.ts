@@ -11,7 +11,7 @@ import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-import { importFresh } from '../utils/share.js';
+// import { importFresh } from '../utils/share.js';
 import {
   bold,
   clearScreen,
@@ -479,10 +479,10 @@ async function readConfigFile(
       const filePath = path.join(outputPath, fileName);
 
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(filePath);
+      return (await import(filePath)).default;
     } else {
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(configFilePath);
+      return (await import(configFilePath)).default;
     }
   }
 }

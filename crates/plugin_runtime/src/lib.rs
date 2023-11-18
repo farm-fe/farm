@@ -346,12 +346,14 @@ impl Plugin for FarmPluginRuntime {
 
         for external_module in external_modules {
           // replace all invalid characters with `_`
-          let name = external_module
+          let mut name = external_module
             .chars()
             .map(|c| if c.is_alphanumeric() { c } else { '_' })
             .collect::<String>();
+          name = format!("__farm_external_module_{}", name);
+
           let import_str = if context.config.output.format == ModuleFormat::EsModule {
-            format!("import {name} from {external_module:?};")
+            format!("import * as {name} from {external_module:?};")
           } else {
             format!("const {name} = require({external_module:?});")
           };
@@ -364,7 +366,13 @@ impl Plugin for FarmPluginRuntime {
           "{FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
           source_to_names
             .into_iter()
-            .map(|(name, source)| format!("{source:?}: {name}"))
+            .map(
+              |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
+                format!("{source:?}: {{ ...{name}, __esModule: true }}")
+              } else {
+                format!("{source:?}: {name}")
+              }
+            )
             .collect::<Vec<_>>()
             .join(",")
         ));
@@ -385,7 +393,7 @@ impl Plugin for FarmPluginRuntime {
         if is_target_node_and_cjs {
           "__filename".to_string()
         } else {
-          format!("{:?}", resource_pot.name.to_string() + ".js")
+          format!("'{}'", resource_pot.name.to_string() + ".js")
         },
       );
 

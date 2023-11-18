@@ -4,9 +4,9 @@ import { createRequire } from 'module';
 import type { SassPluginOptions } from './index.js';
 import { CompilationContext } from '@farmfe/core';
 
-const __require = createRequire(__filename);
+const __require = createRequire(import.meta.url);
 
-export const { name: pluginName } = __require('../package.json');
+export const { name: pluginName } = __require('../../package.json');
 
 export const getAdditionContext = async (
   cwd: string,
