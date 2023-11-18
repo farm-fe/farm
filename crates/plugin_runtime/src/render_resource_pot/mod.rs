@@ -79,6 +79,8 @@ pub fn resource_pot_to_runtime_object(
         path: PathBuf::from(m_id.resolved_path_with_query(&context.config.root)),
         content: module.content.clone(),
       });
+      let mut external_modules = vec![];
+
       try_with(cm.clone(), &context.meta.script.globals, || {
         // transform esm to commonjs
         let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
@@ -120,6 +122,8 @@ pub fn resource_pot_to_runtime_object(
         }));
         // TODO support comments
         cloned_module.visit_mut_with(&mut fixer(None));
+
+        external_modules = source_replacer.external_modules;
       })?;
 
       let sourcemap_enabled = context.config.sourcemap.enabled(module.immutable);
@@ -192,6 +196,7 @@ pub fn resource_pot_to_runtime_object(
         id: m_id.clone(),
         module,
         rendered_module,
+        external_modules,
       });
 
       Ok::<(), CompilationError>(())
@@ -211,10 +216,12 @@ pub fn resource_pot_to_runtime_object(
     ..Default::default()
   });
   let mut rendered_modules = HashMap::new();
+  let mut external_modules = vec![];
 
   for m in modules {
     bundle.add_source(m.module, None).unwrap();
     rendered_modules.insert(m.id, m.rendered_module);
+    external_modules.extend(m.external_modules);
   }
 
   bundle.prepend("{");
@@ -223,6 +230,7 @@ pub fn resource_pot_to_runtime_object(
   Ok(RenderedJsResourcePot {
     bundle,
     rendered_modules,
+    external_modules,
   })
 }
 
@@ -319,9 +327,11 @@ pub struct RenderedScriptModule {
   pub id: ModuleId,
   pub module: MagicString,
   pub rendered_module: RenderedModule,
+  pub external_modules: Vec<String>,
 }
 
 pub struct RenderedJsResourcePot {
   pub bundle: Bundle,
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
+  pub external_modules: Vec<String>,
 }

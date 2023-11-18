@@ -8,6 +8,6 @@
     "lodash": "^4.17.21"
   },
   "scripts": {
-    "build": "farm build"
+    "build": "farm build && node test.mjs"
   }
 }

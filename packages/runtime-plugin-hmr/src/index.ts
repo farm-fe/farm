@@ -1,7 +1,7 @@
 /**
  * HMR client as a Farm Runtime Plugin
  */
-import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
+import type { FarmRuntimePlugin } from '@farmfe/runtime';
 import { applyHotUpdates, createHotContext } from './hot-module-state';
 import { RawHmrUpdateResult } from './types';
 declare const FARM_HMR_PORT: string | undefined;

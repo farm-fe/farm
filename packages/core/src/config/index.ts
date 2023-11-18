@@ -242,7 +242,6 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (
-    config.output.targetEnv !== 'node' &&
     isArray(config.runtime.plugins) &&
     !config.runtime.plugins.includes(ImportMetaPluginPath)
   ) {

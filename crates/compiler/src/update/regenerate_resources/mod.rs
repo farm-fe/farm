@@ -118,6 +118,7 @@ pub fn render_and_generate_update_resource(
         let RenderedJsResourcePot {
           mut bundle,
           rendered_modules,
+          ..
         } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
         bundle.prepend("(");
         bundle.append(")", None);

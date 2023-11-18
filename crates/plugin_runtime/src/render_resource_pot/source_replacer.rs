@@ -34,6 +34,7 @@ pub struct SourceReplacer<'a> {
   module_id: ModuleId,
   module_system: ModuleSystem,
   mode: Mode,
+  pub external_modules: Vec<String>,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -52,6 +53,7 @@ impl<'a> SourceReplacer<'a> {
       module_id,
       module_system,
       mode,
+      external_modules: vec![],
     }
   }
 }
@@ -126,6 +128,7 @@ impl SourceReplacer<'_> {
         let dep_module = self.module_graph.module(&id).unwrap();
 
         if dep_module.external {
+          self.external_modules.push(id.to_string());
           return SourceReplaceResult::NotReplaced;
         }
 

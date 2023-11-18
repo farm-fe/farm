@@ -69,7 +69,7 @@
     "artifacts": "napi artifacts",
     "build": "tsc -p tsconfig.build.json",
     "build:rs": "npm run build:rs:debug -- --release",
-    "build:rs:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z npm run build:rs",
+    "build:rs:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
     "build:rs:profile": "FARM_PROFILE=1 npm run build:rs -- --features profile",
     "prepublishOnly": "napi prepublish -t npm",
