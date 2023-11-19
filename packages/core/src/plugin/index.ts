@@ -67,7 +67,7 @@ export async function resolveAllPlugins(
   }
   // vite plugins execute after farm plugins by default.
   jsPlugins.push(...vitePluginAdapters);
-  // const config = await resolveConfigHook(resolvedConfig, jsPlugins);
+
   const filterPlugins = filterPluginByName(jsPlugins);
 
   const sortJsPlugins = getSortedPlugins(filterPlugins);
@@ -157,7 +157,11 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   const postPlugins = sortedPlugins.filter(
     (plugin) => plugin?.priority < DEFAULT_PRIORITY
   );
-  const normalPlugins = plugins.filter(Boolean);
+
+  const normalPlugins = plugins.filter(
+    (plugin) =>
+      typeof plugin === 'object' && typeof plugin.priority !== 'number'
+  );
 
   return [...prePlugins, ...normalPlugins, ...postPlugins];
 }

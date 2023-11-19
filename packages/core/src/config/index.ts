@@ -53,7 +53,8 @@ export async function normalizeUserCompilationConfig(
   userConfig: UserConfig,
   logger: Logger,
   isRunConfigResolvedHook = false,
-  mode: CompilationMode = 'development'
+  mode: CompilationMode = 'development',
+  plugins?: any
 ): Promise<Config> {
   const { compilation, root, server, envDir, envPrefix } = userConfig;
   // resolve root path
@@ -152,6 +153,9 @@ export async function normalizeUserCompilationConfig(
 
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
+  const ImportMetaPluginPath = require.resolve(
+    '@farmfe/runtime-plugin-import-meta'
+  );
 
   if (!config.runtime) {
     config.runtime = {
@@ -286,19 +290,19 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  const { rawJsPlugins, rustPlugins, resolvedConfig } = await resolveAllPlugins(
-    config,
-    userConfig
-  );
+  // const { rawJsPlugins, rustPlugins, resolvedConfig } = await resolveAllPlugins(
+  //   config,
+  //   userConfig
+  // );
 
   const normalizedConfig: Config = {
-    config: resolvedConfig,
-    rustPlugins,
-    jsPlugins: rawJsPlugins
+    config,
+    rustPlugins: plugins?.rustPlugins ?? [],
+    jsPlugins: plugins?.jsPlugins ?? []
   };
 
   isRunConfigResolvedHook &&
-    (await resolveConfigResolvedHook(normalizedConfig, rawJsPlugins));
+    (await resolveConfigResolvedHook(normalizedConfig, plugins.jsPlugins));
 
   return normalizedConfig;
 }
@@ -421,7 +425,7 @@ export async function resolveConfig(
   // targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
   const config = filterUserConfig(userConfig, inlineOptions);
-  const { rawJsPlugins } = await resolveAllPlugins({}, config);
+  const { rawJsPlugins, rustPlugins } = await resolveAllPlugins({}, config);
 
   const resolveConfig = await resolveConfigHook(
     config,
@@ -432,7 +436,12 @@ export async function resolveConfig(
   const normalizedConfig = await normalizeUserCompilationConfig(
     resolveConfig,
     logger,
-    true
+    true,
+    'development',
+    {
+      jsPlugins: rawJsPlugins,
+      rustPlugins
+    }
   );
 
   return {

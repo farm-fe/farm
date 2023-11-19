@@ -36,13 +36,6 @@ export default defineConfig({
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
   vitePlugins: [
-    {
-      name: 'vite-plugin-test',
-      config(config, env) {
-        config.a = 123;
-      },
-      configResolved(config) {}
-    }
     // {
     //   name: 'vite-plugin-test2',
     //   config(config, env) {
@@ -56,7 +49,6 @@ export default defineConfig({
     //   },
     //   configResolved(config) {
     //     console.log(config);
-
     //   }
     // }
   ]

@@ -77,6 +77,7 @@ export default class Context {
       skipAddingFilesFromTsConfig: true,
       libFolderPath
     };
+
     this.project = new Project(mergeCompilerOptions);
     const tsConfigOptions = getTsConfig(
       tsConfigPath,

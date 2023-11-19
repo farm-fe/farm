@@ -149,7 +149,7 @@ export class VitePluginAdapter implements JsPlugin {
       );
     }
 
-    return this._farmConfig;
+    return this._farmConfig.compilation;
   }
 
   async configResolved() {
@@ -162,7 +162,7 @@ export class VitePluginAdapter implements JsPlugin {
       await configResolvedHook(this._viteConfig);
     }
 
-    return this._farmConfig;
+    return this._farmConfig.compilation;
   }
 
   async configDevServer(devServer: DevServer) {

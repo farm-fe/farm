@@ -27,7 +27,7 @@
     "email": "1357711537@qq.com"
   },
   "scripts": {
-    "build": "pnpm run clean && farm build && cross-env FARM_FORMAT=esm farm build",
+    "build": "pnpm run clean && farm build",
     "start": "pnpm run build -w",
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
