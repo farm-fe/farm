@@ -13,7 +13,9 @@
     "name": "farm-plugin-react",
     "triples": {
       "additional": [
-        "aarch64-apple-darwin"
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl"
       ]
     }
   },
