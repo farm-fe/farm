@@ -125,7 +125,7 @@ export class VitePluginAdapter implements JsPlugin {
   async config(config: any, _configEnv: ConfigEnv) {
     // async config(config: UserConfig['compilation'], _configEnv: ConfigEnv) {
 
-    this._farmConfig.compilation = config;
+    this._farmConfig.compilation = config.compilation;
     this._viteConfig = farmConfigToViteConfig(this._farmConfig);
 
     const configHook = this.wrapRawPluginHook('config', this._rawPlugin.config);
