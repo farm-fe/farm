@@ -94,7 +94,7 @@ const defaultProps = {
   <p>
     Install
     <a href="https://github.com/vuejs/language-tools" target="_blank">Volar</a>
-    in your IDE for a better DX
+    in your IDE for a better DXasdasdasdasdasdasdasdasdasdasdasd
   </p>
   <p class="read-the-docs">Click on the Farm and Vue logos to learn more</p>
 </template>

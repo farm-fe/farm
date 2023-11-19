@@ -13,16 +13,11 @@ import {
   DefaultLogger,
   green
 } from '../utils/index.js';
-import {
-  DEFAULT_HMR_OPTIONS,
-  JsPlugin,
-  normalizeUserCompilationConfig,
-  resolveUserConfig
-} from '../index.js';
+import { DEFAULT_HMR_OPTIONS, JsPlugin, resolveConfig } from '../index.js';
 import { setProcessEnv } from '../config/env.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 
-import type { ResolvedUserConfig, UserConfig } from '../config/index.js';
+import type { ResolvedUserConfig } from '../config/index.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -78,13 +73,10 @@ export class FileWatcher implements ImplFileWatcher {
           await this.serverOrCompiler.close();
         }
 
-        const config: UserConfig = await resolveUserConfig(
+        const { config, normalizedConfig } = await resolveConfig(
           this.options.inlineConfig,
           'serve',
-          this._logger
-        );
-        const normalizedConfig = await normalizeUserCompilationConfig(
-          config,
+          'development',
           this._logger
         );
         setProcessEnv(normalizedConfig.config.mode);

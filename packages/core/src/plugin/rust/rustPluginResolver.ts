@@ -34,7 +34,8 @@ export async function rustPluginResolver(
 
   // not absolute path, treat it as a package
   if (!path.isAbsolute(pluginPath)) {
-    const require = createRequire(path.join(root, 'package.json'));
+    const cwd = root ?? process.cwd();
+    const require = createRequire(path.join(cwd, 'package.json'));
     pluginPath = require.resolve(pluginPath);
 
     // rust plugin should export a default string representing the path to the binary

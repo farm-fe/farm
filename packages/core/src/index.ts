@@ -16,8 +16,7 @@ import { Compiler } from './compiler/index.js';
 import {
   normalizeDevServerOptions,
   normalizePublicDir,
-  normalizeUserCompilationConfig,
-  resolveUserConfig,
+  resolveConfig,
   UserConfig
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
@@ -38,12 +37,12 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
 
   setProcessEnv('development');
-  const config: UserConfig = await resolveUserConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
     'serve',
+    'development',
     logger
   );
-  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config);
@@ -76,15 +75,11 @@ export async function build(
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   setProcessEnv('production');
-  const userConfig: UserConfig = await resolveUserConfig(
+  const { normalizedConfig } = await resolveConfig(
     options,
-    'build',
+    'serve',
+    'production',
     logger
-  );
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    logger,
-    'production'
   );
   setProcessEnv(normalizedConfig.config.mode);
 
@@ -104,19 +99,15 @@ export async function build(
 export async function preview(options: FarmCLIOptions): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   const port = options.port ?? 1911;
-  const userConfig: UserConfig = await resolveUserConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     options,
     'serve',
+    'production',
     logger
   );
 
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    logger,
-    'production'
-  );
   const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server,
+    config.server,
     'production'
   );
 
@@ -193,15 +184,11 @@ export async function watch(
 ): Promise<void> {
   const logger = options.logger ?? new DefaultLogger();
   setProcessEnv('development');
-  const userConfig: UserConfig = await resolveUserConfig(
+  const { normalizedConfig } = await resolveConfig(
     options,
-    'build',
+    'serve',
+    'development',
     logger
-  );
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    userConfig,
-    logger,
-    'development'
   );
   setProcessEnv(normalizedConfig.config.mode);
 

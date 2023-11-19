@@ -54,7 +54,8 @@ export class VitePluginAdapter implements JsPlugin {
   priority = 0;
 
   private _rawPlugin: Plugin;
-  private _farmConfig: UserConfig;
+  private _farmConfig: any;
+  // private _farmConfig: UserConfig;
   private _viteConfig: ViteUserConfig;
   private _viteDevServer: ViteDevServerAdapter;
 
@@ -79,7 +80,7 @@ export class VitePluginAdapter implements JsPlugin {
 
     this.priority = convertEnforceToPriority(rawPlugin.enforce);
     this._rawPlugin = rawPlugin;
-    this._farmConfig = farmConfig;
+    this._farmConfig = farmConfig ?? {};
     this._viteConfig = farmConfigToViteConfig(farmConfig);
 
     this.filters = filters;
@@ -121,7 +122,9 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // call both config and configResolved
-  async config(config: UserConfig['compilation']) {
+  async config(config: any, _configEnv: ConfigEnv) {
+    // async config(config: UserConfig['compilation'], _configEnv: ConfigEnv) {
+
     this._farmConfig.compilation = config;
     this._viteConfig = farmConfigToViteConfig(this._farmConfig);
 
@@ -138,6 +141,7 @@ export class VitePluginAdapter implements JsPlugin {
         ),
         this.name
       );
+
       this._farmConfig = viteConfigToFarmConfig(
         this._viteConfig,
         this._farmConfig,
@@ -145,6 +149,10 @@ export class VitePluginAdapter implements JsPlugin {
       );
     }
 
+    return this._farmConfig;
+  }
+
+  async configResolved() {
     const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
       this._rawPlugin.configResolved
@@ -154,7 +162,7 @@ export class VitePluginAdapter implements JsPlugin {
       await configResolvedHook(this._viteConfig);
     }
 
-    return this._farmConfig.compilation;
+    return this._farmConfig;
   }
 
   async configDevServer(devServer: DevServer) {
@@ -180,7 +188,7 @@ export class VitePluginAdapter implements JsPlugin {
 
   private getViteConfigEnv(): ConfigEnv {
     return {
-      ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node',
+      ssrBuild: this._farmConfig.compilation.output?.targetEnv === 'node',
       command:
         this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
       mode: this._farmConfig.compilation.mode
@@ -195,7 +203,7 @@ export class VitePluginAdapter implements JsPlugin {
       return this._rawPlugin.apply(this._viteConfig, {
         mode: this._farmConfig.compilation.mode,
         command,
-        ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node'
+        ssrBuild: this._farmConfig.compilation.output?.targetEnv === 'node'
       });
     } else if (this._rawPlugin.apply === undefined) {
       return true;
@@ -342,7 +350,7 @@ export class VitePluginAdapter implements JsPlugin {
           );
 
           const isSSR =
-            this._farmConfig.compilation.output.targetEnv === 'node';
+            this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = decodeStr(params.resolvedPath);
 
           // append query
@@ -385,7 +393,7 @@ export class VitePluginAdapter implements JsPlugin {
             params.moduleId
           );
           const isSSR =
-            this._farmConfig.compilation.output.targetEnv === 'node';
+            this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = decodeStr(params.resolvedPath);
           // append query
           const id = formatId(resolvedPath, params.query);

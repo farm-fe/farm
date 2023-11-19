@@ -147,7 +147,7 @@ export function printServerUrls(urls: any, logger: Logger): void {
     cyan(url.replace(/:(\d+)\//, (_, port) => `:${bold(port)}/`));
 
   const logUrl = (url: string, type: string) =>
-    logger.info(`${magenta('➡️')} ${bold(type)}${bold(colorUrl(url))}`);
+    logger.info(`${bold(magenta('>'))} ${bold(type)}${bold(colorUrl(url))}`);
 
   urls.local.map((url: string) => logUrl(url, 'Local:   '));
   urls.network.map((url: string) => logUrl(url, 'Network: '));

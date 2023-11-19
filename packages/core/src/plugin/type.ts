@@ -7,7 +7,7 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../binding/index.js';
-import { DevServer } from '../index.js';
+import { ConfigEnv, DevServer } from '../index.js';
 
 export interface CompilationContextEmitFileParams {
   resolvedPath: string;
@@ -54,8 +54,12 @@ export interface JsPlugin {
   name: string;
   priority?: number;
 
-  config?: Callback<Config['config'], Config['config']>;
+  config?: (
+    config: Config['config'],
+    configEnv: ConfigEnv
+  ) => Promise<Config['config']>;
 
+  configResolved?: (config: Config['config']) => void;
   /**
    * runs in development mode only
    * @param server
