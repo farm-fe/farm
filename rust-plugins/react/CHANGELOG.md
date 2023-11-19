@@ -1,5 +1,16 @@
 # @farmfe/plugin-react
 
+## 0.4.0
+
+### Minor Changes
+
+- 72bfe2af: Support persistent cache and incremental building
+- 0a20271a: Refactor render pot renders and optimize sourcemap generation
+
+### Patch Changes
+
+- c12156ff: fix #742
+
 ## 0.3.4
 
 ### Patch Changes
