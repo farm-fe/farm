@@ -1,5 +1,19 @@
 # @farmfe/js-plugin-solid
 
+## 3.0.0
+
+### Minor Changes
+
+- 72bfe2af: Support persistent cache and incremental building
+- 0a20271a: Refactor render pot renders and optimize sourcemap generation
+
+### Patch Changes
+
+- Updated dependencies [c12156ff]
+- Updated dependencies [72bfe2af]
+- Updated dependencies [0a20271a]
+  - @farmfe/core@0.14.0
+
 ## 2.0.2
 
 ### Patch Changes
