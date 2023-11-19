@@ -13,7 +13,8 @@ export default {
     },
     output: {
       path: 'build/' + (process.env.FARM_FORMAT || 'cjs'),
-      entryFilename: '[entryName].cjs',
+      entryFilename:
+        '[entryName].' + (process.env.FARM_FORMAT === 'esm' ? 'js' : 'cjs'),
       targetEnv: 'node',
       format: process.env.FARM_FORMAT || 'cjs'
     },

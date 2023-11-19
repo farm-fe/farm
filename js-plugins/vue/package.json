@@ -19,10 +19,10 @@
   ],
   "exports": {
     ".": {
-      "default": "./build/index.cjs",
       "require": "./build/index.cjs",
       "import": "./dist/farm-vue-plugin.js",
-      "types": "./build/farm-vue-plugin.d.ts"
+      "types": "./build/farm-vue-plugin.d.ts",
+      "default": "./build/index.cjs"
     }
   },
   "repository": {

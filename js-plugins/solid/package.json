@@ -12,10 +12,10 @@
   "type": "module",
   "exports": {
     ".": {
-      "default": "./build/cjs/index.cjs",
-      "import": "./build/esm/index.cjs",
+      "import": "./build/esm/index.js",
       "types": "./build/cjs/index.d.ts",
-      "require": "./build/cjs/index.cjs"
+      "require": "./build/cjs/index.cjs",
+      "default": "./build/cjs/index.cjs"
     },
     "./package.json": "./package.json"
   },
