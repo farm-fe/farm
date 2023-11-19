@@ -4,18 +4,19 @@ export * from './server/index.js';
 export * from './plugin/type.js';
 export * from './utils/index.js';
 
-// import path from "node:path";
-// import os from "node:os";
-// import { existsSync, statSync } from "node:fs";
-// import sirv from "sirv";
-// import compression from "koa-compress";
-// import Koa, { Context } from "koa";
-// import fse from "fs-extra";
+// import path from 'node:path';
+// import os from 'node:os';
+// import { existsSync, statSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+// import sirv from 'sirv';
+// import compression from 'koa-compress';
+// import Koa, { Context } from 'koa';
+import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
 import {
   // normalizeDevServerOptions,
-  // normalizePublicDir,
+  normalizePublicDir,
   // normalizeUserCompilationConfig,
   resolveConfig,
   UserConfig
@@ -71,36 +72,42 @@ export async function start(
   }
 }
 
-// export async function build(
-//   options: FarmCLIOptions & UserConfig,
-// ): Promise<void> {
-//   const logger = options.logger ?? new DefaultLogger();
-//   setProcessEnv("production");
-//   const userConfig: UserConfig = await resolveUserConfig(
-//     options,
-//     "build",
-//     "production",
-//     logger,
-//   );
-//   const normalizedConfig = await normalizeUserCompilationConfig(
-//     userConfig,
-//     logger,
-//     "production",
-//   );
-//   setProcessEnv(normalizedConfig.config.mode);
+export async function build(
+  options: FarmCLIOptions & UserConfig
+): Promise<void> {
+  const logger = options.logger ?? new DefaultLogger();
+  setProcessEnv('production');
+  const { normalizedConfig }: any = await resolveConfig(
+    options,
+    'build',
+    'production',
+    logger
+  );
+  // const userConfig: UserConfig = await resolveUserConfig(
+  //   options,
+  //   'build',
+  //   'production',
+  //   logger
+  // );
+  // const normalizedConfig = await normalizeUserCompilationConfig(
+  //   userConfig,
+  //   logger,
+  //   'production'
+  // );
+  setProcessEnv(normalizedConfig.config.mode);
 
-//   await createBundleHandler(normalizedConfig);
+  await createBundleHandler(normalizedConfig);
 
-//   // copy resources under publicDir to output.path
-//   const absPublicDirPath = normalizePublicDir(
-//     normalizedConfig.config.root,
-//     options.publicDir,
-//   );
+  // copy resources under publicDir to output.path
+  const absPublicDirPath = normalizePublicDir(
+    normalizedConfig.config.root,
+    options.publicDir
+  );
 
-//   if (existsSync(absPublicDirPath)) {
-//     fse.copySync(absPublicDirPath, normalizedConfig.config.output.path);
-//   }
-// }
+  if (existsSync(absPublicDirPath)) {
+    fse.copySync(absPublicDirPath, normalizedConfig.config.output.path);
+  }
+}
 
 // export async function preview(options: FarmCLIOptions): Promise<void> {
 //   const logger = options.logger ?? new DefaultLogger();
