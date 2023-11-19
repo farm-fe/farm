@@ -8,6 +8,8 @@
  */
 
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import open from 'open';
 import { execa } from 'execa';
 import { execSync } from 'child_process';
@@ -69,13 +71,14 @@ function startBrowserProcess(browser: string | undefined, url: string) {
     process.platform === 'darwin' &&
     (typeof browser !== 'string' || browser === OSX_CHROME);
 
+  const dirname = path.dirname(fileURLToPath(import.meta.url));
   if (shouldTryOpenChromeWithAppleScript) {
     try {
       // Try our best to reuse existing tab
       // on OS X Google Chrome with AppleScript
       execSync('ps cax | grep "Google Chrome"');
       execSync('osascript openChrome.applescript "' + encodeURI(url) + '"', {
-        cwd: path.resolve(__dirname, '../../bin'),
+        cwd: path.resolve(dirname, '../../bin'),
         stdio: 'ignore'
       });
       return true;

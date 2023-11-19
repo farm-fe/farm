@@ -197,7 +197,7 @@ pub trait Plugin: Any + Send + Sync {
   /// or insert the generated resources into html
   fn finalize_resources(
     &self,
-    _resources: &mut hashbrown::HashMap<String, Resource>,
+    _resources: &mut HashMap<String, Resource>,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)

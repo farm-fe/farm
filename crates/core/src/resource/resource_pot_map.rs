@@ -1,4 +1,4 @@
-use hashbrown::HashMap;
+use std::collections::HashMap;
 
 use super::resource_pot::{ResourcePot, ResourcePotId};
 
@@ -47,7 +47,7 @@ impl ResourcePotMap {
   }
 
   pub fn take_resource_pots(self) -> Vec<ResourcePot> {
-    self.map.into_iter().map(|(_, v)| v).collect()
+    self.map.into_values().collect()
   }
 }
 

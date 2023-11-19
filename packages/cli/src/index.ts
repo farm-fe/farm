@@ -203,17 +203,14 @@ cli.version(version);
 
 cli.parse();
 
-export function resolveCore(cwd: string = process.cwd()): Promise<{
+export async function resolveCore(cwd: string = process.cwd()): Promise<{
   start: typeof start;
   build: typeof build;
   watch: typeof watch;
   preview: typeof preview;
 }> {
-  const require = Module.createRequire(path.join(cwd, 'package.json'));
-
-  let farmCorePath: string;
   try {
-    farmCorePath = require.resolve('@farmfe/core');
+    return import('@farmfe/core');
   } catch (err) {
     // TODO Encapsulation logger
     console.error(
@@ -221,10 +218,4 @@ export function resolveCore(cwd: string = process.cwd()): Promise<{
     );
     process.exit(1);
   }
-
-  if (isWindows) {
-    return import(pathToFileURL(farmCorePath).toString());
-  }
-
-  return import(farmCorePath);
 }

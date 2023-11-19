@@ -166,25 +166,53 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
     .from_js_value(JsUnknown::from_napi_value(env, argv[1]).unwrap())
     .unwrap();
 
-  Env::from_raw(env)
-    .execute_tokio_future(
-      async move {
-        let resolved = ctx
-          .plugin_driver
-          .resolve(&param, &ctx, &hook_context)
-          .map_err(|e| Error::new(Status::GenericFailure, format!("{}", e)))?;
+  let (promise, result) = Env::from_raw(env)
+    .create_deferred::<JsUnknown, Box<dyn FnOnce(Env) -> napi::Result<JsUnknown>>>()
+    .unwrap();
 
-        resolved.ok_or_else(|| {
+  std::thread::spawn(move || {
+    let resolved = ctx
+      .plugin_driver
+      .resolve(&param, &ctx, &hook_context)
+      .map_err(|e| Error::new(Status::GenericFailure, format!("{}", e)));
+
+    match resolved {
+      Ok(resolved) => promise.resolve(Box::new(move |e| {
+        resolved.map(|r| e.to_js_value(&r).unwrap()).ok_or_else(|| {
           Error::new(
             Status::GenericFailure,
             format!("can not resolve {:?}", param),
           )
         })
-      },
-      |&mut env, data| env.to_js_value(&data),
-    )
-    .unwrap()
-    .raw()
+      })),
+      Err(err) => promise.reject(Error::new(
+        Status::GenericFailure,
+        format!("can not resolve {:?}: {:?}", param, err),
+      )),
+    }
+  });
+
+  result.raw()
+
+  // Env::from_raw(env)
+  //   .execute_tokio_future(
+  //     async move {
+  //       let resolved = ctx
+  //         .plugin_driver
+  //         .resolve(&param, &ctx, &hook_context)
+  //         .map_err(|e| Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+  //       resolved.ok_or_else(|| {
+  //         Error::new(
+  //           Status::GenericFailure,
+  //           format!("can not resolve {:?}", param),
+  //         )
+  //       })
+  //     },
+  //     |&mut env, data| env.to_js_value(&data),
+  //   )
+  //   .unwrap()
+  //   .raw()
 }
 
 unsafe extern "C" fn add_watch_file(env: napi_env, info: napi_callback_info) -> napi_value {
@@ -220,7 +248,7 @@ unsafe extern "C" fn get_watch_files(env: napi_env, info: napi_callback_info) ->
   let mut watched_files = watch_graph
     .modules()
     .into_iter()
-    .cloned()
+    .map(|p| p.to_string())
     .collect::<Vec<_>>();
   let module_graph = ctx.module_graph.read();
   let mut modules = module_graph

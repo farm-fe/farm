@@ -1,15 +1,17 @@
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use farmfe_core::resource::ResourceOrigin;
 use farmfe_core::{
   config::{ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
   context::CompilationContext,
-  hashbrown::{HashMap, HashSet},
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleSystem,
   },
   resource::{Resource, ResourceType},
   swc_ecma_ast::{self, Decl, ModuleDecl, ModuleItem, Pat},
 };
+use farmfe_toolkit::fs::transform_output_entry_filename;
 use farmfe_toolkit::get_dynamic_resources_map::{
   get_dynamic_resources_code, get_dynamic_resources_map,
 };
@@ -260,6 +262,11 @@ pub fn handle_entry_resources(
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
 
+  // create a runtime resource
+  let runtime_code = create_runtime_code(resources_map, context);
+  let runtime_resource = create_farm_runtime_resource(&runtime_code, context);
+  let mut should_inject_runtime = false;
+
   for (entry, _) in &module_graph.entries {
     let module = module_graph
       .module(entry)
@@ -277,54 +284,25 @@ pub fn handle_entry_resources(
         );
       dep_resources.sort();
 
-      // 1. node specific code.
-      // TODO: support async module for node, using dynamic require to load external module instead of createRequire. createRequire does not support load ESM module.
-      let node_specific_code = if context.config.output.target_env == TargetEnv::Node {
-        match context.config.output.format {
-          ModuleFormat::EsModule => {
-            format!(
-              r#"import {FARM_NODE_MODULE} from 'node:module';var __farmNodeRequire = {FARM_NODE_MODULE}.createRequire(import.meta.url);var __farmNodeBuiltinModules = {FARM_NODE_MODULE}.builtinModules;"#
-            )
-          }
-          ModuleFormat::CommonJs => r#"var __farmNodeRequire = require;var __farmNodeBuiltinModules = require('node:module').builtinModules;"#
-            .to_string(), // _ => panic!("node only support cjs and esm format"),
-        }
-      } else {
-        "".to_string()
-      };
+      if !should_inject_runtime {
+        should_inject_runtime = !dep_resources.is_empty();
+      }
 
-      // 2. __farm_global_this by namespace
-      let farm_namespace = &context.config.runtime.namespace;
-      let farm_global_this_code = format!(
-        r#"(globalThis || window || global || self).{FARM_NAMESPACE} = '{farm_namespace}';{FARM_GLOBAL_THIS} = {{__FARM_TARGET_ENV__: '{}'}};"#,
-        match &context.config.output.target_env {
-          TargetEnv::Browser => "browser",
-          TargetEnv::Node => "node",
-        }
-      );
-
-      // 3. find runtime resource
-      let runtime_resource_code = String::from_utf8(
-        resources_map
-          .values()
-          .find(|r| matches!(r.resource_type, ResourceType::Runtime))
-          .expect("runtime resource is not found")
-          .bytes
-          .clone(),
-      )
-      .unwrap();
-
-      // 4. __farmNodeRequire(dep) to entry resource if target env is node
+      // 1. import 'dep' or require('dep') to entry resource if target env is node
       let dep_resources_require_code = if context.config.output.target_env == TargetEnv::Node {
         dep_resources
           .iter()
-          .map(|rn| format!("__farmNodeRequire('./{}');", rn))
+          .map(|rn| match context.config.output.format {
+            ModuleFormat::EsModule => format!("import \"./{rn}\";"),
+            ModuleFormat::CommonJs => format!("require(\"./{rn}\");"),
+          })
           .collect::<Vec<_>>()
-          .join("\n")
+          .join("")
       } else {
         "".to_string()
       };
-      // 5. setInitialLoadedResources and setDynamicModuleResourcesMap
+
+      // 4. setInitialLoadedResources and setDynamicModuleResourcesMap
       let set_initial_loaded_resources_code = format!(
         r#"{FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.setInitialLoadedResources([{initial_loaded_resources}]);"#,
         initial_loaded_resources = dep_resources
@@ -337,7 +315,7 @@ pub fn handle_entry_resources(
         r#"{FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
       );
 
-      // 6. append call entry
+      // 5. append call entry
       let call_entry_code = format!(
         r#"var farmModuleSystem = {}.{};farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("{}");"#,
         FARM_GLOBAL_THIS,
@@ -345,7 +323,7 @@ pub fn handle_entry_resources(
         entry.id(context.config.mode.clone()),
       );
 
-      // 7. append export code
+      // 6. append export code
       let export_info_code = get_export_info_code(entry, &module_graph, context);
 
       let entry_js_resource_code = String::from_utf8(
@@ -371,21 +349,86 @@ pub fn handle_entry_resources(
       let entry_js_resource = resources_map
         .get_mut(&entry_js_resource_name)
         .expect("entry resource is not found");
-
-      entry_js_resource.bytes = format!(
-        "{}{}{}{}{}{}{}{}{}{}",
-        node_specific_code,
-        farm_global_this_code,
-        runtime_resource_code,
+      // TODO support sourcemap
+      entry_js_resource.bytes = vec![
+        if !dep_resources.is_empty() {
+          format!("import \"./{}\";", runtime_resource.name)
+        } else {
+          runtime_code.clone()
+        },
         dep_resources_require_code,
+        entry_js_resource_code,
         set_initial_loaded_resources_code,
         set_dynamic_resources_map_code,
-        entry_js_resource_code,
         call_entry_code,
         export_info_code,
         entry_js_resource_source_map,
-      )
-      .into_bytes();
+      ]
+      .join("")
+      .into_bytes()
     }
+  }
+
+  if should_inject_runtime {
+    resources_map.insert(runtime_resource.name.clone(), runtime_resource);
+  }
+}
+
+fn create_runtime_code(
+  resources_map: &HashMap<String, Resource>,
+  context: &Arc<CompilationContext>,
+) -> String {
+  let node_specific_code = if context.config.output.target_env == TargetEnv::Node {
+    match context.config.output.format {
+      ModuleFormat::EsModule => {
+        format!(
+          r#"import {FARM_NODE_MODULE} from 'node:module';globalThis.nodeRequire = {FARM_NODE_MODULE}.createRequire(import.meta.url);"#
+        )
+      }
+      ModuleFormat::CommonJs => r#"globalThis.nodeRequire = require;"#.to_string(), // _ => panic!("node only support cjs and esm format"),
+    }
+  } else {
+    "".to_string()
+  };
+
+  // 2. __farm_global_this by namespace
+  let farm_namespace = &context.config.runtime.namespace;
+  let farm_global_this_code = format!(
+    r#"(globalThis || window || global || self).{FARM_NAMESPACE} = '{farm_namespace}';{FARM_GLOBAL_THIS} = {{__FARM_TARGET_ENV__: '{}'}};"#,
+    match &context.config.output.target_env {
+      TargetEnv::Browser => "browser",
+      TargetEnv::Node => "node",
+    }
+  );
+
+  // 3. find runtime resource
+  let runtime_resource_code = String::from_utf8(
+    resources_map
+      .values()
+      .find(|r| matches!(r.resource_type, ResourceType::Runtime))
+      .expect("runtime resource is not found")
+      .bytes
+      .clone(),
+  )
+  .unwrap();
+
+  format!("{node_specific_code}{farm_global_this_code}{runtime_resource_code}")
+}
+
+fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationContext>) -> Resource {
+  let bytes = runtime_code.to_string().into_bytes();
+  let name = transform_output_entry_filename(
+    context.config.output.entry_filename.clone(),
+    "__farm_runtime",
+    "__farm_runtime",
+    &bytes,
+    "js",
+  );
+  Resource {
+    name: name.to_string(),
+    bytes,
+    emitted: false,
+    resource_type: ResourceType::Js,
+    origin: ResourceOrigin::ResourcePot(name.to_string()),
   }
 }

@@ -2,15 +2,14 @@ import { JsPlugin, UserConfig } from '@farmfe/core';
 import sirv from 'sirv';
 
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import http from 'node:http';
 import { RecordViewerOptions } from './types';
 
 const path = require('path');
 
-const PLUGIN_DIR =
-  typeof __dirname !== 'undefined'
-    ? __dirname
-    : path.dirname(require.main?.filename);
+const PLUGIN_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 export const PLUGIN_DIR_CLIENT = resolve(PLUGIN_DIR, '../build/client');
 

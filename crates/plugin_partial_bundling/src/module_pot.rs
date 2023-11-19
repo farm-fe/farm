@@ -1,7 +1,6 @@
-use farmfe_core::{
-  hashbrown::HashSet,
-  module::{ModuleId, ModuleType},
-};
+use std::collections::HashSet;
+
+use farmfe_core::module::{ModuleId, ModuleType};
 
 #[derive(Debug, Clone)]
 /// A ModulePot is a collection of modules in the same ModuleBucket that satisfy following rules:

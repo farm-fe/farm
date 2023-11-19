@@ -1,10 +1,10 @@
+use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   config::{ScriptConfigPlugin, ScriptConfigPluginFilters},
   context::CompilationContext,
   error::Result,
-  hashbrown::HashMap,
   module::ModuleType,
   parking_lot::Mutex,
   plugin::PluginProcessModuleHookParam,

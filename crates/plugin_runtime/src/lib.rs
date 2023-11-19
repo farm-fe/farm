@@ -5,6 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+    ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
@@ -273,6 +274,10 @@ impl Plugin for FarmPluginRuntime {
         bundle.prepend(
           r#"(function (modules, entryModule) {
             var cache = {};
+
+            function dynamicRequire(id) {
+              return Promise.resolve(require(id));
+            }
           
             function require(id) {
               if (cache[id]) return cache[id].exports;
@@ -282,7 +287,7 @@ impl Plugin for FarmPluginRuntime {
                 exports: {}
               };
           
-              modules[id](module, module.exports, require);
+              modules[id](module, module.exports, require, dynamicRequire);
               cache[id] = module;
               return module.exports;
             }
@@ -329,23 +334,75 @@ impl Plugin for FarmPluginRuntime {
       let RenderedJsResourcePot {
         mut bundle,
         rendered_modules,
+        external_modules,
       } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
+
+      let mut external_modules_str = None;
+
+      // inject global externals
+      if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
+        let mut import_strings = vec![];
+        let mut source_to_names = vec![];
+
+        for external_module in external_modules {
+          // replace all invalid characters with `_`
+          let mut name = external_module
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '_' })
+            .collect::<String>();
+          name = format!("__farm_external_module_{}", name);
+
+          let import_str = if context.config.output.format == ModuleFormat::EsModule {
+            format!("import * as {name} from {external_module:?};")
+          } else {
+            format!("const {name} = require({external_module:?});")
+          };
+          import_strings.push(import_str);
+          source_to_names.push((name, external_module));
+        }
+
+        let mut prepend_str = import_strings.join("");
+        prepend_str.push_str(&format!(
+          "{FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
+          source_to_names
+            .into_iter()
+            .map(
+              |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
+                format!("{source:?}: {{ ...{name}, __esModule: true }}")
+              } else {
+                format!("{source:?}: {name}")
+              }
+            )
+            .collect::<Vec<_>>()
+            .join(",")
+        ));
+
+        external_modules_str = Some(prepend_str);
+      }
+
+      let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node
+        && context.config.output.format == ModuleFormat::CommonJs;
+
       let str = format!(
         r#"(function (modules) {{
             for (var key in modules) {{
-              var __farm_global_this__ = (globalThis || window || global || self)[
-                __farm_namespace__
-              ];
-              modules[key].__farm_resource_pot__ = '{}';
-                __farm_global_this__.__farm_module_system__.register(key, modules[key]);
+              modules[key].__farm_resource_pot__ = {};
+                {FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.register(key, modules[key]);
             }}
         }})("#,
-        resource_pot.name.to_string() + ".js",
-    );
-      bundle.prepend(
-        &str,
+        if is_target_node_and_cjs {
+          "__filename".to_string()
+        } else {
+          format!("'{}'", resource_pot.name.to_string() + ".js")
+        },
       );
+
+      bundle.prepend(&str);
       bundle.append(");", None);
+
+      if let Some(external_modules_str) = external_modules_str {
+        bundle.prepend(&external_modules_str);
+      }
 
       return Ok(Some(ResourcePotMetaData {
         rendered_modules,

@@ -1,13 +1,37 @@
+//__farm_runtime.js:
+ (globalThis || window || global || self).__farm_namespace__ = '__farm_default_namespace__';(globalThis || window || global || self)[__farm_namespace__] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
+            var cache = {};
+
+            function dynamicRequire(id) {
+              return Promise.resolve(require(id));
+            }
+          
+            function require(id) {
+              if (cache[id]) return cache[id].exports;
+          
+              var module = {
+                id: id,
+                exports: {}
+              };
+          
+              modules[id](module, module.exports, require, dynamicRequire);
+              cache[id] = module;
+              return module.exports;
+            }
+          
+            require(entryModule);
+          })({"d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
+    "use strict";
+    console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
+},}, "d2214aaa");
+
 //debounce_6f74.js:
  (function (modules) {
-        for (var key in modules) {
-          var __farm_global_this__ = (globalThis || window || global || self)[
-            __farm_namespace__
-          ];
-          modules[key].__farm_resource_pot__ = 'debounce_6f74.js';
-          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
-        }
-      })({"01609b59": function(module, exports, farmRequire, farmDynamicRequire) {
+            for (var key in modules) {
+              modules[key].__farm_resource_pot__ = 'debounce_6f74.js';
+                (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);
+            }
+        })({"01609b59": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -26,35 +50,12 @@
 },});
 
 //index.js:
- (globalThis || window || global || self).__farm_namespace__ = '__farm_default_namespace__';(globalThis || window || global || self)[__farm_namespace__] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
-            var cache = {};
-          
-            function require(id) {
-              if (cache[id]) return cache[id].exports;
-          
-              var module = {
-                id: id,
-                exports: {}
-              };
-          
-              modules[id](module, module.exports, require);
-              cache[id] = module;
-              return module.exports;
+ import "./__farm_runtime.js";(function (modules) {
+            for (var key in modules) {
+              modules[key].__farm_resource_pot__ = 'index_dcdc.js';
+                (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);
             }
-          
-            require(entryModule);
-          })({"d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
-},}, "d2214aaa");(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setInitialLoadedResources(['index_2faa.js','index_64d2.js']);(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({ '01609b59': [{ path: 'debounce_6f74.js', type: 'script' },{ path: 'index_2faa.js', type: 'script' },] });(function (modules) {
-        for (var key in modules) {
-          var __farm_global_this__ = (globalThis || window || global || self)[
-            __farm_namespace__
-          ];
-          modules[key].__farm_resource_pot__ = 'index_dcdc.js';
-          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
-        }
-      })({"b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
+        })({"b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -83,18 +84,15 @@
         console.log(debounce);
     });
     var _default = defineConfig({});
-},});var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");export default entry.default || entry;
+},});(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setInitialLoadedResources(['index_2faa.js','index_64d2.js']);(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({ '01609b59': [{ path: 'debounce_6f74.js', type: 'script' },{ path: 'index_2faa.js', type: 'script' },] });var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");export default entry.default || entry;
 
 //index_2faa.js:
  (function (modules) {
-        for (var key in modules) {
-          var __farm_global_this__ = (globalThis || window || global || self)[
-            __farm_namespace__
-          ];
-          modules[key].__farm_resource_pot__ = 'index_2faa.js';
-          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
-        }
-      })({"a5831d05": function(module, exports, farmRequire, farmDynamicRequire) {
+            for (var key in modules) {
+              modules[key].__farm_resource_pot__ = 'index_2faa.js';
+                (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);
+            }
+        })({"a5831d05": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -112,14 +110,11 @@
 
 //index_64d2.js:
  (function (modules) {
-        for (var key in modules) {
-          var __farm_global_this__ = (globalThis || window || global || self)[
-            __farm_namespace__
-          ];
-          modules[key].__farm_resource_pot__ = 'index_64d2.js';
-          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
-        }
-      })({"726cd210": function(module, exports, farmRequire, farmDynamicRequire) {
+            for (var key in modules) {
+              modules[key].__farm_resource_pot__ = 'index_64d2.js';
+                (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);
+            }
+        })({"726cd210": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true

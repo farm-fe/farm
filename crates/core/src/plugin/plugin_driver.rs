@@ -1,7 +1,7 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use farmfe_utils::stringify_query;
-use hashbrown::HashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{

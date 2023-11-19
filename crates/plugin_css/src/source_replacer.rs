@@ -1,5 +1,6 @@
+use std::collections::HashMap;
+
 use farmfe_core::{
-  hashbrown::HashMap,
   module::{module_graph::ModuleGraph, ModuleId},
   resource::{Resource, ResourceOrigin},
   swc_common::DUMMY_SP,

@@ -19,7 +19,6 @@ use farmfe_core::{
     PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
-  rayon,
   rayon::ThreadPool,
   relative_path::RelativePath,
 };
@@ -88,11 +87,11 @@ impl Compiler {
       load_module_graph_cache_into_context(&self.context)?;
     }
 
-    let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
+    let (err_sender, err_receiver) = Self::create_thread_channel();
 
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       Self::build_module_graph_threaded(
-        thread_pool.clone(),
+        self.thread_pool.clone(),
         PluginResolveHookParam {
           source: source.clone(),
           importer: None,
@@ -485,15 +484,10 @@ impl Compiler {
     }
   }
 
-  pub(crate) fn create_thread_pool() -> (
-    Arc<ThreadPool>,
-    Sender<CompilationError>,
-    Receiver<CompilationError>,
-  ) {
-    let thread_pool = Arc::new(rayon::ThreadPoolBuilder::new().build().unwrap());
+  pub(crate) fn create_thread_channel() -> (Sender<CompilationError>, Receiver<CompilationError>) {
     let (err_sender, err_receiver) = channel::<CompilationError>();
 
-    (thread_pool, err_sender, err_receiver)
+    (err_sender, err_receiver)
   }
 
   pub(crate) fn create_module(module_id: ModuleId, external: bool, immutable: bool) -> Module {

@@ -1,6 +1,5 @@
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-
-use hashbrown::HashMap;
 
 use crate::{
   module::{ModuleId, ModuleType},

@@ -7,13 +7,21 @@
     "email": "1163585385@qq.com"
   },
   "license": "MIT",
+  "main": "./build/cjs/index.cjs",
+  "types": "./build/cjs/index.d.ts",
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.cjs",
-  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./build/esm/index.js",
+      "types": "./build/cjs/index.d.ts",
+      "require": "./build/cjs/index.cjs",
+      "default": "./build/cjs/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "start": "farm build -w",
-    "build": "farm build",
+    "build": "farm build && cross-env FARM_FORMAT=esm farm build",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build"
   },

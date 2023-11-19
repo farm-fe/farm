@@ -12,9 +12,11 @@ export default {
       index: './src/index.ts'
     },
     output: {
-      entryFilename: '[entryName].cjs',
+      path: 'build/' + (process.env.FARM_FORMAT || 'cjs'),
+      entryFilename:
+        '[entryName].' + (process.env.FARM_FORMAT === 'esm' ? 'js' : 'cjs'),
       targetEnv: 'node',
-      format: 'cjs'
+      format: process.env.FARM_FORMAT || 'cjs'
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),

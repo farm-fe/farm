@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use deps_analyzer::DepsAnalyzer;
@@ -5,7 +6,6 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::CompilationError,
-  hashbrown::HashMap,
   module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,

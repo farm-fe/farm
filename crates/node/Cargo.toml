@@ -10,7 +10,6 @@ crate-type = ["cdylib"]
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
 napi = { version = "2.5.0", default-features = false, features = [
   "napi4",
-  "async",
   "serde-json",
 ] }
 napi-derive = "2.5.0"
@@ -41,3 +40,6 @@ napi-build = "2.0.1"
 
 [profile.release]
 lto = true
+strip = true
+opt-level = "z"
+panic = "abort"

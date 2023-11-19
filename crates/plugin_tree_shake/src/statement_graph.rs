@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet};
 
 use farmfe_core::{
-  hashbrown::{HashMap, HashSet},
   petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
 };

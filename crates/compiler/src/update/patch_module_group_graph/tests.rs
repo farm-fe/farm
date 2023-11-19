@@ -1,5 +1,6 @@
+use std::collections::HashSet;
+
 use farmfe_core::{
-  hashbrown::HashSet,
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,

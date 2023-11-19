@@ -2,9 +2,9 @@ use std::{any::Any, path::PathBuf, sync::Arc};
 
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
-use hashbrown::HashMap;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use swc_common::Globals;
 
 use crate::{
@@ -86,7 +86,7 @@ impl CompilationContext {
     }
   }
 
-  pub fn add_watch_files(&self, from: String, deps: Vec<&String>) -> Result<()> {
+  pub fn add_watch_files(&self, from: String, deps: Vec<&str>) -> Result<()> {
     // @import 'variable.scss'
     // @import './variable.scss'
     let mut watch_graph = self.watch_graph.write();
@@ -94,7 +94,7 @@ impl CompilationContext {
     watch_graph.add_node(from.clone());
 
     for dep in deps {
-      watch_graph.add_node(dep.clone());
+      watch_graph.add_node(dep.to_string());
       watch_graph.add_edge(&from, dep)?;
     }
 

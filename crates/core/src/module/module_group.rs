@@ -1,4 +1,5 @@
-use hashbrown::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
+
 use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
   visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},

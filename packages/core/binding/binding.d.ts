@@ -81,13 +81,9 @@ export interface ResourcePotRecord {
 export type JsCompiler = Compiler
 export class Compiler {
   constructor(config: object)
-  traceDependencies(): Promise<Array<string>>
-  /**
-   * async compile, return promise
-   *
-   * TODO: usage example
-   */
-  compile(): Promise<void>
+  traceDependencies(): Array<string>
+  /** async compile, return promise */
+  compile(): object
   /** sync compile */
   compileSync(): void
   /** TODO: usage example */

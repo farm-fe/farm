@@ -2,6 +2,7 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 
 import merge from 'lodash.merge';
 
@@ -15,13 +16,14 @@ import { bindingPath, Config } from '../../binding/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-import { importFresh } from '../utils/share.js';
+// import { importFresh } from '../utils/share.js';
 import {
   bold,
   clearScreen,
   green,
   isArray,
   isObject,
+  isWindows,
   Logger,
   normalizePath
 } from '../utils/index.js';
@@ -237,6 +239,13 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_PATH = normalizedDevServerConfig.hmr.path;
   }
 
+  if (
+    isArray(config.runtime.plugins) &&
+    !config.runtime.plugins.includes(ImportMetaPluginPath)
+  ) {
+    config.runtime.plugins.push(ImportMetaPluginPath);
+  }
+
   // we should not deep merge compilation.input
   if (compilation?.input && Object.keys(compilation.input).length > 0) {
     // Add ./ if userConfig.input is relative path without ./
@@ -362,6 +371,10 @@ export async function resolveConfig(
     clearScreen();
   }
 
+  if (!configPath) {
+    return mergeUserConfig(userConfig, inlineOptions);
+  }
+
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
@@ -459,7 +472,7 @@ async function readConfigFile(
             external: [
               ...module.builtinModules.map((m) => `^${m}$`),
               ...module.builtinModules.map((m) => `^node:${m}$`),
-              '^[^./].*'
+              '!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'
             ],
             partialBundling: {
               enforceResources: [
@@ -487,13 +500,18 @@ async function readConfigFile(
       await compiler.compile();
       compiler.writeResourcesToDisk();
 
-      const filePath = path.join(outputPath, fileName);
+      const filePath = isWindows
+        ? pathToFileURL(path.join(outputPath, fileName))
+        : path.join(outputPath, fileName);
 
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(filePath);
+      return (await import(filePath as string)).default;
     } else {
+      const filePath = isWindows
+        ? pathToFileURL(configFilePath)
+        : configFilePath;
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(configFilePath);
+      return (await import(filePath as string)).default;
     }
   }
 }

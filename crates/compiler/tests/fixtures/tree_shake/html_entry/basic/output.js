@@ -19,6 +19,10 @@ window.__farm_namespace__ = '__farm_default_namespace__';
 };
 </script><script data-farm-entry-script="true">(function (modules, entryModule) {
             var cache = {};
+
+            function dynamicRequire(id) {
+              return Promise.resolve(require(id));
+            }
           
             function require(id) {
               if (cache[id]) return cache[id].exports;
@@ -28,7 +32,7 @@ window.__farm_namespace__ = '__farm_default_namespace__';
                 exports: {}
               };
           
-              modules[id](module, module.exports, require);
+              modules[id](module, module.exports, require, dynamicRequire);
               cache[id] = module;
               return module.exports;
             }
@@ -45,13 +49,10 @@ window.__farm_namespace__ = '__farm_default_namespace__';
 
 //index_564c.js:
  (function (modules) {
-        for (var key in modules) {
-          var __farm_global_this__ = (globalThis || window || global || self)[
-            __farm_namespace__
-          ];
-          modules[key].__farm_resource_pot__ = 'index_564c.js';
-          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
-        }
-      })({"7c4a34c2": function(module, exports, farmRequire, farmDynamicRequire) {
+            for (var key in modules) {
+              modules[key].__farm_resource_pot__ = 'index_564c.js';
+                (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);
+            }
+        })({"7c4a34c2": function(module, exports, farmRequire, farmDynamicRequire) {
     console.log("1111");
 },});

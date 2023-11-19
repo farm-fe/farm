@@ -1,7 +1,6 @@
-use farmfe_core::{
-  hashbrown::{HashMap, HashSet},
-  swc_ecma_ast::{self, ModuleExportName, ModuleItem},
-};
+use std::collections::{HashMap, HashSet};
+
+use farmfe_core::swc_ecma_ast::{self, ModuleExportName, ModuleItem};
 use farmfe_toolkit::swc_ecma_visit::VisitWith;
 
 use super::{
@@ -115,64 +114,73 @@ pub fn analyze_imports_and_exports(
           stmt_id: *id,
         })
       }
-      swc_ecma_ast::ModuleDecl::ExportDecl(export_decl) => {
-        match &export_decl.decl {
-          swc_ecma_ast::Decl::Class(class_decl) => {
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers: vec![ExportSpecifierInfo::Named { local: class_decl.ident.to_string(), exported: None }],
-              stmt_id: *id,
-            });
-            defined_idents.insert(class_decl.ident.to_string());
-            analyze_and_insert_used_idents(&class_decl.class, Some(class_decl.ident.to_string()));
-          },
-          swc_ecma_ast::Decl::Fn(fn_decl) => {
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers: vec![ExportSpecifierInfo::Named { local: fn_decl.ident.to_string(), exported: None }],
-              stmt_id: *id,
-            });
-            defined_idents.insert(fn_decl.ident.to_string());
-            analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.to_string()));
-          },
-          swc_ecma_ast::Decl::Var(var_decl) => {
-            let mut specifiers = vec![];
+      swc_ecma_ast::ModuleDecl::ExportDecl(export_decl) => match &export_decl.decl {
+        swc_ecma_ast::Decl::Class(class_decl) => {
+          exports = Some(ExportInfo {
+            source: None,
+            specifiers: vec![ExportSpecifierInfo::Named {
+              local: class_decl.ident.to_string(),
+              exported: None,
+            }],
+            stmt_id: *id,
+          });
+          defined_idents.insert(class_decl.ident.to_string());
+          analyze_and_insert_used_idents(&class_decl.class, Some(class_decl.ident.to_string()));
+        }
+        swc_ecma_ast::Decl::Fn(fn_decl) => {
+          exports = Some(ExportInfo {
+            source: None,
+            specifiers: vec![ExportSpecifierInfo::Named {
+              local: fn_decl.ident.to_string(),
+              exported: None,
+            }],
+            stmt_id: *id,
+          });
+          defined_idents.insert(fn_decl.ident.to_string());
+          analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.to_string()));
+        }
+        swc_ecma_ast::Decl::Var(var_decl) => {
+          let mut specifiers = vec![];
 
-            for v_decl in &var_decl.decls {
+          for v_decl in &var_decl.decls {
+            let mut defined_idents_collector = DefinedIdentsCollector::new();
+            v_decl.name.visit_with(&mut defined_idents_collector);
+            let mut used_idents_collector = UsedIdentsCollector::new();
 
-              let mut defined_idents_collector = DefinedIdentsCollector::new();
-              v_decl.name.visit_with(&mut defined_idents_collector);
-              let mut used_idents_collector = UsedIdentsCollector::new();
-
-              if let Some(init) = &v_decl.init {
-                init.visit_with(&mut used_idents_collector);
-              }
-
-              let mut local_used_idents = HashSet::new();
-              local_used_idents.extend(used_idents_collector.used_idents);
-              local_used_idents.extend(defined_idents_collector.used_idents);
-              used_idents.extend(local_used_idents.clone());
-
-              for defined_ident in defined_idents_collector.defined_idents {
-                if !is_ident_used(&defined_ident.to_string()) {
-                  continue;
-                }
-
-                specifiers.push(ExportSpecifierInfo::Named { local: defined_ident.to_string(), exported: None });
-                defined_idents.insert(defined_ident.clone());
-                defined_idents_map.insert(defined_ident.clone(), local_used_idents.clone());
-              }
+            if let Some(init) = &v_decl.init {
+              init.visit_with(&mut used_idents_collector);
             }
 
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers,
-              stmt_id: *id,
-            });
-          },
-          _ => unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration"),
+            let mut local_used_idents = HashSet::new();
+            local_used_idents.extend(used_idents_collector.used_idents);
+            local_used_idents.extend(defined_idents_collector.used_idents);
+            used_idents.extend(local_used_idents.clone());
+
+            for defined_ident in defined_idents_collector.defined_idents {
+              if !is_ident_used(&defined_ident.to_string()) {
+                continue;
+              }
+
+              specifiers.push(ExportSpecifierInfo::Named {
+                local: defined_ident.to_string(),
+                exported: None,
+              });
+              defined_idents.insert(defined_ident.clone());
+              defined_idents_map.insert(defined_ident.clone(), local_used_idents.clone());
+            }
+          }
+
+          exports = Some(ExportInfo {
+            source: None,
+            specifiers,
+            stmt_id: *id,
+          });
         }
-      }
+        _ => {
+          println!("decl {:?}", export_decl);
+          unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration");
+        }
+      },
       swc_ecma_ast::ModuleDecl::ExportDefaultDecl(export_default_decl) => {
         exports = Some(ExportInfo {
           source: None,
@@ -184,13 +192,19 @@ pub fn analyze_imports_and_exports(
             if let Some(ident) = &class_expr.ident {
               defined_idents.insert(ident.to_string());
             }
-            analyze_and_insert_used_idents(&class_expr.class, class_expr.ident.as_ref().map(|i| i.to_string()));
+            analyze_and_insert_used_idents(
+              &class_expr.class,
+              class_expr.ident.as_ref().map(|i| i.to_string()),
+            );
           }
           swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
             if let Some(ident) = &fn_decl.ident {
               defined_idents.insert(ident.to_string());
             }
-            analyze_and_insert_used_idents(&fn_decl.function, fn_decl.ident.as_ref().map(|i| i.to_string()));
+            analyze_and_insert_used_idents(
+              &fn_decl.function,
+              fn_decl.ident.as_ref().map(|i| i.to_string()),
+            );
           }
           _ => unreachable!(
             "export_default_decl.decl should not be anything other than a class, function"

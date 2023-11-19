@@ -1,5 +1,6 @@
+use std::collections::HashSet;
+
 use farmfe_core::{
-  hashbrown::HashSet,
   module::{Module, ModuleId, ModuleType},
   resource::resource_pot::ResourcePotId,
 };

@@ -1,12 +1,11 @@
 use std::{
-  collections::HashMap,
+  collections::{HashMap, HashSet},
   sync::{mpsc::Sender, Arc},
 };
 
 use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
-  hashbrown::HashSet,
   module::{
     module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId,
     ModuleType,
@@ -63,7 +62,7 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
-    let (thread_pool, err_sender, err_receiver) = Self::create_thread_pool();
+    let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
 
     let watch_graph = self.context.watch_graph.read();
@@ -78,6 +77,8 @@ impl Compiler {
             .into_iter()
             .map(|item| (item.to_owned(), UpdateType::Updated))
             .collect();
+
+          println!("{:?}", r);
 
           if module_graph.has_module(&ModuleId::new(path.as_str(), "", &self.context.config.root)) {
             return [r, vec![(path, update_type)]].concat();
@@ -99,7 +100,7 @@ impl Compiler {
       .read()
       .modules()
       .into_iter()
-      .cloned()
+      .map(|p| p.to_string())
       .collect();
 
     let mut update_result = UpdateResult::default();
@@ -121,7 +122,7 @@ impl Compiler {
           };
 
           Self::update_module_graph_threaded(
-            thread_pool.clone(),
+            self.thread_pool.clone(),
             resolve_param,
             self.context.clone(),
             update_context.clone(),
@@ -174,7 +175,7 @@ impl Compiler {
 
     // TODO Add a separate hook after module graph are updated
     let mut module_ids = updated_module_ids.clone();
-    module_ids.extend(diff_result.added_modules.clone().into_iter());
+    module_ids.extend(diff_result.added_modules.clone());
     transform_css_to_script_modules(module_ids, &self.context)?;
 
     let dynamic_resources_map = self.regenerate_resources(
@@ -190,13 +191,13 @@ impl Compiler {
     // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
-      let resources: HashSet<&String> = watch_graph.modules().into_iter().collect();
+      let resources: HashSet<&str> = watch_graph.modules().into_iter().collect();
 
       let watch_diff_result = &mut update_result.extra_watch_result;
 
       for resource in resources {
         if !old_watch_extra_resources.remove(resource) {
-          watch_diff_result.add.push(resource.clone());
+          watch_diff_result.add.push(resource.to_string());
         };
       }
 
@@ -222,11 +223,11 @@ impl Compiler {
     // TODO: support sourcemap for hmr. and should generate the hmr update response body in rust side.
     update_result
       .added_module_ids
-      .extend(diff_result.added_modules.into_iter());
+      .extend(diff_result.added_modules);
     update_result.updated_module_ids.extend(updated_module_ids);
     update_result
       .removed_module_ids
-      .extend(diff_result.removed_modules.into_iter());
+      .extend(diff_result.removed_modules);
     update_result.immutable_resources = immutable_resources;
     update_result.mutable_resources = mutable_resources;
     update_result.boundaries = boundaries;
@@ -377,7 +378,7 @@ impl Compiler {
     HashSet<ModuleId>,
     Vec<ModuleId>,
     DiffResult,
-    farmfe_core::hashbrown::HashMap<ModuleId, Module>,
+    HashMap<ModuleId, Module>,
   ) {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
@@ -420,7 +421,7 @@ impl Compiler {
     previous_module_groups: HashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
     diff_result: DiffResult,
-    removed_modules: farmfe_core::hashbrown::HashMap<ModuleId, Module>,
+    removed_modules: HashMap<ModuleId, Module>,
     callback: F,
     sync: bool,
   ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>

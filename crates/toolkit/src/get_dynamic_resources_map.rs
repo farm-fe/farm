@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use farmfe_core::{
   config::Mode,
-  hashbrown::HashMap,
   module::{
     module_group::{ModuleGroupGraph, ModuleGroupId},
     ModuleId,
