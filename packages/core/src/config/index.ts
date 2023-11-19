@@ -444,7 +444,7 @@ async function readConfigFile(
             external: [
               ...module.builtinModules.map((m) => `^${m}$`),
               ...module.builtinModules.map((m) => `^node:${m}$`),
-              '^[^./].*'
+              '!^(./)|(../)|([A-Za-z]:\\)|(/).*'
             ],
             partialBundling: {
               enforceResources: [
