@@ -1,6 +1,6 @@
 # @farmfe/js-plugin-vue
 
-## 4.0.0
+## 3.2.0
 
 ### Minor Changes
 
