@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::{
   path::{Path, PathBuf},
   str::FromStr,
@@ -10,7 +11,6 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result as CompResult},
   farm_profile_function, farm_profile_scope,
-  hashbrown::{HashMap, HashSet},
   parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
   regex,

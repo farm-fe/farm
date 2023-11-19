@@ -12,6 +12,7 @@ use farmfe_core::{
   error::Result,
   farm_profile_function,
   plugin::Plugin,
+  rayon::{ThreadPool, ThreadPoolBuilder},
   stats::Stats,
 };
 
@@ -21,6 +22,7 @@ pub mod update;
 
 pub struct Compiler {
   context: Arc<CompilationContext>,
+  pub thread_pool: Arc<ThreadPool>,
 }
 
 impl Compiler {
@@ -64,8 +66,15 @@ impl Compiler {
 
     let mut context = CompilationContext::new(config, plugins)?;
     context.plugin_driver.config(&mut context.config)?;
+
     Ok(Self {
       context: Arc::new(context),
+      thread_pool: Arc::new(
+        ThreadPoolBuilder::new()
+          .num_threads(num_cpus::get())
+          .build()
+          .unwrap(),
+      ),
     })
   }
 

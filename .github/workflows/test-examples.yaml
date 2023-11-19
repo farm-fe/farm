@@ -67,3 +67,10 @@ jobs:
 
       - name: Test Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true

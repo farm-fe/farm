@@ -1,7 +1,6 @@
-use farmfe_core::{
-  hashbrown::{HashMap, HashSet},
-  module::{Module, ModuleId, ModuleSystem},
-};
+use std::collections::{HashMap, HashSet};
+
+use farmfe_core::module::{Module, ModuleId, ModuleSystem};
 
 use crate::statement_graph::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,

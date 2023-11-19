@@ -1,10 +1,10 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
   config::partial_bundling::PartialBundlingEnforceResourceConfig,
   context::CompilationContext,
   error::CompilationError,
-  hashbrown::HashSet,
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId},
   plugin::PluginHookContext,
   resource::{
@@ -208,6 +208,7 @@ fn generate_enforce_resource_pots(
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashSet;
   use std::sync::Arc;
 
   use farmfe_core::{
@@ -215,7 +216,6 @@ mod tests {
       config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
     },
     context::CompilationContext,
-    hashbrown::HashSet,
     plugin::{Plugin, PluginHookContext},
   };
   use farmfe_plugin_partial_bundling::module_group_graph_from_entries;

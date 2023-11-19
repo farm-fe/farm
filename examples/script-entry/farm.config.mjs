@@ -11,14 +11,15 @@ export default {
     output: {
       path: 'dist',
       targetEnv: 'node',
-      entryFilename: '[entryName].mjs',
+      entryFilename: '[entryName].mjs'
     },
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
     ],
-    minify: false,
+    minify: true,
     presetEnv: false,
+    persistentCache: false
     // partialBundling: {
     //   enforceResources: [
     //     {

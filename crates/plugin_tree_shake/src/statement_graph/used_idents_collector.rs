@@ -1,4 +1,6 @@
-use farmfe_core::{hashbrown::HashSet, swc_ecma_ast::Ident};
+use std::collections::HashSet;
+
+use farmfe_core::swc_ecma_ast::Ident;
 use farmfe_toolkit::swc_ecma_visit::Visit;
 
 pub struct UsedIdentsCollector {

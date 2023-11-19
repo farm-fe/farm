@@ -1,7 +1,7 @@
 #![deny(clippy::all)]
 #![allow(clippy::ptr_arg)]
 #![feature(trivial_bounds)]
-#![feature(is_some_and)]
+#![allow(clippy::redundant_closure_call)]
 // #![feature(unsize)]
 // #![feature(trait_upcasting)]
 
@@ -26,7 +26,6 @@ pub const VERSION: &str = "0.2.0";
 pub use dashmap;
 pub use enhanced_magic_string;
 pub use glob;
-pub use hashbrown;
 pub use parking_lot;
 pub use petgraph;
 #[cfg(feature = "profile")]

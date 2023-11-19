@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use farmfe_core::{
   config::{Mode, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
-  hashbrown::HashMap,
   module::ModuleId,
   resource::ResourceType,
   serde_json,

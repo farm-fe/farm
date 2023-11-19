@@ -21,16 +21,16 @@ pub fn handle_update_modules(
   let paths = plugin_update_modules_hook_params.paths;
 
   // group the paths by same resolved_path
-  let grouped_paths = paths.iter().fold(HashMap::new(), |mut acc, (path, _)| {
-    let resolved_path = path.split('?').next().unwrap().to_string();
+  let grouped_paths = paths.iter().fold(
+    HashMap::<String, Vec<String>>::new(),
+    |mut acc, (path, _)| {
+      let resolved_path = path.split('?').next().unwrap().to_string();
 
-    acc
-      .entry(resolved_path)
-      .or_insert_with(Vec::new)
-      .push(path.to_string());
+      acc.entry(resolved_path).or_default().push(path.to_string());
 
-    acc
-  });
+      acc
+    },
+  );
 
   let mut module_graph = context.module_graph.write();
   let mut module_group_graph = context.module_group_graph.write();

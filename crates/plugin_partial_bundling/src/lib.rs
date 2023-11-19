@@ -1,9 +1,9 @@
+use std::collections::{HashMap, HashSet};
 use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   config::{config_regex::ConfigRegex, Config},
   context::CompilationContext,
-  hashbrown::{HashMap, HashSet},
   module::{
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupGraph},
@@ -212,11 +212,11 @@ fn module_group_from_entry(
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashSet;
   use std::{collections::HashMap, sync::Arc};
 
   use farmfe_core::{
     context::CompilationContext,
-    hashbrown::HashSet,
     parking_lot::RwLock,
     plugin::{Plugin, PluginHookContext},
   };

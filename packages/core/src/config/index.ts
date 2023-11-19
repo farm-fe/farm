@@ -2,6 +2,7 @@ import module from 'node:module';
 import fs from 'node:fs';
 import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 
 import merge from 'lodash.merge';
 
@@ -11,13 +12,14 @@ import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-import { importFresh } from '../utils/share.js';
+// import { importFresh } from '../utils/share.js';
 import {
   bold,
   clearScreen,
   green,
   isArray,
   isObject,
+  isWindows,
   Logger,
   normalizePath
 } from '../utils/index.js';
@@ -242,7 +244,6 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (
-    config.output.targetEnv !== 'node' &&
     isArray(config.runtime.plugins) &&
     !config.runtime.plugins.includes(ImportMetaPluginPath)
   ) {
@@ -364,6 +365,10 @@ export async function resolveUserConfig(
     clearScreen();
   }
 
+  if (!configPath) {
+    return mergeUserConfig(userConfig, inlineOptions);
+  }
+
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
@@ -439,7 +444,7 @@ async function readConfigFile(
             external: [
               ...module.builtinModules.map((m) => `^${m}$`),
               ...module.builtinModules.map((m) => `^node:${m}$`),
-              '^[^./].*'
+              '!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'
             ],
             partialBundling: {
               enforceResources: [
@@ -473,13 +478,18 @@ async function readConfigFile(
 
       compiler.writeResourcesToDisk();
 
-      const filePath = path.join(outputPath, fileName);
+      const filePath = isWindows
+        ? pathToFileURL(path.join(outputPath, fileName))
+        : path.join(outputPath, fileName);
 
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(filePath);
+      return (await import(filePath as string)).default;
     } else {
+      const filePath = isWindows
+        ? pathToFileURL(configFilePath)
+        : configFilePath;
       // Change to vm.module of node or loaders as far as it is stable
-      return await importFresh(configFilePath);
+      return (await import(filePath as string)).default;
     }
   }
 }

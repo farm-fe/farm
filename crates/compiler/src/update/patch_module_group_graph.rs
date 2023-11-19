@@ -1,12 +1,9 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet, VecDeque};
 
-use farmfe_core::{
-  hashbrown::{HashMap, HashSet},
-  module::{
-    module_graph::ModuleGraph,
-    module_group::{ModuleGroup, ModuleGroupGraph},
-    Module, ModuleId,
-  },
+use farmfe_core::module::{
+  module_graph::ModuleGraph,
+  module_group::{ModuleGroup, ModuleGroupGraph},
+  Module, ModuleId,
 };
 
 use super::diff_and_patch_module_graph::DiffResult;

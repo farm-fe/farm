@@ -118,7 +118,9 @@
     "Brooooooklyn",
     "lukastaegert",
     "mapref",
-    "nanos"
+    "nanos",
+    "cpus",
+    "bufferutil"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

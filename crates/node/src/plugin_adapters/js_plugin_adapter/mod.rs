@@ -1,9 +1,9 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
-  hashbrown::HashSet,
   plugin::{
     EmptyPluginHookParam, Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,

@@ -1,10 +1,10 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
-  hashbrown::HashMap,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   plugin::{
     Plugin, PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,

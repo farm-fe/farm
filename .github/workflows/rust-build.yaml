@@ -28,7 +28,7 @@ jobs:
       # - run: chmod +x /usr/local/bin/zig
 
       - name: Build - Arm64
-        run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin
+        run: cd packages/core && npm run build:rs:publish -- --target aarch64-apple-darwin
         # run: cd packages/core && npm run build:rs -- --target aarch64-apple-darwin --zig
       - name: Upload - Arm64
         uses: actions/upload-artifact@v3
@@ -64,7 +64,7 @@ jobs:
         run: npm install -g pnpm && pnpm i --frozen-lockfile
 
       - name: Build - ${{ matrix.settings.abi }}
-        run: cd packages/core && npm run build:rs
+        run: cd packages/core && npm run build:rs:publish
       - name: Upload - ${{ matrix.settings.abi }}
         uses: actions/upload-artifact@v3
         with:

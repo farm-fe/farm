@@ -1,4 +1,6 @@
-use farmfe_core::{hashbrown::HashSet, swc_ecma_ast::ModuleItem, swc_ecma_parser::Syntax};
+use std::collections::HashSet;
+
+use farmfe_core::{swc_ecma_ast::ModuleItem, swc_ecma_parser::Syntax};
 use farmfe_toolkit::script::parse_module;
 
 use crate::statement_graph::{ExportSpecifierInfo, ImportSpecifierInfo};

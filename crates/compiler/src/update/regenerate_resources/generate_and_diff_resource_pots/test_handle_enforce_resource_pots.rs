@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -5,7 +6,6 @@ use farmfe_core::{
     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
   },
   context::CompilationContext,
-  hashbrown::HashSet,
   module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,

@@ -1,6 +1,10 @@
 //index.js:
  (globalThis || window || global || self).__farm_namespace__ = '__farm_default_namespace__';(globalThis || window || global || self)[__farm_namespace__] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
             var cache = {};
+
+            function dynamicRequire(id) {
+              return Promise.resolve(require(id));
+            }
           
             function require(id) {
               if (cache[id]) return cache[id].exports;
@@ -10,7 +14,7 @@
                 exports: {}
               };
           
-              modules[id](module, module.exports, require);
+              modules[id](module, module.exports, require, dynamicRequire);
               cache[id] = module;
               return module.exports;
             }
@@ -19,15 +23,12 @@
           })({"../../_internal/runtime/index.js.farm-runtime": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
-},}, "../../_internal/runtime/index.js.farm-runtime");(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({  });(function (modules) {
-        for (var key in modules) {
-          var __farm_global_this__ = (globalThis || window || global || self)[
-            __farm_namespace__
-          ];
-          modules[key].__farm_resource_pot__ = 'index_4924.js';
-          __farm_global_this__.__farm_module_system__.register(key, modules[key]);
-        }
-      })({"comp.tsx": function(module, exports, farmRequire, farmDynamicRequire) {
+},}, "../../_internal/runtime/index.js.farm-runtime");(function (modules) {
+            for (var key in modules) {
+              modules[key].__farm_resource_pot__ = 'index_4924.js';
+                (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);
+            }
+        })({"comp.tsx": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -54,7 +55,13 @@
     function Description() {
         console.trace("In Description, the sourcemap should be correct");
         return _dep.default.createElement(_dep.Suspense, {
-            fallback: _dep.default.createElement("div", null, "Loading..."),
+            fallback: _dep.default.createElement("div", {
+                __source: {
+                    fileName: "comp.tsx",
+                    lineNumber: 8,
+                    columnNumber: 30
+                }
+            }, "Loading..."),
             __source: {
                 fileName: "comp.tsx",
                 lineNumber: 8,
@@ -113,4 +120,4 @@
     });
     var _comp = farmRequire("comp.tsx");
     console.log((0, _comp.Description)());
-},});var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("entry.ts");
+},});(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("entry.ts");

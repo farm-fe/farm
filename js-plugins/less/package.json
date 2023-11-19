@@ -2,15 +2,15 @@
   "name": "@farmfe/js-plugin-less",
   "version": "1.2.3",
   "description": "support less compile for farm.",
-  "main": "./build/index.cjs",
-  "types": "./build/index.d.ts",
+  "main": "./build/cjs/index.cjs",
+  "types": "./build/cjs/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "default": "./build/index.cjs",
-      "import": "./build/index.cjs",
-      "types": "./build/index.d.ts",
-      "require": "./build/index.cjs"
+      "import": "./build/esm/index.js",
+      "types": "./build/cjs/index.d.ts",
+      "require": "./build/cjs/index.cjs",
+      "default": "./build/cjs/index.cjs"
     },
     "./package.json": "./package.json"
   },
@@ -27,7 +27,7 @@
     "email": "1357711537@qq.com"
   },
   "scripts": {
-    "build": "pnpm run clean && farm build",
+    "build": "pnpm run clean && farm build && cross-env FARM_FORMAT=esm farm build",
     "start": "pnpm run build -w",
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",

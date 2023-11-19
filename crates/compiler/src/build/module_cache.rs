@@ -1,11 +1,15 @@
-use std::{collections::VecDeque, path::PathBuf, sync::Arc, time::SystemTime};
+use std::{
+  collections::{HashMap, HashSet, VecDeque},
+  path::PathBuf,
+  sync::Arc,
+  time::SystemTime,
+};
 
 use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency},
   context::CompilationContext,
   dashmap::DashMap,
   farm_profile_function,
-  hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, ModuleId},
   rayon::prelude::*,
   swc_common::{Mark, Span, SyntaxContext, GLOBALS},

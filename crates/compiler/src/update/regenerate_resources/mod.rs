@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -5,7 +6,6 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
-  hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
 };
@@ -118,6 +118,7 @@ pub fn render_and_generate_update_resource(
         let RenderedJsResourcePot {
           mut bundle,
           rendered_modules,
+          ..
         } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
         bundle.prepend("(");
         bundle.append(")", None);

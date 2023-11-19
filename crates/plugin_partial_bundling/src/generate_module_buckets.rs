@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use farmfe_core::{
   config::partial_bundling::PartialBundlingGroupConfigResourceType,
-  hashbrown::HashMap,
   module::{
     module_graph::ModuleGraph,
     module_group::{ModuleGroupGraph, ModuleGroupId},
@@ -123,8 +124,8 @@ pub fn group_module_buckets_by_module_group(
 
 #[cfg(test)]
 mod tests {
-  use farmfe_core::hashbrown::HashSet;
   use farmfe_testing_helpers::construct_test_module_graph_complex;
+  use std::collections::HashSet;
 
   use crate::module_group_graph_from_entries;
 

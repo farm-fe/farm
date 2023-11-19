@@ -1,11 +1,11 @@
 //! Merge module pots to resource pots in the same ModuleGroup.
 //! See https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md#merge-module-pots-into-resource-pot
 
+use std::collections::{HashMap, HashSet};
 use std::{cmp::Ordering, usize};
 
 use farmfe_core::{
   config::partial_bundling::PartialBundlingConfig,
-  hashbrown::{HashMap, HashSet},
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId, ModuleId, ModuleType},
   resource::resource_pot::{ResourcePot, ResourcePotType},
 };

@@ -1,5 +1,4 @@
-import { ModuleSystem } from './../../runtime/src/module-system';
-import type { FarmRuntimePlugin } from '@farmfe/runtime/src/plugin';
+import type { FarmRuntimePlugin, ModuleSystem } from '@farmfe/runtime';
 
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-import-meta',
@@ -14,9 +13,14 @@ export default <FarmRuntimePlugin>{
       prod: process.env.NODE_ENV === 'production'
     };
     const publicPath = this._moduleSystem.publicPaths[0];
-    const url = `${location.host}${publicPath === '/' ? '' : publicPath}/${
-      module.resource_pot
-    }`;
-    module.meta.url = url;
+
+    if (this._moduleSystem.targetEnv === 'node') {
+      module.meta.url = module.resource_pot;
+    } else {
+      const url = `${location.host}${publicPath === '/' ? '' : publicPath}/${
+        module.resource_pot
+      }`;
+      module.meta.url = url;
+    }
   }
 };

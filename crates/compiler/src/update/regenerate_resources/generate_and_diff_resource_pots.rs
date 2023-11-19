@@ -1,12 +1,11 @@
-use std::sync::Arc;
-
 use farmfe_core::{
   context::CompilationContext,
-  hashbrown::{HashMap, HashSet},
   module::{module_group::ModuleGroupId, Module, ModuleId},
   plugin::PluginHookContext,
   resource::resource_pot::{ResourcePot, ResourcePotId},
 };
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use crate::{
   generate::partial_bundling::{

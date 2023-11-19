@@ -107,5 +107,7 @@ fn test_with_compiler() {
 
     let expected = "body {\n  color: red;\n}";
     assert_eq!(css_code, expected);
+    let watch_graph = compiler.context().watch_graph.read();
+    assert!(watch_graph.modules().len() > 0);
   });
 }

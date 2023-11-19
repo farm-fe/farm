@@ -2,8 +2,6 @@ import { Module } from './module';
 import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
 import { Resource, ResourceLoader, targetEnv } from './resource-loader';
 
-declare const __farmNodeRequire: (moduleId: string) => any;
-
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore swc helpers does not have type definition
 import { _interop_require_default } from '@swc/helpers/_/_interop_require_default';
@@ -27,6 +25,8 @@ const INTERNAL_MODULE_MAP: Record<string, any> = {
   }
 };
 
+declare const nodeRequire: (id: string) => any;
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ModuleInitializationFunction = (
   module: Module,
@@ -45,6 +45,8 @@ export class ModuleSystem {
   private modules: Record<string, ModuleInitialization>;
   // module cache after module initialized
   private cache: Record<string, Module>;
+  // external modules injected during compile
+  private externalModules: Record<string, any>;
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
   // dynamic module entry and resources map
@@ -53,6 +55,7 @@ export class ModuleSystem {
   resourceLoader: ResourceLoader;
   // runtime plugin container
   pluginContainer: FarmRuntimePluginContainer;
+  targetEnv: 'browser' | 'node';
 
   constructor() {
     this.modules = {};
@@ -61,6 +64,8 @@ export class ModuleSystem {
     this.dynamicModuleResourcesMap = {};
     this.resourceLoader = new ResourceLoader(this.publicPaths);
     this.pluginContainer = new FarmRuntimePluginContainer([]);
+    this.targetEnv = targetEnv;
+    this.externalModules = {};
   }
 
   // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
@@ -86,11 +91,16 @@ export class ModuleSystem {
     const initializer = this.modules[moduleId];
 
     if (!initializer) {
-      // if running on node, using native require to load node built-in modules
-      if (targetEnv === 'node') {
-        return __farmNodeRequire(moduleId);
+      if (this.externalModules[moduleId]) {
+        return this.externalModules[moduleId];
+      }
+      // try node require if target Env is node
+      if (this.targetEnv === 'node' && nodeRequire) {
+        const externalModule = nodeRequire(moduleId);
+        return externalModule;
       }
       // return a empty module if the module is not registered
+      console.log(`[farm] Module "${moduleId}" is not registered`);
       return {};
       // throw new Error(`Module "${moduleId}" is not registered`);
     }
@@ -236,6 +246,12 @@ export class ModuleSystem {
   // This method can also be called during runtime to add new plugins
   setPlugins(plugins: FarmRuntimePlugin[]): void {
     this.pluginContainer.plugins = plugins;
+  }
+
+  // The external modules are injected during compile time.
+  // This method can also be called during runtime to add new plugins
+  setExternalModules(externalModules: Record<string, any>): void {
+    Object.assign(this.externalModules, externalModules || {});
   }
 
   // bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time

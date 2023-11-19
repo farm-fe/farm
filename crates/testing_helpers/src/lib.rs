@@ -1,10 +1,10 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use farmfe_core::{
   glob::glob,
-  hashbrown::HashMap,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
+    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
     Module,
   },
