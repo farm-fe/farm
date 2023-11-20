@@ -1,4 +1,4 @@
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -9,6 +9,20 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 let binPath = null;
 
 const require = createRequire(import.meta.url);
+
+function isMusl() {
+  // For Node 10
+  if (!process.report || typeof process.report.getReport !== 'function') {
+    try {
+      return readFileSync('/usr/bin/ldd', 'utf8').includes('musl');
+    } catch (e) {
+      return true;
+    }
+  } else {
+    const { glibcVersionRuntime } = process.report.getReport().header;
+    return !glibcVersionRuntime;
+  }
+}
 
 switch (platform) {
   case 'win32':
@@ -52,6 +66,26 @@ switch (platform) {
           binPath = join(currentDir, './npm/linux-x64-gnu/index.farm');
         } else {
           binPath = require.resolve('@farmfe/plugin-sass-linux-x64-gnu');
+        }
+        break;
+
+      case 'arm64':
+        if (isMusl()) {
+          if (
+            existsSync(join(currentDir, './npm/linux-arm64-musl/index.farm'))
+          ) {
+            binPath = join(currentDir, './npm/linux-arm64-musl/index.farm');
+          } else {
+            binPath = require.resolve('@farmfe/plugin-sass-linux-arm64-musl');
+          }
+        } else {
+          if (
+            existsSync(join(currentDir, './npm/linux-arm64-gnu/index.farm'))
+          ) {
+            binPath = join(currentDir, './npm/linux-arm64-gnu/index.farm');
+          } else {
+            binPath = require.resolve('@farmfe/plugin-sass-linux-arm64-gnu');
+          }
         }
         break;
       default:
