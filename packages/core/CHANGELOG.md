@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.14.2
+
+### Patch Changes
+
+- cf0dc914: Fix cjs export not found
+
 ## 0.14.1
 
 ### Patch Changes
