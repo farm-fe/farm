@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.9
+
+### Patch Changes
+
+- ac5b2683: update cli remove chalk add create plugin template
+
 ## 0.5.8
 
 ### Patch Changes

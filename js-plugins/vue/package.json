@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-vue",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "support vue sfc for farm.",
   "main": "./build/index.cjs",
   "module": "./dist/farm-vue-plugin.js",
@@ -51,7 +51,7 @@
     "@jridgewell/trace-mapping": "^0.3.17"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.13.22",
+    "@farmfe/core": "^0.14.1",
     "less": "*",
     "sass": "*",
     "stylus": "*"

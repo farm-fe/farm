@@ -1,5 +1,32 @@
 # @farmfe/core
 
+## 0.14.1
+
+### Patch Changes
+
+- 6e88a1e3: bump version
+- fc91c7df: Fix runtime resource panic
+- Updated dependencies [6e88a1e3]
+  - @farmfe/runtime-plugin-import-meta@0.0.3
+  - @farmfe/runtime@0.8.1
+
+## 0.14.0
+
+### Minor Changes
+
+- 72bfe2af: Support persistent cache and incremental building
+- 0a20271a: Refactor render pot renders and optimize sourcemap generation
+
+### Patch Changes
+
+- c12156ff: fix #741
+- Updated dependencies [72bfe2af]
+- Updated dependencies [c12156ff]
+- Updated dependencies [0a20271a]
+  - @farmfe/runtime-plugin-hmr@3.3.0
+  - @farmfe/runtime-plugin-import-meta@0.0.2
+  - @farmfe/runtime@0.8.0
+
 ## 0.13.22
 
 ### Patch Changes

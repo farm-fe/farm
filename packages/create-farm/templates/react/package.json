@@ -8,9 +8,9 @@
     "core-js": "^3.30.1"
   },
   "devDependencies": {
-    "@farmfe/cli": "^0.5.8",
-    "@farmfe/core": "^0.13.21",
-    "@farmfe/plugin-react": "^0.3.4",
+    "@farmfe/cli": "^0.5.9",
+    "@farmfe/core": "^0.14.1",
+    "@farmfe/plugin-react": "^0.4.0",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"

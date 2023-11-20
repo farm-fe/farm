@@ -1,5 +1,21 @@
 # @farmfe/runtime
 
+## 0.8.1
+
+### Patch Changes
+
+- 6e88a1e3: update import.meta
+
+## 0.8.0
+
+### Minor Changes
+
+- 0a20271a: Refactor render pot renders and optimize sourcemap generation
+
+### Patch Changes
+
+- c12156ff: Fix import.meta.url runtime issue
+
 ## 0.7.4
 
 ### Patch Changes

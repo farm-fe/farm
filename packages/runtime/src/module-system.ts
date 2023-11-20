@@ -10,6 +10,8 @@ import { _interop_require_wildcard } from '@swc/helpers/_/_interop_require_wildc
 // @ts-ignore swc helpers does not have type definition
 import { _export_star } from '@swc/helpers/_/_export_star';
 
+const __global_this__ = globalThis || window;
+
 const INTERNAL_MODULE_MAP: Record<string, any> = {
   '@swc/helpers/_/_interop_require_default': {
     default: _interop_require_default,
@@ -201,11 +203,18 @@ export class ModuleSystem {
   }
 
   getModuleUrl(moduleId: string): string {
-    const publicPath = this.publicPaths[0];
-    const url = `${location.host}${publicPath === '/' ? '' : publicPath}/${
-      this.modules[moduleId].__farm_resource_pot__
-    }`;
-    return url;
+    const publicPath = this.publicPaths[0] ?? '';
+
+    if (__global_this__.location) {
+      const url = `${__global_this__.location.protocol}//${
+        __global_this__.location.host
+      }${publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath}/${
+        this.modules[moduleId].__farm_resource_pot__
+      }`;
+      return url;
+    } else {
+      return this.modules[moduleId].__farm_resource_pot__;
+    }
   }
 
   getCache(moduleId: string): Module | undefined {

@@ -57,6 +57,7 @@ Farm 可以完美解决这些问题，而且速度非常快。 Farm 的目标是
 > 从 0.13 起，Vite 插件可以直接在 Farm 中使用.
 
 - ⚡ **超级快**: 使用 Rust 编写, 可以在毫秒级别内启动一个 React 或 Vue 项目。 在大多数情况下, 可以在 10ms 内执行 HMR 的更新。
+- ⚡ **增量构建**: 支持持久缓存，以模块粒度进行缓存复用，任何一个模块如果没有改变，始终只会编译一次！
 - 🧰 **完全可插拔**: Farm 由插件驱动, 兼容 Vite 插件，同时支持 Farm 编译插件（Rust 和 JavaScript 插件，以及 Swc 插件），Farm Runtime 插件，Farm Dev Server 插件。
 - ⚙️ **丰富的编译能力支持**: 开箱即用, Farm 内置了 JS/TS/JSX/TSX、CSS、Css Modules、Sass、Less、Postcss，HTML 和静态资源的编译，为 React，Vue，Solid 等框架提供了官方插件。
 - ⏱️ **懒编译**: 仅仅在请求时才编译动态导入的资源，极大提速大型项目的编译。通过 `dynamic import` 即可启用，被 `dynamic import` 的模块及其依赖仅在使用时才会编译。
@@ -183,9 +184,9 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景，
 
 - 加入 [Discord](https://discord.gg/mDErq9aFnF)
 
-- 微信群
+<!-- - 微信群
 
-<img src="https://github.com/farm-fe/farm/assets/66500121/695a05f2-14a3-4608-bc47-07a29006004a" width="30%" />
+<img src="https://github.com/farm-fe/farm/assets/66500121/695a05f2-14a3-4608-bc47-07a29006004a" width="30%" /> -->
 
 ## 感谢贡献者们做出的努力
 
@@ -201,7 +202,7 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景，
 
 - [NAPI-RS](https://github.com/napi-rs/napi-rs) 项目由 [@Brooooooklyn](https://github.com/Brooooooklyn)创建, 为 Farm 的 node-binding 实现提供了支持。
 
-- [Rollup](https://github.com/rollup/rollup) 项目由 [@lukastaegert](https://github.com/lukastaegert)创建, 启发了Farm的插件系统的实现。
+- [Rollup](https://github.com/rollup/rollup) 项目由 [@lukastaegert](https://github.com/lukastaegert)创建, 启发了 Farm 的插件系统的实现。
 
 - [Vite](https://github.com/vitejs/vite) 项目由 [Evan You](https://github.com/yyx990803)创建, 针对 Vite 插件生态的兼容性设计提供了启发。
 

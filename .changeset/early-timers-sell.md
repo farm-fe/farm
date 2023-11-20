@@ -2,4 +2,4 @@
 '@farmfe/core': patch
 ---
 
-fix #741
+Fix cjs export not found

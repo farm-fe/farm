@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-sass",
-  "version": "0.2.9",
+  "version": "0.3.1",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -28,7 +28,9 @@
     "name": "farm-plugin-sass",
     "triples": {
       "additional": [
-        "aarch64-apple-darwin"
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl"
       ]
     }
   },
