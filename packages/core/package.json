@@ -60,7 +60,8 @@
     "binding/index.d.ts",
     "binding/index.js",
     "binding/resolve-binding.cjs",
-    "dist"
+    "dist",
+    "cjs"
   ],
   "scripts": {
     "artifacts": "napi artifacts",
@@ -72,7 +73,7 @@
     "prepublishOnly": "napi prepublish -t npm",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "version": "napi version",
-    "start": "tsc -w -p tsconfig.build.json",
+    "start": "tsc -w -p tsconfig.build.json && node scripts/build-cjs.mjs",
     "type-check": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
