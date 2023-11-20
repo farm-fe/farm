@@ -169,6 +169,7 @@ pub fn set_module_graph_cache(
         dependencies,
         package_name: package_info.name.unwrap_or("default".to_string()),
         package_version: package_info.version.unwrap_or("0.0.0".to_string()),
+        entry_name: module_graph.entries.get(&module.id).cloned(),
       };
 
       context
@@ -258,7 +259,11 @@ pub fn load_module_graph_cache_into_context(
           .get_cache(&cached_module_id);
 
         module_graph.add_module(cached_module.module);
-        edges.push((cached_module_id, cached_module.dependencies));
+        edges.push((cached_module_id.clone(), cached_module.dependencies));
+
+        if let Some(entry_name) = cached_module.entry_name {
+          module_graph.entries.insert(cached_module_id, entry_name);
+        }
       }
     });
 

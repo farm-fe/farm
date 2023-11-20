@@ -674,6 +674,9 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:^
+        version: link:../../js-plugins/dts
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -1194,7 +1197,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.8.1
+        specifier: workspace:^0.8.2
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.3.0

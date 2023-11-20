@@ -23,7 +23,7 @@
           })({"d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
-},}, "d2214aaa");(function (modules) {
+},}, "d2214aaa");import * as __farm_external_module_module from "module";(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setExternalModules({ "module": { ...__farm_external_module_module, __esModule: true } });(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_7f1c.js';
                 (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);

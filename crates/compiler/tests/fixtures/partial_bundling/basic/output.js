@@ -50,7 +50,7 @@
 },});
 
 //index.js:
- import "./__farm_runtime.js";(function (modules) {
+ import "./__farm_runtime.js";import "./index_2faa.js";import "./index_64d2.js";import * as __farm_external_module_module from "module";(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setExternalModules({ "module": { ...__farm_external_module_module, __esModule: true } });(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_dcdc.js';
                 (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);

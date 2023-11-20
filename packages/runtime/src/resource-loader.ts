@@ -15,6 +15,8 @@ export const __farm_global_this__: any = (globalThis ||
   self)[__farm_namespace__];
 
 export const targetEnv = __farm_global_this__.__FARM_TARGET_ENV__ || 'node';
+export const isBrowser =
+  targetEnv === 'browser' && (globalThis || window).document;
 
 /**
  * Loading resources according to their type and target env.
@@ -30,7 +32,8 @@ export class ResourceLoader {
   }
 
   load(resource: Resource, index = 0): Promise<void> {
-    if (targetEnv === 'node') {
+    // it's not running in browser
+    if (!isBrowser) {
       if (resource.type === 'script') {
         return this._loadScript(`./${resource.path}`);
       } else if (resource.type === 'link') {
@@ -83,7 +86,7 @@ export class ResourceLoader {
   }
 
   private _loadScript(path: string): Promise<void> {
-    if (targetEnv === 'node') {
+    if (!isBrowser) {
       return import(path);
     } else {
       return new Promise((resolve, reject) => {
@@ -102,7 +105,7 @@ export class ResourceLoader {
   }
 
   private _loadLink(path: string): Promise<void> {
-    if (targetEnv === 'node') {
+    if (!isBrowser) {
       // return Promise.reject(new Error('Not support loading css in SSR'));
       // ignore css loading in SSR
       return Promise.resolve();
