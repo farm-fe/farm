@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 0.14.1
+
+### Patch Changes
+
+- 6e88a1e3: bump version
+- fc91c7df: Fix runtime resource panic
+- Updated dependencies [6e88a1e3]
+  - @farmfe/runtime-plugin-import-meta@0.0.3
+  - @farmfe/runtime@0.8.1
+
 ## 0.14.0
 
 ### Minor Changes
