@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.3.1
+
+### Patch Changes
+
+- update dependencies of create-farm
+
 ## 1.3.0
 
 ### Minor Changes
