@@ -203,7 +203,7 @@ export class ModuleSystem {
   }
 
   getModuleUrl(moduleId: string): string {
-    const publicPath = this.publicPaths[0];
+    const publicPath = this.publicPaths[0] ?? '';
 
     if (__global_this__.location) {
       const url = `${__global_this__.location.protocol}//${

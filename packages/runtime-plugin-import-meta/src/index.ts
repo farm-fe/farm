@@ -15,7 +15,7 @@ export default <FarmRuntimePlugin>{
       dev: process.env.NODE_ENV === 'development',
       prod: process.env.NODE_ENV === 'production'
     };
-    const publicPath = this._moduleSystem.publicPaths[0];
+    const publicPath = this._moduleSystem.publicPaths[0] ?? '';
 
     if (__global_this__.location) {
       const url = `${__global_this__.location.protocol}//${
