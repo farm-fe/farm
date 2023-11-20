@@ -204,10 +204,13 @@ export class ModuleSystem {
 
   getModuleUrl(moduleId: string): string {
     const publicPath = this.publicPaths[0];
+
     if (__global_this__.location) {
-      const url = `${__global_this__.location.host}${
-        publicPath === '/' ? '' : publicPath
-      }/${this.modules[moduleId].__farm_resource_pot__}`;
+      const url = `${__global_this__.location.protocol}//${
+        __global_this__.location.host
+      }${publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath}/${
+        this.modules[moduleId].__farm_resource_pot__
+      }`;
       return url;
     } else {
       return this.modules[moduleId].__farm_resource_pot__;
