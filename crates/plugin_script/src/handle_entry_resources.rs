@@ -263,8 +263,8 @@ pub fn handle_entry_resources(
   let module_group_graph = context.module_group_graph.read();
 
   // create a runtime resource
-  let runtime_code = create_runtime_code(resources_map, context);
-  let runtime_resource = create_farm_runtime_resource(&runtime_code, context);
+  let mut runtime_code = None;
+  let mut runtime_resource = None;
   let mut should_inject_runtime = false;
 
   for (entry, _) in &module_graph.entries {
@@ -346,9 +346,23 @@ pub fn handle_entry_resources(
           (entry_js_resource_code, "".to_string())
         };
 
+      let runtime_code = if let Some(runtime_code) = runtime_code.as_ref() {
+        runtime_code
+      } else {
+        runtime_code = Some(create_runtime_code(resources_map, context));
+        runtime_code.as_ref().unwrap()
+      };
+      let runtime_resource = if let Some(runtime_resource) = runtime_resource.as_ref() {
+        runtime_resource
+      } else {
+        runtime_resource = Some(create_farm_runtime_resource(runtime_code, context));
+        runtime_resource.as_ref().unwrap()
+      };
+
       let entry_js_resource = resources_map
         .get_mut(&entry_js_resource_name)
         .expect("entry resource is not found");
+
       // TODO support sourcemap
       entry_js_resource.bytes = vec![
         if !dep_resources.is_empty() {
@@ -370,7 +384,9 @@ pub fn handle_entry_resources(
   }
 
   if should_inject_runtime {
-    resources_map.insert(runtime_resource.name.clone(), runtime_resource);
+    if let Some(runtime_resource) = runtime_resource {
+      resources_map.insert(runtime_resource.name.clone(), runtime_resource);
+    }
   }
 }
 
@@ -406,7 +422,7 @@ fn create_runtime_code(
     resources_map
       .values()
       .find(|r| matches!(r.resource_type, ResourceType::Runtime))
-      .expect("runtime resource is not found")
+      .expect("runtime resource not found")
       .bytes
       .clone(),
   )

@@ -18,8 +18,7 @@ export default {
       ...builtinModules.map((m) => `^${m}$`)
     ],
     minify: true,
-    presetEnv: false,
-    persistentCache: false
+    presetEnv: false
     // partialBundling: {
     //   enforceResources: [
     //     {

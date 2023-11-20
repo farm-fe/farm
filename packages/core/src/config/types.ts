@@ -45,8 +45,12 @@ export interface UserHmrConfig {
   };
 }
 
+type InternalConfig = Config['config'] extends undefined
+  ? object
+  : Required<Config>['config'];
+
 type AvailableUserConfigKeys = Exclude<
-  keyof Config['config'],
+  keyof InternalConfig,
   'configFilePath' | 'env' | 'envPrefix' | 'coreLibPath' | 'root'
 >;
 
