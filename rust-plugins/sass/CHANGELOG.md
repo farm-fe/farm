@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.3.1
+
+### Patch Changes
+
+- 13c326ae: Fix arm64 arch resolving
+
 ## 0.3.0
 
 ### Minor Changes

@@ -51,7 +51,7 @@
     "@jridgewell/trace-mapping": "^0.3.17"
   },
   "peerDependencies": {
-    "@farmfe/core": "^0.14.0",
+    "@farmfe/core": "^0.14.1",
     "less": "*",
     "sass": "*",
     "stylus": "*"

@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.4.1
+
+### Patch Changes
+
+- 13c326ae: Fix arm64 arch resolving
+
 ## 0.4.0
 
 ### Minor Changes
