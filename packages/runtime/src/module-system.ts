@@ -1,6 +1,11 @@
 import { Module } from './module';
 import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
-import { Resource, ResourceLoader, targetEnv } from './resource-loader';
+import {
+  Resource,
+  ResourceLoader,
+  isBrowser,
+  targetEnv
+} from './resource-loader';
 
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore swc helpers does not have type definition
@@ -97,7 +102,7 @@ export class ModuleSystem {
         return this.externalModules[moduleId];
       }
       // try node require if target Env is node
-      if (this.targetEnv === 'node' && nodeRequire) {
+      if ((this.targetEnv === 'node' || !isBrowser) && nodeRequire) {
         const externalModule = nodeRequire(moduleId);
         return externalModule;
       }

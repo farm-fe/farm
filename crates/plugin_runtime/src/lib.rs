@@ -34,6 +34,7 @@ use render_resource_pot::*;
 
 const RUNTIME_SUFFIX: &str = ".farm-runtime";
 
+mod handle_entry_resources;
 mod insert_runtime_plugins;
 pub mod render_resource_pot;
 
@@ -340,7 +341,7 @@ impl Plugin for FarmPluginRuntime {
       let mut external_modules_str = None;
 
       // inject global externals
-      if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
+      if !external_modules.is_empty() {
         let mut import_strings = vec![];
         let mut source_to_names = vec![];
 
@@ -466,6 +467,15 @@ impl Plugin for FarmPluginRuntime {
     } else {
       Ok(None)
     }
+  }
+
+  fn finalize_resources(
+    &self,
+    resources_map: &mut HashMap<String, Resource>,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    handle_entry_resources::handle_entry_resources(resources_map, context);
+    Ok(Some(()))
   }
 }
 

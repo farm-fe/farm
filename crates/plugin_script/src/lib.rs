@@ -1,7 +1,7 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -42,11 +42,8 @@ use import_meta_visitor::ImportMetaVisitor;
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
-mod handle_entry_resources;
 mod import_meta_visitor;
 mod swc_plugins;
-
-const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
@@ -332,15 +329,6 @@ impl Plugin for FarmPluginScript {
     } else {
       Ok(None)
     }
-  }
-
-  fn finalize_resources(
-    &self,
-    resources_map: &mut HashMap<String, Resource>,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
-    handle_entry_resources::handle_entry_resources(resources_map, context);
-    Ok(Some(()))
   }
 }
 

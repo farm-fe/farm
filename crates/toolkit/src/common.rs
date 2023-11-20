@@ -32,14 +32,22 @@ pub fn append_source_map_comment(
     _ => unreachable!("only js and css need source map"),
   };
 
-  let mut source_map_url = map.name.clone();
+  // get last path segment
+  let mut source_map_url = PathBuf::from(&map.name)
+    .components()
+    .last()
+    .unwrap()
+    .as_os_str()
+    .to_str()
+    .unwrap()
+    .to_string();
 
   if config.is_inline() {
     source_map_url = format!("data:application/json;base64,{}", base64_encode(&map.bytes));
   }
 
   let source_map_comment = format!(
-    "{}/{}{}",
+    "{}{}{}",
     source_map_str,
     source_map_url,
     if matches!(resource.resource_type, ResourceType::Css) {

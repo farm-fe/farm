@@ -1,6 +1,10 @@
 // test that the script is working
-import assert from 'assert';
-import config, { lodashMerge } from './dist/esm/index.mjs';
+const assert = require('assert');
+const config = require('./dist/cjs/index.cjs');
+
+const { lodashMerge } = config;
+
+delete config.lodashMerge;
 
 assert(config, {
   compilation: {
@@ -74,5 +78,5 @@ assert(config, {
     ]
   }
 });
-// console.log(config, lodashMerge({}, { a: 1 }));
+
 assert(lodashMerge({}, { a: 1 }), { a: 1 });
