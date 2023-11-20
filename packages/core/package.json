@@ -60,7 +60,8 @@
     "binding/index.d.ts",
     "binding/index.js",
     "binding/resolve-binding.cjs",
-    "dist"
+    "dist",
+    "cjs"
   ],
   "scripts": {
     "artifacts": "napi artifacts",
