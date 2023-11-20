@@ -1,10 +1,8 @@
-import type { UserConfig } from '@farmfe/core';
-import farmJsPluginVue from '@farmfe/js-plugin-vue';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
+import { defineConfig } from '@farmfe/core';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
-  plugins: [farmJsPluginVue()],
+  vitePlugins: [
+    vue(),
+  ]
 });
