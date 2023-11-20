@@ -39,6 +39,7 @@
     "build": "pnpm --filter @farmfe/cli --filter @farmfe/js-plugin-dts build",
     "release": "node scripts/release.mjs",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
+    "clear-cache": "node scripts/clear-cache.mjs",
     "bump": "node scripts/bump.mjs",
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler"
   },
