@@ -177,10 +177,14 @@ impl Plugin for FarmPluginSass {
         .iter()
         .map(|url| url.path())
         .filter(|p| p != &param.resolved_path)
+        .map(|p| ModuleId::new(p, "", &context.config.root))
         .collect();
 
       context
-        .add_watch_files(param.resolved_path.to_string(), paths)
+        .add_watch_files(
+          ModuleId::new(&param.resolved_path, "", &context.config.root),
+          paths,
+        )
         .expect("cannot add file to watch graph");
 
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {

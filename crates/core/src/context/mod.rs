@@ -86,7 +86,7 @@ impl CompilationContext {
     }
   }
 
-  pub fn add_watch_files(&self, from: String, deps: Vec<&str>) -> Result<()> {
+  pub fn add_watch_files(&self, from: ModuleId, deps: Vec<ModuleId>) -> Result<()> {
     // @import 'variable.scss'
     // @import './variable.scss'
     let mut watch_graph = self.watch_graph.write();
@@ -94,8 +94,8 @@ impl CompilationContext {
     watch_graph.add_node(from.clone());
 
     for dep in deps {
-      watch_graph.add_node(dep.to_string());
-      watch_graph.add_edge(&from, dep)?;
+      watch_graph.add_node(dep.clone());
+      watch_graph.add_edge(&from, &dep)?;
     }
 
     Ok(())
@@ -247,18 +247,24 @@ mod tests {
 
   mod add_watch_files {
 
+    use crate::module::ModuleId;
+
     use super::super::CompilationContext;
 
     #[test]
     fn file_as_root_and_dep() {
       let context = CompilationContext::default();
-      let vc = "./v_c".to_string();
-      let vd = "./v_d".to_string();
-      let a = "./a".to_string();
+      let vc: ModuleId = "./v_c".into();
+      let vd: ModuleId = "./v_d".into();
+      let a: ModuleId = "./a".into();
 
-      context.add_watch_files(a.clone(), vec![&vc, &vd]).unwrap();
+      context
+        .add_watch_files(a.clone(), vec![vc.clone(), vd.clone()])
+        .unwrap();
 
-      context.add_watch_files(vc.clone(), vec![&vd]).unwrap();
+      context
+        .add_watch_files(vc.clone(), vec![vd.clone()])
+        .unwrap();
 
       let watch_graph = context.watch_graph.read();
 

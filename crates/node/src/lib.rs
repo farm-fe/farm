@@ -341,8 +341,16 @@ impl JsCompiler {
   #[napi]
   pub fn add_watch_files(&self, root: String, paths: Vec<String>) {
     let context = self.compiler.context().clone();
+    let root = ModuleId::new(&root, "", &context.config.root);
+
     context
-      .add_watch_files(root, paths.iter().map(|i| i.as_str()).collect())
+      .add_watch_files(
+        root,
+        paths
+          .iter()
+          .map(|i| ModuleId::new(i, "", &context.config.root))
+          .collect(),
+      )
       .expect("failed add extra files to watch list");
   }
 
@@ -353,7 +361,7 @@ impl JsCompiler {
     let watch_graph = context.watch_graph.read();
     let module_id = ModuleId::new(&resolved_path, "", &context.config.root);
 
-    module_graph.has_module(&module_id) || watch_graph.has_module(&resolved_path)
+    module_graph.has_module(&module_id) || watch_graph.has_module(&module_id)
   }
 
   #[napi]
@@ -394,7 +402,7 @@ impl JsCompiler {
     return watch_graph
       .modules()
       .into_iter()
-      .map(|id| id.to_string())
+      .map(|id| id.resolved_path(&context.config.root))
       .collect();
   }
 
