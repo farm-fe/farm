@@ -103,7 +103,7 @@ impl Compiler {
       .read()
       .modules()
       .into_iter()
-      .map(|p| p.clone())
+      .cloned()
       .collect();
 
     let mut update_result = UpdateResult::default();

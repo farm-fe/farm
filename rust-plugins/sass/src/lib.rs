@@ -182,7 +182,7 @@ impl Plugin for FarmPluginSass {
 
       context
         .add_watch_files(
-          ModuleId::new(&param.resolved_path, "", &context.config.root),
+          ModuleId::new(param.resolved_path, "", &context.config.root),
           paths,
         )
         .expect("cannot add file to watch graph");
