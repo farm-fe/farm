@@ -1,6 +1,6 @@
 #![feature(path_file_prefix)]
 
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
@@ -25,7 +25,7 @@ use farmfe_toolkit::{
 lazy_static! {
   static ref DEFAULT_STATIC_ASSETS: Vec<&'static str> = vec![
     "png", "jpg", "jpeg", "gif", "svg", "webp", "mp4", "webm", "wav", "mp3", "wma", "m4a", "aac",
-    "ico", "ttf", "woff", "woff2",
+    "ico", "ttf", "woff", "woff2", "txt"
   ];
 }
 
@@ -49,6 +49,14 @@ impl FarmPluginStaticAssets {
         .include
         .iter()
         .any(|a| a.eq_ignore_ascii_case(ext))
+  }
+
+  fn is_asset_query(&self, query: &Vec<(String, String)>) -> bool {
+    let query_map = query.iter().cloned().collect::<HashMap<_, _>>();
+
+    query_map.contains_key("raw")
+      || query_map.contains_key("inline")
+      || query_map.contains_key("url")
   }
 }
 
@@ -109,7 +117,7 @@ impl Plugin for FarmPluginStaticAssets {
         module_type: ModuleType::Js,
       }));
     } else if let Some(ext) = extension {
-      if self.is_asset(ext, context) {
+      if self.is_asset(ext, context) || self.is_asset_query(&param.query) {
         return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
           content: String::new(), // just return empty string, we don't need to load the file content, we will handle it in the transform hook
           module_type: ModuleType::Asset,
@@ -125,7 +133,7 @@ impl Plugin for FarmPluginStaticAssets {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if matches!(param.module_type, ModuleType::Asset) {
+    if matches!(param.module_type, ModuleType::Asset) || self.is_asset_query(&param.query) {
       // let resolve_kind = ResolveKind::from(
       //   param
       //     .meta
@@ -153,7 +161,7 @@ impl Plugin for FarmPluginStaticAssets {
         }));
       } else if param.query.iter().any(|(k, _)| k == "raw") {
         let file_utf8 = read_file_utf8(param.resolved_path)?;
-        let content = format!("export default `{}`", file_utf8);
+        let content = format!("export default {:?}", file_utf8);
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,
