@@ -46,7 +46,7 @@ export async function start(
   const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
 
   const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, config);
+  const devServer = new DevServer(compiler, logger, config, normalizedConfig);
 
   if (normalizedConfig.config.mode === 'development') {
     normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>

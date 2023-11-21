@@ -29,7 +29,6 @@ export default defineConfig({
       },
     },
     treeShaking: true,
-    persistentCache: false
   },
   server: {
     cors: true,
