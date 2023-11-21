@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.3.4
+
+### Patch Changes
+
+- bump version for create-farm
+
 ## 1.3.3
 
 ### Patch Changes
