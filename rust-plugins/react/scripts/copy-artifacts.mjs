@@ -1,9 +1,18 @@
 import { copyFile } from 'fs/promises';
 import path from 'path';
 
-const [abiFlag, abi] = process.argv.slice(-2);
+let [abiFlag, abi] = process.argv.slice(-2);
 if (abiFlag !== '--abi') {
-  throw new Error('Missing --abi');
+  // try local abi
+  const supportedAbis = ['darwin-arm64', 'darwin-x64', 'linux-arm64-gnu', 'linux-arm64-musl', 'linux-x64-gnu', 'win32-x64-msvc'];
+  const localAbi = process.platform + '-' + process.arch;
+  console.log('localAbi', localAbi);
+  const found = supportedAbis.find(abi => abi.includes(localAbi));
+  if (found) {
+    abi = found;
+  } else {
+    throw new Error('Missing --abi');
+  }
 }
 
 const copyArtifacts = async () => {
