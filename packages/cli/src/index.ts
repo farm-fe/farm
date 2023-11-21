@@ -6,7 +6,7 @@ import { DefaultLogger, isWindows } from '@farmfe/core';
 import { getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
-import type { start, build, preview, watch } from '@farmfe/core';
+import type { build, preview, start, watch } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
@@ -57,17 +57,19 @@ cli
       const defaultOptions = {
         compilation: {
           root,
-          mode: options.mode,
           lazyCompilation: options.lazy
         },
         server: resolveOptions,
         clearScreen: options.clearScreen ?? true,
-        configPath
+        configPath,
+        mode: options.mode
       };
 
       const { start } = await resolveCore();
 
       try {
+        console.log(defaultOptions);
+
         await start(defaultOptions);
       } catch (e) {
         logger.error(`Failed to start server:\n ${e.stack}`);
