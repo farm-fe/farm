@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.14.3
+
+### Patch Changes
+
+- 18563f43: fix #761 static assets for internally supported html/js/ts/css modules
+- 18563f43: Fix #760
+
 ## 0.14.2
 
 ### Patch Changes
