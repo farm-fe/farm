@@ -118,6 +118,7 @@ export interface FarmCLIOptions
   logger?: Logger;
   config?: string;
   configPath?: string;
+  mode?: string;
   clearScreen?: boolean;
 }
 
