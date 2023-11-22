@@ -31,6 +31,7 @@ import {
 import type {
   FarmCLIOptions,
   NormalizedServerConfig,
+  ResolvedUserConfig,
   UserConfig,
   UserHmrConfig,
   UserServerConfig
@@ -435,6 +436,7 @@ export async function resolveConfig(
   );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
+    inlineOptions,
     resolveConfig,
     logger,
     true,

@@ -75,9 +75,9 @@ export async function build(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('production');
-  
+
   const { normalizedConfig } = await resolveConfig(
-    options,
+    inlineConfig,
     'serve',
     'production',
     logger
@@ -97,11 +97,10 @@ export async function build(
   }
 }
 
-
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   const port = inlineConfig.port ?? 1911;
-  const userConfig: UserConfig = await resolveConfig(
+  const { userConfig, normalizedConfig } = await resolveConfig(
     inlineConfig,
     'serve',
     'production',
@@ -109,7 +108,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   );
 
   const normalizedDevServerConfig = normalizeDevServerOptions(
-    config.server,
+    userConfig.server,
     'production'
   );
 
