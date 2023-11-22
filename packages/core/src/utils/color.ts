@@ -96,3 +96,32 @@ export const bgBlue = enabled ? formatter('\x1b[44m', '\x1b[49m') : String;
 export const bgMagenta = enabled ? formatter('\x1b[45m', '\x1b[49m') : String;
 export const bgCyan = enabled ? formatter('\x1b[46m', '\x1b[49m') : String;
 export const bgWhite = enabled ? formatter('\x1b[47m', '\x1b[49m') : String;
+
+export function gradientString(text: string, colors: any) {
+  const steps = text.length;
+  const gradient = colors.map(
+    (color: any) => `\x1b[38;2;${color[0]};${color[1]};${color[2]}m`
+  );
+
+  let output = '';
+
+  for (let i = 0; i < steps; i++) {
+    const colorIndex = Math.floor((i / steps) * (colors.length - 1));
+    output += `${gradient[colorIndex]}${text[i]}`;
+  }
+
+  // 重置颜色
+  output += '\x1b[0m';
+
+  return output;
+}
+
+export const BrandText = gradientString('FULL EXTREME!', [
+  [128, 0, 128],
+  [60, 0, 92],
+  [0, 0, 128],
+  [0, 0, 139],
+  [0, 0, 205],
+  [0, 0, 255],
+  [0, 0, 139]
+]);
