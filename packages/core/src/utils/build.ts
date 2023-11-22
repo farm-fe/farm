@@ -2,12 +2,14 @@ import { performance } from 'node:perf_hooks';
 import { DefaultLogger } from './logger.js';
 
 import type { Config } from '../../binding/index.js';
-import { bold, green } from './color.js';
+import { BrandText, bold, green } from './color.js';
 
 export async function compilerHandler(
   callback: () => Promise<void>,
   config: Config
 ) {
+  const usePersistentCache = config.config.persistentCache;
+  const persistentCacheFlag = usePersistentCache ? bold(BrandText) : '';
   const logger = new DefaultLogger();
   const startTime = performance.now();
   try {
@@ -20,6 +22,8 @@ export async function compilerHandler(
   logger.info(
     `⚡️ Build completed in ${bold(
       green(`${elapsedTime}ms`)
-    )}! Resources emitted to ${bold(green(config.config.output.path))}.`
+    )} ${persistentCacheFlag}! Resources emitted to ${bold(
+      green(config.config.output.path)
+    )}.`
   );
 }

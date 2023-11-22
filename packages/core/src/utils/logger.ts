@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import {
+  BrandText,
   blue,
   bold,
   brandColor,
@@ -159,11 +160,8 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
 }
 
 export function bootstrap(times: number, config: Config) {
-  const cacheText = '⚡ EXTREME PERFORMANCE';
   const usePersistentCache = config.config.persistentCache;
-  const persistentCacheFlag = usePersistentCache
-    ? bold(brandColor(cacheText))
-    : '';
+  const persistentCacheFlag = usePersistentCache ? bold(BrandText) : '';
   const version = JSON.parse(
     readFileSync(
       join(fileURLToPath(import.meta.url), '../../../package.json'),
