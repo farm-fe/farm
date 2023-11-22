@@ -266,3 +266,38 @@ fn update_with_dependencies_change_css_modules() {
     }
   );
 }
+
+#[test]
+fn update_css_and_css_raw() {
+  fixture!("tests/fixtures/update/raw/index.ts", |file, crate_path| {
+    let cwd = file.parent().unwrap().to_path_buf();
+    let compiler = create_update_compiler(
+      HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+      cwd.clone(),
+      crate_path,
+      false,
+    );
+
+    compiler.compile().unwrap();
+
+    let update_file = file
+      .parent()
+      .unwrap()
+      .join("index.module.css")
+      .to_string_lossy()
+      .to_string();
+
+    let result = compiler
+      .update(vec![(update_file, UpdateType::Updated)], || {}, true)
+      .unwrap();
+
+    assert_eq!(result.added_module_ids.len(), 0);
+    assert_eq!(
+      result.updated_module_ids,
+      vec!["index.module.css".into(), "index.module.css?raw".into()]
+    );
+    assert_eq!(result.removed_module_ids.len(), 0);
+
+    asset_update_result_code(cwd, &result, Some("update0"));
+  });
+}

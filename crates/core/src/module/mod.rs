@@ -410,6 +410,10 @@ impl ModuleId {
     }
   }
 
+  pub fn from_resolved_path_with_query(resolved_path_with_query: &str, root: &str) -> Self {
+    relative(root, resolved_path_with_query).into()
+  }
+
   /// return self.relative_path and self.query_string in dev,
   /// return hash(self.relative_path) in prod
   pub fn id(&self, mode: Mode) -> String {
@@ -431,7 +435,8 @@ impl ModuleId {
   /// transform the id back to resolved path
   pub fn resolved_path(&self, root: &str) -> String {
     // if self.relative_path is absolute path, return it directly
-    if Path::new(self.relative_path()).is_absolute() {
+    if Path::new(self.relative_path()).is_absolute() || self.relative_path().starts_with("virtual:")
+    {
       return self.relative_path().to_string();
     }
 

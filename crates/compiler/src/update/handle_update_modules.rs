@@ -19,6 +19,26 @@ pub fn handle_update_modules(
     .update_modules(&mut plugin_update_modules_hook_params, context)?;
 
   let paths = plugin_update_modules_hook_params.paths;
+  let mut module_graph = context.module_graph.write();
+
+  let mut additional_paths = vec![];
+
+  for (path, _) in &paths {
+    if !path.contains('?') {
+      let path_id = ModuleId::new(path, "", &context.config.root);
+      let ids = module_graph.module_ids_by_file(&path_id);
+
+      for id in ids {
+        let resolved_path = id.resolved_path_with_query(&context.config.root);
+
+        if !paths.iter().any(|(p, _)| *p == resolved_path) {
+          additional_paths.push((resolved_path, UpdateType::Updated));
+        }
+      }
+    }
+  }
+
+  let paths = vec![paths, additional_paths].concat();
 
   // group the paths by same resolved_path
   let grouped_paths = paths.iter().fold(
@@ -32,7 +52,6 @@ pub fn handle_update_modules(
     },
   );
 
-  let mut module_graph = context.module_graph.write();
   let mut module_group_graph = context.module_group_graph.write();
 
   // if there are multiple paths for the same resolved_path and one of them is a ancestor of another, we should remove child module in module graph
@@ -74,9 +93,15 @@ pub fn handle_update_modules(
     .collect::<Vec<_>>();
 
   Ok(
-    paths
+    filtered_paths
       .into_iter()
-      .filter(|(path, _)| filtered_paths.contains(path))
+      .map(|p| {
+        if let Some((_, ty)) = paths.iter().find(|(pp, _)| *pp == p) {
+          (p, ty.clone())
+        } else {
+          (p, UpdateType::Updated)
+        }
+      })
       .collect(),
   )
 }

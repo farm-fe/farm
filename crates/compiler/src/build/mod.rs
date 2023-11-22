@@ -60,6 +60,7 @@ pub(crate) mod resolve;
 pub(crate) mod transform;
 pub mod validate_config;
 
+#[derive(Debug)]
 pub(crate) struct ResolveModuleIdResult {
   pub module_id: ModuleId,
   pub resolve_result: PluginResolveHookResult,
