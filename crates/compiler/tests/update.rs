@@ -69,7 +69,10 @@ fn asset_update_result_code(
       let result_lines = code.trim().lines().collect::<Vec<&str>>();
 
       for (expected, result) in expected_lines.iter().zip(result_lines.iter()) {
-        assert_eq!(expected.trim(), result.trim()); // ignore whitespace
+        assert_eq!(
+          expected.trim().replace("\r\n", "\n"),
+          result.trim().replace("\r\n", "\n")
+        ); // ignore whitespace
       }
 
       assert_eq!(expected_lines.len(), result_lines.len());
@@ -265,4 +268,39 @@ fn update_with_dependencies_change_css_modules() {
       asset_update_result_code(cwd, &result, Some("update2"));
     }
   );
+}
+
+#[test]
+fn update_css_and_css_raw() {
+  fixture!("tests/fixtures/update/raw/index.ts", |file, crate_path| {
+    let cwd = file.parent().unwrap().to_path_buf();
+    let compiler = create_update_compiler(
+      HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+      cwd.clone(),
+      crate_path,
+      false,
+    );
+
+    compiler.compile().unwrap();
+
+    let update_file = file
+      .parent()
+      .unwrap()
+      .join("index.module.css")
+      .to_string_lossy()
+      .to_string();
+
+    let result = compiler
+      .update(vec![(update_file, UpdateType::Updated)], || {}, true)
+      .unwrap();
+
+    assert_eq!(result.added_module_ids.len(), 0);
+    assert_eq!(
+      result.updated_module_ids,
+      vec!["index.module.css".into(), "index.module.css?raw".into()]
+    );
+    assert_eq!(result.removed_module_ids.len(), 0);
+
+    asset_update_result_code(cwd, &result, Some("update0"));
+  });
 }

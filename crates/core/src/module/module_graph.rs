@@ -76,6 +76,8 @@ pub struct ModuleGraph {
   g: StableDiGraph<Module, ModuleGraphEdge>,
   /// to index module in the graph using [ModuleId]
   id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
+  /// file path to module ids, e.g src/index.scss -> [src/index.scss, src/index.scss?raw]
+  file_module_ids_map: HashMap<ModuleId, Vec<ModuleId>>,
   /// entry modules of this module graph.
   /// (Entry Module Id, Entry Name)
   pub entries: HashMap<ModuleId, String>,
@@ -86,6 +88,7 @@ impl ModuleGraph {
     Self {
       g: StableDiGraph::new(),
       id_index_map: HashMap::new(),
+      file_module_ids_map: HashMap::new(),
       entries: HashMap::new(),
     }
   }
@@ -163,9 +166,27 @@ impl ModuleGraph {
     self.g[*index] = module;
   }
 
+  pub fn module_ids_by_file(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+    if let Some(ids) = self.file_module_ids_map.get(module_id) {
+      return ids.clone();
+    }
+
+    vec![]
+  }
+
   pub fn add_module(&mut self, module: Module) {
     let id = module.id.clone();
     let index = self.g.add_node(module);
+
+    if !id.query_string().is_empty() {
+      let rel_path = id.relative_path();
+      self
+        .file_module_ids_map
+        .entry(rel_path.into())
+        .or_default()
+        .push(id.clone())
+    }
+
     self.id_index_map.insert(id, index);
   }
 
@@ -174,6 +195,15 @@ impl ModuleGraph {
       .id_index_map
       .remove(module_id)
       .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+
+    if !module_id.query_string().is_empty() {
+      if let Some(ids) = self
+        .file_module_ids_map
+        .get_mut(&module_id.relative_path().into())
+      {
+        ids.retain(|id| id != module_id);
+      }
+    }
     self.g.remove_node(index).unwrap()
   }
 
@@ -515,11 +545,7 @@ impl ModuleGraph {
   }
 
   pub fn take_module(&mut self, module_id: &ModuleId) -> Module {
-    let i = self
-      .id_index_map
-      .remove(module_id)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
-    self.g.remove_node(i).unwrap()
+    self.remove_module(module_id)
   }
 
   pub fn replace_module(&mut self, module: Module) {

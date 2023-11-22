@@ -300,15 +300,14 @@ unsafe extern "C" fn vite_get_modules_by_file(
     .expect("Argument 0 should be a string when calling get_modules_by_file");
 
   let module_graph = ctx.module_graph.read();
+  let file_id = ModuleId::from_resolved_path_with_query(&file, &ctx.config.root);
+
   let modules = module_graph
-    .modules()
+    .module_ids_by_file(&file_id)
     .into_iter()
-    .filter(|m| m.id.resolved_path(&ctx.config.root) == file)
-    .map(|m| {
-      let id = RelativePath::new(&m.id.to_string())
-        .to_logical_path(&ctx.config.root)
-        .to_string_lossy()
-        .to_string();
+    .map(|m_id| {
+      let m = module_graph.module(&m_id).unwrap();
+      let id = m_id.resolved_path_with_query(&ctx.config.root);
       HashMap::from([
         ("url".to_string(), id.clone()),
         ("id".to_string(), id),
