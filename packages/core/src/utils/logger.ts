@@ -172,7 +172,7 @@ export function bootstrap(times: number, config: Config) {
   console.log(
     `${bold(green(` ✓`))}  ${bold('Ready in')} ${bold(
       green(`${times}ms`)
-    )} ${persistentCacheFlag}`,
+    )} ⚡ ${persistentCacheFlag}`,
     '\n'
   );
 }

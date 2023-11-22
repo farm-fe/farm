@@ -116,7 +116,7 @@ export function gradientString(text: string, colors: any) {
   return output;
 }
 
-export const BrandText = gradientString('⚡ FULL EXTREME!', [
+export const BrandText = gradientString('FULL EXTREME!', [
   [128, 0, 128],
   [60, 0, 92],
   [0, 0, 128],

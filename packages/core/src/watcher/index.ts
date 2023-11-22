@@ -84,7 +84,7 @@ export class FileWatcher implements ImplFileWatcher {
           this._logger
         );
         const normalizedConfig = await normalizeUserCompilationConfig(
-          {},
+          null,
           config,
           this._logger
         );
