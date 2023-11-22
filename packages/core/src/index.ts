@@ -43,7 +43,11 @@ export async function start(
     'serve',
     logger
   );
-  const normalizedConfig = await normalizeUserCompilationConfig(config, logger);
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    inlineConfig,
+    config,
+    logger
+  );
 
   const compiler = new Compiler(normalizedConfig);
   const devServer = new DevServer(compiler, logger, config, normalizedConfig);
@@ -72,16 +76,17 @@ export async function start(
 }
 
 export async function build(
-  options: FarmCLIOptions & UserConfig
+  inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('production');
   const userConfig: UserConfig = await resolveUserConfig(
-    options,
+    inlineConfig,
     'build',
     logger
   );
   const normalizedConfig = await normalizeUserCompilationConfig(
+    inlineConfig,
     userConfig,
     logger,
     'production'
@@ -93,7 +98,7 @@ export async function build(
   // copy resources under publicDir to output.path
   const absPublicDirPath = normalizePublicDir(
     normalizedConfig.config.root,
-    options.publicDir
+    inlineConfig.publicDir
   );
 
   if (existsSync(absPublicDirPath)) {
@@ -101,16 +106,17 @@ export async function build(
   }
 }
 
-export async function preview(options: FarmCLIOptions): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  const port = options.port ?? 1911;
+export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
+  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const port = inlineConfig.port ?? 1911;
   const userConfig: UserConfig = await resolveUserConfig(
-    options,
+    inlineConfig,
     'serve',
     logger
   );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
+    inlineConfig,
     userConfig,
     logger,
     'production'
@@ -189,16 +195,17 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
 }
 
 export async function watch(
-  options: FarmCLIOptions & UserConfig
+  inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
   const userConfig: UserConfig = await resolveUserConfig(
-    options,
+    inlineConfig,
     'build',
     logger
   );
   const normalizedConfig = await normalizeUserCompilationConfig(
+    inlineConfig,
     userConfig,
     logger,
     'development'
