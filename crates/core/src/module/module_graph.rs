@@ -183,7 +183,7 @@ impl ModuleGraph {
       self
         .file_module_ids_map
         .entry(rel_path.into())
-        .or_insert(vec![])
+        .or_default()
         .push(id.clone())
     }
 

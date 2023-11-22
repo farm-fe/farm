@@ -69,7 +69,10 @@ fn asset_update_result_code(
       let result_lines = code.trim().lines().collect::<Vec<&str>>();
 
       for (expected, result) in expected_lines.iter().zip(result_lines.iter()) {
-        assert_eq!(expected.trim(), result.trim()); // ignore whitespace
+        assert_eq!(
+          expected.trim().replace("\r\n", "\n"),
+          result.trim().replace("\r\n", "\n")
+        ); // ignore whitespace
       }
 
       assert_eq!(expected_lines.len(), result_lines.len());

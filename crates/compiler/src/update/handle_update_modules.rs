@@ -38,7 +38,7 @@ pub fn handle_update_modules(
     }
   }
 
-  let paths = vec![paths, additional_paths].concat();
+  let paths = [paths, additional_paths].concat();
 
   // group the paths by same resolved_path
   let grouped_paths = paths.iter().fold(
