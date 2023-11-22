@@ -225,7 +225,10 @@ unsafe extern "C" fn add_watch_file(env: napi_env, info: napi_callback_info) -> 
     .from_js_value(JsUnknown::from_napi_value(env, argv[1]).unwrap())
     .expect("Argument 1 should be a string when calling addWatchFile");
 
-  ctx.add_watch_files(from, vec![&to]).unwrap();
+  let from = ModuleId::new(&from, "", &ctx.config.root);
+  let to = ModuleId::new(&to, "", &ctx.config.root);
+
+  ctx.add_watch_files(from, vec![to]).unwrap();
   Env::from_raw(env).get_undefined().unwrap().raw()
 }
 

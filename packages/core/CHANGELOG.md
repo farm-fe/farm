@@ -1,5 +1,21 @@
 # @farmfe/core
 
+## 0.14.3
+
+### Patch Changes
+
+- 18563f43: fix #761 static assets for internally supported html/js/ts/css modules
+- 18563f43: Fix #760
+
+## 0.14.2
+
+### Patch Changes
+
+- cf0dc914: Fix cjs export not found
+- c1a4fcc8: fix #747
+- Updated dependencies [c1a4fcc8]
+  - @farmfe/runtime@0.8.2
+
 ## 0.14.1
 
 ### Patch Changes

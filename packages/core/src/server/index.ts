@@ -33,6 +33,7 @@ import {
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
+import { Config } from '../../binding/index.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -80,11 +81,13 @@ export class DevServer implements ImplDevServer {
   publicDir?: string;
   publicPath?: string;
   userConfig?: UserConfig;
+  compilationConfig?: Config;
 
   constructor(
     private _compiler: Compiler,
     public logger: Logger,
-    options?: UserConfig
+    options?: UserConfig,
+    compilationConfig?: Config
   ) {
     this.publicDir = normalizePublicDir(
       _compiler.config.config.root,
@@ -97,7 +100,7 @@ export class DevServer implements ImplDevServer {
         logger,
         false
       ) || '/';
-
+    this.compilationConfig = compilationConfig;
     this.userConfig = options;
     this.createFarmServer(options.server);
   }
@@ -122,7 +125,7 @@ export class DevServer implements ImplDevServer {
     // compile the project and start the dev server
     await this.compile();
 
-    bootstrap(Date.now() - start);
+    bootstrap(Date.now() - start, this.compilationConfig);
 
     await this.startServer(this.config);
 

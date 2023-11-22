@@ -46,8 +46,6 @@ enum ResolveModuleResult {
   ExistingBeforeUpdate(ModuleId),
   /// This module is added during the update, and we met it again when resolving dependencies
   ExistingWhenUpdate(ModuleId),
-  /// Resolve Cache hit
-  Cached(Box<ResolvedModuleInfo>),
   /// This module is a full new resolved module, and we need to do the full building process
   Success(Box<ResolvedModuleInfo>),
 }
@@ -71,14 +69,19 @@ impl Compiler {
     let paths: Vec<(String, UpdateType)> = paths
       .into_iter()
       .flat_map(|(path, update_type)| {
-        if watch_graph.has_module(&path) {
-          let r: Vec<(String, UpdateType)> = watch_graph
-            .relation_roots(&path)
-            .into_iter()
-            .map(|item| (item.to_owned(), UpdateType::Updated))
-            .collect();
+        let id = ModuleId::new(&path, "", &self.context.config.root);
 
-          println!("{:?}", r);
+        if watch_graph.has_module(&id) {
+          let r: Vec<(String, UpdateType)> = watch_graph
+            .relation_roots(&id)
+            .into_iter()
+            .map(|item| {
+              (
+                item.resolved_path(&self.context.config.root),
+                UpdateType::Updated,
+              )
+            })
+            .collect();
 
           if module_graph.has_module(&ModuleId::new(path.as_str(), "", &self.context.config.root)) {
             return [r, vec![(path, update_type)]].concat();
@@ -94,13 +97,13 @@ impl Compiler {
     drop(watch_graph);
     drop(module_graph);
 
-    let mut old_watch_extra_resources: HashSet<String> = self
+    let mut old_watch_extra_resources: HashSet<ModuleId> = self
       .context
       .watch_graph
       .read()
       .modules()
       .into_iter()
-      .map(|p| p.to_string())
+      .cloned()
       .collect();
 
     let mut update_result = UpdateResult::default();
@@ -191,17 +194,23 @@ impl Compiler {
     // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
-      let resources: HashSet<&str> = watch_graph.modules().into_iter().collect();
+      let module_ids: HashSet<&ModuleId> = watch_graph.modules().into_iter().collect();
 
       let watch_diff_result = &mut update_result.extra_watch_result;
 
-      for resource in resources {
-        if !old_watch_extra_resources.remove(resource) {
-          watch_diff_result.add.push(resource.to_string());
+      for id in module_ids {
+        if !old_watch_extra_resources.remove(id) {
+          watch_diff_result
+            .add
+            .push(id.resolved_path(&self.context.config.root));
         };
       }
 
-      watch_diff_result.remove.extend(old_watch_extra_resources);
+      watch_diff_result.remove.extend(
+        old_watch_extra_resources
+          .into_iter()
+          .map(|r| r.resolved_path(&self.context.config.root)),
+      );
     }
 
     // If the module type is not script, we should skip render and generate update resource.
@@ -259,12 +268,6 @@ impl Compiler {
           }
         };
 
-      let mut graph_watch = context.watch_graph.write();
-
-      graph_watch.delete_module(&resolve_param.source);
-
-      drop(graph_watch);
-
       match resolve_module_result {
         ResolveModuleResult::ExistingBeforeUpdate(module_id) => {
           // insert a placeholder module to the update module graph
@@ -275,11 +278,14 @@ impl Compiler {
         ResolveModuleResult::ExistingWhenUpdate(module_id) => {
           Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
         }
-        ResolveModuleResult::Cached(_) => unimplemented!("Cached is not supported yet"),
         ResolveModuleResult::Success(box ResolvedModuleInfo {
           mut module,
           resolve_module_id_result,
         }) => {
+          let mut graph_watch = context.watch_graph.write();
+          graph_watch.delete_module(&module.id);
+          drop(graph_watch);
+
           if resolve_module_id_result.resolve_result.external {
             // insert external module to the graph
             let module_id: ModuleId = resolve_param.source.as_str().into();

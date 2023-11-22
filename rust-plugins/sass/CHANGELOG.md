@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.3.2
+
+### Patch Changes
+
+- 18563f43: Fix #760
+
 ## 0.3.1
 
 ### Patch Changes

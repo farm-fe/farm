@@ -45,7 +45,7 @@ export async function start(
   );
 
   const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, config);
+  const devServer = new DevServer(compiler, logger, config, normalizedConfig);
 
   if (normalizedConfig.config.mode === 'development') {
     normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
@@ -71,10 +71,11 @@ export async function start(
 }
 
 export async function build(
-  options: FarmCLIOptions & UserConfig
+  inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('production');
+  
   const { normalizedConfig } = await resolveConfig(
     options,
     'serve',
@@ -88,7 +89,7 @@ export async function build(
   // copy resources under publicDir to output.path
   const absPublicDirPath = normalizePublicDir(
     normalizedConfig.config.root,
-    options.publicDir
+    inlineConfig.publicDir
   );
 
   if (existsSync(absPublicDirPath)) {
@@ -96,11 +97,12 @@ export async function build(
   }
 }
 
-export async function preview(options: FarmCLIOptions): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
-  const port = options.port ?? 1911;
-  const { config, normalizedConfig } = await resolveConfig(
-    options,
+
+export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
+  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const port = inlineConfig.port ?? 1911;
+  const userConfig: UserConfig = await resolveConfig(
+    inlineConfig,
     'serve',
     'production',
     logger
@@ -180,16 +182,18 @@ export async function preview(options: FarmCLIOptions): Promise<void> {
 }
 
 export async function watch(
-  options: FarmCLIOptions & UserConfig
+  inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = options.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
+
   const { normalizedConfig } = await resolveConfig(
-    options,
+    inlineConfig,
     'serve',
     'development',
     logger
   );
+
   setProcessEnv(normalizedConfig.config.mode);
 
   createBundleHandler(normalizedConfig, true);

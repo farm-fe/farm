@@ -209,6 +209,7 @@ const FarmConfigSchema = z
     plugins: z.array(z.any()).optional(),
     vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
+    mode: z.string().optional(),
     server: z
       .object({
         headers: z.record(z.string()).optional(),

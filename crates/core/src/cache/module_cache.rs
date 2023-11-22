@@ -29,12 +29,22 @@ pub struct CachedModuleDependency {
 }
 
 #[cache_item]
+#[derive(Debug, Clone)]
+pub struct CachedWatchDependency {
+  pub dependency: ModuleId,
+  pub timestamp: u128,
+  pub hash: String,
+}
+
+#[cache_item]
 #[derive(Clone)]
 pub struct CachedModule {
   pub module: Module,
   pub dependencies: Vec<CachedModuleDependency>,
   pub package_name: String,
   pub package_version: String,
+  pub entry_name: Option<String>,
+  pub watch_dependencies: Vec<CachedWatchDependency>,
 }
 
 impl CachedModule {

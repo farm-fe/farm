@@ -6,7 +6,7 @@ import { DefaultLogger, isWindows } from '@farmfe/core';
 import { getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
-import type { start, build, preview, watch } from '@farmfe/core';
+import type { build, preview, start, watch } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
@@ -57,12 +57,12 @@ cli
       const defaultOptions = {
         compilation: {
           root,
-          mode: options.mode,
           lazyCompilation: options.lazy
         },
         server: resolveOptions,
         clearScreen: options.clearScreen ?? true,
-        configPath
+        configPath,
+        mode: options.mode
       };
 
       const { start } = await resolveCore();
@@ -92,7 +92,6 @@ cli
     const configPath = getConfigPath(options.config);
     const defaultOptions = {
       compilation: {
-        mode: options.mode,
         watch: options.watch,
         output: options.outDir
           ? {
@@ -108,6 +107,7 @@ cli
         minify: options.minify,
         treeShaking: options.treeShaking
       },
+      mode: options.mode,
       configPath
     };
     const { build } = await resolveCore();
@@ -157,9 +157,7 @@ cli
     const configPath = getConfigPath(options.config);
     const resolveOptions = resolveCommandOptions(options);
     const defaultOptions = {
-      compilation: {
-        mode: options.mode
-      },
+      mode: options.mode,
       server: resolveOptions,
       configPath
     };
@@ -203,7 +201,7 @@ cli.version(version);
 
 cli.parse();
 
-export async function resolveCore(cwd: string = process.cwd()): Promise<{
+export async function resolveCore(): Promise<{
   start: typeof start;
   build: typeof build;
   watch: typeof watch;

@@ -16,7 +16,7 @@ use farmfe_toolkit::get_dynamic_resources_map::{
   get_dynamic_resources_code, get_dynamic_resources_map,
 };
 
-use crate::FARM_NODE_MODULE;
+const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
 pub enum ExportInfoOfEntryModule {
   Default,
@@ -157,7 +157,6 @@ fn get_export_info_code(
   let mut visited = HashSet::new();
   let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, &mut visited);
 
-  // TODO cover it with test
   if !export_info.is_empty() {
     export_info
       .iter()
@@ -169,7 +168,7 @@ fn get_export_info_code(
         ExportInfoOfEntryModule::Named { name, import_as } => {
           if let Some(import_as) = import_as {
             match context.config.output.format {
-              ModuleFormat::CommonJs => format!("exports.{} = entry.{};", import_as, name),
+              ModuleFormat::CommonJs => format!("module.exports.{} = entry.{};", import_as, name),
               ModuleFormat::EsModule => format!(
                 "var {name}=entry.{name};export {{ {} as {} }};",
                 name, import_as
@@ -177,7 +176,7 @@ fn get_export_info_code(
             }
           } else {
             match context.config.output.format {
-              ModuleFormat::CommonJs => format!("exports.{} = entry.{};", name, name),
+              ModuleFormat::CommonJs => format!("module.exports.{} = entry.{};", name, name),
               ModuleFormat::EsModule => format!("var {name}=entry.{name};export {{ {} }};", name),
             }
           }
@@ -289,18 +288,14 @@ pub fn handle_entry_resources(
       }
 
       // 1. import 'dep' or require('dep') to entry resource if target env is node
-      let dep_resources_require_code = if context.config.output.target_env == TargetEnv::Node {
-        dep_resources
-          .iter()
-          .map(|rn| match context.config.output.format {
-            ModuleFormat::EsModule => format!("import \"./{rn}\";"),
-            ModuleFormat::CommonJs => format!("require(\"./{rn}\");"),
-          })
-          .collect::<Vec<_>>()
-          .join("")
-      } else {
-        "".to_string()
-      };
+      let dep_resources_require_code = dep_resources
+        .iter()
+        .map(|rn| match context.config.output.format {
+          ModuleFormat::EsModule => format!("import \"./{rn}\";"),
+          ModuleFormat::CommonJs => format!("require(\"./{rn}\");"),
+        })
+        .collect::<Vec<_>>()
+        .join("");
 
       // 4. setInitialLoadedResources and setDynamicModuleResourcesMap
       let set_initial_loaded_resources_code = format!(

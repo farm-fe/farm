@@ -26,7 +26,7 @@
 },}, "d2214aaa");
 
 //index.js:
- import "./__farm_runtime.js";(function (modules) {
+ import "./__farm_runtime.js";import "./index_7ecc.js";(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_7d8a.js';
                 (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);

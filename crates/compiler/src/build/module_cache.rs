@@ -6,7 +6,7 @@ use std::{
 };
 
 use farmfe_core::{
-  cache::module_cache::{CachedModule, CachedModuleDependency},
+  cache::module_cache::{CachedModule, CachedModuleDependency, CachedWatchDependency},
   context::CompilationContext,
   dashmap::DashMap,
   farm_profile_function,
@@ -61,7 +61,9 @@ pub fn try_get_module_cache_by_timestamp(
       let mut cached_module = context.cache_manager.module_cache.get_cache(module_id);
       handle_cached_modules(&mut cached_module, context)?;
 
-      return Ok(Some(cached_module));
+      if !is_watch_dependencies_timestamp_changed(&cached_module, context) {
+        return Ok(Some(cached_module));
+      }
     } else if !context.config.persistent_cache.hash_enabled() {
       drop(cached_module);
       context
@@ -89,7 +91,9 @@ pub fn try_get_module_cache_by_hash(
 
       handle_cached_modules(&mut cached_module, context)?;
 
-      return Ok(Some(cached_module));
+      if !is_watch_dependencies_content_hash_changed(&cached_module, context) {
+        return Ok(Some(cached_module));
+      }
     } else {
       drop(cached_module);
 
@@ -169,6 +173,27 @@ pub fn set_module_graph_cache(
         dependencies,
         package_name: package_info.name.unwrap_or("default".to_string()),
         package_version: package_info.version.unwrap_or("0.0.0".to_string()),
+        entry_name: module_graph.entries.get(&module.id).cloned(),
+        watch_dependencies: context
+          .watch_graph
+          .read()
+          .relation_dependencies(&module.id)
+          .into_iter()
+          .map(|id| {
+            let resolved_path = PathBuf::from(id.resolved_path(&context.config.root));
+            let content = if resolved_path.exists() {
+              std::fs::read_to_string(resolved_path).unwrap()
+            } else {
+              // treat the virtual module as always changed for now
+              "empty".to_string()
+            };
+            CachedWatchDependency {
+              dependency: id.clone(),
+              timestamp: get_timestamp_of_module(id, &context.config.root),
+              hash: get_content_hash_of_module(&content),
+            }
+          })
+          .collect(),
       };
 
       context
@@ -250,7 +275,7 @@ pub fn load_module_graph_cache_into_context(
 
   visited
     .into_iter()
-    .for_each(|(cached_module_id, is_cached)| {
+    .try_for_each(|(cached_module_id, is_cached)| {
       if is_cached {
         let cached_module = context
           .cache_manager
@@ -258,9 +283,17 @@ pub fn load_module_graph_cache_into_context(
           .get_cache(&cached_module_id);
 
         module_graph.add_module(cached_module.module);
-        edges.push((cached_module_id, cached_module.dependencies));
+        edges.push((cached_module_id.clone(), cached_module.dependencies));
+
+        if let Some(entry_name) = cached_module.entry_name {
+          module_graph
+            .entries
+            .insert(cached_module_id.clone(), entry_name);
+        }
       }
-    });
+
+      Ok(())
+    })?;
 
   for (from, edges) in edges {
     {
@@ -306,6 +339,12 @@ fn handle_cached_modules(
     farmfe_core::module::ModuleMetaData::Custom(_) => { /* TODO: add a hook for custom module */ }
   };
 
+  handle_relation_roots(
+    &cached_module.module.id,
+    &cached_module.watch_dependencies,
+    context,
+  )?;
+
   Ok(())
 }
 
@@ -346,6 +385,93 @@ fn clear_unused_cached_modules_from_module_graph(module_graph: &mut ModuleGraph)
   for removed_module in removed_modules {
     module_graph.remove_module(&removed_module);
   }
+}
+
+fn handle_relation_roots(
+  cached_module_id: &ModuleId,
+  watch_dependencies: &Vec<CachedWatchDependency>,
+  context: &Arc<CompilationContext>,
+) -> farmfe_core::error::Result<()> {
+  if !watch_dependencies.is_empty() {
+    let mut watch_graph = context.watch_graph.write();
+    watch_graph.add_node(cached_module_id.clone());
+
+    for cached_dep in watch_dependencies {
+      let dep = &cached_dep.dependency;
+      watch_graph.add_node(dep.clone());
+      watch_graph.add_edge(cached_module_id, dep)?;
+    }
+  }
+
+  Ok(())
+}
+
+fn is_watch_dependencies_timestamp_changed(
+  cached_module: &CachedModule,
+  context: &Arc<CompilationContext>,
+) -> bool {
+  let watch_graph = context.watch_graph.read();
+  let relation_dependencies = watch_graph.relation_dependencies(&cached_module.module.id);
+
+  if relation_dependencies.is_empty() {
+    return false;
+  }
+
+  let cached_dep_timestamp_map = cached_module
+    .watch_dependencies
+    .iter()
+    .map(|dep| (dep.dependency.clone(), dep.timestamp))
+    .collect::<HashMap<_, _>>();
+
+  for dep in relation_dependencies {
+    let resolved_path = PathBuf::from(dep.resolved_path(&context.config.root));
+    let cached_timestamp = cached_dep_timestamp_map.get(dep);
+
+    if !resolved_path.exists()
+      || cached_timestamp.is_none()
+      || get_timestamp_of_module(dep, &context.config.root) != *cached_timestamp.unwrap()
+    {
+      return true;
+    }
+  }
+
+  false
+}
+
+fn is_watch_dependencies_content_hash_changed(
+  cached_module: &CachedModule,
+  context: &Arc<CompilationContext>,
+) -> bool {
+  let watch_graph = context.watch_graph.read();
+  let relation_dependencies = watch_graph.relation_dependencies(&cached_module.module.id);
+
+  if relation_dependencies.is_empty() {
+    return false;
+  }
+
+  let cached_dep_hash_map = cached_module
+    .watch_dependencies
+    .iter()
+    .map(|dep| (dep.dependency.clone(), dep.hash.clone()))
+    .collect::<HashMap<_, _>>();
+
+  for dep in relation_dependencies {
+    let resolved_path = PathBuf::from(dep.resolved_path(&context.config.root));
+    let cached_hash = cached_dep_hash_map.get(dep);
+
+    if !resolved_path.exists() || cached_hash.is_none() {
+      return true;
+    }
+
+    let content = std::fs::read_to_string(resolved_path).unwrap();
+    let hash = get_content_hash_of_module(&content);
+
+    if hash != *cached_hash.unwrap() {
+      return true;
+    }
+  }
+
+  false
 }
 
 #[cfg(test)]

@@ -66,7 +66,7 @@ export interface UserConfig {
   /** vite plugins */
   vitePlugins?: (object | (() => { vitePlugin: any; filters: string[] }))[];
   /** config related to compilation */
-  compilation?: Pick<Config['config'], AvailableUserConfigKeys>;
+  compilation?: Pick<InternalConfig, AvailableUserConfigKeys>;
   /** config related to dev server */
   server?: UserServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
@@ -118,6 +118,7 @@ export interface FarmCLIOptions
   logger?: Logger;
   config?: string;
   configPath?: string;
+  mode?: string;
   clearScreen?: boolean;
 }
 

@@ -9,15 +9,15 @@ export default {
       index: './index.ts'
     },
     output: {
-      path: 'dist',
-      targetEnv: 'node',
-      entryFilename: '[entryName].mjs'
+      path: 'dist/esm',
+      entryFilename: '[entryName].mjs',
+      format: 'esm'
     },
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
     ],
-    minify: true,
+    minify: false,
     presetEnv: false
     // partialBundling: {
     //   enforceResources: [

@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import {
+  BrandText,
   blue,
   bold,
   brandColor,
@@ -12,6 +13,7 @@ import {
 } from './color.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { Config } from '../../binding/index.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -157,7 +159,9 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
   return new DefaultLogger(options);
 }
 
-export function bootstrap(times: number) {
+export function bootstrap(times: number, config: Config) {
+  const usePersistentCache = config.config.persistentCache;
+  const persistentCacheFlag = usePersistentCache ? bold(BrandText) : '';
   const version = JSON.parse(
     readFileSync(
       join(fileURLToPath(import.meta.url), '../../../package.json'),
@@ -166,7 +170,9 @@ export function bootstrap(times: number) {
   ).version;
   console.log('\n', bold(brandColor(`${'ϟ'}  Farm  v${version}`)));
   console.log(
-    `${bold(green(` ✓`))}  ${bold('Ready in')} ${bold(green(`${times}ms`))}`,
+    `${bold(green(` ✓`))}  ${bold('Ready in')} ${bold(
+      green(`${times}ms`)
+    )} ⚡ ${persistentCacheFlag}`,
     '\n'
   );
 }

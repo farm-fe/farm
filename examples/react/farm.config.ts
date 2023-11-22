@@ -28,28 +28,54 @@ export default defineConfig({
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
-    treeShaking: true,
-    persistentCache: false
+    treeShaking: true
   },
   server: {
     cors: true
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass'],
-  vitePlugins: [
-    // {
-    //   name: 'vite-plugin-test2',
-    //   config(config, env) {
-    //     config.b = 123;
-    //   }
-    // },
-    // {
-    //   name: 'vite-plugin-test3',
-    //   config(config, env) {
-    //     config.c = 123;
-    //   },
-    //   configResolved(config) {
-    //     console.log(config);
-    //   }
-    // }
-  ]
+  plugins: [
+    '@farmfe/plugin-react',
+    '@farmfe/plugin-sass',
+    {
+      name: 'plugin-finish-hook-test',
+      finish: {
+        executor(param, context, hookContext) {
+          // console.log('plugin-finish-hook-test', param, context, hookContext);
+        }
+      }
+    },
+    {
+      name: 'plugin-hook-context-test',
+      load: {
+        filters: {
+          resolvedPaths: ['.+main.tsx']
+        },
+        executor(param, context, hookContext) {
+          // console.log('plugin-hook-context-test', param, context, hookContext);
+          // console.log(context.getWatchFiles());
+          // context.emitFile({
+          //   resolvedPath: param.resolvedPath,
+          //   name: "test.txt",
+          //   // Buffer to number[]
+
+          //   content: [...Buffer.from("test")],
+          //   resourceType: "txt"
+          // });
+          // context.addWatchFile(param.resolvedPath, path.join(process.cwd(), 'src', 'original-sourcemap', 'config.d.ts'));
+          // context.warn('test');
+          // context.error('test');
+          return null;
+        }
+      }
+    },
+    {
+      name: 'plugin-update-modules-hook-test',
+      updateModules: {
+        executor(param, context, hookContext) {
+          // console.log("params", param);
+          // console.log("context", context);
+          // console.log("hookContext", hookContext);
+        }
+      }
+    }
 });
