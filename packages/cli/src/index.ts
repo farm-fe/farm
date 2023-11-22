@@ -205,7 +205,7 @@ cli.version(version);
 
 cli.parse();
 
-export async function resolveCore(cwd: string = process.cwd()): Promise<{
+export async function resolveCore(): Promise<{
   start: typeof start;
   build: typeof build;
   watch: typeof watch;

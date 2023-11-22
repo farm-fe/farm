@@ -3,6 +3,7 @@ import { Compiler } from '../src/compiler/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
 import { normalizeUserCompilationConfig } from '../src/config/index.js';
 import { fileURLToPath } from 'node:url';
+import { DefaultLogger } from '../src/index.js';
 
 export async function getCompiler(
   root: string,
@@ -11,6 +12,7 @@ export async function getCompiler(
   input?: Record<string, string>
 ): Promise<Compiler> {
   const config = await normalizeUserCompilationConfig(
+    null,
     {
       root,
       compilation: {
@@ -30,6 +32,7 @@ export async function getCompiler(
       },
       plugins
     },
+    new DefaultLogger(),
     'production'
   );
   return new Compiler(config);

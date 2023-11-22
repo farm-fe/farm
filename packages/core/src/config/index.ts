@@ -48,7 +48,7 @@ export const urlRegex = /^(https?:)?\/\/([^/]+)/;
  * @returns resolved config that parsed to rust compiler
  */
 export async function normalizeUserCompilationConfig(
-  inlineConfig: FarmCLIOptions & UserConfig,
+  inlineConfig: (FarmCLIOptions & UserConfig) | null,
   userConfig: ResolvedUserConfig,
   logger: Logger,
   mode: CompilationMode = 'development'
@@ -432,7 +432,7 @@ async function readConfigFile(
       );
       const fileName = 'farm.config.bundle.mjs';
       const normalizedConfig = await normalizeUserCompilationConfig(
-        {},
+        null,
         {
           compilation: {
             input: {
