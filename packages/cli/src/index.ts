@@ -68,8 +68,6 @@ cli
       const { start } = await resolveCore();
 
       try {
-        console.log(defaultOptions);
-
         await start(defaultOptions);
       } catch (e) {
         logger.error(`Failed to start server:\n ${e.stack}`);
@@ -94,7 +92,6 @@ cli
     const configPath = getConfigPath(options.config);
     const defaultOptions = {
       compilation: {
-        mode: options.mode,
         watch: options.watch,
         output: options.outDir
           ? {
@@ -110,6 +107,7 @@ cli
         minify: options.minify,
         treeShaking: options.treeShaking
       },
+      mode: options.mode,
       configPath
     };
     const { build } = await resolveCore();
@@ -159,9 +157,7 @@ cli
     const configPath = getConfigPath(options.config);
     const resolveOptions = resolveCommandOptions(options);
     const defaultOptions = {
-      compilation: {
-        mode: options.mode
-      },
+      mode: options.mode,
       server: resolveOptions,
       configPath
     };
