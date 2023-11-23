@@ -6,7 +6,7 @@ import fs from 'node:fs';
 
 import { logger } from './logger.mjs';
 
-const DEFAULT_PACKAGE_MANAGER = 'pnpm';
+export const DEFAULT_PACKAGE_MANAGER = 'pnpm';
 const DEFAULT_HOMEBREW_PACKAGE_MANAGER = 'brew';
 const DEFAULT_LINUX_PACKAGE_MANAGER = 'apt';
 const CWD = process.cwd();
@@ -28,6 +28,22 @@ export const JS_PLUGINs_DIR = resolve(CWD, './js-plugins');
 export const EXAMPLES_DIR = resolve(CWD, './examples');
 
 export const excludedJsPlugin = ['dts'];
+
+export const buildExamples = async () => {
+  const examples = fs.readdirSync('./examples');
+  console.log('Building', examples.length, 'examples...');
+
+  for (const example of examples) {
+    const examplePath = join('./examples', example);
+    console.log('Building', examplePath);
+
+    if (fs.statSync(examplePath).isDirectory()) {
+      await execa('npm', ['run', 'build'], {
+        cwd: examplePath
+      });
+    }
+  }
+};
 
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.

@@ -1,4 +1,3 @@
-import http from 'node:http';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRawType } from 'ws';
@@ -10,6 +9,7 @@ import {
   NormalizedServerConfig,
   red
 } from '../index.js';
+import { Server } from './type.js';
 
 const HMR_HEADER = 'farm_hmr';
 
@@ -47,7 +47,7 @@ export default class WsServer implements IWebSocketServer {
   public bufferedError: any = null;
   public logger: Logger;
   constructor(
-    private httpServer: http.Server,
+    private httpServer: Server,
     private config: NormalizedServerConfig,
     public isFarmHmrEvent: boolean = false,
     logger?: Logger
