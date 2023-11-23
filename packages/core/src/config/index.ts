@@ -411,6 +411,7 @@ export async function resolveUserConfig(
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
   const config = filterUserConfig(userConfig, inlineOptions);
+
   return config;
 }
 
