@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use farmfe_core::resource::ResourceOrigin;
 use farmfe_core::{
-  config::{ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
+  config::{ModuleFormat, TargetEnv, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleSystem,
@@ -98,14 +98,18 @@ pub fn get_export_info_of_entry_module(
             match spec {
               swc_ecma_ast::ExportSpecifier::Named(named_spec) => {
                 export_info.push(ExportInfoOfEntryModule::Named {
-                  name: match &named_spec.orig {
-                    swc_ecma_ast::ModuleExportName::Ident(ident) => ident.sym.to_string(),
-                    swc_ecma_ast::ModuleExportName::Str(str) => str.value.to_string(),
-                  },
-                  import_as: named_spec.exported.as_ref().map(|exported| match exported {
-                    swc_ecma_ast::ModuleExportName::Ident(ident) => ident.sym.to_string(),
-                    swc_ecma_ast::ModuleExportName::Str(str) => str.value.to_string(),
-                  }),
+                  name: named_spec
+                    .exported
+                    .as_ref()
+                    .map(|exported| match exported {
+                      swc_ecma_ast::ModuleExportName::Ident(ident) => ident.sym.to_string(),
+                      swc_ecma_ast::ModuleExportName::Str(str) => str.value.to_string(),
+                    })
+                    .unwrap_or(match &named_spec.orig {
+                      swc_ecma_ast::ModuleExportName::Ident(ident) => ident.sym.to_string(),
+                      swc_ecma_ast::ModuleExportName::Str(str) => str.value.to_string(),
+                    }),
+                  import_as: None,
                 });
               }
               swc_ecma_ast::ExportSpecifier::Default(default) => {
@@ -297,9 +301,14 @@ pub fn handle_entry_resources(
         .collect::<Vec<_>>()
         .join("");
 
+      let farm_global_this = format!(
+        "(globalThis || window || self || global)['{}']",
+        context.config.runtime.namespace
+      );
+
       // 4. setInitialLoadedResources and setDynamicModuleResourcesMap
       let set_initial_loaded_resources_code = format!(
-        r#"{FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.setInitialLoadedResources([{initial_loaded_resources}]);"#,
+        r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setInitialLoadedResources([{initial_loaded_resources}]);"#,
         initial_loaded_resources = dep_resources
           .iter()
           .map(|rn| format!("'{}'", rn))
@@ -307,13 +316,13 @@ pub fn handle_entry_resources(
           .join(",")
       );
       let set_dynamic_resources_map_code = format!(
-        r#"{FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
+        r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
       );
 
       // 5. append call entry
       let call_entry_code = format!(
         r#"var farmModuleSystem = {}.{};farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("{}");"#,
-        FARM_GLOBAL_THIS,
+        farm_global_this,
         FARM_MODULE_SYSTEM,
         entry.id(context.config.mode.clone()),
       );
@@ -403,9 +412,12 @@ fn create_runtime_code(
   };
 
   // 2. __farm_global_this by namespace
-  let farm_namespace = &context.config.runtime.namespace;
+  let farm_global_this = format!(
+    "(globalThis || window || self || global)['{}']",
+    context.config.runtime.namespace
+  );
   let farm_global_this_code = format!(
-    r#"(globalThis || window || global || self).{FARM_NAMESPACE} = '{farm_namespace}';{FARM_GLOBAL_THIS} = {{__FARM_TARGET_ENV__: '{}'}};"#,
+    r#"{farm_global_this} = {{__FARM_TARGET_ENV__: '{}'}};"#,
     match &context.config.output.target_env {
       TargetEnv::Browser => "browser",
       TargetEnv::Node => "node",

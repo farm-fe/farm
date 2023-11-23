@@ -1,0 +1,25 @@
+{
+  "name": "@farmfe-examples/lib-for-browser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "watch": "farm watch",
+    "build": "farm build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:^",
+    "@types/react": "18",
+    "react": "^18.2.0"
+  },
+  "dependencies": {
+    "react-refresh": "^0.14.0"
+  }
+}

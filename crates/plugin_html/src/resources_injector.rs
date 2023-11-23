@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  config::{Mode, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM, FARM_NAMESPACE},
+  config::{Mode, FARM_MODULE_SYSTEM},
   module::ModuleId,
   resource::ResourceType,
   serde_json,
@@ -32,6 +32,7 @@ pub struct ResourcesInjector {
   script_entries: Vec<String>,
   dynamic_resources_map: HashMap<ModuleId, Vec<(String, ResourceType)>>,
   options: ResourcesInjectorOptions,
+  farm_global_this: String,
 }
 
 impl ResourcesInjector {
@@ -49,6 +50,10 @@ impl ResourcesInjector {
       script_resources,
       script_entries,
       dynamic_resources_map,
+      farm_global_this: format!(
+        "(globalThis || window || self || global)['{}']",
+        options.namespace
+      ),
       options,
     }
   }
@@ -72,8 +77,8 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"{FARM_GLOBAL_THIS}.{}.setInitialLoadedResources([{}]);"#,
-        FARM_MODULE_SYSTEM, initial_resources_code
+        r#"{}.{}.setInitialLoadedResources([{}]);"#,
+        self.farm_global_this, FARM_MODULE_SYSTEM, initial_resources_code
       )),
       vec![(FARM_ENTRY, "true")],
     )));
@@ -86,50 +91,21 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&format!(
-        r#"{FARM_GLOBAL_THIS}.{}.setDynamicModuleResourcesMap({});"#,
-        FARM_MODULE_SYSTEM, dynamic_resources_code
+        r#"{}.{}.setDynamicModuleResourcesMap({});"#,
+        self.farm_global_this, FARM_MODULE_SYSTEM, dynamic_resources_code
       )),
       vec![(FARM_ENTRY, "true")],
     )));
   }
 
-  fn inject_global_define(&self, element: &mut Element) {
-    let node_env = match self.options.mode {
-      Mode::Development => "development",
-      Mode::Production => "production",
-    };
-    let define_code = self
-      .options
-      .define
-      .iter()
-      .fold(String::new(), |mut acc, (key, v)| {
-        let value = match v {
-          serde_json::Value::Null => "null".to_string(),
-          serde_json::Value::Bool(b) => (if *b { "true" } else { "false" }).to_string(),
-          serde_json::Value::Number(num) => num.to_string(),
-          serde_json::Value::String(str) => format!("'{}'", str),
-          serde_json::Value::Array(arr) => serde_json::to_string(arr).unwrap(),
-          serde_json::Value::Object(obj) => serde_json::to_string(obj).unwrap(),
-        };
-        acc += &format!(r#"window.{} = {};"#, key, value);
-        acc
-      });
-
-    let namespace = &self.options.namespace;
-
+  fn inject_global_this(&self, element: &mut Element) {
     let code = format!(
       r#"
-window.process = {{
-  env: {{
-    NODE_ENV: '{node_env}',
-  }},
-}};
-window.{FARM_NAMESPACE} = '{namespace}';
 {FARM_GLOBAL_THIS} = {{}};
 {FARM_GLOBAL_THIS} = {{
   __FARM_TARGET_ENV__: 'browser',
-}};
-{define_code}"#
+}};"#,
+      FARM_GLOBAL_THIS = self.farm_global_this,
     );
 
     element.children.push(Child::Element(create_element(
@@ -175,7 +151,7 @@ impl VisitMut for ResourcesInjector {
       }
 
       // inject global define
-      self.inject_global_define(element);
+      self.inject_global_this(element);
 
       // inject runtime <script>
       let script_element = create_element(
@@ -202,8 +178,8 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"{FARM_GLOBAL_THIS}.{}.setPublicPaths(['{}']);"#,
-          FARM_MODULE_SYSTEM, self.options.public_path
+          r#"{}.{}.setPublicPaths(['{}']);"#,
+          self.farm_global_this, FARM_MODULE_SYSTEM, self.options.public_path
         )),
         vec![(FARM_ENTRY, "true")],
       )));
@@ -211,8 +187,8 @@ impl VisitMut for ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&format!(
-          r#"{FARM_GLOBAL_THIS}.{}.bootstrap();"#,
-          FARM_MODULE_SYSTEM
+          r#"{}.{}.bootstrap();"#,
+          self.farm_global_this, FARM_MODULE_SYSTEM
         )),
         vec![(FARM_ENTRY, "true")],
       )));
@@ -221,8 +197,8 @@ impl VisitMut for ResourcesInjector {
         element.children.push(Child::Element(create_element(
           "script",
           Some(&format!(
-            r#"{FARM_GLOBAL_THIS}.{}.require("{}")"#,
-            FARM_MODULE_SYSTEM, entry
+            r#"{}.{}.require("{}")"#,
+            self.farm_global_this, FARM_MODULE_SYSTEM, entry
           )),
           vec![(FARM_ENTRY, "true")],
         )));

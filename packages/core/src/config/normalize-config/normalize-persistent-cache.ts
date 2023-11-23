@@ -20,8 +20,13 @@ export async function normalizePersistentCache(
   if (config.persistentCache === true || config.persistentCache == undefined) {
     config.persistentCache = {
       buildDependencies: [],
-      moduleCacheKeyStrategy: {}
+      moduleCacheKeyStrategy: {},
+      envs: config.env
     };
+  }
+
+  if (config.persistentCache.envs === undefined) {
+    config.persistentCache.envs = config.env;
   }
 
   if (config?.output?.targetEnv === 'node') {

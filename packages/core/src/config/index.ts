@@ -33,6 +33,7 @@ import type {
   UserServerConfig
 } from './types.js';
 import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
+import { normalizeOutput } from './normalize-config/normalize-output.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -99,22 +100,7 @@ export async function normalizeUserCompilationConfig(
     envPrefix
   );
 
-  await normalizePersistentCache(config, userConfig);
-
-  if (config.output?.targetEnv !== 'node') {
-    const defaultExternals = [
-      ...module.builtinModules,
-      ...module.builtinModules
-    ]
-      .filter((m) => !config.resolve?.alias?.[m])
-      .map((m) => `^${m}$`);
-
-    if (!config.external) {
-      config.external = defaultExternals;
-    } else {
-      config.external = [...config.external, ...defaultExternals];
-    }
-  }
+  normalizeOutput(config, isProduction);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
@@ -144,13 +130,21 @@ export async function normalizeUserCompilationConfig(
   };
 
   config.define = Object.assign(
-    {},
+    {
+      // skip self define
+      ['FARM' + '_PROCESS_ENV']: config.env
+    },
     config?.define,
-    Object.keys(config.env).reduce((env: any, key) => {
-      env[`process.env.${key}`] = config.env[key];
-      return env;
-    }, {})
+    // for node target, we should not define process.env.NODE_ENV
+    config.output?.targetEnv === 'node'
+      ? {}
+      : Object.keys(config.env).reduce((env: any, key) => {
+          env[`process.env.${key}`] = config.env[key];
+          return env;
+        }, {})
   );
+
+  await normalizePersistentCache(config, userConfig);
 
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
@@ -208,26 +202,6 @@ export async function normalizeUserCompilationConfig(
   }
 
   setProcessEnv(config.mode);
-
-  if (isProduction) {
-    if (!config.output) {
-      config.output = {};
-    }
-    if (!config.output.filename) {
-      config.output.filename = '[resourceName].[contentHash].[ext]';
-    }
-    if (!config.output.assetsFilename) {
-      config.output.assetsFilename = '[resourceName].[contentHash].[ext]';
-    }
-  }
-
-  if (config?.output?.targetEnv === 'node') {
-    config.external = [
-      ...(config.external ?? []),
-      ...module.builtinModules.map((m) => `^${m}($|/)`),
-      ...module.builtinModules.map((m) => `^node:${m}($|/)`)
-    ];
-  }
 
   // TODO resolve other server port
   const normalizedDevServerConfig = normalizeDevServerOptions(server, mode);
@@ -430,7 +404,7 @@ async function readConfigFile(
         'node_modules',
         '.farm'
       );
-      const fileName = 'farm.config.bundle.mjs';
+      const fileName = 'farm.config.bundle.cjs';
       const normalizedConfig = await normalizeUserCompilationConfig(
         null,
         {
@@ -441,6 +415,7 @@ async function readConfigFile(
             output: {
               entryFilename: '[entryName]',
               path: outputPath,
+              format: 'cjs',
               targetEnv: 'node'
             },
             external: [

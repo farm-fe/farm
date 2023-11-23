@@ -5,7 +5,7 @@ import {
   SFCDescriptor,
   SFCScriptCompileOptions,
   SFCTemplateCompileOptions,
-  SFCStyleCompileOptions,
+  SFCStyleCompileOptions
 } from '@vue/compiler-sfc';
 
 export interface outputData {
@@ -34,13 +34,13 @@ export type PreProcessors = {
 export enum PreProcessorsType {
   less = 'less',
   sass = 'sass',
-  stylus = 'stylus',
+  stylus = 'stylus'
 }
 
 export type PreProcessorsOptions<T> = T extends typeof Less
   ? Less.Options
   : T extends typeof Sass
-  ? Sass.Options
+  ? Sass.Options<'async'>
   : T extends typeof Stylus
   ? Stylus.RenderOptions
   : never;

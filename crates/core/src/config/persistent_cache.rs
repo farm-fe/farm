@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 use farmfe_utils::hash::sha256;
 use relative_path::RelativePath;
@@ -48,6 +48,7 @@ impl PersistentCacheConfig {
       },
       // build dependencies are set by node side
       build_dependencies: vec![],
+      envs: HashMap::new(),
     })
   }
 
@@ -59,9 +60,9 @@ impl PersistentCacheConfig {
     }
   }
 
-  pub fn as_obj(&self, root: &str, config_hash: String) -> PersistentCacheConfigObj {
+  pub fn as_obj(&self, root: &str) -> PersistentCacheConfigObj {
     match self {
-      PersistentCacheConfig::Bool(true) => Self::get_default_config(root).as_obj(root, config_hash),
+      PersistentCacheConfig::Bool(true) => Self::get_default_config(root).as_obj(root),
       PersistentCacheConfig::Bool(false) => {
         panic!("should not call as_obj when PersistentCacheConfig is false")
       }
@@ -72,6 +73,15 @@ impl PersistentCacheConfig {
         if cloned_obj.cache_dir.is_empty() {
           cloned_obj.cache_dir = default_config.as_raw_object().cache_dir.clone();
         }
+
+        let mut envs = cloned_obj.envs.iter().collect::<Vec<_>>();
+        envs.sort();
+        let config_str = envs
+          .into_iter()
+          .map(|(k, v)| format!("{}={}", k, v))
+          .collect::<Vec<_>>()
+          .join("&");
+        let config_hash = sha256(config_str.as_bytes(), 32);
 
         cloned_obj.build_dependencies.push(config_hash);
 
@@ -121,6 +131,7 @@ pub struct PersistentCacheConfigObj {
   /// It's absolute paths of farm.config by default. Farm will use their timestamp and hash to invalidate cache.
   /// Note that farm will resolve the config file dependencies from node side
   pub build_dependencies: Vec<String>,
+  pub envs: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

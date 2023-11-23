@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use farmfe_core::{
-  config::{FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
-  context::CompilationContext,
-};
+use farmfe_core::{config::FARM_MODULE_SYSTEM, context::CompilationContext};
 
 const PLUGIN_VAR_PREFIX: &str = "__farm_plugin__";
 
@@ -37,10 +34,14 @@ pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>
     .map(|(_, import)| import.as_str())
     .collect::<Vec<_>>();
 
+  let farm_global_this = format!(
+    "(globalThis || window || self || global)['{}']",
+    context.config.runtime.namespace
+  );
   // FARM_GLOBAL_THIS.FARM_MODULE_SYSTEM.setPlugins([PLUGIN_VAR_PREFIX0, PLUGIN_VAR_PREFIX1, ...])
   let plugins_call = format!(
     "{}.{}.setPlugins([{}]);",
-    FARM_GLOBAL_THIS,
+    farm_global_this,
     FARM_MODULE_SYSTEM,
     idents.join(", ")
   );

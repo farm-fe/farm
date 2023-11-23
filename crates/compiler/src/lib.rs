@@ -16,6 +16,10 @@ use farmfe_core::{
   stats::Stats,
 };
 
+pub use farmfe_plugin_css::FARM_CSS_MODULES_SUFFIX;
+pub use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
+pub use farmfe_plugin_runtime::RUNTIME_SUFFIX;
+
 pub mod build;
 pub mod generate;
 pub mod update;
@@ -40,6 +44,7 @@ impl Compiler {
         &config,
       )) as _,
       Arc::new(farmfe_plugin_json::FarmPluginJson::new(&config)) as _,
+      Arc::new(farmfe_plugin_define::FarmPluginDefine::new(&config)) as _,
     ];
 
     if config.lazy_compilation {

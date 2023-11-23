@@ -2,7 +2,9 @@ use farmfe_core::{
   config::Config,
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::Plugin,
+  rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
+use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
 use module::{TreeShakeModule, UsedExports};
 use statement_graph::{ExportInfo, ImportInfo};
 
@@ -34,7 +36,7 @@ impl Plugin for FarmPluginTreeShake {
   fn optimize_module_graph(
     &self,
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // topo sort the module_graph, the cyclic modules will be marked as side_effects
     let (topo_sorted_modules, cyclic_modules) = {
@@ -45,19 +47,38 @@ impl Plugin for FarmPluginTreeShake {
     // mark cyclic modules as side_effects
     for chain in cyclic_modules {
       for module_id in chain {
-        let mut module = module_graph.module_mut(&module_id).unwrap();
+        let module = module_graph.module_mut(&module_id).unwrap();
         module.side_effects = true;
       }
     }
 
     // mark entry modules as side_effects
     for (entry_module_id, _) in module_graph.entries.clone() {
-      let mut module = module_graph.module_mut(&entry_module_id).unwrap();
+      let module = module_graph.module_mut(&entry_module_id).unwrap();
       module.side_effects = true;
     }
 
     let mut tree_shake_modules_ids = vec![];
     let mut tree_shake_modules_map = std::collections::HashMap::new();
+
+    module_graph
+      .modules_mut()
+      .into_par_iter()
+      .filter(|m| m.module_type.is_script() && !m.external)
+      .for_each(|module| {
+        let meta = module.meta.as_script_mut();
+
+        if meta.top_level_mark != 0 || meta.unresolved_mark != 0 {
+          return;
+        }
+
+        let ast = &mut meta.ast;
+
+        let (unresolved_mark, top_level_mark) =
+          resolve_module_mark(ast, module.module_type.is_typescript(), context);
+        module.meta.as_script_mut().unresolved_mark = unresolved_mark.as_u32();
+        module.meta.as_script_mut().top_level_mark = top_level_mark.as_u32();
+      });
 
     for module_id in topo_sorted_modules {
       let module = module_graph.module(&module_id).unwrap();
@@ -67,7 +88,7 @@ impl Plugin for FarmPluginTreeShake {
         if !module.module_type.is_script() && !module.external {
           // mark all non script modules' script dependencies as side_effects
           for dep_id in module_graph.dependencies_ids(&module_id) {
-            let mut dep_module = module_graph.module_mut(&dep_id).unwrap();
+            let dep_module = module_graph.module_mut(&dep_id).unwrap();
 
             if !dep_module.module_type.is_script() {
               continue;

@@ -48,7 +48,7 @@ use farmfe_utils::{parse_query, relative};
 use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
 
-const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
+pub const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
 
 mod dep_analyzer;
 mod source_replacer;

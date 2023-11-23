@@ -12,14 +12,9 @@ use farmfe_core::{
   farm_profile_function,
   module::{module_graph::ModuleGraph, ModuleId},
   rayon::prelude::*,
-  swc_common::{Mark, Span, SyntaxContext, GLOBALS},
 };
 
-use farmfe_toolkit::{
-  resolve::load_package_json,
-  swc_ecma_transforms_base::resolver,
-  swc_ecma_visit::{VisitMut, VisitMutWith},
-};
+use farmfe_toolkit::resolve::load_package_json;
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   let resolved_path = module_id.resolved_path(root);
@@ -73,6 +68,13 @@ pub fn try_get_module_cache_by_timestamp(
     }
   }
 
+  // println!(
+  //   "module not found: {:?} timestamp enabled {}, has_cache {}",
+  //   module_id,
+  //   context.config.persistent_cache.timestamp_enabled(),
+  //   context.cache_manager.module_cache.has_cache(module_id)
+  // );
+
   Ok(None)
 }
 
@@ -105,14 +107,6 @@ pub fn try_get_module_cache_by_hash(
   }
 
   Ok(None)
-}
-
-pub struct ResetSpanVisitMut;
-
-impl VisitMut for ResetSpanVisitMut {
-  fn visit_mut_span(&mut self, span: &mut Span) {
-    span.ctxt = SyntaxContext::empty();
-  }
 }
 
 pub fn set_module_graph_cache(
@@ -250,7 +244,7 @@ pub fn load_module_graph_cache_into_context(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
   farm_profile_function!("load_module_graph_cache_into_context".to_string());
-
+  // TODO load immutable dependencies into context in need
   let immutable_modules = context.cache_manager.module_cache.get_immutable_modules();
 
   immutable_modules
@@ -316,23 +310,9 @@ fn handle_cached_modules(
   // using swc resolver
   match &mut cached_module.module.meta {
     farmfe_core::module::ModuleMetaData::Script(script) => {
-      GLOBALS.set(&context.meta.script.globals, || {
-        let ast = &mut script.ast;
-        // clear ctxt
-        ast.visit_mut_with(&mut ResetSpanVisitMut);
-
-        let unresolved_mark = Mark::new();
-        let top_level_mark = Mark::new();
-
-        ast.visit_mut_with(&mut resolver(
-          unresolved_mark,
-          top_level_mark,
-          cached_module.module.module_type.is_typescript(),
-        ));
-
-        script.top_level_mark = top_level_mark.as_u32();
-        script.unresolved_mark = unresolved_mark.as_u32();
-      });
+      // reset the mark to prevent the mark from being reused, it will be re-resolved later
+      script.top_level_mark = 0;
+      script.unresolved_mark = 0;
     }
     farmfe_core::module::ModuleMetaData::Css(_) | farmfe_core::module::ModuleMetaData::Html(_) => { /* do nothing */
     }
@@ -417,13 +397,18 @@ fn is_watch_dependencies_timestamp_changed(
     return false;
   }
 
+  // println!(
+  //   "{:?} relation_dependencies: {:?}",
+  //   cached_module.module.id, relation_dependencies
+  // );
+
   let cached_dep_timestamp_map = cached_module
     .watch_dependencies
     .iter()
     .map(|dep| (dep.dependency.clone(), dep.timestamp))
     .collect::<HashMap<_, _>>();
 
-  for dep in relation_dependencies {
+  for dep in &relation_dependencies {
     let resolved_path = PathBuf::from(dep.resolved_path(&context.config.root));
     let cached_timestamp = cached_dep_timestamp_map.get(dep);
 

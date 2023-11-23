@@ -11,6 +11,7 @@ export default {
     output: {
       path: 'dist/esm',
       entryFilename: '[entryName].mjs',
+      targetEnv: 'node',
       format: 'esm'
     },
     external: [

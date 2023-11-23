@@ -258,7 +258,6 @@ impl Plugin for FarmPluginScript {
     }
 
     // skip transform import.meta when targetEnv is node
-    // TODO: transform import.meta.url to __filename when format is cjs
     if matches!(context.config.output.target_env, TargetEnv::Browser) {
       // transform `import.meta.xxx` to `module.meta.xxx`
       let ast = &mut param.module.meta.as_script_mut().ast;

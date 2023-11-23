@@ -10,6 +10,7 @@ const config: UserConfig = {
     output: {
       path: 'dist/cjs',
       entryFilename: '[entryName].cjs',
+      targetEnv: 'node',
       format: 'cjs'
     },
     resolve: {

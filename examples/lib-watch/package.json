@@ -1,5 +1,5 @@
 {
-  "name": "lib-watch",
+  "name": "@farmfe-examples/lib-watch",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

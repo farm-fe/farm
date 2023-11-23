@@ -91,39 +91,6 @@ impl Plugin for FarmPluginReact {
     Ok(None)
   }
 
-  fn transform(
-    &self,
-    param: &farmfe_core::plugin::PluginTransformHookParam,
-    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    let react_relative_paths = vec![
-      "node_modules/react/",
-      "node_modules/react-dom/",
-      "node_modules/react-refresh/",
-      "node_modules/scheduler/",
-    ];
-
-    if react_relative_paths
-      .into_iter()
-      .any(|p| param.resolved_path.contains(p))
-    {
-      // replace process.env.NODE_ENV with "development" or "production" in react and react-dom
-      let content = param.content.replace(
-        "process.env.NODE_ENV",
-        &format!("'{}'", context.config.mode.to_string()),
-      );
-
-      return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-        content,
-        module_type: None,
-        source_map: None,
-        ignore_previous_source_map: false,
-      }));
-    }
-
-    Ok(None)
-  }
-
   fn process_module(
     &self,
     param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,

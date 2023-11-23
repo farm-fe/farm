@@ -19,6 +19,7 @@ export default defineConfig({
       path: './build',
       publicPath: 'public'
     },
+    presetEnv: false,
     // sourcemap: true,
     css: {
       // modules: {
@@ -34,8 +35,8 @@ export default defineConfig({
     cors: true
   },
   plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass',
+    ["@farmfe/plugin-react", { runtime: "automatic" }],
+    "@farmfe/plugin-sass",
     {
       name: 'plugin-finish-hook-test',
       finish: {

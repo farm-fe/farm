@@ -161,7 +161,7 @@ impl Plugin for FarmPluginStaticAssets {
         }));
       } else if param.query.iter().any(|(k, _)| k == "raw") {
         let file_utf8 = read_file_utf8(param.resolved_path)?;
-        let content = format!("export default {:?}", file_utf8);
+        let content = format!("export default {:?}", file_utf8.replace("\r\n", "\n"));
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,
