@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
-    ModuleFormat, TargetEnv, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM,
+    ModuleFormat, TargetEnv, FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
@@ -22,6 +22,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
+  serde_json,
   swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem},
 };
 use farmfe_toolkit::{
@@ -32,7 +33,7 @@ use farmfe_toolkit::{
 use insert_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::*;
 
-const RUNTIME_SUFFIX: &str = ".farm-runtime";
+pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
 
 mod handle_entry_resources;
 mod insert_runtime_plugins;
@@ -77,6 +78,14 @@ impl Plugin for FarmPluginRuntime {
         name: "FARM_RUNTIME".to_string(),
         test: vec![ConfigRegex::new(&format!(".+{}", RUNTIME_SUFFIX))],
       },
+    );
+
+    config.define.insert(
+      "'<@__farm_global_this__@>'".to_string(),
+      serde_json::Value::String(format!(
+        "(globalThis || window || self || global)['{}']",
+        config.runtime.namespace
+      )),
     );
 
     Ok(Some(()))
@@ -340,8 +349,13 @@ impl Plugin for FarmPluginRuntime {
 
       let mut external_modules_str = None;
 
+      let farm_global_this = format!(
+        "(globalThis || window || self || global)['{}']",
+        context.config.runtime.namespace
+      );
+
       // inject global externals
-      if !external_modules.is_empty() {
+      if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
         let mut import_strings = vec![];
         let mut source_to_names = vec![];
 
@@ -364,7 +378,7 @@ impl Plugin for FarmPluginRuntime {
 
         let mut prepend_str = import_strings.join("");
         prepend_str.push_str(&format!(
-          "{FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
+          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
           source_to_names
             .into_iter()
             .map(
@@ -388,11 +402,11 @@ impl Plugin for FarmPluginRuntime {
         r#"(function (modules) {{
             for (var key in modules) {{
               modules[key].__farm_resource_pot__ = {};
-                {FARM_GLOBAL_THIS}.{FARM_MODULE_SYSTEM}.register(key, modules[key]);
+                {farm_global_this}.{FARM_MODULE_SYSTEM}.register(key, modules[key]);
             }}
         }})("#,
         if is_target_node_and_cjs {
-          "__filename".to_string()
+          "'file://' + __filename".to_string()
         } else {
           format!("'{}'", resource_pot.name.to_string() + ".js")
         },

@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
+use farmfe_compiler::{DYNAMIC_VIRTUAL_PREFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_SUFFIX};
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
@@ -76,6 +77,12 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginWritePluginCacheHook::new(env, obj)),
     })
   }
+
+  pub fn is_internal_virtual_module(&self, path: &str) -> bool {
+    path.starts_with(DYNAMIC_VIRTUAL_PREFIX)
+      || path.ends_with(FARM_CSS_MODULES_SUFFIX)
+      || path.ends_with(RUNTIME_SUFFIX)
+  }
 }
 
 impl Plugin for JsPluginAdapter {
@@ -102,6 +109,10 @@ impl Plugin for JsPluginAdapter {
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
+    if self.is_internal_virtual_module(&param.source) {
+      return Ok(None);
+    }
+
     if let Some(js_resolve_hook) = &self.js_resolve_hook {
       let cp = param.clone();
       js_resolve_hook.call(cp, context.clone(), hook_context.clone())
@@ -116,6 +127,10 @@ impl Plugin for JsPluginAdapter {
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
+    if self.is_internal_virtual_module(param.resolved_path) {
+      return Ok(None);
+    }
+
     if let Some(js_load_hook) = &self.js_load_hook {
       let cp = param.clone();
       js_load_hook.call(cp, context.clone(), hook_context.clone())
@@ -129,6 +144,10 @@ impl Plugin for JsPluginAdapter {
     param: &PluginTransformHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<PluginTransformHookResult>> {
+    if self.is_internal_virtual_module(param.resolved_path) {
+      return Ok(None);
+    }
+
     if let Some(js_transform_hook) = &self.js_transform_hook {
       let cp = param.clone();
       js_transform_hook.call(cp, context.clone())

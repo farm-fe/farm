@@ -116,8 +116,8 @@ const compilationConfigSchema = z
     partialBundling: z
       .object({
         targetConcurrentRequests: z.number().positive().int().optional(),
-        targetMinSize: z.number().positive().int().optional(),
-        targetMaxSize: z.number().positive().int().optional(),
+        targetMinSize: z.number().nonnegative().int().optional(),
+        targetMaxSize: z.number().nonnegative().int().optional(),
         groups: z
           .array(
             z.object({
@@ -191,7 +191,8 @@ const compilationConfigSchema = z
               timestamp: z.boolean().optional(),
               hash: z.boolean().optional()
             })
-            .optional()
+            .optional(),
+          envs: z.map(z.string(), z.string()).optional()
         })
         .optional()
     ])

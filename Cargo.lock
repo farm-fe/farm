@@ -1243,6 +1243,7 @@ version = "0.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_css",
+ "farmfe_plugin_define",
  "farmfe_plugin_html",
  "farmfe_plugin_json",
  "farmfe_plugin_lazy_compilation",
@@ -1343,6 +1344,16 @@ dependencies = [
  "farmfe_toolkit",
  "farmfe_utils 0.0.4",
  "rkyv",
+]
+
+[[package]]
+name = "farmfe_plugin_define"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.0.4",
 ]
 
 [[package]]

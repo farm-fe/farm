@@ -6,13 +6,7 @@ export interface Resource {
 }
 
 // Injected during build
-declare const __farm_namespace__: string;
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-export const __farm_global_this__: any = (globalThis ||
-  window ||
-  global ||
-  self)[__farm_namespace__];
+export const __farm_global_this__: any = eval('<@__farm_global_this__@>');
 
 export const targetEnv = __farm_global_this__.__FARM_TARGET_ENV__ || 'node';
 export const isBrowser =

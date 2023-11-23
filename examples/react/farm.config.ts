@@ -34,8 +34,8 @@ export default defineConfig({
     cors: true
   },
   plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass',
+    ["@farmfe/plugin-react", { runtime: "automatic" }],
+    "@farmfe/plugin-sass",
     {
       name: 'plugin-finish-hook-test',
       finish: {

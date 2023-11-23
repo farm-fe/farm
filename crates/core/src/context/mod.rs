@@ -66,14 +66,7 @@ impl CompilationContext {
 
   pub fn normalize_persistent_cache_config(config: &mut Config) -> (String, String) {
     if config.persistent_cache.enabled() {
-      let mut config_str_vec = serde_json::to_string(config)
-        .unwrap()
-        .chars()
-        .collect::<Vec<_>>();
-      config_str_vec.sort();
-      let config_str = config_str_vec.into_iter().collect::<String>();
-      let config_hash = sha256(config_str.as_bytes(), 32);
-      let cache_config_obj = config.persistent_cache.as_obj(&config.root, config_hash);
+      let cache_config_obj = config.persistent_cache.as_obj(&config.root);
       let (cache_dir, namespace) = (
         cache_config_obj.cache_dir.clone(),
         cache_config_obj.namespace.clone(),

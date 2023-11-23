@@ -23,7 +23,10 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
-  script::{codegen_module, swc_try_with::try_with},
+  script::{
+    codegen_module,
+    swc_try_with::{resolve_module_mark, try_with},
+  },
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
     fixer,
@@ -86,9 +89,19 @@ pub fn resource_pot_to_runtime_object(
       let mut external_modules = vec![];
 
       try_with(cm.clone(), &context.meta.script.globals, || {
-        // transform esm to commonjs
-        let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-        let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+        let (unresolved_mark, top_level_mark) = if module.meta.as_script().unresolved_mark == 0
+          && module.meta.as_script().top_level_mark == 0
+        {
+          resolve_module_mark(
+            &mut cloned_module,
+            module.module_type.is_typescript(),
+            context,
+          )
+        } else {
+          let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+          let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+          (unresolved_mark, top_level_mark)
+        };
 
         // ESM to commonjs, then commonjs to farm's runtime module systems
         if matches!(

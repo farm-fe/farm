@@ -345,6 +345,28 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/lib-for-browser:
+    dependencies:
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:^
+        version: link:../../js-plugins/dts
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+
   examples/lib-watch:
     devDependencies:
       '@farmfe/cli':
@@ -474,6 +496,9 @@ importers:
 
   examples/react:
     dependencies:
+      '@farmfe-examples/lib-for-browser':
+        specifier: workspace:^
+        version: link:../lib-for-browser
       clsx:
         specifier: ^1.2.1
         version: 1.2.1
@@ -9194,7 +9219,6 @@ packages:
     hasBin: true
     dependencies:
       js-tokens: 4.0.0
-    dev: false
 
   /loupe@2.3.7:
     resolution: {integrity: sha512-zSMINGVYkdpYSOBmLi0D1Uo7JU9nVdQKrHxC8eYlV+9YKK9WePqAlL7lSlorG/U2Fw1w0hTBmaa/jrQ3UbPHtA==}
@@ -11044,7 +11068,6 @@ packages:
   /react-refresh@0.14.0:
     resolution: {integrity: sha512-wViHqhAd8OHeLS/IRMJjTSDHF3U9eWi62F/MledQGPdJGDhodXJ9PBLNGr6WWL7qlH12Mt3TyTpbS+hGXMjCzQ==}
     engines: {node: '>=0.10.0'}
-    dev: true
 
   /react-router-dom@5.3.4(react@17.0.2):
     resolution: {integrity: sha512-m4EqFMHv/Ih4kpcBCONHbkT68KoAeHN4p3lAGoNryfHi0dMy0kCzEZakiKRsvg5wHZ/JLrLW8o8KomWiz/qbYQ==}
@@ -11128,7 +11151,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
-    dev: false
 
   /reactcss@1.2.3(react@17.0.2):
     resolution: {integrity: sha512-KiwVUcFu1RErkI97ywr8nvx8dNOpT03rbnma0SSalTYjkrPYaEajR4a/MRt6DZ46K6arDRbWMNHF+xH7G7n/8A==}

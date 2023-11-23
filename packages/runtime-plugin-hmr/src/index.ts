@@ -3,10 +3,7 @@
  */
 import type { FarmRuntimePlugin } from '@farmfe/runtime';
 import { applyHotUpdates, createHotContext } from './hot-module-state';
-import { RawHmrUpdateResult } from './types';
-declare const FARM_HMR_PORT: string | undefined;
-declare const FARM_HMR_HOST: string | undefined;
-declare const FARM_HMR_PATH: string | undefined;
+import type { RawHmrUpdateResult } from './types';
 
 const port = Number(FARM_HMR_PORT || 9000);
 // TODO use import.meta to get hostname

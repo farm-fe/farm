@@ -246,7 +246,8 @@ export interface Config {
       moduleCacheKeyStrategy?: {
         timestamp?: boolean,
         hash?: boolean,
-      }
+      };
+      envs?: Record<string, String>;
     };
 };
   jsPlugins?: JsPlugin[];

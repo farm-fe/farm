@@ -12,9 +12,7 @@ use self::{
   preset_env::PresetEnvConfig,
 };
 
-pub const FARM_GLOBAL_THIS: &str = "(globalThis || window || global || self)[__farm_namespace__]";
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
-pub const FARM_NAMESPACE: &str = "__farm_namespace__";
 
 pub mod config_regex;
 pub mod html;
@@ -104,9 +102,9 @@ impl Default for OutputConfig {
   fn default() -> Self {
     Self {
       entry_filename: "[entryName].[ext]".to_string(),
-      /// [resourceName].[contentHash].[ext]
+      // [resourceName].[contentHash].[ext]
       filename: "[resourceName].[ext]".to_string(),
-      /// [resourceName].[contentHash].[ext]
+      // [resourceName].[contentHash].[ext]
       assets_filename: "[resourceName].[ext]".to_string(),
       public_path: "/".to_string(),
       path: "dist".to_string(),

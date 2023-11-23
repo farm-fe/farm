@@ -10,7 +10,7 @@ export default <FarmRuntimePlugin>{
   },
   moduleCreated(module) {
     module.meta.env = {
-      ...process.env,
+      ...(FARM_PROCESS_ENV ?? {}),
       mode: process.env.NODE_ENV,
       dev: process.env.NODE_ENV === 'development',
       prod: process.env.NODE_ENV === 'production'

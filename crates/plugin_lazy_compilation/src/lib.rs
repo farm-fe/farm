@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  config::{Config, FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM},
+  config::{Config, FARM_MODULE_SYSTEM},
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
@@ -145,6 +145,10 @@ impl Plugin for FarmPluginLazyCompilation {
 
     if param.resolved_path.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
       if param.meta.get(ORIGINAL_RESOLVED_PATH).is_none() {
+        let farm_global_this = format!(
+          "(globalThis || window || self || global)['{}']",
+          context.config.runtime.namespace
+        );
         let resolved_path = param.resolved_path;
         let dynamic_code = include_str!("dynamic_module.ts")
           .replace("MODULE_PATH", &resolved_path.replace('\\', r"\\"))
@@ -160,7 +164,7 @@ impl Plugin for FarmPluginLazyCompilation {
           )
           .replace(
             "'FARM_MODULE_SYSTEM'",
-            &format!("{}.{}", FARM_GLOBAL_THIS, FARM_MODULE_SYSTEM),
+            &format!("{}.{}", farm_global_this, FARM_MODULE_SYSTEM),
           );
 
         Ok(Some(farmfe_core::plugin::PluginLoadHookResult {

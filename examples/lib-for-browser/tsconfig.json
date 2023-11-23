@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react"
+  },
+  "exclude": ["node_modules"],
+  "include": ["src", "farm.config.ts"]
+}

@@ -25,7 +25,8 @@ export async function getCompiler(
           targetEnv: 'node'
         },
         lazyCompilation: false,
-        sourcemap: false
+        sourcemap: false,
+        persistentCache: false
       },
       server: {
         hmr: false
