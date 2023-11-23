@@ -1,5 +1,5 @@
 //index.js:
- (globalThis || window || global || self).__farm_namespace__ = '__farm_default_namespace__';(globalThis || window || global || self)[__farm_namespace__] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
+ (globalThis || window || self || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
             var cache = {};
 
             function dynamicRequire(id) {
@@ -22,11 +22,11 @@
             require(entryModule);
           })({"d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setPlugins([]);
+    console.log("runtime/index.js")(globalThis || window || self || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 },}, "d2214aaa");(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_a93b.js';
-                (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.register(key, modules[key]);
+                (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
             }
         })({"066a321b": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
@@ -255,4 +255,4 @@
     var _resolveuri = _interop_require_default._(farmRequire("066a321b"));
     console.log((0, _cloneBuffer.default)(Buffer.from("test")));
     console.log((0, _resolveuri.default)("test"));
-},});(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global || self)[__farm_namespace__].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global || self)[__farm_namespace__].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+},});(globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
