@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.14.5
+
+### Patch Changes
+
+- 50db539e: support create https server & support restart
+- 75c7018a: Fix #774
+
 ## 0.14.4
 
 ### Patch Changes
