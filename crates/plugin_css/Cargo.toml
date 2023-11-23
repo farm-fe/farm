@@ -7,7 +7,7 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_utils = { path = "../utils" }
-farmfe_macro_cache_item = { version = "0.0.2", path = "../macro_cache_item" }
+farmfe_macro_cache_item = { path = "../macro_cache_item" }
 rkyv = { version = "0.7.42" }
 
 [dev-dependencies]
