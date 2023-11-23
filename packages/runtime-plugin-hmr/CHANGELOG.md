@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.3.1
+
+### Patch Changes
+
+- dbecdf58: fix #769 and optimize cache
+
 ## 3.3.0
 
 ### Minor Changes
