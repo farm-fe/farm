@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.8.3
+
+### Patch Changes
+
+- dbecdf58: fix #769 and optimize cache
+
 ## 0.8.2
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @farmfe/core
 
+## 0.14.4
+
+### Patch Changes
+
+- dbecdf58: fix #769 and optimize cache
+- b3a60e93: fix #768
+- Updated dependencies [dbecdf58]
+  - @farmfe/runtime-plugin-import-meta@0.0.4
+  - @farmfe/runtime-plugin-hmr@3.3.1
+  - @farmfe/runtime@0.8.3
+
 ## 0.14.3
 
 ### Patch Changes

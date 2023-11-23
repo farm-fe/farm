@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.4.2
+
+### Patch Changes
+
+- dbecdf58: fix #769 and optimize cache
+
 ## 0.4.1
 
 ### Patch Changes

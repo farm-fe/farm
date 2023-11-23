@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.0.4
+
+### Patch Changes
+
+- dbecdf58: fix #769 and optimize cache
+
 ## 0.0.3
 
 ### Patch Changes
