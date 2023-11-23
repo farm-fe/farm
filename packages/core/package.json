@@ -71,7 +71,7 @@
     "build:rs:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
     "build:rs:profile": "FARM_PROFILE=1 npm run build:rs -- --features profile",
-    "prepublishOnly": "napi prepublish -t npm && npm run build:cjs",
+    "prepublishOnly": "napi prepublish -t npm && FARM_PUBLISH=true npm run build:cjs",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",

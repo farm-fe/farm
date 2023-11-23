@@ -160,7 +160,7 @@ pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> 
   let mut result = vec![];
 
   for (name, resource) in resources_map.iter() {
-    if matches!(resource.resource_type, ResourceType::Runtime) {
+    if resource.emitted {
       continue;
     }
 
