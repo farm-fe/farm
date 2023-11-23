@@ -128,8 +128,8 @@ export function handleExclude(resolvedOptions: ResolvedOptions) {
 
 export async function dynamicImportFromESM(moduleName: string) {
   const _require = createRequire(import.meta.url);
-  const module = _require(moduleName) ?? {};
-  return module.default ?? module;
+  const mod = _require(moduleName) ?? {};
+  return mod.default ?? mod;
 }
 
 export async function loadPreProcessor<T extends PreProcessorsType>(

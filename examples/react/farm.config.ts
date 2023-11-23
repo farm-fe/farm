@@ -19,6 +19,7 @@ export default defineConfig({
       path: './build',
       publicPath: 'public'
     },
+    presetEnv: false,
     // sourcemap: true,
     css: {
       // modules: {
