@@ -120,7 +120,8 @@
     "mapref",
     "nanos",
     "cpus",
-    "bufferutil"
+    "bufferutil",
+    "clippy"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

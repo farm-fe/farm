@@ -283,7 +283,10 @@ export function viteConfigToFarmConfig(
     }
 
     farmConfig.server.strictPort = config.server.strictPort;
-    farmConfig.server.https = Boolean(config.server.https);
+    farmConfig.server.https =
+      typeof config.server.https === 'boolean'
+        ? undefined
+        : config.server.https;
     farmConfig.server.proxy = config.server.proxy as any;
     farmConfig.server.open = Boolean(config.server.open);
   }

@@ -121,6 +121,7 @@ export interface Config {
     };
     env?: Record<string, any>;
     envDir?: string;
+    envFiles?: string[];
     envPrefix?: string | string[];
     resolve?: {
       extensions?: string[];

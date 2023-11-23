@@ -1,3 +1,4 @@
+import { SecureServerOptions } from 'node:http2';
 import { DevServer } from '../index.js';
 
 import type cors from '@koa/cors';
@@ -11,7 +12,7 @@ import type { Config } from '../../binding/index.js';
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
-  https?: boolean;
+  https?: SecureServerOptions;
   protocol?: 'http' | 'https';
   hostname?: string;
   // http2?: boolean;
@@ -23,7 +24,7 @@ export interface UserServerConfig {
   cors?: boolean | cors.Options;
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
-  plugins?: DevServerPlugin[];
+  middlewares?: DevServerMiddleware[];
   writeToDisk?: boolean;
 }
 
@@ -51,7 +52,7 @@ type InternalConfig = Config['config'] extends undefined
 
 type AvailableUserConfigKeys = Exclude<
   keyof InternalConfig,
-  'configFilePath' | 'env' | 'envPrefix' | 'coreLibPath' | 'root'
+  'configFilePath' | 'env' | 'envPrefix' | 'envFiles' | 'coreLibPath' | 'root'
 >;
 
 export interface UserConfig {
@@ -93,7 +94,7 @@ export interface GlobalFarmCLIOptions {
 export interface FarmCLIServerOptions {
   port?: number;
   open?: boolean;
-  https?: boolean;
+  https?: SecureServerOptions;
   hmr?: boolean;
   host?: boolean | string;
   strictPort?: boolean;
@@ -107,7 +108,7 @@ export interface FarmCLIBuildOptions {
 
 export interface FarmCLIPreviewOptions {
   open?: boolean;
-  https?: boolean;
+  https?: SecureServerOptions;
   port?: number;
 }
 
@@ -122,4 +123,4 @@ export interface FarmCLIOptions
   clearScreen?: boolean;
 }
 
-export type DevServerPlugin = (context: DevServer) => void;
+export type DevServerMiddleware = (context: DevServer) => void;

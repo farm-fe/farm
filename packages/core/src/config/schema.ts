@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
+import { SecureServerOptions } from 'node:http2';
 
 import type { UserConfig } from './types.js';
 
@@ -223,7 +224,7 @@ const FarmConfigSchema = z
           ])
           .optional(),
         open: z.boolean().optional(),
-        https: z.boolean().optional(),
+        https: z.custom<SecureServerOptions>(),
         cors: z.boolean().optional(),
         proxy: z
           .record(
@@ -257,7 +258,7 @@ const FarmConfigSchema = z
               .strict()
           ])
           .optional(),
-        plugins: z.array(z.any()).optional(),
+        middlewares: z.array(z.any()).optional(),
         writeToDisk: z.boolean().optional()
       })
       .strict()

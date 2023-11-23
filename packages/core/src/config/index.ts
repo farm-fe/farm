@@ -94,11 +94,16 @@ export async function normalizeUserCompilationConfig(
 
   const resolvedEnvPath = envDir ? envDir : resolvedRootPath;
 
-  const userEnv = loadEnv(
+  const [userEnv, existsEnvFiles] = loadEnv(
     inlineConfig?.mode ?? mode,
     resolvedEnvPath,
     envPrefix
   );
+
+  config.envFiles = [
+    ...(Array.isArray(config.envFiles) ? config.envFiles : []),
+    ...existsEnvFiles
+  ];
 
   normalizeOutput(config, isProduction);
 
@@ -293,7 +298,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   // TODO more server options e.g: https
   headers: {},
   port: 9000,
-  https: false,
+  https: undefined,
   protocol: 'http',
   hostname: 'localhost',
   host: true,
@@ -303,22 +308,42 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   strictPort: false,
   cors: false,
   spa: true,
-  plugins: [],
+  middlewares: [],
   writeToDisk: false
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function tryAsFileRead(value?: any): string | Buffer {
+  if (typeof value === 'string' && fs.existsSync(value)) {
+    return fs.readFileSync(path.resolve(value.toString()));
+  }
+
+  return value;
+}
 
 export function normalizeDevServerOptions(
   options: UserServerConfig | undefined,
   mode: string
 ): NormalizedServerConfig {
-  const { host, port, hmr: hmrConfig } = options || {};
+  const { host, port, hmr: hmrConfig, https } = options || {};
   const isProductionMode = mode === 'production';
   const hmr =
     isProductionMode || hmrConfig === false
       ? false
       : merge({}, DEFAULT_HMR_OPTIONS, { host, port }, hmrConfig || {});
 
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, { hmr });
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
+    hmr,
+    https: https
+      ? {
+          ...https,
+          ca: tryAsFileRead(options.https.ca),
+          cert: tryAsFileRead(options.https.cert),
+          key: tryAsFileRead(options.https.key),
+          pfx: tryAsFileRead(options.https.pfx)
+        }
+      : undefined
+  });
 }
 
 /**
@@ -335,7 +360,7 @@ export async function resolveUserConfig(
   const { configPath } = inlineOptions;
   if (
     inlineOptions.clearScreen &&
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
   ) {
     clearScreen();
   }
@@ -394,7 +419,7 @@ async function readConfigFile(
   logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
     if (configFilePath.endsWith('.ts')) {

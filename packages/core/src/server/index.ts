@@ -1,15 +1,15 @@
 import http from 'node:http';
+import http2 from 'node:http2';
 import Koa from 'koa';
 
 import { Compiler } from '../compiler/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
-  DevServerPlugin,
+  DevServerMiddleware,
   normalizeDevServerOptions,
   NormalizedServerConfig,
   normalizePublicDir,
   normalizePublicPath,
-  urlRegex,
   UserConfig,
   UserServerConfig
 } from '../config/index.js';
@@ -34,6 +34,7 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Config } from '../../binding/index.js';
+import { Server } from './type.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -46,7 +47,7 @@ import { Config } from '../../binding/index.js';
 interface FarmServerContext {
   config: UserServerConfig;
   app: Koa;
-  server: http.Server;
+  server: Server;
   compiler: Compiler;
   logger: Logger;
   serverOptions?: {
@@ -72,12 +73,13 @@ interface ImplDevServer {
 
 export class DevServer implements ImplDevServer {
   private _app: Koa;
+  private restart_promise: Promise<void> | null = null;
   public _context: FarmServerContext;
 
   ws: WsServer;
   config: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
-  server?: http.Server;
+  server?: Server;
   publicDir?: string;
   publicPath?: string;
   userConfig?: UserConfig;
@@ -102,7 +104,6 @@ export class DevServer implements ImplDevServer {
       ) || '/';
     this.compilationConfig = compilationConfig;
     this.userConfig = options;
-    this.createFarmServer(options.server);
   }
 
   getCompiler(): Compiler {
@@ -119,7 +120,6 @@ export class DevServer implements ImplDevServer {
       return;
     }
     const { port, open, protocol, hostname } = this.config;
-    this.getNormalizedPublicPath();
 
     const start = Date.now();
     // compile the project and start the dev server
@@ -129,7 +129,8 @@ export class DevServer implements ImplDevServer {
 
     await this.startServer(this.config);
 
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && this.printServerUrls();
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      (await this.printServerUrls());
 
     if (open) {
       openBrowser(`${protocol}://${hostname}:${port}${this.publicPath}`);
@@ -142,16 +143,6 @@ export class DevServer implements ImplDevServer {
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this._compiler.writeResourcesToDisk(base);
-    }
-  }
-
-  private getNormalizedPublicPath(): string {
-    if (urlRegex.test(this.publicPath)) {
-      return '/';
-    } else {
-      return this.publicPath.startsWith('/')
-        ? this.publicPath
-        : `/${this.publicPath}`;
     }
   }
 
@@ -192,8 +183,11 @@ export class DevServer implements ImplDevServer {
     process.exit(0);
   }
 
-  async restart() {
-    // TODO restart
+  async restart(promise: () => Promise<void>) {
+    if (!this.restart_promise) {
+      this.restart_promise = promise();
+    }
+    return this.restart_promise;
   }
 
   async closeFarmServer() {
@@ -211,7 +205,7 @@ export class DevServer implements ImplDevServer {
   }
 
   public createFarmServer(options: UserServerConfig) {
-    const { https = false, host = 'localhost', plugins = [] } = options;
+    const { https, host = 'localhost', middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
     if (typeof host !== 'boolean') {
@@ -225,7 +219,18 @@ export class DevServer implements ImplDevServer {
     );
 
     this._app = new Koa();
-    this.server = http.createServer(this._app.callback());
+    if (https) {
+      this.server = http2.createSecureServer(
+        {
+          ...https,
+          allowHTTP1: true
+        },
+        this._app.callback()
+      );
+    } else {
+      this.server = http.createServer(this._app.callback());
+    }
+
     this.ws = new WsServer(this.server, this.config, true);
 
     this._context = {
@@ -236,7 +241,7 @@ export class DevServer implements ImplDevServer {
       logger: this.logger,
       serverOptions: {}
     };
-    this.resolvedFarmServerPlugins(plugins);
+    this.resolvedFarmServerMiddleware(middlewares);
   }
 
   static async resolvePortConflict(
@@ -300,7 +305,9 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  private resolvedFarmServerPlugins(middlewares?: DevServerPlugin[]): void {
+  private resolvedFarmServerMiddleware(
+    middlewares?: DevServerMiddleware[]
+  ): void {
     const resolvedPlugins = [
       ...(middlewares || []),
       headersPlugin,

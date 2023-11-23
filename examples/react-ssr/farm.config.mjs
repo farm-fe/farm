@@ -24,7 +24,7 @@ export default {
   server: {
     hmr: true,
     cors: true,
-    plugins: [
+    middlewares: [
       (server) => {
         server.app().use(async (ctx, next) => {
           await next();
