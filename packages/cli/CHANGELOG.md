@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.10
+
+### Patch Changes
+
+- b9a48466: bump version
+
 ## 0.5.9
 
 ### Patch Changes
