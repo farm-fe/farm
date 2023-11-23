@@ -87,7 +87,11 @@ impl Compiler {
             return [r, vec![(path, update_type)]].concat();
           };
 
-          r
+          if !r.is_empty() {
+            r
+          } else {
+            vec![(path, update_type)]
+          }
         } else {
           vec![(path, update_type)]
         }

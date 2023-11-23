@@ -133,7 +133,9 @@ impl Plugin for FarmPluginStaticAssets {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if matches!(param.module_type, ModuleType::Asset) || self.is_asset_query(&param.query) {
+    if matches!(param.module_type, ModuleType::Asset)
+      || (self.is_asset_query(&param.query) && param.content.is_empty())
+    {
       // let resolve_kind = ResolveKind::from(
       //   param
       //     .meta
