@@ -1,8 +1,6 @@
 import { readFileSync } from 'node:fs';
-import Module from 'node:module';
-import { pathToFileURL } from 'node:url';
 import { cac } from 'cac';
-import { DefaultLogger, isWindows } from '@farmfe/core';
+import { DefaultLogger } from '@farmfe/core';
 import { getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
@@ -13,7 +11,6 @@ import type {
   FarmCLIServerOptions,
   GlobalFarmCLIOptions
 } from './types.js';
-import path from 'node:path';
 
 const logger = new DefaultLogger();
 
