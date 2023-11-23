@@ -8,6 +8,7 @@ use farmfe_core::{
   config::Config,
   context::{CompilationContext, EmitFileParams},
   deserialize,
+  error::CompilationError,
   module::ModuleType,
   // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
   plugin::{Plugin, PluginResolveHookResult},
@@ -32,6 +33,12 @@ lazy_static! {
 const PLUGIN_NAME: &str = "FarmPluginStaticAssets";
 const PUBLIC_ASSET_PREFIX: &str = "virtual:__FARM_PUBLIC_ASSET__:";
 
+fn is_asset_query(query: &Vec<(String, String)>) -> bool {
+  let query_map = query.iter().cloned().collect::<HashMap<_, _>>();
+
+  query_map.contains_key("raw") || query_map.contains_key("inline") || query_map.contains_key("url")
+}
+
 pub struct FarmPluginStaticAssets {}
 
 impl FarmPluginStaticAssets {
@@ -49,14 +56,6 @@ impl FarmPluginStaticAssets {
         .include
         .iter()
         .any(|a| a.eq_ignore_ascii_case(ext))
-  }
-
-  fn is_asset_query(&self, query: &Vec<(String, String)>) -> bool {
-    let query_map = query.iter().cloned().collect::<HashMap<_, _>>();
-
-    query_map.contains_key("raw")
-      || query_map.contains_key("inline")
-      || query_map.contains_key("url")
   }
 }
 
@@ -117,7 +116,7 @@ impl Plugin for FarmPluginStaticAssets {
         module_type: ModuleType::Js,
       }));
     } else if let Some(ext) = extension {
-      if self.is_asset(ext, context) || self.is_asset_query(&param.query) {
+      if self.is_asset(ext, context) {
         return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
           content: String::new(), // just return empty string, we don't need to load the file content, we will handle it in the transform hook
           module_type: ModuleType::Asset,
@@ -133,9 +132,7 @@ impl Plugin for FarmPluginStaticAssets {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if matches!(param.module_type, ModuleType::Asset)
-      || (self.is_asset_query(&param.query) && param.content.is_empty())
-    {
+    if matches!(param.module_type, ModuleType::Asset) {
       // let resolve_kind = ResolveKind::from(
       //   param
       //     .meta
@@ -145,8 +142,11 @@ impl Plugin for FarmPluginStaticAssets {
       // );
 
       if param.query.iter().any(|(k, _)| k == "inline") {
-        let file_raw = read_file_raw(param.resolved_path)?;
-        let file_base64 = general_purpose::STANDARD.encode(file_raw);
+        let file_base64 = if param.content.is_empty() {
+          general_purpose::STANDARD.encode(read_file_raw(param.resolved_path)?)
+        } else {
+          param.content.clone()
+        };
         let path = Path::new(param.resolved_path);
         let ext = path.extension().and_then(|s| s.to_str()).unwrap();
         // TODO: recognize MIME type
@@ -162,7 +162,11 @@ impl Plugin for FarmPluginStaticAssets {
           ignore_previous_source_map: false,
         }));
       } else if param.query.iter().any(|(k, _)| k == "raw") {
-        let file_utf8 = read_file_utf8(param.resolved_path)?;
+        let file_utf8 = if param.content.is_empty() {
+          read_file_utf8(param.resolved_path)?
+        } else {
+          param.content.clone()
+        };
         let content = format!("export default {:?}", file_utf8.replace("\r\n", "\n"));
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
@@ -176,7 +180,16 @@ impl Plugin for FarmPluginStaticAssets {
           .file_prefix()
           .and_then(|s| s.to_str())
           .unwrap();
-        let bytes = read_file_raw(param.resolved_path)?;
+        let bytes = if param.content.is_empty() {
+          read_file_raw(param.resolved_path)?
+        } else {
+          general_purpose::STANDARD
+            .decode(param.content.clone())
+            .map_err(|e| CompilationError::GenericError(
+                format!("Invalid assets: Assets returned by plugins in transform hook should be encoded in base64. {:?}", e)
+              )
+            )?
+        };
         let ext = Path::new(param.resolved_path)
           .extension()
           .and_then(|s| s.to_str())
@@ -276,4 +289,38 @@ impl Plugin for FarmPluginStaticAssets {
 #[cache_item]
 struct CachedStaticAssets {
   list: Vec<Resource>,
+}
+
+pub struct FarmPluginRaw {}
+
+impl FarmPluginRaw {
+  pub fn new(_: &Config) -> Self {
+    Self {}
+  }
+}
+
+impl Plugin for FarmPluginRaw {
+  fn name(&self) -> &str {
+    "FARM_PLUGIN_RAW"
+  }
+  /// Make sure this plugin is executed last
+  fn priority(&self) -> i32 {
+    101
+  }
+
+  fn load(
+    &self,
+    param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    if is_asset_query(&param.query) {
+      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+        content: String::new(), // just return empty string, we don't need to load the file content, we will handle it in the transform hook
+        module_type: ModuleType::Asset,
+      }));
+    }
+
+    Ok(None)
+  }
 }

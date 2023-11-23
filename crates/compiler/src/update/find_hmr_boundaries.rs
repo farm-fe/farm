@@ -1,8 +1,10 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{
+  collections::{HashMap, HashSet},
+  sync::Arc,
+};
 
 use farmfe_core::{
   context::CompilationContext,
-
   module::{module_graph::ModuleGraph, ModuleId},
 };
 
