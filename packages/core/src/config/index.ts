@@ -430,7 +430,11 @@ async function readConfigFile(
         'node_modules',
         '.farm'
       );
-      const fileName = 'farm.config.bundle.cjs';
+
+      const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
+        .toString(16)
+        .split('.')
+        .join('')}}.cjs`;
       const normalizedConfig = await normalizeUserCompilationConfig(
         null,
         {
@@ -485,8 +489,12 @@ async function readConfigFile(
         ? pathToFileURL(path.join(outputPath, fileName))
         : path.join(outputPath, fileName);
 
-      // Change to vm.module of node or loaders as far as it is stable
-      return (await import(filePath as string)).default;
+      try {
+        // Change to vm.module of node or loaders as far as it is stable
+        return (await import(filePath as string)).default;
+      } finally {
+        fs.unlink(filePath, () => void 0);
+      }
     } else {
       const filePath = isWindows
         ? pathToFileURL(configFilePath)
