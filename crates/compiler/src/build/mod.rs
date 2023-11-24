@@ -35,9 +35,8 @@ use crate::{
 };
 
 use self::module_cache::{
-  clear_unused_cached_modules, get_content_hash_of_module, get_timestamp_of_module,
-  load_module_graph_cache_into_context, set_module_graph_cache, try_get_module_cache_by_hash,
-  try_get_module_cache_by_timestamp,
+  get_content_hash_of_module, get_timestamp_of_module, handle_cached_modules,
+  set_module_graph_cache, try_get_module_cache_by_hash, try_get_module_cache_by_timestamp,
 };
 
 macro_rules! call_and_catch_error {
@@ -71,6 +70,25 @@ pub(crate) struct ResolvedModuleInfo {
   pub resolve_module_id_result: ResolveModuleIdResult,
 }
 
+pub(crate) struct BuildModuleGraphThreadedParams {
+  pub thread_pool: Arc<ThreadPool>,
+  pub resolve_param: PluginResolveHookParam,
+  pub context: Arc<CompilationContext>,
+  pub err_sender: Sender<CompilationError>,
+  pub order: usize,
+  pub cached_dependency: Option<ModuleId>,
+}
+
+pub(crate) struct HandleDependenciesParams<'a> {
+  pub module: Module,
+  pub resolve_param: &'a PluginResolveHookParam,
+  pub order: usize,
+  pub deps: Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)>,
+  pub thread_pool: Arc<ThreadPool>,
+  pub err_sender: Sender<CompilationError>,
+  pub context: Arc<CompilationContext>,
+}
+
 enum ResolveModuleResult {
   /// The module is already built
   Built(ModuleId),
@@ -83,25 +101,22 @@ impl Compiler {
     self.context.plugin_driver.build_start(&self.context)?;
     validate_config::validate_config(&self.context.config);
 
-    if self.context.config.persistent_cache.enabled() {
-      // load module graph cache
-      load_module_graph_cache_into_context(&self.context)?;
-    }
-
     let (err_sender, err_receiver) = Self::create_thread_channel();
 
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
-      Self::build_module_graph_threaded(
-        self.thread_pool.clone(),
-        PluginResolveHookParam {
+      let params = BuildModuleGraphThreadedParams {
+        thread_pool: self.thread_pool.clone(),
+        resolve_param: PluginResolveHookParam {
           source: source.clone(),
           importer: None,
           kind: ResolveKind::Entry(name.clone()),
         },
-        self.context.clone(),
-        err_sender.clone(),
+        context: self.context.clone(),
+        err_sender: err_sender.clone(),
         order,
-      );
+        cached_dependency: None,
+      };
+      Self::build_module_graph_threaded(params);
     }
 
     drop(err_sender);
@@ -131,8 +146,6 @@ impl Compiler {
 
     // set module graph cache
     if self.context.config.persistent_cache.enabled() {
-      // clear unused cached modules
-      clear_unused_cached_modules(&self.context);
       let module_ids = self
         .context
         .module_graph
@@ -212,7 +225,7 @@ impl Compiler {
     resolve_result: PluginResolveHookResult,
     module: &mut Module,
     context: &Arc<CompilationContext>,
-  ) -> Result<Vec<PluginAnalyzeDepsHookResultEntry>> {
+  ) -> Result<Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)>> {
     module.last_update_timestamp = get_timestamp_of_module(&module.id, &context.config.root);
 
     if let Some(cached_module) =
@@ -310,7 +323,7 @@ impl Compiler {
       &hook_context,
     )?;
 
-    Ok(deps)
+    Ok(deps.into_iter().map(|dep| (dep, None)).collect())
   }
 
   fn build_module_after_transform(
@@ -370,15 +383,64 @@ impl Compiler {
   }
 
   /// resolving, loading, transforming and parsing a module in a separate thread
-  fn build_module_graph_threaded(
-    thread_pool: Arc<ThreadPool>,
-    resolve_param: PluginResolveHookParam,
-    context: Arc<CompilationContext>,
-    err_sender: Sender<CompilationError>,
-    order: usize,
-  ) {
+  fn build_module_graph_threaded(params: BuildModuleGraphThreadedParams) {
+    let BuildModuleGraphThreadedParams {
+      thread_pool,
+      resolve_param,
+      context,
+      err_sender,
+      order,
+      cached_dependency,
+    } = params;
+
     let c_thread_pool = thread_pool.clone();
     thread_pool.spawn(move || {
+      // skip resolve, build and timestamp/hash check for cached immutable modules
+      if let Some(cached_dependency) = cached_dependency {
+        let module_cache_manager = &context.cache_manager.module_cache;
+
+        if module_cache_manager.has_cache(&cached_dependency)
+          && module_cache_manager
+            .get_cache_ref(&cached_dependency)
+            .module
+            .immutable
+        {
+          // if module is already in the module graph, return
+          if context.module_graph.read().has_module(&cached_dependency) {
+            Self::add_edge(&resolve_param, cached_dependency, order, &context);
+            return;
+          }
+          // if the dependency is immutable, skip building
+          let mut cached_module = module_cache_manager.get_cache(&cached_dependency);
+
+          if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
+            err_sender.send(e).unwrap();
+            return;
+          }
+          // insert the entry name to the module graph
+          if let Some(entry_name) = cached_module.entry_name {
+            context
+              .module_graph
+              .write()
+              .entries
+              .insert(cached_module.module.id.clone(), entry_name.to_string());
+          }
+
+          let params = HandleDependenciesParams {
+            module: cached_module.module,
+            resolve_param: &resolve_param,
+            order,
+            deps: CachedModule::dep_sources(cached_module.dependencies),
+            thread_pool: c_thread_pool,
+            err_sender,
+            context,
+          };
+
+          Self::handle_dependencies(params);
+          return;
+        }
+      }
+
       let resolve_module_result = match resolve_module(&resolve_param, &context) {
         Ok(r) => r,
         Err(e) => {
@@ -416,32 +478,56 @@ impl Compiler {
               err_sender.send(e).unwrap();
             }
             Ok(deps) => {
-              farm_profile_scope!(format!("build module {:?}", module.id));
-              let module_id = module.id.clone();
-              // add module to the graph
-              Self::add_module(module, &resolve_param.kind, &context);
-              // add edge to the graph
-              Self::add_edge(&resolve_param, module_id.clone(), order, &context);
-
-              // resolving dependencies recursively in the thread pool
-              for (order, dep) in deps.into_iter().enumerate() {
-                Self::build_module_graph_threaded(
-                  c_thread_pool.clone(),
-                  PluginResolveHookParam {
-                    source: dep.source,
-                    importer: Some(module_id.clone()),
-                    kind: dep.kind,
-                  },
-                  context.clone(),
-                  err_sender.clone(),
-                  order,
-                );
-              }
+              let params = HandleDependenciesParams {
+                module,
+                resolve_param: &resolve_param,
+                order,
+                deps,
+                thread_pool: c_thread_pool,
+                err_sender,
+                context,
+              };
+              Self::handle_dependencies(params);
             }
           }
         }
       }
     });
+  }
+
+  pub(crate) fn handle_dependencies(params: HandleDependenciesParams) {
+    let HandleDependenciesParams {
+      module,
+      resolve_param,
+      order,
+      deps,
+      thread_pool,
+      err_sender,
+      context,
+    } = params;
+
+    let module_id = module.id.clone();
+    // add module to the graph
+    Self::add_module(module, &resolve_param.kind, &context);
+    // add edge to the graph
+    Self::add_edge(resolve_param, module_id.clone(), order, &context);
+
+    // resolving dependencies recursively in the thread pool
+    for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
+      let params = BuildModuleGraphThreadedParams {
+        thread_pool: thread_pool.clone(),
+        resolve_param: PluginResolveHookParam {
+          source: dep.source,
+          importer: Some(module_id.clone()),
+          kind: dep.kind,
+        },
+        context: context.clone(),
+        err_sender: err_sender.clone(),
+        order,
+        cached_dependency,
+      };
+      Self::build_module_graph_threaded(params);
+    }
   }
 
   pub(crate) fn add_edge(
@@ -512,13 +598,13 @@ fn resolve_module(
   context: &Arc<CompilationContext>,
 ) -> Result<ResolveModuleResult> {
   let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
-  let mut module_graph = context.module_graph.write();
   let module_id = if resolve_module_id_result.resolve_result.external {
     resolve_param.source.as_str().into()
   } else {
     resolve_module_id_result.module_id.clone()
   };
 
+  let mut module_graph = context.module_graph.write();
   let res = if module_graph.has_module(&module_id) {
     // the module has already been handled and it should not be handled twice
     ResolveModuleResult::Built(resolve_module_id_result.module_id)

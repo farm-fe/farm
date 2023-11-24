@@ -29,6 +29,12 @@ export async function normalizePersistentCache(
     config.persistentCache.envs = config.env;
   }
 
+  for (const lockfile of ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
+    if (!config.persistentCache.buildDependencies.includes(lockfile)) {
+      config.persistentCache.buildDependencies.push(lockfile);
+    }
+  }
+
   if (config?.output?.targetEnv === 'node') {
     if (!config.persistentCache.moduleCacheKeyStrategy) {
       config.persistentCache.moduleCacheKeyStrategy = {};

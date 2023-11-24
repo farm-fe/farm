@@ -50,18 +50,29 @@ pub struct CachedModule {
 impl CachedModule {
   pub fn dep_sources(
     dependencies: Vec<CachedModuleDependency>,
-  ) -> Vec<PluginAnalyzeDepsHookResultEntry> {
+  ) -> Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)> {
     dependencies
       .into_iter()
       .flat_map(|dep| {
-        dep
+        let cloned_dep = dep.dependency;
+
+        let mut sorted_dep = dep
           .edge_info
           .0
           .into_iter()
-          .map(|item| PluginAnalyzeDepsHookResultEntry {
-            source: item.source,
-            kind: item.kind,
-          })
+          .map(|item| (item.source, item.kind, item.order))
+          .collect::<Vec<_>>();
+        sorted_dep.sort_by(|a, b| a.2.cmp(&b.2));
+
+        sorted_dep.into_iter().map(move |item| {
+          (
+            PluginAnalyzeDepsHookResultEntry {
+              source: item.0,
+              kind: item.1,
+            },
+            Some(cloned_dep.clone()),
+          )
+        })
       })
       .collect()
   }

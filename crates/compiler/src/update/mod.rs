@@ -39,9 +39,9 @@ mod handle_update_modules;
 mod module_cache;
 mod patch_module_group_graph;
 mod regenerate_resources;
-mod update_context;
+pub(crate) mod update_context;
 
-enum ResolveModuleResult {
+pub(crate) enum ResolveModuleResult {
   /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
   ExistingBeforeUpdate(ModuleId),
   /// This module is added during the update, and we met it again when resolving dependencies
@@ -321,7 +321,7 @@ impl Compiler {
                 order,
               );
 
-              for (order, dep) in deps.into_iter().enumerate() {
+              for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
                 Self::update_module_graph_threaded(
                   c_thread_pool.clone(),
                   PluginResolveHookParam {
