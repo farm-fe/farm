@@ -409,8 +409,10 @@ export async function resolveUserConfig(
     userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
   );
 
-  const dependencies = await traceDependencies(userConfig.resolveConfigPath);
-  userConfig.configFileDependencies = dependencies;
+  if (userConfig.resolveConfigPath) {
+    const dependencies = await traceDependencies(userConfig.resolveConfigPath);
+    userConfig.configFileDependencies = dependencies;
+  }
 
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
