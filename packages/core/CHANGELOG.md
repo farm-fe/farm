@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.14.6
+
+### Patch Changes
+
+- e38729de: fix import config cache
+- 1c862451: fix #774 again
+
 ## 0.14.5
 
 ### Patch Changes
