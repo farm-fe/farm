@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.10",
-    "@farmfe/core": "^0.14.5",
+    "@farmfe/core": "^0.14.6",
     "@farmfe/plugin-react": "^0.4.1",
     "@types/react": "18",
     "@types/react-dom": "18",
