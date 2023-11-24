@@ -35,6 +35,12 @@ test('resolveUserConfig', async () => {
       'config',
       'farm.config.ts'
     ),
+    configFileDependencies: [
+      path.join(filePath, '..', 'src', 'config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'util.ts'),
+      'module'
+    ],
     inlineConfig: {
       configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
     },

@@ -411,6 +411,7 @@ export async function resolveUserConfig(
 
   if (userConfig.resolveConfigPath) {
     const dependencies = await traceDependencies(userConfig.resolveConfigPath);
+    dependencies.sort();
     userConfig.configFileDependencies = dependencies;
   }
 
