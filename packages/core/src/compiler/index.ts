@@ -160,6 +160,14 @@ export class Compiler {
       return p.slice(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX.length);
     }
 
+    if (path.isAbsolute(p)) {
+      return p;
+    }
+
+    if (p.includes('?')) {
+      return path.join(root, p.split('?')[0]);
+    }
+
     return path.join(root, p);
   }
 

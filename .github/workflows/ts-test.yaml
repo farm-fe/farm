@@ -50,12 +50,12 @@ jobs:
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test -- --coverage
       
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
-        with:
-          limit-access-to-actor: true
+      # - name: Setup tmate session
+      #   if: ${{ failure() }}
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 30
+      #   with:
+      #     limit-access-to-actor: true
       # - name: Coverage
       #   uses: codecov/codecov-action@v3
       #   with:

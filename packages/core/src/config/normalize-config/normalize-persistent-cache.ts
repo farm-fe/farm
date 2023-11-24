@@ -39,7 +39,9 @@ export async function normalizePersistentCache(
 
   // trace all build dependencies of the config file
   if (config.configFilePath) {
-    const files = await traceDependencies(config.configFilePath);
+    const files = resolvedUserConfig?.configFileDependencies?.length
+      ? resolvedUserConfig.configFileDependencies
+      : await traceDependencies(config.configFilePath);
 
     const packages = [];
 
@@ -73,6 +75,11 @@ export async function normalizePersistentCache(
           const key = `${packageJson.name}@${packageJson.version}`;
           config.persistentCache.buildDependencies.push(key);
         } catch (e) {
+          if (typeof p === 'string') {
+            config.persistentCache.buildDependencies.push(p);
+          } else if (Array.isArray(p) && typeof p[0] === 'string') {
+            config.persistentCache.buildDependencies.push(p[0]);
+          }
           continue;
         }
       }
