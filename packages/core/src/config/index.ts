@@ -34,6 +34,7 @@ import type {
 } from './types.js';
 import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
 import { normalizeOutput } from './normalize-config/normalize-output.js';
+import { traceDependencies } from '../utils/trace-dependencies.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -407,6 +408,9 @@ export async function resolveUserConfig(
   const targetWeb = !(
     userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
   );
+
+  const dependencies = await traceDependencies(userConfig.resolveConfigPath);
+  userConfig.configFileDependencies = dependencies;
 
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service

@@ -360,8 +360,11 @@ impl JsCompiler {
     let module_graph = context.module_graph.read();
     let watch_graph = context.watch_graph.read();
     let module_id = ModuleId::new(&resolved_path, "", &context.config.root);
+    let module_ids_by_file = module_graph.module_ids_by_file(&module_id);
 
-    module_graph.has_module(&module_id) || watch_graph.has_module(&module_id)
+    module_graph.has_module(&module_id)
+      || watch_graph.has_module(&module_id)
+      || !module_ids_by_file.is_empty()
   }
 
   #[napi]

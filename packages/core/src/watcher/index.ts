@@ -96,7 +96,7 @@ export class FileWatcher implements ImplFileWatcher {
           );
           return resolvedPath;
         });
-        this._watcher.watch(added);
+        this._watcher.watch([...new Set(added)]);
       });
     }
   }
