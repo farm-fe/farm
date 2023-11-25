@@ -167,7 +167,10 @@ pub fn set_module_graph_cache(
     .for_each(|module| {
       // Replace the module with a placeholder module to prevent the module from being cloned
       let cloned_module = module.clone();
-      let dependencies = cached_dependency_map.remove(&module.id).unwrap().1;
+      let dependencies = cached_dependency_map
+        .remove(&module.id)
+        .unwrap_or_else(|| panic!("module {:?} not found in cached_dependency_map", module.id))
+        .1;
 
       let resolved_path = module.id.resolved_path(&context.config.root);
       let package_info =
@@ -177,7 +180,6 @@ pub fn set_module_graph_cache(
         dependencies,
         package_name: package_info.name.unwrap_or("default".to_string()),
         package_version: package_info.version.unwrap_or("0.0.0".to_string()),
-        entry_name: module_graph.entries.get(&module.id).cloned(),
         watch_dependencies: context
           .watch_graph
           .read()
@@ -188,7 +190,7 @@ pub fn set_module_graph_cache(
             let content = if resolved_path.exists() {
               std::fs::read_to_string(resolved_path).unwrap()
             } else {
-              // treat the virtual module as always changed for now
+              // treat the virtual module as always unchanged for now
               "empty".to_string()
             };
             CachedWatchDependency {

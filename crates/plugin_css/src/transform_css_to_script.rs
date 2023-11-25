@@ -1,10 +1,14 @@
+use rkyv::Deserialize;
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
+  cache::cache_store::CacheStoreKey,
   context::CompilationContext,
+  deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   module::{ModuleId, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
   rayon::prelude::*,
+  serialize,
   swc_common::Mark,
   swc_css_ast::Stylesheet,
   swc_ecma_ast::EsVersion,
@@ -35,6 +39,31 @@ pub fn transform_css_to_script_modules(
       matches!(m.module_type, ModuleType::Css)
     })
     .try_for_each(|module_id: ModuleId| {
+      // try read custom css transform cache
+      let store_key = CacheStoreKey {
+        name: module_id.to_string() + "-transform_css_to_script_modules",
+        key: context
+          .module_graph
+          .read()
+          .module(&module_id)
+          .unwrap()
+          .content_hash
+          .clone(),
+      };
+      let cache_manager = &context.cache_manager;
+
+      if cache_manager.custom.has_cache(&store_key.name)
+        && !cache_manager.custom.is_cache_changed(&store_key)
+      {
+        let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
+        let meta = deserialize!(&cache, ModuleMetaData);
+        let mut module_graph = context.module_graph.write();
+        let module = module_graph.module_mut(&module_id).unwrap();
+        module.meta = meta;
+        module.module_type = ModuleType::Js;
+        return Ok(());
+      }
+
       let stylesheet = transform_css_stylesheet(&module_id, context);
       let css_deps = transform_css_deps(&module_id, context);
 
@@ -120,6 +149,12 @@ pub fn transform_css_to_script_modules(
         });
 
         module.module_type = ModuleType::Js;
+
+        let bytes = serialize!(&module.meta);
+        cache_manager
+          .custom
+          .write_single_cache(store_key, bytes)
+          .expect("failed to write css transform cache");
       })
     })
 }

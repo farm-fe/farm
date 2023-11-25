@@ -79,9 +79,9 @@ pub(crate) struct BuildModuleGraphThreadedParams {
   pub cached_dependency: Option<ModuleId>,
 }
 
-pub(crate) struct HandleDependenciesParams<'a> {
+pub(crate) struct HandleDependenciesParams {
   pub module: Module,
-  pub resolve_param: &'a PluginResolveHookParam,
+  pub resolve_param: PluginResolveHookParam,
   pub order: usize,
   pub deps: Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)>,
   pub thread_pool: Arc<ThreadPool>,
@@ -92,6 +92,7 @@ pub(crate) struct HandleDependenciesParams<'a> {
 enum ResolveModuleResult {
   /// The module is already built
   Built(ModuleId),
+  Cached(CachedModule),
   /// A full new normal module resolved successfully
   Success(Box<ResolvedModuleInfo>),
 }
@@ -226,7 +227,12 @@ impl Compiler {
     module: &mut Module,
     context: &Arc<CompilationContext>,
   ) -> Result<Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)>> {
-    module.last_update_timestamp = get_timestamp_of_module(&module.id, &context.config.root);
+    // skip timestamp and content hash for immutable modules
+    module.last_update_timestamp = if module.immutable {
+      0
+    } else {
+      get_timestamp_of_module(&module.id, &context.config.root)
+    };
 
     if let Some(cached_module) =
       try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, context)?
@@ -304,7 +310,11 @@ impl Compiler {
     let transform_result = call_and_catch_error!(transform, transform_param, context);
     // ================ Transform End ===============
     module.content = Arc::new(transform_result.content.clone());
-    module.content_hash = get_content_hash_of_module(&transform_result.content);
+    module.content_hash = if module.immutable {
+      "immutable_module".to_string()
+    } else {
+      get_content_hash_of_module(&transform_result.content)
+    };
 
     // skip building if the module is already built and the cache is enabled
     if let Some(cached_module) =
@@ -396,52 +406,8 @@ impl Compiler {
     let c_thread_pool = thread_pool.clone();
     thread_pool.spawn(move || {
       // skip resolve, build and timestamp/hash check for cached immutable modules
-      if let Some(cached_dependency) = cached_dependency {
-        let module_cache_manager = &context.cache_manager.module_cache;
-
-        if module_cache_manager.has_cache(&cached_dependency)
-          && module_cache_manager
-            .get_cache_ref(&cached_dependency)
-            .module
-            .immutable
-        {
-          // if module is already in the module graph, return
-          if context.module_graph.read().has_module(&cached_dependency) {
-            Self::add_edge(&resolve_param, cached_dependency, order, &context);
-            return;
-          }
-          // if the dependency is immutable, skip building
-          let mut cached_module = module_cache_manager.get_cache(&cached_dependency);
-
-          if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
-            err_sender.send(e).unwrap();
-            return;
-          }
-          // insert the entry name to the module graph
-          if let Some(entry_name) = cached_module.entry_name {
-            context
-              .module_graph
-              .write()
-              .entries
-              .insert(cached_module.module.id.clone(), entry_name.to_string());
-          }
-
-          let params = HandleDependenciesParams {
-            module: cached_module.module,
-            resolve_param: &resolve_param,
-            order,
-            deps: CachedModule::dep_sources(cached_module.dependencies),
-            thread_pool: c_thread_pool,
-            err_sender,
-            context,
-          };
-
-          Self::handle_dependencies(params);
-          return;
-        }
-      }
-
-      let resolve_module_result = match resolve_module(&resolve_param, &context) {
+      let resolve_module_result = match resolve_module(&resolve_param, cached_dependency, &context)
+      {
         Ok(r) => r,
         Err(e) => {
           err_sender.send(e).unwrap();
@@ -453,6 +419,25 @@ impl Compiler {
         ResolveModuleResult::Built(module_id) => {
           // add edge to the graph
           Self::add_edge(&resolve_param, module_id, order, &context);
+        }
+        ResolveModuleResult::Cached(mut cached_module) => {
+          // if the dependency is immutable, skip building
+          if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
+            err_sender.send(e).unwrap();
+            return;
+          }
+
+          let params = HandleDependenciesParams {
+            module: cached_module.module,
+            resolve_param,
+            order,
+            deps: CachedModule::dep_sources(cached_module.dependencies),
+            thread_pool: c_thread_pool,
+            err_sender,
+            context,
+          };
+
+          Self::handle_dependencies(params);
         }
         ResolveModuleResult::Success(box ResolvedModuleInfo {
           mut module,
@@ -477,7 +462,7 @@ impl Compiler {
             Ok(deps) => {
               let params = HandleDependenciesParams {
                 module,
-                resolve_param: &resolve_param,
+                resolve_param,
                 order,
                 deps,
                 thread_pool: c_thread_pool,
@@ -492,7 +477,7 @@ impl Compiler {
     });
   }
 
-  pub(crate) fn handle_dependencies(params: HandleDependenciesParams) {
+  fn handle_dependencies(params: HandleDependenciesParams) {
     let HandleDependenciesParams {
       module,
       resolve_param,
@@ -507,7 +492,7 @@ impl Compiler {
     // add module to the graph
     Self::add_module(module, &resolve_param.kind, &context);
     // add edge to the graph
-    Self::add_edge(resolve_param, module_id.clone(), order, &context);
+    Self::add_edge(&resolve_param, module_id.clone(), order, &context);
 
     // resolving dependencies recursively in the thread pool
     for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
@@ -592,20 +577,40 @@ impl Compiler {
 
 fn resolve_module(
   resolve_param: &PluginResolveHookParam,
+  cached_dependency: Option<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> Result<ResolveModuleResult> {
-  let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
-  let module_id = if resolve_module_id_result.resolve_result.external {
-    resolve_param.source.as_str().into()
+  let mut resolve_module_id_result = None;
+  let module_id = if let Some(cached_dependency) = &cached_dependency {
+    cached_dependency.clone()
   } else {
-    resolve_module_id_result.module_id.clone()
+    resolve_module_id_result = Some(Compiler::resolve_module_id(resolve_param, context)?);
+    resolve_module_id_result.as_ref().unwrap().module_id.clone()
   };
 
   let mut module_graph = context.module_graph.write();
+
   let res = if module_graph.has_module(&module_id) {
     // the module has already been handled and it should not be handled twice
-    ResolveModuleResult::Built(resolve_module_id_result.module_id)
+    ResolveModuleResult::Built(module_id)
   } else {
+    if let Some(cached_dependency) = cached_dependency {
+      let module_cache_manager = &context.cache_manager.module_cache;
+
+      if module_cache_manager.has_cache(&cached_dependency)
+        && module_cache_manager
+          .get_cache_ref(&cached_dependency)
+          .module
+          .immutable
+      {
+        return Ok(ResolveModuleResult::Cached(
+          module_cache_manager.get_cache(&cached_dependency),
+        ));
+      }
+    }
+
+    let resolve_module_id_result =
+      resolve_module_id_result.unwrap_or(Compiler::resolve_module_id(resolve_param, context)?);
     // insert a dummy module to the graph to prevent the module from being handled twice
     module_graph.add_module(Compiler::create_module(
       resolve_module_id_result.module_id.clone(),

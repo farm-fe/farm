@@ -251,7 +251,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
     cache_map.insert(
       CacheStoreKey {
         name: MANIFEST_KEY.to_string(),
-        key: MANIFEST_KEY.to_string(),
+        key: sha256(manifest_bytes.as_slice(), 32),
       },
       manifest_bytes,
     );
