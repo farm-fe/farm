@@ -354,6 +354,11 @@ export function normalizeDevServerOptions(
   });
 }
 
+type ResolveConfigType = {
+  config?: UserConfig;
+  normalizedConfig?: Config;
+};
+
 /**
  * Resolve and load user config from the specified path
  * @param configPath
@@ -363,7 +368,8 @@ export async function resolveConfig(
   logger: Logger,
   command: 'serve' | 'build',
   mode?: CompilationMode
-): Promise<any> {
+): Promise<ResolveConfigType> {
+  // Promise<Config>
   let userConfig: ResolvedUserConfig = {};
   const root: string = process.cwd();
   const { configPath } = inlineOptions;
@@ -430,14 +436,14 @@ export async function resolveConfig(
 
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
-  const config = filterUserConfig(userConfig, inlineOptions);
+  let config = filterUserConfig(userConfig, inlineOptions);
   const { jsPlugins } = await resolvePlugins({}, config);
 
-  const baseConfig = await resolveConfigHook(config, configEnv, jsPlugins);
+  config = await resolveConfigHook(config, configEnv, jsPlugins);
 
   const resultConfig = await normalizeUserCompilationConfig(
     inlineOptions,
-    baseConfig,
+    config,
     logger,
     mode
   );
@@ -469,6 +475,7 @@ async function readConfigFile(
         .toString(16)
         .split('.')
         .join('')}}.cjs`;
+
       const normalizedConfig = await normalizeUserCompilationConfig(
         null,
         {
