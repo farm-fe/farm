@@ -460,10 +460,7 @@ impl Compiler {
         }) => {
           if resolve_module_id_result.resolve_result.external {
             // insert external module to the graph
-            let module_id: ModuleId = resolve_param.source.as_str().into();
-            let mut module = Module::new(module_id.clone());
-            module.external = true;
-
+            let module_id = module.id.clone();
             Self::add_module(module, &resolve_param.kind, &context);
             Self::add_edge(&resolve_param, module_id, order, &context);
             return;

@@ -113,7 +113,6 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       if self.store.is_cache_changed(&store_key) {
         cache_map.insert(store_key, module.clone());
       }
-      // cache_map.insert(key.clone(), serialize!(module));
     }
 
     let cache_map = cache_map

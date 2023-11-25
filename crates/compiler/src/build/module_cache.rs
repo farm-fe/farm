@@ -38,6 +38,12 @@ pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
 }
 
 pub fn get_content_hash_of_module(content: &str) -> String {
+  let content = if content.is_empty() {
+    "empty".to_string()
+  } else {
+    content.to_string()
+  };
+
   let module_content_hash = farmfe_toolkit::hash::sha256(content.as_bytes(), 32);
   module_content_hash
 }
@@ -201,111 +207,6 @@ pub fn set_module_graph_cache(
     });
 }
 
-// fn load_module_cache_into_context(
-//   cached_module_id: &ModuleId,
-//   visited: &mut HashMap<ModuleId, bool>,
-//   context: &Arc<CompilationContext>,
-// ) -> bool {
-//   if visited.contains_key(cached_module_id) {
-//     return visited[cached_module_id];
-//   }
-
-//   if !context
-//     .cache_manager
-//     .module_cache
-//     .has_cache(cached_module_id)
-//   {
-//     visited.insert(cached_module_id.clone(), false);
-//     return false;
-//   }
-//   // if cycle detected, return true to skip this module
-//   visited.insert(cached_module_id.clone(), true);
-
-//   let cached_module = context
-//     .cache_manager
-//     .module_cache
-//     .get_cache_ref(cached_module_id);
-
-//   if !cached_module.module.immutable {
-//     visited.insert(cached_module_id.clone(), false);
-//     return false;
-//   }
-//   for dep in &cached_module.dependencies {
-//     if !load_module_cache_into_context(&dep.dependency, visited, context) {
-//       visited.insert(cached_module_id.clone(), false);
-//       return false;
-//     }
-//   }
-
-//   visited.insert(cached_module_id.clone(), true);
-
-//   true
-// }
-
-// /// Load module graph cache to context.
-// /// All immutable modules and all of its immutable dependencies will be loaded into context.module_graph
-// pub fn load_module_graph_cache_into_context(
-//   context: &Arc<CompilationContext>,
-// ) -> farmfe_core::error::Result<()> {
-//   farm_profile_function!("load_module_graph_cache_into_context".to_string());
-//   // TODO load immutable dependencies into context in need
-//   let immutable_modules = context.cache_manager.module_cache.get_immutable_modules();
-
-//   immutable_modules
-//     .par_iter()
-//     .try_for_each(|cached_module_id| {
-//       let mut cached_module = context
-//         .cache_manager
-//         .module_cache
-//         .get_cache_mut_ref(cached_module_id);
-
-//       handle_cached_modules(cached_module.value_mut(), context)
-//     })?;
-
-//   let mut visited = HashMap::new();
-
-//   immutable_modules.iter().for_each(|cached_module_id| {
-//     load_module_cache_into_context(cached_module_id, &mut visited, context);
-//   });
-
-//   let mut module_graph = context.module_graph.write();
-//   let mut edges = vec![];
-
-//   visited
-//     .into_iter()
-//     .try_for_each(|(cached_module_id, is_cached)| {
-//       if is_cached {
-//         let cached_module = context
-//           .cache_manager
-//           .module_cache
-//           .get_cache(&cached_module_id);
-
-//         module_graph.add_module(cached_module.module);
-//         edges.push((cached_module_id.clone(), cached_module.dependencies));
-
-//         if let Some(entry_name) = cached_module.entry_name {
-//           module_graph
-//             .entries
-//             .insert(cached_module_id.clone(), entry_name);
-//         }
-//       }
-
-//       Ok(())
-//     })?;
-
-//   for (from, edges) in edges {
-//     {
-//       for edge in edges {
-//         module_graph
-//           .add_edge(&from, &edge.dependency, edge.edge_info)
-//           .unwrap();
-//       }
-//     }
-//   }
-
-//   Ok(())
-// }
-
 /// recreate syntax context for the cached module
 pub fn handle_cached_modules(
   cached_module: &mut CachedModule,
@@ -331,45 +232,6 @@ pub fn handle_cached_modules(
 
   Ok(())
 }
-
-// pub fn clear_unused_cached_modules(context: &Arc<CompilationContext>) {
-//   farm_profile_function!("clear_unused_cached_modules".to_string());
-//   let mut module_graph = context.module_graph.write();
-//   clear_unused_cached_modules_from_module_graph(&mut module_graph);
-// }
-
-// fn clear_unused_cached_modules_from_module_graph(module_graph: &mut ModuleGraph) {
-//   let mut removed_modules = HashSet::new();
-
-//   // module that does not belong to any ModuleGroup will be removed
-//   for module in module_graph.modules() {
-//     if !module_graph.entries.contains_key(&module.id)
-//       && module_graph.dependents_ids(&module.id).is_empty()
-//     {
-//       removed_modules.insert(module.id.clone());
-//     }
-//   }
-
-//   let mut removed_modules_vec = removed_modules.iter().cloned().collect::<VecDeque<_>>();
-
-//   while !removed_modules_vec.is_empty() {
-//     let removed_module = removed_modules_vec.pop_front().unwrap();
-//     let dependencies = module_graph.dependencies_ids(&removed_module);
-
-//     for dep in dependencies {
-//       let dependents = module_graph.dependents_ids(&dep);
-
-//       if dependents.iter().all(|dept| removed_modules.contains(dept)) {
-//         removed_modules_vec.push_back(dep.clone());
-//         removed_modules.insert(dep);
-//       }
-//     }
-//   }
-
-//   for removed_module in removed_modules {
-//     module_graph.remove_module(&removed_module);
-//   }
-// }
 
 fn handle_relation_roots(
   cached_module_id: &ModuleId,
@@ -462,19 +324,3 @@ fn is_watch_dependencies_content_hash_changed(
 
   false
 }
-
-// #[cfg(test)]
-// mod tests {
-//   use farmfe_testing_helpers::construct_test_module_graph_complex;
-
-//   use super::clear_unused_cached_modules_from_module_graph;
-
-//   #[test]
-//   fn test_clear_unused_cached_modules_from_module_graph() {
-//     let mut module_graph = construct_test_module_graph_complex();
-//     module_graph.remove_edge(&"B".into(), &"E".into()).unwrap();
-
-//     clear_unused_cached_modules_from_module_graph(&mut module_graph);
-//     assert!(!module_graph.has_module(&"E".into()));
-//   }
-// }
