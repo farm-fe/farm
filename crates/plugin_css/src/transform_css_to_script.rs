@@ -23,7 +23,7 @@ use farmfe_toolkit::{
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::VisitMutWith,
 };
-use farmfe_utils::relative;
+use farmfe_utils::{hash::sha256, relative};
 
 use crate::source_replace;
 
@@ -39,29 +39,37 @@ pub fn transform_css_to_script_modules(
       matches!(m.module_type, ModuleType::Css)
     })
     .try_for_each(|module_id: ModuleId| {
-      // try read custom css transform cache
-      let store_key = CacheStoreKey {
-        name: module_id.to_string() + "-transform_css_to_script_modules",
-        key: context
-          .module_graph
-          .read()
-          .module(&module_id)
-          .unwrap()
-          .content_hash
-          .clone(),
-      };
-      let cache_manager = &context.cache_manager;
+      let mut cache_store_key = None;
 
-      if cache_manager.custom.has_cache(&store_key.name)
-        && !cache_manager.custom.is_cache_changed(&store_key)
-      {
-        let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
-        let meta = deserialize!(&cache, ModuleMetaData);
-        let mut module_graph = context.module_graph.write();
-        let module = module_graph.module_mut(&module_id).unwrap();
-        module.meta = meta;
-        module.module_type = ModuleType::Js;
-        return Ok(());
+      if context.config.persistent_cache.enabled() {
+        let content_hash = {
+          let module_graph = context.module_graph.read();
+          let m = module_graph.module(&module_id).unwrap();
+          m.content_hash.clone()
+        };
+        // try read custom css transform cache
+        let store_key = CacheStoreKey {
+          name: module_id.to_string() + "-transform_css_to_script_modules",
+          key: sha256(
+            format!("{}{}", content_hash, module_id.to_string()).as_bytes(),
+            32,
+          ),
+        };
+        let cache_manager = &context.cache_manager;
+
+        if cache_manager.custom.has_cache(&store_key.name)
+          && !cache_manager.custom.is_cache_changed(&store_key)
+        {
+          let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
+          let meta = deserialize!(&cache, ModuleMetaData);
+          let mut module_graph = context.module_graph.write();
+          let module = module_graph.module_mut(&module_id).unwrap();
+          module.meta = meta;
+          module.module_type = ModuleType::Js;
+          return Ok(());
+        }
+
+        cache_store_key = Some(store_key);
       }
 
       let stylesheet = transform_css_stylesheet(&module_id, context);
@@ -150,11 +158,15 @@ pub fn transform_css_to_script_modules(
 
         module.module_type = ModuleType::Js;
 
-        let bytes = serialize!(&module.meta);
-        cache_manager
-          .custom
-          .write_single_cache(store_key, bytes)
-          .expect("failed to write css transform cache");
+        if context.config.persistent_cache.enabled() {
+          let store_key = cache_store_key.unwrap();
+          let bytes = serialize!(&module.meta);
+          context
+            .cache_manager
+            .custom
+            .write_single_cache(store_key, bytes)
+            .expect("failed to write css transform cache");
+        }
       })
     })
 }
