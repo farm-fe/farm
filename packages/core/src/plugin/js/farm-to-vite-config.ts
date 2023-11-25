@@ -53,7 +53,7 @@ export function farmConfigToViteConfig(config: UserConfig): ViteUserConfig {
       sourcemap: Boolean(config.compilation?.sourcemap),
       minify: config.compilation?.minify,
       cssMinify: config.compilation?.minify,
-      ssr: config.compilation.output.targetEnv === 'node'
+      ssr: config.compilation.output?.targetEnv === 'node'
       // other options are not supported in farm
     }
   };
