@@ -117,7 +117,11 @@ export function gradientString(text: string, colors: any) {
   return output;
 }
 
-function interpolateColor(color1: number[], color2: number[], factor: number) {
+export function interpolateColor(
+  color1: number[],
+  color2: number[],
+  factor: number
+) {
   return [
     Math.round(color1[0] + (color2[0] - color1[0]) * factor),
     Math.round(color1[1] + (color2[1] - color1[1]) * factor),
