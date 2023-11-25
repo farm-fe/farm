@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use dashmap::DashMap;
+use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
 
@@ -104,16 +105,18 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     for entry in self.cached_modules.iter() {
       let key = entry.key().clone();
       let module = entry.value();
-
+      let hash_key = sha256(
+        format!("{}{}", module.module.content_hash, key.to_string()).as_bytes(),
+        32,
+      );
       let store_key = CacheStoreKey {
         name: key.to_string(),
-        key: module.module.content_hash.clone(),
+        key: hash_key,
       };
 
       if self.store.is_cache_changed(&store_key) {
         cache_map.insert(store_key, module.clone());
       }
-      // cache_map.insert(key.clone(), serialize!(module));
     }
 
     let cache_map = cache_map
