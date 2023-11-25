@@ -116,12 +116,27 @@ export function gradientString(text: string, colors: any) {
   return output;
 }
 
+export function interpolateColor(
+  color1: number[],
+  color2: number[],
+  factor: number
+) {
+  return [
+    Math.round(color1[0] + (color2[0] - color1[0]) * factor),
+    Math.round(color1[1] + (color2[1] - color1[1]) * factor),
+    Math.round(color1[2] + (color2[2] - color1[2]) * factor)
+  ];
+}
+
 export const BrandText = gradientString('FULL EXTREME!', [
   [128, 0, 128],
-  [60, 0, 92],
-  [0, 0, 128],
-  [0, 0, 139],
-  [0, 0, 205],
-  [0, 0, 255],
-  [0, 0, 139]
+  interpolateColor([128, 0, 128], [60, 0, 92], 0.1),
+  interpolateColor([60, 0, 92], [0, 0, 128], 0.2),
+  interpolateColor([0, 0, 128], [135, 206, 250], 0.3),
+  interpolateColor([135, 206, 250], [0, 0, 139], 0.4),
+  interpolateColor([0, 0, 139], [0, 0, 205], 0.5),
+  interpolateColor([0, 0, 205], [0, 0, 255], 0.6),
+  interpolateColor([0, 0, 255], [0, 0, 139], 0.7),
+  interpolateColor([0, 0, 139], [128, 0, 128], 0.8),
+  interpolateColor([128, 0, 128], [60, 0, 92], 0.9)
 ]);

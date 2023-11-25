@@ -117,26 +117,32 @@ export function gradientString(text: string, colors: any) {
   return output;
 }
 
+function interpolateColor(color1: number[], color2: number[], factor: number) {
+  return [
+    Math.round(color1[0] + (color2[0] - color1[0]) * factor),
+    Math.round(color1[1] + (color2[1] - color1[1]) * factor),
+    Math.round(color1[2] + (color2[2] - color1[2]) * factor)
+  ];
+}
+
 export const BrandText = gradientString('\n⚡ Welcome To Farm ! \n', [
-  [128, 0, 128],
-  [60, 0, 92],
-  [0, 0, 128],
-  [0, 0, 139],
-  [0, 0, 205],
-  [0, 0, 255],
-  [0, 0, 139]
+  [255, 182, 193],
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
+  [128, 0, 128]
 ]);
 
 export function handleBrandText(text: string) {
   console.log(
     gradientString(text, [
-      [128, 0, 128],
-      [60, 0, 92],
-      [0, 0, 128],
-      [0, 0, 139],
-      [0, 0, 205],
-      [0, 0, 255],
-      [0, 0, 139]
+      [255, 182, 193],
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
+      [128, 0, 128]
     ])
   );
 }
