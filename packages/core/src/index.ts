@@ -16,7 +16,6 @@ import { Compiler } from './compiler/index.js';
 import {
   normalizeDevServerOptions,
   normalizePublicDir,
-  // normalizeUserCompilationConfig,
   resolveConfig,
   UserConfig
 } from './config/index.js';
