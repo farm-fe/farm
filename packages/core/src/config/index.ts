@@ -433,11 +433,11 @@ export async function resolveConfig(
   const config = filterUserConfig(userConfig, inlineOptions);
   const { jsPlugins } = await resolvePlugins({}, config);
 
-  await resolveConfigHook(config, configEnv, jsPlugins);
+  const baseConfig = await resolveConfigHook(config, configEnv, jsPlugins);
 
   const resultConfig = await normalizeUserCompilationConfig(
     inlineOptions,
-    config,
+    baseConfig,
     logger,
     mode
   );
@@ -563,7 +563,9 @@ export function mergeConfiguration(
         continue;
       }
       if (isArray(value)) {
-        result[key] = result[key] ? [...result[key], ...value] : value;
+        result[key] = result[key]
+          ? [...new Set([...result[key], ...value])]
+          : value;
       } else if (isObject(value)) {
         result[key] = mergeConfiguration(result[key] || {}, value);
       } else {

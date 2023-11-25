@@ -134,7 +134,8 @@ export class VitePluginAdapter implements JsPlugin {
           await configHook(
             proxyViteConfig(this._viteConfig, this.name),
             this.getViteConfigEnv(configEnv)
-          )
+          ),
+          this.getViteConfigEnv(configEnv)
         ),
         this.name
       );

@@ -71,6 +71,10 @@ export function proxyViteConfig(
         return target[key as unknown as keyof typeof target];
       }
 
+      if (key === 'then' || key === 'length' || key === 'constructor') {
+        return (target as Record<string, any>)[key];
+      }
+
       const allowedKeys = [
         'root',
         'base',
@@ -113,6 +117,14 @@ export function proxyViteConfig(
                 return resolveTarget[resolveKey as keyof typeof resolveTarget];
               }
 
+              if (
+                resolveKey === 'then' ||
+                resolveKey === 'length' ||
+                resolveKey === 'constructor'
+              ) {
+                return (target as Record<string, any>)[key];
+              }
+
               throw throwIncompatibleError(
                 pluginName,
                 'viteConfig.resolve',
@@ -143,6 +155,14 @@ export function proxyViteConfig(
                 return serverTarget[serverKey as keyof typeof serverTarget];
               }
 
+              if (
+                serverKey === 'then' ||
+                serverKey === 'length' ||
+                serverKey === 'constructor'
+              ) {
+                return (target as Record<string, any>)[key];
+              }
+
               throw throwIncompatibleError(
                 pluginName,
                 'viteConfig.server',
@@ -162,6 +182,14 @@ export function proxyViteConfig(
 
               if (allowedCssKeys.includes(String(cssKey))) {
                 return cssTarget[cssKey as keyof typeof cssTarget];
+              }
+
+              if (
+                cssKey === 'then' ||
+                cssKey === 'length' ||
+                cssKey === 'constructor'
+              ) {
+                return (target as Record<string, any>)[key];
               }
 
               throw throwIncompatibleError(
@@ -189,6 +217,13 @@ export function proxyViteConfig(
 
               if (allowedBuildKeys.includes(String(buildKey))) {
                 return buildTarget[buildKey as keyof typeof buildTarget];
+              }
+              if (
+                buildKey === 'then' ||
+                buildKey === 'length' ||
+                buildKey === 'constructor'
+              ) {
+                return (target as Record<string, any>)[key];
               }
 
               throw throwIncompatibleError(

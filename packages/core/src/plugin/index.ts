@@ -205,20 +205,61 @@ export async function resolveConfigHook(
   configEnv: ConfigEnv,
   plugins: JsPlugin[]
 ): Promise<UserConfig> {
-  const conf = config;
+  let conf = config;
+
+  const uniqueVitePlugins = new Map<string, JsPlugin>();
 
   for (const p of plugins) {
+    const pluginName = p.name;
+
+    if (!uniqueVitePlugins.has(pluginName)) {
+      uniqueVitePlugins.set(pluginName, p);
+    }
+  }
+
+  for (const p of uniqueVitePlugins.values()) {
     const hook = p.config;
 
     if (hook) {
-      await p.config(conf, configEnv);
+      const res = await p.config(conf, configEnv);
 
-      // if (res) {
-      //   conf = mergeConfiguration(conf, res);
-      // }
+      if (res) {
+        conf = mergeConfig(conf, res);
+      }
     }
   }
+
   return conf;
+}
+
+export function mergeConfig(
+  a: Record<string, any>,
+  b: Record<string, any>
+): Record<string, any> {
+  const result: Record<string, any> = { ...a };
+
+  for (const key in b) {
+    if (Object.prototype.hasOwnProperty.call(b, key)) {
+      const value = b[key];
+
+      if (value == null) {
+        continue;
+      }
+
+      if (isArray(value)) {
+        // 直接替换数组
+        result[key] = value;
+      } else if (isObject(value)) {
+        // 递归替换对象
+        result[key] = mergeConfig({}, value);
+      } else {
+        // 替换其他值
+        result[key] = value;
+      }
+    }
+  }
+
+  return result;
 }
 
 export async function resolveConfigResolvedHook(
