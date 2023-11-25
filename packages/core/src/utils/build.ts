@@ -22,7 +22,7 @@ export async function compilerHandler(
   logger.info(
     `⚡️ Build completed in ${bold(
       green(`${elapsedTime}ms`)
-    )} ${persistentCacheFlag}! Resources emitted to ${bold(
+    )} ${persistentCacheFlag} Resources emitted to ${bold(
       green(config.config.output.path)
     )}.`
   );

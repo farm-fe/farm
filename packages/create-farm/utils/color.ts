@@ -96,6 +96,7 @@ export const bgBlue = enabled ? formatter('\x1b[44m', '\x1b[49m') : String;
 export const bgMagenta = enabled ? formatter('\x1b[45m', '\x1b[49m') : String;
 export const bgCyan = enabled ? formatter('\x1b[46m', '\x1b[49m') : String;
 export const bgWhite = enabled ? formatter('\x1b[47m', '\x1b[49m') : String;
+export const blueBright = enabled ? formatter('\x1b[94m', '\x1b[39m') : String;
 
 export function gradientString(text: string, colors: any) {
   const steps = text.length;
@@ -128,15 +129,24 @@ export function interpolateColor(
   ];
 }
 
-export const BrandText = gradientString('FULL EXTREME!', [
-  [128, 0, 128],
-  interpolateColor([128, 0, 128], [60, 0, 92], 0.1),
-  interpolateColor([60, 0, 92], [0, 0, 128], 0.2),
-  interpolateColor([0, 0, 128], [135, 206, 250], 0.3),
-  interpolateColor([135, 206, 250], [0, 0, 139], 0.4),
-  interpolateColor([0, 0, 139], [0, 0, 205], 0.5),
-  interpolateColor([0, 0, 205], [0, 0, 255], 0.6),
-  interpolateColor([0, 0, 255], [0, 0, 139], 0.7),
-  interpolateColor([0, 0, 139], [128, 0, 128], 0.8),
-  interpolateColor([128, 0, 128], [60, 0, 92], 0.9)
+export const BrandText = gradientString('\n⚡ Welcome To Farm ! \n', [
+  [255, 182, 193],
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
+  interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
+  [128, 0, 128]
 ]);
+
+export function handleBrandText(text: string) {
+  console.log(
+    gradientString(text, [
+      [255, 182, 193],
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
+      [128, 0, 128]
+    ])
+  );
+}

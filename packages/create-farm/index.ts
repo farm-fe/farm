@@ -1,13 +1,19 @@
 #!/usr/bin/env node
-
-import chalk from 'chalk';
-
 import prompts from 'prompts';
 import minimist from 'minimist';
 import path from 'node:path';
 import fs from 'node:fs';
 
 import { loadWithRocketGradient } from './utils/gradient.js';
+import {
+  BrandText,
+  blue,
+  blueBright,
+  green,
+  handleBrandText,
+  red,
+  yellow
+} from './utils/color.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
 import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
 import { fileURLToPath } from 'node:url';
@@ -68,7 +74,7 @@ async function createFarm() {
         {
           type: (_, { overwrite }: { overwrite?: boolean }) => {
             if (overwrite === false) {
-              throw new Error(chalk.red('❌') + ' Operation cancelled');
+              throw new Error(red('❌') + ' Operation cancelled');
             }
             return null;
           },
@@ -81,11 +87,11 @@ async function createFarm() {
           initial: 0,
           choices: [
             {
-              title: chalk.blue('React'),
+              title: blue('React'),
               value: 'react'
             },
-            { title: chalk.green('Vue'), value: 'vue' },
-            { title: chalk.blueBright('Solid'), value: 'solid' }
+            { title: green('Vue'), value: 'vue' },
+            { title: blueBright('Solid'), value: 'solid' }
           ]
         },
         {
@@ -109,7 +115,7 @@ async function createFarm() {
       ],
       {
         onCancel: () => {
-          throw new Error(chalk.red('❌') + ' Operation cancelled');
+          throw new Error(red('❌') + ' Operation cancelled');
         }
       }
     );
@@ -132,7 +138,7 @@ function isEmpty(path: string) {
 }
 
 async function copyTemplate(targetDir: string, framework: string) {
-  const spinner = await loadWithRocketGradient('copy template');
+  const spinner = await loadWithRocketGradient('Copy template');
   const dest = path.join(cwd, targetDir);
   const templatePath = path.join(
     fileURLToPath(import.meta.url),
@@ -151,28 +157,26 @@ async function installationDeps(
   const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
   const currentPkgManager = pkgInfo ? pkgManager : packageManager;
   if (autoInstall) {
-    const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir));
+    const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir), 'ignore');
+    const spinner = await loadWithRocketGradient('Install Dependencies');
     await cmdInherit(
       currentPkgManager,
       currentPkgManager === 'pnpm'
         ? ['install', '--no-frozen-lockfile']
         : ['install']
     );
+    spinner.text = 'Dependencies Installed Successfully!';
+    spinner.succeed();
   }
-  logger('> Initial Farm Project created successfully ✨ ✨');
-  logger(`  cd ${targetDir}`);
+  handleBrandText('\n > Initial Farm Project created successfully ✨ ✨ \n');
+  handleBrandText(`   cd ${targetDir} \n`);
   autoInstall
-    ? logger(
-        `  ${currentPkgManager} ${
+    ? handleBrandText(
+        `   ${currentPkgManager} ${
           currentPkgManager === 'npm' ? 'run start' : 'start'
         } `
       )
-    : logger(`  npm install \n\n  npm run start`);
-}
-
-function logger(info: string) {
-  console.log();
-  console.log(chalk.magenta(info));
+    : handleBrandText(`   npm install \n\n   npm run start`);
 }
 
 function pkgFromUserAgent(userAgent: string | undefined) {
@@ -190,11 +194,9 @@ function judgeNodeVersion() {
   const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
   const minimumMajorVersion = 16;
   if (requiredMajorVersion < minimumMajorVersion) {
+    console.log(yellow(`create-farm unsupported Node.js v${currentVersion}.`));
     console.log(
-      chalk.yellow(`create-farm unsupported Node.js v${currentVersion}.`)
-    );
-    console.log(
-      chalk.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
+      yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
     );
     process.exit(1);
   }
@@ -219,7 +221,7 @@ function copyDir(srcDir: string, destDir: string) {
 }
 
 function welcome() {
-  console.log(chalk.magenta(`\n⚡ Welcome To Farm ! \n`));
+  console.log(BrandText);
 }
 
 createFarm();

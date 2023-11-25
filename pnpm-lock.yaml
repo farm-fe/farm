@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: false
@@ -1345,9 +1345,6 @@ importers:
       '@types/prompts':
         specifier: ^2.4.4
         version: 2.4.7
-      chalk:
-        specifier: ^5.2.0
-        version: 5.3.0
       gradient-string:
         specifier: ^2.0.2
         version: 2.0.2
