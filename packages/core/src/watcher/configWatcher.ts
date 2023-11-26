@@ -12,21 +12,26 @@ export class ConfigWatcher {
 
   constructor(private options: WatcherOptions) {}
 
-  watch(callback: (file: string) => void) {
-    async function handle(file: string) {
+  watch(callback: (file: string[]) => void) {
+    async function handle(file: string[]) {
       callback(file);
     }
 
-    this.watcher = new JsFileWatcher((paths: string[]) => {
-      if (this._close) return;
-      paths.forEach(handle);
-    });
-
-    this.watcher.watch([
+    const watchedFiles = [
       ...(this.options.config.config.envFiles ?? []),
       ...(this.options.userConfig.configFileDependencies ?? []),
       this.options.userConfig.resolveConfigPath
-    ]);
+    ];
+
+    this.watcher = new JsFileWatcher((paths: string[]) => {
+      if (this._close) return;
+      const filteredPaths = paths.filter((path) => watchedFiles.includes(path));
+
+      if (!filteredPaths.length) return;
+      handle(filteredPaths);
+    });
+
+    this.watcher.watch(watchedFiles);
     return this;
   }
 

@@ -12,7 +12,10 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   farm_profile_scope,
-  module::{module_graph::ModuleGraphEdgeDataItem, Module, ModuleId, ModuleType},
+  module::{
+    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
+    Module, ModuleId, ModuleType,
+  },
   plugin::{
     constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND,
     plugin_driver::PluginDriverTransformHookResult, PluginAnalyzeDepsHookResultEntry,
@@ -590,6 +593,10 @@ fn resolve_module(
   };
 
   let mut module_graph = context.module_graph.write();
+  let insert_dummy_module = |module_id: &ModuleId, module_graph: &mut ModuleGraph| {
+    // insert a dummy module to the graph to prevent the module from being handled twice
+    module_graph.add_module(Compiler::create_module(module_id.clone(), false, false));
+  };
 
   let res = if module_graph.has_module(&module_id) {
     // the module has already been handled and it should not be handled twice
@@ -604,6 +611,7 @@ fn resolve_module(
           .module
           .immutable
       {
+        insert_dummy_module(&cached_dependency, &mut module_graph);
         return Ok(ResolveModuleResult::Cached(
           module_cache_manager.get_cache(&cached_dependency),
         ));
@@ -612,12 +620,7 @@ fn resolve_module(
 
     let resolve_module_id_result =
       resolve_module_id_result.unwrap_or(Compiler::resolve_module_id(resolve_param, context)?);
-    // insert a dummy module to the graph to prevent the module from being handled twice
-    module_graph.add_module(Compiler::create_module(
-      resolve_module_id_result.module_id.clone(),
-      false,
-      false,
-    ));
+    insert_dummy_module(&resolve_module_id_result.module_id, &mut module_graph);
     let module_id_str = resolve_module_id_result.module_id.to_string();
     ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
       module: Compiler::create_module(
