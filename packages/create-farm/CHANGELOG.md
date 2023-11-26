@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.4.0
+
+### Minor Changes
+
+- b1b1f4ed: optimize create-farm code
+
 ## 1.3.5
 
 ### Patch Changes

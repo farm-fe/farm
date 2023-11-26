@@ -1,6 +1,29 @@
 import { defineConfig } from '@farmfe/core';
 
 export default defineConfig({
+  compilation: {
+    input: {
+      index: './index.html'
+    },
+    resolve: {
+      symlinks: true
+    },
+    output: {
+      path: './build',
+      publicPath: 'public'
+    },
+    presetEnv: false,
+    // sourcemap: true,
+    css: {
+      // modules: {
+      //   indentName: 'farm-[name]-[hash]'
+      // },
+      prefixer: {
+        targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
+      }
+    },
+    treeShaking: true
+  },
   server: {
     port: 3000
   },

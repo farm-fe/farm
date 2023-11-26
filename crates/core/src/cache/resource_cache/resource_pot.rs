@@ -49,17 +49,17 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
   }
 
   fn get_cache(&self, name: &str) -> Option<CachedResourcePot> {
-    if let Some(resource) = self.cached_resources.get(name) {
-      return Some(resource.value().clone());
+    if let Some((_, resource)) = self.cached_resources.remove(name) {
+      return Some(resource);
     }
 
     let cache = self.store.read_cache(name);
 
     if let Some(cache) = cache {
       let resource = deserialize!(&cache, CachedResourcePot);
-      self
-        .cached_resources
-        .insert(name.to_string(), resource.clone());
+      // self
+      //   .cached_resources
+      //   .insert(name.to_string(), resource.clone());
       return Some(resource);
     }
 
