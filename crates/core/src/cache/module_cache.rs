@@ -85,6 +85,14 @@ impl ModuleCacheManager {
     }
   }
 
+  pub fn is_cache_changed(&self, module: &Module) -> bool {
+    if module.immutable {
+      return self.immutable_modules_store.is_cache_changed(module);
+    }
+
+    self.mutable_modules_store.is_cache_changed(module)
+  }
+
   pub fn has_cache(&self, key: &ModuleId) -> bool {
     self.mutable_modules_store.has_cache(key) || self.immutable_modules_store.has_cache(key)
   }
@@ -148,9 +156,5 @@ impl ModuleCacheManager {
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
-  }
-
-  pub fn get_immutable_modules(&self) -> Vec<ModuleId> {
-    self.immutable_modules_store.get_modules()
   }
 }

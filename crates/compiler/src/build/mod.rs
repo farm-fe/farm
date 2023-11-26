@@ -23,6 +23,7 @@ use farmfe_core::{
   relative_path::RelativePath,
 };
 
+use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
 use farmfe_toolkit::hash::base64_decode;
 use farmfe_utils::stringify_query;
 
@@ -156,7 +157,7 @@ impl Compiler {
         .map(|m| m.id.clone())
         .collect();
       // set new module cache
-      set_module_graph_cache(module_ids, true, &self.context);
+      set_module_graph_cache(module_ids, &self.context);
     }
 
     // Topo sort the module graph
@@ -617,16 +618,19 @@ fn resolve_module(
       false,
       false,
     ));
+    let module_id_str = resolve_module_id_result.module_id.to_string();
     ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
       module: Compiler::create_module(
         resolve_module_id_result.module_id.clone(),
         resolve_module_id_result.resolve_result.external,
-        context
-          .config
-          .partial_bundling
-          .immutable_modules
-          .iter()
-          .any(|im| im.is_match(&resolve_module_id_result.module_id.to_string())),
+        // treat all lazy virtual modules as mutable
+        !module_id_str.starts_with(DYNAMIC_VIRTUAL_PREFIX)
+          && context
+            .config
+            .partial_bundling
+            .immutable_modules
+            .iter()
+            .any(|im| im.is_match(&module_id_str)),
       ),
       resolve_module_id_result,
     }))

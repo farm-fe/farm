@@ -59,6 +59,7 @@ pub fn try_get_module_cache_by_timestamp(
     let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);
 
     if cached_module.value().module.last_update_timestamp == timestamp {
+      drop(cached_module);
       let mut cached_module = context.cache_manager.module_cache.get_cache(module_id);
       handle_cached_modules(&mut cached_module, context)?;
 
@@ -97,6 +98,7 @@ pub fn try_get_module_cache_by_hash(
     let cached_module = context.cache_manager.module_cache.get_cache_ref(module_id);
 
     if cached_module.value().module.content_hash == content_hash {
+      drop(cached_module);
       let mut cached_module = context.cache_manager.module_cache.get_cache(module_id);
 
       handle_cached_modules(&mut cached_module, context)?;
@@ -119,11 +121,7 @@ pub fn try_get_module_cache_by_hash(
   Ok(None)
 }
 
-pub fn set_module_graph_cache(
-  module_ids: Vec<ModuleId>,
-  check_initial_cache: bool,
-  context: &Arc<CompilationContext>,
-) {
+pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<CompilationContext>) {
   farm_profile_function!("set_module_graph_cache".to_string());
   let module_graph = context.module_graph.read();
   let mut cacheable_modules = HashSet::new();
@@ -135,13 +133,9 @@ pub fn set_module_graph_cache(
     .collect::<Vec<_>>();
 
   for module in &modules {
-    // if the module has already in the cache, skip it.
-    if check_initial_cache && context.cache_manager.module_cache.has_cache(&module.id) {
-      let cached_ref = context.cache_manager.module_cache.get_cache_ref(&module.id);
-
-      if cached_ref.value().module.content_hash == module.content_hash {
-        continue;
-      }
+    // if the module has already in the cache and not changed, skip it.
+    if !context.cache_manager.module_cache.is_cache_changed(*module) {
+      continue;
     }
 
     cacheable_modules.insert(module.id.clone());
