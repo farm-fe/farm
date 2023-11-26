@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
@@ -41,6 +41,7 @@ pub struct ImmutableModulesMemoryStore {
   cached_modules: DashMap<ModuleId, CachedModule>,
   /// moduleId -> PackageKey
   manifest: DashMap<ModuleId, String>,
+  manifest_reversed: DashMap<String, HashSet<ModuleId>>,
 }
 
 impl ImmutableModulesMemoryStore {
@@ -50,55 +51,40 @@ impl ImmutableModulesMemoryStore {
     let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
     let manifest: HashMap<String, String> =
       serde_json::from_slice(&manifest_bytes).unwrap_or_default();
+    let manifest = manifest
+      .into_iter()
+      .map(|(key, value)| (ModuleId::from(key), value))
+      .collect::<HashMap<ModuleId, String>>();
+
+    let manifest_reversed = DashMap::new();
+
+    for (key, value) in manifest.iter() {
+      let mut set = manifest_reversed
+        .entry(value.clone())
+        .or_insert_with(HashSet::new);
+      set.insert(key.clone());
+    }
 
     Self {
       store,
       cached_modules: DashMap::new(),
-      manifest: manifest
-        .into_iter()
-        .map(|(key, value)| (ModuleId::from(key), value))
-        .collect(),
+      manifest: manifest.into_iter().collect(),
+      manifest_reversed,
     }
   }
 
-  /// Get all modules, if not loaded, read from disk
-  pub fn get_modules(&self) -> Vec<ModuleId> {
-    if self.cached_modules.is_empty() {
-      let store_keys = self.store.get_store_keys();
+  fn read_cached_package(&self, package_key: &str) -> CachedPackage {
+    let cache = self
+      .store
+      .read_cache(package_key)
+      .expect("Cache broken, please remove node_modules/.farm and retry.");
 
-      store_keys.into_par_iter().for_each(|item| {
-        if item.key() == MANIFEST_KEY {
-          return;
-        }
-
-        let cache = self
-          .store
-          .read_cache(item.key())
-          .expect("Cache broken, please remove node_modules/.farm and retry.");
-
-        let package = crate::deserialize!(&cache, CachedPackage);
-
-        for module in package.list {
-          self.cached_modules.insert(module.module.id.clone(), module);
-        }
-      });
-    }
-
-    self
-      .cached_modules
-      .iter()
-      .map(|item| item.key().clone())
-      .collect()
+    crate::deserialize!(&cache, CachedPackage)
   }
 
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {
     if let Some(package_key) = self.manifest.get(module_id) {
-      let cache = self
-        .store
-        .read_cache(package_key.value())
-        .expect("Cache broken, please remove node_modules/.farm and retry.");
-
-      let package = crate::deserialize!(&cache, CachedPackage);
+      let package = self.read_cached_package(package_key.value());
 
       for module in package.list {
         self.cached_modules.insert(module.module.id.clone(), module);
@@ -130,16 +116,16 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
   fn get_cache(&self, key: &crate::module::ModuleId) -> Option<super::CachedModule> {
     if self.cached_modules.contains_key(key) {
-      return Some(self.cached_modules.get(key).unwrap().clone());
+      return Some(self.cached_modules.remove(key).map(|item| item.1).unwrap());
     }
 
     if self.read_package(key).is_some() {
       return Some(
         self
           .cached_modules
-          .get(key)
-          .expect("Cache broken, please remove node_modules/.farm and retry.")
-          .clone(),
+          .remove(key)
+          .map(|item| item.1)
+          .expect("Cache broken, please remove node_modules/.farm and retry."),
       );
     }
 
@@ -211,19 +197,40 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
     let mut cache_map = packages
       .into_par_iter()
       .filter_map(|(key, modules)| {
-        let module_ids_str = modules
-          .iter()
-          .map(|item| item.to_string())
-          .collect::<Vec<String>>()
-          .join(",");
-        let package_hash = sha256(module_ids_str.as_bytes(), 32);
-
         let store_key = CacheStoreKey {
           name: key.clone(),
-          key: package_hash,
+          key: sha256(key.as_bytes(), 32),
         };
-        // skip clone if the cache is not changed
-        if !self.store.is_cache_changed(&store_key) {
+
+        // the package is already cached, we only need to update it
+        if self.manifest_reversed.contains_key(&key) {
+          let modules_in_package = self.manifest_reversed.get(&key).unwrap();
+          let mut added_modules = vec![];
+
+          for module_id in modules {
+            if modules_in_package.contains(&module_id) {
+              continue;
+            }
+            added_modules.push(module_id);
+          }
+          // add the new modules to the package
+          if !added_modules.is_empty() {
+            let mut package = self.read_cached_package(&key);
+            package.list.extend(
+              added_modules
+                .into_par_iter()
+                .map(|module_id| {
+                  self
+                    .cached_modules
+                    .get(&module_id)
+                    .expect("Cache broken, please remove node_modules/.farm and retry.")
+                    .clone()
+                })
+                .collect::<Vec<_>>(),
+            );
+            let package_bytes = crate::serialize!(&package);
+            return Some((store_key, package_bytes));
+          }
           return None;
         }
 
@@ -243,7 +250,6 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         };
 
         let package_bytes = crate::serialize!(&package);
-
         Some((store_key, package_bytes))
       })
       .collect::<HashMap<CacheStoreKey, Vec<u8>>>();
@@ -261,5 +267,10 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
   fn invalidate_cache(&self, key: &ModuleId) {
     self.cached_modules.remove(key);
+  }
+
+  fn is_cache_changed(&self, module: &crate::module::Module) -> bool {
+    // we do not need to check the hash of immutable modules, just check the cache
+    !self.has_cache(&module.id)
   }
 }
