@@ -83,10 +83,12 @@ export async function start(
   const farmWatcher = new ConfigWatcher({
     config: normalizedConfig,
     userConfig: config
-  }).watch((filename: string) => {
+  }).watch((filenames: string[]) => {
     logger.info(
       green(
-        `${path.relative(config.root, filename)} changed, will restart server`
+        `${filenames
+          .map((filename) => path.relative(config.root, filename))
+          .join(', ')} changed, will restart server`
       )
     );
 
@@ -239,13 +241,12 @@ export async function watch(
   const farmWatcher = new ConfigWatcher({
     userConfig,
     config: normalizedConfig
-  }).watch(async (file: string) => {
+  }).watch(async (files: string[]) => {
     logger.info(
       green(
-        `${path.relative(
-          normalizedConfig.config.root,
-          file
-        )} changed, will be restart`
+        `${files
+          .map((file) => path.relative(normalizedConfig.config.root, file))
+          .join(', ')} changed, will be restart`
       )
     );
 

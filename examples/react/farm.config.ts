@@ -12,9 +12,6 @@ export default defineConfig({
     resolve: {
       symlinks: true
     },
-    define: {
-      BTN: 'Click me'
-    },
     output: {
       path: './build',
       publicPath: 'public'
