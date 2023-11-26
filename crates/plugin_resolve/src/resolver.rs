@@ -61,7 +61,7 @@ struct ConditionOptions {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ResolveNodeModuleCacheKey {
+pub struct ResolveCacheKey {
   pub source: String,
   pub base_dir: String,
   pub kind: ResolveKind,
@@ -69,8 +69,7 @@ pub struct ResolveNodeModuleCacheKey {
 
 pub struct Resolver {
   /// the key is (source, base_dir) and the value is the resolved result
-  resolve_node_modules_cache:
-    Mutex<HashMap<ResolveNodeModuleCacheKey, Option<PluginResolveHookResult>>>,
+  resolve_cache: Mutex<HashMap<ResolveCacheKey, Option<PluginResolveHookResult>>>,
 }
 
 const NODE_MODULES: &str = "node_modules";
@@ -78,8 +77,30 @@ const NODE_MODULES: &str = "node_modules";
 impl Resolver {
   pub fn new() -> Self {
     Self {
-      resolve_node_modules_cache: Mutex::new(HashMap::new()),
+      resolve_cache: Mutex::new(HashMap::new()),
     }
+  }
+
+  pub fn resolve(
+    &self,
+    source: &str,
+    base_dir: PathBuf,
+    kind: &ResolveKind,
+    context: &Arc<CompilationContext>,
+  ) -> Option<PluginResolveHookResult> {
+    let cache_key = ResolveCacheKey {
+      source: source.to_string(),
+      base_dir: base_dir.to_string_lossy().to_string(),
+      kind: kind.clone(),
+    };
+
+    if let Some(result) = self.resolve_cache.lock().get(&cache_key) {
+      return result.clone();
+    }
+
+    let result = self._resolve(source, base_dir, kind, context);
+    self.resolve_cache.lock().insert(cache_key, result.clone());
+    result
   }
 
   /// Specifier type supported by now:
@@ -90,7 +111,7 @@ impl Resolver {
   ///   * **exports**: refer to [exports](https://nodejs.org/api/packages.html#packages_conditional_exports), if source is end with '.js', also try to find '.ts' file
   ///   * **browser**: refer to [package-browser-field-spec](https://github.com/defunctzombie/package-browser-field-spec)
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
-  pub fn resolve(
+  pub fn _resolve(
     &self,
     source: &str,
     base_dir: PathBuf,
@@ -209,23 +230,19 @@ impl Resolver {
         });
     } else {
       // check if the result is cached
-      if let Some(result) = self
-        .resolve_node_modules_cache
-        .lock()
-        .get(&ResolveNodeModuleCacheKey {
-          source: source.to_string(),
-          base_dir: base_dir.to_string_lossy().to_string(),
-          kind: kind.clone(),
-        })
-      {
+      if let Some(result) = self.resolve_cache.lock().get(&ResolveCacheKey {
+        source: source.to_string(),
+        base_dir: base_dir.to_string_lossy().to_string(),
+        kind: kind.clone(),
+      }) {
         return result.clone();
       }
 
       let (result, tried_paths) = self.try_node_modules(source, base_dir, kind, context);
       // cache the result
       for tried_path in tried_paths {
-        let mut resolve_node_modules_cache = self.resolve_node_modules_cache.lock();
-        let key = ResolveNodeModuleCacheKey {
+        let mut resolve_node_modules_cache = self.resolve_cache.lock();
+        let key = ResolveCacheKey {
           source: source.to_string(),
           base_dir: tried_path.to_string_lossy().to_string(),
           kind: kind.clone(),
@@ -350,13 +367,13 @@ impl Resolver {
     let mut tried_paths = vec![];
 
     while current.parent().is_some() {
-      let key = ResolveNodeModuleCacheKey {
+      let key = ResolveCacheKey {
         source: source.to_string(),
         base_dir: current.to_string_lossy().to_string(),
         kind: kind.clone(),
       };
 
-      if let Some(result) = self.resolve_node_modules_cache.lock().get(&key) {
+      if let Some(result) = self.resolve_cache.lock().get(&key) {
         return (result.clone(), tried_paths);
       }
 

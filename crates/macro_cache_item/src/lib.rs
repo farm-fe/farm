@@ -21,6 +21,8 @@ pub fn cache_item(attr: TokenStream, input: TokenStream) -> TokenStream {
       }
     };
     let derives = quote! {
+      use rkyv::*;
+
       #[derive(rkyv::Serialize, rkyv::Deserialize, rkyv::Archive)]
       #[archive_attr(derive(TypeName))]
       #item
@@ -34,6 +36,8 @@ pub fn cache_item(attr: TokenStream, input: TokenStream) -> TokenStream {
   }
 
   let derives = quote! {
+    use rkyv::*;
+
     #[derive(rkyv::Serialize, rkyv::Deserialize, rkyv::Archive)]
     #item
   };

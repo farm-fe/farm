@@ -43,25 +43,35 @@ pub struct CachedModule {
   pub dependencies: Vec<CachedModuleDependency>,
   pub package_name: String,
   pub package_version: String,
-  pub entry_name: Option<String>,
   pub watch_dependencies: Vec<CachedWatchDependency>,
 }
 
 impl CachedModule {
   pub fn dep_sources(
     dependencies: Vec<CachedModuleDependency>,
-  ) -> Vec<PluginAnalyzeDepsHookResultEntry> {
+  ) -> Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)> {
     dependencies
       .into_iter()
       .flat_map(|dep| {
-        dep
+        let cloned_dep = dep.dependency;
+
+        let mut sorted_dep = dep
           .edge_info
           .0
           .into_iter()
-          .map(|item| PluginAnalyzeDepsHookResultEntry {
-            source: item.source,
-            kind: item.kind,
-          })
+          .map(|item| (item.source, item.kind, item.order))
+          .collect::<Vec<_>>();
+        sorted_dep.sort_by(|a, b| a.2.cmp(&b.2));
+
+        sorted_dep.into_iter().map(move |item| {
+          (
+            PluginAnalyzeDepsHookResultEntry {
+              source: item.0,
+              kind: item.1,
+            },
+            Some(cloned_dep.clone()),
+          )
+        })
       })
       .collect()
   }
@@ -73,6 +83,14 @@ impl ModuleCacheManager {
       mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode.clone()),
       immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
     }
+  }
+
+  pub fn is_cache_changed(&self, module: &Module) -> bool {
+    if module.immutable {
+      return self.immutable_modules_store.is_cache_changed(module);
+    }
+
+    self.mutable_modules_store.is_cache_changed(module)
   }
 
   pub fn has_cache(&self, key: &ModuleId) -> bool {
@@ -138,9 +156,5 @@ impl ModuleCacheManager {
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
-  }
-
-  pub fn get_immutable_modules(&self) -> Vec<ModuleId> {
-    self.immutable_modules_store.get_modules()
   }
 }

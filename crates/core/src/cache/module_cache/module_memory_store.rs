@@ -1,10 +1,11 @@
 use dashmap::mapref::one::{Ref, RefMut};
 
-use crate::module::ModuleId;
+use crate::module::{Module, ModuleId};
 
 use super::CachedModule;
 
 pub trait ModuleMemoryStore {
+  fn is_cache_changed(&self, module: &Module) -> bool;
   fn has_cache(&self, key: &ModuleId) -> bool;
   fn set_cache(&self, key: ModuleId, module: CachedModule);
   fn get_cache(&self, key: &ModuleId) -> Option<CachedModule>;

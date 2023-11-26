@@ -9,7 +9,7 @@ use std::{
 
 use crate::config::Mode;
 
-const FARM_CACHE_VERSION: &str = "0.0.5";
+const FARM_CACHE_VERSION: &str = "0.1.0";
 const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
@@ -89,6 +89,44 @@ impl CacheStore {
     true
   }
 
+  pub fn write_single_cache(
+    &self,
+    store_key: CacheStoreKey,
+    bytes: Vec<u8>,
+  ) -> std::io::Result<()> {
+    let cache_file_dir = &self.cache_dir;
+
+    if !cache_file_dir.exists() {
+      std::fs::create_dir_all(cache_file_dir).unwrap();
+    }
+
+    if self.is_cache_changed(&store_key) {
+      if let Some(guard) = self.manifest.get(&store_key.name) {
+        let cache_file_path = cache_file_dir.join(guard.value());
+
+        if cache_file_path.exists() && cache_file_path.is_file() {
+          std::fs::remove_file(cache_file_path)?;
+        }
+      }
+
+      self
+        .manifest
+        .insert(store_key.name.clone(), store_key.key.clone());
+      let cache_file_path = cache_file_dir.join(store_key.key);
+      std::fs::write(&cache_file_path, bytes).map_err(|e| {
+        std::io::Error::new(
+          e.kind(),
+          format!(
+            "Failed to write cache file: {} {:?}, error: {:?}",
+            store_key.name, cache_file_path, e
+          ),
+        )
+      })?;
+    }
+
+    Ok(())
+  }
+
   /// Write the cache map to the disk.
   pub fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
     let cache_file_dir = &self.cache_dir;
@@ -100,15 +138,7 @@ impl CacheStore {
     cache_map
       .into_par_iter()
       .try_for_each(|(store_key, bytes)| {
-        if self.is_cache_changed(&store_key) {
-          if let Some(guard) = self.manifest.get(&store_key.name) {
-            std::fs::remove_file(cache_file_dir.join(guard.value()))?;
-          }
-
-          self.manifest.insert(store_key.name, store_key.key.clone());
-          std::fs::write(cache_file_dir.join(store_key.key), bytes)?;
-        }
-
+        self.write_single_cache(store_key, bytes)?;
         Ok::<(), std::io::Error>(())
       })
       .unwrap();

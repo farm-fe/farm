@@ -1,9 +1,10 @@
 use std::{
   collections::{HashMap, HashSet},
-  sync::{mpsc::Sender, Arc},
+  sync::Arc,
 };
 
 use farmfe_core::{
+  cache::module_cache::CachedModule,
   context::CompilationContext,
   error::CompilationError,
   module::{
@@ -11,14 +12,18 @@ use farmfe_core::{
     ModuleType,
   },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
-  rayon::ThreadPool,
   resource::ResourceType,
 };
 use farmfe_plugin_css::transform_css_to_script::transform_css_to_script_modules;
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
 
 use crate::{
-  build::ResolvedModuleInfo, generate::finalize_resources::finalize_resources, Compiler,
+  build::{
+    module_cache::handle_cached_modules, BuildModuleGraphThreadedParams, HandleDependenciesParams,
+    ResolvedModuleInfo,
+  },
+  generate::finalize_resources::finalize_resources,
+  Compiler,
 };
 use farmfe_core::error::Result;
 
@@ -42,12 +47,26 @@ mod regenerate_resources;
 mod update_context;
 
 enum ResolveModuleResult {
+  Cached(CachedModule),
   /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
   ExistingBeforeUpdate(ModuleId),
   /// This module is added during the update, and we met it again when resolving dependencies
   ExistingWhenUpdate(ModuleId),
   /// This module is a full new resolved module, and we need to do the full building process
   Success(Box<ResolvedModuleInfo>),
+}
+
+struct BuildUpdateModuleGraphThreadedParams {
+  build_module_graph_threaded_params: BuildModuleGraphThreadedParams,
+  // if order is [None], means this is the root update module, it should always be rebuilt
+  order: Option<usize>,
+  update_context: Arc<UpdateContext>,
+}
+
+struct HandleUpdateDependenciesParams {
+  handle_dependencies_params: HandleDependenciesParams,
+  order: Option<usize>,
+  update_context: Arc<UpdateContext>,
 }
 
 impl Compiler {
@@ -128,14 +147,20 @@ impl Compiler {
             importer: None,
           };
 
-          Self::update_module_graph_threaded(
-            self.thread_pool.clone(),
-            resolve_param,
-            self.context.clone(),
-            update_context.clone(),
-            err_sender.clone(),
-            None,
-          );
+          let params = BuildUpdateModuleGraphThreadedParams {
+            build_module_graph_threaded_params: BuildModuleGraphThreadedParams {
+              resolve_param,
+              context: self.context.clone(),
+              err_sender: err_sender.clone(),
+              thread_pool: self.thread_pool.clone(),
+              order: 0,
+              cached_dependency: None,
+            },
+            order: None,
+            update_context: update_context.clone(),
+          };
+
+          Self::update_module_graph_threaded(params);
         }
         UpdateType::Removed => {
           return Err(farmfe_core::error::CompilationError::GenericError(
@@ -252,27 +277,63 @@ impl Compiler {
   /// This method is similar to the build_module_graph_threaded method in the build/mod.rs file,
   /// the difference is that this method is used for updating the module graph, only handles the updated and added module, and ignores the existing unchanged module,
   /// while the build_module_threaded method is used for building full module graph and every module is handled.
-  fn update_module_graph_threaded(
-    thread_pool: Arc<ThreadPool>,
-    resolve_param: PluginResolveHookParam,
-    context: Arc<CompilationContext>,
-    update_context: Arc<UpdateContext>,
-    err_sender: Sender<CompilationError>,
-    order: Option<usize>, // if order is [None], means this is the root update module, it should always be rebuilt
-  ) {
+  fn update_module_graph_threaded(params: BuildUpdateModuleGraphThreadedParams) {
+    let BuildUpdateModuleGraphThreadedParams {
+      build_module_graph_threaded_params:
+        BuildModuleGraphThreadedParams {
+          resolve_param,
+          context,
+          err_sender,
+          thread_pool,
+          order: _,
+          cached_dependency,
+        },
+      order,
+      update_context,
+    } = params;
     let c_thread_pool = thread_pool.clone();
 
     thread_pool.spawn(move || {
-      let resolve_module_result =
-        match resolve_module(&resolve_param, &context, &update_context, order.is_none()) {
-          Ok(result) => result,
-          Err(e) => {
+      let resolve_module_result = match resolve_module(
+        &resolve_param,
+        cached_dependency,
+        &context,
+        &update_context,
+        order.is_none(),
+      ) {
+        Ok(result) => result,
+        Err(e) => {
+          err_sender.send(e).unwrap();
+          return;
+        }
+      };
+
+      match resolve_module_result {
+        ResolveModuleResult::Cached(mut cached_module) => {
+          // if the dependency is immutable, skip building
+          if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
             err_sender.send(e).unwrap();
             return;
           }
-        };
 
-      match resolve_module_result {
+          let handle_dependencies_params = HandleDependenciesParams {
+            module: cached_module.module,
+            resolve_param,
+            order: order.unwrap_or(0),
+            deps: CachedModule::dep_sources(cached_module.dependencies),
+            thread_pool: c_thread_pool,
+            err_sender,
+            context,
+          };
+
+          let params = HandleUpdateDependenciesParams {
+            handle_dependencies_params,
+            order,
+            update_context,
+          };
+
+          Self::handle_update_dependencies(params);
+        }
         ResolveModuleResult::ExistingBeforeUpdate(module_id) => {
           // insert a placeholder module to the update module graph
           let module = Module::new(module_id.clone());
@@ -312,29 +373,20 @@ impl Compiler {
             &context,
           ) {
             Ok(deps) => {
-              let module_id = module.id.clone();
-              Self::add_module_to_update_module_graph(&update_context, module);
-              Self::add_edge_to_update_module_graph(
-                &update_context,
-                &resolve_param,
-                &module_id,
+              let params = HandleUpdateDependenciesParams {
+                handle_dependencies_params: HandleDependenciesParams {
+                  resolve_param,
+                  context,
+                  err_sender,
+                  thread_pool: c_thread_pool,
+                  module,
+                  deps,
+                  order: order.unwrap_or(0),
+                },
                 order,
-              );
-
-              for (order, dep) in deps.into_iter().enumerate() {
-                Self::update_module_graph_threaded(
-                  c_thread_pool.clone(),
-                  PluginResolveHookParam {
-                    source: dep.source,
-                    importer: Some(module_id.clone()),
-                    kind: dep.kind,
-                  },
-                  context.clone(),
-                  update_context.clone(),
-                  err_sender.clone(),
-                  Some(order),
-                );
-              }
+                update_context,
+              };
+              Self::handle_update_dependencies(params);
             }
             Err(e) => {
               err_sender.send(e).unwrap();
@@ -343,6 +395,47 @@ impl Compiler {
         }
       }
     });
+  }
+
+  fn handle_update_dependencies(params: HandleUpdateDependenciesParams) {
+    let HandleUpdateDependenciesParams {
+      handle_dependencies_params:
+        HandleDependenciesParams {
+          resolve_param,
+          context,
+          err_sender,
+          thread_pool,
+          module,
+          deps,
+          ..
+        },
+      order,
+      update_context,
+    } = params;
+
+    let module_id = module.id.clone();
+    Self::add_module_to_update_module_graph(&update_context, module);
+    Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
+
+    for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
+      let params = BuildUpdateModuleGraphThreadedParams {
+        build_module_graph_threaded_params: BuildModuleGraphThreadedParams {
+          thread_pool: thread_pool.clone(),
+          resolve_param: PluginResolveHookParam {
+            source: dep.source,
+            importer: Some(module_id.clone()),
+            kind: dep.kind,
+          },
+          context: context.clone(),
+          err_sender: err_sender.clone(),
+          order,
+          cached_dependency,
+        },
+        order: Some(order),
+        update_context: update_context.clone(),
+      };
+      Self::update_module_graph_threaded(params);
+    }
   }
 
   fn add_module_to_update_module_graph(update_context: &Arc<UpdateContext>, module: Module) {
@@ -513,14 +606,23 @@ impl Compiler {
 /// Similar to [crate::build::resolve_module], but the resolved module may be existed in both context and update_context
 fn resolve_module(
   resolve_param: &PluginResolveHookParam,
+  cached_dependency: Option<ModuleId>,
   context: &Arc<CompilationContext>,
   update_context: &Arc<UpdateContext>,
   is_root: bool,
 ) -> Result<ResolveModuleResult> {
-  let resolve_module_id_result = Compiler::resolve_module_id(resolve_param, context)?;
-  let module_id = &resolve_module_id_result.module_id;
+  let mut resolve_module_id_result = None; //  Compiler::resolve_module_id(resolve_param, context)?;
+  let module_id = if let Some(cached_dependency) = &cached_dependency {
+    cached_dependency.clone()
+  } else {
+    resolve_module_id_result = Some(Compiler::resolve_module_id(resolve_param, context)?);
+    resolve_module_id_result.as_ref().unwrap().module_id.clone()
+  };
+
   // if this is the root module, we should always rebuild it
   if is_root {
+    let resolve_module_id_result =
+      resolve_module_id_result.expect("For root module, resolve_module_id_result should be Some");
     return Ok(ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
       module: Compiler::create_module(
         resolve_module_id_result.module_id.clone(),
@@ -538,18 +640,32 @@ fn resolve_module(
   }
 
   let module_graph = context.module_graph.read();
-  if module_graph.has_module(&resolve_module_id_result.module_id) {
-    return Ok(ResolveModuleResult::ExistingBeforeUpdate(
-      resolve_module_id_result.module_id,
-    ));
+  if module_graph.has_module(&module_id) {
+    return Ok(ResolveModuleResult::ExistingBeforeUpdate(module_id));
   }
 
   let mut update_module_graph = update_context.module_graph.write();
-  if update_module_graph.has_module(&resolve_module_id_result.module_id) {
-    return Ok(ResolveModuleResult::ExistingWhenUpdate(
-      resolve_module_id_result.module_id,
-    ));
+  if update_module_graph.has_module(&module_id) {
+    return Ok(ResolveModuleResult::ExistingWhenUpdate(module_id));
   }
+
+  if let Some(cached_dependency) = cached_dependency {
+    let module_cache_manager = &context.cache_manager.module_cache;
+
+    if module_cache_manager.has_cache(&cached_dependency)
+      && module_cache_manager
+        .get_cache_ref(&cached_dependency)
+        .module
+        .immutable
+    {
+      return Ok(ResolveModuleResult::Cached(
+        module_cache_manager.get_cache(&cached_dependency),
+      ));
+    }
+  }
+
+  let resolve_module_id_result =
+    resolve_module_id_result.unwrap_or(Compiler::resolve_module_id(resolve_param, context)?);
   // just a placeholder module, it will be replaced by the real module later
   update_module_graph.add_module(Compiler::create_module(
     resolve_module_id_result.module_id.clone(),

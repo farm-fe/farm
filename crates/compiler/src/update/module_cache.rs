@@ -38,5 +38,5 @@ pub fn set_updated_modules_cache(
 ) {
   let affected_module_ids = get_affected_module_ids(updated_modules, diff_result, context);
 
-  set_module_graph_cache(affected_module_ids, false, context);
+  set_module_graph_cache(affected_module_ids, context);
 }

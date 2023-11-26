@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use dashmap::DashMap;
+use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
 
@@ -29,6 +30,17 @@ impl MutableModulesMemoryStore {
       cached_modules: DashMap::new(),
     }
   }
+
+  fn gen_cache_store_key(&self, module: &crate::module::Module) -> CacheStoreKey {
+    let hash_key = sha256(
+      format!("{}{}", module.content_hash, module.id.to_string()).as_bytes(),
+      32,
+    );
+    CacheStoreKey {
+      name: module.id.to_string(),
+      key: hash_key,
+    }
+  }
 }
 
 impl ModuleMemoryStore for MutableModulesMemoryStore {
@@ -45,15 +57,15 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn get_cache(&self, key: &ModuleId) -> Option<CachedModule> {
-    if let Some(module) = self.cached_modules.get(key) {
-      return Some(module.value().clone());
+    if let Some((_, module)) = self.cached_modules.remove(key) {
+      return Some(module);
     }
 
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
       let module = deserialize!(&cache, CachedModule);
-      self.cached_modules.insert(key.clone(), module.clone());
+      // self.cached_modules.insert(key.clone(), module.clone());
       return Some(module);
     }
 
@@ -102,18 +114,12 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let mut cache_map = HashMap::new();
 
     for entry in self.cached_modules.iter() {
-      let key = entry.key().clone();
       let module = entry.value();
-
-      let store_key = CacheStoreKey {
-        name: key.to_string(),
-        key: module.module.content_hash.clone(),
-      };
+      let store_key = self.gen_cache_store_key(&module.module);
 
       if self.store.is_cache_changed(&store_key) {
         cache_map.insert(store_key, module.clone());
       }
-      // cache_map.insert(key.clone(), serialize!(module));
     }
 
     let cache_map = cache_map
@@ -126,5 +132,10 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
 
   fn invalidate_cache(&self, key: &ModuleId) {
     self.cached_modules.remove(key);
+  }
+
+  fn is_cache_changed(&self, module: &crate::module::Module) -> bool {
+    let store_key = self.gen_cache_store_key(module);
+    self.store.is_cache_changed(&store_key)
   }
 }
