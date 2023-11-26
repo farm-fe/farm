@@ -134,7 +134,7 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
 
   for module in &modules {
     // if the module has already in the cache and not changed, skip it.
-    if !context.cache_manager.module_cache.is_cache_changed(*module) {
+    if !context.cache_manager.module_cache.is_cache_changed(module) {
       continue;
     }
 
