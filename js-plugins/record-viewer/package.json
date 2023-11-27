@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-record-viewer",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
   "type": "module",
@@ -39,7 +39,8 @@
     "build": "pnpm build:plugin && cross-env FARM_FORMAT=esm farm build && pnpm build:client",
     "build:plugin": "farm build",
     "build:client": "cd src/client && farm build",
-    "preview": "cd src/client && farm preview"
+    "preview": "cd src/client && farm preview",
+    "prepublishOnly": "npm run build"
   },
   "files": [
     "build"
