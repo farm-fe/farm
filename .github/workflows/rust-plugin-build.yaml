@@ -20,13 +20,26 @@ jobs:
       matrix:
         settings:
           - os: ubuntu-latest
+            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
             abi: linux-x64-gnu
-          - os: macos-latest
-            abi: darwin-x64
+            build: >-
+              set -e &&
+              unset CC_x86_64_unknown_linux_gnu &&
+              unset CC &&
+              cd packages/core &&
+              npm run build:rs:publish -- --target x86_64-unknown-linux-gnu
           - os: windows-latest
             abi: win32-x64-msvc
 
-          # cross compile arm64 cause github runners does not native support it
+          # cross compile
+          # windows
+          - os: windows-latest
+            abi: win32-ia32-msvc
+            target: i686-pc-windows-msvc
+          - os: windows-latest
+            abi: win32-arm64-msvc
+            target: aarch64-pc-windows-msvc
+          # linux
           - os: ubuntu-latest
             abi: linux-arm64-musl
             target: aarch64-unknown-linux-musl
@@ -35,7 +48,14 @@ jobs:
             abi: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             zig: true
-          - os: macos-latest
+          # macos
+          # cross compile macos cause github runners is limited for macos.
+          # It always wait for a long time to get a macos runner. So we use cross compile instead to save time.
+          - os: ubuntu-latest
+            abi: darwin-x64
+            target: x86_64-apple-darwin
+            zig: false
+          - os: ubuntu-latest
             abi: darwin-arm64
             target: aarch64-apple-darwin
             zig: false
@@ -60,7 +80,15 @@ jobs:
         if: ${{ matrix.settings.target }}
       - uses: goto-bus-stop/setup-zig@v2
         if: ${{ matrix.settings.zig }}
+      - name: Build in docker
+        uses: addnab/docker-run-action@v3
+        if: ${{ matrix.settings.docker }}
+        with:
+          image: ${{ matrix.settings.docker }}
+          options: -v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build
+          run: ${{ matrix.settings.build }}
       - name: Build
+        if: ${{ !matrix.settings.docker }}
         run: cd ${{ inputs.root }} && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }}
       - name: Copy Artifacts
         run: cd ${{ inputs.root }} && npm run copy-artifacts -- --abi ${{ matrix.settings.abi }}

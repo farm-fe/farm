@@ -35,6 +35,22 @@ switch (platform) {
         }
 
         break;
+      case 'ia32':
+          if (existsSync(join(currentDir, './npm/win32-ia32-msvc/index.farm'))) {
+            binPath = join(currentDir, './npm/win32-ia32-msvc/index.farm');
+          } else {
+            binPath = require.resolve('@farmfe/plugin-react-win32-ia32-msvc');
+          }
+  
+          break;
+      case 'arm64':
+          if (existsSync(join(currentDir, './npm/win32-arm64-msvc/index.farm'))) {
+            binPath = join(currentDir, './npm/win32-arm64-msvc/index.farm');
+          } else {
+            binPath = require.resolve('@farmfe/plugin-react-win32-arm64-msvc');
+          }
+  
+          break;
       default:
         throw new Error(`Unsupported architecture on Windows: ${arch}`);
     }
