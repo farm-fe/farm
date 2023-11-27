@@ -39,6 +39,7 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
 
   setProcessEnv('development');
+
   const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
     logger,

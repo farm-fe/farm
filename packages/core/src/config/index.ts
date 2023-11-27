@@ -10,7 +10,7 @@ import {
   // resolveAllPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolvePlugins,
+  resolveJsPlugins,
   resolveRustPlugins
 } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
@@ -278,15 +278,8 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  // const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
-  //   config,
-  //   userConfig
-  // );
-
   const normalizedConfig: Config = {
     config
-    // rustPlugins,
-    // jsPlugins
   };
 
   return normalizedConfig;
@@ -431,13 +424,13 @@ export async function resolveConfig(
 
   const configEnv: ConfigEnv = {
     command,
-    mode: inlineOptions.mode ?? mode
+    mode: inlineOptions.mode ?? mode ?? 'development'
   };
 
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
   let config = filterUserConfig(userConfig, inlineOptions);
-  const { jsPlugins } = await resolvePlugins({}, config);
+  const { jsPlugins } = await resolveJsPlugins({}, config);
 
   config = await resolveConfigHook(config, configEnv, jsPlugins);
 

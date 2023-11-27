@@ -4,11 +4,7 @@ import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
 import type { Config } from '../../binding/index.js';
-import {
-  ConfigEnv,
-  // mergeConfiguration,
-  type UserConfig
-} from '../config/index.js';
+import { ConfigEnv, type UserConfig } from '../config/index.js';
 
 export * from './js/index.js';
 export * from './rust/index.js';
@@ -79,7 +75,7 @@ export async function resolveAllPlugins(
   };
 }
 
-export async function resolvePlugins(
+export async function resolveJsPlugins(
   finalConfig: Config['config'],
   userConfig: UserConfig
 ) {
@@ -88,13 +84,10 @@ export async function resolvePlugins(
 
   if (!plugins.length && !vitePlugins?.length) {
     return {
-      // rustPlugins: [],
       jsPlugins: [],
       finalConfig
     };
   }
-
-  // const rustPlugins = [];
 
   const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
     vitePlugins,
@@ -109,10 +102,10 @@ export async function resolvePlugins(
       typeof plugin === 'string' ||
       (isArray(plugin) && typeof plugin[0] === 'string')
     ) {
-      // rustPlugins.push(
-      //   await rustPluginResolver(plugin as string, finalConfig.root)
-      // );
-    } else if (isObject(plugin)) {
+      // Ignore or handle the string or specific array format
+      continue;
+    }
+    if (isObject(plugin)) {
       convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
     } else if (isArray(plugin)) {
@@ -130,14 +123,13 @@ export async function resolvePlugins(
   jsPlugins.push(...vitePluginAdapters);
 
   return {
-    // rustPlugins,
     jsPlugins,
     finalConfig
   };
 }
 
 export async function resolveRustPlugins(
-  finalConfig: any,
+  compilationConfig: Config['config'],
   userConfig: UserConfig
 ) {
   const plugins = userConfig.plugins ?? [];
@@ -156,7 +148,7 @@ export async function resolveRustPlugins(
       (isArray(plugin) && typeof plugin[0] === 'string')
     ) {
       rustPlugins.push(
-        await rustPluginResolver(plugin as string, finalConfig.root)
+        await rustPluginResolver(plugin as string, compilationConfig.root)
       );
     }
   }
