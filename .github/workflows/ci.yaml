@@ -8,27 +8,10 @@ jobs:
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
 
-  call-rust-plugin-react-build:
-    uses: ./.github/workflows/rust-plugin-build.yaml
-    with:
-      root: rust-plugins/react
-      name: plugin-react
-
-  call-rust-plugin-sass-build:
-    uses: ./.github/workflows/rust-plugin-build.yaml
-    with:
-      root: rust-plugins/sass
-      name: plugin-sass
-
   examples-test:
     name: Examples Test
     runs-on: ${{ matrix.settings.os }}
-    needs:
-      [
-        call-rust-build,
-        call-rust-plugin-react-build,
-        call-rust-plugin-sass-build
-      ]
+    needs: [call-rust-build]
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +73,8 @@ jobs:
       matrix:
         settings:
           - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: ubuntu-20.04
             abi: linux-x64-gnu
           - os: macos-latest
             abi: darwin-x64
