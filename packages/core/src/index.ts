@@ -5,6 +5,7 @@ export * from './plugin/type.js';
 export * from './utils/index.js';
 
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import os from 'node:os';
 import { existsSync, statSync } from 'node:fs';
 import sirv from 'sirv';
@@ -258,6 +259,61 @@ export async function watch(
 
     await watch(inlineConfig);
   });
+}
+
+export async function clean(
+  rootPath: string,
+  recursive: boolean | undefined
+): Promise<void> {
+  // TODO After optimizing the reading of config, put the clean method into compiler
+  const logger = new DefaultLogger();
+  const nodeModulesFolders = recursive
+    ? await findNodeModulesRecursively(rootPath)
+    : [path.join(rootPath, 'node_modules')];
+
+  for (const nodeModulesPath of nodeModulesFolders) {
+    const farmFolderPath = path.join(nodeModulesPath, '.farm');
+    try {
+      const stats = await fs.stat(farmFolderPath);
+      if (stats.isDirectory()) {
+        await fs.rm(farmFolderPath, { recursive: true, force: true });
+        logger.info(
+          `Under the current path, ${bold(
+            green(nodeModulesPath)
+          )}. The cache has been cleaned`
+        );
+      }
+    } catch (error) {
+      logger.warn(
+        `Currently, no cached files have been found in ${bold(
+          green(nodeModulesPath)
+        )}.`
+      );
+    }
+  }
+}
+
+async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
+  const result: string[] = [];
+
+  async function traverse(currentPath: string) {
+    const items = await fs.readdir(currentPath);
+    for (const item of items) {
+      const fullPath = path.join(currentPath, item);
+      const stats = await fs.stat(fullPath);
+
+      if (stats.isDirectory()) {
+        if (item === 'node_modules') {
+          result.push(fullPath);
+        } else {
+          await traverse(fullPath);
+        }
+      }
+    }
+  }
+
+  await traverse(rootPath);
+  return result;
 }
 
 export async function createBundleHandler(
