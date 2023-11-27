@@ -7,7 +7,10 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
 
 use crate::{
-  cache::cache_store::{CacheStore, CacheStoreKey},
+  cache::{
+    cache_store::{CacheStore, CacheStoreKey},
+    utils::cache_panic,
+  },
   config::Mode,
   module::ModuleId,
 };
@@ -35,6 +38,7 @@ impl CachedPackage {
 
 /// In memory store for mutable modules
 pub struct ImmutableModulesMemoryStore {
+  cache_dir: String,
   /// low level cache store
   store: CacheStore,
   /// ModuleId -> Cached Module
@@ -70,6 +74,7 @@ impl ImmutableModulesMemoryStore {
       cached_modules: DashMap::new(),
       manifest: manifest.into_iter().collect(),
       manifest_reversed,
+      cache_dir: cache_dir_str.to_string(),
     }
   }
 
@@ -145,7 +150,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         self
           .cached_modules
           .get(key)
-          .expect("Cache broken, please remove node_modules/.farm and retry."),
+          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
       );
     }
 
@@ -165,7 +170,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         self
           .cached_modules
           .get_mut(key)
-          .expect("Cache broken, please remove node_modules/.farm and retry."),
+          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
       );
     }
 
@@ -192,14 +197,18 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       .collect::<HashMap<String, String>>();
 
     let manifest_bytes = serde_json::to_vec(&manifest)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
+      .unwrap_or_else(|e| cache_panic(&e.to_string(), &self.cache_dir));
 
     let mut cache_map = packages
       .into_par_iter()
       .filter_map(|(key, modules)| {
-        let store_key = CacheStoreKey {
-          name: key.clone(),
-          key: sha256(key.as_bytes(), 32),
+        let gen_cache_store_key = |mut modules: Vec<String>| {
+          modules.sort();
+
+          CacheStoreKey {
+            name: key.clone(),
+            key: sha256(modules.join(",").as_bytes(), 32),
+          }
         };
 
         // the package is already cached, we only need to update it
@@ -213,6 +222,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
             }
             added_modules.push(module_id);
           }
+
           // add the new modules to the package
           if !added_modules.is_empty() {
             let mut package = self.read_cached_package(&key);
@@ -223,17 +233,23 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
                   self
                     .cached_modules
                     .get(&module_id)
-                    .expect("Cache broken, please remove node_modules/.farm and retry.")
+                    .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir))
                     .clone()
                 })
                 .collect::<Vec<_>>(),
             );
+            let modules = package
+              .list
+              .iter()
+              .map(|cm| cm.module.id.to_string())
+              .collect::<Vec<_>>();
             let package_bytes = crate::serialize!(&package);
-            return Some((store_key, package_bytes));
+            return Some((gen_cache_store_key(modules), package_bytes));
           }
           return None;
         }
 
+        let module_strings = modules.iter().map(|m| m.to_string()).collect::<Vec<_>>();
         let package = CachedPackage {
           list: modules
             .into_par_iter()
@@ -241,7 +257,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
               self
                 .cached_modules
                 .get(&module_id)
-                .expect("Cache broken, please remove node_modules/.farm and retry.")
+                .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir))
                 .clone()
             })
             .collect(),
@@ -250,7 +266,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         };
 
         let package_bytes = crate::serialize!(&package);
-        Some((store_key, package_bytes))
+        Some((gen_cache_store_key(module_strings), package_bytes))
       })
       .collect::<HashMap<CacheStoreKey, Vec<u8>>>();
 
