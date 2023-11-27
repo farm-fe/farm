@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.14.8
+
+### Patch Changes
+
+- c6243c91: Fix immutable modules cache not found
+
 ## 0.14.7
 
 ### Patch Changes
