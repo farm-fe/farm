@@ -10,26 +10,9 @@ jobs:
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
 
-  call-rust-plugin-react-build:
-    uses: ./.github/workflows/rust-plugin-build.yaml
-    with:
-      root: rust-plugins/react
-      name: plugin-react
-
-  call-rust-plugin-sass-build:
-    uses: ./.github/workflows/rust-plugin-build.yaml
-    with:
-      root: rust-plugins/sass
-      name: plugin-sass
-
   release:
     name: Release
-    needs:
-      [
-        call-rust-build,
-        call-rust-plugin-react-build,
-        call-rust-plugin-sass-build
-      ]
+    needs: [call-rust-build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
