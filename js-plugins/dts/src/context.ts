@@ -50,12 +50,12 @@ export default class Context {
     const outputFiles = new Map<string, string>();
     const emittedFiles = new Map<string, string>();
     const outputDir = ensureAbsolute(
-      options.outputDir ? options.outputDir : this.config.output.path,
+      options.outputDir ? options.outputDir : this.config.output?.path,
       root
     );
     const outDir = options.outputDir
       ? options.outputDir
-      : this.config.output.path;
+      : this.config.output?.path;
     const aliasesExclude = userOptions?.aliasesExclude ?? [];
     const tsConfigPath = resolveAbsolutePath(userOptions.tsconfigPath, root);
     libFolderPath = libFolderPath && ensureAbsolute(libFolderPath, root);

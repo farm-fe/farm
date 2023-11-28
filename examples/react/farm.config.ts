@@ -1,8 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
+import { defineConfig } from '@farmfe/core';
 
 export default defineConfig({
   compilation: {
@@ -29,7 +25,7 @@ export default defineConfig({
     treeShaking: true
   },
   server: {
-    cors: true
+    port: 3001
   },
   plugins: [
     ["@farmfe/plugin-react", { runtime: "automatic" }],
@@ -76,5 +72,20 @@ export default defineConfig({
         }
       }
     }
+  ],
+  vitePlugins: [
+    {
+      name: 'vite111',
+      config(config, env) {
+        return config;
+      },
+      configResolved(config) {}
+    }
+    // {
+    //   name: 'vite2222',
+    //   config(config) {
+    //     return config
+    //   }
+    // }
   ]
 });

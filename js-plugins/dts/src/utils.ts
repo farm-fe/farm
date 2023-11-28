@@ -158,18 +158,6 @@ export function handleExclude(resolvedOptions: any) {
   });
 }
 
-export async function dynamicImportFromESM(moduleName: string) {
-  try {
-    // @ts-ignore
-    // TODO: use dynamic import
-    const _require = createRequire(import.meta.url);
-    const module = _require(moduleName) ?? {};
-    return module.default ?? module;
-  } catch (error) {
-    throw error;
-  }
-}
-
 export function resolveAbsolutePath(path: string, root: string) {
   return path ? (isAbsolute(path) ? path : resolve(root, path)) : root;
 }
