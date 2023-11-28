@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 22752363: bump verion
+- 22752363: bump version
 
 ## 1.4.0
 
