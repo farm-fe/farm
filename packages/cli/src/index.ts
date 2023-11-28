@@ -4,13 +4,14 @@ import { DefaultLogger } from '@farmfe/core';
 import { getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
-import type { build, preview, start, watch } from '@farmfe/core';
+import type { build, preview, start, watch, clean } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
   FarmCLIServerOptions,
   GlobalFarmCLIOptions
 } from './types.js';
+import path from 'node:path';
 
 const logger = new DefaultLogger();
 
@@ -168,6 +169,31 @@ cli
     }
   });
 
+interface ICleanOptions {
+  path?: string;
+  recursive?: boolean;
+}
+
+cli
+  .command('clean [path]', 'Clean up the cache built incrementally')
+  .option(
+    '--recursive',
+    'Recursively search for node_modules directories and clean them'
+  )
+  .action(async (cleanPath: string, options: ICleanOptions) => {
+    const rootPath = cleanPath
+      ? path.resolve(process.cwd(), cleanPath)
+      : process.cwd();
+    const { clean } = await resolveCore();
+
+    try {
+      await clean(rootPath, options?.recursive);
+    } catch (e) {
+      logger.error(`Failed to clean cache:\n${e.stack}`);
+      process.exit(1);
+    }
+  });
+
 // create plugins command
 cli
   .command('plugin [command]', 'Commands for manage plugins', {
@@ -203,6 +229,7 @@ export async function resolveCore(): Promise<{
   build: typeof build;
   watch: typeof watch;
   preview: typeof preview;
+  clean: typeof clean;
 }> {
   try {
     return import('@farmfe/core');

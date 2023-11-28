@@ -25,7 +25,7 @@ export default defineConfig({
     treeShaking: true
   },
   server: {
-    port: 3000
+    port: 3001
   },
   plugins: [
     ["@farmfe/plugin-react", { runtime: "automatic" }],
