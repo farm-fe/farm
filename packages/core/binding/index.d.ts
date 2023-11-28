@@ -216,8 +216,8 @@ export interface Config {
       groups?: {
         name: string;
         test: string[];
-        groupType?: 'mutable' | 'immutable',
-        resourceType?: 'all' | 'initial' | 'async'
+        groupType?: 'mutable' | 'immutable';
+        resourceType?: 'all' | 'initial' | 'async';
       }[];
       enforceResources?: {
         name: string;
@@ -240,17 +240,19 @@ export interface Config {
           options?: any;
           assumptions?: any;
         };
-    persistentCache?: boolean | {
-      namespace?: string;
-      cacheDir?: string;
-      buildDependencies?: string[];
-      moduleCacheKeyStrategy?: {
-        timestamp?: boolean,
-        hash?: boolean,
-      };
-      envs?: Record<string, String>;
-    };
-};
+    persistentCache?:
+      | boolean
+      | {
+          namespace?: string;
+          cacheDir?: string;
+          buildDependencies?: string[];
+          moduleCacheKeyStrategy?: {
+            timestamp?: boolean;
+            hash?: boolean;
+          };
+          envs?: Record<string, String>;
+        };
+  };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]
   rustPlugins?: [string, string][];

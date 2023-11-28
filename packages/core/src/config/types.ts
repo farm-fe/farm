@@ -34,6 +34,11 @@ export type NormalizedServerConfig = Required<
   }
 >;
 
+export interface ConfigEnv {
+  command: 'build' | 'serve';
+  mode: string;
+}
+
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
   ignores?: string[];

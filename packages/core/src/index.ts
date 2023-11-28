@@ -17,8 +17,7 @@ import { Compiler } from './compiler/index.js';
 import {
   normalizeDevServerOptions,
   normalizePublicDir,
-  normalizeUserCompilationConfig,
-  resolveUserConfig,
+  resolveConfig,
   UserConfig
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
@@ -41,16 +40,12 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
 
   setProcessEnv('development');
-  const config: UserConfig = await resolveUserConfig(
-    inlineConfig,
-    'serve',
-    logger
-  );
 
-  const normalizedConfig = await normalizeUserCompilationConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    config,
-    logger
+    logger,
+    'serve',
+    'development'
   );
 
   const compiler = new Compiler(normalizedConfig);
@@ -109,20 +104,16 @@ export async function build(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('production');
-  const userConfig: UserConfig = await resolveUserConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    'build',
-    logger
-  );
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    inlineConfig,
-    userConfig,
     logger,
+    'build',
     'production'
   );
+
   setProcessEnv(normalizedConfig.config.mode);
 
-  await createBundleHandler(normalizedConfig, userConfig);
+  await createBundleHandler(normalizedConfig, config);
 
   // copy resources under publicDir to output.path
   const absPublicDirPath = normalizePublicDir(
@@ -138,16 +129,15 @@ export async function build(
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   const port = inlineConfig.port ?? 1911;
-  const userConfig = await resolveUserConfig(inlineConfig, 'serve', logger);
-
-  const normalizedConfig = await normalizeUserCompilationConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    userConfig,
     logger,
+    'serve',
     'production'
   );
+
   const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server,
+    config.server,
     'production'
   );
 
@@ -224,23 +214,23 @@ export async function watch(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
-  const userConfig = await resolveUserConfig(inlineConfig, 'build', logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    userConfig,
     logger,
+    'build',
     'development'
   );
+
   setProcessEnv(normalizedConfig.config.mode);
 
   const compilerFileWatcher = await createBundleHandler(
     normalizedConfig,
-    userConfig,
+    config,
     true
   );
 
   const farmWatcher = new ConfigWatcher({
-    userConfig,
+    userConfig: config,
     config: normalizedConfig
   }).watch(async (files: string[]) => {
     logger.info(
