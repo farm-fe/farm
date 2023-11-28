@@ -71,6 +71,9 @@ jobs:
         run: npm install -g pnpm && pnpm i --frozen-lockfile
       - run: rustup target add ${{ matrix.settings.target }}
         if: ${{ matrix.settings.target }}
+      - uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: goto-bus-stop/setup-zig@v2
         if: ${{ matrix.settings.zig }}
       - name: Build in docker
