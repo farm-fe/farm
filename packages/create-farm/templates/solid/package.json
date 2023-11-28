@@ -6,11 +6,10 @@
     "solid-js": "^1.7.6"
   },
   "devDependencies": {
-    "@farmfe/cli": "^0.5.10",
-    "@farmfe/core": "^0.14.6",
+    "@farmfe/cli": "^0.5.11",
+    "@farmfe/core": "^0.14.9",
     "solid-refresh": "^0.5.3",
-    "vite-plugin-solid": "^2.7.0",
-    "vite": "^4.4.11"
+    "vite-plugin-solid": "^2.7.0"
   },
   "scripts": {
     "dev": "farm start",
