@@ -5,6 +5,7 @@ import { rustPluginResolver } from './rust/index.js';
 import type { JsPlugin } from './type.js';
 import type { Config } from '../../binding/index.js';
 import { ConfigEnv, type UserConfig } from '../config/index.js';
+import merge from 'lodash.merge';
 
 export * from './js/index.js';
 export * from './rust/index.js';
@@ -216,42 +217,12 @@ export async function resolveConfigHook(
       const res = await p.config(conf, configEnv);
 
       if (res) {
-        conf = mergeConfig(conf, res);
+        conf = merge(conf, res);
       }
     }
   }
 
   return conf;
-}
-
-export function mergeConfig(
-  a: Record<string, any>,
-  b: Record<string, any>
-): Record<string, any> {
-  const result: Record<string, any> = { ...a };
-
-  for (const key in b) {
-    if (Object.prototype.hasOwnProperty.call(b, key)) {
-      const value = b[key];
-
-      if (value == null) {
-        continue;
-      }
-
-      if (isArray(value)) {
-        // 直接替换数组
-        result[key] = value;
-      } else if (isObject(value)) {
-        // 递归替换对象
-        result[key] = mergeConfig({}, value);
-      } else {
-        // 替换其他值
-        result[key] = value;
-      }
-    }
-  }
-
-  return result;
 }
 
 export async function resolveConfigResolvedHook(
