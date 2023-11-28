@@ -11,7 +11,7 @@ export async function getCompiler(
   plugins: JsPlugin[],
   input?: Record<string, string>
 ): Promise<Compiler> {
-  const config = await normalizeUserCompilationConfig(
+  const compilationConfig = await normalizeUserCompilationConfig(
     null,
     {
       root,
@@ -36,7 +36,13 @@ export async function getCompiler(
     new DefaultLogger(),
     'production'
   );
-  return new Compiler(config);
+  const { config } = compilationConfig;
+
+  return new Compiler({
+    config,
+    jsPlugins: plugins,
+    rustPlugins: []
+  });
 }
 
 export function getFixturesDir() {

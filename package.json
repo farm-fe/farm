@@ -36,7 +36,6 @@
     "bootstrap": "pnpm install && node scripts/clean.mjs && node scripts/bootstrap.mjs && pnpm start",
     "test": "vitest run",
     "start": "pnpm --filter @farmfe/cli start",
-    "build": "pnpm --filter @farmfe/cli --filter @farmfe/js-plugin-dts build && pnpm --filter @farmfe/core build:cjs",
     "release": "node scripts/release.mjs",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
     "bump": "node scripts/bump.mjs",

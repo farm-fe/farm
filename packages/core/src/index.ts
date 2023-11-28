@@ -5,6 +5,7 @@ export * from './plugin/type.js';
 export * from './utils/index.js';
 
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import os from 'node:os';
 import { existsSync, statSync } from 'node:fs';
 import sirv from 'sirv';
@@ -16,8 +17,7 @@ import { Compiler } from './compiler/index.js';
 import {
   normalizeDevServerOptions,
   normalizePublicDir,
-  normalizeUserCompilationConfig,
-  resolveUserConfig,
+  resolveConfig,
   UserConfig
 } from './config/index.js';
 import { DefaultLogger } from './utils/logger.js';
@@ -40,16 +40,12 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
 
   setProcessEnv('development');
-  const config: UserConfig = await resolveUserConfig(
-    inlineConfig,
-    'serve',
-    logger
-  );
 
-  const normalizedConfig = await normalizeUserCompilationConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    config,
-    logger
+    logger,
+    'serve',
+    'development'
   );
 
   const compiler = new Compiler(normalizedConfig);
@@ -108,20 +104,16 @@ export async function build(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('production');
-  const userConfig: UserConfig = await resolveUserConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    'build',
-    logger
-  );
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    inlineConfig,
-    userConfig,
     logger,
+    'build',
     'production'
   );
+
   setProcessEnv(normalizedConfig.config.mode);
 
-  await createBundleHandler(normalizedConfig, userConfig);
+  await createBundleHandler(normalizedConfig, config);
 
   // copy resources under publicDir to output.path
   const absPublicDirPath = normalizePublicDir(
@@ -137,16 +129,15 @@ export async function build(
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   const port = inlineConfig.port ?? 1911;
-  const userConfig = await resolveUserConfig(inlineConfig, 'serve', logger);
-
-  const normalizedConfig = await normalizeUserCompilationConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    userConfig,
     logger,
+    'serve',
     'production'
   );
+
   const normalizedDevServerConfig = normalizeDevServerOptions(
-    userConfig.server,
+    config.server,
     'production'
   );
 
@@ -223,23 +214,23 @@ export async function watch(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
-  const userConfig = await resolveUserConfig(inlineConfig, 'build', logger);
-  const normalizedConfig = await normalizeUserCompilationConfig(
+  const { config, normalizedConfig } = await resolveConfig(
     inlineConfig,
-    userConfig,
     logger,
+    'build',
     'development'
   );
+
   setProcessEnv(normalizedConfig.config.mode);
 
   const compilerFileWatcher = await createBundleHandler(
     normalizedConfig,
-    userConfig,
+    config,
     true
   );
 
   const farmWatcher = new ConfigWatcher({
-    userConfig,
+    userConfig: config,
     config: normalizedConfig
   }).watch(async (files: string[]) => {
     logger.info(
@@ -258,6 +249,61 @@ export async function watch(
 
     await watch(inlineConfig);
   });
+}
+
+export async function clean(
+  rootPath: string,
+  recursive: boolean | undefined
+): Promise<void> {
+  // TODO After optimizing the reading of config, put the clean method into compiler
+  const logger = new DefaultLogger();
+  const nodeModulesFolders = recursive
+    ? await findNodeModulesRecursively(rootPath)
+    : [path.join(rootPath, 'node_modules')];
+
+  for (const nodeModulesPath of nodeModulesFolders) {
+    const farmFolderPath = path.join(nodeModulesPath, '.farm');
+    try {
+      const stats = await fs.stat(farmFolderPath);
+      if (stats.isDirectory()) {
+        await fs.rm(farmFolderPath, { recursive: true, force: true });
+        logger.info(
+          `Under the current path, ${bold(
+            green(nodeModulesPath)
+          )}. The cache has been cleaned`
+        );
+      }
+    } catch (error) {
+      logger.warn(
+        `Currently, no cached files have been found in ${bold(
+          green(nodeModulesPath)
+        )}.`
+      );
+    }
+  }
+}
+
+async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
+  const result: string[] = [];
+
+  async function traverse(currentPath: string) {
+    const items = await fs.readdir(currentPath);
+    for (const item of items) {
+      const fullPath = path.join(currentPath, item);
+      const stats = await fs.stat(fullPath);
+
+      if (stats.isDirectory()) {
+        if (item === 'node_modules') {
+          result.push(fullPath);
+        } else {
+          await traverse(fullPath);
+        }
+      }
+    }
+  }
+
+  await traverse(rootPath);
+  return result;
 }
 
 export async function createBundleHandler(

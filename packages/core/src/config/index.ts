@@ -6,7 +6,13 @@ import { pathToFileURL } from 'node:url';
 
 import merge from 'lodash.merge';
 
-import { resolveAllPlugins } from '../plugin/index.js';
+import {
+  // resolveAllPlugins,
+  resolveConfigHook,
+  resolveConfigResolvedHook,
+  resolveJsPlugins,
+  resolveRustPlugins
+} from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
@@ -25,6 +31,7 @@ import {
 } from '../utils/index.js';
 
 import type {
+  ConfigEnv,
   FarmCLIOptions,
   NormalizedServerConfig,
   ResolvedUserConfig,
@@ -271,15 +278,8 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
-    config,
-    userConfig
-  );
-
   const normalizedConfig: Config = {
-    config: finalConfig,
-    rustPlugins,
-    jsPlugins
+    config
   };
 
   return normalizedConfig;
@@ -347,15 +347,22 @@ export function normalizeDevServerOptions(
   });
 }
 
+type ResolveConfigType = {
+  config?: UserConfig;
+  normalizedConfig?: Config;
+};
+
 /**
  * Resolve and load user config from the specified path
  * @param configPath
  */
-export async function resolveUserConfig(
+export async function resolveConfig(
   inlineOptions: FarmCLIOptions,
+  logger: Logger,
   command: 'serve' | 'build',
-  logger: Logger
-): Promise<ResolvedUserConfig> {
+  mode?: CompilationMode
+): Promise<ResolveConfigType> {
+  // Promise<Config>
   let userConfig: ResolvedUserConfig = {};
   const root: string = process.cwd();
   const { configPath } = inlineOptions;
@@ -415,11 +422,30 @@ export async function resolveUserConfig(
     userConfig.configFileDependencies = dependencies;
   }
 
+  const configEnv: ConfigEnv = {
+    command,
+    mode: inlineOptions.mode ?? mode ?? 'development'
+  };
+
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
-  const config = filterUserConfig(userConfig, inlineOptions);
+  let config = filterUserConfig(userConfig, inlineOptions);
+  const { jsPlugins } = await resolveJsPlugins({}, config);
 
-  return config;
+  config = await resolveConfigHook(config, configEnv, jsPlugins);
+
+  const resultConfig = await normalizeUserCompilationConfig(
+    inlineOptions,
+    config,
+    logger,
+    mode
+  );
+
+  await resolveConfigResolvedHook(resultConfig, jsPlugins);
+  const { rustPlugins } = await resolveRustPlugins(resultConfig.config, config);
+  const normalizedConfig = { ...resultConfig, rustPlugins, jsPlugins };
+
+  return { config, normalizedConfig };
 }
 
 async function readConfigFile(
@@ -442,6 +468,7 @@ async function readConfigFile(
         .toString(16)
         .split('.')
         .join('')}}.cjs`;
+
       const normalizedConfig = await normalizeUserCompilationConfig(
         null,
         {
@@ -483,7 +510,11 @@ async function readConfigFile(
         logger
       );
 
-      const compiler = new Compiler(normalizedConfig);
+      const compiler = new Compiler({
+        ...normalizedConfig,
+        rustPlugins: [],
+        jsPlugins: []
+      });
 
       // const previousProfileEnv = process.env.FARM_PROFILE;
       // process.env.FARM_PROFILE = '';
@@ -532,7 +563,9 @@ export function mergeConfiguration(
         continue;
       }
       if (isArray(value)) {
-        result[key] = result[key] ? [...result[key], ...value] : value;
+        result[key] = result[key]
+          ? [...new Set([...result[key], ...value])]
+          : value;
       } else if (isObject(value)) {
         result[key] = mergeConfiguration(result[key] || {}, value);
       } else {
