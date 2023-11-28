@@ -22,6 +22,8 @@ jobs:
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu
           - os: windows-latest
             abi: win32-x64-msvc
+          - os: macos-latest
+            abi: darwin-x64
 
           # cross compile
           # windows
@@ -52,16 +54,10 @@ jobs:
             target: aarch64-unknown-linux-gnu
             zig: true
           # macos
-          # cross compile macos cause github runners is limited for macos.
-          # It always wait for a long time to get a macos runner. So we use cross compile instead to save time.
-          - os: ubuntu-latest
-            abi: darwin-x64
-            target: x86_64-apple-darwin
-            zig: true
-          - os: ubuntu-latest
+          - os: macos-latest
             abi: darwin-arm64
             target: aarch64-apple-darwin
-            zig: true
+            zig: false
     steps:
       - uses: actions/checkout@v3
       - name: Cache rust artifacts
