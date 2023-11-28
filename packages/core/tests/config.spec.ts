@@ -6,7 +6,7 @@ import { describe, expect, test } from 'vitest';
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
   normalizeDevServerOptions,
-  resolveUserConfig
+  resolveConfig
 } from '../src/index.js';
 import { parseUserConfig } from '../src/config/schema.js';
 import { DefaultLogger } from '../src/utils/logger.js';
@@ -14,11 +14,13 @@ import { DefaultLogger } from '../src/utils/logger.js';
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
-  const config = await resolveUserConfig(
+  const { config } = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
+    new DefaultLogger(),
     'serve',
-    new DefaultLogger()
+    'development'
   );
+
   expect(config).toEqual({
     compilation: {
       input: {

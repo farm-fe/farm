@@ -10,13 +10,18 @@ import {
 // just make sure the binding works
 test('Binding - should parse config to rust correctly', async () => {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  const config = await normalizeUserCompilationConfig(
+  const compilationConfig = await normalizeUserCompilationConfig(
     null,
     {
       root: path.resolve(currentDir, 'fixtures', 'binding')
     },
     new DefaultLogger()
   );
-  const compiler = new Compiler(config);
+  const { config } = compilationConfig;
+  const compiler = new Compiler({
+    config,
+    jsPlugins: [],
+    rustPlugins: []
+  });
   await compiler.compile();
 });
