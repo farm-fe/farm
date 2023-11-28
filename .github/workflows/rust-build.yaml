@@ -33,15 +33,15 @@ jobs:
             target: i686-pc-windows-msvc
             build: |
               cd packages/core && npm run build:rs -- --target i686-pc-windows-msvc
-              cd rust-plugins/react && npm run build -- --target i686-pc-windows-msvc && npm run copy-artifacts -- --abi win32-ia32-msvc
-              cd rust-plugins/sass && npm run build -- --target i686-pc-windows-msvc && npm run copy-artifacts -- --abi win32-ia32-msvc
+              cd ../../rust-plugins/react && npm run build -- --target i686-pc-windows-msvc && npm run copy-artifacts -- --abi win32-ia32-msvc
+              cd ../sass && npm run build -- --target i686-pc-windows-msvc && npm run copy-artifacts -- --abi win32-ia32-msvc
           - os: windows-latest
             abi: win32-arm64-msvc
             target: aarch64-pc-windows-msvc
             build: |
               cd packages/core && npm run build:rs -- --target aarch64-pc-windows-msvc
-              cd rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc && npm run copy-artifacts -- --abi win32-arm64-msvc
-              cd rust-plugins/sass && npm run build -- --target aarch64-pc-windows-msvc && npm run copy-artifacts -- --abi win32-arm64-msvc
+              cd .././rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc && npm run copy-artifacts -- --abi win32-arm64-msvc
+              cd ../sass && npm run build -- --target aarch64-pc-windows-msvc && npm run copy-artifacts -- --abi win32-arm64-msvc
           # linux
           - os: ubuntu-latest
             abi: linux-arm64-musl
