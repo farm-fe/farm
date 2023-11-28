@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.14.9
+
+### Patch Changes
+
+- 22752363: add clean command
+
 ## 0.14.8
 
 ### Patch Changes
