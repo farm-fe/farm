@@ -23,6 +23,8 @@ jobs:
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu && npm run copy-artifacts -- --abi linux-x64-gnu
           - os: windows-latest
             abi: win32-x64-msvc
+          - os: macos-latest
+            abi: darwin-x64
 
           # cross compile
           # windows
@@ -52,16 +54,20 @@ jobs:
             target: aarch64-unknown-linux-gnu
             zig: true
           # macos
-          - os: ubuntu-latest
-            abi: darwin-x64
-            target: x86_64-apple-darwin
-            osxcross: true
-            zig: true
-          - os: ubuntu-latest
+          - os: macos-latest
             abi: darwin-arm64
             target: aarch64-apple-darwin
-            osxcross: true
-            zig: true
+            zig: false
+          # - os: ubuntu-latest
+          #   abi: darwin-x64
+          #   target: x86_64-apple-darwin
+          #   osxcross: true
+          #   zig: true
+          # - os: ubuntu-latest
+          #   abi: darwin-arm64
+          #   target: aarch64-apple-darwin
+          #   osxcross: true
+          #   zig: true
     steps:
       - uses: actions/checkout@v3
       - name: Cache rust artifacts
