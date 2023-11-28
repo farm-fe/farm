@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.4.1
+
+### Patch Changes
+
+- 22752363: bump verion
+
 ## 1.4.0
 
 ### Minor Changes

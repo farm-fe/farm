@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.5.11
+
+### Patch Changes
+
+- 22752363: add clean command
+
 ## 0.5.10
 
 ### Patch Changes
