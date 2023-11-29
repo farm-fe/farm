@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import {
-  BrandText,
+  PersistentCacheBrand,
   blue,
   bold,
   brandColor,
@@ -161,7 +161,9 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
 
 export function bootstrap(times: number, config: Config) {
   const usePersistentCache = config.config.persistentCache;
-  const persistentCacheFlag = usePersistentCache ? bold(BrandText) : '';
+  const persistentCacheFlag = usePersistentCache
+    ? bold(PersistentCacheBrand)
+    : '';
   const version = JSON.parse(
     readFileSync(
       join(fileURLToPath(import.meta.url), '../../../package.json'),
@@ -172,7 +174,7 @@ export function bootstrap(times: number, config: Config) {
   console.log(
     `${bold(green(` ✓`))}  ${bold('Ready in')} ${bold(
       green(`${times}ms`)
-    )} ⚡ ${persistentCacheFlag}`,
+    )} ${persistentCacheFlag}`,
     '\n'
   );
 }

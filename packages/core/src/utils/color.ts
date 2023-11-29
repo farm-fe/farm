@@ -128,7 +128,7 @@ export function interpolateColor(
   ];
 }
 
-export const BrandText = gradientString('FULL EXTREME!', [
+export const PersistentCacheBrand = gradientString('⚡ FULL EXTREME!', [
   [128, 0, 128],
   interpolateColor([128, 0, 128], [60, 0, 92], 0.1),
   interpolateColor([60, 0, 92], [0, 0, 128], 0.2),
