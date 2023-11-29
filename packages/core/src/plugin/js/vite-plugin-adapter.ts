@@ -124,6 +124,7 @@ export class VitePluginAdapter implements JsPlugin {
   async config(config: UserConfig['compilation'], configEnv: ConfigEnv) {
     this._farmConfig.compilation = config;
     this._viteConfig = farmConfigToViteConfig(this._farmConfig);
+    // console.log(this._viteConfig, this.name);
 
     const configHook = this.wrapRawPluginHook('config', this._rawPlugin.config);
 
@@ -134,16 +135,26 @@ export class VitePluginAdapter implements JsPlugin {
           await configHook(
             proxyViteConfig(this._viteConfig, this.name),
             this.getViteConfigEnv(configEnv)
-          ),
-          this.getViteConfigEnv(configEnv)
+          )
         ),
         this.name
       );
+      console.log('_viteConfig.config', this.name, this._viteConfig);
+
       this._farmConfig = viteConfigToFarmConfig(
         this._viteConfig,
         this._farmConfig,
         this.name
       );
+    }
+
+    const configResolvedHook = this.wrapRawPluginHook(
+      'configResolved',
+      this._rawPlugin.configResolved
+    );
+
+    if (configResolvedHook) {
+      await configResolvedHook(this._viteConfig);
     }
 
     return this._farmConfig.compilation;

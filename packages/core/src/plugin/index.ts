@@ -15,7 +15,8 @@ export * from './rust/index.js';
  */
 export async function resolveAllPlugins(
   finalConfig: Config['config'],
-  userConfig: UserConfig
+  userConfig: UserConfig,
+  configEnv: any
 ) {
   const plugins = userConfig.plugins ?? [];
   const vitePlugins = (userConfig.vitePlugins ?? []).filter(Boolean);
@@ -64,8 +65,10 @@ export async function resolveAllPlugins(
   jsPlugins.push(...vitePluginAdapters);
 
   // call user config hooks
+
   for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
+    finalConfig =
+      (await jsPlugin.config?.(finalConfig, configEnv)) ?? finalConfig;
   }
 
   return {

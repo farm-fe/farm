@@ -37,7 +37,7 @@ export default defineConfig({
     {
       name: 'vite111',
       config(config, env) {
-        console.log(config, env);
+        return config;
       }
     },
     vue(),

@@ -43,7 +43,7 @@ export default function farmPostcssPlugin(
       );
       postcssOptions = _options;
       postcssProcessor = implementation(plugins);
-      return config;
+      // return config;
     },
 
     transform: {
