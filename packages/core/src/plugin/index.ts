@@ -65,6 +65,7 @@ export async function resolveAllPlugins(
   jsPlugins.push(...vitePluginAdapters);
 
   // call user config hooks
+  console.log(configEnv);
 
   for (const jsPlugin of jsPlugins) {
     finalConfig =

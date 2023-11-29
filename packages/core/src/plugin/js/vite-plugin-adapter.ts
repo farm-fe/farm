@@ -139,7 +139,6 @@ export class VitePluginAdapter implements JsPlugin {
         ),
         this.name
       );
-      console.log('_viteConfig.config', this.name, this._viteConfig);
 
       this._farmConfig = viteConfigToFarmConfig(
         this._viteConfig,

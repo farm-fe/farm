@@ -282,7 +282,7 @@ export async function normalizeUserCompilationConfig(
   const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
     config,
     userConfig,
-    {}
+    { mode, command: isProduction ? 'build' : 'serve' }
   );
 
   const normalizedConfig: Config = {

@@ -35,8 +35,9 @@ export default defineConfig({
   ],
   vitePlugins: [
     {
-      name: 'vite111',
+      name: 'vite151',
       config(config, env) {
+        console.log(config, env);
         return config;
       }
     },
