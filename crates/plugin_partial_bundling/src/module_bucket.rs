@@ -1,9 +1,6 @@
 use std::collections::HashSet;
 
-use farmfe_core::{
-  module::{Module, ModuleId, ModuleType},
-  resource::resource_pot::ResourcePotId,
-};
+use farmfe_core::module::{Module, ModuleId, ModuleType};
 
 /// A ModuleBucket is a collection of modules whose module_groups field is equal.
 /// For example, if there are two ModuleGroups A and B. if module c is in ModuleGroup A and ModuleGroup B, module d is only in ModuleGroup A, then c and d are in the different ModuleBucket.

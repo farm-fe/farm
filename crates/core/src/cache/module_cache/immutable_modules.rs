@@ -182,7 +182,8 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
     for item in self.cached_modules.iter() {
       let module = item.value();
-      let package_key = CachedPackage::gen_key(&module.package_name, &module.package_version);
+      let package_key =
+        CachedPackage::gen_key(&module.module.package_name, &module.module.package_version);
 
       let package = packages.entry(package_key.clone()).or_insert_with(Vec::new);
 

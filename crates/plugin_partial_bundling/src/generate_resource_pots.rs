@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use farmfe_core::{
   config::partial_bundling::PartialBundlingConfig,
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId},
-  resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
+  resource::resource_pot::ResourcePot,
 };
 
 use crate::{
@@ -23,7 +23,6 @@ pub fn generate_resource_pots(
   module_group_buckets: Vec<ModuleGroupBuckets>,
   mut module_buckets_map: HashMap<String, ModuleBucket>,
   module_graph: &ModuleGraph,
-  root: &str,
   config: &PartialBundlingConfig,
 ) -> Vec<ResourcePot> {
   let mut resource_pots = vec![];
@@ -55,7 +54,6 @@ pub fn generate_resource_pots(
         &module_bucket.modules(),
         module_graph,
         config,
-        root,
         module_group_bucket.resource_type.clone(),
       );
 

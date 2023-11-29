@@ -14,13 +14,15 @@ use farmfe_core::{
   rayon::prelude::*,
 };
 
-use farmfe_toolkit::resolve::load_package_json;
-
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   let resolved_path = module_id.resolved_path(root);
 
   if !PathBuf::from(&resolved_path).exists() {
-    return std::time::Instant::now().elapsed().as_nanos();
+    // return unix epoch if the module is not found
+    return SystemTime::now()
+      .duration_since(SystemTime::UNIX_EPOCH)
+      .unwrap()
+      .as_nanos();
   }
 
   let file_meta = std::fs::metadata(resolved_path).unwrap_or_else(|_| {
@@ -166,14 +168,9 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
         .unwrap_or_else(|| panic!("module {:?} not found in cached_dependency_map", module.id))
         .1;
 
-      let resolved_path = module.id.resolved_path(&context.config.root);
-      let package_info =
-        load_package_json(PathBuf::from(resolved_path), Default::default()).unwrap_or_default();
       let cached_module = CachedModule {
         module: cloned_module,
         dependencies,
-        package_name: package_info.name.unwrap_or("default".to_string()),
-        package_version: package_info.version.unwrap_or("0.0.0".to_string()),
         watch_dependencies: context
           .watch_graph
           .read()

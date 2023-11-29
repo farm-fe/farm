@@ -1,11 +1,9 @@
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 
 use farmfe_core::{
   config::partial_bundling::PartialBundlingConfig,
   module::{module_graph::ModuleGraph, Module, ModuleId},
 };
-use farmfe_toolkit::resolve::load_package_json;
 
 use crate::{generate_module_buckets::ResourceType, module_pot::ModulePot};
 
@@ -13,14 +11,13 @@ pub fn generate_module_pots(
   modules: &HashSet<ModuleId>,
   module_graph: &ModuleGraph,
   config: &PartialBundlingConfig,
-  root: &str,
   resource_type: ResourceType,
 ) -> Vec<ModulePot> {
   let mut module_pot_map = HashMap::<String, ModulePot>::new();
 
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
-    let module_pot_name = generate_module_pot_name(module, config, root, resource_type.clone());
+    let module_pot_name = generate_module_pot_name(module, config, resource_type.clone());
     let module_pot_id = ModulePot::gen_id(
       &module_pot_name,
       module.module_type.clone(),
@@ -90,7 +87,6 @@ pub fn generate_module_pots(
 fn generate_module_pot_name(
   module: &Module,
   config: &PartialBundlingConfig,
-  root: &str,
   resource_type: ResourceType,
 ) -> String {
   // 1. get name from partialBundling.groups
@@ -111,20 +107,7 @@ fn generate_module_pot_name(
 
   // 2. get name from immutable package
   if module.immutable {
-    let package_json = load_package_json(
-      PathBuf::from(module.id.resolved_path(root)),
-      Default::default(),
-    );
-
-    if let Ok(package_json) = package_json {
-      let mut name = package_json.name.unwrap_or_default();
-
-      if let Some(version) = package_json.version {
-        name = format!("{}@{}", name, version);
-      }
-
-      return name;
-    }
+    return format!("{}@{}", module.package_name, module.package_version);
   }
 
   module.id.to_string()
@@ -192,7 +175,6 @@ mod tests {
           &modules,
           &module_graph,
           &Default::default(),
-          cwd.to_str().unwrap(),
           ResourceType::Initial,
         );
 
@@ -320,13 +302,7 @@ mod tests {
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      "/root",
-      ResourceType::Initial,
-    );
+    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
     assert_group_works(module_pots);
 
     // only match mutable modules
@@ -340,13 +316,7 @@ mod tests {
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      "/root",
-      ResourceType::Initial,
-    );
+    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
 
     assert_group_not_works(module_pots);
 
@@ -360,23 +330,11 @@ mod tests {
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      "/root",
-      ResourceType::Initial,
-    );
+    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
 
     assert_group_not_works(module_pots);
 
-    let module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      "/root",
-      ResourceType::Async,
-    );
+    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Async);
 
     assert_group_works(module_pots);
 
@@ -390,13 +348,7 @@ mod tests {
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      "/root",
-      ResourceType::Initial,
-    );
+    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
 
     assert_group_works(module_pots);
   }

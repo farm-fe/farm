@@ -1,0 +1,1 @@
+import('./dep').then(console.log);

@@ -1,6 +1,6 @@
 use std::{
   collections::HashMap,
-  path::Path,
+  path::{Path, PathBuf},
   sync::{
     mpsc::{channel, Receiver, Sender},
     Arc,
@@ -27,7 +27,7 @@ use farmfe_core::{
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
-use farmfe_toolkit::hash::base64_decode;
+use farmfe_toolkit::{hash::base64_decode, resolve::load_package_json};
 use farmfe_utils::stringify_query;
 
 use crate::{
@@ -378,12 +378,16 @@ impl Compiler {
 
     // ================ Process Module End ===============
     module.size = parse_param.content.as_bytes().len();
-
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
     module.source_map_chain = transform_result.source_map_chain;
     module.meta = module_meta;
+    let resolved_path = module.id.resolved_path(&context.config.root);
+    let package_info =
+      load_package_json(PathBuf::from(resolved_path), Default::default()).unwrap_or_default();
+    module.package_name = package_info.name.unwrap_or("default".to_string());
+    module.package_version = package_info.version.unwrap_or("0.0.0".to_string());
 
     // ================ Analyze Deps Start ===============
     let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);

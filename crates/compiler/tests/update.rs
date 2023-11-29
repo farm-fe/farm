@@ -13,11 +13,12 @@ use farmfe_testing_helpers::fixture;
 
 mod common;
 
-fn create_update_compiler(
+fn create_compiler_internal(
   input: HashMap<String, String>,
   cwd: PathBuf,
   crate_path: PathBuf,
   minify: bool,
+  lazy_compilation: bool,
 ) -> Compiler {
   let compiler = Compiler::new(
     Config {
@@ -34,7 +35,7 @@ fn create_update_compiler(
         ConfigRegex::new("^module$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
-      lazy_compilation: false,
+      lazy_compilation,
       minify,
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
@@ -45,6 +46,24 @@ fn create_update_compiler(
   .unwrap();
 
   compiler
+}
+
+fn create_update_compiler(
+  input: HashMap<String, String>,
+  cwd: PathBuf,
+  crate_path: PathBuf,
+  minify: bool,
+) -> Compiler {
+  create_compiler_internal(input, cwd, crate_path, minify, false)
+}
+
+fn create_lazy_update_compiler(
+  input: HashMap<String, String>,
+  cwd: PathBuf,
+  crate_path: PathBuf,
+  minify: bool,
+) -> Compiler {
+  create_compiler_internal(input, cwd, crate_path, minify, true)
 }
 
 fn asset_update_result_code(
@@ -303,4 +322,36 @@ fn update_css_and_css_raw() {
 
     asset_update_result_code(cwd, &result, Some("update0"));
   });
+}
+
+#[test]
+fn update_lazy_compilation() {
+  fixture!(
+    "tests/fixtures/update/lazy-compilation/index.ts",
+    |file, crate_path| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let compiler = create_lazy_update_compiler(
+        HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+        cwd.clone(),
+        crate_path,
+        false,
+      );
+
+      compiler.compile().unwrap();
+
+      let update_file = cwd.join("dep.ts").to_string_lossy().to_string();
+      let update_module_id = format!("virtual:FARMFE_DYNAMIC_IMPORT:{}", update_file);
+      let result = compiler
+        .update(
+          vec![(update_module_id.clone(), UpdateType::Updated)],
+          || {},
+          true,
+        )
+        .unwrap();
+
+      assert_eq!(result.added_module_ids, vec!["dep.ts".into()]);
+      assert_eq!(result.updated_module_ids, vec![update_module_id.into()]);
+      assert_eq!(result.removed_module_ids.len(), 0);
+    }
+  );
 }
