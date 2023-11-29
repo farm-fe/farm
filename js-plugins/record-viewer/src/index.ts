@@ -11,7 +11,7 @@ const path = require('path');
 
 const PLUGIN_DIR = path.dirname(fileURLToPath(import.meta.url));
 
-export const PLUGIN_DIR_CLIENT = resolve(PLUGIN_DIR, '../build/client');
+export const PLUGIN_DIR_CLIENT = resolve(PLUGIN_DIR, '../client');
 
 function StaticFilesHandler(
   req: http.IncomingMessage,
@@ -77,14 +77,6 @@ export default function farmRecorderPlugin(
           recordViewerOptions.host || '127.0.0.1'
         }:${recordViewerOptions.port || 9527}`
       );
-    },
-    buildEnd: {
-      executor: (param, ctx) => {
-        // const server = http.createServer((req, res) => {
-        //   StaticFilesHandler(req, res);
-        // });
-        // server.listen(9527, '127.0.0.1', () => {})
-      }
     }
   };
 }
