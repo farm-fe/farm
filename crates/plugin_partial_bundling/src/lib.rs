@@ -1,20 +1,19 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
+  config::Config,
   context::CompilationContext,
   module::{
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupGraph},
-    ModuleId, ModuleType,
+    ModuleId,
   },
   plugin::{Plugin, PluginHookContext},
-  resource::resource_pot::{ResourcePot, ResourcePotId},
+  resource::resource_pot::ResourcePot,
 };
 use generate_module_buckets::{generate_module_buckets_map, group_module_buckets_by_module_group};
 use generate_resource_pots::generate_resource_pots;
-use module_bucket::ModuleBucket;
 
 // mod module_bucket;
 mod generate_module_buckets;
@@ -80,7 +79,6 @@ impl Plugin for FarmPluginPartialBundling {
       module_group_buckets,
       module_buckets_map,
       &module_graph,
-      &context.config.root,
       &context.config.partial_bundling,
     );
 

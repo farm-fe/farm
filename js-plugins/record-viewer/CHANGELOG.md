@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 1.0.0
+
+### Major Changes
+
+- 632a9aad: fix record viewer client no such file or directory
+
 ## 0.1.2
 
 ### Patch Changes

@@ -149,10 +149,12 @@ impl Plugin for FarmPluginStaticAssets {
         };
         let path = Path::new(param.resolved_path);
         let ext = path.extension().and_then(|s| s.to_str()).unwrap();
-        // TODO: recognize MIME type
+        let mime_type = mime_guess::from_ext(ext).first_or_octet_stream();
+        let mime_type_str = mime_type.to_string();
+
         let content = format!(
-          "export default \"data:image/{};base64,{}\"",
-          ext, file_base64
+          "export default \"data:{};base64,{}\"",
+          mime_type_str, file_base64
         );
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
