@@ -39,6 +39,11 @@ export interface ConfigEnv {
   mode: string;
 }
 
+export type ResolveConfigType = {
+  config?: UserConfig;
+  normalizedConfig?: Config;
+};
+
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
   ignores?: string[];

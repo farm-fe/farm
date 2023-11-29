@@ -6,13 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 import merge from 'lodash.merge';
 
-import {
-  // resolveAllPlugins,
-  resolveConfigHook,
-  resolveConfigResolvedHook,
-  resolveJsPlugins,
-  resolveRustPlugins
-} from '../plugin/index.js';
+import { resolveAllPlugins } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
@@ -31,9 +25,9 @@ import {
 } from '../utils/index.js';
 
 import type {
-  ConfigEnv,
   FarmCLIOptions,
   NormalizedServerConfig,
+  ResolveConfigType,
   ResolvedUserConfig,
   UserConfig,
   UserHmrConfig,
@@ -278,10 +272,16 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  const normalizedConfig: Config = {
-    config
-  };
+  const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
+    config,
+    userConfig
+  );
 
+  const normalizedConfig: Config = {
+    config: finalConfig,
+    rustPlugins,
+    jsPlugins
+  };
   return normalizedConfig;
 }
 
@@ -346,11 +346,6 @@ export function normalizeDevServerOptions(
       : undefined
   });
 }
-
-type ResolveConfigType = {
-  config?: UserConfig;
-  normalizedConfig?: Config;
-};
 
 /**
  * Resolve and load user config from the specified path
@@ -422,28 +417,16 @@ export async function resolveConfig(
     userConfig.configFileDependencies = dependencies;
   }
 
-  const configEnv: ConfigEnv = {
-    command,
-    mode: inlineOptions.mode ?? mode ?? 'development'
-  };
-
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
   // Save variables are used when restarting the service
-  let config = filterUserConfig(userConfig, inlineOptions);
-  const { jsPlugins } = await resolveJsPlugins({}, config);
+  const config = filterUserConfig(userConfig, inlineOptions);
 
-  config = await resolveConfigHook(config, configEnv, jsPlugins);
-
-  const resultConfig = await normalizeUserCompilationConfig(
+  const normalizedConfig = await normalizeUserCompilationConfig(
     inlineOptions,
     config,
     logger,
     mode
   );
-
-  await resolveConfigResolvedHook(resultConfig, jsPlugins);
-  const { rustPlugins } = await resolveRustPlugins(resultConfig.config, config);
-  const normalizedConfig = { ...resultConfig, rustPlugins, jsPlugins };
 
   return { config, normalizedConfig };
 }
@@ -510,11 +493,7 @@ async function readConfigFile(
         logger
       );
 
-      const compiler = new Compiler({
-        ...normalizedConfig,
-        rustPlugins: [],
-        jsPlugins: []
-      });
+      const compiler = new Compiler(normalizedConfig);
 
       // const previousProfileEnv = process.env.FARM_PROFILE;
       // process.env.FARM_PROFILE = '';

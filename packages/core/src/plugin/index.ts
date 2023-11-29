@@ -4,7 +4,7 @@ import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
 import type { Config } from '../../binding/index.js';
-import { ConfigEnv, type UserConfig } from '../config/index.js';
+import { type UserConfig } from '../config/index.js';
 import merge from 'lodash.merge';
 
 export * from './js/index.js';
@@ -195,7 +195,7 @@ export function filterPluginByName(plugins: JsPlugin[]) {
 
 export async function resolveConfigHook(
   config: UserConfig,
-  configEnv: ConfigEnv,
+  // configEnv: ConfigEnv,
   plugins: JsPlugin[]
 ): Promise<UserConfig> {
   let conf = config;
@@ -214,7 +214,7 @@ export async function resolveConfigHook(
     const hook = p.config;
 
     if (hook) {
-      const res = await p.config(conf, configEnv);
+      const res = await p.config(conf);
 
       if (res) {
         conf = merge(conf, res);
@@ -227,7 +227,7 @@ export async function resolveConfigHook(
 
 export async function resolveConfigResolvedHook(
   config: any,
-  plugins: JsPlugin[]
+  plugins: any[]
 ): Promise<UserConfig> {
   const conf = config;
 

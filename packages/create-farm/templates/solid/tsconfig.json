@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
@@ -8,5 +7,8 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js"
   },
-  "include": ["src", "farm.config.mjs"]
+  "include": [
+    "src",
+    "farm.config.mjs"
+  ]
 }

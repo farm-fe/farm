@@ -121,7 +121,7 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // call both config and configResolved
-  async config(config: UserConfig['compilation'], configEnv: ConfigEnv) {
+  async config(config: UserConfig['compilation']) {
     this._farmConfig.compilation = config;
     this._viteConfig = farmConfigToViteConfig(this._farmConfig);
 
@@ -133,9 +133,8 @@ export class VitePluginAdapter implements JsPlugin {
           this._viteConfig,
           await configHook(
             proxyViteConfig(this._viteConfig, this.name),
-            this.getViteConfigEnv(configEnv)
-          ),
-          this.getViteConfigEnv(configEnv)
+            this.getViteConfigEnv()
+          )
         ),
         this.name
       );
@@ -146,12 +145,19 @@ export class VitePluginAdapter implements JsPlugin {
       );
     }
 
+    const configResolvedHook = this.wrapRawPluginHook(
+      'configResolved',
+      this._rawPlugin.configResolved
+    );
+
+    if (configResolvedHook) {
+      await configResolvedHook(this._viteConfig);
+    }
+
     return this._farmConfig.compilation;
   }
 
   async configResolved() {
-    // this._farmConfig.compilation = config;
-    // this._viteConfig = farmConfigToViteConfig(this._farmConfig);
     const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
       this._rawPlugin.configResolved
@@ -183,11 +189,12 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  private getViteConfigEnv(configEnv: ConfigEnv): ConfigEnv {
+  private getViteConfigEnv(): ConfigEnv {
     return {
-      ssrBuild: this._farmConfig.compilation.output?.targetEnv === 'node',
-      command: configEnv.command,
-      mode: configEnv.mode
+      ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node',
+      command:
+        this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
+      mode: this._farmConfig.compilation.mode
     };
   }
 
