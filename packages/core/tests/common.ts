@@ -36,13 +36,8 @@ export async function getCompiler(
     new DefaultLogger(),
     'production'
   );
-  const { config } = compilationConfig;
 
-  return new Compiler({
-    config,
-    jsPlugins: plugins,
-    rustPlugins: []
-  });
+  return new Compiler(compilationConfig);
 }
 
 export function getFixturesDir() {

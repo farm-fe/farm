@@ -34,12 +34,6 @@ export default defineConfig({
     }
   ],
   vitePlugins: [
-    {
-      name: 'vite111',
-      config(config, env) {
-        console.log(config, env);
-      }
-    },
     vue(),
     AutoImport({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })]

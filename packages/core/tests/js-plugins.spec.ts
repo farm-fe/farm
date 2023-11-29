@@ -108,8 +108,7 @@ test('Js Plugin Execution - transform', async () => {
       priority: 1000,
       transform: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
-          moduleTypes: ['ts']
+          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
         },
         executor: async (param) => {
           console.log(param);
