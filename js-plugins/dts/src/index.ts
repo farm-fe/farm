@@ -13,8 +13,9 @@ export default function farmDtsPlugin(options: DtsPluginOptions): JsPlugin {
   return {
     name: pluginName,
     priority: 1000,
-    configResolved(config: any) {
+    config(config: any) {
       ctx.handleResolveOptions(options, config);
+      return config;
     },
     load: {
       filters: {
