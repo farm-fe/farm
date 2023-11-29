@@ -150,16 +150,22 @@ mod tests {
         module_index.immutable = true;
         module_index.size = 10 * 1024;
         module_index.execution_order = 2;
+        module_index.package_name = "test-package".to_string();
+        module_index.package_version = "1.0.0".to_string();
 
         module_utils.module_type = ModuleType::Js;
         module_utils.immutable = true;
         module_utils.size = 5 * 1024;
         module_utils.execution_order = 3;
+        module_utils.package_name = "test-package".to_string();
+        module_utils.package_version = "1.0.0".to_string();
 
         module_a.module_type = ModuleType::Js;
         module_a.execution_order = 1;
         module_a.immutable = true;
         module_a.size = 1 * 1024;
+        module_a.package_name = "test-package1".to_string();
+        module_a.package_version = "1.0.0".to_string();
 
         module_graph.add_module(module_index);
         module_graph.add_module(module_utils);
