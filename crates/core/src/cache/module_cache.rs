@@ -41,8 +41,6 @@ pub struct CachedWatchDependency {
 pub struct CachedModule {
   pub module: Module,
   pub dependencies: Vec<CachedModuleDependency>,
-  pub package_name: String,
-  pub package_version: String,
   pub watch_dependencies: Vec<CachedWatchDependency>,
 }
 

@@ -67,7 +67,7 @@ impl<'a> VisitMut for SourceReplacer<'a> {
 
           *value = Box::new(UrlValue::Str(Str {
             span: DUMMY_SP,
-            value: resource_name.as_str().into(),
+            value: format!("/{}", resource_name).into(),
             raw: None,
           }));
         }

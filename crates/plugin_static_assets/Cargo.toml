@@ -10,3 +10,4 @@ farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
 base64 = "0.21.0"
 rkyv = { version = "0.7.42" }
+mime_guess = "2.0.4"

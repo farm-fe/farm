@@ -22,9 +22,6 @@ export default defineConfig({
     // },
     writeToDisk: false,
     cors: true,
-    hmr: {
-      port: 6542
-    }
   },
   plugins: ["@farmfe/plugin-react", "@farmfe/plugin-sass"],
 });

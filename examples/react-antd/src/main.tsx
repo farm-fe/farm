@@ -3,6 +3,8 @@ import { AntdLayout } from './antd-layout';
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+import url from '../assets/plugin.svg?inline';
+
 const router = createBrowserRouter(
   [
     {
@@ -11,7 +13,11 @@ const router = createBrowserRouter(
       children: [
         {
           path: '1',
-          element: <div>1111</div>
+          element: (
+            <div>
+              1111 <img src={url} width={200} />
+            </div>
+          )
         },
         {
           path: '2',

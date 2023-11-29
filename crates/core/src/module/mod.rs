@@ -63,6 +63,10 @@ pub struct Module {
   pub last_update_timestamp: u128,
   /// content(after load and transform) hash
   pub content_hash: String,
+  /// package name of this module
+  pub package_name: String,
+  /// package version of this module
+  pub package_version: String,
 }
 
 impl Module {
@@ -84,6 +88,8 @@ impl Module {
       used_exports: vec![],
       last_update_timestamp: 0,
       content_hash: "".to_string(),
+      package_name: "".to_string(),
+      package_version: "".to_string(),
     }
   }
 }
@@ -411,7 +417,13 @@ impl ModuleId {
   }
 
   pub fn from_resolved_path_with_query(resolved_path_with_query: &str, root: &str) -> Self {
-    relative(root, resolved_path_with_query).into()
+    let rp = Path::new(resolved_path_with_query);
+    let relative_path = if rp.is_absolute() {
+      relative(root, resolved_path_with_query)
+    } else {
+      resolved_path_with_query.to_string()
+    };
+    relative_path.into()
   }
 
   /// return self.relative_path and self.query_string in dev,
