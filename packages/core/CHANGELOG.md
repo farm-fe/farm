@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.14.10
+
+### Patch Changes
+
+- 9c6bb8bb: fix #787 #794 #795
+- a6f7b165: bump version for publishing addtional cpu arch package
+
 ## 0.14.9
 
 ### Patch Changes
