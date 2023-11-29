@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.3.3
+
+### Patch Changes
+
+- a6f7b165: bump version for publishing addtional cpu arch package
+
 ## 0.3.2
 
 ### Patch Changes
