@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.8.4
+
+### Patch Changes
+
+- 2bcf360e: fix #802
+
 ## 0.8.3
 
 ### Patch Changes
