@@ -133,7 +133,7 @@ export class DevServer implements ImplDevServer {
       (await this.printServerUrls());
 
     if (open) {
-      openBrowser(`${protocol}://${hostname}:${port}${this.publicPath}`);
+      openBrowser(`${protocol}://${hostname}:${port}/${this.publicPath}`);
     }
   }
 
