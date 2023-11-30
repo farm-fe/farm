@@ -10,7 +10,7 @@ export default defineConfig({
     },
     output: {
       path: './build',
-      publicPath: 'public'
+      publicPath: '/public/'
     },
     presetEnv: false,
     // sourcemap: true,
@@ -25,11 +25,12 @@ export default defineConfig({
     treeShaking: true
   },
   server: {
-    port: 3001
+    port: 3652,
+    open: true
   },
   plugins: [
-    ["@farmfe/plugin-react", { runtime: "automatic" }],
-    "@farmfe/plugin-sass",
+    ['@farmfe/plugin-react', { runtime: 'automatic' }],
+    '@farmfe/plugin-sass',
     {
       name: 'plugin-finish-hook-test',
       finish: {
