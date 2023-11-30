@@ -40,6 +40,12 @@ Farm is a extremely fast vite-compatible web-building tool written in Rust. Benc
 
 <br />
 
+## Online experience
+
+[![Edit Farm](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/ErKeLost/react/main)
+
+<br />
+
 ## Why Farm?
 
 > See [Why Farm](https://farm-fe.github.io/docs/why-farm) for details.

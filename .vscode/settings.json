@@ -1,4 +1,4 @@
 {
   "editor.tabSize": 2,
-  "editor.inlineSuggest.showToolbar": "onHover"
+  "editor.inlineSuggest.showToolbar": "always"
 }
