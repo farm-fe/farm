@@ -42,7 +42,6 @@ Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件�
 
 ## 在线体验
 
-
 [![Edit Farm](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/ErKeLost/react/main)
 
 <br />
