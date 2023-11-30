@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.4.2
+
+### Patch Changes
+
+- 0a83fff6: bump version Config hook undo
+
 ## 1.4.1
 
 ### Patch Changes
