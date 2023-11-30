@@ -1114,9 +1114,9 @@ dependencies = [
 
 [[package]]
 name = "enhanced-magic-string"
-version = "0.0.11"
+version = "0.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a684841d843325b2f8afe0caffcc037e91b74b3a9299944a1b86ba6de506763b"
+checksum = "d9f6fd29710ef1b16bd94ceab2dc01f15c046af3a91f30fe0b63fc07eab6c849"
 dependencies = [
  "base64 0.21.0",
  "farmfe_utils 0.0.4",
