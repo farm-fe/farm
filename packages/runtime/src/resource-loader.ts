@@ -36,7 +36,9 @@ export class ResourceLoader {
     }
 
     const publicPath = this.publicPaths[index];
-    const url = `${publicPath === '/' ? '' : publicPath}/${resource.path}`;
+    const url = `${
+      publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath
+    }/${resource.path}`;
 
     if (this._loadedResources[resource.path]) {
       return;

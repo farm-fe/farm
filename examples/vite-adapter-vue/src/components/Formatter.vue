@@ -28,4 +28,6 @@ const format = async () => {
 };
 </script>
 
-<style scoped></style>
+<style lang="scss" scoped>
+/* build error */
+</style>
