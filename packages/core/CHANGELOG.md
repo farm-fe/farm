@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.14.11
+
+### Patch Changes
+
+- 0a83fff6: bump version Config hook undo
+- 2bcf360e: fix #770
+- Updated dependencies [2bcf360e]
+  - @farmfe/runtime@0.8.4
+
 ## 0.14.10
 
 ### Patch Changes

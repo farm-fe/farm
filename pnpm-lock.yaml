@@ -1225,7 +1225,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.8.3
+        specifier: workspace:^0.8.4
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.3.1

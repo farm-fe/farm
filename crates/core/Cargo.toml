@@ -37,7 +37,7 @@ swc_html_ast = { version = "0.33.9", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.17.0", features = ["packing"], optional = true }
 regex = "1.7.3"
-enhanced-magic-string = { version = "0.0.11" }
+enhanced-magic-string = { version = "0.0.12" }
 
 [features]
 profile = ["dep:puffin"]
