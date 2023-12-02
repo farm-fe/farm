@@ -187,6 +187,23 @@ export interface Config {
           noEarlyErrors: boolean;
         };
       };
+      decorators?: {
+        legacyDecorator: boolean;
+        decoratorMetadata: boolean;
+        /**
+         * The version of the decorator proposal to use. 2021-12 or 2022-03
+         * @default 2021-12
+         */
+        decoratorVersion: '2021-12' | '2022-03' | null;
+        /**
+         * @default []
+         */
+        includes: string[];
+        /**
+         * @default ["node_modules/"]
+         */
+        excludes: string[];
+      };
       plugins: {
         name: string;
         options?: Record<string, any>;

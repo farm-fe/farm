@@ -19,8 +19,8 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_common::{comments::NoopComments, Mark, GLOBALS},
-  swc_ecma_ast::{ModuleItem, Program},
+  swc_common::{Mark, GLOBALS},
+  swc_ecma_ast::ModuleItem,
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
@@ -31,10 +31,7 @@ use farmfe_toolkit::{
     syntax_from_module_type,
   },
   sourcemap::SourceMap,
-  swc_ecma_transforms::{
-    resolver,
-    typescript::{strip, tsx, Config as TsConfig, TsxConfig},
-  },
+  swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
 
@@ -44,6 +41,7 @@ use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 mod deps_analyzer;
 mod import_meta_visitor;
 mod swc_plugins;
+mod swc_script_transforms;
 
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
@@ -139,37 +137,17 @@ impl Plugin for FarmPluginScript {
       content: param.content.clone(),
     });
 
+    // transform decorators if needed
+    // this transform should be done before strip typescript cause it may need to access the type information
+    if (param.module_type.is_typescript() && context.config.script.parser.ts_config.decorators)
+      || (param.module_type.is_script() && context.config.script.parser.es_config.decorators)
+    {
+      swc_script_transforms::transform_decorators(param, &cm, context)?;
+    }
+
+    // strip typescript
     if param.module_type.is_typescript() {
-      try_with(cm.clone(), &context.meta.script.globals, || {
-        let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
-        let ast = param.meta.as_script_mut().take_ast();
-        let mut program = Program::Module(ast);
-
-        match param.module_type {
-          farmfe_core::module::ModuleType::Js => {}
-          farmfe_core::module::ModuleType::Jsx => {
-            // Do nothing, jsx should be handled by other plugins
-          }
-          farmfe_core::module::ModuleType::Ts => {
-            program.visit_mut_with(&mut strip(top_level_mark));
-          }
-          farmfe_core::module::ModuleType::Tsx => {
-            // TODO support comments
-            // TODO make it configurable
-            program.visit_mut_with(&mut tsx(
-              cm.clone(),
-              TsConfig::default(),
-              TsxConfig::default(),
-              NoopComments,
-              top_level_mark,
-            ));
-            program.visit_mut_with(&mut strip(top_level_mark));
-          }
-          _ => {}
-        }
-
-        param.meta.as_script_mut().set_ast(program.expect_module());
-      })?;
+      swc_script_transforms::strip_typescript(param, &cm, context)?;
     }
 
     // execute swc plugins

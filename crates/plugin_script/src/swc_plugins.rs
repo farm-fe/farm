@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::{ScriptConfigPlugin, ScriptConfigPluginFilters},
+  config::script::{ScriptConfigPlugin, ScriptConfigPluginFilters},
   context::CompilationContext,
   error::Result,
   module::ModuleType,
