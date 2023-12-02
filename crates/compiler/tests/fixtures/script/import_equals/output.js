@@ -1,4 +1,4 @@
-//__farm_runtime.8774b52b.js:
+//__farm_runtime.8774b52b.mjs:
  (globalThis || window || self || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
             var cache = {};
 
@@ -26,7 +26,7 @@
 },}, "d2214aaa");
 
 //index.js:
- import "./__farm_runtime.8774b52b.js";import "./index_7ecc.js";(function (modules) {
+ import "./__farm_runtime.8774b52b.mjs";import "./index_7ecc.js";(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_7d8a.js';
                 (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
