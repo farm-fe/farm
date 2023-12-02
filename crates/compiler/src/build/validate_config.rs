@@ -1,5 +1,5 @@
 use farmfe_core::config::Config;
-use farmfe_toolkit::fs::{ENTRY_NAME, RESOURCE_NAME};
+use farmfe_toolkit::fs::{ENTRY_NAME, RESOURCE_NAME, RESOURCE_NAME_NEW};
 
 /// Check possible errors in config
 pub fn validate_config(config: &Config) {
@@ -14,6 +14,7 @@ pub fn validate_config(config: &Config) {
 
   if config.partial_bundling.enforce_resources.len() <= 1
     && !config.output.filename.contains(RESOURCE_NAME)
+    && !config.output.filename.contains(RESOURCE_NAME_NEW)
   {
     errors.push(format!(
       "`output.filename` must contain {} when `partial_bundling.module_buckets` is not configured",

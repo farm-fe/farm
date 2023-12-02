@@ -359,7 +359,7 @@ pub fn handle_entry_resources(
       let runtime_resource = if let Some(runtime_resource) = runtime_resource.as_ref() {
         runtime_resource
       } else {
-        runtime_resource = Some(create_farm_runtime_resource(runtime_code));
+        runtime_resource = Some(create_farm_runtime_resource(runtime_code, context));
         runtime_resource.as_ref().unwrap()
       };
 
@@ -438,14 +438,17 @@ fn create_runtime_code(
   format!("{node_specific_code}{farm_global_this_code}{runtime_resource_code}")
 }
 
-fn create_farm_runtime_resource(runtime_code: &str) -> Resource {
+fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationContext>) -> Resource {
   let bytes = runtime_code.to_string().into_bytes();
   let name = transform_output_entry_filename(
     "[entryName].[hash].[ext]".to_string(),
     "__farm_runtime",
     "__farm_runtime",
     &bytes,
-    "js",
+    match context.config.output.format {
+      ModuleFormat::EsModule => "mjs",
+      ModuleFormat::CommonJs => "cjs",
+    },
   );
   Resource {
     name: name.clone(),

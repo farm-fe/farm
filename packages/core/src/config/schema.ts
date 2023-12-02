@@ -107,6 +107,17 @@ const compilationConfigSchema = z
               .optional()
           })
           .optional(),
+        decorators: z
+          .object({
+            legacyDecorator: z.boolean().optional(),
+            decoratorMetadata: z.boolean().optional(),
+            decoratorVersion: z
+              .union([z.literal('2021-12'), z.literal('2022-03')])
+              .optional(),
+            includes: z.array(z.string()).optional(),
+            excludes: z.array(z.string()).optional()
+          })
+          .optional(),
         plugins: z.array(z.any()).optional()
       })
       .strict()
