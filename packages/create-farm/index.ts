@@ -216,7 +216,12 @@ function copyDir(srcDir: string, destDir: string) {
   for (const file of fs.readdirSync(srcDir)) {
     const srcFile = path.resolve(srcDir, file);
     const destFile = path.resolve(destDir, file);
-    copy(srcFile, destFile);
+    if (file === 'gitignore') {
+      copy(srcFile, destFile);
+      fs.renameSync(destFile, path.resolve(destDir, '.gitignore'));
+    } else {
+      copy(srcFile, destFile);
+    }
   }
 }
 
