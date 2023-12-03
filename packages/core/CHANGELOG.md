@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- d533fa88: server: publicpath in open server error
+- d533fa88: server: publicPath in open server error
 
 ## 0.14.11
 
