@@ -9,7 +9,7 @@ export async function compilerHandler(
   config: Config
 ) {
   const usePersistentCache = config.config.persistentCache;
-  const persistentCacheFlag = usePersistentCache
+  const persistentCacheText = usePersistentCache
     ? bold(PersistentCacheBrand)
     : '';
   const logger = new DefaultLogger();
@@ -24,7 +24,7 @@ export async function compilerHandler(
   logger.info(
     `⚡️ Build completed in ${bold(
       green(`${elapsedTime}ms`)
-    )} ${persistentCacheFlag} Resources emitted to ${bold(
+    )} ${persistentCacheText} Resources emitted to ${bold(
       green(config.config.output.path)
     )}.`
   );

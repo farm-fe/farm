@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 5e5df27f: update tempalte
+- 5e5df27f: update template
 
 ## 1.4.2
 
