@@ -11,7 +11,7 @@ use farmfe_core::{
   cache::module_cache::CachedModule,
   context::CompilationContext,
   error::{CompilationError, Result},
-  farm_profile_scope,
+  farm_profile_function, farm_profile_scope,
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     Module, ModuleId, ModuleType,
@@ -96,7 +96,7 @@ pub(crate) struct HandleDependenciesParams {
 enum ResolveModuleResult {
   /// The module is already built
   Built(ModuleId),
-  Cached(CachedModule),
+  Cached(ModuleId),
   /// A full new normal module resolved successfully
   Success(Box<ResolvedModuleInfo>),
 }
@@ -413,6 +413,10 @@ impl Compiler {
 
     let c_thread_pool = thread_pool.clone();
     thread_pool.spawn(move || {
+      farm_profile_function!(format!(
+        "build_module_graph_threaded from {:?} -> {:?}, cached: {:?}",
+        resolve_param.importer, resolve_param.source, cached_dependency
+      ));
       // skip resolve, build and timestamp/hash check for cached immutable modules
       let resolve_module_result = match resolve_module(&resolve_param, cached_dependency, &context)
       {
@@ -425,10 +429,13 @@ impl Compiler {
 
       match resolve_module_result {
         ResolveModuleResult::Built(module_id) => {
+          farm_profile_scope!(format!("module {:?} already exists", module_id));
           // add edge to the graph
           Self::add_edge(&resolve_param, module_id, order, &context);
         }
-        ResolveModuleResult::Cached(mut cached_module) => {
+        ResolveModuleResult::Cached(module_id) => {
+          farm_profile_scope!(format!("cache module {:?}", cached_module.module.id));
+          let mut cached_module = context.cache_manager.module_cache.get_cache(&module_id);
           // if the dependency is immutable, skip building
           if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
             err_sender.send(e).unwrap();
@@ -451,6 +458,7 @@ impl Compiler {
           mut module,
           resolve_module_id_result,
         }) => {
+          farm_profile_scope!(format!("new module {:?}", module.id));
           if resolve_module_id_result.resolve_result.external {
             // insert external module to the graph
             let module_id = module.id.clone();
@@ -497,6 +505,7 @@ impl Compiler {
     } = params;
 
     let module_id = module.id.clone();
+    let immutable = module.immutable;
     // add module to the graph
     Self::add_module(module, &resolve_param.kind, &context);
     // add edge to the graph
@@ -514,7 +523,7 @@ impl Compiler {
         context: context.clone(),
         err_sender: err_sender.clone(),
         order,
-        cached_dependency,
+        cached_dependency: if immutable { cached_dependency } else { None },
       };
       Self::build_module_graph_threaded(params);
     }
@@ -588,6 +597,10 @@ fn resolve_module(
   cached_dependency: Option<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> Result<ResolveModuleResult> {
+  farm_profile_function!(format!(
+    "resolve_module from {:?} -> {:?}, cached: {:?}",
+    resolve_param.importer, resolve_param.source, cached_dependency
+  ));
   let mut resolve_module_id_result = None;
   let module_id = if let Some(cached_dependency) = &cached_dependency {
     cached_dependency.clone()
@@ -603,25 +616,21 @@ fn resolve_module(
   };
 
   let res = if module_graph.has_module(&module_id) {
+    farm_profile_scope!(format!("module {:?} already exists", module_id));
     // the module has already been handled and it should not be handled twice
     ResolveModuleResult::Built(module_id)
   } else {
     if let Some(cached_dependency) = cached_dependency {
+      farm_profile_scope!(format!("cache module {:?} ", module_id));
       let module_cache_manager = &context.cache_manager.module_cache;
 
-      if module_cache_manager.has_cache(&cached_dependency)
-        && module_cache_manager
-          .get_cache_ref(&cached_dependency)
-          .module
-          .immutable
-      {
+      if module_cache_manager.has_cache(&cached_dependency) {
         insert_dummy_module(&cached_dependency, &mut module_graph);
-        return Ok(ResolveModuleResult::Cached(
-          module_cache_manager.get_cache(&cached_dependency),
-        ));
+        return Ok(ResolveModuleResult::Cached(cached_dependency));
       }
     }
 
+    farm_profile_scope!(format!("new module {:?}", module_id));
     let resolve_module_id_result =
       resolve_module_id_result.unwrap_or(Compiler::resolve_module_id(resolve_param, context)?);
     insert_dummy_module(&resolve_module_id_result.module_id, &mut module_graph);

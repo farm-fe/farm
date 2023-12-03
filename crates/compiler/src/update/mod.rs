@@ -47,7 +47,7 @@ mod regenerate_resources;
 mod update_context;
 
 enum ResolveModuleResult {
-  Cached(CachedModule),
+  Cached(ModuleId),
   /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
   ExistingBeforeUpdate(ModuleId),
   /// This module is added during the update, and we met it again when resolving dependencies
@@ -309,7 +309,8 @@ impl Compiler {
       };
 
       match resolve_module_result {
-        ResolveModuleResult::Cached(mut cached_module) => {
+        ResolveModuleResult::Cached(module_id) => {
+          let mut cached_module = context.cache_manager.module_cache.get_cache(&module_id);
           // if the dependency is immutable, skip building
           if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
             err_sender.send(e).unwrap();
@@ -414,6 +415,7 @@ impl Compiler {
     } = params;
 
     let module_id = module.id.clone();
+    let immutable = module.immutable;
     Self::add_module_to_update_module_graph(&update_context, module);
     Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
 
@@ -429,7 +431,7 @@ impl Compiler {
           context: context.clone(),
           err_sender: err_sender.clone(),
           order,
-          cached_dependency,
+          cached_dependency: if immutable { cached_dependency } else { None },
         },
         order: Some(order),
         update_context: update_context.clone(),
@@ -652,15 +654,8 @@ fn resolve_module(
   if let Some(cached_dependency) = cached_dependency {
     let module_cache_manager = &context.cache_manager.module_cache;
 
-    if module_cache_manager.has_cache(&cached_dependency)
-      && module_cache_manager
-        .get_cache_ref(&cached_dependency)
-        .module
-        .immutable
-    {
-      return Ok(ResolveModuleResult::Cached(
-        module_cache_manager.get_cache(&cached_dependency),
-      ));
+    if module_cache_manager.has_cache(&cached_dependency) {
+      return Ok(ResolveModuleResult::Cached(cached_dependency));
     }
   }
 

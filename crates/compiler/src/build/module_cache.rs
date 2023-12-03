@@ -15,6 +15,7 @@ use farmfe_core::{
 };
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
+  farm_profile_function!(format!("get_timestamp_of_module: {:?}", module_id));
   let resolved_path = module_id.resolved_path(root);
 
   if !PathBuf::from(&resolved_path).exists() {
@@ -40,6 +41,8 @@ pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
 }
 
 pub fn get_content_hash_of_module(content: &str) -> String {
+  farm_profile_function!("get_content_hash_of_module".to_string());
+
   let content = if content.is_empty() {
     "empty".to_string()
   } else {
@@ -55,6 +58,10 @@ pub fn try_get_module_cache_by_timestamp(
   timestamp: u128,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
+  farm_profile_function!(format!(
+    "try_get_module_cache_by_timestamp: {:?}",
+    module_id
+  ));
   if context.config.persistent_cache.timestamp_enabled()
     && context.cache_manager.module_cache.has_cache(module_id)
   {
@@ -94,6 +101,7 @@ pub fn try_get_module_cache_by_hash(
   content_hash: &str,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
+  farm_profile_function!(format!("try_get_module_cache_by_hash: {:?}", module_id));
   if context.config.persistent_cache.hash_enabled()
     && context.cache_manager.module_cache.has_cache(module_id)
   {
@@ -249,6 +257,10 @@ fn is_watch_dependencies_timestamp_changed(
   cached_module: &CachedModule,
   context: &Arc<CompilationContext>,
 ) -> bool {
+  farm_profile_function!(format!(
+    "is_watch_dependencies_timestamp_changed: {:?}",
+    cached_module.module.id
+  ));
   let watch_graph = context.watch_graph.read();
   let relation_dependencies = watch_graph.relation_dependencies(&cached_module.module.id);
 
@@ -286,6 +298,10 @@ fn is_watch_dependencies_content_hash_changed(
   cached_module: &CachedModule,
   context: &Arc<CompilationContext>,
 ) -> bool {
+  farm_profile_function!(format!(
+    "is_watch_dependencies_content_hash_changed: {:?}",
+    cached_module.module.id
+  ));
   let watch_graph = context.watch_graph.read();
   let relation_dependencies = watch_graph.relation_dependencies(&cached_module.module.id);
 

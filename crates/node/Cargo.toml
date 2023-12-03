@@ -19,12 +19,12 @@ farmfe_toolkit = { path = "../toolkit" }
 regex = "1"
 libloading = "0.7"
 farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }
-eframe = { version = "0.21.0", default-features = false, features = [
+eframe = { version = "0.24.1", default-features = false, features = [
   "persistence",
   "glow",
   "default_fonts",
 ], optional = true }
-puffin_egui = { version = "0.20.0", optional = true }
+puffin_egui = { version = "0.24.0", optional = true }
 notify = { version = "6.0.1" }
 
 [features]

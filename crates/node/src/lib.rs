@@ -2,7 +2,6 @@
 #![allow(clippy::redundant_allocation)]
 use std::{
   collections::HashMap,
-  f32::consts::E,
   path::{Path, PathBuf},
   sync::Arc,
 };

@@ -35,7 +35,11 @@ swc_ecma_preset_env = { version = "0.203.46" }
 preset_env_base = { version = "0.4.5" }
 swc_html_ast = { version = "0.33.9", features = ["rkyv-impl"] }
 heck = "0.4.1"
-puffin = { version = "0.17.0", features = ["packing"], optional = true }
+puffin = { version = "0.18.0", features = [
+  "packing",
+  "lz4",
+  "serialization",
+], optional = true }
 regex = "1.7.3"
 enhanced-magic-string = { version = "0.0.12" }
 
