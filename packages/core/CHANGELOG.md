@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.14.14
+
+### Patch Changes
+
+- 0b022e7a: bug: PublicPath parsing error while setting server.open
+- 418247f3: Optimize cache
+
 ## 0.14.13
 
 ### Patch Changes
@@ -9,7 +16,6 @@
 ## 0.14.12
 
 ### Patch Changes
-
 
 - d533fa88: server: public path in open server error
 
