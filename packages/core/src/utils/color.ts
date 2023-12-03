@@ -97,7 +97,7 @@ export const bgMagenta = enabled ? formatter('\x1b[45m', '\x1b[49m') : String;
 export const bgCyan = enabled ? formatter('\x1b[46m', '\x1b[49m') : String;
 export const bgWhite = enabled ? formatter('\x1b[47m', '\x1b[49m') : String;
 
-export function gradientString(text: string, colors: any) {
+export function gradientString(text: string, colors: any[]) {
   const steps = text.length;
   const gradient = colors.map(
     (color: any) => `\x1b[38;2;${color[0]};${color[1]};${color[2]}m`
@@ -128,15 +128,16 @@ export function interpolateColor(
   ];
 }
 
-export const PersistentCacheBrand = gradientString('⚡ FULL EXTREME!', [
-  [128, 0, 128],
-  interpolateColor([128, 0, 128], [60, 0, 92], 0.1),
-  interpolateColor([60, 0, 92], [0, 0, 128], 0.2),
-  interpolateColor([0, 0, 128], [135, 206, 250], 0.3),
-  interpolateColor([135, 206, 250], [0, 0, 139], 0.4),
-  interpolateColor([0, 0, 139], [0, 0, 205], 0.5),
-  interpolateColor([0, 0, 205], [0, 0, 255], 0.6),
-  interpolateColor([0, 0, 255], [0, 0, 139], 0.7),
-  interpolateColor([0, 0, 139], [128, 0, 128], 0.8),
-  interpolateColor([128, 0, 128], [60, 0, 92], 0.9)
+export const PersistentCacheBrand = gradientString('⚡️ FULL EXTREME !', [
+  [176, 106, 179],
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.1),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.2),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.3),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.4),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.5),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.6),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.7),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.8),
+  interpolateColor([176, 106, 179], [198, 66, 110], 0.9),
+  [198, 66, 110]
 ]);

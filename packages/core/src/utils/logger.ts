@@ -80,8 +80,8 @@ export class DefaultLogger implements Logger {
 
   private logMessage(
     level: LogLevelNames,
-    message: any[],
-    color?: any,
+    message: string[],
+    color?: (s: string | string[]) => string,
     showBanner = true
   ): void {
     const loggerMethod =
@@ -89,9 +89,10 @@ export class DefaultLogger implements Logger {
         ? LOGGING_METHOD[level as keyof typeof LOGGING_METHOD]
         : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
+      const prefix = showBanner ? this.prefix + ' ' : '';
       const loggerMessage = color
-        ? color(`${showBanner ? this.prefix : ''} ${message}`)
-        : `${showBanner ? this.prefix : ''} ${message}`;
+        ? color(prefix + message.join(' '))
+        : prefix + message.join(' ');
       console[loggerMethod](loggerMessage);
     }
   }
@@ -106,8 +107,27 @@ export class DefaultLogger implements Logger {
     this.logMessage(LogLevel.Debug, message, blue);
   }
 
+  setPrefix(options: LoggerOptions): void {
+    if (options.name) {
+      this.options.name = options.name;
+      this.brandPrefix(options.brandColor);
+    }
+  }
+
   info(...message: any[]): void {
-    this.brandPrefix(brandColor);
+    let options: LoggerOptions | undefined;
+
+    // Check if the last argument is an object (options)
+    if (message.length > 0 && typeof message[message.length - 1] === 'object') {
+      options = message.pop() as LoggerOptions;
+    }
+
+    if (options) {
+      this.setPrefix(options);
+    }
+    if (!options || !options.brandColor) {
+      this.brandPrefix(brandColor);
+    }
     this.logMessage(LogLevel.Info, message, null);
   }
 
