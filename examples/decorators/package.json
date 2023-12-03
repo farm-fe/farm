@@ -1,0 +1,16 @@
+{
+  "name": "@farmfe-examples/decorators",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "@farmfe/cli": "^0.5.11",
+    "@farmfe/core": "^0.14.12"
+  },
+  "scripts": {
+    "build": "farm build && node test.mjs"
+  },
+  "dependencies": {
+    "core-js": "^3.33.3",
+    "reflect-metadata": "^0.1.13"
+  }
+}

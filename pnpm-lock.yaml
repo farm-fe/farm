@@ -211,10 +211,10 @@ importers:
         specifier: workspace:^
         version: link:../../js-plugins/postcss
       '@farmfe/plugin-react':
-        specifier: workspace:^0.4.3
+        specifier: workspace:^0.4.4
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.3.3
+        specifier: workspace:^0.3.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -228,6 +228,22 @@ importers:
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
+
+  examples/decorators:
+    dependencies:
+      core-js:
+        specifier: ^3.33.3
+        version: 3.33.3
+      reflect-metadata:
+        specifier: ^0.1.13
+        version: 0.1.13
+    devDependencies:
+      '@farmfe/cli':
+        specifier: ^0.5.11
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   examples/emotion:
     dependencies:
@@ -254,7 +270,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.4.3
+        specifier: workspace:^0.4.4
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
         specifier: ^2.5.70
@@ -330,7 +346,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
-        specifier: workspace:^0.4.3
+        specifier: workspace:^0.4.4
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -401,10 +417,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.4.3
+        specifier: workspace:^0.4.4
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.3.3
+        specifier: workspace:^0.3.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -522,10 +538,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.4.3
+        specifier: workspace:^0.4.4
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.3.3
+        specifier: workspace:^0.3.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -571,10 +587,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.4.3
+        specifier: workspace:^0.4.4
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.3.3
+        specifier: workspace:^0.3.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -611,10 +627,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.4.3
+        specifier: workspace:^0.4.4
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.3.3
+        specifier: workspace:^0.3.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -3414,7 +3430,7 @@ packages:
   /@simonwep/pickr@1.8.2:
     resolution: {integrity: sha512-/l5w8BIkrpP6n1xsetx9MWPWlU6OblN5YgZZphxan0Tq4BByTCETL6lyIeY8lagalS2Nbt4F2W034KHLIiunKA==}
     dependencies:
-      core-js: 3.30.1
+      core-js: 3.33.3
       nanopop: 2.3.0
     dev: false
 
@@ -6571,9 +6587,14 @@ packages:
   /core-js@3.30.1:
     resolution: {integrity: sha512-ZNS5nbiSwDTq4hFosEDqm65izl2CWmLz0hARJMyNQBgkUZMIF51cQiMvIQKA6hvuaeWxQDP3hEedM1JZIgTldQ==}
     requiresBuild: true
+    dev: false
 
   /core-js@3.33.2:
     resolution: {integrity: sha512-XeBzWI6QL3nJQiHmdzbAOiMYqjrb7hwU7A39Qhvd/POSa/t9E1AeZyEZx3fNvp/vtM8zXwhoL0FsiS0hD0pruQ==}
+    requiresBuild: true
+
+  /core-js@3.33.3:
+    resolution: {integrity: sha512-lo0kOocUlLKmm6kv/FswQL8zbkH7mVsLJ/FULClOhv8WRVmKLVcs6XPNQAzstfeJTCHMyButEwG+z1kHxHoDZw==}
     requiresBuild: true
 
   /core-util-is@1.0.3:
@@ -10207,7 +10228,7 @@ packages:
       camelcase-keys: 7.0.2
       chalk: 4.1.2
       common-tags: 1.8.2
-      core-js: 3.30.1
+      core-js: 3.33.3
       eslint: 8.53.0
       find-up: 5.0.0
       get-stdin: 8.0.0
@@ -11235,6 +11256,10 @@ packages:
     resolution: {integrity: sha512-LAUYz4lc+Do8/g7aeRa8JkyDErK6ekstQaqWQrNRW//MY1TvCEpMtpTWvlQ+FPbWCx+Xixu/6SHt5N0HR+SB4w==}
     dependencies:
       '@babel/runtime': 7.23.2
+    dev: false
+
+  /reflect-metadata@0.1.13:
+    resolution: {integrity: sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==}
     dev: false
 
   /regenerator-runtime@0.10.5:

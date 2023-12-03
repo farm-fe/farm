@@ -10,7 +10,7 @@ export default defineConfig({
     },
     output: {
       path: './build',
-      publicPath: '/public/'
+      // publicPath: '/public/'
     },
     presetEnv: false,
     // sourcemap: true,

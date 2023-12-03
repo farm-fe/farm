@@ -1,10 +1,17 @@
 # @farmfe/core
 
+## 0.14.13
+
+### Patch Changes
+
+- cfc5cfa2: Fix #814
+
 ## 0.14.12
 
 ### Patch Changes
 
-- d533fa88: server: publicPath in open server error
+
+- d533fa88: server: public path in open server error
 
 ## 0.14.11
 
