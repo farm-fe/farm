@@ -32,7 +32,7 @@
 
 Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件生态。对照其他工具进行基准性能测试 (使用 Turbopack 的基准测试，1000 个 React 组件) 如下所示:
 
-![xx](./assets/benchmark.jpg)
+![performance](./assets/2023-12-4.benchmark.png)
 
 > 测试仓库地址: https://github.com/farm-fe/performance-compare
 >

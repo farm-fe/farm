@@ -32,7 +32,7 @@
 
 Farm is a extremely fast vite-compatible web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
-![performance](./assets/benchmark.jpg)
+![performance](./assets/2023-12-4.benchmark.png)
 
 > Test Repository: https://github.com/farm-fe/performance-compare
 >
