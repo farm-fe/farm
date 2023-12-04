@@ -1,4 +1,8 @@
-import { JsPlugin, CompilationContext } from '../type.js';
+import {
+  JsPlugin,
+  CompilationContext,
+  RenderResourcePotParams
+} from '../type.js';
 import {
   convertEnforceToPriority,
   customParseQueryString,
@@ -24,7 +28,12 @@ import type {
   ModuleNode,
   ConfigEnv
 } from 'vite';
-import type { ResolveIdResult } from 'rollup';
+import type {
+  ResolveIdResult,
+  RenderedChunk,
+  RenderedModule,
+  RenderChunkHook
+} from 'rollup';
 import path from 'path';
 import {
   PluginLoadHookParam,
@@ -65,6 +74,7 @@ export class VitePluginAdapter implements JsPlugin {
   buildEnd: JsPlugin['buildEnd'];
   finish: JsPlugin['finish'];
   updateModules: JsPlugin['updateModules'];
+  renderResourcePot: JsPlugin['renderResourcePot'];
   // filter for js plugin to improve performance
   filters: string[];
 
@@ -92,6 +102,8 @@ export class VitePluginAdapter implements JsPlugin {
     this.buildEnd = this.viteBuildEndToFarmBuildEnd();
     this.finish = this.viteCloseBundleToFarmFinish();
     this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules();
+    this.renderResourcePot =
+      this.viteHandleRenderChunkToFarmRenderResourcePot();
 
     // if other unsupported vite plugins hooks are used, throw error
     const unsupportedHooks = [
@@ -276,9 +288,7 @@ export class VitePluginAdapter implements JsPlugin {
         ): Promise<PluginResolveHookResult> => {
           if (
             params.importer &&
-            VitePluginAdapter.isFarmInternalVirtualModule(
-              params.importer.relativePath
-            )
+            VitePluginAdapter.isFarmInternalVirtualModule(params.importer)
           ) {
             return null;
           }
@@ -290,7 +300,7 @@ export class VitePluginAdapter implements JsPlugin {
           );
           const absImporterPath = path.resolve(
             process.cwd(),
-            params.importer?.relativePath ?? ''
+            params.importer ?? ''
           );
           const resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
@@ -485,6 +495,82 @@ export class VitePluginAdapter implements JsPlugin {
           }
 
           return [...new Set(result)];
+        }
+      )
+    };
+  }
+
+  private viteHandleRenderChunkToFarmRenderResourcePot(): JsPlugin['renderResourcePot'] {
+    return {
+      executor: this.wrapExecutor(
+        async (param: RenderResourcePotParams, ctx) => {
+          const hook = this.wrapRawPluginHook(
+            'renderChunk',
+            this._rawPlugin.renderChunk,
+            ctx
+          );
+
+          const {
+            dynamicImports,
+            fileName,
+            implicitlyLoadedBefore,
+            importedBindings,
+            imports,
+            modules,
+            referencedFiles,
+            exports,
+            facadeModuleId,
+            isDynamicEntry,
+            isEntry,
+            isImplicitEntry,
+            moduleIds,
+            name,
+            ty
+          } = param.resourcePotInfo;
+
+          const result: ReturnType<RenderChunkHook> = await hook(
+            param.content,
+            {
+              dynamicImports,
+              fileName,
+              implicitlyLoadedBefore,
+              importedBindings,
+              imports,
+              modules: Object.entries(modules).reduce((result, [key, val]) => {
+                return {
+                  ...result,
+                  [key]: {
+                    code: val.renderedContent,
+                    renderedLength: val.renderedLength,
+                    originalLength: val.originalLength,
+                    removedExports: [],
+                    renderedExports: []
+                  }
+                };
+              }, {} as Record<string, RenderedModule>),
+              referencedFiles,
+              exports,
+              facadeModuleId,
+              isDynamicEntry,
+              isEntry,
+              isImplicitEntry,
+              moduleIds,
+              name,
+              type: ty
+            } as RenderedChunk,
+            {},
+            {
+              chunks: {}
+            }
+          );
+
+          if (result) {
+            if (typeof result === 'string') {
+              return { content: result };
+            } else if (typeof result === 'object') {
+              return { content: result, sourceMap: result.map };
+            }
+          }
         }
       )
     };

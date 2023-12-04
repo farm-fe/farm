@@ -43,6 +43,59 @@ export interface CompilationContext {
   }[];
 }
 
+type ModuleId = string;
+
+export interface ResourcePot {
+  id: string;
+  name: string;
+  resourcePotType: string;
+  modules: ModuleId[];
+  meta: any;
+  entryModule?: ModuleId;
+  resources: string[];
+  moduleGroups: string[];
+  immutable: boolean;
+}
+
+interface RenderedModule {
+  id: ModuleId;
+  renderedContent: string;
+  renderedMap?: string;
+  renderedLength: number;
+  originalLength: number;
+}
+
+interface ResourcePotInfo {
+  id: string;
+  resourcePotType: string;
+  content: string;
+  dynamicImports: string[];
+  exports: string[];
+  facadeModuleId?: string;
+  fileName: string;
+  implicitlyLoadedBefore: string[];
+  imports: string[];
+  importedBindings: Record<string, string[]>;
+  isDynamicEntry: boolean;
+  isEntry: boolean;
+  isImplicitEntry: boolean;
+  map?: string;
+  modules: Record<ModuleId, RenderedModule>;
+  moduleIds: ModuleId[];
+  name: string;
+  preliminaryFileName: string;
+  referencedFiles: string[];
+  ty: string;
+}
+export interface RenderResourcePotParams {
+  content: string;
+  resourcePotInfo: ResourcePotInfo;
+}
+export interface RenderResourcePotResult {
+  content: string;
+  sourceMap?: string;
+}
+
 type Callback<P, R> = (
   param: P,
   context?: CompilationContext,
@@ -102,6 +155,10 @@ export interface JsPlugin {
       { paths: [string, string][] },
       string[] | undefined | null | void
     >;
+  };
+
+  renderResourcePot?: {
+    executor: Callback<RenderResourcePotParams, RenderResourcePotResult>;
   };
 
   pluginCacheLoaded?: {

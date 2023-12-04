@@ -452,13 +452,15 @@ pub struct EmptyPluginHookParam {}
 pub struct EmptyPluginHookResult {}
 
 #[cache_item]
-#[derive(Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,
   pub source_map: Option<Resource>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ResourcePotInfoOfPluginRenderResourcePotHookParam {
   pub id: ResourcePotId,
   pub resource_pot_type: ResourcePotType,
@@ -517,7 +519,8 @@ impl ResourcePotInfoOfPluginRenderResourcePotHookParam {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginRenderResourcePotHookParam {
   pub content: Arc<String>,
   pub resource_pot_info: ResourcePotInfoOfPluginRenderResourcePotHookParam,

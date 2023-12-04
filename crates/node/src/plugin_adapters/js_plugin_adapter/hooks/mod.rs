@@ -3,6 +3,7 @@ pub mod build_start;
 pub mod finish;
 pub mod load;
 pub mod plugin_cache_loaded;
+pub mod render_resource_pot;
 pub mod resolve;
 pub mod transform;
 pub mod update_modules;

@@ -16,8 +16,9 @@ use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 use self::hooks::{
   build_end::JsPluginBuildEndHook, build_start::JsPluginBuildStartHook, finish::JsPluginFinishHook,
   load::JsPluginLoadHook, plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
-  resolve::JsPluginResolveHook, transform::JsPluginTransformHook,
-  update_modules::JsPluginUpdateModulesHook, write_plugin_cache::JsPluginWritePluginCacheHook,
+  render_resource_pot::JsPluginRenderResourcePotHook, resolve::JsPluginResolveHook,
+  transform::JsPluginTransformHook, update_modules::JsPluginUpdateModulesHook,
+  write_plugin_cache::JsPluginWritePluginCacheHook,
 };
 
 pub mod context;
@@ -36,6 +37,7 @@ pub struct JsPluginAdapter {
   js_update_modules_hook: Option<JsPluginUpdateModulesHook>,
   js_plugin_cache_loaded: Option<JsPluginPluginCacheLoadedHook>,
   js_write_plugin_cache: Option<JsPluginWritePluginCacheHook>,
+  js_render_resource_pot_hook: Option<JsPluginRenderResourcePotHook>,
 }
 
 impl JsPluginAdapter {
@@ -59,6 +61,8 @@ impl JsPluginAdapter {
       get_named_property::<JsObject>(env, &js_plugin_object, "pluginCacheLoaded").ok();
     let write_plugin_cache_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "writePluginCache").ok();
+    let render_resource_pot_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "renderResourcePot").ok();
 
     Ok(Self {
       name,
@@ -75,6 +79,8 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginPluginCacheLoadedHook::new(env, obj)),
       js_write_plugin_cache: write_plugin_cache_obj
         .map(|obj| JsPluginWritePluginCacheHook::new(env, obj)),
+      js_render_resource_pot_hook: render_resource_pot_obj
+        .map(|obj| JsPluginRenderResourcePotHook::new(env, obj)),
     })
   }
 
@@ -214,6 +220,18 @@ impl Plugin for JsPluginAdapter {
     if let Some(js_plugin_cache_loaded_hook) = &self.js_plugin_cache_loaded {
       js_plugin_cache_loaded_hook.call(cache, context.clone())?;
       Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn render_resource_pot(
+    &self,
+    param: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
+    if let Some(js_plugin_render_resource_pot) = &self.js_render_resource_pot_hook {
+      js_plugin_render_resource_pot.call(param.clone(), context.clone())
     } else {
       Ok(None)
     }

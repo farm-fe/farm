@@ -1,11 +1,14 @@
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
+use serde::{Deserialize, Serialize};
 
 use farmfe_macro_cache_item::cache_item;
 
 use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 
 #[cache_item]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ResourcePot {
   pub id: ResourcePotId,
   pub name: String,
@@ -124,7 +127,8 @@ pub struct RenderedModule {
 }
 
 #[cache_item]
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ResourcePotMetaData {
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
   pub rendered_content: Arc<String>,

@@ -388,11 +388,8 @@ impl ToString for ModuleType {
 
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
-#[derive(
-  PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
-)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
 #[archive_attr(derive(Hash, Eq, PartialEq))]
-#[serde(rename_all = "camelCase")]
 pub struct ModuleId {
   relative_path: String,
   query_string: String,
@@ -502,6 +499,26 @@ impl From<String> for ModuleId {
 impl ToString for ModuleId {
   fn to_string(&self) -> String {
     self.relative_path.to_string() + self.query_string.as_str()
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for ModuleId {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    let s = <std::string::String as serde::Deserialize>::deserialize(deserializer)?;
+
+    Ok(ModuleId::from(s))
+  }
+}
+
+impl serde::Serialize for ModuleId {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.serialize_str(self.to_string().as_str())
   }
 }
 

@@ -29,7 +29,7 @@ export const bindingPath: string;
 /// Parameter of the resolve hook
 export interface PluginResolveHookParam {
   /// the start location to resolve `source`, being [None] if resolving a entry or resolving a hmr update.
-  importer: { relativePath: string; queryString: string | null } | null;
+  importer: string | null;
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   kind: ResolveKind;
   /// resolvedPath. for example in index.ts (import App from "./App.vue")

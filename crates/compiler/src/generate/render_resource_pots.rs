@@ -117,7 +117,7 @@ pub fn render_resource_pots_and_generate_resources(
       Ok(())
     })?;
 
-  let mut resources_map = context.resources_map.lock();
+  let mut resources_map: farmfe_core::parking_lot::lock_api::MutexGuard<'_, farmfe_core::parking_lot::RawMutex, std::collections::HashMap<String, farmfe_core::resource::Resource>> = context.resources_map.lock();
 
   for resource in resources.lock().drain(..) {
     resources_map.insert(resource.name.clone(), resource);
@@ -156,9 +156,13 @@ pub fn render_resource_pot_generate_resources(
         context,
       ),
     };
-    context
+
+    let result = context
       .plugin_driver
       .render_resource_pot(&mut param, context)?;
+
+    resource_pot.meta.rendered_content = result.content;
+    resource_pot.meta.rendered_map_chain = result.source_map_chain;
   }
 
   {
