@@ -746,9 +746,6 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@farmfe/js-plugin-record-viewer':
-        specifier: workspace:*
-        version: link:../../js-plugins/record-viewer
       '@farmfe/js-plugin-solid':
         specifier: workspace:*
         version: link:../../js-plugins/solid
