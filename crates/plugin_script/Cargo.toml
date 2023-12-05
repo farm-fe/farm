@@ -26,8 +26,8 @@ once_cell = { version = "1.10.0", optional = true }
 
 [features]
 swc_plugin = [
-  "swc_plugin_proxy",
-  "swc_plugin_runner",
-  "swc_ecma_loader",
-  "once_cell",
+  "dep:swc_plugin_proxy",
+  "dep:swc_plugin_runner",
+  "dep:swc_ecma_loader",
+  "dep:once_cell",
 ]
