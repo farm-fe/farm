@@ -47,8 +47,6 @@ Farm is a extremely fast vite-compatible web-building tool written in Rust. Benc
 > [!NOTE]
 > Since Farm v0.14, Farm implements incremental builds: here's how farm compares cache-enabled hot starts and production builds with other tools
 
-
-
 ![performance](./assets/2023-12-5.benchmark(hot).jpg)
 
 ## Online experience
