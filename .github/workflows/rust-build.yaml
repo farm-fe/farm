@@ -27,26 +27,24 @@ jobs:
             abi: darwin-x64
 
           # cross compile
-          # windows
+          # windows. Note swc plugins is not supported on ia32 and arm64
           - os: windows-latest
             abi: win32-ia32-msvc
             target: i686-pc-windows-msvc
             build: |
-              export DISABLE_PLUGIN_E2E_TESTS=true
               export CARGO_PROFILE_RELEASE_LTO=false
               cargo install cargo-xwin
-              cd packages/core && npm run build:rs -- --target i686-pc-windows-msvc
+              cd packages/core && npm run build:rs -- --target i686-pc-windows-msvc --cargo-flags="--no-default-features"
               cd ../../rust-plugins/react && npm run build -- --target i686-pc-windows-msvc && npm run copy-artifacts -- --abi win32-ia32-msvc
               cd ../sass && npm run build -- --target i686-pc-windows-msvc && npm run copy-artifacts -- --abi win32-ia32-msvc
           - os: windows-latest
             abi: win32-arm64-msvc
             target: aarch64-pc-windows-msvc
             build: |
-              export DISABLE_PLUGIN_E2E_TESTS=true
               export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
               export CARGO_PROFILE_RELEASE_LTO=false
               cargo install cargo-xwin
-              cd packages/core && npm run build:rs -- --target aarch64-pc-windows-msvc
+              cd packages/core && npm run build:rs -- --target aarch64-pc-windows-msvc --cargo-flags="--no-default-features"
               cd ../../rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc && npm run copy-artifacts -- --abi win32-arm64-msvc
               cd ../sass && npm run build -- --target aarch64-pc-windows-msvc && npm run copy-artifacts -- --abi win32-arm64-msvc
           # linux
