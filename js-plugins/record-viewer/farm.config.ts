@@ -31,10 +31,12 @@ export default defineConfig({
     },
     minify: false,
     sourcemap: false,
-    presetEnv: false
+    presetEnv: false,
+  
   },
   server: {
-    hmr: false
+    hmr: false,
+    cors: true
   },
   plugins: [
     farmDtsPlugin({
