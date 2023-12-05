@@ -30,3 +30,4 @@ profile = [
   "farmfe_plugin_resolve/profile",
   "farmfe_plugin_partial_bundling/profile",
 ]
+swc_plugin = ["farmfe_plugin_script/swc_plugin"]

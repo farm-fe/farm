@@ -36,10 +36,12 @@ use farmfe_toolkit::{
 };
 
 use import_meta_visitor::ImportMetaVisitor;
+#[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
 mod import_meta_visitor;
+#[cfg(feature = "swc_plugin")]
 mod swc_plugins;
 mod swc_script_transforms;
 
@@ -151,6 +153,7 @@ impl Plugin for FarmPluginScript {
     }
 
     // execute swc plugins
+    #[cfg(feature = "swc_plugin")]
     if param.module_type.is_script() && !context.config.script.plugins.is_empty() {
       try_with(cm.clone(), &context.meta.script.globals, || {
         transform_by_swc_plugins(param, context).unwrap()
@@ -311,6 +314,7 @@ impl Plugin for FarmPluginScript {
 
 impl FarmPluginScript {
   pub fn new(config: &Config) -> Self {
+    #[cfg(feature = "swc_plugin")]
     init_plugin_module_cache_once(config);
     Self {}
   }
