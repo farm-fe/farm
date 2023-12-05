@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.14.16
+
+### Patch Changes
+
+- 88a93d0a: Fix duplicate `/` in css url()
+
 ## 0.14.15
 
 ### Patch Changes
