@@ -7,7 +7,7 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../binding/index.js';
-import { DevServer } from '../index.js';
+import { Compiler, DevServer } from '../index.js';
 
 export interface CompilationContextEmitFileParams {
   resolvedPath: string;
@@ -69,6 +69,12 @@ export interface JsPlugin {
    * @returns
    */
   configDevServer?: (server: DevServer) => void;
+  /**
+   * runs in production mode only
+   * @param server
+   * @returns
+   */
+  configCompiler?: (compiler: Compiler) => void;
 
   buildStart?: { executor: Callback<Record<string, never>, void> };
 

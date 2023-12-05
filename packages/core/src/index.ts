@@ -312,6 +312,11 @@ export async function createBundleHandler(
   watchMode = false
 ) {
   const compiler = new Compiler(normalizedConfig);
+  if (normalizedConfig.config.mode === 'production') {
+    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configCompiler?.(compiler)
+    );
+  }
   await compilerHandler(async () => {
     compiler.removeOutputPathDir();
     await compiler.compile();
