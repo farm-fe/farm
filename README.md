@@ -32,13 +32,24 @@
 
 Farm is a extremely fast vite-compatible web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
-![performance](./assets/2023-12-4.benchmark.png)
+### All Benchmark
+
+![performance](./assets/2023-12-5.benchmark.jpg)
 
 > Test Repository: https://github.com/farm-fe/performance-compare
 >
 > Test Machine (Linux Mint 21.1 Cinnamon, 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6, 15.5 GiB)
 
 <br />
+
+### Hot Startup Benchmark
+
+> [!NOTE]
+> Since Farm v0.14, Farm implements incremental builds: here's how farm compares cache-enabled hot starts and production builds with other tools
+
+
+
+![performance](./assets/2023-12-5.benchmark(hot).jpg)
 
 ## Online experience
 
@@ -60,6 +71,7 @@ Farm can solve these problems perfectly, and it's really fast cause it's written
 
 ## Features
 
+> [!NOTE]
 > Since Farm v0.13, Vite plugins can be used directly in Farm. Refer to [Using vite plugins in Farm](https://farm-fe.github.io/docs/using-plugins#using-vite-plugins-in-farm)
 
 - ⚡ **Extremely Fast**: Written in Rust, start a React / Vue project in milliseconds and perform an HMR update within 20ms for most situations.
