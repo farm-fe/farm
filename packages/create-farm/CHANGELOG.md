@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.4.4
+
+### Patch Changes
+
+- 478c685f: update brand color update logger logic
+
 ## 1.4.3
 
 ### Patch Changes

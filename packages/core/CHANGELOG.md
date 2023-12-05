@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 0.14.15
+
+### Patch Changes
+
+- 19c600d2: Fix win ia32 artifact not found
+- 478c685f: update brand color update logger logic
+
 ## 0.14.14
 
 ### Patch Changes
