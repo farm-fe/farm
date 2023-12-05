@@ -45,7 +45,7 @@ impl<'a> VisitMut for SourceReplacer<'a> {
             for resource in self.resources_map.values() {
               if let ResourceOrigin::Module(m_id) = &resource.origin {
                 if &dep_module == m_id {
-                  return resource.name.clone();
+                  return format!("/{}", resource.name);
                 }
               }
             }
@@ -67,7 +67,7 @@ impl<'a> VisitMut for SourceReplacer<'a> {
 
           *value = Box::new(UrlValue::Str(Str {
             span: DUMMY_SP,
-            value: format!("/{}", resource_name).into(),
+            value: resource_name.into(),
             raw: None,
           }));
         }

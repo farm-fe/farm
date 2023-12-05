@@ -97,7 +97,7 @@ jobs:
         run: npm run test -- --coverage
 
   check-core-artifacts:
-    name: Check Plugin React Artifacts
+    name: Check Core Artifacts
     runs-on: ubuntu-latest
     needs: call-rust-build
     steps:
@@ -112,7 +112,7 @@ jobs:
           done
 
   check-plugin-artifacts:
-    name: Check Plugin Sass Artifacts
+    name: Check ${{ matrix.settings.name }} Artifacts
     runs-on: ubuntu-latest
     needs: call-rust-build
     strategy:
