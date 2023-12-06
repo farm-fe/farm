@@ -156,6 +156,10 @@ impl Plugin for RustPluginAdapter {
     self.plugin.process_resource_pots(resource_pots, context)
   }
 
+  fn render_start(&self, config: &Config, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    self.plugin.render_start(config, context)
+  }
+
   fn render_resource_pot_modules(
     &self,
     resource_pot: &ResourcePot,
@@ -173,6 +177,14 @@ impl Plugin for RustPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
     self.plugin.render_resource_pot(resource_pot, context)
+  }
+
+  fn augment_resource_hash(
+    &self,
+    render_pot_info: &farmfe_core::plugin::ChunkResourceInfo,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<String>> {
+    self.plugin.augment_resource_hash(render_pot_info, context)
   }
 
   fn optimize_resource_pot(

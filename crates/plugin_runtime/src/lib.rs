@@ -288,20 +288,20 @@ impl Plugin for FarmPluginRuntime {
             function dynamicRequire(id) {
               return Promise.resolve(require(id));
             }
-          
+
             function require(id) {
               if (cache[id]) return cache[id].exports;
-          
+
               var module = {
                 id: id,
                 exports: {}
               };
-          
+
               modules[id](module, module.exports, require, dynamicRequire);
               cache[id] = module;
               return module.exports;
             }
-          
+
             require(entryModule);
           })("#,
         );
@@ -475,6 +475,7 @@ impl Plugin for FarmPluginRuntime {
           emitted: true, // do not emit runtime resource by default
           resource_type: ResourceType::Runtime,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+          info: None
         },
         source_map: None,
       }))

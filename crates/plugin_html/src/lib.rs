@@ -210,6 +210,7 @@ impl Plugin for FarmPluginHtml {
           emitted: false,
           resource_type: ResourceType::Html,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+          info: None
         },
         source_map: None,
       }))

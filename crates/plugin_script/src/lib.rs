@@ -270,6 +270,7 @@ impl Plugin for FarmPluginScript {
         emitted: false,
         resource_type: ResourceType::Js,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+        info: None
       };
       let mut source_map = None;
 
@@ -294,6 +295,7 @@ impl Plugin for FarmPluginScript {
           emitted: false,
           resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+          info: None
         };
 
         source_map = Some(map);

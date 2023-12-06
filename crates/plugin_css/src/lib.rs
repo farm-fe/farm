@@ -577,6 +577,7 @@ impl Plugin for FarmPluginCss {
         emitted: false,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+        info: None
       };
       let mut source_map = None;
 
@@ -603,6 +604,7 @@ impl Plugin for FarmPluginCss {
             emitted: false,
             resource_type,
             origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+            info: None
           });
         }
       }
