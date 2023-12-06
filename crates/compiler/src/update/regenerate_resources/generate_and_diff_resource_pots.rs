@@ -178,9 +178,12 @@ fn handle_enforce_resource_pots(
     }
   }
 
+  let mut modules = un_enforced_modules.into_iter().collect::<Vec<_>>();
+  modules.sort();
+
   (
     affected_resource_pot_ids.into_iter().collect::<Vec<_>>(),
-    un_enforced_modules.into_iter().collect::<Vec<_>>(),
+    modules,
   )
 }
 

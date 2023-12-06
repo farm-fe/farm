@@ -36,11 +36,12 @@ pub fn generate_module_pots(
   }
 
   // split module_pots from module_pot_map that its size larger that target_max_size
-  let exceed_size_module_pot_ids = module_pot_map
+  let mut exceed_size_module_pot_ids = module_pot_map
     .iter()
     .filter(|(_, module_pot)| module_pot.size > config.target_max_size)
     .map(|(module_pot_id, _)| module_pot_id.clone())
-    .collect::<HashSet<_>>();
+    .collect::<Vec<_>>();
+  exceed_size_module_pot_ids.sort();
 
   for exceed_size_module_pot_id in exceed_size_module_pot_ids {
     let module_pot = module_pot_map.remove(&exceed_size_module_pot_id).unwrap();
