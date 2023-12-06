@@ -38,7 +38,7 @@ Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件�
 
 > 测试仓库: https://github.com/farm-fe/performance-compare
 >
-> 测试机器: (Linux Mint 21.1 Cinnamon, 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6, 15.5 GiB)
+> 测试机器环境: (Linux Mint 21.1 Cinnamon, 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6, 15.5 GiB)
 
 <br />
 
