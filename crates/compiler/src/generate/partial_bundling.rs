@@ -56,8 +56,7 @@ pub fn generate_resource_pot_map(
 ) -> farmfe_core::error::Result<ResourcePotMap> {
   let (enforce_resource_pots, modules) = generate_enforce_resource_pots(context);
 
-  let mut resources_pots =
-    call_partial_bundling_hook(&modules.into_iter().collect(), context, hook_context)?;
+  let mut resources_pots = call_partial_bundling_hook(&modules, context, hook_context)?;
   // extends enforce resource pots
   resources_pots.extend(enforce_resource_pots);
   fill_necessary_fields_for_resource_pot(resources_pots.iter_mut().collect(), context);
@@ -200,10 +199,11 @@ fn generate_enforce_resource_pots(
     }
   }
 
-  (
-    enforce_resource_pot_map.take_resource_pots(),
-    modules.into_iter().collect(),
-  )
+  let mut modules: Vec<_> = modules.into_iter().collect();
+  // sort modules to make it stable
+  modules.sort();
+
+  (enforce_resource_pot_map.take_resource_pots(), modules)
 }
 
 #[cfg(test)]
