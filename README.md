@@ -42,12 +42,12 @@ Farm is a extremely fast vite-compatible web-building tool written in Rust. Benc
 
 <br />
 
-### Hot Startup Benchmark
+### Hot (Startup and Build) Benchmark
 
 > [!NOTE]
-> Since Farm v0.14, Farm implements incremental builds: here's how farm compares cache-enabled hot starts and production builds with other tools
+> Since Farm v0.14, Farm has implemented persistent cache. The following compares Farm's use of persistent cache in hot starts and production builds with other tools.
 
-![performance](./assets/2023-12-5.benchmark(hot).jpg)
+![performance](<./assets/2023-12-5.benchmark(hot).jpg>)
 
 ## Online experience
 
