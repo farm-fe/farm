@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.14.17
+
+### Patch Changes
+
+- 329d37ef: fix enforceTargetMinSize panic
+
 ## 0.14.16
 
 ### Patch Changes
