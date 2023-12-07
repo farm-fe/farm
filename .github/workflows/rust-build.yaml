@@ -23,7 +23,6 @@ jobs:
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu && npm run copy-artifacts -- --abi linux-x64-gnu
           - os: ubuntu-latest
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            target: x86_64-unknown-linux-musl
             abi: linux-x64-musl
             build: >-
               set -e &&
