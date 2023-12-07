@@ -31,7 +31,7 @@ jobs:
               cd packages/core &&
               npm run build:rs:publish -- --target x86_64-unknown-linux-musl &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-musl && npm run copy-artifacts -- --abi linux-x64-musl &&
-              apt install -y protobuf-compiler &&
+              apk add protobuf &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-musl && npm run copy-artifacts -- --abi linux-x64-musl
           - os: windows-latest
             abi: win32-x64-msvc
