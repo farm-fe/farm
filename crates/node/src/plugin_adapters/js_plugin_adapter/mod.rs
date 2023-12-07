@@ -14,10 +14,18 @@ use farmfe_core::{
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
 use self::hooks::{
-  build_end::JsPluginBuildEndHook, build_start::JsPluginBuildStartHook, finish::JsPluginFinishHook,
-  load::JsPluginLoadHook, plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
-  render_resource_pot::JsPluginRenderResourcePotHook, resolve::JsPluginResolveHook,
-  transform::JsPluginTransformHook, update_modules::JsPluginUpdateModulesHook,
+  augment_resource_hash::{self, JsPluginAugmentResourceHashHook},
+  build_end::JsPluginBuildEndHook,
+  build_start::JsPluginBuildStartHook,
+  finalize_resources::JsPluginFinalizeResourcesHook,
+  finish::JsPluginFinishHook,
+  load::JsPluginLoadHook,
+  plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
+  render_resource_pot::JsPluginRenderResourcePotHook,
+  render_start::JsPluginRenderStartHook,
+  resolve::JsPluginResolveHook,
+  transform::JsPluginTransformHook,
+  update_modules::JsPluginUpdateModulesHook,
   write_plugin_cache::JsPluginWritePluginCacheHook,
 };
 
@@ -38,6 +46,9 @@ pub struct JsPluginAdapter {
   js_plugin_cache_loaded: Option<JsPluginPluginCacheLoadedHook>,
   js_write_plugin_cache: Option<JsPluginWritePluginCacheHook>,
   js_render_resource_pot_hook: Option<JsPluginRenderResourcePotHook>,
+  js_render_start_hook: Option<JsPluginRenderStartHook>,
+  js_augment_resource_hash_hook: Option<JsPluginAugmentResourceHashHook>,
+  js_finalize_resources_hook: Option<JsPluginFinalizeResourcesHook>,
 }
 
 impl JsPluginAdapter {
@@ -63,6 +74,12 @@ impl JsPluginAdapter {
       get_named_property::<JsObject>(env, &js_plugin_object, "writePluginCache").ok();
     let render_resource_pot_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "renderResourcePot").ok();
+    let render_start_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "renderStart").ok();
+    let augment_resource_hash_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "augmentResourceHash").ok();
+    let finalize_resources_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "finalizeResources").ok();
 
     Ok(Self {
       name,
@@ -81,6 +98,11 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginWritePluginCacheHook::new(env, obj)),
       js_render_resource_pot_hook: render_resource_pot_obj
         .map(|obj| JsPluginRenderResourcePotHook::new(env, obj)),
+      js_render_start_hook: render_start_obj.map(|obj| JsPluginRenderStartHook::new(env, obj)),
+      js_augment_resource_hash_hook: augment_resource_hash_obj
+        .map(|obj| JsPluginAugmentResourceHashHook::new(env, obj)),
+      js_finalize_resources_hook: finalize_resources_obj
+        .map(|obj| JsPluginFinalizeResourcesHook::new(env, obj)),
     })
   }
 
@@ -232,6 +254,44 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
     if let Some(js_plugin_render_resource_pot) = &self.js_render_resource_pot_hook {
       js_plugin_render_resource_pot.call(param.clone(), context.clone())
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn render_start(
+    &self,
+    config: &farmfe_core::config::Config,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(js_render_start_hook) = &self.js_render_start_hook {
+      js_render_start_hook.call(config.clone(), context.clone())?;
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn augment_resource_hash(
+    &self,
+    render_pot_info: &farmfe_core::plugin::ChunkResourceInfo,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<String>> {
+    if let Some(js_augment_resource_hash_hook) = &self.js_augment_resource_hash_hook {
+      js_augment_resource_hash_hook.call(render_pot_info.clone(), context.clone())
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn finalize_resources(
+    &self,
+    resources: &mut std::collections::HashMap<String, farmfe_core::resource::Resource>,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(js_finalize_resources_hook) = &self.js_finalize_resources_hook {
+      js_finalize_resources_hook.call(resources.clone(), context.clone())?;
+      Ok(Some(()))
     } else {
       Ok(None)
     }

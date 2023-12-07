@@ -96,6 +96,15 @@ export interface RenderResourcePotResult {
   sourceMap?: string;
 }
 
+export interface Resource {
+  name: string;
+  bytes: number[];
+  emitted: boolean;
+  resource_type: string;
+  origin: { type: 'ResourcePot' | 'Module'; value: string };
+  info?: ResourcePotInfo;
+}
+
 type Callback<P, R> = (
   param: P,
   context?: CompilationContext,
@@ -157,8 +166,20 @@ export interface JsPlugin {
     >;
   };
 
+  renderStart?: {
+    executor: Callback<Config['config'], void>;
+  };
+
   renderResourcePot?: {
     executor: Callback<RenderResourcePotParams, RenderResourcePotResult>;
+  };
+
+  augmentResourceHash?: {
+    executor: Callback<ResourcePotInfo, string>;
+  };
+
+  finalizeResources?: {
+    executor: Callback<Record<string, Resource>, Record<string, Resource>>;
   };
 
   pluginCacheLoaded?: {
