@@ -10,16 +10,6 @@ rustflags = ["-Zshare-generics=y"]
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "target-feature=+sse2", "-Zshare-generics=y"]
 
-[target.x86_64-unknown-linux-musl]
-linker = "x86_64-linux-musl-gcc"
-rustflags = [
-  "-C",
-  "target-feature=-crt-static",
-  "-C",
-  "link-arg=-lgcc",
-  "-Zshare-generics=y",
-]
-
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
 
