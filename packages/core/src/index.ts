@@ -49,12 +49,15 @@ export async function start(
   );
 
   const compiler = new Compiler(normalizedConfig);
+  normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    plugin.configureCompiler?.(compiler)
+  );
   const devServer = new DevServer(compiler, logger, config, normalizedConfig);
   devServer.createFarmServer(devServer.userConfig.server);
 
   if (normalizedConfig.config.mode === 'development') {
     normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configDevServer?.(devServer)
+      plugin.configureDevServer?.(devServer)
     );
   }
 
@@ -312,11 +315,11 @@ export async function createBundleHandler(
   watchMode = false
 ) {
   const compiler = new Compiler(normalizedConfig);
-  if (normalizedConfig.config.mode === 'production') {
-    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configCompiler?.(compiler)
-    );
-  }
+
+  normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    plugin.configureCompiler?.(compiler)
+  );
+
   await compilerHandler(async () => {
     compiler.removeOutputPathDir();
     await compiler.compile();

@@ -24,7 +24,7 @@ export default function farmRecorderPlugin(
       farmConfig.record = true;
       recordViewerOptions = options;
     },
-    configDevServer: (devServer) => {
+    configureDevServer: (devServer) => {
       const compiler = devServer.getCompiler();
 
       const middleware = createDateSourceMiddleware(compiler);
@@ -36,7 +36,7 @@ export default function farmRecorderPlugin(
         middleware
       });
     },
-    configCompiler: (compiler) => {
+    configureCompiler: (compiler) => {
       const middleware = createDateSourceMiddleware(compiler);
 
       createRecordViewerServer({

@@ -204,7 +204,7 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  async configDevServer(devServer: DevServer) {
+  async configureDevServer(devServer: DevServer) {
     const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer

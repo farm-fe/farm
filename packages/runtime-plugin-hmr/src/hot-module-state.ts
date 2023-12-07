@@ -1,3 +1,6 @@
+// Farm's HMR client is compatible with Vite, see https://vitejs.dev/guide/api-hmr.html.
+// And it's inspired by esm-hmr, see https://github.com/FredKSchott/esm-hmr
+
 import { HmrUpdateResult } from './types';
 import type {
   ModuleSystem,
@@ -21,6 +24,20 @@ export class HotModuleState {
       this.acceptCallbacks.push(callback);
     }
   }
+
+  dispose(callback: () => void) {}
+
+  prune(callback: () => void) {}
+
+  invalidate(message?: string) {
+    console.log(`[Farm HMR] ${this.id} invalidated`);
+  }
+
+  on<T extends string>(event: T, callback: (data: any) => void): void {}
+
+  off<T extends string>(event: T, callback: (data: any) => void): void {}
+
+  send<T extends string>(event: T, data: any): void {}
 
   tap = (changeModule: ModuleInitialization) => {
     this.acceptCallbacks.map((cb) => {

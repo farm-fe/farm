@@ -47,7 +47,7 @@ impl HmrAcceptedVisitor {
 
 impl VisitMut for HmrAcceptedVisitor {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
-    // detect hmr based on `module.meta.hot.accept()`
+    // detect hmr based on `module.meta.hot.accept`
     if let Expr::Call(CallExpr {
       callee:
         Callee::Expr(box Expr::Member(MemberExpr {

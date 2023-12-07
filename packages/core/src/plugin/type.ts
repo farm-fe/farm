@@ -138,13 +138,12 @@ export interface JsPlugin {
    * @param server
    * @returns
    */
-  configDevServer?: (server: DevServer) => void;
+  configureDevServer?: (server: DevServer) => void;
   /**
-   * runs in production mode only
-   * @param server
+   * @param compiler
    * @returns
    */
-  configCompiler?: (compiler: Compiler) => void;
+  configureCompiler?: (compiler: Compiler) => void;
 
   buildStart?: { executor: Callback<Record<string, never>, void> };
 
