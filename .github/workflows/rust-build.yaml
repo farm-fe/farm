@@ -23,7 +23,6 @@ jobs:
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu && npm run copy-artifacts -- --abi linux-x64-gnu
           - os: ubuntu-latest
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            target: x86_64-unknown-linux-musl
             abi: linux-x64-musl
             build: >-
               set -e &&
@@ -32,7 +31,7 @@ jobs:
               cd packages/core &&
               npm run build:rs:publish -- --target x86_64-unknown-linux-musl &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-musl && npm run copy-artifacts -- --abi linux-x64-musl &&
-              apt install -y protobuf-compiler &&
+              apk add protobuf &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-musl && npm run copy-artifacts -- --abi linux-x64-musl
           - os: windows-latest
             abi: win32-x64-msvc
