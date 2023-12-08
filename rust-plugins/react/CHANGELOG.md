@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.4.5
+
+### Patch Changes
+
+- b181bb1c: support linux-x64-musl
+
 ## 0.4.4
 
 ### Patch Changes
