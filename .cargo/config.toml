@@ -5,7 +5,7 @@ git-fetch-with-cli = true
 [build]
 
 rustdocflags = ["--cfg", "docsrs"]
-rustflags    = ["-Zshare-generics=y"]
+rustflags = ["-Zshare-generics=y"]
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "target-feature=+sse2", "-Zshare-generics=y"]
@@ -24,7 +24,7 @@ rustflags = [
 ]
 
 [target.x86_64-pc-windows-msvc]
-linker    = "rust-lld"
+linker = "rust-lld"
 rustflags = ["-C", "target-feature=+crt-static", "-Zshare-generics=y"]
 
 

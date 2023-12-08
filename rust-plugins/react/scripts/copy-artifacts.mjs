@@ -4,10 +4,18 @@ import path from 'path';
 let [abiFlag, abi] = process.argv.slice(-2);
 if (abiFlag !== '--abi') {
   // try local abi
-  const supportedAbis = ['darwin-arm64', 'darwin-x64', 'linux-arm64-gnu', 'linux-arm64-musl', 'linux-x64-gnu', 'win32-x64-msvc'];
+  const supportedAbis = [
+    'darwin-arm64',
+    'darwin-x64',
+    'linux-arm64-gnu',
+    'linux-arm64-musl',
+    'linux-x64-gnu',
+    'linux-x64-musl',
+    'win32-x64-msvc'
+  ];
   const localAbi = process.platform + '-' + process.arch;
   console.log('localAbi', localAbi);
-  const found = supportedAbis.find(abi => abi.includes(localAbi));
+  const found = supportedAbis.find((abi) => abi.includes(localAbi));
   if (found) {
     abi = found;
   } else {
