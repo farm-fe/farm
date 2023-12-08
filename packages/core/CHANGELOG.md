@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.14.18
+
+### Patch Changes
+
+- b181bb1c: support linux-x64-musl
+
 ## 0.14.17
 
 ### Patch Changes
