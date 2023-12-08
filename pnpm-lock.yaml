@@ -1476,6 +1476,9 @@ importers:
         specifier: ^3.30.1
         version: 3.33.2
     devDependencies:
+      '@farmfe/core':
+        specifier: workspace:^
+        version: link:../core
       '@farmfe/runtime':
         specifier: workspace:^0.8.3
         version: link:../runtime

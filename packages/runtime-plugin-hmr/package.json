@@ -12,6 +12,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@farmfe/core": "workspace:^",
     "@farmfe/runtime": "workspace:^0.8.3"
   },
   "dependencies": {
