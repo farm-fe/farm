@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, sync::Arc};
+use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use serde::{Deserialize, Serialize};
@@ -213,7 +213,7 @@ pub trait Plugin: Any + Send + Sync {
   /// or insert the generated resources into html
   fn finalize_resources(
     &self,
-    _resources: &mut HashMap<String, Resource>,
+    _param: &mut PluginFinalizeResourcesHookParams,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -549,4 +549,9 @@ pub struct PluginRenderResourcePotHookResult {
 pub struct PluginDriverRenderResourcePotHookResult {
   pub content: Arc<String>,
   pub source_map_chain: Vec<Arc<String>>,
+}
+
+pub struct PluginFinalizeResourcesHookParams<'a> {
+  pub resources_map: &'a mut HashMap<String, Resource>,
+  pub config: &'a Config,
 }

@@ -16,7 +16,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookResult, ResolveKind,
+    PluginTransformHookResult, ResolveKind, PluginFinalizeResourcesHookParams,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -486,10 +486,10 @@ impl Plugin for FarmPluginRuntime {
 
   fn finalize_resources(
     &self,
-    resources_map: &mut HashMap<String, Resource>,
+    param: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    handle_entry_resources::handle_entry_resources(resources_map, context);
+    handle_entry_resources::handle_entry_resources(param.resources_map, context);
     Ok(Some(()))
   }
 }

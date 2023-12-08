@@ -38,24 +38,5 @@ export default defineConfig({
     cors: true,
     port: 6260
   },
-  plugins: [
-    {
-      priority: -Number.MAX_SAFE_INTEGER,
-      name: 'test-js-plugin',
-
-      generateResources: {
-        executor(param, context, hookContext) {
-          console.log(param.entryModule, param.name, param.id);
-        }
-      },
-      renderResourcePot: {
-        executor(param, context, hookContext) {
-          console.log();
-        }
-      }
-    } as JsPlugin,
-    '@farmfe/plugin-react',
-    farmJsPluginLess(),
-    farmJsPluginSvgr()
-  ]
+  plugins: ['@farmfe/plugin-react', farmJsPluginLess(), farmJsPluginSvgr()]
 });

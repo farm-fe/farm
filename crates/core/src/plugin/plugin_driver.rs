@@ -9,7 +9,7 @@ use super::{
   PluginFinalizeModuleHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
   PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   PluginRenderResourcePotHookParam, PluginResolveHookParam, PluginResolveHookResult,
-  PluginTransformHookParam, PluginUpdateModulesHookParams,
+  PluginTransformHookParam, PluginUpdateModulesHookParams, PluginFinalizeResourcesHookParams,
 };
 use crate::{
   config::Config,
@@ -537,10 +537,10 @@ impl PluginDriver {
 
   hook_serial!(
     finalize_resources,
-    &mut HashMap<String, Resource>,
-    |plugin_name: String,
-     param: &mut HashMap<String, Resource>,
-     context: &Arc<CompilationContext>| {
+    &mut PluginFinalizeResourcesHookParams,
+    |_plugin_name: String,
+     _param: &mut PluginFinalizeResourcesHookParams,
+     _context: &Arc<CompilationContext>| {
     // todo something
   });
 

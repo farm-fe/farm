@@ -122,7 +122,10 @@
     "walkdir",
     "wasi",
     "wasix",
-    "wechat"
+    "wechat",
+    "outro",
+    "Deoptimization",
+    "onwarn"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

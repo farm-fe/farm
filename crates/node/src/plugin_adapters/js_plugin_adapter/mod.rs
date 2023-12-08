@@ -6,9 +6,9 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   plugin::{
-    EmptyPluginHookParam, Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
-    PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
+    EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParams, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
@@ -286,11 +286,14 @@ impl Plugin for JsPluginAdapter {
 
   fn finalize_resources(
     &self,
-    resources: &mut std::collections::HashMap<String, farmfe_core::resource::Resource>,
+    params: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(js_finalize_resources_hook) = &self.js_finalize_resources_hook {
-      js_finalize_resources_hook.call(resources.clone(), context.clone())?;
+      if let Some(result) = js_finalize_resources_hook.call(params.into(), context.clone())? {
+        *(params.resources_map) = result;
+      };
+
       Ok(Some(()))
     } else {
       Ok(None)

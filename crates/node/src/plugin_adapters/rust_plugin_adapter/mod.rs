@@ -7,9 +7,10 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   plugin::{
-    Plugin, PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginProcessModuleHookParam, PluginResolveHookParam,
-    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
+    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
+    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+    PluginTransformHookResult,
   },
   resource::resource_pot::ResourcePot,
 };
@@ -208,10 +209,10 @@ impl Plugin for RustPluginAdapter {
 
   fn finalize_resources(
     &self,
-    resources: &mut HashMap<String, farmfe_core::resource::Resource>,
+    param: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.finalize_resources(resources, context)
+    self.plugin.finalize_resources(param, context)
   }
 
   fn generate_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {

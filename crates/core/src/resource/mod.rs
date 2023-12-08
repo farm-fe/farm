@@ -118,6 +118,7 @@ impl ResourceOrigin {
 
 #[cache_item]
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Resource {
   pub name: String,
   pub bytes: Vec<u8>,

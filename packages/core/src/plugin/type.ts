@@ -65,7 +65,7 @@ interface RenderedModule {
   originalLength: number;
 }
 
-interface ResourcePotInfo {
+export interface ResourcePotInfo {
   id: string;
   resourcePotType: string;
   content: string;
@@ -100,10 +100,15 @@ export interface Resource {
   name: string;
   bytes: number[];
   emitted: boolean;
-  resource_type: string;
+  resourceType: string;
   origin: { type: 'ResourcePot' | 'Module'; value: string };
   info?: ResourcePotInfo;
 }
+
+export type FinalizeResourcesHookParams = {
+  resourcesMap: Record<string, Resource>;
+  config: Config['config'];
+};
 
 type Callback<P, R> = (
   param: P,
@@ -179,7 +184,10 @@ export interface JsPlugin {
   };
 
   finalizeResources?: {
-    executor: Callback<Record<string, Resource>, Record<string, Resource>>;
+    executor: Callback<
+      FinalizeResourcesHookParams,
+      FinalizeResourcesHookParams
+    >;
   };
 
   pluginCacheLoaded?: {

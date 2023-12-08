@@ -1,6 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
-use farmfe_core::{context::CompilationContext, error::Result, resource::Resource};
+use farmfe_core::{
+  context::CompilationContext,
+  error::Result,
+  plugin::PluginFinalizeResourcesHookParams,
+  resource::Resource,
+  serde::{Deserialize, Serialize},
+};
 
 use crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
 
@@ -8,7 +14,21 @@ pub struct JsPluginFinalizeResourcesHook {
   tsfn: ThreadSafeJsPluginHook,
 }
 
-pub type PluginFinalizeResourcesHookValue = HashMap<String, Resource>;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(crate = "farmfe_core::serde", rename_all = "camelCase")]
+pub struct JsPluginFinalizeResourcesHookParams {
+  pub resources_map: HashMap<String, Resource>,
+  pub config: farmfe_core::config::Config,
+}
+
+impl<'a> From<&mut PluginFinalizeResourcesHookParams<'a>> for JsPluginFinalizeResourcesHookParams {
+  fn from(value: &mut PluginFinalizeResourcesHookParams) -> Self {
+    Self {
+      resources_map: value.resources_map.clone(),
+      config: value.config.clone(),
+    }
+  }
+}
 
 impl JsPluginFinalizeResourcesHook {
   pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
@@ -18,17 +38,17 @@ impl JsPluginFinalizeResourcesHook {
 
     Self {
       tsfn: ThreadSafeJsPluginHook::new::<
-        PluginFinalizeResourcesHookValue,
-        PluginFinalizeResourcesHookValue,
+        JsPluginFinalizeResourcesHookParams,
+        HashMap<String, Resource>,
       >(env, func),
     }
   }
 
   pub fn call(
     &self,
-    param: PluginFinalizeResourcesHookValue,
+    param: JsPluginFinalizeResourcesHookParams,
     ctx: Arc<CompilationContext>,
-  ) -> Result<Option<PluginFinalizeResourcesHookValue>> {
+  ) -> Result<Option<HashMap<String, Resource>>> {
     self.tsfn.call(param, ctx, None)
   }
 }
