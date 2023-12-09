@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { fileURLToPath } from 'node:url';
 import {
+  ColorFunction,
   PersistentCacheBrand,
   blue,
   bold,
@@ -41,7 +43,7 @@ export interface ErrorOptions {
 }
 interface LoggerOptions {
   name?: string;
-  brandColor?: any;
+  brandColor?: ColorFunction;
   exit?: boolean;
 }
 

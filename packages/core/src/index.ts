@@ -361,4 +361,4 @@ export async function createBundleHandler(
   }
 }
 
-export { defineFarmConfig as defineConfig } from './config.js';
+export { defineFarmConfig as defineConfig } from './config/index.js';

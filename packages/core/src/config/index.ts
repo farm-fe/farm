@@ -6,14 +6,19 @@ import { pathToFileURL } from 'node:url';
 
 import merge from 'lodash.merge';
 
-import { resolveAllPlugins } from '../plugin/index.js';
+import {
+  convertPlugin,
+  getSortedPlugins,
+  resolveAllPlugins,
+  rustPluginResolver
+} from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { DevServer } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-// import { importFresh } from '../utils/share.js';
 import {
+  asyncFlatten,
   bold,
   clearScreen,
   green,
@@ -23,8 +28,12 @@ import {
   Logger,
   normalizePath
 } from '../utils/index.js';
+import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
+import { normalizeOutput } from './normalize-config/normalize-output.js';
+import { traceDependencies } from '../utils/trace-dependencies.js';
 
 import type {
+  ConfigEnv,
   FarmCLIOptions,
   NormalizedServerConfig,
   ResolveConfigType,
@@ -33,9 +42,8 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
-import { normalizeOutput } from './normalize-config/normalize-output.js';
-import { traceDependencies } from '../utils/trace-dependencies.js';
+import { urlRegex } from '../utils/http.js';
+import { JsPlugin } from '../index.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -43,7 +51,102 @@ export const DEFAULT_CONFIG_NAMES = [
   'farm.config.js',
   'farm.config.mjs'
 ];
-export const urlRegex = /^(https?:)?\/\/([^/]+)/;
+
+export function defineFarmConfig(
+  config: UserConfig | Promise<UserConfig>
+): UserConfig | Promise<UserConfig> {
+  return config;
+}
+
+/**
+ * Resolve and load user config from the specified path
+ * @param configPath
+ */
+export async function resolveConfig(
+  inlineOptions: FarmCLIOptions,
+  logger: Logger,
+  command: 'serve' | 'build',
+  mode?: CompilationMode
+): Promise<ResolveConfigType> {
+  // Clear the console according to the cli command
+  checkClearScreen(inlineOptions);
+
+  let userConfig: ResolvedUserConfig = {};
+  // configPath may be file or directory
+  const { configPath, root } = inlineOptions;
+
+  if (!configPath) {
+    return mergeUserConfig(userConfig, inlineOptions);
+  }
+
+  if (!path.isAbsolute(configPath)) {
+    throw new Error('configPath must be an absolute path');
+  }
+
+  userConfig = await loadFileConfig(userConfig, inlineOptions, logger);
+
+  if (!userConfig.root) {
+    userConfig.root = root || process.cwd();
+  }
+
+  userConfig.isBuild = command === 'build';
+  userConfig.command = command;
+  const configEnv: ConfigEnv = {
+    mode,
+    command
+  };
+  console.log(configEnv);
+
+  // Save variables are used when restarting the service
+  // const config = filterUserConfig(userConfig, inlineOptions);
+  const config = userConfig;
+  console.log(config);
+
+  // -----------------------------------------Resolve Plugins-----------------------------------------
+
+  // TODO RUN CONFIG HOOK
+  // 1. first resolve farm plugins
+  const { jsPlugins } = await resolveFarmPlugins(config);
+  // 2. filter boolean plugin and resolve sync plugin
+  const filterPlugin = (p: JsPlugin) => {
+    if (!p) {
+      return false;
+    } else if (!p.apply) {
+      return true;
+    } else if (typeof p.apply === 'function') {
+      return p.apply(
+        { ...config, compilation: { ...config.compilation, mode } },
+        configEnv
+      );
+    } else {
+      return p.apply === command;
+    }
+  };
+
+  // 3. filter duplicate plugin Flattening js plugins and farm plugins
+  const rawPlugins = (
+    await asyncFlatten((await asyncFlatten(jsPlugins || [])) || [])
+  ).filter(filterPlugin);
+  const sortFarmJsPlugins = getSortedPlugins(rawPlugins);
+  console.log(sortFarmJsPlugins);
+
+  // -----------------------------------------Resolve Plugins-----------------------------------------
+
+  // check port availability: auto increment the port if a conflict occurs
+  const targetWeb = !(
+    userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
+  );
+
+  targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
+  const normalizedConfig = await normalizeUserCompilationConfig(
+    inlineOptions,
+    config,
+    logger,
+    mode
+  );
+
+  return { config, normalizedConfig };
+}
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
@@ -57,6 +160,7 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development'
 ): Promise<Config> {
   const { compilation, root, server, envDir, envPrefix } = userConfig;
+
   // resolve root path
   const resolvedRootPath = normalizePath(
     root ? path.resolve(root) : process.cwd()
@@ -92,7 +196,7 @@ export async function normalizeUserCompilationConfig(
   const isDevelopment = config.mode === 'development';
 
   config.coreLibPath = bindingPath;
-  config.configFilePath = userConfig.resolveConfigPath;
+  config.configFilePath = userConfig.configFilePath;
 
   const resolvedEnvPath = envDir ? envDir : resolvedRootPath;
 
@@ -347,90 +451,6 @@ export function normalizeDevServerOptions(
   });
 }
 
-/**
- * Resolve and load user config from the specified path
- * @param configPath
- */
-export async function resolveConfig(
-  inlineOptions: FarmCLIOptions,
-  logger: Logger,
-  command: 'serve' | 'build',
-  mode?: CompilationMode
-): Promise<ResolveConfigType> {
-  // Promise<Config>
-  let userConfig: ResolvedUserConfig = {};
-  const root: string = process.cwd();
-  const { configPath } = inlineOptions;
-  if (
-    inlineOptions.clearScreen &&
-    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
-  ) {
-    clearScreen();
-  }
-
-  if (!configPath) {
-    return mergeUserConfig(userConfig, inlineOptions);
-  }
-
-  if (!path.isAbsolute(configPath)) {
-    throw new Error('configPath must be an absolute path');
-  }
-
-  // if configPath points to a directory, try to find a config file in it using default config
-  if (fs.statSync(configPath).isDirectory()) {
-    for (const name of DEFAULT_CONFIG_NAMES) {
-      const resolvedPath = path.join(configPath, name);
-      const config = await readConfigFile(resolvedPath, logger);
-      const farmConfig = mergeUserConfig(config, inlineOptions);
-      if (config) {
-        userConfig = parseUserConfig(farmConfig);
-        userConfig.resolveConfigPath = resolvedPath;
-        // if we found a config file, stop searching
-        break;
-      }
-    }
-  } else if (fs.statSync(configPath).isFile()) {
-    const config = await readConfigFile(configPath, logger);
-    const farmConfig = mergeUserConfig(config, inlineOptions);
-
-    if (config) {
-      userConfig = parseUserConfig(farmConfig);
-      userConfig.resolveConfigPath = configPath;
-    }
-  }
-
-  if (!userConfig.root) {
-    userConfig.root = root;
-  }
-
-  userConfig.isBuild = command === 'build';
-  userConfig.command = command;
-
-  // check port availability: auto increment the port if a conflict occurs
-  const targetWeb = !(
-    userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
-  );
-
-  if (userConfig.resolveConfigPath) {
-    const dependencies = await traceDependencies(userConfig.resolveConfigPath);
-    dependencies.sort();
-    userConfig.configFileDependencies = dependencies;
-  }
-
-  targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
-  // Save variables are used when restarting the service
-  const config = filterUserConfig(userConfig, inlineOptions);
-
-  const normalizedConfig = await normalizeUserCompilationConfig(
-    inlineOptions,
-    config,
-    logger,
-    mode
-  );
-
-  return { config, normalizedConfig };
-}
-
 async function readConfigFile(
   configFilePath: string,
   logger: Logger
@@ -625,4 +645,78 @@ export function filterUserConfig(
   userConfig.inlineConfig = inlineConfig;
   delete userConfig.configPath;
   return userConfig;
+}
+
+function checkClearScreen(inlineConfig: FarmCLIOptions) {
+  if (
+    inlineConfig.clearScreen &&
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
+  ) {
+    clearScreen();
+  }
+}
+
+async function loadFileConfig(
+  userConfig: ResolvedUserConfig,
+  inlineOptions: FarmCLIOptions,
+  logger: Logger
+): Promise<ResolvedUserConfig> {
+  const { configPath } = inlineOptions;
+  // if configPath points to a directory, try to find a config file in it using default config
+  if (fs.statSync(configPath).isDirectory()) {
+    for (const name of DEFAULT_CONFIG_NAMES) {
+      const resolvedPath = path.join(configPath, name);
+      const config = await readConfigFile(resolvedPath, logger);
+      const farmConfig = mergeUserConfig(config, inlineOptions);
+      if (config) {
+        userConfig = parseUserConfig(farmConfig);
+        userConfig.configFilePath = resolvedPath;
+        // if we found a config file, stop searching
+        break;
+      }
+    }
+  } else if (fs.statSync(configPath).isFile()) {
+    const config = await readConfigFile(configPath, logger);
+    const farmConfig = mergeUserConfig(config, inlineOptions);
+
+    if (config) {
+      userConfig = parseUserConfig(farmConfig);
+      userConfig.configFilePath = configPath;
+    }
+  }
+
+  if (userConfig.configFilePath) {
+    const dependencies = await traceDependencies(userConfig.configFilePath);
+    dependencies.sort();
+    userConfig.configFileDependencies = dependencies;
+  }
+  return userConfig;
+}
+
+async function resolveFarmPlugins(config: UserConfig) {
+  const rustPlugins = [];
+
+  const jsPlugins: JsPlugin[] = [];
+
+  for (const plugin of config.plugins) {
+    if (
+      typeof plugin === 'string' ||
+      (isArray(plugin) && typeof plugin[0] === 'string')
+    ) {
+      rustPlugins.push(await rustPluginResolver(plugin as string, config.root));
+    } else if (isObject(plugin)) {
+      convertPlugin(plugin as unknown as JsPlugin);
+      jsPlugins.push(plugin as unknown as JsPlugin);
+    } else if (isArray(plugin)) {
+      for (const pluginNestItem of plugin as JsPlugin[]) {
+        convertPlugin(pluginNestItem as JsPlugin);
+        jsPlugins.push(pluginNestItem as JsPlugin);
+      }
+    } else {
+      throw new Error(
+        `plugin ${plugin} is not supported, Please pass the correct plugin type`
+      );
+    }
+  }
+  return { jsPlugins, rustPlugins };
 }

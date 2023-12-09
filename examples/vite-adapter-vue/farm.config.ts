@@ -10,9 +10,6 @@ function defineConfig(config: UserConfig) {
 }
 
 export default defineConfig({
-  compilation: {
-    presetEnv: false
-  },
   plugins: [
     // farmJsPluginSass()
     '@farmfe/plugin-sass',

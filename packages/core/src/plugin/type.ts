@@ -7,7 +7,7 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../binding/index.js';
-import { Compiler, DevServer } from '../index.js';
+import { Compiler, ConfigEnv, DevServer, UserConfig } from '../index.js';
 
 export interface CompilationContextEmitFileParams {
   resolvedPath: string;
@@ -53,7 +53,10 @@ type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 export interface JsPlugin {
   name: string;
   priority?: number;
-
+  apply?:
+    | 'serve'
+    | 'build'
+    | ((this: void, config: UserConfig, env: ConfigEnv) => boolean);
   config?: Callback<Config['config'], Config['config']>;
 
   // config?: (

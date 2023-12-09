@@ -20,7 +20,7 @@ export class ConfigWatcher {
     const watchedFiles = [
       ...(this.options.config.config.envFiles ?? []),
       ...(this.options.userConfig.configFileDependencies ?? []),
-      this.options.userConfig.resolveConfigPath
+      this.options.userConfig.configFilePath
     ];
 
     this.watcher = new JsFileWatcher((paths: string[]) => {

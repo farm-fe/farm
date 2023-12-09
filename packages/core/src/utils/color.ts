@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ISC License
 
 // Copyright (c) 2021 Alexey Raspopov, Kostiantyn Denysov, Anton Verinov
@@ -15,6 +16,9 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import { createRequire } from 'node:module';
+
+export type StylerEnabled = (s: any) => any;
+export type ColorFunction = (s: any) => any;
 
 const require = createRequire(import.meta.url);
 
@@ -53,22 +57,28 @@ const replaceClose = (
     : start + end;
 };
 
-export const reset: any = enabled
+export const reset: StylerEnabled = enabled
   ? (s: string) => `\x1b[0m${s}\x1b[0m`
   : String;
-export const bold: any = enabled
+export const bold: StylerEnabled = enabled
   ? formatter('\x1b[1m', '\x1b[22m', '\x1b[22m\x1b[1m')
   : String;
 export const dim = enabled
   ? formatter('\x1b[2m', '\x1b[22m', '\x1b[22m\x1b[2m')
   : String;
-export const italic: any = enabled ? formatter('\x1b[3m', '\x1b[23m') : String;
-export const underline: any = enabled
+export const italic: StylerEnabled = enabled
+  ? formatter('\x1b[3m', '\x1b[23m')
+  : String;
+export const underline: StylerEnabled = enabled
   ? formatter('\x1b[4m', '\x1b[24m')
   : String;
-export const inverse: any = enabled ? formatter('\x1b[7m', '\x1b[27m') : String;
-export const hidden: any = enabled ? formatter('\x1b[8m', '\x1b[28m') : String;
-export const strikethrough: any = enabled
+export const inverse: StylerEnabled = enabled
+  ? formatter('\x1b[7m', '\x1b[27m')
+  : String;
+export const hidden: StylerEnabled = enabled
+  ? formatter('\x1b[8m', '\x1b[28m')
+  : String;
+export const strikethrough: StylerEnabled = enabled
   ? formatter('\x1b[9m', '\x1b[29m')
   : String;
 
@@ -97,10 +107,10 @@ export const bgMagenta = enabled ? formatter('\x1b[45m', '\x1b[49m') : String;
 export const bgCyan = enabled ? formatter('\x1b[46m', '\x1b[49m') : String;
 export const bgWhite = enabled ? formatter('\x1b[47m', '\x1b[49m') : String;
 
-export function gradientString(text: string, colors: any[]) {
+export function gradientString(text: string, colors: number[][]) {
   const steps = text.length;
   const gradient = colors.map(
-    (color: any) => `\x1b[38;2;${color[0]};${color[1]};${color[2]}m`
+    (color: number[]) => `\x1b[38;2;${color[0]};${color[1]};${color[2]}m`
   );
 
   let output = '';
@@ -128,7 +138,7 @@ export function interpolateColor(
   ];
 }
 
-export const PersistentCacheBrand = gradientString('⚡️ FULL EXTREME !', [
+export const PersistentCacheBrand = gradientString('⚡️FULL EXTREME !', [
   [176, 106, 179],
   interpolateColor([176, 106, 179], [198, 66, 110], 0.1),
   interpolateColor([176, 106, 179], [198, 66, 110], 0.2),

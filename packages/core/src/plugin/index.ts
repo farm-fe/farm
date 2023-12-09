@@ -29,13 +29,12 @@ export async function resolveAllPlugins(
     };
   }
 
-  const rustPlugins = [];
-
   const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
     vitePlugins,
     userConfig,
     finalConfig
   );
+  const rustPlugins = [];
 
   const jsPlugins: JsPlugin[] = [];
 

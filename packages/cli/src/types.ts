@@ -30,6 +30,7 @@ export interface FarmCLIBuildOptions {
   minify?: boolean;
   treeShaking?: boolean;
   format?: 'cjs' | 'esm';
+  targetEnv?: 'node' | 'browser';
 }
 
 export interface FarmCLIPreviewOptions {
