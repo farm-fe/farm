@@ -14,19 +14,13 @@ use farmfe_core::{
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
 use self::hooks::{
-  augment_resource_hash::{self, JsPluginAugmentResourceHashHook},
-  build_end::JsPluginBuildEndHook,
-  build_start::JsPluginBuildStartHook,
-  finalize_resources::JsPluginFinalizeResourcesHook,
-  finish::JsPluginFinishHook,
-  load::JsPluginLoadHook,
+  augment_resource_hash::JsPluginAugmentResourceHashHook, build_end::JsPluginBuildEndHook,
+  build_start::JsPluginBuildStartHook, finalize_resources::JsPluginFinalizeResourcesHook,
+  finish::JsPluginFinishHook, load::JsPluginLoadHook,
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
-  render_resource_pot::JsPluginRenderResourcePotHook,
-  render_start::JsPluginRenderStartHook,
-  resolve::JsPluginResolveHook,
-  transform::JsPluginTransformHook,
-  update_modules::JsPluginUpdateModulesHook,
-  write_plugin_cache::JsPluginWritePluginCacheHook,
+  render_resource_pot::JsPluginRenderResourcePotHook, render_start::JsPluginRenderStartHook,
+  resolve::JsPluginResolveHook, transform::JsPluginTransformHook,
+  update_modules::JsPluginUpdateModulesHook, write_plugin_cache::JsPluginWritePluginCacheHook,
 };
 
 pub mod context;

@@ -6,10 +6,11 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
   ChunkResourceInfo, Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
-  PluginFinalizeModuleHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
-  PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
-  PluginRenderResourcePotHookParam, PluginResolveHookParam, PluginResolveHookResult,
-  PluginTransformHookParam, PluginUpdateModulesHookParams, PluginFinalizeResourcesHookParams,
+  PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParams,
+  PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
+  PluginParseHookParam, PluginProcessModuleHookParam, PluginRenderResourcePotHookParam,
+  PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+  PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
@@ -467,7 +468,7 @@ impl PluginDriver {
     let mut result: Option<String> = None;
 
     for plugin in &self.plugins {
-      if let Some(plugin_result) = plugin.augment_resource_hash(render_pot_info, &context)? {
+      if let Some(plugin_result) = plugin.augment_resource_hash(render_pot_info, context)? {
         match result {
           Some(ref mut result) => {
             result.push_str(plugin_result.as_str());
@@ -479,7 +480,7 @@ impl PluginDriver {
       }
     }
 
-    return Ok(result);
+    Ok(result)
   }
 
   hook_serial!(
@@ -541,8 +542,9 @@ impl PluginDriver {
     |_plugin_name: String,
      _param: &mut PluginFinalizeResourcesHookParams,
      _context: &Arc<CompilationContext>| {
-    // todo something
-  });
+      // todo something
+    }
+  );
 
   hook_parallel!(
     generate_end,

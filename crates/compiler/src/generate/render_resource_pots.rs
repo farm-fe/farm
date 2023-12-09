@@ -35,7 +35,7 @@ pub fn render_resource_pots_and_generate_resources(
     let cached_resource_pot = try_get_resource_cache(resource_pot, context)?;
 
     if let Some(cached_resource_pot) = cached_resource_pot {
-      let rendered_resource_pot_info = ChunkResourceInfo::new(&resource_pot, context);
+      let rendered_resource_pot_info = ChunkResourceInfo::new(resource_pot, context);
 
       let mut cached_resource = cached_resource_pot.resources;
       let cached_meta = cached_resource_pot.meta;
@@ -99,14 +99,14 @@ pub fn render_resource_pots_and_generate_resources(
             context.config.output.entry_filename.clone(),
             resource_pot.id.to_string().as_str(),
             entry_name,
-            &content_with_extra_content_hash,
+            content_with_extra_content_hash,
             &r.resource_type.to_ext(),
           );
         } else {
           r.name = transform_output_filename(
             context.config.output.filename.clone(),
             &r.name,
-            &content_with_extra_content_hash,
+            content_with_extra_content_hash,
             &r.resource_type.to_ext(),
           );
         }
