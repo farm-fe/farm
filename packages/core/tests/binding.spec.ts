@@ -17,6 +17,10 @@ test('Binding - should parse config to rust correctly', async () => {
     },
     new DefaultLogger()
   );
-  const compiler = new Compiler(compilationConfig);
+  const compiler = new Compiler({
+    ...compilationConfig,
+    jsPlugins: [],
+    rustPlugins: []
+  });
   await compiler.compile();
 });

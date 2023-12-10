@@ -151,10 +151,8 @@ export async function resolveConfig(
   );
 
   await resolveConfigResolvedHook(normalizedConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
-  // return {
-  //   config,
-  //   normalizedConfig
-  // };
+  console.log(sortFarmJsPlugins);
+
   return {
     config,
     normalizedConfig: {
@@ -716,16 +714,20 @@ async function loadFileConfig(
 }
 
 async function resolveFarmPlugins(config: UserConfig) {
-  const rustPlugins: [string, string][] = [];
+  const plugins = config.plugins ?? [];
 
-  const jsPlugins: JsPlugin[] = [];
-  if (!config.plugins) {
+  if (!plugins.length) {
     return {
-      jsPlugins,
-      rustPlugins
+      rustPlugins: [],
+      jsPlugins: []
     };
   }
-  for (const plugin of config.plugins) {
+
+  const rustPlugins = [];
+
+  const jsPlugins: JsPlugin[] = [];
+
+  for (const plugin of plugins) {
     if (
       typeof plugin === 'string' ||
       (isArray(plugin) && typeof plugin[0] === 'string')
@@ -745,5 +747,9 @@ async function resolveFarmPlugins(config: UserConfig) {
       );
     }
   }
-  return { jsPlugins, rustPlugins };
+
+  return {
+    rustPlugins,
+    jsPlugins
+  };
 }
