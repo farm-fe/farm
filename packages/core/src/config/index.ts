@@ -8,8 +8,13 @@ import merge from 'lodash.merge';
 
 import {
   convertPlugin,
+  // getSortedPluginHooks,
   getSortedPlugins,
-  resolveAllPlugins,
+  handleVitePlugins,
+  // resolveAllPlugins,
+  resolveAsyncPlugins,
+  resolveConfigHook,
+  resolveConfigResolvedHook,
   rustPluginResolver
 } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
@@ -95,40 +100,40 @@ export async function resolveConfig(
     mode,
     command
   };
-  console.log(configEnv);
 
   // Save variables are used when restarting the service
   // const config = filterUserConfig(userConfig, inlineOptions);
-  const config = userConfig;
-  console.log(config);
 
   // -----------------------------------------Resolve Plugins-----------------------------------------
 
   // TODO RUN CONFIG HOOK
-  // 1. first resolve farm plugins
-  const { jsPlugins } = await resolveFarmPlugins(config);
-  // 2. filter boolean plugin and resolve sync plugin
-  const filterPlugin = (p: JsPlugin) => {
-    if (!p) {
-      return false;
-    } else if (!p.apply) {
-      return true;
-    } else if (typeof p.apply === 'function') {
-      return p.apply(
-        { ...config, compilation: { ...config.compilation, mode } },
-        configEnv
-      );
-    } else {
-      return p.apply === command;
-    }
-  };
+  // 1. get Vite plugin transform to farm class plugins
+  const vitePlugins = userConfig.vitePlugins ?? [];
+  const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
+    vitePlugins,
+    userConfig
+  );
+
+  // 2. first resolve farm plugins
+  const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
   // 3. filter duplicate plugin Flattening js plugins and farm plugins
   const rawPlugins = (
-    await asyncFlatten((await asyncFlatten(jsPlugins || [])) || [])
-  ).filter(filterPlugin);
-  const sortFarmJsPlugins = getSortedPlugins(rawPlugins);
-  console.log(sortFarmJsPlugins);
+    await asyncFlatten((await resolveAsyncPlugins(jsPlugins || [])) || [])
+  ).filter(Boolean);
+  // ！！！！ At present, all plug-ins have the highest priority of 98
+  const sortFarmJsPlugins = getSortedPlugins([
+    ...rawPlugins,
+    ...vitePluginAdapters
+  ]);
+  // TODO Flatten the promise of vite's plugin
+  // TODO vite plugin hook need sort by `order` !!! not priority or enforce
+  // 4. Start running config hook for all plugins
+  const config = await resolveConfigHook(
+    userConfig,
+    configEnv,
+    sortFarmJsPlugins
+  );
 
   // -----------------------------------------Resolve Plugins-----------------------------------------
 
@@ -145,7 +150,19 @@ export async function resolveConfig(
     mode
   );
 
-  return { config, normalizedConfig };
+  await resolveConfigResolvedHook(normalizedConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
+  // return {
+  //   config,
+  //   normalizedConfig
+  // };
+  return {
+    config,
+    normalizedConfig: {
+      ...normalizedConfig,
+      jsPlugins: sortFarmJsPlugins,
+      rustPlugins
+    }
+  };
 }
 
 /**
@@ -376,17 +393,18 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
-    config,
-    userConfig
-  );
+  // const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
+  //   config,
+  //   userConfig
+  // );
 
-  const normalizedConfig: Config = {
-    config: finalConfig,
-    rustPlugins,
-    jsPlugins
-  };
-  return normalizedConfig;
+  // const normalizedConfig: Config = {
+  //   config: finalConfig,
+  //   rustPlugins,
+  //   jsPlugins
+  // };
+  // return normalizedConfig;
+  return { config };
 }
 
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
@@ -513,7 +531,11 @@ async function readConfigFile(
         logger
       );
 
-      const compiler = new Compiler(normalizedConfig);
+      const compiler = new Compiler({
+        ...normalizedConfig,
+        jsPlugins: [],
+        rustPlugins: []
+      });
 
       // const previousProfileEnv = process.env.FARM_PROFILE;
       // process.env.FARM_PROFILE = '';
@@ -694,10 +716,15 @@ async function loadFileConfig(
 }
 
 async function resolveFarmPlugins(config: UserConfig) {
-  const rustPlugins = [];
+  const rustPlugins: [string, string][] = [];
 
   const jsPlugins: JsPlugin[] = [];
-
+  if (!config.plugins) {
+    return {
+      jsPlugins,
+      rustPlugins
+    };
+  }
   for (const plugin of config.plugins) {
     if (
       typeof plugin === 'string' ||

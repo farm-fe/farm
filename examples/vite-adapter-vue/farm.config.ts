@@ -1,17 +1,12 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import farmJsPluginSass from '@farmfe/js-plugin-sass';
 
-function defineConfig(config: UserConfig) {
-  return config;
-}
-
 export default defineConfig({
   plugins: [
-    // farmJsPluginSass()
     '@farmfe/plugin-sass',
     {
       name: 'remove-css-filter-plugin',
@@ -31,12 +26,12 @@ export default defineConfig({
     }
   ],
   vitePlugins: [
-    vue(),
-    AutoImport({
-      resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
-    }),
-    Components({
-      resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
-    })
+    vue()
+    //   AutoImport({
+    //     resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
+    //   }),
+    //   Components({
+    //     resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
+    //   })
   ]
 });

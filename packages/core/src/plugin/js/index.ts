@@ -1,5 +1,4 @@
 import merge from 'lodash.merge';
-import { Config } from '../../../binding/index.js';
 import {
   type JsPlugin,
   normalizeDevServerOptions,
@@ -21,15 +20,17 @@ type VitePluginsType = VitePluginType[];
 
 export function handleVitePlugins(
   vitePlugins: VitePluginsType,
-  userConfig: UserConfig,
-  finalConfig: Config['config']
+  userConfig: UserConfig
 ): JsPlugin[] {
   const jsPlugins: JsPlugin[] = [];
 
   if (vitePlugins.length) {
     userConfig = merge({}, userConfig, {
-      compilation: finalConfig,
-      server: normalizeDevServerOptions(userConfig.server, finalConfig.mode)
+      compilation: userConfig.compilation,
+      server: normalizeDevServerOptions(
+        userConfig.server,
+        userConfig.compilation?.mode ?? 'development'
+      )
     });
   }
 
@@ -87,7 +88,7 @@ export function handleVitePlugins(
           if (VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath)) {
             return null;
           }
-          const cssModules = finalConfig?.css?.modules?.paths ?? [
+          const cssModules = userConfig.compilation?.css?.modules?.paths ?? [
             '\\.module\\.(css|less|sass|scss)$'
           ];
           // skip css module because it will be handled by Farm

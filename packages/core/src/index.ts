@@ -26,7 +26,7 @@ import { FileWatcher } from './watcher/index.js';
 import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
-import { bold, cyan, green, magenta } from './utils/color.js';
+import { bold, cyan, green, magenta, yellow } from './utils/color.js';
 import { useProxy } from './server/middlewares/index.js';
 
 import type { FarmCLIOptions } from './config/types.js';
@@ -322,31 +322,31 @@ export async function createBundleHandler(
     await compiler.compile();
     compiler.writeResourcesToDisk();
 
-    // const maxFileNameLength = Math.max(
-    //   ...Object.keys(compiler.resources()).map((name) => name.length)
-    // );
-    // const fileSizeMap = Object.entries(compiler.resources())
-    //   .filter(([name]) => !name.endsWith('.map'))
-    //   .map(([resourceName, resource]) => {
-    //     let c = chalk.green;
-    //     const size = Buffer.byteLength(resource) / 1024;
+    const maxFileNameLength = Math.max(
+      ...Object.keys(compiler.resources()).map((name) => name.length)
+    );
+    const fileSizeMap = Object.entries(compiler.resources())
+      .filter(([name]) => !name.endsWith('.map'))
+      .map(([resourceName, resource]) => {
+        let c = green;
+        const size = Buffer.byteLength(resource) / 1024;
 
-    //     if (size > 500) {
-    //       c = chalk.yellow;
-    //     }
+        if (size > 500) {
+          c = yellow;
+        }
 
-    //     const sizeStr = c(size.toFixed(0)) + chalk.cyan(' KB');
+        const sizeStr = c(size.toFixed(0)) + cyan(' KB');
 
-    //     return {
-    //       resourceName: resourceName.padEnd(maxFileNameLength + 4, ' '),
-    //       size: sizeStr
-    //     };
-    //   });
+        return {
+          resourceName: resourceName.padEnd(maxFileNameLength + 4, ' '),
+          size: sizeStr
+        };
+      });
 
-    // console.log(`\n${chalk.green('Output Files:')}`);
-    // fileSizeMap.forEach(({ resourceName, size }) =>
-    //   console.log(`\t${chalk.cyan(resourceName)}\t${size}`)
-    // );
+    console.log(`\n${green('Output Files:')}`);
+    fileSizeMap.forEach(({ resourceName, size }) =>
+      console.log(`\t${cyan(resourceName)}\t${size}`)
+    );
   }, normalizedConfig);
 
   if (normalizedConfig.config?.watch || watchMode) {
