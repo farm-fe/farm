@@ -121,6 +121,7 @@ impl CompilationContext {
         emitted: false,
         resource_type: params.resource_type,
         origin: ResourceOrigin::Module(module_id),
+        info: None
       },
     );
   }

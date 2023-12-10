@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -7,9 +6,10 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   plugin::{
-    Plugin, PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginProcessModuleHookParam, PluginResolveHookParam,
-    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
+    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
+    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+    PluginTransformHookResult,
   },
   resource::resource_pot::ResourcePot,
 };
@@ -156,6 +156,10 @@ impl Plugin for RustPluginAdapter {
     self.plugin.process_resource_pots(resource_pots, context)
   }
 
+  fn render_start(&self, config: &Config, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    self.plugin.render_start(config, context)
+  }
+
   fn render_resource_pot_modules(
     &self,
     resource_pot: &ResourcePot,
@@ -173,6 +177,14 @@ impl Plugin for RustPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
     self.plugin.render_resource_pot(resource_pot, context)
+  }
+
+  fn augment_resource_hash(
+    &self,
+    render_pot_info: &farmfe_core::plugin::ChunkResourceInfo,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<String>> {
+    self.plugin.augment_resource_hash(render_pot_info, context)
   }
 
   fn optimize_resource_pot(
@@ -196,10 +208,10 @@ impl Plugin for RustPluginAdapter {
 
   fn finalize_resources(
     &self,
-    resources: &mut HashMap<String, farmfe_core::resource::Resource>,
+    param: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    self.plugin.finalize_resources(resources, context)
+    self.plugin.finalize_resources(param, context)
   }
 
   fn generate_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {

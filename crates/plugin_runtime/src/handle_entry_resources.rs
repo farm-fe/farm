@@ -456,5 +456,6 @@ fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationCon
     emitted: false,
     resource_type: ResourceType::Runtime,
     origin: ResourceOrigin::ResourcePot(name),
+    info: None
   }
 }

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::config_regex::ConfigRegex;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PartialBundlingConfig {
   /// target concurrent requests for every resource loading

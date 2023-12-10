@@ -101,14 +101,10 @@ export default function farmSassPlugin(
                         return pathToFileURL(relPath);
                       }
                     }
-                    const splits = param.moduleId.split('?');
                     const result = await ctx.resolve(
                       {
                         source: url,
-                        importer: {
-                          relativePath: splits[0],
-                          queryString: splits[1] ?? ''
-                        },
+                        importer: param.moduleId,
                         kind: 'cssAtImport'
                       },
                       {

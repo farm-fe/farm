@@ -9,7 +9,7 @@ use farmfe_core::{
   module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
+    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult, PluginFinalizeResourcesHookParams,
   },
   relative_path::RelativePath,
   resource::{
@@ -210,6 +210,7 @@ impl Plugin for FarmPluginHtml {
           emitted: false,
           resource_type: ResourceType::Html,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+          info: None
         },
         source_map: None,
       }))
@@ -220,7 +221,7 @@ impl Plugin for FarmPluginHtml {
 
   fn finalize_resources(
     &self,
-    resources_map: &mut HashMap<String, Resource>,
+    params: &mut PluginFinalizeResourcesHookParams,
     context: &std::sync::Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // 1. inject runtime as inline <script>
@@ -229,7 +230,7 @@ impl Plugin for FarmPluginHtml {
 
     let mut runtime_code = String::new();
 
-    for resource in resources_map.values() {
+    for resource in params.resources_map.values() {
       if matches!(resource.resource_type, ResourceType::Runtime) {
         runtime_code = String::from_utf8(resource.bytes.to_vec()).unwrap();
         break;
@@ -304,7 +305,7 @@ impl Plugin for FarmPluginHtml {
         &module_group_graph,
         &module_group_id,
         &resource_pot_map,
-        resources_map,
+        &params.resources_map,
       );
 
       resources_to_inject.insert(
@@ -319,7 +320,7 @@ impl Plugin for FarmPluginHtml {
       let mut css_resources: Vec<String> = vec![];
 
       for res_id in dep_resources {
-        let res = resources_map.get(&res_id).unwrap();
+        let res = params.resources_map.get(&res_id).unwrap();
 
         if matches!(res.resource_type, ResourceType::Js) {
           script_resources.push(res.name.clone());
@@ -328,7 +329,7 @@ impl Plugin for FarmPluginHtml {
         }
       }
 
-      let html_resource = resources_map.get_mut(&html_resource_name).unwrap();
+      let html_resource = params.resources_map.get_mut(&html_resource_name).unwrap();
 
       let module_graph = context.module_graph.read();
       let script_entries = module_graph

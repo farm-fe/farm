@@ -1,5 +1,16 @@
 // import path from 'node:path';
 import * as querystring from 'node:querystring';
+import { Resource, ResourcePotInfo } from '../type.js';
+import {
+  InternalModuleFormat,
+  NormalizedInputOptions,
+  NormalizedOutputOptions,
+  OutputAsset,
+  OutputChunk,
+  RenderedChunk,
+  RenderedModule
+} from 'rollup';
+import { Config } from '../../../binding/index.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -185,4 +196,230 @@ export function throwIncompatibleError(
       ','
     )}`
   );
+}
+
+export function transformResourceInfo2RollupRenderedChunk(
+  info: ResourcePotInfo
+): RenderedChunk {
+  const {
+    dynamicImports,
+    fileName,
+    implicitlyLoadedBefore,
+    importedBindings,
+    imports,
+    modules,
+    referencedFiles,
+    exports,
+    facadeModuleId,
+    isDynamicEntry,
+    isEntry,
+    isImplicitEntry,
+    moduleIds,
+    name
+  } = info;
+
+  return {
+    dynamicImports,
+    fileName,
+    implicitlyLoadedBefore,
+    importedBindings,
+    imports,
+    modules: Object.entries(modules).reduce(
+      (result, [key, val]) => ({
+        ...result,
+        [key]: {
+          code: val.renderedContent,
+          renderedLength: val.renderedLength,
+          originalLength: val.originalLength,
+          removedExports: [],
+          renderedExports: []
+        }
+      }),
+      {} as Record<string, RenderedModule>
+    ),
+    referencedFiles,
+    exports,
+    facadeModuleId,
+    isDynamicEntry,
+    isEntry,
+    isImplicitEntry,
+    moduleIds,
+    name,
+    type: 'chunk'
+  } satisfies RenderedChunk;
+}
+
+export function transformResourceInfo2RollupResource(
+  resource: Resource
+): OutputChunk | OutputAsset {
+  const source = Buffer.from(resource.bytes).toString('utf-8');
+  if (resource.info) {
+    return {
+      ...transformResourceInfo2RollupRenderedChunk(resource.info),
+      type: 'chunk',
+      code: source,
+      name: resource.name,
+      map: undefined,
+      sourcemapFileName: null,
+      preliminaryFileName: resource.origin.value
+    } satisfies OutputChunk;
+  } else {
+    return {
+      fileName: resource.name,
+      name: resource.name,
+      needsCodeReference: false,
+      source,
+      type: 'asset'
+    } satisfies OutputAsset;
+  }
+}
+
+export function transformRollupResource2FarmResource(
+  chunk: OutputChunk | OutputAsset,
+  originResource: Resource
+): Resource {
+  if (chunk.type === 'chunk') {
+    return {
+      ...originResource,
+      bytes: Array.from(Buffer.from(chunk.code)) as any,
+      emitted: originResource.emitted,
+      name: chunk.name
+    };
+  } else {
+    return {
+      bytes: Array.from(Buffer.from(chunk.source)) as any,
+      emitted: originResource.emitted,
+      name: chunk.name,
+      origin: originResource.origin,
+      resourceType: originResource.resourceType
+    };
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const notSupport: (method: string) => (...args: any[]) => any =
+  (method) => () => {
+    console.warn(`${method} not support`);
+  };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const noop: (...args: any) => any = () => void 0;
+
+function transformFarmFormatToRollupFormat(
+  config: Config['config']['output']
+): InternalModuleFormat {
+  if (config.format === 'esm') {
+    return 'es';
+  } else if (config.format === 'cjs') {
+    if (config.targetEnv === 'node') return 'cjs';
+    return 'amd';
+  }
+}
+
+export function transformFarmConfigToRollupNormalizedOutputOptions(
+  config: Config['config']
+): NormalizedOutputOptions {
+  return {
+    amd: { autoId: false, define: 'define', forceJsExtensionForImports: false },
+    assetFileNames: config.output.assetsFilename,
+    chunkFileNames: config.output.filename,
+    compact: config.minify,
+    dir: config.output.path,
+    dynamicImportInCjs: true,
+    entryFileNames: config.output.entryFilename,
+    esModule: 'if-default-prop',
+    experimentalMinChunkSize:
+      config.partialBundling.targetMinSize ||
+      config.partialBundling.targetMinSize ||
+      1,
+    exports: 'auto',
+    extend: false,
+    externalImportAssertions: false,
+    // externalImportAttributes: true,
+    externalLiveBindings: true,
+    format: transformFarmFormatToRollupFormat(config.output),
+    freeze: false,
+    generatedCode: {
+      arrowFunctions: false,
+      constBindings: false,
+      objectShorthand: false,
+      reservedNamesAsProps: true,
+      symbols: false
+    },
+
+    globals: {},
+    hoistTransitiveImports: true,
+    indent: true,
+    inlineDynamicImports: false,
+    manualChunks: {},
+    minifyInternalExports: true,
+    noConflict: false,
+    paths: {},
+    plugins: [],
+    preserveModules: false,
+    sourcemap: Boolean(config.sourcemap),
+    sourcemapExcludeSources: false,
+    strict: true,
+    systemNullSetters: true,
+    validate: false,
+    banner: notSupport('banner'),
+    footer: notSupport('footer'),
+    interop: notSupport('interop'),
+    outro: notSupport('outro'),
+    intro: notSupport('intro'),
+    sanitizeFileName: notSupport('sanitizeFileName'),
+    sourcemapIgnoreList: notSupport('sourcemapIgnoreList'),
+
+    dynamicImportFunction: undefined,
+    experimentalDeepDynamicChunkOptimization: false,
+    file: undefined,
+    name: undefined,
+    namespaceToStringTag: false,
+    preferConst: false,
+    preserveModulesRoot: undefined,
+    sourcemapBaseUrl: undefined,
+    sourcemapFile: undefined,
+    sourcemapFileNames: undefined,
+    sourcemapPathTransform: undefined
+  } satisfies NormalizedOutputOptions;
+}
+
+export function transformFarmConfigToRollupNormalizedInputOptions(
+  config: Config['config']
+): NormalizedInputOptions {
+  return {
+    context: 'undefined',
+    experimentalCacheExpiry: 10,
+    experimentalLogSideEffects: false,
+    input: config.input,
+    logLevel: 'info',
+    makeAbsoluteExternalsRelative: 'ifRelativeSource',
+    maxParallelFileOps: 20,
+    perf: false,
+    plugins: [],
+    preserveEntrySignatures: 'exports-only',
+    preserveSymlinks: false,
+    shimMissingExports: false,
+    strictDeprecations: false,
+    treeshake: config.treeShaking && {
+      moduleSideEffects: () => false,
+      annotations: true,
+      correctVarValueBeforeDeclaration: false,
+      manualPureFunctions: [],
+      propertyReadSideEffects: true,
+      tryCatchDeoptimization: true,
+      unknownGlobalSideEffects: true
+    },
+    acorn: undefined,
+    acornInjectPlugins: undefined,
+    cache: undefined,
+    external: undefined,
+    inlineDynamicImports: undefined,
+    manualChunks: undefined,
+    maxParallelFileReads: undefined,
+    moduleContext: undefined,
+    onLog: noop,
+    onwarn: noop,
+    preserveModules: undefined
+  } satisfies NormalizedInputOptions;
 }

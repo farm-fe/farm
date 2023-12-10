@@ -149,8 +149,13 @@ pub fn render_and_generate_update_resource(
           ..Default::default()
         };
 
-        let mut update_resources =
-          render_resource_pot_generate_resources(resource_pot, context, &Default::default(), true)?;
+        let (mut update_resources, _) = render_resource_pot_generate_resources(
+          resource_pot,
+          context,
+          &Default::default(),
+          true,
+          &mut None,
+        )?;
 
         if let Some(map) = update_resources.source_map {
           // inline source map
