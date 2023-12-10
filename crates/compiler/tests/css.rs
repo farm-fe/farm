@@ -57,3 +57,31 @@ fn css_prefixer() {
     assert_compiler_result(&compiler, Some(&entry_name));
   });
 }
+
+#[test]
+fn css_url_replacer() {
+  fixture!(
+    "tests/fixtures/css/url_replacer/**/*.ts",
+    |file, crate_path| {
+      let cwd = file.parent().unwrap();
+
+      let entry_name = "index".to_string();
+
+      let compiler = create_css_compiler(
+        HashMap::from([(entry_name.clone(), "./index.ts".into())]),
+        cwd.to_path_buf(),
+        crate_path,
+        CssConfig {
+          prefixer: Some(CssPrefixerConfig {
+            targets: farmfe_toolkit::swc_css_prefixer::options::Options::default().env,
+          }),
+          ..Default::default()
+        },
+      );
+
+      compiler.compile().unwrap();
+
+      assert_compiler_result(&compiler, Some(&entry_name));
+    }
+  );
+}

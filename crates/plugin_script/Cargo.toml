@@ -8,12 +8,26 @@ farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob" }
-swc_plugin_proxy = { version = "0.39.10", features = ["plugin-rt"] }
+swc_plugin_proxy = { version = "0.39.10", features = [
+  "plugin-rt",
+], optional = true }
 swc_plugin_runner = { version = "0.104.25", features = [
   "ecma",
   "rkyv-impl",
   "plugin_transform_schema_v1",
   "plugin_transform_host_native",
-] }
-swc_ecma_loader = { version = "0.45.10", features = ["cache", "node", "tsc"] }
-once_cell = { version = "1.10.0" }
+], optional = true }
+swc_ecma_loader = { version = "0.45.10", features = [
+  "cache",
+  "node",
+  "tsc",
+], optional = true }
+once_cell = { version = "1.10.0", optional = true }
+
+[features]
+swc_plugin = [
+  "dep:swc_plugin_proxy",
+  "dep:swc_plugin_runner",
+  "dep:swc_ecma_loader",
+  "dep:once_cell",
+]

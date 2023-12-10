@@ -251,6 +251,8 @@ fn merge_resource_pots_by_buckets(
 
     final_resource_pots.extend(resource_pots);
   }
+  // sort to make the order stable
+  final_resource_pots.sort_by(|a, b| a.id.cmp(&b.id));
 
   final_resource_pots
 }
@@ -344,7 +346,14 @@ fn handle_enforce_target_min_size(
 
       for final_resource_pot_id in &final_resource_pot_ids {
         let (f_resource_pot_type, f_immutable) = {
-          let final_resource_pot = resource_pot_map.get(final_resource_pot_id).unwrap();
+          // this resource pot has been merged
+          if !resource_pot_map.contains_key(final_resource_pot_id) {
+            continue;
+          }
+
+          let final_resource_pot = resource_pot_map
+            .get(final_resource_pot_id)
+            .unwrap_or_else(|| panic!("resource pot {:?} does not exist", final_resource_pot_id));
           (
             final_resource_pot.resource_pot_type.clone(),
             final_resource_pot.immutable,

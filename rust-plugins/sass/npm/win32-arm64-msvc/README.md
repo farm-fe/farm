@@ -1,3 +1,3 @@
-# `@farmfe/core-win32-ia32-msvc`
+# `@farmfe/plugin-sass-win32-arm64-msvc`
 
-This is the aarch64-pc-windows-msvc binary for `@farmfe/core`
+This is the aarch64-pc-windows-msvc binary for `@farmfe/plugin-sass`

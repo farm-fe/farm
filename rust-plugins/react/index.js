@@ -36,21 +36,21 @@ switch (platform) {
 
         break;
       case 'ia32':
-          if (existsSync(join(currentDir, './npm/win32-ia32-msvc/index.farm'))) {
-            binPath = join(currentDir, './npm/win32-ia32-msvc/index.farm');
-          } else {
-            binPath = require.resolve('@farmfe/plugin-react-win32-ia32-msvc');
-          }
-  
-          break;
+        if (existsSync(join(currentDir, './npm/win32-ia32-msvc/index.farm'))) {
+          binPath = join(currentDir, './npm/win32-ia32-msvc/index.farm');
+        } else {
+          binPath = require.resolve('@farmfe/plugin-react-win32-ia32-msvc');
+        }
+
+        break;
       case 'arm64':
-          if (existsSync(join(currentDir, './npm/win32-arm64-msvc/index.farm'))) {
-            binPath = join(currentDir, './npm/win32-arm64-msvc/index.farm');
-          } else {
-            binPath = require.resolve('@farmfe/plugin-react-win32-arm64-msvc');
-          }
-  
-          break;
+        if (existsSync(join(currentDir, './npm/win32-arm64-msvc/index.farm'))) {
+          binPath = join(currentDir, './npm/win32-arm64-msvc/index.farm');
+        } else {
+          binPath = require.resolve('@farmfe/plugin-react-win32-arm64-msvc');
+        }
+
+        break;
       default:
         throw new Error(`Unsupported architecture on Windows: ${arch}`);
     }
@@ -78,10 +78,18 @@ switch (platform) {
   case 'linux':
     switch (arch) {
       case 'x64':
-        if (existsSync(join(currentDir, './npm/linux-x64-gnu/index.farm'))) {
-          binPath = join(currentDir, './npm/linux-x64-gnu/index.farm');
+        if (isMusl()) {
+          if (existsSync(join(currentDir, './npm/linux-x64-musl/index.farm'))) {
+            binPath = join(currentDir, './npm/linux-x64-musl/index.farm');
+          } else {
+            binPath = require.resolve('@farmfe/plugin-react-linux-x64-musl');
+          }
         } else {
-          binPath = require.resolve('@farmfe/plugin-react-linux-x64-gnu');
+          if (existsSync(join(currentDir, './npm/linux-x64-gnu/index.farm'))) {
+            binPath = join(currentDir, './npm/linux-x64-gnu/index.farm');
+          } else {
+            binPath = require.resolve('@farmfe/plugin-react-linux-x64-gnu');
+          }
         }
         break;
       case 'arm64':

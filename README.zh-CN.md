@@ -32,13 +32,22 @@
 
 Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件生态。对照其他工具进行基准性能测试 (使用 Turbopack 的基准测试，1000 个 React 组件) 如下所示:
 
-![xx](./assets/benchmark.jpg)
+### 基准测试
 
-> 测试仓库地址: https://github.com/farm-fe/performance-compare
+![performance](./assets/2023-12-5.benchmark.jpg)
+
+> 测试仓库: https://github.com/farm-fe/performance-compare
 >
-> 测试机器环境 (Linux Mint 21.1 Cinnamon, 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6, 15.5 GiB)
+> 测试机器环境: (Linux Mint 21.1 Cinnamon, 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6, 15.5 GiB)
 
 <br />
+
+### 热启动与构建的基准测试
+
+> [!NOTE]
+> 从 `Farm v0.14` 起 `Farm` 已经实现了持久化缓存, 以下是 `Farm` 在开启持久化缓存在热启动以及生产构建与其他工具的对比.
+
+![performance](<./assets/2023-12-5.benchmark(hot).jpg>)
 
 ## 在线体验
 

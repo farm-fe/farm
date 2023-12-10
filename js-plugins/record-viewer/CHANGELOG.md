@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 2.0.0
+
+### Major Changes
+
+- 6d757514: support build record
+
 ## 1.0.0
 
 ### Major Changes
