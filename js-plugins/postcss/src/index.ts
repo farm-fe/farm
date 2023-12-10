@@ -35,7 +35,7 @@ export default function farmPostcssPlugin(
     // Execute last
     priority: 0,
 
-    config: async (config: UserConfig) => {
+    configResolved: async (config: UserConfig) => {
       const { plugins, options: _options } = await postcssLoadConfig(
         options.postcssLoadConfig?.ctx,
         options.postcssLoadConfig?.path ?? config.root,

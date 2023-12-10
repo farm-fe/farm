@@ -52,9 +52,8 @@ export default function farmVuePlugin(
   const include = handleInclude(resolvedOptions);
   return {
     name: 'farm-vue-plugin',
-    config(config) {
+    configResolved(config) {
       farmConfig = config || {};
-      return config;
     },
     load: {
       filters: {

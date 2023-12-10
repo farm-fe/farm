@@ -44,7 +44,7 @@ export default function farmPluginSolid(
 
   return {
     name: 'farm-plugin-solid',
-    config(param = {}) {
+    configResolved(param = {}) {
       // We inject the dev mode only if the use˜r explicitly wants it or if we are in dev (serve) mode
       needHmr = param.mode !== 'production';
       replaceDev = options.dev === true || param.mode === 'production';
@@ -63,8 +63,6 @@ export default function farmPluginSolid(
         ...(param.resolve.alias ?? {}),
         'solid-refresh': runtimePublicPath
       };
-
-      return param;
     },
     load: {
       filters: {

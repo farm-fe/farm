@@ -19,11 +19,10 @@ export default function farmRecorderPlugin(
 
   return {
     name: 'farm-plugin-record-viewer',
-    config: (config) => {
+    configResolved: (config) => {
       farmConfig = config || {};
       farmConfig.record = true;
       recordViewerOptions = options;
-      return config;
     },
     configDevServer: (devServer) => {
       const compiler = devServer.getCompiler();
