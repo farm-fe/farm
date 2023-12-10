@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::config_regex::ConfigRegex;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PresetEnvConfig {
   Bool(bool),
@@ -24,7 +24,7 @@ impl Default for PresetEnvConfig {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PresetEnvConfigObj {
   // The value will be deserialized in FarmPluginPolyfill

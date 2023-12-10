@@ -1,4 +1,10 @@
-import { JsPlugin, CompilationContext } from '../type.js';
+import {
+  JsPlugin,
+  CompilationContext,
+  RenderResourcePotParams,
+  FinalizeResourcesHookParams,
+  ResourcePotInfo
+} from '../type.js';
 import {
   convertEnforceToPriority,
   customParseQueryString,
@@ -10,7 +16,10 @@ import {
   isString,
   encodeStr,
   decodeStr,
-  FARM_CSS_MODULE_SUFFIX
+  FARM_CSS_MODULE_SUFFIX,
+  transformFarmConfigToRollupNormalizedOutputOptions,
+  transformResourceInfo2RollupRenderedChunk,
+  transformRollupResource2FarmResource
 } from './utils.js';
 import type { UserConfig } from '../../config/types.js';
 import type { DevServer } from '../../server/index.js';
@@ -24,9 +33,15 @@ import type {
   ModuleNode,
   ConfigEnv
 } from 'vite';
-import type { ResolveIdResult } from 'rollup';
+import type {
+  ResolveIdResult,
+  RenderChunkHook,
+  OutputBundle,
+  FunctionPluginHooks
+} from 'rollup';
 import path from 'path';
 import {
+  Config,
   PluginLoadHookParam,
   PluginLoadHookResult,
   PluginResolveHookParam,
@@ -47,6 +62,17 @@ import {
   viteConfigToFarmConfig
 } from './farm-to-vite-config.js';
 import { VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX } from '../../compiler/index.js';
+import {
+  transformResourceInfo2RollupResource,
+  transformFarmConfigToRollupNormalizedInputOptions
+} from './utils.js';
+
+type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
+  this: any,
+  ...args: infer A
+) => infer R
+  ? (...arg: A) => R
+  : T;
 
 /// turn a vite plugin to farm js plugin
 export class VitePluginAdapter implements JsPlugin {
@@ -65,6 +91,11 @@ export class VitePluginAdapter implements JsPlugin {
   buildEnd: JsPlugin['buildEnd'];
   finish: JsPlugin['finish'];
   updateModules: JsPlugin['updateModules'];
+  renderResourcePot: JsPlugin['renderResourcePot'];
+  renderStart: JsPlugin['renderStart'];
+  augmentResourceHash?: JsPlugin['augmentResourceHash'];
+  finalizeResources: JsPlugin['finalizeResources'];
+
   // filter for js plugin to improve performance
   filters: string[];
 
@@ -85,20 +116,30 @@ export class VitePluginAdapter implements JsPlugin {
     this.filters = filters;
 
     // convert hooks
-    this.buildStart = this.viteBuildStartToFarmBuildStart();
-    this.resolve = this.viteResolveIdToFarmResolve();
-    this.load = this.viteLoadToFarmLoad();
-    this.transform = this.viteTransformToFarmTransform();
-    this.buildEnd = this.viteBuildEndToFarmBuildEnd();
-    this.finish = this.viteCloseBundleToFarmFinish();
-    this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules();
+    if (rawPlugin.buildStart)
+      this.buildStart = this.viteBuildStartToFarmBuildStart();
+    if (rawPlugin.buildStart) this.resolve = this.viteResolveIdToFarmResolve();
+    if (rawPlugin.load) this.load = this.viteLoadToFarmLoad();
+    if (rawPlugin.transform)
+      this.transform = this.viteTransformToFarmTransform();
+    if (rawPlugin.buildEnd) this.buildEnd = this.viteBuildEndToFarmBuildEnd();
+    if (rawPlugin.closeBundle) this.finish = this.viteCloseBundleToFarmFinish();
+    if (rawPlugin.handleHotUpdate)
+      this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules();
+    if (rawPlugin.renderChunk)
+      this.renderResourcePot =
+        this.viteHandleRenderChunkToFarmRenderResourcePot();
+    if (rawPlugin.renderStart)
+      this.renderStart = this.viteRenderStartToFarmRenderStart();
+    if (rawPlugin.augmentChunkHash)
+      this.augmentResourceHash =
+        this.viteAugmentChunkHashToFarmAugmentResourceHash();
+    if (rawPlugin.generateBundle)
+      this.finalizeResources = this.viteGenerateBundleToFarmFinalizeResources();
 
     // if other unsupported vite plugins hooks are used, throw error
     const unsupportedHooks = [
       'transformIndexHtml',
-      'renderChunk',
-      'argumentChunkHash',
-      'generateBundle',
       'writeBundle',
       'renderError',
       'resolveDynamicImport',
@@ -107,8 +148,7 @@ export class VitePluginAdapter implements JsPlugin {
       'transformIndexHtml',
       'shouldTransformCachedModule',
       'banner',
-      'footer',
-      'renderStart'
+      'footer'
     ];
 
     for (const hookName of unsupportedHooks) {
@@ -276,9 +316,7 @@ export class VitePluginAdapter implements JsPlugin {
         ): Promise<PluginResolveHookResult> => {
           if (
             params.importer &&
-            VitePluginAdapter.isFarmInternalVirtualModule(
-              params.importer.relativePath
-            )
+            VitePluginAdapter.isFarmInternalVirtualModule(params.importer)
           ) {
             return null;
           }
@@ -290,7 +328,7 @@ export class VitePluginAdapter implements JsPlugin {
           );
           const absImporterPath = path.resolve(
             process.cwd(),
-            params.importer?.relativePath ?? ''
+            params.importer ?? ''
           );
           const resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
@@ -485,6 +523,107 @@ export class VitePluginAdapter implements JsPlugin {
           }
 
           return [...new Set(result)];
+        }
+      )
+    };
+  }
+
+  private viteHandleRenderChunkToFarmRenderResourcePot(): JsPlugin['renderResourcePot'] {
+    return {
+      executor: this.wrapExecutor(
+        async (param: RenderResourcePotParams, ctx) => {
+          const hook = this.wrapRawPluginHook(
+            'renderChunk',
+            this._rawPlugin.renderChunk,
+            ctx
+          );
+
+          const result: ReturnType<RenderChunkHook> = await hook(
+            param.content,
+            transformResourceInfo2RollupRenderedChunk(param.resourcePotInfo),
+            {},
+            {
+              chunks: {}
+            }
+          );
+
+          if (result) {
+            if (typeof result === 'string') {
+              return { content: result };
+            } else if (typeof result === 'object') {
+              return { content: result, sourceMap: result.map };
+            }
+          }
+        }
+      )
+    };
+  }
+
+  private viteRenderStartToFarmRenderStart(): JsPlugin['renderStart'] {
+    return {
+      executor: this.wrapExecutor(async (param: Config['config'], ctx) => {
+        const hook = this.wrapRawPluginHook(
+          'renderStart',
+          this._rawPlugin.renderStart,
+          ctx
+        ) as OmitThis<FunctionPluginHooks['renderStart']>;
+
+        await hook(
+          transformFarmConfigToRollupNormalizedOutputOptions(param),
+          transformFarmConfigToRollupNormalizedInputOptions(param)
+        );
+      })
+    };
+  }
+
+  private viteAugmentChunkHashToFarmAugmentResourceHash(): JsPlugin['augmentResourceHash'] {
+    return {
+      executor: this.wrapExecutor(async (param: ResourcePotInfo, context) => {
+        const hook = this.wrapRawPluginHook(
+          'augmentChunkHash',
+          this._rawPlugin.augmentChunkHash,
+          context
+        ) as OmitThis<FunctionPluginHooks['augmentChunkHash']>;
+
+        const hash = await hook(
+          transformResourceInfo2RollupRenderedChunk(param)
+        );
+
+        return hash;
+      })
+    };
+  }
+
+  private viteGenerateBundleToFarmFinalizeResources(): JsPlugin['finalizeResources'] {
+    return {
+      executor: this.wrapExecutor(
+        async (param: FinalizeResourcesHookParams, context) => {
+          const hook = this.wrapRawPluginHook(
+            'generateBundle',
+            this._rawPlugin.generateBundle,
+            context
+          );
+
+          const bundles = Object.entries(param.resourcesMap).reduce(
+            (res, [key, val]) => {
+              res[key] = transformResourceInfo2RollupResource(val);
+              return res;
+            },
+            {} as OutputBundle
+          );
+
+          hook(
+            transformFarmConfigToRollupNormalizedOutputOptions(param.config),
+            bundles
+          );
+
+          return Object.entries(bundles).reduce((res, [key, val]) => {
+            res[key] = transformRollupResource2FarmResource(
+              val,
+              param.resourcesMap[key]
+            );
+            return res;
+          }, {} as FinalizeResourcesHookParams['resourcesMap']);
         }
       )
     };

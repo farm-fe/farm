@@ -1,14 +1,19 @@
 use std::sync::Arc;
 
-use farmfe_core::context::CompilationContext;
+use farmfe_core::{context::CompilationContext, plugin::PluginFinalizeResourcesHookParams};
 
 pub fn finalize_resources(context: &Arc<CompilationContext>) -> farmfe_core::error::Result<()> {
   {
     let mut resources_map = context.resources_map.lock();
 
+    let mut param = PluginFinalizeResourcesHookParams {
+      resources_map: &mut resources_map,
+      config: &context.config,
+    };
+
     context
       .plugin_driver
-      .finalize_resources(&mut resources_map, context)?;
+      .finalize_resources(&mut param, context)?;
 
     // if cache enabled, clear unused resources
     if context.config.persistent_cache.enabled() {

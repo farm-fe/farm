@@ -19,7 +19,7 @@ pub mod persistent_cache;
 pub mod preset_env;
 pub mod script;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {
   pub input: HashMap<String, String>,
@@ -249,7 +249,7 @@ impl Default for ResolveConfig {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RuntimeConfig {
   /// the absolute path of the runtime entry, a runtime is required for script module loading, executing and hot module updating.
@@ -273,7 +273,7 @@ impl Default for RuntimeConfig {
   }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AssetsConfig {
   pub include: Vec<String>,
@@ -281,7 +281,7 @@ pub struct AssetsConfig {
   pub public_dir: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SourcemapConfig {
   Bool(bool),

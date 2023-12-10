@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, sync::Arc};
+use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use serde::{Deserialize, Serialize};
@@ -154,6 +154,14 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  fn render_start(
+    &self,
+    _config: &Config,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
   fn render_resource_pot_modules(
     &self,
     _resource_pot: &ResourcePot,
@@ -170,6 +178,14 @@ pub trait Plugin: Any + Send + Sync {
     _resource_pot: &PluginRenderResourcePotHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<PluginRenderResourcePotHookResult>> {
+    Ok(None)
+  }
+
+  fn augment_resource_hash(
+    &self,
+    _render_pot_info: &ChunkResourceInfo,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<String>> {
     Ok(None)
   }
 
@@ -197,7 +213,7 @@ pub trait Plugin: Any + Send + Sync {
   /// or insert the generated resources into html
   fn finalize_resources(
     &self,
-    _resources: &mut HashMap<String, Resource>,
+    _param: &mut PluginFinalizeResourcesHookParams,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -452,17 +468,18 @@ pub struct EmptyPluginHookParam {}
 pub struct EmptyPluginHookResult {}
 
 #[cache_item]
-#[derive(Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,
   pub source_map: Option<Resource>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ResourcePotInfoOfPluginRenderResourcePotHookParam {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChunkResourceInfo {
   pub id: ResourcePotId,
   pub resource_pot_type: ResourcePotType,
-  pub content: Arc<String>,
   pub dynamic_imports: Vec<String>,
   pub exports: Vec<String>,
   pub facade_module_id: Option<String>,
@@ -482,7 +499,7 @@ pub struct ResourcePotInfoOfPluginRenderResourcePotHookParam {
   pub ty: String,
 }
 
-impl ResourcePotInfoOfPluginRenderResourcePotHookParam {
+impl ChunkResourceInfo {
   pub fn new(resource_pot: &ResourcePot, context: &Arc<CompilationContext>) -> Self {
     let is_dynamic_entry = resource_pot
       .modules()
@@ -491,7 +508,6 @@ impl ResourcePotInfoOfPluginRenderResourcePotHookParam {
     Self {
       id: resource_pot.id.clone(),
       resource_pot_type: resource_pot.resource_pot_type.clone(),
-      content: resource_pot.meta.rendered_content.clone(),
       dynamic_imports: vec![], // TODO
       exports: vec![],         // TODO
       facade_module_id: None,  // TODO
@@ -517,10 +533,11 @@ impl ResourcePotInfoOfPluginRenderResourcePotHookParam {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginRenderResourcePotHookParam {
   pub content: Arc<String>,
-  pub resource_pot_info: ResourcePotInfoOfPluginRenderResourcePotHookParam,
+  pub resource_pot_info: ChunkResourceInfo,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -532,4 +549,9 @@ pub struct PluginRenderResourcePotHookResult {
 pub struct PluginDriverRenderResourcePotHookResult {
   pub content: Arc<String>,
   pub source_map_chain: Vec<Arc<String>>,
+}
+
+pub struct PluginFinalizeResourcesHookParams<'a> {
+  pub resources_map: &'a mut HashMap<String, Resource>,
+  pub config: &'a Config,
 }

@@ -5,8 +5,8 @@ use farmfe_core::{
   error::{CompilationError, Result},
   parking_lot::Mutex,
   plugin::{
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginRenderResourcePotHookParam,
-    ResourcePotInfoOfPluginRenderResourcePotHookParam,
+    ChunkResourceInfo, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginRenderResourcePotHookParam,
   },
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
   resource::{resource_pot::ResourcePot, ResourceType},
@@ -35,22 +35,32 @@ pub fn render_resource_pots_and_generate_resources(
     let cached_resource_pot = try_get_resource_cache(resource_pot, context)?;
 
     if let Some(cached_resource_pot) = cached_resource_pot {
-      let cached_resource = cached_resource_pot.resources;
+      let rendered_resource_pot_info = ChunkResourceInfo::new(resource_pot, context);
+
+      let mut cached_resource = cached_resource_pot.resources;
       let cached_meta = cached_resource_pot.meta;
 
       resource_pot.meta = cached_meta;
 
       resource_pot.add_resource(cached_resource.resource.name.clone());
+
+      cached_resource.resource.info = Some(rendered_resource_pot_info);
+
       resources.lock().push(cached_resource.resource);
 
       if let Some(map) = cached_resource.source_map {
         resource_pot.add_resource(map.name.clone());
+
         resources.lock().push(map);
       }
     } else {
       resource_pots_need_render.push(resource_pot);
     }
   }
+
+  context
+    .plugin_driver
+    .render_start(&context.config, context)?;
 
   // Note: Plugins should not using context.resource_pot_map, as it may cause deadlock
   resource_pots_need_render
@@ -64,35 +74,51 @@ pub fn render_resource_pots_and_generate_resources(
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!(id);
 
-      let mut res =
-        render_resource_pot_generate_resources(resource_pot, context, hook_context, false)?;
+      let mut resource_pot_info: Option<ChunkResourceInfo> = None;
+      let (mut res, augment_resource_hash) = render_resource_pot_generate_resources(
+        resource_pot,
+        context,
+        hook_context,
+        false,
+        &mut resource_pot_info,
+      )?;
+
       let r = &mut res.resource;
+      let mut resource_pot_info: ChunkResourceInfo = resource_pot_info.unwrap();
 
       // ignore runtime resource
       if !matches!(r.resource_type, ResourceType::Runtime) {
+        let content_with_extra_content_hash = &[
+          &r.bytes,
+          augment_resource_hash.unwrap_or_default().as_bytes(),
+        ]
+        .concat();
         if let Some(name) = resource_pot.entry_module.as_ref() {
           let entry_name = entries.get(name).unwrap();
           r.name = transform_output_entry_filename(
             context.config.output.entry_filename.clone(),
             resource_pot.id.to_string().as_str(),
             entry_name,
-            &r.bytes,
+            content_with_extra_content_hash,
             &r.resource_type.to_ext(),
           );
         } else {
           r.name = transform_output_filename(
             context.config.output.filename.clone(),
             &r.name,
-            &r.bytes,
+            content_with_extra_content_hash,
             &r.resource_type.to_ext(),
           );
         }
+
+        resource_pot_info.file_name = r.name.clone();
       }
 
-      let mut cached_result = PluginGenerateResourcesHookResult {
-        resource: Default::default(),
-        source_map: None,
-      };
+      let mut cached_result: PluginGenerateResourcesHookResult =
+        PluginGenerateResourcesHookResult {
+          resource: Default::default(),
+          source_map: None,
+        };
       // if source map is generated, we need to update the resource name and the content of the resource
       // to make sure the source map can be found.
       if let Some(mut source_map) = res.source_map {
@@ -104,6 +130,7 @@ pub fn render_resource_pots_and_generate_resources(
         }
 
         resource_pot.add_resource(source_map.name.clone());
+
         resources.lock().push(source_map);
       }
 
@@ -113,11 +140,18 @@ pub fn render_resource_pots_and_generate_resources(
       }
 
       resource_pot.add_resource(res.resource.name.clone());
+
+      res.resource.info = Some(resource_pot_info);
+
       resources.lock().push(res.resource);
       Ok(())
     })?;
 
-  let mut resources_map = context.resources_map.lock();
+  let mut resources_map: farmfe_core::parking_lot::lock_api::MutexGuard<
+    '_,
+    farmfe_core::parking_lot::RawMutex,
+    std::collections::HashMap<String, farmfe_core::resource::Resource>,
+  > = context.resources_map.lock();
 
   for resource in resources.lock().drain(..) {
     resources_map.insert(resource.name.clone(), resource);
@@ -131,7 +165,10 @@ pub fn render_resource_pot_generate_resources(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
   skip_render: bool,
-) -> Result<PluginGenerateResourcesHookResult> {
+  chunk_resource_info: &mut Option<ChunkResourceInfo>,
+) -> Result<(PluginGenerateResourcesHookResult, Option<String>)> {
+  let mut augment_resource_hash = None;
+
   if !skip_render {
     #[cfg(feature = "profile")]
     let id = farmfe_utils::transform_string_to_static_str(format!(
@@ -151,14 +188,21 @@ pub fn render_resource_pot_generate_resources(
 
     let mut param = PluginRenderResourcePotHookParam {
       content: resource_pot.meta.rendered_content.clone(),
-      resource_pot_info: ResourcePotInfoOfPluginRenderResourcePotHookParam::new(
-        resource_pot,
-        context,
-      ),
+      resource_pot_info: ChunkResourceInfo::new(resource_pot, context),
     };
-    context
+
+    let result = context
       .plugin_driver
       .render_resource_pot(&mut param, context)?;
+
+    resource_pot.meta.rendered_content = result.content;
+    resource_pot.meta.rendered_map_chain = result.source_map_chain;
+
+    augment_resource_hash = context
+      .plugin_driver
+      .augment_resource_hash(&param.resource_pot_info, context)?;
+
+    *chunk_resource_info = Some(param.resource_pot_info);
   }
 
   {
@@ -184,13 +228,16 @@ pub fn render_resource_pot_generate_resources(
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_scope!(id);
 
-    context
-      .plugin_driver
-      .generate_resources(resource_pot, context, hook_context)?
-      .ok_or(CompilationError::GenerateResourcesError {
-        name: resource_pot.id.to_string(),
-        ty: resource_pot.resource_pot_type.clone(),
-        source: None,
-      })
+    Ok((
+      context
+        .plugin_driver
+        .generate_resources(resource_pot, context, hook_context)?
+        .ok_or(CompilationError::GenerateResourcesError {
+          name: resource_pot.id.to_string(),
+          ty: resource_pot.resource_pot_type.clone(),
+          source: None,
+        })?,
+      augment_resource_hash,
+    ))
   }
 }
