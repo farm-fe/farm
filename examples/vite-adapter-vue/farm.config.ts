@@ -26,12 +26,12 @@ export default defineConfig({
     }
   ],
   vitePlugins: [
-    vue()
-    //   AutoImport({
-    //     resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
-    //   }),
-    //   Components({
-    //     resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
-    //   })
+    vue(),
+    AutoImport({
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
+    }),
+    Components({
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
+    })
   ]
 });

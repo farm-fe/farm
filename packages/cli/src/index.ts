@@ -101,7 +101,6 @@ cli
       mode: options.mode,
       configPath
     };
-    console.log(defaultOptions);
 
     const { build } = await resolveCore();
 
