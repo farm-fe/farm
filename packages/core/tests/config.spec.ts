@@ -31,7 +31,6 @@ test('resolveUserConfig', async () => {
     isBuild: false,
     command: 'serve',
     root: process.cwd(),
-    configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     configFilePath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     configFileDependencies: [
       // path.join(filePath, '..', 'src', 'config.ts'),

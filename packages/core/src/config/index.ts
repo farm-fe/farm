@@ -102,7 +102,7 @@ export async function resolveConfig(
   };
 
   // Save variables are used when restarting the service
-  // const config = filterUserConfig(userConfig, inlineOptions);
+  filterUserConfig(userConfig);
 
   // -----------------------------------------Resolve Plugins-----------------------------------------
 
@@ -659,10 +659,8 @@ export function normalizePublicPath(
 }
 
 export function filterUserConfig(
-  userConfig: ResolvedUserConfig,
-  inlineConfig: FarmCLIOptions
+  userConfig: ResolvedUserConfig
 ): ResolvedUserConfig {
-  userConfig.inlineConfig = inlineConfig;
   delete userConfig.configPath;
   return userConfig;
 }
