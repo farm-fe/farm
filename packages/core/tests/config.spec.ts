@@ -31,21 +31,14 @@ test('resolveUserConfig', async () => {
     isBuild: false,
     command: 'serve',
     root: process.cwd(),
-    resolveConfigPath: path.join(
-      filePath,
-      'fixtures',
-      'config',
-      'farm.config.ts'
-    ),
+    mode: 'development',
+    configFilePath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
     configFileDependencies: [
-      path.join(filePath, '..', 'src', 'config.ts'),
+      // path.join(filePath, '..', 'src', 'config.ts'),
       path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
       path.join(filePath, 'fixtures', 'config', 'util.ts'),
       'module'
     ],
-    inlineConfig: {
-      configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
-    },
     server: normalizeDevServerOptions(config.server, 'development')
   });
 });

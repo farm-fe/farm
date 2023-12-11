@@ -1,10 +1,9 @@
 import { builtinModules } from 'module';
-import { defineFarmConfig } from '../../../src/config';
-import input from './util';
+import input from './util.js';
 
-export default defineFarmConfig({
+export default {
   compilation: {
     input,
     external: builtinModules
   }
-});
+};

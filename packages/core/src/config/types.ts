@@ -88,7 +88,8 @@ export interface ResolvedUserConfig extends UserConfig {
   configPath?: string;
   isBuild?: boolean;
   command?: 'serve' | 'build';
-  resolveConfigPath?: string;
+  mode?: 'development' | 'production';
+  configFilePath?: string;
   // TODO set this field for persistent cache
   configFileDependencies?: string[];
 }
@@ -130,6 +131,7 @@ export interface FarmCLIOptions
   config?: string;
   configPath?: string;
   mode?: string;
+  root?: string;
   clearScreen?: boolean;
 }
 

@@ -17,13 +17,13 @@ export function farmConfigToViteConfig(config: UserConfig): ViteUserConfig {
 
   const viteConfig: ViteUserConfig = {
     root: config.root,
-    base: config.compilation?.output?.publicPath,
+    base: config.compilation?.output?.publicPath ?? '/',
     publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
     define: config.compilation?.define,
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore ignore this error
-    command: config.compilation.mode === 'production' ? 'build' : 'serve',
+    command: config.compilation?.mode === 'production' ? 'build' : 'serve',
     resolve: {
       alias: config.compilation?.resolve?.alias,
       extensions: config.compilation?.resolve?.extensions,
@@ -53,7 +53,7 @@ export function farmConfigToViteConfig(config: UserConfig): ViteUserConfig {
       sourcemap: Boolean(config.compilation?.sourcemap),
       minify: config.compilation?.minify,
       cssMinify: config.compilation?.minify,
-      ssr: config.compilation.output?.targetEnv === 'node'
+      ssr: config.compilation?.output?.targetEnv === 'node'
       // other options are not supported in farm
     }
   };

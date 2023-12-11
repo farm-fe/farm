@@ -106,3 +106,10 @@ export function mergeObjects(obj1: any, obj2: any) {
 
   return merged;
 }
+
+export async function asyncFlatten<T>(arr: T[]): Promise<T[]> {
+  do {
+    arr = (await Promise.all(arr)).flat(Infinity) as any;
+  } while (arr.some((v: any) => v?.then));
+  return arr;
+}

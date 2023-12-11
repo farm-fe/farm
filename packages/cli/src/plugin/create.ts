@@ -1,7 +1,7 @@
 import path from 'node:path';
 import inquirer from 'inquirer';
 import { copyFiles, TEMPLATES_DIR } from '../utils.js';
-import { bold, green } from '../color.js';
+import { bold, green } from '@farmfe/core';
 
 export interface CreateArgs {
   npmName?: string;

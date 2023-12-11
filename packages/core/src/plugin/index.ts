@@ -4,7 +4,7 @@ import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
 import type { Config } from '../../binding/index.js';
-import { type UserConfig } from '../config/index.js';
+import { ConfigEnv, type UserConfig } from '../config/index.js';
 import merge from 'lodash.merge';
 
 export * from './js/index.js';
@@ -29,13 +29,11 @@ export async function resolveAllPlugins(
     };
   }
 
-  const rustPlugins = [];
-
-  const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
+  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
     vitePlugins,
-    userConfig,
-    finalConfig
+    userConfig
   );
+  const rustPlugins = [];
 
   const jsPlugins: JsPlugin[] = [];
 
@@ -90,10 +88,10 @@ export async function resolveJsPlugins(
     };
   }
 
-  const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
+  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
     vitePlugins,
-    userConfig,
-    finalConfig
+    userConfig
+    // finalConfig
   );
 
   const jsPlugins: JsPlugin[] = [];
@@ -179,14 +177,11 @@ export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
 export function filterPluginByName(plugins: JsPlugin[]) {
   const uniqueNamesSet = new Set();
 
-  // 使用 Array.filter 进行过滤
   const filteredArray = plugins.filter((obj) => {
-    // 如果 Set 中没有出现过当前对象的 name 值，加入 Set，并保留该对象
     if (!uniqueNamesSet.has(obj.name)) {
       uniqueNamesSet.add(obj.name);
       return true;
     }
-    // 如果 Set 中已经出现过相同的 name 值，过滤掉该对象
     return false;
   });
 
@@ -195,7 +190,7 @@ export function filterPluginByName(plugins: JsPlugin[]) {
 
 export async function resolveConfigHook(
   config: UserConfig,
-  // configEnv: ConfigEnv,
+  configEnv: ConfigEnv,
   plugins: JsPlugin[]
 ): Promise<UserConfig> {
   let conf = config;
@@ -214,7 +209,7 @@ export async function resolveConfigHook(
     const hook = p.config;
 
     if (hook) {
-      const res = await p.config(conf);
+      const res = await p.config(conf, configEnv);
 
       if (res) {
         conf = merge(conf, res);
@@ -225,10 +220,7 @@ export async function resolveConfigHook(
   return conf;
 }
 
-export async function resolveConfigResolvedHook(
-  config: any,
-  plugins: any[]
-): Promise<UserConfig> {
+export async function resolveConfigResolvedHook(config: any, plugins: any[]) {
   const conf = config;
 
   for (const p of plugins) {
@@ -237,10 +229,10 @@ export async function resolveConfigResolvedHook(
       await p.configResolved(conf.config);
     }
   }
-  return conf;
 }
 
 export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
+  // TODO The priority needs to be redefined. Q！！！！
   const DEFAULT_PRIORITY = 100;
 
   const sortedPlugins = plugins
@@ -253,14 +245,23 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   const prePlugins = sortedPlugins.filter(
     (plugin) => plugin?.priority > DEFAULT_PRIORITY
   );
+
   const postPlugins = sortedPlugins.filter(
     (plugin) => plugin?.priority < DEFAULT_PRIORITY
   );
 
   const normalPlugins = plugins.filter(
     (plugin) =>
-      typeof plugin === 'object' && typeof plugin.priority !== 'number'
+      (typeof plugin === 'object' && typeof plugin.priority !== 'number') ||
+      plugin?.priority === DEFAULT_PRIORITY
   );
 
   return [...prePlugins, ...normalPlugins, ...postPlugins];
+}
+
+export function getSortedPluginHooks(
+  plugins: JsPlugin[],
+  hookName: keyof JsPlugin
+): any {
+  return plugins.map((p: JsPlugin) => p[hookName]).filter(Boolean);
 }

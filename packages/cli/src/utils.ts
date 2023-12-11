@@ -4,9 +4,12 @@ import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
+import type { build, preview, start, watch, clean } from '@farmfe/core';
+import { DefaultLogger } from '@farmfe/core';
 
 import type { GlobalFarmCLIOptions } from './types.js';
 
+const logger = new DefaultLogger();
 interface installProps {
   cwd: string; // 项目路径
   package: string; // 包管理器 yarn 或者 npm
@@ -17,6 +20,23 @@ export const TEMPLATES_DIR = path.join(
   '..',
   'templates'
 );
+
+export async function resolveCore(): Promise<{
+  start: typeof start;
+  build: typeof build;
+  watch: typeof watch;
+  preview: typeof preview;
+  clean: typeof clean;
+}> {
+  try {
+    return import('@farmfe/core');
+  } catch (err) {
+    logger.error(
+      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
+    );
+    process.exit(1);
+  }
+}
 
 export function copyFiles(
   source: string,

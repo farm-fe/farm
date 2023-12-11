@@ -328,14 +328,14 @@ export async function createBundleHandler(
     // const fileSizeMap = Object.entries(compiler.resources())
     //   .filter(([name]) => !name.endsWith('.map'))
     //   .map(([resourceName, resource]) => {
-    //     let c = chalk.green;
+    //     let c = green;
     //     const size = Buffer.byteLength(resource) / 1024;
 
     //     if (size > 500) {
-    //       c = chalk.yellow;
+    //       c = yellow;
     //     }
 
-    //     const sizeStr = c(size.toFixed(0)) + chalk.cyan(' KB');
+    //     const sizeStr = c(size.toFixed(0)) + cyan(' KB');
 
     //     return {
     //       resourceName: resourceName.padEnd(maxFileNameLength + 4, ' '),
@@ -343,9 +343,9 @@ export async function createBundleHandler(
     //     };
     //   });
 
-    // console.log(`\n${chalk.green('Output Files:')}`);
+    // console.log(`\n${green('Output Files:')}`);
     // fileSizeMap.forEach(({ resourceName, size }) =>
-    //   console.log(`\t${chalk.cyan(resourceName)}\t${size}`)
+    //   console.log(`\t${cyan(resourceName)}\t${size}`)
     // );
   }, normalizedConfig);
 
@@ -361,4 +361,4 @@ export async function createBundleHandler(
   }
 }
 
-export { defineFarmConfig as defineConfig } from './config.js';
+export { defineFarmConfig as defineConfig } from './config/index.js';

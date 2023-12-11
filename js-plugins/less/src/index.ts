@@ -31,9 +31,8 @@ export default function farmLessPlugin(
 
   return {
     name: pluginName,
-    config: (config) => {
+    configResolved: (config) => {
       farmConfig = config;
-      return config;
     },
     configDevServer(server) {
       devServer = server;

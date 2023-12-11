@@ -185,19 +185,24 @@ export class VitePluginAdapter implements JsPlugin {
       );
     }
 
-    const configResolvedHook = this.wrapRawPluginHook(
-      'configResolved',
-      this._rawPlugin.configResolved
-    );
+    // const configResolvedHook = this.wrapRawPluginHook(
+    //   'configResolved',
+    //   this._rawPlugin.configResolved
+    // );
 
-    if (configResolvedHook) {
-      await configResolvedHook(this._viteConfig);
-    }
+    // if (configResolvedHook) {
+    //   await configResolvedHook(this._viteConfig);
+    // }
 
     return this._farmConfig.compilation;
   }
 
-  async configResolved() {
+  async configResolved(config: UserConfig['compilation']) {
+    if (!this._rawPlugin.configResolved) return;
+
+    this._farmConfig.compilation = config;
+    this._viteConfig = farmConfigToViteConfig(this._farmConfig);
+
     const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
       this._rawPlugin.configResolved
@@ -231,10 +236,10 @@ export class VitePluginAdapter implements JsPlugin {
 
   private getViteConfigEnv(): ConfigEnv {
     return {
-      ssrBuild: this._farmConfig.compilation.output.targetEnv === 'node',
+      ssrBuild: this._farmConfig.compilation?.output?.targetEnv === 'node',
       command:
         this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
-      mode: this._farmConfig.compilation.mode
+      mode: this._farmConfig.compilation?.mode
     };
   }
 

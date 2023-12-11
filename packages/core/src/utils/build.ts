@@ -22,7 +22,7 @@ export async function compilerHandler(
   const endTime = performance.now();
   const elapsedTime = Math.floor(endTime - startTime);
   logger.info(
-    `⚡️ Build completed in ${bold(
+    `Build completed in ${bold(
       green(`${elapsedTime}ms`)
     )} ${persistentCacheText} Resources emitted to ${bold(
       green(config.config.output.path)

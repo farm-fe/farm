@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { cac } from 'cac';
 import { DefaultLogger } from '@farmfe/core';
-import { getConfigPath, resolveCommandOptions } from './utils.js';
+import { resolveCore, getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
-import type { build, preview, start, watch, clean } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
@@ -40,10 +39,8 @@ cli
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server start')
   .option('--hmr', 'enable hot module replacement')
-  .option('--cors', 'enable CORS')
+  .option('--cors', 'enable cors')
   .option('--strictPort', 'specified port is already in use, exit with error')
-  // TODO add https config
-  // .option('--https', 'use https')
   .action(
     async (
       root: string,
@@ -53,8 +50,8 @@ cli
       const configPath = getConfigPath(options.config);
 
       const defaultOptions = {
+        root,
         compilation: {
-          root,
           lazyCompilation: options.lazy
         },
         server: resolveOptions,
@@ -77,30 +74,26 @@ cli
 // build command
 cli
   .command('build', 'compile the project in production mode')
-  // TODO add target config esm, commonjs
-  // .option("--target <target>", "transpile target")
-  .option('--format <format>', 'transpile format esm, commonjs')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
+  .option('-w, --watch', 'watch file change')
+  .option('--targetEnv <target>', 'transpile targetEnv node, browser')
+  .option('--format <format>', 'transpile format esm, commonjs')
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
   .option('--minify', 'code compression at build time')
-  .option('-w, --watch', 'watch file change')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     const configPath = getConfigPath(options.config);
     const defaultOptions = {
       compilation: {
         watch: options.watch,
-        output: options.outDir
-          ? {
-              path: options.outDir
-            }
-          : undefined,
-        input: options.input
-          ? {
-              index: options.input
-            }
-          : undefined,
+        output: {
+          targetEnv: options?.targetEnv,
+          format: options?.format
+        },
+        input: {
+          index: options?.input
+        },
         sourcemap: options.sourcemap,
         minify: options.minify,
         treeShaking: options.treeShaking
@@ -108,6 +101,7 @@ cli
       mode: options.mode,
       configPath
     };
+
     const { build } = await resolveCore();
 
     try {
@@ -223,21 +217,3 @@ cli.help();
 cli.version(version);
 
 cli.parse();
-
-export async function resolveCore(): Promise<{
-  start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
-  clean: typeof clean;
-}> {
-  try {
-    return import('@farmfe/core');
-  } catch (err) {
-    // TODO Encapsulation logger
-    console.error(
-      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
-    );
-    process.exit(1);
-  }
-}
