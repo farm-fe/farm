@@ -4,8 +4,6 @@ import type { InferCustomEventPayload } from '@farmfe/core/types/custom-event.d.
 import { HmrClient } from './hmr-client';
 import { logger } from './logger';
 
-// export const REGISTERED_HOT_MODULES =
-
 export class HotModuleState {
   acceptCallbacks: Array<{ deps: string[]; fn: (mods: any[]) => void }> = [];
   data = {};
@@ -77,7 +75,6 @@ export class HotModuleState {
       map.set(event, existing);
     };
     addToMap(this.hmrClient.customListenersMap);
-    addToMap(this.newListeners);
   }
 
   off<T extends string>(
@@ -97,12 +94,14 @@ export class HotModuleState {
       map.set(event, pruned);
     };
     removeFromMap(this.hmrClient.customListenersMap);
-    removeFromMap(this.newListeners);
   }
 
   send<T extends string>(event: T, data?: InferCustomEventPayload<T>): void {
-    this.hmrClient.addBuffer(JSON.stringify({ type: 'custom', event, data }));
-    this.hmrClient.send();
+    if (this.hmrClient.socket.readyState === WebSocket.OPEN) {
+      this.hmrClient.socket.send(
+        JSON.stringify({ type: 'custom', event, data })
+      );
+    }
   }
 
   // tap = (changeModule: ModuleInitialization) => {

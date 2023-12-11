@@ -18,6 +18,10 @@ export class HmrClient {
   registeredHotModulesMap = new Map<string, HotModuleState>();
   disposeMap = new Map<string, (data: any) => void | Promise<void>>();
   pruneMap = new Map<string, (data: any[]) => void | Promise<void>>();
+  customListenersMap = new Map<
+    string,
+    ((data: any) => void | Promise<void>)[]
+  >();
 
   constructor(private moduleSystem: ModuleSystem) {}
 
@@ -49,11 +53,23 @@ export class HmrClient {
       );
     });
 
-    socket.addEventListener('open', () => {
-      logger.log('connected to the server');
+    socket.addEventListener(
+      'open',
+      () => {
+        logger.log('connected to the server');
+        this.notifyListeners('vite:ws:connect', { webSocket: socket });
+      },
+      { once: true }
+    );
+
+    socket.addEventListener('message', async ({ data }) => {
+      // handle message
     });
-    // TODO use ping/pong to detect the connection is closed, and if the server is online again, reload the page
-    // socket.addEventListener('close', () => setTimeout(connect, 3000));
+
+    socket.addEventListener('close', () => {
+      this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
+      logger.log('disconnected from the server, please reload the page.');
+    });
 
     return socket;
   }
@@ -72,7 +88,7 @@ export class HmrClient {
 
   applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {
     result.changed.forEach((id) => {
-      console.log(`[Farm HMR] ${id} updated`);
+      logger.log(`${id} updated`);
     });
 
     for (const id of result.removed) {
@@ -121,6 +137,14 @@ export class HmrClient {
           window.location.reload();
         }
       }
+    }
+  }
+
+  async notifyListeners(event: string, data: any) {
+    const callbacks = this.customListenersMap.get(event);
+
+    if (callbacks) {
+      await Promise.allSettled(callbacks.map((cb) => cb(data)));
     }
   }
 }
