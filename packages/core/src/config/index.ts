@@ -101,41 +101,31 @@ export async function resolveConfig(
     command
   };
 
-  // Save variables are used when restarting the service
-  filterUserConfig(userConfig);
-
-  // -----------------------------------------Resolve Plugins-----------------------------------------
-
-  // TODO RUN CONFIG HOOK
-  // 1. get Vite plugin transform to farm class plugins
+  // run config and configResolved hook
   const vitePlugins = userConfig.vitePlugins ?? [];
-  const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
+  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
     vitePlugins,
     userConfig
   );
 
-  // 2. first resolve farm plugins
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
-  // 3. filter duplicate plugin Flattening js plugins and farm plugins
   const rawPlugins = (
     await asyncFlatten((await resolveAsyncPlugins(jsPlugins || [])) || [])
   ).filter(Boolean);
-  // ！！！！ At present, all plug-ins have the highest priority of 98
+
   const sortFarmJsPlugins = getSortedPlugins([
     ...rawPlugins,
     ...vitePluginAdapters
   ]);
-  // TODO Flatten the promise of vite's plugin
-  // TODO vite plugin hook need sort by `order` !!! not priority or enforce
+
+  // TODO vite plugin hook need sort by `order` in config hooks !!! not priority or enforce
   // 4. Start running config hook for all plugins
   const config = await resolveConfigHook(
     userConfig,
     configEnv,
     sortFarmJsPlugins
   );
-
-  // -----------------------------------------Resolve Plugins-----------------------------------------
 
   // check port availability: auto increment the port if a conflict occurs
   const targetWeb = !(
@@ -151,7 +141,6 @@ export async function resolveConfig(
   );
 
   await resolveConfigResolvedHook(normalizedConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
-  console.log(sortFarmJsPlugins);
 
   return {
     config,
@@ -658,13 +647,6 @@ export function normalizePublicPath(
   return normalizedPublicPath;
 }
 
-export function filterUserConfig(
-  userConfig: ResolvedUserConfig
-): ResolvedUserConfig {
-  delete userConfig.configPath;
-  return userConfig;
-}
-
 function checkClearScreen(inlineConfig: FarmCLIOptions) {
   if (
     inlineConfig.clearScreen &&
@@ -708,6 +690,7 @@ async function loadFileConfig(
     dependencies.sort();
     userConfig.configFileDependencies = dependencies;
   }
+  delete userConfig.configPath;
   return userConfig;
 }
 

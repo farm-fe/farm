@@ -29,10 +29,9 @@ export async function resolveAllPlugins(
     };
   }
 
-  const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
+  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
     vitePlugins,
     userConfig
-    // finalConfig
   );
   const rustPlugins = [];
 
@@ -89,7 +88,7 @@ export async function resolveJsPlugins(
     };
   }
 
-  const vitePluginAdapters: JsPlugin[] = handleVitePlugins(
+  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
     vitePlugins,
     userConfig
     // finalConfig

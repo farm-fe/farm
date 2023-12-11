@@ -11,6 +11,7 @@ import {
 } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 import { existsSync, readFileSync } from 'node:fs';
+import { resolveAsyncPlugins } from '../index.js';
 
 // export * from './jsPluginAdapter.js';
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
@@ -18,10 +19,10 @@ export { VitePluginAdapter } from './vite-plugin-adapter.js';
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];
 
-export function handleVitePlugins(
+export async function handleVitePlugins(
   vitePlugins: VitePluginsType,
   userConfig: UserConfig
-): JsPlugin[] {
+): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
 
   if (vitePlugins.length) {
@@ -33,8 +34,9 @@ export function handleVitePlugins(
       )
     });
   }
+  const flatVitePlugins = await resolveAsyncPlugins(vitePlugins);
 
-  for (const vitePluginObj of vitePlugins) {
+  for (const vitePluginObj of flatVitePlugins) {
     let vitePlugin = vitePluginObj,
       filters = DEFAULT_FILTERS;
 
