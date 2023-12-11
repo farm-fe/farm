@@ -88,6 +88,7 @@ export interface ResolvedUserConfig extends UserConfig {
   configPath?: string;
   isBuild?: boolean;
   command?: 'serve' | 'build';
+  mode?: 'development' | 'production';
   configFilePath?: string;
   // TODO set this field for persistent cache
   configFileDependencies?: string[];

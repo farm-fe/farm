@@ -8,10 +8,8 @@ import merge from 'lodash.merge';
 
 import {
   convertPlugin,
-  // getSortedPluginHooks,
   getSortedPlugins,
   handleVitePlugins,
-  // resolveAllPlugins,
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
@@ -93,7 +91,7 @@ export async function resolveConfig(
   if (!userConfig.root) {
     userConfig.root = root || process.cwd();
   }
-
+  userConfig.mode = userConfig.compilation?.mode || mode;
   userConfig.isBuild = command === 'build';
   userConfig.command = command;
   const configEnv: ConfigEnv = {
