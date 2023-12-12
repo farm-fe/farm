@@ -67,6 +67,7 @@ import {
   transformResourceInfo2RollupResource,
   transformFarmConfigToRollupNormalizedInputOptions
 } from './utils.js';
+import { Logger } from '../../index.js';
 
 type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
   this: any,
@@ -74,6 +75,9 @@ type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
 ) => infer R
   ? (...arg: A) => R
   : T;
+type ObjectHook<T, O = Record<string, any>> =
+  | T
+  | ({ handler: T; order?: 'pre' | 'post' | null } & O);
 
 /// turn a vite plugin to farm js plugin
 export class VitePluginAdapter implements JsPlugin {
@@ -84,6 +88,7 @@ export class VitePluginAdapter implements JsPlugin {
   private _farmConfig: UserConfig;
   private _viteConfig: ViteUserConfig;
   private _viteDevServer: ViteDevServerAdapter;
+  private _logger: Logger;
 
   buildStart: JsPlugin['buildStart'];
   resolve: JsPlugin['resolve'];
@@ -100,7 +105,12 @@ export class VitePluginAdapter implements JsPlugin {
   // filter for js plugin to improve performance
   filters: string[];
 
-  constructor(rawPlugin: Plugin, farmConfig: UserConfig, filters: string[]) {
+  constructor(
+    rawPlugin: Plugin,
+    farmConfig: UserConfig,
+    filters: string[],
+    logger: Logger
+  ) {
     this.name = rawPlugin.name;
 
     if (!rawPlugin.name) {
@@ -113,6 +123,7 @@ export class VitePluginAdapter implements JsPlugin {
     this._rawPlugin = rawPlugin;
     this._farmConfig = farmConfig;
     this._viteConfig = farmUserConfigToViteConfig(farmConfig);
+    this._logger = logger;
 
     this.filters = filters;
 
@@ -261,7 +272,7 @@ export class VitePluginAdapter implements JsPlugin {
 
   private wrapRawPluginHook(
     hookName: string,
-    hook: object | undefined | ((...args: any[]) => any),
+    hook?: ObjectHook<(...args: any[]) => any, { sequential?: boolean }>,
     farmContext?: CompilationContext,
     currentHandlingFile?: string
   ) {
@@ -269,10 +280,25 @@ export class VitePluginAdapter implements JsPlugin {
       return undefined;
     }
 
-    if (typeof hook !== 'function') {
-      throw new Error(
-        `${hookName} hook of vite plugin ${this.name} is not a function. Farm only supports vite plugin with function hooks. This Plugin is not compatible with farm.`
-      );
+    if (typeof hook === 'object') {
+      if (!hook.handler) {
+        return undefined;
+      }
+
+      const logWarn = (name: string) => {
+        this._logger.warn(
+          `Farm does not support '${name}' property of vite plugin ${this.name} hook ${hookName} for now. It will be ignored.`
+        );
+      };
+      // TODO support order, if a hook has order, it should be split into two plugins
+      if (hook.order) {
+        logWarn('order');
+      }
+      if (hook.sequential) {
+        logWarn('sequential');
+      }
+
+      hook = hook.handler;
     }
 
     if (farmContext) {

@@ -1,6 +1,5 @@
 // Farm's HMR client is compatible with Vite, see https://vitejs.dev/guide/api-hmr.html.
 // And it's inspired by both Vite and esm-hmr, see https://github.com/FredKSchott/esm-hmr
-import type { InferCustomEventPayload } from '@farmfe/core/types/custom-event.d.ts';
 import { HmrClient } from './hmr-client';
 import { logger } from './logger';
 
@@ -65,10 +64,7 @@ export class HotModuleState {
     logger.log(`invalidate ${this.id}${message ? `: ${message}` : ''}`);
   }
 
-  on<T extends string>(
-    event: T,
-    cb: (payload: InferCustomEventPayload<T>) => void
-  ): void {
+  on<T extends string>(event: T, cb: (payload: any) => void): void {
     const addToMap = (map: Map<string, any[]>) => {
       const existing = map.get(event) || [];
       existing.push(cb);
@@ -77,10 +73,7 @@ export class HotModuleState {
     addToMap(this.hmrClient.customListenersMap);
   }
 
-  off<T extends string>(
-    event: T,
-    cb: (payload: InferCustomEventPayload<T>) => void
-  ): void {
+  off<T extends string>(event: T, cb: (payload: any) => void): void {
     const removeFromMap = (map: Map<string, any[]>) => {
       const existing = map.get(event);
       if (existing === undefined) {

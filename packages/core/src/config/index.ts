@@ -7,13 +7,12 @@ import { pathToFileURL } from 'node:url';
 import merge from 'lodash.merge';
 
 import {
-  convertPlugin,
   getSortedPlugins,
   handleVitePlugins,
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  rustPluginResolver
+  resolveFarmPlugins
 } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
 import { DevServer } from '../server/index.js';
@@ -143,7 +142,7 @@ export async function resolveConfig(
   return {
     config,
     normalizedConfig: {
-      ...normalizedConfig,
+      config: normalizedConfig,
       jsPlugins: sortFarmJsPlugins,
       rustPlugins
     }
@@ -164,9 +163,8 @@ export async function normalizeUserCompilationConfig(
   userConfig: ResolvedUserConfig,
   logger: Logger,
   mode: CompilationMode = 'development'
-): Promise<Config> {
+): Promise<Config['config']> {
   const { compilation, root, server, envDir, envPrefix } = userConfig;
-
   // resolve root path
   const resolvedRootPath = normalizePath(
     root ? path.resolve(root) : process.cwd()
@@ -389,7 +387,7 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  return { config };
+  return config;
 }
 
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
@@ -473,7 +471,7 @@ async function readConfigFile(
       const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
         .toString(16)
         .split('.')
-        .join('')}}.cjs`;
+        .join('')}}.mjs`;
 
       const normalizedConfig = await normalizeUserCompilationConfig(
         null,
@@ -485,7 +483,7 @@ async function readConfigFile(
             output: {
               entryFilename: '[entryName]',
               path: outputPath,
-              format: 'cjs',
+              format: 'esm',
               targetEnv: 'node'
             },
             external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
@@ -513,7 +511,7 @@ async function readConfigFile(
       );
 
       const compiler = new Compiler({
-        ...normalizedConfig,
+        config: normalizedConfig,
         jsPlugins: [],
         rustPlugins: []
       });

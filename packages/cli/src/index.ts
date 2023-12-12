@@ -49,6 +49,10 @@ cli
       const resolveOptions = resolveCommandOptions(options);
       const configPath = getConfigPath(options.config);
 
+      if (root && !path.isAbsolute(root)) {
+        root = path.resolve(process.cwd(), root);
+      }
+
       const defaultOptions = {
         root,
         compilation: {

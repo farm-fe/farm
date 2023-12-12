@@ -1,38 +1,24 @@
 import { isArray, isObject } from '../utils/index.js';
-import { convertPlugin, handleVitePlugins } from './js/index.js';
+import { convertPlugin } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
-import type { Config } from '../../binding/index.js';
 import { ConfigEnv, type UserConfig } from '../config/index.js';
 import merge from 'lodash.merge';
 
 export * from './js/index.js';
 export * from './rust/index.js';
 
-/**
- * resolvePlugins split / jsPlugins / rustPlugins
- * @param config
- */
-export async function resolveAllPlugins(
-  finalConfig: Config['config'],
-  userConfig: UserConfig
-) {
-  const plugins = userConfig.plugins ?? [];
-  const vitePlugins = (userConfig.vitePlugins ?? []).filter(Boolean);
+export async function resolveFarmPlugins(config: UserConfig) {
+  const plugins = config.plugins ?? [];
 
-  if (!plugins.length && !vitePlugins?.length) {
+  if (!plugins.length) {
     return {
       rustPlugins: [],
-      jsPlugins: [],
-      finalConfig
+      jsPlugins: []
     };
   }
 
-  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
-    vitePlugins,
-    userConfig
-  );
   const rustPlugins = [];
 
   const jsPlugins: JsPlugin[] = [];
@@ -42,9 +28,7 @@ export async function resolveAllPlugins(
       typeof plugin === 'string' ||
       (isArray(plugin) && typeof plugin[0] === 'string')
     ) {
-      rustPlugins.push(
-        await rustPluginResolver(plugin as string, finalConfig.root)
-      );
+      rustPlugins.push(await rustPluginResolver(plugin as string, config.root));
     } else if (isObject(plugin)) {
       convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
@@ -59,18 +43,10 @@ export async function resolveAllPlugins(
       );
     }
   }
-  // vite plugins execute after farm plugins by default.
-  jsPlugins.push(...vitePluginAdapters);
-
-  // call user config hooks
-  for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
-  }
 
   return {
     rustPlugins,
-    jsPlugins,
-    finalConfig
+    jsPlugins
   };
 }
 

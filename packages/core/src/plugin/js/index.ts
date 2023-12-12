@@ -2,7 +2,8 @@ import merge from 'lodash.merge';
 import {
   type JsPlugin,
   normalizeDevServerOptions,
-  type UserConfig
+  type UserConfig,
+  Logger
 } from '../../index.js';
 import {
   DEFAULT_FILTERS,
@@ -21,7 +22,8 @@ type VitePluginsType = VitePluginType[];
 
 export async function handleVitePlugins(
   vitePlugins: VitePluginsType,
-  userConfig: UserConfig
+  userConfig: UserConfig,
+  logger: Logger
 ): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
 
@@ -45,7 +47,7 @@ export async function handleVitePlugins(
       vitePlugin = plugin;
       filters = f;
     }
-    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins);
+    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger);
   }
 
   // if vitePlugins is not empty, append a load plugin to load file
@@ -123,13 +125,15 @@ export function processVitePlugin(
   vitePlugin: VitePluginType,
   userConfig: UserConfig,
   filters: string[],
-  jsPlugins: JsPlugin[]
+  jsPlugins: JsPlugin[],
+  logger: Logger
 ) {
   const processPlugin = (plugin: any) => {
     const vitePluginAdapter = new VitePluginAdapter(
       plugin as any,
       userConfig,
-      filters
+      filters,
+      logger
     );
     convertPlugin(vitePluginAdapter);
     jsPlugins.push(vitePluginAdapter);
