@@ -12,7 +12,7 @@ export class ConfigWatcher {
 
   constructor(private options: WatcherOptions) {
     if (!options) {
-      throw new Error('Invalid options provided to ConfigWatcher');
+      throw new Error('Invalid options provided to Farm JsConfigWatcher');
     }
   }
 
