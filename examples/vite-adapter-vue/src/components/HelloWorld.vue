@@ -2,17 +2,18 @@
 import { ref } from 'vue';
 import Intro from './async-comp';
 
-defineProps<{ msg: string }>();
-const count = ref(0);
+defineProps<{ msg: string }>()
+const count = ref(0)
+console.log(count.value);
 
 interface Tree {
-  label: string;
-  children?: Tree[];
+  label: string
+  children?: Tree[]
 }
 
 const handleNodeClick = (data: Tree) => {
-  console.log(data);
-};
+  console.log(data)
+}
 
 const data: Tree[] = [
   {
@@ -22,11 +23,11 @@ const data: Tree[] = [
         label: 'Level two 1-1',
         children: [
           {
-            label: 'Level three 1-1-1'
-          }
-        ]
-      }
-    ]
+            label: 'Level three 1-1-1',
+          },
+        ],
+      },
+    ],
   },
   {
     label: 'Level one 2',
@@ -35,19 +36,19 @@ const data: Tree[] = [
         label: 'Level two 2-1',
         children: [
           {
-            label: 'Level three 2-1-1'
-          }
-        ]
+            label: 'Level three 2-1-1',
+          },
+        ],
       },
       {
         label: 'Level two 2-2',
         children: [
           {
-            label: 'Level three 2-2-1'
-          }
-        ]
-      }
-    ]
+            label: 'Level three 2-2-1',
+          },
+        ],
+      },
+    ],
   },
   {
     label: 'Level one 3',
@@ -56,26 +57,26 @@ const data: Tree[] = [
         label: 'Level two 3-1',
         children: [
           {
-            label: 'Level three 3-1-1'
-          }
-        ]
+            label: 'Level three 3-1-1',
+          },
+        ],
       },
       {
         label: 'Level two 3-2',
         children: [
           {
-            label: 'Level three 3-2-1'
-          }
-        ]
-      }
-    ]
-  }
-];
+            label: 'Level three 3-2-1',
+          },
+        ],
+      },
+    ],
+  },
+]
 
 const defaultProps = {
   children: 'children',
-  label: 'label'
-};
+  label: 'label',
+}
 </script>
 
 <template>

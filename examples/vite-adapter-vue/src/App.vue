@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue';
+import HelloWorld from './components/HelloWorld.vue'
 import Formatter from './components/Formatter.vue';
-console.log('Hello from Vite + Vue + TypeScript + ESLint + Prettier');
 </script>
 
 <template>
@@ -28,7 +27,7 @@ console.log('Hello from Vite + Vue + TypeScript + ESLint + Prettier');
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 2em #9f1a8faa);
+  filter: drop-shadow(0 0 2em #9F1A8Faa);
 }
 
 .logo.vue:hover {
