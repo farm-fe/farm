@@ -131,19 +131,19 @@ export interface JsPlugin {
     configEnv?: ConfigEnv
   ) => UserConfig | Promise<UserConfig>;
 
-  configResolved?: (config: Config['config']) => void;
+  configResolved?: (config: Config['config']) => void | Promise<void>;
 
   /**
    * runs in development mode only
    * @param server
    * @returns
    */
-  configureDevServer?: (server: DevServer) => void;
+  configureDevServer?: (server: DevServer) => void | Promise<void>;
   /**
    * @param compiler
    * @returns
    */
-  configureCompiler?: (compiler: Compiler) => void;
+  configureCompiler?: (compiler: Compiler) => void | Promise<void>;
 
   buildStart?: { executor: Callback<Record<string, never>, void> };
 
@@ -196,6 +196,10 @@ export interface JsPlugin {
       FinalizeResourcesHookParams,
       FinalizeResourcesHookParams
     >;
+  };
+
+  writeResources?: {
+    executor: Callback<FinalizeResourcesHookParams, void | Promise<void>>;
   };
 
   pluginCacheLoaded?: {

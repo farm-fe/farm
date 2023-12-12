@@ -49,9 +49,10 @@ export async function start(
   );
 
   const compiler = new Compiler(normalizedConfig);
-  normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    plugin.configureCompiler?.(compiler)
-  );
+  for (const plugin of normalizedConfig.jsPlugins) {
+    await plugin.configureCompiler?.(compiler);
+  }
+
   const devServer = new DevServer(compiler, logger, config, normalizedConfig);
   devServer.createFarmServer(devServer.userConfig.server);
 
@@ -316,9 +317,9 @@ export async function createBundleHandler(
 ) {
   const compiler = new Compiler(normalizedConfig);
 
-  normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    plugin.configureCompiler?.(compiler)
-  );
+  for (const plugin of normalizedConfig.jsPlugins) {
+    await plugin.configureCompiler?.(compiler);
+  }
 
   await compilerHandler(async () => {
     compiler.removeOutputPathDir();

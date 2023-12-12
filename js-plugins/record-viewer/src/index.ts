@@ -37,14 +37,16 @@ export default function farmRecorderPlugin(
       });
     },
     configureCompiler: (compiler) => {
-      const middleware = createDateSourceMiddleware(compiler);
+      if (farmConfig?.mode !== 'development') {
+        const middleware = createDateSourceMiddleware(compiler);
 
-      createRecordViewerServer({
-        host: recordViewerOptions.host,
-        port: recordViewerOptions.port,
-        clientPath: PLUGIN_DIR_CLIENT,
-        middleware
-      });
+        createRecordViewerServer({
+          host: recordViewerOptions.host,
+          port: recordViewerOptions.port,
+          clientPath: PLUGIN_DIR_CLIENT,
+          middleware
+        });
+      }
     }
   };
 }

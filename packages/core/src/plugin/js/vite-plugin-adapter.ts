@@ -101,6 +101,7 @@ export class VitePluginAdapter implements JsPlugin {
   renderStart: JsPlugin['renderStart'];
   augmentResourceHash?: JsPlugin['augmentResourceHash'];
   finalizeResources: JsPlugin['finalizeResources'];
+  writeResources: JsPlugin['writeResources'];
 
   // filter for js plugin to improve performance
   filters: string[];
@@ -127,32 +128,41 @@ export class VitePluginAdapter implements JsPlugin {
 
     this.filters = filters;
 
+    const hooksMap = {
+      buildStart: () =>
+        (this.buildStart = this.viteBuildStartToFarmBuildStart()),
+      resolve: () => (this.resolve = this.viteResolveIdToFarmResolve()),
+      load: () => (this.load = this.viteLoadToFarmLoad()),
+      transform: () => (this.transform = this.viteTransformToFarmTransform()),
+      buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
+      closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
+      handleHotUpdate: () =>
+        (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
+      renderChunk: () =>
+        (this.renderResourcePot =
+          this.viteHandleRenderChunkToFarmRenderResourcePot()),
+      renderStart: () =>
+        (this.renderStart = this.viteRenderStartToFarmRenderStart()),
+      augmentChunkHash: () =>
+        (this.augmentResourceHash =
+          this.viteAugmentChunkHashToFarmAugmentResourceHash()),
+      generateBundle: () =>
+        (this.finalizeResources =
+          this.viteGenerateBundleToFarmFinalizeResources()),
+      writeBundle: () =>
+        (this.writeResources = this.viteWriteBundleToFarmWriteResources())
+    };
     // convert hooks
-    if (rawPlugin.buildStart)
-      this.buildStart = this.viteBuildStartToFarmBuildStart();
-    if (rawPlugin.buildStart) this.resolve = this.viteResolveIdToFarmResolve();
-    if (rawPlugin.load) this.load = this.viteLoadToFarmLoad();
-    if (rawPlugin.transform)
-      this.transform = this.viteTransformToFarmTransform();
-    if (rawPlugin.buildEnd) this.buildEnd = this.viteBuildEndToFarmBuildEnd();
-    if (rawPlugin.closeBundle) this.finish = this.viteCloseBundleToFarmFinish();
-    if (rawPlugin.handleHotUpdate)
-      this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules();
-    if (rawPlugin.renderChunk)
-      this.renderResourcePot =
-        this.viteHandleRenderChunkToFarmRenderResourcePot();
-    if (rawPlugin.renderStart)
-      this.renderStart = this.viteRenderStartToFarmRenderStart();
-    if (rawPlugin.augmentChunkHash)
-      this.augmentResourceHash =
-        this.viteAugmentChunkHashToFarmAugmentResourceHash();
-    if (rawPlugin.generateBundle)
-      this.finalizeResources = this.viteGenerateBundleToFarmFinalizeResources();
+    for (const [hookName, fn] of Object.entries(hooksMap)) {
+      if (rawPlugin[hookName as keyof Plugin]) {
+        fn();
+      }
+    }
 
     // if other unsupported vite plugins hooks are used, throw error
     const unsupportedHooks = [
       'transformIndexHtml',
-      'writeBundle',
+      // 'writeBundle',
       'renderError',
       'resolveDynamicImport',
       'resolveFileUrl',
@@ -183,11 +193,12 @@ export class VitePluginAdapter implements JsPlugin {
         merge(
           this._viteConfig,
           await configHook(
-            proxyViteConfig(this._viteConfig, this.name),
-            configEnv
+            proxyViteConfig(this._viteConfig, this.name, this._logger),
+            this.getViteConfigEnv()
           )
         ),
-        this.name
+        this.name,
+        this._logger
       );
 
       this._farmConfig = viteConfigToFarmConfig(
@@ -275,7 +286,9 @@ export class VitePluginAdapter implements JsPlugin {
     hook?: ObjectHook<(...args: any[]) => any, { sequential?: boolean }>,
     farmContext?: CompilationContext,
     currentHandlingFile?: string
-  ) {
+  ): (
+    ...args: any[]
+  ) => any | undefined | Promise<(...args: any[]) => any | undefined> {
     if (hook === undefined) {
       return undefined;
     }
@@ -607,7 +620,7 @@ export class VitePluginAdapter implements JsPlugin {
           context
         ) as OmitThis<FunctionPluginHooks['augmentChunkHash']>;
 
-        const hash = await hook(
+        const hash = await hook?.(
           transformResourceInfo2RollupRenderedChunk(param)
         );
 
@@ -634,7 +647,7 @@ export class VitePluginAdapter implements JsPlugin {
             {} as OutputBundle
           );
 
-          hook(
+          await hook?.(
             transformFarmConfigToRollupNormalizedOutputOptions(param.config),
             bundles
           );
@@ -646,6 +659,33 @@ export class VitePluginAdapter implements JsPlugin {
             );
             return res;
           }, {} as FinalizeResourcesHookParams['resourcesMap']);
+        }
+      )
+    };
+  }
+
+  private viteWriteBundleToFarmWriteResources(): JsPlugin['writeResources'] {
+    return {
+      executor: this.wrapExecutor(
+        async (param: FinalizeResourcesHookParams, context) => {
+          const hook = this.wrapRawPluginHook(
+            'writeBundle',
+            this._rawPlugin.writeBundle,
+            context
+          );
+
+          const bundles = Object.entries(param.resourcesMap).reduce(
+            (res, [key, val]) => {
+              res[key] = transformResourceInfo2RollupResource(val);
+              return res;
+            },
+            {} as OutputBundle
+          );
+
+          await hook?.(
+            transformFarmConfigToRollupNormalizedOutputOptions(param.config),
+            bundles
+          );
         }
       )
     };

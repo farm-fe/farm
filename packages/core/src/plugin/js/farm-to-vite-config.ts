@@ -6,6 +6,7 @@ import {
 } from './utils.js';
 import merge from 'lodash.merge';
 import { Config } from '../../../binding/index.js';
+import { Logger } from '../../index.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   const vitePlugins = config.vitePlugins.map((plugin) => {
@@ -119,7 +120,8 @@ export function farmNormalConfigToViteConfig(
 
 export function proxyViteConfig(
   viteConfig: ViteUserConfig,
-  pluginName: string
+  pluginName: string,
+  logger: Logger
 ): ViteUserConfig {
   return new Proxy(viteConfig, {
     get(target, key) {
@@ -144,11 +146,14 @@ export function proxyViteConfig(
         'isProduction',
         'css',
         'build',
+        'logger',
         // these fields are always undefined in farm
         // they are only used for compatibility
         'legacy',
         'optimizeDeps',
-        'ssr'
+        'ssr',
+        'logLevel',
+        'experimental'
       ];
 
       if (allowedKeys.includes(String(key))) {
@@ -163,7 +168,7 @@ export function proxyViteConfig(
             'dedupe'
           ];
 
-          return new Proxy(target.resolve, {
+          return new Proxy(target.resolve || {}, {
             get(resolveTarget, resolveKey) {
               if (typeof resolveKey !== 'string') {
                 return target[resolveKey as unknown as keyof typeof target];
@@ -201,7 +206,7 @@ export function proxyViteConfig(
             'origin'
           ];
 
-          return new Proxy(target.server, {
+          return new Proxy(target.server || {}, {
             get(serverTarget, serverKey) {
               if (typeof serverKey !== 'string') {
                 return target[serverKey as unknown as keyof typeof target];
@@ -230,7 +235,7 @@ export function proxyViteConfig(
         } else if (key === 'css') {
           const allowedCssKeys = ['devSourcemap'];
 
-          return new Proxy(target.css, {
+          return new Proxy(target.css || {}, {
             get(cssTarget, cssKey) {
               if (typeof cssKey !== 'string') {
                 return target[cssKey as unknown as keyof typeof target];
@@ -265,7 +270,7 @@ export function proxyViteConfig(
             'ssr'
           ];
 
-          return new Proxy(target.build, {
+          return new Proxy(target.build || {}, {
             get(buildTarget, buildKey) {
               if (typeof buildKey !== 'string') {
                 return target[buildKey as unknown as keyof typeof target];
@@ -290,6 +295,23 @@ export function proxyViteConfig(
               );
             }
           });
+        } else if (key === 'optimizeDeps') {
+          return new Proxy(target.optimizeDeps || {}, {
+            get(_, optimizeDepsKey) {
+              logger.warn(
+                `[vite-plugin] ${pluginName}: config "optimizeDeps" is not needed in farm, all of its options will be ignored. Current ignored option is: "${String(
+                  optimizeDepsKey
+                )}"`
+              );
+
+              if (optimizeDepsKey === 'esbuildOptions') {
+                return {};
+              }
+              return undefined;
+            }
+          });
+        } else if (key === 'logger') {
+          return logger;
         }
 
         return target[key as keyof typeof target];
