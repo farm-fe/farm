@@ -150,6 +150,10 @@ export async function resolveConfig(
   };
 }
 
+type ServerConfig = {
+  server?: NormalizedServerConfig;
+};
+
 /**
  * Normalize user config and transform it to rust compiler compatible config
  * @param config
@@ -175,7 +179,7 @@ export async function normalizeUserCompilationConfig(
       logger
     );
   }
-  const config: Config['config'] = merge(
+  const config: Config['config'] & ServerConfig = merge(
     {
       input: {
         index: './index.html'
@@ -318,7 +322,7 @@ export async function normalizeUserCompilationConfig(
 
   // TODO resolve other server port
   const normalizedDevServerConfig = normalizeDevServerOptions(server, mode);
-
+  config.server = normalizedDevServerConfig;
   if (
     config.output.targetEnv !== 'node' &&
     isArray(config.runtime.plugins) &&
@@ -378,17 +382,6 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  // const { jsPlugins, rustPlugins, finalConfig } = await resolveAllPlugins(
-  //   config,
-  //   userConfig
-  // );
-
-  // const normalizedConfig: Config = {
-  //   config: finalConfig,
-  //   rustPlugins,
-  //   jsPlugins
-  // };
-  // return normalizedConfig;
   return { config };
 }
 

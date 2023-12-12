@@ -74,89 +74,6 @@ export async function resolveAllPlugins(
   };
 }
 
-export async function resolveJsPlugins(
-  finalConfig: Config['config'],
-  userConfig: UserConfig
-) {
-  const plugins = userConfig.plugins ?? [];
-  const vitePlugins = (userConfig.vitePlugins ?? []).filter(Boolean);
-
-  if (!plugins.length && !vitePlugins?.length) {
-    return {
-      jsPlugins: [],
-      finalConfig
-    };
-  }
-
-  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
-    vitePlugins,
-    userConfig
-    // finalConfig
-  );
-
-  const jsPlugins: JsPlugin[] = [];
-
-  for (const plugin of plugins) {
-    if (
-      typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
-    ) {
-      // Ignore or handle the string or specific array format
-      continue;
-    }
-    if (isObject(plugin)) {
-      convertPlugin(plugin as unknown as JsPlugin);
-      jsPlugins.push(plugin as unknown as JsPlugin);
-    } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin as JsPlugin[]) {
-        convertPlugin(pluginNestItem as JsPlugin);
-        jsPlugins.push(pluginNestItem as JsPlugin);
-      }
-    } else {
-      throw new Error(
-        `plugin ${plugin} is not supported, Please pass the correct plugin type`
-      );
-    }
-  }
-  // vite plugins execute after farm plugins by default.
-  jsPlugins.push(...vitePluginAdapters);
-
-  return {
-    jsPlugins,
-    finalConfig
-  };
-}
-
-export async function resolveRustPlugins(
-  compilationConfig: Config['config'],
-  userConfig: UserConfig
-) {
-  const plugins = userConfig.plugins ?? [];
-
-  if (!plugins.length) {
-    return {
-      rustPlugins: []
-    };
-  }
-
-  const rustPlugins = [];
-
-  for (const plugin of plugins) {
-    if (
-      typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
-    ) {
-      rustPlugins.push(
-        await rustPluginResolver(plugin as string, compilationConfig.root)
-      );
-    }
-  }
-
-  return {
-    rustPlugins
-  };
-}
-
 // resolve promise plugins
 export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
   return arr.reduce<Promise<T[]>>(async (acc, current) => {
@@ -172,20 +89,6 @@ export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
       return flattenedAcc.concat(current);
     }
   }, Promise.resolve([]));
-}
-
-export function filterPluginByName(plugins: JsPlugin[]) {
-  const uniqueNamesSet = new Set();
-
-  const filteredArray = plugins.filter((obj) => {
-    if (!uniqueNamesSet.has(obj.name)) {
-      uniqueNamesSet.add(obj.name);
-      return true;
-    }
-    return false;
-  });
-
-  return filteredArray;
 }
 
 export async function resolveConfigHook(
@@ -220,7 +123,10 @@ export async function resolveConfigHook(
   return conf;
 }
 
-export async function resolveConfigResolvedHook(config: any, plugins: any[]) {
+export async function resolveConfigResolvedHook(
+  config: Config,
+  plugins: JsPlugin[]
+) {
   const conf = config;
 
   for (const p of plugins) {
@@ -232,7 +138,7 @@ export async function resolveConfigResolvedHook(config: any, plugins: any[]) {
 }
 
 export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
-  // TODO The priority needs to be redefined. Q！！！！
+  // TODO The priority needs to be redefined.
   const DEFAULT_PRIORITY = 100;
 
   const sortedPlugins = plugins
