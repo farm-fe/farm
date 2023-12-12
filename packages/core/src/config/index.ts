@@ -108,17 +108,17 @@ export async function resolveConfig(
 
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
-  const rawPlugins = (
+  const rawJsPlugins = (
     await asyncFlatten((await resolveAsyncPlugins(jsPlugins || [])) || [])
   ).filter(Boolean);
 
   const sortFarmJsPlugins = getSortedPlugins([
-    ...rawPlugins,
+    ...rawJsPlugins,
     ...vitePluginAdapters
   ]);
 
   // TODO vite plugin hook need sort by `order` in config hooks !!! not priority or enforce
-  // 4. Start running config hook for all plugins
+  // Start running config hook for all plugins
   const config = await resolveConfigHook(
     userConfig,
     configEnv,
@@ -129,8 +129,8 @@ export async function resolveConfig(
   const targetWeb = !(
     userConfig.compilation?.output?.targetEnv === 'node' || userConfig.isBuild
   );
-
   targetWeb && (await DevServer.resolvePortConflict(userConfig, logger));
+
   const normalizedConfig = await normalizeUserCompilationConfig(
     inlineOptions,
     config,
