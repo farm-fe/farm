@@ -178,21 +178,13 @@ export class VitePluginAdapter implements JsPlugin {
         ),
         this.name
       );
+
       this._farmConfig = viteConfigToFarmConfig(
         this._viteConfig,
         this._farmConfig,
         this.name
       );
     }
-
-    // const configResolvedHook = this.wrapRawPluginHook(
-    //   'configResolved',
-    //   this._rawPlugin.configResolved
-    // );
-
-    // if (configResolvedHook) {
-    //   await configResolvedHook(this._viteConfig);
-    // }
 
     return this._farmConfig.compilation;
   }

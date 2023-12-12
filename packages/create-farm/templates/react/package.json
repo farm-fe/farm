@@ -19,6 +19,7 @@
     "dev": "farm start",
     "start": "farm start",
     "build": "farm build",
-    "preview": "farm preview"
+    "preview": "farm preview",
+    "clean": "farm clean"
   }
 }

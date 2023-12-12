@@ -251,6 +251,7 @@ export async function normalizeUserCompilationConfig(
       // skip self define
       ['FARM' + '_PROCESS_ENV']: config.env
     },
+    userConfig.define,
     config?.define,
     // for node target, we should not define process.env.NODE_ENV
     config.output?.targetEnv === 'node'

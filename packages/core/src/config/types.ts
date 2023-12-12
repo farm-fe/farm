@@ -90,6 +90,7 @@ export interface ResolvedUserConfig extends UserConfig {
   command?: 'serve' | 'build';
   mode?: 'development' | 'production';
   configFilePath?: string;
+  define?: Record<string, string | boolean>;
   // TODO set this field for persistent cache
   configFileDependencies?: string[];
 }
