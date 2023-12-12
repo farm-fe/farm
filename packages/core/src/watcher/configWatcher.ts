@@ -22,8 +22,8 @@ export class ConfigWatcher {
     }
 
     const watchedFilesSet = new Set<string>([
-      ...(this.options.config?.config.envFiles || []),
-      ...(this.options.userConfig?.configFileDependencies || []),
+      ...(this.options.config?.config.envFiles ?? []),
+      ...(this.options.userConfig?.configFileDependencies ?? []),
       this.options.userConfig?.configFilePath
     ]);
 
