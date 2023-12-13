@@ -10,18 +10,24 @@ export class ConfigWatcher {
   private watcher: JsFileWatcher;
   private _close = false;
 
-  constructor(private options: WatcherOptions) {}
+  constructor(private options: WatcherOptions) {
+    if (!options) {
+      throw new Error('Invalid options provided to Farm JsConfigWatcher');
+    }
+  }
 
   watch(callback: (file: string[]) => void) {
     async function handle(file: string[]) {
       callback(file);
     }
 
-    const watchedFiles = [
-      ...(this.options.config.config.envFiles ?? []),
-      ...(this.options.userConfig.configFileDependencies ?? []),
-      this.options.userConfig.configFilePath
-    ];
+    const watchedFilesSet = new Set<string>([
+      ...(this.options.config?.config.envFiles ?? []),
+      ...(this.options.userConfig?.configFileDependencies ?? []),
+      this.options.userConfig?.configFilePath
+    ]);
+
+    const watchedFiles = Array.from(watchedFilesSet).filter(Boolean);
 
     this.watcher = new JsFileWatcher((paths: string[]) => {
       if (this._close) return;

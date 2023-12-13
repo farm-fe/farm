@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.5.11",
-    "@farmfe/core": "^0.14.15",
+    "@farmfe/core": "^0.14.18",
     "@farmfe/plugin-react": "^0.4.4",
     "@types/react": "18",
     "@types/react-dom": "18",
@@ -19,6 +19,7 @@
     "dev": "farm start",
     "start": "farm start",
     "build": "farm build",
-    "preview": "farm preview"
+    "preview": "farm preview",
+    "clean": "farm clean"
   }
 }
