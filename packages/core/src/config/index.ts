@@ -26,6 +26,7 @@ import {
   clearScreen,
   green,
   isArray,
+  isEmptyObject,
   isObject,
   isWindows,
   Logger,
@@ -183,41 +184,47 @@ export async function normalizeUserCompilationConfig(
   const targetEnv = compilation?.output?.targetEnv;
   const isTargetNode = targetEnv === 'node';
 
-  let inputFindIndexConfig: { index?: string } = {};
-
+  let inputIndexConfig: { index?: string } = {};
+  let errorMessage = '';
   // Check if input is specified
-  if (compilation?.input?.index) {
-    inputFindIndexConfig = compilation.input;
+  if (!isEmptyObject(compilation?.input)) {
+    inputIndexConfig = compilation.input;
   } else {
     if (isTargetNode) {
       // If input is not specified, try to find index.js or index.ts
-      const possibleIndexFiles = ['./index.js', './index.ts'];
+      const entryFiles = ['./index.js', './index.ts'];
 
-      for (const possibleIndex of possibleIndexFiles) {
-        if (
-          fs.existsSync(
-            path.resolve(userConfig?.root ?? process.cwd(), possibleIndex)
-          )
-        ) {
-          inputFindIndexConfig = { index: possibleIndex };
-          break;
+      for (const entryFile of entryFiles) {
+        try {
+          if (
+            fs.statSync(
+              path.resolve(userConfig?.root ?? process.cwd(), entryFile)
+            )
+          ) {
+            inputIndexConfig = { index: entryFile };
+            break;
+          }
+        } catch (error) {
+          errorMessage = error.stack;
         }
       }
     } else {
-      inputFindIndexConfig = { index: './index.html' };
+      inputIndexConfig = { index: './index.html' };
     }
 
     // If no index file is found, throw an error
-    if (!inputFindIndexConfig.index) {
+    if (!inputIndexConfig.index) {
       logger.error(
-        'Please specify the input or provide an index.js or index.ts file.'
+        `Please specify the input or provide an ${
+          isTargetNode ? 'index.js or index.ts' : 'index.html'
+        } file. \n ${errorMessage}`
       );
     }
   }
 
   const config: Config['config'] & ServerConfig = merge(
     {
-      input: inputFindIndexConfig,
+      input: inputIndexConfig,
       output: {
         path: './dist',
         publicPath: '/'

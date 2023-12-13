@@ -1,12 +1,8 @@
-import { builtinModules } from 'module';
-
-/**
- * @type {import('@farmfe/core').UserConfig}
- */
-export default {
+import { defineConfig } from '@farmfe/core';
+export default defineConfig({
   compilation: {
     output: {
       targetEnv: 'node'
-    },
+    }
   }
-};
+});
