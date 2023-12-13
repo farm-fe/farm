@@ -138,6 +138,8 @@ export async function resolveConfig(
     mode
   );
 
+  console.log(normalizedConfig);
+
   await resolveConfigResolvedHook(normalizedConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
   return {
@@ -179,6 +181,35 @@ export async function normalizeUserCompilationConfig(
       logger
     );
   }
+
+  // TODO auto detect input file
+  const targetEnv = compilation?.output?.targetEnv;
+  const isTargetNode = targetEnv === 'node';
+
+  let inputConfig: { index?: string } = {};
+
+  // Check if input is specified
+  if (compilation?.input) {
+    inputConfig = compilation.input;
+  } else {
+    // If input is not specified, try to find index.js or index.ts
+    const possibleIndexFiles = ['./index.js', './index.ts'];
+
+    for (const possibleIndex of possibleIndexFiles) {
+      if (fs.existsSync(path.resolve(userConfig.root, possibleIndex))) {
+        inputConfig = { index: possibleIndex };
+        break;
+      }
+    }
+
+    // If no index file is found, throw an error
+    if (!inputConfig.index) {
+      logger.error(
+        'Please specify the input or provide an index.js or index.ts file.'
+      );
+    }
+  }
+
   const config: Config['config'] & ServerConfig = merge(
     {
       input: {
@@ -215,6 +246,12 @@ export async function normalizeUserCompilationConfig(
   config.envFiles = [
     ...(Array.isArray(config.envFiles) ? config.envFiles : []),
     ...existsEnvFiles
+  ];
+
+  config.external = [
+    ...module.builtinModules.map((m) => `^${m}$`),
+    ...module.builtinModules.map((m) => `^node:${m}$`),
+    ...(Array.isArray(config.external) ? config.external : [])
   ];
 
   normalizeOutput(config, isProduction);
@@ -482,11 +519,7 @@ async function readConfigFile(
               format: 'cjs',
               targetEnv: 'node'
             },
-            external: [
-              ...module.builtinModules.map((m) => `^${m}$`),
-              ...module.builtinModules.map((m) => `^node:${m}$`),
-              '!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'
-            ],
+            external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
             partialBundling: {
               enforceResources: [
                 {

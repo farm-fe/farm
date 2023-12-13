@@ -1,0 +1,21 @@
+{
+  "name": "a-learn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  },
+  "keywords": [],
+  "devDependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  },
+  "author": "",
+  "license": "ISC"
+}
