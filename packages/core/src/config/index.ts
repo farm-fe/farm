@@ -138,8 +138,6 @@ export async function resolveConfig(
     mode
   );
 
-  console.log(normalizedConfig);
-
   await resolveConfigResolvedHook(normalizedConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
   return {
@@ -186,24 +184,32 @@ export async function normalizeUserCompilationConfig(
   const targetEnv = compilation?.output?.targetEnv;
   const isTargetNode = targetEnv === 'node';
 
-  let inputConfig: { index?: string } = {};
+  let inputFindIndexConfig: { index?: string } = {};
 
   // Check if input is specified
-  if (compilation?.input) {
-    inputConfig = compilation.input;
+  if (compilation?.input?.index) {
+    inputFindIndexConfig = compilation.input;
   } else {
-    // If input is not specified, try to find index.js or index.ts
-    const possibleIndexFiles = ['./index.js', './index.ts'];
+    if (isTargetNode) {
+      // If input is not specified, try to find index.js or index.ts
+      const possibleIndexFiles = ['./index.js', './index.ts'];
 
-    for (const possibleIndex of possibleIndexFiles) {
-      if (fs.existsSync(path.resolve(userConfig.root, possibleIndex))) {
-        inputConfig = { index: possibleIndex };
-        break;
+      for (const possibleIndex of possibleIndexFiles) {
+        if (
+          fs.existsSync(
+            path.resolve(userConfig?.root ?? process.cwd(), possibleIndex)
+          )
+        ) {
+          inputFindIndexConfig = { index: possibleIndex };
+          break;
+        }
       }
+    } else {
+      inputFindIndexConfig = { index: './index.html' };
     }
 
     // If no index file is found, throw an error
-    if (!inputConfig.index) {
+    if (!inputFindIndexConfig.index) {
       logger.error(
         'Please specify the input or provide an index.js or index.ts file.'
       );
@@ -212,9 +218,7 @@ export async function normalizeUserCompilationConfig(
 
   const config: Config['config'] & ServerConfig = merge(
     {
-      input: {
-        index: './index.html'
-      },
+      input: inputFindIndexConfig,
       output: {
         path: './dist',
         publicPath: '/'
