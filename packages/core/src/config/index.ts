@@ -180,7 +180,6 @@ export async function normalizeUserCompilationConfig(
     );
   }
 
-  // TODO auto detect input file
   const targetEnv = compilation?.output?.targetEnv;
   const isTargetNode = targetEnv === 'node';
 
