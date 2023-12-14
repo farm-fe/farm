@@ -21,7 +21,6 @@ import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import {
-  asyncFlatten,
   bold,
   clearScreen,
   green,
@@ -100,18 +99,18 @@ export async function resolveConfig(
     command
   };
 
-  // run config and configResolved hook
-  const vitePlugins = userConfig.vitePlugins ?? [];
-  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
-    vitePlugins,
-    userConfig
-  );
-
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
-  const rawJsPlugins = (
-    await asyncFlatten((await resolveAsyncPlugins(jsPlugins || [])) || [])
-  ).filter(Boolean);
+  const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
+    Boolean
+  );
+
+  let vitePluginAdapters: JsPlugin[] = [];
+  const vitePlugins = userConfig?.vitePlugins ?? [];
+  // run config and configResolved hook
+  if (vitePlugins.length) {
+    vitePluginAdapters = await handleVitePlugins(vitePlugins, userConfig);
+  }
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...rawJsPlugins,
@@ -181,59 +180,7 @@ export async function normalizeUserCompilationConfig(
     );
   }
 
-  const targetEnv = compilation?.output?.targetEnv;
-  const isTargetNode = targetEnv === 'node';
-
-  let inputIndexConfig: { index?: string } = {};
-  let errorMessage = '';
-
-  // Check if input is specified
-  if (!isEmptyObject(compilation?.input)) {
-    inputIndexConfig = compilation?.input;
-  } else {
-    if (isTargetNode) {
-      // If input is not specified, try to find index.js or index.ts
-      const entryFiles = ['./index.js', './index.ts'];
-
-      for (const entryFile of entryFiles) {
-        try {
-          if (
-            fs.statSync(
-              path.resolve(userConfig?.root ?? process.cwd(), entryFile)
-            )
-          ) {
-            inputIndexConfig = { index: entryFile };
-            break;
-          }
-        } catch (error) {
-          errorMessage = error.stack;
-        }
-      }
-    } else {
-      const defaultHtmlPath = './index.html';
-      try {
-        if (
-          fs.statSync(
-            path.resolve(userConfig?.root ?? process.cwd(), defaultHtmlPath)
-          )
-        ) {
-          inputIndexConfig = { index: defaultHtmlPath };
-        }
-      } catch (error) {
-        errorMessage = error.stack;
-      }
-    }
-
-    // If no index file is found, throw an error
-    if (!inputIndexConfig.index) {
-      logger.error(
-        `Build failed due to errors: Can not resolve ${
-          isTargetNode ? 'index.js or index.ts' : 'index.html'
-        }  from ${userConfig.root}. ${errorMessage}`
-      );
-    }
-  }
-
+  const inputIndexConfig = checkCompilationInputValue(userConfig, logger);
   const config: Config['config'] & ServerConfig = merge(
     {
       input: inputIndexConfig,
@@ -780,4 +727,61 @@ async function resolveFarmPlugins(config: UserConfig) {
     rustPlugins,
     jsPlugins
   };
+}
+
+function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
+  const { compilation } = userConfig;
+  const targetEnv = compilation?.output?.targetEnv;
+  const isTargetNode = targetEnv === 'node';
+  const defaultHtmlPath = './index.html';
+  let inputIndexConfig: { index?: string } = { index: '' };
+  let errorMessage = '';
+
+  // Check if input is specified
+  if (!isEmptyObject(compilation?.input)) {
+    inputIndexConfig = compilation?.input;
+  } else {
+    if (isTargetNode) {
+      // If input is not specified, try to find index.js or index.ts
+      const entryFiles = ['./index.js', './index.ts'];
+
+      for (const entryFile of entryFiles) {
+        try {
+          if (
+            fs.statSync(
+              path.resolve(userConfig?.root ?? process.cwd(), entryFile)
+            )
+          ) {
+            inputIndexConfig = { index: entryFile };
+            break;
+          }
+        } catch (error) {
+          errorMessage = error.stack;
+        }
+      }
+    } else {
+      try {
+        if (
+          fs.statSync(
+            path.resolve(userConfig?.root ?? process.cwd(), defaultHtmlPath)
+          )
+        ) {
+          inputIndexConfig = { index: defaultHtmlPath };
+        }
+      } catch (error) {
+        errorMessage = error.stack;
+      }
+    }
+
+    // If no index file is found, throw an error
+    if (!inputIndexConfig.index) {
+      logger.error(
+        `Build failed due to errors: Can not resolve ${
+          isTargetNode ? 'index.js or index.ts' : 'index.html'
+        }  from ${userConfig.root}. \n${errorMessage}`
+      );
+    }
+  }
+
+  return inputIndexConfig;
 }
