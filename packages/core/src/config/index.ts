@@ -26,6 +26,7 @@ import {
   clearScreen,
   green,
   isArray,
+  isEmptyObject,
   isObject,
   isWindows,
   Logger,
@@ -179,11 +180,63 @@ export async function normalizeUserCompilationConfig(
       logger
     );
   }
+
+  const targetEnv = compilation?.output?.targetEnv;
+  const isTargetNode = targetEnv === 'node';
+
+  let inputIndexConfig: { index?: string } = {};
+  let errorMessage = '';
+
+  // Check if input is specified
+  if (!isEmptyObject(compilation?.input)) {
+    inputIndexConfig = compilation?.input;
+  } else {
+    if (isTargetNode) {
+      // If input is not specified, try to find index.js or index.ts
+      const entryFiles = ['./index.js', './index.ts'];
+
+      for (const entryFile of entryFiles) {
+        try {
+          if (
+            fs.statSync(
+              path.resolve(userConfig?.root ?? process.cwd(), entryFile)
+            )
+          ) {
+            inputIndexConfig = { index: entryFile };
+            break;
+          }
+        } catch (error) {
+          errorMessage = error.stack;
+        }
+      }
+    } else {
+      const defaultHtmlPath = './index.html';
+      try {
+        if (
+          fs.statSync(
+            path.resolve(userConfig?.root ?? process.cwd(), defaultHtmlPath)
+          )
+        ) {
+          inputIndexConfig = { index: defaultHtmlPath };
+        }
+      } catch (error) {
+        errorMessage = error.stack;
+      }
+    }
+
+    // If no index file is found, throw an error
+    if (!inputIndexConfig.index) {
+      logger.error(
+        `Build failed due to errors: Can not resolve ${
+          isTargetNode ? 'index.js or index.ts' : 'index.html'
+        }  from ${userConfig.root}. ${errorMessage}`
+      );
+    }
+  }
+
   const config: Config['config'] & ServerConfig = merge(
     {
-      input: {
-        index: './index.html'
-      },
+      input: inputIndexConfig,
       output: {
         path: './dist',
         publicPath: '/'
@@ -215,6 +268,12 @@ export async function normalizeUserCompilationConfig(
   config.envFiles = [
     ...(Array.isArray(config.envFiles) ? config.envFiles : []),
     ...existsEnvFiles
+  ];
+
+  config.external = [
+    ...module.builtinModules.map((m) => `^${m}$`),
+    ...module.builtinModules.map((m) => `^node:${m}$`),
+    ...(Array.isArray(config.external) ? config.external : [])
   ];
 
   normalizeOutput(config, isProduction);
@@ -482,11 +541,7 @@ async function readConfigFile(
               format: 'cjs',
               targetEnv: 'node'
             },
-            external: [
-              ...module.builtinModules.map((m) => `^${m}$`),
-              ...module.builtinModules.map((m) => `^node:${m}$`),
-              '!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'
-            ],
+            external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
             partialBundling: {
               enforceResources: [
                 {

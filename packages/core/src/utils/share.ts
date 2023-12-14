@@ -15,6 +15,7 @@ export function isArray(value: unknown): value is unknown[] {
 }
 
 export function isEmptyObject<T extends object>(obj: T): boolean {
+  if (!obj) return true;
   return Reflect.ownKeys(obj).length === 0;
 }
 export const isUndefined = (obj: any): obj is undefined =>

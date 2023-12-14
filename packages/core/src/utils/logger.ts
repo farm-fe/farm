@@ -97,6 +97,9 @@ export class DefaultLogger implements Logger {
         : prefix + message.join(' ');
       console[loggerMethod](loggerMessage);
     }
+    if (level === LogLevel.Error) {
+      process.exit(0);
+    }
   }
 
   trace(...message: any[]): void {
