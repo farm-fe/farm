@@ -186,9 +186,10 @@ export async function normalizeUserCompilationConfig(
 
   let inputIndexConfig: { index?: string } = {};
   let errorMessage = '';
+
   // Check if input is specified
   if (!isEmptyObject(compilation?.input)) {
-    inputIndexConfig = compilation.input;
+    inputIndexConfig = compilation?.input;
   } else {
     if (isTargetNode) {
       // If input is not specified, try to find index.js or index.ts
@@ -209,15 +210,26 @@ export async function normalizeUserCompilationConfig(
         }
       }
     } else {
-      inputIndexConfig = { index: './index.html' };
+      const defaultHtmlPath = './index.html';
+      try {
+        if (
+          fs.statSync(
+            path.resolve(userConfig?.root ?? process.cwd(), defaultHtmlPath)
+          )
+        ) {
+          inputIndexConfig = { index: defaultHtmlPath };
+        }
+      } catch (error) {
+        errorMessage = error.stack;
+      }
     }
 
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Please specify the input or provide an ${
+        `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
-        } file. \n ${errorMessage}`
+        }  from ${userConfig.root}. ${errorMessage}`
       );
     }
   }
