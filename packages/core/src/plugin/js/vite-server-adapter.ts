@@ -1,4 +1,6 @@
 // import { watch } from 'chokidar';
+import { DevServer } from '../../index.js';
+import WsServer from '../../server/ws.js';
 import { CompilationContext } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
@@ -9,8 +11,9 @@ export class ViteDevServerAdapter {
   watcher: any;
   middlewares: any;
   middlewareCallbacks: any[];
+  ws: WsServer;
 
-  constructor(pluginName: string, config: any) {
+  constructor(pluginName: string, config: any, server: DevServer) {
     this.moduleGraph = createViteModuleGraphAdapter(pluginName);
     this.config = config;
     this.pluginName = pluginName;
@@ -50,6 +53,8 @@ export class ViteDevServerAdapter {
         }
       }
     );
+
+    this.ws = server.ws;
   }
 }
 
@@ -93,23 +98,31 @@ export class ViteModuleGraphAdapter {
   }
 }
 
-export function createViteDevServerAdapter(pluginName: string, config: any) {
-  const proxy = new Proxy(new ViteDevServerAdapter(pluginName, config), {
-    get(target, key) {
-      const allowedKeys = [
-        'moduleGraph',
-        'config',
-        'watcher',
-        'middlewares',
-        'middlewareCallbacks'
-      ];
-      if (allowedKeys.includes(String(key))) {
-        return target[key as keyof typeof target];
-      }
+export function createViteDevServerAdapter(
+  pluginName: string,
+  config: any,
+  server: DevServer
+) {
+  const proxy = new Proxy(
+    new ViteDevServerAdapter(pluginName, config, server),
+    {
+      get(target, key) {
+        const allowedKeys = [
+          'moduleGraph',
+          'config',
+          'watcher',
+          'middlewares',
+          'middlewareCallbacks',
+          'ws'
+        ];
+        if (allowedKeys.includes(String(key))) {
+          return target[key as keyof typeof target];
+        }
 
-      throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
+        throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
+      }
     }
-  });
+  );
 
   return proxy;
 }

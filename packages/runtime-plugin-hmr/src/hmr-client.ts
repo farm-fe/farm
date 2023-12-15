@@ -86,7 +86,7 @@ export class HmrClient {
     }
   }
 
-  applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {
+  async applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {
     result.changed.forEach((id) => {
       logger.log(`${id} updated`);
     });
@@ -115,7 +115,6 @@ export class HmrClient {
       moduleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
     }
 
-    // TODO support accept dependencies change
     for (const updated_id of Object.keys(result.boundaries)) {
       const chains = result.boundaries[updated_id];
 
@@ -129,7 +128,27 @@ export class HmrClient {
           const boundary = chain[chain.length - 1];
           const boundaryExports = moduleSystem.require(boundary);
           const hotContext = this.registeredHotModulesMap.get(boundary);
-          hotContext.tap(boundaryExports);
+
+          if (!hotContext) {
+            window.location.reload();
+          }
+
+          const acceptedCallbacks = hotContext.acceptCallbacks.filter(
+            ({ deps }) => deps.includes(updated_id)
+          );
+
+          if (acceptedCallbacks.length > 0) {
+            const disposer = this.disposeMap.get(updated_id);
+            if (disposer) await disposer(hotContext.data);
+
+            for (const { deps, fn } of acceptedCallbacks) {
+              fn(
+                deps.map((dep) =>
+                  dep === updated_id ? boundaryExports : undefined
+                )
+              );
+            }
+          }
         } catch (err) {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383

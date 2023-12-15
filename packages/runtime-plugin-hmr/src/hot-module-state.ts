@@ -60,6 +60,7 @@ export class HotModuleState {
       path: this.id,
       message
     });
+    // notify the server to find the boundary starting from the parents of this module
     this.send('vite:invalidate', { path: this.id, message });
     logger.log(`invalidate ${this.id}${message ? `: ${message}` : ''}`);
   }
@@ -89,21 +90,13 @@ export class HotModuleState {
     removeFromMap(this.hmrClient.customListenersMap);
   }
 
-  send<T extends string>(event: T, data?: InferCustomEventPayload<T>): void {
+  send<T extends string>(event: T, data?: any): void {
     if (this.hmrClient.socket.readyState === WebSocket.OPEN) {
       this.hmrClient.socket.send(
         JSON.stringify({ type: 'custom', event, data })
       );
     }
   }
-
-  // tap = (changeModule: ModuleInitialization) => {
-  //   this.acceptCallbacks.map((cb) => {
-  //     handleErrorSync(cb, [changeModule], (err) => {
-  //       console.error(err);
-  //     });
-  //   });
-  // };
 }
 
 export function createHotContext(id: string, hmrClient: HmrClient) {

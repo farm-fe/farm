@@ -113,7 +113,6 @@ export class VitePluginAdapter implements JsPlugin {
     logger: Logger
   ) {
     this.name = rawPlugin.name;
-
     if (!rawPlugin.name) {
       throw new Error(
         `Vite plugin ${rawPlugin} is not compatible with Farm for now. Because plugin name is required in Farm.`
@@ -131,7 +130,7 @@ export class VitePluginAdapter implements JsPlugin {
     const hooksMap = {
       buildStart: () =>
         (this.buildStart = this.viteBuildStartToFarmBuildStart()),
-      resolve: () => (this.resolve = this.viteResolveIdToFarmResolve()),
+      resolveId: () => (this.resolve = this.viteResolveIdToFarmResolve()),
       load: () => (this.load = this.viteLoadToFarmLoad()),
       transform: () => (this.transform = this.viteTransformToFarmTransform()),
       buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
@@ -234,7 +233,8 @@ export class VitePluginAdapter implements JsPlugin {
 
     this._viteDevServer = createViteDevServerAdapter(
       this.name,
-      this._viteConfig
+      this._viteConfig,
+      devServer
     );
 
     if (hook) {
@@ -377,6 +377,7 @@ export class VitePluginAdapter implements JsPlugin {
             }
             return path.concat('');
           };
+
           if (isString(resolveIdResult)) {
             return {
               resolvedPath: removeQuery(encodeStr(resolveIdResult)),
@@ -404,7 +405,6 @@ export class VitePluginAdapter implements JsPlugin {
   private viteLoadToFarmLoad(): JsPlugin['load'] {
     return {
       filters: {
-        // TODO support internal filter optimization for common plugins like @vitejs/plugin-vue
         resolvedPaths: this.filters
       },
       executor: this.wrapExecutor(

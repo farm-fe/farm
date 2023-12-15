@@ -47,6 +47,7 @@ export async function handleVitePlugins(
       vitePlugin = plugin;
       filters = f;
     }
+
     processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger);
   }
 
