@@ -31,7 +31,11 @@ export default {
       ]
     },
     sourcemap: false,
-    presetEnv: false
+    persistentCache: {
+      envs: {
+        format: process.env.FARM_FORMAT ?? ''
+      }
+    }
   },
   server: {
     hmr: false

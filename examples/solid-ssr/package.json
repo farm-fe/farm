@@ -1,0 +1,29 @@
+{
+  "name": "@farmfe-examples/solid-ssr",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "dependencies": {
+    "@solidjs/router": "^0.10.3",
+    "clsx": "^1.2.1",
+    "core-js": "^3.30.1",
+    "express": "^4.18.2",
+    "solid-js": "^1.7.8"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-solid": "workspace:*",
+    "@farmfe/plugin-sass": "workspace:*",
+    "react-refresh": "^0.14.0",
+    "solid-refresh": "^0.5.3"
+  },
+  "scripts": {
+    "start": "farm start",
+    "watch": "farm watch --config farm.config.server.mjs",
+    "build": "farm build",
+    "build:server": "farm build --config farm.config.server.mjs",
+    "preview": "farm preview"
+  }
+}

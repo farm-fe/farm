@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: false
@@ -768,6 +768,43 @@ importers:
         specifier: ^5.1.6
         version: 5.2.2
 
+  examples/solid-ssr:
+    dependencies:
+      '@solidjs/router':
+        specifier: ^0.10.3
+        version: 0.10.3(solid-js@1.8.5)
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.33.3
+      express:
+        specifier: ^4.18.2
+        version: 4.18.2
+      solid-js:
+        specifier: ^1.7.8
+        version: 1.8.5
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-solid':
+        specifier: workspace:*
+        version: link:../../js-plugins/solid
+      '@farmfe/plugin-sass':
+        specifier: workspace:*
+        version: link:../../rust-plugins/sass
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
+      solid-refresh:
+        specifier: ^0.5.3
+        version: 0.5.3(solid-js@1.8.5)
+
   examples/tailwind:
     dependencies:
       clsx:
@@ -968,6 +1005,49 @@ importers:
       swc-plugin-vue-jsx:
         specifier: ^0.2.4
         version: 0.2.5
+
+  examples/vue-ssr:
+    dependencies:
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.33.3
+      express:
+        specifier: ^4.18.2
+        version: 4.18.2
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+      react-router-dom:
+        specifier: ^6.13.0
+        version: 6.18.0(react-dom@18.2.0)(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/plugin-react':
+        specifier: workspace:*
+        version: link:../../rust-plugins/react
+      '@farmfe/plugin-sass':
+        specifier: workspace:*
+        version: link:../../rust-plugins/sass
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
 
   examples/x-data-spreadsheet:
     dependencies:
@@ -3478,6 +3558,14 @@ packages:
   /@sinclair/typebox@0.27.8:
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
     dev: true
+
+  /@solidjs/router@0.10.3(solid-js@1.8.5):
+    resolution: {integrity: sha512-UZyUcGbMzeJWCJZthWfveFbv9FyMLi62+BHpXyVwAYpowHaUkkV3WVKoYxYF9m47fVG23UfUo2S6GbuyPAyCjw==}
+    peerDependencies:
+      solid-js: ^1.8.6
+    dependencies:
+      solid-js: 1.8.5
+    dev: false
 
   /@svgr/babel-plugin-add-jsx-attribute@8.0.0(@babel/core@7.23.2):
     resolution: {integrity: sha512-b9MIk7yhdS1pMCZM8VeNfUlSKVRhsHZNMl5O9SfaX0l0t5wjdgu4IDzGB8bpnGBBOjGST3rRFVsaaEtI4W6f7g==}
