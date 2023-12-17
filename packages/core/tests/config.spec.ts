@@ -14,7 +14,7 @@ import { DefaultLogger } from '../src/utils/logger.js';
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
-  const { config } = await resolveConfig(
+  const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
     new DefaultLogger(),
     'serve',
@@ -28,11 +28,7 @@ test('resolveUserConfig', async () => {
       },
       external: builtinModules
     },
-    isBuild: false,
-    command: 'serve',
-    root: process.cwd(),
-    mode: 'development',
-    configFilePath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+    envMode: 'development',
     configFileDependencies: [
       // path.join(filePath, '..', 'src', 'config.ts'),
       path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),

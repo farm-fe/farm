@@ -49,7 +49,7 @@ export default function farmSassPlugin(
   return {
     name: pluginName,
     configResolved: (config) => {
-      farmConfig = config;
+      farmConfig = config.compilation;
     },
     load: {
       filters: { resolvedPaths },

@@ -21,7 +21,7 @@ import {
   transformResourceInfo2RollupRenderedChunk,
   transformRollupResource2FarmResource
 } from './utils.js';
-import type { UserConfig } from '../../config/types.js';
+import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { DevServer } from '../../server/index.js';
 
 // only use types from vite and we do not install vite as a dependency
@@ -182,9 +182,10 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // call both config and configResolved
-  async config(config: UserConfig, configEnv: ConfigEnv) {
+  async config(config: UserConfig) {
     this._farmConfig = config;
-    this._viteConfig = farmUserConfigToViteConfig(this._farmConfig);
+    this._viteConfig = farmConfigToViteConfig(this._farmConfig);
+
     const configHook = this.wrapRawPluginHook('config', this._rawPlugin.config);
 
     if (configHook) {
@@ -210,7 +211,7 @@ export class VitePluginAdapter implements JsPlugin {
     return this._farmConfig;
   }
 
-  async configResolved(config: Config['config']) {
+  async configResolved(_config: ResolvedUserConfig) {
     if (!this._rawPlugin.configResolved) return;
 
     this._viteConfig = farmNormalConfigToViteConfig(config, this._farmConfig);

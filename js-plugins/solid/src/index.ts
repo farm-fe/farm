@@ -61,17 +61,17 @@ export default function farmPluginSolid(
       replaceDev = options.dev === true || param.mode === 'development';
       projectRoot = param.root ?? process.cwd();
 
-      if (!param.resolve) {
-        param.resolve = {};
+      if (!config.compilation.resolve) {
+        config.compilation.resolve = {};
       }
 
-      param.resolve.conditions = [
-        ...(param.resolve.conditions ?? []),
+      config.compilation.resolve.conditions = [
+        ...(config.compilation.resolve.conditions ?? []),
         'solid',
         ...(replaceDev ? ['development'] : [])
       ];
-      param.resolve.alias = {
-        ...(param.resolve.alias ?? {}),
+      config.compilation.resolve.alias = {
+        ...(config.compilation.resolve.alias ?? {}),
         'solid-refresh': runtimePublicPath
       };
     },

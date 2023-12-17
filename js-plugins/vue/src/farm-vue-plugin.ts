@@ -27,9 +27,6 @@ import {
 } from './utils.js';
 import { compileStyle } from '@vue/compiler-sfc';
 
-// apply style langs
-type ApplyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
-
 const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
@@ -66,7 +63,7 @@ export default function farmVuePlugin(
       };
     },
     configResolved(config) {
-      farmConfig = config || {};
+      farmConfig = config.compilation || {};
     },
     load: {
       filters: {

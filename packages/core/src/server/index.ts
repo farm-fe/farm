@@ -6,11 +6,9 @@ import { Compiler } from '../compiler/index.js';
 import {
   DEFAULT_HMR_OPTIONS,
   DevServerMiddleware,
-  normalizeDevServerOptions,
   NormalizedServerConfig,
   normalizePublicDir,
   normalizePublicPath,
-  UserConfig,
   UserServerConfig
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
@@ -33,7 +31,6 @@ import {
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
-import { Config } from '../../binding/index.js';
 import { Server } from './type.js';
 
 /**
@@ -82,32 +79,20 @@ export class DevServer implements ImplDevServer {
   server?: Server;
   publicDir?: string;
   publicPath?: string;
-  userConfig?: UserConfig;
-  compilationConfig?: Config;
 
-  constructor(
-    private _compiler: Compiler,
-    public logger: Logger,
-    options?: UserConfig,
-    compilationConfig?: Config
-  ) {
-    this.publicDir = normalizePublicDir(
-      _compiler.config.config.root,
-      options.publicDir
-    );
+  constructor(private compiler: Compiler, public logger: Logger) {
+    this.publicDir = normalizePublicDir(compiler.config.config.root);
 
     this.publicPath =
       normalizePublicPath(
-        options?.compilation?.output?.publicPath,
+        compiler.config.config.output?.publicPath,
         logger,
         false
       ) || '/';
-    this.compilationConfig = compilationConfig;
-    this.userConfig = options;
   }
 
   getCompiler(): Compiler {
-    return this._compiler;
+    return this.compiler;
   }
 
   app(): Koa {
@@ -125,7 +110,7 @@ export class DevServer implements ImplDevServer {
     // compile the project and start the dev server
     await this.compile();
 
-    bootstrap(Date.now() - start, this.compilationConfig);
+    bootstrap(Date.now() - start, this.compiler.config);
 
     await this.startServer(this.config);
 
@@ -141,11 +126,11 @@ export class DevServer implements ImplDevServer {
   }
 
   private async compile(): Promise<void> {
-    await this._compiler.compile();
+    await this.compiler.compile();
 
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
-      this._compiler.writeResourcesToDisk(base);
+      this.compiler.writeResourcesToDisk(base);
     }
   }
 
@@ -207,7 +192,7 @@ export class DevServer implements ImplDevServer {
     await Promise.all(promises);
   }
 
-  public createFarmServer(options: UserServerConfig) {
+  public createFarmServer(options: NormalizedServerConfig) {
     const { https, host = 'localhost', middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
@@ -216,10 +201,11 @@ export class DevServer implements ImplDevServer {
     } else {
       hostname = 'localhost';
     }
-    this.config = normalizeDevServerOptions(
-      { ...options, protocol, hostname },
-      'development'
-    );
+    this.config = {
+      ...options,
+      protocol,
+      hostname
+    };
 
     this._app = new Koa();
     if (https) {
@@ -240,7 +226,7 @@ export class DevServer implements ImplDevServer {
       config: this.config,
       app: this._app,
       server: this.server,
-      compiler: this._compiler,
+      compiler: this.compiler,
       logger: this.logger,
       serverOptions: {}
     };
@@ -248,15 +234,9 @@ export class DevServer implements ImplDevServer {
   }
 
   static async resolvePortConflict(
-    userConfig: UserConfig,
+    normalizedDevConfig: NormalizedServerConfig,
     logger: Logger
   ): Promise<void> {
-    const normalizedDevConfig = normalizeDevServerOptions(
-      userConfig.server,
-      'development'
-    );
-    userConfig.server = normalizedDevConfig;
-
     let devPort = normalizedDevConfig.port;
     let hmrPort = DEFAULT_HMR_OPTIONS.port;
     const { strictPort, host } = normalizedDevConfig;
@@ -289,8 +269,8 @@ export class DevServer implements ImplDevServer {
 
     let isPortAvailableResult = await isPortAvailable(devPort);
     while (isPortAvailableResult === false) {
-      userConfig.server.hmr = { port: ++hmrPort };
-      userConfig.server.port = ++devPort;
+      normalizedDevConfig.hmr.port = ++hmrPort;
+      normalizedDevConfig.port = ++devPort;
       isPortAvailableResult = await isPortAvailable(devPort);
     }
   }
@@ -329,7 +309,7 @@ export class DevServer implements ImplDevServer {
     this._context.serverOptions.resolvedUrls = await resolveServerUrls(
       this.server,
       this.config,
-      this.userConfig
+      this.compiler.config.config.output?.publicPath
     );
     if (this._context.serverOptions.resolvedUrls) {
       printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);

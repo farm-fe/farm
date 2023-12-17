@@ -3,9 +3,12 @@ import { convertPlugin } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
-import { ConfigEnv, type UserConfig } from '../config/index.js';
+import {
+  ConfigEnv,
+  ResolvedUserConfig,
+  type UserConfig
+} from '../config/index.js';
 import merge from 'lodash.merge';
-import { Config } from '../../binding/index.js';
 
 export * from './js/index.js';
 export * from './rust/index.js';
@@ -29,7 +32,9 @@ export async function resolveFarmPlugins(config: UserConfig) {
       typeof plugin === 'string' ||
       (isArray(plugin) && typeof plugin[0] === 'string')
     ) {
-      rustPlugins.push(await rustPluginResolver(plugin as string, config.root));
+      rustPlugins.push(
+        await rustPluginResolver(plugin as string, config.root ?? process.cwd())
+      );
     } else if (isObject(plugin)) {
       convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
@@ -99,7 +104,7 @@ export async function resolveConfigHook(
 }
 
 export async function resolveConfigResolvedHook(
-  config: Config['config'],
+  config: ResolvedUserConfig,
   plugins: JsPlugin[]
 ) {
   for (const p of plugins) {

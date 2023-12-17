@@ -39,10 +39,10 @@ export interface ConfigEnv {
   mode: string;
 }
 
-export type ResolveConfigType = {
-  config?: UserConfig;
-  normalizedConfig?: Config;
-};
+export interface NormalizedConfig {
+  compilationConfig: Config;
+  serverConfig?: NormalizedServerConfig;
+}
 
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
@@ -62,7 +62,7 @@ type InternalConfig = Config['config'] extends undefined
 
 type AvailableUserConfigKeys = Exclude<
   keyof InternalConfig,
-  'configFilePath' | 'env' | 'envPrefix' | 'envFiles' | 'coreLibPath' | 'root'
+  'configFilePath' | 'env' | 'coreLibPath' | 'root'
 >;
 
 export interface UserConfig {
@@ -84,14 +84,17 @@ export interface UserConfig {
 }
 
 export interface ResolvedUserConfig extends UserConfig {
-  inlineConfig?: FarmCLIOptions;
-  configPath?: string;
-  isBuild?: boolean;
-  command?: 'serve' | 'build';
-  mode?: 'development' | 'production';
+  env?: Record<string, any>;
+  envDir?: string;
+  envFiles?: string[];
+  envPrefix?: string | string[];
   configFilePath?: string;
-  define?: Record<string, string | boolean>;
+  envMode?: string;
   configFileDependencies?: string[];
+  compilation?: Config['config'];
+  server?: NormalizedServerConfig;
+  jsPlugins?: JsPlugin[];
+  rustPlugins?: [string, string][];
 }
 
 export interface GlobalFarmCLIOptions {

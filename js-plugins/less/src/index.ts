@@ -32,7 +32,7 @@ export default function farmLessPlugin(
   return {
     name: pluginName,
     configResolved: (config) => {
-      farmConfig = config;
+      farmConfig = config.compilation;
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore it will be removed in the future

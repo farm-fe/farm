@@ -119,10 +119,6 @@ export interface Config {
       targetEnv?: 'browser' | 'node';
       format?: 'cjs' | 'esm';
     };
-    env?: Record<string, any>;
-    envDir?: string;
-    envFiles?: string[];
-    envPrefix?: string | string[];
     resolve?: {
       extensions?: string[];
       alias?: Record<string, string>;
@@ -142,7 +138,6 @@ export interface Config {
       swcHelpersPath?: string;
       namespace?: string;
     };
-    configFilePath?: string;
     watch?: boolean | WatcherOptions;
     assets?: {
       include?: string[];
