@@ -52,6 +52,19 @@ export default function farmVuePlugin(
 
   return {
     name: 'farm-vue-plugin',
+    config(config) {
+      return {
+        compilation: {
+          lazyCompilation:
+            resolvedOptions.ssr === true
+              ? false
+              : config.compilation.lazyCompilation
+        },
+        server: {
+          hmr: resolvedOptions.hmr ?? config.server.hmr
+        }
+      };
+    },
     configResolved(config) {
       farmConfig = config || {};
     },
@@ -176,8 +189,7 @@ export default function farmVuePlugin(
               resolvedOptions,
               descriptor,
               stylesCodeCache,
-              resolvedPath,
-              farmConfig.mode
+              resolvedPath
             );
             return {
               content: mainCode,

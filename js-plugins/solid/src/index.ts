@@ -44,6 +44,17 @@ export default function farmPluginSolid(
 
   return {
     name: 'farm-plugin-solid',
+    config(config, configEnv) {
+      return {
+        compilation: {
+          lazyCompilation:
+            options.ssr === true ? false : config.compilation.lazyCompilation
+        },
+        server: {
+          hmr: options.ssr === true ? false : config.server.hmr
+        }
+      };
+    },
     configResolved(param) {
       // We inject the dev mode only if the use˜r explicitly wants it or if we are in dev (serve) mode
       needHmr = param.mode !== 'production';

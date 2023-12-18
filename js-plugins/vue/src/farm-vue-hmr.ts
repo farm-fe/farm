@@ -74,7 +74,6 @@ function diffDescriptor(
     descriptor,
     stylesCodeCache,
     resolvedPath,
-    mode,
     true,
     _rerender_only,
     deleteStyles,

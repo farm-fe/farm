@@ -263,15 +263,14 @@ export function genOtherCode(
   hash: string,
   isHmr = false,
   rerenderOnly: boolean,
-  filename: string,
-  mode: string | 'development' | 'production' = 'production'
+  filename: string
 ) {
   const otherCodeArr = [
     assignRenderCode,
     genFileNameCode(filename),
     hasScoped ? genAssignScopedCode(hash) : '',
     genAssignHmrIdCode(hash),
-    mode === 'development' ? defaultHmrCode : '',
+    isHmr ? defaultHmrCode : '',
     isHmr ? `_sfc_main._rerender_only=${rerenderOnly}` : '',
     exportDefaultCode
   ];
@@ -288,7 +287,6 @@ export function genMainCode(
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
-  mode: string | 'development' | 'production' = 'production',
   isHmr = false,
   rerenderOnly = false,
   deleteStyles: SFCStyleBlock[] = [],
@@ -348,8 +346,7 @@ export function genMainCode(
     hash,
     isHmr,
     rerenderOnly,
-    filePath,
-    mode
+    filePath
   );
 
   output.push(scriptCode, templateCode, stylesCode, otherCode);
