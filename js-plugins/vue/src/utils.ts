@@ -76,7 +76,7 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
   };
   for (const key in defaultVueOptions) {
     const val = defaultVueOptions[key as keyof FarmVuePluginOptions];
-    switch (key) {
+    switch (key as keyof FarmVuePluginOptions) {
       case 'include':
         resolvedOptions.include = (
           isArray(val) ? val : [val]
@@ -103,6 +103,12 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
         break;
       case 'style':
         resolvedOptions.style = (val ? val : {}) as ResolvedOptions['style'];
+        break;
+      case 'hmr':
+        if (defaultVueOptions.hmr !== undefined) {
+          resolvedOptions.hmr = Boolean(defaultVueOptions.hmr);
+        }
+        break;
     }
   }
   resolvedOptions.sourceMap =

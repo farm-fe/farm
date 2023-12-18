@@ -47,9 +47,9 @@ export default function farmVuePlugin(
   // options hooks to get farmConfig
   let farmConfig: UserConfig['compilation'];
   const resolvedOptions = getResolvedOptions(farmVuePluginOptions);
-
   const exclude = handleExclude(resolvedOptions);
   const include = handleInclude(resolvedOptions);
+
   return {
     name: 'farm-vue-plugin',
     configResolved(config) {
@@ -142,23 +142,30 @@ export default function farmVuePlugin(
             parse,
             [source]
           );
+
           if (result) {
             const { descriptor } = result;
-            const isHmr = handleHmr(
-              resolvedOptions,
-              cacheDescriptor,
-              descriptor,
-              stylesCodeCache,
-              query,
-              resolvedPath,
-              farmConfig.mode
-            );
-            if (isHmr) {
-              return {
-                content: isHmr.source,
-                moduleType: isHmr.moduleType,
-                sourceMap: isHmr.map
-              };
+
+            const enableHMR =
+              resolvedOptions.hmr ?? farmConfig.mode === 'development';
+
+            if (enableHMR) {
+              const isHmr = handleHmr(
+                resolvedOptions,
+                cacheDescriptor,
+                descriptor,
+                stylesCodeCache,
+                query,
+                resolvedPath,
+                farmConfig.mode
+              );
+              if (isHmr) {
+                return {
+                  content: isHmr.source,
+                  moduleType: isHmr.moduleType,
+                  sourceMap: isHmr.map
+                };
+              }
             }
 
             const {

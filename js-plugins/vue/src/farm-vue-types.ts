@@ -62,6 +62,10 @@ export interface FarmVuePluginOptions {
     >
   >;
   style?: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+  /**
+   * If not set, it is considered to be `true` in `development` mode.
+   */
+  hmr?: boolean;
 }
 
 export interface ResolvedOptions {
@@ -81,4 +85,5 @@ export interface ResolvedOptions {
     >
   >;
   style: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+  hmr?: boolean;
 }
