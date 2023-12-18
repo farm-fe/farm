@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::{
   path::{Path, PathBuf},
   str::FromStr,
@@ -74,7 +74,7 @@ struct ConditionOptions {
   pub unsafe_flag: bool,
   pub require: bool,
   pub browser: bool,
-  pub conditions: Vec<String>,
+  pub conditions: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -642,7 +642,7 @@ impl Resolver {
     if let Some(package_json_info) = package_json_info {
       let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
       let resolved_path = self
-        .try_exports_replace(source, package_json_info, kind, context)
+        .try_exports_replace(source, package_json_info, context)
         .unwrap_or(resolved_path);
       // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
       let resolved_path_buf = PathBuf::from(&resolved_path);
@@ -672,21 +672,15 @@ impl Resolver {
     &self,
     source: &str,
     package_json_info: &PackageJsonInfo,
-    kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_exports_replace".to_string());
     // TODO: add all cases from https://nodejs.org/api/packages.html
     let re = regex::Regex::new(r"^(?P<group1>[^@][^/]*)/|^(?P<group2>@[^/]+/[^/]+)/").unwrap();
     let is_matched = re.is_match(source);
-    if let Some(resolve_exports_path) = self.resolve_exports_or_imports(
-      package_json_info,
-      source,
-      "exports",
-      kind,
-      context,
-      is_matched,
-    ) {
+    if let Some(resolve_exports_path) =
+      self.resolve_exports_or_imports(package_json_info, source, "exports", context, is_matched)
+    {
       let resolved_id = resolve_exports_path.get(0).unwrap();
       let value_path = self.get_key_path(resolved_id, package_json_info.dir());
       return Some(value_path);
@@ -926,7 +920,7 @@ impl Resolver {
           return None;
         }
       };
-      let mut map: HashMap<String, Value> = HashMap::new();
+      let mut map: BTreeMap<String, Value> = BTreeMap::new();
       match exports_field {
         Value::String(string_value) => {
           map.insert(".".to_string(), Value::String(string_value.clone()));
@@ -971,7 +965,7 @@ impl Resolver {
           return None;
         }
       };
-      let mut imports_map: HashMap<String, Value> = HashMap::new();
+      let mut imports_map: BTreeMap<String, Value> = BTreeMap::new();
 
       match imports_field {
         Value::Object(object_value) => {
@@ -992,23 +986,20 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     source: &str,
     field_type: &str,
-    kind: &ResolveKind,
     context: &Arc<CompilationContext>,
     is_matched: bool,
   ) -> Option<Vec<String>> {
     farm_profile_function!("resolve_exports_or_imports".to_string());
-    let mut additional_conditions: Vec<String> = context.config.resolve.conditions.clone();
+    let mut additional_conditions: HashSet<String> =
+      context.config.resolve.conditions.iter().cloned().collect();
 
     if !additional_conditions.contains(&String::from("production"))
       && !additional_conditions.contains(&String::from("development"))
     {
-      additional_conditions.insert(
-        0,
-        match context.config.mode {
-          Mode::Production => String::from("production"),
-          Mode::Development => String::from("development"),
-        },
-      );
+      additional_conditions.insert(match context.config.mode {
+        Mode::Production => String::from("production"),
+        Mode::Development => String::from("development"),
+      });
     }
 
     // resolve exports field
@@ -1017,7 +1008,7 @@ impl Resolver {
     let condition_config = ConditionOptions {
       browser: is_browser && !additional_conditions.contains(&String::from("node")),
       require: is_require && !additional_conditions.contains(&String::from("import")),
-      conditions: additional_conditions.into_iter().collect(),
+      conditions: additional_conditions,
       // set default unsafe_flag to insert require & import field
       unsafe_flag: false,
     };
@@ -1031,17 +1022,17 @@ impl Resolver {
   }
 
   /// [condition order](https://nodejs.org/api/packages.html#conditional-exports)
-  fn conditions(self: &Self, options: &ConditionOptions) -> Vec<Condition> {
+  fn conditions(self: &Self, options: &ConditionOptions) -> HashSet<Condition> {
     // custom conditions should be first
     let mut conditions = options
       .conditions
       .iter()
       .map(|condition| Condition::from_str(condition).unwrap())
-      .collect::<Vec<_>>();
+      .collect::<HashSet<_>>();
 
     let mut add_condition = |condition: Condition| {
       if !conditions.contains(&condition) {
-        conditions.push(condition);
+        conditions.insert(condition);
       }
     };
 
@@ -1083,7 +1074,7 @@ impl Resolver {
   fn loop_value(
     self: &Self,
     m: Value,
-    keys: &Vec<Condition>,
+    conditions: &HashSet<Condition>,
     result: &mut Option<HashSet<String>>,
   ) -> Option<Vec<String>> {
     match m {
@@ -1096,7 +1087,7 @@ impl Resolver {
       Value::Array(values) => {
         let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
         for item in values {
-          if let Some(item_result) = self.loop_value(item, keys, &mut Some(arr_result.clone())) {
+          if let Some(item_result) = self.loop_value(item, conditions, &mut Some(arr_result.clone())) {
             return Some(item_result);
           }
         }
@@ -1108,10 +1099,10 @@ impl Resolver {
         }
       }
       Value::Object(map) => {
-        for key in keys {
-          if let Some(value) = map.get(&key.to_string()) {
-            return self.loop_value(value.clone(), keys, result);
-          }
+        for (condition, val) in map.iter() {
+          if conditions.contains(&Condition::from_str(condition.as_str()).unwrap()) {
+            return self.loop_value(val.clone(), conditions, result);
+          };
         }
         None
       }
@@ -1173,7 +1164,7 @@ impl Resolver {
   fn walk(
     self: &Self,
     name: &str,
-    mapping: &HashMap<String, Value>,
+    mapping: &BTreeMap<String, Value>,
     input: &str,
     options: &ConditionOptions,
   ) -> Vec<String> {
