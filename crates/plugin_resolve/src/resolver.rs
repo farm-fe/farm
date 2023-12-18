@@ -642,7 +642,7 @@ impl Resolver {
     if let Some(package_json_info) = package_json_info {
       let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
       let resolved_path = self
-        .try_exports_replace(source, package_json_info, context)
+        .try_exports_replace(source, package_json_info, kind, context)
         .unwrap_or(resolved_path);
       // fix: not exports field, eg: "@ant-design/icons-svg/es/asn/SearchOutlined"
       let resolved_path_buf = PathBuf::from(&resolved_path);
@@ -672,15 +672,21 @@ impl Resolver {
     &self,
     source: &str,
     package_json_info: &PackageJsonInfo,
+    kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_exports_replace".to_string());
     // TODO: add all cases from https://nodejs.org/api/packages.html
     let re = regex::Regex::new(r"^(?P<group1>[^@][^/]*)/|^(?P<group2>@[^/]+/[^/]+)/").unwrap();
     let is_matched = re.is_match(source);
-    if let Some(resolve_exports_path) =
-      self.resolve_exports_or_imports(package_json_info, source, "exports", context, is_matched)
-    {
+    if let Some(resolve_exports_path) = self.resolve_exports_or_imports(
+      package_json_info,
+      source,
+      "exports",
+      kind,
+      context,
+      is_matched,
+    ) {
       let resolved_id = resolve_exports_path.get(0).unwrap();
       let value_path = self.get_key_path(resolved_id, package_json_info.dir());
       return Some(value_path);
@@ -986,6 +992,7 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     source: &str,
     field_type: &str,
+    kind: &ResolveKind,
     context: &Arc<CompilationContext>,
     is_matched: bool,
   ) -> Option<Vec<String>> {
@@ -1004,7 +1011,10 @@ impl Resolver {
 
     // resolve exports field
     let is_browser = context.config.output.target_env == TargetEnv::Browser;
-    let is_require = context.config.output.format == ModuleFormat::CommonJs;
+    let is_require = match kind {
+      ResolveKind::Require => true,
+      _ => false,
+    };
     let condition_config = ConditionOptions {
       browser: is_browser && !additional_conditions.contains(&String::from("node")),
       require: is_require && !additional_conditions.contains(&String::from("import")),
@@ -1087,7 +1097,9 @@ impl Resolver {
       Value::Array(values) => {
         let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
         for item in values {
-          if let Some(item_result) = self.loop_value(item, conditions, &mut Some(arr_result.clone())) {
+          if let Some(item_result) =
+            self.loop_value(item, conditions, &mut Some(arr_result.clone()))
+          {
             return Some(item_result);
           }
         }
