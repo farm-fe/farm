@@ -204,7 +204,7 @@ const compilationConfigSchema = z
               hash: z.boolean().optional()
             })
             .optional(),
-          envs: z.map(z.string(), z.string()).optional()
+          envs: z.record(z.string(), z.string()).optional()
         })
         .optional()
     ])
