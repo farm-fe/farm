@@ -1040,27 +1040,21 @@ impl Resolver {
       .map(|condition| Condition::from_str(condition).unwrap())
       .collect::<HashSet<_>>();
 
-    let mut add_condition = |condition: Condition| {
-      if !conditions.contains(&condition) {
-        conditions.insert(condition);
-      }
-    };
+    conditions.insert(Condition::Default);
 
     if !options.unsafe_flag {
-      if options.browser {
-        add_condition(Condition::Browser);
+      if options.require {
+        conditions.insert(Condition::Require);
       } else {
-        add_condition(Condition::Node);
+        conditions.insert(Condition::Import);
       }
 
-      if options.require {
-        add_condition(Condition::Require);
+      if options.browser {
+        conditions.insert(Condition::Browser);
       } else {
-        add_condition(Condition::Import);
+        conditions.insert(Condition::Node);
       }
     }
-
-    add_condition(Condition::Default);
 
     conditions
   }
