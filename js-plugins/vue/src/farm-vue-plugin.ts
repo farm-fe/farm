@@ -58,10 +58,10 @@ export default function farmVuePlugin(
           lazyCompilation:
             resolvedOptions.ssr === true
               ? false
-              : config.compilation.lazyCompilation
+              : config.compilation?.lazyCompilation
         },
         server: {
-          hmr: resolvedOptions.hmr ?? config.server.hmr
+          hmr: resolvedOptions.hmr ?? config.server?.hmr
         }
       };
     },
@@ -160,17 +160,20 @@ export default function farmVuePlugin(
             const { descriptor } = result;
 
             const enableHMR =
-              resolvedOptions.hmr ?? farmConfig.mode === 'development';
+              resolvedOptions.hmr && farmConfig.mode !== 'production';
 
-            if (enableHMR) {
+            const beforeDescriptor = cacheDescriptor[resolvedPath];
+            // set descriptors cache to hmr
+            if (!beforeDescriptor) {
+              if (Object.keys(query).length === 0)
+                cacheDescriptor[resolvedPath] = descriptor;
+            } else if (enableHMR) {
               const isHmr = handleHmr(
                 resolvedOptions,
-                cacheDescriptor,
+                beforeDescriptor,
                 descriptor,
                 stylesCodeCache,
-                query,
-                resolvedPath,
-                farmConfig.mode
+                resolvedPath
               );
               if (isHmr) {
                 return {

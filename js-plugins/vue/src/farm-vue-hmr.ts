@@ -16,31 +16,18 @@ export const cacheScript = new WeakMap();
 
 export function handleHmr(
   resolvedOptions: ResolvedOptions,
-  cacheDescriptor: CacheDescriptor,
+  beforeDescriptor: SFCDescriptor,
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
-  query: QueryObj,
-  resolvedPath: string,
-  mode: string | 'development' | 'production' = 'production'
+  resolvedPath: string
 ) {
-  const beforeDescriptor = cacheDescriptor[resolvedPath];
-  // set descriptors cache to hmr
-  if (!beforeDescriptor) {
-    if (Object.keys(query).length === 0)
-      cacheDescriptor[resolvedPath] = descriptor;
-    return null;
-  }
-  // diff beforeDescriptor and currentDescriptor
-  else {
-    return diffDescriptor(
-      resolvedOptions,
-      beforeDescriptor,
-      descriptor,
-      stylesCodeCache,
-      resolvedPath,
-      mode
-    );
-  }
+  return diffDescriptor(
+    resolvedOptions,
+    beforeDescriptor,
+    descriptor,
+    stylesCodeCache,
+    resolvedPath
+  );
 }
 
 function diffDescriptor(
@@ -48,8 +35,7 @@ function diffDescriptor(
   prevDescriptor: SFCDescriptor,
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
-  resolvedPath: string,
-  mode: string | 'development' | 'production' = 'production'
+  resolvedPath: string
 ) {
   let _rerender_only = false;
   // if script changed, rerender from root.

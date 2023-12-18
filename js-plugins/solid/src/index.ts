@@ -48,10 +48,10 @@ export default function farmPluginSolid(
       return {
         compilation: {
           lazyCompilation:
-            options.ssr === true ? false : config.compilation.lazyCompilation
+            options.ssr === true ? false : config.compilation?.lazyCompilation
         },
         server: {
-          hmr: options.ssr === true ? false : config.server.hmr
+          hmr: options.ssr === true ? false : config.server?.hmr
         }
       };
     },
