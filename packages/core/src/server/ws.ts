@@ -10,6 +10,7 @@ import {
   red
 } from '../index.js';
 import { Server } from './type.js';
+import { HmrEngine } from './hmr-engine.js';
 
 const HMR_HEADER = 'farm_hmr';
 
@@ -37,6 +38,7 @@ export type WebSocketCustomListener<T> = (
 export interface WebSocketClient {
   send(payload: any): void;
   send(event: string, payload?: any['data']): void;
+  rawSend(str: string): void;
   socket: WebSocketRawType;
 }
 
@@ -49,7 +51,7 @@ export default class WsServer implements IWebSocketServer {
   constructor(
     private httpServer: Server,
     private config: NormalizedServerConfig,
-    public isFarmHmrEvent: boolean = false,
+    private hmrEngine: HmrEngine,
     logger?: Logger
   ) {
     this.logger = logger ?? new DefaultLogger();
@@ -138,7 +140,7 @@ export default class WsServer implements IWebSocketServer {
     this.send({ type: 'custom', event, data: payload });
   }
 
-  public on(event: string, listener: () => void) {
+  public on(event: string, listener: (...args: any[]) => void) {
     if (wsServerEvents.includes(event)) {
       this.wss.on(event, listener);
     } else {
@@ -164,6 +166,12 @@ export default class WsServer implements IWebSocketServer {
         } catch {
           this.logger.error('Failed to parse WebSocket message: ' + raw);
         }
+        // transform vite js-update to farm update
+        if (parsed?.type === 'js-update' && parsed?.path) {
+          this.hmrEngine.hmrUpdate(parsed.path);
+          return;
+        }
+
         if (!parsed || parsed.type !== 'custom' || !parsed.event) return;
         const listeners = this.customListeners.get(parsed.event);
         if (!listeners?.size) return;
@@ -227,21 +235,17 @@ export default class WsServer implements IWebSocketServer {
   private getSocketClient(socket: WebSocketRawType) {
     if (!this.clientsMap.has(socket)) {
       this.clientsMap.set(socket, {
-        send: (...args) =>
-          this.sendMessage(socket, this.isFarmHmrEvent, ...args),
-        socket
+        send: (...args) => this.sendMessage(socket, ...args),
+        socket,
+        rawSend: (str) => socket.send(str)
       });
     }
     return this.clientsMap.get(socket);
   }
 
-  private sendMessage(
-    socket: WebSocketRawType,
-    isFarmHmrEvent: boolean,
-    ...args: any[]
-  ) {
+  private sendMessage(socket: WebSocketRawType, ...args: any[]) {
     let payload: any;
-    if (typeof args[0] === 'string' && !isFarmHmrEvent) {
+    if (typeof args[0] === 'string') {
       payload = {
         type: 'custom',
         event: args[0],
@@ -250,7 +254,7 @@ export default class WsServer implements IWebSocketServer {
     } else {
       payload = args[0];
     }
-    socket.send(payload);
+    socket.send(JSON.stringify(payload));
   }
 
   private handleSocketError(err: Error & { code: string }) {

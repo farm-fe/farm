@@ -1,5 +1,5 @@
 import type { ModuleSystem } from '@farmfe/runtime';
-import { HmrUpdateResult, RawHmrUpdateResult } from './types';
+import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
 import { HotModuleState } from './hot-module-state';
 import { logger } from './logger';
 
@@ -36,35 +36,17 @@ export class HmrClient {
     // after the file is recompiled, the server will generated a update resource and send its id to the client
     // the client will apply the update
     socket.addEventListener('message', (event) => {
-      const result: RawHmrUpdateResult = eval(`(${event.data})`);
-      const immutableModules = eval(result.immutableModules);
-      const mutableModules = eval(result.mutableModules);
-      const modules = { ...immutableModules, ...mutableModules };
-      this.applyHotUpdates(
-        {
-          added: result.added,
-          changed: result.changed,
-          removed: result.removed,
-          boundaries: result.boundaries,
-          modules,
-          dynamicResourcesMap: result.dynamicResourcesMap
-        },
-        this.moduleSystem
-      );
+      const result: HMRPayload = eval(`(${event.data})`);
+      this.handleMessage(result);
     });
 
     socket.addEventListener(
       'open',
       () => {
-        logger.log('connected to the server');
         this.notifyListeners('vite:ws:connect', { webSocket: socket });
       },
       { once: true }
     );
-
-    socket.addEventListener('message', async ({ data }) => {
-      // handle message
-    });
 
     socket.addEventListener('close', () => {
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
@@ -165,5 +147,69 @@ export class HmrClient {
     if (callbacks) {
       await Promise.allSettled(callbacks.map((cb) => cb(data)));
     }
+  }
+
+  /**
+   * handle vite HMR message, except farm-update which is handled by handleFarmUpdate, other messages are handled the same as vite
+   * @param payload Vite HMR payload
+   */
+  async handleMessage(payload: HMRPayload) {
+    switch (payload.type) {
+      case 'farm-update':
+        this.notifyListeners('farm:beforeUpdate', payload);
+        this.handleFarmUpdate(payload.result);
+        this.notifyListeners('farm:afterUpdate', payload);
+        break;
+      case 'connected':
+        logger.log('connected to the server');
+        break;
+      case 'update':
+        this.notifyListeners('vite:beforeUpdate', payload);
+        await Promise.all(
+          payload.updates.map(async (update) => {
+            if (update.type === 'js-update') {
+              this.socket.send(JSON.stringify(update));
+              return;
+            }
+
+            logger.warn('css link update is not supported yet');
+          })
+        );
+        this.notifyListeners('vite:afterUpdate', payload);
+        break;
+      case 'custom':
+        this.notifyListeners(payload.event, payload.data);
+        break;
+      case 'full-reload':
+        this.notifyListeners('vite:beforeFullReload', payload);
+        window.location.reload();
+        break;
+      case 'prune':
+        this.notifyListeners('vite:beforePrune', payload);
+        break;
+      case 'error':
+        this.notifyListeners('vite:error', payload);
+        // TODO support error overlay
+        break;
+      default:
+        logger.warn(`unknown message payload: ${payload}`);
+    }
+  }
+
+  handleFarmUpdate(result: RawHmrUpdateResult) {
+    const immutableModules = eval(result.immutableModules);
+    const mutableModules = eval(result.mutableModules);
+    const modules = { ...immutableModules, ...mutableModules };
+    this.applyHotUpdates(
+      {
+        added: result.added,
+        changed: result.changed,
+        removed: result.removed,
+        boundaries: result.boundaries,
+        modules,
+        dynamicResourcesMap: result.dynamicResourcesMap
+      },
+      this.moduleSystem
+    );
   }
 }

@@ -3,15 +3,19 @@
  */
 
 import { relative } from 'node:path';
-import { Context } from 'koa';
+import { Context, Middleware } from 'koa';
 
 import { DevServer } from '../index.js';
 import { bold, cyan, green } from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 
-export function lazyCompilation(devSeverContext: DevServer) {
+export function lazyCompilation(devSeverContext: DevServer): Middleware {
   const compiler = devSeverContext.getCompiler();
+
+  if (!compiler.config.config?.lazyCompilation) {
+    return;
+  }
 
   return async (ctx: Context, next: () => Promise<any>) => {
     if (ctx.path === '/__lazy_compile') {
@@ -68,10 +72,4 @@ export function lazyCompilation(devSeverContext: DevServer) {
       await next();
     }
   };
-}
-
-export function lazyCompilationPlugin(distance: DevServer) {
-  if (distance._context.compiler.config.config.lazyCompilation) {
-    distance._context.app.use(lazyCompilation(distance));
-  }
 }

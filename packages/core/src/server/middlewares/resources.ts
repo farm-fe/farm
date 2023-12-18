@@ -3,7 +3,7 @@
  */
 
 import path, { extname } from 'node:path';
-import { Context, Next } from 'koa';
+import { Context, Middleware, Next } from 'koa';
 import { Compiler } from '../../compiler/index.js';
 import { DevServer } from '../index.js';
 import koaStatic from 'koa-static';
@@ -12,7 +12,7 @@ import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 // import mime from 'mime-types';
 
-export function resources(
+export function resourcesMiddleware(
   compiler: Compiler,
   config: NormalizedServerConfig,
   publicPath: string
@@ -110,22 +110,26 @@ export function resources(
   };
 }
 
-export function resourcesPlugin(devSeverContext: DevServer) {
+export function resources(
+  devSeverContext: DevServer
+): Middleware | Middleware[] {
+  const middlewares = [];
   if (!devSeverContext.config.writeToDisk) {
-    devSeverContext._context.app.use(
-      resources(
+    middlewares.push(
+      resourcesMiddleware(
         devSeverContext._context.compiler,
         devSeverContext.config,
         devSeverContext.publicPath
       )
     );
   } else {
-    devSeverContext._context.app.use(
+    middlewares.push(
       koaStatic(devSeverContext.getCompiler().config.config.output.path, {
         extensions: ['html']
       })
     );
   }
 
-  devSeverContext._context.app.use(koaStatic(devSeverContext.publicDir));
+  middlewares.push(koaStatic(devSeverContext.publicDir));
+  return middlewares;
 }

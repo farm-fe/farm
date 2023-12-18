@@ -8,6 +8,7 @@ import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/type.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { Config } from '../../binding/index.js';
+import { Middleware } from 'koa';
 
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
@@ -138,4 +139,6 @@ export interface FarmCLIOptions
   clearScreen?: boolean;
 }
 
-export type DevServerMiddleware = (context: DevServer) => void;
+export type DevServerMiddleware = (
+  context: DevServer
+) => Middleware | undefined;

@@ -20,13 +20,12 @@ import {
   printServerUrls
 } from '../utils/index.js';
 import {
-  corsPlugin,
-  headersPlugin,
-  hmrPlugin,
-  lazyCompilationPlugin,
-  proxyPlugin,
-  recordsPlugin,
-  resourcesPlugin
+  cors,
+  headers,
+  lazyCompilation,
+  proxy,
+  records,
+  resources
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
@@ -220,7 +219,12 @@ export class DevServer implements ImplDevServer {
       this.server = http.createServer(this._app.callback());
     }
 
-    this.ws = new WsServer(this.server, this.config, true);
+    this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
+    this.ws = new WsServer(this.server, this.config, this.hmrEngine);
+
+    this.ws.on('vite:invalidate', ({ path, message }) => {
+      /** todo */
+    });
 
     this._context = {
       config: this.config,
@@ -291,18 +295,29 @@ export class DevServer implements ImplDevServer {
   private resolvedFarmServerMiddleware(
     middlewares?: DevServerMiddleware[]
   ): void {
-    const resolvedPlugins = [
+    const internalMiddlewares = [
       ...(middlewares || []),
-      headersPlugin,
-      lazyCompilationPlugin,
-      hmrPlugin,
-      corsPlugin,
-      resourcesPlugin,
-      recordsPlugin,
-      proxyPlugin
+      headers,
+      lazyCompilation,
+      cors,
+      resources,
+      records,
+      proxy
     ];
 
-    resolvedPlugins.forEach((plugin) => plugin(this));
+    internalMiddlewares.forEach((middleware) => {
+      const middlewareImpl = middleware(this);
+
+      if (middlewareImpl) {
+        if (Array.isArray(middlewareImpl)) {
+          middlewareImpl.forEach((m) => {
+            this._app.use(m);
+          });
+        } else {
+          this._app.use(middlewareImpl);
+        }
+      }
+    });
   }
 
   private async printServerUrls() {
