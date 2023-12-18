@@ -58,5 +58,5 @@ export default {
       }
     ]
   },
-  plugins: [solid({ solid: { hydratable: true } }), '@farmfe/plugin-sass']
+  plugins: [solid({ solid: { hydratable: true } })]
 };

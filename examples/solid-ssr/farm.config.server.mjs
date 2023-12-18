@@ -25,5 +25,5 @@ export default {
     persistentCache: false,
     minify: false
   },
-  plugins: [solid({ ssr: true }), '@farmfe/plugin-sass']
+  plugins: [solid({ ssr: true })]
 };

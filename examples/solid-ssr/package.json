@@ -15,8 +15,6 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-solid": "workspace:*",
-    "@farmfe/plugin-sass": "workspace:*",
-    "react-refresh": "^0.14.0",
     "solid-refresh": "^0.5.3"
   },
   "scripts": {

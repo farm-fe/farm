@@ -1,6 +1,6 @@
 import { A, RouteDefinition } from '@solidjs/router';
 
-import { ParentProps } from 'solid-js';
+import { ParentProps, lazy } from 'solid-js';
 
 function App(props: ParentProps) {
   return (
@@ -74,14 +74,6 @@ function Home() {
   );
 }
 
-function About() {
-  return (
-    <div>
-      <h2>About</h2>
-    </div>
-  );
-}
-
 function Dashboard() {
   return (
     <div>
@@ -116,7 +108,7 @@ export const routes = [
           },
           {
             path: 'about',
-            component: About
+            component: lazy(() => import('./pages/About'))
           },
           {
             path: 'dashboard',

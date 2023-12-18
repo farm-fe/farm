@@ -795,12 +795,6 @@ importers:
       '@farmfe/js-plugin-solid':
         specifier: workspace:*
         version: link:../../js-plugins/solid
-      '@farmfe/plugin-sass':
-        specifier: workspace:*
-        version: link:../../rust-plugins/sass
-      react-refresh:
-        specifier: ^0.14.0
-        version: 0.14.0
       solid-refresh:
         specifier: ^0.5.3
         version: 0.5.3(solid-js@1.8.5)

@@ -18,10 +18,8 @@ export default {
       prefixer: {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
-    }
+    },
+    persistentCache: false
   },
-  server: {
-    hmr: false,
-  },
-  plugins: [vue({ hrm: false })]
+  plugins: [vue({ ssr: true })]
 };
