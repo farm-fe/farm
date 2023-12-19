@@ -29,6 +29,10 @@ export async function normalizePersistentCache(
     config.persistentCache.envs = config.env;
   }
 
+  if (!config.persistentCache.buildDependencies) {
+    config.persistentCache.buildDependencies = [];
+  }
+
   for (const lockfile of ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
     if (!config.persistentCache.buildDependencies.includes(lockfile)) {
       config.persistentCache.buildDependencies.push(lockfile);

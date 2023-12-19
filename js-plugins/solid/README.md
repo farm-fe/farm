@@ -13,9 +13,16 @@ npm i @farmfe/js-plugin-solid --save-dev # or pnpm/yarn add @farmfe/js-plugin-so
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
+import solid from '@farmfe/js-plugin-solid';
 
+export default {
+  compilation: {
+    // ...
+  },
+  plugins: [solid()]
+};
 ```
 
 ## Options
 
-TODO
+see [vite-plugin-solid options](https://github.com/solidjs/vite-plugin-solid#api)

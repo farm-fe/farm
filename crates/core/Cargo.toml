@@ -10,7 +10,7 @@ description = "Core types and data structures for farm."
 farmfe_macro_cache_item = { version = "0.1.0", path = "../macro_cache_item" }
 farmfe_utils = { version = "0.1.0", path = "../utils" }
 serde = { version = "1.0", features = ["derive", "rc"] }
-serde_json = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"]}
 parking_lot = { version = "0.12", features = ["deadlock_detection"] }
 relative-path = "1.7"
 dashmap = "5.0"

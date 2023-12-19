@@ -127,9 +127,9 @@ export interface JsPlugin {
   // config?: Callback<Config['config'], Config['config']>;
 
   config?: (
-    config: Config['config'],
+    config: UserConfig,
     configEnv?: ConfigEnv
-  ) => Config['config'] | Promise<Config['config']>;
+  ) => UserConfig | Promise<UserConfig>;
 
   configResolved?: (config: Config['config']) => void;
 
