@@ -1,6 +1,11 @@
+use std::collections::HashSet;
+
 use farmfe_core::{
+  module::ModuleId,
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp, MetaPropKind},
+  swc_ecma_ast::{
+    CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, MetaPropKind,
+  },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
@@ -34,13 +39,15 @@ impl VisitMut for ImportMetaVisitor {
 }
 
 pub struct HmrAcceptedVisitor {
-  pub is_hmr_accepted: bool,
+  pub is_hmr_self_accepted: bool,
+  pub hmr_accepted_deps: HashSet<ModuleId>,
 }
 
 impl HmrAcceptedVisitor {
   pub fn new() -> Self {
     Self {
-      is_hmr_accepted: false,
+      is_hmr_self_accepted: false,
+      hmr_accepted_deps: HashSet::new(),
     }
   }
 }
@@ -65,6 +72,7 @@ impl VisitMut for HmrAcceptedVisitor {
           prop: MemberProp::Ident(Ident { sym: accept, .. }),
           ..
         })),
+      args,
       ..
     }) = expr
     {
@@ -73,7 +81,39 @@ impl VisitMut for HmrAcceptedVisitor {
         && &hot.to_string() == "hot"
         && &accept.to_string() == "accept"
       {
-        self.is_hmr_accepted = true;
+        // if args is empty or the first arg is a function expression, then it's hmr self accepted
+        if args.is_empty()
+          || matches!(args[0], ExprOrSpread {
+            expr: box Expr::Fn(..) | box Expr::Arrow(..), ..
+          })
+        {
+          self.is_hmr_self_accepted = true;
+        } else if !args.is_empty() {
+          // if args is not empty and the first arg is a literal, then it's hmr accepted deps
+          if let ExprOrSpread {
+            expr: box Expr::Lit(Lit::Str(s)),
+            ..
+          } = &args[0]
+          {
+            // string literal
+            self.hmr_accepted_deps.push(s.value.to_string());
+          } else if let ExprOrSpread {
+            expr: box Expr::Array(arr),
+            ..
+          } = &args[0]
+          {
+            // array literal
+            for expr in arr.elems.iter() {
+              if let Some(ExprOrSpread {
+                expr: box Expr::Lit(Lit::Str(s)),
+                ..
+              }) = expr
+              {
+                self.hmr_accepted_deps.push(s.value.to_string());
+              }
+            }
+          }
+        }
       }
     } else {
       expr.visit_mut_children_with(self);

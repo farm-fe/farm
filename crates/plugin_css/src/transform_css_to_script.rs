@@ -153,7 +153,8 @@ pub fn transform_css_to_script_modules(
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
           module_system: ModuleSystem::EsModule,
-          hmr_accepted: true,
+          hmr_self_accepted: true,
+          hmr_accepted_deps: Default::default(),
         });
 
         module.module_type = ModuleType::Js;

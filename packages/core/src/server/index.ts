@@ -31,6 +31,7 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Server } from './type.js';
+import { isAbsolute } from 'node:path';
 
 /**
  * Farm Dev Server, responsible for:
@@ -222,8 +223,11 @@ export class DevServer implements ImplDevServer {
     this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
     this.ws = new WsServer(this.server, this.config, this.hmrEngine);
 
+    // Note: path should be Farm's id, which is a relative path in dev mode,
+    // but in vite, it's a url path like /xxx/xxx.js
     this.ws.on('vite:invalidate', ({ path, message }) => {
-      /** todo */
+      // find hmr boundary starting from the parent of the file
+      this.logger.info(`hmr invalidate: ${path}. ${message ?? ''}`);
     });
 
     this._context = {

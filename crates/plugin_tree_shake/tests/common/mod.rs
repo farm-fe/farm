@@ -42,7 +42,8 @@ pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
     top_level_mark: 0,
     unresolved_mark: 0,
     module_system: farmfe_core::module::ModuleSystem::EsModule,
-    hmr_accepted: false,
+    hmr_self_accepted: false,
+    hmr_accepted_deps: Default::default(),
   });
   (module, cm)
 }
@@ -56,7 +57,8 @@ pub fn create_module_with_globals(code: &str) -> Module {
       top_level_mark: 0,
       unresolved_mark: 0,
       module_system: farmfe_core::module::ModuleSystem::EsModule,
-      hmr_accepted: false,
+      hmr_self_accepted: false,
+      hmr_accepted_deps: Default::default(),
     });
     module
   })
