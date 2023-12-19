@@ -1,4 +1,4 @@
-import vue from '@farmfe/js-plugin-vue';
+import vue from '@vitejs/plugin-vue';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -48,5 +48,5 @@ export default {
       }
     ]
   },
-  plugins: [vue()]
+  vitePlugins: [vue()]
 };

@@ -1,4 +1,4 @@
-import solid from '@farmfe/js-plugin-solid';
+import solid from 'vite-plugin-solid';
 import { generateHydrationScript } from 'solid-js/web';
 
 /**
@@ -58,5 +58,5 @@ export default {
       }
     ]
   },
-  plugins: [solid({ solid: { hydratable: true } })]
+  vitePlugins: [solid({ solid: { hydratable: true } })]
 };

@@ -1,4 +1,4 @@
-import vue from '@farmfe/js-plugin-vue';
+import vue from '@vitejs/plugin-vue';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -19,7 +19,8 @@ export default {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
-    persistentCache: false
+    persistentCache: false,
+    lazyCompilation: false
   },
-  plugins: [vue({ ssr: true })]
+  vitePlugins: [vue()]
 };

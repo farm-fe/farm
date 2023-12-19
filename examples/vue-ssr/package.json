@@ -13,9 +13,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/plugin-react": "workspace:*",
-    "@farmfe/plugin-sass": "workspace:*",
-    "@farmfe/js-plugin-vue": "workspace:*"
+    "@vitejs/plugin-vue": "^4.4.0"
   },
   "scripts": {
     "start": "farm start",

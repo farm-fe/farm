@@ -1,5 +1,5 @@
 import { builtinModules } from 'node:module';
-import solid from '@farmfe/js-plugin-solid';
+import solid from 'vite-plugin-solid';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -23,7 +23,8 @@ export default {
     },
     treeShaking: false,
     persistentCache: false,
-    minify: false
+    minify: false,
+    lazyCompilation: false,
   },
-  plugins: [solid({ ssr: true })]
+  vitePlugins: [solid({ ssr: true })]
 };

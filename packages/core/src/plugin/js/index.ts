@@ -38,7 +38,7 @@ export async function handleVitePlugins(
 
   for (const vitePluginObj of flatVitePlugins) {
     let vitePlugin = vitePluginObj,
-      filters = DEFAULT_FILTERS;
+      filters = ['.+'];
 
     if (typeof vitePluginObj === 'function') {
       const { vitePlugin: plugin, filters: f } = vitePluginObj();
