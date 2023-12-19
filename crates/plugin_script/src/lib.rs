@@ -1,7 +1,11 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  collections::{HashMap, HashSet},
+  path::PathBuf,
+  sync::Arc,
+};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -15,6 +19,7 @@ use farmfe_core::{
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
+  rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -238,36 +243,28 @@ impl Plugin for FarmPluginScript {
       }
     }
 
-    Ok(None)
-  }
-
-  /// find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
-  fn render_resource_pot_modules(
-    &self,
-    _resource_pot: &ResourcePot,
-    _context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
-  ) -> Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>> {
+    // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node
-    if matches!(context.config.output.target_env, TargetEnv::Browser) {
+    if matches!(context.config.output.target_env, TargetEnv::Browser)
+      || matches!(context.config.output.format, ModuleFormat::CommonJs)
+    {
       // transform `import.meta.xxx` to `module.meta.xxx`
       let ast = &mut param.module.meta.as_script_mut().ast;
       let mut import_meta_v = ImportMetaVisitor::new();
       ast.visit_mut_with(&mut import_meta_v);
+    }
 
-      let mut hmr_accepted_v = import_meta_visitor::HmrAcceptedVisitor::new();
+    if matches!(context.config.output.target_env, TargetEnv::Browser) {
+      let ast = &mut param.module.meta.as_script_mut().ast;
+      let mut hmr_accepted_v =
+        import_meta_visitor::HmrAcceptedVisitor::new(param.module.id.clone(), context.clone());
       ast.visit_mut_with(&mut hmr_accepted_v);
       param.module.meta.as_script_mut().hmr_self_accepted = hmr_accepted_v.is_hmr_self_accepted;
       param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v
         .hmr_accepted_deps
         .into_iter()
-        .map(|s| s.into())
+        .map(|dep| dep.into())
         .collect();
-    } else if matches!(context.config.output.format, ModuleFormat::CommonJs) {
-      // transform `import.meta.xxx` to `module.meta.xxx`
-      let ast = &mut param.module.meta.as_script_mut().ast;
-      let mut import_meta_v = ImportMetaVisitor::new();
-      ast.visit_mut_with(&mut import_meta_v);
     }
 
     Ok(None)

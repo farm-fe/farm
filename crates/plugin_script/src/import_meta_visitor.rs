@@ -1,13 +1,16 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use farmfe_core::{
+  context::CompilationContext,
   module::ModuleId,
+  plugin::{PluginResolveHookParam, ResolveKind},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, MetaPropKind,
+    CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, MetaPropKind, Str,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
+use farmfe_utils::stringify_query;
 
 /// transform `import.meta.xxx` to `module.meta.xxx`
 pub struct ImportMetaVisitor {}
@@ -41,13 +44,18 @@ impl VisitMut for ImportMetaVisitor {
 pub struct HmrAcceptedVisitor {
   pub is_hmr_self_accepted: bool,
   pub hmr_accepted_deps: HashSet<ModuleId>,
+
+  module_id: ModuleId,
+  context: Arc<CompilationContext>,
 }
 
 impl HmrAcceptedVisitor {
-  pub fn new() -> Self {
+  pub fn new(module_id: ModuleId, context: Arc<CompilationContext>) -> Self {
     Self {
       is_hmr_self_accepted: false,
       hmr_accepted_deps: HashSet::new(),
+      module_id,
+      context,
     }
   }
 }
@@ -89,27 +97,53 @@ impl VisitMut for HmrAcceptedVisitor {
         {
           self.is_hmr_self_accepted = true;
         } else if !args.is_empty() {
+          let mut resolve_and_replace_deps = |s: &mut Str| {
+            // string literal
+            let resolve_result = self.context.plugin_driver.resolve(
+              &PluginResolveHookParam {
+                source: s.value.to_string(),
+                importer: Some(self.module_id.clone()),
+                kind: ResolveKind::Import,
+              },
+              &self.context,
+              &Default::default(),
+            );
+            if let Ok(resolved) = resolve_result {
+              if let Some(resolved) = resolved {
+                let id = ModuleId::new(
+                  &resolved.resolved_path,
+                  &stringify_query(&resolved.query),
+                  &self.context.config.root,
+                );
+                self.hmr_accepted_deps.insert(id.clone());
+                *s = Str {
+                  span: DUMMY_SP,
+                  value: id.to_string().into(),
+                  raw: None,
+                }
+              }
+            }
+          };
           // if args is not empty and the first arg is a literal, then it's hmr accepted deps
           if let ExprOrSpread {
             expr: box Expr::Lit(Lit::Str(s)),
             ..
-          } = &args[0]
+          } = &mut args[0]
           {
-            // string literal
-            self.hmr_accepted_deps.push(s.value.to_string());
+            resolve_and_replace_deps(s);
           } else if let ExprOrSpread {
             expr: box Expr::Array(arr),
             ..
-          } = &args[0]
+          } = &mut args[0]
           {
             // array literal
-            for expr in arr.elems.iter() {
+            for expr in arr.elems.iter_mut() {
               if let Some(ExprOrSpread {
                 expr: box Expr::Lit(Lit::Str(s)),
                 ..
               }) = expr
               {
-                self.hmr_accepted_deps.push(s.value.to_string());
+                resolve_and_replace_deps(s);
               }
             }
           }

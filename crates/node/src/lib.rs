@@ -367,6 +367,19 @@ impl JsCompiler {
   }
 
   #[napi]
+  pub fn get_parent_files(&self, resolved_path: String) -> Vec<String> {
+    let context = self.compiler.context();
+    let module_graph = context.module_graph.read();
+    let module_id = ModuleId::from_resolved_path_with_query(&resolved_path, &context.config.root);
+    let parents = module_graph.dependents_ids(&module_id);
+
+    parents
+      .into_iter()
+      .map(|p| p.resolved_path_with_query(&context.config.root))
+      .collect()
+  }
+
+  #[napi]
   pub fn resources(&self) -> HashMap<String, Buffer> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();

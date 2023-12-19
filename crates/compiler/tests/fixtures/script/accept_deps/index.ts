@@ -1,6 +1,8 @@
 import { foo } from './foo.js'
+import { bar } from './bar.js'
 
 foo()
+bar()
 
 if (import.meta.hot) {
   import.meta.hot.accept('./foo.js', (newFoo) => {
