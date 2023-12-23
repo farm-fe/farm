@@ -17,7 +17,9 @@ export async function compilerHandler(
   try {
     await callback();
   } catch (error) {
-    logger.error(error);
+    logger.error(error, {
+      exit: true
+    });
   }
   const endTime = performance.now();
   const elapsedTime = Math.floor(endTime - startTime);

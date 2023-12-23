@@ -107,6 +107,36 @@ export const bgMagenta = enabled ? formatter('\x1b[45m', '\x1b[49m') : String;
 export const bgCyan = enabled ? formatter('\x1b[46m', '\x1b[49m') : String;
 export const bgWhite = enabled ? formatter('\x1b[47m', '\x1b[49m') : String;
 
+export const colors = {
+  reset,
+  bold,
+  dim,
+  italic,
+  underline,
+  inverse,
+  hidden,
+  strikethrough,
+  black,
+  red,
+  green,
+  yellow,
+  blue,
+  magenta,
+  cyan,
+  white,
+  gray,
+  bgBlack,
+  bgRed,
+  bgGreen,
+  bgYellow,
+  bgBlue,
+  bgMagenta,
+  bgCyan,
+  bgWhite,
+  debugColor,
+  brandColor
+};
+
 export function gradientString(text: string, colors: number[][]) {
   const steps = text.length;
   const gradient = colors.map(
@@ -120,7 +150,6 @@ export function gradientString(text: string, colors: number[][]) {
     output += `${gradient[colorIndex]}${text[i]}`;
   }
 
-  // 重置颜色
   output += '\x1b[0m';
 
   return output;
@@ -138,7 +167,7 @@ export function interpolateColor(
   ];
 }
 
-export const PersistentCacheBrand = gradientString('⚡️FULL EXTREME !', [
+export const PersistentCacheBrand = gradientString('⚡️ FULL EXTREME !', [
   [176, 106, 179],
   interpolateColor([176, 106, 179], [198, 66, 110], 0.1),
   interpolateColor([176, 106, 179], [198, 66, 110], 0.2),
