@@ -14,9 +14,11 @@
     } else {
         document.head.appendChild(style);
     }
-    module.meta.hot.accept();
-    module.onDispose(()=>{
-        style.remove();
-    });
+    if (module.meta.hot) {
+        module.meta.hot.accept();
+        module.meta.hot.prune(()=>{
+            style.remove();
+        });
+    }
 },})
 {}
