@@ -17,26 +17,47 @@ test('resolveUserConfig', async () => {
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
     new DefaultLogger(),
-    'serve',
     'development'
   );
 
-  expect(config).toEqual({
-    compilation: {
-      input: {
-        main: './main.tsx'
-      },
-      external: builtinModules
+  expect(config.compilation.define).toEqual({
+    FARM_HMR_HOST: true,
+    FARM_HMR_PATH: '/__hmr',
+    FARM_HMR_PORT: '9000',
+    FARM_PROCESS_ENV: {
+      NODE_ENV: 'test'
     },
-    envMode: 'development',
-    configFileDependencies: [
+    'process.env.NODE_ENV': 'test'
+  });
+  expect(config.compilation.input).toEqual({
+    main: './main.tsx'
+  });
+  expect(config.compilation.output).toEqual({
+    path: './dist',
+    publicPath: '/'
+  });
+  expect(config.compilation.lazyCompilation).toEqual(true);
+  expect(config.compilation.sourcemap).toEqual(true);
+  expect(config.compilation.minify).toEqual(false);
+  expect(config.compilation.presetEnv).toEqual(false);
+  expect(config.compilation.persistentCache).toEqual({
+    buildDependencies: [
       // path.join(filePath, '..', 'src', 'config.ts'),
       path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
       path.join(filePath, 'fixtures', 'config', 'util.ts'),
-      'module'
+      'module',
+      'package-lock.json',
+      'pnpm-lock.yaml',
+      'yarn.lock'
     ],
-    server: normalizeDevServerOptions(config.server, 'development')
+    envs: {
+      NODE_ENV: 'test'
+    },
+    moduleCacheKeyStrategy: {}
   });
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'development')
+  );
 });
 
 describe('normalize-dev-server-options', () => {

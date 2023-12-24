@@ -65,7 +65,6 @@ export function defineFarmConfig(
 export async function resolveConfig(
   inlineOptions: FarmCLIOptions,
   logger: Logger,
-  command: 'serve' | 'build',
   mode?: CompilationMode
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
@@ -146,7 +145,8 @@ export async function resolveConfig(
   );
   // check port availability: auto increment the port if a conflict occurs
   const targetWeb = !(
-    userConfig.compilation?.output?.targetEnv === 'node' || command === 'build'
+    userConfig.compilation?.output?.targetEnv === 'node' ||
+    mode === 'production'
   );
   targetWeb &&
     (await DevServer.resolvePortConflict(resolvedUserConfig.server, logger));
@@ -255,7 +255,7 @@ export async function normalizeUserCompilationConfig(
     // for node target, we should not define process.env.NODE_ENV
     config.output?.targetEnv === 'node'
       ? {}
-      : Object.keys(userConfig.env).reduce((env: any, key) => {
+      : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
           env[`process.env.${key}`] = userConfig.env[key];
           return env;
         }, {})

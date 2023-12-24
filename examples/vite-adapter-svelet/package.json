@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "farm dev",
-    "build": "farm build",
+    "build": "echo \"Error: build script not supported\"",
     "preview": "farm preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"

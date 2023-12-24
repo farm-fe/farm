@@ -12,7 +12,6 @@ export async function getCompiler(
   input?: Record<string, string>
 ): Promise<Compiler> {
   const compilationConfig = await normalizeUserCompilationConfig(
-    null,
     {
       root,
       compilation: {
@@ -28,9 +27,6 @@ export async function getCompiler(
         sourcemap: false,
         persistentCache: false
       },
-      server: {
-        hmr: false
-      },
       plugins
     },
     new DefaultLogger(),
@@ -38,7 +34,7 @@ export async function getCompiler(
   );
 
   return new Compiler({
-    config: compilationConfig.config,
+    config: compilationConfig,
     jsPlugins: plugins,
     rustPlugins: []
   });

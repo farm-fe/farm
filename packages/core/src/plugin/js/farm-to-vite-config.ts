@@ -5,7 +5,6 @@ import {
   throwIncompatibleError
 } from './utils.js';
 import merge from 'lodash.merge';
-import { Config } from '../../../binding/index.js';
 import { Logger } from '../../index.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
@@ -61,61 +60,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   };
 
   return viteConfig;
-}
-export function farmNormalConfigToViteConfig(
-  config: Config['config'],
-  farmConfig: UserConfig
-): ViteUserConfig {
-  const vitePlugins = farmConfig.vitePlugins.map((plugin) => {
-    if (typeof plugin === 'function') {
-      return plugin().vitePlugin;
-    } else {
-      return plugin;
-    }
-  });
-
-  return {
-    root: config.root,
-    base: config?.output?.publicPath ?? '/',
-    publicDir: farmConfig.publicDir ?? 'public',
-    mode: config?.mode,
-    define: config?.define,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
-    command: config?.mode === 'production' ? 'build' : 'serve',
-    resolve: {
-      alias: config?.resolve?.alias,
-      extensions: config?.resolve?.extensions,
-      mainFields: config?.resolve?.mainFields,
-      conditions: config?.resolve?.conditions,
-      preserveSymlinks: config?.resolve?.symlinks === false
-    },
-    plugins: vitePlugins,
-    server: {
-      hmr: Boolean(farmConfig.server?.hmr),
-      port: farmConfig.server?.port,
-      host: farmConfig.server?.host,
-      strictPort: farmConfig.server?.strictPort,
-      https: farmConfig.server?.https,
-      proxy: farmConfig.server?.proxy as any,
-      open: farmConfig.server?.open
-      // other options are not supported in farm
-    },
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
-    isProduction: config.compilation?.mode === 'production',
-    css: {
-      devSourcemap: false
-    },
-    build: {
-      outDir: config?.output?.path,
-      sourcemap: Boolean(config?.sourcemap),
-      minify: config?.minify,
-      cssMinify: config?.minify,
-      ssr: config?.output?.targetEnv === 'node'
-      // other options are not supported in farm
-    }
-  };
 }
 
 export function proxyViteConfig(

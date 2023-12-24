@@ -42,7 +42,6 @@ export async function start(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'serve',
     'development'
   );
   const {
@@ -113,7 +112,6 @@ export async function build(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'build',
     'production'
   );
 
@@ -138,7 +136,6 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'serve',
     'production'
   );
 
@@ -218,7 +215,6 @@ export async function watch(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'build',
     'development'
   );
 

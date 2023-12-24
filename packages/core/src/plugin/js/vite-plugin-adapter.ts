@@ -57,7 +57,6 @@ import {
 } from './vite-server-adapter.js';
 import { farmContextToViteContext } from './farm-to-vite-context.js';
 import {
-  farmNormalConfigToViteConfig,
   farmUserConfigToViteConfig,
   proxyViteConfig,
   viteConfigToFarmConfig
@@ -219,8 +218,6 @@ export class VitePluginAdapter implements JsPlugin {
       this.name,
       this._logger
     );
-
-    this._viteConfig = farmNormalConfigToViteConfig(config, this._farmConfig);
 
     const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
