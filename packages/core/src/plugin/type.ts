@@ -9,7 +9,6 @@ import {
 } from '../../binding/index.js';
 import {
   Compiler,
-  ConfigEnv,
   DevServer,
   ResolvedUserConfig,
   UserConfig
@@ -132,10 +131,7 @@ export interface JsPlugin {
   //   | ((this: void, config: UserConfig, env: ConfigEnv) => boolean);
   // config?: Callback<Config['config'], Config['config']>;
 
-  config?: (
-    config: UserConfig,
-    configEnv?: ConfigEnv
-  ) => UserConfig | Promise<UserConfig>;
+  config?: (config: UserConfig) => UserConfig | Promise<UserConfig>;
 
   configResolved?: (config: ResolvedUserConfig) => void | Promise<void>;
 

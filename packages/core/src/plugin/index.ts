@@ -3,11 +3,7 @@ import { convertPlugin } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
-import {
-  ConfigEnv,
-  ResolvedUserConfig,
-  type UserConfig
-} from '../config/index.js';
+import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
 import merge from 'lodash.merge';
 
 export * from './js/index.js';
@@ -75,7 +71,6 @@ export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
 
 export async function resolveConfigHook(
   config: UserConfig,
-  configEnv: ConfigEnv,
   plugins: JsPlugin[]
 ): Promise<UserConfig> {
   let conf = config;
@@ -92,7 +87,7 @@ export async function resolveConfigHook(
 
   for (const p of uniqueVitePlugins.values()) {
     if (p.config) {
-      const res = await p.config(conf, configEnv);
+      const res = await p.config(conf);
 
       if (res) {
         conf = merge(conf, res);

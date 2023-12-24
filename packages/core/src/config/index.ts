@@ -35,7 +35,6 @@ import { normalizeOutput } from './normalize-config/normalize-output.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
 
 import type {
-  ConfigEnv,
   FarmCLIOptions,
   NormalizedServerConfig,
   ResolvedUserConfig,
@@ -108,10 +107,6 @@ export async function resolveConfig(
   }
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
-  const configEnv: ConfigEnv = {
-    mode,
-    command
-  };
 
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
@@ -135,11 +130,7 @@ export async function resolveConfig(
     ...vitePluginAdapters
   ]);
 
-  const config = await resolveConfigHook(
-    userConfig,
-    configEnv,
-    sortFarmJsPlugins
-  );
+  const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
 
   const mergedUserConfig = mergeInlineCliOptions(config, inlineOptions);
   const resolvedUserConfig = await resolveMergedUserConfig(

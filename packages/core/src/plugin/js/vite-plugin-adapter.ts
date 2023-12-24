@@ -184,7 +184,7 @@ export class VitePluginAdapter implements JsPlugin {
   // call both config and configResolved
   async config(config: UserConfig) {
     this._farmConfig = config;
-    this._viteConfig = farmConfigToViteConfig(this._farmConfig);
+    this._viteConfig = farmUserConfigToViteConfig(this._farmConfig);
 
     const configHook = this.wrapRawPluginHook('config', this._rawPlugin.config);
 
@@ -215,7 +215,7 @@ export class VitePluginAdapter implements JsPlugin {
     if (!this._rawPlugin.configResolved) return;
     this._farmConfig = config;
     this._viteConfig = proxyViteConfig(
-      farmConfigToViteConfig(config),
+      farmUserConfigToViteConfig(config),
       this.name,
       this._logger
     );
@@ -254,14 +254,14 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  // private getViteConfigEnv(): ConfigEnv {
-  //   return {
-  //     ssrBuild: this._farmConfig.compilation?.output?.targetEnv === 'node',
-  //     command:
-  //       this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
-  //     mode: this._farmConfig.compilation?.mode
-  //   };
-  // }
+  private getViteConfigEnv(): ConfigEnv {
+    return {
+      ssrBuild: this._farmConfig.compilation?.output?.targetEnv === 'node',
+      command:
+        this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
+      mode: this._farmConfig.compilation?.mode
+    };
+  }
 
   private shouldExecutePlugin() {
     const command =

@@ -35,11 +35,6 @@ export type NormalizedServerConfig = Required<
   }
 >;
 
-export interface ConfigEnv {
-  command: 'build' | 'serve';
-  mode: string;
-}
-
 export interface NormalizedConfig {
   compilationConfig: Config;
   serverConfig?: NormalizedServerConfig;
