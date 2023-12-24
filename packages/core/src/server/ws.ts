@@ -160,6 +160,8 @@ export default class WsServer implements IWebSocketServer {
   connection() {
     this.wss.on('connection', (socket: WebSocketRawType) => {
       socket.on('message', (raw) => {
+        console.log("我在监听 message 了啊");
+        
         if (!this.customListeners.size) return;
         let parsed: any;
         try {
@@ -194,6 +196,8 @@ export default class WsServer implements IWebSocketServer {
   }
 
   public async close() {
+    console.log("我关闭 ws 了");
+    
     if (this.upgradeWsServer && this.httpServer) {
       this.httpServer.off('upgrade', this.upgradeWsServer);
     }

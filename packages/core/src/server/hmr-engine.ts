@@ -137,8 +137,10 @@ export class HmrEngine {
 
     if (!this._compiler.compiling) {
       try {
+        console.log("开始编译");
         await this.recompileAndSendResult();
       } catch (e) {
+        console.log('这格式我 hmr 的报错了 在这 emit message',e);
         this._logger.error(e);
       }
     }

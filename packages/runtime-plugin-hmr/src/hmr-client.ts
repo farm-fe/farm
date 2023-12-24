@@ -37,9 +37,7 @@ export class HmrClient {
     // after the file is recompiled, the server will generated a update resource and send its id to the client
     // the client will apply the update
     socket.addEventListener('message', (event) => {
-      console.log('我是event',event);
       const result: HMRPayload = eval(`(${event.data})`);
-      console.log(result);
       
       this.handleMessage(result);
     });
@@ -175,7 +173,7 @@ export class HmrClient {
         this.notifyListeners('farm:beforeUpdate', payload);
         this.handleFarmUpdate(payload.result);
         this.notifyListeners('farm:afterUpdate', payload);
-        createOverlay(payload.result);
+        // createOverlay(payload.result);
 
         break;
       case 'connected':
@@ -207,10 +205,9 @@ export class HmrClient {
         break;
       case 'error': {
         this.notifyListeners('vite:error', payload);
-        const err = payload.err;
         // TODO support error overlay
-        console.log(err);
-        createOverlay(err);
+        // const err = payload.err;
+        // createOverlay(err);
         break;
       }
 
