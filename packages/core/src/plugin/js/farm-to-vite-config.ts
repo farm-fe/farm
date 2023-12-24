@@ -267,7 +267,8 @@ export function proxyViteConfig(
             'sourcemap',
             'minify',
             'cssMinify',
-            'ssr'
+            'ssr',
+            'watch'
           ];
 
           return new Proxy(target.build || {}, {

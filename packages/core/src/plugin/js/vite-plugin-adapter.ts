@@ -211,8 +211,14 @@ export class VitePluginAdapter implements JsPlugin {
     return this._farmConfig;
   }
 
-  async configResolved(_config: ResolvedUserConfig) {
+  async configResolved(config: ResolvedUserConfig) {
     if (!this._rawPlugin.configResolved) return;
+    this._farmConfig = config;
+    this._viteConfig = proxyViteConfig(
+      farmConfigToViteConfig(config),
+      this.name,
+      this._logger
+    );
 
     this._viteConfig = farmNormalConfigToViteConfig(config, this._farmConfig);
 

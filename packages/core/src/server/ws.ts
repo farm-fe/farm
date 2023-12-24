@@ -61,6 +61,7 @@ export default class WsServer implements IWebSocketServer {
   private createWebSocketServer() {
     try {
       this.wss = new WebSocketServerRaw({ noServer: true });
+      this.connection();
       // TODO IF not have httpServer
       this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
     } catch (err) {
@@ -178,10 +179,13 @@ export default class WsServer implements IWebSocketServer {
         const client = this.getSocketClient(socket);
         listeners.forEach((listener) => listener(parsed.data, client));
       });
+
       socket.on('error', (err: Error & { code: string }) => {
         return this.handleSocketError(err);
       });
+
       socket.send(JSON.stringify({ type: 'connected' }));
+
       if (this.bufferedError) {
         socket.send(JSON.stringify(this.bufferedError));
         this.bufferedError = null;

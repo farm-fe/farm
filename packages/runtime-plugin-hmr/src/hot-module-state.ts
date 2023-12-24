@@ -51,7 +51,7 @@ export class HotModuleState {
     logger.log('acceptExports is not supported for now');
   }
 
-  declare() {
+  decline() {
     /** does no thing */
   }
 

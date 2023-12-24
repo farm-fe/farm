@@ -244,9 +244,53 @@ mod tests {
       ..Default::default()
     });
 
+    let module_f = module_graph.module_mut(&"F".into()).unwrap();
+    module_f.module_type = ModuleType::Js;
+    module_f.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+      hmr_self_accepted: false,
+      ..Default::default()
+    });
+
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
     // Be careful, the order of the paths may not be guaranteed. check the order if the test fails.
     assert_eq!(boundaries, HashMap::new());
+  }
+
+  #[test]
+  fn find_hmr_boundaries_deps_3() {
+    let mut module_graph = construct_test_module_graph();
+
+    let module_b = module_graph.module_mut(&"B".into()).unwrap();
+    module_b.module_type = ModuleType::Js;
+    module_b.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+      hmr_self_accepted: false,
+      hmr_accepted_deps: HashSet::from(["E".into()]),
+      ..Default::default()
+    });
+
+    let module_e = module_graph.module_mut(&"E".into()).unwrap();
+    module_e.module_type = ModuleType::Js;
+    module_e.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+      hmr_self_accepted: false,
+      ..Default::default()
+    });
+
+    let module_g = module_graph.module_mut(&"G".into()).unwrap();
+    module_g.module_type = ModuleType::Js;
+    module_g.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+      hmr_self_accepted: false,
+      ..Default::default()
+    });
+
+    let context = create_context(module_graph);
+    let boundaries = find_hmr_boundaries(&vec!["G".into()], &context);
+    // Be careful, the order of the paths may not be guaranteed. check the order if the test fails.
+    assert_eq!(
+      boundaries,
+      vec![("G".into(), vec![vec!["G".into(), "E".into(), "B".into()]])]
+        .into_iter()
+        .collect::<HashMap<_, _>>()
+    );
   }
 }

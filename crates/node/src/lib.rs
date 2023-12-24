@@ -370,7 +370,12 @@ impl JsCompiler {
   pub fn get_parent_files(&self, resolved_path: String) -> Vec<String> {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
-    let module_id = ModuleId::from_resolved_path_with_query(&resolved_path, &context.config.root);
+    let path = Path::new(&resolved_path);
+    let module_id = if path.is_absolute() {
+      ModuleId::from_resolved_path_with_query(&resolved_path, &context.config.root)
+    } else {
+      resolved_path.into()
+    };
     let parents = module_graph.dependents_ids(&module_id);
 
     parents

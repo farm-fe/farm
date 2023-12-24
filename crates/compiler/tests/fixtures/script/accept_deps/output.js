@@ -25,10 +25,24 @@
     console.log("runtime/index.js")(globalThis || window || self || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 },}, "d2214aaa");(function (modules) {
             for (var key in modules) {
-              modules[key].__farm_resource_pot__ = 'index_5c9b.js';
+              modules[key].__farm_resource_pot__ = 'index_fb79.js';
                 (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
             }
-        })({"59ebf907": function(module, exports, farmRequire, farmDynamicRequire) {
+        })({"05ee5ec7": function(module, exports, farmRequire, farmDynamicRequire) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    var _foo = farmRequire("59ebf907");
+    var _bar = farmRequire("e185e932");
+    (0, _foo.foo)();
+    (0, _bar.bar)();
+    module.meta.hot.accept([
+        "foo.js",
+        "bar.js"
+    ], ([newFooModule, newBarModule])=>{});
+},
+"59ebf907": function(module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -49,17 +63,12 @@
         value: true
     });
     var _foo = farmRequire("59ebf907");
-    var _bar = farmRequire("e185e932");
+    farmRequire("05ee5ec7");
     (0, _foo.foo)();
-    (0, _bar.bar)();
     if (module.meta.hot) {
         module.meta.hot.accept("foo.js", (newFoo)=>{
             newFoo?.foo();
         });
-        module.meta.hot.accept([
-            "foo.js",
-            "bar.js"
-        ], ([newFooModule, newBarModule])=>{});
     }
 },
 "e185e932": function(module, exports, farmRequire, farmDynamicRequire) {

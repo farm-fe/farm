@@ -6,8 +6,6 @@ export class Module {
   meta: Record<string, any>;
   require: (id: string) => any;
 
-  dispose?: () => void;
-
   constructor(id: string, require: (id: string) => any) {
     this.id = id;
     this.exports = {};
@@ -15,9 +13,5 @@ export class Module {
       env: {}
     };
     this.require = require;
-  }
-
-  onDispose(callback: () => void) {
-    this.dispose = callback;
   }
 }

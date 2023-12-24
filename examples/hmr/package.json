@@ -1,0 +1,14 @@
+{
+  "name": "@farmfe-examples/hmr",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:^",
+    "@farmfe/core": "workspace:^"
+  }
+}

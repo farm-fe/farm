@@ -197,8 +197,6 @@ export class ModuleSystem {
 
   delete(moduleId: string): boolean {
     if (this.modules[moduleId]) {
-      this.cache[moduleId] && this.cache[moduleId].dispose?.();
-
       this.clearCache(moduleId);
       delete this.modules[moduleId];
       return true;

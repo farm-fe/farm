@@ -17,7 +17,7 @@ export class HmrClient {
   socket: WebSocket;
   registeredHotModulesMap = new Map<string, HotModuleState>();
   disposeMap = new Map<string, (data: any) => void | Promise<void>>();
-  pruneMap = new Map<string, (data: any[]) => void | Promise<void>>();
+  pruneMap = new Map<string, (data: any) => void | Promise<void>>();
   customListenersMap = new Map<
     string,
     ((data: any) => void | Promise<void>)[]
@@ -56,29 +56,21 @@ export class HmrClient {
     return socket;
   }
 
-  removeCssStyles(removed: string[]) {
-    for (const id of removed) {
-      const previousStyle = document.querySelector(
-        `style[data-farm-id="${{ id }}"]`
-      );
-
-      if (previousStyle) {
-        previousStyle.remove();
-      }
-    }
-  }
-
   async applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {
     result.changed.forEach((id) => {
       logger.log(`${id} updated`);
     });
 
     for (const id of result.removed) {
+      const prune = this.pruneMap.get(id);
+      if (prune) {
+        const hotContext = this.registeredHotModulesMap.get(id);
+        await prune(hotContext.data);
+      }
+
       moduleSystem.delete(id);
       this.registeredHotModulesMap.delete(id);
     }
-
-    this.removeCssStyles(result.removed);
 
     for (const id of result.added) {
       moduleSystem.register(id, result.modules[id]);
@@ -97,10 +89,9 @@ export class HmrClient {
       moduleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
     }
 
-    for (const updated_id of Object.keys(result.boundaries)) {
-      const chains = result.boundaries[updated_id];
-
+    for (const chains of Object.values(result.boundaries)) {
       for (const chain of chains) {
+        // clear the cache of the boundary module and its dependencies
         for (const id of chain) {
           moduleSystem.clearCache(id);
         }
@@ -108,27 +99,47 @@ export class HmrClient {
         try {
           // require the boundary module
           const boundary = chain[chain.length - 1];
-          const boundaryExports = moduleSystem.require(boundary);
           const hotContext = this.registeredHotModulesMap.get(boundary);
+          const acceptedDep =
+            chain.length > 1 ? chain[chain.length - 2] : undefined;
 
           if (!hotContext) {
+            console.error('hot context is empty for ', boundary);
             window.location.reload();
           }
 
-          const acceptedCallbacks = hotContext.acceptCallbacks.filter(
-            ({ deps }) => deps.includes(updated_id)
+          // get all the accept callbacks of the boundary module that accepts the updated module
+          const selfAcceptedCallbacks = hotContext.acceptCallbacks.filter(
+            ({ deps }) => deps.includes(boundary)
           );
+          const depsAcceptedCallbacks = hotContext.acceptCallbacks.filter(
+            ({ deps }) => deps.includes(acceptedDep)
+          );
+          // when there are both self accept callbacks and deps accept callbacks in a boundary module, only the deps accept callbacks will be called
+          for (const [acceptedId, acceptedCallbacks] of Object.entries({
+            [acceptedDep]: depsAcceptedCallbacks,
+            [boundary]: selfAcceptedCallbacks
+          })) {
+            if (acceptedCallbacks.length > 0) {
+              const acceptHotContext =
+                this.registeredHotModulesMap.get(acceptedId);
 
-          if (acceptedCallbacks.length > 0) {
-            const disposer = this.disposeMap.get(updated_id);
-            if (disposer) await disposer(hotContext.data);
+              const disposer = this.disposeMap.get(acceptedId);
+              if (disposer) await disposer(acceptHotContext.data);
+              // clear accept callbacks, it will be re-registered in the accepted module when the module is required
+              acceptHotContext.acceptCallbacks = [];
 
-            for (const { deps, fn } of acceptedCallbacks) {
-              fn(
-                deps.map((dep) =>
-                  dep === updated_id ? boundaryExports : undefined
-                )
-              );
+              const acceptedExports = moduleSystem.require(acceptedId);
+
+              for (const { deps, fn } of acceptedCallbacks) {
+                fn(
+                  deps.map((dep) =>
+                    dep === acceptedId ? acceptedExports : undefined
+                  )
+                );
+              }
+              // break the loop, only the first accept callback will be called
+              break;
             }
           }
         } catch (err) {

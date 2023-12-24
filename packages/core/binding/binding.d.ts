@@ -90,6 +90,7 @@ export class Compiler {
   update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
   addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
+  getParentFiles(resolvedPath: string): Array<string>
   resources(): Record<string, Buffer>
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>

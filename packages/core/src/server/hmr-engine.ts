@@ -45,7 +45,6 @@ export class HmrEngine {
       return;
     }
 
-    this._updateQueue = [];
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
@@ -65,11 +64,17 @@ export class HmrEngine {
     }
 
     const start = Date.now();
+
     const result = await this._compiler.update(queue);
     this._logger.info(
       `${cyan(updatedFilesStr)} updated in ${bold(
         green(`${Date.now() - start}ms`)
       )}`
+    );
+
+    // clear update queue after update finished
+    this._updateQueue = this._updateQueue.filter(
+      (item) => !queue.includes(item)
     );
 
     let dynamicResourcesMap: Record<string, Resource[]> = null;
@@ -113,29 +118,28 @@ export class HmrEngine {
       `);
     });
 
-    // if there are more updates, recompile again
-    if (this._updateQueue.length > 0) {
-      await this.recompileAndSendResult();
-    }
+    this._compiler.onUpdateFinish(async () => {
+      // if there are more updates, recompile again
+      if (this._updateQueue.length > 0) {
+        await this.recompileAndSendResult();
+      }
+    });
   };
 
-  async hmrUpdate(path: string) {
-    // if lazy compilation is enabled, we need to update the virtual module
-    if (this._compiler.config.config.lazyCompilation) {
+  async hmrUpdate(absPath: string | string[]) {
+    const paths = Array.isArray(absPath) ? absPath : [absPath];
+
+    for (const path of paths) {
       if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
         this._updateQueue.push(path);
       }
+    }
 
-      if (!this._compiler.compiling) {
+    if (!this._compiler.compiling) {
+      try {
         await this.recompileAndSendResult();
-      }
-    } else if (this._compiler.hasModule(path)) {
-      if (!this._updateQueue.includes(path)) {
-        this._updateQueue.push(path);
-      }
-
-      if (!this._compiler.compiling) {
-        await this.recompileAndSendResult();
+      } catch (e) {
+        this._logger.error(e);
       }
     }
   }

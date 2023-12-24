@@ -72,35 +72,42 @@ export async function resolveConfig(
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
 
-  // configPath may be file or directory
-  const { configPath } = inlineOptions;
-  // if the config file can not found, just merge cli options and return default
-  if (!configPath) {
+  const getDefaultConfig = async () => {
     const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
     const resolvedUserConfig = await resolveMergedUserConfig(
       mergedUserConfig,
       undefined,
       inlineOptions.mode ?? mode
     );
+    resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
     resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
       resolvedUserConfig,
       logger,
       mode
     );
+    resolvedUserConfig.root = resolvedUserConfig.compilation.root;
     resolvedUserConfig.jsPlugins = [];
     resolvedUserConfig.rustPlugins = [];
-    resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
     return resolvedUserConfig;
+  };
+  // configPath may be file or directory
+  const { configPath } = inlineOptions;
+  // if the config file can not found, just merge cli options and return default
+  if (!configPath) {
+    return getDefaultConfig();
   }
 
   if (!path.isAbsolute(configPath)) {
     throw new Error('configPath must be an absolute path');
   }
 
-  const { config: userConfig, configFilePath } = await loadConfigFile(
-    configPath,
-    logger
-  );
+  const loadedUserConfig = await loadConfigFile(configPath, logger);
+
+  if (!loadedUserConfig) {
+    return getDefaultConfig();
+  }
+
+  const { config: userConfig, configFilePath } = loadedUserConfig;
   const configEnv: ConfigEnv = {
     mode,
     command

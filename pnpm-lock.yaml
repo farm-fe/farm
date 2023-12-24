@@ -321,6 +321,15 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
 
+  examples/hmr:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:^
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/js-plugin-cache:
     devDependencies:
       '@farmfe/cli':
