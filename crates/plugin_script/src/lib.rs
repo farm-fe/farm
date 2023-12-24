@@ -1,7 +1,11 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  collections::{HashMap, HashSet},
+  path::PathBuf,
+  sync::Arc,
+};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -15,6 +19,7 @@ use farmfe_core::{
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
+  rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -114,8 +119,8 @@ impl Plugin for FarmPluginScript {
           unresolved_mark: unresolved_mark.as_u32(),
           // set module_system to unknown, it will be detected in `finalize_module`
           module_system: ModuleSystem::Custom(String::from("unknown")),
-          // set module_type to unknown, it will be detected in `finalize_module`
-          hmr_accepted: false,
+          hmr_self_accepted: false,
+          hmr_accepted_deps: Default::default(),
         };
 
         Ok(Some(ModuleMetaData::Script(meta)))
@@ -238,21 +243,28 @@ impl Plugin for FarmPluginScript {
       }
     }
 
+    // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node
-    if matches!(context.config.output.target_env, TargetEnv::Browser) {
+    if matches!(context.config.output.target_env, TargetEnv::Browser)
+      || matches!(context.config.output.format, ModuleFormat::CommonJs)
+    {
       // transform `import.meta.xxx` to `module.meta.xxx`
       let ast = &mut param.module.meta.as_script_mut().ast;
       let mut import_meta_v = ImportMetaVisitor::new();
       ast.visit_mut_with(&mut import_meta_v);
+    }
 
-      let mut hmr_accepted_v = import_meta_visitor::HmrAcceptedVisitor::new();
-      ast.visit_mut_with(&mut hmr_accepted_v);
-      param.module.meta.as_script_mut().hmr_accepted = hmr_accepted_v.is_hmr_accepted;
-    } else if matches!(context.config.output.format, ModuleFormat::CommonJs) {
-      // transform `import.meta.xxx` to `module.meta.xxx`
+    if matches!(context.config.output.target_env, TargetEnv::Browser) {
       let ast = &mut param.module.meta.as_script_mut().ast;
-      let mut import_meta_v = ImportMetaVisitor::new();
-      ast.visit_mut_with(&mut import_meta_v);
+      let mut hmr_accepted_v =
+        import_meta_visitor::HmrAcceptedVisitor::new(param.module.id.clone(), context.clone());
+      ast.visit_mut_with(&mut hmr_accepted_v);
+      param.module.meta.as_script_mut().hmr_self_accepted = hmr_accepted_v.is_hmr_self_accepted;
+      param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v
+        .hmr_accepted_deps
+        .into_iter()
+        .map(|dep| dep.into())
+        .collect();
     }
 
     Ok(None)
@@ -273,7 +285,7 @@ impl Plugin for FarmPluginScript {
         emitted: false,
         resource_type: ResourceType::Js,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        info: None
+        info: None,
       };
       let mut source_map = None;
 
@@ -298,7 +310,7 @@ impl Plugin for FarmPluginScript {
           emitted: false,
           resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          info: None
+          info: None,
         };
 
         source_map = Some(map);

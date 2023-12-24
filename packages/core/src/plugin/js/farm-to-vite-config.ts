@@ -5,7 +5,7 @@ import {
   throwIncompatibleError
 } from './utils.js';
 import merge from 'lodash.merge';
-import { Config } from '../../../binding/index.js';
+import { Logger } from '../../index.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   const vitePlugins = config.vitePlugins.map((plugin) => {
@@ -61,65 +61,11 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
 
   return viteConfig;
 }
-export function farmNormalConfigToViteConfig(
-  config: Config['config'],
-  farmConfig: UserConfig
-): ViteUserConfig {
-  const vitePlugins = farmConfig.vitePlugins.map((plugin) => {
-    if (typeof plugin === 'function') {
-      return plugin().vitePlugin;
-    } else {
-      return plugin;
-    }
-  });
-
-  return {
-    root: config.root,
-    base: config?.output?.publicPath ?? '/',
-    publicDir: farmConfig.publicDir ?? 'public',
-    mode: config?.mode,
-    define: config?.define,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
-    command: config?.mode === 'production' ? 'build' : 'serve',
-    resolve: {
-      alias: config?.resolve?.alias,
-      extensions: config?.resolve?.extensions,
-      mainFields: config?.resolve?.mainFields,
-      conditions: config?.resolve?.conditions,
-      preserveSymlinks: config?.resolve?.symlinks === false
-    },
-    plugins: vitePlugins,
-    server: {
-      hmr: Boolean(farmConfig.server?.hmr),
-      port: farmConfig.server?.port,
-      host: farmConfig.server?.host,
-      strictPort: farmConfig.server?.strictPort,
-      https: farmConfig.server?.https,
-      proxy: farmConfig.server?.proxy as any,
-      open: farmConfig.server?.open
-      // other options are not supported in farm
-    },
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
-    isProduction: config.compilation?.mode === 'production',
-    css: {
-      devSourcemap: false
-    },
-    build: {
-      outDir: config?.output?.path,
-      sourcemap: Boolean(config?.sourcemap),
-      minify: config?.minify,
-      cssMinify: config?.minify,
-      ssr: config?.output?.targetEnv === 'node'
-      // other options are not supported in farm
-    }
-  };
-}
 
 export function proxyViteConfig(
   viteConfig: ViteUserConfig,
-  pluginName: string
+  pluginName: string,
+  logger: Logger
 ): ViteUserConfig {
   return new Proxy(viteConfig, {
     get(target, key) {
@@ -144,11 +90,14 @@ export function proxyViteConfig(
         'isProduction',
         'css',
         'build',
+        'logger',
         // these fields are always undefined in farm
         // they are only used for compatibility
         'legacy',
         'optimizeDeps',
-        'ssr'
+        'ssr',
+        'logLevel',
+        'experimental'
       ];
 
       if (allowedKeys.includes(String(key))) {
@@ -163,7 +112,7 @@ export function proxyViteConfig(
             'dedupe'
           ];
 
-          return new Proxy(target.resolve, {
+          return new Proxy(target.resolve || {}, {
             get(resolveTarget, resolveKey) {
               if (typeof resolveKey !== 'string') {
                 return target[resolveKey as unknown as keyof typeof target];
@@ -201,7 +150,7 @@ export function proxyViteConfig(
             'origin'
           ];
 
-          return new Proxy(target.server, {
+          return new Proxy(target.server || {}, {
             get(serverTarget, serverKey) {
               if (typeof serverKey !== 'string') {
                 return target[serverKey as unknown as keyof typeof target];
@@ -230,7 +179,7 @@ export function proxyViteConfig(
         } else if (key === 'css') {
           const allowedCssKeys = ['devSourcemap'];
 
-          return new Proxy(target.css, {
+          return new Proxy(target.css || {}, {
             get(cssTarget, cssKey) {
               if (typeof cssKey !== 'string') {
                 return target[cssKey as unknown as keyof typeof target];
@@ -262,10 +211,11 @@ export function proxyViteConfig(
             'sourcemap',
             'minify',
             'cssMinify',
-            'ssr'
+            'ssr',
+            'watch'
           ];
 
-          return new Proxy(target.build, {
+          return new Proxy(target.build || {}, {
             get(buildTarget, buildKey) {
               if (typeof buildKey !== 'string') {
                 return target[buildKey as unknown as keyof typeof target];
@@ -290,6 +240,23 @@ export function proxyViteConfig(
               );
             }
           });
+        } else if (key === 'optimizeDeps') {
+          return new Proxy(target.optimizeDeps || {}, {
+            get(_, optimizeDepsKey) {
+              logger.warn(
+                `[vite-plugin] ${pluginName}: config "optimizeDeps" is not needed in farm, all of its options will be ignored. Current ignored option is: "${String(
+                  optimizeDepsKey
+                )}"`
+              );
+
+              if (optimizeDepsKey === 'esbuildOptions') {
+                return {};
+              }
+              return undefined;
+            }
+          });
+        } else if (key === 'logger') {
+          return logger;
         }
 
         return target[key as keyof typeof target];

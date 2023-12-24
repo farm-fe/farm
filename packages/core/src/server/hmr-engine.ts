@@ -45,7 +45,6 @@ export class HmrEngine {
       return;
     }
 
-    this._updateQueue = [];
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
@@ -65,6 +64,7 @@ export class HmrEngine {
     }
 
     const start = Date.now();
+
     const result = await this._compiler.update(queue);
     this._logger.info(
       `${cyan(updatedFilesStr)} updated in ${bold(
@@ -72,13 +72,10 @@ export class HmrEngine {
       )}`
     );
 
-    // TODO: write resources to disk when hmr finished in incremental mode
-    // if (this._devServer.config?.writeToDisk) {
-    //   this._compiler.onUpdateFinish(() => {
-    //     this._compiler.writeResourcesToDisk();
-    //     console.log('writeResourcesToDisk');
-    //   });
-    // }
+    // clear update queue after update finished
+    this._updateQueue = this._updateQueue.filter(
+      (item) => !queue.includes(item)
+    );
 
     let dynamicResourcesMap: Record<string, Resource[]> = null;
 
@@ -112,60 +109,38 @@ export class HmrEngine {
 
     this.callUpdates(result);
 
-    // const id = Date.now().toString();
-    // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // // @ts-ignore TODO fix this
-    // this._updateResults.set(id, {
-    //   result: resultStr,
-    //   count: this._devServer.ws.clients.size
-    // });
     this._devServer.ws.clients.forEach((client: WebSocketClient) => {
-      client.send(resultStr);
+      client.rawSend(`
+        {
+          type: 'farm-update',
+          result: ${resultStr}
+        }
+      `);
     });
 
-    // if there are more updates, recompile again
-    if (this._updateQueue.length > 0) {
-      await this.recompileAndSendResult();
-    }
+    this._compiler.onUpdateFinish(async () => {
+      // if there are more updates, recompile again
+      if (this._updateQueue.length > 0) {
+        await this.recompileAndSendResult();
+      }
+    });
   };
 
-  async hmrUpdate(path: string) {
-    // if lazy compilation is enabled, we need to update the virtual module
-    if (this._compiler.config.config.lazyCompilation) {
+  async hmrUpdate(absPath: string | string[]) {
+    const paths = Array.isArray(absPath) ? absPath : [absPath];
+
+    for (const path of paths) {
       if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
         this._updateQueue.push(path);
       }
+    }
 
-      if (!this._compiler.compiling) {
+    if (!this._compiler.compiling) {
+      try {
         await this.recompileAndSendResult();
-      }
-    } else if (this._compiler.hasModule(path)) {
-      if (!this._updateQueue.includes(path)) {
-        this._updateQueue.push(path);
-      }
-
-      if (!this._compiler.compiling) {
-        await this.recompileAndSendResult();
+      } catch (e) {
+        this._logger.error(e);
       }
     }
   }
-
-  // getUpdateResult(id: string) {
-  //   const result = this._updateResults.get(id);
-
-  //   if (result) {
-  //     result.count--;
-
-  //     // there are no more clients waiting for this update
-  //     if (result.count <= 0 && this._updateResults.size >= 2) {
-  //       /**
-  //        * Edge handle
-  //        * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
-  //        * So keep the result of the last time every time, so that the request can be successfully carried out.
-  //        */
-  //       this._updateResults.delete(this._updateResults.keys().next().value);
-  //     }
-  //   }
-  //   return result?.result;
-  // }
 }

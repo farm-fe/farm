@@ -3,11 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import {
-  ColorFunction,
-  PersistentCacheBrand,
-  colors
-} from './color.js';
+import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 import { Config } from '../../binding/index.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
@@ -84,9 +80,7 @@ export class DefaultLogger implements Logger {
         : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
       const prefix = showBanner ? this.prefix + ' ' : '';
-      const loggerMessage = color
-        ? color(prefix + message)
-        : prefix + message;
+      const loggerMessage = color ? color(prefix + message) : prefix + message;
       console[loggerMethod](loggerMessage);
     }
   }
@@ -98,7 +92,6 @@ export class DefaultLogger implements Logger {
     }
   }
 
-
   trace(message: string): void {
     this.brandPrefix(colors.green);
     this.logMessage(LogLevel.Trace, message, colors.magenta);
@@ -108,7 +101,6 @@ export class DefaultLogger implements Logger {
     this.brandPrefix(colors.debugColor);
     this.logMessage(LogLevel.Debug, message, colors.blue);
   }
-
 
   info(message: string, iOptions?: LoggerOptions): void {
     const options: LoggerOptions | undefined = iOptions;
@@ -131,7 +123,7 @@ export class DefaultLogger implements Logger {
     this.logMessage(LogLevel.Error, message, colors.red);
 
     const effectiveOptions = { ...this.options, ...errorOptions };
-    
+
     if (effectiveOptions.exit) {
       process.exit(1);
     }
@@ -158,10 +150,14 @@ export class DefaultLogger implements Logger {
 
 export function printServerUrls(urls: any, logger: Logger): void {
   const colorUrl = (url: string) =>
-  colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
+    colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
 
   const logUrl = (url: string, type: string) =>
-    logger.info(`${colors.bold(colors.magenta('>'))} ${colors.bold(type)}${colors.bold(colorUrl(url))}`);
+    logger.info(
+      `${colors.bold(colors.magenta('>'))} ${colors.bold(type)}${colors.bold(
+        colorUrl(url)
+      )}`
+    );
 
   urls.local.map((url: string) => logUrl(url, 'Local:   '));
   urls.network.map((url: string) => logUrl(url, 'Network: '));
@@ -182,11 +178,14 @@ export function bootstrap(times: number, config: Config) {
       'utf-8'
     )
   ).version;
-  console.log('\n', colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`)));
   console.log(
-    `${colors.bold(colors.green(` ✓`))}  ${colors.bold('Ready in')} ${colors.bold(
-      colors.green(`${times}ms`)
-    )} ${persistentCacheFlag}`,
+    '\n',
+    colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`))
+  );
+  console.log(
+    `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
+      'Ready in'
+    )} ${colors.bold(colors.green(`${times}ms`))} ${persistentCacheFlag}`,
     '\n'
   );
 }

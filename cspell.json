@@ -138,6 +138,7 @@
     "**/examples/**",
     "rust-plugins/sass/ext/sass/**",
     "assets/**",
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "**/LICENSE"
   ]
 }

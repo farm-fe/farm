@@ -1,13 +1,11 @@
 import { JsPlugin, UserConfig } from '@farmfe/core';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RecordViewerOptions } from './types';
 import { createRecordViewerServer } from './node/server';
 import { createDateSourceMiddleware } from './node/dataSource';
 
-const path = require('path');
-
-const PLUGIN_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url));
 
 export const PLUGIN_DIR_CLIENT = resolve(PLUGIN_DIR, '../client');
 
@@ -15,28 +13,16 @@ export default function farmRecorderPlugin(
   options: RecordViewerOptions = {}
 ): JsPlugin {
   let farmConfig: UserConfig['compilation'];
-  let recordViewerOptions: RecordViewerOptions;
+  const recordViewerOptions: RecordViewerOptions = options;
 
   return {
     name: 'farm-plugin-record-viewer',
-    configResolved: (config) => {
-      farmConfig = config || {};
+    config(config) {
+      farmConfig = config.compilation || {};
       farmConfig.record = true;
-      recordViewerOptions = options;
+      return config;
     },
-    configDevServer: (devServer) => {
-      const compiler = devServer.getCompiler();
-
-      const middleware = createDateSourceMiddleware(compiler);
-
-      createRecordViewerServer({
-        host: recordViewerOptions.host,
-        port: recordViewerOptions.port,
-        clientPath: PLUGIN_DIR_CLIENT,
-        middleware
-      });
-    },
-    configCompiler: (compiler) => {
+    configureCompiler: (compiler) => {
       const middleware = createDateSourceMiddleware(compiler);
 
       createRecordViewerServer({

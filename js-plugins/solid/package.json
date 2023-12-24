@@ -12,7 +12,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./build/esm/index.js",
+      "import": "./build/esm/index.mjs",
       "types": "./build/cjs/index.d.ts",
       "require": "./build/cjs/index.cjs",
       "default": "./build/cjs/index.cjs"

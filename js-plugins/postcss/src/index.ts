@@ -1,4 +1,4 @@
-import { JsPlugin, UserConfig } from '@farmfe/core';
+import { JsPlugin, ResolvedUserConfig } from '@farmfe/core';
 import postcssLoadConfig from 'postcss-load-config';
 import { ProcessOptions, Processor } from 'postcss';
 import path from 'path';
@@ -35,7 +35,7 @@ export default function farmPostcssPlugin(
     // Execute last
     priority: 0,
 
-    configResolved: async (config: UserConfig) => {
+    configResolved: async (config: ResolvedUserConfig) => {
       const { plugins, options: _options } = await postcssLoadConfig(
         options.postcssLoadConfig?.ctx,
         options.postcssLoadConfig?.path ?? config.root,
@@ -43,7 +43,6 @@ export default function farmPostcssPlugin(
       );
       postcssOptions = _options;
       postcssProcessor = implementation(plugins);
-      return config;
     },
 
     transform: {

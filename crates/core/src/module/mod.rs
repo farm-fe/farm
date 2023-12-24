@@ -223,8 +223,9 @@ pub struct ScriptModuleMetaData {
   pub top_level_mark: u32,
   pub unresolved_mark: u32,
   pub module_system: ModuleSystem,
-  /// true if this module calls `import.meta.hot.accept`
-  pub hmr_accepted: bool,
+  /// true if this module calls `import.meta.hot.accept()` or `import.meta.hot.accept(mod => {})`
+  pub hmr_self_accepted: bool,
+  pub hmr_accepted_deps: HashSet<ModuleId>,
 }
 
 impl Default for ScriptModuleMetaData {
@@ -238,7 +239,8 @@ impl Default for ScriptModuleMetaData {
       top_level_mark: 0,
       unresolved_mark: 0,
       module_system: ModuleSystem::EsModule,
-      hmr_accepted: false,
+      hmr_self_accepted: false,
+      hmr_accepted_deps: Default::default(),
     }
   }
 }

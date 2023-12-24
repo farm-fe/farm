@@ -537,6 +537,7 @@ impl ChunkResourceInfo {
 #[serde(rename_all = "camelCase")]
 pub struct PluginRenderResourcePotHookParam {
   pub content: Arc<String>,
+  pub source_map_chain: Vec<Arc<String>>,
   pub resource_pot_info: ChunkResourceInfo,
 }
 

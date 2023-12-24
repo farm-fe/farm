@@ -2,13 +2,11 @@
  * record middleware.
  */
 
-import { Context } from 'koa';
-
+import { Context, Middleware } from 'koa';
 import { DevServer } from '../index.js';
 
-export function records(devSeverContext: DevServer) {
-  const compiler = devSeverContext.getCompiler();
-
+export function records(devServer: DevServer): Middleware {
+  const compiler = devServer.getCompiler();
   return async (ctx: Context, next: () => Promise<any>) => {
     if (ctx.path === '/__record/modules') {
       ctx.body = compiler.modules();
@@ -37,8 +35,4 @@ export function records(devSeverContext: DevServer) {
       await next();
     }
   };
-}
-
-export function recordsPlugin(distance: DevServer) {
-  distance._context.app.use(records(distance));
 }

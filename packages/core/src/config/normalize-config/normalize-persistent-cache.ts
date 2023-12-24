@@ -12,7 +12,7 @@ export async function normalizePersistentCache(
 ) {
   if (
     config?.persistentCache === false ||
-    config.configFilePath === undefined
+    resolvedUserConfig.configFilePath === undefined
   ) {
     return;
   }
@@ -21,12 +21,12 @@ export async function normalizePersistentCache(
     config.persistentCache = {
       buildDependencies: [],
       moduleCacheKeyStrategy: {},
-      envs: config.env
+      envs: resolvedUserConfig.env
     };
   }
 
   if (config.persistentCache.envs === undefined) {
-    config.persistentCache.envs = config.env;
+    config.persistentCache.envs = resolvedUserConfig.env;
   }
 
   if (!config.persistentCache.buildDependencies) {
@@ -48,10 +48,10 @@ export async function normalizePersistentCache(
   }
 
   // trace all build dependencies of the config file
-  if (config.configFilePath) {
+  if (resolvedUserConfig.configFilePath) {
     const files = resolvedUserConfig?.configFileDependencies?.length
       ? resolvedUserConfig.configFileDependencies
-      : await traceDependencies(config.configFilePath);
+      : await traceDependencies(resolvedUserConfig.configFilePath);
 
     const packages = [];
 
@@ -70,6 +70,7 @@ export async function normalizePersistentCache(
     packages.push(...(rustPlugins ?? []));
 
     if (packages?.length) {
+      // console.log('packages', config);
       const require = createRequire(path.join(config.root, 'package.json'));
 
       for (const p of packages) {

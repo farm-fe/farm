@@ -1,38 +1,24 @@
 import { isArray, isObject } from '../utils/index.js';
-import { convertPlugin, handleVitePlugins } from './js/index.js';
+import { convertPlugin } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
-import type { Config } from '../../binding/index.js';
-import { ConfigEnv, type UserConfig } from '../config/index.js';
+import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
 import merge from 'lodash.merge';
 
 export * from './js/index.js';
 export * from './rust/index.js';
 
-/**
- * resolvePlugins split / jsPlugins / rustPlugins
- * @param config
- */
-export async function resolveAllPlugins(
-  finalConfig: Config['config'],
-  userConfig: UserConfig
-) {
-  const plugins = userConfig.plugins ?? [];
-  const vitePlugins = (userConfig.vitePlugins ?? []).filter(Boolean);
+export async function resolveFarmPlugins(config: UserConfig) {
+  const plugins = config.plugins ?? [];
 
-  if (!plugins.length && !vitePlugins?.length) {
+  if (!plugins.length) {
     return {
       rustPlugins: [],
-      jsPlugins: [],
-      finalConfig
+      jsPlugins: []
     };
   }
 
-  const vitePluginAdapters: JsPlugin[] = await handleVitePlugins(
-    vitePlugins,
-    userConfig
-  );
   const rustPlugins = [];
 
   const jsPlugins: JsPlugin[] = [];
@@ -43,7 +29,7 @@ export async function resolveAllPlugins(
       (isArray(plugin) && typeof plugin[0] === 'string')
     ) {
       rustPlugins.push(
-        await rustPluginResolver(plugin as string, finalConfig.root)
+        await rustPluginResolver(plugin as string, config.root ?? process.cwd())
       );
     } else if (isObject(plugin)) {
       convertPlugin(plugin as unknown as JsPlugin);
@@ -59,18 +45,10 @@ export async function resolveAllPlugins(
       );
     }
   }
-  // vite plugins execute after farm plugins by default.
-  jsPlugins.push(...vitePluginAdapters);
-
-  // call user config hooks
-  for (const jsPlugin of jsPlugins) {
-    finalConfig = (await jsPlugin.config?.(finalConfig)) ?? finalConfig;
-  }
 
   return {
     rustPlugins,
-    jsPlugins,
-    finalConfig
+    jsPlugins
   };
 }
 
@@ -93,7 +71,6 @@ export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
 
 export async function resolveConfigHook(
   config: UserConfig,
-  configEnv: ConfigEnv,
   plugins: JsPlugin[]
 ): Promise<UserConfig> {
   let conf = config;
@@ -109,10 +86,8 @@ export async function resolveConfigHook(
   }
 
   for (const p of uniqueVitePlugins.values()) {
-    const hook = p.config;
-
-    if (hook) {
-      const res = await p.config(conf, configEnv);
+    if (p.config) {
+      const res = await p.config(conf);
 
       if (res) {
         conf = merge(conf, res);
@@ -124,15 +99,12 @@ export async function resolveConfigHook(
 }
 
 export async function resolveConfigResolvedHook(
-  config: Config,
+  config: ResolvedUserConfig,
   plugins: JsPlugin[]
 ) {
-  const conf = config;
-
   for (const p of plugins) {
-    const hook = p.configResolved;
-    if (hook) {
-      await p.configResolved(conf.config);
+    if (p.configResolved) {
+      await p.configResolved(config);
     }
   }
 }
