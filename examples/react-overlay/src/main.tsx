@@ -4,11 +4,9 @@ import reactLogo from './assets/react.svg';
 import FarmLogo from './assets/logo.png';
 export function Main() {
   const [count, setCount] = useState(0);
-  const 123e
   return (
     <>
       <div>
-        123456456123123123123
         <a href="https://farm-fe.github.io/" target="_blank">
           <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>

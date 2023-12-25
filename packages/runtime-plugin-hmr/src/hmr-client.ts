@@ -14,6 +14,7 @@ const host =
 
 const path = FARM_HMR_PATH || '/__hmr';
 const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+
 export class HmrClient {
   socket: WebSocket;
   registeredHotModulesMap = new Map<string, HotModuleState>();
@@ -287,7 +288,7 @@ async function waitForSuccessfulPing(
         headers: {
           // Custom headers won't be included in a request with no-cors so (ab)use one of the
           // safelisted headers to identify the ping request
-          Accept: 'text/x-vite-ping'
+          Accept: 'text/x-farm-ping'
         }
       });
       return true;
