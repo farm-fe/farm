@@ -151,7 +151,7 @@ export class HmrEngine {
           `);
         });
         console.log('这格式我 hmr 的报错了 在这 emit message');
-        // this._logger.error(e);
+        this._logger.error(e);
       }
     }
   }

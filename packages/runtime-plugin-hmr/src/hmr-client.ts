@@ -50,7 +50,13 @@ export class HmrClient {
       { once: true }
     );
 
-    socket.addEventListener('close', async () => {
+    socket.addEventListener('close', async ({ wasClean }) => {
+      if (wasClean) return;
+
+      // if (!isOpened && onCloseWithoutOpen) {
+      //   onCloseWithoutOpen();
+      //   return;
+      // }
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       // TODO ping this chose until it reconnects
       logger.log('disconnected from the server, please reload the page.');
@@ -86,7 +92,7 @@ export class HmrClient {
 
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
-        window.location.reload();
+        location.reload();
       }
     }
 
@@ -110,7 +116,7 @@ export class HmrClient {
 
           if (!hotContext) {
             console.error('hot context is empty for ', boundary);
-            window.location.reload();
+            location.reload();
           }
 
           // get all the accept callbacks of the boundary module that accepts the updated module
@@ -151,7 +157,7 @@ export class HmrClient {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
           console.error(err);
-          window.location.reload();
+          location.reload();
         }
       }
     }
@@ -202,7 +208,7 @@ export class HmrClient {
         break;
       case 'full-reload':
         this.notifyListeners('vite:beforeFullReload', payload);
-        window.location.reload();
+        location.reload();
         break;
       case 'prune':
         this.notifyListeners('vite:beforePrune', payload);
