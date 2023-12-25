@@ -8,7 +8,6 @@ export function Main() {
   return (
     <>
       <div>
-        1
         <a href="https://farm-fe.github.io/" target="_blank">
           <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>

@@ -13,7 +13,7 @@ const host =
     : FARM_HMR_HOST || 'localhost';
 
 const path = FARM_HMR_PATH || '/__hmr';
-
+const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
 export class HmrClient {
   socket: WebSocket;
   registeredHotModulesMap = new Map<string, HotModuleState>();
@@ -50,10 +50,12 @@ export class HmrClient {
       { once: true }
     );
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', async () => {
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       // TODO ping this chose until it reconnects
       logger.log('disconnected from the server, please reload the page.');
+      await waitForSuccessfulPing(protocol, `${host}:${port}${path}`);
+      location.reload();
     });
 
     return socket;
@@ -238,4 +240,65 @@ export class HmrClient {
 
 export function createOverlay(err: any) {
   document.body.appendChild(new ErrorOverlay(err));
+}
+
+export function waitForWindowShow() {
+  return new Promise<void>((resolve) => {
+    const onChange = async () => {
+      if (document.visibilityState === 'visible') {
+        resolve();
+        document.removeEventListener('visibilitychange', onChange);
+      }
+    };
+    document.addEventListener('visibilitychange', onChange);
+  });
+}
+
+async function waitForSuccessfulPing(
+  socketProtocol: string,
+  hostAndPath: string,
+  ms = 1000
+) {
+  const pingHostProtocol = socketProtocol === 'wss' ? 'https' : 'http';
+
+  const ping = async () => {
+    // A fetch on a websocket URL will return a successful promise with status 400,
+    // but will reject a networking error.
+    // When running on middleware mode, it returns status 426, and an cors error happens if mode is not no-cors
+    try {
+      await fetch(`${pingHostProtocol}://${hostAndPath}`, {
+        mode: 'no-cors',
+        headers: {
+          // Custom headers won't be included in a request with no-cors so (ab)use one of the
+          // safelisted headers to identify the ping request
+          Accept: 'text/x-vite-ping'
+        }
+      });
+      return true;
+    } catch {
+      /* empty */
+    }
+    return false;
+  };
+
+  if (await ping()) {
+    return;
+  }
+  await wait(ms);
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (document.visibilityState === 'visible') {
+      if (await ping()) {
+        break;
+      }
+      await wait(ms);
+    } else {
+      await waitForWindowShow();
+    }
+  }
+}
+
+export function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
