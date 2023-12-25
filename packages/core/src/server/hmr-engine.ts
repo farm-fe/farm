@@ -141,7 +141,7 @@ export class HmrEngine {
         await this.recompileAndSendResult();
       } catch (e) {
         // eslint-disable-next-line no-control-regex
-        const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, "")
+        const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, "");
         const errorStr = `${JSON.stringify({
           message: serialization
         })}`;

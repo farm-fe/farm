@@ -102,6 +102,7 @@
     "rsplit",
     "Rustup",
     "sabi",
+    "safelisted",
     "sirv",
     "styl",
     "stylesheet",

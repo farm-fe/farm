@@ -252,7 +252,7 @@ function clearOverlay() {
 }
 
 function hasErrorOverlay() {
-  return document.querySelectorAll(overlayId).length
+  return document.querySelectorAll(overlayId).length;
 }
 
 export function waitForWindowShow() {
