@@ -38,7 +38,7 @@ export class HmrClient {
     // the client will apply the update
     socket.addEventListener('message', (event) => {
       const result: HMRPayload = eval(`(${event.data})`);
-      
+
       this.handleMessage(result);
     });
 
@@ -173,9 +173,11 @@ export class HmrClient {
         this.notifyListeners('farm:beforeUpdate', payload);
         this.handleFarmUpdate(payload.result);
         this.notifyListeners('farm:afterUpdate', payload);
-        // createOverlay(payload.result);
-
         break;
+      case 'farm-error': {
+        createOverlay(payload.result);
+        break;
+      }
       case 'connected':
         logger.log('connected to the server');
         break;

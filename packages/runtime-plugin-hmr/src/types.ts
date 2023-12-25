@@ -37,6 +37,7 @@ export interface RawHmrUpdateResult {
 // the same as Vite, see LICENSE. modified by @farmfe
 export type HMRPayload =
   | FarmHmrPayload
+  | FarmErrorHmrPayload
   | ConnectedPayload
   | UpdatePayload
   | FullReloadPayload
@@ -47,6 +48,11 @@ export type HMRPayload =
 export interface FarmHmrPayload {
   type: 'farm-update';
   result: RawHmrUpdateResult;
+}
+
+export interface FarmErrorHmrPayload {
+  type: 'farm-error';
+  result: string;
 }
 
 export interface ConnectedPayload {

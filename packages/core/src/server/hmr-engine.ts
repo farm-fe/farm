@@ -137,11 +137,21 @@ export class HmrEngine {
 
     if (!this._compiler.compiling) {
       try {
-        console.log("开始编译");
         await this.recompileAndSendResult();
       } catch (e) {
-        console.log('这格式我 hmr 的报错了 在这 emit message',e);
-        this._logger.error(e);
+        const errorStr = `${JSON.stringify({
+          message: e.message
+        })}`;
+        this._devServer.ws.clients.forEach((client: WebSocketClient) => {
+          client.rawSend(`
+            {
+              type: 'farm-error',
+              result: ${errorStr}
+            }
+          `);
+        });
+        console.log('这格式我 hmr 的报错了 在这 emit message');
+        // this._logger.error(e);
       }
     }
   }

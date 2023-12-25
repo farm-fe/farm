@@ -3,11 +3,12 @@ import { Welcome } from './components/index';
 import './main.css';
 import { Button } from '@farmfe-examples/lib-for-browser';
 
-const 123
+// const 123+
 export function Main() {
   return (
     <>
-    123123
+    123123123sadsadasda
+    123
       <Button />
       <Welcome />
     </>

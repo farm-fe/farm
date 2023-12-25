@@ -67,6 +67,7 @@ export class FileWatcher implements ImplFileWatcher {
           }, this.options);
         }
       } catch (error) {
+        console.log('我这是不是走了两遍 error 啊', error);
         this._logger.error(error);
       }
     };
@@ -114,10 +115,6 @@ export class FileWatcher implements ImplFileWatcher {
     this._watcher = null;
     this.serverOrCompiler = null;
   }
-}
-
-export function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function clearModuleCache(modulePath: string) {
