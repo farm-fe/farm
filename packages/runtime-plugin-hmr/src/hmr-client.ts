@@ -2,7 +2,7 @@ import type { ModuleSystem } from '@farmfe/runtime';
 import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
 import { HotModuleState } from './hot-module-state';
 import { logger } from './logger';
-import { ErrorOverlay } from './overlay';
+import { ErrorOverlay, overlayId } from './overlay';
 
 // Inject during compile time
 const port = Number(FARM_HMR_PORT || 9000);
@@ -227,6 +227,7 @@ export class HmrClient {
   }
 
   handleFarmUpdate(result: RawHmrUpdateResult) {
+    hasErrorOverlay() && clearOverlay();
     const immutableModules = eval(result.immutableModules);
     const mutableModules = eval(result.mutableModules);
     const modules = { ...immutableModules, ...mutableModules };
@@ -245,7 +246,16 @@ export class HmrClient {
 }
 
 export function createOverlay(err: any) {
+  clearOverlay();
   document.body.appendChild(new ErrorOverlay(err));
+}
+
+function clearOverlay() {
+  document.querySelectorAll<ErrorOverlay>(overlayId).forEach((n) => n.close());
+}
+
+function hasErrorOverlay() {
+  return document.querySelectorAll(overlayId).length
 }
 
 export function waitForWindowShow() {

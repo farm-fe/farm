@@ -1,4 +1,4 @@
-const base =  '/';
+const base = '/';
 
 // set :host styles to make playwright detect the element as visible
 const template = /*html*/ `
@@ -13,13 +13,10 @@ const template = /*html*/ `
   --monospace: 'SFMono-Regular', Consolas,
   'Liberation Mono', Menlo, Courier, monospace;
   --red: #ff5555;
-  --yellow: #e2aa53;
-  --purple: #cfa4ff;
-  --cyan: #2dd9da;
-  --dim: #c9c9c9;
-
-  --window-background: #181818;
+  --brand-color: #9f1a8f;
+  --window-background: #ffffff;
   --window-color: #d8d8d8;
+  --brand-color-o: rgba(248, 44, 224, 0.3);
 }
 
 .backdrop {
@@ -39,14 +36,13 @@ const template = /*html*/ `
   line-height: 1.5;
   width: 800px;
   color: var(--window-color);
-  margin: 30px auto;
-  padding: 25px 40px;
+  margin: 60px auto;
   position: relative;
   background: var(--window-background);
   border-radius: 6px 6px 8px 8px;
   box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
   overflow: hidden;
-  border-top: 8px solid var(--red);
+  border-top: 12px solid var(--brand-color);
   direction: ltr;
   text-align: left;
 }
@@ -79,6 +75,8 @@ pre.frame {
 }
 
 .message {
+  max-width: 400px;
+  padding: 25px 30px;
   line-height: 1.3;
   font-weight: 600;
   white-space: pre-wrap;
@@ -88,43 +86,41 @@ pre.frame {
   color: var(--red);
 }
 
-.plugin {
-  color: var(--purple);
-}
-
-.file {
-  color: var(--cyan);
-  margin-bottom: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.frame {
-  color: var(--yellow);
-}
-
-.stack {
-  font-size: 13px;
-  color: var(--dim);
-}
-
-.tip {
-  font-size: 13px;
-  color: #999;
-  border-top: 1px dotted #999;
-  padding-top: 13px;
-  line-height: 1.8;
-}
-
 code {
   font-size: 13px;
   font-family: var(--monospace);
   color: var(--yellow);
 }
 
-.file-link {
-  text-decoration: underline;
-  cursor: pointer;
+.footer {
+  font-family: var(--monospace);
+  background-color: var(--brand-color-o);
+  color: #000;
+  padding: 10px 20px;
+  border-radius: 0 0 6px 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tip {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+kbd {
+  line-height: 1.5;
+  font-family: ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: rgb(38, 40, 44);
+  color: rgb(166, 167, 171);
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.25rem;
+  border-width: 0.0625rem 0.0625rem 0.1875rem;
+  border-style: solid;
+  border-color: rgb(54, 57, 64);
+  border-image: initial;
 }
 
 kbd {
@@ -144,15 +140,11 @@ kbd {
 </style>
 <div class="backdrop" part="backdrop">
   <div class="window" part="window">
-    我是奥特曼
     <pre class="message" part="message"><span class="plugin" part="plugin"></span><span class="message-body" part="message-body"></span></pre>
-    <pre class="file" part="file"></pre>
-    <pre class="frame" part="frame"></pre>
-    <pre class="stack" part="stack"></pre>
-    <div class="tip" part="tip">
-      Click outside, press <kbd>Esc</kbd> key, or fix the code to dismiss.<br>
-      You can also disable this overlay by setting
-      <code part="config-option-name">server.hmr.overlay</code> to <code part="config-option-value">false</code> in <code part="config-file-name">.</code>
+    <div class="footer">
+      <div class="tip" part="tip">
+        Click outside, press <kbd>Esc</kbd> key, or fix the code to dismiss.<br />
+      </div>
     </div>
   </div>
 </div>
