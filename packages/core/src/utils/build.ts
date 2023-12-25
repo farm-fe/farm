@@ -17,7 +17,6 @@ export async function compilerHandler(
   try {
     await callback();
   } catch (error) {
-    console.log('这个应该是构建的报错');
     logger.error(error, {
       exit: true
     });

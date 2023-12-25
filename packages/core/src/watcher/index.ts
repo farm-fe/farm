@@ -67,7 +67,6 @@ export class FileWatcher implements ImplFileWatcher {
           }, this.options);
         }
       } catch (error) {
-        console.log('我这是不是走了两遍 error 啊', error);
         this._logger.error(error);
       }
     };
