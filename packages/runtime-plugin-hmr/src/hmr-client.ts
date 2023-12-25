@@ -54,10 +54,6 @@ export class HmrClient {
     socket.addEventListener('close', async ({ wasClean }) => {
       if (wasClean) return;
 
-      // if (!isOpened && onCloseWithoutOpen) {
-      //   onCloseWithoutOpen();
-      //   return;
-      // }
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       // TODO ping this chose until it reconnects
       logger.log('disconnected from the server, please reload the page.');

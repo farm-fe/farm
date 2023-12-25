@@ -159,7 +159,7 @@ const { HTMLElement = class {} as typeof globalThis.HTMLElement } = globalThis;
 export class ErrorOverlay extends HTMLElement {
   root: ShadowRoot;
   closeOnEsc: (e: KeyboardEvent) => void;
-
+  // TODO Optimize hmr boundaries and return values to match vite hmr mode socket return values
   constructor(err: any, links = true) {
     super();
     this.root = this.attachShadow({ mode: 'open' });
