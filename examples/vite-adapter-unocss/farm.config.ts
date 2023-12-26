@@ -1,9 +1,6 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
+import UnoCSS from 'unocss/vite'
 
 export default defineConfig({
   compilation: {
@@ -11,5 +8,6 @@ export default defineConfig({
   },
   vitePlugins: [
     vue(),
+    UnoCSS()
   ]
 });

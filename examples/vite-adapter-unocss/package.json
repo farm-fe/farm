@@ -9,7 +9,8 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@vitejs/plugin-vue": "^4.4.0"
+    "@vitejs/plugin-vue": "^4.4.0",
+    "unocss": "^0.58.0"
   },
   "scripts": {
     "start": "farm start",

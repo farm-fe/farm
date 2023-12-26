@@ -4,6 +4,7 @@ import { Logger, DefaultLogger } from '../utils/logger.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
 import type { Config, JsUpdateResult } from '../../binding/index.js';
+import { JsPlugin, Resource } from '../index.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX =
   'virtual:FARMFE_DYNAMIC_IMPORT:';
@@ -128,6 +129,16 @@ export class Compiler {
     const outputPath = path.isAbsolute(configOutputPath)
       ? configOutputPath
       : path.join(this.config.config.root, configOutputPath);
+
+    for (const jsPlugin of this.config.jsPlugins ?? []) {
+      (jsPlugin as JsPlugin).writeResources?.executor?.({
+        resourcesMap: this._bindingCompiler.resourcesMap() as Record<
+          string,
+          Resource
+        >,
+        config: this.config.config
+      });
+    }
 
     for (const [name, resource] of Object.entries(resources)) {
       if (process.env.NODE_ENV === 'test') {

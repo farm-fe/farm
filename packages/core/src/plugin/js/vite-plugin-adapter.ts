@@ -159,13 +159,12 @@ export class VitePluginAdapter implements JsPlugin {
 
     // if other unsupported vite plugins hooks are used, throw error
     const unsupportedHooks = [
-      'transformIndexHtml',
+      // 'transformIndexHtml',
       // 'writeBundle',
       'renderError',
       'resolveDynamicImport',
       'resolveFileUrl',
       'resolveImportMeta',
-      'transformIndexHtml',
       'shouldTransformCachedModule',
       'banner',
       'footer'
@@ -340,6 +339,9 @@ export class VitePluginAdapter implements JsPlugin {
           this._rawPlugin.buildStart,
           context
         );
+        if (this._viteDevServer) {
+          this._viteDevServer.moduleGraph.context = context;
+        }
         return hook?.();
       })
     };
@@ -655,6 +657,38 @@ export class VitePluginAdapter implements JsPlugin {
             transformFarmConfigToRollupNormalizedOutputOptions(param.config),
             bundles
           );
+
+          // call transformIndexHtml hook after finalizeResources hook
+          const transformIndexHtmlHook = this.wrapRawPluginHook(
+            'transformIndexHtml',
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore ignore type error
+            this._rawPlugin.transformIndexHtml,
+            context
+          );
+
+          for (const resource of Object.values(param.resourcesMap)) {
+            if (resource.resourceType === 'html') {
+              const result = await transformIndexHtmlHook?.(
+                Buffer.from(resource.bytes).toString(),
+                {
+                  path: resource.name,
+                  filename: resource.name,
+                  server: this._viteDevServer,
+                  bundle: bundles,
+                  chunk: transformResourceInfo2RollupResource(resource)
+                }
+              );
+
+              if (result && typeof result !== 'string') {
+                throw new Error(
+                  `Vite plugin "${this.name}" is not compatible with Farm for now. Cause it uses transformIndexHtmlHook and return non-string value. Farm only supports string return for transformIndexHtmlHook`
+                );
+              } else if (typeof result === 'string') {
+                resource.bytes = [...Buffer.from(result)];
+              }
+            }
+          }
 
           return Object.entries(bundles).reduce((res, [key, val]) => {
             res[key] = transformRollupResource2FarmResource(
