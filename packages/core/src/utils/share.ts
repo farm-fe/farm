@@ -5,6 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 // import { pathToFileURL } from 'node:url';
 
+
+const splitRE = /\r?\n/;
+
 /* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
@@ -26,6 +29,11 @@ export const isEmpty = (array: any): boolean => !(array && array.length > 0);
 export const isSymbol = (val: any): val is symbol => typeof val === 'symbol';
 
 export const isWindows = os.platform() === 'win32';
+
+export function pad(source: string, n = 2): string {
+  const lines = source.split(splitRE);
+  return lines.map((l) => ` `.repeat(n) + l).join(`\n`);
+}
 
 export function clearScreen() {
   const repeatCount = process.stdout.rows - 2;
