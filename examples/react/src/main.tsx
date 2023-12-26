@@ -7,8 +7,6 @@ import { Button } from '@farmfe-examples/lib-for-browser';
 export function Main() {
   return (
     <>
-    123123123sadsadasda
-    123
       <Button />
       <Welcome />
     </>
