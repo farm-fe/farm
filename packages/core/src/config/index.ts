@@ -620,6 +620,14 @@ function mergeInlineCliOptions(
     }
   }
 
+  if (userConfig.root && !isAbsolute(userConfig.root)) {
+    const resolvedRoot = path.resolve(
+      inlineOptions.configPath || process.cwd(),
+      userConfig.root
+    );
+    userConfig.root = resolvedRoot;
+  }
+
   // set compiler options
   ['minify', 'sourcemap'].forEach((option: keyof FarmCLIOptions) => {
     if (inlineOptions[option] !== undefined) {

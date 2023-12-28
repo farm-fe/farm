@@ -34,8 +34,21 @@ export class ViteDevServerAdapter {
     this.middlewareCallbacks = [];
     this.middlewares = new Proxy(
       {
-        use: (cb: (...args: any[]) => any) => {
-          this.middlewareCallbacks.push(cb);
+        use: (...args: any[]) => {
+          if (
+            args.length === 2 &&
+            typeof args[0] === 'string' &&
+            typeof args[1] === 'function'
+          ) {
+            this.middlewareCallbacks.push((req: any, res: any, next: any) => {
+              const [url, cb] = args;
+              if (req.url.startsWith(url)) {
+                cb(req, res, next);
+              }
+            });
+          } else if (args.length === 1 && typeof args[0] === 'function') {
+            this.middlewareCallbacks.push(args[0]);
+          }
         }
       },
       {
@@ -80,6 +93,21 @@ export class ViteModuleGraphAdapter {
     const raw = this.context.viteGetModuleById(id);
 
     return proxyViteModuleNode(raw, this.pluginName, this.context);
+  }
+
+  async getModuleByUrl(url: string): Promise<ViteModule | undefined> {
+    if (url.startsWith('/')) {
+      url = url.slice(1);
+      return proxyViteModuleNode(
+        this.context.viteGetModuleById(url),
+        this.pluginName,
+        this.context
+      );
+    }
+  }
+
+  invalidateModule() {
+    /** does thing for now, only for compatibility */
   }
 }
 
@@ -139,7 +167,12 @@ export function createViteDevServerAdapter(
 export function createViteModuleGraphAdapter(pluginName: string) {
   const proxy = new Proxy(new ViteModuleGraphAdapter(pluginName), {
     get(target, key) {
-      const allowedKeys = ['getModulesByFile', 'getModuleById'];
+      const allowedKeys = [
+        'getModulesByFile',
+        'getModuleById',
+        'getModuleByUrl',
+        'invalidateModule'
+      ];
       const ownkeys = Reflect.ownKeys(target);
 
       if (allowedKeys.includes(String(key)) || ownkeys.includes(key)) {
