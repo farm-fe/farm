@@ -8,26 +8,22 @@ export async function compilerHandler(
   callback: () => Promise<void>,
   config: ResolvedUserConfig
 ) {
-  const usePersistentCache = config.compilation.persistentCache;
-  const persistentCacheText = usePersistentCache
-    ? bold(PersistentCacheBrand)
-    : '';
+  const { persistentCache, output } = config.compilation;
   const logger = new DefaultLogger();
   const startTime = performance.now();
+
   try {
     await callback();
   } catch (error) {
-    logger.error(error, {
-      exit: true
-    });
+    logger.error(error, { exit: true });
+    return;
   }
-  const endTime = performance.now();
-  const elapsedTime = Math.floor(endTime - startTime);
+
+  const elapsedTime = Math.floor(performance.now() - startTime);
+  const persistentCacheText = persistentCache ? bold(PersistentCacheBrand) : '';
   logger.info(
     `Build completed in ${bold(
       green(`${elapsedTime}ms`)
-    )} ${persistentCacheText} Resources emitted to ${bold(
-      green(config.compilation.output.path)
-    )}.`
+    )} ${persistentCacheText} Resources emitted to ${bold(green(output.path))}.`
   );
 }

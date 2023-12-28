@@ -24,13 +24,14 @@ import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
-import { bold, cyan, green, magenta } from './utils/color.js';
+import { colors } from './utils/color.js';
 import { useProxy } from './server/middlewares/index.js';
 
 import type { FarmCLIOptions, ResolvedUserConfig } from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/configWatcher.js';
+import { clearScreen } from './utils/share.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -84,12 +85,13 @@ export async function start(
 
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
     (filenames: string[]) => {
+      clearScreen();
       logger.info(
-        green(
+        colors.bold(colors.green(
           `${filenames
             .map((filename) => path.relative(resolvedUserConfig.root, filename))
-            .join(', ')} changed, will restart server`
-        )
+            .join(', ')} changed, server will restart.`
+        ))
       );
 
       farmWatcher.close();
@@ -184,7 +186,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   });
 
   app.listen(port, () => {
-    logger.info(green(`preview server running at:\n`));
+    logger.info(colors.green(`preview server running at:\n`));
     const interfaces = os.networkInterfaces();
     Object.keys(interfaces).forEach((key) =>
       (interfaces[key] || [])
@@ -198,10 +200,10 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${bold(port)}${
+          const url = `${'http'}://${host}:${colors.bold(port)}${
             output.publicPath ?? ''
           }`;
-          logger.info(`${magenta('>')} ${type} ${cyan(url)}`);
+          logger.info(`${colors.magenta('>')} ${type} ${colors.cyan(url)}`);
         })
     );
   });
@@ -228,7 +230,7 @@ export async function watch(
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
     async (files: string[]) => {
       logger.info(
-        green(
+        colors.green(
           `${files
             .map((file) => path.relative(resolvedUserConfig.root, file))
             .join(', ')} changed, will be restart`
@@ -263,15 +265,15 @@ export async function clean(
       if (stats.isDirectory()) {
         await fs.rm(farmFolderPath, { recursive: true, force: true });
         logger.info(
-          `Under the current path, ${bold(
-            green(nodeModulesPath)
+          `Under the current path, ${colors.bold(
+            colors.green(nodeModulesPath)
           )}. The cache has been cleaned`
         );
       }
     } catch (error) {
       logger.warn(
-        `Currently, no cached files have been found in ${bold(
-          green(nodeModulesPath)
+        `Currently, no cached files have been found in ${colors.bold(
+          colors.green(nodeModulesPath)
         )}.`
       );
     }

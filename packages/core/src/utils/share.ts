@@ -1,11 +1,8 @@
 /* eslint-disable no-prototype-builtins */
 import os from 'node:os';
-import readline from 'node:readline';
 import fs from 'node:fs';
 import path from 'node:path';
-// import { pathToFileURL } from 'node:url';
 
-/* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -18,6 +15,7 @@ export function isEmptyObject<T extends object>(obj: T): boolean {
   if (!obj) return true;
   return Reflect.ownKeys(obj).length === 0;
 }
+
 export const isUndefined = (obj: any): obj is undefined =>
   typeof obj === 'undefined';
 export const isString = (val: any): val is string => typeof val === 'string';
@@ -28,11 +26,15 @@ export const isSymbol = (val: any): val is symbol => typeof val === 'symbol';
 export const isWindows = os.platform() === 'win32';
 
 export function clearScreen() {
-  const repeatCount = process.stdout.rows - 2;
-  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
-  console.log(blank);
-  readline.cursorTo(process.stdout, 0, 0);
-  readline.clearScreenDown(process.stdout);
+  try {
+    if (isWindows) {
+      process.stdout.write('\x1B[2J\x1B[0f');
+    } else {
+      process.stdout.write('\x1Bc');
+    }
+  } catch (error) {
+    console.error('Failed to clear screen:', error);
+  }
 }
 
 export function normalizePath(id: string): string {
@@ -46,29 +48,11 @@ export function arraify<T>(target: T | T[]): T[] {
 export function getFileSystemStats(file: string): fs.Stats | undefined {
   try {
     return fs.statSync(file, { throwIfNoEntry: false });
-  } catch {
-    // Ignore errors
+  } catch (error) {
+    console.error(`Error accessing file ${file}:`, error);
+    return undefined;
   }
 }
-
-// export async function importFresh(modulePath: string) {
-//   const filepath = path.resolve(modulePath);
-//   const fileContent = await fs.promises.readFile(filepath, 'utf8');
-//   const ext = path.extname(filepath);
-//   const extRegex = new RegExp(`\\${ext}$`);
-//   const newFilepath = `${filepath.replace(extRegex, '')}${Date.now()}${ext}`;
-
-//   await fs.promises.writeFile(newFilepath, fileContent);
-//   let module;
-//   if (process.platform === 'win32') {
-//     module = (await import(pathToFileURL(newFilepath).toString())).default;
-//   } else {
-//     module = (await import(newFilepath)).default;
-//   }
-//   fs.unlinkSync(newFilepath);
-
-//   return module;
-// }
 
 /**
  * Null or whatever
@@ -81,32 +65,26 @@ export type Nullable<T> = T | null | undefined;
 export type ArrayAble<T> = T | Array<T>;
 
 export function toArray<T>(array?: Nullable<ArrayAble<T>>): Array<T> {
-  array = array || [];
-  if (Array.isArray(array)) {
-    return array;
-  }
-  return [array];
+  return array ? (Array.isArray(array) ? array : [array]) : [];
 }
 
-export function mergeObjects(obj1: any, obj2: any) {
-  const merged = { ...obj1 };
 
-  for (const key in obj2) {
-    if (obj2.hasOwnProperty(key)) {
-      if (merged.hasOwnProperty(key)) {
-        if (typeof obj2[key] === 'object' && !Array.isArray(obj2[key])) {
-          merged[key] = mergeObjects(merged[key], obj2[key]);
-        } else {
-          merged[key] = obj1[key];
-        }
+export function mergeObjects<T extends Record<string, any>, U extends Record<string, any>>(obj1: T, obj2: U): T & U {
+  const merged: Record<string, any> = { ...obj1 };
+
+  Object.keys(obj2).forEach(key => {
+    if (Object.prototype.hasOwnProperty.call(obj2, key)) {
+      if (merged.hasOwnProperty(key) && typeof obj2[key] === 'object' && !Array.isArray(obj2[key])) {
+        merged[key] = mergeObjects(merged[key], obj2[key]);
       } else {
         merged[key] = obj2[key];
       }
     }
-  }
+  });
 
-  return merged;
+  return merged as T & U;
 }
+
 
 export async function asyncFlatten<T>(arr: T[]): Promise<T[]> {
   do {
