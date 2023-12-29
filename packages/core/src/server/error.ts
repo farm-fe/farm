@@ -1,9 +1,9 @@
 import type { RollupError } from 'rollup';
 import { colors } from '../utils/color.js';
 import { pad } from '../utils/share.js';
-import { DevServer } from './index.js';
+// import { DevServer } from './index.js';
 
-export function prepareError(err: Error) {
+export function prepareError(err: Error & { potentialSolution?: string }) {
   return {
     message: stripAnsi(err.message),
     stack: stripAnsi(cleanStack(err.stack || '')),
@@ -11,7 +11,8 @@ export function prepareError(err: Error) {
     frame: stripAnsi((err as RollupError).frame || ''),
     plugin: (err as RollupError).plugin,
     pluginCode: (err as RollupError).pluginCode?.toString(),
-    loc: (err as RollupError).loc
+    loc: (err as RollupError).loc,
+    potential: err.potentialSolution || ''
   };
 }
 
