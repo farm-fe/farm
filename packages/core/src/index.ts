@@ -45,12 +45,14 @@ export async function start(
     logger,
     'development'
   );
+  
   const {
     compilation: compilationConfig,
     server: serverConfig,
     jsPlugins,
     rustPlugins
   } = resolvedUserConfig;
+
   const compiler = new Compiler({
     config: compilationConfig,
     jsPlugins,
@@ -328,6 +330,21 @@ export async function createBundleHandler(
     await watcher.watch();
     return watcher;
   }
+}
+
+// TODO optimize the reading of config, put the clean method into compiler
+export async function configureCompiler(compilationConfig, jsPlugins, rustPlugins) {
+  const compiler = new Compiler({
+    config: compilationConfig,
+    jsPlugins,
+    rustPlugins
+  });
+
+  for (const plugin of jsPlugins) {
+    await plugin.configureCompiler?.(compiler);
+  }
+
+  return compiler;
 }
 
 export { defineFarmConfig as defineConfig } from './config/index.js';

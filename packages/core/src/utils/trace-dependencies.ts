@@ -1,6 +1,23 @@
 import { Config } from '../../binding/index.js';
 import { Compiler } from '../compiler/index.js';
 
+function createTraceDepCompiler(entry: string) {
+  const config = getDefaultTraceDepCompilerConfig(entry);
+  return new Compiler(config);
+}
+
+export async function traceDependencies(configFilePath: string): Promise<string[]> {
+  try {
+    const compiler = createTraceDepCompiler(configFilePath);
+    const files = await compiler.traceDependencies();
+    return files;
+  } catch (error) {
+    console.error('Error tracing dependencies:', error);
+    throw error; 
+  }
+}
+
+
 function getDefaultTraceDepCompilerConfig(entry: string): Config {
   return {
     config: {
@@ -35,21 +52,4 @@ function getDefaultTraceDepCompilerConfig(entry: string): Config {
     ],
     rustPlugins: []
   };
-}
-
-
-function createTraceDepCompiler(entry: string) {
-  const config = getDefaultTraceDepCompilerConfig(entry);
-  return new Compiler(config);
-}
-
-export async function traceDependencies(configFilePath: string): Promise<string[]> {
-  try {
-    const compiler = createTraceDepCompiler(configFilePath);
-    const files = await compiler.traceDependencies();
-    return files;
-  } catch (error) {
-    console.error('Error tracing dependencies:', error);
-    throw error; 
-  }
 }
