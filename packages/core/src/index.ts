@@ -33,99 +33,27 @@ import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/configWatcher.js';
 import { clearScreen } from './utils/share.js';
 
-// export async function start(
-//   inlineConfig: FarmCLIOptions & UserConfig
-// ): Promise<void> {
-//   const logger = inlineConfig.logger ?? new DefaultLogger();
-//   setProcessEnv('development');
-  
-//   try {
-//     const resolvedUserConfig = await resolveConfig(
-//       inlineConfig,
-//       logger,
-//       'development'
-//     );
-
-//     const compiler = await createCompiler(resolvedUserConfig);
-//     const devServer = setupDevServer(compiler, resolvedUserConfig, logger);
-//     await devServer.listen();
-
-//     setupFileWatcher(devServer, resolvedUserConfig, logger);
-//   } catch (error) {
-//     logger.error(`Failed to start the server: ${error.message}`);
-//     process.exit(1);
-//   }
-// }
-
-
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
-
   setProcessEnv('development');
 
-  const resolvedUserConfig = await resolveConfig(
-    inlineConfig,
-    logger,
-    'development'
-  );
-
-  const {
-    compilation: compilationConfig,
-    server: serverConfig,
-    jsPlugins
-  } = resolvedUserConfig;
-
-  const compiler = await createCompiler(resolvedUserConfig);
-
-  const devServer = new DevServer(compiler, logger);
-  devServer.createFarmServer(serverConfig);
-
-  jsPlugins.forEach((plugin: JsPlugin) =>
-    plugin.configureDevServer?.(devServer)
-  );
-
-  await devServer.listen();
-
-  let fileWatcher: FileWatcher;
-  // Make sure the server is listening before we watch for file changes
-  if (devServer.config.hmr) {
-    if (compilationConfig.mode === 'production') {
-      logger.error(
-        'HMR can not be enabled in production mode. Please set the mode option to "development" in your config file.'
-      );
-      process.exit(1);
-    }
-    fileWatcher = new FileWatcher(devServer, resolvedUserConfig);
-    await fileWatcher.watch();
+  try {
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      logger,
+      'development'
+    );
+    
+    const compiler = await createCompiler(resolvedUserConfig);
+    const devServer = setupDevServer(compiler, resolvedUserConfig, logger);
+    await devServer.listen();
+    setupFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+  } catch (error) {
+    logger.error(`Failed to start the server: ${error.message}`);
+    process.exit(1);
   }
-
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
-    (filenames: string[]) => {
-      clearScreen();
-      logger.info(
-        colors.bold(
-          colors.green(
-            `${filenames
-              .map((filename) =>
-                path.relative(resolvedUserConfig.root, filename)
-              )
-              .join(', ')} changed, server will restart.`
-          )
-        )
-      );
-
-      farmWatcher.close();
-
-      devServer.restart(async () => {
-        fileWatcher?.close();
-        await devServer.closeFarmServer();
-        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-        await start(inlineConfig);
-      });
-    }
-  );
 }
 
 export async function build(
@@ -142,7 +70,6 @@ export async function build(
   setProcessEnv(resolvedUserConfig.compilation.mode);
 
   await createBundleHandler(resolvedUserConfig);
-
   // copy resources under publicDir to output.path
   await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
 }
@@ -229,6 +156,7 @@ export async function watch(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
+
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
@@ -241,15 +169,13 @@ export async function watch(
     resolvedUserConfig,
     true
   );
-  
+
   async function handleFileChange(files: string[]) {
-    const changedFiles = files.map(file => path.relative(resolvedUserConfig.root, file)).join(', ');
+    const changedFiles = files
+      .map((file) => path.relative(resolvedUserConfig.root, file))
+      .join(', ');
     logger.info(
-      colors.bold(
-        colors.green(
-          `${changedFiles} changed, will be restart`
-        )
-      )
+      colors.bold(colors.green(`${changedFiles} changed, will be restart`))
     );
 
     try {
@@ -265,7 +191,9 @@ export async function watch(
     }
   }
 
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(handleFileChange);
+  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
+    handleFileChange
+  );
 }
 
 export async function clean(
@@ -353,12 +281,12 @@ export async function createBundleHandler(
   }
 }
 
-export async function createCompiler(ResolvedUserConfig: ResolvedUserConfig) {
+export async function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
   const {
     jsPlugins,
     rustPlugins,
     compilation: compilationConfig
-  } = ResolvedUserConfig;
+  } = resolvedUserConfig;
 
   const compiler = new Compiler({
     config: compilationConfig,
@@ -385,7 +313,10 @@ async function copyPublicDirectory(
 
   try {
     if (await fse.pathExists(absPublicDirPath)) {
-      await fse.copy(absPublicDirPath, resolvedUserConfig.compilation.output.path);
+      await fse.copy(
+        absPublicDirPath,
+        resolvedUserConfig.compilation.output.path
+      );
       logger.info('Public directory resources copied successfully.');
     }
   } catch (error) {
@@ -393,7 +324,11 @@ async function copyPublicDirectory(
   }
 }
 
-function setupDevServer(compiler, resolvedUserConfig, logger) {
+export function setupDevServer(
+  compiler: Compiler,
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger
+) {
   const devServer = new DevServer(compiler, logger);
   devServer.createFarmServer(resolvedUserConfig.server);
 
@@ -404,8 +339,16 @@ function setupDevServer(compiler, resolvedUserConfig, logger) {
   return devServer;
 }
 
-async function setupFileWatcher(devServer, resolvedUserConfig, logger) {
-  if (devServer.config.hmr && resolvedUserConfig.compilation.mode === 'production') {
+export async function setupFileWatcher(
+  devServer: DevServer,
+  resolvedUserConfig: ResolvedUserConfig,
+  inlineConfig: FarmCLIOptions & UserConfig,
+  logger: Logger
+) {
+  if (
+    devServer.config.hmr &&
+    resolvedUserConfig.compilation.mode === 'production'
+  ) {
     logger.error('HMR cannot be enabled in production mode.');
     return;
   }
@@ -418,27 +361,23 @@ async function setupFileWatcher(devServer, resolvedUserConfig, logger) {
       clearScreen();
       logFileChanges(filenames, resolvedUserConfig.root, logger);
 
-      farmWatcher.close();
-      await restartServer(devServer, fileWatcher, inlineConfig);
+      devServer.restart(async () => {
+        farmWatcher?.close();
+        await devServer.closeFarmServer();
+        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+        await start(inlineConfig);
+      });
     }
   );
 }
 
-function logFileChanges(filenames, root, logger) {
-  const changedFiles = filenames
-    .map((filename) => path.relative(root, filename))
+export function logFileChanges(files: string[], root: string, logger: Logger) {
+  const changedFiles = files
+    .map((file) => path.relative(root, file))
     .join(', ');
-  logger.info(colors.bold(colors.green(`${changedFiles} changed, server will restart.`)));
-}
-
-async function restartServer(devServer, fileWatcher, inlineConfig) {
-  fileWatcher?.close();
-  await devServer.closeFarmServer();
-  __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-  await start(inlineConfig);
+  logger.info(
+    colors.bold(colors.green(`${changedFiles} changed, server will restart.`))
+  );
 }
 
 export { defineFarmConfig as defineConfig } from './config/index.js';
-
-
-
