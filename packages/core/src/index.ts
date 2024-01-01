@@ -171,12 +171,7 @@ export async function watch(
   );
 
   async function handleFileChange(files: string[]) {
-    const changedFiles = files
-      .map((file) => path.relative(resolvedUserConfig.root, file))
-      .join(', ');
-    logger.info(
-      colors.bold(colors.green(`${changedFiles} changed, will be restart`))
-    );
+    logFileChanges(files, resolvedUserConfig.root, logger);
 
     try {
       farmWatcher.close();
@@ -357,9 +352,9 @@ export async function setupFileWatcher(
   await fileWatcher.watch();
 
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
-    async (filenames: string[]) => {
+    async (files: string[]) => {
       clearScreen();
-      logFileChanges(filenames, resolvedUserConfig.root, logger);
+      logFileChanges(files, resolvedUserConfig.root, logger);
 
       devServer.restart(async () => {
         farmWatcher?.close();
