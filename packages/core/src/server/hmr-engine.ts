@@ -12,7 +12,6 @@ import { WebSocketClient } from './ws.js';
 export class HmrEngine {
   private _updateQueue: string[] = [];
   // private _updateResults: Map<string, { result: string; count: number }> =
-  //   new Map();
 
   private _compiler: Compiler;
   private _devServer: DevServer;
@@ -148,7 +147,7 @@ export class HmrEngine {
         this._devServer.ws.clients.forEach((client: WebSocketClient) => {
           client.rawSend(`
             {
-              type: 'farm-error',
+              type: 'error',
               result: ${errorStr}
             }
           `);

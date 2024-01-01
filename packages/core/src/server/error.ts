@@ -46,11 +46,7 @@ export function buildErrorMessage(
 //     colors.red(`Internal server error: ${err.message}`)
 //   ]);
 
-//   server.config.logger.error(msg, {
-//     clear: true,
-//     timestamp: true,
-//     error: err
-//   });
+// TODO server logger e.g: DevServer.logger.error(msg);
 
 //   server.ws.send({
 //     type: 'error',

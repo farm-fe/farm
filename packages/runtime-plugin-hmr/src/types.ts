@@ -50,9 +50,8 @@ export interface FarmHmrPayload {
   result: RawHmrUpdateResult;
 }
 
-export interface FarmErrorHmrPayload {
-  type: 'farm-error';
-  result: string;
+export interface FarmErrorHmrPayload extends ErrorPayload {
+  type: 'error';
 }
 
 export interface ConnectedPayload {

@@ -179,8 +179,10 @@ export class HmrClient {
         this.handleFarmUpdate(payload.result);
         this.notifyListeners('farm:afterUpdate', payload);
         break;
-      case 'farm-error': {
-        createOverlay(payload.result);
+      case 'error': {
+        this.notifyListeners('vite:error', payload);
+        this.notifyListeners('farm:error', payload);
+        createOverlay(payload.err);
         break;
       }
       case 'connected':
@@ -210,13 +212,6 @@ export class HmrClient {
       case 'prune':
         this.notifyListeners('vite:beforePrune', payload);
         break;
-      case 'error': {
-        this.notifyListeners('vite:error', payload);
-        // TODO support error overlay
-        // const err = payload.err;
-        // createOverlay(err);
-        break;
-      }
 
       default:
         logger.warn(`unknown message payload: ${payload}`);
