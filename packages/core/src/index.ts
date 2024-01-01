@@ -7,7 +7,7 @@ export * from './utils/index.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import os from 'node:os';
-import { existsSync, statSync } from 'node:fs';
+import { statSync } from 'node:fs';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
@@ -19,7 +19,7 @@ import {
   resolveConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger } from './utils/logger.js';
+import { DefaultLogger, Logger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
@@ -45,23 +45,14 @@ export async function start(
     logger,
     'development'
   );
-  
+
   const {
     compilation: compilationConfig,
     server: serverConfig,
-    jsPlugins,
-    rustPlugins
+    jsPlugins
   } = resolvedUserConfig;
 
-  const compiler = new Compiler({
-    config: compilationConfig,
-    jsPlugins,
-    rustPlugins
-  });
-
-  for (const plugin of jsPlugins) {
-    await plugin.configureCompiler?.(compiler);
-  }
+  const compiler = await createCompiler(resolvedUserConfig);
 
   const devServer = new DevServer(compiler, logger);
   devServer.createFarmServer(serverConfig);
@@ -89,11 +80,15 @@ export async function start(
     (filenames: string[]) => {
       clearScreen();
       logger.info(
-        colors.bold(colors.green(
-          `${filenames
-            .map((filename) => path.relative(resolvedUserConfig.root, filename))
-            .join(', ')} changed, server will restart.`
-        ))
+        colors.bold(
+          colors.green(
+            `${filenames
+              .map((filename) =>
+                path.relative(resolvedUserConfig.root, filename)
+              )
+              .join(', ')} changed, server will restart.`
+          )
+        )
       );
 
       farmWatcher.close();
@@ -124,14 +119,7 @@ export async function build(
   await createBundleHandler(resolvedUserConfig);
 
   // copy resources under publicDir to output.path
-  const absPublicDirPath = normalizePublicDir(
-    resolvedUserConfig.root,
-    inlineConfig.publicDir
-  );
-
-  if (existsSync(absPublicDirPath)) {
-    fse.copySync(absPublicDirPath, resolvedUserConfig.compilation.output.path);
-  }
+  await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
 }
 
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
@@ -228,17 +216,18 @@ export async function watch(
     resolvedUserConfig,
     true
   );
-
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
-    async (files: string[]) => {
-      logger.info(
+  
+  async function handleFileChange(files: string[]) {
+    const changedFiles = files.map(file => path.relative(resolvedUserConfig.root, file)).join(', ');
+    logger.info(
+      colors.bold(
         colors.green(
-          `${files
-            .map((file) => path.relative(resolvedUserConfig.root, file))
-            .join(', ')} changed, will be restart`
+          `${changedFiles} changed, will be restart`
         )
-      );
+      )
+    );
 
+    try {
       farmWatcher.close();
 
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
@@ -246,8 +235,12 @@ export async function watch(
       compilerFileWatcher?.close();
 
       await watch(inlineConfig);
+    } catch (error) {
+      logger.error(`Error restarting the watcher: ${error.message}`);
     }
-  );
+  }
+
+  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(handleFileChange);
 }
 
 export async function clean(
@@ -256,30 +249,41 @@ export async function clean(
 ): Promise<void> {
   // TODO After optimizing the reading of config, put the clean method into compiler
   const logger = new DefaultLogger();
+
   const nodeModulesFolders = recursive
     ? await findNodeModulesRecursively(rootPath)
     : [path.join(rootPath, 'node_modules')];
 
-  for (const nodeModulesPath of nodeModulesFolders) {
-    const farmFolderPath = path.join(nodeModulesPath, '.farm');
-    try {
-      const stats = await fs.stat(farmFolderPath);
-      if (stats.isDirectory()) {
-        await fs.rm(farmFolderPath, { recursive: true, force: true });
-        logger.info(
-          `Under the current path, ${colors.bold(
-            colors.green(nodeModulesPath)
-          )}. The cache has been cleaned`
-        );
+  await Promise.all(
+    nodeModulesFolders.map(async (nodeModulesPath) => {
+      // TODO Bug .farm cacheDir folder not right
+      const farmFolderPath = path.join(nodeModulesPath, '.farm');
+      try {
+        const stats = await fs.stat(farmFolderPath);
+        if (stats.isDirectory()) {
+          await fs.rm(farmFolderPath, { recursive: true, force: true });
+          // TODO optimize nodeModulePath path e.g: /Users/xxx/node_modules/.farm/cache
+          logger.info(
+            `Cache cleaned at ${colors.bold(colors.green(nodeModulesPath))}`
+          );
+        }
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          logger.warn(
+            `No cached files found in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}`
+          );
+        } else {
+          logger.error(
+            `Error cleaning cache in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}: ${error.message}`
+          );
+        }
       }
-    } catch (error) {
-      logger.warn(
-        `Currently, no cached files have been found in ${colors.bold(
-          colors.green(nodeModulesPath)
-        )}.`
-      );
-    }
-  }
+    })
+  );
 }
 
 async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
@@ -309,15 +313,7 @@ export async function createBundleHandler(
   resolvedUserConfig: ResolvedUserConfig,
   watchMode = false
 ) {
-  const compiler = new Compiler({
-    config: resolvedUserConfig.compilation,
-    jsPlugins: resolvedUserConfig.jsPlugins,
-    rustPlugins: resolvedUserConfig.rustPlugins
-  });
-
-  for (const plugin of resolvedUserConfig.jsPlugins) {
-    await plugin.configureCompiler?.(compiler);
-  }
+  const compiler = await createCompiler(resolvedUserConfig);
 
   await compilerHandler(async () => {
     compiler.removeOutputPathDir();
@@ -332,8 +328,13 @@ export async function createBundleHandler(
   }
 }
 
-// TODO optimize the reading of config, put the clean method into compiler
-export async function configureCompiler(compilationConfig, jsPlugins, rustPlugins) {
+export async function createCompiler(ResolvedUserConfig: ResolvedUserConfig) {
+  const {
+    jsPlugins,
+    rustPlugins,
+    compilation: compilationConfig
+  } = ResolvedUserConfig;
+
   const compiler = new Compiler({
     config: compilationConfig,
     jsPlugins,
@@ -347,4 +348,25 @@ export async function configureCompiler(compilationConfig, jsPlugins, rustPlugin
   return compiler;
 }
 
+async function copyPublicDirectory(
+  resolvedUserConfig: ResolvedUserConfig,
+  inlineConfig: FarmCLIOptions & UserConfig,
+  logger: Logger
+): Promise<void> {
+  const absPublicDirPath = normalizePublicDir(
+    resolvedUserConfig.root,
+    inlineConfig.publicDir
+  );
+
+  try {
+    if (await fse.pathExists(absPublicDirPath)) {
+      await fse.copy(absPublicDirPath, resolvedUserConfig.compilation.output.path);
+      logger.info('Public directory resources copied successfully.');
+    }
+  } catch (error) {
+    logger.error(`Error copying public directory: ${error.message}`);
+  }
+}
+
 export { defineFarmConfig as defineConfig } from './config/index.js';
+
