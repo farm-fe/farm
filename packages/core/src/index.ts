@@ -33,6 +33,31 @@ import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/configWatcher.js';
 import { clearScreen } from './utils/share.js';
 
+// export async function start(
+//   inlineConfig: FarmCLIOptions & UserConfig
+// ): Promise<void> {
+//   const logger = inlineConfig.logger ?? new DefaultLogger();
+//   setProcessEnv('development');
+  
+//   try {
+//     const resolvedUserConfig = await resolveConfig(
+//       inlineConfig,
+//       logger,
+//       'development'
+//     );
+
+//     const compiler = await createCompiler(resolvedUserConfig);
+//     const devServer = setupDevServer(compiler, resolvedUserConfig, logger);
+//     await devServer.listen();
+
+//     setupFileWatcher(devServer, resolvedUserConfig, logger);
+//   } catch (error) {
+//     logger.error(`Failed to start the server: ${error.message}`);
+//     process.exit(1);
+//   }
+// }
+
+
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
@@ -368,5 +393,52 @@ async function copyPublicDirectory(
   }
 }
 
+function setupDevServer(compiler, resolvedUserConfig, logger) {
+  const devServer = new DevServer(compiler, logger);
+  devServer.createFarmServer(resolvedUserConfig.server);
+
+  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    plugin.configureDevServer?.(devServer)
+  );
+
+  return devServer;
+}
+
+async function setupFileWatcher(devServer, resolvedUserConfig, logger) {
+  if (devServer.config.hmr && resolvedUserConfig.compilation.mode === 'production') {
+    logger.error('HMR cannot be enabled in production mode.');
+    return;
+  }
+
+  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig);
+  await fileWatcher.watch();
+
+  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
+    async (filenames: string[]) => {
+      clearScreen();
+      logFileChanges(filenames, resolvedUserConfig.root, logger);
+
+      farmWatcher.close();
+      await restartServer(devServer, fileWatcher, inlineConfig);
+    }
+  );
+}
+
+function logFileChanges(filenames, root, logger) {
+  const changedFiles = filenames
+    .map((filename) => path.relative(root, filename))
+    .join(', ');
+  logger.info(colors.bold(colors.green(`${changedFiles} changed, server will restart.`)));
+}
+
+async function restartServer(devServer, fileWatcher, inlineConfig) {
+  fileWatcher?.close();
+  await devServer.closeFarmServer();
+  __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+  await start(inlineConfig);
+}
+
 export { defineFarmConfig as defineConfig } from './config/index.js';
+
+
 
