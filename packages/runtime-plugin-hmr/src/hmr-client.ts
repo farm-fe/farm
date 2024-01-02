@@ -2,6 +2,7 @@ import type { ModuleSystem } from '@farmfe/runtime';
 import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
 import { HotModuleState } from './hot-module-state';
 import { logger } from './logger';
+import { ErrorOverlay, overlayId } from './overlay';
 
 // Inject during compile time
 const port = Number(FARM_HMR_PORT || 9000);
@@ -12,6 +13,7 @@ const host =
     : FARM_HMR_HOST || 'localhost';
 
 const path = FARM_HMR_PATH || '/__hmr';
+const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
 
 export class HmrClient {
   socket: WebSocket;
@@ -37,6 +39,7 @@ export class HmrClient {
     // the client will apply the update
     socket.addEventListener('message', (event) => {
       const result: HMRPayload = eval(`(${event.data})`);
+
       this.handleMessage(result);
     });
 
@@ -48,9 +51,14 @@ export class HmrClient {
       { once: true }
     );
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', async ({ wasClean }) => {
+      if (wasClean) return;
+
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
+      // TODO ping this chose until it reconnects
       logger.log('disconnected from the server, please reload the page.');
+      await waitForSuccessfulPing(protocol, `${host}:${port}${path}`);
+      location.reload();
     });
 
     return socket;
@@ -81,7 +89,7 @@ export class HmrClient {
 
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
-        window.location.reload();
+        location.reload();
       }
     }
 
@@ -105,7 +113,7 @@ export class HmrClient {
 
           if (!hotContext) {
             console.error('hot context is empty for ', boundary);
-            window.location.reload();
+            location.reload();
           }
 
           // get all the accept callbacks of the boundary module that accepts the updated module
@@ -146,7 +154,7 @@ export class HmrClient {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
           console.error(err);
-          window.location.reload();
+          location.reload();
         }
       }
     }
@@ -171,6 +179,12 @@ export class HmrClient {
         this.handleFarmUpdate(payload.result);
         this.notifyListeners('farm:afterUpdate', payload);
         break;
+      case 'error': {
+        this.notifyListeners('vite:error', payload);
+        this.notifyListeners('farm:error', payload);
+        createOverlay(payload.err);
+        break;
+      }
       case 'connected':
         logger.log('connected to the server');
         break;
@@ -193,21 +207,19 @@ export class HmrClient {
         break;
       case 'full-reload':
         this.notifyListeners('vite:beforeFullReload', payload);
-        window.location.reload();
+        location.reload();
         break;
       case 'prune':
         this.notifyListeners('vite:beforePrune', payload);
         break;
-      case 'error':
-        this.notifyListeners('vite:error', payload);
-        // TODO support error overlay
-        break;
+
       default:
         logger.warn(`unknown message payload: ${payload}`);
     }
   }
 
   handleFarmUpdate(result: RawHmrUpdateResult) {
+    hasErrorOverlay() && clearOverlay();
     const immutableModules = eval(result.immutableModules);
     const mutableModules = eval(result.mutableModules);
     const modules = { ...immutableModules, ...mutableModules };
@@ -223,4 +235,78 @@ export class HmrClient {
       this.moduleSystem
     );
   }
+}
+
+export function createOverlay(err: any) {
+  clearOverlay();
+  document.body.appendChild(new ErrorOverlay(err));
+}
+
+function clearOverlay() {
+  document.querySelectorAll<ErrorOverlay>(overlayId).forEach((n) => n.close());
+}
+
+function hasErrorOverlay() {
+  return document.querySelectorAll(overlayId).length;
+}
+
+export function waitForWindowShow() {
+  return new Promise<void>((resolve) => {
+    const onChange = async () => {
+      if (document.visibilityState === 'visible') {
+        resolve();
+        document.removeEventListener('visibilitychange', onChange);
+      }
+    };
+    document.addEventListener('visibilitychange', onChange);
+  });
+}
+
+async function waitForSuccessfulPing(
+  socketProtocol: string,
+  hostAndPath: string,
+  ms = 1000
+) {
+  const pingHostProtocol = socketProtocol === 'wss' ? 'https' : 'http';
+
+  const ping = async () => {
+    // A fetch on a websocket URL will return a successful promise with status 400,
+    // but will reject a networking error.
+    // When running on middleware mode, it returns status 426, and an cors error happens if mode is not no-cors
+    try {
+      await fetch(`${pingHostProtocol}://${hostAndPath}`, {
+        mode: 'no-cors',
+        headers: {
+          // Custom headers won't be included in a request with no-cors so (ab)use one of the
+          // safelisted headers to identify the ping request
+          Accept: 'text/x-farm-ping'
+        }
+      });
+      return true;
+    } catch {
+      /* empty */
+    }
+    return false;
+  };
+
+  if (await ping()) {
+    return;
+  }
+  await wait(ms);
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (document.visibilityState === 'visible') {
+      if (await ping()) {
+        break;
+      }
+      await wait(ms);
+    } else {
+      await waitForWindowShow();
+    }
+  }
+}
+
+export function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

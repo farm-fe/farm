@@ -24,7 +24,7 @@ pub enum CompilationError {
   #[error("Transform `{resolved_path}` failed.\nError: {msg}")]
   TransformError { resolved_path: String, msg: String },
   // TODO, give the specific recommended plugin of this kind of module
-  #[error("Parse `{resolved_path}` failed.\n Error: {msg}.\n\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
+  #[error("Parse `{resolved_path}` failed.\n Error: {msg}\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
   ParseError { resolved_path: String, msg: String },
 
   #[error("Hook `process_module` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}.")]

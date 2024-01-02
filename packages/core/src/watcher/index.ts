@@ -116,10 +116,6 @@ export class FileWatcher implements ImplFileWatcher {
   }
 }
 
-export function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export function clearModuleCache(modulePath: string) {
   const _require = createRequire(import.meta.url);
   delete _require.cache[_require.resolve(modulePath)];
