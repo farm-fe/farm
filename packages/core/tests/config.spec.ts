@@ -27,7 +27,11 @@ test('resolveUserConfig', async () => {
     FARM_PROCESS_ENV: {
       NODE_ENV: 'test'
     },
-    'process.env.NODE_ENV': 'test'
+    process: {
+      env: {
+        NODE_ENV: 'test'
+      }
+    }
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
