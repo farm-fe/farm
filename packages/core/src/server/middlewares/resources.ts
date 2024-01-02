@@ -10,7 +10,6 @@ import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-// import mime from 'mime-types';
 
 export function resourcesMiddleware(
   compiler: Compiler,
