@@ -51,7 +51,7 @@ const template = /*html*/ `
 
 pre {
   font-family: var(--monospace);
-  font-size: 16px;
+  font-size: 14px;
   margin-top: 0;
   margin-bottom: 1em;
   overflow-x: scroll;
