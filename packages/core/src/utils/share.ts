@@ -3,6 +3,9 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const splitRE = /\r?\n/;
+
+/* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -24,6 +27,11 @@ export const isEmpty = (array: any): boolean => !(array && array.length > 0);
 export const isSymbol = (val: any): val is symbol => typeof val === 'symbol';
 
 export const isWindows = os.platform() === 'win32';
+
+export function pad(source: string, n = 2): string {
+  const lines = source.split(splitRE);
+  return lines.map((l) => ` `.repeat(n) + l).join(`\n`);
+}
 
 export function clearScreen() {
   try {
@@ -91,4 +99,8 @@ export async function asyncFlatten<T>(arr: T[]): Promise<T[]> {
     arr = (await Promise.all(arr)).flat(Infinity) as any;
   } while (arr.some((v: any) => v?.then));
   return arr;
+}
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

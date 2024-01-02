@@ -4,7 +4,7 @@ import { isAbsolute, relative } from 'node:path';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from './index.js';
-import { Logger, bold, cyan, green } from '../utils/index.js';
+import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { WebSocketClient } from './ws.js';
@@ -12,7 +12,6 @@ import { WebSocketClient } from './ws.js';
 export class HmrEngine {
   private _updateQueue: string[] = [];
   // private _updateResults: Map<string, { result: string; count: number }> =
-  //   new Map();
 
   private _compiler: Compiler;
   private _devServer: DevServer;
@@ -66,6 +65,7 @@ export class HmrEngine {
     const start = Date.now();
 
     const result = await this._compiler.update(queue);
+    clearScreen();
     this._logger.info(
       `${cyan(updatedFilesStr)} updated in ${bold(
         green(`${Date.now() - start}ms`)
@@ -139,6 +139,19 @@ export class HmrEngine {
       try {
         await this.recompileAndSendResult();
       } catch (e) {
+        // eslint-disable-next-line no-control-regex
+        const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
+        const errorStr = `${JSON.stringify({
+          message: serialization
+        })}`;
+        this._devServer.ws.clients.forEach((client: WebSocketClient) => {
+          client.rawSend(`
+            {
+              type: 'error',
+              err: ${errorStr}
+            }
+          `);
+        });
         this._logger.error(e);
       }
     }

@@ -23,10 +23,9 @@ const referenceGradient = [
   ...gradientColors
 ];
 
-// async-friendly setTimeout
-const sleep = (time: number) =>
+const sleep = (ms: number) =>
   new Promise((resolve) => {
-    setTimeout(resolve, time);
+    setTimeout(resolve, ms);
   });
 
 function getGradientAnimFrames() {
