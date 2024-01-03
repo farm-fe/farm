@@ -16,6 +16,8 @@ export class HmrEngine {
   private _compiler: Compiler;
   private _devServer: DevServer;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
+  // flag to indicate if last attempt was error
+  private _lastAttemptWasError: boolean;
 
   constructor(
     compiler: Compiler,
@@ -24,6 +26,7 @@ export class HmrEngine {
   ) {
     this._compiler = compiler;
     this._devServer = devServer;
+    this._lastAttemptWasError = false;
   }
 
   callUpdates(result: JsUpdateResult) {
@@ -62,36 +65,39 @@ export class HmrEngine {
         updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
-    const start = Date.now();
-
-    const result = await this._compiler.update(queue);
-    clearScreen();
-    this._logger.info(
-      `${cyan(updatedFilesStr)} updated in ${bold(
-        green(`${Date.now() - start}ms`)
-      )}`
-    );
-
-    // clear update queue after update finished
-    this._updateQueue = this._updateQueue.filter(
-      (item) => !queue.includes(item)
-    );
-
-    let dynamicResourcesMap: Record<string, Resource[]> = null;
-
-    if (result.dynamicResourcesMap) {
-      for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
-        if (!dynamicResourcesMap) {
-          dynamicResourcesMap = {} as Record<string, Resource[]>;
-        }
-        dynamicResourcesMap[key] = value.map((r) => ({
-          path: r[0],
-          type: r[1] as 'script' | 'link'
-        }));
+    try {
+      if (this._lastAttemptWasError) {
+        clearScreen();
+        this._lastAttemptWasError = false; // clear reset flag
       }
-    }
+      const start = Date.now();
+      const result = await this._compiler.update(queue);
+      this._logger.info(
+        `${cyan(updatedFilesStr)} updated in ${bold(
+          green(`${Date.now() - start}ms`)
+        )}`
+      );
 
-    const resultStr = `{
+      // clear update queue after update finished
+      this._updateQueue = this._updateQueue.filter(
+        (item) => !queue.includes(item)
+      );
+
+      let dynamicResourcesMap: Record<string, Resource[]> = null;
+
+      if (result.dynamicResourcesMap) {
+        for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
+          if (!dynamicResourcesMap) {
+            dynamicResourcesMap = {} as Record<string, Resource[]>;
+          }
+          dynamicResourcesMap[key] = value.map((r) => ({
+            path: r[0],
+            type: r[1] as 'script' | 'link'
+          }));
+        }
+      }
+
+      const resultStr = `{
       added: [${result.added
         .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
         .join(', ')}],
@@ -107,23 +113,28 @@ export class HmrEngine {
       dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;
 
-    this.callUpdates(result);
+      this.callUpdates(result);
 
-    this._devServer.ws.clients.forEach((client: WebSocketClient) => {
-      client.rawSend(`
+      this._devServer.ws.clients.forEach((client: WebSocketClient) => {
+        client.rawSend(`
         {
           type: 'farm-update',
           result: ${resultStr}
         }
       `);
-    });
+      });
 
-    this._compiler.onUpdateFinish(async () => {
-      // if there are more updates, recompile again
-      if (this._updateQueue.length > 0) {
-        await this.recompileAndSendResult();
-      }
-    });
+      this._compiler.onUpdateFinish(async () => {
+        // if there are more updates, recompile again
+        if (this._updateQueue.length > 0) {
+          await this.recompileAndSendResult();
+        }
+      });
+    } catch (e) {
+      clearScreen();
+      this._logger.error(e);
+      this._lastAttemptWasError = true;
+    }
   };
 
   async hmrUpdate(absPath: string | string[]) {
