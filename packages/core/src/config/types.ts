@@ -123,14 +123,14 @@ export interface FarmCLIPreviewOptions {
 }
 
 export interface FarmCLIOptions
-  extends FarmCLIServerOptions,
-    FarmCLIBuildOptions,
+  extends FarmCLIBuildOptions,
     FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
   configPath?: string;
   mode?: string;
   root?: string;
+  server?: FarmCLIServerOptions;
   clearScreen?: boolean;
 }
 
