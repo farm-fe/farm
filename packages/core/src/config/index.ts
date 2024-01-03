@@ -644,7 +644,7 @@ function mergeInlineCliOptions(
   // set server options
   ['port', 'open', 'https', 'hmr', 'host', 'strictPort'].forEach(
     (option: keyof FarmCLIServerOptions) => {
-      if (inlineOptions.server[option] !== undefined) {
+      if (inlineOptions.server?.[option]) {
         userConfig.server = {
           ...(userConfig.server ?? {}),
           [option]: inlineOptions.server[option]
