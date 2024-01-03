@@ -30,20 +30,21 @@ import {
   Logger,
   normalizePath
 } from '../utils/index.js';
+import { urlRegex } from '../utils/http.js';
+import { JsPlugin } from '../index.js';
 import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
 import { normalizeOutput } from './normalize-config/normalize-output.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
 
 import type {
   FarmCLIOptions,
+  FarmCLIServerOptions,
   NormalizedServerConfig,
   ResolvedUserConfig,
   UserConfig,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import { urlRegex } from '../utils/http.js';
-import { JsPlugin } from '../index.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -72,6 +73,7 @@ export async function resolveConfig(
 
   const getDefaultConfig = async () => {
     const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
+
     const resolvedUserConfig = await resolveMergedUserConfig(
       mergedUserConfig,
       undefined,
@@ -132,6 +134,7 @@ export async function resolveConfig(
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
 
   const mergedUserConfig = mergeInlineCliOptions(config, inlineOptions);
+
   const resolvedUserConfig = await resolveMergedUserConfig(
     mergedUserConfig,
     configFilePath,
@@ -626,10 +629,12 @@ function mergeInlineCliOptions(
       };
     }
   });
+
   if (inlineOptions.outDir) {
     userConfig.compilation = {
       ...(userConfig.compilation ?? {})
     };
+
     userConfig.compilation.output = {
       ...(userConfig.compilation.output ?? {}),
       path: inlineOptions.outDir
@@ -638,11 +643,11 @@ function mergeInlineCliOptions(
 
   // set server options
   ['port', 'open', 'https', 'hmr', 'host', 'strictPort'].forEach(
-    (option: keyof FarmCLIOptions) => {
-      if (inlineOptions[option] !== undefined) {
+    (option: keyof FarmCLIServerOptions) => {
+      if (inlineOptions.server[option] !== undefined) {
         userConfig.server = {
           ...(userConfig.server ?? {}),
-          [option]: inlineOptions[option]
+          [option]: inlineOptions.server[option]
         };
       }
     }
