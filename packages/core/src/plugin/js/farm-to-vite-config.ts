@@ -34,7 +34,9 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     plugins: vitePlugins,
     server: {
-      hmr: Boolean(config.server?.hmr),
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore ignore error
+      hmr: config.server?.hmr,
       port: config.server?.port,
       host: config.server?.host,
       strictPort: config.server?.strictPort,

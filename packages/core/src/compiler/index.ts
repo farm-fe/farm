@@ -42,7 +42,7 @@ export class Compiler {
         exit: true
       });
     }
-    console.log('begin compile');
+
     this.compiling = true;
     if (process.env.FARM_PROFILE) {
       this._bindingCompiler.compileSync();

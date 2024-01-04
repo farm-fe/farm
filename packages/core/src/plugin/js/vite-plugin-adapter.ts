@@ -150,9 +150,14 @@ export class VitePluginAdapter implements JsPlugin {
       writeBundle: () =>
         (this.writeResources = this.viteWriteBundleToFarmWriteResources())
     };
+    const alwaysExecutedHooks = ['buildStart'];
+
     // convert hooks
     for (const [hookName, fn] of Object.entries(hooksMap)) {
-      if (rawPlugin[hookName as keyof Plugin]) {
+      if (
+        rawPlugin[hookName as keyof Plugin] ||
+        alwaysExecutedHooks.includes(hookName)
+      ) {
         fn();
       }
     }
@@ -210,13 +215,14 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   async configResolved(config: ResolvedUserConfig) {
-    if (!this._rawPlugin.configResolved) return;
     this._farmConfig = config;
     this._viteConfig = proxyViteConfig(
       farmUserConfigToViteConfig(config),
       this.name,
       this._logger
     );
+
+    if (!this._rawPlugin.configResolved) return;
 
     const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
@@ -592,7 +598,7 @@ export class VitePluginAdapter implements JsPlugin {
             if (typeof result === 'string') {
               return { content: result };
             } else if (typeof result === 'object') {
-              return { content: result, sourceMap: result.map };
+              return { content: result.code, sourceMap: result.map };
             }
           }
         }
