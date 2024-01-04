@@ -22,6 +22,10 @@ export type ColorFunction = (s: any) => any;
 
 const require = createRequire(import.meta.url);
 
+// brand gradient colors
+const gradientPurpleColor = [176, 106, 179];
+const gradientPinkColor = [198, 66, 110];
+
 const argv = process.argv || [],
   env = process.env;
 
@@ -33,7 +37,7 @@ const enabled =
     (require != null && require('tty').isatty(1) && env.TERM !== 'dumb') ||
     'CI' in env);
 
-const formatter =
+const createFormatter =
   (open: string, close: string, replace = open) =>
   (input: string) => {
     const string = '' + input;
@@ -61,51 +65,99 @@ export const reset: StylerEnabled = enabled
   ? (s: string) => `\x1b[0m${s}\x1b[0m`
   : String;
 export const bold: StylerEnabled = enabled
-  ? formatter('\x1b[1m', '\x1b[22m', '\x1b[22m\x1b[1m')
+  ? createFormatter('\x1b[1m', '\x1b[22m', '\x1b[22m\x1b[1m')
   : String;
 export const dim = enabled
-  ? formatter('\x1b[2m', '\x1b[22m', '\x1b[22m\x1b[2m')
+  ? createFormatter('\x1b[2m', '\x1b[22m', '\x1b[22m\x1b[2m')
   : String;
 export const italic: StylerEnabled = enabled
-  ? formatter('\x1b[3m', '\x1b[23m')
+  ? createFormatter('\x1b[3m', '\x1b[23m')
   : String;
 export const underline: StylerEnabled = enabled
-  ? formatter('\x1b[4m', '\x1b[24m')
+  ? createFormatter('\x1b[4m', '\x1b[24m')
   : String;
 export const inverse: StylerEnabled = enabled
-  ? formatter('\x1b[7m', '\x1b[27m')
+  ? createFormatter('\x1b[7m', '\x1b[27m')
   : String;
 export const hidden: StylerEnabled = enabled
-  ? formatter('\x1b[8m', '\x1b[28m')
+  ? createFormatter('\x1b[8m', '\x1b[28m')
   : String;
 export const strikethrough: StylerEnabled = enabled
-  ? formatter('\x1b[9m', '\x1b[29m')
+  ? createFormatter('\x1b[9m', '\x1b[29m')
   : String;
 
-export const debugColor = formatter('\x1b[38;2;255;140;0m', '\x1b[39m');
+export const debugColor = createFormatter('\x1b[38;2;255;140;0m', '\x1b[39m');
 export const brandColor = enabled
-  ? formatter('\x1b[38;2;113;26;95m', '\x1b[39m')
+  ? createFormatter('\x1b[38;2;113;26;95m', '\x1b[39m')
   : String;
-export const black = enabled ? formatter('\x1b[30m', '\x1b[39m') : String;
-export const red = enabled ? formatter('\x1b[31m', '\x1b[39m') : String;
-export const green = enabled ? formatter('\x1b[32m', '\x1b[39m') : String;
-export const yellow = enabled ? formatter('\x1b[33m', '\x1b[39m') : String;
-export const blue = enabled ? formatter('\x1b[34m', '\x1b[39m') : String;
-export const magenta = enabled ? formatter('\x1b[35m', '\x1b[39m') : String;
+export const black = enabled ? createFormatter('\x1b[30m', '\x1b[39m') : String;
+export const red = enabled ? createFormatter('\x1b[31m', '\x1b[39m') : String;
+export const green = enabled ? createFormatter('\x1b[32m', '\x1b[39m') : String;
+export const yellow = enabled
+  ? createFormatter('\x1b[33m', '\x1b[39m')
+  : String;
+export const blue = enabled ? createFormatter('\x1b[34m', '\x1b[39m') : String;
+export const magenta = enabled
+  ? createFormatter('\x1b[35m', '\x1b[39m')
+  : String;
 export const purple = enabled
-  ? formatter('\x1b[38;2;173;127;168m', '\x1b[39m')
+  ? createFormatter('\x1b[38;2;173;127;168m', '\x1b[39m')
   : String;
-export const cyan = enabled ? formatter('\x1b[36m', '\x1b[39m') : String;
-export const white = enabled ? formatter('\x1b[37m', '\x1b[39m') : String;
-export const gray = enabled ? formatter('\x1b[90m', '\x1b[39m') : String;
-export const bgBlack = enabled ? formatter('\x1b[40m', '\x1b[49m') : String;
-export const bgRed = enabled ? formatter('\x1b[41m', '\x1b[49m') : String;
-export const bgGreen = enabled ? formatter('\x1b[42m', '\x1b[49m') : String;
-export const bgYellow = enabled ? formatter('\x1b[43m', '\x1b[49m') : String;
-export const bgBlue = enabled ? formatter('\x1b[44m', '\x1b[49m') : String;
-export const bgMagenta = enabled ? formatter('\x1b[45m', '\x1b[49m') : String;
-export const bgCyan = enabled ? formatter('\x1b[46m', '\x1b[49m') : String;
-export const bgWhite = enabled ? formatter('\x1b[47m', '\x1b[49m') : String;
+export const cyan = enabled ? createFormatter('\x1b[36m', '\x1b[39m') : String;
+export const white = enabled ? createFormatter('\x1b[37m', '\x1b[39m') : String;
+export const gray = enabled ? createFormatter('\x1b[90m', '\x1b[39m') : String;
+export const bgBlack = enabled
+  ? createFormatter('\x1b[40m', '\x1b[49m')
+  : String;
+export const bgRed = enabled ? createFormatter('\x1b[41m', '\x1b[49m') : String;
+export const bgGreen = enabled
+  ? createFormatter('\x1b[42m', '\x1b[49m')
+  : String;
+export const bgYellow = enabled
+  ? createFormatter('\x1b[43m', '\x1b[49m')
+  : String;
+export const bgBlue = enabled
+  ? createFormatter('\x1b[44m', '\x1b[49m')
+  : String;
+export const bgMagenta = enabled
+  ? createFormatter('\x1b[45m', '\x1b[49m')
+  : String;
+export const bgCyan = enabled
+  ? createFormatter('\x1b[46m', '\x1b[49m')
+  : String;
+export const bgWhite = enabled
+  ? createFormatter('\x1b[47m', '\x1b[49m')
+  : String;
+
+export const colors = {
+  reset,
+  bold,
+  dim,
+  italic,
+  underline,
+  inverse,
+  hidden,
+  strikethrough,
+  black,
+  red,
+  green,
+  yellow,
+  blue,
+  magenta,
+  cyan,
+  white,
+  gray,
+  bgBlack,
+  bgRed,
+  bgGreen,
+  bgYellow,
+  bgBlue,
+  bgMagenta,
+  bgCyan,
+  bgWhite,
+  debugColor,
+  brandColor
+};
 
 export function gradientString(text: string, colors: number[][]) {
   const steps = text.length;
@@ -120,7 +172,6 @@ export function gradientString(text: string, colors: number[][]) {
     output += `${gradient[colorIndex]}${text[i]}`;
   }
 
-  // 重置颜色
   output += '\x1b[0m';
 
   return output;
@@ -138,16 +189,16 @@ export function interpolateColor(
   ];
 }
 
-export const PersistentCacheBrand = gradientString('⚡️FULL EXTREME !', [
-  [176, 106, 179],
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.1),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.2),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.3),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.4),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.5),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.6),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.7),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.8),
-  interpolateColor([176, 106, 179], [198, 66, 110], 0.9),
-  [198, 66, 110]
+export const PersistentCacheBrand = gradientString('⚡️ FULL EXTREME !', [
+  gradientPurpleColor,
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
+  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
+  gradientPinkColor
 ]);

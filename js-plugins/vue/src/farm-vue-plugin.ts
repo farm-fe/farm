@@ -27,9 +27,6 @@ import {
 } from './utils.js';
 import { compileStyle } from '@vue/compiler-sfc';
 
-// apply style langs
-type ApplyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
-
 const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
@@ -47,13 +44,26 @@ export default function farmVuePlugin(
   // options hooks to get farmConfig
   let farmConfig: UserConfig['compilation'];
   const resolvedOptions = getResolvedOptions(farmVuePluginOptions);
-
   const exclude = handleExclude(resolvedOptions);
   const include = handleInclude(resolvedOptions);
+
   return {
     name: 'farm-vue-plugin',
+    config(config) {
+      return {
+        compilation: {
+          lazyCompilation:
+            resolvedOptions.ssr === true
+              ? false
+              : config.compilation?.lazyCompilation
+        },
+        server: {
+          hmr: resolvedOptions.hmr ?? config.server?.hmr
+        }
+      };
+    },
     configResolved(config) {
-      farmConfig = config || {};
+      farmConfig = config.compilation || {};
     },
     load: {
       filters: {
@@ -142,23 +152,33 @@ export default function farmVuePlugin(
             parse,
             [source]
           );
+
           if (result) {
             const { descriptor } = result;
-            const isHmr = handleHmr(
-              resolvedOptions,
-              cacheDescriptor,
-              descriptor,
-              stylesCodeCache,
-              query,
-              resolvedPath,
-              farmConfig.mode
-            );
-            if (isHmr) {
-              return {
-                content: isHmr.source,
-                moduleType: isHmr.moduleType,
-                sourceMap: isHmr.map
-              };
+
+            const enableHMR =
+              resolvedOptions.hmr && farmConfig.mode !== 'production';
+
+            const beforeDescriptor = cacheDescriptor[resolvedPath];
+            // set descriptors cache to hmr
+            if (!beforeDescriptor) {
+              if (Object.keys(query).length === 0)
+                cacheDescriptor[resolvedPath] = descriptor;
+            } else if (enableHMR) {
+              const isHmr = handleHmr(
+                resolvedOptions,
+                beforeDescriptor,
+                descriptor,
+                stylesCodeCache,
+                resolvedPath
+              );
+              if (isHmr) {
+                return {
+                  content: isHmr.source,
+                  moduleType: isHmr.moduleType,
+                  sourceMap: isHmr.map
+                };
+              }
             }
 
             const {
@@ -169,8 +189,7 @@ export default function farmVuePlugin(
               resolvedOptions,
               descriptor,
               stylesCodeCache,
-              resolvedPath,
-              farmConfig.mode
+              resolvedPath
             );
             return {
               content: mainCode,

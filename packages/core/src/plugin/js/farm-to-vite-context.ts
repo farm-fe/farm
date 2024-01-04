@@ -114,7 +114,7 @@ export function farmContextToViteContext(
     },
     meta: {
       rollupVersion: '3.29.4',
-      watchMode: config.compilation.mode !== 'production'
+      watchMode: config.compilation?.mode !== 'production'
     },
     parse: (_) => {
       throw new Error(

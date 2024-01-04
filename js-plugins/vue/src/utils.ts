@@ -72,11 +72,12 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
     sourceMap: false,
     script: {},
     template: {},
-    style: {}
+    style: {},
+    ssr: false
   };
   for (const key in defaultVueOptions) {
     const val = defaultVueOptions[key as keyof FarmVuePluginOptions];
-    switch (key) {
+    switch (key as keyof FarmVuePluginOptions) {
       case 'include':
         resolvedOptions.include = (
           isArray(val) ? val : [val]
@@ -103,7 +104,22 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
         break;
       case 'style':
         resolvedOptions.style = (val ? val : {}) as ResolvedOptions['style'];
+        break;
+      case 'hmr':
+        if (defaultVueOptions.hmr !== undefined) {
+          resolvedOptions.hmr = Boolean(defaultVueOptions.hmr);
+        }
+        break;
+      case 'ssr':
+        resolvedOptions.ssr = Boolean(defaultVueOptions.ssr);
+        break;
     }
+  }
+  if (resolvedOptions.ssr) {
+    if (resolvedOptions.hmr) {
+      console.warn('in the ssr mode, hmr will be forcibly set to false.');
+    }
+    resolvedOptions.hmr = false;
   }
   resolvedOptions.sourceMap =
     resolvedOptions.isProduction === true ? false : true;

@@ -1,111 +1,110 @@
-import { HmrUpdateResult } from './types';
-import type {
-  ModuleSystem,
-  ModuleInitialization
-} from '@farmfe/runtime/src/module-system';
-import { handleErrorSync } from './utils';
-
-const REGISTERED_HOT_MODULES = new Map<string, HotModuleState>();
+// Farm's HMR client is compatible with Vite, see https://vitejs.dev/guide/api-hmr.html.
+// And it's inspired by both Vite and esm-hmr, see https://github.com/FredKSchott/esm-hmr
+import { HmrClient } from './hmr-client';
+import { logger } from './logger';
 
 export class HotModuleState {
-  acceptCallbacks: Array<() => void> = [];
+  acceptCallbacks: Array<{ deps: string[]; fn: (mods: any[]) => void }> = [];
   data = {};
   id: string;
+  hmrClient: HmrClient;
 
-  constructor(id: string) {
+  constructor(id: string, hmrClient: HmrClient) {
     this.id = id;
+    this.hmrClient = hmrClient;
   }
 
-  accept(callback?: () => void) {
-    if (callback) {
-      this.acceptCallbacks.push(callback);
-    }
-  }
-
-  tap = (changeModule: ModuleInitialization) => {
-    this.acceptCallbacks.map((cb) => {
-      handleErrorSync(cb, [changeModule], (err) => {
-        console.error(err);
+  // the same as vite's hot.accept
+  accept(deps?: any, callback?: (mods: any[]) => void) {
+    if (typeof deps === 'function' || !deps) {
+      // self-accept hot.accept(() => {})
+      this.acceptCallbacks.push({
+        deps: [this.id],
+        fn: ([mod]) => deps?.(mod)
       });
+    } else if (typeof deps === 'string') {
+      // accept a single dependency hot.accept('./dep.js', () => {})
+      this.acceptCallbacks.push({
+        deps: [deps],
+        fn: ([mod]) => callback?.(mod)
+      });
+    } else if (Array.isArray(deps)) {
+      // accept multiple dependencies hot.accept(['./dep1.js', './dep2.js'], () => {})
+      this.acceptCallbacks.push({ deps, fn: callback });
+    } else {
+      throw new Error('invalid hot.accept call');
+    }
+  }
+
+  dispose(callback: (data: any) => void) {
+    this.hmrClient.disposeMap.set(this.id, callback);
+  }
+
+  prune(callback: (data: any[]) => void) {
+    this.hmrClient.pruneMap.set(this.id, callback);
+  }
+
+  acceptExports(
+    _: string | readonly string[],
+    _callback: (data: any) => void
+  ): void {
+    logger.log('acceptExports is not supported for now');
+  }
+
+  decline() {
+    /** does no thing */
+  }
+
+  invalidate(message?: string) {
+    this.hmrClient.notifyListeners('vite:invalidate', {
+      path: this.id,
+      message
     });
-  };
-}
-
-export function createHotContext(id: string) {
-  if (REGISTERED_HOT_MODULES.has(id)) {
-    return REGISTERED_HOT_MODULES.get(id);
+    // notify the server to find the boundary starting from the parents of this module
+    this.send('vite:invalidate', { path: this.id, message });
+    logger.log(`invalidate ${this.id}${message ? `: ${message}` : ''}`);
   }
 
-  const state = new HotModuleState(id);
-  REGISTERED_HOT_MODULES.set(id, state);
+  on<T extends string>(event: T, cb: (payload: any) => void): void {
+    const addToMap = (map: Map<string, any[]>) => {
+      const existing = map.get(event) || [];
+      existing.push(cb);
+      map.set(event, existing);
+    };
+    addToMap(this.hmrClient.customListenersMap);
+  }
+
+  off<T extends string>(event: T, cb: (payload: any) => void): void {
+    const removeFromMap = (map: Map<string, any[]>) => {
+      const existing = map.get(event);
+      if (existing === undefined) {
+        return;
+      }
+      const pruned = existing.filter((l) => l !== cb);
+      if (pruned.length === 0) {
+        map.delete(event);
+        return;
+      }
+      map.set(event, pruned);
+    };
+    removeFromMap(this.hmrClient.customListenersMap);
+  }
+
+  send<T extends string>(event: T, data?: any): void {
+    if (this.hmrClient.socket.readyState === WebSocket.OPEN) {
+      this.hmrClient.socket.send(
+        JSON.stringify({ type: 'custom', event, data })
+      );
+    }
+  }
+}
+
+export function createHotContext(id: string, hmrClient: HmrClient) {
+  if (hmrClient.registeredHotModulesMap.has(id)) {
+    return hmrClient.registeredHotModulesMap.get(id);
+  }
+
+  const state = new HotModuleState(id, hmrClient);
+  hmrClient.registeredHotModulesMap.set(id, state);
   return state;
-}
-
-function removeCssStyles(removed: string[]) {
-  for (const id of removed) {
-    const previousStyle = document.querySelector(
-      `style[data-farm-id="${{ id }}"]`
-    );
-
-    if (previousStyle) {
-      previousStyle.remove();
-    }
-  }
-}
-
-export function applyHotUpdates(
-  result: HmrUpdateResult,
-  moduleSystem: ModuleSystem
-) {
-  result.changed.forEach((id) => {
-    console.log(`[Farm HMR] ${id} updated`);
-  });
-
-  for (const id of result.removed) {
-    moduleSystem.delete(id);
-    REGISTERED_HOT_MODULES.delete(id);
-  }
-
-  removeCssStyles(result.removed);
-
-  for (const id of result.added) {
-    moduleSystem.register(id, result.modules[id]);
-  }
-
-  for (const id of result.changed) {
-    moduleSystem.update(id, result.modules[id]);
-
-    if (!result.boundaries[id]) {
-      // do not found boundary module, reload the window
-      window.location.reload();
-    }
-  }
-
-  if (result.dynamicResourcesMap) {
-    moduleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
-  }
-
-  // TODO support accept dependencies change
-  for (const updated_id of Object.keys(result.boundaries)) {
-    const chains = result.boundaries[updated_id];
-
-    for (const chain of chains) {
-      for (const id of chain) {
-        moduleSystem.clearCache(id);
-      }
-
-      try {
-        // require the boundary module
-        const boundary = chain[chain.length - 1];
-        const boundaryExports = moduleSystem.require(boundary);
-        const hotContext = REGISTERED_HOT_MODULES.get(boundary);
-        hotContext.tap(boundaryExports);
-      } catch (err) {
-        // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
-        // See https://github.com/farm-fe/farm/issues/383
-        console.error(err);
-        window.location.reload();
-      }
-    }
-  }
 }

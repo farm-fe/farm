@@ -8,6 +8,7 @@ import type { ProxiesOptions } from '../server/middlewares/proxy.js';
 import type { JsPlugin } from '../plugin/type.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { Config } from '../../binding/index.js';
+import { Middleware } from 'koa';
 
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
@@ -34,15 +35,10 @@ export type NormalizedServerConfig = Required<
   }
 >;
 
-export interface ConfigEnv {
-  command: 'build' | 'serve';
-  mode: string;
+export interface NormalizedConfig {
+  compilationConfig: Config;
+  serverConfig?: NormalizedServerConfig;
 }
-
-export type ResolveConfigType = {
-  config?: UserConfig;
-  normalizedConfig?: Config;
-};
 
 export interface UserHmrConfig {
   /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
@@ -62,7 +58,7 @@ type InternalConfig = Config['config'] extends undefined
 
 type AvailableUserConfigKeys = Exclude<
   keyof InternalConfig,
-  'configFilePath' | 'env' | 'envPrefix' | 'envFiles' | 'coreLibPath' | 'root'
+  'configFilePath' | 'env' | 'coreLibPath' | 'root'
 >;
 
 export interface UserConfig {
@@ -84,15 +80,17 @@ export interface UserConfig {
 }
 
 export interface ResolvedUserConfig extends UserConfig {
-  inlineConfig?: FarmCLIOptions;
-  configPath?: string;
-  isBuild?: boolean;
-  command?: 'serve' | 'build';
-  mode?: 'development' | 'production';
+  env?: Record<string, any>;
+  envDir?: string;
+  envFiles?: string[];
+  envPrefix?: string | string[];
   configFilePath?: string;
-  define?: Record<string, string | boolean>;
-  // TODO set this field for persistent cache
+  envMode?: string;
   configFileDependencies?: string[];
+  compilation?: Config['config'];
+  server?: NormalizedServerConfig;
+  jsPlugins?: JsPlugin[];
+  rustPlugins?: [string, string][];
 }
 
 export interface GlobalFarmCLIOptions {
@@ -125,15 +123,17 @@ export interface FarmCLIPreviewOptions {
 }
 
 export interface FarmCLIOptions
-  extends FarmCLIServerOptions,
-    FarmCLIBuildOptions,
+  extends FarmCLIBuildOptions,
     FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
   configPath?: string;
   mode?: string;
   root?: string;
+  server?: FarmCLIServerOptions;
   clearScreen?: boolean;
 }
 
-export type DevServerMiddleware = (context: DevServer) => void;
+export type DevServerMiddleware = (
+  context: DevServer
+) => Middleware | undefined;

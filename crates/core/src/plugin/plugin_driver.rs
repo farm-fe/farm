@@ -439,23 +439,21 @@ impl PluginDriver {
     param: &mut PluginRenderResourcePotHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<PluginDriverRenderResourcePotHookResult> {
-    let mut result = PluginDriverRenderResourcePotHookResult {
-      content: Arc::new(String::new()),
-      source_map_chain: vec![],
-    };
-
     for plugin in &self.plugins {
       // if the transform hook returns None, treat it as empty hook and ignore it
       if let Some(plugin_result) = plugin.render_resource_pot(param, context)? {
         param.content = Arc::new(plugin_result.content);
 
         if let Some(source_map) = plugin_result.source_map {
-          result.source_map_chain.push(Arc::new(source_map));
+          param.source_map_chain.push(Arc::new(source_map));
         }
       }
     }
 
-    result.content = param.content.clone();
+    let result = PluginDriverRenderResourcePotHookResult {
+      content: param.content.clone(),
+      source_map_chain: param.source_map_chain.clone(),
+    };
 
     Ok(result)
   }

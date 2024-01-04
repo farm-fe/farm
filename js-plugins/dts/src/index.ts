@@ -9,12 +9,11 @@ import type { DtsPluginOptions } from './types.js';
 export default function farmDtsPlugin(options: DtsPluginOptions): JsPlugin {
   const ctx = new Context();
   // TODO support vue other framework file type
-  // TODO support alias
   return {
     name: pluginName,
     priority: 1000,
-    configResolved(config: any) {
-      ctx.handleResolveOptions(options, config);
+    configResolved(config) {
+      ctx.handleResolveOptions(options, config.compilation);
     },
     load: {
       filters: {

@@ -57,7 +57,7 @@ fn hmr_accepted() {
     module.meta = module_meta;
     module.module_type = loaded.module_type;
 
-    assert!(!module.meta.as_script().hmr_accepted);
+    assert!(!module.meta.as_script().hmr_self_accepted);
     plugin_script
       .finalize_module(
         &mut PluginFinalizeModuleHookParam {
@@ -67,7 +67,6 @@ fn hmr_accepted() {
         &context,
       )
       .unwrap();
-
-    assert!(module.meta.as_script().hmr_accepted);
+    assert!(module.meta.as_script().hmr_self_accepted);
   });
 }

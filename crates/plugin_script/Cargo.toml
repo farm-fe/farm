@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
+farmfe_utils = { path = "../utils" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob" }
 swc_plugin_proxy = { version = "0.39.10", features = [

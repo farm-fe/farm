@@ -41,7 +41,6 @@ pub fn render_resource_pots_and_generate_resources(
       let cached_meta = cached_resource_pot.meta;
 
       resource_pot.meta = cached_meta;
-
       resource_pot.add_resource(cached_resource.resource.name.clone());
 
       cached_resource.resource.info = Some(rendered_resource_pot_info);
@@ -188,6 +187,7 @@ pub fn render_resource_pot_generate_resources(
 
     let mut param = PluginRenderResourcePotHookParam {
       content: resource_pot.meta.rendered_content.clone(),
+      source_map_chain: resource_pot.meta.rendered_map_chain.clone(),
       resource_pot_info: ChunkResourceInfo::new(resource_pot, context),
     };
 

@@ -7,7 +7,7 @@ export * from './utils/index.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import os from 'node:os';
-import { existsSync, statSync } from 'node:fs';
+import { statSync } from 'node:fs';
 import sirv from 'sirv';
 import compression from 'koa-compress';
 import Koa, { Context } from 'koa';
@@ -15,88 +15,45 @@ import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
 import {
-  normalizeDevServerOptions,
   normalizePublicDir,
   resolveConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger } from './utils/logger.js';
+import { DefaultLogger, Logger } from './utils/logger.js';
 import { DevServer } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
-import { Config } from '../binding/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
-import { bold, cyan, green, magenta } from './utils/color.js';
+import { colors } from './utils/color.js';
 import { useProxy } from './server/middlewares/index.js';
 
-import type { FarmCLIOptions } from './config/types.js';
+import type { FarmCLIOptions, ResolvedUserConfig } from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/configWatcher.js';
+import { clearScreen } from './utils/share.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
-
   setProcessEnv('development');
 
-  const { config, normalizedConfig } = await resolveConfig(
-    inlineConfig,
-    logger,
-    'serve',
-    'development'
-  );
-
-  const compiler = new Compiler(normalizedConfig);
-  const devServer = new DevServer(compiler, logger, config, normalizedConfig);
-  devServer.createFarmServer(devServer.userConfig.server);
-
-  if (normalizedConfig.config.mode === 'development') {
-    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configDevServer?.(devServer)
-    );
-  }
-
-  await devServer.listen();
-
-  let fileWatcher: FileWatcher;
-  // Make sure the server is listening before we watch for file changes
-  if (devServer.config.hmr) {
-    if (normalizedConfig.config.mode === 'production') {
-      logger.error(
-        'HMR can not be enabled in production mode. Please set the mode option to "development" in your config file.'
-      );
-      process.exit(1);
-    }
-    fileWatcher = new FileWatcher(devServer, {
-      ...normalizedConfig,
-      ...config
-    });
-    await fileWatcher.watch();
-  }
-
-  const farmWatcher = new ConfigWatcher({
-    config: normalizedConfig,
-    userConfig: config
-  }).watch((filenames: string[]) => {
-    logger.info(
-      green(
-        `${filenames
-          .map((filename) => path.relative(config.root, filename))
-          .join(', ')} changed, will restart server`
-      )
+  try {
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      logger,
+      'development'
     );
 
-    farmWatcher.close();
-
-    devServer.restart(async () => {
-      fileWatcher?.close();
-      await devServer.closeFarmServer();
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      await start(inlineConfig);
-    });
-  });
+    const compiler = await createCompiler(resolvedUserConfig);
+    const devServer = setupDevServer(compiler, resolvedUserConfig, logger);
+    await devServer.listen();
+    setupFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+  } catch (error) {
+    logger.error(`Failed to start the server: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 export async function build(
@@ -104,44 +61,29 @@ export async function build(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('production');
-  const { config, normalizedConfig } = await resolveConfig(
+  const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'build',
     'production'
   );
 
-  setProcessEnv(normalizedConfig.config.mode);
+  setProcessEnv(resolvedUserConfig.compilation.mode);
 
-  await createBundleHandler(normalizedConfig, config);
-
+  await createBundleHandler(resolvedUserConfig);
   // copy resources under publicDir to output.path
-  const absPublicDirPath = normalizePublicDir(
-    normalizedConfig.config.root,
-    inlineConfig.publicDir
-  );
-
-  if (existsSync(absPublicDirPath)) {
-    fse.copySync(absPublicDirPath, normalizedConfig.config.output.path);
-  }
+  await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
 }
 
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   const port = inlineConfig.port ?? 1911;
-  const { config, normalizedConfig } = await resolveConfig(
+  const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'serve',
     'production'
   );
 
-  const normalizedDevServerConfig = normalizeDevServerOptions(
-    config.server,
-    'production'
-  );
-
-  const { root, output } = normalizedConfig.config;
+  const { root, output } = resolvedUserConfig.compilation;
   const distDir = path.resolve(root, output.path);
   try {
     statSync(distDir);
@@ -167,7 +109,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const app = new Koa();
 
   // support proxy
-  useProxy(normalizedDevServerConfig.proxy, app, logger);
+  useProxy(resolvedUserConfig.server.proxy, app, logger);
 
   app.use(compression());
   app.use(async (ctx) => {
@@ -186,7 +128,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   });
 
   app.listen(port, () => {
-    logger.info(green(`preview server running at:\n`));
+    logger.info(colors.green(`preview server running at:\n`));
     const interfaces = os.networkInterfaces();
     Object.keys(interfaces).forEach((key) =>
       (interfaces[key] || [])
@@ -200,10 +142,10 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
           };
         })
         .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${bold(port)}${
+          const url = `${'http'}://${host}:${colors.bold(port)}${
             output.publicPath ?? ''
           }`;
-          logger.info(`${magenta('>')} ${type} ${cyan(url)}`);
+          logger.info(`${colors.magenta('>')} ${type} ${colors.cyan(url)}`);
         })
     );
   });
@@ -214,41 +156,39 @@ export async function watch(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
-  const { config, normalizedConfig } = await resolveConfig(
+
+  const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'build',
     'development'
   );
 
-  setProcessEnv(normalizedConfig.config.mode);
+  setProcessEnv(resolvedUserConfig.compilation.mode);
 
   const compilerFileWatcher = await createBundleHandler(
-    normalizedConfig,
-    config,
+    resolvedUserConfig,
     true
   );
 
-  const farmWatcher = new ConfigWatcher({
-    userConfig: config,
-    config: normalizedConfig
-  }).watch(async (files: string[]) => {
-    logger.info(
-      green(
-        `${files
-          .map((file) => path.relative(normalizedConfig.config.root, file))
-          .join(', ')} changed, will be restart`
-      )
-    );
+  async function handleFileChange(files: string[]) {
+    logFileChanges(files, resolvedUserConfig.root, logger);
 
-    farmWatcher.close();
+    try {
+      farmWatcher.close();
 
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
 
-    compilerFileWatcher?.close();
+      compilerFileWatcher?.close();
 
-    await watch(inlineConfig);
-  });
+      await watch(inlineConfig);
+    } catch (error) {
+      logger.error(`Error restarting the watcher: ${error.message}`);
+    }
+  }
+
+  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
+    handleFileChange
+  );
 }
 
 export async function clean(
@@ -257,30 +197,41 @@ export async function clean(
 ): Promise<void> {
   // TODO After optimizing the reading of config, put the clean method into compiler
   const logger = new DefaultLogger();
+
   const nodeModulesFolders = recursive
     ? await findNodeModulesRecursively(rootPath)
     : [path.join(rootPath, 'node_modules')];
 
-  for (const nodeModulesPath of nodeModulesFolders) {
-    const farmFolderPath = path.join(nodeModulesPath, '.farm');
-    try {
-      const stats = await fs.stat(farmFolderPath);
-      if (stats.isDirectory()) {
-        await fs.rm(farmFolderPath, { recursive: true, force: true });
-        logger.info(
-          `Under the current path, ${bold(
-            green(nodeModulesPath)
-          )}. The cache has been cleaned`
-        );
+  await Promise.all(
+    nodeModulesFolders.map(async (nodeModulesPath) => {
+      // TODO Bug .farm cacheDir folder not right
+      const farmFolderPath = path.join(nodeModulesPath, '.farm');
+      try {
+        const stats = await fs.stat(farmFolderPath);
+        if (stats.isDirectory()) {
+          await fs.rm(farmFolderPath, { recursive: true, force: true });
+          // TODO optimize nodeModulePath path e.g: /Users/xxx/node_modules/.farm/cache
+          logger.info(
+            `Cache cleaned at ${colors.bold(colors.green(nodeModulesPath))}`
+          );
+        }
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          logger.warn(
+            `No cached files found in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}`
+          );
+        } else {
+          logger.error(
+            `Error cleaning cache in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}: ${error.message}`
+          );
+        }
       }
-    } catch (error) {
-      logger.warn(
-        `Currently, no cached files have been found in ${bold(
-          green(nodeModulesPath)
-        )}.`
-      );
-    }
-  }
+    })
+  );
 }
 
 async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
@@ -307,58 +258,121 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
 }
 
 export async function createBundleHandler(
-  normalizedConfig: Config,
-  userConfig: UserConfig,
+  resolvedUserConfig: ResolvedUserConfig,
   watchMode = false
 ) {
-  const compiler = new Compiler(normalizedConfig);
-  if (normalizedConfig.config.mode === 'production') {
-    normalizedConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configCompiler?.(compiler)
-    );
-  }
+  const compiler = await createCompiler(resolvedUserConfig);
+
   await compilerHandler(async () => {
     compiler.removeOutputPathDir();
     await compiler.compile();
     compiler.writeResourcesToDisk();
+  }, resolvedUserConfig);
 
-    // const maxFileNameLength = Math.max(
-    //   ...Object.keys(compiler.resources()).map((name) => name.length)
-    // );
-    // const fileSizeMap = Object.entries(compiler.resources())
-    //   .filter(([name]) => !name.endsWith('.map'))
-    //   .map(([resourceName, resource]) => {
-    //     let c = green;
-    //     const size = Buffer.byteLength(resource) / 1024;
-
-    //     if (size > 500) {
-    //       c = yellow;
-    //     }
-
-    //     const sizeStr = c(size.toFixed(0)) + cyan(' KB');
-
-    //     return {
-    //       resourceName: resourceName.padEnd(maxFileNameLength + 4, ' '),
-    //       size: sizeStr
-    //     };
-    //   });
-
-    // console.log(`\n${green('Output Files:')}`);
-    // fileSizeMap.forEach(({ resourceName, size }) =>
-    //   console.log(`\t${cyan(resourceName)}\t${size}`)
-    // );
-  }, normalizedConfig);
-
-  if (normalizedConfig.config?.watch || watchMode) {
-    const watcher = new FileWatcher(compiler, {
-      ...normalizedConfig,
-      ...userConfig
-    });
-
+  if (resolvedUserConfig.compilation?.watch || watchMode) {
+    const watcher = new FileWatcher(compiler, resolvedUserConfig);
     await watcher.watch();
-
     return watcher;
   }
+}
+
+export async function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
+  const {
+    jsPlugins,
+    rustPlugins,
+    compilation: compilationConfig
+  } = resolvedUserConfig;
+
+  const compiler = new Compiler({
+    config: compilationConfig,
+    jsPlugins,
+    rustPlugins
+  });
+
+  for (const plugin of jsPlugins) {
+    await plugin.configureCompiler?.(compiler);
+  }
+
+  return compiler;
+}
+
+async function copyPublicDirectory(
+  resolvedUserConfig: ResolvedUserConfig,
+  inlineConfig: FarmCLIOptions & UserConfig,
+  logger: Logger
+): Promise<void> {
+  const absPublicDirPath = normalizePublicDir(
+    resolvedUserConfig.root,
+    inlineConfig.publicDir
+  );
+
+  try {
+    if (await fse.pathExists(absPublicDirPath)) {
+      await fse.copy(
+        absPublicDirPath,
+        resolvedUserConfig.compilation.output.path
+      );
+      logger.info('Public directory resources copied successfully.');
+    }
+  } catch (error) {
+    logger.error(`Error copying public directory: ${error.message}`);
+  }
+}
+
+export function setupDevServer(
+  compiler: Compiler,
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger
+) {
+  const devServer = new DevServer(compiler, logger);
+  devServer.createFarmServer(resolvedUserConfig.server);
+
+  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    plugin.configureDevServer?.(devServer)
+  );
+
+  return devServer;
+}
+
+export async function setupFileWatcher(
+  devServer: DevServer,
+  resolvedUserConfig: ResolvedUserConfig,
+  inlineConfig: FarmCLIOptions & UserConfig,
+  logger: Logger
+) {
+  if (
+    devServer.config.hmr &&
+    resolvedUserConfig.compilation.mode === 'production'
+  ) {
+    logger.error('HMR cannot be enabled in production mode.');
+    return;
+  }
+
+  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig);
+  await fileWatcher.watch();
+
+  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
+    async (files: string[]) => {
+      clearScreen();
+      logFileChanges(files, resolvedUserConfig.root, logger);
+
+      devServer.restart(async () => {
+        farmWatcher?.close();
+        await devServer.closeFarmServer();
+        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+        await start(inlineConfig);
+      });
+    }
+  );
+}
+
+export function logFileChanges(files: string[], root: string, logger: Logger) {
+  const changedFiles = files
+    .map((file) => path.relative(root, file))
+    .join(', ');
+  logger.info(
+    colors.bold(colors.green(`${changedFiles} changed, server will restart.`))
+  );
 }
 
 export { defineFarmConfig as defineConfig } from './config/index.js';

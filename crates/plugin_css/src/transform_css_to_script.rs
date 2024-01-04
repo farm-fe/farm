@@ -153,7 +153,8 @@ pub fn transform_css_to_script_modules(
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
           module_system: ModuleSystem::EsModule,
-          hmr_accepted: true,
+          hmr_self_accepted: true,
+          hmr_accepted_deps: Default::default(),
         });
 
         module.module_type = ModuleType::Js;
@@ -228,11 +229,13 @@ previousStyle.replaceWith(style);
 }} else {{
 document.head.appendChild(style);
 }}
-module.meta.hot.accept();
 
-module.onDispose(() => {{
-style.remove();
-}});
+if (module.meta.hot) {{
+  module.meta.hot.accept();
+  module.meta.hot.prune(() => {{
+    style.remove();
+  }});
+}}
 "#,
     format!(
       "{}\n{}",

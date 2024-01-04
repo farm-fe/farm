@@ -1,0 +1,23 @@
+{
+  "name": "@farmfe-examples/svelet",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "farm dev",
+    "build": "echo \"Error: build script not supported\"",
+    "preview": "farm preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:^",
+    "@farmfe/core": "workspace:^",
+    "@sveltejs/adapter-auto": "^2.0.0",
+    "@sveltejs/kit": "^1.27.4",
+    "svelte": "^4.2.7",
+    "svelte-check": "^3.6.0",
+    "tslib": "^2.4.1",
+    "typescript": "^5.0.0"
+  },
+  "type": "module"
+}

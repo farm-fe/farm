@@ -21,7 +21,7 @@ import {
   transformResourceInfo2RollupRenderedChunk,
   transformRollupResource2FarmResource
 } from './utils.js';
-import type { UserConfig } from '../../config/types.js';
+import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { DevServer } from '../../server/index.js';
 
 // only use types from vite and we do not install vite as a dependency
@@ -57,7 +57,7 @@ import {
 } from './vite-server-adapter.js';
 import { farmContextToViteContext } from './farm-to-vite-context.js';
 import {
-  farmConfigToViteConfig,
+  farmUserConfigToViteConfig,
   proxyViteConfig,
   viteConfigToFarmConfig
 } from './farm-to-vite-config.js';
@@ -66,6 +66,7 @@ import {
   transformResourceInfo2RollupResource,
   transformFarmConfigToRollupNormalizedInputOptions
 } from './utils.js';
+import { Logger } from '../../index.js';
 
 type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
   this: any,
@@ -73,6 +74,9 @@ type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
 ) => infer R
   ? (...arg: A) => R
   : T;
+type ObjectHook<T, O = Record<string, any>> =
+  | T
+  | ({ handler: T; order?: 'pre' | 'post' | null } & O);
 
 /// turn a vite plugin to farm js plugin
 export class VitePluginAdapter implements JsPlugin {
@@ -83,6 +87,7 @@ export class VitePluginAdapter implements JsPlugin {
   private _farmConfig: UserConfig;
   private _viteConfig: ViteUserConfig;
   private _viteDevServer: ViteDevServerAdapter;
+  private _logger: Logger;
 
   buildStart: JsPlugin['buildStart'];
   resolve: JsPlugin['resolve'];
@@ -95,13 +100,18 @@ export class VitePluginAdapter implements JsPlugin {
   renderStart: JsPlugin['renderStart'];
   augmentResourceHash?: JsPlugin['augmentResourceHash'];
   finalizeResources: JsPlugin['finalizeResources'];
+  writeResources: JsPlugin['writeResources'];
 
   // filter for js plugin to improve performance
   filters: string[];
 
-  constructor(rawPlugin: Plugin, farmConfig: UserConfig, filters: string[]) {
+  constructor(
+    rawPlugin: Plugin,
+    farmConfig: UserConfig,
+    filters: string[],
+    logger: Logger
+  ) {
     this.name = rawPlugin.name;
-
     if (!rawPlugin.name) {
       throw new Error(
         `Vite plugin ${rawPlugin} is not compatible with Farm for now. Because plugin name is required in Farm.`
@@ -111,36 +121,46 @@ export class VitePluginAdapter implements JsPlugin {
     this.priority = convertEnforceToPriority(rawPlugin.enforce);
     this._rawPlugin = rawPlugin;
     this._farmConfig = farmConfig;
-    this._viteConfig = farmConfigToViteConfig(farmConfig);
+    this._viteConfig = farmUserConfigToViteConfig(farmConfig);
+    this._logger = logger;
 
     this.filters = filters;
 
+    const hooksMap = {
+      buildStart: () =>
+        (this.buildStart = this.viteBuildStartToFarmBuildStart()),
+      resolveId: () => (this.resolve = this.viteResolveIdToFarmResolve()),
+      load: () => (this.load = this.viteLoadToFarmLoad()),
+      transform: () => (this.transform = this.viteTransformToFarmTransform()),
+      buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
+      closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
+      handleHotUpdate: () =>
+        (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
+      renderChunk: () =>
+        (this.renderResourcePot =
+          this.viteHandleRenderChunkToFarmRenderResourcePot()),
+      renderStart: () =>
+        (this.renderStart = this.viteRenderStartToFarmRenderStart()),
+      augmentChunkHash: () =>
+        (this.augmentResourceHash =
+          this.viteAugmentChunkHashToFarmAugmentResourceHash()),
+      generateBundle: () =>
+        (this.finalizeResources =
+          this.viteGenerateBundleToFarmFinalizeResources()),
+      writeBundle: () =>
+        (this.writeResources = this.viteWriteBundleToFarmWriteResources())
+    };
     // convert hooks
-    if (rawPlugin.buildStart)
-      this.buildStart = this.viteBuildStartToFarmBuildStart();
-    if (rawPlugin.buildStart) this.resolve = this.viteResolveIdToFarmResolve();
-    if (rawPlugin.load) this.load = this.viteLoadToFarmLoad();
-    if (rawPlugin.transform)
-      this.transform = this.viteTransformToFarmTransform();
-    if (rawPlugin.buildEnd) this.buildEnd = this.viteBuildEndToFarmBuildEnd();
-    if (rawPlugin.closeBundle) this.finish = this.viteCloseBundleToFarmFinish();
-    if (rawPlugin.handleHotUpdate)
-      this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules();
-    if (rawPlugin.renderChunk)
-      this.renderResourcePot =
-        this.viteHandleRenderChunkToFarmRenderResourcePot();
-    if (rawPlugin.renderStart)
-      this.renderStart = this.viteRenderStartToFarmRenderStart();
-    if (rawPlugin.augmentChunkHash)
-      this.augmentResourceHash =
-        this.viteAugmentChunkHashToFarmAugmentResourceHash();
-    if (rawPlugin.generateBundle)
-      this.finalizeResources = this.viteGenerateBundleToFarmFinalizeResources();
+    for (const [hookName, fn] of Object.entries(hooksMap)) {
+      if (rawPlugin[hookName as keyof Plugin]) {
+        fn();
+      }
+    }
 
     // if other unsupported vite plugins hooks are used, throw error
     const unsupportedHooks = [
       'transformIndexHtml',
-      'writeBundle',
+      // 'writeBundle',
       'renderError',
       'resolveDynamicImport',
       'resolveFileUrl',
@@ -161,9 +181,9 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   // call both config and configResolved
-  async config(config: UserConfig['compilation']) {
-    this._farmConfig.compilation = config;
-    this._viteConfig = farmConfigToViteConfig(this._farmConfig);
+  async config(config: UserConfig) {
+    this._farmConfig = config;
+    this._viteConfig = farmUserConfigToViteConfig(this._farmConfig);
 
     const configHook = this.wrapRawPluginHook('config', this._rawPlugin.config);
 
@@ -172,11 +192,12 @@ export class VitePluginAdapter implements JsPlugin {
         merge(
           this._viteConfig,
           await configHook(
-            proxyViteConfig(this._viteConfig, this.name),
+            proxyViteConfig(this._viteConfig, this.name, this._logger),
             this.getViteConfigEnv()
           )
         ),
-        this.name
+        this.name,
+        this._logger
       );
 
       this._farmConfig = viteConfigToFarmConfig(
@@ -186,14 +207,17 @@ export class VitePluginAdapter implements JsPlugin {
       );
     }
 
-    return this._farmConfig.compilation;
+    return this._farmConfig;
   }
 
-  async configResolved(config: UserConfig['compilation']) {
+  async configResolved(config: ResolvedUserConfig) {
     if (!this._rawPlugin.configResolved) return;
-
-    this._farmConfig.compilation = config;
-    this._viteConfig = farmConfigToViteConfig(this._farmConfig);
+    this._farmConfig = config;
+    this._viteConfig = proxyViteConfig(
+      farmUserConfigToViteConfig(config),
+      this.name,
+      this._logger
+    );
 
     const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
@@ -205,7 +229,7 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  async configDevServer(devServer: DevServer) {
+  async configureDevServer(devServer: DevServer) {
     const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer
@@ -213,7 +237,8 @@ export class VitePluginAdapter implements JsPlugin {
 
     this._viteDevServer = createViteDevServerAdapter(
       this.name,
-      this._viteConfig
+      this._viteConfig,
+      devServer
     );
 
     if (hook) {
@@ -262,18 +287,35 @@ export class VitePluginAdapter implements JsPlugin {
 
   private wrapRawPluginHook(
     hookName: string,
-    hook: object | undefined | ((...args: any[]) => any),
+    hook?: ObjectHook<(...args: any[]) => any, { sequential?: boolean }>,
     farmContext?: CompilationContext,
     currentHandlingFile?: string
-  ) {
+  ): (
+    ...args: any[]
+  ) => any | undefined | Promise<(...args: any[]) => any | undefined> {
     if (hook === undefined) {
       return undefined;
     }
 
-    if (typeof hook !== 'function') {
-      throw new Error(
-        `${hookName} hook of vite plugin ${this.name} is not a function. Farm only supports vite plugin with function hooks. This Plugin is not compatible with farm.`
-      );
+    if (typeof hook === 'object') {
+      if (!hook.handler) {
+        return undefined;
+      }
+
+      const logWarn = (name: string) => {
+        this._logger.warn(
+          `Farm does not support '${name}' property of vite plugin ${this.name} hook ${hookName} for now. It will be ignored.`
+        );
+      };
+      // TODO support order, if a hook has order, it should be split into two plugins
+      if (hook.order) {
+        logWarn('order');
+      }
+      if (hook.sequential) {
+        logWarn('sequential');
+      }
+
+      hook = hook.handler;
     }
 
     if (farmContext) {
@@ -339,6 +381,7 @@ export class VitePluginAdapter implements JsPlugin {
             }
             return path.concat('');
           };
+
           if (isString(resolveIdResult)) {
             return {
               resolvedPath: removeQuery(encodeStr(resolveIdResult)),
@@ -366,7 +409,6 @@ export class VitePluginAdapter implements JsPlugin {
   private viteLoadToFarmLoad(): JsPlugin['load'] {
     return {
       filters: {
-        // TODO support internal filter optimization for common plugins like @vitejs/plugin-vue
         resolvedPaths: this.filters
       },
       executor: this.wrapExecutor(
@@ -582,7 +624,7 @@ export class VitePluginAdapter implements JsPlugin {
           context
         ) as OmitThis<FunctionPluginHooks['augmentChunkHash']>;
 
-        const hash = await hook(
+        const hash = await hook?.(
           transformResourceInfo2RollupRenderedChunk(param)
         );
 
@@ -609,7 +651,7 @@ export class VitePluginAdapter implements JsPlugin {
             {} as OutputBundle
           );
 
-          hook(
+          await hook?.(
             transformFarmConfigToRollupNormalizedOutputOptions(param.config),
             bundles
           );
@@ -621,6 +663,33 @@ export class VitePluginAdapter implements JsPlugin {
             );
             return res;
           }, {} as FinalizeResourcesHookParams['resourcesMap']);
+        }
+      )
+    };
+  }
+
+  private viteWriteBundleToFarmWriteResources(): JsPlugin['writeResources'] {
+    return {
+      executor: this.wrapExecutor(
+        async (param: FinalizeResourcesHookParams, context) => {
+          const hook = this.wrapRawPluginHook(
+            'writeBundle',
+            this._rawPlugin.writeBundle,
+            context
+          );
+
+          const bundles = Object.entries(param.resourcesMap).reduce(
+            (res, [key, val]) => {
+              res[key] = transformResourceInfo2RollupResource(val);
+              return res;
+            },
+            {} as OutputBundle
+          );
+
+          await hook?.(
+            transformFarmConfigToRollupNormalizedOutputOptions(param.config),
+            bundles
+          );
         }
       )
     };

@@ -44,23 +44,36 @@ export default function farmPluginSolid(
 
   return {
     name: 'farm-plugin-solid',
-    configResolved(param = {}) {
+    config(config) {
+      return {
+        compilation: {
+          lazyCompilation:
+            options.ssr === true ? false : config.compilation?.lazyCompilation
+        },
+        server: {
+          hmr: options.ssr === true ? false : config.server?.hmr
+        }
+      };
+    },
+    configResolved(config) {
+      const root = config.root ?? process.cwd();
+      const mode = config.compilation?.mode;
       // We inject the dev mode only if the use˜r explicitly wants it or if we are in dev (serve) mode
-      needHmr = param.mode !== 'production';
-      replaceDev = options.dev === true || param.mode === 'production';
-      projectRoot = param.root ?? process.cwd();
+      needHmr = mode !== 'production';
+      replaceDev = options.dev === true || mode === 'development';
+      projectRoot = root ?? process.cwd();
 
-      if (!param.resolve) {
-        param.resolve = {};
+      if (!config.compilation.resolve) {
+        config.compilation.resolve = {};
       }
 
-      param.resolve.conditions = [
-        ...(param.resolve.conditions ?? []),
+      config.compilation.resolve.conditions = [
+        ...(config.compilation.resolve.conditions ?? []),
         'solid',
         ...(replaceDev ? ['development'] : [])
       ];
-      param.resolve.alias = {
-        ...(param.resolve.alias ?? {}),
+      config.compilation.resolve.alias = {
+        ...(config.compilation.resolve.alias ?? {}),
         'solid-refresh': runtimePublicPath
       };
     },

@@ -29,13 +29,16 @@
     "chpos",
     "clippy",
     "clsx",
+    "codeframe",
     "codegen",
     "commitlint",
+    "Consolas",
     "consts",
     "cpus",
     "ctxt",
     "dashmap",
     "Denysov",
+    "Deoptimization",
     "Deque",
     "deserializers",
     "dylib",
@@ -63,6 +66,7 @@
     "loglevel",
     "lukastaegert",
     "mapref",
+    "Menlo",
     "mgfe",
     "middlewares",
     "minifier",
@@ -74,8 +78,10 @@
     "NAPI",
     "normpath",
     "npmlog",
+    "onwarn",
     "opentelemetry",
     "osascript",
+    "outro",
     "pathdiff",
     "petgraph",
     "picomatch",
@@ -96,6 +102,7 @@
     "rsplit",
     "Rustup",
     "sabi",
+    "safelisted",
     "sirv",
     "styl",
     "stylesheet",
@@ -112,6 +119,7 @@
     "tsfn",
     "tsup",
     "Turbopack",
+    "xlink",
     "unplugin",
     "unref",
     "unsize",
@@ -122,10 +130,7 @@
     "walkdir",
     "wasi",
     "wasix",
-    "wechat",
-    "outro",
-    "Deoptimization",
-    "onwarn"
+    "wechat"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
@@ -138,6 +143,7 @@
     "**/examples/**",
     "rust-plugins/sass/ext/sass/**",
     "assets/**",
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "**/LICENSE"
   ]
 }

@@ -20,7 +20,7 @@ export interface UpdateQueueItem {
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
   private _updateQueue: UpdateQueueItem[] = [];
-  private _onUpdateFinishQueue: (() => void)[] = [];
+  private _onUpdateFinishQueue: (() => void | Promise<void>)[] = [];
 
   public compiling = false;
 
@@ -89,7 +89,9 @@ export class Compiler {
             await this.update(next.paths, true, true).then(next.resolve);
           } else {
             this.compiling = false;
-            this._onUpdateFinishQueue.forEach((cb) => cb());
+            for (const cb of this._onUpdateFinishQueue) {
+              await cb();
+            }
             // clear update finish queue
             this._onUpdateFinishQueue = [];
           }
@@ -106,6 +108,10 @@ export class Compiler {
 
   hasModule(resolvedPath: string): boolean {
     return this._bindingCompiler.hasModule(resolvedPath);
+  }
+
+  getParentFiles(idOrResolvedPath: string): string[] {
+    return this._bindingCompiler.getParentFiles(idOrResolvedPath);
   }
 
   resources(): Record<string, Buffer> {

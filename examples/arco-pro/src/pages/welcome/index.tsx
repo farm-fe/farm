@@ -1,15 +1,16 @@
-import useLocale from '@/utils/useLocale'
-import { Alert, Card, Link, Tag, Typography } from '@arco-design/web-react'
-import { IconDoubleRight } from '@arco-design/web-react/icon'
-import React from 'react'
-import { useSelector } from 'react-redux'
-import CodeBlock from './code-block'
-import locale from './locale'
-import styles from './style/index.module.less'
+import useLocale from '@/utils/useLocale';
+import { Alert, Card, Link, Tag, Typography } from '@arco-design/web-react';
+import { IconDoubleRight } from '@arco-design/web-react/icon';
+import React from 'react';
+import { useSelector } from 'react-redux';
+import CodeBlock from './code-block';
+import locale from './locale';
+import styles from './style/index.module.less';
 
 export default function Welcome() {
-  const t = useLocale(locale)
-  const userInfo = useSelector((state: any) => state.userInfo) || {}
+  const t = useLocale(locale);
+
+  const userInfo = useSelector((state: any) => state.userInfo) || {};
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -62,5 +63,5 @@ export default function Welcome() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

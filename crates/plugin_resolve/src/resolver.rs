@@ -1,10 +1,11 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::{
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
 };
 
+use farmfe_core::config::ModuleFormat;
 use farmfe_core::{
   common::PackageJsonInfo,
   config::{Mode, TargetEnv},
@@ -52,12 +53,28 @@ impl FromStr for Condition {
   }
 }
 
+impl ToString for &Condition {
+  fn to_string(&self) -> String {
+    match self {
+      Condition::Default => "default".to_string(),
+      Condition::Require => "require".to_string(),
+      Condition::Import => "import".to_string(),
+      Condition::Browser => "browser".to_string(),
+      Condition::Node => "node".to_string(),
+      Condition::Development => "development".to_string(),
+      Condition::Production => "production".to_string(),
+      Condition::Module => "module".to_string(),
+      Condition::Custom(c) => c.to_string(),
+    }
+  }
+}
+
 #[derive(Debug)]
 struct ConditionOptions {
   pub unsafe_flag: bool,
   pub require: bool,
   pub browser: bool,
-  pub conditions: Vec<String>,
+  pub conditions: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -909,7 +926,7 @@ impl Resolver {
           return None;
         }
       };
-      let mut map: HashMap<String, Value> = HashMap::new();
+      let mut map: BTreeMap<String, Value> = BTreeMap::new();
       match exports_field {
         Value::String(string_value) => {
           map.insert(".".to_string(), Value::String(string_value.clone()));
@@ -954,7 +971,7 @@ impl Resolver {
           return None;
         }
       };
-      let mut imports_map: HashMap<String, Value> = HashMap::new();
+      let mut imports_map: BTreeMap<String, Value> = BTreeMap::new();
 
       match imports_field {
         Value::Object(object_value) => {
@@ -980,49 +997,28 @@ impl Resolver {
     is_matched: bool,
   ) -> Option<Vec<String>> {
     farm_profile_function!("resolve_exports_or_imports".to_string());
-    let mut additional_conditions: HashSet<String> = vec![
-      String::from("development"),
-      String::from("production"),
-      String::from("module"),
-    ]
-    .into_iter()
-    .collect();
+    let mut additional_conditions: HashSet<String> =
+      context.config.resolve.conditions.iter().cloned().collect();
 
-    let resolve_conditions: HashSet<String> = context
-      .config
-      .resolve
-      .conditions
-      .clone()
-      .into_iter()
-      .collect();
-    additional_conditions.extend(resolve_conditions);
-
-    let filtered_conditions: Vec<String> = additional_conditions
-      .clone()
-      .into_iter()
-      .filter(|condition| match condition.as_str() {
-        "production" => {
-          let mode = &context.config.mode;
-          matches!(mode, Mode::Production)
-        }
-        "development" => {
-          let mode = &context.config.mode;
-          matches!(mode, Mode::Development)
-        }
-        _ => true,
-      })
-      .collect();
+    if !additional_conditions.contains(&String::from("production"))
+      && !additional_conditions.contains(&String::from("development"))
+    {
+      additional_conditions.insert(match context.config.mode {
+        Mode::Production => String::from("production"),
+        Mode::Development => String::from("development"),
+      });
+    }
 
     // resolve exports field
-    let is_browser = TargetEnv::Browser == context.config.output.target_env;
+    let is_browser = context.config.output.target_env == TargetEnv::Browser;
     let is_require = match kind {
       ResolveKind::Require => true,
       _ => false,
     };
     let condition_config = ConditionOptions {
-      browser: is_browser && !additional_conditions.contains("node"),
-      require: is_require && !additional_conditions.contains("import"),
-      conditions: filtered_conditions,
+      browser: is_browser && !additional_conditions.contains(&String::from("node")),
+      require: is_require && !additional_conditions.contains(&String::from("import")),
+      conditions: additional_conditions,
       // set default unsafe_flag to insert require & import field
       unsafe_flag: false,
     };
@@ -1035,35 +1031,32 @@ impl Resolver {
     return result;
   }
 
+  /// [condition order](https://nodejs.org/api/packages.html#conditional-exports)
   fn conditions(self: &Self, options: &ConditionOptions) -> HashSet<Condition> {
-    let mut out: HashSet<Condition> = HashSet::new();
-    out.insert(Condition::Default);
+    // custom conditions should be first
+    let mut conditions = options
+      .conditions
+      .iter()
+      .map(|condition| Condition::from_str(condition).unwrap())
+      .collect::<HashSet<_>>();
 
-    for condition_str in &options.conditions {
-      match Condition::from_str(condition_str) {
-        Ok(condition_enum) => {
-          out.insert(condition_enum);
-        }
-        Err(error) => {
-          // TODO resolve error
-          eprintln!("Error: {}", error);
-        }
-      }
-    }
+    conditions.insert(Condition::Default);
+
     if !options.unsafe_flag {
       if options.require {
-        out.insert(Condition::Require);
+        conditions.insert(Condition::Require);
       } else {
-        out.insert(Condition::Import);
+        conditions.insert(Condition::Import);
       }
 
       if options.browser {
-        out.insert(Condition::Browser);
+        conditions.insert(Condition::Browser);
       } else {
-        out.insert(Condition::Node);
+        conditions.insert(Condition::Node);
       }
     }
-    out
+
+    conditions
   }
 
   fn injects(self: &Self, items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
@@ -1085,7 +1078,7 @@ impl Resolver {
   fn loop_value(
     self: &Self,
     m: Value,
-    keys: &HashSet<Condition>,
+    conditions: &HashSet<Condition>,
     result: &mut Option<HashSet<String>>,
   ) -> Option<Vec<String>> {
     match m {
@@ -1098,7 +1091,9 @@ impl Resolver {
       Value::Array(values) => {
         let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
         for item in values {
-          if let Some(item_result) = self.loop_value(item, keys, &mut Some(arr_result.clone())) {
+          if let Some(item_result) =
+            self.loop_value(item, conditions, &mut Some(arr_result.clone()))
+          {
             return Some(item_result);
           }
         }
@@ -1110,24 +1105,10 @@ impl Resolver {
         }
       }
       Value::Object(map) => {
-        // TODO Temporarily define the order problem
-        let property_order: Vec<String> = vec![
-          String::from("browser"),
-          String::from("development"),
-          String::from("module"),
-          String::from("import"),
-          String::from("require"),
-          String::from("default"),
-        ];
-
-        for key in &property_order {
-          if let Some(value) = map.get(key) {
-            if let Ok(condition) = Condition::from_str(&key) {
-              if keys.contains(&condition) {
-                return self.loop_value(value.clone(), keys, result);
-              }
-            }
-          }
+        for (condition, val) in map.iter() {
+          if conditions.contains(&Condition::from_str(condition.as_str()).unwrap()) {
+            return self.loop_value(val.clone(), conditions, result);
+          };
         }
         None
       }
@@ -1189,7 +1170,7 @@ impl Resolver {
   fn walk(
     self: &Self,
     name: &str,
-    mapping: &HashMap<String, Value>,
+    mapping: &BTreeMap<String, Value>,
     input: &str,
     options: &ConditionOptions,
   ) -> Vec<String> {
@@ -1201,7 +1182,7 @@ impl Resolver {
         String::from(name)
       }
     };
-    let c: HashSet<Condition> = self.conditions(options);
+    let c = self.conditions(options);
     let mut m: Option<&Value> = mapping.get(&entry);
     let mut replace: Option<String> = None;
     if m.is_none() {

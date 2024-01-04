@@ -4,7 +4,7 @@ import debounce from 'lodash.debounce';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
-import { Config, JsFileWatcher } from '../../binding/index.js';
+import { JsFileWatcher } from '../../binding/index.js';
 import { compilerHandler, DefaultLogger } from '../utils/index.js';
 import { DEFAULT_HMR_OPTIONS } from '../index.js';
 
@@ -23,9 +23,9 @@ export class FileWatcher implements ImplFileWatcher {
 
   constructor(
     public serverOrCompiler: DevServer | Compiler,
-    public options?: Config & ResolvedUserConfig
+    public options: ResolvedUserConfig
   ) {
-    this._root = options.config.root;
+    this._root = options.root;
     this._awaitWriteFinish = DEFAULT_HMR_OPTIONS.watchOptions.awaitWriteFinish;
 
     if (serverOrCompiler instanceof DevServer) {
@@ -114,10 +114,6 @@ export class FileWatcher implements ImplFileWatcher {
     this._watcher = null;
     this.serverOrCompiler = null;
   }
-}
-
-export function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function clearModuleCache(modulePath: string) {

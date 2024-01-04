@@ -4,7 +4,7 @@ import { isAbsolute, relative } from 'node:path';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from './index.js';
-import { Logger, bold, cyan, green } from '../utils/index.js';
+import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { WebSocketClient } from './ws.js';
@@ -12,11 +12,12 @@ import { WebSocketClient } from './ws.js';
 export class HmrEngine {
   private _updateQueue: string[] = [];
   // private _updateResults: Map<string, { result: string; count: number }> =
-  //   new Map();
 
   private _compiler: Compiler;
   private _devServer: DevServer;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
+  // flag to indicate if last attempt was error
+  private _lastAttemptWasError: boolean;
 
   constructor(
     compiler: Compiler,
@@ -25,6 +26,7 @@ export class HmrEngine {
   ) {
     this._compiler = compiler;
     this._devServer = devServer;
+    this._lastAttemptWasError = false;
   }
 
   callUpdates(result: JsUpdateResult) {
@@ -45,7 +47,6 @@ export class HmrEngine {
       return;
     }
 
-    this._updateQueue = [];
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
@@ -64,37 +65,39 @@ export class HmrEngine {
         updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
-    const start = Date.now();
-    const result = await this._compiler.update(queue);
-    this._logger.info(
-      `${cyan(updatedFilesStr)} updated in ${bold(
-        green(`${Date.now() - start}ms`)
-      )}`
-    );
-
-    // TODO: write resources to disk when hmr finished in incremental mode
-    // if (this._devServer.config?.writeToDisk) {
-    //   this._compiler.onUpdateFinish(() => {
-    //     this._compiler.writeResourcesToDisk();
-    //     console.log('writeResourcesToDisk');
-    //   });
-    // }
-
-    let dynamicResourcesMap: Record<string, Resource[]> = null;
-
-    if (result.dynamicResourcesMap) {
-      for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
-        if (!dynamicResourcesMap) {
-          dynamicResourcesMap = {} as Record<string, Resource[]>;
-        }
-        dynamicResourcesMap[key] = value.map((r) => ({
-          path: r[0],
-          type: r[1] as 'script' | 'link'
-        }));
+    try {
+      if (this._lastAttemptWasError) {
+        clearScreen();
+        this._lastAttemptWasError = false; // clear reset flag
       }
-    }
+      const start = Date.now();
+      const result = await this._compiler.update(queue);
+      this._logger.info(
+        `${cyan(updatedFilesStr)} updated in ${bold(
+          green(`${Date.now() - start}ms`)
+        )}`
+      );
 
-    const resultStr = `{
+      // clear update queue after update finished
+      this._updateQueue = this._updateQueue.filter(
+        (item) => !queue.includes(item)
+      );
+
+      let dynamicResourcesMap: Record<string, Resource[]> = null;
+
+      if (result.dynamicResourcesMap) {
+        for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
+          if (!dynamicResourcesMap) {
+            dynamicResourcesMap = {} as Record<string, Resource[]>;
+          }
+          dynamicResourcesMap[key] = value.map((r) => ({
+            path: r[0],
+            type: r[1] as 'script' | 'link'
+          }));
+        }
+      }
+
+      const resultStr = `{
       added: [${result.added
         .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
         .join(', ')}],
@@ -110,62 +113,58 @@ export class HmrEngine {
       dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
     }`;
 
-    this.callUpdates(result);
+      this.callUpdates(result);
 
-    // const id = Date.now().toString();
-    // // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // // @ts-ignore TODO fix this
-    // this._updateResults.set(id, {
-    //   result: resultStr,
-    //   count: this._devServer.ws.clients.size
-    // });
-    this._devServer.ws.clients.forEach((client: WebSocketClient) => {
-      client.send(resultStr);
-    });
+      this._devServer.ws.clients.forEach((client: WebSocketClient) => {
+        client.rawSend(`
+        {
+          type: 'farm-update',
+          result: ${resultStr}
+        }
+      `);
+      });
 
-    // if there are more updates, recompile again
-    if (this._updateQueue.length > 0) {
-      await this.recompileAndSendResult();
+      this._compiler.onUpdateFinish(async () => {
+        // if there are more updates, recompile again
+        if (this._updateQueue.length > 0) {
+          await this.recompileAndSendResult();
+        }
+      });
+    } catch (e) {
+      clearScreen();
+      this._logger.error(e);
+      this._lastAttemptWasError = true;
     }
   };
 
-  async hmrUpdate(path: string) {
-    // if lazy compilation is enabled, we need to update the virtual module
-    if (this._compiler.config.config.lazyCompilation) {
+  async hmrUpdate(absPath: string | string[]) {
+    const paths = Array.isArray(absPath) ? absPath : [absPath];
+
+    for (const path of paths) {
       if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
         this._updateQueue.push(path);
       }
+    }
 
-      if (!this._compiler.compiling) {
+    if (!this._compiler.compiling) {
+      try {
         await this.recompileAndSendResult();
-      }
-    } else if (this._compiler.hasModule(path)) {
-      if (!this._updateQueue.includes(path)) {
-        this._updateQueue.push(path);
-      }
-
-      if (!this._compiler.compiling) {
-        await this.recompileAndSendResult();
+      } catch (e) {
+        // eslint-disable-next-line no-control-regex
+        const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
+        const errorStr = `${JSON.stringify({
+          message: serialization
+        })}`;
+        this._devServer.ws.clients.forEach((client: WebSocketClient) => {
+          client.rawSend(`
+            {
+              type: 'error',
+              err: ${errorStr}
+            }
+          `);
+        });
+        this._logger.error(e);
       }
     }
   }
-
-  // getUpdateResult(id: string) {
-  //   const result = this._updateResults.get(id);
-
-  //   if (result) {
-  //     result.count--;
-
-  //     // there are no more clients waiting for this update
-  //     if (result.count <= 0 && this._updateResults.size >= 2) {
-  //       /**
-  //        * Edge handle
-  //        * The BrowserExtension the user's browser may replay the request, resulting in an error that the result.id cannot be found.
-  //        * So keep the result of the last time every time, so that the request can be successfully carried out.
-  //        */
-  //       this._updateResults.delete(this._updateResults.keys().next().value);
-  //     }
-  //   }
-  //   return result?.result;
-  // }
 }

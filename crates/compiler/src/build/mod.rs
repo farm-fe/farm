@@ -133,20 +133,12 @@ impl Compiler {
     }
 
     self.handle_global_log(&mut errors);
-
     if !errors.is_empty() {
       let mut error_messages = vec![];
       for error in errors {
         error_messages.push(error.to_string());
       }
-      let error_message = format!(
-        "\n Build failed due to errors: \n\n {}",
-        error_messages.join("\n")
-      );
-      println!("{}", error_message);
-      // TODO Temporarily exit the process with exit
-      std::process::exit(1);
-      // return Err(CompilationError::GenericError(error_messages.join(", ")));
+      return Err(CompilationError::GenericError(error_messages.join(", ")));
     }
 
     // set module graph cache

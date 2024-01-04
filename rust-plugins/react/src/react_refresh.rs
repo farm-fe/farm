@@ -21,7 +21,11 @@ window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
 const POST_CODE: &str = r#"
 window.$RefreshReg$ = prevRefreshReg;
 window.$RefreshSig$ = prevRefreshSig;
-module.meta.hot.accept();
+
+if (import.meta.hot) {
+  import.meta.hot.accept();
+}
+
 RefreshRuntime.performReactRefresh();
 "#;
 

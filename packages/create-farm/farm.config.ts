@@ -1,36 +1,11 @@
-import { builtinModules } from 'module';
+import { defineConfig } from '@farmfe/core';
 
-/**
- * @type {import('@farmfe/core').UserConfig}
- */
-export default {
+export default defineConfig({
   compilation: {
-    input: {
-      index: './index.ts'
-    },
     output: {
-      path: 'dist',
-      filename: 'index.[ext]',
       targetEnv: 'node'
     },
-    external: [
-      ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`)
-    ],
-    partialBundling: {
-      enforceResources: [
-        {
-          name: 'node.bundle.js',
-          test: ['.+']
-        }
-      ]
-    },
-    minify: false,
     sourcemap: false,
-    presetEnv: false,
-    treeShaking: false
-  },
-  server: {
-    hmr: false
+    presetEnv: false
   }
-};
+});

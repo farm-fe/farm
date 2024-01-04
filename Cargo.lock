@@ -1502,6 +1502,7 @@ dependencies = [
  "farmfe_swc_transformer_import_glob",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "farmfe_utils 0.1.0",
  "once_cell",
  "swc_ecma_loader",
  "swc_plugin_proxy",
@@ -3853,6 +3854,7 @@ version = "1.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "057d394a50403bcac12672b2b18fb387ab6d289d957dab67dd201875391e52f1"
 dependencies = [
+ "indexmap 1.9.3",
  "itoa",
  "ryu",
  "serde",

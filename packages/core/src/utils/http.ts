@@ -30,7 +30,7 @@ export const wildcardHosts = new Set([
 export async function resolveServerUrls(
   server: Server,
   options: UserServerConfig,
-  config: any
+  publicPath?: string
 ): Promise<ResolvedServerUrls> {
   const address = server.address();
   const isAddressInfo = (x: any): x is AddressInfo => x?.address;
@@ -44,7 +44,7 @@ export async function resolveServerUrls(
   const hostname = await resolveHostname(options.host);
   const protocol = options.https ? 'https' : 'http';
   const { port } = getAddressHostnamePort(address);
-  const base = config.compilation?.output?.publicPath || '';
+  const base = publicPath || '';
 
   if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
     const url = createServerUrl(protocol, hostname.name, port, base);
