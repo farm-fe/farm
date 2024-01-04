@@ -258,11 +258,18 @@ export async function normalizeUserCompilationConfig(
     // for node target, we should not define process.env.NODE_ENV
     config.output?.targetEnv === 'node'
       ? {}
-      : {
-          process: {
-            env: userConfig.env
-          }
-        }
+      : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
+          env[`process.env.${key}`] = userConfig.env[key];
+          return env;
+        }, {})
+    // {
+    //   process: {
+    //     env: {
+    //       NODE_ENV: process.env.NODE_ENV || mode,
+    //       ...userConfig.env
+    //     }
+    //   }
+    // }
   );
 
   await normalizePersistentCache(config, userConfig);

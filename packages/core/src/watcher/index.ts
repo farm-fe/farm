@@ -30,7 +30,7 @@ export class FileWatcher implements ImplFileWatcher {
 
     if (serverOrCompiler instanceof DevServer) {
       this._awaitWriteFinish =
-        serverOrCompiler.config.hmr.watchOptions.awaitWriteFinish ??
+        serverOrCompiler.config.hmr.watchOptions?.awaitWriteFinish ??
         this._awaitWriteFinish;
     } else if (serverOrCompiler instanceof Compiler) {
       this._awaitWriteFinish =
