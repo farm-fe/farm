@@ -5,6 +5,7 @@ import { builtinModules } from 'module';
  */
 export default {
   compilation: {
+    persistentCache: false,
     input: {
       index: './index.ts'
     },
@@ -21,5 +22,50 @@ export default {
         }
       ]
     }
-  }
+  },
+  plugins: [
+    {
+      name: 'farm-plugin-learn-lib',
+      finish: {
+        executor() {
+          console.log('finish');
+        }
+      },
+      buildStart: {
+        executor() {
+          console.log('buildStart');
+        }
+      },
+      buildEnd: {
+        executor() {
+          console.log('buildEnd');
+        }
+      },
+      writeResources: {
+        async executor(params) {
+          console.log('writeResources');
+        }
+      },
+      finalizeResources: {
+        executor(params) {
+          console.log('finalizeResources');
+        }
+      },
+      renderStart: {
+        executor() {
+          console.log('renderStart');
+        }
+      },
+      augmentResourceHash: {
+        executor() {
+          console.log('augmentResourceHash');
+        }
+      },
+      renderResourcePot: {
+        executor() {
+          console.log('renderResourcePot');
+        }
+      }
+    }
+  ]
 };
