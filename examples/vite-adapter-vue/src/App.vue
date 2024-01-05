@@ -18,10 +18,10 @@ import Formatter from './components/Formatter.vue';
   </el-config-provider>
 </template>
 
-<style scoped>
+<style scoped lang="less">
 .logo {
-  height: 6em;
-  padding: 1.5em;
+  height: 100px;
+  padding: 18px;
   will-change: filter;
   transition: filter 300ms;
 }
