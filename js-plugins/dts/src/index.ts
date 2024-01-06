@@ -6,7 +6,7 @@ import { pluginName } from './options.js';
 
 import type { DtsPluginOptions } from './types.js';
 
-export default function farmDtsPlugin(options: DtsPluginOptions): JsPlugin {
+export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
   const ctx = new Context();
   // TODO support vue other framework file type
   return {

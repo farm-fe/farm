@@ -67,7 +67,7 @@ Farm 的开发启动非常简单, 您只需在根目录中执行 `pnpm bootstrap
 $ pnpm bootstrap # install the dependencies of the project with series of initialization operations.
 ```
 
-- 使用`pnpm bootstRap`安装依赖项，并通过一系列初始化操作构建核心包。
+- 使用`pnpm bootstrap`安装依赖项，并通过一系列初始化操作构建核心包。
 
 - 使用示例(打开新终端)：`cd examples/react && pnpm start`，如果示例不能正常启动，则上报问题。
 
