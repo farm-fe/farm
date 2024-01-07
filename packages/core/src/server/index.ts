@@ -1,6 +1,9 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa from 'koa';
+import os from 'node:os';
+import Koa, { Context } from 'koa';
+import sirv from 'sirv';
+import compression from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
 import {
@@ -16,6 +19,7 @@ import { openBrowser } from './openBrowser.js';
 import {
   bootstrap,
   clearScreen,
+  colors,
   Logger,
   printServerUrls
 } from '../utils/index.js';
@@ -61,7 +65,8 @@ type ErrorMap = {
 };
 
 interface ImplDevServer {
-  createFarmServer(options: UserServerConfig): void;
+  createServer(options: UserServerConfig): void;
+  createPreviewServer(options: UserServerConfig): void;
   listen(): Promise<void>;
   close(): Promise<void>;
   getCompiler(): Compiler;
@@ -74,13 +79,15 @@ export class DevServer implements ImplDevServer {
 
   ws: WsServer;
   config: NormalizedServerConfig;
+  previewServerConfig: NormalizedServerConfig;
   hmrEngine?: HmrEngine;
   server?: Server;
   publicDir?: string;
   publicPath?: string;
 
-  constructor(private compiler: Compiler, public logger: Logger) {
-    this.publicDir = normalizePublicDir(compiler.config.config.root);
+  constructor(private compiler: Compiler | null, public logger: Logger) {
+    if (!compiler) return;
+    this.publicDir = normalizePublicDir(compiler?.config.config.root);
 
     this.publicPath =
       normalizePublicPath(
@@ -191,7 +198,91 @@ export class DevServer implements ImplDevServer {
     await Promise.all(promises);
   }
 
-  public createFarmServer(options: NormalizedServerConfig) {
+  public initKoa() {
+    this._app = new Koa();
+  }
+
+  public async createPreviewServer(options: any) {
+    // const { https, port, host = 'localhost', middlewares = [] } = options;
+    const { https, port, host = 'localhost' } = options;
+    const protocol = https ? 'https' : 'http';
+    let hostname;
+    if (typeof host !== 'boolean') {
+      hostname = host === '0.0.0.0' ? 'localhost' : host;
+    } else {
+      hostname = 'localhost';
+    }
+    this.previewServerConfig = {
+      ...options,
+      protocol,
+      hostname
+    };
+
+    this.initKoa();
+
+    if (https) {
+      this.server = http2.createSecureServer(
+        {
+          ...https,
+          allowHTTP1: true
+        },
+        this._app.callback()
+      );
+    } else {
+      this.server = http.createServer(this._app.callback());
+    }
+
+    // support proxy
+    // useProxy(resolvedUserConfig.server.proxy, app, logger);
+
+    this._app.use(compression());
+    this._app.use(async (ctx) => {
+      const requestPath = ctx.request.path;
+
+      if (requestPath.startsWith(options.output.publicPath)) {
+        const modifiedPath = requestPath.substring(
+          options.output.publicPath.length
+        );
+
+        if (modifiedPath.startsWith('/')) {
+          ctx.request.path = modifiedPath;
+        } else {
+          ctx.request.path = `/${modifiedPath}`;
+        }
+      }
+      await StaticFilesHandler(options.outputDir, ctx);
+    });
+
+    // await this.startServer(this.previewServerConfig);
+    // await this.printServerUrls();
+
+    this._app.listen(port, () => {
+      this.logger.info(colors.green(`preview server running at:\n`));
+      const interfaces = os.networkInterfaces();
+      Object.keys(interfaces).forEach((key) =>
+        (interfaces[key] || [])
+          .filter((details: any) => details.family === 'IPv4')
+          .map((detail: any) => {
+            return {
+              type: detail.address.includes('127.0.0.1')
+                ? 'Local:   '
+                : 'Network: ',
+              host: detail.address
+            };
+          })
+          .forEach(({ type, host }) => {
+            const url = `${'http'}://${host}:${colors.bold(port)}${
+              options.output.publicPath ?? ''
+            }`;
+            this.logger.info(
+              `${colors.magenta('>')} ${type} ${colors.cyan(url)}`
+            );
+          })
+      );
+    });
+  }
+
+  public createServer(options: NormalizedServerConfig) {
     const { https, host = 'localhost', middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
@@ -206,7 +297,7 @@ export class DevServer implements ImplDevServer {
       hostname
     };
 
-    this._app = new Koa();
+    this.initKoa();
     if (https) {
       this.server = http2.createSecureServer(
         {
@@ -239,7 +330,7 @@ export class DevServer implements ImplDevServer {
       logger: this.logger,
       serverOptions: {}
     };
-    this.resolvedFarmServerMiddleware(middlewares);
+    this.resolvedServerMiddleware(middlewares);
   }
 
   static async resolvePortConflict(
@@ -297,9 +388,46 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  private resolvedFarmServerMiddleware(
-    middlewares?: DevServerMiddleware[]
-  ): void {
+  // private resolvedPreviewServerMiddleware(
+  //   middlewares?: DevServerMiddleware[]
+  // ): void {
+  //   async function staticFile(ctx: Context) {
+  //     const requestPath = ctx.request.path;
+
+  //     if (requestPath.startsWith(output.publicPath)) {
+  //       const modifiedPath = requestPath.substring(output.publicPath.length);
+
+  //       if (modifiedPath.startsWith('/')) {
+  //         ctx.request.path = modifiedPath;
+  //       } else {
+  //         ctx.request.path = `/${modifiedPath}`;
+  //       }
+  //     }
+  //     await StaticFilesHandler(output.path, ctx);
+  //   }
+  //   const internalMiddlewares = [
+  //     ...(middlewares || []),
+  //     compression,
+  //     staticFile,
+  //     proxy
+  //   ];
+
+  //   internalMiddlewares.forEach((middleware) => {
+  //     const middlewareImpl = middleware(this);
+
+  //     if (middlewareImpl) {
+  //       if (Array.isArray(middlewareImpl)) {
+  //         middlewareImpl.forEach((m) => {
+  //           this._app.use(m);
+  //         });
+  //       } else {
+  //         this._app.use(middlewareImpl);
+  //       }
+  //     }
+  //   });
+  // }
+
+  private resolvedServerMiddleware(middlewares?: DevServerMiddleware[]): void {
     const internalMiddlewares = [
       ...(middlewares || []),
       headers,
@@ -337,4 +465,16 @@ export class DevServer implements ImplDevServer {
       throw new Error('cannot print server URLs with Server Error.');
     }
   }
+}
+
+export function StaticFilesHandler(distDir: string, ctx: Context) {
+  const staticFilesServer = sirv(distDir, {
+    etag: true,
+    single: true
+  });
+  return new Promise<void>((resolve) => {
+    staticFilesServer(ctx.req, ctx.res, () => {
+      resolve();
+    });
+  });
 }

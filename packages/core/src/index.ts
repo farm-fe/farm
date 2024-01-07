@@ -6,11 +6,11 @@ export * from './utils/index.js';
 
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import os from 'node:os';
+// import os from 'node:os';
 import { statSync } from 'node:fs';
-import sirv from 'sirv';
-import compression from 'koa-compress';
-import Koa, { Context } from 'koa';
+// import sirv from 'sirv';
+// import compression from 'koa-compress';
+// import Koa, { Context } from 'koa';
 import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
@@ -25,7 +25,7 @@ import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
 import { colors } from './utils/color.js';
-import { useProxy } from './server/middlewares/index.js';
+// import { useProxy } from './server/middlewares/index.js';
 
 import type { FarmCLIOptions, ResolvedUserConfig } from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
@@ -95,60 +95,67 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     }
   }
 
-  function StaticFilesHandler(ctx: Context) {
-    const staticFilesServer = sirv(distDir, {
-      etag: true,
-      single: true
-    });
-    return new Promise<void>((resolve) => {
-      staticFilesServer(ctx.req, ctx.res, () => {
-        resolve();
-      });
-    });
-  }
-  const app = new Koa();
-
-  // support proxy
-  useProxy(resolvedUserConfig.server.proxy, app, logger);
-
-  app.use(compression());
-  app.use(async (ctx) => {
-    const requestPath = ctx.request.path;
-
-    if (requestPath.startsWith(output.publicPath)) {
-      const modifiedPath = requestPath.substring(output.publicPath.length);
-
-      if (modifiedPath.startsWith('/')) {
-        ctx.request.path = modifiedPath;
-      } else {
-        ctx.request.path = `/${modifiedPath}`;
-      }
-    }
-    await StaticFilesHandler(ctx);
+  const devServer = new DevServer(null, logger);
+  devServer.createPreviewServer({
+    distDir,
+    output,
+    port
   });
 
-  app.listen(port, () => {
-    logger.info(colors.green(`preview server running at:\n`));
-    const interfaces = os.networkInterfaces();
-    Object.keys(interfaces).forEach((key) =>
-      (interfaces[key] || [])
-        .filter((details) => details.family === 'IPv4')
-        .map((detail) => {
-          return {
-            type: detail.address.includes('127.0.0.1')
-              ? 'Local:   '
-              : 'Network: ',
-            host: detail.address
-          };
-        })
-        .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${colors.bold(port)}${
-            output.publicPath ?? ''
-          }`;
-          logger.info(`${colors.magenta('>')} ${type} ${colors.cyan(url)}`);
-        })
-    );
-  });
+  // function StaticFilesHandler(ctx: Context) {
+  //   const staticFilesServer = sirv(distDir, {
+  //     etag: true,
+  //     single: true
+  //   });
+  //   return new Promise<void>((resolve) => {
+  //     staticFilesServer(ctx.req, ctx.res, () => {
+  //       resolve();
+  //     });
+  //   });
+  // }
+  // const app = new Koa();
+
+  // // support proxy
+  // useProxy(resolvedUserConfig.server.proxy, app, logger);
+
+  // app.use(compression());
+  // app.use(async (ctx) => {
+  //   const requestPath = ctx.request.path;
+
+  //   if (requestPath.startsWith(output.publicPath)) {
+  //     const modifiedPath = requestPath.substring(output.publicPath.length);
+
+  //     if (modifiedPath.startsWith('/')) {
+  //       ctx.request.path = modifiedPath;
+  //     } else {
+  //       ctx.request.path = `/${modifiedPath}`;
+  //     }
+  //   }
+  //   await StaticFilesHandler(ctx);
+  // });
+
+  // app.listen(port, () => {
+  //   logger.info(colors.green(`preview server running at:\n`));
+  //   const interfaces = os.networkInterfaces();
+  //   Object.keys(interfaces).forEach((key) =>
+  //     (interfaces[key] || [])
+  //       .filter((details) => details.family === 'IPv4')
+  //       .map((detail) => {
+  //         return {
+  //           type: detail.address.includes('127.0.0.1')
+  //             ? 'Local:   '
+  //             : 'Network: ',
+  //           host: detail.address
+  //         };
+  //       })
+  //       .forEach(({ type, host }) => {
+  //         const url = `${'http'}://${host}:${colors.bold(port)}${
+  //           output.publicPath ?? ''
+  //         }`;
+  //         logger.info(`${colors.magenta('>')} ${type} ${colors.cyan(url)}`);
+  //       })
+  //   );
+  // });
 }
 
 export async function watch(
@@ -325,7 +332,7 @@ export function setupDevServer(
   logger: Logger
 ) {
   const devServer = new DevServer(compiler, logger);
-  devServer.createFarmServer(resolvedUserConfig.server);
+  devServer.createServer(resolvedUserConfig.server);
 
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
     plugin.configureDevServer?.(devServer)
