@@ -8,6 +8,9 @@ import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
 
 export default defineConfig({
+  compilation: {
+    persistentCache: false,
+  },
   plugins: [
     '@farmfe/plugin-sass',
     less(),
