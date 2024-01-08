@@ -150,22 +150,25 @@ export class VitePluginAdapter implements JsPlugin {
       writeBundle: () =>
         (this.writeResources = this.viteWriteBundleToFarmWriteResources())
     };
+    const alwaysExecutedHooks = ['buildStart'];
+
     // convert hooks
     for (const [hookName, fn] of Object.entries(hooksMap)) {
-      if (rawPlugin[hookName as keyof Plugin]) {
+      if (
+        rawPlugin[hookName as keyof Plugin] ||
+        alwaysExecutedHooks.includes(hookName)
+      ) {
         fn();
       }
     }
 
     // if other unsupported vite plugins hooks are used, throw error
     const unsupportedHooks = [
-      'transformIndexHtml',
-      // 'writeBundle',
+      'moduleParsed',
       'renderError',
       'resolveDynamicImport',
       'resolveFileUrl',
       'resolveImportMeta',
-      'transformIndexHtml',
       'shouldTransformCachedModule',
       'banner',
       'footer'
@@ -211,13 +214,14 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   async configResolved(config: ResolvedUserConfig) {
-    if (!this._rawPlugin.configResolved) return;
     this._farmConfig = config;
     this._viteConfig = proxyViteConfig(
       farmUserConfigToViteConfig(config),
       this.name,
       this._logger
     );
+
+    if (!this._rawPlugin.configResolved) return;
 
     const configResolvedHook = this.wrapRawPluginHook(
       'configResolved',
@@ -340,6 +344,9 @@ export class VitePluginAdapter implements JsPlugin {
           this._rawPlugin.buildStart,
           context
         );
+        if (this._viteDevServer) {
+          this._viteDevServer.moduleGraph.context = context;
+        }
         return hook?.();
       })
     };
@@ -590,7 +597,7 @@ export class VitePluginAdapter implements JsPlugin {
             if (typeof result === 'string') {
               return { content: result };
             } else if (typeof result === 'object') {
-              return { content: result, sourceMap: result.map };
+              return { content: result.code, sourceMap: result.map };
             }
           }
         }
@@ -655,6 +662,38 @@ export class VitePluginAdapter implements JsPlugin {
             transformFarmConfigToRollupNormalizedOutputOptions(param.config),
             bundles
           );
+
+          // call transformIndexHtml hook after finalizeResources hook
+          const transformIndexHtmlHook = this.wrapRawPluginHook(
+            'transformIndexHtml',
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore ignore type error
+            this._rawPlugin.transformIndexHtml,
+            context
+          );
+
+          for (const resource of Object.values(param.resourcesMap)) {
+            if (resource.resourceType === 'html') {
+              const result = await transformIndexHtmlHook?.(
+                Buffer.from(resource.bytes).toString(),
+                {
+                  path: resource.name,
+                  filename: resource.name,
+                  server: this._viteDevServer,
+                  bundle: bundles,
+                  chunk: transformResourceInfo2RollupResource(resource)
+                }
+              );
+
+              if (result && typeof result !== 'string') {
+                throw new Error(
+                  `Vite plugin "${this.name}" is not compatible with Farm for now. Cause it uses transformIndexHtmlHook and return non-string value. Farm only supports string return for transformIndexHtmlHook`
+                );
+              } else if (typeof result === 'string') {
+                resource.bytes = [...Buffer.from(result)];
+              }
+            }
+          }
 
           return Object.entries(bundles).reduce((res, [key, val]) => {
             res[key] = transformRollupResource2FarmResource(

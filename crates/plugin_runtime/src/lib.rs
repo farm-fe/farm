@@ -14,9 +14,9 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookResult, ResolveKind, PluginFinalizeResourcesHookParams,
+    PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookResult, ResolveKind,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
@@ -466,16 +466,14 @@ impl Plugin for FarmPluginRuntime {
 
     // only handle runtime resource pot
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      // set emitted property of Runtime to true by default, as it will be generated and injected when generating entry resources,
-      // other plugins wants to modify this behavior in write_resources hook.
       Ok(Some(PluginGenerateResourcesHookResult {
         resource: Resource {
           name: resource_pot.id.to_string(),
           bytes: resource_pot.meta.rendered_content.as_bytes().to_vec(),
-          emitted: true, // do not emit runtime resource by default
+          emitted: true, // do not emit runtime resource by default. The runtime will be injected into the html or script entry.
           resource_type: ResourceType::Runtime,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          info: None
+          info: None,
         },
         source_map: None,
       }))

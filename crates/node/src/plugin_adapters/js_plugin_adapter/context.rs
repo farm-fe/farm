@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   ffi::{c_void, CString},
   ptr,
   sync::Arc,
@@ -16,10 +15,9 @@ use napi::{
 
 use farmfe_core::{
   context::{CompilationContext, EmitFileParams},
-  module::{ModuleId, ModuleType},
+  module::ModuleId,
   // swc_ecma_ast::EsVersion,
   plugin::{PluginHookContext, PluginResolveHookParam},
-  relative_path::RelativePath,
 };
 
 const RESOLVE: &str = "resolve";
@@ -28,11 +26,14 @@ const EMIT_FILE: &str = "emitFile";
 const GET_WATCH_FILES: &str = "getWatchFiles";
 const WARN: &str = "warn";
 const ERROR: &str = "error";
+const SOURCE_MAP_ENABLED: &str = "sourceMapEnabled";
 
 /// These functions are used to make farm js plugin compatible with Vite plugin
-const VITE_GET_MODULES_BY_FILE: &str = "viteGetModulesByFile";
-const VITE_GET_IMPORTERS: &str = "viteGetImporters";
-const SOURCE_MAP_ENABLED: &str = "sourceMapEnabled";
+use super::context_methods::vite_get_importers::{vite_get_importers, VITE_GET_IMPORTERS};
+use super::context_methods::vite_get_module_by_id::{vite_get_module_by_id, VITE_GET_MODULE_BY_ID};
+use super::context_methods::vite_get_modules_by_file::{
+  vite_get_modules_by_file, VITE_GET_MODULES_BY_FILE,
+};
 
 pub struct GetModulesByFileResultItem {
   pub url: String,
@@ -51,47 +52,26 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     JsObject::from_napi_value(raw_env, js_context_ptr).unwrap()
   };
 
-  js_context = attach_context_method(raw_env, js_context, RESOLVE, Some(resolve), ctx.clone());
-  // js_context = attach_context_method(raw_env, js_context, PARSE, Some(parse), ctx.clone());
-  js_context = attach_context_method(
-    raw_env,
-    js_context,
-    ADD_WATCH_FILE,
-    Some(add_watch_file),
-    ctx.clone(),
-  );
-  js_context = attach_context_method(raw_env, js_context, EMIT_FILE, Some(emit_file), ctx.clone());
-  js_context = attach_context_method(
-    raw_env,
-    js_context,
-    GET_WATCH_FILES,
-    Some(get_watch_files),
-    ctx.clone(),
-  );
-  js_context = attach_context_method(raw_env, js_context, WARN, Some(warn), ctx.clone());
-  js_context = attach_context_method(raw_env, js_context, ERROR, Some(error), ctx.clone());
+  let methods = vec![
+    (
+      RESOLVE,
+      resolve as unsafe extern "C" fn(napi_env, napi_callback_info) -> napi_value,
+    ),
+    // (PARSE, parse),
+    (ADD_WATCH_FILE, add_watch_file),
+    (EMIT_FILE, emit_file),
+    (GET_WATCH_FILES, get_watch_files),
+    (WARN, warn),
+    (ERROR, error),
+    (SOURCE_MAP_ENABLED, source_map_enabled),
+    (VITE_GET_IMPORTERS, vite_get_importers),
+    (VITE_GET_MODULES_BY_FILE, vite_get_modules_by_file),
+    (VITE_GET_MODULE_BY_ID, vite_get_module_by_id),
+  ];
 
-  js_context = attach_context_method(
-    raw_env,
-    js_context,
-    VITE_GET_MODULES_BY_FILE,
-    Some(vite_get_modules_by_file),
-    ctx.clone(),
-  );
-  js_context = attach_context_method(
-    raw_env,
-    js_context,
-    VITE_GET_IMPORTERS,
-    Some(vite_get_importers),
-    ctx.clone(),
-  );
-  js_context = attach_context_method(
-    raw_env,
-    js_context,
-    SOURCE_MAP_ENABLED,
-    Some(source_map_enabled),
-    ctx,
-  );
+  for (name, cb) in methods {
+    js_context = attach_context_method(raw_env, js_context, name, Some(cb), ctx.clone());
+  }
 
   js_context
 }
@@ -128,12 +108,13 @@ fn attach_context_method(
 }
 
 #[repr(C)]
-struct ArgvAndContext {
-  argv: [napi_value; 2],
-  ctx: Box<Arc<CompilationContext>>,
+pub struct ArgvAndContext {
+  pub argv: [napi_value; 2],
+  pub ctx: Box<Arc<CompilationContext>>,
 }
 
-unsafe extern "C" fn get_argv_and_context_from_cb_info(
+/// # Safety
+pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
   env: napi_env,
   info: napi_callback_info,
 ) -> ArgvAndContext {
@@ -193,26 +174,6 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
   });
 
   result.raw()
-
-  // Env::from_raw(env)
-  //   .execute_tokio_future(
-  //     async move {
-  //       let resolved = ctx
-  //         .plugin_driver
-  //         .resolve(&param, &ctx, &hook_context)
-  //         .map_err(|e| Error::new(Status::GenericFailure, format!("{}", e)))?;
-
-  //       resolved.ok_or_else(|| {
-  //         Error::new(
-  //           Status::GenericFailure,
-  //           format!("can not resolve {:?}", param),
-  //         )
-  //       })
-  //     },
-  //     |&mut env, data| env.to_js_value(&data),
-  //   )
-  //   .unwrap()
-  //   .raw()
 }
 
 unsafe extern "C" fn add_watch_file(env: napi_env, info: napi_callback_info) -> napi_value {
@@ -287,82 +248,6 @@ unsafe extern "C" fn error(env: napi_env, info: napi_callback_info) -> napi_valu
   ctx.log_store.lock().add_error(message);
 
   Env::from_raw(env).get_undefined().unwrap().raw()
-}
-
-unsafe extern "C" fn vite_get_modules_by_file(
-  env: napi_env,
-  info: napi_callback_info,
-) -> napi_value {
-  let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
-
-  let file: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
-    .expect("Argument 0 should be a string when calling get_modules_by_file");
-
-  let module_graph = ctx.module_graph.read();
-  let file_id = ModuleId::from_resolved_path_with_query(&file, &ctx.config.root);
-
-  let modules = module_graph
-    .module_ids_by_file(&file_id)
-    .into_iter()
-    .map(|m_id| {
-      let m = module_graph.module(&m_id).unwrap();
-      let id = m_id.resolved_path_with_query(&ctx.config.root);
-      HashMap::from([
-        ("url".to_string(), id.clone()),
-        ("id".to_string(), id),
-        ("file".to_string(), m.id.resolved_path(&ctx.config.root)),
-        (
-          "type".to_string(),
-          if m.module_type == ModuleType::Css {
-            "css".to_string()
-          } else {
-            "js".to_string()
-          },
-        ),
-      ])
-    })
-    .collect::<Vec<_>>();
-
-  Env::from_raw(env).to_js_value(&modules).unwrap().raw()
-}
-
-unsafe extern "C" fn vite_get_importers(env: napi_env, info: napi_callback_info) -> napi_value {
-  let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
-
-  let id: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
-    .expect("Argument 0 should be a string when calling get_modules_by_file");
-
-  let module_graph = ctx.module_graph.read();
-  let module_id: ModuleId = id.into();
-  let dependents = module_graph.dependents_ids(&module_id);
-
-  let importers = dependents
-    .into_iter()
-    .map(|id| {
-      let m = module_graph.module(&id).unwrap();
-      let id = RelativePath::new(&m.id.to_string())
-        .to_logical_path(&ctx.config.root)
-        .to_string_lossy()
-        .to_string();
-      HashMap::from([
-        ("url".to_string(), id.clone()),
-        ("id".to_string(), id),
-        ("file".to_string(), m.id.resolved_path(&ctx.config.root)),
-        (
-          "type".to_string(),
-          if m.module_type == ModuleType::Css {
-            "css".to_string()
-          } else {
-            "js".to_string()
-          },
-        ),
-      ])
-    })
-    .collect::<Vec<_>>();
-
-  Env::from_raw(env).to_js_value(&importers).unwrap().raw()
 }
 
 unsafe extern "C" fn source_map_enabled(env: napi_env, info: napi_callback_info) -> napi_value {

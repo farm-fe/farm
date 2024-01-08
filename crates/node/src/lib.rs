@@ -18,6 +18,7 @@ use farmfe_core::{
   module::ModuleId,
   plugin::UpdateType,
   record::Trigger,
+  resource::Resource,
 };
 
 use napi::{
@@ -25,7 +26,7 @@ use napi::{
   threadsafe_function::{
     ErrorStrategy, ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
   },
-  Env, JsFunction, JsObject, JsUndefined, NapiRaw, Status,
+  Env, JsFunction, JsObject, JsUndefined, JsUnknown, NapiRaw, Status,
 };
 use notify::{
   event::{AccessKind, ModifyKind},
@@ -411,6 +412,19 @@ impl JsCompiler {
     }
 
     result
+  }
+
+  #[napi]
+  pub fn resources_map(&self, e: Env) -> HashMap<String, JsUnknown> {
+    let context = self.compiler.context();
+    let resources = context.resources_map.lock();
+    let mut resources_map = HashMap::new();
+
+    for (name, resource) in resources.iter() {
+      resources_map.insert(name.clone(), e.to_js_value(resource).unwrap());
+    }
+
+    resources_map
   }
 
   #[napi]
