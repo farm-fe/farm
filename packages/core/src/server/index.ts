@@ -235,26 +235,37 @@ export class DevServer implements ImplDevServer {
     // support proxy
     // useProxy(resolvedUserConfig.server.proxy, app, logger);
 
-    this._app.use(compression());
-    this._app.use(async (ctx) => {
-      const requestPath = ctx.request.path;
+    // this._app.use(compression());
+    // this._app.use(async (ctx) => {
+    //   const requestPath = ctx.request.path;
 
-      if (requestPath.startsWith(options.output.publicPath)) {
-        const modifiedPath = requestPath.substring(
-          options.output.publicPath.length
-        );
+    //   if (requestPath.startsWith(options.output.publicPath)) {
+    //     const modifiedPath = requestPath.substring(
+    //       options.output.publicPath.length
+    //     );
 
-        if (modifiedPath.startsWith('/')) {
-          ctx.request.path = modifiedPath;
-        } else {
-          ctx.request.path = `/${modifiedPath}`;
-        }
-      }
-      await StaticFilesHandler(options.outputDir, ctx);
-    });
+    //     if (modifiedPath.startsWith('/')) {
+    //       ctx.request.path = modifiedPath;
+    //     } else {
+    //       ctx.request.path = `/${modifiedPath}`;
+    //     }
+    //   }
+    //   await StaticFilesHandler(options.outputDir, ctx);
+    // });
 
     // await this.startServer(this.previewServerConfig);
     // await this.printServerUrls();
+
+    this._context = {
+      config: this.config,
+      app: this._app,
+      server: this.server,
+      compiler: this.compiler,
+      logger: this.logger,
+      serverOptions: {}
+    };
+    // this.resolvedPreviewServerMiddleware(middlewares);
+    this.resolvedPreviewServerMiddleware();
 
     this._app.listen(port, () => {
       this.logger.info(colors.green(`preview server running at:\n`));
@@ -388,44 +399,59 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  // private resolvedPreviewServerMiddleware(
-  //   middlewares?: DevServerMiddleware[]
-  // ): void {
-  //   async function staticFile(ctx: Context) {
-  //     const requestPath = ctx.request.path;
+  private resolvedPreviewServerMiddleware(
+    middlewares?: DevServerMiddleware[]
+  ): void {
+    async function staticFile(ctx: Context) {
+      const requestPath = ctx.request?.path;
 
-  //     if (requestPath.startsWith(output.publicPath)) {
-  //       const modifiedPath = requestPath.substring(output.publicPath.length);
+      if (
+        requestPath &&
+        requestPath.startsWith(this.previewServerConfig.output.publicPath)
+      ) {
+        const modifiedPath = requestPath.substring(
+          this.previewServerConfig.output.publicPath.length
+        );
 
-  //       if (modifiedPath.startsWith('/')) {
-  //         ctx.request.path = modifiedPath;
-  //       } else {
-  //         ctx.request.path = `/${modifiedPath}`;
-  //       }
-  //     }
-  //     await StaticFilesHandler(output.path, ctx);
-  //   }
-  //   const internalMiddlewares = [
-  //     ...(middlewares || []),
-  //     compression,
-  //     staticFile,
-  //     proxy
-  //   ];
+        if (modifiedPath.startsWith('/')) {
+          ctx.request.path = modifiedPath;
+        } else {
+          ctx.request.path = `/${modifiedPath}`;
+        }
+      }
+      // await StaticFilesHandler(this.previewServerConfig.output.path);
+      const handleStatic = StaticFilesHandler(
+        this.previewServerConfig.output.path
+      );
+      console.log(handleStatic);
 
-  //   internalMiddlewares.forEach((middleware) => {
-  //     const middlewareImpl = middleware(this);
+      await handleStatic(ctx, () => Promise.resolve());
+    }
+    // TODO make Let the user pass in the general koa plugin
+    const internalMiddlewares = [
+      ...(middlewares || []),
+      // compression,
+      proxy
+      // staticFile.bind(this)
+    ];
+    console.log(staticFile.bind(this));
+    this._app.use(staticFile.bind(this));
+    this._app.use(compression);
 
-  //     if (middlewareImpl) {
-  //       if (Array.isArray(middlewareImpl)) {
-  //         middlewareImpl.forEach((m) => {
-  //           this._app.use(m);
-  //         });
-  //       } else {
-  //         this._app.use(middlewareImpl);
-  //       }
-  //     }
-  //   });
-  // }
+    internalMiddlewares.forEach((middleware: any) => {
+      const middlewareImpl = middleware(this);
+
+      if (middlewareImpl) {
+        if (Array.isArray(middlewareImpl)) {
+          middlewareImpl.forEach((m) => {
+            this._app.use(m);
+          });
+        } else {
+          this._app.use(middlewareImpl);
+        }
+      }
+    });
+  }
 
   private resolvedServerMiddleware(middlewares?: DevServerMiddleware[]): void {
     const internalMiddlewares = [
@@ -467,14 +493,30 @@ export class DevServer implements ImplDevServer {
   }
 }
 
-export function StaticFilesHandler(distDir: string, ctx: Context) {
+// export function StaticFilesHandler(distDir: string, ctx: Context) {
+//   const staticFilesServer = sirv(distDir, {
+//     etag: true,
+//     single: true
+//   });
+//   return new Promise<void>((resolve) => {
+//     staticFilesServer(ctx.req, ctx.res, () => {
+//       resolve();
+//     });
+//   });
+// }
+
+export function StaticFilesHandler(distDir: string) {
   const staticFilesServer = sirv(distDir, {
     etag: true,
     single: true
   });
-  return new Promise<void>((resolve) => {
-    staticFilesServer(ctx.req, ctx.res, () => {
-      resolve();
+
+  return async (ctx: Context, next: () => Promise<any>) => {
+    await new Promise<void>((resolve) => {
+      staticFilesServer(ctx.req, ctx.res, () => {
+        resolve();
+      });
     });
-  });
+    await next();
+  };
 }

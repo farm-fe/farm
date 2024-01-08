@@ -95,12 +95,13 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     }
   }
 
-  const devServer = new DevServer(null, logger);
-  devServer.createPreviewServer({
+  const previewOptions = {
     distDir,
     output,
     port
-  });
+  };
+  const devServer = new DevServer(null, logger);
+  devServer.createPreviewServer(previewOptions);
 
   // function StaticFilesHandler(ctx: Context) {
   //   const staticFilesServer = sirv(distDir, {

@@ -40,7 +40,7 @@ export function useProxy(
 
 export function proxy(devSeverContext: DevServer): Middleware {
   const { app, config, logger } = devSeverContext._context;
-  if (!config.proxy) {
+  if (!config?.proxy) {
     return;
   }
   const options = config.proxy;
