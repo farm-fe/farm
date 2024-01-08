@@ -424,7 +424,7 @@ impl JsCompiler {
       resources_map.insert(name.clone(), e.to_js_value(resource).unwrap());
     }
 
-    return resources_map;
+    resources_map
   }
 
   #[napi]

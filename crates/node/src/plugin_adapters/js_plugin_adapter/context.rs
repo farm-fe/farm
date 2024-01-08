@@ -113,6 +113,7 @@ pub struct ArgvAndContext {
   pub ctx: Box<Arc<CompilationContext>>,
 }
 
+/// # Safety
 pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
   env: napi_env,
   info: napi_callback_info,

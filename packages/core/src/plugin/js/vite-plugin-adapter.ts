@@ -164,8 +164,7 @@ export class VitePluginAdapter implements JsPlugin {
 
     // if other unsupported vite plugins hooks are used, throw error
     const unsupportedHooks = [
-      // 'transformIndexHtml',
-      // 'writeBundle',
+      'moduleParsed',
       'renderError',
       'resolveDynamicImport',
       'resolveFileUrl',
