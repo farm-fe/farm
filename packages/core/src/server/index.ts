@@ -1,6 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import os from 'node:os';
+// import os from 'node:os';
 import Koa, { Context } from 'koa';
 import sirv from 'sirv';
 import compression from 'koa-compress';
@@ -19,7 +19,7 @@ import { openBrowser } from './openBrowser.js';
 import {
   bootstrap,
   clearScreen,
-  colors,
+  // colors,
   Logger,
   printServerUrls
 } from '../utils/index.js';
@@ -46,6 +46,7 @@ import { Server } from './type.js';
 
 interface FarmServerContext {
   config: UserServerConfig;
+  previewConfig: any;
   app: Koa;
   server: Server;
   compiler: Compiler;
@@ -79,13 +80,14 @@ export class DevServer implements ImplDevServer {
 
   ws: WsServer;
   config: NormalizedServerConfig;
-  previewServerConfig: NormalizedServerConfig;
+  previewServerConfig: NormalizedServerConfig | any;
   hmrEngine?: HmrEngine;
   server?: Server;
   publicDir?: string;
   publicPath?: string;
 
   constructor(private compiler: Compiler | null, public logger: Logger) {
+    this.initApp();
     if (!compiler) return;
     this.publicDir = normalizePublicDir(compiler?.config.config.root);
 
@@ -95,7 +97,6 @@ export class DevServer implements ImplDevServer {
         logger,
         false
       ) || '/';
-    this.initApp();
   }
 
   getCompiler(): Compiler {
@@ -204,7 +205,7 @@ export class DevServer implements ImplDevServer {
   }
 
   public async createPreviewServer(options: any) {
-    const { https, port, host = 'localhost', middlewares = [] } = options;
+    const { https, port, host = true, middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
     if (typeof host !== 'boolean') {
@@ -230,9 +231,9 @@ export class DevServer implements ImplDevServer {
       this.server = http.createServer(this._app.callback());
     }
 
-    // support proxy
     this._context = {
       config: this.config,
+      previewConfig: this.previewServerConfig,
       app: this._app,
       server: this.server,
       compiler: this.compiler,
@@ -241,30 +242,9 @@ export class DevServer implements ImplDevServer {
     };
     this.resolvedPreviewServerMiddleware(middlewares);
 
-    this._app.listen(port, () => {
-      this.logger.info(colors.green(`preview server running at:\n`));
-      const interfaces = os.networkInterfaces();
-      Object.keys(interfaces).forEach((key) =>
-        (interfaces[key] || [])
-          .filter((details: any) => details.family === 'IPv4')
-          .map((detail: any) => {
-            return {
-              type: detail.address.includes('127.0.0.1')
-                ? 'Local:   '
-                : 'Network: ',
-              host: detail.address
-            };
-          })
-          .forEach(({ type, host }) => {
-            const url = `${'http'}://${host}:${colors.bold(port)}${
-              options.output.publicPath ?? ''
-            }`;
-            this.logger.info(
-              `${colors.magenta('>')} ${type} ${colors.cyan(url)}`
-            );
-          })
-      );
-    });
+    await this.startServer({ port, host });
+
+    await this.printServerUrls(true);
   }
 
   public createServer(options: NormalizedServerConfig) {
@@ -308,6 +288,7 @@ export class DevServer implements ImplDevServer {
 
     this._context = {
       config: this.config,
+      previewConfig: this.previewServerConfig,
       app: this._app,
       server: this.server,
       compiler: this.compiler,
@@ -372,12 +353,18 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  _applyMiddlewares(middlewares?: DevServerMiddleware[]) {
-    middlewares.forEach((middleware) => {
-      if (Array.isArray(middleware)) {
-        middleware.forEach((m) => this._app.use(m));
-      } else {
-        this._app.use(middleware);
+  _applyMiddlewares(internalMiddlewares?: any[]) {
+    internalMiddlewares.forEach((middleware) => {
+      const middlewareImpl = middleware(this);
+
+      if (middlewareImpl) {
+        if (Array.isArray(middlewareImpl)) {
+          middlewareImpl.forEach((m) => {
+            this._app.use(m);
+          });
+        } else {
+          this._app.use(middlewareImpl);
+        }
       }
     });
   }
@@ -386,74 +373,19 @@ export class DevServer implements ImplDevServer {
     middlewares?: DevServerMiddleware[]
   ): void {
     const staticFileMiddleware = this.createStaticFileMiddleware();
-    this._applyMiddlewares([staticFileMiddleware, ...(middlewares || [])]);
-    // async function staticFile(ctx: Context) {
-    //   const requestPath = ctx.request?.path;
-
-    //   if (
-    //     requestPath &&
-    //     requestPath.startsWith(this.previewServerConfig.output.publicPath)
-    //   ) {
-    //     const modifiedPath = requestPath.substring(
-    //       this.previewServerConfig.output.publicPath.length
-    //     );
-
-    //     if (modifiedPath.startsWith('/')) {
-    //       ctx.request.path = modifiedPath;
-    //     } else {
-    //       ctx.request.path = `/${modifiedPath}`;
-    //     }
-    //   }
-    //   const handleStatic = StaticFilesHandler(
-    //     this.previewServerConfig.output.path
-    //   );
-    //   await handleStatic(ctx, () => Promise.resolve());
-    // }
-    // // TODO make Let the user pass in the general koa plugin
-    // const internalMiddlewares = [...(middlewares || []), compression, proxy];
-    // this._app.use(staticFile.bind(this));
-
-    // internalMiddlewares.forEach((middleware: any) => {
-    //   const middlewareImpl = middleware(this);
-
-    //   if (middlewareImpl) {
-    //     if (Array.isArray(middlewareImpl)) {
-    //       middlewareImpl.forEach((m) => {
-    //         this._app.use(m);
-    //       });
-    //     } else {
-    //       this._app.use(middlewareImpl);
-    //     }
-    //   }
-    // });
+    const internalMiddlewares = [
+      ...(middlewares || []),
+      compression,
+      proxy
+      // staticFileMiddleware
+    ];
+    this._app.use(staticFileMiddleware);
+    this._applyMiddlewares(internalMiddlewares);
   }
 
   private resolvedServerMiddleware(middlewares?: DevServerMiddleware[]): void {
-    // const internalMiddlewares = [
-    //   ...(middlewares || []),
-    //   headers,
-    //   lazyCompilation,
-    //   cors,
-    //   resources,
-    //   records,
-    //   proxy
-    // ];
-
-    // internalMiddlewares.forEach((middleware) => {
-    //   const middlewareImpl = middleware(this);
-
-    //   if (middlewareImpl) {
-    //     if (Array.isArray(middlewareImpl)) {
-    //       middlewareImpl.forEach((m) => {
-    //         this._app.use(m);
-    //       });
-    //     } else {
-    //       this._app.use(middlewareImpl);
-    //     }
-    //   }
-    // });
-    // TODO make Let the user pass in the general koa plugin
-    const defaultMiddlewares = [
+    const internalMiddlewares = [
+      ...(middlewares || []),
       headers,
       lazyCompilation,
       cors,
@@ -461,17 +393,25 @@ export class DevServer implements ImplDevServer {
       records,
       proxy
     ];
-    this._applyMiddlewares([...defaultMiddlewares, ...(middlewares || [])]);
+    this._applyMiddlewares(internalMiddlewares);
   }
 
-  private async printServerUrls() {
+  private async printServerUrls(showPreviewFlag = false) {
+    const publicPath = this.compiler
+      ? this.publicPath
+      : this.previewServerConfig.output.publicPath;
+    const config = this.compiler ? this.config : this.previewServerConfig;
     this._context.serverOptions.resolvedUrls = await resolveServerUrls(
       this.server,
-      this.config,
-      this.compiler.config.config.output?.publicPath
+      config,
+      publicPath
     );
     if (this._context.serverOptions.resolvedUrls) {
-      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
+      printServerUrls(
+        this._context.serverOptions.resolvedUrls,
+        this.logger,
+        showPreviewFlag
+      );
     } else {
       throw new Error('cannot print server URLs with Server Error.');
     }
@@ -496,7 +436,6 @@ export class DevServer implements ImplDevServer {
         }
       }
 
-      // 创建并使用静态文件服务中间件
       const handleStatic = StaticFilesHandler(
         this.previewServerConfig.output.path
       );

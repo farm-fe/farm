@@ -98,65 +98,11 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const previewOptions = {
     distDir,
     output,
-    port
+    port,
+    host: true
   };
   const devServer = new DevServer(null, logger);
   devServer.createPreviewServer(previewOptions);
-
-  // function StaticFilesHandler(ctx: Context) {
-  //   const staticFilesServer = sirv(distDir, {
-  //     etag: true,
-  //     single: true
-  //   });
-  //   return new Promise<void>((resolve) => {
-  //     staticFilesServer(ctx.req, ctx.res, () => {
-  //       resolve();
-  //     });
-  //   });
-  // }
-  // const app = new Koa();
-
-  // // support proxy
-  // useProxy(resolvedUserConfig.server.proxy, app, logger);
-
-  // app.use(compression());
-  // app.use(async (ctx) => {
-  //   const requestPath = ctx.request.path;
-
-  //   if (requestPath.startsWith(output.publicPath)) {
-  //     const modifiedPath = requestPath.substring(output.publicPath.length);
-
-  //     if (modifiedPath.startsWith('/')) {
-  //       ctx.request.path = modifiedPath;
-  //     } else {
-  //       ctx.request.path = `/${modifiedPath}`;
-  //     }
-  //   }
-  //   await StaticFilesHandler(ctx);
-  // });
-
-  // app.listen(port, () => {
-  //   logger.info(colors.green(`preview server running at:\n`));
-  //   const interfaces = os.networkInterfaces();
-  //   Object.keys(interfaces).forEach((key) =>
-  //     (interfaces[key] || [])
-  //       .filter((details) => details.family === 'IPv4')
-  //       .map((detail) => {
-  //         return {
-  //           type: detail.address.includes('127.0.0.1')
-  //             ? 'Local:   '
-  //             : 'Network: ',
-  //           host: detail.address
-  //         };
-  //       })
-  //       .forEach(({ type, host }) => {
-  //         const url = `${'http'}://${host}:${colors.bold(port)}${
-  //           output.publicPath ?? ''
-  //         }`;
-  //         logger.info(`${colors.magenta('>')} ${type} ${colors.cyan(url)}`);
-  //       })
-  //   );
-  // });
 }
 
 export async function watch(
