@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 0.4.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
 ## 0.3.5
 
 ### Patch Changes
