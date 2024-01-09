@@ -1,7 +1,7 @@
 // import { watch } from 'chokidar';
 import { DevServer } from '../../index.js';
 import WsServer from '../../server/ws.js';
-import { CompilationContext } from '../type.js';
+import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
 export class ViteDevServerAdapter {
@@ -34,8 +34,21 @@ export class ViteDevServerAdapter {
     this.middlewareCallbacks = [];
     this.middlewares = new Proxy(
       {
-        use: (cb: (...args: any[]) => any) => {
-          this.middlewareCallbacks.push(cb);
+        use: (...args: any[]) => {
+          if (
+            args.length === 2 &&
+            typeof args[0] === 'string' &&
+            typeof args[1] === 'function'
+          ) {
+            this.middlewareCallbacks.push((req: any, res: any, next: any) => {
+              const [url, cb] = args;
+              if (req.url.startsWith(url)) {
+                cb(req, res, next);
+              }
+            });
+          } else if (args.length === 1 && typeof args[0] === 'function') {
+            this.middlewareCallbacks.push(args[0]);
+          }
         }
       },
       {
@@ -60,42 +73,66 @@ export class ViteDevServerAdapter {
 
 export class ViteModuleGraphAdapter {
   context: CompilationContext;
+  pluginName: string;
 
-  constructor() {
+  constructor(pluginName: string) {
+    // context will be set in buildStart hook
     this.context = undefined;
+    this.pluginName = pluginName;
   }
 
-  getModulesByFile(
-    file: string
-  ): ReturnType<CompilationContext['viteGetModulesByFile']> {
+  getModulesByFile(file: string): ViteModule[] {
     const raw = this.context.viteGetModulesByFile(file);
-    const _context = this.context;
 
     return raw.map((item) => {
-      const proxy = new Proxy(item, {
-        get(target, key) {
-          if (key === 'importers') {
-            return _context.viteGetImporters(target.id);
-          }
-
-          const allowedKeys = ['url', 'id', 'file', 'type'];
-
-          if (allowedKeys.includes(String(key))) {
-            return target[key as keyof typeof target];
-          }
-
-          throwIncompatibleError(
-            this.pluginName,
-            'viteModuleNode',
-            allowedKeys,
-            key
-          );
-        }
-      });
-
-      return proxy;
+      return proxyViteModuleNode(item, this.pluginName, this.context);
     });
   }
+
+  getModuleById(id: string): ViteModule {
+    const raw = this.context.viteGetModuleById(id);
+
+    return proxyViteModuleNode(raw, this.pluginName, this.context);
+  }
+
+  async getModuleByUrl(url: string): Promise<ViteModule | undefined> {
+    if (url.startsWith('/')) {
+      url = url.slice(1);
+      return proxyViteModuleNode(
+        this.context.viteGetModuleById(url),
+        this.pluginName,
+        this.context
+      );
+    }
+  }
+
+  invalidateModule() {
+    /** does thing for now, only for compatibility */
+  }
+}
+
+function proxyViteModuleNode(
+  node: ViteModule,
+  pluginName: string,
+  context: CompilationContext
+) {
+  const proxy = new Proxy(node, {
+    get(target, key) {
+      if (key === 'importers') {
+        return context.viteGetImporters(target.id);
+      }
+
+      const allowedKeys = ['url', 'id', 'file', 'type'];
+
+      if (allowedKeys.includes(String(key))) {
+        return target[key as keyof typeof target];
+      }
+
+      throwIncompatibleError(pluginName, 'viteModuleNode', allowedKeys, key);
+    }
+  });
+
+  return proxy;
 }
 
 export function createViteDevServerAdapter(
@@ -128,11 +165,17 @@ export function createViteDevServerAdapter(
 }
 
 export function createViteModuleGraphAdapter(pluginName: string) {
-  const proxy = new Proxy(new ViteModuleGraphAdapter(), {
+  const proxy = new Proxy(new ViteModuleGraphAdapter(pluginName), {
     get(target, key) {
-      const allowedKeys = ['getModulesByFile', 'context'];
+      const allowedKeys = [
+        'getModulesByFile',
+        'getModuleById',
+        'getModuleByUrl',
+        'invalidateModule'
+      ];
+      const ownkeys = Reflect.ownKeys(target);
 
-      if (allowedKeys.includes(String(key))) {
+      if (allowedKeys.includes(String(key)) || ownkeys.includes(key)) {
         return target[key as keyof typeof target];
       }
 
@@ -144,11 +187,7 @@ export function createViteModuleGraphAdapter(pluginName: string) {
         return true;
       }
 
-      throw new Error(
-        `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses viteModuleGraph['${String(
-          p
-        )}'] which is not supported by Farm`
-      );
+      throwIncompatibleError(pluginName, 'viteModuleGraph', ['context'], p);
     }
   });
 

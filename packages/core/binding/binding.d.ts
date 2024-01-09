@@ -92,6 +92,7 @@ export class Compiler {
   hasModule(resolvedPath: string): boolean
   getParentFiles(resolvedPath: string): Array<string>
   resources(): Record<string, Buffer>
+  resourcesMap(): Record<string, unknown>
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null

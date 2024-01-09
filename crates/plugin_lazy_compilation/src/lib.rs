@@ -44,9 +44,9 @@ impl Plugin for FarmPluginLazyCompilation {
     if let Some(importer) = &param.importer {
       if importer.to_string().starts_with(DYNAMIC_VIRTUAL_PREFIX) {
         let original_importer = importer.to_string().replace(DYNAMIC_VIRTUAL_PREFIX, "");
-        return context.plugin_driver.resolve(
+        if let Some(res) = context.plugin_driver.resolve(
           &PluginResolveHookParam {
-            importer: Some(original_importer.into()),
+            importer: Some(original_importer.as_str().into()),
             ..param.clone()
           },
           context,
@@ -54,20 +54,18 @@ impl Plugin for FarmPluginLazyCompilation {
             caller: Some("FarmPluginLazyCompilation".to_string()),
             ..hook_context.clone()
           },
-        );
-
-        // if let Some(mut resolve_result) = resolve_result {
-        //   // if dependency is also a dynamic virtual module, we should remove the dynamic prefix
-        //   if resolve_result.meta.contains_key(ORIGINAL_RESOLVED_PATH) {
-        //     resolve_result.resolved_path = resolve_result
-        //       .meta
-        //       .get(ORIGINAL_RESOLVED_PATH)
-        //       .unwrap()
-        //       .to_string();
-        //   }
-
-        //   return Ok(Some(resolve_result));
-        // }
+        )? {
+          return Ok(Some(res));
+        } else if original_importer == param.source {
+          // if the original importer is the same as the source, it is a virtual module that farm generated, we should return the source as the resolved path
+          return Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
+            resolved_path: param.source.clone(),
+            external: false,
+            side_effects: false,
+            query: vec![],
+            meta: HashMap::new(),
+          }));
+        }
       }
     }
 

@@ -24,6 +24,7 @@ use self::hooks::{
 };
 
 pub mod context;
+mod context_methods;
 mod hooks;
 mod thread_safe_js_plugin_hook;
 

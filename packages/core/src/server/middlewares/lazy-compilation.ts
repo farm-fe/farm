@@ -9,6 +9,7 @@ import { DevServer } from '../index.js';
 import { bold, cyan, green } from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import { existsSync } from 'node:fs';
 
 export function lazyCompilation(devSeverContext: DevServer): Middleware {
   const compiler = devSeverContext.getCompiler();
@@ -22,6 +23,9 @@ export function lazyCompilation(devSeverContext: DevServer): Middleware {
       const paths = (ctx.query.paths as string).split(',');
       const pathsStr = paths
         .map((p) => {
+          if (p.startsWith('/') && !existsSync(p)) {
+            return p;
+          }
           const resolvedPath = compiler.transformModulePath(
             compiler.config.config.root,
             p
