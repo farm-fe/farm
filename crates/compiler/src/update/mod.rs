@@ -336,9 +336,15 @@ impl Compiler {
           Self::handle_update_dependencies(params);
         }
         ResolveModuleResult::ExistingBeforeUpdate(module_id) => {
-          // insert a placeholder module to the update module graph
-          let module = Module::new(module_id.clone());
-          Self::add_module_to_update_module_graph(&update_context, module);
+          // if the module does not exist, insert a placeholder module to the update module graph
+          {
+            let mut update_module_graph = update_context.module_graph.write();
+
+            if !update_module_graph.has_module(&module_id) {
+              let module = Module::new(module_id.clone());
+              update_module_graph.add_module(module);
+            }
+          }
           Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
         }
         ResolveModuleResult::ExistingWhenUpdate(module_id) => {
@@ -629,7 +635,6 @@ fn resolve_module(
       module: Compiler::create_module(
         resolve_module_id_result.module_id.clone(),
         resolve_module_id_result.resolve_result.external,
-        // TODO: make it configurable
         context
           .config
           .partial_bundling
