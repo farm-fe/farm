@@ -59,7 +59,7 @@ pub struct Module {
   pub content: Arc<String>,
   /// Used exports of this module. Set by the tree-shake plugin
   pub used_exports: Vec<String>,
-  /// last update timestamp, 0 if the module if not from disk
+  /// last update timestamp
   pub last_update_timestamp: u128,
   /// content(after load and transform) hash
   pub content_hash: String,

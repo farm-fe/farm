@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.1.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
 ## 0.0.4
 
 ### Patch Changes

@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "devDependencies": {
-    "@farmfe/cli": "^0.5.11",
-    "@farmfe/core": "^0.14.12"
+    "@farmfe/cli": "^0.6.0",
+    "@farmfe/core": "^0.15.0"
   },
   "scripts": {
     "build": "farm build && node test.mjs"
