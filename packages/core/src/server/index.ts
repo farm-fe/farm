@@ -95,6 +95,7 @@ export class DevServer implements ImplDevServer {
         logger,
         false
       ) || '/';
+    this.initApp();
   }
 
   getCompiler(): Compiler {
@@ -198,7 +199,7 @@ export class DevServer implements ImplDevServer {
     await Promise.all(promises);
   }
 
-  public initKoa() {
+  public initApp() {
     this._app = new Koa();
   }
 
@@ -216,8 +217,6 @@ export class DevServer implements ImplDevServer {
       protocol,
       hostname
     };
-
-    this.initKoa();
 
     if (https) {
       this.server = http2.createSecureServer(
@@ -283,7 +282,6 @@ export class DevServer implements ImplDevServer {
       hostname
     };
 
-    this.initKoa();
     if (https) {
       this.server = http2.createSecureServer(
         {
@@ -374,10 +372,113 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
+  _applyMiddlewares(middlewares?: DevServerMiddleware[]) {
+    middlewares.forEach((middleware) => {
+      if (Array.isArray(middleware)) {
+        middleware.forEach((m) => this._app.use(m));
+      } else {
+        this._app.use(middleware);
+      }
+    });
+  }
+
   private resolvedPreviewServerMiddleware(
     middlewares?: DevServerMiddleware[]
   ): void {
-    async function staticFile(ctx: Context) {
+    const staticFileMiddleware = this.createStaticFileMiddleware();
+    this._applyMiddlewares([staticFileMiddleware, ...(middlewares || [])]);
+    // async function staticFile(ctx: Context) {
+    //   const requestPath = ctx.request?.path;
+
+    //   if (
+    //     requestPath &&
+    //     requestPath.startsWith(this.previewServerConfig.output.publicPath)
+    //   ) {
+    //     const modifiedPath = requestPath.substring(
+    //       this.previewServerConfig.output.publicPath.length
+    //     );
+
+    //     if (modifiedPath.startsWith('/')) {
+    //       ctx.request.path = modifiedPath;
+    //     } else {
+    //       ctx.request.path = `/${modifiedPath}`;
+    //     }
+    //   }
+    //   const handleStatic = StaticFilesHandler(
+    //     this.previewServerConfig.output.path
+    //   );
+    //   await handleStatic(ctx, () => Promise.resolve());
+    // }
+    // // TODO make Let the user pass in the general koa plugin
+    // const internalMiddlewares = [...(middlewares || []), compression, proxy];
+    // this._app.use(staticFile.bind(this));
+
+    // internalMiddlewares.forEach((middleware: any) => {
+    //   const middlewareImpl = middleware(this);
+
+    //   if (middlewareImpl) {
+    //     if (Array.isArray(middlewareImpl)) {
+    //       middlewareImpl.forEach((m) => {
+    //         this._app.use(m);
+    //       });
+    //     } else {
+    //       this._app.use(middlewareImpl);
+    //     }
+    //   }
+    // });
+  }
+
+  private resolvedServerMiddleware(middlewares?: DevServerMiddleware[]): void {
+    // const internalMiddlewares = [
+    //   ...(middlewares || []),
+    //   headers,
+    //   lazyCompilation,
+    //   cors,
+    //   resources,
+    //   records,
+    //   proxy
+    // ];
+
+    // internalMiddlewares.forEach((middleware) => {
+    //   const middlewareImpl = middleware(this);
+
+    //   if (middlewareImpl) {
+    //     if (Array.isArray(middlewareImpl)) {
+    //       middlewareImpl.forEach((m) => {
+    //         this._app.use(m);
+    //       });
+    //     } else {
+    //       this._app.use(middlewareImpl);
+    //     }
+    //   }
+    // });
+    // TODO make Let the user pass in the general koa plugin
+    const defaultMiddlewares = [
+      headers,
+      lazyCompilation,
+      cors,
+      resources,
+      records,
+      proxy
+    ];
+    this._applyMiddlewares([...defaultMiddlewares, ...(middlewares || [])]);
+  }
+
+  private async printServerUrls() {
+    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
+      this.server,
+      this.config,
+      this.compiler.config.config.output?.publicPath
+    );
+    if (this._context.serverOptions.resolvedUrls) {
+      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
+    } else {
+      throw new Error('cannot print server URLs with Server Error.');
+    }
+  }
+
+  private createStaticFileMiddleware() {
+    return async (ctx: any, next: any) => {
       const requestPath = ctx.request?.path;
 
       if (
@@ -394,67 +495,13 @@ export class DevServer implements ImplDevServer {
           ctx.request.path = `/${modifiedPath}`;
         }
       }
+
+      // 创建并使用静态文件服务中间件
       const handleStatic = StaticFilesHandler(
         this.previewServerConfig.output.path
       );
-      await handleStatic(ctx, () => Promise.resolve());
-    }
-    // TODO make Let the user pass in the general koa plugin
-    const internalMiddlewares = [...(middlewares || []), compression, proxy];
-    this._app.use(staticFile.bind(this));
-
-    internalMiddlewares.forEach((middleware: any) => {
-      const middlewareImpl = middleware(this);
-
-      if (middlewareImpl) {
-        if (Array.isArray(middlewareImpl)) {
-          middlewareImpl.forEach((m) => {
-            this._app.use(m);
-          });
-        } else {
-          this._app.use(middlewareImpl);
-        }
-      }
-    });
-  }
-
-  private resolvedServerMiddleware(middlewares?: DevServerMiddleware[]): void {
-    const internalMiddlewares = [
-      ...(middlewares || []),
-      headers,
-      lazyCompilation,
-      cors,
-      resources,
-      records,
-      proxy
-    ];
-
-    internalMiddlewares.forEach((middleware) => {
-      const middlewareImpl = middleware(this);
-
-      if (middlewareImpl) {
-        if (Array.isArray(middlewareImpl)) {
-          middlewareImpl.forEach((m) => {
-            this._app.use(m);
-          });
-        } else {
-          this._app.use(middlewareImpl);
-        }
-      }
-    });
-  }
-
-  private async printServerUrls() {
-    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
-      this.server,
-      this.config,
-      this.compiler.config.config.output?.publicPath
-    );
-    if (this._context.serverOptions.resolvedUrls) {
-      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
-    } else {
-      throw new Error('cannot print server URLs with Server Error.');
-    }
+      await handleStatic(ctx, next);
+    };
   }
 }
 
