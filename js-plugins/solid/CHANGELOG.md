@@ -1,5 +1,22 @@
 # @farmfe/js-plugin-solid
 
+## 2.2.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
+### Patch Changes
+
+- e4c9f81e: Break change: reset config and configResolved hooks hook functionality and structure
+- e91a088a: fix condition & fix persistent cache failed reuse
+- Updated dependencies [e4c9f81e]
+- Updated dependencies [e91a088a]
+- Updated dependencies [24571102]
+- Updated dependencies [78c19574]
+- Updated dependencies [8846d063]
+  - @farmfe/core@0.15.0
+
 ## 2.1.0
 
 ### Minor Changes

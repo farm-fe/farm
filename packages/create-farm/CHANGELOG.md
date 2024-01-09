@@ -1,5 +1,15 @@
 # create-farm
 
+## 1.5.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
+### Patch Changes
+
+- 65c742c4: update template script && update runtime log
+
 ## 1.4.4
 
 ### Patch Changes
