@@ -1,6 +1,5 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-// import os from 'node:os';
 import Koa, { Context } from 'koa';
 import sirv from 'sirv';
 import compression from 'koa-compress';
@@ -19,7 +18,6 @@ import { openBrowser } from './openBrowser.js';
 import {
   bootstrap,
   clearScreen,
-  // colors,
   Logger,
   printServerUrls
 } from '../utils/index.js';

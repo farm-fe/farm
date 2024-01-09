@@ -6,11 +6,7 @@ export * from './utils/index.js';
 
 import path from 'node:path';
 import fs from 'node:fs/promises';
-// import os from 'node:os';
 import { statSync } from 'node:fs';
-// import sirv from 'sirv';
-// import compression from 'koa-compress';
-// import Koa, { Context } from 'koa';
 import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
@@ -25,7 +21,6 @@ import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
 import { colors } from './utils/color.js';
-// import { useProxy } from './server/middlewares/index.js';
 
 import type { FarmCLIOptions, ResolvedUserConfig } from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
