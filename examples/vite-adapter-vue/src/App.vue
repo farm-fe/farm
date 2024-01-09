@@ -4,7 +4,7 @@ import Formatter from './components/Formatter.vue';
 </script>
 
 <template>
-  <div>
+  <div class="container">
     <a href="https://farm-fe.github.io/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" />
     </a>
@@ -18,13 +18,16 @@ import Formatter from './components/Formatter.vue';
   </el-config-provider>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<style scoped lang="less">
+.container {
+  .logo {
+    height: 100px;
+    padding: 18px;
+    will-change: filter;
+    transition: filter 300ms;
+  }
 }
+
 
 .logo:hover {
   filter: drop-shadow(0 0 2em #9F1A8Faa);

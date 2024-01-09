@@ -19,7 +19,8 @@ import {
   FARM_CSS_MODULE_SUFFIX,
   transformFarmConfigToRollupNormalizedOutputOptions,
   transformResourceInfo2RollupRenderedChunk,
-  transformRollupResource2FarmResource
+  transformRollupResource2FarmResource,
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { DevServer } from '../../server/index.js';
@@ -498,7 +499,10 @@ export class VitePluginAdapter implements JsPlugin {
                 typeof result.map === 'object' && result.map !== null
                   ? JSON.stringify(result.map)
                   : undefined,
-              moduleType: formatTransformModuleType(id)
+              moduleType:
+                params.moduleType === VITE_PLUGIN_DEFAULT_MODULE_TYPE
+                  ? formatTransformModuleType(id)
+                  : params.moduleType
               // TODO support meta and sideEffects
             };
           }
