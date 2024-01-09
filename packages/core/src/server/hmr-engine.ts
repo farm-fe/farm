@@ -132,8 +132,8 @@ export class HmrEngine {
       });
     } catch (e) {
       clearScreen();
-      this._logger.error(e);
       this._lastAttemptWasError = true;
+      throw e;
     }
   };
 

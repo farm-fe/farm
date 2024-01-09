@@ -16,6 +16,12 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     }
   });
 
+  let sourcemap = true;
+
+  if (config.compilation?.sourcemap !== undefined) {
+    sourcemap = Boolean(config.compilation?.sourcemap);
+  }
+
   const viteConfig: ViteUserConfig = {
     root: config.root,
     base: config.compilation?.output?.publicPath ?? '/',
@@ -53,7 +59,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     build: {
       outDir: config.compilation?.output?.path,
-      sourcemap: Boolean(config.compilation?.sourcemap),
+      sourcemap,
       minify: config.compilation?.minify,
       cssMinify: config.compilation?.minify,
       ssr: config.compilation?.output?.targetEnv === 'node',
@@ -367,8 +373,17 @@ export function viteConfigToFarmConfig(
       farmConfig.compilation.output = {};
     }
     farmConfig.compilation.output.path = config.build.outDir;
-    farmConfig.compilation.sourcemap = Boolean(config.build.sourcemap);
-    farmConfig.compilation.minify = Boolean(config.build.minify);
+
+    if (
+      config.build?.sourcemap !== undefined &&
+      !farmConfig.compilation?.sourcemap
+    ) {
+      farmConfig.compilation.sourcemap = Boolean(config.build.sourcemap);
+    }
+
+    if (config.build?.minify !== undefined) {
+      farmConfig.compilation.minify = Boolean(config.build.minify);
+    }
 
     if (config.build.ssr !== undefined) {
       farmConfig.compilation.lazyCompilation = !config.build.ssr;
