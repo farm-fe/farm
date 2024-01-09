@@ -203,8 +203,7 @@ export class DevServer implements ImplDevServer {
   }
 
   public async createPreviewServer(options: any) {
-    // const { https, port, host = 'localhost', middlewares = [] } = options;
-    const { https, port, host = 'localhost' } = options;
+    const { https, port, host = 'localhost', middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
     if (typeof host !== 'boolean') {
@@ -233,29 +232,6 @@ export class DevServer implements ImplDevServer {
     }
 
     // support proxy
-    // useProxy(resolvedUserConfig.server.proxy, app, logger);
-
-    // this._app.use(compression());
-    // this._app.use(async (ctx) => {
-    //   const requestPath = ctx.request.path;
-
-    //   if (requestPath.startsWith(options.output.publicPath)) {
-    //     const modifiedPath = requestPath.substring(
-    //       options.output.publicPath.length
-    //     );
-
-    //     if (modifiedPath.startsWith('/')) {
-    //       ctx.request.path = modifiedPath;
-    //     } else {
-    //       ctx.request.path = `/${modifiedPath}`;
-    //     }
-    //   }
-    //   await StaticFilesHandler(options.outputDir, ctx);
-    // });
-
-    // await this.startServer(this.previewServerConfig);
-    // await this.printServerUrls();
-
     this._context = {
       config: this.config,
       app: this._app,
@@ -264,8 +240,7 @@ export class DevServer implements ImplDevServer {
       logger: this.logger,
       serverOptions: {}
     };
-    // this.resolvedPreviewServerMiddleware(middlewares);
-    this.resolvedPreviewServerMiddleware();
+    this.resolvedPreviewServerMiddleware(middlewares);
 
     this._app.listen(port, () => {
       this.logger.info(colors.green(`preview server running at:\n`));
@@ -419,24 +394,14 @@ export class DevServer implements ImplDevServer {
           ctx.request.path = `/${modifiedPath}`;
         }
       }
-      // await StaticFilesHandler(this.previewServerConfig.output.path);
       const handleStatic = StaticFilesHandler(
         this.previewServerConfig.output.path
       );
-      console.log(handleStatic);
-
       await handleStatic(ctx, () => Promise.resolve());
     }
     // TODO make Let the user pass in the general koa plugin
-    const internalMiddlewares = [
-      ...(middlewares || []),
-      // compression,
-      proxy
-      // staticFile.bind(this)
-    ];
-    console.log(staticFile.bind(this));
+    const internalMiddlewares = [...(middlewares || []), compression, proxy];
     this._app.use(staticFile.bind(this));
-    this._app.use(compression);
 
     internalMiddlewares.forEach((middleware: any) => {
       const middlewareImpl = middleware(this);
@@ -492,18 +457,6 @@ export class DevServer implements ImplDevServer {
     }
   }
 }
-
-// export function StaticFilesHandler(distDir: string, ctx: Context) {
-//   const staticFilesServer = sirv(distDir, {
-//     etag: true,
-//     single: true
-//   });
-//   return new Promise<void>((resolve) => {
-//     staticFilesServer(ctx.req, ctx.res, () => {
-//       resolve();
-//     });
-//   });
-// }
 
 export function StaticFilesHandler(distDir: string) {
   const staticFilesServer = sirv(distDir, {
