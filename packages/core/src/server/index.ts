@@ -1,6 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa from 'koa';
+import Koa, { Context } from 'koa';
 import compression from 'koa-compress';
 import os from 'node:os';
 
@@ -36,6 +36,7 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Server } from './type.js';
+import sirv from 'sirv';
 
 /**
  * Farm Dev Server, responsible for:
@@ -257,6 +258,7 @@ export class DevServer implements ImplDevServer {
     // this.initializeServer(options);
 
     // this.resolvedPreviewServerMiddleware(this.config.middlewares);
+    console.log(this.resolvedPreviewServerMiddleware);
 
     // await this.startServer(this.config);
 
@@ -280,6 +282,18 @@ export class DevServer implements ImplDevServer {
       }
       await StaticFilesHandler(ctx);
     });
+
+    function StaticFilesHandler(ctx: Context) {
+      const staticFilesServer = sirv(options.output.path, {
+        etag: true,
+        single: true
+      });
+      return new Promise<void>((resolve) => {
+        staticFilesServer(ctx.req, ctx.res, () => {
+          resolve();
+        });
+      });
+    }
 
     app.listen(options.port, () => {
       this.logger.info(colors.green(`preview server running at:\n`));
