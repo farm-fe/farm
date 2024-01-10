@@ -127,8 +127,8 @@ export async function resolveConfig(
   }
 
   const sortFarmJsPlugins = getSortedPlugins([
-    ...vitePluginAdapters,
-    ...rawJsPlugins
+    ...rawJsPlugins,
+    ...vitePluginAdapters
   ]);
 
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
