@@ -362,8 +362,6 @@ export class DevServer implements ImplDevServer {
             this._app.use(m);
           });
         } else {
-          console.log('走这里了了');
-
           this._app.use(middlewareImpl);
         }
       }
