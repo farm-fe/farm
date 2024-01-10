@@ -75,6 +75,8 @@ export class DevServer implements ImplDevServer {
   private _app: Koa;
   private restart_promise: Promise<void> | null = null;
   public _context: FarmServerContext;
+  private compiler: Compiler | null;
+  public logger: Logger;
 
   ws: WsServer;
   config: NormalizedServerConfig & UserPreviewServerConfig;
@@ -83,9 +85,20 @@ export class DevServer implements ImplDevServer {
   publicDir?: string;
   publicPath?: string;
 
-  constructor(private compiler: Compiler | null, public logger: Logger) {
+  constructor({
+    compiler = null,
+    logger
+  }: {
+    compiler?: Compiler | null;
+    logger: Logger;
+  }) {
+    this.compiler = compiler;
+    this.logger = logger;
+
     this.initApp();
+
     if (!compiler) return;
+
     this.publicDir = normalizePublicDir(compiler?.config.config.root);
 
     this.publicPath =
@@ -249,31 +262,11 @@ export class DevServer implements ImplDevServer {
   }
 
   public createDevServer(options: NormalizedServerConfig) {
-    const { https, host = 'localhost', middlewares = [] } = options;
-    const protocol = https ? 'https' : 'http';
-    let hostname;
-    if (typeof host !== 'boolean') {
-      hostname = host === '0.0.0.0' ? 'localhost' : host;
-    } else {
-      hostname = 'localhost';
+    if (!this.compiler) {
+      throw new Error('DevServer requires a compiler for development mode.');
     }
-    this.config = {
-      ...options,
-      protocol,
-      hostname
-    };
 
-    if (https) {
-      this.server = http2.createSecureServer(
-        {
-          ...https,
-          allowHTTP1: true
-        },
-        this._app.callback()
-      );
-    } else {
-      this.server = http.createServer(this._app.callback());
-    }
+    this.initializeServer(options);
 
     this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
     this.ws = new WsServer(this.server, this.config, this.hmrEngine);
@@ -287,15 +280,7 @@ export class DevServer implements ImplDevServer {
       this.hmrEngine.hmrUpdate(parentFiles);
     });
 
-    this._context = {
-      config: this.config,
-      app: this._app,
-      server: this.server,
-      compiler: this.compiler,
-      logger: this.logger,
-      serverOptions: {}
-    };
-    this.resolvedServerMiddleware(middlewares);
+    this.resolvedServerMiddleware(options.middlewares);
   }
 
   static async resolvePortConflict(

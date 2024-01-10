@@ -100,7 +100,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     port,
     host: true
   };
-  const devServer = new DevServer(null, logger);
+  const devServer = new DevServer({ logger });
   devServer.createPreviewServer(previewOptions);
 }
 
@@ -277,7 +277,7 @@ export function createDevServer(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
-  const devServer = new DevServer(compiler, logger);
+  const devServer = new DevServer({ compiler, logger });
   devServer.createDevServer(resolvedUserConfig.server);
 
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
