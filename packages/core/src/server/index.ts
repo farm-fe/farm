@@ -354,7 +354,6 @@ export class DevServer implements ImplDevServer {
   _applyMiddlewares(internalMiddlewares?: any[]) {
     internalMiddlewares.forEach((middleware) => {
       const middlewareImpl = middleware(this);
-      console.log(middlewareImpl);
 
       if (middlewareImpl) {
         if (Array.isArray(middlewareImpl)) {
@@ -390,6 +389,7 @@ export class DevServer implements ImplDevServer {
       records,
       proxy
     ];
+
     this._applyMiddlewares(internalMiddlewares);
   }
 
@@ -403,6 +403,10 @@ export class DevServer implements ImplDevServer {
       config,
       publicPath
     );
+    console.log(this.publicPath);
+
+    console.log(this._context.serverOptions.resolvedUrls);
+
     if (this._context.serverOptions.resolvedUrls) {
       printServerUrls(
         this._context.serverOptions.resolvedUrls,
