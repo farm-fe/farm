@@ -1,7 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa, { Context } from 'koa';
-import sirv from 'sirv';
+import Koa from 'koa';
 import compression from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
@@ -27,7 +26,8 @@ import {
   lazyCompilation,
   proxy,
   records,
-  resources
+  resources,
+  sirvMiddleware
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
@@ -354,6 +354,7 @@ export class DevServer implements ImplDevServer {
   _applyMiddlewares(internalMiddlewares?: any[]) {
     internalMiddlewares.forEach((middleware) => {
       const middlewareImpl = middleware(this);
+      console.log(middlewareImpl);
 
       if (middlewareImpl) {
         if (Array.isArray(middlewareImpl)) {
@@ -361,6 +362,8 @@ export class DevServer implements ImplDevServer {
             this._app.use(m);
           });
         } else {
+          console.log('走这里了了');
+
           this._app.use(middlewareImpl);
         }
       }
@@ -370,14 +373,12 @@ export class DevServer implements ImplDevServer {
   private resolvedPreviewServerMiddleware(
     middlewares?: DevServerMiddleware[]
   ): void {
-    const staticFileMiddleware = this.createStaticFileMiddleware();
     const internalMiddlewares = [
       ...(middlewares || []),
       compression,
-      proxy
-      // staticFileMiddleware
+      proxy,
+      sirvMiddleware
     ];
-    this._app.use(staticFileMiddleware);
     this._applyMiddlewares(internalMiddlewares);
   }
 
@@ -414,46 +415,4 @@ export class DevServer implements ImplDevServer {
       throw new Error('cannot print server URLs with Server Error.');
     }
   }
-
-  private createStaticFileMiddleware() {
-    return async (ctx: any, next: any) => {
-      const requestPath = ctx.request?.path;
-
-      if (
-        requestPath &&
-        requestPath.startsWith(this.previewServerConfig.output.publicPath)
-      ) {
-        const modifiedPath = requestPath.substring(
-          this.previewServerConfig.output.publicPath.length
-        );
-
-        if (modifiedPath.startsWith('/')) {
-          ctx.request.path = modifiedPath;
-        } else {
-          ctx.request.path = `/${modifiedPath}`;
-        }
-      }
-
-      const handleStatic = StaticFilesHandler(
-        this.previewServerConfig.output.path
-      );
-      await handleStatic(ctx, next);
-    };
-  }
-}
-
-export function StaticFilesHandler(distDir: string) {
-  const staticFilesServer = sirv(distDir, {
-    etag: true,
-    single: true
-  });
-
-  return async (ctx: Context, next: () => Promise<any>) => {
-    await new Promise<void>((resolve) => {
-      staticFilesServer(ctx.req, ctx.res, () => {
-        resolve();
-      });
-    });
-    await next();
-  };
 }
