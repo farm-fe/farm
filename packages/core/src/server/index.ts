@@ -10,6 +10,7 @@ import {
   NormalizedServerConfig,
   normalizePublicDir,
   normalizePublicPath,
+  UserPreviewServerConfig,
   UserServerConfig
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
@@ -43,8 +44,7 @@ import { Server } from './type.js';
  */
 
 interface FarmServerContext {
-  config: UserServerConfig;
-  previewConfig: any;
+  config: UserServerConfig & UserPreviewServerConfig;
   app: Koa;
   server: Server;
   compiler: Compiler;
@@ -64,7 +64,7 @@ type ErrorMap = {
 };
 
 interface ImplDevServer {
-  createServer(options: UserServerConfig): void;
+  createDevServer(options: UserServerConfig): void;
   createPreviewServer(options: UserServerConfig): void;
   listen(): Promise<void>;
   close(): Promise<void>;
@@ -77,8 +77,7 @@ export class DevServer implements ImplDevServer {
   public _context: FarmServerContext;
 
   ws: WsServer;
-  config: NormalizedServerConfig;
-  previewServerConfig: NormalizedServerConfig | any;
+  config: NormalizedServerConfig & UserPreviewServerConfig;
   hmrEngine?: HmrEngine;
   server?: Server;
   publicDir?: string;
@@ -121,7 +120,7 @@ export class DevServer implements ImplDevServer {
     await this.startServer(this.config);
 
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      (await this.printServerUrls());
+      (await this.getPrintServerUrls());
 
     if (open) {
       const publicPath =
@@ -202,8 +201,8 @@ export class DevServer implements ImplDevServer {
     this._app = new Koa();
   }
 
-  public async createPreviewServer(options: any) {
-    const { https, port, host = true, middlewares = [] } = options;
+  private initializeServer(options: any) {
+    const { https, host = 'localhost' } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
     if (typeof host !== 'boolean') {
@@ -211,7 +210,7 @@ export class DevServer implements ImplDevServer {
     } else {
       hostname = 'localhost';
     }
-    this.previewServerConfig = {
+    this.config = {
       ...options,
       protocol,
       hostname
@@ -231,21 +230,25 @@ export class DevServer implements ImplDevServer {
 
     this._context = {
       config: this.config,
-      previewConfig: this.previewServerConfig,
       app: this._app,
       server: this.server,
       compiler: this.compiler,
       logger: this.logger,
       serverOptions: {}
     };
-    this.resolvedPreviewServerMiddleware(middlewares);
-
-    await this.startServer({ port, host });
-
-    await this.printServerUrls(true);
   }
 
-  public createServer(options: NormalizedServerConfig) {
+  public async createPreviewServer(options: any) {
+    this.initializeServer(options);
+
+    this.resolvedPreviewServerMiddleware(this.config.middlewares);
+
+    await this.startServer(this.config);
+
+    await this.getPrintServerUrls(true);
+  }
+
+  public createDevServer(options: NormalizedServerConfig) {
     const { https, host = 'localhost', middlewares = [] } = options;
     const protocol = https ? 'https' : 'http';
     let hostname;
@@ -286,7 +289,6 @@ export class DevServer implements ImplDevServer {
 
     this._context = {
       config: this.config,
-      previewConfig: this.previewServerConfig,
       app: this._app,
       server: this.server,
       compiler: this.compiler,
@@ -393,19 +395,15 @@ export class DevServer implements ImplDevServer {
     this._applyMiddlewares(internalMiddlewares);
   }
 
-  private async printServerUrls(showPreviewFlag = false) {
+  private async getPrintServerUrls(showPreviewFlag = false) {
     const publicPath = this.compiler
-      ? this.publicPath
-      : this.previewServerConfig.output.publicPath;
-    const config = this.compiler ? this.config : this.previewServerConfig;
+      ? this.compiler.config.config.output?.publicPath
+      : this.config.output.publicPath;
     this._context.serverOptions.resolvedUrls = await resolveServerUrls(
       this.server,
-      config,
+      this.config,
       publicPath
     );
-    console.log(this.publicPath);
-
-    console.log(this._context.serverOptions.resolvedUrls);
 
     if (this._context.serverOptions.resolvedUrls) {
       printServerUrls(

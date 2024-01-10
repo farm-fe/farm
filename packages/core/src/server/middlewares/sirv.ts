@@ -3,17 +3,14 @@ import { DevServer } from '../index.js';
 import sirv from 'sirv';
 
 export function sirvMiddleware(devSeverContext: DevServer): Middleware {
-  const { previewConfig } = devSeverContext._context;
+  const { config } = devSeverContext._context;
 
-  return async (ctx: any, next: any) => {
+  return async (ctx: Context, next) => {
     const requestPath = ctx.request?.path;
 
-    if (
-      requestPath &&
-      requestPath.startsWith(previewConfig.output.publicPath)
-    ) {
+    if (requestPath && requestPath.startsWith(config.output.publicPath)) {
       const modifiedPath = requestPath.substring(
-        previewConfig.output.publicPath.length
+        config.output.publicPath.length
       );
 
       if (modifiedPath.startsWith('/')) {
@@ -23,7 +20,7 @@ export function sirvMiddleware(devSeverContext: DevServer): Middleware {
       }
     }
 
-    const handleStatic = StaticFilesHandler(previewConfig.output.path);
+    const handleStatic = StaticFilesHandler(config.output.path);
     await handleStatic(ctx, next);
   };
 }

@@ -29,6 +29,11 @@ export interface UserServerConfig {
   writeToDisk?: boolean;
 }
 
+export interface UserPreviewServerConfig {
+  // write static output file
+  output?: { path: string; publicPath: string };
+}
+
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
     hmr: Required<UserHmrConfig>;

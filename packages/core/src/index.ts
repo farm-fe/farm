@@ -42,11 +42,15 @@ export async function start(
     );
 
     const compiler = await createCompiler(resolvedUserConfig);
-    const devServer = setupDevServer(compiler, resolvedUserConfig, logger);
+
+    const devServer = createDevServer(compiler, resolvedUserConfig, logger);
     await devServer.listen();
-    setupFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+
+    createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
   } catch (error) {
-    logger.error(`Failed to start the server: ${error.message}`);
+    logger.error(
+      `Failed to start the server: ${error.message} \n ${error.stack}`
+    );
     process.exit(1);
   }
 }
@@ -268,13 +272,13 @@ async function copyPublicDirectory(
   }
 }
 
-export function setupDevServer(
+export function createDevServer(
   compiler: Compiler,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
   const devServer = new DevServer(compiler, logger);
-  devServer.createServer(resolvedUserConfig.server);
+  devServer.createDevServer(resolvedUserConfig.server);
 
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
     plugin.configureDevServer?.(devServer)
@@ -283,7 +287,7 @@ export function setupDevServer(
   return devServer;
 }
 
-export async function setupFileWatcher(
+export async function createFileWatcher(
   devServer: DevServer,
   resolvedUserConfig: ResolvedUserConfig,
   inlineConfig: FarmCLIOptions & UserConfig,
