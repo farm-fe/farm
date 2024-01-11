@@ -22,7 +22,11 @@ import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
 import { colors } from './utils/color.js';
 
-import type { FarmCLIOptions, ResolvedUserConfig } from './config/types.js';
+import type {
+  FarmCLIOptions,
+  ResolvedUserConfig,
+  UserPreviewServerConfig
+} from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/configWatcher.js';
@@ -43,7 +47,11 @@ export async function start(
 
     const compiler = await createCompiler(resolvedUserConfig);
 
-    const devServer = createDevServer(compiler, resolvedUserConfig, logger);
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
     await devServer.listen();
 
     createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
@@ -94,11 +102,11 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     }
   }
 
-  const previewOptions = {
+  const previewOptions: UserPreviewServerConfig = {
     distDir,
-    output,
+    output: { path: output.path, publicPath: output.publicPath },
     port,
-    host: true
+    host: inlineConfig.host ?? true
   };
   const devServer = new DevServer({ logger });
   devServer.createPreviewServer(previewOptions);
@@ -265,20 +273,24 @@ async function copyPublicDirectory(
         absPublicDirPath,
         resolvedUserConfig.compilation.output.path
       );
-      logger.info('Public directory resources copied successfully.');
+      logger.info(
+        `Public directory resources copied ${colors.bold(
+          colors.green('successfully')
+        )}.`
+      );
     }
   } catch (error) {
     logger.error(`Error copying public directory: ${error.message}`);
   }
 }
 
-export function createDevServer(
+export async function createDevServer(
   compiler: Compiler,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
   const devServer = new DevServer({ compiler, logger });
-  devServer.createDevServer(resolvedUserConfig.server);
+  await devServer.createDevServer(resolvedUserConfig.server);
 
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
     plugin.configureDevServer?.(devServer)

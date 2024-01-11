@@ -31,7 +31,7 @@ import {
   sirvMiddleware
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { resolveServerUrls } from '../utils/http.js';
+import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Server } from './type.js';
 
@@ -127,7 +127,7 @@ export class DevServer implements ImplDevServer {
     if (open) {
       const publicPath =
         this.publicPath === '/' ? this.publicPath : `/${this.publicPath}`;
-      const serverUrl = `${protocol}://${hostname}:${port}${publicPath}`;
+      const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
       openBrowser(serverUrl);
     }
   }
@@ -143,25 +143,27 @@ export class DevServer implements ImplDevServer {
 
   async startServer(serverOptions: UserServerConfig) {
     const { port, hostname } = serverOptions;
+    console.log(hostname);
+
     try {
       await new Promise((resolve) => {
-        this.server.listen(port, hostname as string, () => {
+        this.server.listen(port, hostname.host, () => {
           resolve(port);
         });
       });
     } catch (error) {
-      this.handleServerError(error, port, hostname);
+      this.handleServerError(error, port, hostname.host);
     }
   }
 
   handleServerError(
     error: Error & { code?: string },
     port: number,
-    ip: string | boolean
+    host: string | undefined
   ) {
     const errorMap: ErrorMap = {
       EACCES: `Permission denied to use port ${port}`,
-      EADDRNOTAVAIL: `The IP address ${ip} is not available on this machine.`
+      EADDRNOTAVAIL: `The IP address host: ${host} is not available on this machine.`
     };
 
     const errorMessage =
@@ -203,15 +205,11 @@ export class DevServer implements ImplDevServer {
     this._app = new Koa();
   }
 
-  private initializeServer(options: any) {
-    const { https, host = 'localhost' } = options;
+  private async initializeServer(options: NormalizedServerConfig) {
+    const { https, host = true } = options;
     const protocol = https ? 'https' : 'http';
-    let hostname;
-    if (typeof host !== 'boolean') {
-      hostname = host === '0.0.0.0' ? 'localhost' : host;
-    } else {
-      hostname = 'localhost';
-    }
+    const hostname = await resolveHostname(host);
+
     this.config = {
       ...options,
       protocol,
@@ -231,8 +229,8 @@ export class DevServer implements ImplDevServer {
     }
   }
 
-  public async createPreviewServer(options: any) {
-    this.initializeServer(options);
+  public async createPreviewServer(options: UserPreviewServerConfig) {
+    await this.initializeServer(options as NormalizedServerConfig);
 
     this.resolvedPreviewServerMiddleware(this.config.middlewares);
 
@@ -241,12 +239,12 @@ export class DevServer implements ImplDevServer {
     await this.getPrintServerUrls(true);
   }
 
-  public createDevServer(options: NormalizedServerConfig) {
+  public async createDevServer(options: NormalizedServerConfig) {
     if (!this.compiler) {
       throw new Error('DevServer requires a compiler for development mode.');
     }
 
-    this.initializeServer(options);
+    await this.initializeServer(options);
 
     this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
     this.ws = new WsServer(this.server, this.config, this.hmrEngine);
