@@ -39,17 +39,6 @@ import { Server } from './type.js';
  * * compile the project in dev mode and serve the production
  * * HMR middleware and websocket supported
  */
-
-interface FarmServerContext {
-  config: UserServerConfig;
-  app: Koa;
-  server: Server;
-  compiler: Compiler;
-  logger: Logger;
-  serverOptions?: {
-    resolvedUrls?: ServerUrls;
-  };
-}
 interface ServerUrls {
   local: string[];
   network: string[];
@@ -70,7 +59,6 @@ interface ImplDevServer {
 export class DevServer implements ImplDevServer {
   private _app: Koa;
   private restart_promise: Promise<void> | null = null;
-  public _context: FarmServerContext;
 
   ws: WsServer;
   config: NormalizedServerConfig;
@@ -78,6 +66,7 @@ export class DevServer implements ImplDevServer {
   server?: Server;
   publicDir?: string;
   publicPath?: string;
+  resolvedUrls?: ServerUrls;
 
   constructor(private compiler: Compiler, public logger: Logger) {
     this.publicDir = normalizePublicDir(compiler.config.config.root);
@@ -134,15 +123,15 @@ export class DevServer implements ImplDevServer {
   }
 
   async startServer(serverOptions: UserServerConfig) {
-    const { port, host } = serverOptions;
+    const { port, hostname } = serverOptions;
     try {
       await new Promise((resolve) => {
-        this.server.listen(port, host as string, () => {
+        this.server.listen(port, hostname as string, () => {
           resolve(port);
         });
       });
     } catch (error) {
-      this.handleServerError(error, port, host);
+      this.handleServerError(error, port, hostname);
     }
   }
 
@@ -231,14 +220,6 @@ export class DevServer implements ImplDevServer {
       this.hmrEngine.hmrUpdate(parentFiles);
     });
 
-    this._context = {
-      config: this.config,
-      app: this._app,
-      server: this.server,
-      compiler: this.compiler,
-      logger: this.logger,
-      serverOptions: {}
-    };
     this.resolvedFarmServerMiddleware(middlewares);
   }
 
@@ -326,13 +307,13 @@ export class DevServer implements ImplDevServer {
   }
 
   private async printServerUrls() {
-    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
+    this.resolvedUrls = await resolveServerUrls(
       this.server,
       this.config,
       this.compiler.config.config.output?.publicPath
     );
-    if (this._context.serverOptions.resolvedUrls) {
-      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
+    if (this.resolvedUrls) {
+      printServerUrls(this.resolvedUrls, this.logger);
     } else {
       throw new Error('cannot print server URLs with Server Error.');
     }
