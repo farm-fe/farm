@@ -34,6 +34,7 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Server } from './type.js';
+import { promisify } from 'node:util';
 
 /**
  * Farm Dev Server, responsible for:
@@ -141,16 +142,27 @@ export class DevServer implements ImplDevServer {
     }
   }
 
+  // async startServer(serverOptions: UserServerConfig) {
+  //   const { port, hostname } = serverOptions;
+  //   console.log(hostname);
+
+  //   try {
+  //     await new Promise((resolve) => {
+  //       this.server.listen(port, hostname.host, () => {
+  //         resolve(port);
+  //       });
+  //     });
+  //   } catch (error) {
+  //     this.handleServerError(error, port, hostname.host);
+  //   }
+  // }
+
   async startServer(serverOptions: UserServerConfig) {
     const { port, hostname } = serverOptions;
+    const listen = promisify(this.server.listen).bind(this.server);
     console.log(hostname);
-
     try {
-      await new Promise((resolve) => {
-        this.server.listen(port, hostname.host, () => {
-          resolve(port);
-        });
-      });
+      await listen(port, hostname.host);
     } catch (error) {
       this.handleServerError(error, port, hostname.host);
     }
