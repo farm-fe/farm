@@ -1,8 +1,7 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa, { Context } from 'koa';
+import Koa from 'koa';
 import compression from 'koa-compress';
-import os from 'node:os';
 
 import { Compiler } from '../compiler/index.js';
 import {
@@ -19,7 +18,6 @@ import { openBrowser } from './openBrowser.js';
 import {
   bootstrap,
   clearScreen,
-  colors,
   Logger,
   printServerUrls
 } from '../utils/index.js';
@@ -36,7 +34,6 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Server } from './type.js';
-import sirv from 'sirv';
 
 /**
  * Farm Dev Server, responsible for:
@@ -235,70 +232,13 @@ export class DevServer implements ImplDevServer {
   }
 
   public async createPreviewServer(options: any) {
-    // this.initializeServer(options);
+    this.initializeServer(options);
 
-    // this.resolvedPreviewServerMiddleware(this.config.middlewares);
-    console.log(this.resolvedPreviewServerMiddleware);
+    this.resolvedPreviewServerMiddleware(this.config.middlewares);
 
-    // await this.startServer(this.config);
+    await this.startServer(this.config);
 
-    // await this.getPrintServerUrls(true);
-
-    const app = new Koa();
-
-    app.use(async (ctx) => {
-      const requestPath = ctx.request.path;
-
-      if (requestPath.startsWith(options.output.publicPath)) {
-        const modifiedPath = requestPath.substring(
-          options.output.publicPath.length
-        );
-
-        if (modifiedPath.startsWith('/')) {
-          ctx.request.path = modifiedPath;
-        } else {
-          ctx.request.path = `/${modifiedPath}`;
-        }
-      }
-      await StaticFilesHandler(ctx);
-    });
-
-    function StaticFilesHandler(ctx: Context) {
-      const staticFilesServer = sirv(options.output.path, {
-        etag: true,
-        single: true
-      });
-      return new Promise<void>((resolve) => {
-        staticFilesServer(ctx.req, ctx.res, () => {
-          resolve();
-        });
-      });
-    }
-
-    app.listen(options.port, () => {
-      this.logger.info(colors.green(`preview server running at:\n`));
-      const interfaces = os.networkInterfaces();
-      Object.keys(interfaces).forEach((key) =>
-        (interfaces[key] || [])
-          .filter((details) => details.family === 'IPv4')
-          .map((detail) => {
-            return {
-              type: detail.address.includes('127.0.0.1')
-                ? 'Local:   '
-                : 'Network: ',
-              host: detail.address
-            };
-          })
-          .forEach(({ type, host }) => {
-            const url = `${'http'}://${host}:${colors.bold(options.port)}${
-              options.output.publicPath ?? ''
-            }`;
-            this.logger.info(
-              `${colors.magenta('>')} ${type} ${colors.cyan(url)}`
-            );
-          })
-      );
-    });
+    await this.getPrintServerUrls(true);
   }
 
   public createDevServer(options: NormalizedServerConfig) {

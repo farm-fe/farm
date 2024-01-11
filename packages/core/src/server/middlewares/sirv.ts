@@ -3,7 +3,7 @@ import { DevServer } from '../index.js';
 import sirv from 'sirv';
 
 export function sirvMiddleware(devSeverContext: DevServer): Middleware {
-  const { config } = devSeverContext._context;
+  const { config } = devSeverContext;
   const handleStatic = StaticFilesHandler(config.output.path);
 
   return async (ctx: Context, next) => {
