@@ -22,6 +22,7 @@ export default defineConfig({
     // },
     writeToDisk: false,
     cors: true,
+    host: '127.0.0.1'
   },
   plugins: ["@farmfe/plugin-react", "@farmfe/plugin-sass"],
 });

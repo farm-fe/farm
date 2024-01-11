@@ -401,7 +401,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   port: 9000,
   https: undefined,
   protocol: 'http',
-  hostname: 'localhost',
+  hostname: { name: 'localhost', host: undefined },
   host: true,
   proxy: {},
   hmr: DEFAULT_HMR_OPTIONS,
