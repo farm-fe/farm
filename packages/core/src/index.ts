@@ -323,7 +323,7 @@ export async function createFileWatcher(
 
       devServer.restart(async () => {
         farmWatcher?.close();
-        await devServer.closeFarmServer();
+        await devServer.close();
         __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
         await start(inlineConfig);
       });

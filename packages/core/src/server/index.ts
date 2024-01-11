@@ -1,6 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa from 'koa';
+import Koa, { Middleware } from 'koa';
 import compression from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
@@ -84,7 +84,7 @@ export class DevServer implements ImplDevServer {
     this.compiler = compiler;
     this.logger = logger;
 
-    this.initApp();
+    this.initializeApplication();
 
     if (!compiler) return;
 
@@ -122,7 +122,7 @@ export class DevServer implements ImplDevServer {
     await this.startServer(this.config);
 
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      (await this.getPrintServerUrls());
+      (await this.displayServerUrls());
 
     if (open) {
       const publicPath =
@@ -176,18 +176,6 @@ export class DevServer implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
-    await this.closeFarmServer();
-    process.exit(0);
-  }
-
-  async restart(promise: () => Promise<void>) {
-    if (!this.restart_promise) {
-      this.restart_promise = promise();
-    }
-    return this.restart_promise;
-  }
-
-  async closeFarmServer() {
     const promises = [];
 
     if (this.ws) {
@@ -199,9 +187,17 @@ export class DevServer implements ImplDevServer {
     }
 
     await Promise.all(promises);
+    process.exit(0);
   }
 
-  public initApp() {
+  async restart(promise: () => Promise<void>) {
+    if (!this.restart_promise) {
+      this.restart_promise = promise();
+    }
+    return this.restart_promise;
+  }
+
+  public initializeApplication() {
     this._app = new Koa();
   }
 
@@ -232,11 +228,11 @@ export class DevServer implements ImplDevServer {
   public async createPreviewServer(options: UserPreviewServerConfig) {
     await this.initializeServer(options as NormalizedServerConfig);
 
-    this.resolvedPreviewServerMiddleware(this.config.middlewares);
+    this.applyPreviewServerMiddlewares(this.config.middlewares);
 
     await this.startServer(this.config);
 
-    await this.getPrintServerUrls(true);
+    await this.displayServerUrls(true);
   }
 
   public async createDevServer(options: NormalizedServerConfig) {
@@ -258,7 +254,7 @@ export class DevServer implements ImplDevServer {
       this.hmrEngine.hmrUpdate(parentFiles);
     });
 
-    this.resolvedServerMiddleware(options.middlewares);
+    this.applyServerMiddlewares(options.middlewares);
   }
 
   static async resolvePortConflict(
@@ -316,7 +312,7 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  _applyMiddlewares(internalMiddlewares?: any[]) {
+  applyMiddlewares(internalMiddlewares?: DevServerMiddleware[]) {
     internalMiddlewares.forEach((middleware) => {
       const middlewareImpl = middleware(this);
 
@@ -332,7 +328,7 @@ export class DevServer implements ImplDevServer {
     });
   }
 
-  private resolvedPreviewServerMiddleware(
+  private applyPreviewServerMiddlewares(
     middlewares?: DevServerMiddleware[]
   ): void {
     const internalMiddlewares = [
@@ -341,10 +337,12 @@ export class DevServer implements ImplDevServer {
       proxy,
       sirvMiddleware
     ];
-    this._applyMiddlewares(internalMiddlewares);
+    this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }
 
-  private resolvedServerMiddleware(middlewares?: DevServerMiddleware[]): void {
+  private applyServerMiddlewares(
+    middlewares?: (DevServerMiddleware | Middleware)[]
+  ): void {
     const internalMiddlewares = [
       ...(middlewares || []),
       headers,
@@ -355,10 +353,10 @@ export class DevServer implements ImplDevServer {
       proxy
     ];
 
-    this._applyMiddlewares(internalMiddlewares);
+    this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }
 
-  private async getPrintServerUrls(showPreviewFlag = false) {
+  private async displayServerUrls(showPreviewFlag = false) {
     const publicPath = this.compiler
       ? this.compiler.config.config.output?.publicPath
       : this.config.output.publicPath;
