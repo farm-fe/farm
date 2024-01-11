@@ -360,6 +360,7 @@ export class DevServer implements ImplDevServer {
     const publicPath = this.compiler
       ? this.compiler.config.config.output?.publicPath
       : this.config.output.publicPath;
+
     this.resolvedUrls = await resolveServerUrls(
       this.server,
       this.config,
