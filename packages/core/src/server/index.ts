@@ -142,25 +142,9 @@ export class DevServer implements ImplDevServer {
     }
   }
 
-  // async startServer(serverOptions: UserServerConfig) {
-  //   const { port, hostname } = serverOptions;
-  //   console.log(hostname);
-
-  //   try {
-  //     await new Promise((resolve) => {
-  //       this.server.listen(port, hostname.host, () => {
-  //         resolve(port);
-  //       });
-  //     });
-  //   } catch (error) {
-  //     this.handleServerError(error, port, hostname.host);
-  //   }
-  // }
-
   async startServer(serverOptions: UserServerConfig) {
     const { port, hostname } = serverOptions;
     const listen = promisify(this.server.listen).bind(this.server);
-    console.log(hostname);
     try {
       await listen(port, hostname.host);
     } catch (error) {
@@ -214,8 +198,9 @@ export class DevServer implements ImplDevServer {
   }
 
   private async initializeServer(options: NormalizedServerConfig) {
-    const { https, host = true } = options;
+    const { https, host } = options;
     const protocol = https ? 'https' : 'http';
+
     const hostname = await resolveHostname(host);
 
     this.config = {
@@ -237,6 +222,24 @@ export class DevServer implements ImplDevServer {
     }
   }
 
+  public createWebSocket() {
+    if (!this.server) {
+      throw new Error('Websocket requires a server.');
+    }
+    this.ws = new WsServer(this.server, this.config, this.hmrEngine);
+  }
+
+  private invalidateVite() {
+    // Note: path should be Farm's id, which is a relative path in dev mode,
+    // but in vite, it's a url path like /xxx/xxx.js
+    this.ws.on('vite:invalidate', ({ path, message }) => {
+      // find hmr boundary starting from the parent of the file
+      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''}`);
+      const parentFiles = this.compiler.getParentFiles(path);
+      this.hmrEngine.hmrUpdate(parentFiles);
+    });
+  }
+
   public async createPreviewServer(options: UserPreviewServerConfig) {
     await this.initializeServer(options as NormalizedServerConfig);
 
@@ -255,16 +258,10 @@ export class DevServer implements ImplDevServer {
     await this.initializeServer(options);
 
     this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
-    this.ws = new WsServer(this.server, this.config, this.hmrEngine);
 
-    // Note: path should be Farm's id, which is a relative path in dev mode,
-    // but in vite, it's a url path like /xxx/xxx.js
-    this.ws.on('vite:invalidate', ({ path, message }) => {
-      // find hmr boundary starting from the parent of the file
-      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''}`);
-      const parentFiles = this.compiler.getParentFiles(path);
-      this.hmrEngine.hmrUpdate(parentFiles);
-    });
+    this.createWebSocket();
+
+    this.invalidateVite();
 
     this.applyServerMiddlewares(options.middlewares);
   }
