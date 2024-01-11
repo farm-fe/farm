@@ -15,7 +15,7 @@ export interface UserServerConfig {
   port?: number;
   https?: SecureServerOptions;
   protocol?: 'http' | 'https';
-  hostname?: string;
+  hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
   proxy?: Record<string, ProxiesOptions>;
@@ -27,6 +27,15 @@ export interface UserServerConfig {
   spa?: boolean;
   middlewares?: DevServerMiddleware[];
   writeToDisk?: boolean;
+}
+
+export interface UserPreviewServerConfig {
+  // write static output file
+  output?: { path?: string; publicPath?: string };
+  distDir?: string;
+  https?: SecureServerOptions;
+  port?: number;
+  host?: string | boolean;
 }
 
 export type NormalizedServerConfig = Required<
@@ -120,6 +129,7 @@ export interface FarmCLIPreviewOptions {
   open?: boolean;
   https?: SecureServerOptions;
   port?: number;
+  host?: string | boolean;
 }
 
 export interface FarmCLIOptions

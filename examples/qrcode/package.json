@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "farm start",
-    "build": "farm build"
+    "dev": "farm start",
+    "build": "farm build",
+    "preview": "farm build"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:^",

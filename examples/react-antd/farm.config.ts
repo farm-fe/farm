@@ -1,4 +1,4 @@
-import type { UserConfig } from "@farmfe/core";
+import type { UserConfig } from '@farmfe/core';
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -7,21 +7,18 @@ function defineConfig(config: UserConfig) {
 export default defineConfig({
   compilation: {
     input: {
-      index: "./index.html",
+      index: './index.html'
     },
     output: {
-      path: "./build",
-      publicPath: "/admin/",
+      path: './build',
+      publicPath: '/admin/'
     },
-    sourcemap: false,
-    persistentCache: true,
+    sourcemap: true,
+    persistentCache: true
   },
   server: {
-    // headers: {
-    //   'Access-Control-Allow-Origin': '*'
-    // },
     writeToDisk: false,
     cors: true,
   },
-  plugins: ["@farmfe/plugin-react", "@farmfe/plugin-sass"],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 });
