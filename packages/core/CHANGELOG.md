@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.15.3
+
+### Patch Changes
+
+- 18616c7d: Fix dev server random 503
+
 ## 0.15.2
 
 ### Patch Changes
