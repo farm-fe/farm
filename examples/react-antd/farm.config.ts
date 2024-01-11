@@ -19,13 +19,6 @@ export default defineConfig({
   server: {
     writeToDisk: false,
     cors: true,
-    proxy: {
-      '/api': {
-        target: 'https://music-erkelost.vercel.app/banner',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 });

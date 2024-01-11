@@ -45,9 +45,11 @@ export function useProxy(
 }
 
 export function proxy(devSeverContext: DevServer): Middleware {
-  const { app, config, logger } = devSeverContext._context;
+  const { config, logger } = devSeverContext;
   if (!config.proxy) {
     return;
   }
-  useProxy(config.proxy, app, logger);
+
+  const options = config.proxy;
+  useProxy(options, devSeverContext.app(), logger);
 }

@@ -148,7 +148,13 @@ export class DefaultLogger implements Logger {
   }
 }
 
-export function printServerUrls(urls: any, logger: Logger): void {
+export function printServerUrls(
+  urls: any,
+  logger: Logger,
+  previewFlag = false
+): void {
+  if (previewFlag)
+    logger.info(colors.bold(colors.magenta('preview server running at: \n')));
   const colorUrl = (url: string) =>
     colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
 

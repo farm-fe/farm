@@ -6,11 +6,7 @@ export * from './utils/index.js';
 
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import { statSync } from 'node:fs';
-import sirv from 'sirv';
-import compression from 'koa-compress';
-import Koa, { Context } from 'koa';
 import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
@@ -25,9 +21,12 @@ import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
 import { colors } from './utils/color.js';
-import { useProxy } from './server/middlewares/index.js';
 
-import type { FarmCLIOptions, ResolvedUserConfig } from './config/types.js';
+import type {
+  FarmCLIOptions,
+  ResolvedUserConfig,
+  UserPreviewServerConfig
+} from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/configWatcher.js';
@@ -47,11 +46,19 @@ export async function start(
     );
 
     const compiler = await createCompiler(resolvedUserConfig);
-    const devServer = setupDevServer(compiler, resolvedUserConfig, logger);
+
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
     await devServer.listen();
-    setupFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+
+    createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
   } catch (error) {
-    logger.error(`Failed to start the server: ${error.message}`);
+    logger.error(
+      `Failed to start the server: ${error.message} \n ${error.stack}`
+    );
     process.exit(1);
   }
 }
@@ -95,60 +102,14 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     }
   }
 
-  function StaticFilesHandler(ctx: Context) {
-    const staticFilesServer = sirv(distDir, {
-      etag: true,
-      single: true
-    });
-    return new Promise<void>((resolve) => {
-      staticFilesServer(ctx.req, ctx.res, () => {
-        resolve();
-      });
-    });
-  }
-  const app = new Koa();
-
-  // support proxy
-  useProxy(resolvedUserConfig.server.proxy, app, logger);
-
-  app.use(compression());
-  app.use(async (ctx) => {
-    const requestPath = ctx.request.path;
-
-    if (requestPath.startsWith(output.publicPath)) {
-      const modifiedPath = requestPath.substring(output.publicPath.length);
-
-      if (modifiedPath.startsWith('/')) {
-        ctx.request.path = modifiedPath;
-      } else {
-        ctx.request.path = `/${modifiedPath}`;
-      }
-    }
-    await StaticFilesHandler(ctx);
-  });
-
-  app.listen(port, () => {
-    logger.info(colors.green(`preview server running at:\n`));
-    const interfaces = os.networkInterfaces();
-    Object.keys(interfaces).forEach((key) =>
-      (interfaces[key] || [])
-        .filter((details) => details.family === 'IPv4')
-        .map((detail) => {
-          return {
-            type: detail.address.includes('127.0.0.1')
-              ? 'Local:   '
-              : 'Network: ',
-            host: detail.address
-          };
-        })
-        .forEach(({ type, host }) => {
-          const url = `${'http'}://${host}:${colors.bold(port)}${
-            output.publicPath ?? ''
-          }`;
-          logger.info(`${colors.magenta('>')} ${type} ${colors.cyan(url)}`);
-        })
-    );
-  });
+  const previewOptions: UserPreviewServerConfig = {
+    distDir,
+    output: { path: output.path, publicPath: output.publicPath },
+    port,
+    host: inlineConfig.host ?? true
+  };
+  const devServer = new DevServer({ logger });
+  devServer.createPreviewServer(previewOptions);
 }
 
 export async function watch(
@@ -312,20 +273,24 @@ async function copyPublicDirectory(
         absPublicDirPath,
         resolvedUserConfig.compilation.output.path
       );
-      logger.info('Public directory resources copied successfully.');
+      logger.info(
+        `Public directory resources copied ${colors.bold(
+          colors.green('successfully')
+        )}.`
+      );
     }
   } catch (error) {
     logger.error(`Error copying public directory: ${error.message}`);
   }
 }
 
-export function setupDevServer(
+export async function createDevServer(
   compiler: Compiler,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
-  const devServer = new DevServer(compiler, logger);
-  devServer.createFarmServer(resolvedUserConfig.server);
+  const devServer = new DevServer({ compiler, logger });
+  await devServer.createDevServer(resolvedUserConfig.server);
 
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
     plugin.configureDevServer?.(devServer)
@@ -334,7 +299,7 @@ export function setupDevServer(
   return devServer;
 }
 
-export async function setupFileWatcher(
+export async function createFileWatcher(
   devServer: DevServer,
   resolvedUserConfig: ResolvedUserConfig,
   inlineConfig: FarmCLIOptions & UserConfig,
@@ -358,7 +323,7 @@ export async function setupFileWatcher(
 
       devServer.restart(async () => {
         farmWatcher?.close();
-        await devServer.closeFarmServer();
+        await devServer.close();
         __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
         await start(inlineConfig);
       });
