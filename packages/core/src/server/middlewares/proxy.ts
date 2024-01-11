@@ -39,10 +39,10 @@ export function useProxy(
 }
 
 export function proxy(devSeverContext: DevServer): Middleware {
-  const { app, config, logger } = devSeverContext._context;
-  if (!config?.proxy) {
+  const { config, logger } = devSeverContext;
+  if (!config.proxy) {
     return;
   }
   const options = config.proxy;
-  useProxy(options, app, logger);
+  useProxy(options, devSeverContext.app(), logger);
 }

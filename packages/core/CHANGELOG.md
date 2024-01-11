@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.15.1
+
+### Patch Changes
+
+- 295ec500: make vite plugins execute later than farm plugins
+
 ## 0.15.0
 
 ### Minor Changes

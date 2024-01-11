@@ -45,17 +45,6 @@ import sirv from 'sirv';
  * * compile the project in dev mode and serve the production
  * * HMR middleware and websocket supported
  */
-
-interface FarmServerContext {
-  config: UserServerConfig & UserPreviewServerConfig;
-  app: Koa;
-  server: Server;
-  compiler: Compiler;
-  logger: Logger;
-  serverOptions?: {
-    resolvedUrls?: ServerUrls;
-  };
-}
 interface ServerUrls {
   local: string[];
   network: string[];
@@ -77,7 +66,6 @@ interface ImplDevServer {
 export class DevServer implements ImplDevServer {
   private _app: Koa;
   private restart_promise: Promise<void> | null = null;
-  public _context: FarmServerContext;
   private compiler: Compiler | null;
   public logger: Logger;
 
@@ -87,6 +75,7 @@ export class DevServer implements ImplDevServer {
   server?: Server;
   publicDir?: string;
   publicPath?: string;
+  resolvedUrls?: ServerUrls;
 
   constructor({
     compiler = null,
@@ -156,15 +145,15 @@ export class DevServer implements ImplDevServer {
   }
 
   async startServer(serverOptions: UserServerConfig) {
-    const { port, host } = serverOptions;
+    const { port, hostname } = serverOptions;
     try {
       await new Promise((resolve) => {
-        this.server.listen(port, host as string, () => {
+        this.server.listen(port, hostname as string, () => {
           resolve(port);
         });
       });
     } catch (error) {
-      this.handleServerError(error, port, host);
+      this.handleServerError(error, port, hostname);
     }
   }
 
@@ -243,15 +232,6 @@ export class DevServer implements ImplDevServer {
     } else {
       this.server = http.createServer(this._app.callback());
     }
-
-    this._context = {
-      config: this.config,
-      app: this._app,
-      server: this.server,
-      compiler: this.compiler,
-      logger: this.logger,
-      serverOptions: {}
-    };
   }
 
   public async createPreviewServer(options: any) {
@@ -444,18 +424,14 @@ export class DevServer implements ImplDevServer {
     const publicPath = this.compiler
       ? this.compiler.config.config.output?.publicPath
       : this.config.output.publicPath;
-    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
+    this.resolvedUrls = await resolveServerUrls(
       this.server,
       this.config,
       publicPath
     );
 
-    if (this._context.serverOptions.resolvedUrls) {
-      printServerUrls(
-        this._context.serverOptions.resolvedUrls,
-        this.logger,
-        showPreviewFlag
-      );
+    if (this.resolvedUrls) {
+      printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);
     } else {
       throw new Error('cannot print server URLs with Server Error.');
     }

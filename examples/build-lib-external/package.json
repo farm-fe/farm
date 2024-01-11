@@ -1,7 +1,8 @@
 {
-  "name": "a-learn",
+  "name": "@farm-exmaples/a-learn",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "index.js",
   "type": "module",
   "scripts": {
