@@ -116,7 +116,7 @@ export function resources(
   if (!devSeverContext.config.writeToDisk) {
     middlewares.push(
       resourcesMiddleware(
-        devSeverContext._context.compiler,
+        devSeverContext.getCompiler(),
         devSeverContext.config,
         devSeverContext.publicPath
       )
