@@ -147,7 +147,7 @@ export class DevServer implements ImplDevServer {
 
     try {
       await new Promise((resolve) => {
-        this.server.listen(port, hostname.host, () => {
+        this.server.listen(port, hostname as string, () => {
           resolve(port);
         });
       });
@@ -332,6 +332,7 @@ export class DevServer implements ImplDevServer {
     });
   }
 
+
   private resolvedPreviewServerMiddleware(
     middlewares?: DevServerMiddleware[]
   ): void {
@@ -362,6 +363,7 @@ export class DevServer implements ImplDevServer {
     const publicPath = this.compiler
       ? this.compiler.config.config.output?.publicPath
       : this.config.output.publicPath;
+
     this.resolvedUrls = await resolveServerUrls(
       this.server,
       this.config,
