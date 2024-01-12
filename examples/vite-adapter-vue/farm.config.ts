@@ -9,7 +9,7 @@ import postcss from '@farmfe/js-plugin-postcss';
 
 export default defineConfig({
   compilation: {
-    persistentCache: false,
+    persistentCache: false
   },
   plugins: [
     '@farmfe/plugin-sass',
@@ -29,6 +29,13 @@ export default defineConfig({
             content: content.replace('filter: alpha(opacity=0);', '')
           };
         }
+      }
+    },
+    {
+      name: 'test',
+      priority: 0,
+      configureCompiler(compiler) {
+        console.log(compiler);
       }
     }
   ],
