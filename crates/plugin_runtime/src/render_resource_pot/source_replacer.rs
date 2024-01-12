@@ -128,12 +128,7 @@ impl SourceReplacer<'_> {
         let dep_module = self.module_graph.module(&id).unwrap();
 
         if dep_module.external {
-          if matches!(
-            self.module_system,
-            ModuleSystem::EsModule | ModuleSystem::Hybrid
-          ) {
-            self.external_modules.push(id.to_string());
-          }
+          self.external_modules.push(id.to_string());
 
           return SourceReplaceResult::NotReplaced;
         }

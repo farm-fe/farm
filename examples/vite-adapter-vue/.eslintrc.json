@@ -2,7 +2,7 @@
   "root": true,
   "extends": "../../.eslintrc.base.json",
   "parserOptions": {
-    "project": ["./examples/vue/tsconfig.json"]
+    "project": ["./examples/vite-adapter-vue/tsconfig.json"]
   },
   "rules": {}
 }

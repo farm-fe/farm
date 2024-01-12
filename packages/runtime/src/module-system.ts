@@ -106,6 +106,7 @@ export class ModuleSystem {
         const externalModule = nodeRequire(moduleId);
         return externalModule;
       }
+      this.pluginContainer.hookSerial('moduleNotFound', moduleId);
       // return a empty module if the module is not registered
       console.log(`[Farm] Module "${moduleId}" is not registered`);
       return {};
@@ -248,20 +249,29 @@ export class ModuleSystem {
   }
 
   // The public paths are injected during compile time
-  // This method can also be called during runtime to add new public paths
   setPublicPaths(publicPaths: string[]): void {
     this.publicPaths = publicPaths;
     this.resourceLoader.publicPaths = this.publicPaths;
   }
 
   // The plugins are injected during compile time.
-  // This method can also be called during runtime to add new plugins
   setPlugins(plugins: FarmRuntimePlugin[]): void {
     this.pluginContainer.plugins = plugins;
   }
+  // This method can be called during runtime to add new plugins
+  addPlugin(plugin: FarmRuntimePlugin): void {
+    if (this.pluginContainer.plugins.every((p) => p.name !== plugin.name)) {
+      this.pluginContainer.plugins.push(plugin);
+    }
+  }
+  // This method can be called during runtime to remove plugins
+  removePlugin(pluginName: string): void {
+    this.pluginContainer.plugins = this.pluginContainer.plugins.filter(
+      (p) => p.name !== pluginName
+    );
+  }
 
   // The external modules are injected during compile time.
-  // This method can also be called during runtime to add new plugins
   setExternalModules(externalModules: Record<string, any>): void {
     Object.assign(this.externalModules, externalModules || {});
   }
