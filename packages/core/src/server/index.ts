@@ -1,6 +1,7 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa from 'koa';
+import Koa, { Middleware } from 'koa';
+import compression from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
 import {
@@ -9,6 +10,7 @@ import {
   NormalizedServerConfig,
   normalizePublicDir,
   normalizePublicPath,
+  UserPreviewServerConfig,
   UserServerConfig
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
@@ -25,12 +27,14 @@ import {
   lazyCompilation,
   proxy,
   records,
-  resources
+  resources,
+  sirvMiddleware
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { resolveServerUrls } from '../utils/http.js';
+import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Server } from './type.js';
+import { promisify } from 'node:util';
 
 /**
  * Farm Dev Server, responsible for:
@@ -39,17 +43,6 @@ import { Server } from './type.js';
  * * compile the project in dev mode and serve the production
  * * HMR middleware and websocket supported
  */
-
-interface FarmServerContext {
-  config: UserServerConfig;
-  app: Koa;
-  server: Server;
-  compiler: Compiler;
-  logger: Logger;
-  serverOptions?: {
-    resolvedUrls?: ServerUrls;
-  };
-}
 interface ServerUrls {
   local: string[];
   network: string[];
@@ -61,7 +54,8 @@ type ErrorMap = {
 };
 
 interface ImplDevServer {
-  createFarmServer(options: UserServerConfig): void;
+  createDevServer(options: UserServerConfig): void;
+  createPreviewServer(options: UserServerConfig): void;
   listen(): Promise<void>;
   close(): Promise<void>;
   getCompiler(): Compiler;
@@ -70,17 +64,32 @@ interface ImplDevServer {
 export class DevServer implements ImplDevServer {
   private _app: Koa;
   private restart_promise: Promise<void> | null = null;
-  public _context: FarmServerContext;
+  private compiler: Compiler | null;
+  public logger: Logger;
 
   ws: WsServer;
-  config: NormalizedServerConfig;
+  config: NormalizedServerConfig & UserPreviewServerConfig;
   hmrEngine?: HmrEngine;
   server?: Server;
   publicDir?: string;
   publicPath?: string;
+  resolvedUrls?: ServerUrls;
 
-  constructor(private compiler: Compiler, public logger: Logger) {
-    this.publicDir = normalizePublicDir(compiler.config.config.root);
+  constructor({
+    compiler = null,
+    logger
+  }: {
+    compiler?: Compiler | null;
+    logger: Logger;
+  }) {
+    this.compiler = compiler;
+    this.logger = logger;
+
+    this.initializeApplication();
+
+    if (!compiler) return;
+
+    this.publicDir = normalizePublicDir(compiler?.config.config.root);
 
     this.publicPath =
       normalizePublicPath(
@@ -114,12 +123,12 @@ export class DevServer implements ImplDevServer {
     await this.startServer(this.config);
 
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      (await this.printServerUrls());
+      (await this.displayServerUrls());
 
     if (open) {
       const publicPath =
         this.publicPath === '/' ? this.publicPath : `/${this.publicPath}`;
-      const serverUrl = `${protocol}://${hostname}:${port}${publicPath}`;
+      const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
       openBrowser(serverUrl);
     }
   }
@@ -134,26 +143,23 @@ export class DevServer implements ImplDevServer {
   }
 
   async startServer(serverOptions: UserServerConfig) {
-    const { port, host } = serverOptions;
+    const { port, hostname } = serverOptions;
+    const listen = promisify(this.server.listen).bind(this.server);
     try {
-      await new Promise((resolve) => {
-        this.server.listen(port, host as string, () => {
-          resolve(port);
-        });
-      });
+      await listen(port, hostname.host);
     } catch (error) {
-      this.handleServerError(error, port, host);
+      this.handleServerError(error, port, hostname.host);
     }
   }
 
   handleServerError(
     error: Error & { code?: string },
     port: number,
-    ip: string | boolean
+    host: string | undefined
   ) {
     const errorMap: ErrorMap = {
       EACCES: `Permission denied to use port ${port}`,
-      EADDRNOTAVAIL: `The IP address ${ip} is not available on this machine.`
+      EADDRNOTAVAIL: `The IP address host: ${host} is not available on this machine.`
     };
 
     const errorMessage =
@@ -166,18 +172,6 @@ export class DevServer implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
-    await this.closeFarmServer();
-    process.exit(0);
-  }
-
-  async restart(promise: () => Promise<void>) {
-    if (!this.restart_promise) {
-      this.restart_promise = promise();
-    }
-    return this.restart_promise;
-  }
-
-  async closeFarmServer() {
     const promises = [];
 
     if (this.ws) {
@@ -189,24 +183,32 @@ export class DevServer implements ImplDevServer {
     }
 
     await Promise.all(promises);
+    process.exit(0);
   }
 
-  public createFarmServer(options: NormalizedServerConfig) {
-    const { https, host = 'localhost', middlewares = [] } = options;
-    const protocol = https ? 'https' : 'http';
-    let hostname;
-    if (typeof host !== 'boolean') {
-      hostname = host === '0.0.0.0' ? 'localhost' : host;
-    } else {
-      hostname = 'localhost';
+  async restart(promise: () => Promise<void>) {
+    if (!this.restart_promise) {
+      this.restart_promise = promise();
     }
+    return this.restart_promise;
+  }
+
+  public initializeApplication() {
+    this._app = new Koa();
+  }
+
+  private async initializeServer(options: NormalizedServerConfig) {
+    const { https, host } = options;
+    const protocol = https ? 'https' : 'http';
+
+    const hostname = await resolveHostname(host);
+
     this.config = {
       ...options,
       protocol,
       hostname
     };
 
-    this._app = new Koa();
     if (https) {
       this.server = http2.createSecureServer(
         {
@@ -218,10 +220,16 @@ export class DevServer implements ImplDevServer {
     } else {
       this.server = http.createServer(this._app.callback());
     }
+  }
 
-    this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
+  public createWebSocket() {
+    if (!this.server) {
+      throw new Error('Websocket requires a server.');
+    }
     this.ws = new WsServer(this.server, this.config, this.hmrEngine);
+  }
 
+  private invalidateVite() {
     // Note: path should be Farm's id, which is a relative path in dev mode,
     // but in vite, it's a url path like /xxx/xxx.js
     this.ws.on('vite:invalidate', ({ path, message }) => {
@@ -230,16 +238,32 @@ export class DevServer implements ImplDevServer {
       const parentFiles = this.compiler.getParentFiles(path);
       this.hmrEngine.hmrUpdate(parentFiles);
     });
+  }
 
-    this._context = {
-      config: this.config,
-      app: this._app,
-      server: this.server,
-      compiler: this.compiler,
-      logger: this.logger,
-      serverOptions: {}
-    };
-    this.resolvedFarmServerMiddleware(middlewares);
+  public async createPreviewServer(options: UserPreviewServerConfig) {
+    await this.initializeServer(options as NormalizedServerConfig);
+
+    this.applyPreviewServerMiddlewares(this.config.middlewares);
+
+    await this.startServer(this.config);
+
+    await this.displayServerUrls(true);
+  }
+
+  public async createDevServer(options: NormalizedServerConfig) {
+    if (!this.compiler) {
+      throw new Error('DevServer requires a compiler for development mode.');
+    }
+
+    await this.initializeServer(options);
+
+    this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
+
+    this.createWebSocket();
+
+    this.invalidateVite();
+
+    this.applyServerMiddlewares(options.middlewares);
   }
 
   static async resolvePortConflict(
@@ -297,19 +321,7 @@ export class DevServer implements ImplDevServer {
     this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  private resolvedFarmServerMiddleware(
-    middlewares?: DevServerMiddleware[]
-  ): void {
-    const internalMiddlewares = [
-      ...(middlewares || []),
-      headers,
-      lazyCompilation,
-      cors,
-      resources,
-      records,
-      proxy
-    ];
-
+  applyMiddlewares(internalMiddlewares?: DevServerMiddleware[]) {
     internalMiddlewares.forEach((middleware) => {
       const middlewareImpl = middleware(this);
 
@@ -325,14 +337,47 @@ export class DevServer implements ImplDevServer {
     });
   }
 
-  private async printServerUrls() {
-    this._context.serverOptions.resolvedUrls = await resolveServerUrls(
+  private applyPreviewServerMiddlewares(
+    middlewares?: DevServerMiddleware[]
+  ): void {
+    const internalMiddlewares = [
+      ...(middlewares || []),
+      compression,
+      proxy,
+      sirvMiddleware
+    ];
+    this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
+  }
+
+  private applyServerMiddlewares(
+    middlewares?: (DevServerMiddleware | Middleware)[]
+  ): void {
+    const internalMiddlewares = [
+      ...(middlewares || []),
+      headers,
+      lazyCompilation,
+      cors,
+      resources,
+      records,
+      proxy
+    ];
+
+    this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
+  }
+
+  private async displayServerUrls(showPreviewFlag = false) {
+    const publicPath = this.compiler
+      ? this.compiler.config.config.output?.publicPath
+      : this.config.output.publicPath;
+
+    this.resolvedUrls = await resolveServerUrls(
       this.server,
       this.config,
-      this.compiler.config.config.output?.publicPath
+      publicPath
     );
-    if (this._context.serverOptions.resolvedUrls) {
-      printServerUrls(this._context.serverOptions.resolvedUrls, this.logger);
+
+    if (this.resolvedUrls) {
+      printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);
     } else {
       throw new Error('cannot print server URLs with Server Error.');
     }

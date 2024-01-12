@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-dts",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "",
   "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",
@@ -19,7 +19,6 @@
     "start": "farm build -w",
     "dev": "farm build -w",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
-    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

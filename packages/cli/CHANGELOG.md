@@ -1,5 +1,15 @@
 # @farmfe/cli
 
+## 0.6.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
+### Patch Changes
+
+- e4c9f81e: optimize cli code
+
 ## 0.5.11
 
 ### Patch Changes

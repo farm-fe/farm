@@ -5,7 +5,7 @@ import {
 } from 'koa-proxies';
 import type { DevServer } from '../index.js';
 import { UserConfig } from '../../config/types.js';
-import Application, { Middleware } from 'koa';
+import Application, { Middleware, Context, Next } from 'koa';
 import { Logger } from '../../utils/logger.js';
 
 export type ProxiesOptions = IKoaProxiesOptions;
@@ -21,28 +21,35 @@ export function useProxy(
     if (typeof opts === 'string') {
       opts = { target: opts, changeOrigin: true } as IBaseKoaProxiesOptions;
     }
-    app.on('error', (err, ctx) => {
-      // proxy watcher error
-      if (ctx.req.oldPath === path) {
-        logger.error(`http proxy error:\n ${err.stack}`);
+    const proxyMiddleware = koaProxy(
+      path[0] === '^' ? new RegExp(path) : path,
+      opts
+    );
+
+    const errorHandlerMiddleware = async (ctx: Context, next: Next) => {
+      try {
+        await proxyMiddleware(ctx, next);
+      } catch (err) {
+        logger.error(`Error in proxy for path ${path}: \n ${err.stack}`);
       }
-    });
+    };
 
     try {
       if (path.length > 0) {
-        app.use(koaProxy(path[0] === '^' ? new RegExp(path) : path, opts));
+        app.use(errorHandlerMiddleware);
       }
     } catch (err) {
-      logger.error(`Error setting proxy for path ${path}: ${err.message}`);
+      logger.error(`Error setting proxy for path ${path}: \n ${err.stack}`);
     }
   }
 }
 
 export function proxy(devSeverContext: DevServer): Middleware {
-  const { app, config, logger } = devSeverContext._context;
+  const { config, logger } = devSeverContext;
   if (!config.proxy) {
     return;
   }
+
   const options = config.proxy;
-  useProxy(options, app, logger);
+  useProxy(options, devSeverContext.app(), logger);
 }

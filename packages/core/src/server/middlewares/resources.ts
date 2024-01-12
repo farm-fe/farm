@@ -31,7 +31,7 @@ export function resourcesMiddleware(
     }
 
     // Fallback to index.html if the resource is not found
-    let resourcePath = ctx.path.slice(1) || 'index.html'; // remove leading slash
+    let resourcePath = ctx.path?.slice(1) || 'index.html'; // remove leading slash
 
     // output_files
     if (resourcePath === '_output_files') {
@@ -116,7 +116,7 @@ export function resources(
   if (!devSeverContext.config.writeToDisk) {
     middlewares.push(
       resourcesMiddleware(
-        devSeverContext._context.compiler,
+        devSeverContext.getCompiler(),
         devSeverContext.config,
         devSeverContext.publicPath
       )

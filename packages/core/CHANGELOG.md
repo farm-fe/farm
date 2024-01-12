@@ -1,5 +1,41 @@
 # @farmfe/core
 
+## 0.15.3
+
+### Patch Changes
+
+- 18616c7d: Fix dev server random 503
+
+## 0.15.2
+
+### Patch Changes
+
+- 09992927: Fix dev server random 503
+
+## 0.15.1
+
+### Patch Changes
+
+- 295ec500: make vite plugins execute later than farm plugins
+
+## 0.15.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
+### Patch Changes
+
+- e4c9f81e: Break change: reset config and configResolved hooks hook functionality and structure
+- e91a088a: resolve condition orderly
+- 78c19574: support renderResourcePot/finalizeResources/augmentResourceHash/renderStart js hook
+- 8846d063: Normalize js plugin hooks name
+- Updated dependencies [65c742c4]
+- Updated dependencies [24571102]
+  - @farmfe/runtime@0.9.0
+  - @farmfe/runtime-plugin-hmr@3.4.0
+  - @farmfe/runtime-plugin-import-meta@0.1.0
+
 ## 0.14.18
 
 ### Patch Changes

@@ -1,7 +1,8 @@
 {
-  "name": "resolve-module-graph",
+  "name": "@farm-examples/resolve-module-graph",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "index.js",
   "type": "module",
   "scripts": {

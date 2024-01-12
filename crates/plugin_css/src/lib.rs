@@ -229,7 +229,10 @@ impl Plugin for FarmPluginCss {
         );
         let mut css_stylesheet = parse_css_stylesheet(
           &css_modules_module_id.to_string(),
-          Arc::new(param.content.clone()),
+          Arc::new(
+            // replace --: '' to --farm-empty: ''
+            param.content.replace("--:", "--farm-empty:"),
+          ),
         )?;
 
         // js code for css modules
@@ -360,7 +363,11 @@ impl Plugin for FarmPluginCss {
           .remove(&param.resolved_path)
           .unwrap_or_else(|| panic!("ast not found {:?}", param.resolved_path))
       } else {
-        parse_css_stylesheet(&param.module_id.to_string(), param.content.clone())?
+        parse_css_stylesheet(
+          &param.module_id.to_string(),
+          // replace --: '' to --farm-empty: ''
+          Arc::new(param.content.replace("--:", "--farm-empty:")),
+        )?
       };
 
       let meta = ModuleMetaData::Css(CssModuleMetaData {
@@ -577,7 +584,7 @@ impl Plugin for FarmPluginCss {
         emitted: false,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        info: None
+        info: None,
       };
       let mut source_map = None;
 
@@ -604,7 +611,7 @@ impl Plugin for FarmPluginCss {
             emitted: false,
             resource_type,
             origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-            info: None
+            info: None,
           });
         }
       }

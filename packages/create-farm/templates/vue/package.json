@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "vue": "^3.3.4",
+    "vue": "^3.4.0",
     "core-js": "^3.30.1"
   },
   "devDependencies": {
-    "@farmfe/cli": "^0.5.11",
-    "@farmfe/core": "^0.14.18",
+    "@farmfe/cli": "^0.6.0",
+    "@farmfe/core": "^0.15.3",
     "@vitejs/plugin-vue": "^4.5.0"
   },
   "scripts": {

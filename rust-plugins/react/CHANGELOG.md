@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.5.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
 ## 0.4.5
 
 ### Patch Changes

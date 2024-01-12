@@ -16,6 +16,12 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     }
   });
 
+  let sourcemap = true;
+
+  if (config.compilation?.sourcemap !== undefined) {
+    sourcemap = Boolean(config.compilation?.sourcemap);
+  }
+
   const viteConfig: ViteUserConfig = {
     root: config.root,
     base: config.compilation?.output?.publicPath ?? '/',
@@ -34,7 +40,9 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     plugins: vitePlugins,
     server: {
-      hmr: Boolean(config.server?.hmr),
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore ignore error
+      hmr: config.server?.hmr,
       port: config.server?.port,
       host: config.server?.host,
       strictPort: config.server?.strictPort,
@@ -51,10 +59,17 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     build: {
       outDir: config.compilation?.output?.path,
-      sourcemap: Boolean(config.compilation?.sourcemap),
+      sourcemap,
       minify: config.compilation?.minify,
       cssMinify: config.compilation?.minify,
-      ssr: config.compilation?.output?.targetEnv === 'node'
+      ssr: config.compilation?.output?.targetEnv === 'node',
+      rollupOptions: {
+        output: {
+          assetFileNames: config.compilation?.output?.assetsFilename,
+          entryFileNames: config.compilation?.output?.entryFilename,
+          chunkFileNames: config.compilation?.output?.filename
+        }
+      }
       // other options are not supported in farm
     }
   };
@@ -212,7 +227,8 @@ export function proxyViteConfig(
             'minify',
             'cssMinify',
             'ssr',
-            'watch'
+            'watch',
+            'rollupOptions'
           ];
 
           return new Proxy(target.build || {}, {
@@ -357,11 +373,37 @@ export function viteConfigToFarmConfig(
       farmConfig.compilation.output = {};
     }
     farmConfig.compilation.output.path = config.build.outDir;
-    farmConfig.compilation.sourcemap = Boolean(config.build.sourcemap);
-    farmConfig.compilation.minify = Boolean(config.build.minify);
 
-    if (config.build.ssr !== undefined) {
+    if (
+      config.build?.sourcemap !== undefined &&
+      origFarmConfig.compilation?.sourcemap === undefined
+    ) {
+      farmConfig.compilation.sourcemap = Boolean(config.build.sourcemap);
+    }
+
+    if (config.build?.minify !== undefined) {
+      farmConfig.compilation.minify = Boolean(config.build.minify);
+    }
+
+    if (
+      config.build.ssr !== undefined &&
+      origFarmConfig.compilation?.lazyCompilation === undefined
+    ) {
       farmConfig.compilation.lazyCompilation = !config.build.ssr;
+    }
+
+    if (config.build.rollupOptions?.output !== undefined) {
+      if (!Array.isArray(config.build.rollupOptions.output)) {
+        const keys = ['assetFileNames', 'entryFilename', 'filename'];
+
+        for (const k of keys) {
+          /* eslint-disable @typescript-eslint/ban-ts-comment */
+          // @ts-ignore type is correct
+          farmConfig.compilation.output[k] =
+            // @ts-ignore type is correct
+            config.build.rollupOptions.output[k];
+        }
+      }
     }
   }
 

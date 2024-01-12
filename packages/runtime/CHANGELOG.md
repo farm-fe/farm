@@ -1,5 +1,15 @@
 # @farmfe/runtime
 
+## 0.9.0
+
+### Minor Changes
+
+- 24571102: Bump version
+
+### Patch Changes
+
+- 65c742c4: update template script && update runtime log
+
 ## 0.8.4
 
 ### Patch Changes

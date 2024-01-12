@@ -21,6 +21,13 @@ export interface CompilationContextEmitFileParams {
   resourceType: 'runtime' | 'js' | 'css' | 'html' | string;
 }
 
+export interface ViteModule {
+  url: string;
+  id: string;
+  file: string;
+  type: 'js' | 'css';
+}
+
 export interface CompilationContext {
   resolve(
     param: PluginResolveHookParam,
@@ -34,18 +41,9 @@ export interface CompilationContext {
   error(message: string): void;
   sourceMapEnabled(id: string): boolean;
 
-  viteGetModulesByFile(file: string): {
-    url: string;
-    id: string;
-    file: string;
-    type: 'js' | 'css';
-  }[];
-  viteGetImporters(file: string): {
-    url: string;
-    id: string;
-    file: string;
-    type: 'js' | 'css';
-  }[];
+  viteGetModulesByFile(file: string): ViteModule[];
+  viteGetModuleById(id: string): ViteModule;
+  viteGetImporters(file: string): ViteModule[];
 }
 
 type ModuleId = string;
@@ -196,7 +194,7 @@ export interface JsPlugin {
   };
 
   writeResources?: {
-    executor: Callback<FinalizeResourcesHookParams, void | Promise<void>>;
+    executor: (param: FinalizeResourcesHookParams) => void | Promise<void>;
   };
 
   pluginCacheLoaded?: {

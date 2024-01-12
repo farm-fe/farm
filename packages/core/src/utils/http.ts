@@ -1,3 +1,12 @@
+/**
+ * The following is modified based on source found in
+ * https://github.com/vitejs/vite
+ *
+ * MIT Licensed
+ * Copyright (c) 2019-present, (Evan) You and Vite contributors
+ * https://github.com/vitejs/vite/blob/main/LICENSE
+ */
+
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
 import { UserServerConfig } from '../index.js';
@@ -84,15 +93,13 @@ export async function resolveHostname(
 ): Promise<Hostname> {
   let host: string | undefined;
   if (optionsHost === undefined || optionsHost === false) {
-    // Use a secure default
     host = 'localhost';
   } else if (optionsHost === true) {
-    host = undefined; // undefined typically means 0.0.0.0 or :: (listen on all IPs)
+    host = undefined;
   } else {
     host = optionsHost;
   }
 
-  // Set host name to localhost when possible
   const name =
     host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
 

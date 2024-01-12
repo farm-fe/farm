@@ -2,7 +2,7 @@ import { Middleware } from 'koa';
 import { DevServer } from '../index.js';
 
 export function headers(devSeverContext: DevServer): Middleware {
-  const { config } = devSeverContext._context;
+  const { config } = devSeverContext;
   if (!config.headers) return;
 
   return async (ctx, next) => {

@@ -1,8 +1,9 @@
 {
-  "name": "server-proxy",
+  "name": "@farm-examples/server-proxy",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "private": true,
   "keywords": [],
   "author": "",
   "license": "ISC",
