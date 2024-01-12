@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.1
+
+### Patch Changes
+
+- 1750612c: bump version
+
 ## 1.5.0
 
 ### Minor Changes
