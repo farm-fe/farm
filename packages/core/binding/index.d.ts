@@ -19,9 +19,9 @@ export type ResolveKind =
   | 'linkHref'
   | string;
 
+
 export * from './binding.js';
 import { Compiler } from './binding.js';
-import type { WatchOptions } from 'chokidar';
 
 export default Compiler;
 export const bindingPath: string;
@@ -145,16 +145,16 @@ export interface Config {
     script?: {
       // specify target es version
       target?:
-        | 'es3'
-        | 'es5'
-        | 'es2015'
-        | 'es2016'
-        | 'es2017'
-        | 'es2018'
-        | 'es2019'
-        | 'es2020'
-        | 'es2021'
-        | 'es2022';
+      | 'es3'
+      | 'es5'
+      | 'es2015'
+      | 'es2016'
+      | 'es2017'
+      | 'es2018'
+      | 'es2019'
+      | 'es2020'
+      | 'es2021'
+      | 'es2022';
       // config swc parser
       parser?: {
         esConfig?: {
@@ -244,28 +244,33 @@ export interface Config {
     minify?: boolean;
     record?: boolean;
     presetEnv?:
-      | boolean
-      | {
-          include?: string[];
-          exclude?: string[];
-          // TODO using swc's config
-          options?: any;
-          assumptions?: any;
-        };
+    | boolean
+    | {
+      include?: string[];
+      exclude?: string[];
+      // TODO using swc's config
+      options?: any;
+      assumptions?: any;
+    };
     persistentCache?:
-      | boolean
-      | {
-          namespace?: string;
-          cacheDir?: string;
-          buildDependencies?: string[];
-          moduleCacheKeyStrategy?: {
-            timestamp?: boolean;
-            hash?: boolean;
-          };
-          envs?: Record<string, String>;
-        };
+    | boolean
+    | {
+      namespace?: string;
+      cacheDir?: string;
+      buildDependencies?: string[];
+      moduleCacheKeyStrategy?: {
+        timestamp?: boolean;
+        hash?: boolean;
+      };
+      envs?: Record<string, String>;
+    };
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]
   rustPlugins?: [string, string][];
+}
+
+export interface WatcherOptions {
+  ignored?: string[];
+  awaitWriteFinish?: number;
 }

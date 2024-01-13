@@ -1,4 +1,3 @@
-// import { watch } from 'chokidar';
 import { DevServer } from '../../index.js';
 import WsServer from '../../server/ws.js';
 import { CompilationContext, ViteModule } from '../type.js';
