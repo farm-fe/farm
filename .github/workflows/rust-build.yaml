@@ -93,7 +93,7 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: npm install -g pnpm && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@8.11.0 && pnpm i --frozen-lockfile
       - run: rustup target add ${{ matrix.settings.target }}
         if: ${{ matrix.settings.target }}
       - uses: arduino/setup-protoc@v1
