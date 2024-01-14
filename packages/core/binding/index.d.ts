@@ -138,7 +138,7 @@ export interface Config {
       swcHelpersPath?: string;
       namespace?: string;
     };
-    watch?: boolean | WatcherOptions;
+    watch?: boolean | watchOptions;
     assets?: {
       include?: string[];
     };
@@ -270,7 +270,7 @@ export interface Config {
   rustPlugins?: [string, string][];
 }
 
-export interface WatcherOptions {
+export interface watchOptions {
   ignored?: string[];
   awaitWriteFinish?: number;
 }
