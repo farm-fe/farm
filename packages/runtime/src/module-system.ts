@@ -98,7 +98,8 @@ export class ModuleSystem {
     const initializer = this.modules[moduleId];
 
     if (!initializer) {
-      if (this.externalModules[moduleId]) {
+      // try external modules if target Env is browser
+      if (this.targetEnv === 'browser' && this.externalModules[moduleId]) {
         return this.externalModules[moduleId];
       }
       // try node require if target Env is node

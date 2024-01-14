@@ -70,8 +70,8 @@ export class FileWatcher implements ImplFileWatcher {
         this._logger.error(error);
       }
     };
-
-    if (process.platform === 'win32') {
+    // debounce the path change event to avoid duplicate compilation for windows and macos
+    if (process.platform === 'win32' || process.platform === 'darwin') {
       handlePathChange = debounce(handlePathChange, this._awaitWriteFinish);
     }
 
