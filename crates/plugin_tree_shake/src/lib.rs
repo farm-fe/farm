@@ -192,8 +192,10 @@ impl Plugin for FarmPluginTreeShake {
 
       // add all dynamic imported dependencies as [UsedExports::All]
       for (dep, edge) in module_graph.dependencies(&tree_shake_module_id) {
-        if edge.is_dynamic() {
-          let tree_shake_module = tree_shake_modules_map.get_mut(&dep).unwrap();
+        if edge.is_dynamic() && tree_shake_modules_map.contains_key(&dep) {
+          let tree_shake_module = tree_shake_modules_map.get_mut(&dep).unwrap_or_else(|| {
+            panic!("dynamic imported module not found: {:?}", dep);
+          });
           tree_shake_module.side_effects = true;
           tree_shake_module.used_exports = UsedExports::All;
         }

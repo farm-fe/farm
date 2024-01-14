@@ -147,13 +147,26 @@ impl SourceReplacer<'_> {
         expr: box Expr::Lit(Lit::Str(Str { value, .. })),
       } = &mut call_expr.args[0]
       {
+        let source = value.to_string();
+
+        let id = self
+          .module_graph
+          .get_dep_by_source(&self.module_id, &source);
+        // only execute script module
+        let dep_module = self.module_graph.module(&id).unwrap();
+
+        if dep_module.external {
+          self.external_modules.push(id.to_string());
+
+          return SourceReplaceResult::NotReplaced;
+        }
+
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
           sym: DYNAMIC_REQUIRE.into(),
           optional: false,
         })));
 
-        let source = value.to_string();
         let id = self
           .module_graph
           .get_dep_by_source(&self.module_id, &source);
