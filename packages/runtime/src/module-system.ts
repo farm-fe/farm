@@ -98,8 +98,9 @@ export class ModuleSystem {
     const initializer = this.modules[moduleId];
 
     if (!initializer) {
-      // try external modules if target Env is browser
-      if (this.targetEnv === 'browser' && this.externalModules[moduleId]) {
+      // TODO: fix `const assert = require('assert');` when assert is external. This leads to `assert is not a function` error caused by default export different from esm and cjs
+      // TODO: we may need to add `@swc/helpers/_/_interop_require_default` for external modules, replace `const assert = require('assert');` to `const assert = _interop_require_default(require('assert'));`
+      if (this.externalModules[moduleId]) {
         return this.externalModules[moduleId];
       }
       // try node require if target Env is node
