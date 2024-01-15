@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.9.1
+
+### Patch Changes
+
+- 736e6620: fix #878
+
 ## 0.9.0
 
 ### Minor Changes
