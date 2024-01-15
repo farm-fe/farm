@@ -105,6 +105,13 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
+    let base_dir = if base_dir.is_absolute() {
+      base_dir
+    } else {
+      // using the root as the base dir
+      PathBuf::from(&context.config.root)
+    };
+
     let cache_key = ResolveCacheKey {
       source: source.to_string(),
       base_dir: base_dir.to_string_lossy().to_string(),

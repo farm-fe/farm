@@ -393,6 +393,29 @@ impl Plugin for FarmPluginRuntime {
         ));
 
         external_modules_str = Some(prepend_str);
+      } else if !external_modules.is_empty()
+        && context.config.output.target_env == TargetEnv::Browser
+      {
+        let prepend_str = format!(
+          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
+          external_modules
+            .into_iter()
+            .map(|source| {
+              // TODO: make window['{source}'] configurable.
+              let source_obj = format!(
+                "(globalThis || window || self || {{}})['{}'] || {{}}",
+                source
+              );
+              if context.config.output.format == ModuleFormat::EsModule {
+                format!("{source:?}: {{ ...({source_obj}), __esModule: true }}")
+              } else {
+                format!("{source:?}: {source_obj}")
+              }
+            })
+            .collect::<Vec<_>>()
+            .join(",")
+        );
+        external_modules_str = Some(prepend_str);
       }
 
       let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node

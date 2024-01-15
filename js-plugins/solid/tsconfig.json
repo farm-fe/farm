@@ -3,6 +3,6 @@
   "compilerOptions": {
     "outDir": "dist"
   },
-  "include": ["src"],
+  "include": ["src", "farm.config.mjs"],
   "exclude": ["node_modules"]
 }

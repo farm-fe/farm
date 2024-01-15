@@ -4,16 +4,32 @@ interface RawLazyCompileResult {
   dynamicResourcesMap: Record<string, any>;
 }
 
-interface LazyCompileResult {
-  modules: Record<
-    string,
-    (module: any, exports: any, require: (id: string) => any) => void
-  >;
-}
 
 const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
 const moduleId = `MODULE_ID`;
 const modulePath = `MODULE_PATH`;
+
+const debouncePageReload = function(ms: number) {
+  let timer;
+
+  return function () {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (window && window.location && window.location.reload) {
+        window.location.reload();
+      }
+    }, ms);
+  };
+};
+const pageReload = debouncePageReload(500);
+
+const lazyCompilationRuntimePlugin = {
+  name: 'farm-lazy-compilation',
+  moduleNotFound: () => {
+    // reload the page if the module is not found
+    pageReload();
+  }
+};
 
 if (FarmModuleSystem.lazyCompiling === undefined) {
   FarmModuleSystem.lazyCompiling = false;
@@ -97,8 +113,11 @@ if (compilingModules.has(modulePath)) {
           compileModules(FarmModuleSystem.lazyCompilingQueue.map((m) => m[0]));
         }
 
+        // fix #878
+        FarmModuleSystem.addPlugin(lazyCompilationRuntimePlugin);
         // The lazy compiled module should not contains side effects, as it may be executed twice
         const exports = FarmModuleSystem.require(moduleId);
+        FarmModuleSystem.removePlugin(lazyCompilationRuntimePlugin.name);
 
         return exports;
       });

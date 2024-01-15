@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
+import { VueRouterAutoImports } from 'unplugin-vue-router';
+import VueRouter from 'unplugin-vue-router/vite'
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
@@ -33,9 +35,13 @@ export default defineConfig({
     }
   ],
   vitePlugins: [
+    VueRouter(),
     vue(),
     AutoImport({
-      resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
+      imports: [
+        VueRouterAutoImports
+      ]
     }),
     Components({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })]

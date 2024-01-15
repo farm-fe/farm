@@ -2,9 +2,8 @@ import { builtinModules } from 'module';
 
 const format = process.env.FARM_FORMAT || 'cjs';
 const ext = format === 'esm' ? 'mjs' : 'cjs';
-console.log('format', format, ext);
 
-export function createFarmJsPluginBuildConfig(plugins) {
+export function createFarmJsPluginBuildConfig(plugins, options = {}) {
   return {
     compilation: {
       input: {
@@ -18,7 +17,8 @@ export function createFarmJsPluginBuildConfig(plugins) {
       },
       external: [
         ...builtinModules.map((m) => `^${m}$`),
-        ...builtinModules.map((m) => `^node:${m}$`)
+        ...builtinModules.map((m) => `^node:${m}$`),
+        ...(options.external || [])
       ],
       partialBundling: {
         enforceResources: [
@@ -40,7 +40,6 @@ export function createFarmJsPluginBuildConfig(plugins) {
     server: {
       hmr: false
     },
-    plugins,
+    plugins
   };
-
 }

@@ -12,6 +12,8 @@ export interface FarmRuntimePlugin {
   moduleInitialized?: (module: Module) => void | Promise<void>;
   // invoked after module caches are read, return true to skip cache reading
   readModuleCache?: (module: Module) => boolean | Promise<boolean>;
+  // called when module is not found
+  moduleNotFound?: (moduleId: string) => void | Promise<void>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

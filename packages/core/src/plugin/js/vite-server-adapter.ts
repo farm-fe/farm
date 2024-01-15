@@ -92,17 +92,19 @@ export class ViteModuleGraphAdapter {
   getModuleById(id: string): ViteModule {
     const raw = this.context.viteGetModuleById(id);
 
-    return proxyViteModuleNode(raw, this.pluginName, this.context);
+    if (raw) {
+      return proxyViteModuleNode(raw, this.pluginName, this.context);
+    }
   }
 
   async getModuleByUrl(url: string): Promise<ViteModule | undefined> {
     if (url.startsWith('/')) {
       url = url.slice(1);
-      return proxyViteModuleNode(
-        this.context.viteGetModuleById(url),
-        this.pluginName,
-        this.context
-      );
+      const raw = this.context.viteGetModuleById(url);
+
+      if (raw) {
+        return proxyViteModuleNode(raw, this.pluginName, this.context);
+      }
     }
   }
 

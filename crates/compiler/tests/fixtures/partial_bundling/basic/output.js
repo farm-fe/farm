@@ -50,7 +50,7 @@
 },});
 
 //index.js:
- import "./__farm_runtime.8774b52b.mjs";import "./index_2faa.js";import "./index_64d2.js";(function (modules) {
+ import "./__farm_runtime.8774b52b.mjs";import "./index_2faa.js";import "./index_64d2.js";(globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.setExternalModules({ "module": { ...((globalThis || window || self || {})['module'] || {}), __esModule: true } });(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_dcdc.js';
                 (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);

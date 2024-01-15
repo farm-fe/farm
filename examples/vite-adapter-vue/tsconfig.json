@@ -14,5 +14,5 @@
     "noEmit": true,
     "types": ["element-plus/global"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "farm.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "farm.config.ts", "**/*.d.ts"],
 }
