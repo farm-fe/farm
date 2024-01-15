@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "0.15.3",
+  "version": "0.15.4",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -81,7 +81,7 @@
     "type-check": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@farmfe/runtime": "workspace:^0.9.0",
+    "@farmfe/runtime": "workspace:^0.9.1",
     "@farmfe/runtime-plugin-hmr": "workspace:^3.4.0",
     "@farmfe/runtime-plugin-import-meta": "workspace:*",
     "@koa/cors": "^4.0.0",

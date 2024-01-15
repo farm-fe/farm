@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.15.4
+
+### Patch Changes
+
+- 736e6620: fix #878
+- Updated dependencies [736e6620]
+  - @farmfe/runtime@0.9.1
+
 ## 0.15.3
 
 ### Patch Changes

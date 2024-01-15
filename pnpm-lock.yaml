@@ -236,7 +236,7 @@ importers:
         version: 18.2.14
       postcss-pxtorem:
         specifier: ^6.0.0
-        version: 6.0.0(postcss@8.4.31)
+        version: 6.0.0(postcss@8.4.32)
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
@@ -1358,7 +1358,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.9.0
+        specifier: workspace:^0.9.1
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:^3.4.0
