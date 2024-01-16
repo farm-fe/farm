@@ -198,6 +198,10 @@ export interface JsPlugin {
     >;
   };
 
+  transformHtml?: {
+    executor: Callback<{ htmlResource: Resource }, Resource>;
+  };
+
   writeResources?: {
     executor: (param: FinalizeResourcesHookParams) => void | Promise<void>;
   };

@@ -131,16 +131,6 @@ export class Compiler {
       ? configOutputPath
       : path.join(this.config.config.root, configOutputPath);
 
-    for (const jsPlugin of this.config.jsPlugins ?? []) {
-      (jsPlugin as JsPlugin).writeResources?.executor?.({
-        resourcesMap: this._bindingCompiler.resourcesMap() as Record<
-          string,
-          Resource
-        >,
-        config: this.config.config
-      });
-    }
-
     for (const [name, resource] of Object.entries(resources)) {
       if (process.env.NODE_ENV === 'test') {
         console.log('Writing', name, 'to disk');
@@ -153,6 +143,20 @@ export class Compiler {
       }
 
       writeFileSync(filePath, resource);
+    }
+
+    this.callWriteResourcesHook();
+  }
+
+  callWriteResourcesHook() {
+    for (const jsPlugin of this.config.jsPlugins ?? []) {
+      (jsPlugin as JsPlugin).writeResources?.executor?.({
+        resourcesMap: this._bindingCompiler.resourcesMap() as Record<
+          string,
+          Resource
+        >,
+        config: this.config.config
+      });
     }
   }
 

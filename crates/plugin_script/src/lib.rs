@@ -1,11 +1,7 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -19,7 +15,6 @@ use farmfe_core::{
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
-  rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,

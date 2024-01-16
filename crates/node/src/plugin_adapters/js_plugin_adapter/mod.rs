@@ -10,17 +10,25 @@ use farmfe_core::{
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
+  resource::ResourceType,
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
 use self::hooks::{
-  augment_resource_hash::JsPluginAugmentResourceHashHook, build_end::JsPluginBuildEndHook,
-  build_start::JsPluginBuildStartHook, finalize_resources::JsPluginFinalizeResourcesHook,
-  finish::JsPluginFinishHook, load::JsPluginLoadHook,
+  augment_resource_hash::JsPluginAugmentResourceHashHook,
+  build_end::JsPluginBuildEndHook,
+  build_start::JsPluginBuildStartHook,
+  finalize_resources::JsPluginFinalizeResourcesHook,
+  finish::JsPluginFinishHook,
+  load::JsPluginLoadHook,
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
-  render_resource_pot::JsPluginRenderResourcePotHook, render_start::JsPluginRenderStartHook,
-  resolve::JsPluginResolveHook, transform::JsPluginTransformHook,
-  update_modules::JsPluginUpdateModulesHook, write_plugin_cache::JsPluginWritePluginCacheHook,
+  render_resource_pot::JsPluginRenderResourcePotHook,
+  render_start::JsPluginRenderStartHook,
+  resolve::JsPluginResolveHook,
+  transform::JsPluginTransformHook,
+  transform_html::{JsPluginTransformHtmlHook, JsPluginTransformHtmlHookParams},
+  update_modules::JsPluginUpdateModulesHook,
+  write_plugin_cache::JsPluginWritePluginCacheHook,
 };
 
 pub mod context;
@@ -44,6 +52,7 @@ pub struct JsPluginAdapter {
   js_render_start_hook: Option<JsPluginRenderStartHook>,
   js_augment_resource_hash_hook: Option<JsPluginAugmentResourceHashHook>,
   js_finalize_resources_hook: Option<JsPluginFinalizeResourcesHook>,
+  js_transform_html_hook: Option<JsPluginTransformHtmlHook>,
 }
 
 impl JsPluginAdapter {
@@ -75,6 +84,8 @@ impl JsPluginAdapter {
       get_named_property::<JsObject>(env, &js_plugin_object, "augmentResourceHash").ok();
     let finalize_resources_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "finalizeResources").ok();
+    let transform_html_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "transformHtml").ok();
 
     Ok(Self {
       name,
@@ -98,6 +109,8 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginAugmentResourceHashHook::new(env, obj)),
       js_finalize_resources_hook: finalize_resources_obj
         .map(|obj| JsPluginFinalizeResourcesHook::new(env, obj)),
+      js_transform_html_hook: transform_html_obj
+        .map(|obj| JsPluginTransformHtmlHook::new(env, obj)),
     })
   }
 
@@ -286,13 +299,27 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<()>> {
     if let Some(js_finalize_resources_hook) = &self.js_finalize_resources_hook {
       if let Some(result) = js_finalize_resources_hook.call(params.into(), context.clone())? {
-        *(params.resources_map) = result;
+        params.resources_map.clear();
+        params.resources_map.extend(result);
       };
-
-      Ok(Some(()))
-    } else {
-      Ok(None)
     }
+
+    if let Some(js_transform_html_hook) = &self.js_transform_html_hook {
+      for (_, v) in params.resources_map.iter_mut() {
+        if matches!(v.resource_type, ResourceType::Html) {
+          let params = JsPluginTransformHtmlHookParams {
+            html_resource: v.clone(),
+          };
+          let transformed_html_resource = js_transform_html_hook.call(params, context.clone())?;
+
+          if let Some(transformed_html_resource) = transformed_html_resource {
+            v.bytes = transformed_html_resource.bytes;
+          }
+        }
+      }
+    }
+
+    Ok(Some(()))
   }
 
   fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {

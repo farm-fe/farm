@@ -8,8 +8,9 @@ use farmfe_core::{
   error::CompilationError,
   module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult, PluginFinalizeResourcesHookParams,
+    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeResourcesHookParams,
+    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
   },
   relative_path::RelativePath,
   resource::{
@@ -36,10 +37,6 @@ pub struct FarmPluginHtml {}
 impl Plugin for FarmPluginHtml {
   fn name(&self) -> &str {
     "FarmPluginHtml"
-  }
-
-  fn priority(&self) -> i32 {
-    99
   }
 
   fn load(
@@ -210,13 +207,31 @@ impl Plugin for FarmPluginHtml {
           emitted: false,
           resource_type: ResourceType::Html,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          info: None
+          info: None,
         },
         source_map: None,
       }))
     } else {
       Ok(None)
     }
+  }
+}
+
+impl FarmPluginHtml {
+  pub fn new(_: &Config) -> Self {
+    Self {}
+  }
+}
+
+pub struct FarmPluginTransformHtml {}
+
+impl Plugin for FarmPluginTransformHtml {
+  fn name(&self) -> &str {
+    "FarmPluginTransformHtml"
+  }
+
+  fn priority(&self) -> i32 {
+    101
   }
 
   fn finalize_resources(
@@ -380,7 +395,7 @@ impl Plugin for FarmPluginHtml {
   }
 }
 
-impl FarmPluginHtml {
+impl FarmPluginTransformHtml {
   pub fn new(_: &Config) -> Self {
     Self {}
   }

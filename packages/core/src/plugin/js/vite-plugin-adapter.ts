@@ -3,7 +3,8 @@ import {
   CompilationContext,
   RenderResourcePotParams,
   FinalizeResourcesHookParams,
-  ResourcePotInfo
+  ResourcePotInfo,
+  Resource
 } from '../type.js';
 import {
   convertEnforceToPriority,
@@ -102,6 +103,7 @@ export class VitePluginAdapter implements JsPlugin {
   augmentResourceHash?: JsPlugin['augmentResourceHash'];
   finalizeResources: JsPlugin['finalizeResources'];
   writeResources: JsPlugin['writeResources'];
+  transformHtml: JsPlugin['transformHtml'];
 
   // filter for js plugin to improve performance
   filters: string[];
@@ -148,6 +150,8 @@ export class VitePluginAdapter implements JsPlugin {
       generateBundle: () =>
         (this.finalizeResources =
           this.viteGenerateBundleToFarmFinalizeResources()),
+      transformIndexHtml: () =>
+        (this.transformHtml = this.viteTransformIndexHtmlToFarmTransformHtml()),
       writeBundle: () =>
         (this.writeResources = this.viteWriteBundleToFarmWriteResources())
     };
@@ -667,8 +671,26 @@ export class VitePluginAdapter implements JsPlugin {
             bundles
           );
 
-          // call transformIndexHtml hook after finalizeResources hook
-          const transformIndexHtmlHook = this.wrapRawPluginHook(
+          const result = Object.entries(bundles).reduce((res, [key, val]) => {
+            res[key] = transformRollupResource2FarmResource(
+              val,
+              param.resourcesMap[key]
+            );
+            return res;
+          }, {} as FinalizeResourcesHookParams['resourcesMap']);
+
+          return result;
+        }
+      )
+    };
+  }
+
+  private viteTransformIndexHtmlToFarmTransformHtml(): JsPlugin['transformHtml'] {
+    return {
+      executor: this.wrapExecutor(
+        async (params: { htmlResource: Resource }, context) => {
+          const { htmlResource } = params;
+          const hook = this.wrapRawPluginHook(
             'transformIndexHtml',
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore ignore type error
@@ -676,36 +698,16 @@ export class VitePluginAdapter implements JsPlugin {
             context
           );
 
-          for (const resource of Object.values(param.resourcesMap)) {
-            if (resource.resourceType === 'html') {
-              const result = await transformIndexHtmlHook?.(
-                Buffer.from(resource.bytes).toString(),
-                {
-                  path: resource.name,
-                  filename: resource.name,
-                  server: this._viteDevServer,
-                  bundle: bundles,
-                  chunk: transformResourceInfo2RollupResource(resource)
-                }
-              );
+          const result = await this.callViteTransformIndexHtmlHook(
+            htmlResource,
+            hook
+          );
 
-              if (result && typeof result !== 'string') {
-                throw new Error(
-                  `Vite plugin "${this.name}" is not compatible with Farm for now. Cause it uses transformIndexHtmlHook and return non-string value. Farm only supports string return for transformIndexHtmlHook`
-                );
-              } else if (typeof result === 'string') {
-                resource.bytes = [...Buffer.from(result)];
-              }
-            }
+          if (result) {
+            htmlResource.bytes = [...Buffer.from(result)];
           }
 
-          return Object.entries(bundles).reduce((res, [key, val]) => {
-            res[key] = transformRollupResource2FarmResource(
-              val,
-              param.resourcesMap[key]
-            );
-            return res;
-          }, {} as FinalizeResourcesHookParams['resourcesMap']);
+          return htmlResource;
         }
       )
     };
@@ -736,6 +738,31 @@ export class VitePluginAdapter implements JsPlugin {
         }
       )
     };
+  }
+
+  private async callViteTransformIndexHtmlHook(
+    resource: Resource,
+    transformIndexHtmlHook?: (...args: any[]) => Promise<string>,
+    bundles?: OutputBundle
+  ) {
+    const result = await transformIndexHtmlHook?.(
+      Buffer.from(resource.bytes).toString(),
+      {
+        path: resource.name,
+        filename: resource.name,
+        server: bundles === undefined ? this._viteDevServer : undefined,
+        bundle: bundles,
+        chunk: transformResourceInfo2RollupResource(resource)
+      }
+    );
+
+    if (result && typeof result !== 'string') {
+      throw new Error(
+        `Vite plugin "${this.name}" is not compatible with Farm for now. Cause it uses transformIndexHtmlHook and return non-string value. Farm only supports string return for transformIndexHtmlHook`
+      );
+    } else if (typeof result === 'string') {
+      return result;
+    }
   }
 
   // skip farm lazy compilation virtual module for vite plugin

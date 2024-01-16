@@ -5,9 +5,14 @@ import App from './App.vue'
 import { createRouter, createWebHistory } from 'vue-router/auto'
 import { routes } from 'vue-router/auto/routes';
 
+import SvgIcon from '~virtual/svg-component'
+
+const app = createApp(App);
+
+app.component(SvgIcon.name, SvgIcon)
 const router = createRouter({
   history: createWebHistory(),
   routes
-})
+});
 
-createApp(App).use(router).mount('#app')
+app.use(router).mount('#app');
