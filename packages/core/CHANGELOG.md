@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.15.5
+
+### Patch Changes
+
+- 286d9fce: Fix transformIndexHtml does not work as expected
+
 ## 0.15.4
 
 ### Patch Changes
