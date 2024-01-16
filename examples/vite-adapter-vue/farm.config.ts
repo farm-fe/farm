@@ -1,18 +1,19 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { VueRouterAutoImports } from 'unplugin-vue-router';
-import VueRouter from 'unplugin-vue-router/vite'
+import VueRouter from 'unplugin-vue-router/vite';
+import UnpluginSvgComponent from 'unplugin-svg-component/vite';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
 
 export default defineConfig({
-  compilation: {
-    persistentCache: false,
-  },
   plugins: [
     '@farmfe/plugin-sass',
     less(),
@@ -45,6 +46,25 @@ export default defineConfig({
     }),
     Components({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })]
+    }),
+    UnpluginSvgComponent({
+      iconDir: [path.resolve(process.cwd(), 'src', 'assets')],
+      dts: true,
+      preserveColor: path.resolve(process.cwd(), 'src', 'assets'),
+      dtsDir: process.cwd(),
+      svgSpriteDomId: 'my-svg-id',
+      prefix: 'icon',
+      componentName: 'MySvgIcon',
+      symbolIdFormatter: (svgName: string, prefix: string): string => {
+        const nameArr = svgName.split('/')
+        if (prefix)
+          nameArr.unshift(prefix)
+        return nameArr.join('-').replace(/\.svg$/, '')
+      },
+      optimizeOptions: undefined,
+      vueVersion: 3,
+      scanStrategy: 'component',
+      treeShaking: true,
     })
   ]
 });

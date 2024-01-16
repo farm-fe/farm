@@ -258,7 +258,6 @@ impl Compiler {
     // find the boundaries.
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
 
-    // TODO: support sourcemap for hmr. and should generate the hmr update response body in rust side.
     update_result
       .added_module_ids
       .extend(diff_result.added_modules);

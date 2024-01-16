@@ -25,6 +25,7 @@
     "postcss-pxtorem": "^6.0.0",
     "sass": "^1.62.1",
     "unplugin-auto-import": "^0.16.7",
+    "unplugin-svg-component": "^0.8.0",
     "unplugin-vue-components": "^0.25.2",
     "unplugin-vue-router": "^0.7.0"
   },

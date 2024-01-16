@@ -139,6 +139,8 @@ export class DevServer implements ImplDevServer {
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this.compiler.writeResourcesToDisk(base);
+    } else {
+      this.compiler.callWriteResourcesHook();
     }
   }
 
