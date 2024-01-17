@@ -252,7 +252,6 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { Compiler, JsFileWatcher } = nativeBinding
+const { Compiler } = nativeBinding
 
 module.exports.Compiler = Compiler
-module.exports.JsFileWatcher = JsFileWatcher

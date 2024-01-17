@@ -29,7 +29,7 @@ import type {
 } from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
-import { ConfigWatcher } from './watcher/configWatcher.js';
+import { ConfigWatcher } from './watcher/config-watcher.js';
 import { clearScreen } from './utils/share.js';
 
 export async function start(
@@ -314,6 +314,7 @@ export async function createFileWatcher(
   }
 
   const fileWatcher = new FileWatcher(devServer, resolvedUserConfig);
+  devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(

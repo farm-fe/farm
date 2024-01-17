@@ -35,6 +35,7 @@ import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
 import { Server } from './type.js';
 import { promisify } from 'node:util';
+import { FileWatcher } from '../watcher/index.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -74,6 +75,7 @@ export class DevServer implements ImplDevServer {
   publicDir?: string;
   publicPath?: string;
   resolvedUrls?: ServerUrls;
+  watcher: FileWatcher;
 
   constructor({
     compiler = null,

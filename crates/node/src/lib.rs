@@ -1,10 +1,8 @@
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
-use std::{
-  collections::HashMap,
-  path::{Path, PathBuf},
-  sync::Arc,
-};
+#[cfg(feature = "file_watcher")]
+use std::path::PathBuf;
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use farmfe_compiler::Compiler;
 
@@ -18,16 +16,20 @@ use farmfe_core::{
   module::ModuleId,
   plugin::UpdateType,
   record::Trigger,
-  resource::Resource,
 };
+
+#[cfg(feature = "file_watcher")]
+use farmfe_core::resource::Resource;
+#[cfg(feature = "file_watcher")]
+use napi::threadsafe_function::ThreadSafeCallContext;
 
 use napi::{
   bindgen_prelude::{Buffer, FromNapiValue},
-  threadsafe_function::{
-    ErrorStrategy, ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
-  },
+  threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode},
   Env, JsFunction, JsObject, JsUndefined, JsUnknown, NapiRaw, Status,
 };
+
+#[cfg(feature = "file_watcher")]
 use notify::{
   event::{AccessKind, ModifyKind},
   EventKind, RecommendedWatcher, Watcher,
@@ -580,11 +582,12 @@ impl JsCompiler {
   }
 }
 
+#[cfg(feature = "file_watcher")]
 pub struct FsWatcher {
   watcher: notify::RecommendedWatcher,
   watched_paths: Vec<PathBuf>,
 }
-
+#[cfg(feature = "file_watcher")]
 impl FsWatcher {
   pub fn new<F>(mut callback: F) -> notify::Result<Self>
   where
@@ -690,11 +693,13 @@ impl FsWatcher {
   }
 }
 
+#[cfg(feature = "file_watcher")]
 #[napi(js_name = "JsFileWatcher")]
 pub struct FileWatcher {
   watcher: FsWatcher,
 }
 
+#[cfg(feature = "file_watcher")]
 #[napi]
 impl FileWatcher {
   #[napi(constructor)]

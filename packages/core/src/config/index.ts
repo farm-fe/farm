@@ -390,9 +390,7 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   host: true,
   port: 9000,
   path: '/__hmr',
-  watchOptions: {
-    awaitWriteFinish: 10
-  }
+  watchOptions: {}
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
