@@ -1,6 +1,7 @@
 // queue all updates and compile them one by one
 
 import { isAbsolute, relative } from 'node:path';
+import { stat } from 'node:fs/promises';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from './index.js';
@@ -19,6 +20,8 @@ export class HmrEngine {
   // flag to indicate if last attempt was error
   private _lastAttemptWasError: boolean;
 
+  private _lastModifiedTimestamp: Map<string, string>;
+
   constructor(
     compiler: Compiler,
     devServer: DevServer,
@@ -27,6 +30,7 @@ export class HmrEngine {
     this._compiler = compiler;
     this._devServer = devServer;
     this._lastAttemptWasError = false;
+    this._lastModifiedTimestamp = new Map();
   }
 
   callUpdates(result: JsUpdateResult) {
@@ -142,11 +146,20 @@ export class HmrEngine {
 
     for (const path of paths) {
       if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
+        const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
+        const currentTimestamp = (await stat(path)).mtime.toISOString();
+        // only update the file if the timestamp changed since last update
+        if (lastModifiedTimestamp === currentTimestamp) {
+          continue;
+        }
+
+        this._lastModifiedTimestamp.set(path, currentTimestamp);
+        // push the path into the queue
         this._updateQueue.push(path);
       }
     }
 
-    if (!this._compiler.compiling) {
+    if (!this._compiler.compiling && this._updateQueue.length > 0) {
       try {
         await this.recompileAndSendResult();
       } catch (e) {

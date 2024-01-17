@@ -1,5 +1,7 @@
 // import { watch } from 'chokidar';
+import { FSWatcher } from 'chokidar';
 import { DevServer } from '../../index.js';
+import { Server } from '../../server/type.js';
 import WsServer from '../../server/ws.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
@@ -8,10 +10,11 @@ export class ViteDevServerAdapter {
   moduleGraph: ViteModuleGraphAdapter;
   config: any;
   pluginName: string;
-  watcher: any;
+  watcher: FSWatcher;
   middlewares: any;
   middlewareCallbacks: any[];
   ws: WsServer;
+  httpServer: Server;
 
   constructor(pluginName: string, config: any, server: DevServer) {
     this.moduleGraph = createViteModuleGraphAdapter(pluginName);
@@ -20,17 +23,7 @@ export class ViteDevServerAdapter {
     // watcher is not used in Farm vite plugin for now
     // it's only for compatibility
     // this.watcher = watch(config.root);
-    this.watcher = {
-      add: () => {
-        // do nothing
-      },
-      on: () => {
-        // do nothing
-      },
-      close: () => {
-        // do nothing
-      }
-    };
+    this.watcher = server.watcher.getInternalWatcher();
     this.middlewareCallbacks = [];
     this.middlewares = new Proxy(
       {
@@ -68,6 +61,7 @@ export class ViteDevServerAdapter {
     );
 
     this.ws = server.ws;
+    this.httpServer = server.server;
   }
 }
 
@@ -152,7 +146,8 @@ export function createViteDevServerAdapter(
           'watcher',
           'middlewares',
           'middlewareCallbacks',
-          'ws'
+          'ws',
+          'httpServer'
         ];
         if (allowedKeys.includes(String(key))) {
           return target[key as keyof typeof target];

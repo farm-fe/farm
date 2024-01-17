@@ -1,14 +1,14 @@
 import { createRequire } from 'node:module';
 
-import debounce from 'lodash.debounce';
+import { FSWatcher } from 'chokidar';
 
 import { Compiler } from '../compiler/index.js';
 import { DevServer } from '../server/index.js';
-import { JsFileWatcher } from '../../binding/index.js';
 import { compilerHandler, DefaultLogger } from '../utils/index.js';
-import { DEFAULT_HMR_OPTIONS } from '../index.js';
 
 import type { ResolvedUserConfig } from '../config/index.js';
+import { createWatcher } from './create-watcher.js';
+import { existsSync } from 'node:fs';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -16,9 +16,8 @@ interface ImplFileWatcher {
 
 export class FileWatcher implements ImplFileWatcher {
   private _root: string;
-  private _watcher: JsFileWatcher;
+  private _watcher: FSWatcher;
   private _logger: DefaultLogger;
-  private _awaitWriteFinish: number;
   private _close = false;
 
   constructor(
@@ -26,19 +25,11 @@ export class FileWatcher implements ImplFileWatcher {
     public options: ResolvedUserConfig
   ) {
     this._root = options.root;
-    this._awaitWriteFinish = DEFAULT_HMR_OPTIONS.watchOptions.awaitWriteFinish;
-
-    if (serverOrCompiler instanceof DevServer) {
-      this._awaitWriteFinish =
-        serverOrCompiler.config.hmr.watchOptions.awaitWriteFinish ??
-        this._awaitWriteFinish;
-    } else if (serverOrCompiler instanceof Compiler) {
-      this._awaitWriteFinish =
-        serverOrCompiler.config.config?.watch?.watchOptions?.awaitWriteFinish ??
-        this._awaitWriteFinish;
-    }
-
     this._logger = new DefaultLogger();
+  }
+
+  getInternalWatcher() {
+    return this._watcher;
   }
 
   async watch() {
@@ -47,7 +38,7 @@ export class FileWatcher implements ImplFileWatcher {
       this.serverOrCompiler
     );
 
-    let handlePathChange = async (path: string): Promise<void> => {
+    const handlePathChange = async (path: string): Promise<void> => {
       if (this._close) {
         return;
       }
@@ -70,19 +61,24 @@ export class FileWatcher implements ImplFileWatcher {
         this._logger.error(error);
       }
     };
-    // debounce the path change event to avoid duplicate compilation for windows and macos
-    if (process.platform === 'win32' || process.platform === 'darwin') {
-      handlePathChange = debounce(handlePathChange, this._awaitWriteFinish);
-    }
 
-    this._watcher = new JsFileWatcher((paths: string[]) => {
-      paths.forEach(handlePathChange);
-    });
-
-    this._watcher.watch([
+    const watchedFiles = [
       ...compiler.resolvedModulePaths(this._root),
       ...compiler.resolvedWatchPaths()
-    ]);
+    ].filter(
+      (file) =>
+        !file.startsWith(this.options.root) &&
+        !file.includes('node_modules/') &&
+        existsSync(file)
+    );
+
+    const files = [this.options.root, ...watchedFiles];
+    this._watcher = createWatcher(this.options, files);
+
+    this._watcher.on('change', (path) => {
+      if (this._close) return;
+      handlePathChange(path);
+    });
 
     if (this.serverOrCompiler instanceof DevServer) {
       this.serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
@@ -96,7 +92,13 @@ export class FileWatcher implements ImplFileWatcher {
           );
           return resolvedPath;
         });
-        this._watcher.watch([...new Set(added)]);
+        const filteredAdded = added.filter(
+          (file) => !file.startsWith(this.options.root)
+        );
+
+        if (filteredAdded.length > 0) {
+          this._watcher.add(filteredAdded);
+        }
       });
     }
   }

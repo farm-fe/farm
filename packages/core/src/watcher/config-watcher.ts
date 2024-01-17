@@ -1,8 +1,10 @@
-import { JsFileWatcher } from '../../binding/index.js';
+import { FSWatcher } from 'chokidar';
 import { ResolvedUserConfig } from '../config/index.js';
+import { createWatcher } from './create-watcher.js';
+import { existsSync } from 'fs';
 
 export class ConfigWatcher {
-  private watcher: JsFileWatcher;
+  private watcher: FSWatcher;
   private _close = false;
 
   constructor(private resolvedUserConfig: ResolvedUserConfig) {
@@ -26,17 +28,18 @@ export class ConfigWatcher {
         : [])
     ]);
 
-    const watchedFiles = Array.from(watchedFilesSet).filter(Boolean);
+    const watchedFiles = Array.from(watchedFilesSet).filter(
+      (file) => file && existsSync(file)
+    );
 
-    this.watcher = new JsFileWatcher((paths: string[]) => {
+    this.watcher = createWatcher(this.resolvedUserConfig, watchedFiles);
+
+    this.watcher.on('change', (path) => {
       if (this._close) return;
-      const filteredPaths = paths.filter((path) => watchedFiles.includes(path));
-
-      if (!filteredPaths.length) return;
-      handle(filteredPaths);
+      if (watchedFiles.includes(path)) {
+        handle([path]);
+      }
     });
-
-    this.watcher.watch(watchedFiles);
     return this;
   }
 

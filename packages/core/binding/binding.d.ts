@@ -103,9 +103,3 @@ export class Compiler {
   getAnalyzeDepsRecordsById(id: string): Array<AnalyzeDepsRecord>
   getResourcePotRecordsById(id: string): Array<ResourcePotRecord>
 }
-export type FileWatcher = JsFileWatcher
-export class JsFileWatcher {
-  constructor(callback: (...args: any[]) => any)
-  watch(paths: Array<string>): void
-  unwatch(paths: Array<string>): void
-}

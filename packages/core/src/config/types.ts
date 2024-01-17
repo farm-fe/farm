@@ -9,6 +9,7 @@ import type { JsPlugin } from '../plugin/type.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { Config } from '../../binding/index.js';
 import { Middleware } from 'koa';
+import { WatchOptions } from 'chokidar';
 
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
@@ -55,10 +56,7 @@ export interface UserHmrConfig {
   host?: string | boolean;
   port?: number;
   path?: string;
-  watchOptions?: {
-    // this options only works in windows
-    awaitWriteFinish?: number;
-  };
+  watchOptions?: WatchOptions;
 }
 
 type InternalConfig = Config['config'] extends undefined

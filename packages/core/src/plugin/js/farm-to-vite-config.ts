@@ -6,6 +6,7 @@ import {
 } from './utils.js';
 import merge from 'lodash.merge';
 import { Logger } from '../../index.js';
+import { VITE_DEFAULT_ASSETS } from './constants.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   const vitePlugins = config.vitePlugins.map((plugin) => {
@@ -71,7 +72,14 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
         }
       }
       // other options are not supported in farm
-    }
+    },
+    // TODO make it configurable
+    cacheDir: 'node_modules/.farm/cache',
+    envDir: config.envDir,
+    assetsInclude: [
+      ...VITE_DEFAULT_ASSETS,
+      ...(config.compilation?.assets?.include ?? [])
+    ]
   };
 
   return viteConfig;
@@ -106,6 +114,9 @@ export function proxyViteConfig(
         'css',
         'build',
         'logger',
+        'cacheDir',
+        'envDir',
+        'assetsInclude',
         // these fields are always undefined in farm
         // they are only used for compatibility
         'legacy',
@@ -192,7 +203,12 @@ export function proxyViteConfig(
             }
           });
         } else if (key === 'css') {
-          const allowedCssKeys = ['devSourcemap'];
+          const allowedCssKeys = [
+            'devSourcemap',
+            'transformer',
+            'modules',
+            'postcss'
+          ];
 
           return new Proxy(target.css || {}, {
             get(cssTarget, cssKey) {
@@ -273,6 +289,14 @@ export function proxyViteConfig(
           });
         } else if (key === 'logger') {
           return logger;
+        } else if (key === 'assetsInclude') {
+          return (filename: string) => {
+            return (
+              (viteConfig.assetsInclude as string[])?.some((r) => {
+                return new RegExp(r).test(filename);
+              }) ?? false
+            );
+          };
         }
 
         return target[key as keyof typeof target];

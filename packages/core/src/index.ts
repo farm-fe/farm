@@ -29,7 +29,7 @@ import type {
 } from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
-import { ConfigWatcher } from './watcher/configWatcher.js';
+import { ConfigWatcher } from './watcher/config-watcher.js';
 import { clearScreen } from './utils/share.js';
 
 export async function start(
@@ -55,6 +55,10 @@ export async function start(
     await devServer.listen();
 
     createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+
+    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configureDevServer?.(devServer)
+    );
   } catch (error) {
     logger.error(
       `Failed to start the server: ${error.message} \n ${error.stack}`
@@ -292,10 +296,6 @@ export async function createDevServer(
   const devServer = new DevServer({ compiler, logger });
   await devServer.createDevServer(resolvedUserConfig.server);
 
-  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    plugin.configureDevServer?.(devServer)
-  );
-
   return devServer;
 }
 
@@ -313,7 +313,12 @@ export async function createFileWatcher(
     return;
   }
 
+  if (!devServer.config.hmr) {
+    return;
+  }
+
   const fileWatcher = new FileWatcher(devServer, resolvedUserConfig);
+  devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
