@@ -120,8 +120,8 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn get_cache(&self, key: &crate::module::ModuleId) -> Option<super::CachedModule> {
-    if self.cached_modules.contains_key(key) {
-      return Some(self.cached_modules.remove(key).map(|item| item.1).unwrap());
+    if let Some(module) = self.cached_modules.remove(key).map(|item| item.1) {
+      return Some(module);
     }
 
     if self.read_package(key).is_some() {
@@ -141,8 +141,8 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
     &self,
     key: &crate::module::ModuleId,
   ) -> Option<dashmap::mapref::one::Ref<'_, crate::module::ModuleId, super::CachedModule>> {
-    if self.cached_modules.contains_key(key) {
-      return Some(self.cached_modules.get(key).unwrap());
+    if let Some(module) = self.cached_modules.get(key) {
+      return Some(module);
     }
 
     if self.read_package(key).is_some() {
