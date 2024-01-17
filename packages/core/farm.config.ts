@@ -19,7 +19,8 @@ export default <UserConfig>{
       '.node$',
       '@farmfe/core',
       'bufferutil',
-      'utf-8-validate'
+      'utf-8-validate',
+      'fsevents'
     ],
     presetEnv: false,
     minify: false,
