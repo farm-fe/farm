@@ -185,7 +185,8 @@ export class DevServer implements ImplDevServer {
     }
 
     await Promise.all(promises);
-    process.exit(0);
+
+    !this.restart_promise && process.exit(0);
   }
 
   async restart(promise: () => Promise<void>) {
