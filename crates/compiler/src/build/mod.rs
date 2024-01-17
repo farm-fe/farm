@@ -582,6 +582,11 @@ impl Compiler {
 
     module
   }
+
+  pub(crate) fn insert_dummy_module(module_id: &ModuleId, module_graph: &mut ModuleGraph) {
+    // insert a dummy module to the graph to prevent the module from being handled twice
+    module_graph.add_module(Compiler::create_module(module_id.clone(), false, false));
+  }
 }
 
 fn resolve_module(
@@ -602,10 +607,6 @@ fn resolve_module(
   };
 
   let mut module_graph = context.module_graph.write();
-  let insert_dummy_module = |module_id: &ModuleId, module_graph: &mut ModuleGraph| {
-    // insert a dummy module to the graph to prevent the module from being handled twice
-    module_graph.add_module(Compiler::create_module(module_id.clone(), false, false));
-  };
 
   let res = if module_graph.has_module(&module_id) {
     farm_profile_scope!(format!("module {:?} already exists", module_id));
@@ -617,7 +618,7 @@ fn resolve_module(
       let module_cache_manager = &context.cache_manager.module_cache;
 
       if module_cache_manager.has_cache(&cached_dependency) {
-        insert_dummy_module(&cached_dependency, &mut module_graph);
+        Compiler::insert_dummy_module(&cached_dependency, &mut module_graph);
         return Ok(ResolveModuleResult::Cached(cached_dependency));
       }
     }
@@ -625,7 +626,7 @@ fn resolve_module(
     farm_profile_scope!(format!("new module {:?}", module_id));
     let resolve_module_id_result =
       resolve_module_id_result.unwrap_or(Compiler::resolve_module_id(resolve_param, context)?);
-    insert_dummy_module(&resolve_module_id_result.module_id, &mut module_graph);
+    Compiler::insert_dummy_module(&resolve_module_id_result.module_id, &mut module_graph);
     let module_id_str = resolve_module_id_result.module_id.to_string();
     ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
       module: Compiler::create_module(

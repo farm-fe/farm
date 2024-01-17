@@ -659,6 +659,7 @@ fn resolve_module(
     let module_cache_manager = &context.cache_manager.module_cache;
 
     if module_cache_manager.has_cache(&cached_dependency) {
+      Compiler::insert_dummy_module(&cached_dependency, &mut update_module_graph);
       return Ok(ResolveModuleResult::Cached(cached_dependency));
     }
   }
@@ -666,11 +667,10 @@ fn resolve_module(
   let resolve_module_id_result =
     resolve_module_id_result.unwrap_or(Compiler::resolve_module_id(resolve_param, context)?);
   // just a placeholder module, it will be replaced by the real module later
-  update_module_graph.add_module(Compiler::create_module(
-    resolve_module_id_result.module_id.clone(),
-    false,
-    false,
-  ));
+  Compiler::insert_dummy_module(
+    &resolve_module_id_result.module_id,
+    &mut update_module_graph,
+  );
 
   Ok(ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
     module: Compiler::create_module(

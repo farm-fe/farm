@@ -55,6 +55,10 @@ export async function start(
     await devServer.listen();
 
     createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+
+    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configureDevServer?.(devServer)
+    );
   } catch (error) {
     logger.error(
       `Failed to start the server: ${error.message} \n ${error.stack}`
@@ -292,10 +296,6 @@ export async function createDevServer(
   const devServer = new DevServer({ compiler, logger });
   await devServer.createDevServer(resolvedUserConfig.server);
 
-  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    plugin.configureDevServer?.(devServer)
-  );
-
   return devServer;
 }
 
@@ -310,6 +310,10 @@ export async function createFileWatcher(
     resolvedUserConfig.compilation.mode === 'production'
   ) {
     logger.error('HMR cannot be enabled in production mode.');
+    return;
+  }
+
+  if (!devServer.config.hmr) {
     return;
   }
 
