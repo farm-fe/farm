@@ -134,7 +134,11 @@
     "outro",
     "Deoptimization",
     "onwarn",
-    "unocss"
+    "unocss",
+    "apng",
+    "jfif",
+    "pjpeg",
+    "flac"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
