@@ -199,9 +199,10 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景，
 
 - 加入 [Discord](https://discord.gg/mDErq9aFnF)
 
-<!-- - 微信群
+- 微信群
 
-<img src="https://github.com/farm-fe/farm/assets/66500121/695a05f2-14a3-4608-bc47-07a29006004a" width="30%" /> -->
+<img src="https://github.com/ErKeLost/farm/assets/66500121/ad475cc7-ff53-44a9-b2b6-e61d73e99468" width="30%" />
+
 
 ## 感谢贡献者们做出的努力
 

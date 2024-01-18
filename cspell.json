@@ -113,6 +113,8 @@
     "thiserror",
     "threadsafe",
     "topo",
+    "Typecheck",
+    "mdsvex",
     "toposort",
     "treeshake",
     "tsbuildinfo",

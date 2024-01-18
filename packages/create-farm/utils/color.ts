@@ -81,6 +81,9 @@ export const red = enabled ? formatter('\x1b[31m', '\x1b[39m') : String;
 export const green = enabled ? formatter('\x1b[32m', '\x1b[39m') : String;
 export const yellow = enabled ? formatter('\x1b[33m', '\x1b[39m') : String;
 export const blue = enabled ? formatter('\x1b[34m', '\x1b[39m') : String;
+export const orange = enabled
+  ? formatter('\x1b[38;2;255;165;0m', '\x1b[39m')
+  : String;
 export const magenta = enabled ? formatter('\x1b[35m', '\x1b[39m') : String;
 export const purple = enabled
   ? formatter('\x1b[38;2;173;127;168m', '\x1b[39m')

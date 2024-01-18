@@ -12,7 +12,8 @@ import {
   green,
   handleBrandText,
   red,
-  yellow
+  yellow,
+  orange
 } from './utils/color.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
 import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
@@ -91,6 +92,7 @@ async function createFarm() {
               value: 'react'
             },
             { title: green('Vue'), value: 'vue' },
+            { title: orange('Svelte'), value: 'svelte' },
             { title: blueBright('Solid'), value: 'solid' }
           ]
         },
