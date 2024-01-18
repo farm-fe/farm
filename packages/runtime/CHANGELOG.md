@@ -1,5 +1,12 @@
 # @farmfe/runtime
 
+## 0.9.2
+
+### Patch Changes
+
+- 0ab4edf9: Fix failed to load external cjs require when output esm
+- 0ab4edf9: throw error when dynamic load fail. close #836
+
 ## 0.9.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.3
+
+### Patch Changes
+
+- 0ab4edf9: Fix failed to load external cjs require when output esm
+
 ## 1.5.2
 
 ### Patch Changes
