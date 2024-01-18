@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.15.8
+
+### Patch Changes
+
+- 91c5f0da: fix restart server exit(0) bump template version
+
 ## 0.15.7
 
 ### Patch Changes
