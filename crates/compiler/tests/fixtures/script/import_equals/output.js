@@ -39,8 +39,8 @@
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    const fs = farmRequire("e4b1dea3");
-    const utils = farmRequire("363fc137");
+    const fs = farmRequire("e4b1dea3", true);
+    const utils = farmRequire("363fc137", true);
     console.log(fs, utils);
 },});(globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources(['index_7ecc.js']);(globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
