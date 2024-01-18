@@ -141,7 +141,7 @@ export class HmrEngine {
     }
   };
 
-  async hmrUpdate(absPath: string | string[]) {
+  async hmrUpdate(absPath: string | string[], force = false) {
     const paths = Array.isArray(absPath) ? absPath : [absPath];
 
     for (const path of paths) {
@@ -149,7 +149,7 @@ export class HmrEngine {
         const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
         const currentTimestamp = (await stat(path)).mtime.toISOString();
         // only update the file if the timestamp changed since last update
-        if (lastModifiedTimestamp === currentTimestamp) {
+        if (!force && lastModifiedTimestamp === currentTimestamp) {
           continue;
         }
 

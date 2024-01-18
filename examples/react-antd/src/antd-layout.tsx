@@ -21,11 +21,12 @@ axios.get('https://music-erkelost.vercel.app/banner').then((res) => {
   console.log(res);
 });
 
-axios.get('/api')
-  .then(response => {
+axios
+  .get('/api')
+  .then((response) => {
     console.log(response.data);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('There was an error!', error);
   });
 

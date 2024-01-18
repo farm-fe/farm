@@ -15,7 +15,7 @@ use farmfe_toolkit_plugin_types::{
 };
 
 mod react_refresh;
-use react_refresh::inject_react_refresh;
+use react_refresh::{inject_react_refresh, IS_REACT_REFRESH_BOUNDARY};
 
 const GLOBAL_INJECT_MODULE_ID: &str = "farmfe_plugin_react_global_inject";
 
@@ -61,6 +61,11 @@ impl Plugin for FarmPluginReact {
         resolved_path: GLOBAL_INJECT_MODULE_ID.to_string(),
         ..Default::default()
       }));
+    } else if param.source == IS_REACT_REFRESH_BOUNDARY {
+      return Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
+        resolved_path: IS_REACT_REFRESH_BOUNDARY.to_string(),
+        ..Default::default()
+      }));
     }
 
     Ok(None)
@@ -85,6 +90,12 @@ impl Plugin for FarmPluginReact {
             }"#
           .to_string(),
         module_type: farmfe_core::module::ModuleType::Js,
+      }));
+    } else if param.resolved_path == IS_REACT_REFRESH_BOUNDARY {
+      let code = include_str!("is_react_refresh_boundary.ts");
+      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+        content: code.to_string(),
+        module_type: farmfe_core::module::ModuleType::Ts,
       }));
     }
 
