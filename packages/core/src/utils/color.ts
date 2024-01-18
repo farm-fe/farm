@@ -90,56 +90,55 @@ export const debugColor = createFormatter('\x1b[38;2;255;140;0m', '\x1b[39m');
 export const brandColor = enabled
   ? createFormatter('\x1b[38;2;113;26;95m', '\x1b[39m')
   : String;
-export const black = enabled ? createFormatter('\x1b[30m', '\x1b[39m') : String;
-export const red = enabled ? createFormatter('\x1b[31m', '\x1b[39m') : String;
+
+// black
+export const black = enabled
+  ? createFormatter('\x1b[38;2;0;0;0m', '\x1b[39m')
+  : String;
+export const red = enabled
+  ? createFormatter('\x1b[38;2;219;90;107m', '\x1b[39m')
+  : String;
 export const green = enabled ? createFormatter('\x1b[32m', '\x1b[39m') : String;
-export const yellow = enabled ? createFormatter('\x1b[33m', '\x1b[39m') : String;
-export const blue = enabled ? createFormatter('\x1b[34m', '\x1b[39m') : String;
-export const magenta = enabled ? createFormatter('\x1b[35m', '\x1b[39m') : String;
+export const yellow = enabled
+  ? createFormatter('\x1b[33m', '\x1b[39m')
+  : String;
+export const blue = enabled
+  ? createFormatter('\x1b[38;2;68;206;246m', '\x1b[39m')
+  : String;
+export const magenta = enabled
+  ? createFormatter('\x1b[38;2;255;179;151m', '\x1b[39m')
+  : String;
 export const purple = enabled
-  ? createFormatter('\x1b[38;2;173;127;168m', '\x1b[39m')
+  ? createFormatter('\x1b[38;2;140;67;86m', '\x1b[39m')
+  : String;
+export const orange = enabled
+  ? createFormatter('\x1b[38;2;255;137;54m', '\x1b[39m')
   : String;
 export const cyan = enabled ? createFormatter('\x1b[36m', '\x1b[39m') : String;
 export const white = enabled ? createFormatter('\x1b[37m', '\x1b[39m') : String;
-export const gray = enabled ? createFormatter('\x1b[90m', '\x1b[39m') : String;
-export const bgBlack = enabled ? createFormatter('\x1b[40m', '\x1b[49m') : String;
-export const bgRed = enabled ? createFormatter('\x1b[41m', '\x1b[49m') : String;
-export const bgGreen = enabled ? createFormatter('\x1b[42m', '\x1b[49m') : String;
-export const bgYellow = enabled ? createFormatter('\x1b[43m', '\x1b[49m') : String;
-export const bgBlue = enabled ? createFormatter('\x1b[44m', '\x1b[49m') : String;
-export const bgMagenta = enabled ? createFormatter('\x1b[45m', '\x1b[49m') : String;
-export const bgCyan = enabled ? createFormatter('\x1b[46m', '\x1b[49m') : String;
-export const bgWhite = enabled ? createFormatter('\x1b[47m', '\x1b[49m') : String;
 
-export const colors = {
-  reset,
-  bold,
-  dim,
-  italic,
-  underline,
-  inverse,
-  hidden,
-  strikethrough,
-  black,
-  red,
-  green,
-  yellow,
-  blue,
-  magenta,
-  cyan,
-  white,
-  gray,
-  bgBlack,
-  bgRed,
-  bgGreen,
-  bgYellow,
-  bgBlue,
-  bgMagenta,
-  bgCyan,
-  bgWhite,
-  debugColor,
-  brandColor
-};
+export const bgBlack = enabled
+  ? createFormatter('\x1b[40m', '\x1b[49m')
+  : String;
+export const bgRed = enabled ? createFormatter('\x1b[41m', '\x1b[49m') : String;
+export const bgGreen = enabled
+  ? createFormatter('\x1b[42m', '\x1b[49m')
+  : String;
+export const bgYellow = enabled
+  ? createFormatter('\x1b[43m', '\x1b[49m')
+  : String;
+export const bgBlue = enabled
+  ? createFormatter('\x1b[44m', '\x1b[49m')
+  : String;
+export const bgMagenta = enabled
+  ? createFormatter('\x1b[45m', '\x1b[49m')
+  : String;
+export const bgCyan = enabled
+  ? createFormatter('\x1b[46m', '\x1b[49m')
+  : String;
+export const bgWhite = enabled
+  ? createFormatter('\x1b[47m', '\x1b[49m')
+  : String;
 
 export function gradientString(text: string, colors: number[][]) {
   const steps = text.length;
@@ -171,7 +170,6 @@ export function interpolateColor(
   ];
 }
 
-
 export const PersistentCacheBrand = gradientString('⚡️ FULL EXTREME !', [
   gradientPurpleColor,
   interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
@@ -185,3 +183,59 @@ export const PersistentCacheBrand = gradientString('⚡️ FULL EXTREME !', [
   interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
   gradientPinkColor
 ]);
+
+export function handleBrandText(text: string) {
+  console.log(
+    gradientString(text, [
+      [255, 182, 193],
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
+      interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
+      [128, 0, 128]
+    ])
+  );
+}
+
+export const BrandText = (text: string) =>
+  gradientString(`\n${text}\n`, [
+    [255, 182, 193],
+    interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
+    interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
+    interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
+    interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
+    [128, 0, 128]
+  ]);
+
+export const colors = {
+  reset,
+  bold,
+  dim,
+  italic,
+  underline,
+  inverse,
+  hidden,
+  strikethrough,
+  black,
+  red,
+  green,
+  yellow,
+  blue,
+  magenta,
+  purple,
+  orange,
+  cyan,
+  white,
+  bgBlack,
+  bgRed,
+  bgGreen,
+  bgYellow,
+  bgBlue,
+  bgMagenta,
+  bgCyan,
+  bgWhite,
+  debugColor,
+  brandColor,
+  handleBrandText,
+  BrandText
+};

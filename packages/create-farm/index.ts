@@ -4,20 +4,12 @@ import minimist from 'minimist';
 import path from 'node:path';
 import fs from 'node:fs';
 
+import { fileURLToPath } from 'node:url';
+import { colors } from '@farmfe/core';
+
 import { loadWithRocketGradient } from './utils/gradient.js';
-import {
-  BrandText,
-  blue,
-  blueBright,
-  green,
-  handleBrandText,
-  red,
-  yellow,
-  orange
-} from './utils/color.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
 import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
-import { fileURLToPath } from 'node:url';
 
 interface IResultType {
   packageName?: string;
@@ -75,7 +67,7 @@ async function createFarm() {
         {
           type: (_, { overwrite }: { overwrite?: boolean }) => {
             if (overwrite === false) {
-              throw new Error(red('❌') + ' Operation cancelled');
+              throw new Error(colors.red('❌') + ' Operation cancelled');
             }
             return null;
           },
@@ -88,12 +80,12 @@ async function createFarm() {
           initial: 0,
           choices: [
             {
-              title: blue('React'),
+              title: colors.cyan('React'),
               value: 'react'
             },
-            { title: green('Vue'), value: 'vue' },
-            { title: orange('Svelte'), value: 'svelte' },
-            { title: blueBright('Solid'), value: 'solid' }
+            { title: colors.green('Vue'), value: 'vue' },
+            { title: colors.orange('Svelte'), value: 'svelte' },
+            { title: colors.blue('Solid'), value: 'solid' }
           ]
         },
         {
@@ -117,7 +109,7 @@ async function createFarm() {
       ],
       {
         onCancel: () => {
-          throw new Error(red('❌') + ' Operation cancelled');
+          throw new Error(colors.red('❌') + ' Operation cancelled');
         }
       }
     );
@@ -170,15 +162,17 @@ async function installationDeps(
     spinner.text = 'Dependencies Installed Successfully!';
     spinner.succeed();
   }
-  handleBrandText('\n > Initial Farm Project created successfully ✨ ✨ \n');
-  handleBrandText(`   cd ${targetDir} \n`);
+  colors.handleBrandText(
+    '\n > Initial Farm Project created successfully ✨ ✨ \n'
+  );
+  colors.handleBrandText(`   cd ${targetDir} \n`);
   autoInstall
-    ? handleBrandText(
+    ? colors.handleBrandText(
         `   ${currentPkgManager} ${
           currentPkgManager === 'npm' ? 'run start' : 'start'
         } `
       )
-    : handleBrandText(`   npm install \n\n   npm run start`);
+    : colors.handleBrandText(`   npm install \n\n   npm run start`);
 }
 
 function pkgFromUserAgent(userAgent: string | undefined) {
@@ -196,9 +190,11 @@ function judgeNodeVersion() {
   const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
   const minimumMajorVersion = 16;
   if (requiredMajorVersion < minimumMajorVersion) {
-    console.log(yellow(`create-farm unsupported Node.js v${currentVersion}.`));
     console.log(
-      yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
+      colors.yellow(`create-farm unsupported Node.js v${currentVersion}.`)
+    );
+    console.log(
+      colors.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
     );
     process.exit(1);
   }
@@ -228,7 +224,7 @@ function copyDir(srcDir: string, destDir: string) {
 }
 
 function welcome() {
-  console.log(BrandText);
+  console.log(colors.BrandText('⚡ Welcome To Farm ! '));
 }
 
 createFarm();
