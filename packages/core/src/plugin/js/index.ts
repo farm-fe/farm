@@ -40,7 +40,7 @@ export async function handleVitePlugins(
 
   for (const vitePluginObj of flatVitePlugins) {
     let vitePlugin = vitePluginObj,
-      filters = ['.+'];
+      filters = DEFAULT_FILTERS;
 
     if (typeof vitePluginObj === 'function') {
       const { vitePlugin: plugin, filters: f } = vitePluginObj();
@@ -147,6 +147,10 @@ export function processVitePlugin(
   }
 }
 
+function compatibleWin32Path(path: string): string {
+  return path.replaceAll('/', '\\\\');
+}
+
 export function convertPlugin(plugin: JsPlugin): void {
   if (
     plugin.transform &&
@@ -165,12 +169,31 @@ export function convertPlugin(plugin: JsPlugin): void {
     }
   }
 
+  if (plugin.renderResourcePot) {
+    plugin.renderResourcePot.filters ??= {};
+
+    if (!plugin.renderResourcePot.filters?.resourcePotTypes) {
+      plugin.renderResourcePot.filters.resourcePotTypes = [];
+    } else if (!plugin.renderResourcePot.filters?.paths) {
+      plugin.renderResourcePot.filters.paths ??= DEFAULT_FILTERS;
+    }
+  }
+
+  if (plugin.augmentResourceHash) {
+    plugin.augmentResourceHash.filters ??= {};
+
+    if (!plugin.augmentResourceHash.filters?.resourcePotTypes) {
+      plugin.augmentResourceHash.filters.resourcePotTypes = [];
+    } else if (!plugin.augmentResourceHash.filters?.paths) {
+      plugin.augmentResourceHash.filters.paths ??= DEFAULT_FILTERS;
+    }
+  }
+
   if (plugin.load?.filters?.resolvedPaths?.length) {
     if (process.platform === 'win32') {
       // replace / to \
-      plugin.load.filters.resolvedPaths = plugin.load.filters.resolvedPaths.map(
-        (item) => item.replaceAll('/', '\\\\')
-      );
+      plugin.load.filters.resolvedPaths =
+        plugin.load.filters.resolvedPaths.map(compatibleWin32Path);
     }
   }
 
@@ -178,9 +201,22 @@ export function convertPlugin(plugin: JsPlugin): void {
     if (process.platform === 'win32') {
       // replace / to \
       plugin.transform.filters.resolvedPaths =
-        plugin.transform.filters.resolvedPaths.map((item) =>
-          item.replaceAll('/', '\\\\')
-        );
+        plugin.transform.filters.resolvedPaths.map(compatibleWin32Path);
     }
+  }
+  if (
+    plugin.augmentResourceHash?.filters?.paths &&
+    process.platform === 'win32'
+  ) {
+    plugin.augmentResourceHash.filters.paths =
+      plugin.augmentResourceHash.filters.paths.map(compatibleWin32Path);
+  }
+
+  if (
+    plugin.renderResourcePot?.filters?.paths &&
+    process.platform === 'win32'
+  ) {
+    plugin.renderResourcePot.filters.paths =
+      plugin.renderResourcePot.filters.paths.map(compatibleWin32Path);
   }
 }

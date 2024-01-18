@@ -24,7 +24,12 @@ export default {
     treeShaking: false,
     persistentCache: false,
     minify: false,
-    lazyCompilation: false,
+    lazyCompilation: false
   },
-  vitePlugins: [solid({ ssr: true })]
+  vitePlugins: [
+    () => ({
+      filters: ['.+'],
+      vitePlugin: solid({ ssr: true })
+    })
+  ]
 };

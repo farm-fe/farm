@@ -584,6 +584,9 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteHandleRenderChunkToFarmRenderResourcePot(): JsPlugin['renderResourcePot'] {
     return {
+      filters: {
+        paths: this.filters
+      },
       executor: this.wrapExecutor(
         async (param: RenderResourcePotParams, ctx) => {
           const hook = this.wrapRawPluginHook(
@@ -632,6 +635,9 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteAugmentChunkHashToFarmAugmentResourceHash(): JsPlugin['augmentResourceHash'] {
     return {
+      filters: {
+        paths: this.filters
+      },
       executor: this.wrapExecutor(async (param: ResourcePotInfo, context) => {
         const hook = this.wrapRawPluginHook(
           'augmentChunkHash',

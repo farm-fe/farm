@@ -14,6 +14,14 @@ import {
   UserConfig
 } from '../index.js';
 
+// https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
+// eslint-disable-next-line @typescript-eslint/ban-types
+type LiteralUnion<T extends string> = T | (string & {});
+
+type ResourcePotType = LiteralUnion<
+  'runtime' | 'js' | 'css' | 'html' | 'asset'
+>;
+
 export interface CompilationContextEmitFileParams {
   resolvedPath: string;
   name: string;
@@ -70,7 +78,7 @@ interface RenderedModule {
 
 export interface ResourcePotInfo {
   id: string;
-  resourcePotType: string;
+  resourcePotType: ResourcePotType;
   content: string;
   dynamicImports: string[];
   exports: string[];
@@ -183,13 +191,23 @@ export interface JsPlugin {
     executor: Callback<Config['config'], void>;
   };
 
-  renderResourcePot?: {
-    executor: Callback<RenderResourcePotParams, RenderResourcePotResult>;
-  };
+  renderResourcePot?: JsPluginHook<
+    {
+      resourcePotTypes?: ResourcePotType[];
+      paths?: string[];
+    },
+    RenderResourcePotParams,
+    RenderResourcePotResult
+  >;
 
-  augmentResourceHash?: {
-    executor: Callback<ResourcePotInfo, string>;
-  };
+  augmentResourceHash?: JsPluginHook<
+    {
+      resourcePotTypes?: ResourcePotType[];
+      paths?: string[];
+    },
+    ResourcePotInfo,
+    string
+  >;
 
   finalizeResources?: {
     executor: Callback<
