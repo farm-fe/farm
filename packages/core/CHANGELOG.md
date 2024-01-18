@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.15.7
+
+### Patch Changes
+
+- 0ab4edf9: Fix failed to load external cjs require when output esm
+- Updated dependencies [0ab4edf9]
+- Updated dependencies [0ab4edf9]
+  - @farmfe/runtime@0.9.2
+
 ## 0.15.6
 
 ### Patch Changes
