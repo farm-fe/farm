@@ -9,7 +9,7 @@
 
 use farmfe_core::{
   config::Mode,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem, ModuleType},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
@@ -32,7 +32,6 @@ pub struct SourceReplacer<'a> {
   top_level_mark: Mark,
   module_graph: &'a ModuleGraph,
   module_id: ModuleId,
-  module_system: ModuleSystem,
   mode: Mode,
   pub external_modules: Vec<String>,
 }
@@ -43,7 +42,6 @@ impl<'a> SourceReplacer<'a> {
     top_level_mark: Mark,
     module_graph: &'a ModuleGraph,
     module_id: ModuleId,
-    module_system: ModuleSystem,
     mode: Mode,
   ) -> Self {
     Self {
@@ -51,7 +49,6 @@ impl<'a> SourceReplacer<'a> {
       top_level_mark,
       module_graph,
       module_id,
-      module_system,
       mode,
       external_modules: vec![],
     }
