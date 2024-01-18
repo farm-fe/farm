@@ -275,7 +275,7 @@ export function proxyViteConfig(
         } else if (key === 'optimizeDeps') {
           return new Proxy(target.optimizeDeps || {}, {
             get(_, optimizeDepsKey) {
-              logger.warn(
+              logger.warnOnce(
                 `[vite-plugin] ${pluginName}: config "optimizeDeps" is not needed in farm, all of its options will be ignored. Current ignored option is: "${String(
                   optimizeDepsKey
                 )}"`
