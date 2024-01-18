@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.5.1
+
+### Patch Changes
+
+- 5c6d896d: fix #857 #460
+
 ## 0.5.0
 
 ### Minor Changes

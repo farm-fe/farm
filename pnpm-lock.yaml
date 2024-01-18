@@ -223,7 +223,7 @@ importers:
         specifier: workspace:^
         version: link:../../js-plugins/postcss
       '@farmfe/plugin-react':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.4.0
@@ -282,7 +282,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
         specifier: ^2.5.70
@@ -371,7 +371,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -442,7 +442,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.4.0
@@ -563,7 +563,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.4.0
@@ -612,7 +612,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.4.0
@@ -655,7 +655,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^0.4.0
