@@ -241,7 +241,7 @@ export class DevServer implements ImplDevServer {
       // find hmr boundary starting from the parent of the file
       this.logger.info(`HMR invalidate: ${path}. ${message ?? ''}`);
       const parentFiles = this.compiler.getParentFiles(path);
-      this.hmrEngine.hmrUpdate(parentFiles);
+      this.hmrEngine.hmrUpdate(parentFiles, true);
     });
   }
 
