@@ -3,4 +3,4 @@
 '@farmfe/core': patch
 ---
 
-fix restart server exit(0) bump tepmlate version
+fix restart server exit(0) bump template version
