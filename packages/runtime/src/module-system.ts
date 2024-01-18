@@ -169,6 +169,12 @@ export class ModuleSystem {
       resources.map((resource) => this.resourceLoader.load(resource))
     )
       .then(() => {
+        if (!this.modules[moduleId]) {
+          throw new Error(
+            `Dynamic imported module "${moduleId}" is not registered.`
+          );
+        }
+
         const result = this.require(moduleId);
         // if the module is async, return the default export, the default export should be a promise
         if (result.__farm_async) {
