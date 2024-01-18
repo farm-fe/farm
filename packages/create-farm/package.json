@@ -13,6 +13,7 @@
   "scripts": {
     "build": "farm build",
     "dev": "farm watch",
+    "clean": "farm clean",
     "prepublishOnly": "npm run build"
   },
   "author": "",
