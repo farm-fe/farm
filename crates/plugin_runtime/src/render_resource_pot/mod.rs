@@ -41,7 +41,9 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use self::source_replacer::{SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE};
+use self::source_replacer::{
+  ExistingCommonJsRequireVisitor, SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE,
+};
 
 // mod farm_module_system; // TODO: replace with farm_module_system later, as soon as it's ready
 mod source_replacer;
@@ -103,6 +105,17 @@ pub fn resource_pot_to_runtime_object(
           (unresolved_mark, top_level_mark)
         };
 
+        // replace commonjs require('./xxx') to require('./xxx', true)
+        if matches!(
+          module.meta.as_script().module_system,
+          ModuleSystem::CommonJs | ModuleSystem::Hybrid
+        ) {
+          cloned_module.visit_mut_with(&mut ExistingCommonJsRequireVisitor::new(
+            unresolved_mark,
+            top_level_mark,
+          ));
+        }
+
         // ESM to commonjs, then commonjs to farm's runtime module systems
         if matches!(
           module.meta.as_script().module_system,
@@ -139,17 +152,7 @@ pub fn resource_pot_to_runtime_object(
         // TODO support comments
         cloned_module.visit_mut_with(&mut fixer(None));
 
-        external_modules = source_replacer
-          .external_modules
-          .into_iter()
-          .map(|m| {
-            let module_system = module.meta.as_script().module_system.clone();
-            RenderedExternalModule {
-              id: m,
-              importer_module_system: module_system,
-            }
-          })
-          .collect::<Vec<_>>();
+        external_modules = source_replacer.external_modules;
       })?;
 
       let sourcemap_enabled = context.config.sourcemap.enabled(module.immutable);
@@ -251,7 +254,7 @@ pub fn resource_pot_to_runtime_object(
   }
 
   let mut external_modules = external_modules_set.into_iter().collect::<Vec<_>>();
-  external_modules.sort_by(|a, b| a.id.cmp(&b.id));
+  external_modules.sort();
 
   bundle.prepend("{");
   bundle.append("}", None);
@@ -352,21 +355,15 @@ fn wrap_module_ast(ast: SwcModule) -> SwcModule {
   }
 }
 
-#[derive(PartialEq, Eq, Hash)]
-pub struct RenderedExternalModule {
-  pub id: String,
-  pub importer_module_system: ModuleSystem,
-}
-
 pub struct RenderedScriptModule {
   pub id: ModuleId,
   pub module: MagicString,
   pub rendered_module: RenderedModule,
-  pub external_modules: Vec<RenderedExternalModule>,
+  pub external_modules: Vec<String>,
 }
 
 pub struct RenderedJsResourcePot {
   pub bundle: Bundle,
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
-  pub external_modules: Vec<RenderedExternalModule>,
+  pub external_modules: Vec<String>,
 }

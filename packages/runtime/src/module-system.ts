@@ -76,7 +76,7 @@ export class ModuleSystem {
   }
 
   // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
-  require(moduleId: string): any {
+  require(moduleId: string, isCJS = false): any {
     if (INTERNAL_MODULE_MAP[moduleId]) {
       return INTERNAL_MODULE_MAP[moduleId];
     }
@@ -102,9 +102,10 @@ export class ModuleSystem {
         const exports = this.externalModules[moduleId];
 
         // fix `const assert = require('assert');` when assert is external. This leads to `assert is not a function` error caused by default export different from esm and cjs
-        if (exports.__farm_importer_cjs) {
+        if (isCJS) {
           return exports.default || exports;
         }
+
         return exports;
       }
       // try node require if target Env is node

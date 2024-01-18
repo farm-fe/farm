@@ -362,17 +362,15 @@ impl Plugin for FarmPluginRuntime {
         for external_module in external_modules {
           // replace all invalid characters with `_`
           let mut name = external_module
-            .id
             .chars()
             .map(|c| if c.is_alphanumeric() { c } else { '_' })
             .collect::<String>();
           name = format!("__farm_external_module_{}", name);
-          let source_id = &external_module.id;
 
           let import_str = if context.config.output.format == ModuleFormat::EsModule {
-            format!("import * as {name} from {source_id:?};")
+            format!("import * as {name} from {external_module:?};")
           } else {
-            format!("const {name} = require({source_id:?});")
+            format!("const {name} = require({external_module:?});")
           };
           import_strings.push(import_str);
           source_to_names.push((name, external_module));
@@ -383,21 +381,13 @@ impl Plugin for FarmPluginRuntime {
           "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
           source_to_names
             .into_iter()
-            .map(|(name, em)| {
-              let source = &em.id;
-
-              if context.config.output.format == ModuleFormat::EsModule {
-                if em.importer_module_system == ModuleSystem::EsModule {
-                  format!("{source:?}: {{ ...{name}, __esModule: true }}")
-                } else {
-                  format!(
-                    "{source:?}: {{ ...{name}, __esModule: true, __farm_importer_cjs: true }}"
-                  )
-                }
+            .map(
+              |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
+                format!("{source:?}: {{ ...{name}, __esModule: true }}")
               } else {
                 format!("{source:?}: {name}")
               }
-            })
+            )
             .collect::<Vec<_>>()
             .join(",")
         ));
@@ -410,21 +400,14 @@ impl Plugin for FarmPluginRuntime {
           "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
           external_modules
             .into_iter()
-            .map(|em| {
-              let source = em.id;
+            .map(|source| {
               // TODO: make window['{source}'] configurable.
               let source_obj = format!(
                 "(globalThis || window || self || {{}})['{}'] || {{}}",
                 source
               );
               if context.config.output.format == ModuleFormat::EsModule {
-                if em.importer_module_system == ModuleSystem::EsModule {
-                  format!("{source:?}: {{ ...({source_obj}), __esModule: true }}")
-                } else {
-                  format!(
-                    "{source:?}: {{ ...({source_obj}), __esModule: true, __farm_importer_cjs: true }}"
-                  )
-                }
+                format!("{source:?}: {{ ...({source_obj}), __esModule: true }}")
               } else {
                 format!("{source:?}: {source_obj}")
               }
