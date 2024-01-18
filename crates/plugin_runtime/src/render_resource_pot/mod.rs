@@ -41,7 +41,9 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use self::source_replacer::{SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE};
+use self::source_replacer::{
+  ExistingCommonJsRequireVisitor, SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE,
+};
 
 // mod farm_module_system; // TODO: replace with farm_module_system later, as soon as it's ready
 mod source_replacer;
@@ -103,6 +105,17 @@ pub fn resource_pot_to_runtime_object(
           (unresolved_mark, top_level_mark)
         };
 
+        // replace commonjs require('./xxx') to require('./xxx', true)
+        if matches!(
+          module.meta.as_script().module_system,
+          ModuleSystem::CommonJs | ModuleSystem::Hybrid
+        ) {
+          cloned_module.visit_mut_with(&mut ExistingCommonJsRequireVisitor::new(
+            unresolved_mark,
+            top_level_mark,
+          ));
+        }
+
         // ESM to commonjs, then commonjs to farm's runtime module systems
         if matches!(
           module.meta.as_script().module_system,
@@ -129,7 +142,6 @@ pub fn resource_pot_to_runtime_object(
           top_level_mark,
           module_graph,
           m_id.clone(),
-          module.meta.as_script().module_system.clone(),
           context.config.mode.clone(),
         );
         cloned_module.visit_mut_with(&mut source_replacer);

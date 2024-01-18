@@ -9,17 +9,19 @@
 
 use farmfe_core::{
   config::Mode,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem, ModuleType},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
+  swc_ecma_ast::{Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
 use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
-
+// transformed from dynamic import, e.g `import('./xxx')`
 pub const DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
+// transformed from static import, e.g `import xxx from './xxx'`
 pub const FARM_REQUIRE: &str = "farmRequire";
+
 /// replace all `require('./xxx')` to the actual id and transform require('./xxx'). for example:
 /// ```js
 /// // a.js is originally a commonjs module
@@ -32,7 +34,6 @@ pub struct SourceReplacer<'a> {
   top_level_mark: Mark,
   module_graph: &'a ModuleGraph,
   module_id: ModuleId,
-  module_system: ModuleSystem,
   mode: Mode,
   pub external_modules: Vec<String>,
 }
@@ -43,7 +44,6 @@ impl<'a> SourceReplacer<'a> {
     top_level_mark: Mark,
     module_graph: &'a ModuleGraph,
     module_id: ModuleId,
-    module_system: ModuleSystem,
     mode: Mode,
   ) -> Self {
     Self {
@@ -51,7 +51,6 @@ impl<'a> SourceReplacer<'a> {
       top_level_mark,
       module_graph,
       module_id,
-      module_system,
       mode,
       external_modules: vec![],
     }
@@ -83,7 +82,8 @@ enum SourceReplaceResult {
 
 impl SourceReplacer<'_> {
   fn replace_source_with_id(&mut self, call_expr: &mut CallExpr) -> SourceReplaceResult {
-    if call_expr.args.len() != 1 {
+    // require('./xxx') or require('./xxx', true)
+    if call_expr.args.len() < 1 && call_expr.args.len() > 2 {
       call_expr.visit_mut_children_with(self);
       return SourceReplaceResult::NotReplaced;
     }
@@ -177,5 +177,39 @@ impl SourceReplacer<'_> {
 
     call_expr.visit_mut_children_with(self);
     SourceReplaceResult::NotReplaced
+  }
+}
+
+/// replace require('./xxx') to require('./xxx', true)
+pub struct ExistingCommonJsRequireVisitor {
+  unresolved_mark: Mark,
+  top_level_mark: Mark,
+}
+
+impl ExistingCommonJsRequireVisitor {
+  pub fn new(unresolved_mark: Mark, top_level_mark: Mark) -> Self {
+    Self {
+      unresolved_mark,
+      top_level_mark,
+    }
+  }
+}
+
+impl VisitMut for ExistingCommonJsRequireVisitor {
+  fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
+    if call_expr.args.len() != 1 {
+      call_expr.visit_mut_children_with(self);
+      return;
+    }
+
+    if is_commonjs_require(self.unresolved_mark, self.top_level_mark, &*call_expr) {
+      call_expr.args.push(ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Lit(Lit::Bool(Bool {
+          span: DUMMY_SP,
+          value: true,
+        }))),
+      });
+    }
   }
 }

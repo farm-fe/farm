@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 1504a51b: fix restart server exit(0) bump tepmlate version
+- 1504a51b: fix restart server exit(0) bump template version
 
 ## 1.5.1
 

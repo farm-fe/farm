@@ -51,6 +51,16 @@ jobs:
       - name: Test Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
 
+      # test create farm
+      - name: Build Create Farm
+        run: cd packages/create-farm && npm run build
+      - name: Test Create Farm React - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-react --template react --skip-install && cd my-test-app-react && pnpm i && pnpm build
+      - name: Test Create Farm Vue - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-vue --template vue --skip-install && cd my-test-app-vue && pnpm i && pnpm build
+      - name: Test Create Farm Solid - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-solid --template solid --skip-install && cd my-test-app-solid && pnpm i && pnpm build
+
   type-check:
     name: Type Check
     runs-on: ubuntu-latest

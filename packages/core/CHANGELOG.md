@@ -5,7 +5,7 @@
 ### Patch Changes
 
 - 3abd5112: Change file watcher to chokidar to be compatible with Vite
-- 1504a51b: fix restart server exit(0) bump tepmlate version
+- 1504a51b: fix restart server exit(0) bump template version
 - 3abd5112: Support vite plugin svelte. #825
 
 ## 0.15.5

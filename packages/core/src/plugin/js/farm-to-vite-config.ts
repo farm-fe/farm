@@ -123,7 +123,8 @@ export function proxyViteConfig(
         'optimizeDeps',
         'ssr',
         'logLevel',
-        'experimental'
+        'experimental',
+        'test'
       ];
 
       if (allowedKeys.includes(String(key))) {
