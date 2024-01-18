@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.2
+
+### Patch Changes
+
+- 1504a51b: fix restart server exit(0) bump tepmlate version
+
 ## 1.5.1
 
 ### Patch Changes
