@@ -419,10 +419,10 @@ impl Plugin for FarmPluginRuntime {
               );
               if context.config.output.format == ModuleFormat::EsModule {
                 if em.importer_module_system == ModuleSystem::EsModule {
-                  format!("{source:?}: {{ ...{source_obj}, __esModule: true }}")
+                  format!("{source:?}: {{ ...({source_obj}), __esModule: true }}")
                 } else {
                   format!(
-                    "{source:?}: {{ ...{source_obj}, __esModule: true, __farm_importer_cjs: true }}"
+                    "{source:?}: {{ ...({source_obj}), __esModule: true, __farm_importer_cjs: true }}"
                   )
                 }
               } else {
