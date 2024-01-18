@@ -21,6 +21,8 @@ export interface Logger {
   debug(message: string): void;
   info(message: string): void;
   warn(message: string): void;
+  warnOnce(message: string): void;
+  errorOnce(message: string | Error): void;
   error(message: string | Error, options?: ErrorOptions): void;
 }
 

@@ -1,5 +1,12 @@
 # create-farm
 
+## 1.5.4
+
+### Patch Changes
+
+- 91c5f0da: fix restart server exit(0) bump template version
+- 91c5f0da: add svelte template
+
 ## 1.5.3
 
 ### Patch Changes
