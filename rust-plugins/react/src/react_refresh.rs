@@ -5,6 +5,7 @@ use farmfe_core::{
 use farmfe_toolkit_plugin_types::{libloading::Library, swc_ast::parse_module};
 
 const REFRESH_RUNTIME_IMPORT: &str = "import RefreshRuntime from 'react-refresh'";
+pub const IS_REACT_REFRESH_BOUNDARY: &str = "farmfe_plugin_react_is_react_refresh_boundary";
 
 const PRE_CODE: &str = r#"
 var prevRefreshReg;
@@ -23,18 +24,22 @@ window.$RefreshReg$ = prevRefreshReg;
 window.$RefreshSig$ = prevRefreshSig;
 
 if (import.meta.hot) {
-  import.meta.hot.accept();
+  import.meta.hot.accept(mod => {
+    if (!isReactRefreshBoundary(RefreshRuntime, mod)) {
+      import.meta.hot.invalidate(`Not all exports of ${module.id} are react components`);
+    }
+  });
 }
 
 RefreshRuntime.performReactRefresh();
 "#;
 
 fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
-  let import_decl = {
+  let parse_import_decl = |file_name: &str, code: &str| {
     let mut module = parse_module(
       lib,
-      "refreshRuntimeImport",
-      REFRESH_RUNTIME_IMPORT,
+      file_name,
+      code,
       Syntax::Es(Default::default()),
       Default::default(),
     )
@@ -47,6 +52,18 @@ fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
     }
   };
 
+  let import_decl = parse_import_decl("refreshRuntimeImport", REFRESH_RUNTIME_IMPORT);
+
+  // inject react boundary detection
+  let react_boundary_import =
+    format!("import isReactRefreshBoundary from '{IS_REACT_REFRESH_BOUNDARY}'");
+  let react_boundary_import_decl =
+    parse_import_decl("isReactRefreshBoundary", &react_boundary_import);
+
+  ast.body.insert(
+    0,
+    ModuleItem::ModuleDecl(ModuleDecl::Import(react_boundary_import_decl)),
+  );
   ast
     .body
     .insert(0, ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)));

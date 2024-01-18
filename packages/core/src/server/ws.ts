@@ -169,7 +169,7 @@ export default class WsServer implements IWebSocketServer {
         }
         // transform vite js-update to farm update
         if (parsed?.type === 'js-update' && parsed?.path) {
-          this.hmrEngine.hmrUpdate(parsed.path);
+          this.hmrEngine.hmrUpdate(parsed.path, true);
           return;
         }
 
