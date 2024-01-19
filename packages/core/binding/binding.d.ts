@@ -5,14 +5,14 @@
 
 export interface JsPluginAugmentResourceHashHookFilters {
   resourcePotTypes: Array<string>
-  paths: Array<string>
+  moduleIds: Array<string>
 }
 export interface JsPluginLoadHookFilters {
   resolvedPaths: Array<string>
 }
 export interface JsPluginRenderResourcePotHookFilters {
   resourcePotTypes: Array<string>
-  paths: Array<string>
+  moduleIds: Array<string>
 }
 /** Resolve hook filters, works as `||`. If any importers or sources matches any regex item in the Vec, we treat it as filtered. */
 export interface JsPluginResolveHookFilters {

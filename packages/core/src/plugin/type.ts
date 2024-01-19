@@ -194,7 +194,7 @@ export interface JsPlugin {
   renderResourcePot?: JsPluginHook<
     {
       resourcePotTypes?: ResourcePotType[];
-      paths?: string[];
+      moduleIds?: string[];
     },
     RenderResourcePotParams,
     RenderResourcePotResult
@@ -203,7 +203,7 @@ export interface JsPlugin {
   augmentResourceHash?: JsPluginHook<
     {
       resourcePotTypes?: ResourcePotType[];
-      paths?: string[];
+      moduleIds?: string[];
     },
     ResourcePotInfo,
     string

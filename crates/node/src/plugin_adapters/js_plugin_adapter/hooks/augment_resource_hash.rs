@@ -34,7 +34,7 @@ impl JsPluginAugmentResourceHashHook {
       .contains(&param.resource_pot_type)
       && self
         .filters
-        .paths
+        .module_ids
         .iter()
         .any(|p| param.module_ids.iter().any(|m| p.is_match(&m.to_string())))
     {
@@ -48,13 +48,13 @@ impl JsPluginAugmentResourceHashHook {
 #[napi(object)]
 pub struct JsPluginAugmentResourceHashHookFilters {
   pub resource_pot_types: Vec<String>,
-  pub paths: Vec<String>,
+  pub module_ids: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct PluginAugmentResourceHashHookFilters {
   pub resource_pot_types: Vec<ResourcePotType>,
-  pub paths: Vec<ConfigRegex>,
+  pub module_ids: Vec<ConfigRegex>,
 }
 
 impl From<JsPluginAugmentResourceHashHookFilters> for PluginAugmentResourceHashHookFilters {
@@ -65,8 +65,8 @@ impl From<JsPluginAugmentResourceHashHookFilters> for PluginAugmentResourceHashH
         .into_iter()
         .map(|ty| ty.into())
         .collect(),
-      paths: f
-        .paths
+      module_ids: f
+        .module_ids
         .into_iter()
         .map(|p| (ConfigRegex::new(&p)))
         .collect(),

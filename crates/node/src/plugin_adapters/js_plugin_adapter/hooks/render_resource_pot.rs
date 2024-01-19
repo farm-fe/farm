@@ -17,13 +17,13 @@ use crate::{
 #[napi(object)]
 pub struct JsPluginRenderResourcePotHookFilters {
   pub resource_pot_types: Vec<String>,
-  pub paths: Vec<String>,
+  pub module_ids: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct PluginRenderResourcePotHookFilters {
   pub resource_pot_types: Vec<ResourcePotType>,
-  pub paths: Vec<ConfigRegex>,
+  pub module_ids: Vec<ConfigRegex>,
 }
 
 pub struct JsPluginRenderResourcePotHook {
@@ -39,8 +39,8 @@ impl From<JsPluginRenderResourcePotHookFilters> for PluginRenderResourcePotHookF
         .into_iter()
         .map(|ty| ty.into())
         .collect(),
-      paths: f
-        .paths
+      module_ids: f
+        .module_ids
         .into_iter()
         .map(|p| (ConfigRegex::new(&p)))
         .collect(),
@@ -65,7 +65,7 @@ impl JsPluginRenderResourcePotHook {
       .filters
       .resource_pot_types
       .contains(&param.resource_pot_info.resource_pot_type)
-      || self.filters.paths.iter().any(|f| {
+      || self.filters.module_ids.iter().any(|f| {
         param
           .resource_pot_info
           .module_ids

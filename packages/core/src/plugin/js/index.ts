@@ -172,20 +172,38 @@ export function convertPlugin(plugin: JsPlugin): void {
   if (plugin.renderResourcePot) {
     plugin.renderResourcePot.filters ??= {};
 
+    if (
+      !plugin.renderResourcePot?.filters?.moduleIds &&
+      !plugin.renderResourcePot?.filters?.resourcePotTypes
+    ) {
+      throw new Error(
+        `renderResourcePot hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+      );
+    }
+
     if (!plugin.renderResourcePot.filters?.resourcePotTypes) {
       plugin.renderResourcePot.filters.resourcePotTypes = [];
-    } else if (!plugin.renderResourcePot.filters?.paths) {
-      plugin.renderResourcePot.filters.paths ??= DEFAULT_FILTERS;
+    } else if (!plugin.renderResourcePot.filters?.moduleIds) {
+      plugin.renderResourcePot.filters.moduleIds = [];
     }
   }
 
   if (plugin.augmentResourceHash) {
     plugin.augmentResourceHash.filters ??= {};
 
+    if (
+      !plugin.augmentResourceHash?.filters?.moduleIds &&
+      !plugin.augmentResourceHash?.filters?.resourcePotTypes
+    ) {
+      throw new Error(
+        `augmentResourceHash hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+      );
+    }
+
     if (!plugin.augmentResourceHash.filters?.resourcePotTypes) {
       plugin.augmentResourceHash.filters.resourcePotTypes = [];
-    } else if (!plugin.augmentResourceHash.filters?.paths) {
-      plugin.augmentResourceHash.filters.paths ??= DEFAULT_FILTERS;
+    } else if (!plugin.augmentResourceHash.filters?.moduleIds) {
+      plugin.augmentResourceHash.filters.moduleIds = [];
     }
   }
 
@@ -205,18 +223,18 @@ export function convertPlugin(plugin: JsPlugin): void {
     }
   }
   if (
-    plugin.augmentResourceHash?.filters?.paths &&
+    plugin.augmentResourceHash?.filters?.moduleIds &&
     process.platform === 'win32'
   ) {
-    plugin.augmentResourceHash.filters.paths =
-      plugin.augmentResourceHash.filters.paths.map(compatibleWin32Path);
+    plugin.augmentResourceHash.filters.moduleIds =
+      plugin.augmentResourceHash.filters.moduleIds.map(compatibleWin32Path);
   }
 
   if (
-    plugin.renderResourcePot?.filters?.paths &&
+    plugin.renderResourcePot?.filters?.moduleIds &&
     process.platform === 'win32'
   ) {
-    plugin.renderResourcePot.filters.paths =
-      plugin.renderResourcePot.filters.paths.map(compatibleWin32Path);
+    plugin.renderResourcePot.filters.moduleIds =
+      plugin.renderResourcePot.filters.moduleIds.map(compatibleWin32Path);
   }
 }
