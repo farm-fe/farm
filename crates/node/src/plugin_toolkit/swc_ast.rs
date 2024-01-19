@@ -3,10 +3,10 @@ use std::sync::Arc;
 use farmfe_core::{
   error::Result,
   swc_common::{SourceFile, SourceMap},
-  swc_ecma_ast::{EsVersion, Module as SwcModule},
+  swc_ecma_ast::EsVersion,
   swc_ecma_parser::Syntax,
 };
-use farmfe_toolkit::script::parse_module;
+use farmfe_toolkit::script::{parse_module, ParseScriptModuleResult};
 
 #[no_mangle]
 pub fn farm_swc_parse_module(
@@ -14,7 +14,7 @@ pub fn farm_swc_parse_module(
   content: &str,
   syntax: Syntax,
   target: EsVersion,
-) -> Result<SwcModule> {
+) -> Result<ParseScriptModuleResult> {
   parse_module(id, content, syntax, target)
 }
 

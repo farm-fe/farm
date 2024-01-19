@@ -14,7 +14,10 @@ use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::parse_html_document,
-  script::{codegen_module, parse_module, swc_try_with::try_with, ParseScriptModuleResult},
+  script::{
+    codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
+    ParseScriptModuleResult,
+  },
   swc_css_minifier::minify,
   swc_ecma_minifier::{
     optimize,
@@ -74,8 +77,8 @@ impl FarmPluginMinify {
           top_level_mark,
         },
       );
-      // TODO support comments
-      program = program.fold_with(&mut fixer(None));
+
+      program = program.fold_with(&mut fixer(Some(&comments)));
 
       let ast = match program {
         Program::Module(ast) => ast,
@@ -95,7 +98,10 @@ impl FarmPluginMinify {
           None
         },
         context.config.minify,
-        Some(&comments),
+        Some(CodeGenCommentsConfig {
+          comments: &comments,
+          config: &context.config.comments,
+        }),
       )
       .unwrap();
 
@@ -125,7 +131,10 @@ impl FarmPluginMinify {
     });
 
     try_with(cm.clone(), &context.meta.css.globals, || {
-      let ParseCssModuleResult { mut ast, comments } = parse_css_stylesheet(
+      let ParseCssModuleResult {
+        mut ast,
+        comments: _,
+      } = parse_css_stylesheet(
         &resource_pot.name,
         resource_pot.meta.rendered_content.clone(),
       )

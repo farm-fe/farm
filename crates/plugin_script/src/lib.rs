@@ -119,7 +119,7 @@ impl Plugin for FarmPluginScript {
           module_system: ModuleSystem::Custom(String::from("unknown")),
           hmr_self_accepted: false,
           hmr_accepted_deps: Default::default(),
-          comments: CommentsMetaData::from(comments.take_all()),
+          comments: CommentsMetaData::from(comments),
         };
 
         Ok(Some(ModuleMetaData::Script(meta)))
@@ -187,7 +187,7 @@ impl Plugin for FarmPluginScript {
 
     if module.module_type.is_script() {
       let module_ast = &module.meta.as_script().ast;
-      // TODO deal with dynamic import, when dynamic import and static import are mixed, using static import
+
       let mut analyzer = DepsAnalyzer::new(
         &module.id,
         module_ast,

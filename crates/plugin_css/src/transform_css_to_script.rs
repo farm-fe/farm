@@ -63,10 +63,10 @@ pub fn transform_css_to_script_modules(
           && !cache_manager.custom.is_cache_changed(&store_key)
         {
           let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
-          let meta = deserialize!(&cache, ModuleMetaData);
+          let meta = deserialize!(&cache, Box<ModuleMetaData>);
           let mut module_graph = context.module_graph.write();
           let module = module_graph.module_mut(&module_id).unwrap();
-          module.meta = Box::new(meta);
+          module.meta = meta;
           module.module_type = ModuleType::Js;
           return Ok(());
         }
@@ -157,7 +157,7 @@ pub fn transform_css_to_script_modules(
           module_system: ModuleSystem::EsModule,
           hmr_self_accepted: true,
           hmr_accepted_deps: Default::default(),
-          comments: CommentsMetaData::from(comments.take_all()),
+          comments: CommentsMetaData::from(comments),
         }));
 
         module.module_type = ModuleType::Js;

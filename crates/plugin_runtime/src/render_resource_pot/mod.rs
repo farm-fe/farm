@@ -26,6 +26,7 @@ use farmfe_toolkit::{
   script::{
     codegen_module,
     swc_try_with::{resolve_module_mark, try_with},
+    CodeGenCommentsConfig,
   },
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
@@ -45,7 +46,7 @@ use self::source_replacer::{
   ExistingCommonJsRequireVisitor, SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE,
 };
 
-// mod farm_module_system; // TODO: replace with farm_module_system later, as soon as it's ready
+// mod farm_module_system;
 mod source_replacer;
 
 /// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
@@ -89,6 +90,7 @@ pub fn resource_pot_to_runtime_object(
         content: module.content.clone(),
       });
       let mut external_modules = vec![];
+      let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
 
       try_with(cm.clone(), &context.meta.script.globals, || {
         let (unresolved_mark, top_level_mark) = if module.meta.as_script().unresolved_mark == 0
@@ -123,16 +125,15 @@ pub fn resource_pot_to_runtime_object(
         ) {
           cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
           cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
-          cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
+          cloned_module.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
             unresolved_mark,
             Config {
-              // TODO process dynamic import by ourselves later
               ignore_dynamic: true,
               preserve_import_meta: true,
               ..Default::default()
             },
             enable_available_feature_from_es_version(context.config.script.target),
-            None,
+            Some(&comments),
           ));
         }
 
@@ -149,8 +150,8 @@ pub fn resource_pot_to_runtime_object(
           top_level_mark,
           ..Default::default()
         }));
-        // TODO support comments
-        cloned_module.visit_mut_with(&mut fixer(None));
+
+        cloned_module.visit_mut_with(&mut fixer(Some(&comments)));
 
         external_modules = source_replacer.external_modules;
       })?;
@@ -169,6 +170,10 @@ pub fn resource_pot_to_runtime_object(
           None
         },
         false,
+        Some(CodeGenCommentsConfig {
+          comments: &comments,
+          config: &context.config.comments,
+        }),
       )
       .map_err(|e| CompilationError::RenderScriptModuleError {
         id: m_id.to_string(),
@@ -318,6 +323,7 @@ fn wrap_module_ast(ast: SwcModule) -> SwcModule {
             Arc::new(Default::default()),
             None,
             false,
+            None,
           )
           .unwrap();
 

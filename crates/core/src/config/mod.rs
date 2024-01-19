@@ -6,12 +6,13 @@ use swc_css_prefixer::options::Targets;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
 use self::{
-  config_regex::ConfigRegex, html::HtmlConfig, partial_bundling::PartialBundlingConfig,
-  preset_env::PresetEnvConfig, script::ScriptConfig,
+  comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
+  partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
 
+pub mod comments;
 pub mod config_regex;
 pub mod html;
 pub mod partial_bundling;
@@ -44,6 +45,8 @@ pub struct Config {
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
   pub persistent_cache: Box<persistent_cache::PersistentCacheConfig>,
+  /// comments config for script, css and html
+  pub comments: Box<CommentsConfig>,
   /// preserved for future compatibility usage when there are more config options
   pub custom: Box<HashMap<String, String>>,
 }
@@ -80,6 +83,7 @@ impl Default for Config {
         // the config file path will be set after the Config is initialized
         persistent_cache::PersistentCacheConfig::get_default_config(&root),
       ),
+      comments: Box::new(Default::default()),
       custom: Box::<HashMap<String, String>>::default(),
     }
   }

@@ -16,7 +16,9 @@ use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
 use std::collections::HashSet;
 use swc_common::{
-  comments::{Comment, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner},
+  comments::{
+    Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
+  },
   BytePos, DUMMY_SP,
 };
 use swc_css_ast::Stylesheet;
@@ -234,9 +236,9 @@ pub struct CommentsMetaData {
   pub trailing: Vec<CommentsMetaDataItem>,
 }
 
-impl From<(SingleThreadedCommentsMap, SingleThreadedCommentsMap)> for CommentsMetaData {
-  fn from(value: (SingleThreadedCommentsMap, SingleThreadedCommentsMap)) -> Self {
-    let (swc_leading_map, swc_trailing_map) = value;
+impl From<SingleThreadedComments> for CommentsMetaData {
+  fn from(value: SingleThreadedComments) -> Self {
+    let (swc_leading_map, swc_trailing_map) = value.take_all();
     let transform_comment_map = |map: SingleThreadedCommentsMap| {
       map
         .take()
@@ -255,8 +257,8 @@ impl From<(SingleThreadedCommentsMap, SingleThreadedCommentsMap)> for CommentsMe
   }
 }
 
-impl Into<(SingleThreadedCommentsMap, SingleThreadedCommentsMap)> for CommentsMetaData {
-  fn into(self) -> (SingleThreadedCommentsMap, SingleThreadedCommentsMap) {
+impl Into<SingleThreadedComments> for CommentsMetaData {
+  fn into(self) -> SingleThreadedComments {
     let transform_comment_map = |comments: Vec<CommentsMetaDataItem>| {
       Rc::new(RefCell::new(
         comments
@@ -269,7 +271,7 @@ impl Into<(SingleThreadedCommentsMap, SingleThreadedCommentsMap)> for CommentsMe
     let leading = transform_comment_map(self.leading);
     let trailing = transform_comment_map(self.trailing);
 
-    (leading, trailing)
+    SingleThreadedComments::from_leading_and_trailing(leading, trailing)
   }
 }
 
@@ -319,6 +321,10 @@ impl ScriptModuleMetaData {
 
   pub fn set_ast(&mut self, ast: SwcModule) {
     self.ast = ast;
+  }
+
+  pub fn set_comments(&mut self, comments: CommentsMetaData) {
+    self.comments = comments;
   }
 }
 

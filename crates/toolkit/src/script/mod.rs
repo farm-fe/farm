@@ -7,7 +7,7 @@ use swc_ecma_codegen::{
 use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax, TsConfig};
 
 use farmfe_core::{
-  config::ScriptParserConfig,
+  config::{comments::CommentsConfig, ScriptParserConfig},
   error::{CompilationError, Result},
   module::{ModuleSystem, ModuleType},
   plugin::ResolveKind,
@@ -19,14 +19,11 @@ use farmfe_core::{
 };
 use swc_error_reporters::handler::try_with_handler;
 
-use crate::common::{create_swc_source_map, Source};
+use crate::common::{create_swc_source_map, minify_comments, Source};
+
+pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 pub mod swc_try_with;
-
-pub struct ParseScriptModuleResult {
-  pub ast: SwcModule,
-  pub comments: SingleThreadedComments,
-}
 
 /// parse the content of a module to [SwcModule] ast.
 pub fn parse_module(
@@ -96,6 +93,11 @@ pub fn parse_stmt(
     })
 }
 
+pub struct CodeGenCommentsConfig<'a> {
+  pub comments: &'a SingleThreadedComments,
+  pub config: &'a CommentsConfig,
+}
+
 /// ast codegen, return generated utf8 bytes. using [String::from_utf8] if you want to transform the bytes to string.
 /// Example:
 /// ```ignore
@@ -108,7 +110,7 @@ pub fn codegen_module(
   cm: Arc<SourceMap>,
   src_map: Option<&mut Vec<(BytePos, LineCol)>>,
   minify: bool,
-  comments: Option<&dyn Comments>,
+  comments_cfg: Option<CodeGenCommentsConfig>,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
 
@@ -119,6 +121,12 @@ pub fn codegen_module(
       .with_target(target)
       .with_omit_last_semi(true)
       .with_ascii_only(false);
+
+    if let Some(comments_cfg) = &comments_cfg {
+      minify_comments(comments_cfg.comments, comments_cfg.config);
+    }
+
+    let comments = comments_cfg.map(|c| c.comments as &dyn Comments);
 
     let mut emitter = Emitter {
       cfg,

@@ -16,6 +16,7 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
+farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }
 swc_ecma_parser = { version = "0.141.23" }
 swc_ecma_visit = { version = "0.96.10" }
 swc_ecma_codegen = { version = "0.146.29" }

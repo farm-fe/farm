@@ -1556,6 +1556,7 @@ dependencies = [
  "anyhow",
  "farmfe_core",
  "farmfe_testing_helpers",
+ "farmfe_toolkit_plugin_types",
  "farmfe_utils 0.1.0",
  "lazy_static",
  "preset_env_base",

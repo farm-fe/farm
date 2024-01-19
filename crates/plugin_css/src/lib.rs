@@ -261,7 +261,7 @@ impl Plugin for FarmPluginCss {
         let cache_id = format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX);
         self.ast_map.lock().insert(
           cache_id.clone(),
-          (css_stylesheet, CommentsMetaData::from(comments.take_all())),
+          (css_stylesheet, CommentsMetaData::from(comments)),
         );
         self
           .content_map
@@ -377,7 +377,7 @@ impl Plugin for FarmPluginCss {
           Arc::new(param.content.replace("--:", "--farm-empty:")),
         )?;
 
-        (ast, CommentsMetaData::from(comments.take_all()))
+        (ast, CommentsMetaData::from(comments))
       };
 
       let meta = ModuleMetaData::Css(CssModuleMetaData {

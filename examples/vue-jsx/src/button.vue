@@ -8,7 +8,7 @@
 
 <script lang="tsx" setup>
 import { ref, computed } from 'vue';
-
+// button 0
 const currentColor = ref('red');
 
 const comp = computed(() => (<div style={{ width: '100%', height: '100%', backgroundColor: currentColor.value }}></div>));
