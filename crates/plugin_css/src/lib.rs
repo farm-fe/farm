@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
+use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
@@ -31,6 +32,7 @@ use farmfe_core::{
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
+use farmfe_toolkit::css::ParseCssModuleResult;
 use farmfe_toolkit::{
   common::Source,
   css::{codegen_css_stylesheet, parse_css_stylesheet},
@@ -62,7 +64,7 @@ struct CssModulesCache {
 
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
-  ast_map: Mutex<HashMap<String, Stylesheet>>,
+  ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
   content_map: Mutex<HashMap<String, String>>,
   sourcemap_map: Mutex<HashMap<String, String>>,
 }
@@ -227,7 +229,10 @@ impl Plugin for FarmPluginCss {
           &query_string,
           &context.config.root,
         );
-        let mut css_stylesheet = parse_css_stylesheet(
+        let ParseCssModuleResult {
+          ast: mut css_stylesheet,
+          comments,
+        } = parse_css_stylesheet(
           &css_modules_module_id.to_string(),
           Arc::new(
             // replace --: '' to --farm-empty: ''
@@ -254,7 +259,10 @@ impl Plugin for FarmPluginCss {
 
         // we can not use css_modules_resolved_path here because of the compatibility of windows. eg: \\ vs \\\\
         let cache_id = format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX);
-        self.ast_map.lock().insert(cache_id.clone(), css_stylesheet);
+        self.ast_map.lock().insert(
+          cache_id.clone(),
+          (css_stylesheet, CommentsMetaData::from(comments.take_all())),
+        );
         self
           .content_map
           .lock()
@@ -356,22 +364,25 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let css_stylesheet = if is_farm_css_modules(&param.resolved_path) {
+      let (css_stylesheet, comments) = if is_farm_css_modules(&param.resolved_path) {
         self
           .ast_map
           .lock()
           .remove(&param.resolved_path)
           .unwrap_or_else(|| panic!("ast not found {:?}", param.resolved_path))
       } else {
-        parse_css_stylesheet(
+        let ParseCssModuleResult { ast, comments } = parse_css_stylesheet(
           &param.module_id.to_string(),
           // replace --: '' to --farm-empty: ''
           Arc::new(param.content.replace("--:", "--farm-empty:")),
-        )?
+        )?;
+
+        (ast, CommentsMetaData::from(comments.take_all()))
       };
 
       let meta = ModuleMetaData::Css(CssModuleMetaData {
         ast: css_stylesheet,
+        comments,
       });
 
       Ok(Some(meta))

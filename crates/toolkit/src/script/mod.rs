@@ -11,7 +11,10 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{ModuleSystem, ModuleType},
   plugin::ResolveKind,
-  swc_common::{BytePos, FileName, LineCol, Mark, SourceMap},
+  swc_common::{
+    comments::{Comments, SingleThreadedComments},
+    BytePos, FileName, LineCol, Mark, SourceMap,
+  },
   swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
 };
 use swc_error_reporters::handler::try_with_handler;
@@ -20,21 +23,26 @@ use crate::common::{create_swc_source_map, Source};
 
 pub mod swc_try_with;
 
+pub struct ParseScriptModuleResult {
+  pub ast: SwcModule,
+  pub comments: SingleThreadedComments,
+}
+
 /// parse the content of a module to [SwcModule] ast.
 pub fn parse_module(
   id: &str,
   content: &str,
   syntax: Syntax,
   target: EsVersion,
-) -> Result<SwcModule> {
+) -> Result<ParseScriptModuleResult> {
   let (cm, source_file) = create_swc_source_map(Source {
     path: PathBuf::from(id),
     content: Arc::new(content.to_string()),
   });
 
   let input = StringInput::from(&*source_file);
-  // TODO support parsing comments
-  let lexer = Lexer::new(syntax, target, input, None);
+  let comments = SingleThreadedComments::default();
+  let lexer = Lexer::new(syntax, target, input, Some(&comments));
 
   let mut parser = Parser::new_from(lexer);
   let module = parser.parse_module();
@@ -45,7 +53,7 @@ pub fn parse_module(
       recovered_errors.push(err);
     }
     Ok(m) => {
-      return Ok(m);
+      return Ok(ParseScriptModuleResult { ast: m, comments });
     }
   }
 
@@ -100,6 +108,7 @@ pub fn codegen_module(
   cm: Arc<SourceMap>,
   src_map: Option<&mut Vec<(BytePos, LineCol)>>,
   minify: bool,
+  comments: Option<&dyn Comments>,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
 
@@ -113,8 +122,7 @@ pub fn codegen_module(
 
     let mut emitter = Emitter {
       cfg,
-      // TODO preserve comments
-      comments: None,
+      comments,
       cm,
       wr,
     };

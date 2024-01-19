@@ -82,7 +82,7 @@ fn load_parse_and_analyze_deps() {
         .unwrap();
 
       let mut module = Module::new("any".into());
-      module.meta = module_meta;
+      module.meta = Box::new(module_meta);
       module.module_type = loaded.module_type;
 
       assert_eq!(module.meta.as_script().ast.body.len(), 5);

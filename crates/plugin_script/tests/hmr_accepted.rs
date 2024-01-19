@@ -54,7 +54,7 @@ fn hmr_accepted() {
       .unwrap();
 
     let mut module = Module::new("any".into());
-    module.meta = module_meta;
+    module.meta = Box::new(module_meta);
     module.module_type = loaded.module_type;
 
     assert!(!module.meta.as_script().hmr_self_accepted);

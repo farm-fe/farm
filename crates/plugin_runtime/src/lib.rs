@@ -184,7 +184,7 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
 
-    if let ModuleMetaData::Script(script) = &param.module.meta {
+    if let ModuleMetaData::Script(script) = &*param.module.meta {
       let mut has_import_star = false;
       let mut has_import_default = false;
       let mut has_export_star = false;
