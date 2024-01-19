@@ -91,7 +91,6 @@ export const brandColor = enabled
   ? createFormatter('\x1b[38;2;113;26;95m', '\x1b[39m')
   : String;
 
-// black
 export const black = enabled
   ? createFormatter('\x1b[38;2;0;0;0m', '\x1b[39m')
   : String;
@@ -106,7 +105,7 @@ export const blue = enabled
   ? createFormatter('\x1b[38;2;68;206;246m', '\x1b[39m')
   : String;
 export const magenta = enabled
-  ? createFormatter('\x1b[38;2;255;179;151m', '\x1b[39m')
+  ? createFormatter('\x1b[38;2;255;102;151m', '\x1b[39m')
   : String;
 export const purple = enabled
   ? createFormatter('\x1b[38;2;140;67;86m', '\x1b[39m')

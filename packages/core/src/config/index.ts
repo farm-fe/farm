@@ -375,11 +375,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.presetEnv === undefined && config.output?.targetEnv !== 'node') {
-    if (isProduction) {
-      config.presetEnv = true;
-    } else {
-      config.presetEnv = false;
-    }
+    config.presetEnv = false;
   }
 
   return config;

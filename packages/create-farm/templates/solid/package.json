@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.6.0",
-    "@farmfe/core": "^0.15.7",
+    "@farmfe/core": "^0.15.10",
     "solid-refresh": "^0.5.3",
     "vite-plugin-solid": "^2.7.0"
   },
