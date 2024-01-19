@@ -7,6 +7,7 @@ export default defineConfig({
       targetEnv: 'node'
     },
     sourcemap: false,
+    presetEnv: false,
     external: ['@farmfe/core']
   }
 });
