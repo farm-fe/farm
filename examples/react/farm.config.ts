@@ -3,6 +3,7 @@ import { defineConfig } from '@farmfe/core';
 export default defineConfig({
   compilation: {
     presetEnv: false,
+    123
   },
   server: {
     // port: 3000,

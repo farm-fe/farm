@@ -30,7 +30,7 @@ import type {
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
-import { clearScreen } from './utils/share.js';
+// import { clearScreen } from './utils/share.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -38,33 +38,29 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
 
-  try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      logger,
-      'development'
-    );
+  // try {
+  const resolvedUserConfig = await resolveConfig(
+    inlineConfig,
+    logger,
+    'development'
+  );
 
-    const compiler = await createCompiler(resolvedUserConfig);
+  const compiler = await createCompiler(resolvedUserConfig);
 
-    const devServer = await createDevServer(
-      compiler,
-      resolvedUserConfig,
-      logger
-    );
-    await devServer.listen();
+  const devServer = await createDevServer(compiler, resolvedUserConfig, logger);
+  await devServer.listen();
 
-    createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+  createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
 
-    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configureDevServer?.(devServer)
-    );
-  } catch (error) {
-    logger.error(
-      `Failed to start the server: ${error.message} \n ${error.stack}`
-    );
-    process.exit(1);
-  }
+  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    plugin.configureDevServer?.(devServer)
+  );
+  // } catch (error) {
+  //   logger.error(
+  //     `Failed to start the server: ${error.message} \n ${error.stack}`
+  //   );
+  //   process.exit(1);
+  // }
 }
 
 export async function build(
@@ -305,6 +301,8 @@ export async function createFileWatcher(
   inlineConfig: FarmCLIOptions & UserConfig,
   logger: Logger
 ) {
+  console.log('走不走了');
+
   if (
     devServer.config.hmr &&
     resolvedUserConfig.compilation.mode === 'production'
@@ -323,7 +321,7 @@ export async function createFileWatcher(
 
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
     async (files: string[]) => {
-      clearScreen();
+      // clearScreen();
       logFileChanges(files, resolvedUserConfig.root, logger);
 
       devServer.restart(async () => {
