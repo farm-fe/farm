@@ -11,6 +11,7 @@ import {
   RenderedModule
 } from 'rollup';
 import { Config } from '../../../binding/index.js';
+import path from 'node:path';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -111,6 +112,17 @@ export function formatId(id: string, query: [string, string][]): string {
   }
 
   return `${id}?${stringifyQuery(query)}`;
+}
+
+// normalize path for windows the same as Vite
+export function normalizePath(p: string): string {
+  return path.posix.normalize(
+    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
+  );
+}
+
+export function revertNormalizePath(p: string): string {
+  return process.platform === 'win32' ? p.replace(/\//g, '\\') : p;
 }
 
 export function getCssModuleType(id: string): string | null {
