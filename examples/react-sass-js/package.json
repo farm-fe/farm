@@ -12,7 +12,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-sass": "workspace:*",
-    "@farmfe/plugin-react": "workspace:^0.5.0",
+    "@farmfe/plugin-react": "workspace:^0.5.1",
     "@farmfe/plugin-sass": "workspace:^0.4.0",
     "@types/react": "18",
     "@types/react-dom": "18",
