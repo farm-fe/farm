@@ -30,7 +30,7 @@ import type {
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
-// import { clearScreen } from './utils/share.js';
+import { clearScreen } from './utils/share.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -320,7 +320,7 @@ export async function createFileWatcher(
 
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
     async (files: string[]) => {
-      // clearScreen();
+      clearScreen();
       logFileChanges(files, resolvedUserConfig.root, logger);
 
       devServer.restart(async () => {
