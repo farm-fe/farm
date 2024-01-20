@@ -257,8 +257,8 @@ impl From<SingleThreadedComments> for CommentsMetaData {
   }
 }
 
-impl Into<SingleThreadedComments> for CommentsMetaData {
-  fn into(self) -> SingleThreadedComments {
+impl From<CommentsMetaData> for SingleThreadedComments {
+  fn from(value: CommentsMetaData) -> Self {
     let transform_comment_map = |comments: Vec<CommentsMetaDataItem>| {
       Rc::new(RefCell::new(
         comments
@@ -268,8 +268,8 @@ impl Into<SingleThreadedComments> for CommentsMetaData {
       ))
     };
 
-    let leading = transform_comment_map(self.leading);
-    let trailing = transform_comment_map(self.trailing);
+    let leading = transform_comment_map(value.leading);
+    let trailing = transform_comment_map(value.trailing);
 
     SingleThreadedComments::from_leading_and_trailing(leading, trailing)
   }

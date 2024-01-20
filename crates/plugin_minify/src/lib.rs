@@ -50,13 +50,18 @@ impl FarmPluginMinify {
       let unresolved_mark = Mark::new();
       let top_level_mark = Mark::new();
 
-      let ParseScriptModuleResult { ast, comments } = parse_module(
+      let ParseScriptModuleResult { ast, comments } = match parse_module(
         &resource_pot.name,
         &resource_pot.meta.rendered_content,
         Syntax::Es(Default::default()),
         EsVersion::EsNext,
-      )
-      .unwrap();
+      ) {
+        Ok(res) => res,
+        Err(err) => {
+          println!("{}", err.to_string());
+          panic!("Parse {} failed. See error details above.", resource_pot.id);
+        }
+      };
 
       let mut program = Program::Module(ast);
       program = program.fold_with(&mut resolver(unresolved_mark, top_level_mark, false));

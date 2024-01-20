@@ -431,6 +431,7 @@ impl Plugin for FarmPluginRuntime {
         if is_target_node_and_cjs {
           "'file://' + __filename".to_string()
         } else {
+          // TODO make it final output file name
           format!("'{}'", resource_pot.name.to_string() + ".js")
         },
       );

@@ -14,6 +14,9 @@ import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
 
 export default defineConfig({
+  compilation: {
+    // compilation options here
+  },
   plugins: [
     '@farmfe/plugin-sass',
     less(),

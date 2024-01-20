@@ -83,7 +83,7 @@ impl Default for Config {
         // the config file path will be set after the Config is initialized
         persistent_cache::PersistentCacheConfig::get_default_config(&root),
       ),
-      comments: Box::new(Default::default()),
+      comments: Box::default(),
       custom: Box::<HashMap<String, String>>::default(),
     }
   }
