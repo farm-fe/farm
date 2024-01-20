@@ -363,11 +363,13 @@ export class VitePluginAdapter implements JsPlugin {
       executor: this.wrapExecutor(
         async (
           params: PluginResolveHookParam,
-          context: CompilationContext
+          context: CompilationContext,
+          hookContext?: { caller?: string; meta: Record<string, unknown> }
         ): Promise<PluginResolveHookResult> => {
           if (
-            params.importer &&
-            VitePluginAdapter.isFarmInternalVirtualModule(params.importer)
+            (params.importer &&
+              VitePluginAdapter.isFarmInternalVirtualModule(params.importer)) ||
+            hookContext?.caller === this.name + '.resolveId'
           ) {
             return null;
           }
