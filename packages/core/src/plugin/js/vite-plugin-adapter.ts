@@ -21,7 +21,9 @@ import {
   transformFarmConfigToRollupNormalizedOutputOptions,
   transformResourceInfo2RollupRenderedChunk,
   transformRollupResource2FarmResource,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
+  normalizePath,
+  revertNormalizePath
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { DevServer } from '../../server/index.js';
@@ -363,11 +365,13 @@ export class VitePluginAdapter implements JsPlugin {
       executor: this.wrapExecutor(
         async (
           params: PluginResolveHookParam,
-          context: CompilationContext
+          context: CompilationContext,
+          hookContext?: { caller?: string; meta: Record<string, unknown> }
         ): Promise<PluginResolveHookResult> => {
           if (
-            params.importer &&
-            VitePluginAdapter.isFarmInternalVirtualModule(params.importer)
+            (params.importer &&
+              VitePluginAdapter.isFarmInternalVirtualModule(params.importer)) ||
+            hookContext?.caller === this.name + '.resolveId'
           ) {
             return null;
           }
@@ -377,9 +381,8 @@ export class VitePluginAdapter implements JsPlugin {
             this._rawPlugin.resolveId,
             context
           );
-          const absImporterPath = path.resolve(
-            process.cwd(),
-            params.importer ?? ''
+          const absImporterPath = normalizePath(
+            path.resolve(process.cwd(), params.importer ?? '')
           );
           const resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
@@ -391,7 +394,7 @@ export class VitePluginAdapter implements JsPlugin {
             if (queryIndex !== -1) {
               return path.slice(0, queryIndex);
             }
-            return path.concat('');
+            return revertNormalizePath(path.concat(''));
           };
 
           if (isString(resolveIdResult)) {
@@ -443,7 +446,7 @@ export class VitePluginAdapter implements JsPlugin {
 
           const isSSR =
             this._farmConfig.compilation.output?.targetEnv === 'node';
-          const resolvedPath = decodeStr(params.resolvedPath);
+          const resolvedPath = normalizePath(decodeStr(params.resolvedPath));
 
           // append query
           const id = formatId(resolvedPath, params.query);
@@ -486,7 +489,7 @@ export class VitePluginAdapter implements JsPlugin {
           );
           const isSSR =
             this._farmConfig.compilation.output?.targetEnv === 'node';
-          const resolvedPath = decodeStr(params.resolvedPath);
+          const resolvedPath = normalizePath(decodeStr(params.resolvedPath));
           // append query
           const id = formatId(resolvedPath, params.query);
 
@@ -561,7 +564,14 @@ export class VitePluginAdapter implements JsPlugin {
             const ctx: HmrContext = {
               file: file,
               timestamp: Date.now(),
-              modules: mods ?? [],
+              modules: (mods ?? []).map(
+                (m) =>
+                  ({
+                    ...m,
+                    id: normalizePath(m.id),
+                    file: normalizePath(m.file)
+                  } as ModuleNode)
+              ),
               read: function (): string | Promise<string> {
                 return readFile(file, 'utf-8');
               },
@@ -576,7 +586,7 @@ export class VitePluginAdapter implements JsPlugin {
             }
           }
 
-          return [...new Set(result)];
+          return [...new Set(result)].map((id) => revertNormalizePath(id));
         }
       )
     };

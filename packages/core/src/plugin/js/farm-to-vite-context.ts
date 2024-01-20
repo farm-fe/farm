@@ -122,10 +122,9 @@ export function farmContextToViteContext(
       );
     },
     resolve: async (source, importer, options) => {
-      if (options.custom.caller === `${pluginName}.${hookName}`) {
+      if (options.custom?.caller === `${pluginName}.${hookName}`) {
         return null;
       }
-
       const farmResolveResult = await farmContext.resolve(
         {
           source,
