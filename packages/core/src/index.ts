@@ -38,29 +38,30 @@ export async function start(
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
 
-  // try {
-  const resolvedUserConfig = await resolveConfig(
-    inlineConfig,
-    logger,
-    'development'
-  );
+  try {
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      logger,
+      'development'
+    );
 
-  const compiler = await createCompiler(resolvedUserConfig);
+    const compiler = await createCompiler(resolvedUserConfig);
 
-  const devServer = await createDevServer(compiler, resolvedUserConfig, logger);
-  await devServer.listen();
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
+    await devServer.listen();
 
-  createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+    createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
 
-  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    plugin.configureDevServer?.(devServer)
-  );
-  // } catch (error) {
-  //   logger.error(
-  //     `Failed to start the server: ${error.message} \n ${error.stack}`
-  //   );
-  //   process.exit(1);
-  // }
+    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      plugin.configureDevServer?.(devServer)
+    );
+  } catch (error) {
+    logger.error(`Failed to start the server: ${error}`);
+  }
 }
 
 export async function build(
@@ -301,8 +302,6 @@ export async function createFileWatcher(
   inlineConfig: FarmCLIOptions & UserConfig,
   logger: Logger
 ) {
-  console.log('走不走了');
-
   if (
     devServer.config.hmr &&
     resolvedUserConfig.compilation.mode === 'production'

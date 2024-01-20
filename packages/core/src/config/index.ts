@@ -507,7 +507,13 @@ async function readConfigFile(
 
       // const previousProfileEnv = process.env.FARM_PROFILE;
       // process.env.FARM_PROFILE = '';
-      await compiler.compile();
+      try {
+        await compiler.compile();
+      } catch (error) {
+        throw new Error(
+          `Failed to compile config file: ${configFilePath} \n ${error}`
+        );
+      }
       // process.env.FARM_PROFILE = previousProfileEnv;
 
       compiler.writeResourcesToDisk();
