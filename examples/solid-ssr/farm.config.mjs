@@ -58,5 +58,10 @@ export default {
       }
     ]
   },
-  vitePlugins: [solid({ solid: { hydratable: true } })]
+  vitePlugins: [
+    () => ({
+      filters: ['.+'],
+      vitePlugin: solid({ solid: { hydratable: true } })
+    })
+  ]
 };
