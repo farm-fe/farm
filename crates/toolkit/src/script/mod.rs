@@ -7,16 +7,21 @@ use swc_ecma_codegen::{
 use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax, TsConfig};
 
 use farmfe_core::{
-  config::ScriptParserConfig,
+  config::{comments::CommentsConfig, ScriptParserConfig},
   error::{CompilationError, Result},
   module::{ModuleSystem, ModuleType},
   plugin::ResolveKind,
-  swc_common::{BytePos, FileName, LineCol, Mark, SourceMap},
+  swc_common::{
+    comments::{Comments, SingleThreadedComments},
+    BytePos, FileName, LineCol, Mark, SourceMap,
+  },
   swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
 };
 use swc_error_reporters::handler::try_with_handler;
 
-use crate::common::{create_swc_source_map, Source};
+use crate::common::{create_swc_source_map, minify_comments, Source};
+
+pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 pub mod swc_try_with;
 
@@ -26,15 +31,15 @@ pub fn parse_module(
   content: &str,
   syntax: Syntax,
   target: EsVersion,
-) -> Result<SwcModule> {
+) -> Result<ParseScriptModuleResult> {
   let (cm, source_file) = create_swc_source_map(Source {
     path: PathBuf::from(id),
     content: Arc::new(content.to_string()),
   });
 
   let input = StringInput::from(&*source_file);
-  // TODO support parsing comments
-  let lexer = Lexer::new(syntax, target, input, None);
+  let comments = SingleThreadedComments::default();
+  let lexer = Lexer::new(syntax, target, input, Some(&comments));
 
   let mut parser = Parser::new_from(lexer);
   let module = parser.parse_module();
@@ -45,7 +50,7 @@ pub fn parse_module(
       recovered_errors.push(err);
     }
     Ok(m) => {
-      return Ok(m);
+      return Ok(ParseScriptModuleResult { ast: m, comments });
     }
   }
 
@@ -88,6 +93,11 @@ pub fn parse_stmt(
     })
 }
 
+pub struct CodeGenCommentsConfig<'a> {
+  pub comments: &'a SingleThreadedComments,
+  pub config: &'a CommentsConfig,
+}
+
 /// ast codegen, return generated utf8 bytes. using [String::from_utf8] if you want to transform the bytes to string.
 /// Example:
 /// ```ignore
@@ -100,6 +110,7 @@ pub fn codegen_module(
   cm: Arc<SourceMap>,
   src_map: Option<&mut Vec<(BytePos, LineCol)>>,
   minify: bool,
+  comments_cfg: Option<CodeGenCommentsConfig>,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
 
@@ -111,10 +122,15 @@ pub fn codegen_module(
       .with_omit_last_semi(true)
       .with_ascii_only(false);
 
+    if let Some(comments_cfg) = &comments_cfg {
+      minify_comments(comments_cfg.comments, comments_cfg.config);
+    }
+
+    let comments = comments_cfg.map(|c| c.comments as &dyn Comments);
+
     let mut emitter = Emitter {
       cfg,
-      // TODO preserve comments
-      comments: None,
+      comments,
       cm,
       wr,
     };

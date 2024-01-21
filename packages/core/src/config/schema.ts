@@ -207,7 +207,8 @@ const compilationConfigSchema = z
           envs: z.record(z.string(), z.string()).optional()
         })
         .optional()
-    ])
+    ]),
+    comments: z.union([z.boolean(), z.literal('license')]).optional()
   })
   .strict();
 

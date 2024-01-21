@@ -98,10 +98,11 @@ pub fn transform_by_swc_plugins(
     path: PathBuf::from(&param.module_id.to_string()),
     content: param.content.clone(),
   });
+  let comments = param.meta.as_script().comments.clone().into();
   let mut plugin_transforms = swc_plugins(
     Some(plugins_should_execute),
     transform_metadata_context,
-    None,
+    Some(comments),
     cm,
     unresolved_mark,
   );
@@ -158,58 +159,57 @@ impl RustPlugins {
     // swc_plugin_macro will not inject proxy to the comments if comments is empty
     let should_enable_comments_proxy = self.comments.is_some();
 
-    // TODO support comments
     // Set comments once per whole plugin transform execution.
-    // swc_plugin_proxy::COMMENTS.set(
-    //   &swc_plugin_proxy::HostCommentsStorage {
-    //     inner: self.comments.clone(),
-    //   },
-    //   || {
-    let mut serialized = PluginSerializedBytes::try_serialize(
-      &swc_common::plugin::serialized::VersionedSerializable::new(n),
-    )?;
+    swc_plugin_proxy::COMMENTS.set(
+      &swc_plugin_proxy::HostCommentsStorage {
+        inner: self.comments.clone(),
+      },
+      || {
+        let mut serialized = PluginSerializedBytes::try_serialize(
+          &swc_common::plugin::serialized::VersionedSerializable::new(n),
+        )?;
 
-    // Run plugin transformation against current program.
-    // We do not serialize / deserialize between each plugin execution but
-    // copies raw transformed bytes directly into plugin's memory space.
-    // Note: This doesn't mean plugin won't perform any se/deserialization: it
-    // still have to construct from raw bytes internally to perform actual
-    // transform.
-    if let Some(plugins) = &mut self.plugins {
-      for p in plugins.drain(..) {
-        let plugin_module_bytes = PLUGIN_MODULE_CACHE
-          .lock()
-          .get(&p.name)
-          .expect("plugin module should be cached")
-          .clone();
-        let plugin_name = plugin_module_bytes.get_module_name().to_string();
-        let runtime = swc_plugin_runner::wasix_runtime::build_wasi_runtime(None);
+        // Run plugin transformation against current program.
+        // We do not serialize / deserialize between each plugin execution but
+        // copies raw transformed bytes directly into plugin's memory space.
+        // Note: This doesn't mean plugin won't perform any se/deserialization: it
+        // still have to construct from raw bytes internally to perform actual
+        // transform.
+        if let Some(plugins) = &mut self.plugins {
+          for p in plugins.drain(..) {
+            let plugin_module_bytes = PLUGIN_MODULE_CACHE
+              .lock()
+              .get(&p.name)
+              .expect("plugin module should be cached")
+              .clone();
+            let plugin_name = plugin_module_bytes.get_module_name().to_string();
+            let runtime = swc_plugin_runner::wasix_runtime::build_wasi_runtime(None);
 
-        let mut plugin_transform_executor = swc_plugin_runner::create_plugin_transform_executor(
-          &self.source_map,
-          &self.unresolved_mark,
-          &self.metadata_context,
-          plugin_module_bytes,
-          Some(p.options.clone()),
-          runtime,
-        );
+            let mut plugin_transform_executor = swc_plugin_runner::create_plugin_transform_executor(
+              &self.source_map,
+              &self.unresolved_mark,
+              &self.metadata_context,
+              plugin_module_bytes,
+              Some(p.options.clone()),
+              runtime,
+            );
 
-        serialized = plugin_transform_executor
-          .transform(&serialized, Some(should_enable_comments_proxy))
-          .with_context(|| {
-            format!(
-              "failed to invoke `{}` as js transform plugin at {}",
-              &p.name, plugin_name
-            )
-          })?;
-      }
-    }
+            serialized = plugin_transform_executor
+              .transform(&serialized, Some(should_enable_comments_proxy))
+              .with_context(|| {
+                format!(
+                  "failed to invoke `{}` as js transform plugin at {}",
+                  &p.name, plugin_name
+                )
+              })?;
+          }
+        }
 
-    // Plugin transformation is done. Deserialize transformed bytes back
-    // into Program
-    serialized.deserialize().map(|v| v.into_inner())
-    //   },
-    // )
+        // Plugin transformation is done. Deserialize transformed bytes back
+        // into Program
+        serialized.deserialize().map(|v| v.into_inner())
+      },
+    )
   }
 }
 

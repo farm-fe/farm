@@ -9,7 +9,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain,
   error::Result,
-  module::{ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
+  module::{CommentsMetaData, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
@@ -28,7 +28,7 @@ use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
     module_system_from_deps, module_type_from_id, parse_module, swc_try_with::try_with,
-    syntax_from_module_type,
+    syntax_from_module_type, ParseScriptModuleResult,
   },
   sourcemap::SourceMap,
   swc_ecma_transforms::resolver,
@@ -91,7 +91,10 @@ impl Plugin for FarmPluginScript {
     if let Some(syntax) =
       syntax_from_module_type(&param.module_type, context.config.script.parser.clone())
     {
-      let mut swc_module = parse_module(
+      let ParseScriptModuleResult {
+        ast: mut swc_module,
+        comments,
+      } = parse_module(
         &param.module_id.to_string(),
         &param.content,
         syntax,
@@ -116,6 +119,7 @@ impl Plugin for FarmPluginScript {
           module_system: ModuleSystem::Custom(String::from("unknown")),
           hmr_self_accepted: false,
           hmr_accepted_deps: Default::default(),
+          comments: CommentsMetaData::from(comments),
         };
 
         Ok(Some(ModuleMetaData::Script(meta)))
@@ -183,7 +187,7 @@ impl Plugin for FarmPluginScript {
 
     if module.module_type.is_script() {
       let module_ast = &module.meta.as_script().ast;
-      // TODO deal with dynamic import, when dynamic import and static import are mixed, using static import
+
       let mut analyzer = DepsAnalyzer::new(
         &module.id,
         module_ast,

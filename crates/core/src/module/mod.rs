@@ -1,4 +1,6 @@
-use std::{any::Any, hash::Hash, path::Path, sync::Arc};
+use std::{
+  any::Any, cell::RefCell, collections::HashMap, hash::Hash, path::Path, rc::Rc, sync::Arc,
+};
 
 use blake2::{
   digest::{Update, VariableOutput},
@@ -13,7 +15,12 @@ use rkyv::Deserialize;
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
 use std::collections::HashSet;
-use swc_common::DUMMY_SP;
+use swc_common::{
+  comments::{
+    Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
+  },
+  BytePos, DUMMY_SP,
+};
 use swc_css_ast::Stylesheet;
 use swc_ecma_ast::Module as SwcModule;
 use swc_html_ast::Document;
@@ -40,7 +47,7 @@ pub struct Module {
   /// the resource pot this module belongs to
   pub resource_pot: Option<ResourcePotId>,
   /// the meta data of this module custom by plugins
-  pub meta: ModuleMetaData,
+  pub meta: Box<ModuleMetaData>,
   /// whether this module has side_effects
   pub side_effects: bool,
   /// the transformed source map chain of this module
@@ -74,7 +81,7 @@ impl Module {
     Self {
       id,
       module_type: ModuleType::Custom("__farm_unknown".to_string()),
-      meta: ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _),
+      meta: Box::new(ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _)),
       module_groups: HashSet::new(),
       resource_pot: None,
       side_effects: false,
@@ -215,6 +222,59 @@ impl_downcast!(SerializeCustomModuleMetaData);
 #[cache_item(CustomModuleMetaData)]
 pub struct EmptyModuleMetaData;
 
+#[cache_item]
+#[derive(Clone)]
+pub struct CommentsMetaDataItem {
+  pub byte_pos: BytePos,
+  pub comment: Vec<Comment>,
+}
+
+#[cache_item]
+#[derive(Clone, Default)]
+pub struct CommentsMetaData {
+  pub leading: Vec<CommentsMetaDataItem>,
+  pub trailing: Vec<CommentsMetaDataItem>,
+}
+
+impl From<SingleThreadedComments> for CommentsMetaData {
+  fn from(value: SingleThreadedComments) -> Self {
+    let (swc_leading_map, swc_trailing_map) = value.take_all();
+    let transform_comment_map = |map: SingleThreadedCommentsMap| {
+      map
+        .take()
+        .into_iter()
+        .map(|(byte_pos, comments)| CommentsMetaDataItem {
+          byte_pos,
+          comment: comments,
+        })
+        .collect::<Vec<CommentsMetaDataItem>>()
+    };
+
+    let leading = transform_comment_map(swc_leading_map);
+    let trailing = transform_comment_map(swc_trailing_map);
+
+    Self { leading, trailing }
+  }
+}
+
+impl From<CommentsMetaData> for SingleThreadedComments {
+  fn from(value: CommentsMetaData) -> Self {
+    let transform_comment_map = |comments: Vec<CommentsMetaDataItem>| {
+      Rc::new(RefCell::new(
+        comments
+          .into_iter()
+          .map(|item| (item.byte_pos, item.comment))
+          .collect::<SingleThreadedCommentsMapInner>(),
+      ))
+    };
+
+    let leading = transform_comment_map(value.leading);
+    let trailing = transform_comment_map(value.trailing);
+
+    SingleThreadedComments::from_leading_and_trailing(leading, trailing)
+  }
+}
+
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
 #[derive(Clone)]
@@ -226,6 +286,7 @@ pub struct ScriptModuleMetaData {
   /// true if this module calls `import.meta.hot.accept()` or `import.meta.hot.accept(mod => {})`
   pub hmr_self_accepted: bool,
   pub hmr_accepted_deps: HashSet<ModuleId>,
+  pub comments: CommentsMetaData,
 }
 
 impl Default for ScriptModuleMetaData {
@@ -241,6 +302,7 @@ impl Default for ScriptModuleMetaData {
       module_system: ModuleSystem::EsModule,
       hmr_self_accepted: false,
       hmr_accepted_deps: Default::default(),
+      comments: Default::default(),
     }
   }
 }
@@ -260,6 +322,10 @@ impl ScriptModuleMetaData {
   pub fn set_ast(&mut self, ast: SwcModule) {
     self.ast = ast;
   }
+
+  pub fn set_comments(&mut self, comments: CommentsMetaData) {
+    self.comments = comments;
+  }
 }
 
 #[cache_item]
@@ -276,6 +342,7 @@ pub enum ModuleSystem {
 #[derive(Clone)]
 pub struct CssModuleMetaData {
   pub ast: Stylesheet,
+  pub comments: CommentsMetaData,
 }
 
 impl CssModuleMetaData {
@@ -526,10 +593,8 @@ impl serde::Serialize for ModuleId {
 
 #[cfg(test)]
 mod tests {
-
   use crate::config::Mode;
   use farmfe_macro_cache_item::cache_item;
-  use rkyv::{Archive, Archived, Deserialize, Serialize};
   use rkyv_dyn::archive_dyn;
   use rkyv_typename::TypeName;
   use std::collections::HashSet;
@@ -630,10 +695,10 @@ mod tests {
 
     module.module_groups = HashSet::from([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
 
-    module.meta = ModuleMetaData::Custom(Box::new(StructModuleData {
+    module.meta = Box::new(ModuleMetaData::Custom(Box::new(StructModuleData {
       ast: String::from("ast"),
       imports: vec![String::from("./index")],
-    }) as _);
+    }) as _));
 
     let bytes = rkyv::to_bytes::<_, 256>(&module).unwrap();
 

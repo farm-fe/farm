@@ -223,7 +223,7 @@ impl Compiler {
     module: &mut Module,
     context: &Arc<CompilationContext>,
   ) -> Result<Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)>> {
-    // skip timestamp and content hash for immutable modules
+    // skip timestamp and content hash for modules
     module.last_update_timestamp = if module.immutable {
       0
     } else {
@@ -374,7 +374,8 @@ impl Compiler {
     module.side_effects = resolve_result.side_effects;
     module.external = false;
     module.source_map_chain = transform_result.source_map_chain;
-    module.meta = module_meta;
+    module.meta = Box::new(module_meta);
+
     let resolved_path = module.id.resolved_path(&context.config.root);
     let package_info =
       load_package_json(PathBuf::from(resolved_path), Default::default()).unwrap_or_default();
@@ -529,7 +530,6 @@ impl Compiler {
   ) {
     let mut module_graph = context.module_graph.write();
 
-    // TODO check if the edge already exists
     if let Some(importer_id) = &resolve_param.importer {
       module_graph.add_edge_item(
         importer_id,

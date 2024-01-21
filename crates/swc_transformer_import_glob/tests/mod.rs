@@ -3,14 +3,14 @@ use std::sync::Arc;
 use farmfe_core::{swc_common::SourceMap, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax};
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_testing_helpers::fixture;
-use farmfe_toolkit::script::{codegen_module, parse_module};
+use farmfe_toolkit::script::{codegen_module, parse_module, ParseScriptModuleResult};
 
 #[test]
 fn test_import_meta_glob() {
   fixture!("tests/fixtures/**/input.js", |file, _crate_path| {
     let file_content = std::fs::read_to_string(&file).unwrap();
     let cm = Arc::new(SourceMap::default());
-    let mut ast = parse_module(
+    let ParseScriptModuleResult { ast: mut ast, .. } = parse_module(
       file.to_string_lossy().to_string().as_str(),
       &file_content,
       Syntax::Es(Default::default()),
@@ -20,7 +20,7 @@ fn test_import_meta_glob() {
     let dir = file.parent().unwrap().to_str().unwrap();
     transform_import_meta_glob(&mut ast, dir.to_string(), dir.to_string()).unwrap();
 
-    let code = codegen_module(&ast, EsVersion::EsNext, cm, None, false).unwrap();
+    let code = codegen_module(&ast, EsVersion::EsNext, cm, None, false, None).unwrap();
     let code = String::from_utf8(code).unwrap();
 
     let expected_file = file.with_extension("expected.js");
