@@ -52,7 +52,7 @@ fn html_build_stage() {
       .unwrap();
 
     let mut html_module = Module::new(module_id);
-    html_module.meta = html_module_meta_data;
+    html_module.meta = Box::new(html_module_meta_data);
     html_module.module_type = file_content.module_type;
 
     let mut analyze_deps_param = PluginAnalyzeDepsHookParam {

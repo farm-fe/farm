@@ -59,7 +59,7 @@ fn analyze_deps() {
       file.parent().unwrap().to_str().unwrap(),
     ));
     css_module.module_type = load_result.module_type;
-    css_module.meta = parse_result;
+    css_module.meta = Box::new(parse_result);
 
     let mut params = PluginAnalyzeDepsHookParam {
       module: &css_module,

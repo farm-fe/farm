@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.15.10
+
+### Patch Changes
+
+- c4dcc75e: Support plugin vite-tsconfig-paths
+
 ## 0.15.9
 
 ### Patch Changes

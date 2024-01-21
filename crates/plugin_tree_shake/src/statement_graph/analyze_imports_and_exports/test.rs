@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 
 use farmfe_core::{swc_ecma_ast::ModuleItem, swc_ecma_parser::Syntax};
-use farmfe_toolkit::script::parse_module;
+use farmfe_toolkit::script::{parse_module, ParseScriptModuleResult};
 
 use crate::statement_graph::{ExportSpecifierInfo, ImportSpecifierInfo};
 
 use super::analyze_imports_and_exports;
 
 fn parse_module_item(stmt: &str) -> ModuleItem {
-  let module = parse_module(
+  let ParseScriptModuleResult { ast: module, .. } = parse_module(
     "any",
     stmt,
     Syntax::Es(Default::default()),

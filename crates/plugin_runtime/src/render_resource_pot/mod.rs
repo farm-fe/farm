@@ -5,6 +5,7 @@ use std::{
 };
 
 use farmfe_core::{
+  config::comments::CommentsConfig,
   context::CompilationContext,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
@@ -15,17 +16,14 @@ use farmfe_core::{
   parking_lot::Mutex,
   rayon::prelude::*,
   resource::resource_pot::{RenderedModule, ResourcePot},
-  swc_common::{comments::SingleThreadedComments, Mark, DUMMY_SP},
-  swc_ecma_ast::{
-    BlockStmt, Expr, ExprStmt, FnExpr, Function, Ident, Module as SwcModule, ModuleItem, Param,
-    Pat, Stmt,
-  },
+  swc_common::{comments::SingleThreadedComments, Mark},
 };
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
   script::{
     codegen_module,
     swc_try_with::{resolve_module_mark, try_with},
+    CodeGenCommentsConfig,
   },
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
@@ -38,6 +36,7 @@ use farmfe_toolkit::{
       util::{Config, ImportInterop},
     },
   },
+  swc_ecma_transforms_base::fixer::paren_remover,
   swc_ecma_visit::VisitMutWith,
 };
 
@@ -45,7 +44,7 @@ use self::source_replacer::{
   ExistingCommonJsRequireVisitor, SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE,
 };
 
-// mod farm_module_system; // TODO: replace with farm_module_system later, as soon as it's ready
+// mod farm_module_system;
 mod source_replacer;
 
 /// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
@@ -89,6 +88,7 @@ pub fn resource_pot_to_runtime_object(
         content: module.content.clone(),
       });
       let mut external_modules = vec![];
+      let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
 
       try_with(cm.clone(), &context.meta.script.globals, || {
         let (unresolved_mark, top_level_mark) = if module.meta.as_script().unresolved_mark == 0
@@ -121,18 +121,18 @@ pub fn resource_pot_to_runtime_object(
           module.meta.as_script().module_system,
           ModuleSystem::EsModule | ModuleSystem::Hybrid
         ) {
+          cloned_module.visit_mut_with(&mut paren_remover(Some(&comments)));
           cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
           cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
-          cloned_module.visit_mut_with(&mut common_js::<SingleThreadedComments>(
+          cloned_module.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
             unresolved_mark,
             Config {
-              // TODO process dynamic import by ourselves later
               ignore_dynamic: true,
               preserve_import_meta: true,
               ..Default::default()
             },
             enable_available_feature_from_es_version(context.config.script.target),
-            None,
+            Some(&comments),
           ));
         }
 
@@ -149,18 +149,21 @@ pub fn resource_pot_to_runtime_object(
           top_level_mark,
           ..Default::default()
         }));
-        // TODO support comments
-        cloned_module.visit_mut_with(&mut fixer(None));
+
+        cloned_module.visit_mut_with(&mut fixer(Some(&comments)));
 
         external_modules = source_replacer.external_modules;
       })?;
 
+      // remove shebang
+      cloned_module.shebang = None;
+
       let sourcemap_enabled = context.config.sourcemap.enabled(module.immutable);
       // wrap module function
-      let wrapped_module = wrap_module_ast(cloned_module);
+      // let wrapped_module = wrap_module_ast(cloned_module);
       let mut mappings = vec![];
-      let code = codegen_module(
-        &wrapped_module,
+      let code_bytes = codegen_module(
+        &cloned_module,
         context.config.script.target.clone(),
         cm.clone(),
         if sourcemap_enabled {
@@ -169,20 +172,18 @@ pub fn resource_pot_to_runtime_object(
           None
         },
         false,
+        Some(CodeGenCommentsConfig {
+          comments: &comments,
+          // preserve all comments when generate module code. the comments will be handled by [farmfe_plugin_minify]
+          config: &CommentsConfig::Bool(true),
+        }),
       )
       .map_err(|e| CompilationError::RenderScriptModuleError {
         id: m_id.to_string(),
         source: Some(Box::new(e)),
       })?;
 
-      let mut code = String::from_utf8(code).unwrap();
-      // remove last ";\n" or ";"
-      if code.ends_with(";\n") {
-        code.truncate(code.len() - 2);
-      } else if code.ends_with(';') {
-        code.truncate(code.len() - 1);
-      }
-      let code = Arc::new(code);
+      let code = Arc::new(String::from_utf8(code_bytes).unwrap());
 
       let mut rendered_module = RenderedModule {
         id: m_id.clone(),
@@ -217,6 +218,8 @@ pub fn resource_pot_to_runtime_object(
           ..Default::default()
         }),
       );
+
+      wrap_module_code(&mut module);
 
       module.prepend(&format!("{:?}: ", m_id.id(context.config.mode.clone())));
       module.append(",");
@@ -271,88 +274,23 @@ pub fn resource_pot_to_runtime_object(
 ///
 /// For example:
 /// ```js
-/// const b = require('./b');
+/// const b = farmRequire('./b');
 /// console.log(b);
 /// exports.b = b;
 /// ```
 /// will be rendered to
 /// ```js
-/// async function(module, exports, farmRequire) {
+/// function(module, exports, farmRequire) {
 ///   const b = farmRequire('./b');
 ///   console.log(b);
 ///   exports.b = b;
 /// }
 /// ```
-fn wrap_module_ast(ast: SwcModule) -> SwcModule {
-  let params = vec!["module", "exports", FARM_REQUIRE, DYNAMIC_REQUIRE]
-    .into_iter()
-    .map(|ident| Param {
-      span: DUMMY_SP,
-      decorators: vec![],
-      pat: Pat::Ident(
-        Ident {
-          span: DUMMY_SP,
-          sym: ident.into(),
-          optional: false,
-        }
-        .into(),
-      ),
-    })
-    .collect();
-
-  let body = Some(BlockStmt {
-    span: DUMMY_SP,
-    stmts: ast
-      .body
-      .iter()
-      .cloned()
-      .map(|item| match item {
-        ModuleItem::ModuleDecl(decl) => {
-          let code = codegen_module(
-            &SwcModule {
-              span: DUMMY_SP,
-              shebang: None,
-              body: vec![ModuleItem::ModuleDecl(decl)],
-            },
-            Default::default(),
-            Arc::new(Default::default()),
-            None,
-            false,
-          )
-          .unwrap();
-
-          panic!(
-            "should transform all esm module item to commonjs first! code: {}",
-            String::from_utf8(code).unwrap()
-          )
-        }
-        ModuleItem::Stmt(stmt) => stmt,
-      })
-      .collect(),
-  });
-
-  let func = Function {
-    params,
-    decorators: vec![],
-    span: DUMMY_SP,
-    body,
-    is_generator: false,
-    is_async: false,
-    type_params: None,
-    return_type: None,
-  };
-
-  SwcModule {
-    span: DUMMY_SP,
-    shebang: None,
-    body: vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-      span: DUMMY_SP,
-      expr: Box::new(Expr::Fn(FnExpr {
-        ident: None,
-        function: Box::new(func),
-      })),
-    }))],
-  }
+fn wrap_module_code(module: &mut MagicString) {
+  module.prepend(&format!(
+    "function(module, exports, {FARM_REQUIRE}, {DYNAMIC_REQUIRE}) {{\n"
+  ));
+  module.append("\n}");
 }
 
 pub struct RenderedScriptModule {

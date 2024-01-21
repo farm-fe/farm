@@ -6,7 +6,9 @@ use farmfe_core::{
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
-  module::{ModuleId, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
+  module::{
+    CommentsMetaData, ModuleId, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData,
+  },
   rayon::prelude::*,
   serialize,
   swc_common::Mark,
@@ -18,7 +20,7 @@ use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
   css::codegen_css_stylesheet,
   hash::base64_encode,
-  script::{parse_module, swc_try_with::try_with},
+  script::{parse_module, swc_try_with::try_with, ParseScriptModuleResult},
   sourcemap::SourceMap,
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::VisitMutWith,
@@ -61,7 +63,7 @@ pub fn transform_css_to_script_modules(
           && !cache_manager.custom.is_cache_changed(&store_key)
         {
           let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
-          let meta = deserialize!(&cache, ModuleMetaData);
+          let meta = deserialize!(&cache, Box<ModuleMetaData>);
           let mut module_graph = context.module_graph.write();
           let module = module_graph.module_mut(&module_id).unwrap();
           module.meta = meta;
@@ -133,7 +135,7 @@ pub fn transform_css_to_script_modules(
       }
 
       try_with(cm.clone(), &context.meta.script.globals, || {
-        let mut ast = parse_module(
+        let ParseScriptModuleResult { mut ast, comments } = parse_module(
           &module_id.to_string(),
           &css_code,
           Syntax::default(),
@@ -148,14 +150,15 @@ pub fn transform_css_to_script_modules(
         let mut module_graph = context.module_graph.write();
         let module = module_graph.module_mut(&module_id).unwrap();
 
-        module.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+        module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
           ast,
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
           module_system: ModuleSystem::EsModule,
           hmr_self_accepted: true,
           hmr_accepted_deps: Default::default(),
-        });
+          comments: CommentsMetaData::from(comments),
+        }));
 
         module.module_type = ModuleType::Js;
 

@@ -148,6 +148,12 @@ export class DefaultLogger implements Logger {
       this.error(message);
     }
   }
+  hasErrorLogged(message: string | Error) {
+    return errorOnceMessages.has(message);
+  }
+  hasWarnLogged(message: string) {
+    return warnOnceMessages.has(message);
+  }
 }
 
 export function printServerUrls(
