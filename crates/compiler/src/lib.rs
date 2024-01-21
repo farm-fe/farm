@@ -59,7 +59,7 @@ impl Compiler {
       plugins.push(Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _);
     }
 
-    if config.minify {
+    if config.minify.enabled() {
       plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
     }
 

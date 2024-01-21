@@ -1,11 +1,12 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::Config,
+  config::{bool_or_obj::BoolOrObj, Config},
   context::CompilationContext,
   error::Result,
   plugin::Plugin,
   resource::resource_pot::{ResourcePot, ResourcePotType},
+  serde_json,
   swc_common::Mark,
   swc_ecma_ast::{EsVersion, Program},
   swc_ecma_parser::Syntax,
@@ -66,17 +67,23 @@ impl FarmPluginMinify {
       let mut program = Program::Module(ast);
       program = program.fold_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
+      let minify_options = match &*context.config.minify {
+        BoolOrObj::Bool(b) => {
+          MinifyOptions {
+            // TODO: make it configurable
+            compress: Some(Default::default()),
+            mangle: Some(Default::default()),
+            ..Default::default()
+          }
+        }
+        BoolOrObj::Obj(obj) => serde_json::from_value(obj.clone()).unwrap(),
+      };
       let mut program = optimize(
         program,
         cm.clone(),
         None,
         None,
-        &MinifyOptions {
-          // TODO: make it configurable
-          compress: Some(Default::default()),
-          mangle: Some(Default::default()),
-          ..Default::default()
-        },
+        &minify_options,
         &ExtraOptions {
           unresolved_mark,
           top_level_mark,
@@ -102,7 +109,7 @@ impl FarmPluginMinify {
         } else {
           None
         },
-        context.config.minify,
+        context.config.minify.enabled(),
         Some(CodeGenCommentsConfig {
           comments: &comments,
           config: &context.config.comments,
@@ -159,7 +166,7 @@ impl FarmPluginMinify {
         } else {
           None
         },
-        context.config.minify,
+        context.config.minify.enabled(),
       );
 
       resource_pot.meta.rendered_content = Arc::new(minified_content);
@@ -190,7 +197,7 @@ impl FarmPluginMinify {
       minify_document(&mut ast, &Default::default());
 
       let minified_content =
-        farmfe_toolkit::html::codegen_html_document(&ast, context.config.minify);
+        farmfe_toolkit::html::codegen_html_document(&ast, context.config.minify.enabled());
 
       resource_pot.meta.rendered_content = Arc::new(minified_content);
     })
