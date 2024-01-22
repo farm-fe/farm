@@ -294,16 +294,20 @@ export async function normalizeUserCompilationConfig(
   }
   // set namespace to package.json name field's hash
   if (!config.runtime.namespace) {
+    const defaultNameSpace = 'FARM_DEFAULT_NAMESPACE';
     // read package.json name field
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
       const packageJson = JSON.parse(
         fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
       );
+
       config.runtime.namespace = crypto
         .createHash('md5')
-        .update(packageJson.name)
+        .update(packageJson?.name ?? defaultNameSpace)
         .digest('hex');
+    } else {
+      config.runtime.namespace = defaultNameSpace;
     }
   }
 
