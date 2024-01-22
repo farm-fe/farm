@@ -264,6 +264,7 @@ export interface Config {
           };
           envs?: Record<string, String>;
         };
+    comments?: boolean | 'license';
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]

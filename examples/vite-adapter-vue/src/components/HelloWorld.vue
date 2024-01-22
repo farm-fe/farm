@@ -3,8 +3,11 @@ import { ref } from 'vue';
 import Intro from './async-comp';
 
 defineProps<{ msg: string }>()
-const count = ref(0)
-console.log(count.value);
+/**
+ * @license MIT brightwu 2024
+ */
+const count = ref(0);
+console.log('current count is', count.value);
 
 interface Tree {
   label: string

@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue';
 
 const currentColor = ref('red');
-
+// button
 const comp = computed(() => (<div style={{ width: '100%', height: '100%', backgroundColor: currentColor.value }}></div>));
 
 const changeColor = () => {

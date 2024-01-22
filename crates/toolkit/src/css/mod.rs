@@ -1,7 +1,9 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  error::CompilationError, swc_common::input::SourceFileInput, swc_css_ast::Stylesheet,
+  error::CompilationError,
+  swc_common::{comments::SingleThreadedComments, input::SourceFileInput},
+  swc_css_ast::Stylesheet,
 };
 use swc_css_codegen::{
   writer::basic::{BasicCssWriter, BasicCssWriterConfig},
@@ -15,11 +17,16 @@ use swc_error_reporters::handler::try_with_handler;
 
 use crate::common::{build_source_map, create_swc_source_map, Source};
 
+pub struct ParseCssModuleResult {
+  pub ast: Stylesheet,
+  pub comments: SingleThreadedComments,
+}
+
 /// parse the input css file content to [Stylesheet]
 pub fn parse_css_stylesheet(
   id: &str,
   content: Arc<String>,
-) -> farmfe_core::error::Result<Stylesheet> {
+) -> farmfe_core::error::Result<ParseCssModuleResult> {
   let (cm, source_file) = create_swc_source_map(Source {
     path: PathBuf::from(id),
     content,
@@ -31,8 +38,12 @@ pub fn parse_css_stylesheet(
     ..Default::default()
   };
 
-  // TODO support comments
-  let lexer = Lexer::new(SourceFileInput::from(&*source_file), None, config);
+  let comments = SingleThreadedComments::default();
+  let lexer = Lexer::new(
+    SourceFileInput::from(&*source_file),
+    Some(&comments),
+    config,
+  );
   let mut parser = Parser::new(lexer, config);
 
   let parse_result = parser.parse_all();
@@ -44,7 +55,7 @@ pub fn parse_css_stylesheet(
         recovered_errors.push(err);
       }
       Ok(m) => {
-        return Ok(m);
+        return Ok(ParseCssModuleResult { ast: m, comments });
       }
     }
   }

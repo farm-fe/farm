@@ -40,7 +40,7 @@ export async function handleVitePlugins(
 
   for (const vitePluginObj of flatVitePlugins) {
     let vitePlugin = vitePluginObj,
-      filters = ['.+'];
+      filters = DEFAULT_FILTERS;
 
     if (typeof vitePluginObj === 'function') {
       const { vitePlugin: plugin, filters: f } = vitePluginObj();
@@ -147,6 +147,10 @@ export function processVitePlugin(
   }
 }
 
+function compatibleWin32Path(path: string): string {
+  return path.replaceAll('/', '\\\\');
+}
+
 export function convertPlugin(plugin: JsPlugin): void {
   if (
     plugin.transform &&
@@ -165,12 +169,49 @@ export function convertPlugin(plugin: JsPlugin): void {
     }
   }
 
+  if (plugin.renderResourcePot) {
+    plugin.renderResourcePot.filters ??= {};
+
+    if (
+      !plugin.renderResourcePot?.filters?.moduleIds &&
+      !plugin.renderResourcePot?.filters?.resourcePotTypes
+    ) {
+      throw new Error(
+        `renderResourcePot hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+      );
+    }
+
+    if (!plugin.renderResourcePot.filters?.resourcePotTypes) {
+      plugin.renderResourcePot.filters.resourcePotTypes = [];
+    } else if (!plugin.renderResourcePot.filters?.moduleIds) {
+      plugin.renderResourcePot.filters.moduleIds = [];
+    }
+  }
+
+  if (plugin.augmentResourceHash) {
+    plugin.augmentResourceHash.filters ??= {};
+
+    if (
+      !plugin.augmentResourceHash?.filters?.moduleIds &&
+      !plugin.augmentResourceHash?.filters?.resourcePotTypes
+    ) {
+      throw new Error(
+        `augmentResourceHash hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+      );
+    }
+
+    if (!plugin.augmentResourceHash.filters?.resourcePotTypes) {
+      plugin.augmentResourceHash.filters.resourcePotTypes = [];
+    } else if (!plugin.augmentResourceHash.filters?.moduleIds) {
+      plugin.augmentResourceHash.filters.moduleIds = [];
+    }
+  }
+
   if (plugin.load?.filters?.resolvedPaths?.length) {
     if (process.platform === 'win32') {
       // replace / to \
-      plugin.load.filters.resolvedPaths = plugin.load.filters.resolvedPaths.map(
-        (item) => item.replaceAll('/', '\\\\')
-      );
+      plugin.load.filters.resolvedPaths =
+        plugin.load.filters.resolvedPaths.map(compatibleWin32Path);
     }
   }
 
@@ -178,9 +219,22 @@ export function convertPlugin(plugin: JsPlugin): void {
     if (process.platform === 'win32') {
       // replace / to \
       plugin.transform.filters.resolvedPaths =
-        plugin.transform.filters.resolvedPaths.map((item) =>
-          item.replaceAll('/', '\\\\')
-        );
+        plugin.transform.filters.resolvedPaths.map(compatibleWin32Path);
     }
+  }
+  if (
+    plugin.augmentResourceHash?.filters?.moduleIds &&
+    process.platform === 'win32'
+  ) {
+    plugin.augmentResourceHash.filters.moduleIds =
+      plugin.augmentResourceHash.filters.moduleIds.map(compatibleWin32Path);
+  }
+
+  if (
+    plugin.renderResourcePot?.filters?.moduleIds &&
+    process.platform === 'win32'
+  ) {
+    plugin.renderResourcePot.filters.moduleIds =
+      plugin.renderResourcePot.filters.moduleIds.map(compatibleWin32Path);
   }
 }
