@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
-use serde::{Deserialize, Serialize};
 
 use farmfe_macro_cache_item::cache_item;
 
@@ -113,6 +113,19 @@ impl From<ModuleType> for ResourcePotType {
 impl ToString for ResourcePotType {
   fn to_string(&self) -> String {
     format!("{:?}", self).to_lowercase()
+  }
+}
+
+impl From<String> for ResourcePotType {
+  fn from(s: String) -> Self {
+    match s.as_str() {
+      "runtime" => Self::Runtime,
+      "js" => Self::Js,
+      "css" => Self::Css,
+      "html" => Self::Html,
+      "asset" => Self::Asset,
+      _ => Self::Custom(s),
+    }
   }
 }
 

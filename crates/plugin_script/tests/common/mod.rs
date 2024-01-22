@@ -66,9 +66,11 @@ pub fn build_module_deps(
     meta: &mut parse_result,
     content: Arc::new(load_result.content),
   };
-  script_plugin.process_module(&mut process_module_param, &context);
+  script_plugin
+    .process_module(&mut process_module_param, &context)
+    .unwrap();
 
-  module.meta = parse_result;
+  module.meta = Box::new(parse_result);
 
   let mut analyze_deps_param = PluginAnalyzeDepsHookParam {
     module: &module,

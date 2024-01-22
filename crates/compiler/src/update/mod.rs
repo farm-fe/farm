@@ -676,7 +676,6 @@ fn resolve_module(
     module: Compiler::create_module(
       resolve_module_id_result.module_id.clone(),
       resolve_module_id_result.resolve_result.external,
-      // TODO: make it configurable
       context
         .config
         .partial_bundling

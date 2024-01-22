@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "0.15.9",
+  "version": "0.15.10",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",

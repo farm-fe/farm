@@ -2,10 +2,15 @@ use std::sync::Arc;
 
 use farmfe_core::{
   error::Result,
-  swc_common::{SourceFile, SourceMap},
+  swc_common::{comments::SingleThreadedComments, SourceFile, SourceMap},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::Syntax,
 };
+
+pub struct ParseScriptModuleResult {
+  pub ast: SwcModule,
+  pub comments: SingleThreadedComments,
+}
 
 #[no_mangle]
 pub fn parse_module(
@@ -14,10 +19,10 @@ pub fn parse_module(
   src: &str,
   syntax: Syntax,
   target: EsVersion,
-) -> Result<SwcModule> {
+) -> Result<ParseScriptModuleResult> {
   unsafe {
     let farm_swc_parse_module: libloading::Symbol<
-      unsafe fn(&str, &str, Syntax, EsVersion) -> Result<SwcModule>,
+      unsafe fn(&str, &str, Syntax, EsVersion) -> Result<ParseScriptModuleResult>,
     > = lib.get(b"farm_swc_parse_module").unwrap();
 
     farm_swc_parse_module(file_name, src, syntax, target)

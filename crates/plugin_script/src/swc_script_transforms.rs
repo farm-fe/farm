@@ -4,7 +4,10 @@ use farmfe_core::{
   config::script::DecoratorVersion,
   context::CompilationContext,
   plugin::PluginProcessModuleHookParam,
-  swc_common::{comments::NoopComments, Mark, SourceMap},
+  swc_common::{
+    comments::{NoopComments, SingleThreadedComments},
+    Mark, SourceMap,
+  },
   swc_ecma_ast::Program,
 };
 use farmfe_toolkit::{
@@ -36,13 +39,13 @@ pub fn strip_typescript(
         program.visit_mut_with(&mut strip(top_level_mark));
       }
       farmfe_core::module::ModuleType::Tsx => {
-        // TODO support comments
+        let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
         // TODO make it configurable
         program.visit_mut_with(&mut tsx(
           cm.clone(),
           TsConfig::default(),
           TsxConfig::default(),
-          NoopComments,
+          comments,
           top_level_mark,
         ));
         program.visit_mut_with(&mut strip(top_level_mark));

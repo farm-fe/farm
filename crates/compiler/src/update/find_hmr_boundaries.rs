@@ -140,10 +140,10 @@ mod tests {
 
     let module_a = module_graph.module_mut(&"A".into()).unwrap();
     module_a.module_type = ModuleType::Js;
-    module_a.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_a.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    });
+    }));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
@@ -157,16 +157,16 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    });
+    }));
     let module_c = module_graph.module_mut(&"C".into()).unwrap();
     module_c.module_type = ModuleType::Js;
-    module_c.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_c.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    });
+    }));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
@@ -188,10 +188,10 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    });
+    }));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
@@ -205,18 +205,18 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
       hmr_accepted_deps: HashSet::from(["F".into()]),
       ..Default::default()
-    });
+    }));
     let module_c = module_graph.module_mut(&"C".into()).unwrap();
     module_c.module_type = ModuleType::Js;
-    module_c.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_c.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
       hmr_accepted_deps: HashSet::from(["F".into()]),
       ..Default::default()
-    });
+    }));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
@@ -238,18 +238,18 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
       hmr_accepted_deps: HashSet::from(["F".into()]),
       ..Default::default()
-    });
+    }));
 
     let module_f = module_graph.module_mut(&"F".into()).unwrap();
     module_f.module_type = ModuleType::Js;
-    module_f.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_f.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
       ..Default::default()
-    });
+    }));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
@@ -263,25 +263,25 @@ mod tests {
 
     let module_b = module_graph.module_mut(&"B".into()).unwrap();
     module_b.module_type = ModuleType::Js;
-    module_b.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_b.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
       hmr_accepted_deps: HashSet::from(["E".into()]),
       ..Default::default()
-    });
+    }));
 
     let module_e = module_graph.module_mut(&"E".into()).unwrap();
     module_e.module_type = ModuleType::Js;
-    module_e.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_e.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
       ..Default::default()
-    });
+    }));
 
     let module_g = module_graph.module_mut(&"G".into()).unwrap();
     module_g.module_type = ModuleType::Js;
-    module_g.meta = ModuleMetaData::Script(ScriptModuleMetaData {
+    module_g.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
       ..Default::default()
-    });
+    }));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["G".into()], &context);

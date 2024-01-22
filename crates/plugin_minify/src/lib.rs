@@ -12,9 +12,12 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
-  css::{codegen_css_stylesheet, parse_css_stylesheet},
+  css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::parse_html_document,
-  script::{codegen_module, parse_module, swc_try_with::try_with},
+  script::{
+    codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
+    ParseScriptModuleResult,
+  },
   swc_css_minifier::minify,
   swc_ecma_minifier::{
     optimize,
@@ -47,15 +50,20 @@ impl FarmPluginMinify {
       let unresolved_mark = Mark::new();
       let top_level_mark = Mark::new();
 
-      let mut program = Program::Module(
-        parse_module(
-          &resource_pot.name,
-          &resource_pot.meta.rendered_content,
-          Syntax::Es(Default::default()),
-          EsVersion::EsNext,
-        )
-        .unwrap(),
-      );
+      let ParseScriptModuleResult { ast, comments } = match parse_module(
+        &resource_pot.name,
+        &resource_pot.meta.rendered_content,
+        Syntax::Es(Default::default()),
+        EsVersion::EsNext,
+      ) {
+        Ok(res) => res,
+        Err(err) => {
+          println!("{}", err.to_string());
+          panic!("Parse {} failed. See error details above.", resource_pot.id);
+        }
+      };
+
+      let mut program = Program::Module(ast);
       program = program.fold_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
       let mut program = optimize(
@@ -74,8 +82,8 @@ impl FarmPluginMinify {
           top_level_mark,
         },
       );
-      // TODO support comments
-      program = program.fold_with(&mut fixer(None));
+
+      program = program.fold_with(&mut fixer(Some(&comments)));
 
       let ast = match program {
         Program::Module(ast) => ast,
@@ -95,6 +103,10 @@ impl FarmPluginMinify {
           None
         },
         context.config.minify,
+        Some(CodeGenCommentsConfig {
+          comments: &comments,
+          config: &context.config.comments,
+        }),
       )
       .unwrap();
 
@@ -124,7 +136,10 @@ impl FarmPluginMinify {
     });
 
     try_with(cm.clone(), &context.meta.css.globals, || {
-      let mut ast = parse_css_stylesheet(
+      let ParseCssModuleResult {
+        mut ast,
+        comments: _,
+      } = parse_css_stylesheet(
         &resource_pot.name,
         resource_pot.meta.rendered_content.clone(),
       )

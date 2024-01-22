@@ -32,8 +32,9 @@
           
             require(entryModule);
           })({"ec853507": function(module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    console.log("runtime/index.js")(globalThis || window || self || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+"use strict";
+console.log("runtime/index.js")(globalThis || window || self || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+
 },}, "ec853507");</script></head>
 <body>
   
@@ -47,5 +48,6 @@
                 (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
             }
         })({"7c4a34c2": function(module, exports, farmRequire, farmDynamicRequire) {
-    console.log("1111");
+console.log("1111");
+
 },});

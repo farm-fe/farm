@@ -60,7 +60,7 @@ export default 'default';
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
+    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     let expect = r#"import { aValue } from './foo';
 const a = aValue;
@@ -140,7 +140,7 @@ export * from './src/foo';
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
+    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     assert_eq!(
       result,
@@ -204,7 +204,7 @@ export * from './src/bar';
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false).unwrap();
+    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     assert_eq!(
       result,
