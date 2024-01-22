@@ -298,18 +298,16 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime.namespace) {
     // read package.json name field
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(
-        fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
-      );
+    const packageJsonExists = fs.existsSync(packageJsonPath);
+    const namespaceName = packageJsonExists
+      ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
+          ?.name ?? FARM_DEFAULT_NAMESPACE
+      : FARM_DEFAULT_NAMESPACE;
 
-      config.runtime.namespace = crypto
-        .createHash('md5')
-        .update(packageJson?.name ?? FARM_DEFAULT_NAMESPACE)
-        .digest('hex');
-    } else {
-      config.runtime.namespace = FARM_DEFAULT_NAMESPACE;
-    }
+    config.runtime.namespace = crypto
+      .createHash('md5')
+      .update(namespaceName)
+      .digest('hex');
   }
 
   if (isProduction) {
