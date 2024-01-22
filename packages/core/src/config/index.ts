@@ -299,11 +299,9 @@ export async function normalizeUserCompilationConfig(
     // read package.json name field
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
     const packageJsonExists = fs.existsSync(packageJsonPath);
-    const packageName = JSON.parse(
-      fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
-    )?.name;
     const namespaceName = packageJsonExists
-      ? packageName ?? FARM_DEFAULT_NAMESPACE
+      ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
+          ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
