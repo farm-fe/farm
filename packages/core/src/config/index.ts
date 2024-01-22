@@ -45,6 +45,7 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
+import { normalizeExternal } from './normalize-config/normalize-external.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -228,6 +229,7 @@ export async function normalizeUserCompilationConfig(
   ];
 
   normalizeOutput(config, isProduction);
+  normalizeExternal(config);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option

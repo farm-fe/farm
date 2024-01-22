@@ -129,9 +129,11 @@ export interface OutputConfig {
    */
   assetsFilename?: string;
   /**
-   * Target execution environment of production files, browser or Node
+   * Target execution environment of production files, browser or node. browser is equal to `browser-es2017`, node is equal to `node16`.
+   * You can also set target env version like `node16`, `node-legacy`, 'browser-legacy`, 'browser-es2015', 'browser-2017', 'browser-esnext'. Farm will automatically downgrade syntax and inject polyfill according to the specified target env.
+   * @default 'browser'
    */
-  targetEnv?: 'browser' | 'node';
+  targetEnv?: 'browser' | 'node' | 'node16' | 'node-legacy' | 'node-next' | 'browser-legacy' | 'browser-es2015' | 'browser-es2017' | 'browser-esnext';
   /**
    * output modul format
    */
@@ -245,14 +247,25 @@ export interface CssConfig {
     paths?: string[];
     // configure the generated css class name, the default is `[name]-[hash]`
     indentName?: string;
-  };
+  } | null;
   /**
    * Configure CSS compatibility prefixes, such as -webkit-.
    */
   prefixer?: {
     targets?: string[] | string | BrowserTargetsRecord;
-  };
+  } | null;
 }
+
+export interface PersistentCacheConfig {
+  namespace?: string;
+  cacheDir?: string;
+  buildDependencies?: string[];
+  moduleCacheKeyStrategy?: {
+    timestamp?: boolean;
+    hash?: boolean;
+  };
+  envs?: Record<string, String>;
+};
 
 export interface PartialBundlingConfig {
   /**
@@ -300,6 +313,16 @@ export interface PartialBundlingConfig {
    */
   immutableModules?: string[];
 }
+
+export interface PresetEnvConfig {
+  include?: string[];
+  exclude?: string[];
+  options?: PresetEnvConfig;
+  /**
+   * @see https://babeljs.io/docs/assumptions
+   */
+  assumptions?: any;
+};
 
 export interface Config {
   config?: {
@@ -356,29 +379,8 @@ export interface Config {
     treeShaking?: boolean;
     minify?: boolean | JsMinifyOptions;
     record?: boolean;
-    presetEnv?:
-      | boolean
-      | {
-          include?: string[];
-          exclude?: string[];
-          options?: PresetEnvConfig;
-          /**
-           * @see https://babeljs.io/docs/assumptions
-           */
-          assumptions?: any;
-        };
-    persistentCache?:
-      | boolean
-      | {
-          namespace?: string;
-          cacheDir?: string;
-          buildDependencies?: string[];
-          moduleCacheKeyStrategy?: {
-            timestamp?: boolean;
-            hash?: boolean;
-          };
-          envs?: Record<string, String>;
-        };
+    presetEnv?: boolean | PresetEnvConfig;
+    persistentCache?: boolean | PersistentCacheConfig;
     comments?: boolean | 'license';
   };
   jsPlugins?: JsPlugin[];
