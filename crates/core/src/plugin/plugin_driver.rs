@@ -147,7 +147,6 @@ impl PluginDriver {
      param: &PluginResolveHookParam,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
-      // TODO skip record manager if it is not enabled.
       match result {
         Some(resolve_result) => {
           context.record_manager.add_resolve_record(

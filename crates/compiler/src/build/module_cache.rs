@@ -215,14 +215,15 @@ pub fn handle_cached_modules(
 ) -> farmfe_core::error::Result<()> {
   // using swc resolver
   match &mut cached_module.module.meta {
-    farmfe_core::module::ModuleMetaData::Script(script) => {
+    box farmfe_core::module::ModuleMetaData::Script(script) => {
       // reset the mark to prevent the mark from being reused, it will be re-resolved later
       script.top_level_mark = 0;
       script.unresolved_mark = 0;
     }
-    farmfe_core::module::ModuleMetaData::Css(_) | farmfe_core::module::ModuleMetaData::Html(_) => { /* do nothing */
+    box farmfe_core::module::ModuleMetaData::Css(_)
+    | box farmfe_core::module::ModuleMetaData::Html(_) => { /* do nothing */ }
+    box farmfe_core::module::ModuleMetaData::Custom(_) => { /* TODO: add a hook for custom module */
     }
-    farmfe_core::module::ModuleMetaData::Custom(_) => { /* TODO: add a hook for custom module */ }
   };
 
   handle_relation_roots(

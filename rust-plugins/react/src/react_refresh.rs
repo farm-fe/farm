@@ -2,7 +2,10 @@ use farmfe_core::{
   swc_ecma_ast::{Module as SwcModule, ModuleDecl, ModuleItem},
   swc_ecma_parser::Syntax,
 };
-use farmfe_toolkit_plugin_types::{libloading::Library, swc_ast::parse_module};
+use farmfe_toolkit_plugin_types::{
+  libloading::Library,
+  swc_ast::{parse_module, ParseScriptModuleResult},
+};
 
 const REFRESH_RUNTIME_IMPORT: &str = "import RefreshRuntime from 'react-refresh'";
 pub const IS_REACT_REFRESH_BOUNDARY: &str = "farmfe_plugin_react_is_react_refresh_boundary";
@@ -36,7 +39,9 @@ RefreshRuntime.performReactRefresh();
 
 fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
   let parse_import_decl = |file_name: &str, code: &str| {
-    let mut module = parse_module(
+    let ParseScriptModuleResult {
+      ast: mut module, ..
+    } = parse_module(
       lib,
       file_name,
       code,
@@ -70,7 +75,7 @@ fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
 }
 
 fn inject_pre_code(lib: &Library, ast: &mut SwcModule) {
-  let module = parse_module(
+  let ParseScriptModuleResult { ast: module, .. } = parse_module(
     lib,
     "preCode",
     PRE_CODE,
@@ -84,7 +89,7 @@ fn inject_pre_code(lib: &Library, ast: &mut SwcModule) {
 }
 
 fn inject_post_code(lib: &Library, ast: &mut SwcModule) {
-  let module = parse_module(
+  let ParseScriptModuleResult { ast: module, .. } = parse_module(
     lib,
     "postCode",
     POST_CODE,

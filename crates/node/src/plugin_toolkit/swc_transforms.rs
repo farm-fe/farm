@@ -50,7 +50,7 @@ pub fn farm_swc_transform_react(
   try_with(options.cm.clone(), options.globals, || {
     ast.visit_mut_with(&mut react(
       options.cm,
-      Some(NoopComments), // TODO parse comments
+      Some(NoopComments),
       react_options,
       top_level_mark,
       unresolved_mark,

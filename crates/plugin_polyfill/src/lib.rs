@@ -8,7 +8,10 @@ use farmfe_core::{
   },
   plugin::Plugin,
   serde_json,
-  swc_common::{comments::NoopComments, Mark},
+  swc_common::{
+    comments::{NoopComments, SingleThreadedComments},
+    Mark,
+  },
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -122,11 +125,10 @@ impl Plugin for FarmPluginPolyfill {
       let mut ast = param.meta.as_script_mut().take_ast();
       // TODO: store feature flags in module meta and use them when transform the module system
       let mut feature_flag = FeatureFlag::empty();
-
+      let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
       ast = ast.fold_with(&mut preset_env(
         unresolved_mark,
-        // TODO: support comments
-        None as Option<NoopComments>,
+        Some(&comments),
         self.config.clone(),
         self.assumptions,
         &mut feature_flag,
