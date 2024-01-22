@@ -53,6 +53,8 @@ export const DEFAULT_CONFIG_NAMES = [
   'farm.config.mjs'
 ];
 
+const FARM_DEFAULT_NAMESPACE = 'FARM_DEFAULT_NAMESPACE';
+
 export function defineFarmConfig(
   config: UserConfig | Promise<UserConfig>
 ): UserConfig | Promise<UserConfig> {
@@ -294,7 +296,6 @@ export async function normalizeUserCompilationConfig(
   }
   // set namespace to package.json name field's hash
   if (!config.runtime.namespace) {
-    const defaultNameSpace = 'FARM_DEFAULT_NAMESPACE';
     // read package.json name field
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
@@ -304,10 +305,10 @@ export async function normalizeUserCompilationConfig(
 
       config.runtime.namespace = crypto
         .createHash('md5')
-        .update(packageJson?.name ?? defaultNameSpace)
+        .update(packageJson?.name ?? FARM_DEFAULT_NAMESPACE)
         .digest('hex');
     } else {
-      config.runtime.namespace = defaultNameSpace;
+      config.runtime.namespace = FARM_DEFAULT_NAMESPACE;
     }
   }
 
