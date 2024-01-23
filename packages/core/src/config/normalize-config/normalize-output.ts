@@ -42,7 +42,7 @@ const targetsMap: TargetsMap = {
     cssTargets: null
   },
   'node-legacy': {
-    scriptTargets: ['node 10'],
+    scriptTargets: ['> 0.25%, not dead'],
     cssTargets: null
   },
   'node-next': null,

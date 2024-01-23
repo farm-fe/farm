@@ -112,3 +112,7 @@ pub fn create_attribute(name: &str, value: Option<&str>) -> Attribute {
     raw_value: None,
   }
 }
+
+pub fn get_farm_global_this(namespace: &str) -> String {
+  format!("(globalThis || window || global)['{}']", namespace)
+}

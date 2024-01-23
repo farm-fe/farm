@@ -216,9 +216,9 @@ export async function normalizeUserCompilationConfig(
     config.root = resolvedRootPath;
   }
 
+  const isProduction = mode === 'production';
+  const isDevelopment = mode === 'development';
   config.mode = config.mode ?? mode;
-  const isProduction = config.mode === 'production';
-  const isDevelopment = config.mode === 'development';
 
   config.coreLibPath = bindingPath;
 

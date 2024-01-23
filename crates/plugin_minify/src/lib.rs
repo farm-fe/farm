@@ -78,7 +78,7 @@ impl FarmPluginMinify {
       let mut program = optimize(
         program,
         cm.clone(),
-        None,
+        Some(&comments),
         None,
         &minify_options,
         &ExtraOptions {

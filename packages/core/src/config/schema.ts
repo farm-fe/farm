@@ -15,7 +15,19 @@ const compilationConfigSchema = z
         path: z.string().optional(),
         publicPath: z.string().optional(),
         assetsFilename: z.string().optional(),
-        targetEnv: z.enum(['browser', 'node']).optional(),
+        targetEnv: z
+          .enum([
+            'browser',
+            'node',
+            'node-legacy',
+            'node-next',
+            'node-16',
+            'browser-legacy',
+            'browser-next',
+            'browser-es2015',
+            'browser-es2017'
+          ])
+          .optional(),
         format: z.enum(['cjs', 'esm']).optional()
       })
       .strict()

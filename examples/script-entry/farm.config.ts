@@ -14,19 +14,12 @@ export default {
       targetEnv: 'node',
       format: 'esm'
     },
+    mode: 'development',
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
     ],
     minify: false,
-    // partialBundling: {
-    //   enforceResources: [
-    //     {
-    //       name: 'node.bundle.js',
-    //       test: ['.+']
-    //     }
-    //   ]
-    // }
   },
   server: {
     hmr: false

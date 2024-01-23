@@ -20,14 +20,14 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{Mark, GLOBALS},
-  swc_ecma_ast::{EsVersion, ModuleItem},
+  swc_ecma_ast::EsVersion,
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
   fs::read_file_utf8,
   script::{
-    module_system_from_deps, module_type_from_id, parse_module, swc_try_with::try_with,
+    module_type_from_id, parse_module, set_module_system_for_module_meta, swc_try_with::try_with,
     syntax_from_module_type, ParseScriptModuleResult,
   },
   sourcemap::SourceMap,
@@ -218,29 +218,8 @@ impl Plugin for FarmPluginScript {
     // all jsx, js, ts, tsx modules should be transformed to js module for now
     // cause the partial bundling is not support other module type yet
     param.module.module_type = ModuleType::Js;
-    // default to commonjs
-    let module_system = if !param.deps.is_empty() {
-      module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
-    } else {
-      ModuleSystem::CommonJs
-    };
-    param.module.meta.as_script_mut().module_system = module_system.clone();
-
-    let ast = &param.module.meta.as_script().ast;
-
-    if module_system != ModuleSystem::Hybrid {
-      // if the ast contains ModuleDecl, it's a esm module
-      for item in ast.body.iter() {
-        if let ModuleItem::ModuleDecl(_) = item {
-          if module_system == ModuleSystem::CommonJs && !param.deps.is_empty() {
-            param.module.meta.as_script_mut().module_system = ModuleSystem::Hybrid;
-          } else {
-            param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
-          }
-          break;
-        }
-      }
-    }
+    // set param.module.meta.module_system
+    set_module_system_for_module_meta(param);
 
     // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node

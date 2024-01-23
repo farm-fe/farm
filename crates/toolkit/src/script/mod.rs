@@ -10,12 +10,14 @@ use farmfe_core::{
   config::{comments::CommentsConfig, ScriptParserConfig},
   error::{CompilationError, Result},
   module::{ModuleSystem, ModuleType},
-  plugin::ResolveKind,
+  plugin::{PluginFinalizeModuleHookParam, ResolveKind},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     BytePos, FileName, LineCol, Mark, SourceMap,
   },
-  swc_ecma_ast::{CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, Stmt},
+  swc_ecma_ast::{
+    CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, ModuleItem, Stmt,
+  },
 };
 use swc_error_reporters::handler::try_with_handler;
 
@@ -237,4 +239,40 @@ pub fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
   }
 
   module_system
+}
+
+pub fn module_system_from_ast(
+  ast: &SwcModule,
+  module_system: ModuleSystem,
+  has_deps: bool,
+) -> ModuleSystem {
+  if module_system != ModuleSystem::Hybrid {
+    // if the ast contains ModuleDecl, it's a esm module
+    for item in ast.body.iter() {
+      if let ModuleItem::ModuleDecl(_) = item {
+        if module_system == ModuleSystem::CommonJs && has_deps {
+          return ModuleSystem::Hybrid;
+        } else {
+          return ModuleSystem::EsModule;
+        }
+      }
+    }
+  }
+
+  module_system
+}
+
+pub fn set_module_system_for_module_meta(param: &mut PluginFinalizeModuleHookParam) {
+  // default to commonjs
+  let module_system = if !param.deps.is_empty() {
+    module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
+  } else {
+    ModuleSystem::CommonJs
+  };
+  param.module.meta.as_script_mut().module_system = module_system.clone();
+
+  let ast = &param.module.meta.as_script().ast;
+
+  param.module.meta.as_script_mut().module_system =
+    module_system_from_ast(ast, module_system, !param.deps.is_empty());
 }
