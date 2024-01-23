@@ -1421,6 +1421,9 @@ importers:
       '@swc/helpers':
         specifier: ^0.5.0
         version: 0.5.3
+      browserslist-generator:
+        specifier: ^2.1.0
+        version: 2.1.0
       chokidar:
         specifier: ^3.5.3
         version: 3.5.3
@@ -3443,6 +3446,10 @@ packages:
       read-yaml-file: 1.1.0
     dev: true
 
+  /@mdn/browser-compat-data@5.5.7:
+    resolution: {integrity: sha512-DoHTZ/TjtNfUu9eiqJd+x3IcCQrhS+yOYU436TKUnlE36jZwNbK535D1CmTsSYdi/UcdCWNm5KRQZ9g1tlZCPw==}
+    dev: false
+
   /@messageformat/core@3.2.0:
     resolution: {integrity: sha512-ppbb/7OYqg/t4WdFk8VAfZEV2sNUq3+7VeBAo5sKFhmF786sh6gB7fUeXa2qLTDIcTHS49HivTBN7QNOU5OFTg==}
     dependencies:
@@ -5174,6 +5181,10 @@ packages:
     resolution: {integrity: sha512-ehPtgRgaULsFG8x0NeYJvmyH1hmlfsNLujHe9dQEia/7MAJYdzMSi19JtchUHjmBA6XC/75dK55mzZH+RyieSg==}
     dev: true
 
+  /@types/object-path@0.11.4:
+    resolution: {integrity: sha512-4tgJ1Z3elF/tOMpA8JLVuR9spt9Ynsf7+JjqsQ2IqtiPJtcLoHoXcT6qU4E10cPFqyXX5HDm9QwIzZhBSkLxsw==}
+    dev: false
+
   /@types/parse-json@4.0.1:
     resolution: {integrity: sha512-3YmXzzPAdOTVljVMkTMBdBEvlOLg2cDQaDhnnhT3nT9uDbnJzjWhKlzb+desT12Y7tGqaN6d+AbozcKzyL36Ng==}
     dev: false
@@ -5237,7 +5248,6 @@ packages:
 
   /@types/semver@7.5.4:
     resolution: {integrity: sha512-MMzuxN3GdFwskAnb6fz0orFvhfqi752yjaXylr0Rp4oDg5H0Zn1IuyRhDVvYOwAXoJirx2xuS16I3WjxnAIHiQ==}
-    dev: true
 
   /@types/send@0.17.3:
     resolution: {integrity: sha512-/7fKxvKUoETxjFUsuFlPB9YndePpxxRAOfGC/yJdc9kTjTeP5kRCTzfnE8kPUKCeyiyIZu0YQ76s50hCedI1ug==}
@@ -5269,6 +5279,10 @@ packages:
   /@types/tinycolor2@1.4.5:
     resolution: {integrity: sha512-uLJijDHN5E6j5n1qefF9oaeplgszXglWXWTviMoFr/YxgvbyrkFil20yDT7ljhCiTQ/BfCYtxfJS81LdTro5DQ==}
     dev: true
+
+  /@types/ua-parser-js@0.7.39:
+    resolution: {integrity: sha512-P/oDfpofrdtF5xw433SPALpdSchtJmY7nsJItf8h3KXqOslkbySh8zq4dSWXH2oTjRvJ5PczVEoCZPow6GicLg==}
+    dev: false
 
   /@types/web-bluetooth@0.0.16:
     resolution: {integrity: sha512-oh8q2Zc32S6gd/j50GowEjKLoOVOwHP/bWVjKJInBwQqdOYMdPrf1oVlelTlyfFK3CKxL1uahMDAr+vy8T7yMQ==}
@@ -6461,6 +6475,22 @@ packages:
     dependencies:
       wcwidth: 1.0.1
     dev: true
+
+  /browserslist-generator@2.1.0:
+    resolution: {integrity: sha512-ZFz4mAOgqm0cbwKaZsfJbYDbTXGoPANlte7qRsRJOfjB9KmmISQrXJxAVrnXG8C8v/QHNzXyeJt0Cfcks6zZvQ==}
+    engines: {node: '>=16.15.1', npm: '>=7.0.0', pnpm: '>=3.2.0', yarn: '>=1.13'}
+    dependencies:
+      '@mdn/browser-compat-data': 5.5.7
+      '@types/object-path': 0.11.4
+      '@types/semver': 7.5.4
+      '@types/ua-parser-js': 0.7.39
+      browserslist: 4.22.1
+      caniuse-lite: 1.0.30001561
+      isbot: 3.8.0
+      object-path: 0.11.8
+      semver: 7.5.4
+      ua-parser-js: 1.0.37
+    dev: false
 
   /browserslist@4.22.1:
     resolution: {integrity: sha512-FEVc202+2iuClEhZhrWy6ZiAcRLvNMyYcxZ8raemul1DYVOVdFsbqckWLdsixQZCpJlwe77Z3UTalE7jsjnKfQ==}
@@ -9672,6 +9702,11 @@ packages:
   /isarray@2.0.5:
     resolution: {integrity: sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw==}
 
+  /isbot@3.8.0:
+    resolution: {integrity: sha512-vne1mzQUTR+qsMLeCBL9+/tgnDXRyc2pygLGl/WsgA+EZKIiB5Ehu0CiVTHIIk30zhJ24uGz4M5Ppse37aR0Hg==}
+    engines: {node: '>=12'}
+    dev: false
+
   /isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
@@ -10249,7 +10284,6 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       yallist: 4.0.0
-    dev: true
 
   /magic-string-ast@0.3.0:
     resolution: {integrity: sha512-0shqecEPgdFpnI3AP90epXyxZy9g6CRZ+SZ7BcqFwYmtFEnZ1jpevcV5HoyVnlDS9gCnc1UIg3Rsvp3Ci7r8OA==}
@@ -10836,6 +10870,11 @@ packages:
   /object-keys@1.1.1:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
     engines: {node: '>= 0.4'}
+
+  /object-path@0.11.8:
+    resolution: {integrity: sha512-YJjNZrlXJFM42wTBn6zgOJVar9KFJvzx6sTWDte8sWZF//cnjl0BxHNpfZx+ZffXX63A9q0b1zsFiBX4g4X5KA==}
+    engines: {node: '>= 10.12.0'}
+    dev: false
 
   /object-visit@1.0.1:
     resolution: {integrity: sha512-GBaMwwAVK9qbQN3Scdo0OyvgPW7l3lnaVMj84uTOZlswkX0KpF6fyDBJhtTthf7pymztoN36/KEr1DyhF96zEA==}
@@ -13009,7 +13048,6 @@ packages:
     hasBin: true
     dependencies:
       lru-cache: 6.0.0
-    dev: true
 
   /send@0.18.0:
     resolution: {integrity: sha512-qqWzuOjSFOuqPjFe4NOsMLafToQQwBSOEpS+FwEt3A2V3vKubTquT3vmLTQpFgMXp8AlFWFuP1qKaJZOtPpVXg==}
@@ -14254,6 +14292,10 @@ packages:
     hasBin: true
     dev: true
 
+  /ua-parser-js@1.0.37:
+    resolution: {integrity: sha512-bhTyI94tZofjo+Dn8SN6Zv8nBDvyXTymAdM3LDI/0IboIUwTu1rEhW7v2TfiVsoYWgkQ4kOVqnI8APUFbIQIFQ==}
+    dev: false
+
   /ufo@1.3.1:
     resolution: {integrity: sha512-uY/99gMLIOlJPwATcMVYfqDSxUR9//AUcgZMzwfSTJPDKzA1S8mX4VLqa+fiAtveraQUBCz4FFcwVZBGbwBXIw==}
     dev: true
@@ -15130,7 +15172,6 @@ packages:
 
   /yallist@4.0.0:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
-    dev: true
 
   /yaml@1.10.2:
     resolution: {integrity: sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==}

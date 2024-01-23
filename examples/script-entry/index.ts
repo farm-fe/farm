@@ -15,7 +15,8 @@ function defineConfig(config: UserConfig) {
 }
 
 import('lodash/debounce').then((debounce) => {
-  console.log(debounce);
+  const ld = debounce;
+  console.log('ld is', ld);
 });
 
 export default defineConfig({});

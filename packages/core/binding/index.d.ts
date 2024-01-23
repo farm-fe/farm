@@ -22,7 +22,7 @@ export type ResolveKind =
 export * from './binding.js';
 import { Compiler } from './binding.js';
 import type { WatchOptions } from 'chokidar';
-import { JsMinifyOptions, PresetEnvConfig, ScriptDecoratorsConfig, ScriptParseConfig } from './swc-config.js';
+import { JsMinifyOptions, SwcPresetEnvOptions, ScriptDecoratorsConfig, ScriptParseConfig } from './swc-config.js';
 export default Compiler;
 export const bindingPath: string;
 
@@ -210,7 +210,8 @@ export interface ScriptConfig {
   | 'es2019'
   | 'es2020'
   | 'es2021'
-  | 'es2022';
+  | 'es2022'
+  | 'esnext';
   // config swc parser
   parser?: ScriptParseConfig;
   decorators?: ScriptDecoratorsConfig;
@@ -317,7 +318,7 @@ export interface PartialBundlingConfig {
 export interface PresetEnvConfig {
   include?: string[];
   exclude?: string[];
-  options?: PresetEnvConfig;
+  options?: SwcPresetEnvOptions;
   /**
    * @see https://babeljs.io/docs/assumptions
    */

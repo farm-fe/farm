@@ -68,14 +68,11 @@ impl FarmPluginMinify {
       program = program.fold_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
       let minify_options = match &*context.config.minify {
-        BoolOrObj::Bool(b) => {
-          MinifyOptions {
-            // TODO: make it configurable
-            compress: Some(Default::default()),
-            mangle: Some(Default::default()),
-            ..Default::default()
-          }
-        }
+        BoolOrObj::Bool(_) => MinifyOptions {
+          compress: Some(Default::default()),
+          mangle: Some(Default::default()),
+          ..Default::default()
+        },
         BoolOrObj::Obj(obj) => serde_json::from_value(obj.clone()).unwrap(),
       };
       let mut program = optimize(

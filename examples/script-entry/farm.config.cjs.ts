@@ -27,8 +27,7 @@ const config: UserConfig = {
       ]
     },
     minify: true,
-    sourcemap: true,
-    presetEnv: false
+    sourcemap: true
   },
   plugins: [
     dts({

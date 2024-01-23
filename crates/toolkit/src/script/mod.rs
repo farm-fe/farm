@@ -165,10 +165,12 @@ pub fn syntax_from_module_type(
   match module_type {
     ModuleType::Js => Some(Syntax::Es(EsConfig {
       jsx: false,
+      import_attributes: true,
       ..config.es_config
     })),
     ModuleType::Jsx => Some(Syntax::Es(EsConfig {
       jsx: true,
+      import_attributes: true,
       ..config.es_config
     })),
     ModuleType::Ts => Some(Syntax::Typescript(TsConfig {

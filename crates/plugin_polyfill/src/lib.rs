@@ -61,7 +61,6 @@ impl FarmPluginPolyfill {
       }
       PresetEnvConfig::Obj(obj) => {
         let options = &obj.options;
-
         let mut user_config: swc_ecma_preset_env::Config =
           serde_json::from_value(*options.clone()).unwrap();
         user_config.mode = user_config.mode.or(Some(Mode::Usage));

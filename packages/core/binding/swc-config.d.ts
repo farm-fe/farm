@@ -46,7 +46,7 @@ export interface ScriptDecoratorsConfig {
 /**
  * Configuration ported from babel-preset-env
  */
-export interface PresetEnvConfig {
+export interface SwcPresetEnvOptions {
   mode?: "usage" | "entry";
   debug?: boolean;
   dynamicImport?: boolean;

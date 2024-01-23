@@ -20,7 +20,7 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{Mark, GLOBALS},
-  swc_ecma_ast::ModuleItem,
+  swc_ecma_ast::{EsVersion, ModuleItem},
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
@@ -98,7 +98,7 @@ impl Plugin for FarmPluginScript {
         &param.module_id.to_string(),
         &param.content,
         syntax,
-        context.config.script.target,
+        EsVersion::EsNext,
       )?;
 
       GLOBALS.set(&context.meta.script.globals, || {
