@@ -285,8 +285,8 @@ importers:
         specifier: workspace:^0.5.1
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
-        specifier: ^2.5.70
-        version: 2.5.96
+        specifier: ^2.5.115
+        version: 2.5.115
       '@types/react':
         specifier: '18'
         version: 18.2.35
@@ -1084,8 +1084,8 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/vue
       swc-plugin-vue-jsx:
-        specifier: ^0.2.4
-        version: 0.2.5
+        specifier: ^0.2.6
+        version: 0.2.6
 
   examples/vue-ssr:
     dependencies:
@@ -3828,8 +3828,8 @@ packages:
       tslib: 2.6.2
     dev: false
 
-  /@swc/plugin-emotion@2.5.96:
-    resolution: {integrity: sha512-tVFe25pCPIFADX6PYPYrNBL7TtApjo+NJbSAd0b99nQP+fpu+SNTQHO2IXQPzWMw3oJrfnNFSTZETBvprXpJLA==}
+  /@swc/plugin-emotion@2.5.115:
+    resolution: {integrity: sha512-3SuO6RbJESgVdmey0hwB5HR+ZU9sgLINTGdhRI+Uhr/KAhbZVvLxjf+g9/8g9RngECqljmd/xc0lZyNols8DVw==}
     dev: true
 
   /@sxzz/popperjs-es@2.11.7:
@@ -13847,8 +13847,8 @@ packages:
       picocolors: 1.0.0
     dev: true
 
-  /swc-plugin-vue-jsx@0.2.5:
-    resolution: {integrity: sha512-0RnGUEGhse/6g2BMkEJUUOWGs6e9ZYaeGRBTDW5BM49J2qfFL3WQ/YDDIB8lXw5bobZOEjQ1p8ms53IdjN06Hg==}
+  /swc-plugin-vue-jsx@0.2.6:
+    resolution: {integrity: sha512-3/+Dzkfg/dMN4RQotlm/vOOE3RpgmwCVHsPZ+Wgkyhg9MWCVyD5IP3WOiVWC4jWAzkDG2MtkUZcdfX3MvDG8VA==}
     dev: true
 
   /tailwindcss@3.3.5:

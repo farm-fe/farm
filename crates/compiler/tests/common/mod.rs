@@ -58,7 +58,7 @@ pub fn create_css_compiler(
       sourcemap: SourcemapConfig::Bool(false),
       css: css_config,
       lazy_compilation: false,
-      minify: Box::new(BoolOrObj::Bool(true)),
+      minify: Box::new(BoolOrObj::Bool(false)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()

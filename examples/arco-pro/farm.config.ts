@@ -8,9 +8,7 @@ export default defineConfig({
     input: {
       index: './index.html'
     },
-    lazyCompilation: true,
     sourcemap: true,
-    mode: 'development',
     resolve: {
       symlinks: true,
       alias: {

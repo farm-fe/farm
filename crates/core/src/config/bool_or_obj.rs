@@ -14,6 +14,16 @@ impl<T> BoolOrObj<T> {
       BoolOrObj::Obj(_) => true,
     }
   }
+
+  pub fn unwrap_as_option<F>(self, default: F) -> Option<T>
+  where
+    F: FnOnce(Option<bool>) -> Option<T>,
+  {
+    match self {
+      BoolOrObj::Obj(v) => Some(v),
+      BoolOrObj::Bool(b) => default(Some(b)),
+    }
+  }
 }
 
 impl<T> Default for BoolOrObj<T> {

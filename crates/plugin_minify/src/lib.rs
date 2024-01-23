@@ -6,9 +6,10 @@ use farmfe_core::{
   error::Result,
   plugin::Plugin,
   resource::resource_pot::{ResourcePot, ResourcePotType},
+  serde::{Deserialize, Serialize},
   serde_json,
-  swc_common::Mark,
-  swc_ecma_ast::{EsVersion, Program},
+  swc_common::{util::take::Take, Mark},
+  swc_ecma_ast::EsVersion,
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
@@ -22,11 +23,14 @@ use farmfe_toolkit::{
   swc_css_minifier::minify,
   swc_ecma_minifier::{
     optimize,
-    option::{ExtraOptions, MinifyOptions},
+    option::{
+      terser::{TerserCompressorOptions, TerserTopLevelOptions},
+      ExtraOptions, MangleOptions, MinifyOptions,
+    },
   },
   swc_ecma_transforms::fixer,
-  swc_ecma_transforms_base::resolver,
-  swc_ecma_visit::FoldWith,
+  swc_ecma_transforms_base::{fixer::paren_remover, resolver},
+  swc_ecma_visit::VisitMutWith,
   swc_html_minifier::minify_document,
 };
 
@@ -48,10 +52,7 @@ impl FarmPluginMinify {
     });
 
     try_with(cm.clone(), &context.meta.script.globals, || {
-      let unresolved_mark = Mark::new();
-      let top_level_mark = Mark::new();
-
-      let ParseScriptModuleResult { ast, comments } = match parse_module(
+      let ParseScriptModuleResult { mut ast, comments } = match parse_module(
         &resource_pot.name,
         &resource_pot.meta.rendered_content,
         Syntax::Es(Default::default()),
@@ -64,35 +65,65 @@ impl FarmPluginMinify {
         }
       };
 
-      let mut program = Program::Module(ast);
-      program = program.fold_with(&mut resolver(unresolved_mark, top_level_mark, false));
-
-      let minify_options = match &*context.config.minify {
-        BoolOrObj::Bool(_) => MinifyOptions {
-          compress: Some(Default::default()),
-          mangle: Some(Default::default()),
+      let js_minify_options = match &*context.config.minify {
+        BoolOrObj::Bool(_) => JsMinifyOptions {
+          compress: BoolOrObj::Bool(true),
+          mangle: BoolOrObj::Bool(true),
           ..Default::default()
         },
         BoolOrObj::Obj(obj) => serde_json::from_value(obj.clone()).unwrap(),
       };
-      let mut program = optimize(
-        program,
-        cm.clone(),
-        Some(&comments),
-        None,
-        &minify_options,
-        &ExtraOptions {
-          unresolved_mark,
-          top_level_mark,
-        },
-      );
 
-      program = program.fold_with(&mut fixer(Some(&comments)));
+      let minify_options = MinifyOptions {
+        compress: js_minify_options
+          .compress
+          .unwrap_as_option(|default| match default {
+            Some(true) => Some(Default::default()),
+            _ => None,
+          })
+          .map(|mut v| {
+            if v.const_to_let.is_none() {
+              v.const_to_let = Some(true);
+            }
+            if v.toplevel.is_none() {
+              v.toplevel = Some(TerserTopLevelOptions::Bool(true));
+            }
 
-      let ast = match program {
-        Program::Module(ast) => ast,
-        _ => unreachable!(),
+            v.into_config(cm.clone())
+          }),
+        mangle: js_minify_options
+          .mangle
+          .unwrap_as_option(|default| match default {
+            Some(true) => Some(Default::default()),
+            _ => None,
+          }),
+        ..Default::default()
       };
+
+      let unresolved_mark = Mark::new();
+      let top_level_mark = Mark::new();
+
+      ast.visit_mut_with(&mut paren_remover(Some(&comments)));
+
+      ast.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
+
+      ast.map_with_mut(|m| {
+        optimize(
+          m.into(),
+          cm.clone(),
+          Some(&comments),
+          None,
+          &minify_options,
+          &ExtraOptions {
+            unresolved_mark,
+            top_level_mark,
+          },
+        )
+        .expect_module()
+      });
+
+      ast.visit_mut_with(&mut fixer(Some(&comments)));
+
       let sourcemap_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
 
       let mut src_map = vec![];
@@ -224,4 +255,18 @@ impl Plugin for FarmPluginMinify {
 
     Ok(None)
   }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(
+  crate = "farmfe_core::serde",
+  deny_unknown_fields,
+  rename_all = "camelCase"
+)]
+pub struct JsMinifyOptions {
+  #[serde(default)]
+  pub compress: BoolOrObj<TerserCompressorOptions>,
+
+  #[serde(default)]
+  pub mangle: BoolOrObj<MangleOptions>,
 }
