@@ -123,7 +123,6 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  console.log(result);
 
   await copyTemplate(targetDir, result);
   await installationDeps(targetDir, !skipInstall, result);
