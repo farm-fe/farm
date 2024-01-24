@@ -1,0 +1,21 @@
+{
+  "name": "996",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:vite": "vite --port 9654",
+    "dev": "farm",
+    "build": "farm build",
+    "preview": "farm preview"
+  },
+  "dependencies": {
+    "lit": "^3.1.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^0.6.0",
+    "@farmfe/core": "^0.15.10",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8"
+  }
+}
