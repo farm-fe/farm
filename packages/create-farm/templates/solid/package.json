@@ -1,7 +1,6 @@
 {
-  "name": "@farmfe-examples/solid",
-  "version": "0.0.1",
-  "private": true,
+  "name": "www",
+  "version": "1.0.0",
   "dependencies": {
     "solid-js": "^1.7.6"
   },

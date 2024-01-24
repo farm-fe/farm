@@ -1,7 +1,6 @@
 {
-  "name": "@farmfe-examples/vue",
+  "name": "vue-example",
   "version": "1.0.0",
-  "private": true,
   "dependencies": {
     "vue": "^3.4.0",
     "core-js": "^3.30.1"

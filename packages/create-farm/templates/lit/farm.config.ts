@@ -12,15 +12,7 @@ export default defineConfig({
           noEarlyErrors: false,
           tsx: false,
         },
-      },
-      decorators: {
-        legacyDecorator: true,
-        decoratorMetadata: false,
-        decoratorVersion: '2021-12',
-        includes: ["src/my-element.ts"],
-        excludes: ['node_modules/'],
       }
-    },
-    presetEnv: false,
+    }
   },
 });

@@ -1,12 +1,13 @@
 {
-  "name": "999",
-  "private": true,
-  "version": "0.0.0",
+  "name": "lit-example",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "farm",
+    "start": "farm",
     "build": "farm build",
-    "preview": "farm preview"
+    "preview": "farm preview",
+    "clean": "farm clean"
   },
   "dependencies": {
     "lit": "^3.1.0"
@@ -14,7 +15,6 @@
   "devDependencies": {
     "@farmfe/cli": "^0.6.0",
     "@farmfe/core": "^0.15.10",
-    "typescript": "^5.2.2",
-    "vite": "^5.0.8"
+    "typescript": "^5.2.2"
   }
 }

@@ -13,6 +13,7 @@ import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
 
 interface IResultType {
   packageName?: string;
+  projectName?: string;
   framework?: string;
   autoInstall?: boolean;
   packageManager?: string;
@@ -80,11 +81,16 @@ async function createFarm() {
           initial: 0,
           choices: [
             {
+              title: colors.yellow('Vanilla'),
+              value: 'vanilla'
+            },
+            {
               title: colors.cyan('React'),
               value: 'react'
             },
             { title: colors.green('Vue'), value: 'vue' },
             { title: colors.orange('Svelte'), value: 'svelte' },
+            { title: colors.red('Lit'), value: 'lit' },
             { title: colors.blue('Solid'), value: 'solid' }
           ]
         },
@@ -117,9 +123,10 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { framework = argFramework, packageManager } = result;
-  await copyTemplate(targetDir, framework!);
-  await installationDeps(targetDir, !skipInstall, packageManager!);
+  console.log(result);
+
+  await copyTemplate(targetDir, result);
+  await installationDeps(targetDir, !skipInstall, result);
 }
 
 function formatTargetDir(targetDir: string | undefined) {
@@ -131,25 +138,42 @@ function isEmpty(path: string) {
   return files.length === 0 || (files.length === 1 && files[0] === '.git');
 }
 
-async function copyTemplate(targetDir: string, framework: string) {
+async function copyTemplate(targetDir: string, options: IResultType) {
   const spinner = await loadWithRocketGradient('Copy template');
   const dest = path.join(cwd, targetDir);
   const templatePath = path.join(
     fileURLToPath(import.meta.url),
-    `../../templates/${framework}`
+    `../../templates/${options.framework}`
   );
+  writePackageJson(templatePath, options);
   copy(templatePath, dest);
   spinner.text = 'Template copied Successfully!';
   spinner.succeed();
 }
 
+function writePackageJson(templatePath: string, options: IResultType) {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(templatePath, `package.json`), 'utf-8')
+  );
+
+  pkg.name = options.projectName;
+
+  const packageJsonPath = path.join(templatePath, 'package.json');
+  const { name, ...rest } = pkg;
+  const sortedPackageJson = { name, ...rest };
+  fs.writeFileSync(
+    packageJsonPath,
+    JSON.stringify(sortedPackageJson, null, 2) + '\n'
+  );
+}
+
 async function installationDeps(
   targetDir: string,
   autoInstall: boolean,
-  packageManager: string
+  options: IResultType
 ) {
   const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
-  const currentPkgManager = pkgInfo ? pkgManager : packageManager;
+  const currentPkgManager = pkgInfo ? pkgManager : options.packageManager;
   if (autoInstall) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir), 'ignore');
     const spinner = await loadWithRocketGradient('Install Dependencies');

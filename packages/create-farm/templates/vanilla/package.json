@@ -1,12 +1,13 @@
 {
-  "name": "vanilla-js-farm",
-  "private": true,
-  "version": "0.0.0",
+  "name": "vanilla-example",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "farm",
+    "start": "farm",
     "build": "farm build",
-    "preview": "farm preview"
+    "preview": "farm preview",
+    "clean": "farm clean"
   },
   "devDependencies": {
     "@farmfe/cli": "^0.6.0",

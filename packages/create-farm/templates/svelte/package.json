@@ -1,7 +1,6 @@
 {
-  "name": "@farmfe-examples/svelet",
-  "private": true,
-  "version": "0.0.0",
+  "name": "svelte-example",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "farm",
