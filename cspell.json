@@ -29,6 +29,7 @@
     "chpos",
     "clippy",
     "clsx",
+    "csspart",
     "codeframe",
     "codegen",
     "commitlint",
