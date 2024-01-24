@@ -41,9 +41,7 @@ impl FarmPluginPolyfill {
         (
           swc_ecma_preset_env::Config {
             mode: Some(Mode::Usage),
-            targets: Some(Targets::Query(Query::Single(
-              "> 0.25%, not dead".to_string(),
-            ))),
+            targets: Some(Targets::Query(Query::Single("ie >= 9".to_string()))),
             ..Default::default()
           },
           include,
@@ -56,9 +54,9 @@ impl FarmPluginPolyfill {
         let mut user_config: swc_ecma_preset_env::Config =
           serde_json::from_value(*options.clone()).unwrap();
         user_config.mode = user_config.mode.or(Some(Mode::Usage));
-        user_config.targets = user_config.targets.or(Some(Targets::Query(Query::Single(
-          "> 0.25%, not dead".to_string(),
-        ))));
+        user_config.targets = user_config
+          .targets
+          .or(Some(Targets::Query(Query::Single("ie >= 9".to_string()))));
         let user_assumption: Assumptions =
           serde_json::from_value(*obj.assumptions.clone()).unwrap();
         (

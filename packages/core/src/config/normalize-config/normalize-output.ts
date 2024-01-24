@@ -18,7 +18,26 @@ export async function normalizeOutput(
     }
   }
 
-  normalizeTargetEnv(config);
+  // only set default polyfill in production
+  if (isProduction) {
+    normalizeTargetEnv(config);
+  }
+
+  // the rust compiler only receives 'node' or 'browser'.
+  if (
+    ['node16', 'node-legacy', 'node-next'].includes(config.output.targetEnv)
+  ) {
+    config.output.targetEnv = 'node';
+  } else if (
+    [
+      'browser-legacy',
+      'browser-es2015',
+      'browser-es2017',
+      'browser-esnext'
+    ].includes(config.output.targetEnv)
+  ) {
+    config.output.targetEnv = 'browser';
+  }
 }
 
 type TargetEnvKeys = Config['config']['output']['targetEnv'];
@@ -35,6 +54,7 @@ type TargetsMap = Omit<TargetsForTargetEnv, 'node' | 'browser'>;
 
 const es2015Browsers = browsersWithSupportForFeatures('es6');
 const es2017Browsers = browsersWithSupportForFeatures('async-functions');
+const LEGACY_BROWSERS = ['ie >= 9'];
 
 const targetsMap: TargetsMap = {
   node16: {
@@ -42,13 +62,13 @@ const targetsMap: TargetsMap = {
     cssTargets: null
   },
   'node-legacy': {
-    scriptTargets: ['> 0.25%, not dead'],
+    scriptTargets: ['node 10'],
     cssTargets: null
   },
   'node-next': null,
   'browser-legacy': {
-    scriptTargets: ['> 0.25%, not dead'],
-    cssTargets: ['> 0.25%, not dead'],
+    scriptTargets: LEGACY_BROWSERS,
+    cssTargets: LEGACY_BROWSERS,
     scriptGenTarget: 'es5'
   },
   'browser-es2015': {
@@ -105,7 +125,7 @@ function normalizeTargetEnv(config: Config['config']) {
     }
 
     config.script ??= { plugins: [] };
-    config.script.target = scriptGenTarget ?? 'esnext';
+    config.script.target = config.script.target ?? scriptGenTarget ?? 'esnext';
 
     if (!config)
       if (config.css?.prefixer !== null) {
@@ -132,21 +152,5 @@ function normalizeTargetEnv(config: Config['config']) {
 
     config.css ??= {};
     config.css.prefixer = null;
-  }
-
-  // the rust compiler only receives 'node' or 'browser'.
-  if (
-    ['node16', 'node-legacy', 'node-next'].includes(config.output.targetEnv)
-  ) {
-    config.output.targetEnv = 'node';
-  } else if (
-    [
-      'browser-legacy',
-      'browser-es2015',
-      'browser-es2017',
-      'browser-esnext'
-    ].includes(config.output.targetEnv)
-  ) {
-    config.output.targetEnv = 'browser';
   }
 }

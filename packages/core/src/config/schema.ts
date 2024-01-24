@@ -23,7 +23,7 @@ const compilationConfigSchema = z
             'node-next',
             'node-16',
             'browser-legacy',
-            'browser-next',
+            'browser-esnext',
             'browser-es2015',
             'browser-es2017'
           ])
@@ -89,7 +89,8 @@ const compilationConfigSchema = z
             'es2019',
             'es2020',
             'es2021',
-            'es2022'
+            'es2022',
+            'esnext'
           ])
           .optional(),
         parser: z
