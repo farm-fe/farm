@@ -119,7 +119,7 @@ export async function resolveConfig(
   );
 
   let vitePluginAdapters: JsPlugin[] = [];
-  const vitePlugins = userConfig?.vitePlugins ?? [];
+  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
   // run config and configResolved hook
   if (vitePlugins.length) {
     vitePluginAdapters = await handleVitePlugins(
@@ -221,12 +221,6 @@ export async function normalizeUserCompilationConfig(
   config.mode = config.mode ?? mode;
 
   config.coreLibPath = bindingPath;
-
-  config.external = [
-    ...module.builtinModules.map((m) => `^${m}$`),
-    ...module.builtinModules.map((m) => `^node:${m}$`),
-    ...(Array.isArray(config.external) ? config.external : [])
-  ];
 
   normalizeOutput(config, isProduction);
   normalizeExternal(config);

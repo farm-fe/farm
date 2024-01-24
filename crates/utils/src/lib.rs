@@ -7,9 +7,9 @@ pub use pathdiff::diff_paths;
 
 pub mod hash;
 
-pub const PARSE_QUERY_TRUE: &str = "true";
+pub const PARSE_QUERY_TRUE: &str = "";
 
-/// parse `?a=b` to `HashMap { a: b }`, `?a` to `HashMap { a: "true" }`
+/// parse `?a=b` to `HashMap { a: b }`, `?a` to `HashMap { a: "" }`
 pub fn parse_query(path: &str) -> Vec<(String, String)> {
   if !path.contains('?') {
     return vec![];

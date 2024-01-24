@@ -254,6 +254,7 @@ impl Compiler {
 
     // try load source map after load module content.
     // TODO load source map in load hook and add a context.load_source_map method
+    // TODO load css source map
     if context.config.sourcemap.enabled(module.immutable)
       && load_result.content.contains("//# sourceMappingURL")
     {

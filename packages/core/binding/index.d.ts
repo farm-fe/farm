@@ -345,6 +345,7 @@ export interface Config {
      * Configure the imports that are external, and the imports that are external will not appear in the compiled product.
      */
     external?: string[];
+    externalNodeBuiltins?: boolean | string[];
     mode?: 'development' | 'production';
     root?: string;
     runtime?: RuntimeConfig;
