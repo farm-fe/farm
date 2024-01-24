@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
-    config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
+    bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
     preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
   },
   plugin::Plugin,
@@ -58,7 +58,7 @@ pub fn create_css_compiler(
       sourcemap: SourcemapConfig::Bool(false),
       css: css_config,
       lazy_compilation: false,
-      minify: false,
+      minify: Box::new(BoolOrObj::Bool(false)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()
@@ -92,7 +92,7 @@ pub fn create_compiler(
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
-      minify,
+      minify: Box::new(BoolOrObj::from(minify)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()
@@ -143,7 +143,7 @@ pub fn create_compiler_with_plugins(
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
-      minify,
+      minify: Box::new(BoolOrObj::from(minify)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()

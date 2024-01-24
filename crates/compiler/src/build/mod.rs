@@ -429,7 +429,7 @@ impl Compiler {
         ResolveModuleResult::Cached(module_id) => {
           farm_profile_scope!(format!("cache module {:?}", cached_module.module.id));
           let mut cached_module = context.cache_manager.module_cache.get_cache(&module_id);
-          // if the dependency is immutable, skip building
+
           if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
             err_sender.send(e).unwrap();
             return;

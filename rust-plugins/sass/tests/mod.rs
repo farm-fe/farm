@@ -2,7 +2,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{preset_env::PresetEnvConfig, Config, ResolveConfig, RuntimeConfig, SourcemapConfig},
+  config::{
+    bool_or_obj::BoolOrObj, preset_env::PresetEnvConfig, Config, ResolveConfig, RuntimeConfig,
+    SourcemapConfig,
+  },
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookParam},
@@ -76,7 +79,7 @@ fn test_with_compiler() {
       mode: farmfe_core::config::Mode::Production,
       sourcemap: SourcemapConfig::Bool(false),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
-      minify: false,
+      minify: Box::new(BoolOrObj::from(false)),
       tree_shaking: false,
       resolve: ResolveConfig {
         alias: std::collections::HashMap::from([(

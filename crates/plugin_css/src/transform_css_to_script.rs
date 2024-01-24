@@ -90,7 +90,7 @@ pub fn transform_css_to_script_modules(
         } else {
           None
         },
-        context.config.minify,
+        context.config.minify.enabled(),
       );
       let mut source_map_chain = m.source_map_chain.clone();
       drop(module_graph);

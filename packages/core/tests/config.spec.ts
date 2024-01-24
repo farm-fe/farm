@@ -1,4 +1,3 @@
-import { builtinModules } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'vitest';
@@ -57,6 +56,86 @@ test('resolveUserConfig', async () => {
   });
   expect(config.server).toEqual(
     normalizeDevServerOptions(config.server, 'development')
+  );
+});
+
+test('resolveUserConfig-prod', async () => {
+  const filePath = fileURLToPath(path.dirname(import.meta.url));
+
+  const config = await resolveConfig(
+    { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
+    new DefaultLogger(),
+    'production'
+  );
+
+  expect(config.compilation.define).toEqual({
+    FARM_PROCESS_ENV: {
+      NODE_ENV: 'test'
+    },
+    'process.env.NODE_ENV': 'test'
+  });
+  expect(config.compilation.input).toEqual({
+    main: './main.tsx'
+  });
+  expect(config.compilation.output).toEqual({
+    assetsFilename: '[resourceName].[contentHash].[ext]',
+    filename: '[resourceName].[contentHash].[ext]',
+    path: './dist',
+    publicPath: '/',
+    targetEnv: 'browser'
+  });
+  expect(config.compilation.lazyCompilation).toEqual(false);
+  expect(config.compilation.sourcemap).toEqual(true);
+  expect(config.compilation.minify).toEqual(true);
+  expect(config.compilation.presetEnv).toEqual({
+    options: {
+      targets: [
+        'edge >= 15',
+        'firefox >= 52',
+        'chrome >= 55',
+        'safari >= 11',
+        'opera >= 42',
+        'ios_saf >= 11.2',
+        'and_chr >= 119',
+        'and_ff >= 119',
+        'and_uc >= 15.5',
+        'samsung >= 6.4',
+        'and_qq >= 13.1',
+        'baidu >= 13.18',
+        'kaios >= 3.1',
+        'unreleased edge versions',
+        'unreleased firefox versions',
+        'unreleased chrome versions',
+        'unreleased safari versions',
+        'unreleased opera versions',
+        'unreleased ios_saf versions',
+        'unreleased and_chr versions',
+        'unreleased and_ff versions',
+        'unreleased and_uc versions',
+        'unreleased samsung versions',
+        'unreleased and_qq versions',
+        'unreleased baidu versions',
+        'unreleased kaios versions'
+      ]
+    }
+  });
+  expect(config.compilation.persistentCache).toEqual({
+    buildDependencies: [
+      // path.join(filePath, '..', 'src', 'config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'util.ts'),
+      'module',
+      'package-lock.json',
+      'pnpm-lock.yaml',
+      'yarn.lock'
+    ],
+    envs: {
+      NODE_ENV: 'test'
+    },
+    moduleCacheKeyStrategy: {}
+  });
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'production')
   );
 });
 

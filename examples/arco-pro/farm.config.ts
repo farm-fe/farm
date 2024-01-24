@@ -1,19 +1,13 @@
 import { resolve } from 'node:path';
-import type { JsPlugin, UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
   compilation: {
     input: {
       index: './index.html'
     },
-    lazyCompilation: true,
-    presetEnv: false,
     sourcemap: true,
     resolve: {
       symlinks: true,
@@ -38,5 +32,8 @@ export default defineConfig({
     cors: true,
     port: 6260
   },
-  plugins: ['@farmfe/plugin-react', farmJsPluginLess(), farmJsPluginSvgr()]
+  plugins: [['@farmfe/plugin-react', {
+    refresh: process.env.NODE_ENV === 'development',
+    development: process.env.NODE_ENV === 'development'
+  }], farmJsPluginLess(), farmJsPluginSvgr()]
 });

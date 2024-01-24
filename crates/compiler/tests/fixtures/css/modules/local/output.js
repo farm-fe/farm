@@ -1,5 +1,5 @@
 //index.js:
- (globalThis || window || self || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
+ (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
             var cache = {};
 
             function dynamicRequire(id) {
@@ -21,13 +21,12 @@
           
             require(entryModule);
           })({"ec853507": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-console.log("runtime/index.js")(globalThis || window || self || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 
 },}, "ec853507");(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_2544.js';
-                (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
+                (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
             }
         })({"95fe6ac5": function(module, exports, farmRequire, farmDynamicRequire) {
 "use strict";
@@ -58,7 +57,7 @@ var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_defa
 var _indexcss = /*#__PURE__*/ _interop_require_default._(farmRequire("95fe6ac5"));
 console.log(_indexcss.default.base);
 
-},});(globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+},});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
 //index_64d1.css:
  .farm-base {

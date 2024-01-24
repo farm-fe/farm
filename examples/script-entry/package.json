@@ -13,5 +13,8 @@
     "build:esm": "farm build && farm build && node test.mjs",
     "build:cjs": "farm build -c farm.config.cjs.ts && farm build -c farm.config.cjs.ts && node test-cjs.cjs",
     "build": "npm run build:esm && npm run build:cjs"
+  },
+  "dependencies": {
+    "core-js": "^3.35.1"
   }
 }

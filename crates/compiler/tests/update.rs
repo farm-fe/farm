@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use common::generate_runtime;
 use farmfe_compiler::Compiler;
+use farmfe_core::config::bool_or_obj::BoolOrObj;
 use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_core::config::persistent_cache::PersistentCacheConfig;
 use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
@@ -36,7 +37,7 @@ fn create_compiler_internal(
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation,
-      minify,
+      minify: Box::new(BoolOrObj::from(minify)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
       ..Default::default()

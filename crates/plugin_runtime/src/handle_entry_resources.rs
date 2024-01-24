@@ -15,6 +15,7 @@ use farmfe_toolkit::fs::transform_output_entry_filename;
 use farmfe_toolkit::get_dynamic_resources_map::{
   get_dynamic_resources_code, get_dynamic_resources_map,
 };
+use farmfe_toolkit::html::get_farm_global_this;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
@@ -301,10 +302,7 @@ pub fn handle_entry_resources(
         .collect::<Vec<_>>()
         .join("");
 
-      let farm_global_this = format!(
-        "(globalThis || window || self || global)['{}']",
-        context.config.runtime.namespace
-      );
+      let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
 
       // 4. setInitialLoadedResources and setDynamicModuleResourcesMap
       let set_initial_loaded_resources_code = format!(
@@ -412,10 +410,7 @@ fn create_runtime_code(
   };
 
   // 2. __farm_global_this by namespace
-  let farm_global_this = format!(
-    "(globalThis || window || self || global)['{}']",
-    context.config.runtime.namespace
-  );
+  let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
   let farm_global_this_code = format!(
     r#"{farm_global_this} = {{__FARM_TARGET_ENV__: '{}'}};"#,
     match &context.config.output.target_env {
@@ -456,6 +451,6 @@ fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationCon
     emitted: false,
     resource_type: ResourceType::Runtime,
     origin: ResourceOrigin::ResourcePot(name),
-    info: None
+    info: None,
   }
 }

@@ -10,7 +10,7 @@ const config: UserConfig = {
     output: {
       path: 'dist/cjs',
       entryFilename: '[entryName].cjs',
-      targetEnv: 'node',
+      targetEnv: 'node-legacy',
       format: 'cjs'
     },
     resolve: {
@@ -26,9 +26,8 @@ const config: UserConfig = {
         }
       ]
     },
-    minify: true,
-    sourcemap: true,
-    presetEnv: false
+    minify: false,
+    sourcemap: true
   },
   plugins: [
     dts({
