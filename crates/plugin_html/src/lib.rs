@@ -170,7 +170,7 @@ impl Plugin for FarmPluginHtml {
 
       let code = Arc::new(codegen_html_document(
         html_module_document,
-        context.config.minify,
+        context.config.minify.enabled(),
       ));
 
       Ok(Some(ResourcePotMetaData {
@@ -387,7 +387,7 @@ impl Plugin for FarmPluginTransformHtml {
         parse_html_document(&resource_pot.id, resource_pot.meta.rendered_content.clone())?;
       resources_injector.inject(&mut html_ast);
 
-      let code = codegen_html_document(&html_ast, context.config.minify);
+      let code = codegen_html_document(&html_ast, context.config.minify.enabled());
       html_resource.bytes = code.bytes().collect();
     }
 

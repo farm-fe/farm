@@ -10,7 +10,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
-  module::{ModuleMetaData, ModuleSystem, ModuleType},
+  module::{ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
@@ -27,7 +27,8 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
-  script::{module_system_from_deps, module_type_from_id},
+  html::get_farm_global_this,
+  script::{module_type_from_id, set_module_system_for_module_meta},
 };
 
 use insert_runtime_plugins::insert_runtime_plugins;
@@ -82,10 +83,7 @@ impl Plugin for FarmPluginRuntime {
 
     config.define.insert(
       "'<@__farm_global_this__@>'".to_string(),
-      serde_json::Value::String(format!(
-        "(globalThis || window || self || global)['{}']",
-        config.runtime.namespace
-      )),
+      serde_json::Value::String(get_farm_global_this(&config.runtime.namespace)),
     );
 
     Ok(Some(()))
@@ -250,14 +248,7 @@ impl Plugin for FarmPluginRuntime {
     if param.module.id.relative_path().ends_with(RUNTIME_SUFFIX) {
       param.module.module_type = ModuleType::Runtime;
 
-      if !param.deps.is_empty() {
-        let module_system =
-          module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect());
-        param.module.meta.as_script_mut().module_system = module_system;
-      } else {
-        // default to es module
-        param.module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
-      }
+      set_module_system_for_module_meta(param);
 
       Ok(Some(()))
     } else {
@@ -349,10 +340,7 @@ impl Plugin for FarmPluginRuntime {
 
       let mut external_modules_str = None;
 
-      let farm_global_this = format!(
-        "(globalThis || window || self || global)['{}']",
-        context.config.runtime.namespace
-      );
+      let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
 
       // inject global externals
       if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
@@ -370,7 +358,7 @@ impl Plugin for FarmPluginRuntime {
           let import_str = if context.config.output.format == ModuleFormat::EsModule {
             format!("import * as {name} from {external_module:?};")
           } else {
-            format!("const {name} = require({external_module:?});")
+            format!("var {name} = require({external_module:?});")
           };
           import_strings.push(import_str);
           source_to_names.push((name, external_module));
@@ -402,10 +390,7 @@ impl Plugin for FarmPluginRuntime {
             .into_iter()
             .map(|source| {
               // TODO: make window['{source}'] configurable.
-              let source_obj = format!(
-                "(globalThis || window || self || {{}})['{}'] || {{}}",
-                source
-              );
+              let source_obj = format!("(globalThis || window || {{}})['{}'] || {{}}", source);
               if context.config.output.format == ModuleFormat::EsModule {
                 format!("{source:?}: {{ ...({source_obj}), __esModule: true }}")
               } else {

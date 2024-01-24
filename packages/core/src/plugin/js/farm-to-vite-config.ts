@@ -61,8 +61,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     build: {
       outDir: config.compilation?.output?.path,
       sourcemap,
-      minify: config.compilation?.minify,
-      cssMinify: config.compilation?.minify,
+      minify: Boolean(config.compilation?.minify),
+      cssMinify: Boolean(config.compilation?.minify),
       ssr: config.compilation?.output?.targetEnv === 'node',
       rollupOptions: {
         output: {

@@ -9,7 +9,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   get_dynamic_resources_map::get_dynamic_resources_code,
-  html::create_element,
+  html::{create_element, get_farm_global_this},
   swc_html_visit::{VisitMut, VisitMutWith},
 };
 
@@ -50,10 +50,7 @@ impl ResourcesInjector {
       script_resources,
       script_entries,
       dynamic_resources_map,
-      farm_global_this: format!(
-        "(globalThis || window || self || global)['{}']",
-        options.namespace
-      ),
+      farm_global_this: get_farm_global_this(&options.namespace),
       options,
     }
   }

@@ -1,6 +1,6 @@
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 
-use farmfe_core::module::{ModuleId, ModuleType};
+use farmfe_core::module::ModuleId;
 use napi::{
   bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},

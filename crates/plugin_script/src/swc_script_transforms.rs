@@ -4,10 +4,7 @@ use farmfe_core::{
   config::script::DecoratorVersion,
   context::CompilationContext,
   plugin::PluginProcessModuleHookParam,
-  swc_common::{
-    comments::{NoopComments, SingleThreadedComments},
-    Mark, SourceMap,
-  },
+  swc_common::{comments::SingleThreadedComments, Mark, SourceMap},
   swc_ecma_ast::Program,
 };
 use farmfe_toolkit::{

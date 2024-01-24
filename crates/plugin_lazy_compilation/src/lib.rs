@@ -5,6 +5,7 @@ use farmfe_core::{
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
+use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_utils::stringify_query;
 
 pub const DYNAMIC_VIRTUAL_PREFIX: &str = "virtual:FARMFE_DYNAMIC_IMPORT:";
@@ -143,10 +144,7 @@ impl Plugin for FarmPluginLazyCompilation {
 
     if param.resolved_path.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
       if param.meta.get(ORIGINAL_RESOLVED_PATH).is_none() {
-        let farm_global_this = format!(
-          "(globalThis || window || self || global)['{}']",
-          context.config.runtime.namespace
-        );
+        let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
         let resolved_path = param.resolved_path;
         let dynamic_code = include_str!("dynamic_module.ts")
           .replace("MODULE_PATH", &resolved_path.replace('\\', r"\\"))

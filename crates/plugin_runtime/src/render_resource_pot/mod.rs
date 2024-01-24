@@ -116,12 +116,13 @@ pub fn resource_pot_to_runtime_object(
           ));
         }
 
+        cloned_module.visit_mut_with(&mut paren_remover(Some(&comments)));
+
         // ESM to commonjs, then commonjs to farm's runtime module systems
         if matches!(
           module.meta.as_script().module_system,
           ModuleSystem::EsModule | ModuleSystem::Hybrid
         ) {
-          cloned_module.visit_mut_with(&mut paren_remover(Some(&comments)));
           cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
           cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
           cloned_module.visit_mut_with(&mut common_js::<&SingleThreadedComments>(

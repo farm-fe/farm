@@ -8,10 +8,7 @@ use farmfe_core::{
   },
   plugin::Plugin,
   serde_json,
-  swc_common::{
-    comments::{NoopComments, SingleThreadedComments},
-    Mark,
-  },
+  swc_common::{comments::SingleThreadedComments, Mark},
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -44,14 +41,7 @@ impl FarmPluginPolyfill {
         (
           swc_ecma_preset_env::Config {
             mode: Some(Mode::Usage),
-            core_js: Some(Version {
-              major: 3,
-              minor: 30,
-              patch: 1,
-            }),
-            targets: Some(Targets::Query(Query::Single(
-              "> 0.25%, not dead".to_string(),
-            ))),
+            targets: Some(Targets::Query(Query::Single("ie >= 9".to_string()))),
             ..Default::default()
           },
           include,
@@ -61,18 +51,12 @@ impl FarmPluginPolyfill {
       }
       PresetEnvConfig::Obj(obj) => {
         let options = &obj.options;
-
         let mut user_config: swc_ecma_preset_env::Config =
           serde_json::from_value(*options.clone()).unwrap();
         user_config.mode = user_config.mode.or(Some(Mode::Usage));
-        user_config.core_js = user_config.core_js.or(Some(Version {
-          major: 3,
-          minor: 30,
-          patch: 1,
-        }));
-        user_config.targets = user_config.targets.or(Some(Targets::Query(Query::Single(
-          "> 0.25%, not dead".to_string(),
-        ))));
+        user_config.targets = user_config
+          .targets
+          .or(Some(Targets::Query(Query::Single("ie >= 9".to_string()))));
         let user_assumption: Assumptions =
           serde_json::from_value(*obj.assumptions.clone()).unwrap();
         (
@@ -123,7 +107,7 @@ impl Plugin for FarmPluginPolyfill {
     try_with(cm, &context.meta.script.globals, || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
       let mut ast = param.meta.as_script_mut().take_ast();
-      // TODO: store feature flags in module meta and use them when transform the module system
+
       let mut feature_flag = FeatureFlag::empty();
       let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
       ast = ast.fold_with(&mut preset_env(

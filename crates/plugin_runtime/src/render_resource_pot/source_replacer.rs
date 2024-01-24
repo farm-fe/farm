@@ -91,10 +91,10 @@ impl SourceReplacer<'_> {
     if is_commonjs_require(self.unresolved_mark, self.top_level_mark, &*call_expr) {
       if let ExprOrSpread {
         spread: None,
-        expr: box Expr::Lit(Lit::Str(Str { value, .. })),
+        expr: box Expr::Lit(Lit::Str(str)),
       } = &mut call_expr.args[0]
       {
-        let source = value.to_string();
+        let source = str.value.to_string();
         let module_type = self
           .module_graph
           .module(&self.module_id)
@@ -134,7 +134,10 @@ impl SourceReplacer<'_> {
         }
 
         if dep_module.module_type.is_script() || dep_module.module_type == ModuleType::Runtime {
-          *value = id.id(self.mode.clone()).into();
+          // println!("replace {:?} to {:?}", value, id.id(self.mode.clone()));
+          str.value = id.id(self.mode.clone()).into();
+          str.span = DUMMY_SP;
+          str.raw = None;
           return SourceReplaceResult::Replaced;
         } else {
           // not script module should not be executed and should be removed
@@ -144,10 +147,10 @@ impl SourceReplacer<'_> {
     } else if is_dynamic_import(&*call_expr) {
       if let ExprOrSpread {
         spread: None,
-        expr: box Expr::Lit(Lit::Str(Str { value, .. })),
+        expr: box Expr::Lit(Lit::Str(str)),
       } = &mut call_expr.args[0]
       {
-        let source = value.to_string();
+        let source = str.value.to_string();
 
         let id = self
           .module_graph
@@ -170,7 +173,10 @@ impl SourceReplacer<'_> {
         let id = self
           .module_graph
           .get_dep_by_source(&self.module_id, &source);
-        *value = id.id(self.mode.clone()).into();
+
+        str.value = id.id(self.mode.clone()).into();
+        str.span = DUMMY_SP;
+        str.raw = None;
         return SourceReplaceResult::Replaced;
       }
     }

@@ -9,10 +9,10 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-vue": "workspace:*",
-    "swc-plugin-vue-jsx": "^0.2.4"
+    "swc-plugin-vue-jsx": "^0.2.6"
   },
   "scripts": {
     "start": "farm start",
-    "build": "farm build"
+    "build": "echo \"swc-plugin-vue-jsx is not compatible with latest swc. wait it to support later\""
   }
 }
