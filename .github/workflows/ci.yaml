@@ -63,7 +63,7 @@ jobs:
       - name: Test Create Farm Svelte - ${{ matrix.settings.abi }}
         run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-svelte --template svelte --skip-install && cd my-test-app-svelte && pnpm i && pnpm build
       - name: Test Create Farm Lit - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-Lit --template Lit --skip-install && cd my-test-app-Lit && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-lit --template lit --skip-install && cd my-test-app-lit && pnpm i && pnpm build
       - name: Test Create Farm Vanilla - ${{ matrix.settings.abi }}
         run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-vanilla --template vanilla --skip-install && cd my-test-app-vanilla && pnpm i && pnpm build
 
