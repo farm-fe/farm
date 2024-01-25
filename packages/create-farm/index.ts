@@ -15,6 +15,7 @@ interface IResultType {
   packageName?: string;
   projectName?: string;
   framework?: string;
+  argFrameWork?: string;
   autoInstall?: boolean;
   packageManager?: string;
 }
@@ -123,8 +124,9 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
+  const { framework = argFramework } = result;
 
-  await copyTemplate(targetDir, result);
+  await copyTemplate(targetDir, { framework, projectName: targetDir });
   await installationDeps(targetDir, !skipInstall, result);
 }
 
