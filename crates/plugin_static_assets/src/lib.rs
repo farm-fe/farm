@@ -199,10 +199,9 @@ impl Plugin for FarmPluginStaticAssets {
           .file_prefix()
           .and_then(|s| s.to_str())
           .unwrap();
-
         let resource_name = transform_output_filename(
           context.config.output.assets_filename.clone(),
-          format!("{filename}{}", stringify_query(&param.query)).as_str(),
+          filename,
           &bytes,
           ext,
         );
@@ -228,7 +227,7 @@ impl Plugin for FarmPluginStaticAssets {
         // TODO refactor this to support cache
         context.emit_file(EmitFileParams {
           resolved_path: param.module_id.clone(),
-          name: resource_name,
+          name: resource_name + stringify_query(&param.query).as_str(),
           content: bytes,
           resource_type: ResourceType::Asset(ext.to_string()),
         });

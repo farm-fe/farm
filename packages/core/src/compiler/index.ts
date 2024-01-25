@@ -132,11 +132,11 @@ export class Compiler {
       : path.join(this.config.config.root, configOutputPath);
 
     for (const [name, resource] of Object.entries(resources)) {
-      if (process.env.NODE_ENV === 'test') {
-        console.log('Writing', name, 'to disk');
-      }
+      // remove query params and hash of name
+      const nameWithoutQuery = name.split('?')[0];
+      const nameWithoutHash = nameWithoutQuery.split('#')[0];
 
-      const filePath = path.join(outputPath, base, name);
+      const filePath = path.join(outputPath, base, nameWithoutHash);
 
       if (!existsSync(path.dirname(filePath))) {
         mkdirSync(path.dirname(filePath), { recursive: true });
