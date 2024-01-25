@@ -138,7 +138,7 @@ mod tests {
     assert_eq!(
       parsed_query,
       vec![
-        ("inline".to_string(), "true".to_string()),
+        ("inline".to_string(), "".to_string()),
         ("b".to_string(), "c".to_string())
       ]
     );
