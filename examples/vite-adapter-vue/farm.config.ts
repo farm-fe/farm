@@ -1,5 +1,4 @@
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
