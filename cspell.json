@@ -141,7 +141,8 @@
     "apng",
     "jfif",
     "pjpeg",
-    "flac"
+    "flac",
+    "Yuxi"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

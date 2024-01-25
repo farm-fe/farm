@@ -12,7 +12,7 @@ Farm has implemented all basic features for a web building tool.
 - [x] Tree Shaking
 - [x] CSS Modules
 - [x] Official Plugins like Sass
-- [ ] Persistent Cache
+- [x] Persistent Cache
 - [x] Polyfill
 
 See milestones: https://github.com/farm-fe/farm/milestones
