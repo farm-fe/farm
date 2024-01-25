@@ -9,7 +9,7 @@ import { Logger } from '../../index.js';
 import { VITE_DEFAULT_ASSETS } from './constants.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
-  const vitePlugins = config.vitePlugins.map((plugin) => {
+  const vitePlugins = config.vitePlugins.filter(Boolean).map((plugin) => {
     if (typeof plugin === 'function') {
       return plugin().vitePlugin;
     } else {
@@ -49,7 +49,11 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       strictPort: config.server?.strictPort,
       https: config.server?.https,
       proxy: config.server?.proxy as any,
-      open: config.server?.open
+      open: config.server?.open,
+      watch:
+        typeof config.server?.hmr === 'object'
+          ? config.server.hmr?.watchOptions ?? {}
+          : {}
       // other options are not supported in farm
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -124,7 +128,9 @@ export function proxyViteConfig(
         'ssr',
         'logLevel',
         'experimental',
-        'test'
+        'test',
+        'clearScreen',
+        'customLogger'
       ];
 
       if (allowedKeys.includes(String(key))) {
@@ -174,7 +180,8 @@ export function proxyViteConfig(
             'https',
             'proxy',
             'open',
-            'origin'
+            'origin',
+            'watch'
           ];
 
           return new Proxy(target.server || {}, {
@@ -208,7 +215,8 @@ export function proxyViteConfig(
             'devSourcemap',
             'transformer',
             'modules',
-            'postcss'
+            'postcss',
+            'preprocessorOptions'
           ];
 
           return new Proxy(target.css || {}, {
@@ -245,7 +253,8 @@ export function proxyViteConfig(
             'cssMinify',
             'ssr',
             'watch',
-            'rollupOptions'
+            'rollupOptions',
+            'assetsDir'
           ];
 
           return new Proxy(target.build || {}, {
@@ -376,6 +385,20 @@ export function viteConfigToFarmConfig(
     }
     farmConfig.server.hmr = config.server.hmr;
     farmConfig.server.port = config.server.port;
+
+    if (config.server.watch) {
+      if (
+        farmConfig.server?.hmr === true ||
+        farmConfig.server?.hmr === undefined
+      ) {
+        farmConfig.server.hmr = {
+          ...(typeof origFarmConfig?.server?.hmr === 'object'
+            ? origFarmConfig.server.hmr
+            : {}),
+          watchOptions: config.server.watch
+        };
+      }
+    }
 
     if (typeof config.server.host === 'string') {
       farmConfig.server.host = config.server.host;

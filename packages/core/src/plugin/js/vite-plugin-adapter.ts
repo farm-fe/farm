@@ -37,6 +37,7 @@ import type {
   ModuleNode,
   ConfigEnv
 } from 'vite';
+
 import type {
   ResolveIdResult,
   RenderChunkHook,
@@ -71,6 +72,7 @@ import {
   transformFarmConfigToRollupNormalizedInputOptions
 } from './utils.js';
 import { Logger } from '../../index.js';
+import { applyHtmlTransform } from './apply-html-transform.js';
 
 type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
   this: any,
@@ -315,7 +317,7 @@ export class VitePluginAdapter implements JsPlugin {
 
       const logWarn = (name: string) => {
         this._logger.warn(
-          `Farm does not support '${name}' property of vite plugin ${this.name} hook ${hookName} for now. It will be ignored.`
+          `Farm does not support '${name}' property of vite plugin ${this.name} hook ${hookName} for now. '${name}' property will be ignored.`
         );
       };
       // TODO support order, if a hook has order, it should be split into two plugins
@@ -761,21 +763,17 @@ export class VitePluginAdapter implements JsPlugin {
     transformIndexHtmlHook?: (...args: any[]) => Promise<string>,
     bundles?: OutputBundle
   ) {
-    const result = await transformIndexHtmlHook?.(
-      Buffer.from(resource.bytes).toString(),
-      {
-        path: resource.name,
-        filename: resource.name,
-        server: bundles === undefined ? this._viteDevServer : undefined,
-        bundle: bundles,
-        chunk: transformResourceInfo2RollupResource(resource)
-      }
-    );
+    const html = Buffer.from(resource.bytes).toString();
+    const result = await transformIndexHtmlHook?.(html, {
+      path: resource.name,
+      filename: resource.name,
+      server: bundles === undefined ? this._viteDevServer : undefined,
+      bundle: bundles,
+      chunk: transformResourceInfo2RollupResource(resource)
+    });
 
     if (result && typeof result !== 'string') {
-      throw new Error(
-        `Vite plugin "${this.name}" is not compatible with Farm for now. Cause it uses transformIndexHtmlHook and return non-string value. Farm only supports string return for transformIndexHtmlHook`
-      );
+      return applyHtmlTransform(html, result);
     } else if (typeof result === 'string') {
       return result;
     }

@@ -40,11 +40,11 @@ impl FarmPluginSass {
 
   pub fn get_sass_options(
     &self,
-    url: String,
+    resolved_path_with_query: String,
     sourcemap_enabled: bool,
   ) -> (StringOptions, HashMap<String, String>) {
     let options = serde_json::from_str(&self.sass_options).unwrap_or_default();
-    get_options(options, url, sourcemap_enabled)
+    get_options(options, resolved_path_with_query, sourcemap_enabled)
   }
 }
 
@@ -148,7 +148,7 @@ impl Plugin for FarmPluginSass {
       });
 
       let (mut string_options, additional_options) = self.get_sass_options(
-        format!("/{}", param.module_id),
+        ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&context.config.root),
         context.sourcemap_enabled(&param.module_id.to_string()),
       );
 
@@ -284,12 +284,14 @@ fn get_exe_path(context: &Arc<CompilationContext>) -> PathBuf {
 
 fn get_options(
   options: Value,
-  url: String,
+  resolved_path_with_query: String,
   sourcemap_enabled: bool,
 ) -> (StringOptions, HashMap<String, String>) {
   let mut builder = StringOptionsBuilder::new();
-  builder = builder
-    .url(Url::from_file_path(&url).unwrap_or_else(|e| panic!("invalid url: {url}. Error: {e:?}")));
+  builder = builder.url(
+    Url::from_file_path(&resolved_path_with_query)
+      .unwrap_or_else(|e| panic!("invalid path: {resolved_path_with_query}. Error: {e:?}")),
+  );
   if let Some(source_map) = options.get("sourceMap") {
     builder = builder.source_map(source_map.as_bool().unwrap_or(sourcemap_enabled));
   } else {
@@ -334,7 +336,7 @@ fn get_options(
     );
   }
 
-  if url.ends_with(".sass") {
+  if resolved_path_with_query.ends_with(".sass") {
     builder = builder.syntax(Syntax::Indented);
   }
 

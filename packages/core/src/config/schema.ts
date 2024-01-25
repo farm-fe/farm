@@ -46,6 +46,9 @@ const compilationConfigSchema = z
       .optional(),
     define: z.record(z.any()).optional(),
     external: z.array(z.string()).optional(),
+    externalNodeBuiltins: z
+      .union([z.boolean(), z.array(z.string())])
+      .optional(),
     mode: z.string().optional(),
     watch: z
       .union([
