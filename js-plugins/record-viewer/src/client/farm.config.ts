@@ -1,14 +1,8 @@
-import type { UserConfig } from '@farmfe/core';
 import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
 import vitejsPluginVue from '@vitejs/plugin-vue'
-
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
+import { defineConfig } from '@farmfe/core';
 
 export default defineConfig({
-  
   plugins: [farmPostcssPlugin()],
   vitePlugins: [vitejsPluginVue()],
   compilation: {
