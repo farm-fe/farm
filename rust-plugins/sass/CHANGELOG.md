@@ -1,5 +1,15 @@
 # @farmfe/plugin-sass
 
+## 0.5.0
+
+### Minor Changes
+
+- 7fc2a650: Support preserving comments for Js/Ts/Jsx/Tsx modules
+
+### Patch Changes
+
+- 069249a1: Fix #909
+
 ## 0.4.0
 
 ### Minor Changes

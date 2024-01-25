@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.5
+
+### Patch Changes
+
+- Bump Farm to 0.16
+
 ## 1.5.4
 
 ### Patch Changes

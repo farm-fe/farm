@@ -1,5 +1,11 @@
 # @farmfe/plugin-react
 
+## 0.6.0
+
+### Minor Changes
+
+- 7fc2a650: Support preserving comments for Js/Ts/Jsx/Tsx modules
+
 ## 0.5.1
 
 ### Patch Changes
