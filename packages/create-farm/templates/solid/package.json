@@ -1,5 +1,5 @@
 {
-  "name": "www",
+  "name": "solid-template",
   "version": "1.0.0",
   "dependencies": {
     "solid-js": "^1.7.6"
