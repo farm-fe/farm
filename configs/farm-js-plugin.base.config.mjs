@@ -15,6 +15,11 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
         targetEnv: 'node',
         format
       },
+      external: [
+        ...builtinModules.map((m) => `^${m}$`),
+        ...builtinModules.map((m) => `^node:${m}$`),
+        ...(options.external || [])
+      ],
       partialBundling: {
         enforceResources: [
           {
