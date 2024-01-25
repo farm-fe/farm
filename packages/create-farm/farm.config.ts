@@ -6,12 +6,8 @@ export default defineConfig({
     output: {
       targetEnv: 'node'
     },
-    resolve: {
-      autoExternalFailedResolve: true
-    },
     sourcemap: false,
     presetEnv: false,
-    externalNodeBuiltins: false,
     external: ['@farmfe/core']
   }
 });

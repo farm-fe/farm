@@ -36,7 +36,7 @@ export function normalizeExternal(config: Config['config']) {
 
   config.external = [
     ...(config.external ?? []),
-    ...defaultExternals.map((m) => `^${m}($|/)`),
-    ...defaultExternals.map((m) => `^node:${m}($|/)`)
+    ...defaultExternals.map((m) => `^${m}($|/promises$)`),
+    ...defaultExternals.map((m) => `^node:${m}($|/promises$)`)
   ];
 }
