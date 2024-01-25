@@ -204,7 +204,7 @@ impl Plugin for FarmPluginStaticAssets {
           filename,
           &bytes,
           ext,
-        );
+        ) + stringify_query(&param.query).as_str();
         let content = if !context.config.output.public_path.is_empty() {
           let normalized_public_path = context
             .config
@@ -227,7 +227,7 @@ impl Plugin for FarmPluginStaticAssets {
         // TODO refactor this to support cache
         context.emit_file(EmitFileParams {
           resolved_path: param.module_id.clone(),
-          name: resource_name + stringify_query(&param.query).as_str(),
+          name: resource_name,
           content: bytes,
           resource_type: ResourceType::Asset(ext.to_string()),
         });
