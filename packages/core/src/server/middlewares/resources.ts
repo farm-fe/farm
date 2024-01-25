@@ -29,9 +29,8 @@ export function resourcesMiddleware(
         compiler.onUpdateFinish(() => resolve(undefined));
       });
     }
-
     // Fallback to index.html if the resource is not found
-    let resourcePath = ctx.path?.slice(1) || 'index.html'; // remove leading slash
+    let resourcePath = ctx.url?.slice(1) || 'index.html'; // remove leading slash
 
     // output_files
     if (resourcePath === '_output_files') {
@@ -103,7 +102,7 @@ export function resourcesMiddleware(
         ctx.status = 404;
       }
     } else {
-      ctx.type = extname(resourcePath);
+      ctx.type = extname(ctx?.path.slice(1) || 'index.html');
       ctx.body = resource;
     }
   };
