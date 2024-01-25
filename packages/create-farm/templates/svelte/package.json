@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^0.6.0",
-    "@farmfe/core": "^0.15.7",
+    "@farmfe/core": "^0.16.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
     "@tsconfig/svelte": "^5.0.2",
     "core-js": "^3.30.1",
