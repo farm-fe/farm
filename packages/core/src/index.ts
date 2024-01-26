@@ -80,9 +80,13 @@ export async function build(
 
   setProcessEnv(resolvedUserConfig.compilation.mode);
 
-  await createBundleHandler(resolvedUserConfig);
-  // copy resources under publicDir to output.path
-  await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
+  try {
+    await createBundleHandler(resolvedUserConfig);
+    // copy resources under publicDir to output.path
+    await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {

@@ -1,0 +1,20 @@
+{
+  "name": "lit-example",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "start": "farm",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "lit": "^3.1.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^0.6.0",
+    "@farmfe/core": "^0.16.0",
+    "typescript": "^5.2.2"
+  }
+}

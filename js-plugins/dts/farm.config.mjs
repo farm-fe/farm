@@ -14,11 +14,6 @@ export default {
       targetEnv: "node",
       format: "cjs",
     },
-    external: [
-      ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`),
-      "@farmfe/core",
-    ],
     partialBundling: {
       enforceResources: [
         {
