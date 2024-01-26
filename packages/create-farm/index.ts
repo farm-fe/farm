@@ -5,7 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 import { fileURLToPath } from 'node:url';
-import { colors } from '@farmfe/core';
+import { colors } from './utils/color.js';
 
 import { loadWithRocketGradient } from './utils/gradient.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';

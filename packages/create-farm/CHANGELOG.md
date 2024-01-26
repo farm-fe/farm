@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.6
+
+### Patch Changes
+
+- fix create farm error
+
 ## 1.5.5
 
 ### Patch Changes
