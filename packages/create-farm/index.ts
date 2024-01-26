@@ -146,20 +146,21 @@ async function copyTemplate(targetDir: string, options: IResultType) {
     fileURLToPath(import.meta.url),
     `../../templates/${options.framework}`
   );
-  writePackageJson(templatePath, options);
   copy(templatePath, dest);
+
+  writePackageJson(dest, options);
   spinner.text = 'Template copied Successfully!';
   spinner.succeed();
 }
 
-function writePackageJson(templatePath: string, options: IResultType) {
+function writePackageJson(dest: string, options: IResultType) {
   const pkg = JSON.parse(
-    fs.readFileSync(path.join(templatePath, `package.json`), 'utf-8')
+    fs.readFileSync(path.join(dest, `package.json`), 'utf-8')
   );
 
   pkg.name = options.projectName;
 
-  const packageJsonPath = path.join(templatePath, 'package.json');
+  const packageJsonPath = path.join(dest, 'package.json');
   const { name, ...rest } = pkg;
   const sortedPackageJson = { name, ...rest };
   fs.writeFileSync(
