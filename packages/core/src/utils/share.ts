@@ -76,13 +76,19 @@ export function toArray<T>(array?: Nullable<ArrayAble<T>>): Array<T> {
   return array ? (Array.isArray(array) ? array : [array]) : [];
 }
 
-
-export function mergeObjects<T extends Record<string, any>, U extends Record<string, any>>(obj1: T, obj2: U): T & U {
+export function mergeObjects<
+  T extends Record<string, any>,
+  U extends Record<string, any>
+>(obj1: T, obj2: U): T & U {
   const merged: Record<string, any> = { ...obj1 };
 
-  Object.keys(obj2).forEach(key => {
+  Object.keys(obj2).forEach((key) => {
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
-      if (merged.hasOwnProperty(key) && typeof obj2[key] === 'object' && !Array.isArray(obj2[key])) {
+      if (
+        merged.hasOwnProperty(key) &&
+        typeof obj2[key] === 'object' &&
+        !Array.isArray(obj2[key])
+      ) {
         merged[key] = mergeObjects(merged[key], obj2[key]);
       } else {
         merged[key] = obj2[key];
@@ -93,7 +99,6 @@ export function mergeObjects<T extends Record<string, any>, U extends Record<str
   return merged as T & U;
 }
 
-
 export async function asyncFlatten<T>(arr: T[]): Promise<T[]> {
   do {
     arr = (await Promise.all(arr)).flat(Infinity) as any;
@@ -103,4 +108,15 @@ export async function asyncFlatten<T>(arr: T[]): Promise<T[]> {
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// prevent node experimental warning
+export function preventExperimentalWarning() {
+  const defaultEmit = process.emit;
+  process.emit = function (...args: any[]) {
+    if (args[1].name === 'ExperimentalWarning') {
+      return undefined;
+    }
+    return defaultEmit.call(this, ...args);
+  };
 }
