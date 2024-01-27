@@ -1,6 +1,6 @@
 import type { FarmRuntimePlugin, ModuleSystem } from '@farmfe/runtime';
 
-const __global_this__ = globalThis || window;
+const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
 
 export default <FarmRuntimePlugin>{
   name: 'farm-runtime-import-meta',
@@ -15,17 +15,15 @@ export default <FarmRuntimePlugin>{
       dev: process.env.NODE_ENV === 'development',
       prod: process.env.NODE_ENV === 'production'
     };
-    const publicPath = this._moduleSystem.publicPaths[0] ?? '';
+    const publicPath = this._moduleSystem.publicPaths?.[0] || '';
 
-    if (__global_this__.location) {
-      const url = `${__global_this__.location.protocol}//${
-        __global_this__.location.host
-      }${publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath}/${
-        module.resource_pot
-      }`;
-      module.meta.url = url;
-    } else {
-      module.meta.url = module.resource_pot;
-    }
+    const { location } = __global_this__;
+    const url = location
+      ? `${location.protocol}//${location.host}${publicPath.replace(
+          /\/$/,
+          ''
+        )}/${module.id}?t=${Date.now()}`
+      : module.resource_pot;
+    module.meta.url = url;
   }
 };
