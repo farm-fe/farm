@@ -113,9 +113,7 @@ export function sleep(ms: number) {
 // prevent node experimental warning
 export function preventExperimentalWarning() {
   const defaultEmit = process.emit;
-  // @ts-ignore
-  process.emit = function (...args) {
-    // @ts-ignore
+  process.emit = function (...args: any[]) {
     if (args[1].name === 'ExperimentalWarning') {
       return undefined;
     }
