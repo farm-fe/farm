@@ -10,7 +10,8 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeResourcesHookParams,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginTransformHookResult,
+    PluginLoadHookResult, PluginParseHookParam, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookResult, ResolveKind,
   },
   relative_path::RelativePath,
   resource::{
@@ -31,12 +32,50 @@ mod resources_injector;
 mod utils;
 
 const BASE_HTML_CHILDREN_PLACEHOLDER: &str = "{{children}}";
+pub const UNRESOLVED_SLASH_MODULE: &str = "FARM_HTML_UNRESOLVED_SLASH_MODULE";
 
 pub struct FarmPluginHtml {}
 
 impl Plugin for FarmPluginHtml {
   fn name(&self) -> &str {
     "FarmPluginHtml"
+  }
+
+  fn resolve(
+    &self,
+    param: &farmfe_core::plugin::PluginResolveHookParam,
+    context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
+    if hook_context.caller == Some(self.name().to_string()) {
+      return Ok(None);
+    }
+
+    // try resolve `/xxx` as `./xxx`, for example: `/src/index.ts` to `./src/index.ts`
+    if matches!(param.kind, ResolveKind::ScriptSrc | ResolveKind::LinkHref)
+      && param.source.starts_with("/")
+    {
+      let resolve_result = context.plugin_driver.resolve(
+        &PluginResolveHookParam {
+          source: format!(".{}", param.source),
+          importer: param.importer.clone(),
+          kind: param.kind.clone(),
+        },
+        context,
+        &PluginHookContext {
+          caller: Some(self.name().to_string()),
+          meta: hook_context.meta.clone(),
+        },
+      )?;
+
+      return Ok(Some(resolve_result.unwrap_or(PluginResolveHookResult {
+        resolved_path: UNRESOLVED_SLASH_MODULE.to_string(),
+        external: true,
+        ..Default::default()
+      })));
+    }
+
+    Ok(None)
   }
 
   fn load(
@@ -347,13 +386,12 @@ impl Plugin for FarmPluginTransformHtml {
       let html_resource = params.resources_map.get_mut(&html_resource_name).unwrap();
 
       let module_graph = context.module_graph.read();
+      let current_html_id = resource_pot_map
+        .resource_pot(html_resource.origin.as_resource_pot())
+        .unwrap()
+        .modules()[0];
       let script_entries = module_graph
-        .dependencies(
-          resource_pot_map
-            .resource_pot(html_resource.origin.as_resource_pot())
-            .unwrap()
-            .modules()[0],
-        )
+        .dependencies(current_html_id)
         .into_iter()
         .filter_map(|dep| {
           let dep_module = module_graph.module(&dep.0).unwrap();
@@ -365,6 +403,7 @@ impl Plugin for FarmPluginTransformHtml {
           }
         })
         .collect();
+      drop(module_graph);
 
       let mut resources_injector = ResourcesInjector::new(
         runtime_code.clone(),
@@ -377,6 +416,8 @@ impl Plugin for FarmPluginTransformHtml {
           public_path: context.config.output.public_path.clone(),
           define: context.config.define.clone(),
           namespace: context.config.runtime.namespace.clone(),
+          current_html_id: current_html_id.clone(),
+          context: context.clone(),
         },
       );
 
