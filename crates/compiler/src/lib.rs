@@ -35,7 +35,6 @@ impl Compiler {
     let mut plugins = vec![
       Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
       // register internal core plugins
-      Arc::new(farmfe_plugin_resolve::FarmPluginResolve::new(&config)) as _,
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
@@ -68,6 +67,9 @@ impl Compiler {
     }
 
     plugins.append(&mut plugin_adapters);
+    // default resolve will be executed at last
+    plugins.push(Arc::new(farmfe_plugin_resolve::FarmPluginResolve::new(&config)) as _);
+
     // sort plugins by priority to make larger priority plugin run first
     plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
 

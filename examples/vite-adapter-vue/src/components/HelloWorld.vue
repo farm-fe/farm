@@ -89,6 +89,7 @@ const defaultProps = {
     <el-button type="primary" @click="count++">count is {{ count }}</el-button>
 
     <el-tree :data="data" :props="defaultProps" @node-click="handleNodeClick" />
+    <el-date-picker />
     <p>
       Edit
       <code>components/HelloWorld.vue</code> to test HMR
