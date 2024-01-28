@@ -52,7 +52,7 @@ impl Plugin for FarmPluginHtml {
     }
 
     // try resolve `/xxx` as `./xxx`, for example: `/src/index.ts` to `./src/index.ts`
-    if matches!(param.kind, ResolveKind::ScriptSrc | ResolveKind::CssUrl)
+    if matches!(param.kind, ResolveKind::ScriptSrc | ResolveKind::LinkHref)
       && param.source.starts_with("/")
     {
       let resolve_result = context.plugin_driver.resolve(
