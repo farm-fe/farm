@@ -43,7 +43,7 @@ async function createFarm() {
   const argFramework = argv.template || argv.t;
   let targetDir = argProjectName || DEFAULT_TARGET_NAME;
   let result: IResultType = {};
-  const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? false;
+  const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? true;
   try {
     result = await prompts(
       [
@@ -175,7 +175,8 @@ async function installationDeps(
   options: IResultType
 ) {
   const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
-  const currentPkgManager = pkgInfo ? pkgManager : options.packageManager;
+  const currentPkgManager =
+    (pkgInfo ? pkgManager : options.packageManager) ?? 'npm';
   if (autoInstall) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir), 'ignore');
     const spinner = await loadWithRocketGradient('Install Dependencies');
@@ -192,13 +193,20 @@ async function installationDeps(
     '\n > Initial Farm Project created successfully ✨ ✨ \n'
   );
   colors.handleBrandText(`   cd ${targetDir} \n`);
+
   autoInstall
-    ? colors.handleBrandText(
-        `   ${currentPkgManager} ${
-          currentPkgManager === 'npm' ? 'run start' : 'start'
-        } `
-      )
-    : colors.handleBrandText(`   npm install \n\n   npm run start`);
+    ? autoInstallText(currentPkgManager)
+    : colors.handleBrandText(
+        `   ${currentPkgManager} install \n\n   ${autoInstallText(
+          currentPkgManager
+        )}`
+      );
+}
+
+function autoInstallText(currentPkgManager: string) {
+  return `${currentPkgManager} ${
+    currentPkgManager === 'npm' ? 'run start' : 'start'
+  } `;
 }
 
 function pkgFromUserAgent(userAgent: string | undefined) {
