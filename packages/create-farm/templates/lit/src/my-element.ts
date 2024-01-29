@@ -41,7 +41,7 @@ export class MyElement extends LitElement {
       transition: filter 300ms;
     }
     .logo:hover {
-      filter: drop-shadow(0 0 2em #646cffaa);
+      filter: drop-shadow(0 0 2em #9F1A8Faa);
     }
     .logo.lit:hover {
       filter: drop-shadow(0 0 2em #325cffaa);
