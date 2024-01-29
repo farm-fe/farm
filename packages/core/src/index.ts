@@ -52,6 +52,7 @@ export async function start(
       resolvedUserConfig,
       logger
     );
+
     await devServer.listen();
 
     createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
@@ -322,19 +323,21 @@ export async function createFileWatcher(
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
-    async (files: string[]) => {
-      clearScreen();
-      logFileChanges(files, resolvedUserConfig.root, logger);
+  const farmWatcher = new ConfigWatcher(resolvedUserConfig);
+  farmWatcher.watch(async (files: string[]) => {
+    clearScreen();
+    logFileChanges(files, resolvedUserConfig.root, logger);
+    console.log('准备重启服务', new Date().getTime());
 
-      devServer.restart(async () => {
-        farmWatcher?.close();
-        await devServer.close();
-        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-        await start(inlineConfig);
-      });
-    }
-  );
+    devServer.restart(async () => {
+      // farmWatcher?.close();
+      console.log('开始调用重启服务', new Date().getTime());
+
+      await devServer.close();
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+      await start(inlineConfig);
+    });
+  });
 }
 
 export function logFileChanges(files: string[], root: string, logger: Logger) {

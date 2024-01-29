@@ -177,7 +177,7 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     const promises = [];
-
+    // TODO ws error not connect
     if (this.ws) {
       promises.push(this.ws.close());
     }
@@ -187,11 +187,13 @@ export class DevServer implements ImplDevServer {
     }
 
     await Promise.all(promises);
+    console.log(this.server);
 
-    !this.restart_promise && process.exit(0);
+    // !this.restart_promise && process.exit(0);
   }
 
   async restart(promise: () => Promise<void>) {
+    console.log(!this.restart_promise);
     if (!this.restart_promise) {
       this.restart_promise = promise();
     }

@@ -5,7 +5,7 @@ export default defineConfig({
     presetEnv: false,
   },
   server: {
-    port: 3000,
+    port: 3540
   },
   plugins: [
     ['@farmfe/plugin-react', { runtime: 'automatic' }],
