@@ -11,6 +11,7 @@
     "@farmfe/core": "^0.16.1",
     "@farmfe/plugin-react": "^0.6.0",
     "@types/react": "18",
+    "core-js": "^3.30.1",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"
   },
