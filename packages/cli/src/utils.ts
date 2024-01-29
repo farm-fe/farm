@@ -11,8 +11,8 @@ import type { GlobalFarmCLIOptions } from './types.js';
 
 const logger = new DefaultLogger();
 interface installProps {
-  cwd: string; // 项目路径
-  package: string; // 包管理器 yarn 或者 npm
+  cwd: string;
+  package: string;
 }
 
 export const TEMPLATES_DIR = path.join(
@@ -98,7 +98,7 @@ export async function install(options: installProps): Promise<void> {
  * @returns
  */
 export function formatTargetDir(targetDir: string | undefined) {
-  return targetDir?.trim().replace(/\/+$/g, '');
+  return targetDir?.trim()?.replace(/\/+$/g, '');
 }
 
 /**
@@ -150,4 +150,16 @@ export function resolveCommandOptions(
 
 export function getConfigPath(configPath: string) {
   return path.join(process.cwd(), configPath ?? '');
+}
+
+export async function handleAsyncOperationErrors<T>(
+  asyncOperation: Promise<T>,
+  errorMessage: string
+) {
+  try {
+    await asyncOperation;
+  } catch (error) {
+    logger.error(`${errorMessage}:\n${error.stack}`);
+    process.exit(1);
+  }
 }
