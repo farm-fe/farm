@@ -1,16 +1,23 @@
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { cac } from 'cac';
 import { DefaultLogger, preventExperimentalWarning } from '@farmfe/core';
-import { resolveCore, getConfigPath, resolveCommandOptions } from './utils.js';
+import {
+  resolveCore,
+  getConfigPath,
+  resolveCommandOptions,
+  handleAsyncOperationErrors
+} from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
   FarmCLIServerOptions,
-  GlobalFarmCLIOptions
+  GlobalFarmCLIOptions,
+  ICleanOptions
 } from './types.js';
-import path from 'node:path';
 
 const logger = new DefaultLogger();
 
@@ -25,7 +32,9 @@ cli
   .option('-c, --config <file>', 'use specified config file')
   .option('-m, --mode <mode>', 'set env mode')
   .option('--base <path>', 'public base path')
-  .option('--clearScreen', 'allow/disable clear screen when logging');
+  .option('--clearScreen', 'allow/disable clear screen when logging', {
+    default: true
+  });
 
 // dev command
 cli
@@ -59,19 +68,16 @@ cli
           lazyCompilation: options.lazy
         },
         server: resolveOptions,
-        clearScreen: options.clearScreen ?? true,
+        clearScreen: options.clearScreen,
         configPath,
         mode: options.mode
       };
 
       const { start } = await resolveCore();
-
-      try {
-        await start(defaultOptions);
-      } catch (e) {
-        logger.error(`Failed to start server:\n ${e.stack}`);
-        process.exit(1);
-      }
+      handleAsyncOperationErrors(
+        start(defaultOptions),
+        'Failed to start server'
+      );
     }
   );
 
@@ -107,13 +113,7 @@ cli
     };
 
     const { build } = await resolveCore();
-
-    try {
-      build(defaultOptions);
-    } catch (e) {
-      logger.error(`error during build:\n${e.stack}`);
-      process.exit(1);
-    }
+    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
   });
 
 cli
@@ -135,14 +135,12 @@ cli
       },
       configPath
     };
-    const { watch } = await resolveCore();
 
-    try {
-      watch(defaultOptions);
-    } catch (e) {
-      logger.error(`error during watch project:\n${e.stack}`);
-      process.exit(1);
-    }
+    const { watch } = await resolveCore();
+    handleAsyncOperationErrors(
+      watch(defaultOptions),
+      'error during watch project'
+    );
   });
 
 cli
@@ -157,20 +155,13 @@ cli
       server: resolveOptions,
       configPath
     };
+
     const { preview } = await resolveCore();
-
-    try {
-      preview(defaultOptions);
-    } catch (e) {
-      logger.error(`Failed to start preview server:\n${e.stack}`);
-      process.exit(1);
-    }
+    handleAsyncOperationErrors(
+      preview(defaultOptions),
+      'Failed to start preview server'
+    );
   });
-
-interface ICleanOptions {
-  path?: string;
-  recursive?: boolean;
-}
 
 cli
   .command('clean [path]', 'Clean up the cache built incrementally')
@@ -216,7 +207,7 @@ cli.on('command:*', () => {
   );
 });
 
-// use mdn browser compatibility data to prevent experimental warning
+// use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning
 preventExperimentalWarning();
 
 cli.help();
