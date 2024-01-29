@@ -1,5 +1,24 @@
 # create-farm
 
+## 1.5.7
+
+### Patch Changes
+
+- 144e9cd9: update lit vanilla template
+- 9af98060: chore: create-farm autoInstall default false
+
+## 1.5.6
+
+### Patch Changes
+
+- fix create farm error
+
+## 1.5.5
+
+### Patch Changes
+
+- Bump Farm to 0.16
+
 ## 1.5.4
 
 ### Patch Changes

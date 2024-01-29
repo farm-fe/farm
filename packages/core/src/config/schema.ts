@@ -15,7 +15,19 @@ const compilationConfigSchema = z
         path: z.string().optional(),
         publicPath: z.string().optional(),
         assetsFilename: z.string().optional(),
-        targetEnv: z.enum(['browser', 'node']).optional(),
+        targetEnv: z
+          .enum([
+            'browser',
+            'node',
+            'node-legacy',
+            'node-next',
+            'node-16',
+            'browser-legacy',
+            'browser-esnext',
+            'browser-es2015',
+            'browser-es2017'
+          ])
+          .optional(),
         format: z.enum(['cjs', 'esm']).optional()
       })
       .strict()
@@ -34,6 +46,9 @@ const compilationConfigSchema = z
       .optional(),
     define: z.record(z.any()).optional(),
     external: z.array(z.string()).optional(),
+    externalNodeBuiltins: z
+      .union([z.boolean(), z.array(z.string())])
+      .optional(),
     mode: z.string().optional(),
     watch: z
       .union([
@@ -77,7 +92,8 @@ const compilationConfigSchema = z
             'es2019',
             'es2020',
             'es2021',
-            'es2022'
+            'es2022',
+            'esnext'
           ])
           .optional(),
         parser: z

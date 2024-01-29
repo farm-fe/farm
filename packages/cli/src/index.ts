@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { cac } from 'cac';
-import { DefaultLogger } from '@farmfe/core';
+import { DefaultLogger, preventExperimentalWarning } from '@farmfe/core';
 import { resolveCore, getConfigPath, resolveCommandOptions } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
@@ -215,6 +215,9 @@ cli.on('command:*', () => {
     'Unknown command place Run "farm --help" to see available commands'
   );
 });
+
+// use mdn browser compatibility data to prevent experimental warning
+preventExperimentalWarning();
 
 cli.help();
 

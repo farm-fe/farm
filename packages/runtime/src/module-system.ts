@@ -115,7 +115,7 @@ export class ModuleSystem {
       }
       this.pluginContainer.hookSerial('moduleNotFound', moduleId);
       // return a empty module if the module is not registered
-      console.log(`[Farm] Module "${moduleId}" is not registered`);
+      console.debug(`[Farm] Module "${moduleId}" is not registered`);
       return {};
       // throw new Error(`Module "${moduleId}" is not registered`);
     }

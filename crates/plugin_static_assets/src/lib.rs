@@ -21,12 +21,13 @@ use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
   lazy_static::lazy_static,
 };
+use farmfe_utils::stringify_query;
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
   static ref DEFAULT_STATIC_ASSETS: Vec<&'static str> = vec![
     "png", "jpg", "jpeg", "gif", "svg", "webp", "mp4", "webm", "wav", "mp3", "wma", "m4a", "aac",
-    "ico", "ttf", "woff", "woff2", "txt"
+    "ico", "ttf", "woff", "woff2", "txt", "eot"
   ];
 }
 
@@ -178,10 +179,6 @@ impl Plugin for FarmPluginStaticAssets {
           ignore_previous_source_map: false,
         }));
       } else {
-        let filename = Path::new(param.resolved_path)
-          .file_prefix()
-          .and_then(|s| s.to_str())
-          .unwrap();
         let bytes = if param.content.is_empty() {
           read_file_raw(param.resolved_path)?
         } else {
@@ -192,17 +189,22 @@ impl Plugin for FarmPluginStaticAssets {
               )
             )?
         };
+
         let ext = Path::new(param.resolved_path)
           .extension()
           .and_then(|s| s.to_str())
           .unwrap();
 
+        let filename = Path::new(param.resolved_path)
+          .file_prefix()
+          .and_then(|s| s.to_str())
+          .unwrap();
         let resource_name = transform_output_filename(
           context.config.output.assets_filename.clone(),
           filename,
           &bytes,
           ext,
-        );
+        ) + stringify_query(&param.query).as_str();
         let content = if !context.config.output.public_path.is_empty() {
           let normalized_public_path = context
             .config

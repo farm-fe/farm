@@ -335,7 +335,7 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
     amd: { autoId: false, define: 'define', forceJsExtensionForImports: false },
     assetFileNames: config.output.assetsFilename,
     chunkFileNames: config.output.filename,
-    compact: config.minify,
+    compact: Boolean(config.minify),
     dir: config.output.path,
     dynamicImportInCjs: true,
     entryFileNames: config.output.entryFilename,

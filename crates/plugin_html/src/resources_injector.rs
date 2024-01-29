@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
   config::{Mode, FARM_MODULE_SYSTEM},
+  context::CompilationContext,
   module::ModuleId,
   resource::ResourceType,
   serde_json,
@@ -9,7 +10,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   get_dynamic_resources_map::get_dynamic_resources_code,
-  html::create_element,
+  html::{create_element, get_farm_global_this},
   swc_html_visit::{VisitMut, VisitMutWith},
 };
 
@@ -22,6 +23,8 @@ pub struct ResourcesInjectorOptions {
   pub public_path: String,
   pub define: std::collections::HashMap<String, serde_json::Value>,
   pub namespace: String,
+  pub current_html_id: ModuleId,
+  pub context: Arc<CompilationContext>,
 }
 
 /// inject resources into the html ast
@@ -50,10 +53,7 @@ impl ResourcesInjector {
       script_resources,
       script_entries,
       dynamic_resources_map,
-      farm_global_this: format!(
-        "(globalThis || window || self || global)['{}']",
-        options.namespace
-      ),
+      farm_global_this: get_farm_global_this(&options.namespace),
       options,
     }
   }
@@ -124,7 +124,11 @@ impl VisitMut for ResourcesInjector {
       // remove all non-http existing <href /> and <script /> first
       for (i, child) in element.children.iter().enumerate() {
         if let Child::Element(e) = child {
-          if is_script_src(e) || is_script_entry(e) || is_link_href(e) || is_script_resource(e) {
+          if is_script_src(e, &self.options.current_html_id, &self.options.context)
+            || is_script_entry(e)
+            || is_link_href(e, &self.options.current_html_id, &self.options.context)
+            || is_script_resource(e)
+          {
             children_to_remove.push(i);
           }
         }

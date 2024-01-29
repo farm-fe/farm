@@ -1,4 +1,7 @@
 export class Logger {
+  debug(message: string) {
+    console.debug('[Farm HMR]', message);
+  }
   log(message: string) {
     console.log('[Farm HMR]', message);
   }

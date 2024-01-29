@@ -254,6 +254,7 @@ impl Compiler {
 
     // try load source map after load module content.
     // TODO load source map in load hook and add a context.load_source_map method
+    // TODO load css source map
     if context.config.sourcemap.enabled(module.immutable)
       && load_result.content.contains("//# sourceMappingURL")
     {
@@ -429,7 +430,7 @@ impl Compiler {
         ResolveModuleResult::Cached(module_id) => {
           farm_profile_scope!(format!("cache module {:?}", cached_module.module.id));
           let mut cached_module = context.cache_manager.module_cache.get_cache(&module_id);
-          // if the dependency is immutable, skip building
+
           if let Err(e) = handle_cached_modules(&mut cached_module, &context) {
             err_sender.send(e).unwrap();
             return;

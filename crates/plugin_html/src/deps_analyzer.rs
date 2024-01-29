@@ -102,7 +102,7 @@ pub fn get_href_link_value(element: &Element) -> Option<String> {
 
 pub fn should_ignore_source(source: &str) -> bool {
   source.starts_with("http")
-    || source.starts_with('/')
+    // || source.starts_with('/')
     || source.starts_with('#')
     || source.starts_with('?')
     || source.starts_with("data:")

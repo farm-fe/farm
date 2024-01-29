@@ -45,6 +45,7 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
+import { normalizeExternal } from './normalize-config/normalize-external.js';
 
 export * from './types.js';
 export const DEFAULT_CONFIG_NAMES = [
@@ -52,6 +53,8 @@ export const DEFAULT_CONFIG_NAMES = [
   'farm.config.js',
   'farm.config.mjs'
 ];
+
+const FARM_DEFAULT_NAMESPACE = 'FARM_DEFAULT_NAMESPACE';
 
 export function defineFarmConfig(
   config: UserConfig | Promise<UserConfig>
@@ -116,7 +119,7 @@ export async function resolveConfig(
   );
 
   let vitePluginAdapters: JsPlugin[] = [];
-  const vitePlugins = userConfig?.vitePlugins ?? [];
+  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
   // run config and configResolved hook
   if (vitePlugins.length) {
     vitePluginAdapters = await handleVitePlugins(
@@ -213,19 +216,14 @@ export async function normalizeUserCompilationConfig(
     config.root = resolvedRootPath;
   }
 
+  const isProduction = mode === 'production';
+  const isDevelopment = mode === 'development';
   config.mode = config.mode ?? mode;
-  const isProduction = config.mode === 'production';
-  const isDevelopment = config.mode === 'development';
 
   config.coreLibPath = bindingPath;
 
-  config.external = [
-    ...module.builtinModules.map((m) => `^${m}$`),
-    ...module.builtinModules.map((m) => `^node:${m}$`),
-    ...(Array.isArray(config.external) ? config.external : [])
-  ];
-
   normalizeOutput(config, isProduction);
+  normalizeExternal(config);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
@@ -296,15 +294,16 @@ export async function normalizeUserCompilationConfig(
   if (!config.runtime.namespace) {
     // read package.json name field
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(
-        fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
-      );
-      config.runtime.namespace = crypto
-        .createHash('md5')
-        .update(packageJson.name)
-        .digest('hex');
-    }
+    const packageJsonExists = fs.existsSync(packageJsonPath);
+    const namespaceName = packageJsonExists
+      ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
+          ?.name ?? FARM_DEFAULT_NAMESPACE
+      : FARM_DEFAULT_NAMESPACE;
+
+    config.runtime.namespace = crypto
+      .createHash('md5')
+      .update(namespaceName)
+      .digest('hex');
   }
 
   if (isProduction) {

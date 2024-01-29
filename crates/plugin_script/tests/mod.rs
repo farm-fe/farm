@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::Config,
+  config::{bool_or_obj::BoolOrObj, Config},
   context::CompilationContext,
   module::{Module, ModuleType},
   plugin::{
@@ -18,7 +18,7 @@ fn load_parse_and_analyze_deps() {
     "tests/fixtures/load_parse_analyze/**/index.*",
     |file: PathBuf, _| {
       let mut config = Config::default();
-      config.minify = false;
+      config.minify = Box::new(BoolOrObj::Bool(true));
       let plugin_script = farmfe_plugin_script::FarmPluginScript::new(&config);
       let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
       let id = file.to_string_lossy().to_string();

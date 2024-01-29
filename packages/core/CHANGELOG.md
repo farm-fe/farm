@@ -1,5 +1,24 @@
 # @farmfe/core
 
+## 0.16.1
+
+### Patch Changes
+
+- 43bd8333: Support `/src/index.ts`(without .) for html script tag
+- Updated dependencies [297e32bf]
+  - @farmfe/runtime-plugin-import-meta@0.1.1
+
+## 0.16.0
+
+### Minor Changes
+
+- 7fc2a650: Support preserving comments for Js/Ts/Jsx/Tsx modules
+
+### Patch Changes
+
+- 992c0a5c: add filter for augmentResourceHash & renderResourcePot hook
+- 116ffa94: Fix bugs && Support object result of transformIndexHtml Hook
+
 ## 0.15.10
 
 ### Patch Changes

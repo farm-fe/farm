@@ -48,7 +48,7 @@ export class HotModuleState {
     _: string | readonly string[],
     _callback: (data: any) => void
   ): void {
-    logger.log('acceptExports is not supported for now');
+    logger.debug('acceptExports is not supported for now');
   }
 
   decline() {
@@ -62,7 +62,7 @@ export class HotModuleState {
     });
     // notify the server to find the boundary starting from the parents of this module
     this.send('vite:invalidate', { path: this.id, message });
-    logger.log(`invalidate ${this.id}${message ? `: ${message}` : ''}`);
+    logger.debug(`invalidate ${this.id}${message ? `: ${message}` : ''}`);
   }
 
   on<T extends string>(event: T, cb: (payload: any) => void): void {

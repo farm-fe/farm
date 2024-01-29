@@ -44,7 +44,7 @@ pub fn init_plugin_module_cache_once(config: &farmfe_core::config::Config) {
         .resolve(&FileName::Real(PathBuf::from(&plugin_name)), plugin_name)
         .unwrap();
 
-      let path = if let FileName::Real(value) = resolved_path {
+      let path = if let FileName::Real(value) = resolved_path.filename {
         value
       } else {
         panic!("Failed to resolve plugin path: {:?}", resolved_path);

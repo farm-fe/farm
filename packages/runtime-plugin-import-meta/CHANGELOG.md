@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.1.1
+
+### Patch Changes
+
+- 297e32bf: fix: import.meta.url id is undefined
+
 ## 0.1.0
 
 ### Minor Changes

@@ -28,7 +28,7 @@ export class HmrClient {
   constructor(private moduleSystem: ModuleSystem) {}
 
   connect() {
-    logger.log('connecting to the server...');
+    logger.debug('connecting to the server...');
 
     // setup websocket connection
     const socket = new WebSocket(`ws://${host}:${port}${path}`, 'farm_hmr');
@@ -56,7 +56,7 @@ export class HmrClient {
 
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       // TODO ping this chose until it reconnects
-      logger.log('disconnected from the server, please reload the page.');
+      logger.debug('disconnected from the server, please reload the page.');
       await waitForSuccessfulPing(protocol, `${host}:${port}${path}`);
       location.reload();
     });
@@ -66,7 +66,7 @@ export class HmrClient {
 
   async applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {
     result.changed.forEach((id) => {
-      logger.log(`${id} updated`);
+      logger.debug(`${id} updated`);
     });
 
     for (const id of result.removed) {
@@ -186,7 +186,7 @@ export class HmrClient {
         break;
       }
       case 'connected':
-        logger.log('connected to the server');
+        logger.debug('connected to the server');
         break;
       case 'update':
         this.notifyListeners('vite:beforeUpdate', payload);

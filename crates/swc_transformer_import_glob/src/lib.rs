@@ -77,6 +77,7 @@ pub fn transform_import_meta_glob(
                   }),
                   type_only: false,
                   with: None,
+                  phase: Default::default(),
                 },
               ),
             ),
@@ -143,6 +144,7 @@ fn create_eager_named_import(
       }),
       type_only: false,
       with: None,
+      phase: Default::default(),
     },
   ))
 }
@@ -171,6 +173,7 @@ fn create_eager_namespace_import(
       }),
       type_only: false,
       with: None,
+      phase: Default::default(),
     },
   ))
 }
@@ -195,6 +198,7 @@ fn create_eager_default_import(index: usize, glob_index: usize, globed_source: &
       }),
       type_only: false,
       with: None,
+      phase: Default::default(),
     },
   ))
 }
@@ -395,7 +399,10 @@ impl ImportGlobVisitor {
   ) -> (String, Box<Expr>) {
     let import_call_expr = Box::new(Expr::Call(CallExpr {
       span: DUMMY_SP,
-      callee: Callee::Import(Import { span: DUMMY_SP }),
+      callee: Callee::Import(Import {
+        span: DUMMY_SP,
+        phase: Default::default(),
+      }),
       args: vec![ExprOrSpread {
         spread: None,
         expr: Box::new(Expr::Lit(Lit::Str(swc_ecma_ast::Str {

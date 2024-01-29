@@ -1,18 +1,19 @@
 #![deny(clippy::all)]
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
   module::{ModuleId, ModuleType},
-  parking_lot::RwLock,
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},
   relative_path::RelativePath,
   serde_json::{self, Value},
 };
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex};
-use sass_embedded::{FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Url};
+use sass_embedded::{
+  FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Syntax, Url,
+};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::{env, fmt::Debug};
@@ -39,11 +40,11 @@ impl FarmPluginSass {
 
   pub fn get_sass_options(
     &self,
-    resolve_path: String,
+    resolved_path_with_query: String,
     sourcemap_enabled: bool,
   ) -> (StringOptions, HashMap<String, String>) {
     let options = serde_json::from_str(&self.sass_options).unwrap_or_default();
-    get_options(options, resolve_path, sourcemap_enabled)
+    get_options(options, resolved_path_with_query, sourcemap_enabled)
   }
 }
 
@@ -105,6 +106,11 @@ impl Plugin for FarmPluginSass {
     "FarmPluginSass"
   }
 
+  // this plugin should be executed before internal plugins
+  fn priority(&self) -> i32 {
+    101
+  }
+
   fn load(
     &self,
     param: &farmfe_core::plugin::PluginLoadHookParam,
@@ -142,7 +148,7 @@ impl Plugin for FarmPluginSass {
       });
 
       let (mut string_options, additional_options) = self.get_sass_options(
-        param.resolved_path.to_string(),
+        ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&context.config.root),
         context.sourcemap_enabled(&param.module_id.to_string()),
       );
 
@@ -278,11 +284,14 @@ fn get_exe_path(context: &Arc<CompilationContext>) -> PathBuf {
 
 fn get_options(
   options: Value,
-  resolve_path: String,
+  resolved_path_with_query: String,
   sourcemap_enabled: bool,
 ) -> (StringOptions, HashMap<String, String>) {
   let mut builder = StringOptionsBuilder::new();
-  builder = builder.url(Url::from_file_path(resolve_path).unwrap());
+  builder = builder.url(
+    Url::from_file_path(&resolved_path_with_query)
+      .unwrap_or_else(|e| panic!("invalid path: {resolved_path_with_query}. Error: {e:?}")),
+  );
   if let Some(source_map) = options.get("sourceMap") {
     builder = builder.source_map(source_map.as_bool().unwrap_or(sourcemap_enabled));
   } else {
@@ -325,6 +334,10 @@ fn get_options(
       "additionalData".to_string(),
       additional_date.as_str().unwrap().to_string(),
     );
+  }
+
+  if resolved_path_with_query.ends_with(".sass") {
+    builder = builder.syntax(Syntax::Indented);
   }
 
   // TODO support more options

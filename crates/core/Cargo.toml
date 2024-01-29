@@ -26,18 +26,18 @@ petgraph = "0.6"
 bytecheck = "0.7.0"
 downcast-rs = "1.2"
 glob = "0.3"
-swc_ecma_ast = { version = "0.110.17", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "0.141.37" }
-swc_common = { version = "0.33.12", features = [
+swc_ecma_ast = { version = "0.111.0", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "0.142.0" }
+swc_common = { version = "0.33.14", features = [
   "concurrent",
   "sourcemap",
   "rkyv-impl",
 ] }
-swc_css_ast = { version = "0.140.14", features = ["rkyv-impl"] }
-swc_css_prefixer = { version = "0.153.25" }
-swc_ecma_preset_env = { version = "0.204.19" }
-preset_env_base = { version = "0.4.9" }
-swc_html_ast = { version = "0.33.12", features = ["rkyv-impl"] }
+swc_css_ast = { version = "0.140.15", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "0.153.27" }
+swc_ecma_preset_env = { version = "0.205.1" }
+preset_env_base = { version = "0.4.10" }
+swc_html_ast = { version = "0.33.13", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.18.0", features = [
   "packing",

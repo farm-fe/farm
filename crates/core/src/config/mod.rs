@@ -6,12 +6,13 @@ use swc_css_prefixer::options::Targets;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
 use self::{
-  comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
+  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
   partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
 
+pub mod bool_or_obj;
 pub mod comments;
 pub mod config_regex;
 pub mod html;
@@ -40,8 +41,7 @@ pub struct Config {
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
   pub tree_shaking: bool,
-  // TODO: support minify options
-  pub minify: bool,
+  pub minify: Box<BoolOrObj<serde_json::Value>>,
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
   pub persistent_cache: Box<persistent_cache::PersistentCacheConfig>,
@@ -76,7 +76,7 @@ impl Default for Config {
       lazy_compilation: true,
       core_lib_path: None,
       tree_shaking: true,
-      minify: true,
+      minify: Box::new(BoolOrObj::Bool(true)),
       preset_env: Box::<PresetEnvConfig>::default(),
       record: false,
       persistent_cache: Box::<persistent_cache::PersistentCacheConfig>::new(

@@ -5,7 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 import { fileURLToPath } from 'node:url';
-import { colors } from '@farmfe/core';
+import { colors } from './utils/color.js';
 
 import { loadWithRocketGradient } from './utils/gradient.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
@@ -13,7 +13,9 @@ import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
 
 interface IResultType {
   packageName?: string;
+  projectName?: string;
   framework?: string;
+  argFrameWork?: string;
   autoInstall?: boolean;
   packageManager?: string;
 }
@@ -41,7 +43,7 @@ async function createFarm() {
   const argFramework = argv.template || argv.t;
   let targetDir = argProjectName || DEFAULT_TARGET_NAME;
   let result: IResultType = {};
-  const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? false;
+  const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? true;
   try {
     result = await prompts(
       [
@@ -80,11 +82,16 @@ async function createFarm() {
           initial: 0,
           choices: [
             {
+              title: colors.yellow('Vanilla'),
+              value: 'vanilla'
+            },
+            {
               title: colors.cyan('React'),
               value: 'react'
             },
             { title: colors.green('Vue'), value: 'vue' },
             { title: colors.orange('Svelte'), value: 'svelte' },
+            { title: colors.red('Lit'), value: 'lit' },
             { title: colors.blue('Solid'), value: 'solid' }
           ]
         },
@@ -117,9 +124,10 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { framework = argFramework, packageManager } = result;
-  await copyTemplate(targetDir, framework!);
-  await installationDeps(targetDir, !skipInstall, packageManager!);
+  const { framework = argFramework } = result;
+
+  await copyTemplate(targetDir, { framework, projectName: targetDir });
+  await installationDeps(targetDir, !skipInstall, result);
 }
 
 function formatTargetDir(targetDir: string | undefined) {
@@ -131,25 +139,44 @@ function isEmpty(path: string) {
   return files.length === 0 || (files.length === 1 && files[0] === '.git');
 }
 
-async function copyTemplate(targetDir: string, framework: string) {
+async function copyTemplate(targetDir: string, options: IResultType) {
   const spinner = await loadWithRocketGradient('Copy template');
   const dest = path.join(cwd, targetDir);
   const templatePath = path.join(
     fileURLToPath(import.meta.url),
-    `../../templates/${framework}`
+    `../../templates/${options.framework}`
   );
   copy(templatePath, dest);
+
+  writePackageJson(dest, options);
   spinner.text = 'Template copied Successfully!';
   spinner.succeed();
+}
+
+function writePackageJson(dest: string, options: IResultType) {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(dest, `package.json`), 'utf-8')
+  );
+
+  pkg.name = options.projectName;
+
+  const packageJsonPath = path.join(dest, 'package.json');
+  const { name, ...rest } = pkg;
+  const sortedPackageJson = { name, ...rest };
+  fs.writeFileSync(
+    packageJsonPath,
+    JSON.stringify(sortedPackageJson, null, 2) + '\n'
+  );
 }
 
 async function installationDeps(
   targetDir: string,
   autoInstall: boolean,
-  packageManager: string
+  options: IResultType
 ) {
   const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
-  const currentPkgManager = pkgInfo ? pkgManager : packageManager;
+  const currentPkgManager =
+    (pkgInfo ? pkgManager : options.packageManager) ?? 'npm';
   if (autoInstall) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir), 'ignore');
     const spinner = await loadWithRocketGradient('Install Dependencies');
@@ -166,13 +193,20 @@ async function installationDeps(
     '\n > Initial Farm Project created successfully ✨ ✨ \n'
   );
   colors.handleBrandText(`   cd ${targetDir} \n`);
+
   autoInstall
-    ? colors.handleBrandText(
-        `   ${currentPkgManager} ${
-          currentPkgManager === 'npm' ? 'run start' : 'start'
-        } `
-      )
-    : colors.handleBrandText(`   npm install \n\n   npm run start`);
+    ? autoInstallText(currentPkgManager)
+    : colors.handleBrandText(
+        `   ${currentPkgManager} install \n\n   ${autoInstallText(
+          currentPkgManager
+        )}`
+      );
+}
+
+function autoInstallText(currentPkgManager: string) {
+  return `${currentPkgManager} ${
+    currentPkgManager === 'npm' ? 'run start' : 'start'
+  } `;
 }
 
 function pkgFromUserAgent(userAgent: string | undefined) {

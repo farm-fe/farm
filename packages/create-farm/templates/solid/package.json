@@ -1,13 +1,12 @@
 {
-  "name": "@farmfe-examples/solid",
-  "version": "0.0.1",
-  "private": true,
+  "name": "solid-template",
+  "version": "1.0.0",
   "dependencies": {
     "solid-js": "^1.7.6"
   },
   "devDependencies": {
     "@farmfe/cli": "^0.6.0",
-    "@farmfe/core": "^0.15.7",
+    "@farmfe/core": "^0.16.1",
     "solid-refresh": "^0.5.3",
     "vite-plugin-solid": "^2.7.0"
   },
