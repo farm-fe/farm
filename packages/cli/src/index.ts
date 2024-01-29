@@ -216,7 +216,7 @@ cli.on('command:*', () => {
   );
 });
 
-// use mdn browser compatibility data to prevent experimental warning
+// use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning
 preventExperimentalWarning();
 
 cli.help();
