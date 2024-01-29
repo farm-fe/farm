@@ -15,6 +15,11 @@ export interface GlobalFarmCLIOptions {
   clearScreen?: boolean;
 }
 
+export interface ICleanOptions {
+  path?: string;
+  recursive?: boolean;
+}
+
 export interface FarmCLIServerOptions {
   port?: string;
   open?: boolean;
