@@ -7,7 +7,7 @@
     "react-dom": "18"
   },
   "devDependencies": {
-    "@farmfe/cli": "^0.6.1",
+    "@farmfe/cli": "^0.6.0",
     "@farmfe/core": "^0.16.1",
     "@farmfe/plugin-react": "^0.6.0",
     "@types/react": "18",
