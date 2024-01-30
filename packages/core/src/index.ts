@@ -52,13 +52,14 @@ export async function start(
       resolvedUserConfig,
       logger
     );
-    await devServer.listen();
 
     createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
-
+    // call configureDevServer hook after both server and watcher are ready
     resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       plugin.configureDevServer?.(devServer)
     );
+
+    await devServer.listen();
   } catch (error) {
     logger.error(
       `Failed to start the server: ${error.message} \n ${error.stack}`
