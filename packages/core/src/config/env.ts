@@ -14,7 +14,7 @@ import { arraify, getFileSystemStats } from '../utils/index.js';
 export function loadEnv(
   mode: string,
   envDir: string,
-  prefixes: string | string[] = 'FARM_'
+  prefixes: string | string[] = ['FARM_', 'VITE_']
 ): [env: Record<string, string>, existsEnvFiles: string[]] {
   const env: Record<string, string> = {};
   const existsEnvFiles: string[] = [];
