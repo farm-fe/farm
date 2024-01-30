@@ -28,6 +28,7 @@ fn import_default() {
   assert!(import_info.is_some());
   let import_info = import_info.unwrap();
   assert_eq!(import_info.source, "a".to_string());
+  assert!(!import_info.is_import_executed);
   assert!(matches!(
     import_info.specifiers[0],
     ImportSpecifierInfo::Default(_)
@@ -48,7 +49,7 @@ fn import_default() {
   );
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert!(!is_self_executed);
+  assert!(is_self_executed);
 }
 
 #[test]
@@ -61,6 +62,7 @@ fn import_named() {
   assert!(import_info.is_some());
   let import_info = import_info.unwrap();
   assert_eq!(import_info.source, "a".to_string());
+  assert!(!import_info.is_import_executed);
   assert!(matches!(
     import_info.specifiers[0],
     ImportSpecifierInfo::Named { .. }
@@ -104,7 +106,7 @@ fn import_named() {
 
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert!(!is_self_executed);
+  assert!(is_self_executed);
 }
 
 #[test]
@@ -117,6 +119,7 @@ fn import_named_with_used_defined_idents() {
   assert!(import_info.is_some());
   let import_info = import_info.unwrap();
   assert_eq!(import_info.source, "a".to_string());
+  assert!(!import_info.is_import_executed);
   assert!(matches!(
     import_info.specifiers[0],
     ImportSpecifierInfo::Named { .. }
@@ -139,7 +142,7 @@ fn import_named_with_used_defined_idents() {
 
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert!(!is_self_executed);
+  assert!(is_self_executed);
 }
 
 #[test]
@@ -173,7 +176,7 @@ fn import_namespace() {
 
   assert_eq!(used_idents.len(), 0);
   assert_eq!(defined_idents_map.len(), 0);
-  assert!(!is_self_executed);
+  assert!(is_self_executed);
 }
 
 #[test]

@@ -18,6 +18,7 @@ use farmfe_core::{
   module::ModuleId,
   // swc_ecma_ast::EsVersion,
   plugin::{PluginHookContext, PluginResolveHookParam},
+  serde_json,
 };
 
 const RESOLVE: &str = "resolve";
@@ -140,9 +141,18 @@ pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
 
 unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_value {
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
-  let param: PluginResolveHookParam = Env::from_raw(env)
+  let v: serde_json::Value = Env::from_raw(env)
     .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
     .unwrap();
+  println!("{:#?}", v);
+  let param: PluginResolveHookParam = Env::from_raw(env)
+    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).expect(
+      "Argument should be a PluginResolveHookParam { source, importer, kind } when calling resolve",
+    ))
+    .expect(
+      "Failed to convert argument to PluginResolveHookParam, please ensure your argument concert",
+    );
+
   let hook_context: PluginHookContext = Env::from_raw(env)
     .from_js_value(JsUnknown::from_napi_value(env, argv[1]).unwrap())
     .unwrap();

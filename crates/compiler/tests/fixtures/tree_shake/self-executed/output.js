@@ -45,6 +45,12 @@ var d;
 console.log(a);
 d = "d";
 const b = "b";
+const e = d;
+window.d = e;
+function AAA() {
+    console.log("b");
+}
+AAA();
 function _default() {
     return b;
 }

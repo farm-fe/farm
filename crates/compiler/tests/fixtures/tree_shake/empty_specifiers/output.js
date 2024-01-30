@@ -39,7 +39,6 @@ Object.defineProperty(exports, "default", {
         return _default;
     }
 });
-"";
 var _default = "comp";
 
 },

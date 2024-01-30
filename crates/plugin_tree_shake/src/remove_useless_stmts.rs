@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
-  swc_ecma_ast::{ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem},
+  swc_common::{Globals, Mark},
+  swc_ecma_ast::{
+    self, Ident, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem,
+  },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith};
 
@@ -15,11 +18,22 @@ use crate::{
   },
 };
 
+pub fn is_global_ident(unresolved_mark: Mark, ident: &Ident) -> bool {
+  ident.span.ctxt.outer() == unresolved_mark
+}
+
 pub fn remove_useless_stmts(
   tree_shake_module_id: &ModuleId,
   module_graph: &mut ModuleGraph,
   tree_shake_module_map: &HashMap<ModuleId, TreeShakeModule>,
-) -> (Vec<ImportInfo>, Vec<ExportInfo>) {
+  globals: &Globals,
+) -> (
+  Vec<ImportInfo>,
+  Vec<ExportInfo>,
+  Vec<ImportInfo>,
+  Vec<ExportInfo>,
+) {
+  println!("remove_useless_stmts {}", tree_shake_module_id.to_string());
   farmfe_core::farm_profile_function!(format!(
     "remove_useless_stmts {:?}",
     tree_shake_module_id.to_string()
@@ -28,17 +42,24 @@ pub fn remove_useless_stmts(
     .get(tree_shake_module_id)
     .expect("tree shake module should exist");
   let module = module_graph.module_mut(tree_shake_module_id).unwrap();
-  let swc_module = &mut module.meta.as_script_mut().ast;
   // analyze the statement graph start from the used statements
   let mut used_stmts = tree_shake_module
-    .used_statements()
+    .used_statements(module, globals)
     .into_iter()
     .collect::<Vec<_>>();
+  let swc_module = &mut module.meta.as_script_mut().ast;
   // sort used_stmts
   used_stmts.sort_by_key(|a| a.0);
 
   let mut used_import_infos = vec![];
   let mut used_export_from_infos = vec![];
+  let mut removed_import_info = vec![];
+  let mut removed_export_info = vec![];
+
+  println!("used_stmts: {:?}", used_stmts);
+  let mut stmts_to_remove = vec![];
+
+  println!("swc_module.body: len: {:?}", swc_module.body.len());
 
   // remove unused specifiers in export statement and import statement
   for (stmt_id, used_defined_idents) in &used_stmts {
@@ -48,15 +69,36 @@ pub fn remove_useless_stmts(
       analyze_imports_and_exports(stmt_id, module_item, Some(used_defined_idents.clone()));
 
     if let Some(import_info) = import_info {
-      used_import_infos.push(import_info.clone());
+      println!("___stmts_import: {}, {:?}", stmt_id, import_info);
+      if import_info.is_import_executed {
+        used_import_infos.push(import_info.clone());
+      } else {
+        if import_info.specifiers.is_empty() {
+          stmts_to_remove.push(*stmt_id);
+        } else {
+          used_import_infos.push(import_info.clone());
+        }
 
-      let mut remover = UselessImportStmtsRemover { import_info };
+        // 把多余的 import specifier 删除掉
+        let mut remover = UselessImportStmtsRemover {
+          import_info,
+          removed_specify: vec![],
+        };
 
-      module_item.visit_mut_with(&mut remover);
+        module_item.visit_mut_with(&mut remover);
+
+        if !remover.removed_specify.is_empty() {
+          removed_import_info.push(ImportInfo {
+            specifiers: remover.removed_specify,
+            ..remover.import_info
+          });
+        }
+      }
     }
 
     if let Some(mut export_info) = export_info {
       if export_info.specifiers.is_empty() {
+        stmts_to_remove.push(*stmt_id);
         continue;
       }
 
@@ -72,14 +114,23 @@ pub fn remove_useless_stmts(
           used_export_from_infos.push(export_info.clone());
         }
 
-        let mut remover = UselessExportStmtRemover { export_info };
+        let mut remover = UselessExportStmtRemover {
+          export_info,
+          removed_export_info: vec![],
+        };
 
         module_item.visit_mut_with(&mut remover);
+
+        if !remover.removed_export_info.is_empty() {
+          removed_export_info.push(ExportInfo {
+            specifiers: remover.removed_export_info,
+            ..remover.export_info
+          });
+        }
       }
     }
   }
 
-  let mut stmts_to_remove = vec![];
   // TODO recognize the self-executed statements and preserve all the related statements
 
   let used_stmts_indexes = used_stmts
@@ -87,10 +138,78 @@ pub fn remove_useless_stmts(
     .map(|(index, _)| index)
     .collect::<Vec<_>>();
 
+  println!(
+    "___used_stmts_indexes: {} {:?}",
+    swc_module.body.len(),
+    used_stmts_indexes
+  );
+
   // remove the unused statements from the module
-  for (index, _) in swc_module.body.iter().enumerate() {
+  for (index, stmt) in swc_module.body.iter().enumerate() {
     if !used_stmts_indexes.contains(&&index) {
       stmts_to_remove.push(index);
+
+      match stmt {
+        ModuleItem::ModuleDecl(module_decl) => match module_decl {
+          ModuleDecl::ExportNamed(export_named) => {
+            let mut specifiers = vec![];
+
+            for specifier in &export_named.specifiers {
+              match specifier {
+                swc_ecma_ast::ExportSpecifier::Named(named) => {
+                  let local = match &named.orig {
+                    ModuleExportName::Ident(i) => i.clone(),
+                    ModuleExportName::Str(_) => {
+                      unimplemented!("exporting a string is not supported")
+                    }
+                  };
+
+                  specifiers.push(ExportSpecifierInfo::Named {
+                    local: local.to_string(),
+                    exported: named.exported.as_ref().map(|i| match i {
+                      ModuleExportName::Ident(i) => i.to_string(),
+                      _ => panic!("non-ident exported is not supported when tree shaking"),
+                    }),
+                  });
+                }
+                swc_ecma_ast::ExportSpecifier::Default(_) => {
+                  unreachable!("ExportSpecifier::Default is not valid esm syntax")
+                }
+                swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
+                  let ident = match &ns.name {
+                    ModuleExportName::Ident(ident) => ident.to_string(),
+                    ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
+                  };
+
+                  specifiers.push(ExportSpecifierInfo::Namespace(ident));
+                }
+              }
+            }
+
+            removed_export_info.push(ExportInfo {
+              source: export_named.src.as_ref().map(|s| s.value.to_string()),
+              specifiers,
+              stmt_id: 0,
+            });
+          }
+
+          ModuleDecl::ExportAll(export_all) => removed_export_info.push(ExportInfo {
+            source: Some(export_all.src.value.to_string()),
+            specifiers: vec![ExportSpecifierInfo::All(None)],
+            stmt_id: 0,
+          }),
+          ModuleDecl::Import(import_info) => {
+            removed_import_info.push(ImportInfo {
+              source: import_info.src.value.to_string(),
+              specifiers: import_info.specifiers.iter().map(|s| s.into()).collect(),
+              stmt_id: 0,
+              is_import_executed: false,
+            });
+          }
+          _ => {}
+        },
+        _ => {}
+      };
     }
   }
 
@@ -105,6 +224,11 @@ pub fn remove_useless_stmts(
 
   let module = module_graph.module_mut(tree_shake_module_id).unwrap();
   let swc_module = &mut module.meta.as_script_mut().ast;
+
+  println!(
+    "stmts_to_remove: {:?} {:?}",
+    stmts_to_remove, pending_transform_stmts
+  );
 
   // transform the import statement to import 'xxx'
   for (stmt_index, ty) in pending_transform_stmts {
@@ -124,15 +248,27 @@ pub fn remove_useless_stmts(
     swc_module.body.remove(index);
   }
 
-  (used_import_infos, used_export_from_infos)
+  println!(
+    "remove_useless_stmts return: \n    used_import_infos: {:?}\n    used_export_from_infos: {:?}\n    removed_import_info: {:?}\n    removed_export_info: {:?}",
+    used_import_infos, used_export_from_infos, removed_import_info, removed_export_info
+  );
+
+  (
+    used_import_infos,
+    used_export_from_infos,
+    removed_import_info,
+    removed_export_info,
+  )
 }
 
+#[derive(Debug)]
 enum PendingTransformType {
   Import,
   ExportFrom,
   ExportAll,
 }
 
+// 是删掉 import 还是转为 import 'xxx'
 fn filter_stmts_to_remove(
   stmts_to_remove: Vec<usize>,
   tree_shake_module_id: &ModuleId,
@@ -153,20 +289,26 @@ fn filter_stmts_to_remove(
     match &swc_module.body[stmt_index] {
       ModuleItem::ModuleDecl(module_decl) => match module_decl {
         ModuleDecl::Import(import_decl) => {
+          if !import_decl.specifiers.is_empty() {
+            filtered_stmts_to_remove.push(stmt_index);
+            continue;
+          }
+
           let source = import_decl.src.value.to_string();
           pending_transforms.push((stmt_index, PendingTransformType::Import, source));
         }
-        ModuleDecl::ExportNamed(named) => {
-          if let Some(source) = &named.src {
-            let source = source.value.to_string();
-            pending_transforms.push((stmt_index, PendingTransformType::ExportFrom, source));
-          } else {
-            filtered_stmts_to_remove.push(stmt_index);
-          }
+        ModuleDecl::ExportNamed(_) => {
+          // if let Some(source) = &named.src {
+          //   let source = source.value.to_string();
+          //   pending_transforms.push((stmt_index, PendingTransformType::ExportFrom, source));
+          // } else {
+          filtered_stmts_to_remove.push(stmt_index);
+          // }
         }
-        ModuleDecl::ExportAll(export_all) => {
-          let source = export_all.src.value.to_string();
-          pending_transforms.push((stmt_index, PendingTransformType::ExportAll, source));
+        ModuleDecl::ExportAll(_) => {
+          filtered_stmts_to_remove.push(stmt_index);
+          // let source = export_all.src.value.to_string();
+          // pending_transforms.push((stmt_index, PendingTransformType::ExportAll, source));
         }
         _ => {
           filtered_stmts_to_remove.push(stmt_index);
@@ -186,7 +328,7 @@ fn filter_stmts_to_remove(
 
     if let Some(dep_module_id) = dep_module_id {
       if let Some(tree_shake_module) = tree_shake_module_map.get(&dep_module_id) {
-        if tree_shake_module.side_effects || tree_shake_module.contains_self_executed_stmt {
+        if tree_shake_module.is_self_executed_import {
           match ty {
             PendingTransformType::Import => {
               pending_transform_stmts.push((stmt_index, PendingTransformType::Import));
@@ -213,6 +355,7 @@ fn filter_stmts_to_remove(
 
 pub struct UselessImportStmtsRemover {
   import_info: ImportInfo,
+  removed_specify: Vec<ImportSpecifierInfo>,
 }
 
 impl VisitMut for UselessImportStmtsRemover {
@@ -220,17 +363,53 @@ impl VisitMut for UselessImportStmtsRemover {
     let mut specifiers_to_remove = vec![];
 
     for (index, specifier) in import_decl.specifiers.iter().enumerate() {
-      if let ImportSpecifier::Named(named_specifier) = specifier {
-        if !self
-          .import_info
-          .specifiers
-          .iter()
-          .any(|specifier| match specifier {
-            ImportSpecifierInfo::Named { local, .. } => named_specifier.local.to_string() == *local,
-            _ => false,
-          })
-        {
-          specifiers_to_remove.push(index);
+      match specifier {
+        ImportSpecifier::Named(named_specifier) => {
+          if !self
+            .import_info
+            .specifiers
+            .iter()
+            .any(|specifier| match specifier {
+              ImportSpecifierInfo::Named { local, .. } => {
+                named_specifier.local.to_string() == *local
+              }
+              _ => false,
+            })
+          {
+            specifiers_to_remove.push(index);
+
+            self.removed_specify.push(specifier.into());
+          }
+        }
+        ImportSpecifier::Default(default) => {
+          if !self
+            .import_info
+            .specifiers
+            .iter()
+            .any(|specifier| match specifier {
+              ImportSpecifierInfo::Default(d) => default.local.to_string() == *d,
+              _ => false,
+            })
+          {
+            specifiers_to_remove.push(index);
+
+            self.removed_specify.push(specifier.into());
+          }
+        }
+        ImportSpecifier::Namespace(ns) => {
+          if !self
+            .import_info
+            .specifiers
+            .iter()
+            .any(|specifier| match specifier {
+              ImportSpecifierInfo::Namespace(n) => ns.local.to_string() == *n,
+              _ => false,
+            })
+          {
+            specifiers_to_remove.push(index);
+
+            self.removed_specify.push(specifier.into());
+          }
         }
       }
     }
@@ -245,6 +424,7 @@ impl VisitMut for UselessImportStmtsRemover {
 
 pub struct UselessExportStmtRemover {
   export_info: ExportInfo,
+  removed_export_info: Vec<ExportSpecifierInfo>,
 }
 
 impl VisitMut for UselessExportStmtRemover {
@@ -307,6 +487,28 @@ impl VisitMut for UselessExportStmtRemover {
         })
       {
         specifiers_to_remove.push(index);
+        self.removed_export_info.push(match specifier {
+          swc_ecma_ast::ExportSpecifier::Namespace(ns) => match &ns.name {
+            ModuleExportName::Ident(ident) => ExportSpecifierInfo::Namespace(ident.to_string()),
+            ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
+          },
+          swc_ecma_ast::ExportSpecifier::Default(_) => {
+            unreachable!("ExportSpecifier::Default is not valid esm syntax")
+          }
+          swc_ecma_ast::ExportSpecifier::Named(named) => {
+            let local = match &named.orig {
+              ModuleExportName::Ident(i) => i.clone(),
+              ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
+            };
+            ExportSpecifierInfo::Named {
+              local: local.to_string(),
+              exported: named.exported.as_ref().map(|i| match i {
+                ModuleExportName::Ident(i) => i.to_string(),
+                _ => panic!("non-ident exported is not supported when tree shaking"),
+              }),
+            }
+          }
+        });
       }
     }
 

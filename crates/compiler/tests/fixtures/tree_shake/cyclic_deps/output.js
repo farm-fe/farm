@@ -33,23 +33,13 @@ console.log("runtime/index.js")(globalThis || window || global)["__farm_default_
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-function _export(target, all) {
-    for(var name in all)Object.defineProperty(target, name, {
-        enumerable: true,
-        get: all[name]
-    });
-}
-_export(exports, {
-    a: function() {
+Object.defineProperty(exports, "a", {
+    enumerable: true,
+    get: function() {
         return a;
-    },
-    c: function() {
-        return c;
     }
 });
-var _index = farmRequire("b5d64806");
 const a = "1";
-const c = _index.b;
 
 },
 "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {

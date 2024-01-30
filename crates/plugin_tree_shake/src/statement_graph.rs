@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 
+use farmfe_core::swc_ecma_ast::{ImportSpecifier, ModuleExportName};
 use farmfe_core::{
   petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
@@ -26,11 +27,28 @@ pub enum ImportSpecifierInfo {
   Default(String),
 }
 
+impl From<&ImportSpecifier> for ImportSpecifierInfo {
+  fn from(value: &ImportSpecifier) -> Self {
+    match value {
+      ImportSpecifier::Named(named) => ImportSpecifierInfo::Named {
+        local: named.local.to_string(),
+        imported: named.imported.as_ref().map(|i| match i {
+          ModuleExportName::Ident(i) => i.to_string(),
+          _ => panic!("non-ident imported is not supported when tree shaking"),
+        }),
+      },
+      ImportSpecifier::Default(default) => ImportSpecifierInfo::Default(default.local.to_string()),
+      ImportSpecifier::Namespace(ns) => ImportSpecifierInfo::Namespace(ns.local.to_string()),
+    }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct ImportInfo {
   pub source: String,
   pub specifiers: Vec<ImportSpecifierInfo>,
   pub stmt_id: StatementId,
+  pub is_import_executed: bool,
 }
 
 // collect all exports and gathering them into a simpler structure
@@ -122,6 +140,7 @@ impl StatementGraph {
 
     for stmt in graph.stmts() {
       // find the statement that defines the ident
+      // println!("___statement node: index:{} {:#?}", stmt.id, stmt);
       for def_stmt in graph.stmts() {
         let mut deps_idents = HashSet::new();
 
@@ -138,6 +157,7 @@ impl StatementGraph {
     }
 
     for (from, to, idents) in edges_to_add {
+      // println!("___statement edges: {} {} {:?}", from, to, idents);
       graph.add_edge(from, to, idents);
     }
 
@@ -207,6 +227,7 @@ impl StatementGraph {
       .collect()
   }
 
+  // 分析 statement 和 ident 之间的关系
   pub fn analyze_used_statements_and_idents(
     &self,
     used_exports: HashMap<StatementId, HashSet<UsedIdent>>,
@@ -219,12 +240,14 @@ impl StatementGraph {
     let mut used_exports: Vec<_> = used_exports.into_iter().collect();
     used_exports.sort_by(|a, b| a.0.cmp(&b.0));
 
+    println!("___used_exports: {:#?}", used_exports);
+
     for (stmt_id, used_export_idents) in used_exports {
       let mut used_dep_idents = HashSet::new();
       let mut used_defined_idents = HashSet::new();
       let mut skip = false;
 
-      for ident in used_export_idents {
+      for ident in used_export_idents.clone() {
         match ident {
           UsedIdent::SwcIdent(i) => {
             used_defined_idents.insert(i.to_string());
@@ -248,7 +271,10 @@ impl StatementGraph {
             skip = true;
           }
           UsedIdent::ExportAll => {
-            used_statements.insert(stmt_id, ["*".to_string()].into());
+            used_statements
+              .entry(stmt_id)
+              .or_insert_with(HashSet::new)
+              .insert("*".to_string());
             skip = true;
           }
         }
@@ -271,6 +297,10 @@ impl StatementGraph {
         hash
       };
 
+      // println!(
+      //   "________stmt_id: {}, used_export_idents: {:#?}",
+      //   stmt_id, used_export_idents
+      // );
       while let Some((stmt_id, used_defined_idents, used_dep_idents)) = stmts.pop_front() {
         let hash = hash_stmt(&stmt_id, &used_defined_idents);
 
@@ -289,7 +319,9 @@ impl StatementGraph {
 
         let deps = self.dependencies(&stmt_id);
 
+        // println!("___xxxxx: {:?}", deps);
         for (dep_stmt, dep_idents) in deps {
+          println!("___dep_stmt {}", dep_stmt.id);
           if dep_idents.iter().any(|di| used_dep_idents.contains(di)) {
             let mut dep_stmt_idents = HashSet::new();
             let mut dep_used_defined_idents = HashSet::new();
@@ -313,6 +345,9 @@ impl StatementGraph {
               used_dep_defined_idents.extend(dep_used_defined_idents);
               used_dep_idents.extend(dep_stmt_idents);
             } else {
+              if dep_stmt.id == stmt_id {
+                continue;
+              }
               stmts.push_back((dep_stmt.id, dep_used_defined_idents, dep_stmt_idents));
             }
           }

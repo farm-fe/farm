@@ -21,6 +21,15 @@ pub fn analyze_imports_and_exports(
   HashMap<String, HashSet<String>>,
   bool,
 ) {
+  let print = used_defined_idents.is_some();
+  if print {
+    // println!(
+    //   "analyze_imports_and_exports {:?}, used_defined_idents: {:#?}",
+    //   id.to_string(),
+    //   used_defined_idents
+    // );
+  }
+
   let mut defined_idents = HashSet::new();
   let mut used_idents = HashSet::new();
   let mut defined_idents_map = HashMap::new();
@@ -49,6 +58,14 @@ pub fn analyze_imports_and_exports(
 
   let is_ident_used = |ident: &String| {
     if let Some(used_defined_idents) = &used_defined_idents {
+      if print {
+        println!(
+          "ident_used check: {:#?} ident: {} {}",
+          used_defined_idents,
+          ident,
+          used_defined_idents.contains(ident)
+        );
+      }
       return used_defined_idents.contains(ident);
     }
 
@@ -96,15 +113,11 @@ pub fn analyze_imports_and_exports(
           }
         }
 
-        // mark empty specifiers as self-executed so it will be preserved
-        if specifiers.is_empty() {
-          is_self_executed = true;
-        }
-
         imports = Some(ImportInfo {
           source,
           specifiers,
           stmt_id: *id,
+          is_import_executed: import_decl.specifiers.is_empty(),
         });
       }
       swc_ecma_ast::ModuleDecl::ExportAll(export_all) => {
@@ -370,6 +383,13 @@ pub fn analyze_imports_and_exports(
       }
     },
   };
+
+  if print {
+    println!(
+      "analyze_imports_and_exports return: imports: {:#?}, exports: {:#?}, used_idents: {:?}",
+      imports, exports, used_idents
+    );
+  }
 
   (
     imports,
