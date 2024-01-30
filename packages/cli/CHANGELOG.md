@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.6.1
+
+### Patch Changes
+
+- 385700a8: prevent experimental warning
+
 ## 0.6.0
 
 ### Minor Changes

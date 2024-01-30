@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.16.2
+
+### Patch Changes
+
+- f462bbad: support env prefix with "VITE\_"
+
 ## 0.16.1
 
 ### Patch Changes
