@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.8
+
+### Patch Changes
+
+- adaed6a2: bump version
+
 ## 1.5.7
 
 ### Patch Changes
