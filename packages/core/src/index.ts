@@ -30,11 +30,13 @@ import type {
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
-import { clearScreen } from './utils/share.js';
+// import { clearScreen } from './utils/share.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
+  console.log('开始启动服务啦');
+
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
 
@@ -324,19 +326,29 @@ export async function createFileWatcher(
   await fileWatcher.watch();
 
   const farmWatcher = new ConfigWatcher(resolvedUserConfig);
+  let num = 0;
   farmWatcher.watch(async (files: string[]) => {
-    clearScreen();
-    logFileChanges(files, resolvedUserConfig.root, logger);
-    console.log('准备重启服务', new Date().getTime());
+    // clearScreen();
+    if (files) {
+      console.log('');
+    }
+    num++;
+    console.log(num);
 
-    devServer.restart(async () => {
-      // farmWatcher?.close();
-      console.log('开始调用重启服务', new Date().getTime());
+    // logFileChanges(files, resolvedUserConfig.root, logger);
+    // console.log('准备重启服务', new Date().getTime());
 
-      await devServer.close();
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      await start(inlineConfig);
-    });
+    // devServer.restart(async () => {
+    //   // farmWatcher?.close();
+    //   console.log('开始调用重启服务', new Date().getTime());
+
+    //   await devServer.close();
+    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+    //   await start(inlineConfig);
+    // });
+    if (inlineConfig) {
+      console.log('');
+    }
   });
 }
 

@@ -182,6 +182,8 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
 }
 
 export function bootstrap(times: number, config: Config) {
+  console.log('调用 bootstrap');
+
   const usePersistentCache = config.config.persistentCache;
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)

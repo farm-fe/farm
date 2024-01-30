@@ -40,7 +40,7 @@ function resolveChokidarOptions(config: ResolvedUserConfig) {
         ? undefined
         : {
             stabilityThreshold: 10,
-            pollInterval: 10
+            pollInterval: 100
           },
     ...otherOptions
   };
