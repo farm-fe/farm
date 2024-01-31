@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.16.3
+
+### Patch Changes
+
+- 947fe245: fix: change config filer resolve error
+
 ## 0.16.2
 
 ### Patch Changes
