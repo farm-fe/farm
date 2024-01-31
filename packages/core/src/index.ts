@@ -35,8 +35,6 @@ import { ConfigWatcher } from './watcher/config-watcher.js';
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  console.log('开始启动服务啦');
-
   const logger = inlineConfig.logger ?? new DefaultLogger();
   setProcessEnv('development');
 
@@ -325,30 +323,22 @@ export async function createFileWatcher(
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig);
-  let num = 0;
+  // const farmWatcher = new ConfigWatcher(resolvedUserConfig);
+  const farmWatcher = new ConfigWatcher({
+    ...resolvedUserConfig,
+    configFilePath: '/Users/adny/rust/farm/examples/react/farm.config.ts'
+  });
   farmWatcher.watch(async (files: string[]) => {
     // clearScreen();
-    if (files) {
-      console.log('');
-    }
-    num++;
-    console.log(num);
 
-    // logFileChanges(files, resolvedUserConfig.root, logger);
-    // console.log('准备重启服务', new Date().getTime());
+    devServer.restart(async () => {
+      logFileChanges(files, resolvedUserConfig.root, logger);
+      farmWatcher?.close();
 
-    // devServer.restart(async () => {
-    //   // farmWatcher?.close();
-    //   console.log('开始调用重启服务', new Date().getTime());
-
-    //   await devServer.close();
-    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-    //   await start(inlineConfig);
-    // });
-    if (inlineConfig) {
-      console.log('');
-    }
+      await devServer.close();
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+      await start(inlineConfig);
+    });
   });
 }
 

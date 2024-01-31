@@ -185,24 +185,15 @@ export class DevServer implements ImplDevServer {
     if (this.server) {
       promises.push(new Promise((resolve) => this.server.close(resolve)));
     }
-    console.log(promises);
 
     await Promise.all(promises);
     // !this.restart_promise && process.exit(0);
   }
 
   async restart(promise: () => Promise<void>) {
-    console.log(!this.restart_promise);
     if (!this.restart_promise) {
-      console.log('走进来了啊 开始运行');
-
-      // try {
       this.restart_promise = promise();
       await this.restart_promise;
-      // }
-      // finally {
-      //   this.restart_promise = null; // 清除重启Promise，以便下一次可以再次触发
-      // }
     }
     return this.restart_promise;
   }

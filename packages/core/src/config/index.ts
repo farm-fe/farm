@@ -506,13 +506,8 @@ async function readConfigFile(
 
       // const previousProfileEnv = process.env.FARM_PROFILE;
       // process.env.FARM_PROFILE = '';
-      try {
-        await compiler.compile();
-      } catch (error) {
-        throw new Error(
-          `Failed to compile config file: ${configFilePath} \n ${error}`
-        );
-      }
+      await compiler.compile();
+
       // process.env.FARM_PROFILE = previousProfileEnv;
 
       compiler.writeResourcesToDisk();
@@ -721,25 +716,37 @@ export async function loadConfigFile(
   logger: Logger = new DefaultLogger()
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
-  if (fs.statSync(configPath).isDirectory()) {
-    for (const name of DEFAULT_CONFIG_NAMES) {
-      const resolvedPath = path.join(configPath, name);
-      const config = await readConfigFile(resolvedPath, logger);
+  try {
+    if (fs.statSync(configPath).isDirectory()) {
+      for (const name of DEFAULT_CONFIG_NAMES) {
+        const resolvedPath = path.join(configPath, name);
+        const config = await readConfigFile(resolvedPath, logger);
 
-      if (config) {
-        return {
-          config: parseUserConfig(config),
-          configFilePath: resolvedPath
-        };
+        if (config) {
+          return {
+            config: parseUserConfig(config),
+            configFilePath: resolvedPath
+          };
+        }
       }
+    } else if (fs.statSync(configPath).isFile()) {
+      const config = await readConfigFile(configPath, logger);
+      return {
+        config: config && parseUserConfig(config),
+        configFilePath: configPath
+      };
     }
-  } else if (fs.statSync(configPath).isFile()) {
-    const config = await readConfigFile(configPath, logger);
-    return {
-      config: config && parseUserConfig(config),
-      configFilePath: configPath
-    };
+  } catch (error) {
+    // In this place, the original use of
+    // throw caused emit to the outermost catch
+    // callback, causing the code not to execute.
+    // If the internal catch compiler's own
+    // throw error can solve this problem,
+    // it will not continue to affect the execution of
+    // external code. We just need to return the default config.
+    logger.error(`Failed to load config file: ${error}`);
   }
+  console.log('我这还能执行么');
 }
 
 function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
