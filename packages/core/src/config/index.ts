@@ -738,7 +738,7 @@ export async function loadConfigFile(
     // throw error can solve this problem,
     // it will not continue to affect the execution of
     // external code. We just need to return the default config.
-    logger.error(`Failed to load config file: ${error}`);
+    logger.error(`Failed to load config file: ${error.stack}`);
   }
 }
 
@@ -805,7 +805,9 @@ export async function getConfigFilePath(
   if (fs.statSync(configPath).isDirectory()) {
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-      const isFile = fs.statSync(resolvedPath).isFile();
+      const isFile =
+        fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile();
+
       if (isFile) {
         return resolvedPath;
       }
