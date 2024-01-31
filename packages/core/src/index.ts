@@ -11,6 +11,7 @@ import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
 import {
+  getConfigFilePath,
   normalizePublicDir,
   resolveConfig,
   UserConfig
@@ -324,9 +325,10 @@ export async function createFileWatcher(
   await fileWatcher.watch();
 
   // const farmWatcher = new ConfigWatcher(resolvedUserConfig);
+  const configFilePath = await getConfigFilePath(inlineConfig.configPath);
   const farmWatcher = new ConfigWatcher({
     ...resolvedUserConfig,
-    configFilePath: '/Users/adny/rust/farm/examples/react/farm.config.ts'
+    configFilePath
   });
   farmWatcher.watch(async (files: string[]) => {
     clearScreen();

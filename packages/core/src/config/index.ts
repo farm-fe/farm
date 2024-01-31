@@ -721,23 +721,13 @@ export async function loadConfigFile(
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
   try {
-    if (fs.statSync(configPath).isDirectory()) {
-      for (const name of DEFAULT_CONFIG_NAMES) {
-        const resolvedPath = path.join(configPath, name);
-        const config = await readConfigFile(resolvedPath, logger);
+    const configFilePath = await getConfigFilePath(configPath);
 
-        if (config) {
-          return {
-            config: parseUserConfig(config),
-            configFilePath: resolvedPath
-          };
-        }
-      }
-    } else if (fs.statSync(configPath).isFile()) {
-      const config = await readConfigFile(configPath, logger);
+    if (configFilePath) {
+      const config = await readConfigFile(configFilePath, logger);
       return {
         config: config && parseUserConfig(config),
-        configFilePath: configPath
+        configFilePath: configFilePath
       };
     }
   } catch (error) {
@@ -750,7 +740,6 @@ export async function loadConfigFile(
     // external code. We just need to return the default config.
     logger.error(`Failed to load config file: ${error}`);
   }
-  // TODO return default config
 }
 
 function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
@@ -808,4 +797,22 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
   }
 
   return inputIndexConfig;
+}
+
+export async function getConfigFilePath(
+  configPath: string
+): Promise<string | undefined> {
+  if (fs.statSync(configPath).isDirectory()) {
+    for (const name of DEFAULT_CONFIG_NAMES) {
+      const resolvedPath = path.join(configPath, name);
+      const isFile = fs.statSync(resolvedPath).isFile();
+      if (isFile) {
+        return resolvedPath;
+      }
+    }
+  } else if (fs.statSync(configPath).isFile()) {
+    return configPath;
+  }
+
+  return undefined;
 }
