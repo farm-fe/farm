@@ -154,8 +154,12 @@ export async function resolveConfig(
     userConfig.compilation?.output?.targetEnv === 'node' ||
     mode === 'production'
   );
-  targetWeb &&
-    (await DevServer.resolvePortConflict(resolvedUserConfig.server, logger));
+
+  try {
+    targetWeb &&
+      (await DevServer.resolvePortConflict(resolvedUserConfig.server, logger));
+    // eslint-disable-next-line no-empty
+  } catch {}
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -746,7 +750,7 @@ export async function loadConfigFile(
     // external code. We just need to return the default config.
     logger.error(`Failed to load config file: ${error}`);
   }
-  console.log('我这还能执行么');
+  // TODO return default config
 }
 
 function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {

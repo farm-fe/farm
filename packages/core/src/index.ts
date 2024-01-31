@@ -30,7 +30,7 @@ import type {
 import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
-// import { clearScreen } from './utils/share.js';
+import { clearScreen } from './utils/share.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -61,7 +61,7 @@ export async function start(
 
     await devServer.listen();
   } catch (error) {
-    logger.error(`Failed to start the server: ${error}`);
+    logger.error(`Failed to start the server: ${error.stack}`);
   }
 }
 
@@ -329,7 +329,7 @@ export async function createFileWatcher(
     configFilePath: '/Users/adny/rust/farm/examples/react/farm.config.ts'
   });
   farmWatcher.watch(async (files: string[]) => {
-    // clearScreen();
+    clearScreen();
 
     devServer.restart(async () => {
       logFileChanges(files, resolvedUserConfig.root, logger);
