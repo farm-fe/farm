@@ -11,6 +11,7 @@ import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
 import {
+  getConfigFilePath,
   normalizePublicDir,
   resolveConfig,
   UserConfig
@@ -61,10 +62,7 @@ export async function start(
 
     await devServer.listen();
   } catch (error) {
-    logger.error(
-      `Failed to start the server: ${error.message} \n ${error.stack}`
-    );
-    process.exit(1);
+    logger.error(`Failed to start the server: ${error.stack}`);
   }
 }
 
@@ -326,19 +324,24 @@ export async function createFileWatcher(
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
-    async (files: string[]) => {
-      clearScreen();
-      logFileChanges(files, resolvedUserConfig.root, logger);
+  // const farmWatcher = new ConfigWatcher(resolvedUserConfig);
+  const configFilePath = await getConfigFilePath(inlineConfig.configPath);
+  const farmWatcher = new ConfigWatcher({
+    ...resolvedUserConfig,
+    configFilePath
+  });
+  farmWatcher.watch(async (files: string[]) => {
+    clearScreen();
 
-      devServer.restart(async () => {
-        farmWatcher?.close();
-        await devServer.close();
-        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-        await start(inlineConfig);
-      });
-    }
-  );
+    devServer.restart(async () => {
+      logFileChanges(files, resolvedUserConfig.root, logger);
+      farmWatcher?.close();
+
+      await devServer.close();
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+      await start(inlineConfig);
+    });
+  });
 }
 
 export function logFileChanges(files: string[], root: string, logger: Logger) {

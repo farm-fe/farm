@@ -154,8 +154,12 @@ export async function resolveConfig(
     userConfig.compilation?.output?.targetEnv === 'node' ||
     mode === 'production'
   );
-  targetWeb &&
-    (await DevServer.resolvePortConflict(resolvedUserConfig.server, logger));
+
+  try {
+    targetWeb &&
+      (await DevServer.resolvePortConflict(resolvedUserConfig.server, logger));
+    // eslint-disable-next-line no-empty
+  } catch {}
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -507,6 +511,7 @@ async function readConfigFile(
       // const previousProfileEnv = process.env.FARM_PROFILE;
       // process.env.FARM_PROFILE = '';
       await compiler.compile();
+
       // process.env.FARM_PROFILE = previousProfileEnv;
 
       compiler.writeResourcesToDisk();
@@ -715,24 +720,25 @@ export async function loadConfigFile(
   logger: Logger = new DefaultLogger()
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
-  if (fs.statSync(configPath).isDirectory()) {
-    for (const name of DEFAULT_CONFIG_NAMES) {
-      const resolvedPath = path.join(configPath, name);
-      const config = await readConfigFile(resolvedPath, logger);
+  try {
+    const configFilePath = await getConfigFilePath(configPath);
 
-      if (config) {
-        return {
-          config: parseUserConfig(config),
-          configFilePath: resolvedPath
-        };
-      }
+    if (configFilePath) {
+      const config = await readConfigFile(configFilePath, logger);
+      return {
+        config: config && parseUserConfig(config),
+        configFilePath: configFilePath
+      };
     }
-  } else if (fs.statSync(configPath).isFile()) {
-    const config = await readConfigFile(configPath, logger);
-    return {
-      config: config && parseUserConfig(config),
-      configFilePath: configPath
-    };
+  } catch (error) {
+    // In this place, the original use of
+    // throw caused emit to the outermost catch
+    // callback, causing the code not to execute.
+    // If the internal catch compiler's own
+    // throw error can solve this problem,
+    // it will not continue to affect the execution of
+    // external code. We just need to return the default config.
+    logger.error(`Failed to load config file: ${error.stack}`);
   }
 }
 
@@ -791,4 +797,24 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
   }
 
   return inputIndexConfig;
+}
+
+export async function getConfigFilePath(
+  configPath: string
+): Promise<string | undefined> {
+  if (fs.statSync(configPath).isDirectory()) {
+    for (const name of DEFAULT_CONFIG_NAMES) {
+      const resolvedPath = path.join(configPath, name);
+      const isFile =
+        fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile();
+
+      if (isFile) {
+        return resolvedPath;
+      }
+    }
+  } else if (fs.statSync(configPath).isFile()) {
+    return configPath;
+  }
+
+  return undefined;
 }

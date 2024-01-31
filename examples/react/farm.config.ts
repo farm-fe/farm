@@ -2,10 +2,12 @@ import { defineConfig } from '@farmfe/core';
 
 export default defineConfig({
   compilation: {
-    presetEnv: false,
+    persistentCache: false,
+    // TODO error.stack 栈没打出来
+    presetEnv: false
   },
   server: {
-    // port: 3000,
+    port: 4878
   },
   plugins: [
     ['@farmfe/plugin-react', { runtime: 'automatic' }],

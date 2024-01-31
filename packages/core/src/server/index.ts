@@ -167,9 +167,9 @@ export class DevServer implements ImplDevServer {
     };
 
     const errorMessage =
-      errorMap[error.code as keyof ErrorMap] || `An error occurred: ${error}`;
+      errorMap[error.code as keyof ErrorMap] ||
+      `An error occurred: ${error.stack}`;
     this.logger.error(errorMessage);
-    this.close();
   }
 
   async close() {
@@ -177,7 +177,6 @@ export class DevServer implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
     }
     const promises = [];
-
     if (this.ws) {
       promises.push(this.ws.close());
     }
@@ -187,8 +186,6 @@ export class DevServer implements ImplDevServer {
     }
 
     await Promise.all(promises);
-
-    !this.restart_promise && process.exit(0);
   }
 
   async restart(promise: () => Promise<void>) {
@@ -282,6 +279,7 @@ export class DevServer implements ImplDevServer {
     const isPortAvailable = (portToCheck: number) => {
       return new Promise((resolve, reject) => {
         const onError = async (error: { code: string }) => {
+          logger.error(`Error in httpServer: ${error}`);
           if (error.code === 'EADDRINUSE') {
             clearScreen();
             if (strictPort) {
