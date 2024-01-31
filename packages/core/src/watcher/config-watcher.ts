@@ -31,8 +31,20 @@ export class ConfigWatcher {
     const watchedFiles = Array.from(watchedFilesSet).filter(
       (file) => file && existsSync(file)
     );
-
-    this.watcher = createWatcher(this.resolvedUserConfig, watchedFiles);
+    const chokidarOptions = {
+      awaitWriteFinish:
+        process.platform === 'linux'
+          ? undefined
+          : {
+              stabilityThreshold: 10,
+              pollInterval: 80
+            }
+    };
+    this.watcher = createWatcher(
+      this.resolvedUserConfig,
+      watchedFiles,
+      chokidarOptions
+    );
 
     this.watcher.on('change', (path) => {
       if (this._close) return;

@@ -5,8 +5,11 @@ import glob from 'fast-glob';
 
 import { ResolvedUserConfig } from '../index.js';
 
-function resolveChokidarOptions(config: ResolvedUserConfig) {
-  const { ignored = [], ...otherOptions } =
+function resolveChokidarOptions(
+  config: ResolvedUserConfig,
+  insideChokidarOptions: WatchOptions
+) {
+  const { ignored = [], ...userChokidarOptions } =
     config.server?.hmr?.watchOptions ?? {};
   let cacheDir = path.resolve(config.root, 'node_modules', '.farm', 'cache');
 
@@ -40,9 +43,10 @@ function resolveChokidarOptions(config: ResolvedUserConfig) {
         ? undefined
         : {
             stabilityThreshold: 10,
-            pollInterval: 100
+            pollInterval: 10
           },
-    ...otherOptions
+    ...userChokidarOptions,
+    ...insideChokidarOptions
   };
 
   return options;
@@ -50,9 +54,10 @@ function resolveChokidarOptions(config: ResolvedUserConfig) {
 
 export function createWatcher(
   config: ResolvedUserConfig,
-  files: string[]
+  files: string[],
+  chokidarOptions?: WatchOptions
 ): FSWatcher {
-  const options = resolveChokidarOptions(config);
+  const options = resolveChokidarOptions(config, chokidarOptions);
 
   return chokidar.watch(files, options);
 }
