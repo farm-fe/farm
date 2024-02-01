@@ -5,7 +5,6 @@ use std::{
   sync::Arc,
 };
 
-use farmfe_core::config::ModuleFormat;
 use farmfe_core::{
   common::PackageJsonInfo,
   config::{Mode, TargetEnv},
@@ -20,6 +19,10 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
+
+use self::browser_replace_result::BrowserReplaceResult;
+
+mod browser_replace_result;
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 enum Condition {
@@ -167,7 +170,15 @@ impl Resolver {
 
       if !self.is_source_absolute(source) && !self.is_source_relative(source) {
         // check browser replace
-        if let Some(resolved_path) = self.try_browser_replace(package_json_info, source, context) {
+        if let Some(brs) = self.try_browser_replace(package_json_info, source, context) {
+          let resolved_path = match brs {
+            BrowserReplaceResult::Str(str) => str,
+            BrowserReplaceResult::Alias(alias) => {
+              self
+                ._resolve(&alias, base_dir, kind, context)?
+                .resolved_path
+            }
+          };
           let external = self.is_module_external(package_json_info, &resolved_path);
           let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
           return Some(PluginResolveHookResult {
@@ -622,7 +633,9 @@ impl Resolver {
       let side_effects = self.is_module_side_effects(package_json_info, &resolved_path);
       let resolved_path = self
         .try_browser_replace(package_json_info, &resolved_path, context)
+        .map(|brs| brs.as_str().unwrap_or(resolved_path.clone()))
         .unwrap_or(resolved_path);
+
       PluginResolveHookResult {
         resolved_path,
         external,
@@ -660,6 +673,7 @@ impl Resolver {
 
       let resolved_path = self
         .try_browser_replace(package_json_info, &resolved_path, context)
+        .map(|brs| brs.as_str().unwrap_or(resolved_path.clone()))
         .unwrap_or(resolved_path);
 
       PluginResolveHookResult {
@@ -707,7 +721,7 @@ impl Resolver {
     package_json_info: &PackageJsonInfo,
     resolved_path: &str,
     context: &Arc<CompilationContext>,
-  ) -> Option<String> {
+  ) -> Option<BrowserReplaceResult> {
     farm_profile_function!("try_browser_replace".to_string());
     if context.config.output.target_env != TargetEnv::Browser {
       return None;
@@ -723,16 +737,20 @@ impl Resolver {
           if self.are_paths_equal(key_path, resolved_path) {
             if let Value::String(str) = value {
               let value_path = self.get_key_path(&str, package_json_info.dir());
-              return Some(value_path);
+              return Some(BrowserReplaceResult::Str(value_path));
             }
           }
         } else {
-          // TODO: this is not correct, it should remap the package name
           // source, e.g. 'foo' in require('foo')
           if self.are_paths_equal(&key, resolved_path) {
             if let Value::String(str) = value {
               let value_path = self.get_key_path(&str, package_json_info.dir());
-              return Some(value_path);
+              // if value_path is not exists and str is not relative path or absolute path. treat it as alias
+              if Path::new(&value_path).exists() {
+                return Some(BrowserReplaceResult::Str(value_path));
+              } else if !self.is_source_relative(&str) && !self.is_source_absolute(&str) {
+                return Some(BrowserReplaceResult::Alias(str));
+              }
             }
           }
         }
@@ -879,9 +897,7 @@ impl Resolver {
 
   /**
    * get key path with other different key
-   * TODO need add a argument (default | node) to determine the key
    */
-
   fn get_key_path(&self, key: &str, dir: &String) -> String {
     farm_profile_function!("get_key_path".to_string());
     let key_path = match Path::new(&key).is_relative() {
