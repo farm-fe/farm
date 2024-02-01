@@ -291,3 +291,51 @@ fn resolve_browser_entry_replace() {
     }
   );
 }
+
+#[test]
+fn resolve_browser_issue_941() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/browser/node_modules/issue-941/package.json",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "indexof",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("component-indexof")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+
+      let resolved1 = resolver.resolve(
+        "component-indexof",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved1.is_some());
+      let resolved1 = resolved1.unwrap();
+
+      assert_eq!(
+        resolved1.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("component-indexof")
+          .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}

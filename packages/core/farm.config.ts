@@ -14,16 +14,16 @@ export default <UserConfig>{
       entryFilename: 'index.cjs'
     },
     external: [
-      ...module.builtinModules.map((m) => `^${m}$`),
-      ...module.builtinModules.map((m) => `^node:${m}$`),
       '.node$',
       '@farmfe/core',
       'bufferutil',
       'utf-8-validate',
-      'fsevents'
+      'fsevents',
+      'browserslist-generator'
     ],
     presetEnv: false,
     minify: false,
+    sourcemap: false,
     persistentCache: false,
     partialBundling: {
       enforceResources: [

@@ -625,8 +625,12 @@ fn resolve_module(
     }
 
     farm_profile_scope!(format!("new module {:?}", module_id));
-    let resolve_module_id_result =
-      resolve_module_id_result.unwrap_or(Compiler::resolve_module_id(resolve_param, context)?);
+    let resolve_module_id_result = if let Some(result) = resolve_module_id_result {
+      result
+    } else {
+      Compiler::resolve_module_id(resolve_param, context)?
+    };
+
     Compiler::insert_dummy_module(&resolve_module_id_result.module_id, &mut module_graph);
     let module_id_str = resolve_module_id_result.module_id.to_string();
     ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {

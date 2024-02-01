@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.16.4
+
+### Patch Changes
+
+- 501b1342: Fix resolve browser alias #941
+
 ## 0.16.3
 
 ### Patch Changes
