@@ -1,7 +1,8 @@
 /* eslint-disable no-prototype-builtins */
 import os from 'node:os';
-import fs from 'node:fs';
-import path from 'node:path';
+import fs, { readFileSync } from 'node:fs';
+import path, { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const splitRE = /\r?\n/;
 
@@ -120,3 +121,10 @@ export function preventExperimentalWarning() {
     return defaultEmit.call(this, ...args);
   };
 }
+
+export const version = JSON.parse(
+  readFileSync(
+    join(fileURLToPath(import.meta.url), '../../../package.json'),
+    'utf-8'
+  )
+)?.version;
