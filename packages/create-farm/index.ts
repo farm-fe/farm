@@ -90,9 +90,9 @@ async function createFarm() {
               value: 'react'
             },
             { title: colors.green('Vue'), value: 'vue' },
+            { title: colors.blue('Solid'), value: 'solid' },
             { title: colors.orange('Svelte'), value: 'svelte' },
-            { title: colors.red('Lit'), value: 'lit' },
-            { title: colors.blue('Solid'), value: 'solid' }
+            { title: colors.red('Lit'), value: 'lit' }
           ]
         },
         {
