@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.9
+
+### Patch Changes
+
+- 7ed79cd9: bump version
+
 ## 1.5.8
 
 ### Patch Changes
