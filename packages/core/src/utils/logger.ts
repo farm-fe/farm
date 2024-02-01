@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fileURLToPath } from 'node:url';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
+import { version } from './share.js';
 import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 import { Config } from '../../binding/index.js';
 
@@ -186,12 +183,7 @@ export function bootstrap(times: number, config: Config) {
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';
-  const version = JSON.parse(
-    readFileSync(
-      join(fileURLToPath(import.meta.url), '../../../package.json'),
-      'utf-8'
-    )
-  ).version;
+
   console.log(
     '\n',
     colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`))
