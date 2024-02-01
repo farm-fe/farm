@@ -1,5 +1,7 @@
+import { version } from './share';
 /* eslint-disable no-prototype-builtins */
 import os from 'node:os';
+import fse from 'fs-extra';
 import fs, { readFileSync } from 'node:fs';
 import path, { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -122,9 +124,11 @@ export function preventExperimentalWarning() {
   };
 }
 
-export const version = JSON.parse(
-  readFileSync(
-    join(fileURLToPath(import.meta.url), '../../../package.json'),
-    'utf-8'
-  )
-)?.version;
+// export const version = JSON.parse(
+//   readFileSync(
+//     join(fileURLToPath(import.meta.url), '../../../package.json'),
+//     'utf-8'
+//   )
+// )?.version;
+
+// export const version = fse.readJSONSync(path).version;
