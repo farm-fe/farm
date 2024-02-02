@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "extends": "../../.eslintrc.base.json",
+  "parserOptions": {
+    "project": ["./examples/react-ssr-stream/tsconfig.json"]
+  },
+  "rules": {}
+}
