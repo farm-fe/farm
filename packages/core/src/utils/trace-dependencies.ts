@@ -3,20 +3,22 @@ import { Compiler } from '../compiler/index.js';
 
 function createTraceDepCompiler(entry: string) {
   const config = getDefaultTraceDepCompilerConfig(entry);
+  config.config.progress = false;
   return new Compiler(config);
 }
 
-export async function traceDependencies(configFilePath: string): Promise<string[]> {
+export async function traceDependencies(
+  configFilePath: string
+): Promise<string[]> {
   try {
     const compiler = createTraceDepCompiler(configFilePath);
     const files = await compiler.traceDependencies();
     return files;
   } catch (error) {
     console.error('Error tracing dependencies:', error);
-    throw error; 
+    throw error;
   }
 }
-
 
 function getDefaultTraceDepCompilerConfig(entry: string): Config {
   return {

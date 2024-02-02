@@ -177,6 +177,7 @@ const compilationConfigSchema = z
     treeShaking: z.boolean().optional(),
     minify: z.boolean().optional(),
     record: z.boolean().optional(),
+    progress: z.boolean().optional(),
     presetEnv: z
       .union([
         z.boolean(),
