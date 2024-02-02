@@ -1,29 +1,32 @@
 {
-  "name": "create-farm",
+  "name": "create-farm-plugin",
   "version": "1.5.9",
-  "description": "use create-farm to create farm project",
+  "description": "use create-farm-plugin to create farm plugin",
   "exports": {
-    ".": "./bin/create-farm.mjs"
+    ".": "./bin/create-farm-plugin.mjs"
   },
-  "main": "bin/create-farm.mjs",
+  "main": "bin/create-farm-plugin.mjs",
   "type": "module",
   "bin": {
-    "create-farm": "bin/create-farm.mjs"
+    "create-farm-plugin": "bin/create-farm-plugin.mjs"
   },
   "scripts": {
     "build": "farm build",
     "dev": "farm watch",
     "prepublishOnly": "npm run build"
   },
-  "author": "",
   "license": "MIT",
+  "author": {
+    "name": "bright wu",
+    "email": "1521488775@qq.com"
+  },
   "keywords": [
     "farm",
-    "create farm",
-    "rust bundler",
-    "bundler",
+    "farm-plugin",
+    "create-farm-plugin",
+    "rust",
     "build tool",
-    "web bundler"
+    "bundler"
   ],
   "files": [
     "dist",
@@ -31,7 +34,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/farm-fe/farm"
+    "url": "https://github.com/farm-fe"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
@@ -41,7 +44,6 @@
     "@types/prompts": "^2.4.4",
     "gradient-string": "^2.0.2",
     "minimist": "^1.2.8",
-    "ora": "^6.3.0",
     "prompts": "^2.4.2"
   }
 }

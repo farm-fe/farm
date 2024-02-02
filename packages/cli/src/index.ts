@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { cac } from 'cac';
-import { DefaultLogger, preventExperimentalWarning } from '@farmfe/core';
 import {
   resolveCore,
   getConfigPath,
   resolveCommandOptions,
-  handleAsyncOperationErrors
+  handleAsyncOperationErrors,
+  preventExperimentalWarning
 } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
@@ -18,8 +18,6 @@ import type {
   GlobalFarmCLIOptions,
   ICleanOptions
 } from './types.js';
-
-const logger = new DefaultLogger();
 
 const { version } = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url)).toString()
@@ -178,6 +176,8 @@ cli
     try {
       await clean(rootPath, options?.recursive);
     } catch (e) {
+      const { DefaultLogger } = await import('@farmfe/core');
+      const logger = new DefaultLogger();
       logger.error(`Failed to clean cache:\n${e.stack}`);
       process.exit(1);
     }
@@ -188,20 +188,23 @@ cli
   .command('plugin [command]', 'Commands for manage plugins', {
     allowUnknownOptions: true
   })
-  // TODO refactor plugin command
-  .action((command: keyof typeof COMMANDS, args: unknown) => {
+  .action(async (command: keyof typeof COMMANDS, args: unknown) => {
     try {
       COMMANDS[command](args);
     } catch (e) {
+      const { DefaultLogger } = await import('@farmfe/core');
+      const logger = new DefaultLogger();
       logger.error(
-        `The command arg parameter is incorrect. If you want to create a plugin in farm. such as "farm create plugin"\n${e.stack}`
+        `The command arg parameter is incorrect. If you want to create a plugin in farm. such as "farm plugin create"\n${e.stack}`
       );
       process.exit(1);
     }
   });
 
 // Listening for unknown command
-cli.on('command:*', () => {
+cli.on('command:*', async () => {
+  const { DefaultLogger } = await import('@farmfe/core');
+  const logger = new DefaultLogger();
   logger.error(
     'Unknown command place Run "farm --help" to see available commands'
   );

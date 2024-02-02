@@ -6,5 +6,10 @@
     "composite": true
   },
   "include": ["src/**/*.ts", "binding/**/*.d.ts"],
-  "exclude": ["src/**/*.spec.ts"]
+  "exclude": ["src/**/*.spec.ts"],
+  "references": [
+    {
+      "path": "../utils/tsconfig.json"
+    }
+  ]
 }
