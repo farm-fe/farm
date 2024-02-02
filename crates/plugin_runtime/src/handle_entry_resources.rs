@@ -354,12 +354,6 @@ pub fn handle_entry_resources(
         runtime_code = Some(create_runtime_code(resources_map, context));
         runtime_code.as_ref().unwrap()
       };
-      let runtime_resource = if let Some(runtime_resource) = runtime_resource.as_ref() {
-        runtime_resource
-      } else {
-        runtime_resource = Some(create_farm_runtime_resource(runtime_code, context));
-        runtime_resource.as_ref().unwrap()
-      };
 
       let entry_js_resource = resources_map
         .get_mut(&entry_js_resource_name)
@@ -367,7 +361,14 @@ pub fn handle_entry_resources(
 
       // TODO support sourcemap
       entry_js_resource.bytes = vec![
-        if !dep_resources.is_empty() {
+        if should_inject_runtime {
+          let runtime_resource = if let Some(runtime_resource) = runtime_resource.as_ref() {
+            runtime_resource
+          } else {
+            runtime_resource = Some(create_farm_runtime_resource(runtime_code, context));
+            runtime_resource.as_ref().unwrap()
+          };
+
           match context.config.output.format {
             ModuleFormat::EsModule => format!("import \"./{}\";", runtime_resource.name),
             ModuleFormat::CommonJs => format!("require(\"./{}\");", runtime_resource.name),
@@ -452,7 +453,8 @@ fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationCon
     name: name.clone(),
     bytes,
     emitted: false,
-    resource_type: ResourceType::Runtime,
+    // this resource should be Js instead of Runtime because it may cause duplicated runtime code when HMR if it's Runtime
+    resource_type: ResourceType::Js,
     origin: ResourceOrigin::ResourcePot(name),
     info: None,
   }

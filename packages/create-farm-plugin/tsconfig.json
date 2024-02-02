@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "exclude": ["node_modules"],
+  "include": ["index.ts", "color.ts", "farm.config.ts"],
+  "references": [
+    {
+      "path": "../core/tsconfig.build.json"
+    }
+  ]
+}

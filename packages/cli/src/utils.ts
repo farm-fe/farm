@@ -163,3 +163,14 @@ export async function handleAsyncOperationErrors<T>(
     process.exit(1);
   }
 }
+
+// prevent node experimental warning
+export function preventExperimentalWarning() {
+  const defaultEmit = process.emit;
+  process.emit = function (...args: any[]) {
+    if (args[1].name === 'ExperimentalWarning') {
+      return undefined;
+    }
+    return defaultEmit.call(this, ...args);
+  };
+}

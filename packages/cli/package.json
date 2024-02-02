@@ -43,7 +43,6 @@
   "dependencies": {
     "cac": "^6.7.14",
     "cross-spawn": "^7.0.3",
-    "enquirer": "^2.3.6",
     "inquirer": "^9.1.4",
     "walkdir": "^0.4.1"
   },

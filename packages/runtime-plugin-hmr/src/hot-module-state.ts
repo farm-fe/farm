@@ -62,6 +62,7 @@ export class HotModuleState {
     });
     // notify the server to find the boundary starting from the parents of this module
     this.send('vite:invalidate', { path: this.id, message });
+    this.send('farm:invalidate', { path: this.id, message });
     logger.debug(`invalidate ${this.id}${message ? `: ${message}` : ''}`);
   }
 
