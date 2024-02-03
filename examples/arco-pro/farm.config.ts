@@ -8,7 +8,9 @@ export default defineConfig({
     input: {
       index: './index.html'
     },
-    sourcemap: true,
+    presetEnv: false,
+    sourcemap: false,
+    minify: false,
     resolve: {
       symlinks: true,
       alias: {
@@ -26,7 +28,7 @@ export default defineConfig({
     partialBundling: {
       targetMinSize: 1024 * 2
     },
-    // persistentCache: false
+    persistentCache: false
   },
   server: {
     cors: true,

@@ -195,3 +195,5 @@ export function bootstrap(times: number, config: Config) {
     '\n'
   );
 }
+
+export const logger = new DefaultLogger();
