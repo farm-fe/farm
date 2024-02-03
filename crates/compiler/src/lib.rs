@@ -47,6 +47,10 @@ impl Compiler {
       Arc::new(farmfe_plugin_json::FarmPluginJson::new(&config)) as _,
       Arc::new(farmfe_plugin_define::FarmPluginDefine::new(&config)) as _,
     ];
+    
+    if config.progress {
+      plugins.push(Arc::new(farmfe_plugin_progress::FarmPluginProgress::new(&config)) as _,);
+    }
 
     if config.lazy_compilation {
       plugins.push(
