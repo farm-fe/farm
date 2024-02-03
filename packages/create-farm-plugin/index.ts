@@ -30,8 +30,7 @@ async function createFarm() {
   const argTemplate = argv.type || argv.t;
   let targetDir = argPluginName;
   let result: IResultType = {};
-  let pluginName =
-    (argPluginName || 'farm-plugin') + argTemplate ? `-${argTemplate}` : '';
+  let pluginName = argPluginName || 'farm-plugin-xxx';
 
   try {
     result = await prompts(
@@ -40,16 +39,14 @@ async function createFarm() {
           type: argTemplate ? null : 'select',
           name: 'type',
           message: 'Select Plugin Type:',
-          initial: 0,
           choices: [
-            {
-              title: colors.cyan('JS Plugin'),
-              value: 'js'
-            },
-            { title: colors.green('Rust Plugin'), value: 'rust' }
+            { title: colors.cyan('JS Plugin'), value: 'js-plugin' },
+            { title: colors.green('Rust Plugin'), value: 'rust-plugin' }
           ],
           onState: (state) => {
-            pluginName = `farm-plugin-${state.value}`;
+            if (state.value === 'js-plugin') {
+              pluginName = 'farm-js-plugin-xxx';
+            }
           }
         },
         {
@@ -57,8 +54,12 @@ async function createFarm() {
           name: 'pluginName',
           message: 'Plugin Name:',
           initial: () => pluginName,
-          format: (val) =>
-            !val.startsWith(pluginName) ? `${pluginName}-${val}` : val,
+          validate: (name) => {
+            if (name.trim().length === 0) {
+              return 'Plugin name cannot be empty';
+            }
+            return true;
+          },
           onState: (state) => {
             targetDir = formatTargetDir(state.value) || pluginName;
           }
@@ -116,6 +117,9 @@ async function copyTemplate(targetDir: string, options: IResultType) {
   copy(templatePath, dest);
 
   writePackageJson(dest, options);
+
+  console.log(colors.green('\n🎉 Plugin created successfully!\n'));
+  console.log(colors.cyan(`cd ${targetDir} && pnpm install && pnpm dev\n`));
 }
 
 function writePackageJson(dest: string, options: IResultType) {

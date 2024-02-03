@@ -1,14 +1,14 @@
 {
-  "name": "create-farm-plugin",
-  "version": "1.5.9",
-  "description": "use create-farm-plugin to create farm plugin",
+  "name": "@farmfe/plugin-tools",
+  "version": "0.0.0",
+  "description": "farmfe plugin tools to help build farmfe plugin",
   "exports": {
-    ".": "./bin/create-farm-plugin.mjs"
+    ".": "./bin/farm-plugin-tools.mjs"
   },
-  "main": "bin/create-farm-plugin.mjs",
+  "main": "bin/farm-plugin-tools.mjs",
   "type": "module",
   "bin": {
-    "create-farm-plugin": "bin/create-farm-plugin.mjs"
+    "farm-plugin-tools": "bin/farm-plugin-tools.mjs"
   },
   "scripts": {
     "build": "farm build",
@@ -23,14 +23,13 @@
   "keywords": [
     "farm",
     "farm-plugin",
-    "create-farm-plugin",
+    "farm-plugin-tools",
     "rust",
     "build tool",
     "bundler"
   ],
   "files": [
-    "dist",
-    "templates"
+    "dist"
   ],
   "repository": {
     "type": "git",
@@ -39,11 +38,8 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/utils": "workspace:*",
-    "@types/minimist": "^1.2.2",
-    "@types/prompts": "^2.4.4",
-    "gradient-string": "^2.0.2",
-    "minimist": "^1.2.8",
-    "prompts": "^2.4.2"
+    "@farmfe/utils": "workspace:^",
+    "@napi-rs/cli": "^2.15.2",
+    "cac": "^6.7.14"
   }
 }
