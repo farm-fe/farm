@@ -18,7 +18,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/farm-fe"
+    "url": "https://github.com/farm-fe/farm"
   },
   "bin": {
     "farm": "./bin/farm.mjs"

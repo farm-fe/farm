@@ -1649,6 +1649,24 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
 
+  packages/plugin-tools:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../core
+      '@farmfe/utils':
+        specifier: workspace:^
+        version: link:../utils
+      '@napi-rs/cli':
+        specifier: ^2.15.2
+        version: 2.16.5
+      cac:
+        specifier: ^6.7.14
+        version: 6.7.14
+
   packages/runtime:
     dependencies:
       core-js:
