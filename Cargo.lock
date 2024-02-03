@@ -1475,6 +1475,7 @@ dependencies = [
 name = "farmfe_plugin_progress"
 version = "0.0.1"
 dependencies = [
+ "console",
  "farmfe_core",
  "farmfe_testing_helpers",
  "indicatif",

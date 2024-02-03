@@ -7,3 +7,4 @@ edition = "2021"
 farmfe_core = { path = "../core" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 indicatif = "0.17.7"
+console = "0.15.8"
