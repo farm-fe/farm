@@ -1,11 +1,15 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+  borrow::Borrow,
+  collections::{HashMap, HashSet, VecDeque},
+  mem,
+};
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
   petgraph::{
     self,
     stable_graph::NodeIndex,
-    visit::{EdgeRef, IntoEdgesDirected},
+    visit::{EdgeRef, IntoEdgeReferences, IntoEdgesDirected},
     Direction::{Incoming, Outgoing},
   },
   swc_common::{Globals, Mark},
@@ -45,15 +49,18 @@ impl ToString for UsedIdent {
 
 #[derive(Debug, Clone)]
 pub enum UsedExports {
-  All(Vec<String>),
-  Partial(Vec<String>),
+  All(HashMap<ModuleId, Vec<String>>),
+  Partial(HashMap<ModuleId, Vec<String>>),
 }
 
 impl UsedExports {
-  pub fn add_used_export(&mut self, used_export: &dyn ToString) {
+  pub fn add_used_export(&mut self, module_id: &ModuleId, used_export: &dyn ToString) {
     match self {
       UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
-        self_used_exports.push(used_export.to_string());
+        self_used_exports
+          .entry(module_id.clone())
+          .or_insert_with(Vec::new)
+          .push(used_export.to_string());
 
         // if let UsedExports::Partial(self_used_exports) = self {
         //   if ns == used_export.to_string() {
@@ -64,12 +71,18 @@ impl UsedExports {
     }
   }
 
-  pub fn remove_used_export(&mut self, used_export: &dyn ToString) {
+  pub fn remove_used_export(&mut self, module_id: &ModuleId, used_export: &dyn ToString) {
     match self {
       UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
         let s = used_export.to_string();
-        if let Some(pos) = self_used_exports.iter().position(|item| item == &s) {
-          self_used_exports.remove(pos);
+        if !self_used_exports.contains_key(module_id) {
+          return;
+        }
+        if let Some(pos) = self_used_exports[module_id]
+          .iter()
+          .position(|item| item == &s)
+        {
+          self_used_exports.get_mut(module_id).unwrap().remove(pos);
 
           // let ns = UsedIdent::Namespace.to_string();
           // if let UsedExports::All(self_used_exports) = self {
@@ -82,17 +95,27 @@ impl UsedExports {
     };
   }
 
+  pub fn remove_all_used_export(&mut self, module_id: &ModuleId) {
+    match self {
+      UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
+        self_used_exports.remove(module_id);
+      }
+    }
+  }
+
   pub fn is_empty(&self) -> bool {
     match self {
       UsedExports::All(_) => false,
-      UsedExports::Partial(self_used_exports) => self_used_exports.is_empty(),
+      UsedExports::Partial(self_used_exports) => {
+        !self_used_exports.values().any(|item| !item.is_empty())
+      }
     }
   }
 
   pub fn change_all(&mut self) {
     match self {
       UsedExports::Partial(self_used_exports) => {
-        *self = UsedExports::All(self_used_exports.drain(..).collect());
+        *self = UsedExports::All(mem::take(self_used_exports));
       }
       // UsedExports::All(_) => todo!(),
       _ => {}
@@ -104,11 +127,21 @@ impl UsedExports {
       UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
         // let ns = UsedIdent::Namespace.to_string();
         self_used_exports
-          .clone()
-          .into_iter()
+          .values()
+          .flatten()
+          .cloned()
           // .map(|ident| if ident == ns { "*".to_string() } else { ident })
           .collect()
       }
+    }
+  }
+
+  pub fn idents(&mut self) -> HashSet<&String> {
+    match self {
+      UsedExports::Partial(self_used_exports) => {
+        self_used_exports.values().flatten().collect::<HashSet<_>>()
+      }
+      _ => Default::default(),
     }
   }
 }
@@ -120,15 +153,15 @@ enum Mode {
 }
 
 #[derive(Debug)]
-struct CollectStatementUsedMeta {
-  pub is_import_global_ident: bool,
+struct AnalyzeStatementIdent {
+  pub is_reference_global_ident: bool,
   pub unresolved_mark: Mark,
   pub reads: HashSet<String>,
   pub writes: HashSet<String>,
   mode: Mode,
   nested: bool,
 }
-impl CollectStatementUsedMeta {
+impl AnalyzeStatementIdent {
   fn with_mode<F>(&mut self, mode: Mode, f: F)
   where
     F: FnOnce(&mut Self),
@@ -150,32 +183,24 @@ impl CollectStatementUsedMeta {
   }
 }
 
-impl Visit for CollectStatementUsedMeta {
+impl Visit for AnalyzeStatementIdent {
+  fn visit_constructor(&mut self, n: &farmfe_core::swc_ecma_ast::Constructor) {
+    self.with_nested(true, |this| n.visit_children_with(this));
+  }
   fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
-    if self.nested {
-      return;
+    if !self.nested && matches!(self.mode, Mode::Write) {
+      self.writes.insert(n.to_string());
+    } else {
+      self.reads.insert(n.to_string());
     }
 
-    match self.mode {
-      Mode::Write => {
-        self.writes.insert(n.to_string());
-      }
-      Mode::Read => {
-        self.reads.insert(n.to_string());
-      }
-    }
-
-    if self.is_import_global_ident {
+    if self.is_reference_global_ident || self.nested {
       return;
     }
 
     if is_global_ident(self.unresolved_mark, n) {
-      self.is_import_global_ident = true;
+      self.is_reference_global_ident = true;
     }
-  }
-
-  fn visit_expr(&mut self, n: &farmfe_core::swc_ecma_ast::Expr) {
-    self.with_mode(Mode::Read, |this| n.visit_children_with(this))
   }
 
   fn visit_pat_or_expr(&mut self, n: &farmfe_core::swc_ecma_ast::PatOrExpr) {
@@ -189,6 +214,12 @@ impl Visit for CollectStatementUsedMeta {
   fn visit_fn_decl(&mut self, n: &farmfe_core::swc_ecma_ast::FnDecl) {
     self.with_nested(true, |this| n.visit_children_with(this));
   }
+
+  fn visit_assign_expr(&mut self, n: &farmfe_core::swc_ecma_ast::AssignExpr) {
+    self.with_mode(Mode::Write, |this| n.left.visit_with(this));
+
+    self.with_mode(Mode::Read, |this| n.right.visit_with(this));
+  }
 }
 
 // type ModuleDefineGraphEdge = (Mode, String);
@@ -197,8 +228,23 @@ struct ModuleDefineGraphEdge {
 }
 
 struct ModuleDefineGraph {
-  g: petgraph::graph::DiGraph<usize, ModuleDefineGraphEdge>,
-  id_index_map: HashMap<usize, NodeIndex>,
+  g: petgraph::graph::DiGraph<ModuleDefineId, ModuleDefineGraphEdge>,
+  id_index_map: HashMap<ModuleDefineId, NodeIndex>,
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+struct ModuleDefineId {
+  stmt_id: usize,
+  ident: String,
+}
+
+impl From<(usize, &String)> for ModuleDefineId {
+  fn from(id: (usize, &String)) -> Self {
+    Self {
+      stmt_id: id.0,
+      ident: id.1.clone(),
+    }
+  }
 }
 
 impl ModuleDefineGraph {
@@ -209,7 +255,7 @@ impl ModuleDefineGraph {
     }
   }
 
-  fn add_node(&mut self, id: usize) {
+  fn add_node(&mut self, id: ModuleDefineId) {
     if self.id_index_map.contains_key(&id) {
       return;
     }
@@ -218,7 +264,8 @@ impl ModuleDefineGraph {
     self.id_index_map.insert(id, index);
   }
 
-  fn add_edge(&mut self, from: usize, to: usize, mode: Mode) {
+  fn add_edge(&mut self, from: ModuleDefineId, to: ModuleDefineId, mode: Mode) {
+    println!("___add_edge from: {:?}, to: {:?} {:?}", from, to, mode);
     let from_index = self.id_index_map.get(&from).unwrap();
     let to_index = self.id_index_map.get(&to).unwrap();
 
@@ -227,26 +274,44 @@ impl ModuleDefineGraph {
       .add_edge(*from_index, *to_index, ModuleDefineGraphEdge { mode });
   }
 
-  fn remove_node(&mut self, id: usize) {
+  fn remove_node(&mut self, id: ModuleDefineId) {
     let index = self.id_index_map.remove(&id).unwrap();
     self.g.remove_node(index);
   }
 
-  fn has_node(&self, id: usize) -> bool {
-    self.id_index_map.contains_key(&id)
+  fn has_node(&self, id: &ModuleDefineId) -> bool {
+    self.id_index_map.contains_key(id)
   }
 
-  fn edges(&self, id: usize) -> Vec<(usize, Mode)> {
+  fn stmt_read_nodes(&self, id: usize) -> Vec<&ModuleDefineId> {
+    self
+      .id_index_map
+      .iter()
+      .filter(|item| item.0.stmt_id == id && self.g.edges_directed(*item.1, Outgoing).count() > 0)
+      .map(|item| item.0)
+      .collect()
+  }
+
+  fn edges(&self, id: &ModuleDefineId) -> Vec<(&ModuleDefineId, Mode)> {
     let index = self.id_index_map.get(&id).unwrap();
     self
       .g
-      .edges_directed(*index, Incoming)
+      .edges_directed(*index, Outgoing)
       .map(|edge| {
         let mode = edge.weight().mode;
 
-        let node = self.g[edge.source()];
+        let node = &self.g[edge.target()];
         (node, mode)
       })
+      .collect()
+  }
+
+  fn write_node_edge(&self) -> Vec<(usize, usize)> {
+    self
+      .g
+      .edge_references()
+      .filter(|item| item.weight().mode == Mode::Write)
+      .map(|item| (self.g[item.target()].stmt_id, self.g[item.source()].stmt_id))
       .collect()
   }
 }
@@ -280,9 +345,9 @@ impl TreeShakeModule {
 
     // 2. set default used exports
     let used_exports = if module.side_effects {
-      UsedExports::All(vec![])
+      UsedExports::All(Default::default())
     } else {
-      UsedExports::Partial(vec![])
+      UsedExports::Partial(Default::default())
     };
 
     Self {
@@ -334,7 +399,7 @@ impl TreeShakeModule {
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
 
-    if used_exports_idents.is_empty() {
+    if used_exports_idents.is_empty() && !self.is_self_executed_import {
       return HashMap::new();
     }
 
@@ -362,6 +427,7 @@ impl TreeShakeModule {
 
         res
       });
+    // println!("___defined_vars: {:#?}", defined_vars);
 
     {
       farmfe_core::farm_profile_scope!(format!(
@@ -369,24 +435,19 @@ impl TreeShakeModule {
         self.module_id.to_string()
       ));
 
-      // let mut mark_vars_ident_used_meta = HashSet::new();
-
-      // let mut used_self_execute_stmts = Vec::new();
-      // let mut mark_used_var = Vec::new();
-      // let mut write_var = HashMap::new();
       let mut module_define_graph = ModuleDefineGraph::new();
-      let mut entry = vec![];
-      // let mut declare_var = HashSet::new();
+      let mut entries = HashSet::new();
+      let mut used_self_execute_stmts = HashSet::new();
 
       println!("___stmt_graph: {:#?}", self.stmt_graph.stmts());
 
       for stmt in self.stmt_graph.stmts() {
-        if stmt_used_idents_map.contains_key(&stmt.id) {
-          continue;
-        }
+        // if stmt_used_idents_map.contains_key(&stmt.id) {
+        //   continue;
+        // }
 
-        let mut check_ident_is_global_dent = CollectStatementUsedMeta {
-          is_import_global_ident: false,
+        let mut analyze_statement_ident = AnalyzeStatementIdent {
+          is_reference_global_ident: false,
           unresolved_mark: Mark::from_u32(module.meta.as_script().unresolved_mark),
           reads: HashSet::new(),
           writes: HashSet::new(),
@@ -396,131 +457,164 @@ impl TreeShakeModule {
 
         let swc_module = &mut module.meta.as_script_mut().ast;
         try_with(Default::default(), globals, || {
-          swc_module.body[stmt.id].visit_with(&mut check_ident_is_global_dent);
+          swc_module.body[stmt.id].visit_with(&mut analyze_statement_ident);
         })
         .unwrap();
 
-        for read in &check_ident_is_global_dent.reads {
-          module_define_graph.add_node(stmt.id);
+        println!(
+          "___check_ident_is_global_dent: index:{} {:#?}",
+          stmt.id, analyze_statement_ident
+        );
 
-          defined_vars.get(read).map(|&id| {
-            if id == stmt.id {
-              return;
-            }
-            module_define_graph.add_node(id);
-            module_define_graph.add_edge(stmt.id, id, Mode::Read);
-          });
+        for read in &analyze_statement_ident.reads {
+          println!("___set read");
+
+          if let Some(define_stmt_id) = defined_vars.get(read) {
+            let reference_stmt = self.stmt_graph.stmt(&stmt.id);
+            let reference_defines = if reference_stmt.defined_idents.contains(read) {
+              vec![read]
+            } else {
+              reference_stmt
+                .defined_idents_map
+                .iter()
+                .filter_map(|(define, references)| {
+                  if references.contains(read) {
+                    Some(define)
+                  } else {
+                    None
+                  }
+                })
+                .collect::<Vec<_>>()
+            };
+
+            println!("read {} reference: {:#?}", read, reference_defines);
+
+            let define_id: ModuleDefineId = (define_stmt_id.clone(), read).into();
+            module_define_graph.add_node(define_id.clone());
+
+            reference_defines.iter().for_each(|reference_ident| {
+              let reference_id: ModuleDefineId = (stmt.id, *reference_ident).into();
+              if reference_id == define_id {
+                return;
+              }
+              module_define_graph.add_node(reference_id.clone());
+              module_define_graph.add_edge(reference_id.clone(), define_id.clone(), Mode::Read);
+            });
+          };
         }
 
-        for write in &check_ident_is_global_dent.writes {
-          module_define_graph.add_node(stmt.id);
-
+        for write in &analyze_statement_ident.writes {
+          println!("___set write");
+          let define_id: ModuleDefineId = (stmt.id, write).into();
+          module_define_graph.add_node(define_id.clone());
           defined_vars.get(write).map(|&id| {
-            if id == stmt.id {
+            let reference_id: ModuleDefineId = (id, write).into();
+            if define_id == reference_id {
               return;
             }
-            module_define_graph.add_node(id);
-            module_define_graph.add_edge(stmt.id, id, Mode::Write);
+
+            module_define_graph.add_node(reference_id.clone());
+            module_define_graph.add_edge(define_id.clone(), reference_id, Mode::Write);
           });
         }
 
-        if stmt.is_self_executed || check_ident_is_global_dent.is_import_global_ident {
-          entry.push(stmt.id);
+        println!(
+          "___analyze_statement_ident.is_reference_global_ident {}\n    stmt.is_self_executed {}\n    stmt_used_idents_map.contains_key(&stmt.id) {}",
+          analyze_statement_ident.is_reference_global_ident,
+          stmt.is_self_executed,
+          stmt_used_idents_map.contains_key(&stmt.id)
+        );
+
+        if analyze_statement_ident.is_reference_global_ident
+          || stmt.is_self_executed
+          || stmt_used_idents_map.contains_key(&stmt.id)
+        {
+          entries.insert(stmt.id);
         }
       }
 
-      println!("___entry: {:?}", entry,);
-      // let mut nodes = module_define_graph
-      //   .g
-      //   .node_indices()
-      //   .map(|index| module_define_graph.g[index])
-      //   .collect::<VecDeque<_>>();
+      println!("___entries: {:?}", entries,);
 
-      let nodes = entry.into_iter().collect::<HashSet<_>>();
+      // println!("{}", module_define_graph.g.edge_indices());
 
-      let mut used_self_execute_stmts = HashSet::new();
-
-      fn dfs(
-        entry: usize,
-        stack: &mut Vec<usize>,
-        result: &mut Vec<Vec<usize>>,
-        visited: &mut HashSet<usize>,
-        module_define_graph: &ModuleDefineGraph,
-        writes: &mut HashSet<(usize, usize)>,
+      fn dfs<'a>(
+        entry: &'a ModuleDefineId,
+        stack: &mut Vec<ModuleDefineId>,
+        result: &mut Vec<Vec<ModuleDefineId>>,
+        visited: &mut HashSet<&'a ModuleDefineId>,
+        module_define_graph: &'a ModuleDefineGraph,
+        stmt_graph: &StatementGraph,
       ) {
-        if visited.contains(&entry) {
-          return;
-        }
+        stack.push(entry.clone());
 
-        visited.insert(entry);
-        stack.push(entry);
-
-        if !module_define_graph.has_node(entry) {
-          return;
-        }
+        // println!("___stack: entry: {:?} {:#?}", entry, stack,);
 
         let edges = module_define_graph.edges(entry);
 
-        if stack.len() > 1 && edges.is_empty() {
-          result.push(stack.clone());
-          return;
-        }
+        // println!("___edges: {:#?}", edges);
 
-        for (node, mode) in edges {
-          match mode {
-            Mode::Read => {
-              dfs(node, stack, result, visited, module_define_graph, writes);
-            }
-            Mode::Write => {
-              writes.insert((entry, node));
+        if !module_define_graph.has_node(entry) || visited.contains(&entry) || edges.is_empty() {
+          result.push(stack.clone());
+        } else {
+          visited.insert(entry);
+          for (node, mode) in edges {
+            match mode {
+              Mode::Read => {
+                dfs(
+                  &node,
+                  stack,
+                  result,
+                  visited,
+                  module_define_graph,
+                  stmt_graph,
+                );
+              }
+              _ => {}
             }
           }
         }
+
         stack.pop();
       }
 
       let mut reference_chain = Vec::new();
-      let mut node_visited = HashSet::new();
-      let mut writes_edge = HashSet::new();
-      for stmt in self.stmt_graph.stmts() {
-        dfs(
-          stmt.id,
-          &mut vec![],
-          &mut reference_chain,
-          &mut node_visited,
-          &module_define_graph,
-          &mut writes_edge,
-        );
-      }
-
-      println!("___dfs_result: {:#?}", reference_chain);
-
-      for item in reference_chain {
-        let mut max_index = 0;
-        for stmt in &nodes {
-          if let Some(pos) = item.iter().position(|i| stmt == i) {
-            max_index = max_index.max(pos);
-          }
-        }
-        if max_index != 0 {
-          used_self_execute_stmts.extend(&item[..max_index + 1]);
+      // let mut node_visited = HashSet::new();
+      let write_stmt = module_define_graph.write_node_edge();
+      for stmt in &entries {
+        let idents = module_define_graph.stmt_read_nodes(stmt.clone());
+        for ident in idents {
+          dfs(
+            ident,
+            &mut vec![],
+            &mut reference_chain,
+            &mut HashSet::new(),
+            &module_define_graph,
+            &self.stmt_graph,
+          );
         }
       }
 
-      for (target, source) in writes_edge {
+      println!("___reference_chain: {:#?}", reference_chain);
+
+      used_self_execute_stmts.extend(&entries);
+      for chain in reference_chain {
+        used_self_execute_stmts.extend(&chain.iter().map(|item| item.stmt_id).collect::<Vec<_>>());
+      }
+
+      for (target, source) in write_stmt {
         if used_self_execute_stmts.contains(&target) {
           used_self_execute_stmts.insert(source);
         }
       }
 
-      println!(
-        "___module_define_graph: {:?}",
-        module_define_graph
-          .g
-          .node_indices()
-          .map(|item| { module_define_graph.g[item] })
-          .collect::<Vec<_>>()
-      );
+      // println!(
+      //   "___module_define_graph: {:?}",
+      //   module_define_graph
+      //     .g
+      //     .node_indices()
+      //     .map(|item| { &module_define_graph.g[item] })
+      //     .collect::<Vec<_>>()
+      // );
 
       println!("___used_self_execute_stmts: {:?}", used_self_execute_stmts);
 
@@ -589,6 +683,7 @@ impl TreeShakeModule {
       UsedExports::Partial(idents) => {
         let mut used_idents = vec![];
 
+        let idents = idents.values().flatten().collect::<Vec<_>>();
         // if idents.contains(&UsedIdent::ExportAll.to_string()) {
         //   // all exported identifiers are used
         //   for export_info in self.exports() {
@@ -598,11 +693,11 @@ impl TreeShakeModule {
         //   return used_idents;
         // };
 
-        for ident in idents {
+        for ident in &idents {
           // find the export info that contains the ident
           let export_info = self.exports().into_iter().find(|export_info| {
             export_info.specifiers.iter().any(|sp| match sp {
-              ExportSpecifierInfo::Default => ident == "default",
+              ExportSpecifierInfo::Default => *ident == "default",
               ExportSpecifierInfo::Named { local, exported } => {
                 let exported_ident = if let Some(exported) = exported {
                   exported
@@ -624,7 +719,7 @@ impl TreeShakeModule {
             for sp in export_info.specifiers {
               match sp {
                 ExportSpecifierInfo::Default => {
-                  if ident == "default" {
+                  if *ident == "default" {
                     used_idents.push((UsedIdent::Default, export_info.stmt_id));
                   }
                 }
@@ -648,7 +743,7 @@ impl TreeShakeModule {
               }
             }
           } else {
-            let contain_all = idents.contains(&UsedIdent::ExportAll.to_string());
+            let contain_all = idents.contains(&&UsedIdent::ExportAll.to_string());
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
             for export_info in self.exports() {
               if export_info

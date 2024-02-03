@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
-use farmfe_core::swc_ecma_ast::{self, ModuleExportName, ModuleItem};
+use farmfe_core::{
+  swc_common::AstNode,
+  swc_ecma_ast::{self, Expr, ExprStmt, ModuleExportName, ModuleItem},
+};
 use farmfe_toolkit::swc_ecma_visit::VisitWith;
 
 use super::{
@@ -378,7 +381,13 @@ pub fn analyze_imports_and_exports(
         ),
       },
       swc_ecma_ast::Stmt::Expr(expr) => {
-        is_self_executed = true;
+        match expr.expr.as_ref() {
+          Expr::Assign(_) => {}
+
+          _ => {
+            is_self_executed = true;
+          }
+        }
         analyze_and_insert_used_idents(expr, None)
       }
     },

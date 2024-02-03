@@ -76,7 +76,7 @@ fn toposort(
               statement_graph::ImportSpecifierInfo::Namespace(_) => {
                 shake_module
                   .used_exports
-                  .add_used_export(&module::UsedIdent::ExportAll);
+                  .add_used_export(import_circle_module_id, &module::UsedIdent::ExportAll);
               }
 
               statement_graph::ImportSpecifierInfo::Named { local, imported } => {
@@ -84,22 +84,24 @@ fn toposort(
                   if ident.as_str() == "default" {
                     shake_module
                       .used_exports
-                      .add_used_export(&module::UsedIdent::Default);
+                      .add_used_export(import_circle_module_id, &module::UsedIdent::Default);
                   } else {
-                    shake_module
-                      .used_exports
-                      .add_used_export(&module::UsedIdent::SwcIdent(strip_context(&ident)));
+                    shake_module.used_exports.add_used_export(
+                      import_circle_module_id,
+                      &module::UsedIdent::SwcIdent(strip_context(&ident)),
+                    );
                   }
                 } else {
-                  shake_module
-                    .used_exports
-                    .add_used_export(&module::UsedIdent::SwcIdent(strip_context(&local)));
+                  shake_module.used_exports.add_used_export(
+                    import_circle_module_id,
+                    &module::UsedIdent::SwcIdent(strip_context(&local)),
+                  );
                 }
               }
               statement_graph::ImportSpecifierInfo::Default(_) => {
                 shake_module
                   .used_exports
-                  .add_used_export(&module::UsedIdent::Default);
+                  .add_used_export(import_circle_module_id, &module::UsedIdent::Default);
               }
             }
           }
@@ -173,7 +175,7 @@ fn toposort(
 #[derive(Debug)]
 enum ShakeType {
   TopoShaking,
-  CircleRemove(Option<ImportInfo>),
+  CircleRemove(Option<(ModuleId, ImportInfo)>),
 }
 
 impl Plugin for FarmPluginTreeShake {
@@ -331,6 +333,7 @@ impl Plugin for FarmPluginTreeShake {
         tree_shake_module_id, shake_type
       );
 
+
       let tree_shake_module = tree_shake_modules_map
         .get_mut(&tree_shake_module_id)
         .unwrap();
@@ -340,6 +343,7 @@ impl Plugin for FarmPluginTreeShake {
         tree_shake_module.module_system,
         farmfe_core::module::ModuleSystem::EsModule
       ) {
+        println!("___module_system: {:?}", tree_shake_module.module_system);
         for (dep_id, _) in module_graph.dependencies(&tree_shake_module_id) {
           let dep_tree_shake_module = tree_shake_modules_map.get_mut(&dep_id);
 
@@ -394,7 +398,7 @@ impl Plugin for FarmPluginTreeShake {
 
           let mut removed_exports = vec![];
 
-          if let ShakeType::CircleRemove(Some(delay)) = &shake_type {
+          if let ShakeType::CircleRemove(Some((from, delay))) = &shake_type {
             println!("___circle remove process");
             let tree_shake_module = tree_shake_modules_map
               .get_mut(&tree_shake_module_id)
@@ -407,7 +411,7 @@ impl Plugin for FarmPluginTreeShake {
                   // TODO: 待确认删除项
                   tree_shake_module
                     .used_exports
-                    .remove_used_export(&module::UsedIdent::ExportAll);
+                    .remove_used_export(from, &module::UsedIdent::ExportAll);
                 }
 
                 _ => {}
@@ -464,15 +468,22 @@ impl Plugin for FarmPluginTreeShake {
 
           if matches!(shake_type, ShakeType::CircleRemove(Some(_))) {
             // let tree_shake_module = tree_shake_modules_map.get(&tree_shake_module_id).unwrap();
-            // //in cyclic module, `import * as Foo from "foo" is dead code, when it removed, "foo" file imports in module, import need reanalyze`
-            // for export_info in tree_shake_module.exports() {
-            //   if let Some(source) = export_info.source {
-            //     let import_module_id =
-            //       module_graph.get_dep_by_source(&tree_shake_module_id, &source);
-            //     reanalyze_module(&import_module_id, module_graph, &mut tree_shake_modules_map);
-            //     tree_shake_modules_ids.push_back((import_module_id, ShakeType::CircleRemove(None)));
-            //   }
-            // }
+            //in cyclic module, `import * as Foo from "foo" is dead code, when it removed, "foo" file imports in module, import need reanalyze`
+            for export_info in &used_exports_from {
+              if let Some(source) = export_info.source.clone() {
+                replace_used_export_by_export_info(
+                  &mut tree_shake_modules_map,
+                  &*module_graph,
+                  &tree_shake_module_id,
+                  &export_info,
+                );
+
+                let import_module_id =
+                  module_graph.get_dep_by_source(&tree_shake_module_id, &source);
+                reanalyze_module(&import_module_id, module_graph, &mut tree_shake_modules_map);
+                tree_shake_modules_ids.push_back((import_module_id, ShakeType::CircleRemove(None)));
+              }
+            }
           }
 
           // in circle remove process, because the module is remove export, it already proceed
@@ -591,7 +602,7 @@ fn add_used_exports_by_import_info(
   if import_info.is_import_executed {
     // TODO: is_self_executed_import 前置
     imported_tree_shake_module.is_self_executed_import = true;
-    imported_tree_shake_module.side_effects = true;
+    // imported_tree_shake_module.side_effects = true;
     return;
   }
 
@@ -609,29 +620,31 @@ fn add_used_exports_by_import_info(
       statement_graph::ImportSpecifierInfo::Namespace(_) => {
         imported_tree_shake_module
           .used_exports
-          .add_used_export(&module::UsedIdent::ExportAll);
+          .add_used_export(tree_shake_module_id, &module::UsedIdent::ExportAll);
       }
       statement_graph::ImportSpecifierInfo::Named { local, imported } => {
         if let Some(ident) = imported {
           if *ident == "default" {
             imported_tree_shake_module
               .used_exports
-              .add_used_export(&module::UsedIdent::Default);
+              .add_used_export(tree_shake_module_id, &module::UsedIdent::Default);
           } else {
-            imported_tree_shake_module
-              .used_exports
-              .add_used_export(&module::UsedIdent::SwcIdent(strip_context(ident)));
+            imported_tree_shake_module.used_exports.add_used_export(
+              tree_shake_module_id,
+              &module::UsedIdent::SwcIdent(strip_context(ident)),
+            );
           }
         } else {
-          imported_tree_shake_module
-            .used_exports
-            .add_used_export(&module::UsedIdent::SwcIdent(strip_context(local)));
+          imported_tree_shake_module.used_exports.add_used_export(
+            tree_shake_module_id,
+            &module::UsedIdent::SwcIdent(strip_context(local)),
+          );
         }
       }
       statement_graph::ImportSpecifierInfo::Default(_) => {
         imported_tree_shake_module
           .used_exports
-          .add_used_export(&module::UsedIdent::Default);
+          .add_used_export(tree_shake_module_id, &module::UsedIdent::Default);
       }
     }
   }
@@ -643,7 +656,7 @@ fn remove_used_exports_by_import_info(
   tree_shake_module_id: &ModuleId,
   import_info: &ImportInfo,
   cyclic_nodes: &Vec<ModuleId>,
-) -> Option<(ModuleId, Option<ImportInfo>)> {
+) -> Option<(ModuleId, Option<(ModuleId, ImportInfo)>)> {
   let imported_module_id =
     module_graph.get_dep_by_source(tree_shake_module_id, &import_info.source);
   let mut delay_process_specifies = vec![];
@@ -686,26 +699,28 @@ fn remove_used_exports_by_import_info(
           if *ident == "default" {
             imported_tree_shake_module
               .used_exports
-              .remove_used_export(&module::UsedIdent::Default);
+              .remove_used_export(tree_shake_module_id, &module::UsedIdent::Default);
 
             updated = true;
           } else {
-            imported_tree_shake_module
-              .used_exports
-              .remove_used_export(&module::UsedIdent::SwcIdent(strip_context(ident)));
+            imported_tree_shake_module.used_exports.remove_used_export(
+              tree_shake_module_id,
+              &module::UsedIdent::SwcIdent(strip_context(ident)),
+            );
             updated = true;
           }
         } else {
-          imported_tree_shake_module
-            .used_exports
-            .remove_used_export(&module::UsedIdent::SwcIdent(strip_context(local)));
+          imported_tree_shake_module.used_exports.remove_used_export(
+            tree_shake_module_id,
+            &module::UsedIdent::SwcIdent(strip_context(local)),
+          );
           updated = true;
         }
       }
       statement_graph::ImportSpecifierInfo::Default(_) => {
         imported_tree_shake_module
           .used_exports
-          .remove_used_export(&module::UsedIdent::Default);
+          .remove_used_export(tree_shake_module_id, &module::UsedIdent::Default);
         updated = true;
       }
     }
@@ -717,12 +732,15 @@ fn remove_used_exports_by_import_info(
       if delay_process_specifies.is_empty() {
         None
       } else {
-        Some(ImportInfo {
-          specifiers: delay_process_specifies,
-          source: import_info.source.clone(),
-          stmt_id: import_info.stmt_id.clone(),
-          is_import_executed: import_info.is_import_executed,
-        })
+        Some((
+          tree_shake_module_id.clone(),
+          ImportInfo {
+            specifiers: delay_process_specifies,
+            source: import_info.source.clone(),
+            stmt_id: import_info.stmt_id.clone(),
+            is_import_executed: import_info.is_import_executed,
+          },
+        ))
       },
     ));
   }
@@ -764,18 +782,19 @@ fn removed_used_exports_by_export_info(
           if local == &"default".to_string() {
             exported_tree_shake_module
               .used_exports
-              .remove_used_export(&module::UsedIdent::Default);
+              .remove_used_export(tree_shake_module_id, &module::UsedIdent::Default);
           } else {
-            exported_tree_shake_module
-              .used_exports
-              .remove_used_export(&module::UsedIdent::SwcIdent(strip_context(local)));
+            exported_tree_shake_module.used_exports.remove_used_export(
+              tree_shake_module_id,
+              &module::UsedIdent::SwcIdent(strip_context(local)),
+            );
           }
           updated = true;
         }
         statement_graph::ExportSpecifierInfo::Default => {
           exported_tree_shake_module
             .used_exports
-            .remove_used_export(&module::UsedIdent::Default);
+            .remove_used_export(tree_shake_module_id, &module::UsedIdent::Default);
           updated = true;
         }
 
@@ -785,19 +804,19 @@ fn removed_used_exports_by_export_info(
               if ident == "*" {
                 exported_tree_shake_module
                   .used_exports
-                  .remove_used_export(&module::UsedIdent::ExportAll);
+                  .remove_used_export(tree_shake_module_id, &module::UsedIdent::ExportAll);
                 updated = true;
               } else {
                 exported_tree_shake_module
                   .used_exports
-                  .remove_used_export(&strip_context(ident));
+                  .remove_used_export(tree_shake_module_id, &strip_context(ident));
                 updated = true;
               }
             }
           } else {
             exported_tree_shake_module
               .used_exports
-              .remove_used_export(&module::UsedIdent::ExportAll);
+              .remove_used_export(tree_shake_module_id, &module::UsedIdent::ExportAll);
             updated = true;
           }
         }
@@ -835,23 +854,24 @@ fn add_used_exports_by_export_info(
           // exported_tree_shake_module.used_exports.change_all();
           exported_tree_shake_module
             .used_exports
-            .add_used_export(&module::UsedIdent::ExportAll);
+            .add_used_export(tree_shake_module_id, &module::UsedIdent::ExportAll);
         }
         statement_graph::ExportSpecifierInfo::Named { local, .. } => {
           if local == &"default".to_string() {
             exported_tree_shake_module
               .used_exports
-              .add_used_export(&module::UsedIdent::Default);
+              .add_used_export(tree_shake_module_id, &module::UsedIdent::Default);
           } else {
-            exported_tree_shake_module
-              .used_exports
-              .add_used_export(&module::UsedIdent::SwcIdent(strip_context(local)));
+            exported_tree_shake_module.used_exports.add_used_export(
+              tree_shake_module_id,
+              &module::UsedIdent::SwcIdent(strip_context(local)),
+            );
           }
         }
         statement_graph::ExportSpecifierInfo::Default => {
           exported_tree_shake_module
             .used_exports
-            .add_used_export(&module::UsedIdent::Default);
+            .add_used_export(tree_shake_module_id, &module::UsedIdent::Default);
         }
         // TODO: 关于 export 时添加的 used_export
         statement_graph::ExportSpecifierInfo::All(used_idents) => {
@@ -860,21 +880,53 @@ fn add_used_exports_by_export_info(
               if ident == "*" {
                 exported_tree_shake_module
                   .used_exports
-                  .add_used_export(&module::UsedIdent::ExportAll);
+                  .add_used_export(tree_shake_module_id, &module::UsedIdent::ExportAll);
               } else {
                 exported_tree_shake_module
                   .used_exports
-                  .add_used_export(&strip_context(ident));
+                  .add_used_export(tree_shake_module_id, &strip_context(ident));
               }
             }
           } else {
             exported_tree_shake_module
               .used_exports
-              .add_used_export(&module::UsedIdent::ExportAll);
+              .add_used_export(tree_shake_module_id, &module::UsedIdent::ExportAll);
           }
         }
       }
     }
+  }
+}
+
+fn replace_used_export_by_export_info(
+  tree_shake_modules_map: &mut std::collections::HashMap<ModuleId, TreeShakeModule>,
+  module_graph: &ModuleGraph,
+  tree_shake_module_id: &ModuleId,
+  export_info: &ExportInfo,
+) {
+  if let Some(source) = &export_info.source {
+    let exported_module_id = module_graph.get_dep_by_source(tree_shake_module_id, source);
+    let exported_module = module_graph.module(&exported_module_id).unwrap();
+
+    if exported_module.external {
+      return;
+    }
+
+    let exported_tree_shake_module = tree_shake_modules_map.get_mut(&exported_module_id).unwrap();
+    println!(
+      "___replace_used_export_idents: {:#?}",
+      exported_tree_shake_module.used_exports
+    );
+    exported_tree_shake_module
+      .used_exports
+      .remove_all_used_export(tree_shake_module_id);
+
+    add_used_exports_by_export_info(
+      tree_shake_modules_map,
+      module_graph,
+      tree_shake_module_id,
+      export_info,
+    )
   }
 }
 

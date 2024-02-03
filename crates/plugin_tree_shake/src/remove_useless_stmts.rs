@@ -199,12 +199,17 @@ pub fn remove_useless_stmts(
             stmt_id: 0,
           }),
           ModuleDecl::Import(import_info) => {
-            removed_import_info.push(ImportInfo {
+            let info = ImportInfo {
               source: import_info.src.value.to_string(),
               specifiers: import_info.specifiers.iter().map(|s| s.into()).collect(),
               stmt_id: 0,
-              is_import_executed: false,
-            });
+              is_import_executed: import_info.specifiers.is_empty(),
+            };
+            if info.is_import_executed {
+              used_import_infos.push(info);
+            } else {
+              removed_import_info.push(info);
+            }
           }
           _ => {}
         },
