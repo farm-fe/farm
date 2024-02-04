@@ -10,6 +10,7 @@ import { colors } from '@farmfe/utils/colors';
 interface IResultType {
   pluginName?: string;
   type?: 'js' | 'rust';
+  targetDir?: string;
 }
 // judge node version
 judgeNodeVersion();
@@ -19,8 +20,8 @@ welcome();
 
 // argv
 const argv = minimist<{
-  t?: string;
-  type?: string;
+  t?: 'js' | 'rust';
+  type?: 'js' | 'rust';
 }>(process.argv.slice(2), { string: ['_'] });
 
 const cwd = process.cwd();
@@ -40,11 +41,11 @@ async function createFarm() {
           name: 'type',
           message: 'Select Plugin Type:',
           choices: [
-            { title: colors.cyan('JS Plugin'), value: 'js-plugin' },
-            { title: colors.green('Rust Plugin'), value: 'rust-plugin' }
+            { title: colors.cyan('JS Plugin'), value: 'js' },
+            { title: colors.green('Rust Plugin'), value: 'rust' }
           ],
           onState: (state) => {
-            if (state.value === 'js-plugin') {
+            if (state.value === 'js') {
               pluginName = 'farm-js-plugin-xxx';
             }
           }
@@ -94,9 +95,10 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { type } = result;
+  const { type = argTemplate, pluginName: finalPluginName = argPluginName } =
+    result;
 
-  await copyTemplate(targetDir, { type, pluginName: targetDir });
+  await copyTemplate(targetDir, { type, pluginName: finalPluginName });
 }
 
 function formatTargetDir(targetDir: string | undefined) {
@@ -114,28 +116,10 @@ async function copyTemplate(targetDir: string, options: IResultType) {
     fileURLToPath(import.meta.url),
     `../../templates/${options.type}`
   );
-  copy(templatePath, dest);
-
-  writePackageJson(dest, options);
+  copy(templatePath, dest, options);
 
   console.log(colors.green('\n🎉 Plugin created successfully!\n'));
   console.log(colors.cyan(`cd ${targetDir} && pnpm install && pnpm dev\n`));
-}
-
-function writePackageJson(dest: string, options: IResultType) {
-  const pkg = JSON.parse(
-    fs.readFileSync(path.join(dest, `package.json`), 'utf-8')
-  );
-
-  pkg.name = options.pluginName;
-
-  const packageJsonPath = path.join(dest, 'package.json');
-  const { name, ...rest } = pkg;
-  const sortedPackageJson = { name, ...rest };
-  fs.writeFileSync(
-    packageJsonPath,
-    JSON.stringify(sortedPackageJson, null, 2) + '\n'
-  );
 }
 
 function judgeNodeVersion() {
@@ -155,25 +139,70 @@ function judgeNodeVersion() {
   }
 }
 
-function copy(src: string, dest: string) {
+function replaceNamePlaceholders(
+  content: string,
+  options: IResultType
+): string {
+  const PLACEHOLDERS = [
+    {
+      name: '<FARM-RUST-PLUGIN-NPM-NAME>',
+      replace: () => options.pluginName
+    },
+    {
+      name: '<FARM-RUST-PLUGIN-CARGO-NAME>',
+      replace: () => {
+        // replace @ to empty string and all invalid characters to _
+        return options.pluginName
+          .replace(/@/g, '')
+          .replace(/[^a-zA-Z0-9_]/g, '_');
+      }
+    },
+    {
+      name: '<FARM-RUST-PLUGIN-STRUCT-NAME>',
+      replace: () => {
+        return (
+          options.pluginName
+            .replace(/@/g, '')
+            .replace(/[^a-zA-Z0-9_]/g, '_')
+            // to camelCase
+            .replace(/_([a-z])/g, (g) => g[1].toUpperCase())
+            // replace first character to upper case
+            .replace(/^[a-z]/, (g) => g.toUpperCase())
+        );
+      }
+    }
+  ];
+
+  for (const placeholder of PLACEHOLDERS) {
+    if (content.includes(placeholder.name)) {
+      content = content.replaceAll(placeholder.name, placeholder.replace());
+    }
+  }
+
+  return content;
+}
+
+function copy(src: string, dest: string, options: IResultType) {
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
-    copyDir(src, dest);
+    copyDir(src, dest, options);
   } else {
     fs.copyFileSync(src, dest);
+    const destContent = fs.readFileSync(dest, 'utf-8');
+    fs.writeFileSync(dest, replaceNamePlaceholders(destContent, options));
   }
 }
 
-function copyDir(srcDir: string, destDir: string) {
+function copyDir(srcDir: string, destDir: string, options: IResultType) {
   fs.mkdirSync(destDir, { recursive: true });
   for (const file of fs.readdirSync(srcDir)) {
     const srcFile = path.resolve(srcDir, file);
     const destFile = path.resolve(destDir, file);
     if (file === 'gitignore') {
-      copy(srcFile, destFile);
+      copy(srcFile, destFile, options);
       fs.renameSync(destFile, path.resolve(destDir, '.gitignore'));
     } else {
-      copy(srcFile, destFile);
+      copy(srcFile, destFile, options);
     }
   }
 }

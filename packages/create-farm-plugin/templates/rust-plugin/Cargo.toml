@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "<FARM-RUST-PLUGIN-NPM-NAME>"
+name = "<FARM-RUST-PLUGIN-CARGO-NAME>"
 version = "0.0.0"
 
 [lib]

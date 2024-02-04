@@ -1,11 +1,11 @@
 {
-  "name": "<FARM-RUST-PLUGIN-NPM-NAME>-darwin-arm64",
-  "version": "0.1.2",
+  "name": "<FARM-RUST-PLUGIN-NPM-NAME>-linux-x64-musl",
+  "version": "0.0.0",
   "os": [
-    "darwin"
+    "linux"
   ],
   "cpu": [
-    "arm64"
+    "x64"
   ],
   "main": "index.farm",
   "files": [
