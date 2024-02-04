@@ -8,7 +8,9 @@ export default defineConfig({
     input: {
       index: './index.html'
     },
-    sourcemap: true,
+    presetEnv: false,
+    sourcemap: false,
+    minify: false,
     resolve: {
       symlinks: true,
       alias: {

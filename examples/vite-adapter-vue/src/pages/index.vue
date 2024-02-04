@@ -11,7 +11,6 @@ import Formatter from '../components/Formatter.vue';
       <img src="../assets/logo.png" class="logo" alt="Farm logo" />
     </a>
     <a href="https://vuejs.org/" target="_blank">
-      <!-- <img src="../assets/vue.svg" class="logo vue" alt="Vue logo" /> -->
       <my-svg-icon name="icon-vue" class="logo" style="height: 6.25rem; width: 6.25rem;" />
     </a>
   </div>

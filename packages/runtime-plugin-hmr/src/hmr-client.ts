@@ -55,7 +55,6 @@ export class HmrClient {
       if (wasClean) return;
 
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
-      // TODO ping this chose until it reconnects
       logger.debug('disconnected from the server, please reload the page.');
       await waitForSuccessfulPing(protocol, `${host}:${port}${path}`);
       location.reload();

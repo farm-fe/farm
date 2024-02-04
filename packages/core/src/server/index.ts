@@ -55,6 +55,7 @@ type ErrorMap = {
 };
 
 interface ImplDevServer {
+  createServer(options: UserServerConfig): void;
   createDevServer(options: UserServerConfig): void;
   createPreviewServer(options: UserServerConfig): void;
   listen(): Promise<void>;
@@ -87,7 +88,7 @@ export class DevServer implements ImplDevServer {
     this.compiler = compiler;
     this.logger = logger;
 
-    this.initializeApplication();
+    this.initializeKoaServer();
 
     if (!compiler) return;
 
@@ -195,11 +196,11 @@ export class DevServer implements ImplDevServer {
     return this.restart_promise;
   }
 
-  public initializeApplication() {
+  private initializeKoaServer() {
     this._app = new Koa();
   }
 
-  private async initializeServer(options: NormalizedServerConfig) {
+  public async createServer(options: NormalizedServerConfig) {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
 
@@ -243,7 +244,7 @@ export class DevServer implements ImplDevServer {
   }
 
   public async createPreviewServer(options: UserPreviewServerConfig) {
-    await this.initializeServer(options as NormalizedServerConfig);
+    await this.createServer(options as NormalizedServerConfig);
 
     this.applyPreviewServerMiddlewares(this.config.middlewares);
 
@@ -257,7 +258,7 @@ export class DevServer implements ImplDevServer {
       throw new Error('DevServer requires a compiler for development mode.');
     }
 
-    await this.initializeServer(options);
+    await this.createServer(options);
 
     this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
 
@@ -338,6 +339,10 @@ export class DevServer implements ImplDevServer {
         }
       }
     });
+  }
+
+  setCompiler(compiler: Compiler) {
+    this.compiler = compiler;
   }
 
   private applyPreviewServerMiddlewares(
