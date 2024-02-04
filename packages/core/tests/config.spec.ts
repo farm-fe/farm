@@ -33,7 +33,8 @@ test('resolveUserConfig', async () => {
   });
   expect(config.compilation.output).toEqual({
     path: './dist',
-    publicPath: '/'
+    publicPath: '/',
+    targetEnv: 'browser'
   });
   expect(config.compilation.lazyCompilation).toEqual(true);
   expect(config.compilation.sourcemap).toEqual(true);
