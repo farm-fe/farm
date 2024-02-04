@@ -52,10 +52,14 @@ export class FileWatcher implements ImplFileWatcher {
           this.serverOrCompiler instanceof Compiler &&
           this.serverOrCompiler.hasModule(path)
         ) {
-          compilerHandler(async () => {
-            await compiler.update([path], true);
-            compiler.writeResourcesToDisk();
-          }, this.options);
+          compilerHandler(
+            async () => {
+              await compiler.update([path], true);
+              compiler.writeResourcesToDisk();
+            },
+            this.options,
+            { clear: true }
+          );
         }
       } catch (error) {
         this._logger.error(error);

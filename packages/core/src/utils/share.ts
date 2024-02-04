@@ -1,11 +1,26 @@
 /* eslint-disable no-prototype-builtins */
 import os from 'node:os';
-import fse from 'fs-extra';
 import fs from 'node:fs';
+import readline from 'node:readline';
 import path, { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import fse from 'fs-extra';
+import { Config } from '../../binding/index.js';
 
 const splitRE = /\r?\n/;
+
+export const FARM_TARGET_NODE_ENVS = [
+  'node',
+  'node16',
+  'node-legacy',
+  'node-next'
+];
+export const FARM_TARGET_BROWSER_ENVS = [
+  'node',
+  'node16',
+  'node-legacy',
+  'node-next'
+];
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
@@ -37,11 +52,11 @@ export function pad(source: string, n = 2): string {
 
 export function clearScreen() {
   try {
-    if (isWindows) {
-      process.stdout.write('\x1B[2J\x1B[0f');
-    } else {
-      process.stdout.write('\x1Bc');
-    }
+    const repeatCount = process.stdout.rows - 2;
+    const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+    console.log(blank);
+    readline.cursorTo(process.stdout, 0, 0);
+    readline.clearScreenDown(process.stdout);
   } catch (error) {
     console.error('Failed to clear screen:', error);
   }
@@ -126,3 +141,11 @@ export function preventExperimentalWarning() {
 export const version = fse.readJSONSync(
   join(fileURLToPath(import.meta.url), '../../../package.json')
 ).version;
+
+export function mapTargetEnvValue(config: Config['config']) {
+  if (FARM_TARGET_NODE_ENVS.includes(config.output.targetEnv)) {
+    config.output.targetEnv = 'node';
+  } else if (FARM_TARGET_BROWSER_ENVS.includes(config.output.targetEnv)) {
+    config.output.targetEnv = 'browser';
+  }
+}

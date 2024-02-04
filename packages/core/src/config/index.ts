@@ -56,6 +56,28 @@ export const DEFAULT_CONFIG_NAMES = [
 
 const FARM_DEFAULT_NAMESPACE = 'FARM_DEFAULT_NAMESPACE';
 
+export interface ConfigEnv {
+  command: 'build' | 'serve';
+  mode: string;
+}
+
+export type UserConfigFnObject = (env: ConfigEnv) => UserConfig;
+export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
+export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
+
+export type UserConfigExport =
+  | UserConfig
+  | Promise<UserConfig>
+  | UserConfigFnObject
+  | UserConfigFnPromise
+  | UserConfigFn;
+
+// export function defineFarmConfig(config: UserConfig): UserConfig
+// export function defineFarmConfig(config: Promise<UserConfig>): Promise<UserConfig>
+// export function defineFarmConfig(config: UserConfigFnObject): UserConfigFnObject {
+//   return config;
+// }
+
 export function defineFarmConfig(
   config: UserConfig | Promise<UserConfig>
 ): UserConfig | Promise<UserConfig> {
@@ -374,6 +396,12 @@ export async function normalizeUserCompilationConfig(
       config.minify = true;
     } else {
       config.minify = false;
+    }
+  }
+
+  if (config.progress === undefined) {
+    if (config.output.targetEnv === 'node') {
+      config.progress = false;
     }
   }
 

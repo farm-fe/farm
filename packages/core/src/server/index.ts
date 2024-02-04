@@ -341,6 +341,10 @@ export class DevServer implements ImplDevServer {
     });
   }
 
+  setCompiler(compiler: Compiler) {
+    this.compiler = compiler;
+  }
+
   private applyPreviewServerMiddlewares(
     middlewares?: DevServerMiddleware[]
   ): void {

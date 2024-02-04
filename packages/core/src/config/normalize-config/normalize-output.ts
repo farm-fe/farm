@@ -1,11 +1,16 @@
 import { browsersWithSupportForFeatures } from 'browserslist-generator';
 
 import { Config } from '../../../binding/index.js';
+import { mapTargetEnvValue } from '../../utils/share.js';
 
 export async function normalizeOutput(
   config: Config['config'],
   isProduction: boolean
 ) {
+  if (!config.output.targetEnv) {
+    config.output.targetEnv = 'browser';
+  }
+
   if (isProduction) {
     if (!config.output) {
       config.output = {};
@@ -24,20 +29,7 @@ export async function normalizeOutput(
   }
 
   // the rust compiler only receives 'node' or 'browser'.
-  if (
-    ['node16', 'node-legacy', 'node-next'].includes(config.output.targetEnv)
-  ) {
-    config.output.targetEnv = 'node';
-  } else if (
-    [
-      'browser-legacy',
-      'browser-es2015',
-      'browser-es2017',
-      'browser-esnext'
-    ].includes(config.output.targetEnv)
-  ) {
-    config.output.targetEnv = 'browser';
-  }
+  mapTargetEnvValue(config);
 }
 
 type TargetEnvKeys = Config['config']['output']['targetEnv'];
@@ -90,10 +82,6 @@ const targetsMap: TargetsMap = {
  * @param isProduction
  */
 function normalizeTargetEnv(config: Config['config']) {
-  if (!config.output.targetEnv) {
-    config.output.targetEnv = 'browser';
-  }
-
   const aliasMap: Record<string, keyof TargetsMap> = {
     node: 'node16',
     browser: 'browser-es2017'

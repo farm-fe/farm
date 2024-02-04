@@ -28,7 +28,7 @@ export default defineConfig({
     partialBundling: {
       targetMinSize: 1024 * 2
     },
-    persistentCache: false
+    // persistentCache: false
   },
   server: {
     cors: true,

@@ -1,11 +1,17 @@
 use console::style;
-use farmfe_core::{config::Config, context::CompilationContext, error::Result, plugin::Plugin};
+use farmfe_core::{
+  config::{Config, Mode},
+  context::CompilationContext,
+  error::Result,
+  plugin::Plugin,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::sync::{Arc, RwLock};
 
 pub struct FarmPluginProgress {
   module_count: Arc<RwLock<u32>>,
   progress_bar: ProgressBar,
+  newline_char: &'static str,
 }
 
 impl FarmPluginProgress {
@@ -15,6 +21,11 @@ impl FarmPluginProgress {
         .unwrap()
         .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ");
 
+    let newline_char = match _config.mode {
+      Mode::Production => "",
+      _ => "\n",
+    };
+
     let progress_bar = ProgressBar::new(1);
     progress_bar.set_style(spinner_style.clone());
     progress_bar.set_prefix("[ building ]");
@@ -22,6 +33,7 @@ impl FarmPluginProgress {
     Self {
       module_count: Arc::new(RwLock::new(0)),
       progress_bar,
+      newline_char,
     }
   }
 
@@ -84,10 +96,12 @@ impl Plugin for FarmPluginProgress {
 
   fn generate_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     self.progress_bar.finish_and_clear();
+
     println!(
-      "{} compiled {} modules successfully",
-      style("✔").green(),
-      self.get_module_count()
+      "{}{} compiled {} modules successfully",
+      self.newline_char,
+      style("✓").green().bold(),
+      style(self.get_module_count()).green().bold()
     );
     Ok(None)
   }

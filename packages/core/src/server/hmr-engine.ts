@@ -18,7 +18,7 @@ export class HmrEngine {
   private _devServer: DevServer;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
   // flag to indicate if last attempt was error
-  private _lastAttemptWasError: boolean;
+  // private _lastAttemptWasError: boolean;
 
   private _lastModifiedTimestamp: Map<string, string>;
 
@@ -29,7 +29,7 @@ export class HmrEngine {
   ) {
     this._compiler = compiler;
     this._devServer = devServer;
-    this._lastAttemptWasError = false;
+    // this._lastAttemptWasError = false;
     this._lastModifiedTimestamp = new Map();
   }
 
@@ -70,14 +70,18 @@ export class HmrEngine {
     }
 
     try {
-      if (this._lastAttemptWasError) {
-        clearScreen();
-        this._lastAttemptWasError = false; // clear reset flag
-      }
+      // before
+      // only clear screen if last attempt was error
+      // if (this._lastAttemptWasError) {
+      //   clearScreen();
+      //   this._lastAttemptWasError = false; // clear reset flag
+      // }
+      // after allow hmr with clearScreen not care error attempt
+      clearScreen();
       const start = Date.now();
       const result = await this._compiler.update(queue);
       this._logger.info(
-        `${cyan(updatedFilesStr)} updated in ${bold(
+        `${bold(cyan(updatedFilesStr))} updated in ${bold(
           green(`${Date.now() - start}ms`)
         )}`
       );
@@ -136,7 +140,7 @@ export class HmrEngine {
       });
     } catch (e) {
       clearScreen();
-      this._lastAttemptWasError = true;
+      // this._lastAttemptWasError = true;
       throw e;
     }
   };
