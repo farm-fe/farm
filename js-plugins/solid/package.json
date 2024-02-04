@@ -44,6 +44,6 @@
     "@farmfe/core": "^0.16.4"
   },
   "files": [
-    "dist"
+    "build"
   ]
 }
