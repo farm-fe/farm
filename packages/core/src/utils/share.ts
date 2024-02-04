@@ -16,10 +16,11 @@ export const FARM_TARGET_NODE_ENVS = [
   'node-next'
 ];
 export const FARM_TARGET_BROWSER_ENVS = [
-  'node',
-  'node16',
-  'node-legacy',
-  'node-next'
+  'browser',
+  'browser-legacy',
+  'browser-es2015',
+  'browser-es2017',
+  'browser-esnext'
 ];
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
