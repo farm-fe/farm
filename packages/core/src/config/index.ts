@@ -496,7 +496,8 @@ async function readConfigFile(
             minify: false,
             presetEnv: false,
             lazyCompilation: false,
-            persistentCache: false
+            persistentCache: false,
+            progress: false
           }
         },
         logger

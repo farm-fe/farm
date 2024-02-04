@@ -20,6 +20,7 @@ farmfe_utils = { path = "../utils" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_plugin_json = { path = "../plugin_json" }
 farmfe_plugin_polyfill = { path = "../plugin_polyfill" }
+farmfe_plugin_progress = { path = "../plugin_progress"}
 farmfe_plugin_define = { path = "../plugin_define" }
 num_cpus = "1.16.0"
 

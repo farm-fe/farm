@@ -44,6 +44,7 @@ pub struct Config {
   pub minify: Box<BoolOrObj<serde_json::Value>>,
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
+  pub progress: bool,
   pub persistent_cache: Box<persistent_cache::PersistentCacheConfig>,
   /// comments config for script, css and html
   pub comments: Box<CommentsConfig>,
@@ -79,6 +80,7 @@ impl Default for Config {
       minify: Box::new(BoolOrObj::Bool(true)),
       preset_env: Box::<PresetEnvConfig>::default(),
       record: false,
+      progress: true,
       persistent_cache: Box::<persistent_cache::PersistentCacheConfig>::new(
         // the config file path will be set after the Config is initialized
         persistent_cache::PersistentCacheConfig::get_default_config(&root),

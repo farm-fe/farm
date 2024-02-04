@@ -1,0 +1,10 @@
+[package]
+name = "farmfe_plugin_progress"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+farmfe_core = { path = "../core" }
+farmfe_testing_helpers = { path = "../testing_helpers" }
+indicatif = "0.17.7"
+console = "0.15.8"

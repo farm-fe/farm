@@ -381,6 +381,7 @@ export interface Config {
     treeShaking?: boolean;
     minify?: boolean | JsMinifyOptions;
     record?: boolean;
+    progress?: boolean;
     presetEnv?: boolean | PresetEnvConfig;
     persistentCache?: boolean | PersistentCacheConfig;
     comments?: boolean | 'license';
