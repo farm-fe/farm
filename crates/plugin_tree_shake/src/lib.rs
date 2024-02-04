@@ -1,3 +1,6 @@
+#![feature(box_patterns)]
+#![feature(exact_size_is_empty)]
+
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use farmfe_core::{
@@ -10,8 +13,8 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
 use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
-use module::{TreeShakeModule, UsedExports};
-use statement_graph::{ExportInfo, ImportInfo, ImportSpecifierInfo};
+use module::TreeShakeModule;
+use statement_graph::{ExportInfo, ImportInfo};
 
 pub mod module;
 pub mod remove_useless_stmts;
@@ -332,7 +335,6 @@ impl Plugin for FarmPluginTreeShake {
         "\n\n\n___start process tree_shake_module: {:?} ShakeType:{:?}",
         tree_shake_module_id, shake_type
       );
-
 
       let tree_shake_module = tree_shake_modules_map
         .get_mut(&tree_shake_module_id)

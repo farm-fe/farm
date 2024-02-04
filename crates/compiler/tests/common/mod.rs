@@ -75,7 +75,6 @@ pub fn create_compiler(
   cwd: PathBuf,
   crate_path: PathBuf,
   minify: bool,
-  mode: Option<Mode>,
 ) -> Compiler {
   let compiler = Compiler::new(
     Config {
@@ -86,11 +85,10 @@ pub fn create_compiler(
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
       },
-      mode: mode.unwrap_or(Mode::Production),
+      mode: Mode::Production,
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
-        ConfigRegex::new("^vue$")
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,

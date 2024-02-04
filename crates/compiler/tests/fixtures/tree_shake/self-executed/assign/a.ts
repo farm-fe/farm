@@ -11,7 +11,10 @@ function MapCache(entries) {
   }
 }
 
+var a = null;
+
 // Add methods to `MapCache`.
 MapCache.prototype.clear = mapCacheClear;
+MapCache.prototype.clear = () => (a, mapCacheClear);
 
 export default MapCache;

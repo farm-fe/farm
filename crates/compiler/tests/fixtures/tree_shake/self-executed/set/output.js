@@ -5,34 +5,28 @@
             function dynamicRequire(id) {
               return Promise.resolve(require(id));
             }
-
+          
             function require(id) {
               if (cache[id]) return cache[id].exports;
-
+          
               var module = {
                 id: id,
                 exports: {}
               };
-
+          
               modules[id](module, module.exports, require, dynamicRequire);
               cache[id] = module;
               return module.exports;
             }
-
+          
             require(entryModule);
           })({"ec853507": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-console.log("runtime/index.js")(globalThis || window || self || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 
 },}, "ec853507");(function (modules) {
             for (var key in modules) {
-<<<<<<< HEAD:crates/compiler/tests/fixtures/tree_shake/self-executed/output.js
-              modules[key].__farm_resource_pot__ = 'index_ddf1.js';
-                (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
-=======
               modules[key].__farm_resource_pot__ = 'index_ecb7.js';
-                (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
->>>>>>> f76b04db (feat: statement analyze & used_export map):crates/compiler/tests/fixtures/tree_shake/self-executed/set/output.js
+                (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
             }
         })({"569704c1": function(module, exports, farmRequire, farmDynamicRequire) {
 // prototype

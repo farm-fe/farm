@@ -1,27 +1,19 @@
 use std::{
-  borrow::Borrow,
-  collections::{HashMap, HashSet, VecDeque},
+  collections::{HashMap, HashSet},
   mem,
+  slice::Iter,
 };
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
-  petgraph::{
-    self,
-    stable_graph::NodeIndex,
-    visit::{EdgeRef, IntoEdgeReferences, IntoEdgesDirected},
-    Direction::{Incoming, Outgoing},
-  },
   swc_common::{Globals, Mark},
+  swc_ecma_ast::Id,
 };
-use farmfe_toolkit::{
-  script::swc_try_with::try_with,
-  swc_ecma_visit::{Visit, VisitWith},
-};
+use farmfe_toolkit::script::swc_try_with::try_with;
 
-use crate::{
-  remove_useless_stmts::is_global_ident,
-  statement_graph::{ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId},
+use crate::statement_graph::{
+  module_analyze::{ItemId, Mode, ModuleAnalyze},
+  ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -146,176 +138,6 @@ impl UsedExports {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Mode {
-  Write,
-  Read,
-}
-
-#[derive(Debug)]
-struct AnalyzeStatementIdent {
-  pub is_reference_global_ident: bool,
-  pub unresolved_mark: Mark,
-  pub reads: HashSet<String>,
-  pub writes: HashSet<String>,
-  mode: Mode,
-  nested: bool,
-}
-impl AnalyzeStatementIdent {
-  fn with_mode<F>(&mut self, mode: Mode, f: F)
-  where
-    F: FnOnce(&mut Self),
-  {
-    let prev = self.mode;
-    self.mode = mode;
-    f(self);
-    self.mode = prev;
-  }
-
-  fn with_nested<F>(&mut self, nested: bool, f: F)
-  where
-    F: FnOnce(&mut Self),
-  {
-    let prev = self.nested;
-    self.nested = nested;
-    f(self);
-    self.nested = prev;
-  }
-}
-
-impl Visit for AnalyzeStatementIdent {
-  fn visit_constructor(&mut self, n: &farmfe_core::swc_ecma_ast::Constructor) {
-    self.with_nested(true, |this| n.visit_children_with(this));
-  }
-  fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
-    if !self.nested && matches!(self.mode, Mode::Write) {
-      self.writes.insert(n.to_string());
-    } else {
-      self.reads.insert(n.to_string());
-    }
-
-    if self.is_reference_global_ident || self.nested {
-      return;
-    }
-
-    if is_global_ident(self.unresolved_mark, n) {
-      self.is_reference_global_ident = true;
-    }
-  }
-
-  fn visit_pat_or_expr(&mut self, n: &farmfe_core::swc_ecma_ast::PatOrExpr) {
-    self.with_mode(Mode::Write, |this| n.visit_children_with(this))
-  }
-
-  fn visit_pat(&mut self, n: &farmfe_core::swc_ecma_ast::Pat) {
-    self.with_mode(Mode::Write, |this| n.visit_children_with(this))
-  }
-
-  fn visit_fn_decl(&mut self, n: &farmfe_core::swc_ecma_ast::FnDecl) {
-    self.with_nested(true, |this| n.visit_children_with(this));
-  }
-
-  fn visit_assign_expr(&mut self, n: &farmfe_core::swc_ecma_ast::AssignExpr) {
-    self.with_mode(Mode::Write, |this| n.left.visit_with(this));
-
-    self.with_mode(Mode::Read, |this| n.right.visit_with(this));
-  }
-}
-
-// type ModuleDefineGraphEdge = (Mode, String);
-struct ModuleDefineGraphEdge {
-  mode: Mode,
-}
-
-struct ModuleDefineGraph {
-  g: petgraph::graph::DiGraph<ModuleDefineId, ModuleDefineGraphEdge>,
-  id_index_map: HashMap<ModuleDefineId, NodeIndex>,
-}
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
-struct ModuleDefineId {
-  stmt_id: usize,
-  ident: String,
-}
-
-impl From<(usize, &String)> for ModuleDefineId {
-  fn from(id: (usize, &String)) -> Self {
-    Self {
-      stmt_id: id.0,
-      ident: id.1.clone(),
-    }
-  }
-}
-
-impl ModuleDefineGraph {
-  fn new() -> Self {
-    Self {
-      g: Default::default(),
-      id_index_map: Default::default(),
-    }
-  }
-
-  fn add_node(&mut self, id: ModuleDefineId) {
-    if self.id_index_map.contains_key(&id) {
-      return;
-    }
-
-    let index = self.g.add_node(id.clone());
-    self.id_index_map.insert(id, index);
-  }
-
-  fn add_edge(&mut self, from: ModuleDefineId, to: ModuleDefineId, mode: Mode) {
-    println!("___add_edge from: {:?}, to: {:?} {:?}", from, to, mode);
-    let from_index = self.id_index_map.get(&from).unwrap();
-    let to_index = self.id_index_map.get(&to).unwrap();
-
-    self
-      .g
-      .add_edge(*from_index, *to_index, ModuleDefineGraphEdge { mode });
-  }
-
-  fn remove_node(&mut self, id: ModuleDefineId) {
-    let index = self.id_index_map.remove(&id).unwrap();
-    self.g.remove_node(index);
-  }
-
-  fn has_node(&self, id: &ModuleDefineId) -> bool {
-    self.id_index_map.contains_key(id)
-  }
-
-  fn stmt_read_nodes(&self, id: usize) -> Vec<&ModuleDefineId> {
-    self
-      .id_index_map
-      .iter()
-      .filter(|item| item.0.stmt_id == id && self.g.edges_directed(*item.1, Outgoing).count() > 0)
-      .map(|item| item.0)
-      .collect()
-  }
-
-  fn edges(&self, id: &ModuleDefineId) -> Vec<(&ModuleDefineId, Mode)> {
-    let index = self.id_index_map.get(&id).unwrap();
-    self
-      .g
-      .edges_directed(*index, Outgoing)
-      .map(|edge| {
-        let mode = edge.weight().mode;
-
-        let node = &self.g[edge.target()];
-        (node, mode)
-      })
-      .collect()
-  }
-
-  fn write_node_edge(&self) -> Vec<(usize, usize)> {
-    self
-      .g
-      .edge_references()
-      .filter(|item| item.weight().mode == Mode::Write)
-      .map(|item| (self.g[item.target()].stmt_id, self.g[item.source()].stmt_id))
-      .collect()
-  }
-}
-
 pub struct TreeShakeModule {
   pub module_id: ModuleId,
   pub side_effects: bool,
@@ -413,155 +235,146 @@ impl TreeShakeModule {
       used_idents.insert(used_ident);
     }
 
-    // println!("___self.stmt_graph.stmts(): {:#?}", self.stmt_graph.stmts());
-
-    let defined_vars = self
-      .stmt_graph
-      .stmts()
-      .iter()
-      .fold(HashMap::new(), |mut res, stmt| {
-        // (stmt.id, stmt.defined_idents.clone())
-        stmt.defined_idents.iter().for_each(|ident| {
-          res.insert(ident.clone(), stmt.id);
-        });
-
-        res
-      });
-    // println!("___defined_vars: {:#?}", defined_vars);
-
     {
       farmfe_core::farm_profile_scope!(format!(
         "analyze self executed stmts {:?}",
         self.module_id.to_string()
       ));
+      let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+      let (ids, items_map) = ModuleAnalyze::analyze(module);
+      let mut stmt_graph = ModuleAnalyze::new();
+      let mut entries: HashSet<ItemId> = HashSet::new();
 
-      let mut module_define_graph = ModuleDefineGraph::new();
-      let mut entries = HashSet::new();
+      // print ids and items_map
+
+      let print_items = |headers: &'static str, iter: Iter<Id>| {
+        if iter.is_empty() {
+          return;
+        }
+
+        print!("    {}", headers);
+
+        for (index, var_decls) in iter.enumerate() {
+          print!(
+            "{}",
+            format!(
+              "{:?} {}",
+              var_decls.0.to_string(),
+              if index > 0 { "" } else { ", " }
+            )
+          );
+        }
+
+        print!("\n");
+      };
+
+      // print_items("reads: ", &|item| &item.read_vars);
+
+      for id in &ids {
+        let item = &items_map[id];
+        match id {
+          ItemId::Item { index, kind } => println!("index: {} kind: {:?}", index, kind),
+        }
+
+        print_items("var_decls: ", item.var_decls.iter());
+
+        print_items("reads: ", item.read_vars.iter());
+
+        print_items("writes: ", item.write_vars.iter());
+
+        print_items("nested_read_vars: ", item.nested_read_vars.iter());
+
+        print_items("nested_write_vars: ", item.nested_write_vars.iter());
+
+        if item.side_effects {
+          println!("    side_effect")
+        }
+
+        print!("\n")
+      }
+
+      stmt_graph.connect(&items_map, &ids);
+
+      // global side used global variables
+      try_with(Default::default(), globals, || {
+        let side_effect_ids = stmt_graph.global_reference(&ids, &items_map, unresolved_mark);
+        println!("___side_effect_ids: {:#?}", side_effect_ids);
+        entries.extend(side_effect_ids);
+      })
+      .unwrap();
+
+      entries.extend(stmt_graph.reference_side_effect_ids(&ids, &items_map));
+      println!(
+        "___reference_side_effect_ids: {:#?}",
+        stmt_graph.reference_side_effect_ids(&ids, &items_map)
+      );
+
+      // self executed stmts
+      for index in self.stmt_graph.stmts().iter().filter_map(|stmt| {
+        if stmt.is_self_executed {
+          Some(stmt.id)
+        } else {
+          None
+        }
+      }) {
+        println!(
+          "___self_executed: stmt:{} {:?}",
+          index,
+          stmt_graph.items(&index)
+        );
+        entries.extend(stmt_graph.items(&index));
+      }
+
+      stmt_graph.print_graph();
+
       let mut used_self_execute_stmts = HashSet::new();
 
-      println!("___stmt_graph: {:#?}", self.stmt_graph.stmts());
+      // entries.extend(stmt_used_idents_map.keys());
 
-      for stmt in self.stmt_graph.stmts() {
-        // if stmt_used_idents_map.contains_key(&stmt.id) {
-        //   continue;
-        // }
+      // println!("___stmt_graph: {:#?}", self.stmt_graph.stmts());
 
-        let mut analyze_statement_ident = AnalyzeStatementIdent {
-          is_reference_global_ident: false,
-          unresolved_mark: Mark::from_u32(module.meta.as_script().unresolved_mark),
-          reads: HashSet::new(),
-          writes: HashSet::new(),
-          mode: Mode::Read,
-          nested: false,
-        };
-
-        let swc_module = &mut module.meta.as_script_mut().ast;
-        try_with(Default::default(), globals, || {
-          swc_module.body[stmt.id].visit_with(&mut analyze_statement_ident);
-        })
-        .unwrap();
-
-        println!(
-          "___check_ident_is_global_dent: index:{} {:#?}",
-          stmt.id, analyze_statement_ident
-        );
-
-        for read in &analyze_statement_ident.reads {
-          println!("___set read");
-
-          if let Some(define_stmt_id) = defined_vars.get(read) {
-            let reference_stmt = self.stmt_graph.stmt(&stmt.id);
-            let reference_defines = if reference_stmt.defined_idents.contains(read) {
-              vec![read]
-            } else {
-              reference_stmt
-                .defined_idents_map
-                .iter()
-                .filter_map(|(define, references)| {
-                  if references.contains(read) {
-                    Some(define)
-                  } else {
-                    None
-                  }
-                })
-                .collect::<Vec<_>>()
-            };
-
-            println!("read {} reference: {:#?}", read, reference_defines);
-
-            let define_id: ModuleDefineId = (define_stmt_id.clone(), read).into();
-            module_define_graph.add_node(define_id.clone());
-
-            reference_defines.iter().for_each(|reference_ident| {
-              let reference_id: ModuleDefineId = (stmt.id, *reference_ident).into();
-              if reference_id == define_id {
-                return;
-              }
-              module_define_graph.add_node(reference_id.clone());
-              module_define_graph.add_edge(reference_id.clone(), define_id.clone(), Mode::Read);
-            });
-          };
-        }
-
-        for write in &analyze_statement_ident.writes {
-          println!("___set write");
-          let define_id: ModuleDefineId = (stmt.id, write).into();
-          module_define_graph.add_node(define_id.clone());
-          defined_vars.get(write).map(|&id| {
-            let reference_id: ModuleDefineId = (id, write).into();
-            if define_id == reference_id {
-              return;
-            }
-
-            module_define_graph.add_node(reference_id.clone());
-            module_define_graph.add_edge(define_id.clone(), reference_id, Mode::Write);
-          });
-        }
-
-        println!(
-          "___analyze_statement_ident.is_reference_global_ident {}\n    stmt.is_self_executed {}\n    stmt_used_idents_map.contains_key(&stmt.id) {}",
-          analyze_statement_ident.is_reference_global_ident,
-          stmt.is_self_executed,
-          stmt_used_idents_map.contains_key(&stmt.id)
-        );
-
-        if analyze_statement_ident.is_reference_global_ident
-          || stmt.is_self_executed
-          || stmt_used_idents_map.contains_key(&stmt.id)
-        {
-          entries.insert(stmt.id);
-        }
+      for stmt in stmt_used_idents_map.keys() {
+        entries.extend(stmt_graph.items(stmt))
       }
+
+      let write_stmt = stmt_graph.write_edges();
 
       println!("___entries: {:?}", entries,);
 
-      // println!("{}", module_define_graph.g.edge_indices());
-
       fn dfs<'a>(
-        entry: &'a ModuleDefineId,
-        stack: &mut Vec<ModuleDefineId>,
-        result: &mut Vec<Vec<ModuleDefineId>>,
-        visited: &mut HashSet<&'a ModuleDefineId>,
-        module_define_graph: &'a ModuleDefineGraph,
+        entry: &'a ItemId,
+        stack: &mut Vec<&'a ItemId>,
+        result: &mut Vec<Vec<ItemId>>,
+        visited: &mut HashSet<&'a ItemId>,
+        module_define_graph: &'a ModuleAnalyze,
         stmt_graph: &StatementGraph,
       ) {
-        stack.push(entry.clone());
+        stack.push(entry);
 
-        // println!("___stack: entry: {:?} {:#?}", entry, stack,);
+        let edges = module_define_graph.reference_edges(entry);
+        println!(
+          "___index: {}, visited: {:?}, edges: {:#?}",
+          entry.index(),
+          edges.is_empty()
+            || visited.contains(entry)
+            || !module_define_graph.has_node(entry)
+            || !edges.iter().any(|(_, mode)| matches!(mode, Mode::Read)),
+          edges
+        );
 
-        let edges = module_define_graph.edges(entry);
-
-        // println!("___edges: {:#?}", edges);
-
-        if !module_define_graph.has_node(entry) || visited.contains(&entry) || edges.is_empty() {
-          result.push(stack.clone());
+        if edges.is_empty()
+          || visited.contains(entry)
+          || !module_define_graph.has_node(entry)
+          || !edges.iter().any(|(_, mode)| matches!(mode, Mode::Read))
+        {
+          result.push(stack.iter().map(|item| (*item).clone()).collect());
         } else {
           visited.insert(entry);
           for (node, mode) in edges {
             match mode {
               Mode::Read => {
                 dfs(
-                  &node,
+                  node,
                   stack,
                   result,
                   visited,
@@ -577,44 +390,38 @@ impl TreeShakeModule {
         stack.pop();
       }
 
+      let mut visited = HashSet::new();
       let mut reference_chain = Vec::new();
-      // let mut node_visited = HashSet::new();
-      let write_stmt = module_define_graph.write_node_edge();
       for stmt in &entries {
-        let idents = module_define_graph.stmt_read_nodes(stmt.clone());
-        for ident in idents {
-          dfs(
-            ident,
-            &mut vec![],
-            &mut reference_chain,
-            &mut HashSet::new(),
-            &module_define_graph,
-            &self.stmt_graph,
-          );
-        }
+        dfs(
+          stmt,
+          &mut vec![],
+          &mut reference_chain,
+          &mut visited,
+          &stmt_graph,
+          &self.stmt_graph,
+        );
       }
 
       println!("___reference_chain: {:#?}", reference_chain);
 
-      used_self_execute_stmts.extend(&entries);
       for chain in reference_chain {
-        used_self_execute_stmts.extend(&chain.iter().map(|item| item.stmt_id).collect::<Vec<_>>());
+        used_self_execute_stmts.extend(
+          &chain
+            .iter()
+            .filter(|item| self.stmt_graph.stmt(&item.index()).import_info.is_none())
+            .map(|item| item.index())
+            .collect::<Vec<_>>(),
+        );
       }
 
-      for (target, source) in write_stmt {
-        if used_self_execute_stmts.contains(&target) {
-          used_self_execute_stmts.insert(source);
+      println!("___write_stmt: {:?}", write_stmt);
+
+      for (source, target) in write_stmt {
+        if used_self_execute_stmts.contains(&target.index()) {
+          used_self_execute_stmts.insert(source.index());
         }
       }
-
-      // println!(
-      //   "___module_define_graph: {:?}",
-      //   module_define_graph
-      //     .g
-      //     .node_indices()
-      //     .map(|item| { &module_define_graph.g[item] })
-      //     .collect::<Vec<_>>()
-      // );
 
       println!("___used_self_execute_stmts: {:?}", used_self_execute_stmts);
 

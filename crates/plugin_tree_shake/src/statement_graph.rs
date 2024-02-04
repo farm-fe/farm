@@ -10,6 +10,7 @@ use farmfe_core::{
 pub(crate) mod analyze_imports_and_exports;
 pub(crate) mod defined_idents_collector;
 pub(crate) mod used_idents_collector;
+pub(crate) mod module_analyze;
 
 use analyze_imports_and_exports::analyze_imports_and_exports;
 

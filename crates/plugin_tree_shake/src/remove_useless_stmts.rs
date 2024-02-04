@@ -147,8 +147,6 @@ pub fn remove_useless_stmts(
   // remove the unused statements from the module
   for (index, stmt) in swc_module.body.iter().enumerate() {
     if !used_stmts_indexes.contains(&&index) {
-      stmts_to_remove.push(index);
-
       match stmt {
         ModuleItem::ModuleDecl(module_decl) => match module_decl {
           ModuleDecl::ExportNamed(export_named) => {
@@ -207,6 +205,7 @@ pub fn remove_useless_stmts(
             };
             if info.is_import_executed {
               used_import_infos.push(info);
+              continue;
             } else {
               removed_import_info.push(info);
             }
@@ -215,6 +214,8 @@ pub fn remove_useless_stmts(
         },
         _ => {}
       };
+
+      stmts_to_remove.push(index);
     }
   }
 

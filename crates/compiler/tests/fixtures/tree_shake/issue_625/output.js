@@ -5,20 +5,20 @@
             function dynamicRequire(id) {
               return Promise.resolve(require(id));
             }
-
+          
             function require(id) {
               if (cache[id]) return cache[id].exports;
-
+          
               var module = {
                 id: id,
                 exports: {}
               };
-
+          
               modules[id](module, module.exports, require, dynamicRequire);
               cache[id] = module;
               return module.exports;
             }
-
+          
             require(entryModule);
           })({"d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
 console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
@@ -26,7 +26,7 @@ console.log("runtime/index.js")(globalThis || window || global)["__farm_default_
 },}, "d2214aaa");(function (modules) {
             for (var key in modules) {
               modules[key].__farm_resource_pot__ = 'index_05aa.js';
-                (globalThis || window || self || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
+                (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
             }
         })({"11ecb1ee": function(module, exports, farmRequire, farmDynamicRequire) {
 "use strict";

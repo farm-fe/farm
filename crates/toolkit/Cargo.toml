@@ -42,6 +42,7 @@ swc_error_reporters = { version = "0.17.12" }
 swc_atoms = { version = "0.6.5" }
 swc_ecma_transforms_base = "0.136.0"
 swc_ecma_minifier = "0.191.1"
+swc_ecma_utils = "0.126.0"
 lazy_static = "1.4.0"
 sourcemap = "6.2.3"
 anyhow = { version = "1.0.40", features = ["backtrace"] }
