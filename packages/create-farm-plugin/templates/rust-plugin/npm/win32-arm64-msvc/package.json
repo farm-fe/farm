@@ -1,8 +1,8 @@
 {
-  "name": "<FARM-RUST-PLUGIN-NPM-NAME>-darwin-arm64",
-  "version": "0.1.2",
+  "name": "<FARM-RUST-PLUGIN-NPM-NAME>-win32-arm64-msvc",
+  "version": "0.0.0",
   "os": [
-    "darwin"
+    "win32"
   ],
   "cpu": [
     "arm64"

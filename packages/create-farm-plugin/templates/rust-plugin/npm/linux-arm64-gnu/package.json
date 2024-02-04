@@ -1,8 +1,8 @@
 {
-  "name": "<FARM-RUST-PLUGIN-NPM-NAME>-darwin-arm64",
-  "version": "0.1.2",
+  "name": "<FARM-RUST-PLUGIN-NPM-NAME>-linux-arm64-gnu",
+  "version": "0.0.0",
   "os": [
-    "darwin"
+    "linux"
   ],
   "cpu": [
     "arm64"
@@ -14,5 +14,8 @@
   "license": "MIT",
   "engines": {
     "node": ">= 10"
-  }
+  },
+  "libc": [
+    "glibc"
+  ]
 }
