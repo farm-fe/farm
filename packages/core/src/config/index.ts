@@ -266,8 +266,6 @@ export async function normalizeUserCompilationConfig(
         }, {})
   );
 
-  await normalizePersistentCache(config, userConfig);
-
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
   const ImportMetaPluginPath = require.resolve(
@@ -390,6 +388,9 @@ export async function normalizeUserCompilationConfig(
       config.presetEnv = false;
     }
   }
+
+  // normalize persistent cache at last
+  await normalizePersistentCache(config, userConfig);
 
   return config;
 }

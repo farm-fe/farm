@@ -51,7 +51,12 @@ test('resolveUserConfig', async () => {
       'yarn.lock'
     ],
     envs: {
-      NODE_ENV: 'test'
+      FARM_PROCESS_ENV: '{"NODE_ENV":"test"}',
+      NODE_ENV: 'test',
+      'process.env.NODE_ENV': 'test',
+      FARM_HMR_HOST: 'true',
+      FARM_HMR_PATH: '/__hmr',
+      FARM_HMR_PORT: '9000'
     },
     moduleCacheKeyStrategy: {}
   });
@@ -131,7 +136,9 @@ test('resolveUserConfig-prod', async () => {
       'yarn.lock'
     ],
     envs: {
-      NODE_ENV: 'test'
+      FARM_PROCESS_ENV: '{"NODE_ENV":"test"}',
+      NODE_ENV: 'test',
+      'process.env.NODE_ENV': 'test'
     },
     moduleCacheKeyStrategy: {}
   });
