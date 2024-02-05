@@ -652,8 +652,8 @@ function mergeInlineCliOptions(
     ...(userConfig.compilation ?? {}),
     output: {
       ...(userConfig.compilation?.output ?? {}),
-      path: inlineOptions.compilation.output?.path,
-      targetEnv: inlineOptions.compilation.output?.targetEnv
+      path: inlineOptions.compilation?.output?.path,
+      targetEnv: inlineOptions.compilation?.output?.targetEnv
     }
   };
 
