@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use common::create_module;
 use farmfe_core::{
-  module::module_graph::ModuleGraph,
+  module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Globals, GLOBALS},
   swc_ecma_ast::EsVersion,
 };
@@ -37,31 +37,42 @@ export class j {
 export default 'default';
   "#;
 
-  GLOBALS.set(&Globals::new(), || {
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
     let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(vec![
-      "default".to_string(),
-      "j".to_string(),
-      "d".to_string(),
-      "f".to_string(),
-      "a".to_string(),
-    ]);
+    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+      ModuleId::from("index.ts"),
+      vec![
+        "default".to_string(),
+        "j".to_string(),
+        "d".to_string(),
+        "f".to_string(),
+        "a".to_string(),
+      ],
+    )]));
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
     let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
-    let (import_info, export_info, _, _) =
-      remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
+    let (import_info, export_info, removed_import_info, removed_export_info, _) = remove_useless_stmts(
+      &module_id,
+      &mut module_graph,
+      &tree_shake_module_map,
+      &globals,
+    );
 
-    // println!("import_info: {:#?}", import_info);
-    // println!("export_info: {:#?}", export_info);
+    println!("import_info: {:#?}", import_info);
+    println!("export_info: {:#?}", export_info);
+    println!("removed_import_info: {:#?}", removed_import_info);
+    println!("removed_export_info: {:#?}", removed_export_info);
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
     let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
+    println!("{}", result);
     let expect = r#"import { aValue } from './foo';
 const a = aValue;
 const c = 3;
@@ -111,6 +122,43 @@ export default 'default';
         assert_eq!(exported.to_string(), "f#1".to_string());
       }
     }
+
+    assert_eq!(removed_import_info.len(), 1);
+    assert_eq!(removed_import_info[0].specifiers.len(), 1);
+    assert!(matches!(
+      removed_import_info[0].specifiers[0],
+      ImportSpecifierInfo::Named { .. }
+    ));
+    if let ImportSpecifierInfo::Named { local, imported } = &removed_import_info[0].specifiers[0] {
+      assert_eq!(local.to_string(), "bar#1".to_string());
+      assert!(imported.is_none());
+    }
+
+    assert_eq!(removed_export_info.len(), 3);
+    assert_eq!(removed_export_info[0].specifiers.len(), 1);
+    assert!(matches!(
+      removed_export_info[0].specifiers[0],
+      ExportSpecifierInfo::Named { .. }
+    ));
+    if let ExportSpecifierInfo::Named { local, exported } = &removed_export_info[0].specifiers[0] {
+      assert_eq!(local.to_string(), "b#2".to_string());
+      assert!(exported.is_none());
+    }
+
+    assert_eq!(removed_export_info[1].specifiers.len(), 2);
+    assert!(matches!(
+      removed_export_info[1].specifiers[0],
+      ExportSpecifierInfo::Named { .. }
+    ));
+    if let ExportSpecifierInfo::Named { local, exported } = &removed_export_info[1].specifiers[0] {
+      assert_eq!(local.to_string(), "e#1".to_string());
+      assert!(exported.is_none());
+    }
+
+    if let ExportSpecifierInfo::Named { local, exported } = &removed_export_info[1].specifiers[1] {
+      assert_eq!(local.to_string(), "g#1".to_string());
+      assert!(exported.is_none());
+    }
   });
 }
 
@@ -123,18 +171,25 @@ const b = 2;
 export * from './src/foo';
 "#;
 
-  GLOBALS.set(&Globals::new(), || {
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
     let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports =
-      UsedExports::Partial(vec!["a".to_string(), "c".to_string(), "d".to_string()]);
+    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+      "index.ts".into(),
+      vec!["a".to_string(), "c".to_string(), "d".to_string()],
+    )]));
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
     let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
-    let (import_info, export_info, _, _) =
-      remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
+    let (import_info, export_info, _, _, _) = remove_useless_stmts(
+      &module_id,
+      &mut module_graph,
+      &tree_shake_module_map,
+      &globals,
+    );
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
     let module = module_graph.module(&module_id).unwrap();
@@ -187,18 +242,26 @@ export * from './src/foo';
 export * from './src/bar';
 "#;
 
-  GLOBALS.set(&Globals::new(), || {
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
     let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(vec!["c".to_string(), "d".to_string()]);
+    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+      "index.ts".into(),
+      vec!["c".to_string(), "d".to_string()],
+    )]));
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
     let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
-    let (import_info, export_info, _, _) =
-      remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
+    let (import_info, export_info, _, _, _) = remove_useless_stmts(
+      &module_id,
+      &mut module_graph,
+      &tree_shake_module_map,
+      &globals,
+    );
     // println!("import_info: {:#?}", import_info);
     // println!("export_info: {:#?}", export_info);
     let module = module_graph.module(&module_id).unwrap();

@@ -6,8 +6,8 @@ use farmfe_core::petgraph::visit::EdgeRef;
 use farmfe_core::petgraph::Direction::Outgoing;
 use farmfe_core::swc_common::Mark;
 use farmfe_core::swc_ecma_ast::{
-  op, BlockStmtOrExpr, Decl, ExportDecl, Expr, ExprStmt, Id, ImportSpecifier, MemberProp,
-  ModuleDecl, PatOrExpr, PropName, Stmt,
+  op, BlockStmtOrExpr, Decl, DefaultDecl, ExportDecl, ExportDefaultDecl, Expr, ExprStmt, Id,
+  ImportSpecifier, MemberProp, ModuleDecl, PatOrExpr, PropName, Stmt,
 };
 use farmfe_core::{
   petgraph::{self, stable_graph::NodeIndex},
@@ -192,6 +192,37 @@ impl ModuleAnalyze {
           }
         }
 
+        ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(ExportDefaultDecl {
+          decl: DefaultDecl::Fn(f),
+          ..
+        })) => {
+          let id = f.ident.clone().map(|ident| ident.to_id());
+
+          let collect = collect_all_usage(&f.function, None);
+
+          let is_side_effect_fn = collect
+            .vars
+            .write
+            .iter()
+            .any(|id| !collect.vars.read.contains(id));
+
+          let data = ItemData {
+            var_decls: id.map(|id| vec![id]).unwrap_or_default(),
+            nested_read_vars: collect.vars.read,
+            nested_write_vars: collect.vars.write,
+            side_effects: is_side_effect_fn,
+            side_effect_call: collect.call_reads,
+            ..Default::default()
+          };
+
+          let id = ItemId::Item {
+            index,
+            kind: ItemIdType::Normal,
+          };
+          ids.push(id.clone());
+          items_map.insert(id, data);
+        }
+
         ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(_))
         | ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(_)) => {
           let used_ids = collect_usage_ignore_nested(stmt, Some(Mode::Read));
@@ -291,7 +322,6 @@ impl ModuleAnalyze {
         }
       }
 
-      // if item.side_effects {
       // TODO: 嵌套引用链接的时机
       for nested_read in &item.nested_read_vars {
         if let Some(nested_read_id) = self.vars.get(nested_read).cloned() {
@@ -304,7 +334,6 @@ impl ModuleAnalyze {
           self.add_edge(item_id.clone(), nested_write_id, Mode::Write);
         }
       }
-      // }
     }
   }
 

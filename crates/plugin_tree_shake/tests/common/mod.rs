@@ -38,6 +38,7 @@ pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
   (swc_module, cm)
 }
 
+#[allow(dead_code)]
 pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
   let mut module = Module::new("used_exports_idents_test".into());
   let (ast, cm) = parse_module(code);
@@ -53,6 +54,7 @@ pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
   (module, cm)
 }
 
+#[allow(dead_code)]
 pub fn create_module_with_globals(code: &str) -> Module {
   GLOBALS.set(&Globals::new(), || {
     let mut module = Module::new("used_exports_idents_test".into());

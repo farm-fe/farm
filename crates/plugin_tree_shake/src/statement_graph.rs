@@ -9,8 +9,8 @@ use farmfe_core::{
 
 pub(crate) mod analyze_imports_and_exports;
 pub(crate) mod defined_idents_collector;
-pub(crate) mod used_idents_collector;
 pub(crate) mod module_analyze;
+pub(crate) mod used_idents_collector;
 
 use analyze_imports_and_exports::analyze_imports_and_exports;
 
@@ -290,6 +290,9 @@ impl StatementGraph {
 
       let hash_stmt = |stmt_id: &StatementId, used_defined_idents: &HashSet<String>| {
         let mut hash = format!("{}:", stmt_id);
+        let mut used_defined_idents = used_defined_idents.iter().collect::<Vec<_>>();
+
+        used_defined_idents.sort();
 
         for ident in used_defined_idents {
           hash += ident;
@@ -346,9 +349,6 @@ impl StatementGraph {
               used_dep_defined_idents.extend(dep_used_defined_idents);
               used_dep_idents.extend(dep_stmt_idents);
             } else {
-              if dep_stmt.id == stmt_id {
-                continue;
-              }
               stmts.push_back((dep_stmt.id, dep_used_defined_idents, dep_stmt_idents));
             }
           }

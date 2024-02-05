@@ -39,6 +39,7 @@ Object.defineProperty(exports, "a", {
         return a;
     }
 });
+farmRequire("b5d64806");
 const a = "1";
 
 },

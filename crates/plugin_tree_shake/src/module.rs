@@ -7,7 +7,7 @@ use std::{
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
   swc_common::{Globals, Mark},
-  swc_ecma_ast::Id,
+  swc_ecma_ast::{Id, Ident},
 };
 use farmfe_toolkit::script::swc_try_with::try_with;
 
@@ -209,7 +209,7 @@ impl TreeShakeModule {
 
   pub fn used_statements(
     &self,
-    module: &mut Module,
+    module: &Module,
     globals: &Globals,
   ) -> HashMap<StatementId, HashSet<String>> {
     println!("used_statements: {}", self.module_id.to_string());
@@ -220,10 +220,6 @@ impl TreeShakeModule {
     // 通过 used_exports_idents 获取到所有的 ident
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
-
-    if used_exports_idents.is_empty() && !self.is_self_executed_import {
-      return HashMap::new();
-    }
 
     println!("used_exports_idents: {:#?}", used_exports_idents);
     let mut stmt_used_idents_map = HashMap::new();
@@ -241,9 +237,59 @@ impl TreeShakeModule {
         self.module_id.to_string()
       ));
       let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-      let (ids, items_map) = ModuleAnalyze::analyze(module);
+      let (ids, mut items_map) = ModuleAnalyze::analyze(module);
       let mut stmt_graph = ModuleAnalyze::new();
       let mut entries: HashSet<ItemId> = HashSet::new();
+
+      for (stmt, used_idents) in stmt_used_idents_map.iter() {
+        let default_str = UsedIdent::Default.to_string();
+        let used_idents_string = used_idents
+          .iter()
+          .filter_map(|ident| match ident {
+            UsedIdent::SwcIdent(ident) => Some(ident),
+            UsedIdent::Default => Some(&default_str),
+            _ => None,
+          })
+          .collect::<HashSet<_>>();
+
+        let is_need_removed = used_idents.iter().any(|ident| match ident {
+          // need remove
+          UsedIdent::SwcIdent(_) => true,
+          // save all
+          UsedIdent::Default => true,
+          _ => false,
+        });
+
+        if !is_need_removed
+          || (!used_idents_string.is_empty() && used_idents.contains(&UsedIdent::Default))
+        {
+          continue;
+        }
+
+        for item_id in ids.iter().filter(|item_id| &item_id.index() == stmt) {
+          let item = items_map.get_mut(item_id).unwrap();
+
+          let mut removed_idents = item
+            .read_vars
+            .iter()
+            .enumerate()
+            .filter_map(|(index, id)| {
+              if !used_idents_string.contains(&Ident::from(id.clone()).to_string()) {
+                Some(index)
+              } else {
+                None
+              }
+            })
+            .collect::<Vec<_>>();
+
+          removed_idents.sort();
+          removed_idents.reverse();
+
+          for index in removed_idents {
+            item.read_vars.remove(index);
+          }
+        }
+      }
 
       // print ids and items_map
 
@@ -405,25 +451,30 @@ impl TreeShakeModule {
 
       println!("___reference_chain: {:#?}", reference_chain);
 
-      for chain in reference_chain {
-        used_self_execute_stmts.extend(
-          &chain
-            .iter()
-            .filter(|item| self.stmt_graph.stmt(&item.index()).import_info.is_none())
-            .map(|item| item.index())
-            .collect::<Vec<_>>(),
-        );
-      }
+      let reference_stmts = reference_chain
+        .iter()
+        .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
+        .collect::<HashSet<_>>();
 
       println!("___write_stmt: {:?}", write_stmt);
 
       for (source, target) in write_stmt {
-        if used_self_execute_stmts.contains(&target.index()) {
+        if reference_stmts.contains(&target.index()) {
           used_self_execute_stmts.insert(source.index());
         }
       }
 
+      used_self_execute_stmts.extend(
+        reference_stmts
+          .into_iter()
+          .filter(|index| self.stmt_graph.stmt(&index).import_info.is_none()),
+      );
+
       println!("___used_self_execute_stmts: {:?}", used_self_execute_stmts);
+
+      for stmt in stmt_used_idents_map.keys() {
+        used_self_execute_stmts.remove(stmt);
+      }
 
       for stmt_id in used_self_execute_stmts {
         stmt_used_idents_map

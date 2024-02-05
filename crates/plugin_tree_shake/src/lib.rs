@@ -179,6 +179,7 @@ fn toposort(
 enum ShakeType {
   TopoShaking,
   CircleRemove(Option<(ModuleId, ImportInfo)>),
+  CheckNeedRemoveImport(Vec<ImportInfo>),
 }
 
 impl Plugin for FarmPluginTreeShake {
@@ -329,6 +330,9 @@ impl Plugin for FarmPluginTreeShake {
       tree_shake_modules_map.insert(module_id.clone(), new_tree_shake_module);
     }
 
+    let mut wait_check_remove_import: HashSet<ModuleId> = HashSet::new();
+    let mut visited_modules: HashSet<ModuleId> = HashSet::new();
+
     // traverse the tree_shake_modules
     while let Some((tree_shake_module_id, shake_type)) = tree_shake_modules_ids.pop_front() {
       println!(
@@ -390,7 +394,56 @@ impl Plugin for FarmPluginTreeShake {
             tree_shake_module.used_exports
           );
 
-          if tree_shake_module.used_exports.is_empty() && !tree_shake_module.is_self_executed_import
+          if let ShakeType::CheckNeedRemoveImport(imports) = &shake_type {
+            let mut wait_remove_imports = vec![];
+            for import in tree_shake_module.imports() {
+              if imports.iter().any(|item| {
+                if item.source != import.source {
+                  return false;
+                }
+
+                let module_id =
+                  module_graph.get_dep_by_source(&tree_shake_module_id, &import.source);
+
+                let import_tree_shake_module = tree_shake_modules_map.get(&module_id).unwrap();
+
+                return !import_tree_shake_module.contains_self_executed_stmt
+                  && import_tree_shake_module.stmt_graph.stmts().is_empty()
+                  && import_tree_shake_module.used_exports.is_empty();
+              }) {
+                wait_check_remove_import.remove(&tree_shake_module_id);
+                wait_remove_imports.push(import.stmt_id);
+              }
+            }
+
+            wait_remove_imports.sort();
+            wait_remove_imports.reverse();
+
+            if !wait_remove_imports.is_empty() {
+              let module = module_graph.module_mut(&tree_shake_module_id).unwrap();
+              let swc_ast = &mut module.meta.as_script_mut().ast;
+
+              for stmt_id in wait_remove_imports {
+                swc_ast.body.remove(stmt_id);
+              }
+
+              reanalyze_module(
+                &tree_shake_module_id,
+                module_graph,
+                &mut tree_shake_modules_map,
+              );
+            };
+
+            continue;
+          }
+
+          let tree_shake_module = tree_shake_modules_map
+            .get_mut(&tree_shake_module_id)
+            .unwrap();
+
+          if tree_shake_module.used_exports.is_empty()
+            && !tree_shake_module.is_self_executed_import
+            && !wait_check_remove_import.contains(&tree_shake_module_id)
           {
             // if the module's used_exports is empty, and this module does not have self-executed statements, then this module is useless
             // which means this module is not used and should be removed
@@ -410,7 +463,6 @@ impl Plugin for FarmPluginTreeShake {
             for specify in &delay.specifiers {
               match specify {
                 statement_graph::ImportSpecifierInfo::Namespace(_) => {
-                  // TODO: 待确认删除项
                   tree_shake_module
                     .used_exports
                     .remove_used_export(from, &module::UsedIdent::ExportAll);
@@ -443,29 +495,68 @@ impl Plugin for FarmPluginTreeShake {
           }
 
           // remove useless statements and useless imports/exports identifiers, then all preserved import info and export info will be added to the used_exports.
-          let (used_imports, used_exports_from, removed_imports, removed_export) =
-            remove_useless_stmts::remove_useless_stmts(
+          let (
+            used_imports,
+            used_exports_from,
+            removed_imports,
+            removed_export,
+            check_need_remove_import,
+          ) = remove_useless_stmts::remove_useless_stmts(
+            &tree_shake_module_id,
+            module_graph,
+            &tree_shake_modules_map,
+            &context.meta.script.globals,
+          );
+
+          if !matches!(shake_type, ShakeType::CheckNeedRemoveImport(_))
+            && !wait_check_remove_import.contains(&tree_shake_module_id)
+          {
+            for import_info in &check_need_remove_import {
+              if let Some(import_module_id) =
+                module_graph.get_dep_by_source_optional(&tree_shake_module_id, &import_info.source)
+              {
+                wait_check_remove_import.insert(import_module_id);
+              }
+            }
+
+            tree_shake_modules_ids.push_back((
+              tree_shake_module_id.clone(),
+              ShakeType::CheckNeedRemoveImport(check_need_remove_import),
+            ));
+
+            reanalyze_module(
               &tree_shake_module_id,
               module_graph,
-              &tree_shake_modules_map,
-              &context.meta.script.globals,
+              &mut tree_shake_modules_map,
             );
+          }
 
           removed_exports.extend(removed_export);
 
           // cyclic_nodes affect already proceed module
           for import_info in removed_imports {
-            if let Some((module_id, delay_import_info)) = remove_used_exports_by_import_info(
+            let Some((module_id, delay_import_info)) = remove_used_exports_by_import_info(
               &mut tree_shake_modules_map,
               &*module_graph,
               &tree_shake_module_id,
               &import_info,
               &cyclic_nodes,
-            ) {
-              reanalyze_module(&module_id, module_graph, &mut tree_shake_modules_map);
-              tree_shake_modules_ids
-                .push_back((module_id, ShakeType::CircleRemove(delay_import_info)));
+            ) else {
+              continue;
             };
+
+            println!(
+              "___visited_modules has: {:?}",
+              visited_modules.contains(&module_id)
+            );
+
+            // If still in the queue
+            if !visited_modules.contains(&module_id) {
+              continue;
+            }
+            reanalyze_module(&module_id, module_graph, &mut tree_shake_modules_map);
+            tree_shake_modules_ids
+              .push_back((module_id, ShakeType::CircleRemove(delay_import_info)));
           }
 
           if matches!(shake_type, ShakeType::CircleRemove(Some(_))) {
@@ -501,9 +592,6 @@ impl Plugin for FarmPluginTreeShake {
                 tree_shake_modules_ids.push_back((module_id, ShakeType::CircleRemove(None)));
               };
             }
-          }
-
-          if matches!(shake_type, ShakeType::CircleRemove(_)) {
             continue;
           }
 
@@ -535,11 +623,9 @@ impl Plugin for FarmPluginTreeShake {
           });
           tree_shake_module.side_effects = true;
           tree_shake_module.used_exports.change_all();
-          // tree_shake_module
-          //   .used_exports
-          //   .add_used_export(&module::UsedIdent::ExportAll);
         }
       }
+      visited_modules.insert(tree_shake_module_id.clone());
     }
 
     // update used_exports in module_graph
@@ -572,9 +658,6 @@ impl Plugin for FarmPluginTreeShake {
     for module_id in modules_to_remove {
       module_graph.remove_module(&module_id);
     }
-
-    // TODO: 删除
-    toposort(&module_graph, &mut HashMap::default());
 
     Ok(Some(()))
   }

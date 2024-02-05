@@ -25,10 +25,27 @@ console.log("runtime/index.js")(globalThis || window || global)["__farm_default_
 
 },}, "d2214aaa");(function (modules) {
             for (var key in modules) {
-              modules[key].__farm_resource_pot__ = 'index_05aa.js';
+              modules[key].__farm_resource_pot__ = 'index_2c69.js';
                 (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
             }
-        })({"11ecb1ee": function(module, exports, farmRequire, farmDynamicRequire) {
+        })({"10c43cb2": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "registerTickMethod", {
+    enumerable: true,
+    get: function() {
+        return registerTickMethod;
+    }
+});
+const cache = {};
+function registerTickMethod(id, method) {
+    cache[id] = method;
+}
+
+},
+"11ecb1ee": function(module, exports, farmRequire, farmDynamicRequire) {
 "use strict";
 Object.defineProperty(exports, "__esModule", {
     value: true
@@ -39,9 +56,19 @@ Object.defineProperty(exports, "scaleFunc", {
         return scaleFunc;
     }
 });
+farmRequire("3e3af5b6");
 function scaleFunc() {
     return "tick";
 }
+
+},
+"3e3af5b6": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+var _register = farmRequire("10c43cb2");
+(0, _register.registerTickMethod)("xxx", ()=>console.log("xxx"));
 
 },
 "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
