@@ -47,9 +47,9 @@ impl Compiler {
       Arc::new(farmfe_plugin_json::FarmPluginJson::new(&config)) as _,
       Arc::new(farmfe_plugin_define::FarmPluginDefine::new(&config)) as _,
     ];
-    
+
     if config.progress {
-      plugins.push(Arc::new(farmfe_plugin_progress::FarmPluginProgress::new(&config)) as _,);
+      plugins.push(Arc::new(farmfe_plugin_progress::FarmPluginProgress::new(&config)) as _);
     }
 
     if config.lazy_compilation {
@@ -69,10 +69,11 @@ impl Compiler {
     if config.preset_env.enabled() {
       plugins.push(Arc::new(farmfe_plugin_polyfill::FarmPluginPolyfill::new(&config)) as _);
     }
+    // default resolve will be executed at last within internal plugins
+    // but it will be executed earlier than external plugins
+    plugins.push(Arc::new(farmfe_plugin_resolve::FarmPluginResolve::new(&config)) as _);
 
     plugins.append(&mut plugin_adapters);
-    // default resolve will be executed at last
-    plugins.push(Arc::new(farmfe_plugin_resolve::FarmPluginResolve::new(&config)) as _);
 
     // sort plugins by priority to make larger priority plugin run first
     plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
