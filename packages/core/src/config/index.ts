@@ -648,14 +648,27 @@ function mergeInlineCliOptions(
     }
   });
 
-  if (inlineOptions.outDir) {
+  const outputOptions = inlineOptions.compilation?.output;
+
+  if (outputOptions?.path) {
     userConfig.compilation = {
       ...(userConfig.compilation ?? {})
     };
 
     userConfig.compilation.output = {
       ...(userConfig.compilation.output ?? {}),
-      path: inlineOptions.outDir
+      path: outputOptions?.path
+    };
+  }
+
+  if (outputOptions?.targetEnv) {
+    userConfig.compilation = {
+      ...(userConfig.compilation ?? {})
+    };
+
+    userConfig.compilation.output = {
+      ...(userConfig.compilation.output ?? {}),
+      targetEnv: outputOptions?.targetEnv
     };
   }
 
