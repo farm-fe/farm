@@ -2,6 +2,7 @@ import type { PluginContext } from 'rollup';
 import type { UserConfig } from '../../config/types.js';
 import type { CompilationContext } from '../type.js';
 import { DefaultLogger } from '../../utils/logger.js';
+import { revertNormalizePath } from './utils.js';
 
 const contextCache = new Map<string, PluginContext>();
 
@@ -121,20 +122,35 @@ export function farmContextToViteContext(
         `Vite plugin ${pluginName} is not compatible with Farm for now. Because parse(called by hook ${pluginName}.${hookName}) is not supported in Farm`
       );
     },
-    resolve: async (source, importer, options) => {
+    resolve: async (source, importer, options = {}) => {
       if (options.custom?.caller === `${pluginName}.${hookName}`) {
         return null;
       }
+
+      // if importer is a windows style absolute path, replace all / with \\ to make it a valid windows path
+      if (/^[a-zA-Z]:\//.test(importer)) {
+        importer = revertNormalizePath(importer);
+      }
+
       const farmResolveResult = await farmContext.resolve(
         {
           source,
-          importer,
+
+          importer: importer.replaceAll('/', '\\'),
           kind: options.isEntry ? 'entry' : 'import'
         },
         {
           meta: {},
           caller: `${pluginName}.${hookName}`
         }
+      );
+
+      console.log(
+        'context.resolve',
+        source,
+        importer,
+        options,
+        farmResolveResult
       );
 
       if (farmResolveResult) {
