@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.4.1
+
+### Patch Changes
+
+- ea128f69: use log level with debug
+
 ## 3.4.0
 
 ### Minor Changes
