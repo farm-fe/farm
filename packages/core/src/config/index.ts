@@ -648,14 +648,29 @@ function mergeInlineCliOptions(
     }
   });
 
-  userConfig.compilation = {
-    ...(userConfig.compilation ?? {}),
-    output: {
-      ...(userConfig.compilation?.output ?? {}),
-      path: inlineOptions.compilation?.output?.path,
-      targetEnv: inlineOptions.compilation?.output?.targetEnv
-    }
-  };
+  const outputOptions = inlineOptions.compilation?.output;
+
+  if (outputOptions.path) {
+    userConfig.compilation = {
+      ...(userConfig.compilation ?? {})
+    };
+
+    userConfig.compilation.output = {
+      ...(userConfig.compilation.output ?? {}),
+      path: outputOptions?.path
+    };
+  }
+
+  if (outputOptions.targetEnv) {
+    userConfig.compilation = {
+      ...(userConfig.compilation ?? {})
+    };
+
+    userConfig.compilation.output = {
+      ...(userConfig.compilation.output ?? {}),
+      targetEnv: outputOptions?.targetEnv
+    };
+  }
 
   // set server options
   ['port', 'open', 'https', 'hmr', 'host', 'strictPort'].forEach(

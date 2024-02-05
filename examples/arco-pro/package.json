@@ -2,7 +2,6 @@
   "name": "@farmfe-examples/arco-design-pro",
   "version": "1.0.0",
   "description": "Arco Design Pro",
-  "private": true,
   "scripts": {
     "start": "farm start",
     "dev": "farm start",
