@@ -368,7 +368,10 @@ pub fn handle_entry_resources(
       // TODO support sourcemap
       entry_js_resource.bytes = vec![
         if !dep_resources.is_empty() {
-          format!("import \"./{}\";", runtime_resource.name)
+          match context.config.output.format {
+            ModuleFormat::EsModule => format!("import \"./{}\";", runtime_resource.name),
+            ModuleFormat::CommonJs => format!("require(\"./{}\");", runtime_resource.name),
+          }
         } else {
           runtime_code.clone()
         },

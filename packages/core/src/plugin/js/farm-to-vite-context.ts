@@ -135,22 +135,13 @@ export function farmContextToViteContext(
       const farmResolveResult = await farmContext.resolve(
         {
           source,
-
-          importer: importer.replaceAll('/', '\\'),
+          importer,
           kind: options.isEntry ? 'entry' : 'import'
         },
         {
           meta: {},
           caller: `${pluginName}.${hookName}`
         }
-      );
-
-      console.log(
-        'context.resolve',
-        source,
-        importer,
-        options,
-        farmResolveResult
       );
 
       if (farmResolveResult) {

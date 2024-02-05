@@ -1,10 +1,11 @@
 import { createRequire } from 'node:module';
+import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { Config } from '../../../binding/index.js';
 import { ResolvedUserConfig } from '../index.js';
 import { RustPlugin } from '../../plugin/index.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
-import path from 'node:path';
 
 export async function normalizePersistentCache(
   config: Config['config'],
@@ -47,6 +48,23 @@ export async function normalizePersistentCache(
           return acc;
         }, {} as Record<string, string>)
     };
+  }
+
+  // add type of package.json to envs
+  const packageJsonPath = path.join(
+    config.root ?? process.cwd(),
+    'package.json'
+  );
+
+  if (existsSync(packageJsonPath)) {
+    const s = readFileSync(packageJsonPath).toString();
+    const packageJson = JSON.parse(s);
+    const affectedKeys = ['type', 'name'];
+
+    for (const key of affectedKeys) {
+      config.persistentCache.envs[`package.json[${key}]`] =
+        packageJson[key] ?? 'unknown';
+    }
   }
 
   if (!config.persistentCache.buildDependencies) {

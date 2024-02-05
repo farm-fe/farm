@@ -1,8 +1,7 @@
 {
-  "name": "farm-vue-sfc-reproduce",
+  "name": "@farmfe-examples/vue-sfc",
   "version": "1.0.0",
   "dependencies": {
-    "vite": "^5.0.12",
     "vue": "^3.4.15"
   },
   "devDependencies": {
@@ -13,7 +12,6 @@
   },
   "scripts": {
     "dev": "farm start",
-    "vite": "vite",
     "start": "farm start",
     "build": "farm build",
     "preview": "farm preview",
