@@ -1,5 +1,14 @@
 # @farmfe/js-plugin-solid
 
+## 2.3.1
+
+### Patch Changes
+
+- ea128f69: modify publish files
+- Updated dependencies [03d70a0d]
+- Updated dependencies [3d187053]
+  - @farmfe/core@0.16.5
+
 ## 2.3.0
 
 ### Patch Changes
