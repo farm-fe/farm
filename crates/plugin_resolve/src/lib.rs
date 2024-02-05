@@ -34,11 +34,6 @@ impl Plugin for FarmPluginResolve {
     "FarmPluginResolve"
   }
 
-  // Internal Resolve Plugin has the lower priority, so it will be executed at last
-  fn priority(&self) -> i32 {
-    99
-  }
-
   fn resolve(
     &self,
     param: &PluginResolveHookParam,

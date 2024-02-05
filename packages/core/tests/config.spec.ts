@@ -53,6 +53,8 @@ test('resolveUserConfig', async () => {
     envs: {
       FARM_PROCESS_ENV: '{"NODE_ENV":"test"}',
       NODE_ENV: 'test',
+      'package.json[name]': 'farm-fe',
+      'package.json[type]': 'unknown',
       'process.env.NODE_ENV': 'test',
       FARM_HMR_HOST: 'true',
       FARM_HMR_PATH: '/__hmr',
@@ -138,6 +140,8 @@ test('resolveUserConfig-prod', async () => {
     envs: {
       FARM_PROCESS_ENV: '{"NODE_ENV":"test"}',
       NODE_ENV: 'test',
+      'package.json[name]': 'farm-fe',
+      'package.json[type]': 'unknown',
       'process.env.NODE_ENV': 'test'
     },
     moduleCacheKeyStrategy: {}

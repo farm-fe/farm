@@ -99,6 +99,10 @@ impl SourceMapGenConfig for FarmSwcSourceMapConfig {
   fn file_name_to_source(&self, f: &FileName) -> String {
     f.to_string()
   }
+
+  fn emit_columns(&self, _f: &FileName) -> bool {
+    true
+  }
 }
 
 /// minify comments, the rule is same as swc, see https://github.com/swc-project/swc/blob/main/crates/swc_compiler_base/src/lib.rs
