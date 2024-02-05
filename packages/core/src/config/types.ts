@@ -136,6 +136,7 @@ export interface FarmCLIOptions
   logger?: Logger;
   config?: string;
   configPath?: string;
+  compilation?: Config['config'];
   mode?: string;
   root?: string;
   server?: FarmCLIServerOptions;

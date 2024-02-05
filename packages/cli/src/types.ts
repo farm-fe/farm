@@ -35,7 +35,16 @@ export interface FarmCLIBuildOptions {
   minify?: boolean;
   treeShaking?: boolean;
   format?: 'cjs' | 'esm';
-  targetEnv?: 'node' | 'browser';
+  target?:
+    | 'browser'
+    | 'node'
+    | 'node16'
+    | 'node-legacy'
+    | 'node-next'
+    | 'browser-legacy'
+    | 'browser-es2015'
+    | 'browser-es2017'
+    | 'browser-esnext';
 }
 
 export interface FarmCLIPreviewOptions {

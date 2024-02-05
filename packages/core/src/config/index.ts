@@ -648,16 +648,14 @@ function mergeInlineCliOptions(
     }
   });
 
-  if (inlineOptions.outDir) {
-    userConfig.compilation = {
-      ...(userConfig.compilation ?? {})
-    };
-
-    userConfig.compilation.output = {
-      ...(userConfig.compilation.output ?? {}),
-      path: inlineOptions.outDir
-    };
-  }
+  userConfig.compilation = {
+    ...(userConfig.compilation ?? {}),
+    output: {
+      ...(userConfig.compilation?.output ?? {}),
+      path: inlineOptions.compilation.output?.path,
+      targetEnv: inlineOptions.compilation.output?.targetEnv
+    }
+  };
 
   // set server options
   ['port', 'open', 'https', 'hmr', 'host', 'strictPort'].forEach(

@@ -87,7 +87,7 @@ cli
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .option('-w, --watch', 'watch file change')
-  .option('--targetEnv <target>', 'transpile targetEnv node, browser')
+  .option('--target <target>', 'transpile targetEnv node, browser')
   .option('--format <format>', 'transpile format esm, commonjs')
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
@@ -98,7 +98,8 @@ cli
       compilation: {
         watch: options.watch,
         output: {
-          targetEnv: options?.targetEnv,
+          path: options?.outDir,
+          targetEnv: options?.target,
           format: options?.format
         },
         input: {
@@ -118,21 +119,30 @@ cli
 
 cli
   .command('watch', 'watch file change')
-  .option('--format <format>', 'transpile format esm, commonjs')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
+  .option('--target <target>', 'transpile targetEnv node, browser')
+  .option('--format <format>', 'transpile format esm, commonjs')
+  .option('--sourcemap', 'output source maps for build')
+  .option('--treeShaking', 'Eliminate useless code without side effects')
+  .option('--minify', 'code compression at build time')
   .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
     const configPath = getConfigPath(options.config);
     const defaultOptions = {
-      mode: options.mode,
       compilation: {
         output: {
-          path: options.outDir
+          path: options?.outDir,
+          targetEnv: options?.target,
+          format: options?.format
         },
         input: {
-          index: options.input
-        }
+          index: options?.input
+        },
+        sourcemap: options.sourcemap,
+        minify: options.minify,
+        treeShaking: options.treeShaking
       },
+      mode: options.mode,
       configPath
     };
 
