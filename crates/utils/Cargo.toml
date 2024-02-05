@@ -5,6 +5,9 @@ edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
 description = "farm utils"
 license = "MIT"
+homepage = "https://farm-fe.github.io"
+repository = "https://github.com/farm-fe/farm"
+readme = "README.md"
 
 [dependencies]
 pathdiff = "0.2"
