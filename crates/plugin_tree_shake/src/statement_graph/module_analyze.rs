@@ -24,7 +24,7 @@ pub enum ItemId {
 impl ItemId {
   pub fn index(&self) -> usize {
     match self {
-      ItemId::Item { index, kind } => index.clone(),
+      ItemId::Item { index, kind: _ } => index.clone(),
     }
   }
 }
@@ -231,7 +231,6 @@ impl ModuleAnalyze {
             write_vars: used_ids.vars.write,
             ..Default::default()
           };
-          println!("___index: {} {:?}", index, stmt);
 
           let id = ItemId::Item {
             index,
@@ -322,7 +321,6 @@ impl ModuleAnalyze {
         }
       }
 
-      // TODO: 嵌套引用链接的时机
       for nested_read in &item.nested_read_vars {
         if let Some(nested_read_id) = self.vars.get(nested_read).cloned() {
           self.add_edge(item_id.clone(), nested_read_id, Mode::Read);
@@ -564,7 +562,6 @@ impl Visit for CollectIdent {
     if self.call {
       self.call_reads.push(n.to_id());
     }
-
     match self.enforce.as_ref().unwrap_or(&self.mode) {
       Mode::Read => self.vars.read.push(n.to_id()),
       Mode::Write => self.vars.write.push(n.to_id()),

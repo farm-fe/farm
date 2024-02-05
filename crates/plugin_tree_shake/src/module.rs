@@ -109,7 +109,6 @@ impl UsedExports {
       UsedExports::Partial(self_used_exports) => {
         *self = UsedExports::All(mem::take(self_used_exports));
       }
-      // UsedExports::All(_) => todo!(),
       _ => {}
     }
   }
@@ -212,7 +211,6 @@ impl TreeShakeModule {
     module: &Module,
     globals: &Globals,
   ) -> HashMap<StatementId, HashSet<String>> {
-    println!("used_statements: {}", self.module_id.to_string());
     farmfe_core::farm_profile_function!(format!(
       "used_statements {:?}",
       self.module_id.to_string()
@@ -221,7 +219,6 @@ impl TreeShakeModule {
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
 
-    println!("used_exports_idents: {:#?}", used_exports_idents);
     let mut stmt_used_idents_map = HashMap::new();
 
     for (used_ident, stmt_id) in used_exports_idents {
@@ -291,69 +288,16 @@ impl TreeShakeModule {
         }
       }
 
-      // print ids and items_map
-
-      let print_items = |headers: &'static str, iter: Iter<Id>| {
-        if iter.is_empty() {
-          return;
-        }
-
-        print!("    {}", headers);
-
-        for (index, var_decls) in iter.enumerate() {
-          print!(
-            "{}",
-            format!(
-              "{:?} {}",
-              var_decls.0.to_string(),
-              if index > 0 { "" } else { ", " }
-            )
-          );
-        }
-
-        print!("\n");
-      };
-
-      // print_items("reads: ", &|item| &item.read_vars);
-
-      for id in &ids {
-        let item = &items_map[id];
-        match id {
-          ItemId::Item { index, kind } => println!("index: {} kind: {:?}", index, kind),
-        }
-
-        print_items("var_decls: ", item.var_decls.iter());
-
-        print_items("reads: ", item.read_vars.iter());
-
-        print_items("writes: ", item.write_vars.iter());
-
-        print_items("nested_read_vars: ", item.nested_read_vars.iter());
-
-        print_items("nested_write_vars: ", item.nested_write_vars.iter());
-
-        if item.side_effects {
-          println!("    side_effect")
-        }
-
-        print!("\n")
-      }
-
       stmt_graph.connect(&items_map, &ids);
 
       // global side used global variables
       try_with(Default::default(), globals, || {
         let side_effect_ids = stmt_graph.global_reference(&ids, &items_map, unresolved_mark);
-        println!("___side_effect_ids: {:#?}", side_effect_ids);
         entries.extend(side_effect_ids);
       })
       .unwrap();
 
       entries.extend(stmt_graph.reference_side_effect_ids(&ids, &items_map));
-      println!(
-        "___reference_side_effect_ids: {:#?}",
-        stmt_graph.reference_side_effect_ids(&ids, &items_map)
-      );
 
       // self executed stmts
       for index in self.stmt_graph.stmts().iter().filter_map(|stmt| {
@@ -363,29 +307,16 @@ impl TreeShakeModule {
           None
         }
       }) {
-        println!(
-          "___self_executed: stmt:{} {:?}",
-          index,
-          stmt_graph.items(&index)
-        );
         entries.extend(stmt_graph.items(&index));
       }
 
-      stmt_graph.print_graph();
-
       let mut used_self_execute_stmts = HashSet::new();
-
-      // entries.extend(stmt_used_idents_map.keys());
-
-      // println!("___stmt_graph: {:#?}", self.stmt_graph.stmts());
 
       for stmt in stmt_used_idents_map.keys() {
         entries.extend(stmt_graph.items(stmt))
       }
 
       let write_stmt = stmt_graph.write_edges();
-
-      println!("___entries: {:?}", entries,);
 
       fn dfs<'a>(
         entry: &'a ItemId,
@@ -398,15 +329,6 @@ impl TreeShakeModule {
         stack.push(entry);
 
         let edges = module_define_graph.reference_edges(entry);
-        println!(
-          "___index: {}, visited: {:?}, edges: {:#?}",
-          entry.index(),
-          edges.is_empty()
-            || visited.contains(entry)
-            || !module_define_graph.has_node(entry)
-            || !edges.iter().any(|(_, mode)| matches!(mode, Mode::Read)),
-          edges
-        );
 
         if edges.is_empty()
           || visited.contains(entry)
@@ -449,14 +371,10 @@ impl TreeShakeModule {
         );
       }
 
-      println!("___reference_chain: {:#?}", reference_chain);
-
       let reference_stmts = reference_chain
         .iter()
         .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
         .collect::<HashSet<_>>();
-
-      println!("___write_stmt: {:?}", write_stmt);
 
       for (source, target) in write_stmt {
         if reference_stmts.contains(&target.index()) {
@@ -469,8 +387,6 @@ impl TreeShakeModule {
           .into_iter()
           .filter(|index| self.stmt_graph.stmt(&index).import_info.is_none()),
       );
-
-      println!("___used_self_execute_stmts: {:?}", used_self_execute_stmts);
 
       for stmt in stmt_used_idents_map.keys() {
         used_self_execute_stmts.remove(stmt);
@@ -492,8 +408,6 @@ impl TreeShakeModule {
       }
     }
 
-    println!("___stmt_used_idents_map: {:?}", stmt_used_idents_map);
-
     // 2. analyze used statements starting from used exports
 
     self
@@ -506,11 +420,6 @@ impl TreeShakeModule {
       "used_exports_idents {:?}",
       self.module_id.to_string()
     ));
-    println!(
-      "used_exports: {} {:#?}",
-      self.module_id.to_string(),
-      self.used_exports
-    );
 
     match &self.used_exports {
       UsedExports::All(_) => {

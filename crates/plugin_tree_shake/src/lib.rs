@@ -43,19 +43,6 @@ fn toposort(
     ident: usize,
     cyclic_node: &mut Vec<ModuleId>,
   ) {
-    println!(
-      "{}{} {:?} {}",
-      " ".repeat(ident * 2),
-      entry.to_string(),
-      graph.module(entry).unwrap().module_type,
-      if stack.iter().any(|m| m == entry) {
-        "circle"
-      } else {
-        ""
-      }
-    );
-
-    //
     // cycle detected
     if let Some(pos) = stack.iter().position(|m| m == entry) {
       // while see ahead of the stack, mark parse import specify
@@ -210,12 +197,6 @@ impl Plugin for FarmPluginTreeShake {
       .for_each(|module| {
         let meta = module.meta.as_script_mut();
 
-        println!(
-          "___module_graph meta: {} {} {}",
-          module.id.to_string(),
-          meta.top_level_mark,
-          meta.unresolved_mark
-        );
         if meta.top_level_mark != 0 || meta.unresolved_mark != 0 {
           return;
         }
@@ -224,10 +205,7 @@ impl Plugin for FarmPluginTreeShake {
 
         let (unresolved_mark, top_level_mark) =
           resolve_module_mark(ast, module.module_type.is_typescript(), context);
-        println!(
-          "___unresolved_mark: {:?}, top_level_mark: {:?}",
-          unresolved_mark, top_level_mark
-        );
+
         module.meta.as_script_mut().unresolved_mark = unresolved_mark.as_u32();
         module.meta.as_script_mut().top_level_mark = top_level_mark.as_u32();
       });
@@ -247,20 +225,6 @@ impl Plugin for FarmPluginTreeShake {
       toposort(&module_graph, &mut tree_shake_modules_map)
       // module_graph.toposort()
     };
-
-    println!("cyclic_modules: {:#?}", cyclic_modules);
-
-    // mark cyclic modules as side_effects
-    // for chain in cyclic_modules {
-    //   println!(
-    //     "___circle_paths: {:#?}",
-    //     chain.iter().map(|m| m.to_string()).collect::<Vec<_>>()
-    //   );
-    //   for module_id in chain {
-    //     let module = module_graph.module_mut(&module_id).unwrap();
-    //     module.side_effects = true;
-    //   }
-    // }
 
     // mark entry modules as side_effects
     for (entry_module_id, _) in module_graph.entries.clone() {
@@ -306,14 +270,6 @@ impl Plugin for FarmPluginTreeShake {
 
     let mut tree_shake_modules_ids = VecDeque::from(tree_shake_modules_ids);
 
-    println!(
-      "___tree_shake_modules_ids: {:#?}",
-      tree_shake_modules_ids
-        .iter()
-        .map(|(item, _)| item.to_string())
-        .collect::<Vec<_>>()
-    );
-
     fn reanalyze_module(
       module_id: &ModuleId,
       module_graph: &ModuleGraph,
@@ -335,11 +291,6 @@ impl Plugin for FarmPluginTreeShake {
 
     // traverse the tree_shake_modules
     while let Some((tree_shake_module_id, shake_type)) = tree_shake_modules_ids.pop_front() {
-      println!(
-        "\n\n\n___start process tree_shake_module: {:?} ShakeType:{:?}",
-        tree_shake_module_id, shake_type
-      );
-
       let tree_shake_module = tree_shake_modules_map
         .get_mut(&tree_shake_module_id)
         .unwrap();
@@ -349,7 +300,6 @@ impl Plugin for FarmPluginTreeShake {
         tree_shake_module.module_system,
         farmfe_core::module::ModuleSystem::EsModule
       ) {
-        println!("___module_system: {:?}", tree_shake_module.module_system);
         for (dep_id, _) in module_graph.dependencies(&tree_shake_module_id) {
           let dep_tree_shake_module = tree_shake_modules_map.get_mut(&dep_id);
 
@@ -360,12 +310,9 @@ impl Plugin for FarmPluginTreeShake {
       } else {
         // if module is esm and the module has side effects, add imported identifiers to [UsedExports::Partial] of the imported modules
         if tree_shake_module.side_effects {
-          println!("___as site_effects=true module process");
           let imports = tree_shake_module.imports();
           let exports = tree_shake_module.exports();
 
-          println!("___imports {:#?}", imports);
-          // println!("___side_effect_tree: {:#?}", );
           for import_info in &imports {
             add_used_exports_by_import_info(
               &mut tree_shake_modules_map,
@@ -384,15 +331,9 @@ impl Plugin for FarmPluginTreeShake {
             );
           }
         } else {
-          println!("___as site_effects=false module process");
           let tree_shake_module = tree_shake_modules_map
             .get_mut(&tree_shake_module_id)
             .unwrap();
-
-          println!(
-            "___tree_shake_module.used_exports: {:#?}",
-            tree_shake_module.used_exports
-          );
 
           if let ShakeType::CheckNeedRemoveImport(imports) = &shake_type {
             let mut wait_remove_imports = vec![];
@@ -454,7 +395,6 @@ impl Plugin for FarmPluginTreeShake {
           let mut removed_exports = vec![];
 
           if let ShakeType::CircleRemove(Some((from, delay))) = &shake_type {
-            println!("___circle remove process");
             let tree_shake_module = tree_shake_modules_map
               .get_mut(&tree_shake_module_id)
               .unwrap();
@@ -471,11 +411,6 @@ impl Plugin for FarmPluginTreeShake {
                 _ => {}
               }
             }
-
-            println!(
-              "___tree_shake_module.exports(): {:#?}",
-              tree_shake_module.exports()
-            );
 
             for export in tree_shake_module.exports() {
               for specify in &export.specifiers {
@@ -544,11 +479,6 @@ impl Plugin for FarmPluginTreeShake {
             ) else {
               continue;
             };
-
-            println!(
-              "___visited_modules has: {:?}",
-              visited_modules.contains(&module_id)
-            );
 
             // If still in the queue
             if !visited_modules.contains(&module_id) {
@@ -631,28 +561,12 @@ impl Plugin for FarmPluginTreeShake {
     // update used_exports in module_graph
     for module in module_graph.modules_mut() {
       if let Some(tree_shake_module) = tree_shake_modules_map.get(&module.id) {
-        println!("___module id: {}", module.id.to_string());
-
         let mut used_exports = tree_shake_module.used_exports.to_string_vec();
         used_exports.sort();
-        println!("    raw used_exports {:?}", tree_shake_module.used_exports);
-        println!("    used_exports {:?}", used_exports);
-
-        if used_exports.is_empty() {
-          println!("    used_exports is empty",);
-        }
 
         module.used_exports = used_exports;
       }
     }
-
-    println!(
-      "___modules_to_remove: {:#?}",
-      modules_to_remove
-        .iter()
-        .map(|item| item.to_string())
-        .collect::<Vec<_>>()
-    );
 
     // remove the unused modules
     for module_id in modules_to_remove {
@@ -685,18 +599,11 @@ fn add_used_exports_by_import_info(
     });
 
   if import_info.is_import_executed {
-    // TODO: is_self_executed_import 前置
     imported_tree_shake_module.is_self_executed_import = true;
-    // imported_tree_shake_module.side_effects = true;
     return;
   }
 
   if import_info.specifiers.is_empty() {
-    // imported_tree_shake_module
-    //   .used_exports
-    //   .add_used_export(&module::UsedIdent::ExportAll);
-    // imported_tree_shake_module.used_exports.change_all();
-    // imported_tree_shake_module.side_effects = true;
     return;
   }
 
@@ -754,12 +661,6 @@ fn remove_used_exports_by_import_info(
   if imported_module.external || !imported_module.module_type.is_script() {
     return None;
   }
-
-  println!(
-    "___remove_used_exports_by_import_info: in {:?} affect {:?}",
-    tree_shake_module_id,
-    imported_module_id.to_string()
-  );
 
   let imported_tree_shake_module = tree_shake_modules_map
     .get_mut(&imported_module_id)
@@ -843,9 +744,6 @@ fn removed_used_exports_by_export_info(
     let exported_module_id = module_graph.get_dep_by_source(tree_shake_module_id, source);
     let exported_module = module_graph.module(&exported_module_id).unwrap();
 
-    println!("___removed_used_exports_by_export_info: {:?}", export_info);
-    println!("___exported_module_id: {:?}", exported_module_id);
-
     if !exported_module.module_type.is_script() || exported_module.external {
       return None;
     }
@@ -856,13 +754,7 @@ fn removed_used_exports_by_export_info(
 
     for sp in &export_info.specifiers {
       match sp {
-        statement_graph::ExportSpecifierInfo::Namespace(_) => {
-          // TODO: 待确认删除项
-          // exported_tree_shake_module
-          //   .used_exports
-          //   .remove_used_export(&module::UsedIdent::ExportAll);
-          // updated = true;
-        }
+        statement_graph::ExportSpecifierInfo::Namespace(_) => {}
         statement_graph::ExportSpecifierInfo::Named { local, .. } => {
           if local == &"default".to_string() {
             exported_tree_shake_module
@@ -934,7 +826,6 @@ fn add_used_exports_by_export_info(
 
     for sp in &export_info.specifiers {
       match sp {
-        // TODO: namespace 被清除时，撤销
         statement_graph::ExportSpecifierInfo::Namespace(_) => {
           // exported_tree_shake_module.used_exports.change_all();
           exported_tree_shake_module
@@ -958,7 +849,6 @@ fn add_used_exports_by_export_info(
             .used_exports
             .add_used_export(tree_shake_module_id, &module::UsedIdent::Default);
         }
-        // TODO: 关于 export 时添加的 used_export
         statement_graph::ExportSpecifierInfo::All(used_idents) => {
           if let Some(used_idents) = used_idents {
             for ident in used_idents {
@@ -998,10 +888,7 @@ fn replace_used_export_by_export_info(
     }
 
     let exported_tree_shake_module = tree_shake_modules_map.get_mut(&exported_module_id).unwrap();
-    println!(
-      "___replace_used_export_idents: {:#?}",
-      exported_tree_shake_module.used_exports
-    );
+
     exported_tree_shake_module
       .used_exports
       .remove_all_used_export(tree_shake_module_id);

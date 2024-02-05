@@ -141,7 +141,6 @@ impl StatementGraph {
 
     for stmt in graph.stmts() {
       // find the statement that defines the ident
-      // println!("___statement node: index:{} {:#?}", stmt.id, stmt);
       for def_stmt in graph.stmts() {
         let mut deps_idents = HashSet::new();
 
@@ -158,7 +157,6 @@ impl StatementGraph {
     }
 
     for (from, to, idents) in edges_to_add {
-      // println!("___statement edges: {} {} {:?}", from, to, idents);
       graph.add_edge(from, to, idents);
     }
 
@@ -241,8 +239,6 @@ impl StatementGraph {
     let mut used_exports: Vec<_> = used_exports.into_iter().collect();
     used_exports.sort_by(|a, b| a.0.cmp(&b.0));
 
-    println!("___used_exports: {:#?}", used_exports);
-
     for (stmt_id, used_export_idents) in used_exports {
       let mut used_dep_idents = HashSet::new();
       let mut used_defined_idents = HashSet::new();
@@ -301,10 +297,6 @@ impl StatementGraph {
         hash
       };
 
-      // println!(
-      //   "________stmt_id: {}, used_export_idents: {:#?}",
-      //   stmt_id, used_export_idents
-      // );
       while let Some((stmt_id, used_defined_idents, used_dep_idents)) = stmts.pop_front() {
         let hash = hash_stmt(&stmt_id, &used_defined_idents);
 
@@ -323,9 +315,7 @@ impl StatementGraph {
 
         let deps = self.dependencies(&stmt_id);
 
-        // println!("___xxxxx: {:?}", deps);
         for (dep_stmt, dep_idents) in deps {
-          println!("___dep_stmt {}", dep_stmt.id);
           if dep_idents.iter().any(|di| used_dep_idents.contains(di)) {
             let mut dep_stmt_idents = HashSet::new();
             let mut dep_used_defined_idents = HashSet::new();

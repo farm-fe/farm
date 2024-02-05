@@ -34,7 +34,6 @@ pub fn remove_useless_stmts(
   Vec<ExportInfo>,
   Vec<ImportInfo>,
 ) {
-  println!("remove_useless_stmts {}", tree_shake_module_id.to_string());
   farmfe_core::farm_profile_function!(format!(
     "remove_useless_stmts {:?}",
     tree_shake_module_id.to_string()
@@ -57,10 +56,7 @@ pub fn remove_useless_stmts(
   let mut removed_import_info = vec![];
   let mut removed_export_info = vec![];
 
-  println!("used_stmts: {:?}", used_stmts);
   let mut stmts_to_remove = vec![];
-
-  println!("swc_module.body: len: {:?}", swc_module.body.len());
 
   // remove unused specifiers in export statement and import statement
   for (stmt_id, used_defined_idents) in &used_stmts {
@@ -70,7 +66,6 @@ pub fn remove_useless_stmts(
       analyze_imports_and_exports(stmt_id, module_item, Some(used_defined_idents.clone()));
 
     if let Some(import_info) = import_info {
-      println!("___stmts_import: {}, {:?}", stmt_id, import_info);
       if import_info.is_import_executed {
         used_import_infos.push(import_info.clone());
       } else {
@@ -138,12 +133,6 @@ pub fn remove_useless_stmts(
     .iter()
     .map(|(index, _)| index)
     .collect::<Vec<_>>();
-
-  println!(
-    "___used_stmts_indexes: {} {:?}",
-    swc_module.body.len(),
-    used_stmts_indexes
-  );
 
   // remove the unused statements from the module
   for (index, stmt) in swc_module.body.iter().enumerate() {
@@ -232,11 +221,6 @@ pub fn remove_useless_stmts(
   let module = module_graph.module_mut(tree_shake_module_id).unwrap();
   let swc_module = &mut module.meta.as_script_mut().ast;
 
-  println!(
-    "stmts_to_remove: {:?} {:?}",
-    stmts_to_remove, pending_transform_stmts
-  );
-
   let mut wait_check_need_remove_import = vec![];
   // transform the import statement to import 'xxx'
   for (stmt_index, ty) in pending_transform_stmts {
@@ -261,11 +245,6 @@ pub fn remove_useless_stmts(
   for index in stmts_to_remove {
     swc_module.body.remove(index);
   }
-
-  println!(
-    "remove_useless_stmts return: \n    used_import_infos: {:?}\n    used_export_from_infos: {:?}\n    removed_import_info: {:?}\n    removed_export_info: {:?}\n    wait_check_need_remove_import: {:?}",
-    used_import_infos, used_export_from_infos, removed_import_info, removed_export_info, wait_check_need_remove_import
-  );
 
   (
     used_import_infos,
@@ -304,15 +283,6 @@ fn filter_stmts_to_remove(
     match &swc_module.body[stmt_index] {
       ModuleItem::ModuleDecl(module_decl) => match module_decl {
         ModuleDecl::Import(import_decl) => {
-          // let import_module_id = module_graph
-          //   .get_dep_by_source(tree_shake_module_id, &import_decl.src.value.to_string());
-          // println!("import_module_id: {} {:?}", import_module_id.to_string(), tree_shake_module_map[&import_module_id].contains_self_executed_stmt);
-          // if tree_shake_module_map[&import_module_id].contains_self_executed_stmt {
-          //   let source = import_decl.src.value.to_string();
-          //   continue;
-          // }
-
-          // filtered_stmts_to_remove.push(stmt_index);
           pending_transforms.push((
             stmt_index,
             PendingTransformType::Import,
@@ -320,17 +290,10 @@ fn filter_stmts_to_remove(
           ));
         }
         ModuleDecl::ExportNamed(_) => {
-          // if let Some(source) = &named.src {
-          //   let source = source.value.to_string();
-          //   pending_transforms.push((stmt_index, PendingTransformType::ExportFrom, source));
-          // } else {
           filtered_stmts_to_remove.push(stmt_index);
-          // }
         }
         ModuleDecl::ExportAll(_) => {
           filtered_stmts_to_remove.push(stmt_index);
-          // let source = export_all.src.value.to_string();
-          // pending_transforms.push((stmt_index, PendingTransformType::ExportAll, source));
         }
         _ => {
           filtered_stmts_to_remove.push(stmt_index);
@@ -350,7 +313,10 @@ fn filter_stmts_to_remove(
 
     if let Some(dep_module_id) = dep_module_id {
       if let Some(tree_shake_module) = tree_shake_module_map.get(&dep_module_id) {
-        if tree_shake_module.side_effects || tree_shake_module.is_self_executed_import || tree_shake_module.contains_self_executed_stmt {
+        if tree_shake_module.side_effects
+          || tree_shake_module.is_self_executed_import
+          || tree_shake_module.contains_self_executed_stmt
+        {
           match ty {
             PendingTransformType::Import => {
               pending_transform_stmts.push((stmt_index, PendingTransformType::Import));

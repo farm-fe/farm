@@ -144,7 +144,7 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
   let v: serde_json::Value = Env::from_raw(env)
     .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
     .unwrap();
-  println!("{:#?}", v);
+
   let param: PluginResolveHookParam = Env::from_raw(env)
     .from_js_value(JsUnknown::from_napi_value(env, argv[0]).expect(
       "Argument should be a PluginResolveHookParam { source, importer, kind } when calling resolve",

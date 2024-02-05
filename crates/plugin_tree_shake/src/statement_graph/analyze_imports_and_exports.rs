@@ -1,9 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use farmfe_core::{
-  swc_common::AstNode,
-  swc_ecma_ast::{self, Expr, ExprStmt, ModuleExportName, ModuleItem},
-};
+use farmfe_core::swc_ecma_ast::{self, Expr, ModuleExportName, ModuleItem};
 use farmfe_toolkit::swc_ecma_visit::VisitWith;
 
 use super::{
@@ -24,15 +21,6 @@ pub fn analyze_imports_and_exports(
   HashMap<String, HashSet<String>>,
   bool,
 ) {
-  let print = used_defined_idents.is_some();
-  if print {
-    // println!(
-    //   "analyze_imports_and_exports {:?}, used_defined_idents: {:#?}",
-    //   id.to_string(),
-    //   used_defined_idents
-    // );
-  }
-
   let mut defined_idents = HashSet::new();
   let mut used_idents = HashSet::new();
   let mut defined_idents_map = HashMap::new();
@@ -61,14 +49,6 @@ pub fn analyze_imports_and_exports(
 
   let is_ident_used = |ident: &String| {
     if let Some(used_defined_idents) = &used_defined_idents {
-      if print {
-        println!(
-          "ident_used check: {:#?} ident: {} {}",
-          used_defined_idents,
-          ident,
-          used_defined_idents.contains(ident)
-        );
-      }
       return used_defined_idents.contains(ident);
     }
 
@@ -193,7 +173,6 @@ pub fn analyze_imports_and_exports(
           });
         }
         _ => {
-          println!("decl {:?}", export_decl);
           unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration");
         }
       },
@@ -392,13 +371,6 @@ pub fn analyze_imports_and_exports(
       }
     },
   };
-
-  if print {
-    println!(
-      "analyze_imports_and_exports return: imports: {:#?}, exports: {:#?}, used_idents: {:?}",
-      imports, exports, used_idents
-    );
-  }
 
   (
     imports,
