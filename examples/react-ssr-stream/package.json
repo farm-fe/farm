@@ -1,0 +1,26 @@
+{
+  "name": "@farmfe-examples/react-ssr-stream",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "react": "18",
+    "react-dom": "18",
+    "react-router-dom": "^6.13.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/plugin-react": "workspace:*",
+    "@farmfe/plugin-sass": "workspace:*",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0"
+  },
+  "scripts": {
+    "start": "farm start",
+    "watch": "farm watch --config farm.config.server.mjs",
+    "build": "farm build",
+    "build:server": "farm build --config farm.config.server.mjs",
+    "preview": "farm preview"
+  }
+}

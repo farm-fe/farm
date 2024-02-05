@@ -67,6 +67,19 @@ export async function normalizePersistentCache(
     }
   }
 
+  // add type of package.json to envs
+  const packageJsonPath = path.join(
+    config.root ?? process.cwd(),
+    'package.json'
+  );
+
+  if (existsSync(packageJsonPath)) {
+    const s = readFileSync(packageJsonPath).toString();
+    const packageJson = JSON.parse(s);
+    config.persistentCache.envs['package.json[type]'] =
+      packageJson.type ?? 'unknown';
+  }
+
   if (!config.persistentCache.buildDependencies) {
     config.persistentCache.buildDependencies = [];
   }
