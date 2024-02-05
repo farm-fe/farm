@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 0.16.5
+
+### Patch Changes
+
+- 03d70a0d: make default resolve executed before normal plugins. fix #952.
+- 3d187053: make config.define part of cache key. fix #953
+- Updated dependencies [ea128f69]
+  - @farmfe/runtime-plugin-hmr@3.4.1
+
 ## 0.16.4
 
 ### Patch Changes
