@@ -650,7 +650,7 @@ function mergeInlineCliOptions(
 
   const outputOptions = inlineOptions.compilation?.output;
 
-  if (outputOptions.path) {
+  if (outputOptions?.path) {
     userConfig.compilation = {
       ...(userConfig.compilation ?? {})
     };
@@ -661,7 +661,7 @@ function mergeInlineCliOptions(
     };
   }
 
-  if (outputOptions.targetEnv) {
+  if (outputOptions?.targetEnv) {
     userConfig.compilation = {
       ...(userConfig.compilation ?? {})
     };
