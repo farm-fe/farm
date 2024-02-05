@@ -201,7 +201,7 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
 - With [Discord](https://discord.gg/mDErq9aFnF)
 
 - Wechat group
-<img src="https://github.com/ErKeLost/react/assets/66500121/1f054b83-11a3-4d48-a14e-88d68e147a1b" width="30%" />
+  <img src="https://github.com/ErKeLost/react/assets/66500121/1f054b83-11a3-4d48-a14e-88d68e147a1b" width="30%" />
 
 ## Contributors
 
@@ -223,4 +223,4 @@ Thanks to:
 
 ## Author
 
-brightwu（吴明亮）, worked at Bytedance.
+[brightwu（吴明亮）](https://github.com/wre232114), worked at Bytedance.
