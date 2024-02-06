@@ -13,7 +13,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: cargo-clippy
-          
+
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -31,6 +31,6 @@ jobs:
         with:
           node-version: 16
       - name: Install Dependencies
-        run: npm install -g pnpm@8.11.0 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
       - name: Run eslint
         run: npx eslint packages
