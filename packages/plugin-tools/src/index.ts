@@ -1,6 +1,6 @@
-import { execSync } from 'child_process';
-
 import { cac } from 'cac';
+import { createSpawnCmd } from '@farmfe/utils';
+
 import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
 
 import { copyArtifacts } from './copy-artifacts.js';
@@ -28,7 +28,7 @@ const cli = cac('farm-plugin-tools');
 cli
   .command('build', 'Build Farm Rust Plugin for current platform')
   .allowUnknownOptions()
-  .action((argsObj) => {
+  .action(async (argsObj) => {
     const cliPath = resolveNapiRsCli();
     console.log(cliPath);
     const args = process.argv.slice(3);
@@ -38,9 +38,8 @@ cli
     // all args are passed to napi-rs directly
     // 1. build with napi-rs
     try {
-      execSync(`node ${cliPath} build ${args.join(' ')}`, {
-        stdio: 'inherit'
-      });
+      const spawn = createSpawnCmd(process.cwd(), 'inherit');
+      await spawn('node', [cliPath, 'build', ...args]);
     } catch (e) {
       process.exit(1);
     }
@@ -54,13 +53,12 @@ cli
     'Publish platform packages before publish your Rust Plugin'
   )
   .allowUnknownOptions()
-  .action(() => {
+  .action(async () => {
     const cliPath = resolveNapiRsCli();
     // just call napi prepubish -t npm
     try {
-      execSync(`node ${cliPath} prepublish -t npm`, {
-        stdio: 'inherit'
-      });
+      const spawn = createSpawnCmd(process.cwd(), 'inherit');
+      await spawn('node', [cliPath, 'prepublish', '-t', 'npm']);
     } catch (e) {
       process.exit(1);
     }
