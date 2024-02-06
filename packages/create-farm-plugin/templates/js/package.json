@@ -2,37 +2,32 @@
   "name": "<FARM-JS-PLUGIN-NPM-NAME>",
   "version": "0.0.0",
   "description": "",
-  "main": "./build/index.cjs",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.cjs",
+  "types": "./dist/esm/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "default": "./build/index.cjs",
-      "require": "./build/index.cjs",
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./build/esm/index.mjs",
+      "require": "./build/cjs/index.cjs",
+      "import": "./dist/esm/index.mjs",
+      "types": "./dist/esm/index.d.ts"
     }
   },
   "scripts": {
-    "build:tsc": "tsc -p ./tsconfig.build.json",
-    "build": "farm build && npm run build:tsc",
-    "start": "farm build -w",
-    "dev": "farm build -w",
+    "build:cjs": "cross-env FARM_FORMAT=cjs farm build",
+    "build": "farm build && npm run build:cjs",
+    "start": "farm watch",
+    "dev": "farm watch",
     "prepublishOnly": "npm run build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "fast-glob": "^3.2.12",
-    "chalk": "^5.2.0",
-    "fs-extra": "^11.1.1",
-    "ts-morph": "^19.0.0"
-  },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
-    "@types/fs-extra": "^11.0.1"
+    "@farmfe/cli": "^0.6.1",
+    "@farmfe/core": "^0.16.5",
+    "@farmfe/js-plugin-dts": "^0.4.0",
+    "cross-env": "^7.0.3"
   },
   "files": [
     "dist",
