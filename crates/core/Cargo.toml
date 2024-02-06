@@ -38,8 +38,6 @@ swc_common = { version = "0.33.14", features = [
 ] }
 swc_css_ast = { version = "0.140.15", features = ["rkyv-impl"] }
 swc_css_prefixer = { version = "0.153.27" }
-swc_ecma_preset_env = { version = "0.205.1" }
-preset_env_base = { version = "0.4.10" }
 swc_html_ast = { version = "0.33.13", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.18.0", features = [

@@ -1337,7 +1337,6 @@ dependencies = [
  "hex",
  "parking_lot",
  "petgraph",
- "preset_env_base",
  "ptr_meta",
  "puffin",
  "rayon",
@@ -1353,7 +1352,6 @@ dependencies = [
  "swc_css_prefixer",
  "swc_ecma_ast 0.111.0",
  "swc_ecma_parser",
- "swc_ecma_preset_env",
  "swc_html_ast",
  "thiserror",
 ]

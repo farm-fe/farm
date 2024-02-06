@@ -5,6 +5,7 @@
     "noUnusedParameters": false,
     "noUnusedLocals": false,
     "outDir": "dist",
+    "rootDir": "src",
     "lib": ["DOM", "ESNext"],
     "noImplicitAny": true,
     "sourceMap": true,

@@ -30,9 +30,7 @@ cli
   .allowUnknownOptions()
   .action(async (argsObj) => {
     const cliPath = resolveNapiRsCli();
-    console.log(cliPath);
     const args = process.argv.slice(3);
-
     const abi = getArg(argsObj, args, '--abi');
 
     // all args are passed to napi-rs directly
@@ -55,7 +53,7 @@ cli
   .allowUnknownOptions()
   .action(async () => {
     const cliPath = resolveNapiRsCli();
-    // just call napi prepubish -t npm
+    // just call napi prepublish -t npm
     try {
       const spawn = createSpawnCmd(process.cwd(), 'inherit');
       await spawn('node', [cliPath, 'prepublish', '-t', 'npm']);

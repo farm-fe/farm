@@ -29,6 +29,7 @@
     "bundler"
   ],
   "files": [
+    "bin",
     "dist",
     "templates"
   ],

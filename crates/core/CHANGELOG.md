@@ -1,4 +1,5 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -9,16 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.1](https://github.com/farm-fe/farm/compare/farmfe_core-v0.2.0...farmfe_core-v0.2.1) - 2024-02-06
 
 ### Added
+
 - Provide universal JavaScript Api ([#944](https://github.com/farm-fe/farm/pull/944))
 - add progress plugin ([#948](https://github.com/farm-fe/farm/pull/948))
 - add filter for augmentResourceHash & renderResourcePot hook ([#899](https://github.com/farm-fe/farm/pull/899))
 - preserve comments [#607](https://github.com/farm-fe/farm/pull/607) ([#900](https://github.com/farm-fe/farm/pull/900))
 - add overlay window and optimize socket client interaction code ([#854](https://github.com/farm-fe/farm/pull/854))
-- *(hmr)* refactor hmr ([#835](https://github.com/farm-fe/farm/pull/835))
+- _(hmr)_ refactor hmr ([#835](https://github.com/farm-fe/farm/pull/835))
 - vue & solid ssr examples ([#849](https://github.com/farm-fe/farm/pull/849))
 - Support persistent cache and incremental building ([#476](https://github.com/farm-fe/farm/pull/476))
 - js plugin record viewer ([#661](https://github.com/farm-fe/farm/pull/661))
-- *(refactor)* RFC-003 New Partial Bundling Algorithm ([#559](https://github.com/farm-fe/farm/pull/559))
+- _(refactor)_ RFC-003 New Partial Bundling Algorithm ([#559](https://github.com/farm-fe/farm/pull/559))
 - Support js plugin hook context methods for unplugin ([#589](https://github.com/farm-fe/farm/pull/589))
 - generate stage add record ([#573](https://github.com/farm-fe/farm/pull/573))
 - feat support sourcemap chain based on swc sourcemap ([#528](https://github.com/farm-fe/farm/pull/528))
@@ -30,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support polyfill ([#255](https://github.com/farm-fe/farm/pull/255))
 - support css modules ([#230](https://github.com/farm-fe/farm/pull/230))
 - support script minification ([#191](https://github.com/farm-fe/farm/pull/191))
-- *(resolve)* add `TargetEnv` used to judgementthe current output environment ([#216](https://github.com/farm-fe/farm/pull/216))
+- _(resolve)_ add `TargetEnv` used to judgement the current output environment ([#216](https://github.com/farm-fe/farm/pull/216))
 - tree shake ([#99](https://github.com/farm-fe/farm/pull/99))
 - plugin resolve exports ([#150](https://github.com/farm-fe/farm/pull/150))
 - add string when generate css id and change query HashMap to Vec… ([#90](https://github.com/farm-fe/farm/pull/90))
@@ -46,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - init project with cargo and pnpm
 
 ### Fixed
+
 - [#857](https://github.com/farm-fe/farm/pull/857) [#460](https://github.com/farm-fe/farm/pull/460) ([#896](https://github.com/farm-fe/farm/pull/896))
 - [#878](https://github.com/farm-fe/farm/pull/878) ([#881](https://github.com/farm-fe/farm/pull/881))
 - [#850](https://github.com/farm-fe/farm/pull/850) ([#870](https://github.com/farm-fe/farm/pull/870))
@@ -63,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bugs when migrate from vite to farm ([#665](https://github.com/farm-fe/farm/pull/665))
 - Error in export field lookup algorithm ([#635](https://github.com/farm-fe/farm/pull/635))
 - css modules sourcemap gen fail ([#621](https://github.com/farm-fe/farm/pull/621))
-- lazy compialtion error and windows css error ([#454](https://github.com/farm-fe/farm/pull/454))
+- lazy compilation error and windows css error ([#454](https://github.com/farm-fe/farm/pull/454))
 - css hmr will always reload the whole page ([#413](https://github.com/farm-fe/farm/pull/413))
 - vue migrate bugs ([#357](https://github.com/farm-fe/farm/pull/357))
 - module system detection bug ([#345](https://github.com/farm-fe/farm/pull/345))
@@ -72,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - lazy compilation and partial bundling bug ([#44](https://github.com/farm-fe/farm/pull/44))
 
 ### Other
+
 - add release-plz to publish cargo crates
 - support minify options ([#907](https://github.com/farm-fe/farm/pull/907))
 - switch to chokidar ([#886](https://github.com/farm-fe/farm/pull/886))
@@ -79,11 +83,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - optimize cache 4 ([#820](https://github.com/farm-fe/farm/pull/820))
 - optimize cache 3 ([#786](https://github.com/farm-fe/farm/pull/786))
 - optimize cache 2 ([#785](https://github.com/farm-fe/farm/pull/785))
-- *(persistent-cache)* optimize cache ([#782](https://github.com/farm-fe/farm/pull/782))
+- _(persistent-cache)_ optimize cache ([#782](https://github.com/farm-fe/farm/pull/782))
 - update deps ([#740](https://github.com/farm-fe/farm/pull/740))
 - update record viewer ([#731](https://github.com/farm-fe/farm/pull/731))
 - resource pot render ([#675](https://github.com/farm-fe/farm/pull/675))
-- record  add hmr flag ([#696](https://github.com/farm-fe/farm/pull/696))
+- record add hmr flag ([#696](https://github.com/farm-fe/farm/pull/696))
 - Chore/opt vite plugin adapter ([#616](https://github.com/farm-fe/farm/pull/616))
 - Feat/js plugin adaptor ([#613](https://github.com/farm-fe/farm/pull/613))
 - support buildStart, buildEnd, updateModules js plugins hook ([#574](https://github.com/farm-fe/farm/pull/574))

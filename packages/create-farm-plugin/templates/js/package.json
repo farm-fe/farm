@@ -2,15 +2,15 @@
   "name": "<FARM-JS-PLUGIN-NPM-NAME>",
   "version": "0.0.0",
   "description": "",
-  "main": "./dist/cjs/index.cjs",
-  "types": "./dist/esm/index.d.ts",
+  "main": "./build/cjs/index.cjs",
+  "types": "./build/esm/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "default": "./build/esm/index.mjs",
       "require": "./build/cjs/index.cjs",
-      "import": "./dist/esm/index.mjs",
-      "types": "./dist/esm/index.d.ts"
+      "import": "./build/esm/index.mjs",
+      "types": "./build/esm/index.d.ts"
     }
   },
   "scripts": {
@@ -27,10 +27,10 @@
     "@farmfe/cli": "^0.6.1",
     "@farmfe/core": "^0.16.5",
     "@farmfe/js-plugin-dts": "^0.4.0",
+    "@types/node": "^20.11.16",
     "cross-env": "^7.0.3"
   },
   "files": [
-    "dist",
-    "build"
+    "dist"
   ]
 }

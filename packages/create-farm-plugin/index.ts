@@ -149,6 +149,10 @@ function replaceNamePlaceholders(
       replace: () => options.pluginName
     },
     {
+      name: '<FARM-RUST-PLUGIN-NPM-NAME>',
+      replace: () => options.pluginName
+    },
+    {
       name: '<FARM-RUST-PLUGIN-CARGO-NAME>',
       replace: () => {
         // replace @ to empty string and all invalid characters to _

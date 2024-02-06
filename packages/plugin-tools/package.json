@@ -38,7 +38,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/utils": "workspace:^",
+    "@farmfe/utils": "workspace:*",
     "@napi-rs/cli": "^2.15.2",
     "cac": "^6.7.14"
   }
