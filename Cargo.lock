@@ -1317,13 +1317,13 @@ dependencies = [
  "farmfe_plugin_tree_shake",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
  "num_cpus",
 ]
 
 [[package]]
 name = "farmfe_core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "blake2",
  "bytecheck 0.7.0",
@@ -1331,7 +1331,7 @@ dependencies = [
  "downcast-rs",
  "enhanced-magic-string",
  "farmfe_macro_cache_item",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
  "glob",
  "heck 0.4.1",
  "hex",
@@ -1358,7 +1358,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_macro_cache_item"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1367,7 +1367,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_macro_plugin"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1400,7 +1400,7 @@ dependencies = [
  "farmfe_macro_cache_item",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
  "rkyv",
 ]
 
@@ -1411,7 +1411,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
 ]
 
 [[package]]
@@ -1439,7 +1439,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
 ]
 
 [[package]]
@@ -1499,7 +1499,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
 ]
 
 [[package]]
@@ -1509,7 +1509,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
 ]
 
 [[package]]
@@ -1534,7 +1534,7 @@ dependencies = [
  "farmfe_swc_transformer_import_glob",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
  "once_cell",
  "swc_ecma_loader",
  "swc_plugin_proxy",
@@ -1549,7 +1549,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
  "mime_guess",
  "rkyv",
 ]
@@ -1561,7 +1561,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
 ]
 
 [[package]]
@@ -1571,7 +1571,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
 ]
 
 [[package]]
@@ -1589,7 +1589,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 0.1.1",
+ "farmfe_utils 0.1.2",
  "lazy_static",
  "preset_env_base",
  "sourcemap",
@@ -1616,7 +1616,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit_plugin_types"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "farmfe_core",
  "lazy_static",
@@ -1634,7 +1634,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_utils"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "base64 0.21.0",
  "pathdiff",
