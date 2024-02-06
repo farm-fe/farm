@@ -17,10 +17,12 @@ export interface ConfigEnv {
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
+export type UserConfigFnObject = (env: ConfigEnv) => UserConfig;
 
 export type UserConfigExport =
   | UserConfig
   | Promise<UserConfig>
+  | UserConfigFnObject
   | UserConfigFnPromise
   | UserConfigFn;
 
