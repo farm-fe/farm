@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.4.2
+
+### Patch Changes
+
+- 659244ed: Support create-farm-plugin and farm-plugin-tools
+
 ## 3.4.1
 
 ### Patch Changes

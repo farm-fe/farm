@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/utils",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "farmfe utils",
   "main": "dist/index.js",
   "type": "module",

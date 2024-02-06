@@ -1,5 +1,12 @@
 # create-farm
 
+## 1.5.10
+
+### Patch Changes
+
+- 96d87c7c: bump version
+- 659244ed: Support create-farm-plugin and farm-plugin-tools
+
 ## 1.5.9
 
 ### Patch Changes

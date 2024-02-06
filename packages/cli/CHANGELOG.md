@@ -1,5 +1,12 @@
 # @farmfe/cli
 
+## 0.6.2
+
+### Patch Changes
+
+- 96d87c7c: fix: cli options merge with config
+- 659244ed: Support create-farm-plugin and farm-plugin-tools
+
 ## 0.6.1
 
 ### Patch Changes
