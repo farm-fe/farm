@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.1.2
+
+### Patch Changes
+
+- 659244ed: Support create-farm-plugin and farm-plugin-tools
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 0.16.6
+
+### Patch Changes
+
+- 96d87c7c: fix: cli options merge with config
+- 659244ed: Support create-farm-plugin and farm-plugin-tools
+- Updated dependencies [659244ed]
+  - @farmfe/runtime-plugin-import-meta@0.1.2
+  - @farmfe/runtime-plugin-hmr@3.4.2
+  - @farmfe/runtime@0.9.3
+  - @farmfe/utils@0.0.1
+
 ## 0.16.5
 
 ### Patch Changes
