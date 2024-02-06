@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/farm-fe/farm/compare/farmfe_toolkit_plugin_types-v0.0.4...farmfe_toolkit_plugin_types-v0.0.5) - 2024-02-06
+
+### Other
+- create farm plugin ([#946](https://github.com/farm-fe/farm/pull/946))
+
 ## [0.0.4](https://github.com/farm-fe/farm/compare/farmfe_toolkit_plugin_types-v0.0.3...farmfe_toolkit_plugin_types-v0.0.4) - 2024-02-06
 
 ### Added
