@@ -30,7 +30,5 @@ export const copyArtifacts = async (abi?: string) => {
   );
 
   await copyFile(nodeFile, path.join('npm', abi, 'index.farm'));
-  console.log(
-    `Copied artifacts from ${name}.${abi}.node to npm/${abi}/index.farm`
-  );
+  console.log(`Copied artifacts from ${nodeFile} to npm/${abi}/index.farm`);
 };

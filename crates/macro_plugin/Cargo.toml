@@ -1,7 +1,12 @@
 [package]
 name = "farmfe_macro_plugin"
-version = "0.0.0"
+version = "0.0.1"
 edition = "2021"
+license = "MIT"
+description = "macro for farm plugins"
+homepage = "https://farm-fe.github.io"
+repository = "https://github.com/farm-fe/farm"
+readme = "README.md"
 
 [dependencies]
 proc-macro2 = "1"
