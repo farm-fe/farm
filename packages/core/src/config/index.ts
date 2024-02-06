@@ -26,6 +26,7 @@ import {
   green,
   isArray,
   isEmptyObject,
+  isObject,
   isWindows,
   Logger,
   normalizePath
@@ -42,23 +43,20 @@ import type {
   NormalizedServerConfig,
   ResolvedUserConfig,
   UserConfig,
+  UserConfigExport,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
+import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 
 export * from './types.js';
-export const DEFAULT_CONFIG_NAMES = [
-  'farm.config.ts',
-  'farm.config.js',
-  'farm.config.mjs'
-];
-
-const FARM_DEFAULT_NAMESPACE = 'FARM_DEFAULT_NAMESPACE';
-
+export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
-  config: UserConfig | Promise<UserConfig>
-): UserConfig | Promise<UserConfig> {
+  config: Promise<UserConfig>
+): Promise<UserConfig>;
+export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
+export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
 
@@ -104,7 +102,11 @@ export async function resolveConfig(
     throw new Error('configPath must be an absolute path');
   }
 
-  const loadedUserConfig = await loadConfigFile(configPath, logger);
+  const loadedUserConfig = await loadConfigFile(
+    configPath,
+    inlineOptions,
+    logger
+  );
 
   if (!loadedUserConfig) {
     return getDefaultConfig();
@@ -456,10 +458,12 @@ export function normalizeDevServerOptions(
 }
 
 async function readConfigFile(
+  inlineOptions: FarmCLIOptions,
   configFilePath: string,
   logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
+    let userConfig: UserConfigExport;
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // if config is written in typescript, we need to compile it to javascript using farm first
@@ -530,7 +534,7 @@ async function readConfigFile(
 
       try {
         // Change to vm.module of node or loaders as far as it is stable
-        return (await import(filePath as string)).default;
+        userConfig = (await import(filePath as string)).default;
       } finally {
         fs.unlink(filePath, () => void 0);
       }
@@ -539,8 +543,16 @@ async function readConfigFile(
         ? pathToFileURL(configFilePath)
         : configFilePath;
       // Change to vm.module of node or loaders as far as it is stable
-      return (await import(filePath as string)).default;
+      userConfig = (await import(filePath as string)).default;
     }
+    const configEnv = { mode: inlineOptions.mode ?? process.env.NODE_ENV };
+    const config = await (typeof userConfig === 'function'
+      ? userConfig(configEnv)
+      : userConfig);
+    if (!isObject(config)) {
+      throw new Error(`config must export or return an object.`);
+    }
+    return config;
   }
 }
 
@@ -738,6 +750,7 @@ async function resolveMergedUserConfig(
  */
 export async function loadConfigFile(
   configPath: string,
+  inlineOptions: FarmCLIOptions,
   logger: Logger = new DefaultLogger()
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
@@ -745,7 +758,11 @@ export async function loadConfigFile(
     const configFilePath = await getConfigFilePath(configPath);
 
     if (configFilePath) {
-      const config = await readConfigFile(configFilePath, logger);
+      const config = await readConfigFile(
+        inlineOptions,
+        configFilePath,
+        logger
+      );
       return {
         config: config && parseUserConfig(config),
         configFilePath: configFilePath
