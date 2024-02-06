@@ -38,6 +38,7 @@ pub fn remove_useless_stmts(
     "remove_useless_stmts {:?}",
     tree_shake_module_id.to_string()
   ));
+
   let tree_shake_module = tree_shake_module_map
     .get(tree_shake_module_id)
     .expect("tree shake module should exist");
@@ -75,7 +76,6 @@ pub fn remove_useless_stmts(
           used_import_infos.push(import_info.clone());
         }
 
-        // 把多余的 import specifier 删除掉
         let mut remover = UselessImportStmtsRemover {
           import_info,
           removed_specify: vec![],

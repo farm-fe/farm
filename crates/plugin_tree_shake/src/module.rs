@@ -12,7 +12,7 @@ use farmfe_core::{
 use farmfe_toolkit::script::swc_try_with::try_with;
 
 use crate::statement_graph::{
-  module_analyze::{ItemId, Mode, ModuleAnalyze},
+  module_analyze::{ItemId, Mode, ModuleAnalyze, ModuleAnalyzeItemEdge},
   ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,
 };
 
@@ -53,12 +53,6 @@ impl UsedExports {
           .entry(module_id.clone())
           .or_insert_with(Vec::new)
           .push(used_export.to_string());
-
-        // if let UsedExports::Partial(self_used_exports) = self {
-        //   if ns == used_export.to_string() {
-        //     *self = UsedExports::All(self_used_exports.drain(..).collect());
-        //   }
-        // }
       }
     }
   }
@@ -75,13 +69,6 @@ impl UsedExports {
           .position(|item| item == &s)
         {
           self_used_exports.get_mut(module_id).unwrap().remove(pos);
-
-          // let ns = UsedIdent::Namespace.to_string();
-          // if let UsedExports::All(self_used_exports) = self {
-          //   if self_used_exports.iter().any(|item| item != &ns) {
-          //     *self = UsedExports::Partial(self_used_exports.drain(..).collect());
-          //   }
-          // }
         }
       }
     };
@@ -116,13 +103,7 @@ impl UsedExports {
   pub fn to_string_vec(&self) -> Vec<String> {
     match self {
       UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
-        // let ns = UsedIdent::Namespace.to_string();
-        self_used_exports
-          .values()
-          .flatten()
-          .cloned()
-          // .map(|ident| if ident == ns { "*".to_string() } else { ident })
-          .collect()
+        self_used_exports.values().flatten().cloned().collect()
       }
     }
   }
@@ -215,7 +196,7 @@ impl TreeShakeModule {
       "used_statements {:?}",
       self.module_id.to_string()
     ));
-    // 通过 used_exports_idents 获取到所有的 ident
+
     // 1. get used exports
     let used_exports_idents = self.used_exports_idents();
 
@@ -235,9 +216,10 @@ impl TreeShakeModule {
       ));
       let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
       let (ids, mut items_map) = ModuleAnalyze::analyze(module);
-      let mut stmt_graph = ModuleAnalyze::new();
+      let mut module_analyze = ModuleAnalyze::new();
       let mut entries: HashSet<ItemId> = HashSet::new();
 
+      // remove unused export specifiers
       for (stmt, used_idents) in stmt_used_idents_map.iter() {
         let default_str = UsedIdent::Default.to_string();
         let used_idents_string = used_idents
@@ -288,16 +270,18 @@ impl TreeShakeModule {
         }
       }
 
-      stmt_graph.connect(&items_map, &ids);
+      // connect stmt's node
+      module_analyze.connect(&items_map, &ids);
 
-      // global side used global variables
+      // used global ident
       try_with(Default::default(), globals, || {
-        let side_effect_ids = stmt_graph.global_reference(&ids, &items_map, unresolved_mark);
+        let side_effect_ids = module_analyze.global_reference(&ids, &items_map, unresolved_mark);
         entries.extend(side_effect_ids);
       })
       .unwrap();
 
-      entries.extend(stmt_graph.reference_side_effect_ids(&ids, &items_map));
+      // effect stmt
+      entries.extend(module_analyze.reference_side_effect_ids(&ids, &items_map));
 
       // self executed stmts
       for index in self.stmt_graph.stmts().iter().filter_map(|stmt| {
@@ -307,16 +291,17 @@ impl TreeShakeModule {
           None
         }
       }) {
-        entries.extend(stmt_graph.items(&index));
+        entries.extend(module_analyze.items(&index));
       }
 
       let mut used_self_execute_stmts = HashSet::new();
 
+      // used export need to be the entry point to traversal
       for stmt in stmt_used_idents_map.keys() {
-        entries.extend(stmt_graph.items(stmt))
+        entries.extend(module_analyze.items(stmt))
       }
 
-      let write_stmt = stmt_graph.write_edges();
+      let write_stmt = module_analyze.write_edges();
 
       fn dfs<'a>(
         entry: &'a ItemId,
@@ -333,14 +318,26 @@ impl TreeShakeModule {
         if edges.is_empty()
           || visited.contains(entry)
           || !module_define_graph.has_node(entry)
-          || !edges.iter().any(|(_, mode)| matches!(mode, Mode::Read))
+          || !edges.iter().any(|(_, edge)| {
+            matches!(edge.mode, Mode::Read) || (matches!(edge.mode, Mode::Write) && edge.nested)
+          })
         {
           result.push(stack.iter().map(|item| (*item).clone()).collect());
         } else {
           visited.insert(entry);
-          for (node, mode) in edges {
-            match mode {
+          for (node, edge_data) in edges {
+            match edge_data.mode {
               Mode::Read => {
+                dfs(
+                  node,
+                  stack,
+                  result,
+                  visited,
+                  module_define_graph,
+                  stmt_graph,
+                );
+              }
+              Mode::Write if edge_data.nested => {
                 dfs(
                   node,
                   stack,
@@ -360,13 +357,14 @@ impl TreeShakeModule {
 
       let mut visited = HashSet::new();
       let mut reference_chain = Vec::new();
+
       for stmt in &entries {
         dfs(
           stmt,
           &mut vec![],
           &mut reference_chain,
           &mut visited,
-          &stmt_graph,
+          &module_analyze,
           &self.stmt_graph,
         );
       }
@@ -376,6 +374,7 @@ impl TreeShakeModule {
         .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
         .collect::<HashSet<_>>();
 
+      // if a write destination exists, the write operation needs to be preserved
       for (source, target) in write_stmt {
         if reference_stmts.contains(&target.index()) {
           used_self_execute_stmts.insert(source.index());
@@ -388,6 +387,7 @@ impl TreeShakeModule {
           .filter(|index| self.stmt_graph.stmt(&index).import_info.is_none()),
       );
 
+      // dependencies cannot be used to obtain the ident that export stmt depends on.
       for stmt in stmt_used_idents_map.keys() {
         used_self_execute_stmts.remove(stmt);
       }
@@ -451,14 +451,30 @@ impl TreeShakeModule {
         let mut used_idents = vec![];
 
         let idents = idents.values().flatten().collect::<Vec<_>>();
-        // if idents.contains(&UsedIdent::ExportAll.to_string()) {
-        //   // all exported identifiers are used
-        //   for export_info in self.exports() {
 
-        //   }
-
-        //   return used_idents;
-        // };
+        let contain_export_all = idents.contains(&&UsedIdent::ExportAll.to_string());
+        if contain_export_all {
+          // for all content introduced, all export information needs to be collected
+          for export_info in self.exports() {
+            for sp in export_info.specifiers {
+              match sp {
+                ExportSpecifierInfo::Default => {
+                  used_idents.push((UsedIdent::Default, export_info.stmt_id));
+                }
+                ExportSpecifierInfo::Named { local, .. } => {
+                  used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
+                }
+                ExportSpecifierInfo::Namespace(ns) => {
+                  used_idents.push((UsedIdent::SwcIdent(ns.clone()), export_info.stmt_id));
+                }
+                ExportSpecifierInfo::All(_) => {
+                  used_idents.push((UsedIdent::ExportAll, export_info.stmt_id));
+                }
+              }
+            }
+          }
+          return used_idents;
+        }
 
         for ident in &idents {
           // find the export info that contains the ident
@@ -510,7 +526,6 @@ impl TreeShakeModule {
               }
             }
           } else {
-            let contain_all = idents.contains(&&UsedIdent::ExportAll.to_string());
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
             for export_info in self.exports() {
               if export_info
@@ -520,23 +535,6 @@ impl TreeShakeModule {
               {
                 let stmt_id = export_info.stmt_id;
                 used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
-              } else if contain_all {
-                for sp in export_info.specifiers {
-                  match sp {
-                    ExportSpecifierInfo::Default => {
-                      used_idents.push((UsedIdent::Default, export_info.stmt_id));
-                    }
-                    ExportSpecifierInfo::Named { local, .. } => {
-                      used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
-                    }
-                    ExportSpecifierInfo::Namespace(ns) => {
-                      used_idents.push((UsedIdent::SwcIdent(ns.clone()), export_info.stmt_id));
-                    }
-                    ExportSpecifierInfo::All(_) => {
-                      used_idents.push((UsedIdent::ExportAll, export_info.stmt_id));
-                    }
-                  }
-                }
               }
             }
           }

@@ -31,20 +31,18 @@ impl FarmPluginTreeShake {
 fn toposort(
   module_graph: &ModuleGraph,
   pre_shaking_module_map: &mut HashMap<ModuleId, TreeShakeModule>,
-) -> (Vec<ModuleId>, Vec<Vec<ModuleId>>, Vec<ModuleId>) {
+) -> (Vec<ModuleId>, Vec<ModuleId>) {
   fn dfs(
     entry: &ModuleId,
     graph: &ModuleGraph,
     stack: &mut Vec<ModuleId>,
     visited: &mut HashSet<ModuleId>,
     result: &mut Vec<ModuleId>,
-    cyclic: &mut Vec<Vec<ModuleId>>,
     pre_shaking_module_map: &mut HashMap<ModuleId, TreeShakeModule>,
-    ident: usize,
     cyclic_node: &mut Vec<ModuleId>,
   ) {
-    // cycle detected
-    if let Some(pos) = stack.iter().position(|m| m == entry) {
+    // collect cycle
+    if stack.iter().any(|m| m == entry) {
       // while see ahead of the stack, mark parse import specify
       let import_circle_module_id = stack.iter().last().unwrap();
       if let Some(import_circle_module) = pre_shaking_module_map.get_mut(&import_circle_module_id) {
@@ -98,7 +96,6 @@ fn toposort(
         }
       };
 
-      cyclic.push(stack.clone()[pos..].to_vec());
       cyclic_node.push(entry.clone());
       return;
     } else if visited.contains(entry) {
@@ -118,9 +115,7 @@ fn toposort(
         stack,
         visited,
         result,
-        cyclic,
         pre_shaking_module_map,
-        ident + 1,
         cyclic_node,
       )
     }
@@ -130,7 +125,6 @@ fn toposort(
   }
 
   let mut result = vec![];
-  let mut cyclic = vec![];
   let mut stack = vec![];
   let mut cyclic_node = vec![];
 
@@ -148,9 +142,7 @@ fn toposort(
       &mut stack,
       &mut visited,
       &mut res,
-      &mut cyclic,
       pre_shaking_module_map,
-      0,
       &mut cyclic_node,
     );
 
@@ -159,13 +151,16 @@ fn toposort(
 
   result.reverse();
 
-  (result, cyclic, cyclic_node)
+  (result, cyclic_node)
 }
 
 #[derive(Debug)]
 enum ShakeType {
+  // stage1: normal traverse tree_shake_modules
   TopoShaking,
-  CircleRemove(Option<(ModuleId, ImportInfo)>),
+  // stage2: if tree_shake_module is circle_module, need to be processed multiple times
+  CircleRemove(bool),
+  // stage3: if tree_shake_module contain self executed module, it cannot be deleted immediately, need after it process, check it not contain side_effects
   CheckNeedRemoveImport(Vec<ImportInfo>),
 }
 
@@ -220,10 +215,9 @@ impl Plugin for FarmPluginTreeShake {
     });
 
     // topo sort the module_graph, the cyclic modules will be marked as side_effects
-    let (topo_sorted_modules, cyclic_modules, cyclic_nodes) = {
+    let (topo_sorted_modules, cyclic_nodes) = {
       farmfe_core::farm_profile_scope!("tree shake toposort".to_string());
       toposort(&module_graph, &mut tree_shake_modules_map)
-      // module_graph.toposort()
     };
 
     // mark entry modules as side_effects
@@ -270,6 +264,7 @@ impl Plugin for FarmPluginTreeShake {
 
     let mut tree_shake_modules_ids = VecDeque::from(tree_shake_modules_ids);
 
+    // After it is processed, if it needs to be processed again, it needs to be re-parsed
     fn reanalyze_module(
       module_id: &ModuleId,
       module_graph: &ModuleGraph,
@@ -394,41 +389,6 @@ impl Plugin for FarmPluginTreeShake {
 
           let mut removed_exports = vec![];
 
-          if let ShakeType::CircleRemove(Some((from, delay))) = &shake_type {
-            let tree_shake_module = tree_shake_modules_map
-              .get_mut(&tree_shake_module_id)
-              .unwrap();
-
-            // remove circle import Namespace
-            for specify in &delay.specifiers {
-              match specify {
-                statement_graph::ImportSpecifierInfo::Namespace(_) => {
-                  tree_shake_module
-                    .used_exports
-                    .remove_used_export(from, &module::UsedIdent::ExportAll);
-                }
-
-                _ => {}
-              }
-            }
-
-            for export in tree_shake_module.exports() {
-              for specify in &export.specifiers {
-                match specify {
-                  statement_graph::ExportSpecifierInfo::Namespace(_) => {
-                    removed_exports.push(ExportInfo {
-                      source: export.source.clone(),
-                      specifiers: vec![specify.clone()],
-                      stmt_id: 0,
-                    });
-                  }
-
-                  _ => {}
-                }
-              }
-            }
-          }
-
           // remove useless statements and useless imports/exports identifiers, then all preserved import info and export info will be added to the used_exports.
           let (
             used_imports,
@@ -445,6 +405,7 @@ impl Plugin for FarmPluginTreeShake {
 
           if !matches!(shake_type, ShakeType::CheckNeedRemoveImport(_))
             && !wait_check_remove_import.contains(&tree_shake_module_id)
+            && !check_need_remove_import.is_empty()
           {
             for import_info in &check_need_remove_import {
               if let Some(import_module_id) =
@@ -484,14 +445,32 @@ impl Plugin for FarmPluginTreeShake {
             if !visited_modules.contains(&module_id) {
               continue;
             }
+
             reanalyze_module(&module_id, module_graph, &mut tree_shake_modules_map);
-            tree_shake_modules_ids
-              .push_back((module_id, ShakeType::CircleRemove(delay_import_info)));
+
+            let is_removed_import_namespace = delay_import_info.is_some();
+            if let Some((_, delay)) = delay_import_info {
+              let tree_shake_module = tree_shake_modules_map.get_mut(&module_id).unwrap();
+              for specify in &delay.specifiers {
+                match specify {
+                  statement_graph::ImportSpecifierInfo::Namespace(_) => {
+                    tree_shake_module
+                      .used_exports
+                      .remove_used_export(&tree_shake_module_id, &module::UsedIdent::ExportAll);
+                  }
+                  _ => {}
+                }
+              }
+            }
+
+            tree_shake_modules_ids.push_back((
+              module_id,
+              ShakeType::CircleRemove(is_removed_import_namespace),
+            ));
           }
 
-          if matches!(shake_type, ShakeType::CircleRemove(Some(_))) {
-            // let tree_shake_module = tree_shake_modules_map.get(&tree_shake_module_id).unwrap();
-            //in cyclic module, `import * as Foo from "foo" is dead code, when it removed, "foo" file imports in module, import need reanalyze`
+          // in cyclic module, when `import * as Foo from "foo"` is dead code, and after it removed, "foo" module used_export will be changed, import need reanalyze
+          if matches!(shake_type, ShakeType::CircleRemove(true)) {
             for export_info in &used_exports_from {
               if let Some(source) = export_info.source.clone() {
                 replace_used_export_by_export_info(
@@ -504,7 +483,8 @@ impl Plugin for FarmPluginTreeShake {
                 let import_module_id =
                   module_graph.get_dep_by_source(&tree_shake_module_id, &source);
                 reanalyze_module(&import_module_id, module_graph, &mut tree_shake_modules_map);
-                tree_shake_modules_ids.push_back((import_module_id, ShakeType::CircleRemove(None)));
+                tree_shake_modules_ids
+                  .push_back((import_module_id, ShakeType::CircleRemove(false)));
               }
             }
           }
@@ -519,7 +499,7 @@ impl Plugin for FarmPluginTreeShake {
                 &export_info,
               ) {
                 reanalyze_module(&module_id, module_graph, &mut tree_shake_modules_map);
-                tree_shake_modules_ids.push_back((module_id, ShakeType::CircleRemove(None)));
+                tree_shake_modules_ids.push_back((module_id, ShakeType::CircleRemove(true)));
               };
             }
             continue;
@@ -873,6 +853,7 @@ fn add_used_exports_by_export_info(
   }
 }
 
+// reset used export
 fn replace_used_export_by_export_info(
   tree_shake_modules_map: &mut std::collections::HashMap<ModuleId, TreeShakeModule>,
   module_graph: &ModuleGraph,

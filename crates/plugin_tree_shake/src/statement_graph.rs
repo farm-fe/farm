@@ -226,7 +226,6 @@ impl StatementGraph {
       .collect()
   }
 
-  // 分析 statement 和 ident 之间的关系
   pub fn analyze_used_statements_and_idents(
     &self,
     used_exports: HashMap<StatementId, HashSet<UsedIdent>>,
@@ -286,6 +285,7 @@ impl StatementGraph {
 
       let hash_stmt = |stmt_id: &StatementId, used_defined_idents: &HashSet<String>| {
         let mut hash = format!("{}:", stmt_id);
+        // hash set is unordered, so need covert it to Vec and sort it
         let mut used_defined_idents = used_defined_idents.iter().collect::<Vec<_>>();
 
         used_defined_idents.sort();

@@ -47,8 +47,9 @@ pub struct ItemData {
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Default)]
-struct ModuleAnalyzeItemEdge {
+pub struct ModuleAnalyzeItemEdge {
   pub mode: Mode,
+  pub nested: bool,
 }
 
 pub struct ModuleAnalyze {
@@ -68,7 +69,7 @@ impl ModuleAnalyze {
     }
   }
 
-  fn add_edge(&mut self, from: ItemId, to: ItemId, mode: Mode) {
+  fn add_edge(&mut self, from: ItemId, to: ItemId, edge: ModuleAnalyzeItemEdge) {
     if !self.id_map.contains_key(&from) {
       self
         .id_map
@@ -82,15 +83,15 @@ impl ModuleAnalyze {
     let from = self.id_map[&from];
     let to = self.id_map[&to];
 
-    self.g.add_edge(from, to, ModuleAnalyzeItemEdge { mode });
+    self.g.add_edge(from, to, edge);
   }
 
-  pub fn reference_edges(&self, n: &ItemId) -> Vec<(&ItemId, Mode)> {
+  pub fn reference_edges(&self, n: &ItemId) -> Vec<(&ItemId, ModuleAnalyzeItemEdge)> {
     if self.id_map.contains_key(n) {
       self
         .g
         .edges_directed(self.id_map[n], Outgoing)
-        .map(|edge| (&self.g[edge.target()], edge.weight().mode.clone()))
+        .map(|edge| (&self.g[edge.target()], edge.weight().clone()))
         .collect::<Vec<_>>()
     } else {
       vec![]
@@ -311,25 +312,53 @@ impl ModuleAnalyze {
 
       for read in &item.read_vars {
         if let Some(read_id) = self.vars.get(read).cloned() {
-          self.add_edge(item_id.clone(), read_id, Mode::Read);
+          self.add_edge(
+            item_id.clone(),
+            read_id,
+            ModuleAnalyzeItemEdge {
+              mode: Mode::Read,
+              ..Default::default()
+            },
+          );
         }
       }
 
       for write in &item.write_vars {
         if let Some(write_id) = self.vars.get(write).cloned() {
-          self.add_edge(item_id.clone(), write_id, Mode::Write);
+          self.add_edge(
+            item_id.clone(),
+            write_id,
+            ModuleAnalyzeItemEdge {
+              mode: Mode::Write,
+              ..Default::default()
+            },
+          );
         }
       }
 
       for nested_read in &item.nested_read_vars {
         if let Some(nested_read_id) = self.vars.get(nested_read).cloned() {
-          self.add_edge(item_id.clone(), nested_read_id, Mode::Read);
+          self.add_edge(
+            item_id.clone(),
+            nested_read_id,
+            ModuleAnalyzeItemEdge {
+              mode: Mode::Read,
+              nested: true,
+            },
+          );
         }
       }
 
       for nested_write in &item.nested_write_vars {
         if let Some(nested_write_id) = self.vars.get(nested_write).cloned() {
-          self.add_edge(item_id.clone(), nested_write_id, Mode::Write);
+          self.add_edge(
+            item_id.clone(),
+            nested_write_id,
+            ModuleAnalyzeItemEdge {
+              mode: Mode::Write,
+              nested: true,
+            },
+          );
         }
       }
     }
@@ -408,9 +437,13 @@ impl ModuleAnalyze {
     let mut write_ids = vec![];
     for node in self.g.node_indices() {
       let edges = self.g.edges(node);
-      for edge in edges {
-        if edge.weight().mode == Mode::Write {
-          write_ids.push((&self.g[edge.source()], &self.g[edge.target()]));
+      for edge_reference in edges {
+        let edge = edge_reference.weight();
+        if edge.mode == Mode::Write && !edge.nested {
+          write_ids.push((
+            &self.g[edge_reference.source()],
+            &self.g[edge_reference.target()],
+          ));
         }
       }
     }
