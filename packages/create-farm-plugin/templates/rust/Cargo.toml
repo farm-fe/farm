@@ -1,0 +1,12 @@
+[package]
+edition = "2021"
+name = "<FARM-RUST-PLUGIN-CARGO-NAME>"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { version = "*" }
+farmfe_toolkit_plugin_types = { version = "*" }
+farmfe_macro_plugin = { version = "*" }

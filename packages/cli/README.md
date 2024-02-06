@@ -1,25 +1,27 @@
 # @farmfe/cli
 
-`@farmfe/cli` provides CLI and dev-server support for Farm, a toolchain for building enterprise-level web applications. Visit the [Farm GitHub repository](https://github.com/farm-fe) for more information.
+`@farmfe/cli` provides CLI support for Farm, which is extremely rust based web build tool. Visit the [Farm GitHub repository](https://github.com/farm-fe/farm) for more information.
 
 ## Getting Started
 
-To install `@farmfe/cli`, execute the following command in your terminal:
-
 ```sh
-npm install -g @farmfe/cli
+pnpm add @farmfe/cli -D
 ```
 
-Then, create a new project using the experimental React project template with these commands:
+start your farm project:
 
 ```sh
-farm create
-cd farm-react
-npm install
+farm start
 ```
 
-Lastly, start the development server by running:
+build:
 
 ```sh
-npm start
+farm build
+```
+
+preview:
+
+```sh
+farm preview
 ```

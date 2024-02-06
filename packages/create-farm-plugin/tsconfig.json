@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "exclude": ["node_modules"],
+  "include": ["index.ts", "farm.config.ts"],
+  "references": [
+    {
+      "path": "../utils/tsconfig.json"
+    }
+  ]
+}

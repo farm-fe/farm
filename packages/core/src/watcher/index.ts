@@ -9,6 +9,7 @@ import { compilerHandler, DefaultLogger } from '../utils/index.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 import { createWatcher } from './create-watcher.js';
 import { existsSync } from 'node:fs';
+import { JsUpdateResult } from '../../binding/binding.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -54,7 +55,8 @@ export class FileWatcher implements ImplFileWatcher {
         ) {
           compilerHandler(
             async () => {
-              await compiler.update([path], true);
+              const result = await compiler.update([path], true);
+              handleUpdateFinish(result);
               compiler.writeResourcesToDisk();
             },
             this.options,
@@ -84,26 +86,28 @@ export class FileWatcher implements ImplFileWatcher {
       handlePathChange(path);
     });
 
-    if (this.serverOrCompiler instanceof DevServer) {
-      this.serverOrCompiler.hmrEngine?.onUpdateFinish((updateResult) => {
-        const added = [
-          ...updateResult.added,
-          ...updateResult.extraWatchResult.add
-        ].map((addedModule) => {
-          const resolvedPath = compiler.transformModulePath(
-            this._root,
-            addedModule
-          );
-          return resolvedPath;
-        });
-        const filteredAdded = added.filter(
-          (file) => !file.startsWith(this.options.root)
+    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+      const added = [
+        ...updateResult.added,
+        ...updateResult.extraWatchResult.add
+      ].map((addedModule) => {
+        const resolvedPath = compiler.transformModulePath(
+          this._root,
+          addedModule
         );
-
-        if (filteredAdded.length > 0) {
-          this._watcher.add(filteredAdded);
-        }
+        return resolvedPath;
       });
+      const filteredAdded = added.filter(
+        (file) => !file.startsWith(this.options.root)
+      );
+
+      if (filteredAdded.length > 0) {
+        this._watcher.add(filteredAdded);
+      }
+    };
+
+    if (this.serverOrCompiler instanceof DevServer) {
+      this.serverOrCompiler.hmrEngine?.onUpdateFinish(handleUpdateFinish);
     }
   }
 

@@ -17,18 +17,26 @@
   },
   "author": "",
   "license": "MIT",
-  "keywords": [],
+  "keywords": [
+    "farm",
+    "create farm",
+    "rust bundler",
+    "bundler",
+    "build tool",
+    "web bundler"
+  ],
   "files": [
     "dist",
     "templates"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/farm-fe"
+    "url": "https://github.com/farm-fe/farm"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
+    "@farmfe/utils": "workspace:*",
     "@types/minimist": "^1.2.2",
     "@types/prompts": "^2.4.4",
     "gradient-string": "^2.0.2",

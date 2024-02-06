@@ -47,6 +47,7 @@ export class HmrClient {
       'open',
       () => {
         this.notifyListeners('vite:ws:connect', { webSocket: socket });
+        this.notifyListeners('farm:ws:connect', { webSocket: socket });
       },
       { once: true }
     );
@@ -55,6 +56,8 @@ export class HmrClient {
       if (wasClean) return;
 
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
+      this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
+
       logger.debug('disconnected from the server, please reload the page.');
       await waitForSuccessfulPing(protocol, `${host}:${port}${path}`);
       location.reload();
@@ -210,6 +213,7 @@ export class HmrClient {
         break;
       case 'prune':
         this.notifyListeners('vite:beforePrune', payload);
+        this.notifyListeners('farm:beforePrune', payload);
         break;
 
       default:

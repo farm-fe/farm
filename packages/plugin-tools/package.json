@@ -1,0 +1,45 @@
+{
+  "name": "@farmfe/plugin-tools",
+  "version": "0.0.0",
+  "description": "farmfe plugin tools to help build farmfe plugin",
+  "exports": {
+    ".": "./bin/farm-plugin-tools.mjs"
+  },
+  "main": "bin/farm-plugin-tools.mjs",
+  "type": "module",
+  "bin": {
+    "farm-plugin-tools": "bin/farm-plugin-tools.mjs"
+  },
+  "scripts": {
+    "build": "farm build",
+    "dev": "farm watch",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "bright wu",
+    "email": "1521488775@qq.com"
+  },
+  "keywords": [
+    "farm",
+    "farm-plugin",
+    "farm-plugin-tools",
+    "rust",
+    "build tool",
+    "bundler"
+  ],
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/utils": "workspace:*",
+    "@napi-rs/cli": "^2.15.2",
+    "cac": "^6.7.14"
+  }
+}

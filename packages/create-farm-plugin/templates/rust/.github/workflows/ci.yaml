@@ -1,0 +1,8 @@
+name: Cross Build On Linux
+on:
+  branches:
+    - main
+
+jobs:
+  call-rust-build:
+    uses: ./.github/workflows/build.yaml

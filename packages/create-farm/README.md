@@ -7,6 +7,8 @@
   <p>Scaffolding Your First Farm Project</p>
 </div>
 
+This package provides official templates for the Rust Web Bundler [Farm](https://github.com/farm-fe/farm).
+
 ## Scaffolding Your First Farm Project
 
 > **Compatibility Note:**
