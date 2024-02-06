@@ -43,42 +43,18 @@ import type {
   NormalizedServerConfig,
   ResolvedUserConfig,
   UserConfig,
+  UserConfigExport,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
+import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 
 export * from './types.js';
-export const DEFAULT_CONFIG_NAMES = [
-  'farm.config.ts',
-  'farm.config.js',
-  'farm.config.mjs'
-];
-
-const FARM_DEFAULT_NAMESPACE = 'FARM_DEFAULT_NAMESPACE';
-
-export interface ConfigEnv {
-  mode: string;
-}
-
-export type UserConfigFnObject = (env: ConfigEnv) => UserConfig;
-export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
-export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
-
-export type UserConfigExport =
-  | UserConfig
-  | Promise<UserConfig>
-  | UserConfigFnObject
-  | UserConfigFnPromise
-  | UserConfigFn;
-
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
   config: Promise<UserConfig>
 ): Promise<UserConfig>;
-export function defineFarmConfig(
-  config: UserConfigFnObject
-): UserConfigFnObject;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;

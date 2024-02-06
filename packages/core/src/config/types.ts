@@ -11,6 +11,19 @@ import type { Config } from '../../binding/index.js';
 import { Middleware } from 'koa';
 import { WatchOptions } from 'chokidar';
 
+export interface ConfigEnv {
+  mode: string;
+}
+
+export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
+export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
+
+export type UserConfigExport =
+  | UserConfig
+  | Promise<UserConfig>
+  | UserConfigFnPromise
+  | UserConfigFn;
+
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;

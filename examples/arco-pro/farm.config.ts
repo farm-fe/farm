@@ -3,7 +3,8 @@ import { defineConfig } from '@farmfe/core';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
-export default defineConfig((env) => {
+export default defineConfig(async (env) => {
+  console.log(env);
   return {
     compilation: {
       input: {
@@ -36,9 +37,16 @@ export default defineConfig((env) => {
       cors: true,
       port: 6260
     },
-    plugins: [['@farmfe/plugin-react', {
-      refresh: process.env.NODE_ENV === 'development',
-      development: process.env.NODE_ENV === 'development'
-    }], farmJsPluginLess(), farmJsPluginSvgr()]
-  }
+    plugins: [
+      [
+        '@farmfe/plugin-react',
+        {
+          refresh: process.env.NODE_ENV === 'development',
+          development: process.env.NODE_ENV === 'development'
+        }
+      ],
+      farmJsPluginLess(),
+      farmJsPluginSvgr()
+    ]
+  };
 });
