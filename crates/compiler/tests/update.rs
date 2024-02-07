@@ -231,7 +231,7 @@ fn update_with_dependencies_change_css_modules() {
       assert!(result.added_module_ids.contains(&"index.module.css".into()));
       assert!(result
         .added_module_ids
-        .contains(&"index.module.css.FARM_CSS_MODULES?f1d5b6cc".into()));
+        .contains(&"index.module.css?farm_css_modules".into()));
       assert_eq!(result.updated_module_ids, vec!["index.ts".into()]);
       assert_eq!(result.removed_module_ids.len(), 0);
 
@@ -256,12 +256,12 @@ fn update_with_dependencies_change_css_modules() {
         .unwrap();
       assert_eq!(
         result.added_module_ids,
-        vec!["index.module.css.FARM_CSS_MODULES?b2914899".into()]
+        vec!["index.module.css?farm_css_modules".into()]
       );
       assert_eq!(result.updated_module_ids, vec!["index.module.css".into()]);
       assert_eq!(
         result.removed_module_ids,
-        vec!["index.module.css.FARM_CSS_MODULES?f1d5b6cc".into()]
+        vec!["index.module.css?farm_css_modules".into()]
       );
       // restore index.module.css
       let mut original_css_file = File::create(&update_file_css).unwrap();
@@ -284,7 +284,7 @@ fn update_with_dependencies_change_css_modules() {
         .contains(&"index.module.css".into()));
       assert!(result
         .removed_module_ids
-        .contains(&"index.module.css.FARM_CSS_MODULES?b2914899".into()));
+        .contains(&"index.module.css?farm_css_modules".into()));
       asset_update_result_code(cwd, &result, Some("update2"));
     }
   );
@@ -314,12 +314,18 @@ fn update_css_and_css_raw() {
       .update(vec![(update_file, UpdateType::Updated)], || {}, true)
       .unwrap();
 
-    assert_eq!(result.added_module_ids.len(), 0);
+    assert_eq!(
+      result.added_module_ids,
+      vec!["index.module.css?farm_css_modules".into()]
+    );
     assert_eq!(
       result.updated_module_ids,
       vec!["index.module.css".into(), "index.module.css?raw".into()]
     );
-    assert_eq!(result.removed_module_ids.len(), 0);
+    assert_eq!(
+      result.removed_module_ids,
+      vec!["index.module.css?farm_css_modules".into()]
+    );
 
     asset_update_result_code(cwd, &result, Some("update0"));
   });

@@ -9,19 +9,19 @@ Object.defineProperty(exports, "default", {
         return _default;
     }
 });
-farmRequire("index.module.css.FARM_CSS_MODULES?f1d5b6cc");
+farmRequire("index.module.css?farm_css_modules");
 var _default = {
-    "className": `className-47c35c9b`
+    "className": `className-ec324e46`
 };
 
 },
-"index.module.css.FARM_CSS_MODULES?f1d5b6cc": function(module, exports, farmRequire, farmDynamicRequire) {
+"index.module.css?farm_css_modules": function(module, exports, farmRequire, farmDynamicRequire) {
 "use strict";
-const cssCode = `.className-47c35c9b {
+const cssCode = `.className-ec324e46 {
   color: red;
 }
 `;
-const farmId = "index.module.css.FARM_CSS_MODULES?f1d5b6cc";
+const farmId = "index.module.css?farm_css_modules";
 const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
 const style = document.createElement("style");
 style.setAttribute("data-farm-id", farmId);
