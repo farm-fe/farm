@@ -84,7 +84,7 @@ Object.defineProperty(exports, "tick", {
 });
 var _depindex = farmRequire("11ecb1ee");
 function tick() {
-    return (0, _depindex.scaleFunc)();
+    (0, _depindex.scaleFunc)();
 }
 
 },});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");var tick=entry.tick;export { tick };

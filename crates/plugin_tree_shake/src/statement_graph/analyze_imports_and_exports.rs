@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use farmfe_core::swc_ecma_ast::{self, ModuleExportName, ModuleItem};
+use farmfe_core::swc_ecma_ast::{self, Expr, ModuleExportName, ModuleItem};
 use farmfe_toolkit::swc_ecma_visit::VisitWith;
 
 use super::{
@@ -96,15 +96,11 @@ pub fn analyze_imports_and_exports(
           }
         }
 
-        // mark empty specifiers as self-executed so it will be preserved
-        if specifiers.is_empty() {
-          is_self_executed = true;
-        }
-
         imports = Some(ImportInfo {
           source,
           specifiers,
           stmt_id: *id,
+          is_import_executed: import_decl.specifiers.is_empty(),
         });
       }
       swc_ecma_ast::ModuleDecl::ExportAll(export_all) => {
@@ -177,7 +173,6 @@ pub fn analyze_imports_and_exports(
           });
         }
         _ => {
-          println!("decl {:?}", export_decl);
           unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration");
         }
       },
@@ -365,7 +360,13 @@ pub fn analyze_imports_and_exports(
         ),
       },
       swc_ecma_ast::Stmt::Expr(expr) => {
-        is_self_executed = true;
+        match expr.expr.as_ref() {
+          Expr::Assign(_) => {}
+
+          _ => {
+            is_self_executed = true;
+          }
+        }
         analyze_and_insert_used_idents(expr, None)
       }
     },

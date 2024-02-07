@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 
+use farmfe_core::swc_ecma_ast::{ImportSpecifier, ModuleExportName};
 use farmfe_core::{
   petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
@@ -8,6 +9,7 @@ use farmfe_core::{
 
 pub(crate) mod analyze_imports_and_exports;
 pub(crate) mod defined_idents_collector;
+pub(crate) mod module_analyze;
 pub(crate) mod used_idents_collector;
 
 use analyze_imports_and_exports::analyze_imports_and_exports;
@@ -26,11 +28,28 @@ pub enum ImportSpecifierInfo {
   Default(String),
 }
 
+impl From<&ImportSpecifier> for ImportSpecifierInfo {
+  fn from(value: &ImportSpecifier) -> Self {
+    match value {
+      ImportSpecifier::Named(named) => ImportSpecifierInfo::Named {
+        local: named.local.to_string(),
+        imported: named.imported.as_ref().map(|i| match i {
+          ModuleExportName::Ident(i) => i.to_string(),
+          _ => panic!("non-ident imported is not supported when tree shaking"),
+        }),
+      },
+      ImportSpecifier::Default(default) => ImportSpecifierInfo::Default(default.local.to_string()),
+      ImportSpecifier::Namespace(ns) => ImportSpecifierInfo::Namespace(ns.local.to_string()),
+    }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct ImportInfo {
   pub source: String,
   pub specifiers: Vec<ImportSpecifierInfo>,
   pub stmt_id: StatementId,
+  pub is_import_executed: bool,
 }
 
 // collect all exports and gathering them into a simpler structure
@@ -224,7 +243,7 @@ impl StatementGraph {
       let mut used_defined_idents = HashSet::new();
       let mut skip = false;
 
-      for ident in used_export_idents {
+      for ident in used_export_idents.clone() {
         match ident {
           UsedIdent::SwcIdent(i) => {
             used_defined_idents.insert(i.to_string());
@@ -248,7 +267,10 @@ impl StatementGraph {
             skip = true;
           }
           UsedIdent::ExportAll => {
-            used_statements.insert(stmt_id, ["*".to_string()].into());
+            used_statements
+              .entry(stmt_id)
+              .or_insert_with(HashSet::new)
+              .insert("*".to_string());
             skip = true;
           }
         }
@@ -263,6 +285,10 @@ impl StatementGraph {
 
       let hash_stmt = |stmt_id: &StatementId, used_defined_idents: &HashSet<String>| {
         let mut hash = format!("{}:", stmt_id);
+        // hash set is unordered, so need covert it to Vec and sort it
+        let mut used_defined_idents = used_defined_idents.iter().collect::<Vec<_>>();
+
+        used_defined_idents.sort();
 
         for ident in used_defined_idents {
           hash += ident;

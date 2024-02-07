@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use farmfe_core::module::ModuleId;
 use farmfe_core::swc_common::{Globals, GLOBALS};
 use farmfe_plugin_tree_shake::module::UsedIdent;
 
@@ -24,17 +27,20 @@ export default 'default';
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::Partial(vec![
-    "a".to_string(),
-    "d".to_string(),
-    "e".to_string(),
-    "f".to_string(),
-    "any".to_string(),
-    "h".to_string(),
-    "i".to_string(),
-    "j".to_string(),
-    "default".to_string(),
-  ]);
+  tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+    ModuleId::from("index.ts"),
+    vec![
+      "a".to_string(),
+      "d".to_string(),
+      "e".to_string(),
+      "f".to_string(),
+      "any".to_string(),
+      "h".to_string(),
+      "i".to_string(),
+      "j".to_string(),
+      "default".to_string(),
+    ],
+  )]));
 
   let result = tree_shake_module.used_exports_idents();
 
@@ -78,7 +84,8 @@ fn used_exports_idents_export_all() {
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::Partial(vec!["a".to_string()]);
+  tree_shake_module.used_exports =
+    UsedExports::Partial(HashMap::from([("index".into(), vec!["a".to_string()])]));
   let result = tree_shake_module.used_exports_idents();
   assert_eq!(result.len(), 1);
   assert!(matches!(result[0].0, UsedIdent::SwcIdent(_)));
@@ -90,8 +97,10 @@ export const b = 2;"#;
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports =
-    UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+  tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+    "index".into(),
+    vec!["a".to_string(), "b".to_string(), "c".to_string()],
+  )]));
   let result = tree_shake_module.used_exports_idents();
   assert_eq!(result.len(), 3);
   assert!(matches!(result[0].0, UsedIdent::InExportAll(_)));
@@ -119,7 +128,7 @@ export default 'default';
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::All;
+  tree_shake_module.used_exports = UsedExports::All(HashMap::new());
   let result = tree_shake_module.used_exports_idents();
 
   assert_eq!(result.len(), 11);
@@ -153,8 +162,10 @@ export const b = 2;"#;
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports =
-    UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+  tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+    "index".into(),
+    vec!["a".to_string(), "b".to_string(), "c".to_string()],
+  )]));
   let result = tree_shake_module.used_exports_idents();
   println!("{:?}", result);
 
@@ -202,18 +213,22 @@ export class j {
 export default 'default';
   "#;
 
-  GLOBALS.set(&Globals::new(), || {
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(vec![
-      "default".to_string(),
-      "j".to_string(),
-      "d".to_string(),
-      "f".to_string(),
-    ]);
+    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+      "index".into(),
+      vec![
+        "default".to_string(),
+        "j".to_string(),
+        "d".to_string(),
+        "f".to_string(),
+      ],
+    )]));
 
     let mut result = tree_shake_module
-      .used_statements()
+      .used_statements(&module, &globals)
       .into_iter()
       .collect::<Vec<_>>();
     result.sort_by_key(|item| item.0);
@@ -259,13 +274,15 @@ const a = foo;
 export { a };
   "#;
 
-  GLOBALS.set(&Globals::new(), || {
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(vec!["a".to_string()]);
+    tree_shake_module.used_exports =
+      UsedExports::Partial(HashMap::from([("index.ts".into(), vec!["a".to_string()])]));
 
     let mut result = tree_shake_module
-      .used_statements()
+      .used_statements(&module, &globals)
       .into_iter()
       .collect::<Vec<_>>();
     result.sort_by_key(|item| item.0);
@@ -294,14 +311,17 @@ export * from './foo';
 export const b = 2;
   "#;
 
-  GLOBALS.set(&Globals::new(), || {
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports =
-      UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+      "index".into(),
+      vec!["a".to_string(), "b".to_string(), "c".to_string()],
+    )]));
 
     let mut result = tree_shake_module
-      .used_statements()
+      .used_statements(&module, &globals)
       .into_iter()
       .collect::<Vec<_>>();
     result.sort_by_key(|item| item.0);
@@ -328,14 +348,17 @@ export const a = 1;
 export * from './bar';
   "#;
 
-  GLOBALS.set(&Globals::new(), || {
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports =
-      UsedExports::Partial(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+      "index.ts".into(),
+      vec!["a".to_string(), "b".to_string(), "c".to_string()],
+    )]));
 
     let mut result = tree_shake_module
-      .used_statements()
+      .used_statements(&module, &globals)
       .into_iter()
       .collect::<Vec<_>>();
     result.sort_by_key(|item| item.0);

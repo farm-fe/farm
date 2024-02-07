@@ -197,10 +197,10 @@ pub fn transform_css_deps(module_id: &ModuleId, context: &Arc<CompilationContext
   let mut load_statements = Vec::new();
   let dep_modules = module_graph.dependencies(module_id);
 
-  for (module, _) in dep_modules {
-    let relative_path = module.id(context.config.mode.clone()).to_string();
+  for (_, edge) in dep_modules {
+    let relative_path = edge.items()[0].source.clone();
     let load_statement = format!(
-      "farmRequire(\"{}\");",
+      "import \"{}\";",
       if cfg!(windows) {
         relative_path.replace('\\', "\\\\")
       } else {

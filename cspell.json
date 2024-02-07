@@ -158,6 +158,7 @@
     "rust-plugins/sass/ext/sass/**",
     "assets/**",
     "**/*.d.ts",
-    "**/LICENSE"
+    "**/LICENSE",
+    "**/CHANGELOG.md"
   ]
 }
