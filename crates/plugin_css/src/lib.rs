@@ -33,6 +33,7 @@ use farmfe_core::{
 };
 use farmfe_macro_cache_item::cache_item;
 use farmfe_toolkit::css::ParseCssModuleResult;
+use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::{
   common::Source,
   css::{codegen_css_stylesheet, parse_css_stylesheet},
@@ -46,11 +47,17 @@ use farmfe_toolkit::{
   swc_css_prefixer,
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
-use farmfe_utils::{parse_query, relative};
+use farmfe_utils::{parse_query, relative, stringify_query};
 use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
+use transform_css_to_script::transform_css_to_script_modules;
 
-pub const FARM_CSS_MODULES_SUFFIX: &str = ".FARM_CSS_MODULES";
+pub const FARM_CSS_MODULES: &str = "farm_css_modules";
+
+lazy_static! {
+  pub static ref FARM_CSS_MODULES_SUFFIX: Regex =
+    Regex::new(&format!("(?:\\?|&){FARM_CSS_MODULES}")).unwrap();
+}
 
 mod dep_analyzer;
 mod source_replacer;
@@ -162,18 +169,18 @@ impl Plugin for FarmPluginCss {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
-    if is_farm_css_modules(param.resolved_path) {
+    if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
         content: self
           .content_map
           .lock()
-          .get(param.resolved_path)
+          .get(&param.module_id)
           .unwrap()
           .clone(),
-        module_type: ModuleType::Custom(FARM_CSS_MODULES_SUFFIX.to_string()),
+        module_type: ModuleType::Custom(FARM_CSS_MODULES.to_string()),
       }));
     };
-
+    // for internal css plugin, we do not support ?xxx.css. It should be handled by external plugins.
     let module_type = module_type_from_id(param.resolved_path);
 
     if let Some(module_type) = module_type {
@@ -199,7 +206,7 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: self.sourcemap_map.lock().get(param.resolved_path).cloned(),
+        source_map: self.sourcemap_map.lock().get(&param.module_id).cloned(),
         ignore_previous_source_map: false,
       }));
     }
@@ -208,27 +215,13 @@ impl Plugin for FarmPluginCss {
       let enable_css_modules = context.config.css.modules.is_some();
 
       // css modules
-      if enable_css_modules && self.is_path_match_css_modules(param.resolved_path) {
-        // add hash to avoid cache, make sure hmr works
-        // TODO use updateModules hook to invalidate cache instead of hash.
-        let query_string = format!(
-          "?{}",
-          sha256(param.content.replace("\r\n", "\n").as_bytes(), 8)
-        );
-        let css_modules_resolved_path = format!(
-          "{}{}",
-          if cfg!(windows) {
-            param.resolved_path.replace('\\', "\\\\")
-          } else {
-            param.resolved_path.to_string()
-          },
-          FARM_CSS_MODULES_SUFFIX,
-        );
-        let css_modules_module_id = ModuleId::new(
-          &css_modules_resolved_path,
-          &query_string,
-          &context.config.root,
-        );
+      if enable_css_modules && self.is_path_match_css_modules(&param.module_id) {
+        let mut query = param.query.clone();
+        query.push((FARM_CSS_MODULES.to_string(), "".to_string()));
+        let query_string = stringify_query(&query);
+
+        let css_modules_module_id =
+          ModuleId::new(param.resolved_path, &query_string, &context.config.root);
         let ParseCssModuleResult {
           ast: mut css_stylesheet,
           comments,
@@ -258,7 +251,7 @@ impl Plugin for FarmPluginCss {
         );
 
         // we can not use css_modules_resolved_path here because of the compatibility of windows. eg: \\ vs \\\\
-        let cache_id = format!("{}{}", param.resolved_path, FARM_CSS_MODULES_SUFFIX);
+        let cache_id = css_modules_module_id.to_string();
         self.ast_map.lock().insert(
           cache_id.clone(),
           (css_stylesheet, CommentsMetaData::from(comments)),
@@ -297,12 +290,11 @@ impl Plugin for FarmPluginCss {
 
         let code = format!(
           r#"
-    import "{}{}";
+    import "{}";
     {}
     export default {{{}}}
     "#,
-          css_modules_resolved_path,
-          query_string,
+          css_modules_module_id.to_string(),
           dynamic_import_of_composes
             .into_iter()
             .fold(Vec::new(), |mut acc, (from, name)| {
@@ -340,7 +332,7 @@ impl Plugin for FarmPluginCss {
           self
             .sourcemap_map
             .lock()
-            .insert(css_modules_resolved_path, map);
+            .insert(css_modules_module_id.to_string(), map);
         }
 
         Ok(Some(PluginTransformHookResult {
@@ -364,12 +356,12 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let (css_stylesheet, comments) = if is_farm_css_modules(&param.resolved_path) {
+      let (css_stylesheet, comments) = if is_farm_css_modules(&param.module_id.to_string()) {
         self
           .ast_map
           .lock()
-          .remove(&param.resolved_path)
-          .unwrap_or_else(|| panic!("ast not found {:?}", param.resolved_path))
+          .remove(&param.module_id.to_string())
+          .unwrap_or_else(|| panic!("ast not found {:?}", param.module_id.to_string()))
       } else {
         let ParseCssModuleResult { ast, comments } = parse_css_stylesheet(
           &param.module_id.to_string(),
@@ -707,16 +699,12 @@ fn transform_css_module_indent_name(
 }
 
 fn is_farm_css_modules(path: &str) -> bool {
-  path
-    .split('?')
-    .next()
-    .unwrap()
-    .ends_with(FARM_CSS_MODULES_SUFFIX)
+  FARM_CSS_MODULES_SUFFIX.is_match(path)
 }
 
 fn is_farm_css_modules_type(module_type: &ModuleType) -> bool {
   if let ModuleType::Custom(c) = module_type {
-    return c.as_str() == FARM_CSS_MODULES_SUFFIX;
+    return c.as_str() == FARM_CSS_MODULES;
   }
 
   false

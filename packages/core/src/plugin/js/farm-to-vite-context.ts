@@ -2,7 +2,7 @@ import type { PluginContext } from 'rollup';
 import type { UserConfig } from '../../config/types.js';
 import type { CompilationContext } from '../type.js';
 import { DefaultLogger } from '../../utils/logger.js';
-import { revertNormalizePath } from './utils.js';
+import { normalizePath, revertNormalizePath } from './utils.js';
 
 const contextCache = new Map<string, PluginContext>();
 
@@ -146,7 +146,7 @@ export function farmContextToViteContext(
 
       if (farmResolveResult) {
         return {
-          id: farmResolveResult.resolvedPath,
+          id: normalizePath(farmResolveResult.resolvedPath),
           external: farmResolveResult.external,
           resolvedBy: 'vite-plugin-adapter-farm-resolve',
           moduleSideEffects: farmResolveResult.sideEffects,

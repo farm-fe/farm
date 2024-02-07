@@ -56,6 +56,10 @@ test('resolveUserConfig', async () => {
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       'process.env.NODE_ENV': 'test',
+      'package.json[browser]': 'unknown',
+      'package.json[exports]': 'unknown',
+      'package.json[main]': 'unknown',
+      'package.json[module]': 'unknown',
       FARM_HMR_HOST: 'true',
       FARM_HMR_PATH: '/__hmr',
       FARM_HMR_PORT: '9000'
@@ -142,6 +146,10 @@ test('resolveUserConfig-prod', async () => {
       NODE_ENV: 'test',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
+      'package.json[browser]': 'unknown',
+      'package.json[exports]': 'unknown',
+      'package.json[main]': 'unknown',
+      'package.json[module]': 'unknown',
       'process.env.NODE_ENV': 'test'
     },
     moduleCacheKeyStrategy: {}

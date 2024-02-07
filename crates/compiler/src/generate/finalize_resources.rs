@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use farmfe_core::{context::CompilationContext, plugin::PluginFinalizeResourcesHookParams};
+use farmfe_core::{
+  config::Mode, context::CompilationContext, plugin::PluginFinalizeResourcesHookParams,
+};
 
 pub fn finalize_resources(context: &Arc<CompilationContext>) -> farmfe_core::error::Result<()> {
   {
@@ -16,7 +18,10 @@ pub fn finalize_resources(context: &Arc<CompilationContext>) -> farmfe_core::err
       .finalize_resources(&mut param, context)?;
 
     // if cache enabled, clear unused resources
-    if context.config.persistent_cache.enabled() {
+    if context.config.persistent_cache.enabled()
+      && matches!(context.config.mode, Mode::Production)
+      && !context.config.lazy_compilation
+    {
       let mut resources_to_remove = vec![];
       let module_graph = context.module_graph.read();
 

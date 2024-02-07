@@ -144,7 +144,8 @@
     "pjpeg",
     "flac",
     "Yuxi",
-    "struct"
+    "struct",
+    "rfind"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

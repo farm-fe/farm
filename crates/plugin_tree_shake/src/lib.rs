@@ -711,7 +711,7 @@ fn remove_used_exports_by_import_info(
     ));
   }
 
-  return None;
+  None
 }
 
 fn removed_used_exports_by_export_info(
@@ -784,7 +784,7 @@ fn removed_used_exports_by_export_info(
     }
   }
 
-  return None;
+  None
 }
 
 /// All all exported to used_exports
