@@ -51,8 +51,8 @@ impl<'a> VisitMut for SourceReplacer<'a> {
             }
 
             panic!(
-              "can not find resource: resolving {:?} for {:?}",
-              source, self.module_id
+              "can not find resource: resolving {:?} for {:?}. dep: {:?}",
+              source, self.module_id, dep_module
             );
           };
 

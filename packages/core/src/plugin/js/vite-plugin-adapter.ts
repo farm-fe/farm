@@ -17,7 +17,7 @@ import {
   isString,
   encodeStr,
   decodeStr,
-  FARM_CSS_MODULE_SUFFIX,
+  FARM_CSS_MODULES_SUFFIX,
   transformFarmConfigToRollupNormalizedOutputOptions,
   transformResourceInfo2RollupRenderedChunk,
   transformRollupResource2FarmResource,
@@ -371,6 +371,7 @@ export class VitePluginAdapter implements JsPlugin {
           hookContext?: { caller?: string; meta: Record<string, unknown> }
         ): Promise<PluginResolveHookResult> => {
           if (
+            VitePluginAdapter.isFarmInternalVirtualModule(params.source) ||
             (params.importer &&
               VitePluginAdapter.isFarmInternalVirtualModule(params.importer)) ||
             hookContext?.caller === this.name + '.resolveId'
@@ -433,9 +434,7 @@ export class VitePluginAdapter implements JsPlugin {
           params: PluginLoadHookParam,
           context: CompilationContext
         ): Promise<PluginLoadHookResult> => {
-          if (
-            VitePluginAdapter.isFarmInternalVirtualModule(params.resolvedPath)
-          ) {
+          if (VitePluginAdapter.isFarmInternalVirtualModule(params.moduleId)) {
             return null;
           }
 
@@ -477,9 +476,7 @@ export class VitePluginAdapter implements JsPlugin {
           params: PluginTransformHookParam,
           context: CompilationContext
         ): Promise<PluginTransformHookResult> => {
-          if (
-            VitePluginAdapter.isFarmInternalVirtualModule(params.resolvedPath)
-          ) {
+          if (VitePluginAdapter.isFarmInternalVirtualModule(params.moduleId)) {
             return null;
           }
 
@@ -562,9 +559,9 @@ export class VitePluginAdapter implements JsPlugin {
             const mods = this._viteDevServer.moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
-
+            const filename = normalizePath(file);
             const ctx: HmrContext = {
-              file: file,
+              file: filename,
               timestamp: Date.now(),
               modules: (mods ?? []).map(
                 (m) =>
@@ -784,7 +781,7 @@ export class VitePluginAdapter implements JsPlugin {
     return (
       id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) ||
       // css has been handled before the virtual module is created
-      FARM_CSS_MODULE_SUFFIX.test(id)
+      FARM_CSS_MODULES_SUFFIX.test(id)
     );
   }
 }

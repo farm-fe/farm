@@ -72,10 +72,10 @@ export const VITE_PLUGIN_DEFAULT_MODULE_TYPE =
   'VITE_PLUGIN_DEFAULT_MODULE_TYPE';
 
 export const CSS_LANGS_RES: [RegExp, string][] = [
-  [/\.(css)(?:$|\?)/, 'css'],
   [/\.(less)(?:$|\?)/, 'less'],
   [/\.(scss|sass)(?:$|\?)/, 'sass'],
-  [/\.(styl|stylus)(?:$|\?)/, 'stylus']
+  [/\.(styl|stylus)(?:$|\?)/, 'stylus'],
+  [/\.(css)(?:$|\?)/, 'css']
 ];
 
 export const JS_LANGS_RES: [RegExp, string][] = [
@@ -89,8 +89,8 @@ export const JS_LANGS_RES: [RegExp, string][] = [
 ];
 
 export const DEFAULT_FILTERS = ['!node_modules'];
-
-export const FARM_CSS_MODULE_SUFFIX = /\.FARM_CSS_MODULES(?:$|\?)/;
+// farm css modules query
+export const FARM_CSS_MODULES_SUFFIX = /(?:\?|&)farm_css_modules/;
 
 export const stringifyQuery = (query: [string, string][]) => {
   if (!query.length) {

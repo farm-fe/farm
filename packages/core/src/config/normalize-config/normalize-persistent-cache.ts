@@ -59,11 +59,19 @@ export async function normalizePersistentCache(
   if (existsSync(packageJsonPath)) {
     const s = readFileSync(packageJsonPath).toString();
     const packageJson = JSON.parse(s);
-    const affectedKeys = ['type', 'name'];
+    const affectedKeys = [
+      'type',
+      'name',
+      'exports',
+      'browser',
+      'main',
+      'module'
+    ];
 
     for (const key of affectedKeys) {
+      const value = packageJson[key] ?? 'unknown';
       config.persistentCache.envs[`package.json[${key}]`] =
-        packageJson[key] ?? 'unknown';
+        typeof value !== 'string' ? JSON.stringify(value) : value;
     }
   }
 

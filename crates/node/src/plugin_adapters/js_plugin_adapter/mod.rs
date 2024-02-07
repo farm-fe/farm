@@ -116,7 +116,7 @@ impl JsPluginAdapter {
 
   pub fn is_internal_virtual_module(&self, path: &str) -> bool {
     path.starts_with(DYNAMIC_VIRTUAL_PREFIX)
-      || path.ends_with(FARM_CSS_MODULES_SUFFIX)
+      || FARM_CSS_MODULES_SUFFIX.is_match(path)
       || path.ends_with(RUNTIME_SUFFIX)
   }
 }
@@ -163,7 +163,7 @@ impl Plugin for JsPluginAdapter {
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
-    if self.is_internal_virtual_module(param.resolved_path) {
+    if self.is_internal_virtual_module(&param.module_id) {
       return Ok(None);
     }
 
@@ -180,7 +180,7 @@ impl Plugin for JsPluginAdapter {
     param: &PluginTransformHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<PluginTransformHookResult>> {
-    if self.is_internal_virtual_module(param.resolved_path) {
+    if self.is_internal_virtual_module(&param.module_id) {
       return Ok(None);
     }
 

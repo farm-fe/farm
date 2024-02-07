@@ -9,7 +9,7 @@ use farmfe_core::{
   context::{CompilationContext, EmitFileParams},
   deserialize,
   error::CompilationError,
-  module::ModuleType,
+  module::{ModuleId, ModuleType},
   // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
@@ -21,7 +21,7 @@ use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
   lazy_static::lazy_static,
 };
-use farmfe_utils::stringify_query;
+use farmfe_utils::{hash::sha256, stringify_query};
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
@@ -57,6 +57,20 @@ impl FarmPluginStaticAssets {
         .include
         .iter()
         .any(|a| a.eq_ignore_ascii_case(ext))
+  }
+
+  fn get_resource_name(name: &str, module_id: &str) -> String {
+    let last_dot = name.rfind('.').unwrap_or(0);
+    if last_dot == 0 {
+      format!("{}-{}", name, sha256(module_id.as_bytes(), 6))
+    } else {
+      format!(
+        "{}-{}{}",
+        &name[..last_dot],
+        sha256(module_id.to_string().as_bytes(), 6),
+        &name[last_dot..]
+      )
+    }
   }
 }
 
@@ -134,14 +148,6 @@ impl Plugin for FarmPluginStaticAssets {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Asset) {
-      // let resolve_kind = ResolveKind::from(
-      //   param
-      //     .meta
-      //     .get(PLUGIN_BUILD_STAGE_META_RESOLVE_KIND)
-      //     .unwrap()
-      //     .as_str(),
-      // );
-
       if param.query.iter().any(|(k, _)| k == "inline") {
         let file_base64 = if param.content.is_empty() {
           general_purpose::STANDARD.encode(read_file_raw(param.resolved_path)?)
@@ -205,6 +211,8 @@ impl Plugin for FarmPluginStaticAssets {
           &bytes,
           ext,
         ) + stringify_query(&param.query).as_str();
+        let resource_name = Self::get_resource_name(&resource_name, &param.module_id);
+
         let content = if !context.config.output.public_path.is_empty() {
           let normalized_public_path = context
             .config
@@ -224,7 +232,7 @@ impl Plugin for FarmPluginStaticAssets {
         } else {
           format!("export default \"/{}\"", resource_name)
         };
-        // TODO refactor this to support cache
+
         context.emit_file(EmitFileParams {
           resolved_path: param.module_id.clone(),
           name: resource_name,
