@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 0.16.7
+
+### Patch Changes
+
+- 6438b969: Fix static name conflicts in dev. fix #966
+- 6438b969: Fix vite plugin css order. fix #967
+- 72c9a59c: eliminate more useless code
+
 ## 0.16.6
 
 ### Patch Changes
