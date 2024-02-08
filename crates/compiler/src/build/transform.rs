@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
-  error::Result,
+  error::{CompilationError, Result},
   plugin::{plugin_driver::PluginDriverTransformHookResult, PluginTransformHookParam},
 };
 
@@ -12,8 +12,14 @@ pub fn transform(
 ) -> Result<PluginDriverTransformHookResult> {
   #[cfg(feature = "profile")]
   farmfe_core::puffin::profile_function!();
-
-  let transformed = context.plugin_driver.transform(transform_param, context)?;
+  let module_id = transform_param.module_id.to_string();
+  let transformed = context
+    .plugin_driver
+    .transform(transform_param, context)
+    .map_err(|e| CompilationError::TransformError {
+      resolved_path: module_id,
+      msg: e.to_string(),
+    })?;
 
   Ok(transformed)
 }
