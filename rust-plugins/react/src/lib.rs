@@ -90,12 +90,14 @@ impl Plugin for FarmPluginReact {
             }"#
           .to_string(),
         module_type: farmfe_core::module::ModuleType::Js,
+        source_map: None,
       }));
     } else if param.resolved_path == IS_REACT_REFRESH_BOUNDARY {
       let code = include_str!("is_react_refresh_boundary.ts");
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
         content: code.to_string(),
         module_type: farmfe_core::module::ModuleType::Ts,
+        source_map: None,
       }));
     }
 

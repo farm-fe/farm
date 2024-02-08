@@ -145,6 +145,7 @@ impl Plugin for FarmPluginRuntime {
         Ok(Some(PluginLoadHookResult {
           content,
           module_type,
+          source_map: None,
         }))
       } else {
         panic!("unknown module type for {}", real_file_path);

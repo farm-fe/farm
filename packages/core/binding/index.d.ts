@@ -65,6 +65,8 @@ export interface PluginLoadHookResult {
   /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
   /// usually end with `.js` extension
   moduleType: ModuleType;
+  /// source map of the module
+  sourceMap?: string | null;
 }
 
 export interface PluginTransformHookParam {

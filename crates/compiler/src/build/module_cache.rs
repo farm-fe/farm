@@ -62,6 +62,8 @@ pub fn try_get_module_cache_by_timestamp(
     "try_get_module_cache_by_timestamp: {:?}",
     module_id
   ));
+  let mut should_invalidate_cache = false;
+
   if context.config.persistent_cache.timestamp_enabled()
     && context.cache_manager.module_cache.has_cache(module_id)
   {
@@ -75,23 +77,28 @@ pub fn try_get_module_cache_by_timestamp(
       if cached_module.module.immutable
         || !is_watch_dependencies_timestamp_changed(&cached_module, context)
       {
-        return Ok(Some(cached_module));
+        let should_invalidate_cached_module = context
+          .plugin_driver
+          .handle_persistent_cached_module(&cached_module.module, context)?
+          .unwrap_or(false);
+
+        if !should_invalidate_cached_module {
+          return Ok(Some(cached_module));
+        } else {
+          should_invalidate_cache = true;
+        }
       }
     } else if !context.config.persistent_cache.hash_enabled() {
-      drop(cached_module);
-      context
-        .cache_manager
-        .module_cache
-        .invalidate_cache(module_id);
+      should_invalidate_cache = true;
     }
   }
 
-  // println!(
-  //   "module not found: {:?} timestamp enabled {}, has_cache {}",
-  //   module_id,
-  //   context.config.persistent_cache.timestamp_enabled(),
-  //   context.cache_manager.module_cache.has_cache(module_id)
-  // );
+  if should_invalidate_cache {
+    context
+      .cache_manager
+      .module_cache
+      .invalidate_cache(module_id);
+  }
 
   Ok(None)
 }
@@ -102,6 +109,9 @@ pub fn try_get_module_cache_by_hash(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Option<CachedModule>> {
   farm_profile_function!(format!("try_get_module_cache_by_hash: {:?}", module_id));
+
+  let mut should_invalidate_cache = false;
+
   if context.config.persistent_cache.hash_enabled()
     && context.cache_manager.module_cache.has_cache(module_id)
   {
@@ -116,16 +126,27 @@ pub fn try_get_module_cache_by_hash(
       if cached_module.module.immutable
         || !is_watch_dependencies_content_hash_changed(&cached_module, context)
       {
-        return Ok(Some(cached_module));
+        let should_invalidate_cached_module = context
+          .plugin_driver
+          .handle_persistent_cached_module(&cached_module.module, context)?
+          .unwrap_or(false);
+
+        if !should_invalidate_cached_module {
+          return Ok(Some(cached_module));
+        } else {
+          should_invalidate_cache = true;
+        }
       }
     } else {
-      drop(cached_module);
-
-      context
-        .cache_manager
-        .module_cache
-        .invalidate_cache(module_id);
+      should_invalidate_cache = true;
     }
+  }
+
+  if should_invalidate_cache {
+    context
+      .cache_manager
+      .module_cache
+      .invalidate_cache(module_id);
   }
 
   Ok(None)
@@ -268,11 +289,6 @@ fn is_watch_dependencies_timestamp_changed(
   if relation_dependencies.is_empty() {
     return false;
   }
-
-  // println!(
-  //   "{:?} relation_dependencies: {:?}",
-  //   cached_module.module.id, relation_dependencies
-  // );
 
   let cached_dep_timestamp_map = cached_module
     .watch_dependencies

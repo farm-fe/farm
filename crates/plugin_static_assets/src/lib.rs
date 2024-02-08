@@ -129,12 +129,14 @@ impl Plugin for FarmPluginStaticAssets {
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
         content: format!("export default '{source}';"),
         module_type: ModuleType::Js,
+        source_map: None,
       }));
     } else if let Some(ext) = extension {
       if self.is_asset(ext, context) {
         return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
           content: String::new(), // just return empty string, we don't need to load the file content, we will handle it in the transform hook
           module_type: ModuleType::Asset,
+          source_map: None,
         }));
       }
     }
@@ -330,6 +332,7 @@ impl Plugin for FarmPluginRaw {
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
         content: String::new(), // just return empty string, we don't need to load the file content, we will handle it in the transform hook
         module_type: ModuleType::Asset,
+        source_map: None,
       }));
     }
 

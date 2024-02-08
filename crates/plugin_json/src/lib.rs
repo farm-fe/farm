@@ -38,6 +38,7 @@ impl Plugin for FarmPluginJson {
       return Ok(Some(PluginLoadHookResult {
         content: fs::read_file_utf8(param.resolved_path)?,
         module_type: ModuleType::Custom(String::from("json")),
+        source_map: None,
       }));
     }
 
