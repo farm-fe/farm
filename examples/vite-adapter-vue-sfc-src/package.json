@@ -6,8 +6,8 @@
   },
   "private": true,
   "devDependencies": {
-    "@farmfe/cli": "^0.6.1",
-    "@farmfe/core": "^0.16.4",
+    "@farmfe/cli": "workspace:^0.6.1",
+    "@farmfe/core": "workspace:^0.16.4",
     "@vitejs/plugin-vue": "^5.0.3",
     "core-js": "^3.35.1"
   },
