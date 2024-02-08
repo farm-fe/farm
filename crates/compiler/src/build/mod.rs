@@ -190,7 +190,7 @@ impl Compiler {
       )
     };
 
-    if let Some(result) = context.get_resolve_cache(&resolve_param) {
+    if let Some(result) = context.get_resolve_cache(resolve_param) {
       return Ok(ResolveModuleIdResult {
         module_id: get_module_id(&result),
         resolve_result: result,

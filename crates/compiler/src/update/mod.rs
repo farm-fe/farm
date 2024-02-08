@@ -209,11 +209,7 @@ impl Compiler {
     self.context.plugin_driver.module_graph_updated(
       &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams {
         added_modules_ids: diff_result.added_modules.clone().into_iter().collect(),
-        removed_modules_ids: removed_modules
-          .clone()
-          .into_iter()
-          .map(|(id, _)| id)
-          .collect(),
+        removed_modules_ids: removed_modules.clone().into_keys().collect(),
         updated_modules_ids: updated_module_ids.clone(),
       },
       &self.context,
