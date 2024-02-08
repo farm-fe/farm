@@ -454,11 +454,22 @@ export class VitePluginAdapter implements JsPlugin {
           const result = await hook?.(id, isSSR ? { ssr: true } : undefined);
 
           if (result) {
+            let map = undefined;
+
+            if (typeof result === 'object' && result.map) {
+              if (typeof result.map === 'string') {
+                map = result.map;
+              } else if (typeof result.map === 'object') {
+                map = JSON.stringify(result.map);
+              }
+            }
+
             return {
               content: getContentValue(result),
               // only support css as first class citizen for vite plugins
-              moduleType: formatLoadModuleType(id)
-              // TODO support meta, sourcemap and sideEffects
+              moduleType: formatLoadModuleType(id),
+              sourceMap: map
+              // does not support meta and sideEffects
             };
           }
         }

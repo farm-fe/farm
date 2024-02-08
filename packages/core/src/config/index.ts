@@ -377,12 +377,6 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.progress === undefined) {
-    if (config.output.targetEnv === 'node') {
-      config.progress = false;
-    }
-  }
-
   if (config.presetEnv === undefined && config.output?.targetEnv !== 'node') {
     if (isProduction) {
       config.presetEnv = true;

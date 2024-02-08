@@ -91,6 +91,7 @@ impl Plugin for FarmPluginHtml {
         Ok(Some(PluginLoadHookResult {
           content: read_file_utf8(param.resolved_path)?,
           module_type,
+          source_map: None,
         }))
       } else {
         Ok(None)

@@ -237,6 +237,31 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  /// Called when calling compiler.update(module_paths).
+  /// Useful to do some operations like modifying the module graph
+  fn module_graph_updated(
+    &self,
+    _param: &PluginModuleGraphUpdatedHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  /// Called when calling compiler.update(module_paths).
+  /// This hook is called after all compilation work is done, including the resources regeneration and finalization.
+  fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<UpdateResult>> {
+    Ok(None)
+  }
+
+  // Called when hit persistent cache. return false to invalidate the cache
+  fn handle_persistent_cached_module(
+    &self,
+    _module: &Module,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<bool>> {
+    Ok(None)
+  }
+
   fn write_plugin_cache(&self, _context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
     Ok(None)
   }
@@ -352,6 +377,8 @@ pub struct PluginLoadHookResult {
   /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
   /// usually end with `.js` extension
   pub module_type: ModuleType,
+  /// source map of the module
+  pub source_map: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -459,6 +486,14 @@ pub enum UpdateType {
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginUpdateModulesHookParams {
   pub paths: Vec<(String, UpdateType)>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PluginModuleGraphUpdatedHookParams {
+  pub added_modules_ids: Vec<ModuleId>,
+  pub removed_modules_ids: Vec<ModuleId>,
+  pub updated_modules_ids: Vec<ModuleId>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

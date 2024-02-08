@@ -173,6 +173,7 @@ impl Plugin for FarmPluginLazyCompilation {
         Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
           content: dynamic_code,
           module_type: farmfe_core::module::ModuleType::Ts,
+          source_map: None,
         }))
       } else {
         let resolved_path = param.meta.get(ORIGINAL_RESOLVED_PATH).unwrap();
@@ -187,21 +188,8 @@ impl Plugin for FarmPluginLazyCompilation {
         Ok(Some(PluginLoadHookResult {
           content,
           module_type: ModuleType::Js,
+          source_map: None,
         }))
-        // let resolved_path = param.meta.get(ORIGINAL_RESOLVED_PATH).unwrap();
-        // context.plugin_driver.load(
-        //   &farmfe_core::plugin::PluginLoadHookParam {
-        //     resolved_path,
-        //     module_id: param.module_id.clone(),
-        //     query: param.query.clone(),
-        //     meta: param.meta.clone(),
-        //   },
-        //   context,
-        //   &farmfe_core::plugin::PluginHookContext {
-        //     caller: Some("FarmPluginLazyCompilation".to_string()),
-        //     .._hook_context.clone()
-        //   },
-        // )
       }
     } else {
       Ok(None)

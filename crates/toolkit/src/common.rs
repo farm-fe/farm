@@ -1,7 +1,11 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use farmfe_core::{
   config::{comments::CommentsConfig, SourcemapConfig},
+  relative_path::RelativePath,
   resource::{Resource, ResourceType},
   swc_common::{
     comments::{Comment, CommentKind, SingleThreadedComments},
@@ -9,6 +13,7 @@ use farmfe_core::{
     BytePos, FileName, LineCol, SourceFile, SourceMap,
   },
 };
+use farmfe_utils::hash::base64_decode;
 
 use crate::hash::base64_encode;
 
@@ -135,4 +140,49 @@ pub fn minify_comments(comments: &SingleThreadedComments, config: &CommentsConfi
       t.retain(preserve_excl);
     }
   }
+}
+
+pub fn load_source_original_source_map(
+  content: &str,
+  resolved_path: &str,
+  source_map_comment_prefix: &str,
+) -> Option<String> {
+  let mut map = None;
+  // try load source map when load module content.
+  if content.contains(source_map_comment_prefix) {
+    let base64_prefix = format!(
+      "{}=data:application/json;base64,",
+      source_map_comment_prefix
+    );
+    // detect that the source map is inline or not
+    let source_map = if content.contains(&base64_prefix) {
+      // inline source map
+      let mut source_map = content.split(&base64_prefix);
+
+      source_map
+        .nth(1)
+        .map(|source_map| base64_decode(source_map.as_bytes()))
+    } else {
+      // external source map
+      let prefix = format!("{}=", source_map_comment_prefix);
+      let mut source_map_path = content.split(&prefix);
+      let source_map_path = source_map_path.nth(1).unwrap().to_string();
+      let resolved_path = Path::new(resolved_path);
+      let base_dir = resolved_path.parent().unwrap();
+      let source_map_path = RelativePath::new(source_map_path.trim()).to_logical_path(base_dir);
+
+      if source_map_path.exists() {
+        let source_map = std::fs::read_to_string(source_map_path).unwrap();
+        Some(source_map)
+      } else {
+        None
+      }
+    };
+
+    if let Some(src_map) = source_map {
+      map = Some(src_map);
+    }
+  }
+
+  map
 }
