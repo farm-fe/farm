@@ -228,7 +228,7 @@ impl Compiler {
       callback,
       sync,
     );
-    println!("build module graph done");
+
     // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
@@ -667,6 +667,7 @@ fn resolve_module(
   if module_graph.has_module(&module_id) {
     return Ok(ResolveModuleResult::ExistingBeforeUpdate(module_id));
   }
+  drop(module_graph);
 
   let mut update_module_graph = update_context.module_graph.write();
   if update_module_graph.has_module(&module_id) {

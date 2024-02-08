@@ -23,11 +23,10 @@ use farmfe_core::{
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
   rayon::ThreadPool,
-  relative_path::RelativePath,
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
-use farmfe_toolkit::{hash::base64_decode, resolve::load_package_json};
+use farmfe_toolkit::resolve::load_package_json;
 use farmfe_utils::stringify_query;
 
 use crate::{
@@ -182,6 +181,22 @@ impl Compiler {
     resolve_param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<ResolveModuleIdResult> {
+    let get_module_id = |resolve_result: &PluginResolveHookResult| {
+      // make query part of module id
+      ModuleId::new(
+        &resolve_result.resolved_path,
+        &stringify_query(&resolve_result.query),
+        &context.config.root,
+      )
+    };
+
+    if let Some(result) = context.get_resolve_cache(&resolve_param) {
+      return Ok(ResolveModuleIdResult {
+        module_id: get_module_id(&result),
+        resolve_result: result,
+      });
+    }
+
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::new(),
@@ -204,12 +219,9 @@ impl Compiler {
       );
     }
 
-    // make query part of module id
-    let module_id = ModuleId::new(
-      &resolve_result.resolved_path,
-      &stringify_query(&resolve_result.query),
-      &context.config.root,
-    );
+    context.set_resolve_cache(resolve_param.clone(), resolve_result.clone());
+
+    let module_id = get_module_id(&resolve_result);
 
     Ok(ResolveModuleIdResult {
       module_id,

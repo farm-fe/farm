@@ -29,6 +29,9 @@ pub fn parse(
         ),
       }),
     },
-    Err(e) => Err(e),
+    Err(e) => Err(CompilationError::ParseError {
+      resolved_path: parse_param.module_id.to_string(),
+      msg: e.to_string(),
+    }),
   }
 }
