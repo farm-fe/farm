@@ -1650,6 +1650,10 @@ importers:
         version: 2.4.2
 
   packages/plugin-tools:
+    dependencies:
+      '@napi-rs/cli':
+        specifier: ^2.15.2
+        version: 2.16.5
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1660,9 +1664,6 @@ importers:
       '@farmfe/utils':
         specifier: workspace:*
         version: link:../utils
-      '@napi-rs/cli':
-        specifier: ^2.15.2
-        version: 2.16.5
       cac:
         specifier: ^6.7.14
         version: 6.7.14
@@ -3603,7 +3604,6 @@ packages:
     resolution: {integrity: sha512-mFEzwrg4IOLngGd2/P6yeqIWgwQNn59Z08n1rndu6kLDq1gg954NH9cM1O9Da0RJuybt46p43lqgSsnAY2mxqA==}
     engines: {node: '>= 10'}
     hasBin: true
-    dev: true
 
   /@nodelib/fs.scandir@2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
