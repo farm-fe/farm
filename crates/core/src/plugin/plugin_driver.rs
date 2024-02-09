@@ -252,7 +252,7 @@ impl PluginDriver {
   ) -> Result<PluginDriverTransformHookResult> {
     let mut result = PluginDriverTransformHookResult {
       content: String::new(),
-      source_map_chain: vec![],
+      source_map_chain: param.source_map_chain.clone(),
       module_type: None,
     };
 

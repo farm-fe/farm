@@ -91,7 +91,7 @@ export class Compiler {
   constructor(config: object)
   traceDependencies(): Array<string>
   /** async compile, return promise */
-  compile(): promise<void>
+  compile(): object
   /** sync compile */
   compileSync(): void
   /** TODO: usage example */
