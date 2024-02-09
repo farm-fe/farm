@@ -13,7 +13,7 @@ enum LogLevel {
   Error = 'error'
 }
 
-export interface Logger {
+export interface ILogger {
   trace(message: string): void;
   debug(message: string): void;
   info(message: string): void;
@@ -44,7 +44,7 @@ const warnOnceMessages = new Set();
 const infoOnceMessages = new Set();
 const errorOnceMessages = new Set();
 
-export class DefaultLogger implements Logger {
+export class Logger implements Logger {
   constructor(
     public options?: LoggerOptions,
     private levelValues: Record<LogLevelNames, number> = {
@@ -175,7 +175,7 @@ export function printServerUrls(
 }
 
 export function bootstrapLogger(options?: LoggerOptions): Logger {
-  return new DefaultLogger(options);
+  return new Logger(options);
 }
 
 export function bootstrap(times: number, config: Config) {
@@ -196,4 +196,4 @@ export function bootstrap(times: number, config: Config) {
   );
 }
 
-export const logger = new DefaultLogger();
+export const logger = new Logger();

@@ -33,7 +33,7 @@ import {
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
-import { Server } from './type.js';
+import { Server as httpServer } from './type.js';
 import { promisify } from 'node:util';
 import { FileWatcher } from '../watcher/index.js';
 
@@ -63,7 +63,7 @@ interface ImplDevServer {
   getCompiler(): Compiler;
 }
 
-export class DevServer implements ImplDevServer {
+export class Server implements ImplDevServer {
   private _app: Koa;
   private restart_promise: Promise<void> | null = null;
   private compiler: Compiler | null;
@@ -72,7 +72,7 @@ export class DevServer implements ImplDevServer {
   ws: WsServer;
   config: NormalizedServerConfig & UserPreviewServerConfig;
   hmrEngine?: HmrEngine;
-  server?: Server;
+  server?: httpServer;
   publicDir?: string;
   publicPath?: string;
   resolvedUrls?: ServerUrls;
@@ -86,7 +86,7 @@ export class DevServer implements ImplDevServer {
     logger: Logger;
   }) {
     this.compiler = compiler;
-    this.logger = logger;
+    this.logger = logger ?? new Logger();
 
     this.initializeKoaServer();
 

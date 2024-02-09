@@ -5,13 +5,13 @@
 import { relative } from 'node:path';
 import { Context, Middleware, Next } from 'koa';
 
-import { DevServer } from '../index.js';
+import { Server } from '../index.js';
 import { bold, cyan, green } from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { existsSync } from 'node:fs';
 
-export function lazyCompilation(devSeverContext: DevServer): Middleware {
+export function lazyCompilation(devSeverContext: Server): Middleware {
   const compiler = devSeverContext.getCompiler();
 
   if (!compiler.config.config?.lazyCompilation) {

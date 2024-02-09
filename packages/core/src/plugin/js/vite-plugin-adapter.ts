@@ -26,7 +26,7 @@ import {
   revertNormalizePath
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
-import type { DevServer } from '../../server/index.js';
+import type { Server } from '../../server/index.js';
 
 // only use types from vite and we do not install vite as a dependency
 import type {
@@ -242,7 +242,7 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  async configureDevServer(devServer: DevServer) {
+  async configureDevServer(devServer: Server) {
     const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer

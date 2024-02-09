@@ -1060,7 +1060,7 @@ importers:
         version: 3.4.15(typescript@4.9.5)
     devDependencies:
       '@farmfe/cli':
-        specifier: ^0.6.1
+        specifier: workspace:^0.6.1
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*

@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks';
-import { DefaultLogger } from './logger.js';
+import { Logger } from './logger.js';
 
 import { PersistentCacheBrand, bold, green } from './color.js';
 import {
@@ -22,7 +22,7 @@ export async function compilerHandler(
   );
   IS_TARGET_NODE && options?.clear && clearScreen();
   const { persistentCache, output } = config.compilation;
-  const logger = new DefaultLogger();
+  const logger = new Logger();
   const startTime = performance.now();
 
   try {

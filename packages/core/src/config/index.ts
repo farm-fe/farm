@@ -15,20 +15,19 @@ import {
   resolveFarmPlugins
 } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
-import { DevServer } from '../server/index.js';
+import { Server } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import {
   bold,
   clearScreen,
-  DefaultLogger,
+  Logger,
   green,
   isArray,
   isEmptyObject,
   isObject,
   isWindows,
-  Logger,
   normalizePath
 } from '../utils/index.js';
 import { urlRegex } from '../utils/http.js';
@@ -159,7 +158,7 @@ export async function resolveConfig(
 
   try {
     targetWeb &&
-      (await DevServer.resolvePortConflict(resolvedUserConfig.server, logger));
+      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
     // eslint-disable-next-line no-empty
   } catch {}
 
@@ -745,7 +744,7 @@ async function resolveMergedUserConfig(
 export async function loadConfigFile(
   configPath: string,
   inlineOptions: FarmCLIOptions,
-  logger: Logger = new DefaultLogger()
+  logger: Logger = new Logger()
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
   try {
