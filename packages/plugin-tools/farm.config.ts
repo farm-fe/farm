@@ -9,6 +9,9 @@ export default defineConfig({
     output: {
       targetEnv: 'node'
     },
+    external: [
+      "@napi-rs/cli"
+    ],
     sourcemap: false,
     presetEnv: false,
   }
