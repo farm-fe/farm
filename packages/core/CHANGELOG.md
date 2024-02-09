@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.16.8
+
+### Patch Changes
+
+- de0b3ecc: Fix default minify to false in prod when using vite plugins
+
 ## 0.16.7
 
 ### Patch Changes
