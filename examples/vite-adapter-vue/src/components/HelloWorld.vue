@@ -92,7 +92,7 @@ const defaultProps = {
     <el-date-picker />
     <p>
       Edit
-      <code>components/HelloWorld.vue</code> to test HMR
+      <code>components/HelloWorld.vue</code> to <span class="read-the-docs">test</span> HMR
     </p>
   </div>
 
