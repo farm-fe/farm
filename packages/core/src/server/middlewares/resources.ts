@@ -18,7 +18,6 @@ export function resourcesMiddleware(
 ) {
   return async (ctx: Context, next: Next) => {
     await next();
-
     if (ctx.method !== 'HEAD' && ctx.method !== 'GET') return;
     // the response is already handled
     if (ctx.body || ctx.status !== 404) return;
