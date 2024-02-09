@@ -4,7 +4,7 @@ import { isAbsolute, relative } from 'node:path';
 import { stat } from 'node:fs/promises';
 
 import { Compiler } from '../compiler/index.js';
-import { DevServer } from './index.js';
+import { Server } from './index.js';
 import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
@@ -15,18 +15,14 @@ export class HmrEngine {
   // private _updateResults: Map<string, { result: string; count: number }> =
 
   private _compiler: Compiler;
-  private _devServer: DevServer;
+  private _devServer: Server;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
   // flag to indicate if last attempt was error
   // private _lastAttemptWasError: boolean;
 
   private _lastModifiedTimestamp: Map<string, string>;
 
-  constructor(
-    compiler: Compiler,
-    devServer: DevServer,
-    private _logger: Logger
-  ) {
+  constructor(compiler: Compiler, devServer: Server, private _logger: Logger) {
     this._compiler = compiler;
     this._devServer = devServer;
     // this._lastAttemptWasError = false;

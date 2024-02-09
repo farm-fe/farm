@@ -5,11 +5,11 @@ import { fileURLToPath } from 'node:url';
 import walkdir from 'walkdir';
 import spawn from 'cross-spawn';
 import type { build, preview, start, watch, clean } from '@farmfe/core';
-import { DefaultLogger } from '@farmfe/core';
+import { Logger } from '@farmfe/core';
 
 import type { GlobalFarmCLIOptions } from './types.js';
 
-const logger = new DefaultLogger();
+const logger = new Logger();
 interface installProps {
   cwd: string;
   package: string;

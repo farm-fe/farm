@@ -1,7 +1,7 @@
 import { Middleware } from 'koa';
-import { DevServer } from '../index.js';
+import { Server } from '../index.js';
 
-export function headers(devSeverContext: DevServer): Middleware {
+export function headers(devSeverContext: Server): Middleware {
   const { config } = devSeverContext;
   if (!config.headers) return;
 

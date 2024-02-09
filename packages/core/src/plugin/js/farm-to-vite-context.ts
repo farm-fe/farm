@@ -1,7 +1,7 @@
 import type { PluginContext } from 'rollup';
 import type { UserConfig } from '../../config/types.js';
 import type { CompilationContext } from '../type.js';
-import { DefaultLogger } from '../../utils/logger.js';
+import { Logger } from '../../utils/logger.js';
 import { normalizePath, revertNormalizePath } from './utils.js';
 
 const contextCache = new Map<string, PluginContext>();
@@ -17,7 +17,7 @@ export function farmContextToViteContext(
   if (contextCache.has(cacheKey)) {
     return contextCache.get(cacheKey) as PluginContext;
   }
-  const logger = new DefaultLogger();
+  const logger = new Logger();
 
   const log = (message: any) => {
     if (typeof message === 'function') {

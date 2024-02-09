@@ -3,8 +3,8 @@ import { createRequire } from 'node:module';
 import { FSWatcher } from 'chokidar';
 
 import { Compiler } from '../compiler/index.js';
-import { DevServer } from '../server/index.js';
-import { compilerHandler, DefaultLogger } from '../utils/index.js';
+import { Server } from '../server/index.js';
+import { compilerHandler, Logger } from '../utils/index.js';
 
 import type { ResolvedUserConfig } from '../config/index.js';
 import { createWatcher } from './create-watcher.js';
@@ -18,15 +18,15 @@ interface ImplFileWatcher {
 export class FileWatcher implements ImplFileWatcher {
   private _root: string;
   private _watcher: FSWatcher;
-  private _logger: DefaultLogger;
+  private _logger: Logger;
   private _close = false;
 
   constructor(
-    public serverOrCompiler: DevServer | Compiler,
+    public serverOrCompiler: Server | Compiler,
     public options: ResolvedUserConfig
   ) {
     this._root = options.root;
-    this._logger = new DefaultLogger();
+    this._logger = new Logger();
   }
 
   getInternalWatcher() {
@@ -45,7 +45,7 @@ export class FileWatcher implements ImplFileWatcher {
       }
 
       try {
-        if (this.serverOrCompiler instanceof DevServer) {
+        if (this.serverOrCompiler instanceof Server) {
           await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
         }
 
@@ -106,15 +106,15 @@ export class FileWatcher implements ImplFileWatcher {
       }
     };
 
-    if (this.serverOrCompiler instanceof DevServer) {
+    if (this.serverOrCompiler instanceof Server) {
       this.serverOrCompiler.hmrEngine?.onUpdateFinish(handleUpdateFinish);
     }
   }
 
   private getCompilerFromServerOrCompiler(
-    serverOrCompiler: DevServer | Compiler
+    serverOrCompiler: Server | Compiler
   ): Compiler {
-    return serverOrCompiler instanceof DevServer
+    return serverOrCompiler instanceof Server
       ? serverOrCompiler.getCompiler()
       : serverOrCompiler;
   }

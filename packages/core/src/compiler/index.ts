@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { Logger, DefaultLogger } from '../utils/logger.js';
+import { Logger } from '../utils/logger.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
+import type { ILogger } from '../utils/logger.js';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { JsPlugin, Resource } from '../index.js';
 
@@ -25,10 +26,10 @@ export class Compiler {
 
   public compiling = false;
 
-  private logger: Logger;
+  private logger: ILogger;
 
   constructor(public config: Config) {
-    this.logger = new DefaultLogger();
+    this.logger = new Logger();
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 

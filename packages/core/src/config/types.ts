@@ -1,5 +1,5 @@
 import { SecureServerOptions } from 'node:http2';
-import { DevServer } from '../index.js';
+import { Server } from '../index.js';
 
 import type cors from '@koa/cors';
 import type { OutgoingHttpHeaders } from 'http';
@@ -158,6 +158,4 @@ export interface FarmCLIOptions
   clearScreen?: boolean;
 }
 
-export type DevServerMiddleware = (
-  context: DevServer
-) => Middleware | undefined;
+export type DevServerMiddleware = (context: Server) => Middleware | undefined;

@@ -16,8 +16,8 @@ import {
   resolveConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger, Logger } from './utils/logger.js';
-import { DevServer } from './server/index.js';
+import { Logger } from './utils/logger.js';
+import { Server } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
 import { setProcessEnv } from './config/env.js';
@@ -36,7 +36,7 @@ import { clearScreen } from './utils/share.js';
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
   try {
@@ -69,7 +69,7 @@ export async function start(
 export async function build(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('production');
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
@@ -89,7 +89,7 @@ export async function build(
 }
 
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   const port = inlineConfig.port ?? 1911;
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
@@ -115,14 +115,14 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     port,
     host: inlineConfig.host ?? true
   };
-  const devServer = new DevServer({ logger });
-  devServer.createPreviewServer(previewOptions);
+  const server = new Server({ logger });
+  server.createPreviewServer(previewOptions);
 }
 
 export async function watch(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
   const resolvedUserConfig = await resolveConfig(
@@ -164,7 +164,7 @@ export async function clean(
   recursive: boolean | undefined
 ): Promise<void> {
   // TODO After optimizing the reading of config, put the clean method into compiler
-  const logger = new DefaultLogger();
+  const logger = new Logger();
 
   const nodeModulesFolders = recursive
     ? await findNodeModulesRecursively(rootPath)
@@ -296,14 +296,14 @@ export async function createDevServer(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
-  const devServer = new DevServer({ compiler, logger });
-  await devServer.createDevServer(resolvedUserConfig.server);
+  const server = new Server({ compiler, logger });
+  await server.createDevServer(resolvedUserConfig.server);
 
-  return devServer;
+  return server;
 }
 
 export async function createFileWatcher(
-  devServer: DevServer,
+  devServer: Server,
   resolvedUserConfig: ResolvedUserConfig,
   inlineConfig: FarmCLIOptions & UserConfig,
   logger: Logger

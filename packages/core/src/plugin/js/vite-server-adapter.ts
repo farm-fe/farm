@@ -1,7 +1,7 @@
 // import { watch } from 'chokidar';
 import { FSWatcher } from 'chokidar';
-import { DevServer } from '../../index.js';
-import { Server } from '../../server/type.js';
+import { Server } from '../../index.js';
+import { Server as httpServer } from '../../server/type.js';
 import WsServer from '../../server/ws.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
@@ -14,9 +14,9 @@ export class ViteDevServerAdapter {
   middlewares: any;
   middlewareCallbacks: any[];
   ws: WsServer;
-  httpServer: Server;
+  httpServer: httpServer;
 
-  constructor(pluginName: string, config: any, server: DevServer) {
+  constructor(pluginName: string, config: any, server: Server) {
     this.moduleGraph = createViteModuleGraphAdapter(pluginName);
     this.config = config;
     this.pluginName = pluginName;
@@ -134,7 +134,7 @@ function proxyViteModuleNode(
 export function createViteDevServerAdapter(
   pluginName: string,
   config: any,
-  server: DevServer
+  server: Server
 ) {
   const proxy = new Proxy(
     new ViteDevServerAdapter(pluginName, config, server),

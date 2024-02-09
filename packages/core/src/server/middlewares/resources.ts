@@ -5,7 +5,7 @@
 import path, { extname } from 'node:path';
 import { Context, Middleware, Next } from 'koa';
 import { Compiler } from '../../compiler/index.js';
-import { DevServer } from '../index.js';
+import { Server } from '../index.js';
 import koaStatic from 'koa-static';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
@@ -108,9 +108,7 @@ export function resourcesMiddleware(
   };
 }
 
-export function resources(
-  devSeverContext: DevServer
-): Middleware | Middleware[] {
+export function resources(devSeverContext: Server): Middleware | Middleware[] {
   const middlewares = [];
   if (!devSeverContext.config.writeToDisk) {
     middlewares.push(
