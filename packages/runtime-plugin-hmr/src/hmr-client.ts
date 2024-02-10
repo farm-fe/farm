@@ -6,7 +6,6 @@ import { ErrorOverlay, overlayId } from './overlay';
 
 // Inject during compile time
 const port = Number(FARM_HMR_PORT || 9000);
-// TODO use import.meta to get hostname
 const host =
   typeof FARM_HMR_HOST === 'boolean'
     ? window.location.hostname || 'localhost'
@@ -31,7 +30,10 @@ export class HmrClient {
     logger.debug('connecting to the server...');
 
     // setup websocket connection
-    const socket = new WebSocket(`ws://${host}:${port}${path}`, 'farm_hmr');
+    const socket = new WebSocket(
+      `${protocol}://${host}:${port}${path}`,
+      'farm_hmr'
+    );
     this.socket = socket;
     // listen for the message from the server
     // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
