@@ -113,7 +113,7 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
       - name: Test - ${{ matrix.settings.abi }}
-        run: npm run test -- --coverage
+        run: npm run test
 
   check-core-artifacts:
     name: Check Core Artifacts
