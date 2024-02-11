@@ -25,6 +25,8 @@ const require = createRequire(import.meta.url);
 // brand gradient colors
 const gradientPurpleColor = [176, 106, 179];
 const gradientPinkColor = [198, 66, 110];
+const brandGradientColors = [255, 182, 193];
+const brandGradientColors2 = [128, 0, 128];
 
 const argv = process.argv || [],
   env = process.env;
@@ -170,41 +172,43 @@ export function interpolateColor(
   ];
 }
 
-export const PersistentCacheBrand = gradientString('⚡️ FULL EXTREME !', [
-  gradientPurpleColor,
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
-  interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
-  gradientPinkColor
-]);
+export const PersistentCacheBrand =
+  brandColor('⚡️') +
+  gradientString(`FULL EXTREME!`, [
+    gradientPurpleColor,
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
+    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
+    gradientPinkColor
+  ]);
 
 export function handleBrandText(text: string) {
   console.log(
     gradientString(text, [
-      [255, 182, 193],
-      interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
-      interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
-      interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
-      interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
-      [128, 0, 128]
+      brandGradientColors,
+      interpolateColor(brandGradientColors, brandGradientColors2, 0.2),
+      interpolateColor(brandGradientColors, brandGradientColors2, 0.4),
+      interpolateColor(brandGradientColors, brandGradientColors2, 0.6),
+      interpolateColor(brandGradientColors, brandGradientColors2, 0.8),
+      brandGradientColors2
     ])
   );
 }
 
 export const BrandText = (text: string) =>
-  gradientString(`\n${text}\n`, [
-    [255, 182, 193],
-    interpolateColor([255, 182, 193], [128, 0, 128], 0.2),
-    interpolateColor([255, 182, 193], [128, 0, 128], 0.4),
-    interpolateColor([255, 182, 193], [128, 0, 128], 0.6),
-    interpolateColor([255, 182, 193], [128, 0, 128], 0.8),
-    [128, 0, 128]
+  gradientString(`\n${text} \n`, [
+    brandGradientColors,
+    interpolateColor(brandGradientColors, brandGradientColors2, 0.2),
+    interpolateColor(brandGradientColors, brandGradientColors2, 0.4),
+    interpolateColor(brandGradientColors, brandGradientColors2, 0.6),
+    interpolateColor(brandGradientColors, brandGradientColors2, 0.8),
+    brandGradientColors2
   ]);
 
 export const colors = {
