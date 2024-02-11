@@ -3,7 +3,7 @@ import { Compiler } from '../src/compiler/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
 import { normalizeUserCompilationConfig } from '../src/config/index.js';
 import { fileURLToPath } from 'node:url';
-import { DefaultLogger } from '../src/index.js';
+import { Logger } from '../src/index.js';
 
 export async function getCompiler(
   root: string,
@@ -35,7 +35,7 @@ export async function getCompiler(
       },
       plugins
     },
-    new DefaultLogger(),
+    new Logger(),
     'production'
   );
 

@@ -8,14 +8,14 @@ import {
   resolveConfig
 } from '../src/index.js';
 import { parseUserConfig } from '../src/config/schema.js';
-import { DefaultLogger } from '../src/utils/logger.js';
+import { Logger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new DefaultLogger(),
+    new Logger(),
     'development'
   );
 
@@ -76,7 +76,7 @@ test('resolveUserConfig-prod', async () => {
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new DefaultLogger(),
+    new Logger(),
     'production'
   );
 

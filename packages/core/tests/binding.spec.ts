@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { test } from 'vitest';
 import {
   Compiler,
-  DefaultLogger,
+  Logger,
   normalizeDevServerOptions,
   normalizeUserCompilationConfig
 } from '../src/index.js';
@@ -17,7 +17,7 @@ test('Binding - should parse config to rust correctly', async () => {
       root: path.resolve(currentDir, 'fixtures', 'binding'),
       server: serverConfig
     },
-    new DefaultLogger()
+    new Logger()
   );
   const compiler = new Compiler({
     config: compilationConfig,
