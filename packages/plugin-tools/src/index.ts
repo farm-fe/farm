@@ -41,6 +41,10 @@ cli
     } catch (e) {
       process.exit(1);
     }
+
+    // wait 500ms for the output to be ready
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // 2. copy the output to the correct place and rename it to index.farm
     copyArtifacts(abi);
   });

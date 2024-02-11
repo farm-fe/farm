@@ -25,9 +25,18 @@ export const copyArtifacts = async (abi?: string) => {
 
   // find .node file
   const files = await import('fs').then((m) => m.promises.readdir('.'));
+
+  console.log('files:\n', files);
+
   const nodeFile = files.find(
     (file) => file.endsWith('.node') && file.includes(abi)
   );
+
+  if (!nodeFile) {
+    throw new Error(
+      'Missing .node file in current directory: ' + process.cwd()
+    );
+  }
 
   await copyFile(nodeFile, path.join('npm', abi, 'index.farm'));
   console.log(`Copied artifacts from ${nodeFile} to npm/${abi}/index.farm`);
