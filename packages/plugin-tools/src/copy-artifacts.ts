@@ -25,14 +25,12 @@ export const copyArtifacts = async (abi?: string) => {
 
   // find .node file
   const files = await import('fs').then((m) => m.promises.readdir('.'));
-
-  console.log('files:\n', files);
-
   const nodeFile = files.find(
     (file) => file.endsWith('.node') && file.includes(abi)
   );
 
   if (!nodeFile) {
+    console.log('files:\n', files);
     throw new Error(
       'Missing .node file in current directory: ' + process.cwd()
     );
