@@ -265,7 +265,7 @@ export class DevServer implements ImplDevServer {
     this.createWebSocket();
 
     this.invalidateVite();
-
+    // fix: middleware not working
     this.applyServerMiddlewares(options.middlewares);
   }
 
