@@ -7,7 +7,11 @@ license = "MIT"
 description = "Core types and data structures for farm."
 homepage = "https://farm-fe.github.io"
 repository = "https://github.com/farm-fe/farm"
+documentation = "https://docs.rs/farmfe_core"
 readme = "README.md"
+
+[package.metadata.docs.rs]
+no-default-features = true
 
 [dependencies]
 farmfe_macro_cache_item = { version = "0.1.2", path = "../macro_cache_item" }
