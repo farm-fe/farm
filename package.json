@@ -34,7 +34,7 @@
   "scripts": {
     "prepare": "husky install",
     "bootstrap": "pnpm install && node scripts/clean.mjs && node scripts/bootstrap.mjs && pnpm start",
-    "test": "NODE_OPTIONS=--trace-exit vitest run",
+    "test": "cross-env NODE_OPTIONS=--trace-exit vitest run",
     "start": "pnpm --filter @farmfe/cli start",
     "release": "node scripts/release.mjs",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
