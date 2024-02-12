@@ -220,7 +220,10 @@ cli.on('command:*', async () => {
   );
 });
 
-// use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning
+// warning::: use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning
+// we don't use it in `@farmfe/core` package because
+// we need to prevent it in cli package but we don't prevent it in core package
+// We only keep the original code environment.
 preventExperimentalWarning();
 
 cli.help();
