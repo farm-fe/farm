@@ -155,4 +155,9 @@ impl ModuleCacheManager {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
   }
+
+  pub fn cache_outdated(&self, key: &ModuleId) -> bool {
+    self.mutable_modules_store.cache_outdated(key)
+      || self.immutable_modules_store.cache_outdated(key)
+  }
 }

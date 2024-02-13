@@ -33,15 +33,31 @@ export async function rustPluginResolver(
   }
 
   // not absolute path, treat it as a package
-  if (!path.isAbsolute(pluginPath)) {
+  if (!path.isAbsolute(pluginPath) && !pluginPath.startsWith('.')) {
     const require = createRequire(path.join(root, 'package.json'));
     pluginPath = require.resolve(pluginPath);
+  }
 
+  // a rust plugin' entry can be a .farm file or a .js file that exports the path to the binary
+  if (!pluginPath.endsWith('.farm')) {
     // rust plugin should export a default string representing the path to the binary
     if (process.platform === 'win32') {
       pluginPath = (await import(pathToFileURL(pluginPath).toString())).default;
     } else {
       pluginPath = await import(pluginPath).then((m) => m.default);
+    }
+
+    // The entry js file should return { binary: string, options: Record<string, any> } when it's not string
+    if (typeof pluginPath !== 'string') {
+      const { binary, options: pluginOptions } = pluginPath as {
+        binary: string;
+        options: Record<string, any>;
+      };
+      options = JSON.stringify({
+        ...pluginOptions,
+        ...JSON.parse(options)
+      });
+      pluginPath = binary;
     }
   }
 

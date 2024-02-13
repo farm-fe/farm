@@ -138,4 +138,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let store_key = self.gen_cache_store_key(module);
     self.store.is_cache_changed(&store_key)
   }
+
+  fn cache_outdated(&self, key: &ModuleId) -> bool {
+    !self.cached_modules.contains_key(key)
+  }
 }
