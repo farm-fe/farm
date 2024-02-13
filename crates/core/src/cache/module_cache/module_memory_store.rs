@@ -12,6 +12,7 @@ pub trait ModuleMemoryStore {
   fn get_cache_ref(&self, key: &ModuleId) -> Option<Ref<'_, ModuleId, CachedModule>>;
   fn get_cache_mut_ref(&self, key: &ModuleId) -> Option<RefMut<'_, ModuleId, CachedModule>>;
   fn invalidate_cache(&self, key: &ModuleId);
+  fn cache_outdated(&self, key: &ModuleId) -> bool;
   /// Write the cache map to the disk.
   fn write_cache(&self);
 }
