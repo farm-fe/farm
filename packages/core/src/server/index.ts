@@ -1,7 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
 import Koa, { Middleware } from 'koa';
-import compression from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
 import {
@@ -28,7 +27,8 @@ import {
   proxy,
   records,
   resources,
-  sirvMiddleware
+  // sirvMiddleware,
+  compression as compress
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
@@ -328,6 +328,7 @@ export class DevServer implements ImplDevServer {
   applyMiddlewares(internalMiddlewares?: DevServerMiddleware[]) {
     internalMiddlewares.forEach((middleware) => {
       const middlewareImpl = middleware(this);
+      console.log(middlewareImpl);
 
       if (middlewareImpl) {
         if (Array.isArray(middlewareImpl)) {
@@ -348,11 +349,14 @@ export class DevServer implements ImplDevServer {
   private applyPreviewServerMiddlewares(
     middlewares?: DevServerMiddleware[]
   ): void {
+    this._app.use(async (ctx) => {
+      ctx.body = Array(10000).fill('This is a long text. ').join('');
+    });
     const internalMiddlewares = [
       ...(middlewares || []),
-      compression,
-      proxy,
-      sirvMiddleware
+      // proxy,
+      // sirvMiddleware,
+      compress
     ];
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }

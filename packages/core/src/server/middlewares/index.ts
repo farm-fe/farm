@@ -5,3 +5,4 @@ export * from './proxy.js';
 export * from './records.js';
 export * from './resources.js';
 export * from './sirv.js';
+export * from './compress.js';

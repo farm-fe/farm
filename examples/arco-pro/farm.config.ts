@@ -4,9 +4,9 @@ import farmJsPluginLess from '@farmfe/js-plugin-less';
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig(async (env) => {
-  console.log(env);
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  console.log(env);
+  // console.log(env);
+  // await new Promise((resolve) => setTimeout(resolve, 1000));
+  // console.log(env);
   return {
     compilation: {
       input: {
