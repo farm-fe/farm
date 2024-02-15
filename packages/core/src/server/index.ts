@@ -1,6 +1,7 @@
 import http from 'node:http';
 import http2 from 'node:http2';
 import Koa, { Middleware } from 'koa';
+import compress from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
 import {
@@ -27,8 +28,8 @@ import {
   proxy,
   records,
   resources,
-  // sirvMiddleware,
-  compression as compress
+  sirvMiddleware,
+  compression as compressG
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
@@ -65,6 +66,7 @@ interface ImplDevServer {
 
 export class DevServer implements ImplDevServer {
   private _app: Koa;
+  private wwp: Koa;
   private restart_promise: Promise<void> | null = null;
   private compiler: Compiler | null;
   public logger: Logger;
@@ -326,17 +328,16 @@ export class DevServer implements ImplDevServer {
   }
 
   applyMiddlewares(internalMiddlewares?: DevServerMiddleware[]) {
-    internalMiddlewares.forEach((middleware) => {
+    internalMiddlewares.forEach(async (middleware) => {
       const middlewareImpl = middleware(this);
       console.log(middlewareImpl);
-
       if (middlewareImpl) {
         if (Array.isArray(middlewareImpl)) {
           middlewareImpl.forEach((m) => {
             this._app.use(m);
           });
         } else {
-          this._app.use(middlewareImpl);
+          await this._app.use(middlewareImpl);
         }
       }
     });
@@ -349,14 +350,21 @@ export class DevServer implements ImplDevServer {
   private applyPreviewServerMiddlewares(
     middlewares?: DevServerMiddleware[]
   ): void {
-    this._app.use(async (ctx) => {
+    this.wwp = new Koa();
+    this.wwp.use(compress());
+    this.wwp.use(async (ctx) => {
       ctx.body = Array(10000).fill('This is a long text. ').join('');
+    });
+
+    const PORT = 8000;
+    this.wwp.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
     });
     const internalMiddlewares = [
       ...(middlewares || []),
+      compressG,
       // proxy,
-      // sirvMiddleware,
-      compress
+      sirvMiddleware
     ];
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }

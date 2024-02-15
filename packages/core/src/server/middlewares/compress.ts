@@ -7,9 +7,9 @@ export function compression(devSeverContext: DevServer): Middleware {
   console.log('走进来这个插件了');
 
   return compress({
-    filter: function (content_type) {
-      console.log('compression filter', content_type);
-      return /text/i.test(content_type);
-    }
+    // filter: (content_type) => {
+    // console.log('compression filter', content_type);
+    // return /text/i.test(content_type);
+    // }
   });
 }
