@@ -1,5 +1,17 @@
 # @farmfe/plugin-tools
 
+## 0.0.4
+
+### Patch Changes
+
+- Fix plugin tools log
+
+## 0.0.3
+
+### Patch Changes
+
+- fix copy artifacts
+
 ## 0.0.2
 
 ### Patch Changes

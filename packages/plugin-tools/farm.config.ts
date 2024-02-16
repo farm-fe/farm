@@ -14,5 +14,6 @@ export default defineConfig({
     ],
     sourcemap: false,
     presetEnv: false,
+    minify: false,
   }
 });

@@ -11,6 +11,12 @@ export async function getCompiler(
   plugins: JsPlugin[],
   input?: Record<string, string>
 ): Promise<Compiler> {
+  const originalExit = process.exit;
+  process.exit = (code) => {
+    console.trace('call process.exit when test');
+    return originalExit(code);
+  };
+
   const compilationConfig = await normalizeUserCompilationConfig(
     {
       root,
