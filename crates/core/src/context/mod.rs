@@ -51,7 +51,7 @@ impl CompilationContext {
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::new())),
-      plugin_driver: Box::new(PluginDriver::new(plugins, config.record)),
+      plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(CacheManager::new(
         &cache_dir,
         &namespace,
@@ -64,6 +64,10 @@ impl CompilationContext {
       resolve_cache: Box::new(Mutex::new(HashMap::new())),
       custom: Box::new(DashMap::new()),
     })
+  }
+
+  pub fn create_plugin_driver(plugins: Vec<Arc<dyn Plugin>>, record: bool) -> PluginDriver {
+    PluginDriver::new(plugins, record)
   }
 
   pub fn normalize_persistent_cache_config(config: &mut Config) -> (String, String) {

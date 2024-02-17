@@ -32,6 +32,11 @@ pub struct Compiler {
 impl Compiler {
   /// The params are [farmfe_core::config::Config] and dynamic load rust plugins and js plugins [farmfe_core::plugin::Plugin]
   pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    // plugin driver will be initialized in after plugins are setup
+    let mut context = CompilationContext::new(config, vec![])?;
+    context.plugin_driver.config(&mut context.config)?;
+    let config = &context.config;
+
     let mut plugins = vec![
       Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
       // register internal core plugins
@@ -78,8 +83,10 @@ impl Compiler {
     // sort plugins by priority to make larger priority plugin run first
     plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
 
-    let mut context = CompilationContext::new(config, plugins)?;
-    context.plugin_driver.config(&mut context.config)?;
+    context.plugin_driver = Box::new(CompilationContext::create_plugin_driver(
+      plugins,
+      config.record,
+    ));
 
     Ok(Self {
       context: Arc::new(context),
