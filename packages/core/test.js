@@ -1,20 +1,22 @@
-// Import required modules
 import Koa from 'koa';
-import compress from 'koa-compress';
+import koaStatic from 'koa-static';
+import path from 'path';
 
-// Create a Koa application
 const app = new Koa();
 
-// Use koa-compress middleware
-app.use(compress());
+// 拼接静态文件目录的绝对路径
+const staticPath = path.join(process.cwd(), './build');
 
-// Define a route that sends a long text response
+// 使用koa-static中间件处理静态文件
+app.use(koaStatic(staticPath));
+
+// 定义路由
 app.use(async (ctx) => {
-  ctx.body = Array(10000).fill('This is a long text. ').join('');
+  ctx.body = 'Hello, Koa with koa-static!';
 });
 
-// Start the server on port 3000
-const PORT = 8000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+const port = process.env.PORT || 3000;
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });

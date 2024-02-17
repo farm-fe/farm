@@ -330,7 +330,7 @@ export class DevServer implements ImplDevServer {
   applyMiddlewares(internalMiddlewares?: DevServerMiddleware[]) {
     internalMiddlewares.forEach(async (middleware) => {
       const middlewareImpl = middleware(this);
-      console.log(middlewareImpl);
+      console.log(middlewareImpl, '谁undefined 了');
       if (middlewareImpl) {
         if (Array.isArray(middlewareImpl)) {
           middlewareImpl.forEach((m) => {
@@ -362,9 +362,9 @@ export class DevServer implements ImplDevServer {
     });
     const internalMiddlewares = [
       ...(middlewares || []),
-      compressG,
-      // proxy,
-      sirvMiddleware
+      proxy,
+      sirvMiddleware,
+      compressG
     ];
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }
