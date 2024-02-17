@@ -348,7 +348,7 @@ pub struct PluginResolveHookResult {
   pub external: bool,
   /// whether this module has side effects, affects tree shaking
   pub side_effects: bool,
-  /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
+  /// the query parsed from specifier, for example, query should be `{ inline: "" }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [farmfe_toolkit::resolve::parse_query] should be helpful
   pub query: Vec<(String, String)>,
