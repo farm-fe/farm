@@ -70,6 +70,7 @@ export async function resolveConfig(
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
+  inlineOptions.mode = inlineOptions.mode ?? mode;
 
   const getDefaultConfig = async () => {
     const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
@@ -769,7 +770,13 @@ export async function loadConfigFile(
     // throw error can solve this problem,
     // it will not continue to affect the execution of
     // external code. We just need to return the default config.
-    logger.error(`Failed to load config file: ${error.stack}`);
+    if (inlineOptions.mode === 'production') {
+      logger.error(`Failed to load config file: \n ${error.stack}`, {
+        exit: true
+      });
+    } else {
+      logger.error(`Failed to load config file: \n ${error.stack}`);
+    }
   }
 }
 

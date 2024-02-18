@@ -43,6 +43,7 @@ impl Plugin for FarmPluginResolve {
     farm_profile_function!("plugin_resolve::resolve".to_string());
 
     let source = &param.source;
+    println!("resolve source: {:?} {:?}", source, param);
     let query = parse_query(source);
     // split query from source
     let splits: Vec<&str> = source.split('?').collect();
