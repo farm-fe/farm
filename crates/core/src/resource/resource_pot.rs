@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 
@@ -26,12 +27,19 @@ pub struct ResourcePot {
   /// A [ResourcePot] can belong to multiple module groups.
   pub module_groups: HashSet<ModuleGroupId>,
   pub immutable: bool,
+  pub info: Box<ResourcePotInfo>,
 }
 
 impl ResourcePot {
   pub fn new(name: String, ty: ResourcePotType) -> Self {
     Self {
       id: Self::gen_id(&name, ty.clone()),
+      info: Box::new(ResourcePotInfo {
+        name: name.clone(),
+        resource_pot_type: ty.clone(),
+        module_ids: vec![],
+        data: ResourcePotInfoData::Custom("{}".to_string()),
+      }),
       name,
       resource_pot_type: ty,
       modules: HashSet::new(),
@@ -95,6 +103,134 @@ pub enum ResourcePotType {
   Html,
   Asset,
   Custom(String),
+}
+
+#[cache_item]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourcePotInfo {
+  pub name: String,
+  pub resource_pot_type: ResourcePotType,
+  pub module_ids: Vec<ModuleId>,
+  pub data: ResourcePotInfoData,
+}
+
+impl ResourcePotInfo {
+  pub fn new(resource_pot: &ResourcePot) -> Self {
+    let data = match &resource_pot.resource_pot_type {
+      ResourcePotType::Js => ResourcePotInfoData::Script(JsResourcePotInfo::new(resource_pot)),
+      ResourcePotType::Css => ResourcePotInfoData::Css(CssResourcePotInfo {
+        custom: HashMap::new(),
+      }),
+      ResourcePotType::Html => ResourcePotInfoData::Html(HtmlResourcePotInfo {
+        custom: HashMap::new(),
+      }),
+      ResourcePotType::Runtime => ResourcePotInfoData::Custom("{}".to_string()),
+      ResourcePotType::Asset => ResourcePotInfoData::Custom("{}".to_string()),
+      ResourcePotType::Custom(_) => ResourcePotInfoData::Custom("{}".to_string()),
+    };
+
+    Self {
+      name: resource_pot.name.clone(),
+      resource_pot_type: resource_pot.resource_pot_type.clone(),
+      module_ids: resource_pot.modules().into_iter().cloned().collect(),
+      data,
+    }
+  }
+}
+
+/// Info data which is not shared by core plugins should be stored in [ResourcePotInfo::Custom]
+#[cache_item]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", untagged)]
+pub enum ResourcePotInfoData {
+  Script(JsResourcePotInfo),
+  Css(CssResourcePotInfo),
+  Html(HtmlResourcePotInfo),
+  Custom(String),
+}
+
+impl ResourcePotInfoData {
+  pub fn as_js(&self) -> &JsResourcePotInfo {
+    match self {
+      Self::Script(info) => info,
+      _ => panic!("ResourcePotInfo is not ResourcePotInfo::Script"),
+    }
+  }
+
+  pub fn as_css(&self) -> &CssResourcePotInfo {
+    match self {
+      Self::Css(info) => info,
+      _ => panic!("ResourcePotInfo is not ResourcePotInfo::Css"),
+    }
+  }
+
+  pub fn as_html(&self) -> &HtmlResourcePotInfo {
+    match self {
+      Self::Html(info) => info,
+      _ => panic!("ResourcePotInfo is not ResourcePotInfo::Html"),
+    }
+  }
+
+  pub fn as_custom(&self) -> &String {
+    match self {
+      Self::Custom(info) => info,
+      _ => panic!("ResourcePotInfo is not ResourcePotInfo::Custom"),
+    }
+  }
+}
+
+#[cache_item]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JsResourcePotInfo {
+  pub id: ResourcePotId,
+  pub resource_pot_type: ResourcePotType,
+  pub dynamic_imports: Vec<String>,
+  pub exports: Vec<String>,
+  pub imports: Vec<String>,
+  pub imported_bindings: HashMap<String, Vec<String>>,
+  pub is_dynamic_entry: bool,
+  pub is_entry: bool,
+  pub is_implicit_entry: bool,
+  pub map: Option<Arc<String>>,
+  pub modules: HashMap<ModuleId, RenderedModule>,
+  pub name: String,
+  pub custom: HashMap<String, String>,
+}
+
+impl JsResourcePotInfo {
+  pub fn new(resource_pot: &ResourcePot) -> Self {
+    Self {
+      id: resource_pot.id.clone(),
+      resource_pot_type: resource_pot.resource_pot_type.clone(),
+      dynamic_imports: vec![],           // TODO
+      exports: vec![],                   // TODO
+      imports: vec![],                   // TODO
+      imported_bindings: HashMap::new(), // TODO
+      is_dynamic_entry: false,
+      is_entry: resource_pot.entry_module.is_some(),
+      is_implicit_entry: false, // TODO
+      map: None,
+      modules: resource_pot.meta.rendered_modules.clone(),
+      name: resource_pot.name.clone(),
+      custom: HashMap::new(),
+    }
+  }
+}
+
+#[cache_item]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CssResourcePotInfo {
+  pub custom: HashMap<String, String>,
+}
+
+#[cache_item]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HtmlResourcePotInfo {
+  pub custom: HashMap<String, String>,
 }
 
 impl From<ModuleType> for ResourcePotType {

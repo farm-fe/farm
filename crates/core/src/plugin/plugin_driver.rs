@@ -4,7 +4,7 @@ use farmfe_utils::stringify_query;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  ChunkResourceInfo, Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
+  Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
   PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParams,
   PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
   PluginModuleGraphUpdatedHookParams, PluginParseHookParam, PluginProcessModuleHookParam,
@@ -22,7 +22,7 @@ use crate::{
   record::{
     AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger,
   },
-  resource::resource_pot::{ResourcePot, ResourcePotMetaData},
+  resource::resource_pot::{ResourcePot, ResourcePotInfo, ResourcePotMetaData},
   stats::Stats,
 };
 
@@ -458,7 +458,7 @@ impl PluginDriver {
 
   pub fn augment_resource_hash(
     &self,
-    render_pot_info: &ChunkResourceInfo,
+    render_pot_info: &ResourcePotInfo,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     let mut result: Option<String> = None;

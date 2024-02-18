@@ -181,7 +181,7 @@ impl Plugin for RustPluginAdapter {
 
   fn augment_resource_hash(
     &self,
-    render_pot_info: &farmfe_core::plugin::ChunkResourceInfo,
+    render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     self.plugin.augment_resource_hash(render_pot_info, context)

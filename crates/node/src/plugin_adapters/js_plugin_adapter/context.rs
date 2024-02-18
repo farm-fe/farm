@@ -18,7 +18,6 @@ use farmfe_core::{
   module::ModuleId,
   // swc_ecma_ast::EsVersion,
   plugin::{PluginHookContext, PluginResolveHookParam},
-  serde_json,
 };
 
 const RESOLVE: &str = "resolve";
