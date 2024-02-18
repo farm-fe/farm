@@ -160,6 +160,11 @@ function writePackageJson(dest: string, options: IResultType) {
 
   pkg.name = options.projectName;
 
+  if (isYarnInstalled) {
+    pkg.scripts = pkg.scripts ?? {};
+    pkg.scripts.postinstall = 'npx --yes peer-gear --install';
+  }
+
   const packageJsonPath = path.join(dest, 'package.json');
   const { name, ...rest } = pkg;
   const sortedPackageJson = { name, ...rest };
