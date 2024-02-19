@@ -124,9 +124,13 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { framework = argFramework } = result;
+  const { framework = argFramework, packageManager } = result;
 
-  await copyTemplate(targetDir, { framework, projectName: targetDir });
+  await copyTemplate(targetDir, {
+    framework,
+    projectName: targetDir,
+    packageManager
+  });
   await installationDeps(targetDir, !skipInstall, result);
 }
 
@@ -160,7 +164,8 @@ function writePackageJson(dest: string, options: IResultType) {
 
   pkg.name = options.projectName;
 
-  if (isYarnInstalled) {
+  const currentPkgManager = getCurrentPkgManager(options);
+  if (currentPkgManager === 'yarn') {
     pkg.scripts = pkg.scripts ?? {};
     pkg.scripts.postinstall = 'npx --yes peer-gear --install';
   }
@@ -174,14 +179,19 @@ function writePackageJson(dest: string, options: IResultType) {
   );
 }
 
+function getCurrentPkgManager(options: IResultType) {
+  const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
+  const currentPkgManager =
+    (pkgInfo ? pkgManager : options.packageManager) ?? 'npm';
+  return currentPkgManager;
+}
+
 async function installationDeps(
   targetDir: string,
   autoInstall: boolean,
   options: IResultType
 ) {
-  const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
-  const currentPkgManager =
-    (pkgInfo ? pkgManager : options.packageManager) ?? 'npm';
+  const currentPkgManager = getCurrentPkgManager(options);
   if (autoInstall) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir), 'ignore');
     const spinner = await loadWithRocketGradient('Install Dependencies');
