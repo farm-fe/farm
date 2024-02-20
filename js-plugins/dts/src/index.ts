@@ -42,7 +42,7 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
       }
     },
     finish: {
-      executor() {
+      async executor() {
         ctx.handleCloseBundle();
       }
     }

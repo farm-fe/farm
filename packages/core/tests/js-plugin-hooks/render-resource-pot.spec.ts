@@ -43,7 +43,7 @@ test('Js Plugin Execution - renderResourcePot', async () => {
                     "const _default = 'render-resource-pot-return-value';\n",
                   renderedMap: null,
                   renderedLength: 257,
-                  originalLength: 52
+                  originalLength: 51
                 }
               },
               data: {
