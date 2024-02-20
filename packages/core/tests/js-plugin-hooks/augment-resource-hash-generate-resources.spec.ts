@@ -45,6 +45,7 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
             resourcePotTypes: ['js']
           },
           executor: async (resourcePotInfo) => {
+            console.log(resourcePotInfo);
             expect(resourcePotInfo).toEqual({
               id: 'index_eab4_js',
               name: 'index_eab4',

@@ -246,7 +246,7 @@ pub trait Plugin: Any + Send + Sync {
 
   /// Called when calling compiler.update(module_paths).
   /// This hook is called after all compilation work is done, including the resources regeneration and finalization.
-  fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<UpdateResult>> {
+  fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     Ok(None)
   }
 

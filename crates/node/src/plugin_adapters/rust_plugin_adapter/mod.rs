@@ -258,10 +258,7 @@ impl Plugin for RustPluginAdapter {
     self.plugin.module_graph_updated(param, context)
   }
 
-  fn update_finished(
-    &self,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<farmfe_core::plugin::UpdateResult>> {
+  fn update_finished(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
     self.plugin.update_finished(context)
   }
 

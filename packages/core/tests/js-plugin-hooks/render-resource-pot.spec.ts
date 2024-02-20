@@ -20,6 +20,7 @@ test('Js Plugin Execution - renderResourcePot', async () => {
           executor: async (param) => {
             expect(param.content).toContain('render-resource-pot-return-value');
             expect(param.sourceMapChain).toEqual([]);
+            console.log(param.resourcePotInfo);
             expect(param.resourcePotInfo).toEqual({
               id: 'index_eab4_js',
               name: 'index_eab4',
