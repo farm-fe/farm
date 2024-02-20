@@ -9,7 +9,7 @@ export type ModuleType =
   | string;
 
 export type ResolveKind =
-  | 'entry'
+  | { entry: string }
   | 'import'
   | 'dynamicImport'
   | 'require'

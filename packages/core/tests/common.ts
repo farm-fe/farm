@@ -9,7 +9,8 @@ export async function getCompiler(
   root: string,
   p: string,
   plugins: JsPlugin[],
-  input?: Record<string, string>
+  input?: Record<string, string>,
+  output?: Record<string, string>
 ): Promise<Compiler> {
   const originalExit = process.exit;
   process.exit = (code) => {
@@ -27,8 +28,10 @@ export async function getCompiler(
         output: {
           path: path.join('dist', p),
           entryFilename: '[entryName].mjs',
-          targetEnv: 'node'
+          targetEnv: 'node',
+          ...(output ?? {})
         },
+        progress: false,
         lazyCompilation: false,
         sourcemap: false,
         persistentCache: false

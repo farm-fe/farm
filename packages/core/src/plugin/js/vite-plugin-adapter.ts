@@ -609,6 +609,10 @@ export class VitePluginAdapter implements JsPlugin {
       },
       executor: this.wrapExecutor(
         async (param: RenderResourcePotParams, ctx) => {
+          if (param.resourcePotInfo.resourcePotType !== 'js') {
+            return;
+          }
+
           const hook = this.wrapRawPluginHook(
             'renderChunk',
             this._rawPlugin.renderChunk,
@@ -659,6 +663,10 @@ export class VitePluginAdapter implements JsPlugin {
         moduleIds: this.filters
       },
       executor: this.wrapExecutor(async (param: ResourcePotInfo, context) => {
+        if (param.resourcePotType !== 'js') {
+          return;
+        }
+
         const hook = this.wrapRawPluginHook(
           'augmentChunkHash',
           this._rawPlugin.augmentChunkHash,

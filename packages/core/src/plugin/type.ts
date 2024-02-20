@@ -50,17 +50,22 @@ export interface CompilationContext {
 }
 
 type ModuleId = string;
-
 export interface ResourcePot {
   id: string;
   name: string;
-  resourcePotType: string;
+  resourcePotType: ResourcePotType;
   modules: ModuleId[];
-  meta: any;
+  meta: {
+    renderedModules: Record<ModuleId, RenderedModule>;
+    renderedContent: string;
+    renderedMapChain: string[];
+    customData: Record<string, string>;
+  };
   entryModule?: ModuleId;
   resources: string[];
   moduleGroups: string[];
   immutable: boolean;
+  info: ResourcePotInfo;
 }
 
 interface RenderedModule {
@@ -73,28 +78,28 @@ interface RenderedModule {
 
 export interface ResourcePotInfo {
   id: string;
+  name: string;
   resourcePotType: ResourcePotType;
-  content: string;
+  map?: string;
+  modules: Record<ModuleId, RenderedModule>;
+  moduleIds: ModuleId[];
+  data: JsResourcePotInfoData | { custom: Record<string, string> };
+}
+
+export interface JsResourcePotInfoData {
   dynamicImports: string[];
   exports: string[];
-  facadeModuleId?: string;
-  fileName: string;
-  implicitlyLoadedBefore: string[];
   imports: string[];
   importedBindings: Record<string, string[]>;
   isDynamicEntry: boolean;
   isEntry: boolean;
   isImplicitEntry: boolean;
-  map?: string;
-  modules: Record<ModuleId, RenderedModule>;
-  moduleIds: ModuleId[];
-  name: string;
-  preliminaryFileName: string;
-  referencedFiles: string[];
-  ty: string;
+  custom: Record<string, string>;
 }
+
 export interface RenderResourcePotParams {
   content: string;
+  sourceMapChain: string[];
   resourcePotInfo: ResourcePotInfo;
 }
 export interface RenderResourcePotResult {
@@ -120,7 +125,7 @@ type Callback<P, R> = (
   param: P,
   context?: CompilationContext,
   hookContext?: { caller?: string; meta: Record<string, unknown> }
-) => Promise<R | null | undefined> | R | null | undefined;
+) => Promise<R | null | undefined>;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
 export interface JsPlugin {
@@ -207,7 +212,7 @@ export interface JsPlugin {
   finalizeResources?: {
     executor: Callback<
       FinalizeResourcesHookParams,
-      FinalizeResourcesHookParams
+      FinalizeResourcesHookParams['resourcesMap']
     >;
   };
 

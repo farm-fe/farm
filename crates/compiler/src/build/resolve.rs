@@ -28,7 +28,7 @@ pub fn resolve(
     ));
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_scope!(id);
-    println!("resolve param: {:?}", resolve_param);
+
     match context
       .plugin_driver
       .resolve(resolve_param, context, hook_context)

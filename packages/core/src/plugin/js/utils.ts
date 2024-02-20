@@ -1,6 +1,6 @@
 // import path from 'node:path';
 import * as querystring from 'node:querystring';
-import { Resource, ResourcePotInfo } from '../type.js';
+import { JsResourcePotInfoData, Resource, ResourcePotInfo } from '../type.js';
 import {
   InternalModuleFormat,
   NormalizedInputOptions,
@@ -213,27 +213,22 @@ export function throwIncompatibleError(
 export function transformResourceInfo2RollupRenderedChunk(
   info: ResourcePotInfo
 ): RenderedChunk {
+  const { modules, moduleIds, name, data } = info;
+
   const {
     dynamicImports,
-    fileName,
-    implicitlyLoadedBefore,
     importedBindings,
     imports,
-    modules,
-    referencedFiles,
     exports,
-    facadeModuleId,
     isDynamicEntry,
     isEntry,
-    isImplicitEntry,
-    moduleIds,
-    name
-  } = info;
+    isImplicitEntry
+  } = data as JsResourcePotInfoData;
 
   return {
     dynamicImports,
-    fileName,
-    implicitlyLoadedBefore,
+    fileName: name,
+    implicitlyLoadedBefore: [],
     importedBindings,
     imports,
     modules: Object.entries(modules).reduce(
@@ -249,9 +244,9 @@ export function transformResourceInfo2RollupRenderedChunk(
       }),
       {} as Record<string, RenderedModule>
     ),
-    referencedFiles,
+    referencedFiles: [],
     exports,
-    facadeModuleId,
+    facadeModuleId: null,
     isDynamicEntry,
     isEntry,
     isImplicitEntry,

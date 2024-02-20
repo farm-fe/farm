@@ -1,6 +1,7 @@
 import { test, expect } from 'vitest';
 import { getCompiler, getFixturesDir, getOutputFilePath } from '../common.js';
 import path from 'path';
+import { pathToFileURL } from 'node:url';
 
 test('Json compilation', async () => {
   const root = path.join(getFixturesDir(), 'json');
@@ -9,7 +10,13 @@ test('Json compilation', async () => {
   compiler.writeResourcesToDisk();
 
   const outputFilePath = getOutputFilePath(root, 'json');
-  const result = await import(outputFilePath);
+  let result;
+
+  if (process.platform === 'win32') {
+    result = await import(pathToFileURL(outputFilePath).toString());
+  } else {
+    result = await import(outputFilePath);
+  }
 
   expect(result.default.json1Name).toBe('json1');
   expect(result.default.json2Name).toBe('json2');

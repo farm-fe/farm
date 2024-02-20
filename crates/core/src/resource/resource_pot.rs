@@ -1,3 +1,4 @@
+use heck::AsLowerCamelCase;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashSet;
@@ -35,9 +36,12 @@ impl ResourcePot {
     Self {
       id: Self::gen_id(&name, ty.clone()),
       info: Box::new(ResourcePotInfo {
+        id: Self::gen_id(&name, ty.clone()),
         name: name.clone(),
         resource_pot_type: ty.clone(),
         module_ids: vec![],
+        map: None,
+        modules: HashMap::new(),
         data: ResourcePotInfoData::Custom("{}".to_string()),
       }),
       name,
@@ -95,7 +99,7 @@ impl ResourcePot {
 pub type ResourcePotId = String;
 
 #[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ResourcePotType {
   Runtime,
   Js,
@@ -105,13 +109,35 @@ pub enum ResourcePotType {
   Custom(String),
 }
 
+impl serde::Serialize for ResourcePotType {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.serialize_str(self.to_string().as_str())
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for ResourcePotType {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    let s = <std::string::String as serde::Deserialize>::deserialize(deserializer)?;
+    Ok(s.into())
+  }
+}
+
 #[cache_item]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourcePotInfo {
+  pub id: ResourcePotId,
   pub name: String,
   pub resource_pot_type: ResourcePotType,
   pub module_ids: Vec<ModuleId>,
+  pub map: Option<Arc<String>>,
+  pub modules: HashMap<ModuleId, RenderedModule>,
   pub data: ResourcePotInfoData,
 }
 
@@ -131,9 +157,12 @@ impl ResourcePotInfo {
     };
 
     Self {
-      name: resource_pot.name.clone(),
+      id: resource_pot.id.clone(),
       resource_pot_type: resource_pot.resource_pot_type.clone(),
+      name: resource_pot.name.clone(),
       module_ids: resource_pot.modules().into_iter().cloned().collect(),
+      map: None,
+      modules: resource_pot.meta.rendered_modules.clone(),
       data,
     }
   }
@@ -184,8 +213,6 @@ impl ResourcePotInfoData {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JsResourcePotInfo {
-  pub id: ResourcePotId,
-  pub resource_pot_type: ResourcePotType,
   pub dynamic_imports: Vec<String>,
   pub exports: Vec<String>,
   pub imports: Vec<String>,
@@ -193,17 +220,12 @@ pub struct JsResourcePotInfo {
   pub is_dynamic_entry: bool,
   pub is_entry: bool,
   pub is_implicit_entry: bool,
-  pub map: Option<Arc<String>>,
-  pub modules: HashMap<ModuleId, RenderedModule>,
-  pub name: String,
   pub custom: HashMap<String, String>,
 }
 
 impl JsResourcePotInfo {
   pub fn new(resource_pot: &ResourcePot) -> Self {
     Self {
-      id: resource_pot.id.clone(),
-      resource_pot_type: resource_pot.resource_pot_type.clone(),
       dynamic_imports: vec![],           // TODO
       exports: vec![],                   // TODO
       imports: vec![],                   // TODO
@@ -211,9 +233,6 @@ impl JsResourcePotInfo {
       is_dynamic_entry: false,
       is_entry: resource_pot.entry_module.is_some(),
       is_implicit_entry: false, // TODO
-      map: None,
-      modules: resource_pot.meta.rendered_modules.clone(),
-      name: resource_pot.name.clone(),
       custom: HashMap::new(),
     }
   }
@@ -267,6 +286,7 @@ impl From<String> for ResourcePotType {
 
 #[cache_item]
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RenderedModule {
   pub id: ModuleId,
   pub rendered_content: Arc<String>,
