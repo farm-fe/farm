@@ -256,8 +256,7 @@ export async function normalizeUserCompilationConfig(
   config.define = Object.assign(
     {
       // skip self define
-      ['FARM' + '_PROCESS_ENV']: userConfig.env,
-      '$__farm_regex:\\bprocess\\.env\\b': userConfig.env
+      ['FARM' + '_PROCESS_ENV']: userConfig.env
     },
     config?.define,
     // for node target, we should not define process.env.NODE_ENV
