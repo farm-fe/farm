@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.5.11
+
+### Patch Changes
+
+- b3617142: Support auto install peers for yarn
+
 ## 1.5.10
 
 ### Patch Changes

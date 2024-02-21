@@ -1,12 +1,6 @@
 #![feature(path_file_prefix)]
 
-use farmfe_core::{
-  config::Config,
-
-  // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
-  plugin::Plugin,
-  serde_json,
-};
+use farmfe_core::{config::Config, plugin::Plugin, regex::Regex, serde_json};
 use farmfe_toolkit::lazy_static::lazy_static;
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
@@ -18,6 +12,7 @@ lazy_static! {
 }
 
 const PLUGIN_NAME: &str = "FarmPluginDefine";
+const REGEX_PREFIX: &str = "$__farm_regex:";
 
 pub struct FarmPluginDefine {}
 
@@ -55,12 +50,20 @@ impl Plugin for FarmPluginDefine {
           serde_json::Value::Array(arr) => serde_json::to_string(arr).unwrap(),
           serde_json::Value::Object(obj) => serde_json::to_string(obj).unwrap(),
         };
-        // reduce a string allocation
-        if content.is_empty() {
-          content = param.content.replace(key, &value);
+        if let Some(reg) = key.strip_prefix(REGEX_PREFIX) {
+          let regex = Regex::new(reg).unwrap();
+          if content.is_empty() {
+            content = regex.replace_all(&param.content, &value).to_string();
+          } else {
+            content = regex.replace_all(&content, &value).to_string();
+          }
         } else {
-          content = content.replace(key, &value);
-        }
+          if content.is_empty() {
+            content = param.content.replace(key, &value);
+          } else {
+            content = content.replace(key, &value);
+          }
+        };
       }
 
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {

@@ -263,7 +263,8 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-          env[`process.env.${key}`] = userConfig.env[key];
+          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+            userConfig.env[key];
           return env;
         }, {})
   );
@@ -514,11 +515,7 @@ async function readConfigFile(
         rustPlugins: []
       });
 
-      // const previousProfileEnv = process.env.FARM_PROFILE;
-      // process.env.FARM_PROFILE = '';
       await compiler.compile();
-
-      // process.env.FARM_PROFILE = previousProfileEnv;
 
       compiler.writeResourcesToDisk();
 
