@@ -256,14 +256,16 @@ export async function normalizeUserCompilationConfig(
   config.define = Object.assign(
     {
       // skip self define
-      ['FARM' + '_PROCESS_ENV']: userConfig.env
+      ['FARM' + '_PROCESS_ENV']: userConfig.env,
+      '$__farm_regex:\\bprocess\\.env\\b': userConfig.env
     },
     config?.define,
     // for node target, we should not define process.env.NODE_ENV
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-          env[`process.env.${key}`] = userConfig.env[key];
+          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+            userConfig.env[key];
           return env;
         }, {})
   );
@@ -520,11 +522,7 @@ async function readConfigFile(
         rustPlugins: []
       });
 
-      // const previousProfileEnv = process.env.FARM_PROFILE;
-      // process.env.FARM_PROFILE = '';
       await compiler.compile();
-
-      // process.env.FARM_PROFILE = previousProfileEnv;
 
       compiler.writeResourcesToDisk();
 
