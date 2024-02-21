@@ -26,7 +26,7 @@ test('resolveUserConfig', async () => {
     FARM_PROCESS_ENV: {
       NODE_ENV: 'test'
     },
-    'process.env.NODE_ENV': 'test'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -55,7 +55,7 @@ test('resolveUserConfig', async () => {
       NODE_ENV: 'test',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
-      'process.env.NODE_ENV': 'test',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test',
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
@@ -84,7 +84,7 @@ test('resolveUserConfig-prod', async () => {
     FARM_PROCESS_ENV: {
       NODE_ENV: 'test'
     },
-    'process.env.NODE_ENV': 'test'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -150,7 +150,7 @@ test('resolveUserConfig-prod', async () => {
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
       'package.json[module]': 'unknown',
-      'process.env.NODE_ENV': 'test'
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test'
     },
     moduleCacheKeyStrategy: {}
   });
