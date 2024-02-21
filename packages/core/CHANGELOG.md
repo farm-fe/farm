@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 0.16.9
+
+### Patch Changes
+
+- b3617142: fix #982 #983
+
 ## 0.16.8
 
 ### Patch Changes
