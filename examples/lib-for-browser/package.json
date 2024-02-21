@@ -2,7 +2,7 @@
   "name": "@farmfe-examples/lib-for-browser",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "private": true,
   "type": "module",
   "scripts": {
