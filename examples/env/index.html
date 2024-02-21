@@ -30,8 +30,15 @@
       <code class="escape_a"></code>
     </p>
     <p>FARM_ESCAPE_B: <code class="escape_b"></code></p>
+    <p>
+      FARM_CUSTOM_ENV_VARIABLE(globalThis process env):
+      <code class="globalThis"></code>
+    </p>
+    <p>
+      FARM_CUSTOM_ENV_VARIABLE(global process env): <code class="global"></code>
+    </p>
     <script>
-      console.log(process.env);
+      // console.log(process.env);
       text('.custom', process.env.FARM_CUSTOM_ENV_VARIABLE);
       text('.file', process.env.FARM_EFFECTIVE_MODE_FILE_NAME);
       text('.bool', process.env.FARM_BOOL);
@@ -40,6 +47,8 @@
       text('.expand_b', process.env.FARM_EXPAND_B);
       text('.escape_b', process.env.FARM_ESCAPE_B);
       text('.escape_a', process.env.FARM_ESCAPE_A);
+      text('.globalThis', globalThis.process.env.FARM_CUSTOM_ENV_VARIABLE);
+      text('.global', global.process.env.FARM_CUSTOM_ENV_VARIABLE);
       function text(el, text) {
         document.querySelector(el).textContent = text;
       }
