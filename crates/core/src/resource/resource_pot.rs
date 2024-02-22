@@ -42,6 +42,7 @@ impl ResourcePot {
         map: None,
         modules: HashMap::new(),
         data: ResourcePotInfoData::Custom("{}".to_string()),
+        custom: HashMap::new(),
       }),
       name,
       resource_pot_type: ty,
@@ -138,18 +139,15 @@ pub struct ResourcePotInfo {
   pub map: Option<Arc<String>>,
   pub modules: HashMap<ModuleId, RenderedModule>,
   pub data: ResourcePotInfoData,
+  pub custom: HashMap<String, String>,
 }
 
 impl ResourcePotInfo {
   pub fn new(resource_pot: &ResourcePot) -> Self {
     let data = match &resource_pot.resource_pot_type {
       ResourcePotType::Js => ResourcePotInfoData::Script(JsResourcePotInfo::new(resource_pot)),
-      ResourcePotType::Css => ResourcePotInfoData::Css(CssResourcePotInfo {
-        custom: HashMap::new(),
-      }),
-      ResourcePotType::Html => ResourcePotInfoData::Html(HtmlResourcePotInfo {
-        custom: HashMap::new(),
-      }),
+      ResourcePotType::Css => ResourcePotInfoData::Css(CssResourcePotInfo {}),
+      ResourcePotType::Html => ResourcePotInfoData::Html(HtmlResourcePotInfo {}),
       ResourcePotType::Runtime => ResourcePotInfoData::Custom("{}".to_string()),
       ResourcePotType::Asset => ResourcePotInfoData::Custom("{}".to_string()),
       ResourcePotType::Custom(_) => ResourcePotInfoData::Custom("{}".to_string()),
@@ -163,6 +161,7 @@ impl ResourcePotInfo {
       map: None,
       modules: resource_pot.meta.rendered_modules.clone(),
       data,
+      custom: HashMap::new(),
     }
   }
 }
@@ -219,7 +218,6 @@ pub struct JsResourcePotInfo {
   pub is_dynamic_entry: bool,
   pub is_entry: bool,
   pub is_implicit_entry: bool,
-  pub custom: HashMap<String, String>,
 }
 
 impl JsResourcePotInfo {
@@ -232,7 +230,6 @@ impl JsResourcePotInfo {
       is_dynamic_entry: false,
       is_entry: resource_pot.entry_module.is_some(),
       is_implicit_entry: false, // TODO
-      custom: HashMap::new(),
     }
   }
 }
@@ -240,16 +237,12 @@ impl JsResourcePotInfo {
 #[cache_item]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CssResourcePotInfo {
-  pub custom: HashMap<String, String>,
-}
+pub struct CssResourcePotInfo {}
 
 #[cache_item]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct HtmlResourcePotInfo {
-  pub custom: HashMap<String, String>,
-}
+pub struct HtmlResourcePotInfo {}
 
 impl From<ModuleType> for ResourcePotType {
   fn from(m_ty: ModuleType) -> Self {
