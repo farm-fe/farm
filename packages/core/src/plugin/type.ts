@@ -83,7 +83,8 @@ export interface ResourcePotInfo {
   map?: string;
   modules: Record<ModuleId, RenderedModule>;
   moduleIds: ModuleId[];
-  data: JsResourcePotInfoData | { custom: Record<string, string> };
+  data: JsResourcePotInfoData;
+  custom: Record<string, string>;
 }
 
 export interface JsResourcePotInfoData {
@@ -94,7 +95,6 @@ export interface JsResourcePotInfoData {
   isDynamicEntry: boolean;
   isEntry: boolean;
   isImplicitEntry: boolean;
-  custom: Record<string, string>;
 }
 
 export interface RenderResourcePotParams {

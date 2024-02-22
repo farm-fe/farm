@@ -86,9 +86,9 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
                 importedBindings: {},
                 isDynamicEntry: false,
                 isEntry: true,
-                isImplicitEntry: false,
-                custom: {}
-              }
+                isImplicitEntry: false
+              },
+              custom: {}
             } as ResourcePotInfo);
             calledHooks.push('augmentResourceHash');
             return 'augmented-hash';

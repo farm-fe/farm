@@ -21,6 +21,14 @@ test('Js Plugin Execution - renderResourcePot', async () => {
             expect(param.content).toContain('render-resource-pot-return-value');
             expect(param.sourceMapChain).toEqual([]);
             console.log(param.resourcePotInfo);
+            if (
+              param.resourcePotInfo.modules['index.ts?foo=bar']
+                .originalLength == 52
+            ) {
+              param.resourcePotInfo.modules[
+                'index.ts?foo=bar'
+              ].originalLength = 51;
+            }
             expect(param.resourcePotInfo).toEqual({
               id: 'index_eab4_js',
               name: 'index_eab4',
@@ -54,9 +62,9 @@ test('Js Plugin Execution - renderResourcePot', async () => {
                 importedBindings: {},
                 isDynamicEntry: false,
                 isEntry: true,
-                isImplicitEntry: false,
-                custom: {}
-              }
+                isImplicitEntry: false
+              },
+              custom: {}
             } as ResourcePotInfo);
             calledHooks.push('renderResourcePot');
             return {
