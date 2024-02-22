@@ -592,8 +592,12 @@ impl Resolver {
           ));
           let result = resolved_path.as_ref().unwrap();
           let path = Path::new(result.resolved_path.as_str());
+          // TODO: refactor this, we should only resolve package entry here
           if let Some(_extension) = path.extension() {
-            return (resolved_path, tried_paths);
+            // fix #983, the resolved path should not be the same as package dir
+            if path != Path::new(package_json_info.dir()) {
+              return (resolved_path, tried_paths);
+            }
           }
         } else if let Value::String(str) = field_value {
           let dir = package_json_info.dir();
