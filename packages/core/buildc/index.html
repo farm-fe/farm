@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/assets/index_02d8.de4ae0a4.css"><link rel="stylesheet" href="/assets/index_3ece.54da0199.css"><link rel="stylesheet" href="/assets/index_12f3.4ce2d3df.css"><link rel="stylesheet" href="/assets/index_a686.ad9c7cdb.css"><script data-farm-entry-script="true">
+(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'] = {};
+(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'] = {
+  __FARM_TARGET_ENV__: 'browser',
+};</script><script data-farm-entry-script="true">(function (modules, entryModule) {
+            var cache = {};
+
+            function dynamicRequire(id) {
+              return Promise.resolve(require(id));
+            }
+          
+            function require(id) {
+              if (cache[id]) return cache[id].exports;
+          
+              var module = {
+                id: id,
+                exports: {}
+              };
+          
+              modules[id](module, module.exports, require, dynamicRequire);
+              cache[id] = module;
+              return module.exports;
+            }
+          
+            require(entryModule);
+          })({"242b3d0c": function(module, exports, farmRequire, farmDynamicRequire) {
+/* eslint-disable @typescript-eslint/no-explicit-any */ "use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "Module", {
+    enumerable: true,
+    get: function() {
+        return Module;
+    }
+});
+class Module {
+    id;
+    exports;
+    resource_pot;
+    meta;
+    require;
+    constructor(id, require){
+        this.id = id;
+        this.exports = {};
+        this.meta = {
+            env: {}
+        };
+        this.require = require;
+    }
+}
+
+},
+"32ec7913": function(module, exports, farmRequire, farmDynamicRequire) {
+// using native ability to load resources if target env is node.
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    ResourceLoader: function() {
+        return ResourceLoader;
+    },
+    __farm_global_this__: function() {
+        return __farm_global_this__;
+    },
+    isBrowser: function() {
+        return isBrowser;
+    },
+    targetEnv: function() {
+        return targetEnv;
+    }
+});
+const __farm_global_this__ = eval("(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5']");
+const targetEnv = __farm_global_this__.__FARM_TARGET_ENV__ || 'node';
+const isBrowser = targetEnv === 'browser' && (globalThis || window).document;
+class ResourceLoader {
+    _loadedResources = {};
+    _loadingResources = {};
+    publicPaths;
+    constructor(publicPaths){
+        this.publicPaths = publicPaths;
+    }
+    load(resource, index = 0) {
+        // it's not running in browser
+        if (!isBrowser) {
+            if (resource.type === 'script') {
+                return this._loadScript(`./${resource.path}`);
+            } else if (resource.type === 'link') {
+                return this._loadLink(`./${resource.path}`);
+            }
+        }
+        const publicPath = this.publicPaths[index];
+        const url = `${publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath}/${resource.path}`;
+        if (this._loadedResources[resource.path]) {
+            return;
+        } else if (this._loadingResources[resource.path]) {
+            return this._loadingResources[resource.path];
+        }
+        let promise = Promise.resolve();
+        if (resource.type === 'script') {
+            promise = this._loadScript(url);
+        } else if (resource.type === 'link') {
+            promise = this._loadLink(url);
+        }
+        this._loadingResources[resource.path] = promise;
+        promise.then(()=>{
+            this._loadedResources[resource.path] = true;
+        }).catch((e)=>{
+            console.warn(`[Farm] Failed to load resource "${url}" using publicPath: ${this.publicPaths[index]}`);
+            index++;
+            if (index < this.publicPaths.length) {
+                return this.load(resource, index);
+            } else {
+                throw new Error(`[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". ${e}`);
+            }
+        });
+        return promise;
+    }
+    setLoadedResource(path) {
+        this._loadedResources[path] = true;
+    }
+    _loadScript(path) {
+        if (!isBrowser) {
+            return import(path);
+        } else {
+            return new Promise((resolve, reject)=>{
+                const script = document.createElement('script');
+                script.src = path;
+                document.body.appendChild(script);
+                script.onload = ()=>{
+                    resolve();
+                };
+                script.onerror = (e)=>{
+                    reject(e);
+                };
+            });
+        }
+    }
+    _loadLink(path) {
+        if (!isBrowser) {
+            // return Promise.reject(new Error('Not support loading css in SSR'));
+            // ignore css loading in SSR
+            return Promise.resolve();
+        } else {
+            return new Promise((resolve, reject)=>{
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = path;
+                document.head.appendChild(link);
+                link.onload = ()=>{
+                    resolve();
+                };
+                link.onerror = (e)=>{
+                    reject(e);
+                };
+            });
+        }
+    }
+}
+
+},
+"382e5513": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "FarmRuntimePluginContainer", {
+    enumerable: true,
+    get: function() {
+        return FarmRuntimePluginContainer;
+    }
+});
+class FarmRuntimePluginContainer {
+    plugins = [];
+    constructor(plugins){
+        this.plugins = plugins;
+    }
+    // TODO support async later
+    // async hookSerial(
+    hookSerial(hookName, ...args) {
+        for (const plugin of this.plugins){
+            const hook = plugin[hookName];
+            if (hook) {
+                // await hook.apply(plugin, args);
+                hook.apply(plugin, args);
+            }
+        }
+    }
+    // TODO support async later
+    // async hookBail<T = any>(
+    hookBail(hookName, ...args) {
+        for (const plugin of this.plugins){
+            const hook = plugin[hookName];
+            if (hook) {
+                // const result = await hook.apply(plugin, args);
+                const result = hook.apply(plugin, args);
+                if (result) {
+                    return result;
+                }
+            }
+        }
+    }
+}
+
+},
+"45cc7871": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    _: function() {
+        return _export_star;
+    },
+    _export_star: function() {
+        return _export_star;
+    }
+});
+function _export_star(from, to) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                enumerable: true,
+                get: function() {
+                    return from[k];
+                }
+            });
+        }
+    });
+    return from;
+}
+
+},
+"c4321c4c": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    _: function() {
+        return _interop_require_wildcard;
+    },
+    _interop_require_wildcard: function() {
+        return _interop_require_wildcard;
+    }
+});
+function _getRequireWildcardCache(nodeInterop) {
+    if (typeof WeakMap !== "function") return null;
+    var cacheBabelInterop = new WeakMap();
+    var cacheNodeInterop = new WeakMap();
+    return (_getRequireWildcardCache = function(nodeInterop) {
+        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
+    })(nodeInterop);
+}
+function _interop_require_wildcard(obj, nodeInterop) {
+    if (!nodeInterop && obj && obj.__esModule) return obj;
+    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
+        default: obj
+    };
+    var cache = _getRequireWildcardCache(nodeInterop);
+    if (cache && cache.has(obj)) return cache.get(obj);
+    var newObj = {
+        __proto__: null
+    };
+    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
+    for(var key in obj){
+        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
+            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
+            if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
+            else newObj[key] = obj[key];
+        }
+    }
+    newObj.default = obj;
+    if (cache) cache.set(obj, newObj);
+    return newObj;
+}
+
+},
+"c8126b47": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    FarmRuntimePlugin: function() {
+        return _plugin.FarmRuntimePlugin;
+    },
+    ModuleSystem: function() {
+        return _modulesystem.ModuleSystem;
+    }
+});
+const _interop_require_default = farmRequire("ca62dec2");
+const _Dadnyfarmpackagesruntimepluginimportmetasrcindexts = /*#__PURE__*/ _interop_require_default._(farmRequire("fa2a9c7d"));
+const _modulesystem = farmRequire("c87a4e3a");
+const _plugin = farmRequire("382e5513");
+const _resourceloader = farmRequire("32ec7913");
+_resourceloader.__farm_global_this__.__farm_module_system__ = (function() {
+    const moduleSystem = new _modulesystem.ModuleSystem();
+    return function() {
+        return moduleSystem;
+    };
+})()();
+(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'].__farm_module_system__.setPlugins([
+    _Dadnyfarmpackagesruntimepluginimportmetasrcindexts.default
+]);
+
+},
+"c87a4e3a": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "ModuleSystem", {
+    enumerable: true,
+    get: function() {
+        return ModuleSystem;
+    }
+});
+const _module = farmRequire("242b3d0c");
+const _plugin = farmRequire("382e5513");
+const _resourceloader = farmRequire("32ec7913");
+const _interop_require_default = farmRequire("ca62dec2");
+const _interop_require_wildcard = farmRequire("c4321c4c");
+const _export_star = farmRequire("45cc7871");
+const __global_this__ = globalThis || window;
+const INTERNAL_MODULE_MAP = {
+    '@swc/helpers/_/_interop_require_default': {
+        default: _interop_require_default._interop_require_default,
+        _: _interop_require_default._interop_require_default
+    },
+    '@swc/helpers/_/_interop_require_wildcard': {
+        default: _interop_require_wildcard._interop_require_wildcard,
+        _: _interop_require_wildcard._interop_require_wildcard
+    },
+    '@swc/helpers/_/_export_star': {
+        default: _export_star._export_star,
+        _: _export_star._export_star
+    }
+};
+class ModuleSystem {
+    // all modules registered
+    modules;
+    // module cache after module initialized
+    cache;
+    // external modules injected during compile
+    externalModules;
+    // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
+    publicPaths;
+    // dynamic module entry and resources map
+    dynamicModuleResourcesMap;
+    // resources loader
+    resourceLoader;
+    // runtime plugin container
+    pluginContainer;
+    targetEnv;
+    constructor(){
+        this.modules = {};
+        this.cache = {};
+        this.publicPaths = [];
+        this.dynamicModuleResourcesMap = {};
+        this.resourceLoader = new _resourceloader.ResourceLoader(this.publicPaths);
+        this.pluginContainer = new _plugin.FarmRuntimePluginContainer([]);
+        this.targetEnv = _resourceloader.targetEnv;
+        this.externalModules = {};
+    }
+    // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
+    require(moduleId, isCJS = false) {
+        if (INTERNAL_MODULE_MAP[moduleId]) {
+            return INTERNAL_MODULE_MAP[moduleId];
+        }
+        // return the cached exports if cache exists
+        // console.log(`[Farm] require module "${moduleId}" from cache`);
+        if (this.cache[moduleId]) {
+            const shouldSkip = this.pluginContainer.hookBail('readModuleCache', this.cache[moduleId]);
+            // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
+            if (!shouldSkip) {
+                return this.cache[moduleId].exports;
+            }
+        }
+        const initializer = this.modules[moduleId];
+        if (!initializer) {
+            if (this.externalModules[moduleId]) {
+                const exports1 = this.externalModules[moduleId];
+                // fix `const assert = require('assert');` when assert is external. This leads to `assert is not a function` error caused by default export different from esm and cjs
+                if (isCJS) {
+                    return exports1.default || exports1;
+                }
+                return exports1;
+            }
+            // try node require if target Env is node
+            if ((this.targetEnv === 'node' || !_resourceloader.isBrowser) && nodeRequire) {
+                const externalModule = nodeRequire(moduleId);
+                return externalModule;
+            }
+            this.pluginContainer.hookSerial('moduleNotFound', moduleId);
+            // return a empty module if the module is not registered
+            console.debug(`[Farm] Module "${moduleId}" is not registered`);
+            return {};
+        // throw new Error(`Module "${moduleId}" is not registered`);
+        }
+        // create a full new module instance and store it in cache to avoid cyclic initializing
+        const module = new _module.Module(moduleId, this.require.bind(this));
+        module.resource_pot = initializer.__farm_resource_pot__;
+        // call the module created hook
+        this.pluginContainer.hookSerial('moduleCreated', module);
+        this.cache[moduleId] = module;
+        if (!(globalThis || global || window || {}).require) {
+            (globalThis || global || window || {
+                require: undefined
+            }).require = this.require.bind(this);
+        }
+        // initialize the new module
+        initializer(module, module.exports, this.require.bind(this), this.farmDynamicRequire.bind(this));
+        // call the module initialized hook
+        this.pluginContainer.hookSerial('moduleInitialized', module);
+        // return the exports of the module
+        return module.exports;
+    }
+    farmDynamicRequire(moduleId) {
+        if (this.modules[moduleId]) {
+            const exports1 = this.require(moduleId);
+            if (exports1.__farm_async) {
+                return exports1.default;
+            } else {
+                return Promise.resolve(exports1);
+            }
+        }
+        const resources = this.dynamicModuleResourcesMap[moduleId];
+        if (!resources || resources.length === 0) {
+            throw new Error(`Dynamic imported module "${moduleId}" does not belong to any resource`);
+        }
+        // loading all required resources, and return the exports of the entry module
+        return Promise.all(resources.map((resource)=>this.resourceLoader.load(resource))).then(()=>{
+            if (!this.modules[moduleId]) {
+                throw new Error(`Dynamic imported module "${moduleId}" is not registered.`);
+            }
+            const result = this.require(moduleId);
+            // if the module is async, return the default export, the default export should be a promise
+            if (result.__farm_async) {
+                return result.default;
+            } else {
+                return result;
+            }
+        }).catch((err)=>{
+            console.error(`[Farm] Error loading dynamic module "${moduleId}"`, err);
+            throw err;
+        });
+    }
+    register(moduleId, initializer) {
+        // console.log(`[Farm] register module "${moduleId}"`, console.trace());
+        if (this.modules[moduleId]) {
+            // throw new Error(
+            //   `Module "${moduleId}" has registered! It should not be registered twice`
+            // );
+            console.warn(`Module "${moduleId}" has registered! It should not be registered twice`);
+            return;
+        }
+        this.modules[moduleId] = initializer;
+    }
+    update(moduleId, init) {
+        this.modules[moduleId] = init;
+        this.clearCache(moduleId);
+    }
+    delete(moduleId) {
+        if (this.modules[moduleId]) {
+            this.clearCache(moduleId);
+            delete this.modules[moduleId];
+            return true;
+        } else {
+            return false;
+        }
+    }
+    getModuleUrl(moduleId) {
+        const publicPath = this.publicPaths[0] ?? '';
+        if (__global_this__.location) {
+            const url = `${__global_this__.location.protocol}//${__global_this__.location.host}${publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath}/${this.modules[moduleId].__farm_resource_pot__}`;
+            return url;
+        } else {
+            return this.modules[moduleId].__farm_resource_pot__;
+        }
+    }
+    getCache(moduleId) {
+        return this.cache[moduleId];
+    }
+    clearCache(moduleId) {
+        if (this.cache[moduleId]) {
+            delete this.cache[moduleId];
+            return true;
+        } else {
+            return false;
+        }
+    }
+    setInitialLoadedResources(resources) {
+        for (const resource of resources){
+            this.resourceLoader.setLoadedResource(resource);
+        }
+    }
+    // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
+    // This method can also be called during runtime to add new dynamic modules
+    setDynamicModuleResourcesMap(dynamicModuleResourcesMap) {
+        this.dynamicModuleResourcesMap = dynamicModuleResourcesMap;
+    }
+    // The public paths are injected during compile time
+    setPublicPaths(publicPaths) {
+        this.publicPaths = publicPaths;
+        this.resourceLoader.publicPaths = this.publicPaths;
+    }
+    // The plugins are injected during compile time.
+    setPlugins(plugins) {
+        this.pluginContainer.plugins = plugins;
+    }
+    // This method can be called during runtime to add new plugins
+    addPlugin(plugin) {
+        if (this.pluginContainer.plugins.every((p)=>p.name !== plugin.name)) {
+            this.pluginContainer.plugins.push(plugin);
+        }
+    }
+    // This method can be called during runtime to remove plugins
+    removePlugin(pluginName) {
+        this.pluginContainer.plugins = this.pluginContainer.plugins.filter((p)=>p.name !== pluginName);
+    }
+    // The external modules are injected during compile time.
+    setExternalModules(externalModules) {
+        Object.assign(this.externalModules, externalModules || {});
+    }
+    // bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
+    // This method should only be called once
+    bootstrap() {
+        this.pluginContainer.hookSerial('bootstrap', this);
+    }
+}
+
+},
+"ca62dec2": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    _: function() {
+        return _interop_require_default;
+    },
+    _interop_require_default: function() {
+        return _interop_require_default;
+    }
+});
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+
+},
+"fa2a9c7d": function(module, exports, farmRequire, farmDynamicRequire) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "default", {
+    enumerable: true,
+    get: function() {
+        return _default;
+    }
+});
+const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
+const _default = {
+    name: 'farm-runtime-import-meta',
+    _moduleSystem: {},
+    bootstrap (system) {
+        this._moduleSystem = system;
+    },
+    moduleCreated (module) {
+        module.meta.env = {
+            ...{
+                "NODE_ENV": "production"
+            } ?? {},
+            mode: "production",
+            dev: "production" === 'development',
+            prod: "production" === 'production'
+        };
+        const publicPath = this._moduleSystem.publicPaths?.[0] || '';
+        const { location } = __global_this__;
+        const url = location ? `${location.protocol}//${location.host}${publicPath.replace(/\/$/, '')}/${module.id}?t=${Date.now()}` : module.resource_pot;
+        module.meta.url = url;
+    }
+};
+
+},}, "c8126b47");</script></head>
+  <body>
+    <div id="root"></div>
+    
+  
+
+<script src="/assets/index_2ab6.ce9ec4d5.js" data-farm-resource="true"></script><script src="/assets/index_25fa.9a17ac04.js" data-farm-resource="true"></script><script src="/assets/index_4c4c.c6142805.js" data-farm-resource="true"></script><script src="/assets/index_843c.d08e3071.js" data-farm-resource="true"></script><script src="/assets/index_8215.2072045a.js" data-farm-resource="true"></script><script src="/assets/index_e327.c6bca7e7.js" data-farm-resource="true"></script><script src="/assets/index_80aa.363b4b5f.js" data-farm-resource="true"></script><script src="/assets/index_e113.6bfa53cf.js" data-farm-resource="true"></script><script src="/assets/index_b2bc.519eca6b.js" data-farm-resource="true"></script><script src="/assets/index_2782.42062c53.js" data-farm-resource="true"></script><script src="/assets/index_54ac.9fb8a5a2.js" data-farm-resource="true"></script><script src="/assets/index_48fb.d86cadf2.js" data-farm-resource="true"></script><script src="/assets/index_0293.9f8dcb42.js" data-farm-resource="true"></script><script src="/assets/index_704c.faef14e5.js" data-farm-resource="true"></script><script src="/assets/index_bafc.7b20fce2.js" data-farm-resource="true"></script><script src="/assets/index_27db.21a44db9.js" data-farm-resource="true"></script><script src="/assets/index_6ec8.cbb04345.js" data-farm-resource="true"></script><script src="/assets/index_4b86.c4663117.js" data-farm-resource="true"></script><script src="/assets/index_b98b.450b84a8.js" data-farm-resource="true"></script><script data-farm-entry-script="true">(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'].__farm_module_system__.setInitialLoadedResources(['assets/index_0293.9f8dcb42.js','assets/index_02d8.de4ae0a4.css','assets/index_12f3.4ce2d3df.css','assets/index_25fa.9a17ac04.js','assets/index_2782.42062c53.js','assets/index_27db.21a44db9.js','assets/index_2ab6.ce9ec4d5.js','assets/index_3ece.54da0199.css','assets/index_48fb.d86cadf2.js','assets/index_4b86.c4663117.js','assets/index_4c4c.c6142805.js','assets/index_54ac.9fb8a5a2.js','assets/index_6ec8.cbb04345.js','assets/index_704c.faef14e5.js','assets/index_80aa.363b4b5f.js','assets/index_8215.2072045a.js','assets/index_843c.d08e3071.js','assets/index_a686.ad9c7cdb.css','assets/index_b2bc.519eca6b.js','assets/index_b98b.450b84a8.js','assets/index_bafc.7b20fce2.js','assets/index_e113.6bfa53cf.js','assets/index_e327.c6bca7e7.js']);</script><script data-farm-entry-script="true">(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'].__farm_module_system__.setDynamicModuleResourcesMap({ '0e07cb09': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/info_index_055b.14345d8c.js', type: 'script' },{ path: 'assets/info_index_5ad9.f29b1401.js', type: 'script' },{ path: 'assets/info_index_5c12.e7a9f203.js', type: 'script' },{ path: 'assets/info_index_86e9.32f38ab6.css', type: 'link' },{ path: 'assets/info_index_9dad.d9013b70.js', type: 'script' },],'2f452781': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_bafc.7b20fce2.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/monitor_index_1ccc.cac2fd6b.js', type: 'script' },{ path: 'assets/monitor_index_3ab1.6f04ee80.js', type: 'script' },{ path: 'assets/monitor_index_6ab5.b198c1cc.js', type: 'script' },{ path: 'assets/monitor_index_8133.57413f4a.css', type: 'link' },{ path: 'assets/monitor_index_ec33.729d3177.js', type: 'script' },],'31dd8c8e': [{ path: 'assets/error_index_0b11.2fec914a.js', type: 'script' },{ path: 'assets/error_index_af06.6d45641d.js', type: 'script' },{ path: 'assets/error_index_e6b7.47b4c744.css', type: 'link' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },],'349cd1ac': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_27db.21a44db9.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_3f86.b0a3cd14.css', type: 'link' },{ path: 'assets/multi-dimension-data-analysis_index_e607.6216a8ab.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_f4e3.115488fc.js', type: 'script' },{ path: 'assets/workplace_index_63fc.984d1de2.js', type: 'script' },{ path: 'assets/workplace_index_6b18.9573eec8.js', type: 'script' },{ path: 'assets/workplace_index_7093.38e8da8d.js', type: 'script' },{ path: 'assets/workplace_index_bd0b.45190f0c.css', type: 'link' },{ path: 'assets/workplace_index_e4f4.812a162b.js', type: 'script' },{ path: 'assets/workplace_index_fc44.f1e89327.js', type: 'script' },],'37a7b57f': [{ path: 'assets/500_index_2ba8.99aa5e51.css', type: 'link' },{ path: 'assets/500_index_e99e.28e346ea.js', type: 'script' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },],'542b0a82': [{ path: 'assets/index_0293.9f8dcb42.js', type: 'script' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_27db.21a44db9.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/search-table_index_51d3.2ef33692.js', type: 'script' },{ path: 'assets/search-table_index_7b89.86a1e9b2.js', type: 'script' },{ path: 'assets/search-table_index_7c2d.ae130481.js', type: 'script' },{ path: 'assets/search-table_index_8388.2e11ff78.js', type: 'script' },{ path: 'assets/search-table_index_a469.0a482b23.css', type: 'link' },{ path: 'assets/search-table_index_fa4b.9547a3e7.js', type: 'script' },],'5e674e64': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/step_index_2f95.4b05af2a.js', type: 'script' },{ path: 'assets/step_index_860f.ff9a2240.js', type: 'script' },{ path: 'assets/step_index_968b.76e870fa.css', type: 'link' },{ path: 'assets/step_index_b411.6f558899.js', type: 'script' },],'6570b5fa': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_27db.21a44db9.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_bafc.7b20fce2.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_2b79.2c1b02b1.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_3606.8c092abb.css', type: 'link' },{ path: 'assets/multi-dimension-data-analysis_index_3f86.b0a3cd14.css', type: 'link' },{ path: 'assets/multi-dimension-data-analysis_index_b527.09c14cde.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_be6d.5ff4248d.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_d577.44d2b1b3.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_dd97.cdd93fd0.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_e607.6216a8ab.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_e866.637517af.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_f4e3.115488fc.js', type: 'script' },],'69c6321e': [{ path: 'assets/data-analysis_index_0b5a.2b8e37e1.js', type: 'script' },{ path: 'assets/data-analysis_index_3c9b.331fd26a.js', type: 'script' },{ path: 'assets/data-analysis_index_8e4f.c108a504.js', type: 'script' },{ path: 'assets/data-analysis_index_e4dc.4a577f05.css', type: 'link' },{ path: 'assets/data-analysis_index_f891.a85f928d.js', type: 'script' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_27db.21a44db9.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_bafc.7b20fce2.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_2b79.2c1b02b1.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_3f86.b0a3cd14.css', type: 'link' },{ path: 'assets/multi-dimension-data-analysis_index_e607.6216a8ab.js', type: 'script' },{ path: 'assets/multi-dimension-data-analysis_index_f4e3.115488fc.js', type: 'script' },],'87644080': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/success_index_3717.84f36d27.css', type: 'link' },{ path: 'assets/success_index_9e4c.9300689c.js', type: 'script' },{ path: 'assets/success_index_dbff.74a20fc8.js', type: 'script' },],'89272fed': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/welcome_index_366f.a1881298.css', type: 'link' },{ path: 'assets/welcome_index_5e2d.078dbc75.js', type: 'script' },{ path: 'assets/welcome_index_7366.b67a0f07.js', type: 'script' },{ path: 'assets/welcome_index_b08d.f96b979a.js', type: 'script' },],'96ecd90f': [{ path: 'assets/index_12f3.4ce2d3df.css', type: 'link' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_6ec8.cbb04345.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_bafc.7b20fce2.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },],'975f2322': [{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_bafc.7b20fce2.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/setting_index_0d2f.ef963315.js', type: 'script' },{ path: 'assets/setting_index_5d0f.c4a35254.css', type: 'link' },{ path: 'assets/setting_index_a95e.20d7ec94.js', type: 'script' },{ path: 'assets/setting_index_db44.0e1b6abf.js', type: 'script' },{ path: 'assets/setting_index_e598.a17f779f.js', type: 'script' },],'9afc8098': [{ path: 'assets/group_index_867a.37cc7e40.css', type: 'link' },{ path: 'assets/group_index_cb28.e3a22916.js', type: 'script' },{ path: 'assets/group_index_e1c7.ec3b924f.js', type: 'script' },{ path: 'assets/group_index_e49a.1526a671.js', type: 'script' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },],'9e276ce5': [{ path: 'assets/404_index_2817.8434a0af.js', type: 'script' },{ path: 'assets/404_index_6350.e9699e19.css', type: 'link' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },],'b5c07e81': [{ path: 'assets/card_index_3c0e.305b0955.js', type: 'script' },{ path: 'assets/card_index_3cdf.225b4c72.css', type: 'link' },{ path: 'assets/card_index_67c2.2a57dd72.js', type: 'script' },{ path: 'assets/card_index_bd38.c6b79f4d.js', type: 'script' },{ path: 'assets/index_0293.9f8dcb42.js', type: 'script' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b2bc.519eca6b.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_bafc.7b20fce2.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },{ path: 'assets/index_e327.c6bca7e7.js', type: 'script' },{ path: 'assets/search-table_index_7c2d.ae130481.js', type: 'script' },],'beb95129': [{ path: 'assets/basic_index_2451.efb7bcf9.js', type: 'script' },{ path: 'assets/basic_index_24a3.56d4e083.js', type: 'script' },{ path: 'assets/basic_index_379b.20782f14.js', type: 'script' },{ path: 'assets/basic_index_59a6.37dfe378.css', type: 'link' },{ path: 'assets/basic_index_db65.1de118e4.js', type: 'script' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4b86.c4663117.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },{ path: 'assets/index_b98b.450b84a8.js', type: 'script' },{ path: 'assets/index_e113.6bfa53cf.js', type: 'script' },],'d064950f': [{ path: 'assets/403_index_3e73.37acdbaa.js', type: 'script' },{ path: 'assets/403_index_6399.4256b21f.css', type: 'link' },{ path: 'assets/index_25fa.9a17ac04.js', type: 'script' },{ path: 'assets/index_2ab6.ce9ec4d5.js', type: 'script' },{ path: 'assets/index_48fb.d86cadf2.js', type: 'script' },{ path: 'assets/index_4c4c.c6142805.js', type: 'script' },{ path: 'assets/index_8215.2072045a.js', type: 'script' },{ path: 'assets/index_843c.d08e3071.js', type: 'script' },] });</script><script data-farm-entry-script="true">(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'].__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">(globalThis || window || global)['8631a49814b6940e6ec3522bbe70b0e5'].__farm_module_system__.require("2c6e69f1")</script></body></html>
