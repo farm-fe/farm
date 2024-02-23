@@ -1,1 +1,0 @@
-!function(e){for(var _ in e)e[_].__farm_resource_pot__="about_c140.js",(globalThis||window||global)["654316b2128bfe5af99a8ff44c9e8b9f"].__farm_module_system__.register(_,e[_]);}({"43da3e18":function(e,_,o,f){"use strict";Object.defineProperty(_,"__esModule",{value:!0}),o("764eb22e");}});

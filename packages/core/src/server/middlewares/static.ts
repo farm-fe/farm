@@ -1,19 +1,25 @@
 import { Middleware, Context, Next } from 'koa';
 import { DevServer } from '../index.js';
-// import serve from 'koa-static';
+import serve from 'koa-static';
 // import mount from 'koa-mount';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+export function staticMiddleware(devServerContext: DevServer): Middleware {
+  const { config } = devServerContext;
 
-export function staticMiddleware(devSeverContext: DevServer): Middleware {
-  const { config } = devSeverContext;
+  const staticMiddleware = serve(path.join(process.cwd(), config.output.path));
 
-  return async (ctx: Context) => {
+  // Fallback
+  const fallbackMiddleware: Middleware = async (ctx: Context, next: Next) => {
+    ctx.type = 'html';
+    ctx.body = fs.createReadStream(
+      path.join(process.cwd(), config.output.path, 'index.html')
+    );
+    await next();
+  };
+
+  return async (ctx: Context, next: Next) => {
     const requestPath = ctx.request?.path;
 
     if (requestPath && requestPath.startsWith(config.output.publicPath)) {
@@ -21,47 +27,20 @@ export function staticMiddleware(devSeverContext: DevServer): Middleware {
         config.output.publicPath.length
       );
 
-      if (modifiedPath.startsWith('/')) {
-        ctx.request.path = modifiedPath;
-      } else {
-        ctx.request.path = `/${modifiedPath}`;
+      ctx.request.path = `/${modifiedPath}`;
+
+      try {
+        // Serve middleware for static files
+        await staticMiddleware(ctx, async () => {
+          // If staticMiddleware doesn't find the file or refresh current page router, execute fallbackMiddleware
+          await fallbackMiddleware(ctx, next);
+        });
+      } catch (error) {
+        this.logger.error('Static file handling error:', error);
+        ctx.status = 500;
       }
-    }
-
-    try {
-      // const staticMiddleware = mount('/', serve(path.join(__dirname, './buildc')));
-
-      // Fallback route
-      const fallbackMiddleware = async (ctx: Context, next: Next) => {
-        ctx.type = 'html';
-        ctx.body = fs.createReadStream(
-          path.join(__dirname, config.output.path)
-        );
-        await next();
-      };
-
-      return async (ctx: Context, next: Next) => {
-        await fallbackMiddleware(ctx, next);
-      };
-    } catch (error) {
-      this.logger.error('Static file handling error:', error);
-      ctx.status = 500;
+    } else {
+      await next();
     }
   };
 }
-
-// export function StaticFilesHandler(distDir: string) {
-//   const staticFilesServer = sirv(distDir, {
-//     etag: true,
-//     single: true
-//   });
-
-//   return async (ctx: Context, next: Next) => {
-//     await new Promise<void>((resolve) => {
-//       staticFilesServer(ctx.req, ctx.res, () => {
-//         resolve();
-//       });
-//     });
-//     await next();
-//   };
-// }
