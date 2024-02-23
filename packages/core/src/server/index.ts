@@ -28,7 +28,8 @@ import {
   proxy,
   records,
   resources,
-  sirvMiddleware
+  // sirvMiddleware,
+  staticMiddleware
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
@@ -352,7 +353,8 @@ export class DevServer implements ImplDevServer {
       ...(middlewares || []),
       compression,
       proxy,
-      sirvMiddleware
+      // sirvMiddleware
+      staticMiddleware
     ];
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }
