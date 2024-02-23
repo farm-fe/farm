@@ -1,7 +1,6 @@
 import { Middleware, Context, Next } from 'koa';
 import { DevServer } from '../index.js';
 import serve from 'koa-static';
-// import mount from 'koa-mount';
 import path from 'path';
 import fs from 'fs';
 
