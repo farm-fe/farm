@@ -1518,9 +1518,6 @@ importers:
       koa-compress:
         specifier: ^5.1.1
         version: 5.1.1
-      koa-mount:
-        specifier: ^4.0.0
-        version: 4.0.0
       koa-proxies:
         specifier: ^0.12.3
         version: 0.12.4(koa@2.14.2)
@@ -1572,9 +1569,6 @@ importers:
         version: 2.13.10
       '@types/koa-compress':
         specifier: ^4.0.3
-        version: 4.0.5
-      '@types/koa-mount':
-        specifier: ^4.0.5
         version: 4.0.5
       '@types/koa-static':
         specifier: ^4.0.2
@@ -5518,12 +5512,6 @@ packages:
     dependencies:
       '@types/koa': 2.13.10
       '@types/node': 18.18.8
-    dev: true
-
-  /@types/koa-mount@4.0.5:
-    resolution: {integrity: sha512-pV1njJ7r94iqAFzT9D5sGSYKUHFGudCLAnmr4WFli7V5tJf5MAgRQK9leTPJ4gjvgr+hnTf86fZsKoFN358c7w==}
-    dependencies:
-      '@types/koa': 2.13.10
     dev: true
 
   /@types/koa-send@4.1.5:
@@ -10524,16 +10512,6 @@ packages:
 
   /koa-is-json@1.0.0:
     resolution: {integrity: sha512-+97CtHAlWDx0ndt0J8y3P12EWLwTLMXIfMnYDev3wOTwH/RpBGMlfn4bDXlMEg1u73K6XRE9BbUp+5ZAYoRYWw==}
-    dev: false
-
-  /koa-mount@4.0.0:
-    resolution: {integrity: sha512-rm71jaA/P+6HeCpoRhmCv8KVBIi0tfGuO/dMKicbQnQW/YJntJ6MnnspkodoA4QstMVEZArsCphmd0bJEtoMjQ==}
-    engines: {node: '>= 7.6.0'}
-    dependencies:
-      debug: 4.3.4
-      koa-compose: 4.1.0
-    transitivePeerDependencies:
-      - supports-color
     dev: false
 
   /koa-proxies@0.12.4(koa@2.14.2):
