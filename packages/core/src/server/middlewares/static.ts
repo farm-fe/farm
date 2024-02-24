@@ -1,10 +1,10 @@
 import { Middleware, Context, Next } from 'koa';
-import { DevServer } from '../index.js';
+import { Server } from '../index.js';
 import serve from 'koa-static';
 import path from 'path';
 import fs from 'fs';
 
-export function staticMiddleware(devServerContext: DevServer): Middleware {
+export function staticMiddleware(devServerContext: Server): Middleware {
   const { config } = devServerContext;
 
   const staticMiddleware = serve(path.join(process.cwd(), config.output.path));
