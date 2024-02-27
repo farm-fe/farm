@@ -222,7 +222,7 @@ Thanks to:
 
 - The [Vite](https://github.com/vitejs/vite) project created by [Evan You](https://github.com/yyx990803), which inspired Farm's compatibility design of ecosystem.
 
-## 🌟 Star History
+## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=farm-fe/farm&type=Date)](https://star-history.com/#farm-fe/farm&Date)
 
