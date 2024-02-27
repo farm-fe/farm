@@ -221,6 +221,10 @@ Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景，
 
 - [Vite](https://github.com/vitejs/vite) 项目由 [Evan You](https://github.com/yyx990803)创建, 针对 Vite 插件生态的兼容性设计提供了启发。
 
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=farm-fe/farm&type=Date)](https://star-history.com/#farm-fe/farm&Date)
+
 ## 作者
 
 > Twitter: https://twitter.com/brightwwu46799
