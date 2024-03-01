@@ -7,6 +7,8 @@ import {
   ResolveRecord
 } from '@farmfe/core/binding';
 import { http } from '../http';
+import { FarmEnvInfo } from '../../../node/utils/envinfo';
+import { Resource, PluginStats } from '@farmfe/core';
 
 export function getModules(): Promise<Module[]> {
   return http.get<Module[]>('/__record/modules');
@@ -43,4 +45,22 @@ export function getResourcePotRecordsById(
   return http.get<ResourcePotRecord[]>('/__record/resource_pot', {
     id
   });
+}
+
+export function getFarmEnvInfo(): Promise<FarmEnvInfo> {
+  return http.get('/__record/farm_env_info');
+}
+
+export function getResourcesMap(): Promise<Record<string, Resource>> {
+  return http.get('/__record/resources_map');
+}
+
+export function getResource(id: string): Promise<string> {
+  return http.get('/__record/resource', {
+    id
+  });
+}
+
+export function getPluginStats(): Promise<PluginStats> {
+  return http.get('/__record/stats');
 }
