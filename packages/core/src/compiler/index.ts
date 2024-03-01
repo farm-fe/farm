@@ -19,6 +19,17 @@ export interface UpdateQueueItem {
   resolve: (res: JsUpdateResult) => void;
 }
 
+export type PluginStats = Record<
+  string,
+  Record<
+    string,
+    {
+      totalDuration: number;
+      callCount: number;
+    }
+  >
+>;
+
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
   private _updateQueue: UpdateQueueItem[] = [];
@@ -123,6 +134,14 @@ export class Compiler {
 
   resource(path: string): Buffer {
     return this._bindingCompiler.resource(path);
+  }
+
+  resourcesMap(): Record<string, Resource> {
+    return this._bindingCompiler.resourcesMap() as Record<string, Resource>;
+  }
+
+  pluginStats() {
+    return this._bindingCompiler.pluginStats() as PluginStats;
   }
 
   writeResourcesToDisk(base = ''): void {
