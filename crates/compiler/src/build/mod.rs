@@ -23,6 +23,7 @@ use farmfe_core::{
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
   rayon::ThreadPool,
+  serde_json::json,
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
@@ -137,7 +138,11 @@ impl Compiler {
       for error in errors {
         error_messages.push(error.to_string());
       }
-      return Err(CompilationError::GenericError(error_messages.join(", ")));
+      let errors_json = json!(error_messages
+        .iter()
+        .map(|e| e.to_string())
+        .collect::<Vec<_>>());
+      return Err(CompilationError::GenericError(errors_json.to_string()));
     }
 
     // set module graph cache
