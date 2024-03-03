@@ -178,15 +178,6 @@ export interface JsPlugin {
 
   buildEnd?: { executor: Callback<Record<string, never>, void> };
 
-  finish?: { executor: Callback<Record<string, never>, void> };
-
-  updateModules?: {
-    executor: Callback<
-      { paths: [string, string][] },
-      string[] | undefined | null | void
-    >;
-  };
-
   renderStart?: {
     executor: Callback<Config['config'], void>;
   };
@@ -217,7 +208,7 @@ export interface JsPlugin {
   };
 
   transformHtml?: {
-    executor: Callback<{ htmlResource: Resource }, Resource>;
+    executor: Callback<{ htmlResource: Resource }, string>;
   };
 
   writeResources?: {
@@ -230,6 +221,15 @@ export interface JsPlugin {
 
   writePluginCache?: {
     executor: Callback<undefined, number[]>;
+  };
+
+  finish?: { executor: Callback<Record<string, never>, void> };
+
+  updateModules?: {
+    executor: Callback<
+      { paths: [string, string][] },
+      string[] | undefined | null | void
+    >;
   };
 }
 

@@ -401,7 +401,6 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
-  // TODO more server options e.g: https
   headers: {},
   port: 9000,
   https: undefined,

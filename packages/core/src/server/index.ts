@@ -1,6 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa, { Middleware } from 'koa';
+import Koa from 'koa';
 import compression from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
@@ -359,9 +359,7 @@ export class Server implements ImplDevServer {
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }
 
-  private applyServerMiddlewares(
-    middlewares?: (DevServerMiddleware | Middleware)[]
-  ): void {
+  private applyServerMiddlewares(middlewares?: DevServerMiddleware[]): void {
     const internalMiddlewares = [
       ...(middlewares || []),
       headers,

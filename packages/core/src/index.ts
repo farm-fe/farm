@@ -20,7 +20,7 @@ import { Logger } from './utils/logger.js';
 import { Server } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
-import { setProcessEnv } from './config/env.js';
+import { loadEnv, setProcessEnv } from './config/env.js';
 import { colors } from './utils/color.js';
 
 import type {
@@ -354,3 +354,5 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
 }
 
 export { defineFarmConfig as defineConfig } from './config/index.js';
+
+export { loadEnv };

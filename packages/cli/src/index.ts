@@ -161,7 +161,8 @@ cli
     const defaultOptions = {
       mode: options.mode,
       server: resolveOptions,
-      configPath
+      configPath,
+      port: options.port
     };
 
     const { preview } = await resolveCore();
