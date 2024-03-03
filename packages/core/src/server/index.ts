@@ -138,8 +138,13 @@ export class Server implements ImplDevServer {
   }
 
   private async compile(): Promise<void> {
-    await this.compiler.compile();
-
+    try {
+      await this.compiler.compile();
+    } catch (err) {
+      const error_messages = JSON.parse(err.message);
+      console.log(error_messages);
+      // TODO throw new Error(error_messages); for of
+    }
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this.compiler.writeResourcesToDisk(base);
