@@ -67,6 +67,9 @@ pub struct JsResolveRecord {
   pub importer: Option<String>,
   pub kind: String,
   pub is_hmr: bool,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[napi(object, js_name = "TransformRecord")]
@@ -77,6 +80,9 @@ pub struct JsTransformRecord {
   pub source_maps: Option<String>,
   pub module_type: String,
   pub is_hmr: bool,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[napi(object, js_name = "ModuleRecord")]
@@ -85,6 +91,9 @@ pub struct JsModuleRecord {
   pub hook: String,
   pub module_type: String,
   pub is_hmr: bool,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[napi(object, js_name = "AnalyzeDep")]
@@ -100,6 +109,9 @@ pub struct JsAnalyzeDepsRecord {
   pub module_type: String,
   pub is_hmr: bool,
   pub deps: Vec<JsAnalyzeDep>,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[derive(Debug)]
@@ -113,6 +125,7 @@ pub struct JsModule {
   pub source_map_chain: Vec<String>,
   pub external: bool,
   pub immutable: bool,
+  pub size: i64,
 }
 
 #[napi(object, js_name = "ResourcePotRecord")]
@@ -476,6 +489,7 @@ impl JsCompiler {
           .collect(),
         external: m.external,
         immutable: m.immutable,
+        size: m.size as i64,
       })
       .collect()
   }
@@ -494,6 +508,9 @@ impl JsCompiler {
         importer: record.importer,
         kind: record.kind,
         is_hmr: matches!(record.trigger, Trigger::Update),
+        start_time: record.start_time,
+        end_time: record.end_time,
+        duration: record.duration,
       })
       .collect();
     js_resolve_records
@@ -513,6 +530,9 @@ impl JsCompiler {
         module_type: record.module_type.to_string(),
         source_maps: record.source_maps,
         is_hmr: matches!(record.trigger, Trigger::Update),
+        start_time: record.start_time,
+        end_time: record.end_time,
+        duration: record.duration,
       })
       .collect();
     js_transform_records
@@ -530,6 +550,9 @@ impl JsCompiler {
         hook: record.hook,
         module_type: record.module_type.to_string(),
         is_hmr: matches!(record.trigger, Trigger::Update),
+        start_time: record.start_time,
+        end_time: record.end_time,
+        duration: record.duration,
       })
       .collect();
     js_process_records
@@ -547,6 +570,9 @@ impl JsCompiler {
         hook: record.hook,
         module_type: record.module_type.to_string(),
         is_hmr: matches!(record.trigger, Trigger::Update),
+        start_time: record.start_time,
+        end_time: record.end_time,
+        duration: record.duration,
         deps: record
           .deps
           .into_iter()
@@ -579,6 +605,19 @@ impl JsCompiler {
       })
       .collect();
     js_resource_pot_records
+  }
+
+  #[napi]
+  pub fn plugin_stats(&self, e: Env) -> HashMap<String, JsUnknown> {
+    let context = self.compiler.context();
+    let stats = &context.record_manager.plugin_stats.read().unwrap();
+    let mut plugin_stats_map = HashMap::new();
+
+    for (plugin_name, data) in stats.iter() {
+      plugin_stats_map.insert(plugin_name.clone(), e.to_js_value(data).unwrap());
+    }
+
+    plugin_stats_map
   }
 }
 

@@ -31,6 +31,9 @@ export function records(devServer: Server): Middleware {
       const id = ctx.query.id as string;
       ctx.body = compiler.getResourcePotRecordsById(id);
       await next();
+    } else if (ctx.path === '/__record/stats') {
+      ctx.body = compiler.pluginStats();
+      await next();
     } else {
       await next();
     }

@@ -44,6 +44,9 @@ export interface ResolveRecord {
   importer?: string
   kind: string
   isHmr: boolean
+  startTime: number
+  endTime: number
+  duration: number
 }
 export interface TransformRecord {
   plugin: string
@@ -52,12 +55,18 @@ export interface TransformRecord {
   sourceMaps?: string
   moduleType: string
   isHmr: boolean
+  startTime: number
+  endTime: number
+  duration: number
 }
 export interface ModuleRecord {
   plugin: string
   hook: string
   moduleType: string
   isHmr: boolean
+  startTime: number
+  endTime: number
+  duration: number
 }
 export interface AnalyzeDep {
   source: string
@@ -69,6 +78,9 @@ export interface AnalyzeDepsRecord {
   moduleType: string
   isHmr: boolean
   deps: Array<AnalyzeDep>
+  startTime: number
+  endTime: number
+  duration: number
 }
 export interface Module {
   id: string
@@ -79,6 +91,7 @@ export interface Module {
   sourceMapChain: Array<string>
   external: boolean
   immutable: boolean
+  size: number
 }
 export interface ResourcePotRecord {
   name: string
@@ -110,4 +123,5 @@ export class Compiler {
   getProcessRecordsById(id: string): Array<ModuleRecord>
   getAnalyzeDepsRecordsById(id: string): Array<AnalyzeDepsRecord>
   getResourcePotRecordsById(id: string): Array<ResourcePotRecord>
+  pluginStats(): Record<string, unknown>
 }
