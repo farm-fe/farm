@@ -68,7 +68,7 @@ export interface ResourcePot {
   info: ResourcePotInfo;
 }
 
-interface RenderedModule {
+export interface RenderedModule {
   id: ModuleId;
   renderedContent: string;
   renderedMap?: string;

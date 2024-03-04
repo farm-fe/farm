@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { Compiler } from '@farmfe/core';
+import { getFarmEnvInfo } from './utils/envinfo';
 
 export function createDateSourceMiddleware(compiler: Compiler) {
   return async (
@@ -32,6 +33,24 @@ export function createDateSourceMiddleware(compiler: Compiler) {
         handleRecordRequest(compiler.getAnalyzeDepsRecords(id));
       } else if (pathname === '/__record/resource_pot') {
         handleRecordRequest(compiler.getResourcePotRecordsById(id));
+      } else if (pathname === '/__record/farm_env_info') {
+        const info = await getFarmEnvInfo();
+        if (typeof info === 'object') {
+          handleRecordRequest(info);
+        } else if (typeof info === 'string') {
+          handleRecordRequest(JSON.parse(info));
+        } else {
+          handleRecordRequest(null);
+        }
+      } else if (pathname === '/__record/resources_map') {
+        const resource_map = compiler.resourcesMap();
+        handleRecordRequest(resource_map);
+      } else if (pathname === '/__record/resource') {
+        const resource = compiler.resource(id);
+        handleRecordRequest(resource);
+      } else if (pathname === '/__record/stats') {
+        const stats = compiler.getPluginStats();
+        handleRecordRequest(stats);
       } else {
         await next();
       }
