@@ -206,8 +206,49 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
 
 ## Contributors
 
-<a href="https://github.com/farm-fe/farm/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=farm-fe/farm" />
+<a href="https://github.com/farm-fe/farm/graphs/contributors" target="_blank">
+  <table>
+    <tr>
+      <th colspan="2">
+        <br/>
+        <img src="https://contrib.rocks/image?repo=farm-fe/farm"><br/><br/>
+      </th>
+    </tr>
+    <tr>
+      <td>
+        <picture>
+          <source
+            media="(prefers-color-scheme: dark)"
+            srcset="https://next.ossinsight.io/widgets/official/compose-org-active-contributors/thumbnail.png?activity=active&period=past_28_days&owner_id=108205785&repo_ids=507542208&image_size=2x3&color_scheme=dark"
+          />
+          <img
+            alt="Contributors of farm-fe/farm"
+            src="https://next.ossinsight.io/widgets/official/compose-org-active-contributors/thumbnail.png?activity=active&period=past_28_days&owner_id=108205785&repo_ids=507542208&image_size=2x3&color_scheme=light"
+          />
+        </picture>
+      </td>
+      <td rowspan="2">
+       <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/compose-org-participants-growth/thumbnail.png?activity=new&period=past_28_days&owner_id=108205785&repo_ids=507542208&image_size=4x7&color_scheme=dark">
+        <img alt="New trends of farm-fe" src="https://next.ossinsight.io/widgets/official/compose-org-participants-growth/thumbnail.png?activity=new&period=past_28_days&owner_id=108205785&repo_ids=507542208&image_size=4x7&color_scheme=light">
+      </picture>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <picture>
+          <source
+            media="(prefers-color-scheme: dark)"
+            srcset="https://next.ossinsight.io/widgets/official/compose-org-active-contributors/thumbnail.png?activity=new&period=past_28_days&owner_id=108205785&repo_ids=507542208&image_size=2x3&color_scheme=dark"
+          />
+          <img
+            alt="Contributors of farm-fe/farm"
+            src="https://next.ossinsight.io/widgets/official/compose-org-active-contributors/thumbnail.png?activity=new&period=past_28_days&owner_id=108205785&repo_ids=507542208&image_size=2x3&color_scheme=light"
+          />
+        </picture>
+      </td>
+    </tr>
+  </table>
 </a>
 
 ## Credits

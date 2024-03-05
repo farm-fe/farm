@@ -145,7 +145,8 @@
     "flac",
     "Yuxi",
     "struct",
-    "rfind"
+    "rfind",
+    "srcset"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
