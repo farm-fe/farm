@@ -32,28 +32,9 @@
 
 Farm is a extremely fast vite-compatible web-building tool written in Rust. Benchmark against other tools (using Turbopack's benchmark, 1000 React components) as shown below:
 
-### All Benchmark
-
-![performance](./assets/2023-12-5.benchmark.jpg)
-
-> Test Repository: https://github.com/farm-fe/performance-compare
->
-> Test Machine (Linux Mint 21.1 Cinnamon, 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6, 15.5 GiB)
-
-<br />
-
-### Hot (Startup and Build) Benchmark
-
-> [!NOTE]
-> Since Farm v0.14, Farm has implemented persistent cache. The following compares Farm's use of persistent cache in hot starts and production builds with other tools.
-
-![performance](<./assets/2023-12-5.benchmark(hot).jpg>)
-
 ## Online experience
 
 [![Edit Farm](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/ErKeLost/react/main)
-
-<br />
 
 ## Why Farm?
 
@@ -102,97 +83,13 @@ yarn create farm@latest
 pnpm create farm@latest
 ```
 
-Then start the project:
+## Benchmark
 
-```bash
-cd farm-project && npm start
-```
-
-See our 1 minute quick start video:
-
-https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3173
-
-Refer to the [Documentation](https://farm-fe.github.io) to learn more about Farm.
-
-- **[Farm Guide](https://farm-fe.github.io/docs/quick-start)**
-- **[Farm Config](https://farm-fe.github.io/docs/config/farm-config)**
-- **[Farm Plugins](https://farm-fe.github.io/docs/plugins/overview)**
-
-## Farm Plugins
-
-See [Using Plugins](https://farm-fe.github.io/docs/using-plugins) for how to use plugins in Farm.
-
-### Rust Plugins
-
-- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/official-plugins/react)**
-- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/sass)**
-
-### Js Plugins
-
-- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/official-plugins/js-postcss)**
-- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/official-plugins/js-less)**
-- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/official-plugins/js-svgr)**
-- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/official-plugins/js-dts)**
-- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/js-sass)**
-
-### Community Plugins
-
-Plugins of Vite/Rollup/Unplugin can be directly used in Farm.
-
-- **[`@vitejs/plugin-vue`](https://github.com/vitejs/vite-plugin-vue/blob/main/packages/plugin-vue/README.md)**
-- **[`@vitejs/plugin-vue-jsx`](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue-jsx)**
-- **[`vite-plugin-solid`](https://www.npmjs.com/package/vite-plugin-solid)**
-- **[`vite-plugin-mock`](https://www.npmjs.com/package/vite-plugin-solid)**
-- **[unplugin-auto-import](https://github.com/antfu/unplugin-auto-import)**
-- **[unplugin-vue2-script-setup](https://github.com/antfu/unplugin-vue2-script-setup)**
-- **[unplugin-icons](https://github.com/antfu/unplugin-icons)**
-- **[unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)**
-- ...
-
-See [Community Plugins](https://farm-fe.github.io/docs/plugins/community-plugins) for more available plugins.
+See [Benchmark Performance Compare](https://github.com/farm-fe/performance-compare)
 
 ## Contribution
 
 See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.md).
-
-## Examples
-
-Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules officially out of the box. See our examples:
-
-<table>
-  <thead>
-    <th>React Examples</th>
-    <th>Vue Examples</th>
-    <th>Vite Plugin Examples</th>
-  </thead>
-  <tbody>
-    <td>
-      <ul>
-        <ul>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/react">React-Basic</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/react-antd">React-Ant-Design</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/css-modules">React-Sass-CssModules</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/multi-page-app">React-Multi-Page-Application</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/react-ssr">React-SSR</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/tailwind">React-TailwindCSS</a></li>
-      </ul>
-    </td>
-    <td>
-      <ul>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vue">Vue-Basic</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vue-jsx">Vue-Jsx</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vue-antdv">Vue-Antdv</a></li>
-</ul>
-    </td>
-    <td>
-    <ul>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-vue">Plugin-Vue</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/solid">Plugin-Solid</a></li>
-<li><a href="https://github.com/farm-fe/farm-soybean-admin">farm-soybean-admin</a>：A real admin project migrated from Vite to Farm</li>
-</ul>
-    </td>
-  </tbody>
-</table>
 
 ## Chat With Us
 

@@ -32,28 +32,9 @@
 
 Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件生态。对照其他工具进行基准性能测试 (使用 Turbopack 的基准测试，1000 个 React 组件) 如下所示:
 
-### 基准测试
-
-![performance](./assets/2023-12-5.benchmark.jpg)
-
-> 测试仓库: https://github.com/farm-fe/performance-compare
->
-> 测试机器环境: (Linux Mint 21.1 Cinnamon, 11th Gen Intel© Core™ i5-11400 @ 2.60GHz × 6, 15.5 GiB)
-
-<br />
-
-### 热启动与构建的基准测试
-
-> [!NOTE]
-> 从 `Farm v0.14` 起 `Farm` 已经实现了持久化缓存, 以下是 `Farm` 在开启持久化缓存在热启动以及生产构建与其他工具的对比.
-
-![performance](<./assets/2023-12-5.benchmark(hot).jpg>)
-
 ## 在线体验
 
 [![Edit Farm](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/ErKeLost/react/main)
-
-<br />
 
 ## 为什么选择 Farm？
 
@@ -101,97 +82,13 @@ yarn create farm@latest
 pnpm create farm@latest
 ```
 
-然后启动项目:
+## 基准测试
 
-```bash
-cd farm-project && npm start
-```
-
-1 分钟快速开始视频演示:
-
-https://github.com/farm-fe/farm/assets/8372439/51e8834b-584a-4d9f-ae6f-516da70d3173
-
-请参考[文档](https://farm-fe.github.io) 进一步了解 Farm。
-
-- **[Farm 教程](https://farm-fe.github.io/docs/quick-start)**
-- **[Farm 配置](https://farm-fe.github.io/docs/config/farm-config)**
-- **[Farm 插件](https://farm-fe.github.io/docs/plugins/overview)**
-
-## Farm Plugins
-
-在 Farm 中使用插件请参考文档 [Using Plugins](https://farm-fe.github.io/docs/using-plugins)
-
-### Rust Plugins
-
-- **[`@farmfe/plugin-react`](https://farm-fe.github.io/docs/plugins/official-plugins/react)**
-- **[`@farmfe/plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/sass)**
-
-### Js Plugins
-
-- **[`@farmfe/js-plugin-postcss`](https://farm-fe.github.io/docs/plugins/official-plugins/js-postcss)**
-- **[`@farmfe/js-plugin-less`](https://farm-fe.github.io/docs/plugins/official-plugins/js-less)**
-- **[`@farmfe/js-plugin-svgr`](https://farm-fe.github.io/docs/plugins/official-plugins/js-svgr)**
-- **[`@farmfe/js-plugin-dts`](https://farm-fe.github.io/docs/plugins/official-plugins/js-dts)**
-- **[`@farmfe/js-plugin-sass`](https://farm-fe.github.io/docs/plugins/official-plugins/js-sass)**
-
-### Community Plugins
-
-Plugins of Vite/Rollup/Unplugin can be directly used in Farm.
-
-- **[`@vitejs/plugin-vue`](https://github.com/vitejs/vite-plugin-vue/blob/main/packages/plugin-vue/README.md)**
-- **[`@vitejs/plugin-vue-jsx`](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue-jsx)**
-- **[`vite-plugin-solid`](https://www.npmjs.com/package/vite-plugin-solid)**
-- **[`vite-plugin-mock`](https://www.npmjs.com/package/vite-plugin-solid)**
-- **[unplugin-auto-import](https://github.com/antfu/unplugin-auto-import)**
-- **[unplugin-vue2-script-setup](https://github.com/antfu/unplugin-vue2-script-setup)**
-- **[unplugin-icons](https://github.com/antfu/unplugin-icons)**
-- **[unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)**
-- ...
-
-更多插件请参考文档 [Community Plugins](https://farm-fe.github.io/docs/plugins/community-plugins)
+查看 [基准测试仓库](https://github.com/farm-fe/performance-compare)
 
 ## 贡献
 
 查看 [贡献指南](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.zh-CN.md)
-
-## 示例
-
-Farm 支持编译 React、Vue、SolidJS、Sass、Less、Css Modules 等场景，具体可以查看我们的示例:
-
-<table>
-  <thead>
-    <th>React Examples</th>
-    <th>Vue Examples</th>
-    <th>Vite Plugin Examples</th>
-  </thead>
-  <tbody>
-    <td>
-      <ul>
-        <ul>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/react">React-Basic</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/react-antd">React-Ant-Design</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/css-modules">React-Sass-CssModules</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/multi-page-app">React-Multi-Page-Application</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/react-ssr">React-SSR</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/tailwind">React-TailwindCSS</a></li>
-      </ul>
-    </td>
-    <td>
-      <ul>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vue">Vue-Basic</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vue-jsx">Vue-Jsx</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vue-antdv">Vue-Antdv</a></li>
-</ul>
-    </td>
-    <td>
-    <ul>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-vue">Plugin-Vue</a></li>
-<li><a href="https://github.com/farm-fe/farm/tree/main/examples/solid">Plugin-Solid</a></li>
-<li><a href="https://github.com/farm-fe/farm-soybean-admin">farm-soybean-admin</a>：A real admin project migrated from Vite to Farm</li>
-</ul>
-    </td>
-  </tbody>
-</table>
 
 ## 交流群
 
