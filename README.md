@@ -202,7 +202,7 @@ Farm support compiling React, Vue, SolidJS, Sass, Less, and Css Modules official
 
 - Wechat group
 
-<br><img src="https://github.com/farm-fe/farm/assets/66500121/f1502472-4841-4c5e-9c78-42fe8f98f905" width="30%" />
+<br><img src="https://github.com/farm-fe/farm/assets/66500121/c34ca336-5e41-4e7d-bf69-b73a0055f328" width="30%" />
 
 ## Contributors
 
