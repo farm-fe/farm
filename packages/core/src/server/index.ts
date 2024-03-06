@@ -142,6 +142,8 @@ export class Server implements ImplDevServer {
     try {
       await this.compiler.compile();
     } catch (err) {
+      console.log(err);
+      // TODO throw error not finish
       throw new Error(logError(err) as unknown as string);
     }
 

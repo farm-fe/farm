@@ -32,6 +32,7 @@ import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 import { clearScreen } from './utils/share.js';
+import { logError } from './server/error.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -62,7 +63,7 @@ export async function start(
 
     await devServer.listen();
   } catch (error) {
-    logger.error(`Failed to start the server: ${error.stack}`);
+    logger.error(`Failed to start the server: ${error.stack}`, { exit: true });
   }
 }
 
@@ -233,7 +234,11 @@ export async function createBundleHandler(
 
   await compilerHandler(async () => {
     compiler.removeOutputPathDir();
-    await compiler.compile();
+    try {
+      await compiler.compile();
+    } catch (err) {
+      throw new Error(logError(err) as unknown as string);
+    }
     compiler.writeResourcesToDisk();
   }, resolvedUserConfig);
 
