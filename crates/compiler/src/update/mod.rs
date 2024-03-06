@@ -12,7 +12,7 @@ use farmfe_core::{
     ModuleType,
   },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
-  resource::ResourceType,
+  resource::ResourceType, serde_json::json,
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
@@ -181,13 +181,15 @@ impl Compiler {
     self.handle_global_log(&mut errors);
 
     if !errors.is_empty() {
-      return Err(CompilationError::GenericError(
-        errors
-          .into_iter()
-          .map(|e| e.to_string())
-          .collect::<Vec<_>>()
-          .join("\n"),
-      ));
+      let mut error_messages = vec![];
+      for error in errors {
+        error_messages.push(error.to_string());
+      }
+      let errors_json = json!(error_messages
+        .iter()
+        .map(|e| e.to_string())
+        .collect::<Vec<_>>());
+      return Err(CompilationError::GenericError(errors_json.to_string()));
     }
 
     let previous_module_groups = {
