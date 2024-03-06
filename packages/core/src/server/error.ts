@@ -41,10 +41,29 @@ export function buildErrorMessage(
   return args.join('\n');
 }
 
-// export function logError(server: DevServer, err: RollupError): void {
-//   const msg = buildErrorMessage(err, [
-//     colors.red(`Internal server error: ${err.message}`)
-//   ]);
+export function logError(err: Error) {
+  const errorMessages = JSON.parse(err.message);
+  const formattedErrorMessages = errorMessages.map((errorMsg: any) => {
+    try {
+      const parsedErrorMsg = JSON.parse(errorMsg);
+      if (
+        parsedErrorMsg &&
+        typeof parsedErrorMsg === 'object' &&
+        parsedErrorMsg.message
+      ) {
+        return `${buildErrorMessage(parsedErrorMsg, [
+          colors.red(`Internal server error: ${parsedErrorMsg.message}`)
+        ])}`;
+      } else {
+        return colors.red(errorMsg);
+      }
+    } catch {
+      return colors.red(errorMsg);
+    }
+  });
+  const errorMessage = formattedErrorMessages.join('\n');
+  throw new Error(errorMessage);
+}
 
 // TODO server logger e.g: DevServer.logger.error(msg);
 

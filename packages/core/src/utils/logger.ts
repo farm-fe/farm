@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { version } from './share.js';
+import { pad, version } from './share.js';
 import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 import { Config } from '../../binding/index.js';
 
@@ -197,3 +197,23 @@ export function bootstrap(times: number, config: Config) {
 }
 
 export const logger = new Logger();
+
+export function buildErrorMessage(
+  err: any,
+  args: string[] = [],
+  includeStack = true
+): string {
+  if (err.plugin) args.push(`  Plugin: ${colors.magenta(err.plugin)}`);
+  const loc = err.loc ? `:${err.loc.line}:${err.loc.column}` : '';
+  if (err.id) args.push(`  File: ${colors.cyan(err.id)}${loc}`);
+  if (err.frame) args.push(colors.yellow(pad(err.frame)));
+  if (includeStack && err.stack) args.push(pad(cleanStack(err.stack)));
+  return args.join('\n');
+}
+
+function cleanStack(stack: string) {
+  return stack
+    .split(/\n/g)
+    .filter((l) => /^\s*at/.test(l))
+    .join('\n');
+}
