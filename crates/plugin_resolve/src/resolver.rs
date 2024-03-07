@@ -246,13 +246,13 @@ impl Resolver {
     farm_profile_function!("try_absolute_path".to_string());
     let path_buf = PathBuf::from_str(path).unwrap();
 
-    if path_buf.is_absolute() {
-      self
-        .try_file(&path_buf, context)
-        .or_else(|| self.try_directory(&path_buf, kind, false, context))
-    } else {
-      None
+    if !path_buf.is_absolute() {
+      return None;
     }
+
+    self
+      .try_file(&path_buf, context)
+      .or_else(|| self.try_directory(&path_buf, kind, false, context))
   }
 
   fn try_relative_path(
@@ -262,6 +262,10 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
+    if !is_source_relative(source) {
+      return None;
+    }
+
     self
       .try_dot_path(source, base_dir.clone(), kind, context)
       .or_else(|| self.try_double_dot(source, base_dir.clone(), kind, context))
