@@ -22,8 +22,8 @@ use farmfe_utils::relative;
 use crate::resolver::browser::try_browser_map;
 use crate::resolver::exports::resolve_exports_or_imports;
 use crate::resolver::utils::{
-  is_double_source_dot, is_source_absolute, is_source_dot, is_source_relative,
-  ParsePackageSourceResult,
+  get_field_value_from_package_json_info, is_double_source_dot, is_source_absolute, is_source_dot,
+  is_source_relative, ParsePackageSourceResult,
 };
 
 use self::browser::{BrowserMapResult, BrowserMapType};
@@ -144,6 +144,7 @@ impl Resolver {
       },
     )
     .ok()?;
+    let package_path = PathBuf::from(package_json_info.dir());
 
     if let Some(browser_map_result) = try_browser_map(&package_json_info, browser_map_type.clone())
     {
@@ -151,11 +152,11 @@ impl Resolver {
         BrowserMapResult::Str(mapped_value) => {
           // alias to external package
           let result = if !is_source_relative(&mapped_value) && !is_source_absolute(&mapped_value) {
-            self.try_node_modules(&mapped_value, base_dir.clone(), kind, context)
+            self.try_node_modules(&mapped_value, package_path, kind, context)
           } else {
             // alias to local file
             self
-              .try_relative_path(&mapped_value, base_dir, kind, context)
+              .try_relative_path(&mapped_value, package_path, kind, context)
               .map(|resolved_path| PluginResolveHookResult {
                 resolved_path,
                 external: false,
@@ -474,24 +475,42 @@ impl Resolver {
         let resolved_path = if let Some(sub_path) = sub_path {
           self.try_package_subpath(&sub_path, package_path.clone(), kind, context)
         } else {
-          self.try_package_entry(package_path.clone(), kind, context)
+          self
+            .try_package_entry(package_path.clone(), kind, context)
+            .map(|resolved_path| {
+              // browser map package entry
+              let browser_map_type = BrowserMapType::ResolvedPath(resolved_path.clone());
+              self
+                .try_browser(browser_map_type, package_path.clone(), kind, context)
+                .map(|res| res.resolved_path)
+                .unwrap_or(resolved_path)
+            })
         };
 
         if let Some(resolved_path) = resolved_path {
-          let side_effects = load_package_json(
-            package_path,
-            Options {
-              follow_symlinks: context.config.resolve.symlinks,
-              resolve_ancestor_dir: true,
-            },
-          )
-          .map(|info| self.is_module_side_effects(&info, &resolved_path))
-          .unwrap_or(false);
-          let result = PluginResolveHookResult {
-            resolved_path,
-            external: false,
-            side_effects,
-            ..Default::default()
+          let result = if resolved_path == BROWSER_SUBPATH_EXTERNAL_ID {
+            PluginResolveHookResult {
+              resolved_path,
+              external: true,
+              side_effects: false,
+              ..Default::default()
+            }
+          } else {
+            let side_effects = load_package_json(
+              package_path,
+              Options {
+                follow_symlinks: context.config.resolve.symlinks,
+                resolve_ancestor_dir: true,
+              },
+            )
+            .map(|info| self.is_module_side_effects(&info, &resolved_path))
+            .unwrap_or(false);
+            PluginResolveHookResult {
+              resolved_path,
+              external: false,
+              side_effects,
+              ..Default::default()
+            }
           };
 
           return (Some(result), tried_paths);
@@ -544,12 +563,16 @@ impl Resolver {
       subpath.to_string()
     };
 
-    let package_dir = package_path.to_string_lossy().to_string();
-    let resolved_path = RelativePath::new(&relative_path)
-      .to_logical_path(&package_dir)
-      .to_string_lossy()
-      .to_string();
-    self.try_absolute_path(&resolved_path, kind, context)
+    if relative_path == BROWSER_SUBPATH_EXTERNAL_ID {
+      Some(BROWSER_SUBPATH_EXTERNAL_ID.to_string())
+    } else {
+      let package_dir = package_path.to_string_lossy().to_string();
+      let resolved_path = RelativePath::new(&relative_path)
+        .to_logical_path(&package_dir)
+        .to_string_lossy()
+        .to_string();
+      self.try_absolute_path(&resolved_path, kind, context)
+    }
   }
 
   fn try_package_entry(
@@ -588,6 +611,16 @@ impl Resolver {
             {
               let entry = exports_entries.get(0).unwrap();
               entry_point = Some(entry.to_string());
+            }
+          } else if main_field == "browser" {
+            let browser = get_field_value_from_package_json_info(&package_json_info, main_field);
+
+            if let Some(Value::Object(browser)) = browser {
+              if let Some(value) = browser.get(".") {
+                if let Value::String(value) = value {
+                  entry_point = Some(value.to_string());
+                }
+              }
             }
           }
         } else if let Value::String(str) = field_value {
@@ -662,16 +695,7 @@ impl Resolver {
     farm_profile_function!("is_module_side_effects".to_string());
     match package_json_info.side_effects() {
       farmfe_core::common::ParsedSideEffects::Bool(b) => *b,
-      farmfe_core::common::ParsedSideEffects::Array(arr) => arr.iter().any(|s| {
-        let relative_path = format!("./{}", relative(package_json_info.dir(), resolved_path));
-        let s = if !s.starts_with("./") {
-          format!("./{s}")
-        } else {
-          s.clone()
-        };
-
-        glob_match::glob_match(&s, &relative_path)
-      }),
+      farmfe_core::common::ParsedSideEffects::Array(arr) => arr.iter().any(|s| s == resolved_path),
     }
   }
 }

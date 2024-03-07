@@ -8,7 +8,6 @@ farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_testing_helpers = { path = "../testing_helpers" }
 farmfe_utils = { path = "../utils" }
-glob-match = { version = "0.2.1" }
 
 [features]
 profile = ["farmfe_core/profile"]

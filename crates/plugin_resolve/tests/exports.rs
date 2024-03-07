@@ -445,8 +445,12 @@ fn resolve_exports_issue_997() {
         resolved.resolved_path,
         cwd
           .join("node_modules")
-          .join("resolve-jsnext")
-          .join("tslib.es6.js")
+          .join("@issues")
+          .join("997")
+          .join("dist")
+          .join("query")
+          .join("react")
+          .join("rtk-query-react.modern.mjs")
           .to_string_lossy()
           .to_string()
       );

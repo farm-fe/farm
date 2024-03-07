@@ -1,10 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use farmfe_core::{
-  common::PackageJsonInfo,
-  farm_profile_function, regex,
-  serde_json::{from_str, Map, Value},
-};
+use farmfe_core::{common::PackageJsonInfo, farm_profile_function, regex, serde_json::Value};
 
 const PACKAGE_REGEX: &str = r"^(?P<group1>[^@][^/]*)|^(?P<group2>@[^/]+/[^/]+)";
 
@@ -12,7 +8,7 @@ pub fn get_field_value_from_package_json_info(
   package_json_info: &PackageJsonInfo,
   field: &str,
 ) -> Option<Value> {
-  let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
+  let raw_package_json_info = package_json_info.raw_map();
 
   if let Some(field_value) = raw_package_json_info.get(field) {
     return Some(field_value.clone());

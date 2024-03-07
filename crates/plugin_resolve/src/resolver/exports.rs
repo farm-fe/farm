@@ -296,10 +296,12 @@ fn walk(
   input: &str,
   options: &ConditionOptions,
 ) -> Vec<String> {
-  let entry: String = if input.starts_with(".") {
+  let entry: String = if input.starts_with(".") || input.starts_with("#") {
     input.to_string()
   } else {
-    panic!("input must start with \".\" when walk `exports` or `imports` field of package.json")
+    panic!(
+      "input must start with \".\" or \"#\" when walk `exports` or `imports` field of package.json"
+    )
   };
 
   let c = conditions(options);
