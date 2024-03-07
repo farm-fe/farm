@@ -1,5 +1,3 @@
-import module from 'module';
-
 import type { UserConfig } from './src/index.js';
 
 export default <UserConfig>{

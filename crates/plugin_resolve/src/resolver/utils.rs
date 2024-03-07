@@ -19,7 +19,7 @@ pub fn get_field_value_from_package_json_info(
 
 pub fn is_source_relative(source: &str) -> bool {
   // fix: relative path start with .. or ../
-  source.starts_with("./") || source.starts_with("../")
+  source.starts_with("./") || source.starts_with("../") || source == "." || source == ".."
 }
 
 pub fn is_source_absolute(source: &str) -> bool {
@@ -64,7 +64,7 @@ pub fn parse_package_source(source: &str) -> ParsePackageSourceResult {
   let sub_path = if package_name == source {
     None
   } else {
-    Some(format!(".{}", source.replace(package_name, "")))
+    Some(format!(".{}", source.strip_prefix(package_name).unwrap()))
   };
 
   ParsePackageSourceResult {
@@ -104,6 +104,16 @@ mod tests {
       super::ParsePackageSourceResult {
         package_name: "clone".to_string(),
         sub_path: None
+      }
+    );
+
+    let source = "http-proxy/lib/http-proxy/common";
+    let result = super::parse_package_source(source);
+    assert_eq!(
+      result,
+      super::ParsePackageSourceResult {
+        package_name: "http-proxy".to_string(),
+        sub_path: Some("./lib/http-proxy/common".to_string())
       }
     );
   }

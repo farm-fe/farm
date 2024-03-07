@@ -407,6 +407,11 @@ impl Resolver {
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
+    // do not try node_modules for absolute path or relative path
+    if is_source_relative(source) || is_source_absolute(source) {
+      return None;
+    }
+
     // check if the node modules resolve result is cached
     if let Some(result) = self.resolve_cache.lock().get(&ResolveCacheKey {
       source: source.to_string(),
@@ -570,12 +575,7 @@ impl Resolver {
     if relative_path == BROWSER_SUBPATH_EXTERNAL_ID {
       Some(BROWSER_SUBPATH_EXTERNAL_ID.to_string())
     } else {
-      let package_dir = package_path.to_string_lossy().to_string();
-      let resolved_path = RelativePath::new(&relative_path)
-        .to_logical_path(&package_dir)
-        .to_string_lossy()
-        .to_string();
-      self.try_absolute_path(&resolved_path, kind, context)
+      self.try_relative_path(&relative_path, package_path, kind, context)
     }
   }
 
@@ -634,12 +634,12 @@ impl Resolver {
 
       if let Some(entry_point) = entry_point {
         let dir = package_json_info.dir();
-        let full_path = RelativePath::new(&entry_point)
-          .to_logical_path(dir)
-          .to_string_lossy()
-          .to_string();
-        // the main fields can be a file or directory
-        return self.try_absolute_path(&full_path, kind, context);
+        let entry_point = if !entry_point.starts_with("./") && !entry_point.starts_with("../") {
+          format!("./{}", entry_point)
+        } else {
+          entry_point
+        };
+        return self.try_relative_path(&entry_point, PathBuf::from(dir), kind, context);
       }
     }
 
