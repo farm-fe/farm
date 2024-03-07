@@ -424,3 +424,32 @@ fn resolve_exports_jsnext() {
     }
   );
 }
+
+#[test]
+fn resolve_exports_issue_997() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+      // Parsing packages in node_modules
+      let resolved = resolver.resolve(
+        "@issues/997/query/react",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("resolve-jsnext")
+          .join("tslib.es6.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
