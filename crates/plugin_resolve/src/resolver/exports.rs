@@ -274,35 +274,6 @@ fn loop_value(
   }
 }
 
-fn to_entry(name: &str, ident: &str, externals: Option<bool>) -> Result<String, String> {
-  if name == ident || ident == "." {
-    return Ok(".".to_string());
-  }
-
-  let root = format!("{}/", name);
-  let len = root.len();
-  let bool = ident.starts_with(&root);
-  let output = if bool {
-    ident[len..].to_string()
-  } else {
-    ident.to_string()
-  };
-
-  if output.starts_with('#') {
-    return Ok(output);
-  }
-
-  if bool || externals.unwrap_or(false) {
-    if output.starts_with("./") {
-      Ok(output)
-    } else {
-      Ok(format!("./{}", output))
-    }
-  } else {
-    Err(output)
-  }
-}
-
 fn throws(name: &str, entry: &str, condition: Option<i32>) {
   let message = if let Some(cond) = condition {
     if cond != 0 {

@@ -12,7 +12,6 @@ use farmfe_core::{
   farm_profile_function,
   parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
-  regex,
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
@@ -23,7 +22,7 @@ use farmfe_utils::relative;
 use crate::resolver::browser::try_browser_map;
 use crate::resolver::exports::resolve_exports_or_imports;
 use crate::resolver::utils::{
-  get_key_path, is_double_source_dot, is_source_absolute, is_source_dot, is_source_relative,
+  is_double_source_dot, is_source_absolute, is_source_dot, is_source_relative,
   ParsePackageSourceResult,
 };
 
@@ -94,7 +93,7 @@ impl Resolver {
   ///   * **module/main**: `{ "module": "es/index.mjs", "main": "lib/index.cjs" }`
   pub fn _resolve(
     &self,
-    mut source: &str,
+    source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
@@ -102,19 +101,22 @@ impl Resolver {
     farm_profile_function!("resolver::resolve".to_string());
 
     // 1. try `imports` field(https://nodejs.org/api/packages.html#subpath-imports).
-    let resolved_imports = self.try_imports(source, base_dir, kind, context);
+    let resolved_imports = self.try_imports(source, base_dir.clone(), kind, context);
 
-    if let Some(resolved_imports) = &resolved_imports {
-      source = resolved_imports;
-    }
+    let source = if let Some(resolved_imports) = resolved_imports {
+      resolved_imports
+    } else {
+      source.to_string()
+    };
+    let source = source.as_str();
 
     self
-      .try_alias(source, base_dir, kind, context)
-      .or_else(|| self.try_relative_or_absolute_path(source, base_dir, kind, context))
+      .try_alias(source, base_dir.clone(), kind, context)
+      .or_else(|| self.try_relative_or_absolute_path(source, base_dir.clone(), kind, context))
       .or_else(|| {
         self.try_browser(
           BrowserMapType::Source(source.to_string()),
-          base_dir,
+          base_dir.clone(),
           kind,
           context,
         )
@@ -135,7 +137,7 @@ impl Resolver {
     }
 
     let package_json_info = load_package_json(
-      base_dir,
+      base_dir.clone(),
       Options {
         follow_symlinks: context.config.resolve.symlinks,
         resolve_ancestor_dir: true,
@@ -143,17 +145,17 @@ impl Resolver {
     )
     .ok()?;
 
-    if let Some(browser_map_result) = try_browser_map(&package_json_info, browser_map_type) {
+    if let Some(browser_map_result) = try_browser_map(&package_json_info, browser_map_type.clone())
+    {
       match browser_map_result {
         BrowserMapResult::Str(mapped_value) => {
           // alias to external package
           let result = if !is_source_relative(&mapped_value) && !is_source_absolute(&mapped_value) {
-            self.try_node_modules(&mapped_value, base_dir, kind, context)
+            self.try_node_modules(&mapped_value, base_dir.clone(), kind, context)
           } else {
             // alias to local file
             self
-              .try_absolute_path(&mapped_value, base_dir, kind, context)
-              .or_else(|| self.try_relative_path(&mapped_value, base_dir, kind, context))
+              .try_relative_path(&mapped_value, base_dir, kind, context)
               .map(|resolved_path| PluginResolveHookResult {
                 resolved_path,
                 external: false,
@@ -205,8 +207,8 @@ impl Resolver {
   ) -> Option<PluginResolveHookResult> {
     // try relative path or absolute path
     self
-      .try_absolute_path(source, base_dir, kind, context)
-      .or_else(|| self.try_relative_path(source, base_dir, kind, context))
+      .try_absolute_path(source, kind, context)
+      .or_else(|| self.try_relative_path(source, base_dir.clone(), kind, context))
       .map(|resolved_path| {
         // try browser map first
         let browser_map_type = BrowserMapType::ResolvedPath(resolved_path.clone());
@@ -236,17 +238,20 @@ impl Resolver {
 
   fn try_absolute_path(
     &self,
-    source: &str,
-    base_dir: PathBuf,
+    path: &str,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_absolute_path".to_string());
-    let path_buf = PathBuf::from_str(source).unwrap();
+    let path_buf = PathBuf::from_str(path).unwrap();
 
-    self
-      .try_file(&path_buf, context)
-      .or_else(|| self.try_directory(source, &path_buf, kind, false, context))
+    if path_buf.is_absolute() {
+      self
+        .try_file(&path_buf, context)
+        .or_else(|| self.try_directory(&path_buf, kind, false, context))
+    } else {
+      None
+    }
   }
 
   fn try_relative_path(
@@ -257,8 +262,8 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     self
-      .try_dot_path(source, base_dir, kind, context)
-      .or_else(|| self.try_double_dot(source, base_dir, kind, context))
+      .try_dot_path(source, base_dir.clone(), kind, context)
+      .or_else(|| self.try_double_dot(source, base_dir.clone(), kind, context))
       .or_else(|| {
         farm_profile_function!("try_relative_path".to_string());
         let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
@@ -273,7 +278,7 @@ impl Resolver {
         // TODO try read symlink from the resolved path step by step to its parent util the root
         self
           .try_file(&normalized_path, context)
-          .or_else(|| self.try_directory(source, &normalized_path, kind, false, context))
+          .or_else(|| self.try_directory(&normalized_path, kind, false, context))
       })
   }
 
@@ -286,7 +291,7 @@ impl Resolver {
   ) -> Option<String> {
     farm_profile_function!("try_dot_path".to_string());
     if is_source_dot(source) {
-      return self.try_directory(source, &base_dir, kind, false, context);
+      return self.try_directory(&base_dir, kind, false, context);
     }
 
     None
@@ -302,7 +307,7 @@ impl Resolver {
     farm_profile_function!("try_double_dot".to_string());
     if is_double_source_dot(source) {
       let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
-      return self.try_directory(source, &parent_path, kind, false, context);
+      return self.try_directory(&parent_path, kind, false, context);
     }
 
     None
@@ -311,7 +316,6 @@ impl Resolver {
   /// Try resolve as a file with the configured main fields.
   fn try_directory(
     &self,
-    source: &str,
     dir: &Path,
     kind: &ResolveKind,
     skip_try_package: bool,
@@ -329,23 +333,11 @@ impl Resolver {
       }
     }
 
-    let package_path = dir.join("package.json");
+    if !skip_try_package {
+      let res = self.try_package_entry(dir.to_path_buf(), kind, context);
 
-    if package_path.exists() && package_path.is_file() && !skip_try_package {
-      let package_json_info = load_package_json(
-        package_path,
-        Options {
-          follow_symlinks: context.config.resolve.symlinks,
-          resolve_ancestor_dir: true, // only look for current directory
-        },
-      );
-
-      if let Ok(package_json_info) = package_json_info {
-        let (res, _) = self.try_package_entry(".", package_json_info, kind, vec![], context);
-
-        if let Some(res) = res {
-          return Some(res.resolved_path);
-        }
+      if let Some(res) = res {
+        return Some(res);
       }
     }
 
@@ -478,132 +470,31 @@ impl Resolver {
         } else {
           RelativePath::new(&package_name).to_logical_path(&maybe_node_modules_path)
         };
-        // let package_json_info = load_package_json(
-        //   package_path.clone(),
-        //   Options {
-        //     follow_symlinks: context.config.resolve.symlinks,
-        //     resolve_ancestor_dir: false, // only look for current directory
-        //   },
-        // );
 
-        if !package_path.join("package.json").exists() {
-          // check if the source is a directory or file can be resolved
-          if package_path.exists() {
-            if let Some(resolved_path) = self
-              .try_file(&package_path, context)
-              .or_else(|| self.try_directory(source, &package_path, kind, true, context))
-            {
-              return (
-                Some(self.get_resolve_node_modules_result(
-                  source,
-                  package_json_info.ok().as_ref(),
-                  resolved_path,
-                  kind,
-                  context,
-                )),
-                tried_paths,
-              );
-            }
-          }
-          // split source loop find package.json
-          // Arranged according to the priority from back to front
-          let source_parts: Vec<&str> = source.split('/').filter(|s| !s.is_empty()).collect();
-          let split_source_result = source_parts
-            .iter()
-            .scan(String::new(), |prev_path, &single_source| {
-              let new_path = format!("{}/{}", prev_path, single_source);
-              *prev_path = new_path.clone();
-              Some(new_path)
-            })
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect::<Vec<String>>();
-          let package_json_info = load_package_json(
-            package_path.clone(),
+        let resolved_path = if let Some(sub_path) = sub_path {
+          self.try_package_subpath(&sub_path, package_path.clone(), kind, context)
+        } else {
+          self.try_package_entry(package_path.clone(), kind, context)
+        };
+
+        if let Some(resolved_path) = resolved_path {
+          let side_effects = load_package_json(
+            package_path,
             Options {
               follow_symlinks: context.config.resolve.symlinks,
-              resolve_ancestor_dir: false, // only look for current directory
+              resolve_ancestor_dir: true,
             },
-          );
-          for item_source in &split_source_result {
-            let package_path_dir = if context.config.resolve.symlinks {
-              follow_symlinks(
-                RelativePath::new(item_source).to_logical_path(&maybe_node_modules_path),
-              )
-            } else {
-              RelativePath::new(item_source).to_logical_path(&maybe_node_modules_path)
-            };
-            if package_path_dir.exists() && package_path_dir.is_dir() {
-              let package_json_info = load_package_json(
-                package_path_dir.clone(),
-                Options {
-                  follow_symlinks: context.config.resolve.symlinks,
-                  resolve_ancestor_dir: false, // only look for current directory
-                },
-              );
-              if package_json_info.is_ok() {
-                return (
-                  Some(self.get_resolve_node_modules_result(
-                    source,
-                    package_json_info.ok().as_ref(),
-                    package_path.to_str().unwrap().to_string(),
-                    kind,
-                    context,
-                  )),
-                  tried_paths,
-                );
-              }
-            }
-          }
-          if let Some(resolved_path) = self
-            .try_file(&package_path, context)
-            .or_else(|| self.try_directory(source, &package_path, kind, true, context))
-          {
-            return (
-              Some(self.get_resolve_node_modules_result(
-                source,
-                package_json_info.ok().as_ref(),
-                resolved_path,
-                kind,
-                context,
-              )),
-              tried_paths,
-            );
-          }
-        } else if package_path.exists() && package_path.is_dir() {
-          if package_json_info.is_err() {
-            return (None, tried_paths);
-          }
-          let package_json_info = package_json_info.unwrap();
+          )
+          .map(|info| self.is_module_side_effects(&info, &resolved_path))
+          .unwrap_or(false);
+          let result = PluginResolveHookResult {
+            resolved_path,
+            external: false,
+            side_effects,
+            ..Default::default()
+          };
 
-          let (result, tried_paths) = self.try_package(
-            source,
-            package_json_info.clone(),
-            kind,
-            tried_paths,
-            context,
-          );
-
-          if result.is_some() {
-            return (result, tried_paths);
-          }
-
-          // no main field found, try to resolve index.js file
-          return (
-            self
-              .try_file(&package_path.join("index"), context)
-              .map(|resolved_path| {
-                self.get_resolve_node_modules_result(
-                  source,
-                  Some(&package_json_info),
-                  resolved_path,
-                  kind,
-                  context,
-                )
-              }),
-            tried_paths,
-          );
+          return (Some(result), tried_paths);
         }
       }
 
@@ -617,55 +508,68 @@ impl Resolver {
   fn try_package_subpath(
     &self,
     subpath: &str,
-    package_json_info: &PackageJsonInfo,
+    package_path: PathBuf,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_package_subpath".to_string());
 
-    resolve_exports_or_imports(package_json_info, subpath, "exports", kind, context)
-      .map(|resolve_exports_path| resolve_exports_path.get(0).unwrap())
-      .or_else(|| {
-        if context.config.output.target_env == TargetEnv::Browser {
-          try_browser_map(
-            package_json_info,
-            BrowserMapType::Source(subpath.to_string()),
-          )
-          .map(|browser_map_result| match browser_map_result {
-            BrowserMapResult::Str(mapped_value) => mapped_value,
-            BrowserMapResult::External => BROWSER_SUBPATH_EXTERNAL_ID.to_string(),
-          })
-        } else {
-          None
-        }
-      })
-      .map(|relative_path| {
-        let resolved_path = RelativePath::new(&relative_path)
-          .to_logical_path(package_json_info.dir())
-          .to_string_lossy()
-          .to_string();
-        self
-          .try_absolute_path(
-            &resolved_path,
-            PathBuf::from(package_json_info.dir()),
-            kind,
-            context,
-          )
-          .unwrap_or(resolved_path)
-      })
+    let package_json_info = load_package_json(
+      package_path.clone(),
+      Options {
+        follow_symlinks: context.config.resolve.symlinks,
+        resolve_ancestor_dir: false, // only look for current directory
+      },
+    );
+
+    let relative_path = if let Ok(package_json_info) = package_json_info {
+      resolve_exports_or_imports(&package_json_info, subpath, "exports", kind, context)
+        .map(|resolve_exports_path| resolve_exports_path.get(0).unwrap().to_string())
+        .or_else(|| {
+          if context.config.output.target_env == TargetEnv::Browser {
+            try_browser_map(
+              &package_json_info,
+              BrowserMapType::Source(subpath.to_string()),
+            )
+            .map(|browser_map_result| match browser_map_result {
+              BrowserMapResult::Str(mapped_value) => mapped_value,
+              BrowserMapResult::External => BROWSER_SUBPATH_EXTERNAL_ID.to_string(),
+            })
+          } else {
+            None
+          }
+        })
+        .unwrap_or(subpath.to_string())
+    } else {
+      subpath.to_string()
+    };
+
+    let package_dir = package_path.to_string_lossy().to_string();
+    let resolved_path = RelativePath::new(&relative_path)
+      .to_logical_path(&package_dir)
+      .to_string_lossy()
+      .to_string();
+    self.try_absolute_path(&resolved_path, kind, context)
   }
 
   fn try_package_entry(
     &self,
-    source: &str,
-    package_json_info: PackageJsonInfo,
+    package_path: PathBuf,
     kind: &ResolveKind,
-    tried_paths: Vec<PathBuf>,
     context: &Arc<CompilationContext>,
-  ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
+  ) -> Option<String> {
     farm_profile_function!("try_package".to_string());
-    // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points)
 
+    let package_json_info = load_package_json(
+      package_path,
+      Options {
+        follow_symlinks: context.config.resolve.symlinks,
+        resolve_ancestor_dir: false, // only look for current directory
+      },
+    )
+    .ok()?;
+
+    // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points) by default
     // search normal entry, based on self.config.main_fields, e.g. module/main
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
 
@@ -674,74 +578,36 @@ impl Resolver {
         continue;
       }
 
+      let mut entry_point = None;
+
       if let Some(field_value) = raw_package_json_info.get(main_field) {
         if let Value::Object(_) = field_value {
-          let resolved_path = Some(self.get_resolve_node_modules_result(
-            source,
-            Some(&package_json_info),
-            package_json_info.dir().to_string(),
-            kind,
-            context,
-          ));
-          let result = resolved_path.as_ref().unwrap();
-          let path = Path::new(result.resolved_path.as_str());
-          // TODO: refactor this, we should only resolve package entry here
-          if let Some(_extension) = path.extension() {
-            // fix #983, the resolved path should not be the same as package dir
-            if path != Path::new(package_json_info.dir()) {
-              return (resolved_path, tried_paths);
+          if main_field == "exports" {
+            if let Some(exports_entries) =
+              resolve_exports_or_imports(&package_json_info, ".", "exports", kind, context)
+            {
+              let entry = exports_entries.get(0).unwrap();
+              entry_point = Some(entry.to_string());
             }
           }
         } else if let Value::String(str) = field_value {
-          let dir = package_json_info.dir();
-          let full_path = RelativePath::new(str).to_logical_path(dir);
-          // the main fields can be a file or directory
-          return match self.try_file(&full_path, context) {
-            Some(resolved_path) => (
-              Some(self.get_resolve_result(&Ok(package_json_info), resolved_path, kind, context)),
-              tried_paths,
-            ),
-            None => (
-              self
-                .try_directory(source, &full_path, kind, true, context)
-                .map(|resolved_path| {
-                  self.get_resolve_result(&Ok(package_json_info), resolved_path, kind, context)
-                }),
-              tried_paths,
-            ),
-          };
+          entry_point = Some(str.to_string());
         }
+      }
+
+      if let Some(entry_point) = entry_point {
+        let dir = package_json_info.dir();
+        let full_path = RelativePath::new(&entry_point)
+          .to_logical_path(dir)
+          .to_string_lossy()
+          .to_string();
+        // the main fields can be a file or directory
+        return self.try_absolute_path(&full_path, kind, context);
       }
     }
 
-    (None, tried_paths)
-  }
-
-  fn try_exports_replace(
-    &self,
-    source: &str,
-    package_json_info: &PackageJsonInfo,
-    kind: &ResolveKind,
-    context: &Arc<CompilationContext>,
-  ) -> Option<String> {
-    farm_profile_function!("try_exports_replace".to_string());
-    // TODO: add all cases from https://nodejs.org/api/packages.html
-    let re = regex::Regex::new(PACKAGE_REGEX).unwrap();
-    let is_matched = re.is_match(source);
-    if let Some(resolve_exports_path) = resolve_exports_or_imports(
-      package_json_info,
-      source,
-      "exports",
-      kind,
-      context,
-      is_matched,
-    ) {
-      let resolved_id = resolve_exports_path.get(0).unwrap();
-      let value_path = self.get_key_path(resolved_id, package_json_info.dir());
-      return Some(value_path);
-    }
-
-    None
+    // no main field found, try to resolve index.js file
+    self.try_directory(Path::new(package_json_info.dir()), kind, true, context)
   }
 
   fn try_imports(

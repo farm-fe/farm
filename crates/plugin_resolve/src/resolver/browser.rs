@@ -8,15 +8,7 @@ pub enum BrowserMapResult {
   External,
 }
 
-impl BrowserMapResult {
-  pub fn as_str(self) -> Option<String> {
-    match self {
-      BrowserMapResult::Str(s) => Some(s),
-      BrowserMapResult::External => None,
-    }
-  }
-}
-
+#[derive(Clone)]
 pub enum BrowserMapType {
   Source(String),
   ResolvedPath(String),
