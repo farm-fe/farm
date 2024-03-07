@@ -17,7 +17,6 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
-use farmfe_utils::relative;
 
 use crate::resolver::browser::try_browser_map;
 use crate::resolver::exports::resolve_exports_or_imports;
@@ -103,10 +102,10 @@ impl Resolver {
     // 1. try `imports` field(https://nodejs.org/api/packages.html#subpath-imports).
     let resolved_imports = self.try_imports(source, base_dir.clone(), kind, context);
 
-    let source = if let Some(resolved_imports) = resolved_imports {
-      resolved_imports
+    let (source, base_dir) = if let Some((resolved_imports, package_dir)) = resolved_imports {
+      (resolved_imports, PathBuf::from(&package_dir))
     } else {
-      source.to_string()
+      (source.to_string(), base_dir)
     };
     let source = source.as_str();
 
@@ -653,8 +652,8 @@ impl Resolver {
     base_dir: PathBuf,
     kind: &ResolveKind,
     context: &Arc<CompilationContext>,
-  ) -> Option<String> {
-    farm_profile_function!("try_imports_replace".to_string());
+  ) -> Option<(String, String)> {
+    farm_profile_function!("try_imports".to_string());
     if !source.starts_with('#') {
       return None;
     }
@@ -673,22 +672,7 @@ impl Resolver {
 
     imports_paths
       .map(|result| result.get(0).unwrap().to_string())
-      .map(|mut imports_path| {
-        // remap the imports path to the new path defined in `imports` field
-        if imports_path.starts_with('.') {
-          imports_path = RelativePath::new(&imports_path)
-            .to_logical_path(base_dir)
-            .to_string_lossy()
-            .to_string();
-          imports_path = relative(package_json_info.dir(), &imports_path);
-
-          if !imports_path.starts_with('.') {
-            imports_path = format!("./{}", imports_path);
-          }
-        }
-
-        imports_path
-      })
+      .map(|imports_path| (imports_path, package_json_info.dir().to_string()))
   }
 
   fn is_module_side_effects(
