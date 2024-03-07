@@ -114,6 +114,9 @@ jobs:
           path: ./packages/core/binding
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
 
   check-core-artifacts:
     name: Check Core Artifacts
