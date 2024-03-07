@@ -20,6 +20,7 @@
     "@farmfe/plugin-sass": "workspace:^0.5.0",
     "@types/react": "18",
     "@types/react-dom": "18",
+    "@types/react-redux": "^7.1.33",
     "react-refresh": "^0.14.0"
   },
   "scripts": {
