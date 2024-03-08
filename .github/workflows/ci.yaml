@@ -113,7 +113,7 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
       - name: Test - ${{ matrix.settings.abi }}
-        run: npm run test
+        run: npx vitest # use npx vitest to avoid random exit 1
       - name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
