@@ -1,6 +1,6 @@
 use farmfe_macro_cache_item::cache_item;
 use relative_path::RelativePath;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 #[cache_item]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -18,7 +18,6 @@ impl Default for ParsedSideEffects {
 
 /// package json info that farm used.
 /// **Note**: if you want to use the field that not defined here, you can deserialize raw and get the raw package.json [serde_json::Value]
-#[cache_item]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PackageJsonInfo {
@@ -27,6 +26,7 @@ pub struct PackageJsonInfo {
 
   parsed_side_effects: Option<ParsedSideEffects>,
   raw: Option<String>,
+  raw_map: Option<Map<String, Value>>,
   /// the directory this package.json belongs to
   dir: Option<String>,
 }
@@ -38,6 +38,14 @@ impl PackageJsonInfo {
 
   pub fn raw(&self) -> &String {
     self.raw.as_ref().unwrap()
+  }
+
+  pub fn set_raw_map(&mut self, raw_map: Map<String, Value>) {
+    self.raw_map = Some(raw_map);
+  }
+
+  pub fn raw_map(&self) -> &Map<String, Value> {
+    self.raw_map.as_ref().unwrap()
   }
 
   pub fn set_dir(&mut self, dir: String) {
