@@ -76,6 +76,9 @@ importers:
       rollup:
         specifier: ^3.29.4
         version: 3.29.4
+      simple-git-hooks:
+        specifier: ^2.10.0
+        version: 2.10.0
       typescript:
         specifier: ^4.9.4
         version: 4.9.5
@@ -13984,6 +13987,12 @@ packages:
   /signal-exit@4.1.0:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
+    dev: true
+
+  /simple-git-hooks@2.10.0:
+    resolution: {integrity: sha512-TtCytVYfV77pILCkzVxpOSgYKHQyaO7fBI/iwG5bLGb0dIo/v/K1Y1IZ5DN40RQu6WNNJiN0gkuRvSYjxOhFog==}
+    hasBin: true
+    requiresBuild: true
     dev: true
 
   /simple-statistics@6.1.1:
