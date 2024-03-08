@@ -96,6 +96,12 @@ impl PackageJsonLoader {
             package_json_path: package_json_path.to_string_lossy().to_string(),
             err_message: format!("{:?}", e),
           })?;
+        result.set_raw_map(from_str(&content).map_err(|e| {
+          CompilationError::LoadPackageJsonError {
+            package_json_path: package_json_path.to_string_lossy().to_string(),
+            err_message: format!("{:?}", e),
+          }
+        })?);
         result.set_raw(content);
         result.set_dir(
           package_json_path
