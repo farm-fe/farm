@@ -85,7 +85,7 @@ export async function build(
     // copy resources under publicDir to output.path
     await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
   } catch (err) {
-    console.log(err);
+    logger.error(`Failed to build: ${err.stack}`, { exit: true });
   }
 }
 
