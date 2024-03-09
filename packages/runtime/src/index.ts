@@ -10,4 +10,4 @@ __farm_global_this__.__farm_module_system__ = (function () {
   };
 })()();
 
-export { ModuleSystem, FarmRuntimePlugin };
+export { ModuleSystem, FarmRuntimePlugin as Plugin };
