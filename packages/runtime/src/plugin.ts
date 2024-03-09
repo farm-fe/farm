@@ -1,5 +1,12 @@
 import { Module } from './module';
 import type { ModuleSystem } from './module-system';
+import type { Resource } from './resource-loader';
+
+export interface ResourceLoadResult {
+  success: boolean;
+  retryWithDefaultResourceLoader?: boolean;
+  err?: Error;
+}
 
 export interface FarmRuntimePlugin {
   // plugin name
@@ -14,6 +21,13 @@ export interface FarmRuntimePlugin {
   readModuleCache?: (module: Module) => boolean | Promise<boolean>;
   // called when module is not found
   moduleNotFound?: (moduleId: string) => void | Promise<void>;
+  // called when loading resources, custom your resource loading in this hook.
+  // return { success: true } to indicate that this resources have been loaded successfully.
+  // return { success: false, retryWithDefaultResourceLoader: true } to indicate that this resources have not been loaded successfully and should be retried with the default resource loader.
+  loadResource?: (
+    resource: Resource,
+    targetEnv: 'browser' | 'node'
+  ) => Promise<ResourceLoadResult>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

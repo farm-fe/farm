@@ -294,6 +294,15 @@ export async function normalizeUserCompilationConfig(
 
   if (!config.runtime.plugins) {
     config.runtime.plugins = [];
+  } else {
+    // make sure all plugin paths are absolute
+    config.runtime.plugins = config.runtime.plugins.map((plugin) => {
+      if (!path.isAbsolute(plugin)) {
+        return path.resolve(resolvedRootPath, plugin);
+      }
+
+      return plugin;
+    });
   }
   // set namespace to package.json name field's hash
   if (!config.runtime.namespace) {

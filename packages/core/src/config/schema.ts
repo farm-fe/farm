@@ -67,7 +67,7 @@ const compilationConfigSchema = z
     coreLibPath: z.string().optional(),
     runtime: z
       .object({
-        path: z.string().nonempty(),
+        path: z.string().optional(),
         plugins: z.array(z.string()).optional(),
         swcHelpersPath: z.string().optional()
       })

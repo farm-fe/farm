@@ -52,9 +52,6 @@ importers:
       execa:
         specifier: ^7.1.1
         version: 7.2.0
-      husky:
-        specifier: ^8.0.1
-        version: 8.0.3
       lint-staged:
         specifier: ^13.0.3
         version: 13.3.0
@@ -778,6 +775,18 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+
+  examples/runtime-plugin:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
 
   examples/script-entry:
     dependencies:
@@ -9923,12 +9932,6 @@ packages:
   /human-signals@5.0.0:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
     engines: {node: '>=16.17.0'}
-    dev: true
-
-  /husky@8.0.3:
-    resolution: {integrity: sha512-+dQSyqPh4x1hlO1swXBiNb2HzTDN1I2IGLQx1GrBuiqFJfoMrnZWwVmatvSiO+Iz8fBUnf+lekwNo4c2LlXItg==}
-    engines: {node: '>=14'}
-    hasBin: true
     dev: true
 
   /iconv-lite@0.4.24:
