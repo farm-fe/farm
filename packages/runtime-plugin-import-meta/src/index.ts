@@ -1,8 +1,8 @@
-import type { FarmRuntimePlugin, ModuleSystem } from '@farmfe/runtime';
+import type { Plugin, ModuleSystem } from '@farmfe/runtime';
 
 const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
 
-export default <FarmRuntimePlugin>{
+export default <Plugin>{
   name: 'farm-runtime-import-meta',
   _moduleSystem: {} as ModuleSystem,
   bootstrap(system: ModuleSystem) {
