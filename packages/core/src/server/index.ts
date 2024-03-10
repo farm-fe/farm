@@ -216,6 +216,10 @@ export class Server implements ImplDevServer {
 
     this.config = {
       ...options,
+      hmr: {
+        ...options.hmr,
+        path: this.compiler?.config.config.output?.publicPath
+      },
       protocol,
       hostname
     };

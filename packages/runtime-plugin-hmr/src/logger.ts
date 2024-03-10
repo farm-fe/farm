@@ -8,6 +8,9 @@ export class Logger {
   warn(message: string) {
     console.warn('[Farm HMR] Warning:', message);
   }
+  error(message: string) {
+    console.warn('[Farm HMR] Error:', message);
+  }
 }
 
 export const logger = new Logger();

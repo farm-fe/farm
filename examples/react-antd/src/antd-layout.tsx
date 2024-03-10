@@ -13,22 +13,22 @@ import { useNavigate, Outlet } from 'react-router-dom';
 
 import './main.css';
 import logo from '../assets/logo.png';
-import axios from 'axios';
+// import axios from 'axios';
 
 const { Header, Content, Sider } = Layout;
 
-axios.get('https://music-erkelost.vercel.app/banner').then((res) => {
-  console.log(res);
-});
+// axios.get('https://music-erkelost.vercel.app/banner').then((res) => {
+//   console.log(res);
+// });
 
-axios
-  .get('/api')
-  .then((response) => {
-    console.log(response.data);
-  })
-  .catch((error) => {
-    console.error('There was an error!', error);
-  });
+// axios
+//   .get('/api')
+//   .then((response) => {
+//     console.log(response.data);
+//   })
+//   .catch((error) => {
+//     console.error('There was an error!', error);
+//   });
 
 const items1: MenuProps['items'] = ['1', '2', '3'].map((key) => ({
   key,
