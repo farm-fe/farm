@@ -352,7 +352,7 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
     // may be we don't need this
-    // config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
+    config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
     config.define.FARM_HMR_BASE = userConfig.compilation?.output?.publicPath;
   }
 
