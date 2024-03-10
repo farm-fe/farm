@@ -111,6 +111,7 @@ export default class WsServer implements IWebSocketServer {
 
   private isHMRRequest(request: IncomingMessage): boolean {
     return (
+      // request.url === this.config.hmr.path &&
       request.url === this.config.hmr.path &&
       request.headers['sec-websocket-protocol'] === HMR_HEADER
     );

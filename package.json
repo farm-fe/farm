@@ -32,6 +32,8 @@
     "vitest": "^1.2.2"
   },
   "scripts": {
+    "postinstall": "simple-git-hooks",
+    "preinstall": "npx only-allow pnpm",
     "bootstrap": "pnpm install && node scripts/clean.mjs && node scripts/bootstrap.mjs && pnpm start",
     "test": "cross-env NODE_OPTIONS=--trace-exit vitest run",
     "start": "pnpm --filter @farmfe/cli start",
