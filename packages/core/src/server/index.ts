@@ -213,12 +213,13 @@ export class Server implements ImplDevServer {
     const protocol = https ? 'https' : 'http';
 
     const hostname = await resolveHostname(host);
-
+    const publicPath = this.compiler?.config.config.output?.publicPath;
+    const hmrPath = publicPath === '/' ? DEFAULT_HMR_OPTIONS.path : publicPath;
     this.config = {
       ...options,
       hmr: {
         ...options.hmr,
-        path: this.compiler?.config.config.output?.publicPath
+        path: hmrPath
       },
       protocol,
       hostname

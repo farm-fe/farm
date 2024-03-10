@@ -348,7 +348,7 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
     // may be we don't need this
     // config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
-    config.define.FARM_HMR_BASE = userConfig.compilation.output.publicPath;
+    config.define.FARM_HMR_BASE = userConfig.compilation?.output?.publicPath;
   }
 
   if (
@@ -408,7 +408,7 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: true,
   port: 9000,
-  path: '/',
+  path: '/__hmr',
   protocol: 'ws',
   watchOptions: {}
 };
