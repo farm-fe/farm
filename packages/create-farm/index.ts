@@ -82,16 +82,20 @@ async function createFarm() {
           initial: 0,
           choices: [
             {
-              title: colors.yellow('Vanilla'),
-              value: 'vanilla'
-            },
-            {
               title: colors.cyan('React'),
               value: 'react'
             },
             { title: colors.green('Vue'), value: 'vue' },
+            {
+              title: colors.cyan('Preact'),
+              value: 'preact'
+            },
             { title: colors.blue('Solid'), value: 'solid' },
             { title: colors.orange('Svelte'), value: 'svelte' },
+            {
+              title: colors.yellow('Vanilla'),
+              value: 'vanilla'
+            },
             { title: colors.red('Lit'), value: 'lit' }
           ]
         },
