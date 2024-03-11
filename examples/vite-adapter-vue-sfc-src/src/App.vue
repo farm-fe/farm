@@ -12,7 +12,6 @@ import HelloWorld from './components/HelloWorld.vue';
     </a>
   </div>
   <HelloWorld msg="Farm + Vue" />
-  213qwe
 </template>
 
 <!-- <style scoped src="./app.css"></style> -->

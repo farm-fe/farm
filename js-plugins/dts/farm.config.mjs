@@ -26,8 +26,5 @@ export default {
     sourcemap: false,
     persistentCache: false,
     presetEnv: false,
-  },
-  server: {
-    hmr: false,
-  },
+  }
 };
