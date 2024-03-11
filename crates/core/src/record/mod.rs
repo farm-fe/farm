@@ -160,9 +160,7 @@ impl RecordManager {
   pub fn update_plugin_stats(&self, plugin_name: String, hook_name: &str, duration: i64) {
     let mut plugin_stats = self.plugin_stats.write().unwrap();
 
-    let plugin_entry = plugin_stats
-      .entry(plugin_name.clone())
-      .or_insert_with(HashMap::new);
+    let plugin_entry = plugin_stats.entry(plugin_name.clone()).or_default();
 
     let stats = plugin_entry
       .entry(hook_name.to_string())
