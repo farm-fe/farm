@@ -1170,9 +1170,6 @@ importers:
       '@farmfe/js-plugin-less':
         specifier: workspace:^
         version: link:../../js-plugins/less
-      '@farmfe/js-plugin-vue':
-        specifier: workspace:*
-        version: link:../../js-plugins/vue
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
         version: 5.0.4(vite@4.5.0)(vue@3.3.7)
