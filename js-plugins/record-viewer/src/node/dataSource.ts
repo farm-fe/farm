@@ -49,7 +49,7 @@ export function createDateSourceMiddleware(compiler: Compiler) {
         const resource = compiler.resource(id);
         handleRecordRequest(resource);
       } else if (pathname === '/__record/stats') {
-        const stats = compiler.getPluginStats();
+        const stats = compiler.pluginStats();
         handleRecordRequest(stats);
       } else {
         await next();

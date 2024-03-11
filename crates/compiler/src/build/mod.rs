@@ -180,6 +180,9 @@ impl Compiler {
         println!("[warn] {}", warning);
       }
     }
+
+    // clear log store
+    self.context.log_store.lock().clear();
   }
 
   pub(crate) fn resolve_module_id(

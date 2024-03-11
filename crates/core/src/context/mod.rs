@@ -155,6 +155,11 @@ impl CompilationContext {
     let mut resolve_cache = self.resolve_cache.lock();
     resolve_cache.insert(param, result);
   }
+
+  pub fn clear_log_store(&self) {
+    let mut log_store = self.log_store.lock();
+    log_store.clear();
+  }
 }
 
 impl Default for CompilationContext {

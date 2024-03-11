@@ -27,4 +27,9 @@ impl LogStore {
   pub fn errors(&self) -> &Vec<String> {
     &self.errors
   }
+
+  pub fn clear(&mut self) {
+    self.warnings.clear();
+    self.errors.clear();
+  }
 }

@@ -12,7 +12,8 @@ use farmfe_core::{
     ModuleType,
   },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
-  resource::ResourceType, serde_json::json,
+  resource::ResourceType,
+  serde_json::json,
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
@@ -130,6 +131,7 @@ impl Compiler {
       .collect();
 
     let mut update_result = UpdateResult::default();
+    self.context.clear_log_store();
     let paths = handle_update_modules(paths, &self.context, &mut update_result)?;
 
     for (path, update_type) in paths.clone() {
