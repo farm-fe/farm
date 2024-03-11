@@ -80,7 +80,7 @@ impl Default for Config {
       minify: Box::new(BoolOrObj::Bool(true)),
       preset_env: Box::<PresetEnvConfig>::default(),
       record: false,
-      progress: false,
+      progress: true,
       persistent_cache: Box::<persistent_cache::PersistentCacheConfig>::new(
         // the config file path will be set after the Config is initialized
         persistent_cache::PersistentCacheConfig::get_default_config(&root),

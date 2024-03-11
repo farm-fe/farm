@@ -1,0 +1,14 @@
+{
+  "name": "@farmfe-examples/runtime-plugin",
+  "version": "0.0.87",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/runtime": "workspace:*"
+  },
+  "scripts": {
+    "build": "farm build && node test.mjs"
+  }
+}

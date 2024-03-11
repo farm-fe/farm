@@ -14,7 +14,7 @@ use crate::{
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
   },
-  plugin::{plugin_driver::PluginDriver, Plugin},
+  plugin::{plugin_driver::PluginDriver, Plugin, PluginResolveHookParam, PluginResolveHookResult},
   record::RecordManager,
   resource::{resource_pot_map::ResourcePotMap, Resource, ResourceOrigin, ResourceType},
 };
@@ -37,6 +37,7 @@ pub struct CompilationContext {
   pub meta: Box<ContextMetaData>,
   pub record_manager: Box<RecordManager>,
   pub log_store: Box<Mutex<LogStore>>,
+  pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
   pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
 }
 
@@ -50,7 +51,7 @@ impl CompilationContext {
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::new())),
-      plugin_driver: Box::new(PluginDriver::new(plugins, config.record)),
+      plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(CacheManager::new(
         &cache_dir,
         &namespace,
@@ -60,8 +61,13 @@ impl CompilationContext {
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(RecordManager::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
+      resolve_cache: Box::new(Mutex::new(HashMap::new())),
       custom: Box::new(DashMap::new()),
     })
+  }
+
+  pub fn create_plugin_driver(plugins: Vec<Arc<dyn Plugin>>, record: bool) -> PluginDriver {
+    PluginDriver::new(plugins, record)
   }
 
   pub fn normalize_persistent_cache_config(config: &mut Config) -> (String, String) {
@@ -135,6 +141,24 @@ impl CompilationContext {
       .any(|im| im.is_match(id));
 
     self.config.sourcemap.enabled(immutable)
+  }
+
+  pub fn get_resolve_cache(
+    &self,
+    param: &PluginResolveHookParam,
+  ) -> Option<PluginResolveHookResult> {
+    let resolve_cache = self.resolve_cache.lock();
+    resolve_cache.get(param).cloned()
+  }
+
+  pub fn set_resolve_cache(&self, param: PluginResolveHookParam, result: PluginResolveHookResult) {
+    let mut resolve_cache = self.resolve_cache.lock();
+    resolve_cache.insert(param, result);
+  }
+
+  pub fn clear_log_store(&self) {
+    let mut log_store = self.log_store.lock();
+    log_store.clear();
   }
 }
 

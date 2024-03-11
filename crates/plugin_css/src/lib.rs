@@ -32,6 +32,7 @@ use farmfe_core::{
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
+use farmfe_toolkit::common::load_source_original_source_map;
 use farmfe_toolkit::css::ParseCssModuleResult;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::{
@@ -178,6 +179,7 @@ impl Plugin for FarmPluginCss {
           .unwrap()
           .clone(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES.to_string()),
+        source_map: None,
       }));
     };
     // for internal css plugin, we do not support ?xxx.css. It should be handled by external plugins.
@@ -187,9 +189,13 @@ impl Plugin for FarmPluginCss {
       if matches!(module_type, ModuleType::Css) {
         let content = read_file_utf8(param.resolved_path)?;
 
+        let map =
+          load_source_original_source_map(&content, param.resolved_path, "/*# sourceMappingURL");
+
         return Ok(Some(PluginLoadHookResult {
           content,
           module_type,
+          source_map: map,
         }));
       }
     }
@@ -448,6 +454,18 @@ impl Plugin for FarmPluginCss {
       .collect::<Vec<ModuleId>>();
 
     transform_css_to_script::transform_css_to_script_modules(css_modules, context)?;
+
+    Ok(Some(()))
+  }
+
+  fn module_graph_updated(
+    &self,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let mut module_ids = param.updated_modules_ids.clone();
+    module_ids.extend(param.added_modules_ids.clone());
+    transform_css_to_script::transform_css_to_script_modules(module_ids, context)?;
 
     Ok(Some(()))
   }

@@ -1,6 +1,6 @@
 use std::{
   collections::HashMap,
-  path::{Path, PathBuf},
+  path::PathBuf,
   sync::{
     mpsc::{channel, Receiver, Sender},
     Arc,
@@ -23,11 +23,11 @@ use farmfe_core::{
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
   rayon::ThreadPool,
-  relative_path::RelativePath,
+  serde_json::json,
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
-use farmfe_toolkit::{hash::base64_decode, resolve::load_package_json};
+use farmfe_toolkit::resolve::load_package_json;
 use farmfe_utils::stringify_query;
 
 use crate::{
@@ -138,7 +138,11 @@ impl Compiler {
       for error in errors {
         error_messages.push(error.to_string());
       }
-      return Err(CompilationError::GenericError(error_messages.join(", ")));
+      let errors_json = json!(error_messages
+        .iter()
+        .map(|e| e.to_string())
+        .collect::<Vec<_>>());
+      return Err(CompilationError::GenericError(errors_json.to_string()));
     }
 
     // set module graph cache
@@ -176,12 +180,31 @@ impl Compiler {
         println!("[warn] {}", warning);
       }
     }
+
+    // clear log store
+    self.context.log_store.lock().clear();
   }
 
   pub(crate) fn resolve_module_id(
     resolve_param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<ResolveModuleIdResult> {
+    let get_module_id = |resolve_result: &PluginResolveHookResult| {
+      // make query part of module id
+      ModuleId::new(
+        &resolve_result.resolved_path,
+        &stringify_query(&resolve_result.query),
+        &context.config.root,
+      )
+    };
+
+    if let Some(result) = context.get_resolve_cache(resolve_param) {
+      return Ok(ResolveModuleIdResult {
+        module_id: get_module_id(&result),
+        resolve_result: result,
+      });
+    }
+
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::new(),
@@ -204,12 +227,9 @@ impl Compiler {
       );
     }
 
-    // make query part of module id
-    let module_id = ModuleId::new(
-      &resolve_result.resolved_path,
-      &stringify_query(&resolve_result.query),
-      &context.config.root,
-    );
+    context.set_resolve_cache(resolve_param.clone(), resolve_result.clone());
+
+    let module_id = get_module_id(&resolve_result);
 
     Ok(ResolveModuleIdResult {
       module_id,
@@ -251,46 +271,12 @@ impl Compiler {
     };
 
     let load_result = call_and_catch_error!(load, &load_param, context, &hook_context);
+    let mut source_map_chain = vec![];
 
-    // try load source map after load module content.
-    // TODO load source map in load hook and add a context.load_source_map method
-    // TODO load css source map
-    if context.config.sourcemap.enabled(module.immutable)
-      && load_result.content.contains("//# sourceMappingURL")
-    {
-      // detect that the source map is inline or not
-      let source_map = if load_result
-        .content
-        .contains("//# sourceMappingURL=data:application/json;base64,")
-      {
-        // inline source map
-        let mut source_map = load_result
-          .content
-          .split("//# sourceMappingURL=data:application/json;base64,");
-
-        source_map
-          .nth(1)
-          .map(|source_map| base64_decode(source_map.as_bytes()))
-      } else {
-        // external source map
-        let mut source_map_path = load_result.content.split("//# sourceMappingURL=");
-        let source_map_path = source_map_path.nth(1).unwrap().to_string();
-        let resolved_path = Path::new(&load_param.resolved_path);
-        let base_dir = resolved_path.parent().unwrap();
-        let source_map_path = RelativePath::new(source_map_path.trim()).to_logical_path(base_dir);
-
-        if source_map_path.exists() {
-          let source_map = std::fs::read_to_string(source_map_path).unwrap();
-          Some(source_map)
-        } else {
-          None
-        }
-      };
-
-      if let Some(source_map) = source_map {
-        module.source_map_chain.push(Arc::new(source_map));
-      }
+    if let Some(source_map) = load_result.source_map {
+      source_map_chain.push(Arc::new(source_map));
     }
+
     // ================ Load End ===============
     // ================ Transform Start ===============
     let load_module_type = load_result.module_type.clone();
@@ -301,7 +287,7 @@ impl Compiler {
       query: resolve_result.query.clone(),
       meta: resolve_result.meta.clone(),
       module_id: module.id.to_string(),
-      source_map_chain: vec![],
+      source_map_chain,
     };
 
     let transform_result = call_and_catch_error!(transform, transform_param, context);
@@ -619,8 +605,18 @@ fn resolve_module(
       let module_cache_manager = &context.cache_manager.module_cache;
 
       if module_cache_manager.has_cache(&cached_dependency) {
-        Compiler::insert_dummy_module(&cached_dependency, &mut module_graph);
-        return Ok(ResolveModuleResult::Cached(cached_dependency));
+        let cached_module = module_cache_manager.get_cache_ref(&cached_dependency);
+        let should_invalidate_cached_module = context
+          .plugin_driver
+          .handle_persistent_cached_module(&cached_module.module, context)?
+          .unwrap_or(false);
+
+        if should_invalidate_cached_module {
+          module_cache_manager.invalidate_cache(&cached_dependency);
+        } else {
+          Compiler::insert_dummy_module(&cached_dependency, &mut module_graph);
+          return Ok(ResolveModuleResult::Cached(cached_dependency));
+        }
       }
     }
 

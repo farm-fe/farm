@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { version } from './share.js';
+import { pad, version } from './share.js';
 import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 import { Config } from '../../binding/index.js';
 
@@ -13,7 +13,7 @@ enum LogLevel {
   Error = 'error'
 }
 
-export interface Logger {
+export interface ILogger {
   trace(message: string): void;
   debug(message: string): void;
   info(message: string): void;
@@ -44,7 +44,7 @@ const warnOnceMessages = new Set();
 const infoOnceMessages = new Set();
 const errorOnceMessages = new Set();
 
-export class DefaultLogger implements Logger {
+export class Logger implements Logger {
   constructor(
     public options?: LoggerOptions,
     private levelValues: Record<LogLevelNames, number> = {
@@ -175,7 +175,7 @@ export function printServerUrls(
 }
 
 export function bootstrapLogger(options?: LoggerOptions): Logger {
-  return new DefaultLogger(options);
+  return new Logger(options);
 }
 
 export function bootstrap(times: number, config: Config) {
@@ -196,4 +196,24 @@ export function bootstrap(times: number, config: Config) {
   );
 }
 
-export const logger = new DefaultLogger();
+export const logger = new Logger();
+
+export function buildErrorMessage(
+  err: any,
+  args: string[] = [],
+  includeStack = true
+): string {
+  if (err.plugin) args.push(`  Plugin: ${colors.magenta(err.plugin)}`);
+  const loc = err.loc ? `:${err.loc.line}:${err.loc.column}` : '';
+  if (err.id) args.push(`  File: ${colors.cyan(err.id)}${loc}`);
+  if (err.frame) args.push(colors.yellow(pad(err.frame)));
+  if (includeStack && err.stack) args.push(pad(cleanStack(err.stack)));
+  return args.join('\n');
+}
+
+function cleanStack(stack: string) {
+  return stack
+    .split(/\n/g)
+    .filter((l) => /^\s*at/.test(l))
+    .join('\n');
+}

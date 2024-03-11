@@ -5,8 +5,10 @@ use crate::{
   plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook,
 };
 use farmfe_core::{
-  config::config_regex::ConfigRegex, context::CompilationContext, error::Result,
-  plugin::ChunkResourceInfo, resource::resource_pot::ResourcePotType,
+  config::config_regex::ConfigRegex,
+  context::CompilationContext,
+  error::Result,
+  resource::resource_pot::{ResourcePotInfo, ResourcePotType},
 };
 use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
 
@@ -19,13 +21,13 @@ impl JsPluginAugmentResourceHashHook {
   new_js_plugin_hook!(
     PluginAugmentResourceHashHookFilters,
     JsPluginAugmentResourceHashHookFilters,
-    ChunkResourceInfo,
+    ResourcePotInfo,
     String
   );
 
   pub fn call(
     &self,
-    param: ChunkResourceInfo,
+    param: ResourcePotInfo,
     ctx: Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     if self

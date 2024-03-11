@@ -282,7 +282,7 @@ impl Plugin for JsPluginAdapter {
 
   fn augment_resource_hash(
     &self,
-    render_pot_info: &farmfe_core::plugin::ChunkResourceInfo,
+    render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     if let Some(js_augment_resource_hash_hook) = &self.js_augment_resource_hash_hook {

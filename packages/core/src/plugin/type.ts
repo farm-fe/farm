@@ -7,12 +7,7 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../binding/index.js';
-import {
-  Compiler,
-  DevServer,
-  ResolvedUserConfig,
-  UserConfig
-} from '../index.js';
+import { Compiler, Server, ResolvedUserConfig, UserConfig } from '../index.js';
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -55,20 +50,25 @@ export interface CompilationContext {
 }
 
 type ModuleId = string;
-
 export interface ResourcePot {
   id: string;
   name: string;
-  resourcePotType: string;
+  resourcePotType: ResourcePotType;
   modules: ModuleId[];
-  meta: any;
+  meta: {
+    renderedModules: Record<ModuleId, RenderedModule>;
+    renderedContent: string;
+    renderedMapChain: string[];
+    customData: Record<string, string>;
+  };
   entryModule?: ModuleId;
   resources: string[];
   moduleGroups: string[];
   immutable: boolean;
+  info: ResourcePotInfo;
 }
 
-interface RenderedModule {
+export interface RenderedModule {
   id: ModuleId;
   renderedContent: string;
   renderedMap?: string;
@@ -78,28 +78,28 @@ interface RenderedModule {
 
 export interface ResourcePotInfo {
   id: string;
+  name: string;
   resourcePotType: ResourcePotType;
-  content: string;
+  map?: string;
+  modules: Record<ModuleId, RenderedModule>;
+  moduleIds: ModuleId[];
+  data: JsResourcePotInfoData;
+  custom: Record<string, string>;
+}
+
+export interface JsResourcePotInfoData {
   dynamicImports: string[];
   exports: string[];
-  facadeModuleId?: string;
-  fileName: string;
-  implicitlyLoadedBefore: string[];
   imports: string[];
   importedBindings: Record<string, string[]>;
   isDynamicEntry: boolean;
   isEntry: boolean;
   isImplicitEntry: boolean;
-  map?: string;
-  modules: Record<ModuleId, RenderedModule>;
-  moduleIds: ModuleId[];
-  name: string;
-  preliminaryFileName: string;
-  referencedFiles: string[];
-  ty: string;
 }
+
 export interface RenderResourcePotParams {
   content: string;
+  sourceMapChain: string[];
   resourcePotInfo: ResourcePotInfo;
 }
 export interface RenderResourcePotResult {
@@ -125,7 +125,7 @@ type Callback<P, R> = (
   param: P,
   context?: CompilationContext,
   hookContext?: { caller?: string; meta: Record<string, unknown> }
-) => Promise<R | null | undefined> | R | null | undefined;
+) => Promise<R | null | undefined>;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
 export interface JsPlugin {
@@ -146,7 +146,7 @@ export interface JsPlugin {
    * @param server
    * @returns
    */
-  configureDevServer?: (server: DevServer) => void | Promise<void>;
+  configureDevServer?: (server: Server) => void | Promise<void>;
   /**
    * @param compiler
    * @returns
@@ -178,15 +178,6 @@ export interface JsPlugin {
 
   buildEnd?: { executor: Callback<Record<string, never>, void> };
 
-  finish?: { executor: Callback<Record<string, never>, void> };
-
-  updateModules?: {
-    executor: Callback<
-      { paths: [string, string][] },
-      string[] | undefined | null | void
-    >;
-  };
-
   renderStart?: {
     executor: Callback<Config['config'], void>;
   };
@@ -212,12 +203,12 @@ export interface JsPlugin {
   finalizeResources?: {
     executor: Callback<
       FinalizeResourcesHookParams,
-      FinalizeResourcesHookParams
+      FinalizeResourcesHookParams['resourcesMap']
     >;
   };
 
   transformHtml?: {
-    executor: Callback<{ htmlResource: Resource }, Resource>;
+    executor: Callback<{ htmlResource: Resource }, string>;
   };
 
   writeResources?: {
@@ -230,6 +221,15 @@ export interface JsPlugin {
 
   writePluginCache?: {
     executor: Callback<undefined, number[]>;
+  };
+
+  finish?: { executor: Callback<Record<string, never>, void> };
+
+  updateModules?: {
+    executor: Callback<
+      { paths: [string, string][] },
+      string[] | undefined | null | void
+    >;
   };
 }
 

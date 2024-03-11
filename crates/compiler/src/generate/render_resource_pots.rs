@@ -5,11 +5,13 @@ use farmfe_core::{
   error::{CompilationError, Result},
   parking_lot::Mutex,
   plugin::{
-    ChunkResourceInfo, PluginGenerateResourcesHookResult, PluginHookContext,
-    PluginRenderResourcePotHookParam,
+    PluginGenerateResourcesHookResult, PluginHookContext, PluginRenderResourcePotHookParam,
   },
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{resource_pot::ResourcePot, ResourceType},
+  resource::{
+    resource_pot::{ResourcePot, ResourcePotInfo},
+    ResourceType,
+  },
 };
 use farmfe_toolkit::{
   common::append_source_map_comment,
@@ -35,7 +37,7 @@ pub fn render_resource_pots_and_generate_resources(
     let cached_resource_pot = try_get_resource_cache(resource_pot, context)?;
 
     if let Some(cached_resource_pot) = cached_resource_pot {
-      let rendered_resource_pot_info = ChunkResourceInfo::new(resource_pot, context);
+      let rendered_resource_pot_info = ResourcePotInfo::new(resource_pot);
 
       let mut cached_resource = cached_resource_pot.resources;
       let cached_meta = cached_resource_pot.meta;
@@ -73,7 +75,7 @@ pub fn render_resource_pots_and_generate_resources(
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!(id);
 
-      let mut resource_pot_info: Option<ChunkResourceInfo> = None;
+      let mut resource_pot_info: Option<ResourcePotInfo> = None;
       let (mut res, augment_resource_hash) = render_resource_pot_generate_resources(
         resource_pot,
         context,
@@ -83,7 +85,7 @@ pub fn render_resource_pots_and_generate_resources(
       )?;
 
       let r = &mut res.resource;
-      let mut resource_pot_info: ChunkResourceInfo = resource_pot_info.unwrap();
+      let resource_pot_info: ResourcePotInfo = resource_pot_info.unwrap();
 
       // ignore runtime resource
       if !matches!(r.resource_type, ResourceType::Runtime) {
@@ -110,7 +112,7 @@ pub fn render_resource_pots_and_generate_resources(
           );
         }
 
-        resource_pot_info.file_name = r.name.clone();
+        // resource_pot_info.file_name = r.name.clone();
       }
 
       let mut cached_result: PluginGenerateResourcesHookResult =
@@ -164,7 +166,7 @@ pub fn render_resource_pot_generate_resources(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
   skip_render: bool,
-  chunk_resource_info: &mut Option<ChunkResourceInfo>,
+  chunk_resource_info: &mut Option<ResourcePotInfo>,
 ) -> Result<(PluginGenerateResourcesHookResult, Option<String>)> {
   let mut augment_resource_hash = None;
 
@@ -188,7 +190,7 @@ pub fn render_resource_pot_generate_resources(
     let mut param = PluginRenderResourcePotHookParam {
       content: resource_pot.meta.rendered_content.clone(),
       source_map_chain: resource_pot.meta.rendered_map_chain.clone(),
-      resource_pot_info: ChunkResourceInfo::new(resource_pot, context),
+      resource_pot_info: ResourcePotInfo::new(resource_pot),
     };
 
     let result = context

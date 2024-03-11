@@ -3,7 +3,7 @@ import {
   IKoaProxiesOptions,
   IBaseKoaProxiesOptions
 } from 'koa-proxies';
-import type { DevServer } from '../index.js';
+import type { Server } from '../index.js';
 import { UserConfig } from '../../config/types.js';
 import Application, { Middleware, Context, Next } from 'koa';
 import { Logger } from '../../utils/logger.js';
@@ -44,7 +44,7 @@ export function useProxy(
   }
 }
 
-export function proxy(devSeverContext: DevServer): Middleware {
+export function proxy(devSeverContext: Server): Middleware {
   const { config, logger } = devSeverContext;
   if (!config.proxy) {
     return;

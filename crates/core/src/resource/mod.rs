@@ -4,9 +4,9 @@ use farmfe_macro_cache_item::cache_item;
 use rkyv::with::Skip;
 use serde::{Deserialize, Serialize};
 
-use crate::{module::ModuleId, plugin::ChunkResourceInfo};
+use crate::module::ModuleId;
 
-use self::resource_pot::ResourcePotId;
+use self::resource_pot::{ResourcePotId, ResourcePotInfo};
 
 pub mod resource_pot;
 pub mod resource_pot_map;
@@ -129,7 +129,7 @@ pub struct Resource {
   pub origin: ResourceOrigin,
 
   #[with(Skip)]
-  pub info: Option<ChunkResourceInfo>,
+  pub info: Option<ResourcePotInfo>,
 }
 
 impl Default for Resource {

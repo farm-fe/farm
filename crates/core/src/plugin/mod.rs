@@ -12,9 +12,7 @@ use crate::{
     ModuleType,
   },
   resource::{
-    resource_pot::{
-      RenderedModule, ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType,
-    },
+    resource_pot::{ResourcePot, ResourcePotInfo, ResourcePotMetaData},
     Resource, ResourceType,
   },
   stats::Stats,
@@ -171,8 +169,7 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Render the [ResourcePot] in [ResourcePotMap].
-  /// May merge the module's ast in the same resource to a single ast and transform the output format to custom module system and ESM
+  /// Transform rendered bundled code for the given resource_pot
   fn render_resource_pot(
     &self,
     _resource_pot: &PluginRenderResourcePotHookParam,
@@ -183,7 +180,7 @@ pub trait Plugin: Any + Send + Sync {
 
   fn augment_resource_hash(
     &self,
-    _render_pot_info: &ChunkResourceInfo,
+    _render_pot_info: &ResourcePotInfo,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     Ok(None)
@@ -234,6 +231,31 @@ pub trait Plugin: Any + Send + Sync {
     _params: &mut PluginUpdateModulesHookParams,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  /// Called when calling compiler.update(module_paths).
+  /// Useful to do some operations like modifying the module graph
+  fn module_graph_updated(
+    &self,
+    _param: &PluginModuleGraphUpdatedHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  /// Called when calling compiler.update(module_paths).
+  /// This hook is called after all compilation work is done, including the resources regeneration and finalization.
+  fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  // Called when hit persistent cache. return false to invalidate the cache
+  fn handle_persistent_cached_module(
+    &self,
+    _module: &Module,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<bool>> {
     Ok(None)
   }
 
@@ -303,7 +325,7 @@ pub struct PluginHookContext {
 }
 
 /// Parameter of the resolve hook
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginResolveHookParam {
   /// the source would like to resolve, for example, './index'
@@ -323,7 +345,7 @@ pub struct PluginResolveHookResult {
   pub external: bool,
   /// whether this module has side effects, affects tree shaking
   pub side_effects: bool,
-  /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
+  /// the query parsed from specifier, for example, query should be `{ inline: "" }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [farmfe_toolkit::resolve::parse_query] should be helpful
   pub query: Vec<(String, String)>,
@@ -352,6 +374,8 @@ pub struct PluginLoadHookResult {
   /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
   /// usually end with `.js` extension
   pub module_type: ModuleType,
+  /// source map of the module
+  pub source_map: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -408,7 +432,7 @@ pub struct PluginProcessModuleHookParam<'a> {
 
 pub struct PluginAnalyzeDepsHookParam<'a> {
   pub module: &'a Module,
-  /// analyzed deps from previous plugins, if you want to analyzer more deps, you must push new entries to it.
+  /// analyzed deps from previous plugins, you can push new entries to it for your plugin.
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
@@ -461,6 +485,14 @@ pub struct PluginUpdateModulesHookParams {
   pub paths: Vec<(String, UpdateType)>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PluginModuleGraphUpdatedHookParams {
+  pub added_modules_ids: Vec<ModuleId>,
+  pub removed_modules_ids: Vec<ModuleId>,
+  pub updated_modules_ids: Vec<ModuleId>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmptyPluginHookParam {}
 
@@ -477,68 +509,10 @@ pub struct PluginGenerateResourcesHookResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ChunkResourceInfo {
-  pub id: ResourcePotId,
-  pub resource_pot_type: ResourcePotType,
-  pub dynamic_imports: Vec<String>,
-  pub exports: Vec<String>,
-  pub facade_module_id: Option<String>,
-  pub file_name: String,
-  pub implicitly_loaded_before: Vec<String>,
-  pub imports: Vec<String>,
-  pub imported_bindings: HashMap<String, Vec<String>>,
-  pub is_dynamic_entry: bool,
-  pub is_entry: bool,
-  pub is_implicit_entry: bool,
-  pub map: Option<Arc<String>>,
-  pub modules: HashMap<ModuleId, RenderedModule>,
-  pub module_ids: Vec<ModuleId>,
-  pub name: String,
-  pub preliminary_file_name: String,
-  pub referenced_files: Vec<String>,
-  pub ty: String,
-}
-
-impl ChunkResourceInfo {
-  pub fn new(resource_pot: &ResourcePot, context: &Arc<CompilationContext>) -> Self {
-    let is_dynamic_entry = resource_pot
-      .modules()
-      .into_iter()
-      .any(|m| context.module_group_graph.read().has(m));
-    Self {
-      id: resource_pot.id.clone(),
-      resource_pot_type: resource_pot.resource_pot_type.clone(),
-      dynamic_imports: vec![], // TODO
-      exports: vec![],         // TODO
-      facade_module_id: None,  // TODO
-      file_name: if resource_pot.entry_module.is_some() {
-        context.config.output.entry_filename.clone()
-      } else {
-        context.config.output.filename.clone()
-      },
-      implicitly_loaded_before: vec![],  // TODO
-      imports: vec![],                   // TODO
-      imported_bindings: HashMap::new(), // TODO
-      is_dynamic_entry,
-      is_entry: resource_pot.entry_module.is_some(),
-      is_implicit_entry: false, // TODO
-      map: None,
-      modules: resource_pot.meta.rendered_modules.clone(),
-      module_ids: resource_pot.modules().into_iter().cloned().collect(),
-      name: resource_pot.name.clone(),
-      preliminary_file_name: "".to_string(), // TODO
-      referenced_files: vec![],              // TODO
-      ty: "chunk".to_string(),               // TODO
-    }
-  }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct PluginRenderResourcePotHookParam {
   pub content: Arc<String>,
   pub source_map_chain: Vec<Arc<String>>,
-  pub resource_pot_info: ChunkResourceInfo,
+  pub resource_pot_info: ResourcePotInfo,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

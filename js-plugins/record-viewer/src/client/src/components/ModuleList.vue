@@ -1,45 +1,62 @@
 <template>
-  <div class="border shadow-sm rounded-lg p-3 box-border overflow-y-scroll">
-    <div
-      v-for="item in filterList"
-      class="text-base font-semibold px-2 py-3 border-b color-gray-900 hover:text-purple-600"
-      :class="{ 'text-purple-600': props.moduleId === item.id }"
-      @click="handleClick(item)"
-    >
-      <div class="text-lg">{{ item.id }}</div>
-      <!-- <div class="flex mt-2 text-gray-600">
-        resource pot:
-        <span class="w-fit-content ml-2 border text-purple-500 border-purple-500 px-2 rounded-md">
-          {{ item.resourcePot || 'None' }}
-        </span>
-      </div> -->
-      <div class="text-sm font-normal text-gray-400">{{ item.moduleType }}</div>
+  <Card
+    title="Module List"
+    class="overflow-hidden"
+    :bodyStyle="{ overflow: 'scroll', maxHeight: '500px', padding: '10px 0px' }"
+  >
+    <div class="flex flex-col">
+      <div
+        v-for="item in filterList"
+        :key="item.id"
+        class="flex flex-col mb-2 pl-6 py-2 border-b border-gray-200 cursor-pointer"
+        :class="{ 'text-purple-500': current === item.id }"
+        @click="selectModule(item)"
+      >
+        <div class="text-sm font-bold">{{ item.id }}</div>
+        <div class="mt-2 flex items-center">
+          <Tag color="green">{{ formatSize(item.size) }}</Tag>
+          <Tag color="blue">{{item.moduleType}}</Tag>
+          <Tag v-if="item.immutable" color="red">immutable</Tag>
+        </div>
+      </div>
     </div>
-  </div>
+  </Card>
 </template>
 
-<script setup lang="ts">
-import { ref, computed } from "vue";
+<script lang="ts">
+import { ref, defineComponent, computed } from "vue";
+import { Card, Tag, Button } from "ant-design-vue";
+import { CodepenCircleFilled } from "@ant-design/icons-vue";
+import { formatSize } from "../utils/size";
 import { getModules } from "../api";
 import { Module } from "@farmfe/core/binding";
 
-const props = defineProps({
-  moduleId: String,
-});
+export default defineComponent({
+  name: "ResourcePots",
+  components: {
+    Card,
+    Tag,
+    Button,
+    CodepenCircleFilled,
+  },
+  setup(_, { emit }) {
+    const moduleList = ref<Module[]>([]);
+    const current = ref<string>("");
+    const filterList = computed(() => {
+      return moduleList.value.filter((item) => !item.immutable);
+    });
 
-const emit = defineEmits(["click"]);
-const moduleList = ref<Module[]>([]);
-const filterList = computed(() => {
-  return moduleList.value.filter((item) => !item.immutable);
-});
 
-function handleClick(item: Module) {
-  emit("click", item);
-}
+    getModules().then((res) => {
+      moduleList.value = res;
+    });
 
-getModules().then((res) => {
-  console.log("modules:", res);
+    function selectModule(module: Module) {
+      current.value = module.id;
+      emit("select", module);
+    }
 
-  moduleList.value = res;
+    return { current, formatSize, selectModule, moduleList, filterList };
+  },
 });
 </script>

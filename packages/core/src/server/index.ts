@@ -1,6 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
-import Koa, { Middleware } from 'koa';
+import Koa from 'koa';
 import compression from 'koa-compress';
 
 import { Compiler } from '../compiler/index.js';
@@ -34,9 +34,10 @@ import {
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import WsServer from './ws.js';
-import { Server } from './type.js';
+import { Server as httpServer } from './type.js';
 import { promisify } from 'node:util';
 import { FileWatcher } from '../watcher/index.js';
+import { logError } from './error.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -64,7 +65,7 @@ interface ImplDevServer {
   getCompiler(): Compiler;
 }
 
-export class DevServer implements ImplDevServer {
+export class Server implements ImplDevServer {
   private _app: Koa;
   private restart_promise: Promise<void> | null = null;
   private compiler: Compiler | null;
@@ -73,7 +74,7 @@ export class DevServer implements ImplDevServer {
   ws: WsServer;
   config: NormalizedServerConfig & UserPreviewServerConfig;
   hmrEngine?: HmrEngine;
-  server?: Server;
+  server?: httpServer;
   publicDir?: string;
   publicPath?: string;
   resolvedUrls?: ServerUrls;
@@ -87,7 +88,7 @@ export class DevServer implements ImplDevServer {
     logger: Logger;
   }) {
     this.compiler = compiler;
-    this.logger = logger;
+    this.logger = logger ?? new Logger();
 
     this.initializeKoaServer();
 
@@ -138,7 +139,13 @@ export class DevServer implements ImplDevServer {
   }
 
   private async compile(): Promise<void> {
-    await this.compiler.compile();
+    try {
+      await this.compiler.compile();
+    } catch (err) {
+      throw new Error(logError(err) as unknown as string);
+    }
+
+    // 将所有错误信息连接成一个字符串，每个错误信息占一行
 
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
@@ -164,13 +171,13 @@ export class DevServer implements ImplDevServer {
     host: string | undefined
   ) {
     const errorMap: ErrorMap = {
-      EACCES: `Permission denied to use port ${port}`,
+      EACCES: `Permission denied to use port ${port} `,
       EADDRNOTAVAIL: `The IP address host: ${host} is not available on this machine.`
     };
 
     const errorMessage =
       errorMap[error.code as keyof ErrorMap] ||
-      `An error occurred: ${error.stack}`;
+      `An error occurred: ${error.stack} `;
     this.logger.error(errorMessage);
   }
 
@@ -206,9 +213,14 @@ export class DevServer implements ImplDevServer {
     const protocol = https ? 'https' : 'http';
 
     const hostname = await resolveHostname(host);
-
+    const publicPath = this.compiler?.config.config.output?.publicPath;
+    const hmrPath = publicPath === '/' ? DEFAULT_HMR_OPTIONS.path : publicPath;
     this.config = {
       ...options,
+      hmr: {
+        ...options.hmr,
+        path: hmrPath
+      },
       protocol,
       hostname
     };
@@ -238,7 +250,7 @@ export class DevServer implements ImplDevServer {
     // but in vite, it's a url path like /xxx/xxx.js
     this.ws.on('vite:invalidate', ({ path, message }) => {
       // find hmr boundary starting from the parent of the file
-      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''}`);
+      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
       const parentFiles = this.compiler.getParentFiles(path);
       this.hmrEngine.hmrUpdate(parentFiles, true);
     });
@@ -281,7 +293,7 @@ export class DevServer implements ImplDevServer {
     const isPortAvailable = (portToCheck: number) => {
       return new Promise((resolve, reject) => {
         const onError = async (error: { code: string }) => {
-          logger.error(`Error in httpServer: ${error}`);
+          logger.error(`Error in httpServer: ${error} `);
           if (error.code === 'EADDRINUSE') {
             clearScreen();
             if (strictPort) {
@@ -359,9 +371,7 @@ export class DevServer implements ImplDevServer {
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }
 
-  private applyServerMiddlewares(
-    middlewares?: (DevServerMiddleware | Middleware)[]
-  ): void {
+  private applyServerMiddlewares(middlewares?: DevServerMiddleware[]): void {
     const internalMiddlewares = [
       ...(middlewares || []),
       headers,

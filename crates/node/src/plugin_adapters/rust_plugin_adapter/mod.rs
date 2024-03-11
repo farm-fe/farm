@@ -181,7 +181,7 @@ impl Plugin for RustPluginAdapter {
 
   fn augment_resource_hash(
     &self,
-    render_pot_info: &farmfe_core::plugin::ChunkResourceInfo,
+    render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     self.plugin.augment_resource_hash(render_pot_info, context)
@@ -228,5 +228,45 @@ impl Plugin for RustPluginAdapter {
 
   fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
     self.plugin.write_plugin_cache(context)
+  }
+
+  fn config(&self, config: &mut Config) -> Result<Option<()>> {
+    self.plugin.config(config)
+  }
+
+  fn finalize_module(
+    &self,
+    param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.finalize_module(param, context)
+  }
+
+  fn update_modules(
+    &self,
+    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.update_modules(params, context)
+  }
+
+  fn module_graph_updated(
+    &self,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.module_graph_updated(param, context)
+  }
+
+  fn update_finished(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    self.plugin.update_finished(context)
+  }
+
+  fn handle_persistent_cached_module(
+    &self,
+    module: &farmfe_core::module::Module,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<bool>> {
+    self.plugin.handle_persistent_cached_module(module, context)
   }
 }

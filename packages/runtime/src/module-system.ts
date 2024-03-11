@@ -69,7 +69,7 @@ export class ModuleSystem {
     this.cache = {};
     this.publicPaths = [];
     this.dynamicModuleResourcesMap = {};
-    this.resourceLoader = new ResourceLoader(this.publicPaths);
+    this.resourceLoader = new ResourceLoader(this, this.publicPaths);
     this.pluginContainer = new FarmRuntimePluginContainer([]);
     this.targetEnv = targetEnv;
     this.externalModules = {};

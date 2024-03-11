@@ -16,11 +16,11 @@ import {
   resolveConfig,
   UserConfig
 } from './config/index.js';
-import { DefaultLogger, Logger } from './utils/logger.js';
-import { DevServer } from './server/index.js';
+import { Logger } from './utils/logger.js';
+import { Server } from './server/index.js';
 import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
-import { setProcessEnv } from './config/env.js';
+import { loadEnv, setProcessEnv } from './config/env.js';
 import { colors } from './utils/color.js';
 
 import type {
@@ -32,11 +32,12 @@ import { JsPlugin } from './plugin/type.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 import { clearScreen } from './utils/share.js';
+import { logError } from './server/error.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
   try {
@@ -62,14 +63,14 @@ export async function start(
 
     await devServer.listen();
   } catch (error) {
-    logger.error(`Failed to start the server: ${error.stack}`);
+    logger.error(`Failed to start the server: ${error.stack}`, { exit: true });
   }
 }
 
 export async function build(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('production');
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
@@ -84,12 +85,12 @@ export async function build(
     // copy resources under publicDir to output.path
     await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
   } catch (err) {
-    console.log(err);
+    logger.error(`Failed to build: ${err}`, { exit: true });
   }
 }
 
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   const port = inlineConfig.port ?? 1911;
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
@@ -115,14 +116,14 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     port,
     host: inlineConfig.host ?? true
   };
-  const devServer = new DevServer({ logger });
-  devServer.createPreviewServer(previewOptions);
+  const server = new Server({ logger });
+  server.createPreviewServer(previewOptions);
 }
 
 export async function watch(
   inlineConfig: FarmCLIOptions & UserConfig
 ): Promise<void> {
-  const logger = inlineConfig.logger ?? new DefaultLogger();
+  const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
   const resolvedUserConfig = await resolveConfig(
@@ -164,7 +165,7 @@ export async function clean(
   recursive: boolean | undefined
 ): Promise<void> {
   // TODO After optimizing the reading of config, put the clean method into compiler
-  const logger = new DefaultLogger();
+  const logger = new Logger();
 
   const nodeModulesFolders = recursive
     ? await findNodeModulesRecursively(rootPath)
@@ -233,7 +234,11 @@ export async function createBundleHandler(
 
   await compilerHandler(async () => {
     compiler.removeOutputPathDir();
-    await compiler.compile();
+    try {
+      await compiler.compile();
+    } catch (err) {
+      throw new Error(logError(err) as unknown as string);
+    }
     compiler.writeResourcesToDisk();
   }, resolvedUserConfig);
 
@@ -296,14 +301,14 @@ export async function createDevServer(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
-  const devServer = new DevServer({ compiler, logger });
-  await devServer.createDevServer(resolvedUserConfig.server);
+  const server = new Server({ compiler, logger });
+  await server.createDevServer(resolvedUserConfig.server);
 
-  return devServer;
+  return server;
 }
 
 export async function createFileWatcher(
-  devServer: DevServer,
+  devServer: Server,
   resolvedUserConfig: ResolvedUserConfig,
   inlineConfig: FarmCLIOptions & UserConfig,
   logger: Logger
@@ -354,3 +359,5 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
 }
 
 export { defineFarmConfig as defineConfig } from './config/index.js';
+
+export { loadEnv };

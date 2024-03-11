@@ -1,5 +1,5 @@
 #![deny(clippy::all)]
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use farmfe_core::{
   config::Config,
@@ -124,6 +124,7 @@ impl Plugin for FarmPluginSass {
         return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
           content,
           module_type: ModuleType::Custom(String::from("sass")),
+          source_map: None,
         }));
       }
     }

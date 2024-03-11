@@ -1,7 +1,10 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -15,6 +18,7 @@ use farmfe_core::{
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
+  relative_path::RelativePath,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -24,7 +28,7 @@ use farmfe_core::{
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
+  common::{create_swc_source_map, load_source_original_source_map, Source},
   fs::read_file_utf8,
   script::{
     module_type_from_id, parse_module, set_module_system_for_module_meta, swc_try_with::try_with,
@@ -35,6 +39,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
+use farmfe_utils::hash::base64_decode;
 use import_meta_visitor::ImportMetaVisitor;
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
@@ -70,9 +75,13 @@ impl Plugin for FarmPluginScript {
       if module_type.is_script() {
         let content = read_file_utf8(param.resolved_path)?;
 
+        let map =
+          load_source_original_source_map(&content, param.resolved_path, "//# sourceMappingURL");
+
         Ok(Some(PluginLoadHookResult {
           content,
           module_type,
+          source_map: map,
         }))
       } else {
         Ok(None)

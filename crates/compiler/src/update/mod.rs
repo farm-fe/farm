@@ -13,8 +13,9 @@ use farmfe_core::{
   },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   resource::ResourceType,
+  serde_json::json,
 };
-use farmfe_plugin_css::transform_css_to_script::transform_css_to_script_modules;
+
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
 
 use crate::{
@@ -130,6 +131,7 @@ impl Compiler {
       .collect();
 
     let mut update_result = UpdateResult::default();
+    self.context.clear_log_store();
     let paths = handle_update_modules(paths, &self.context, &mut update_result)?;
 
     for (path, update_type) in paths.clone() {
@@ -181,13 +183,15 @@ impl Compiler {
     self.handle_global_log(&mut errors);
 
     if !errors.is_empty() {
-      return Err(CompilationError::GenericError(
-        errors
-          .into_iter()
-          .map(|e| e.to_string())
-          .collect::<Vec<_>>()
-          .join("\n"),
-      ));
+      let mut error_messages = vec![];
+      for error in errors {
+        error_messages.push(error.to_string());
+      }
+      let errors_json = json!(error_messages
+        .iter()
+        .map(|e| e.to_string())
+        .collect::<Vec<_>>());
+      return Err(CompilationError::GenericError(errors_json.to_string()));
     }
 
     let previous_module_groups = {
@@ -205,10 +209,15 @@ impl Compiler {
     // update cache
     set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
 
-    // TODO Add a separate hook after module graph are updated
-    let mut module_ids = updated_module_ids.clone();
-    module_ids.extend(diff_result.added_modules.clone());
-    transform_css_to_script_modules(module_ids, &self.context)?;
+    // call module graph updated hook
+    self.context.plugin_driver.module_graph_updated(
+      &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams {
+        added_modules_ids: diff_result.added_modules.clone().into_iter().collect(),
+        removed_modules_ids: removed_modules.clone().into_keys().collect(),
+        updated_modules_ids: updated_module_ids.clone(),
+      },
+      &self.context,
+    )?;
 
     let dynamic_resources_map = self.regenerate_resources(
       affected_module_groups,
@@ -588,6 +597,11 @@ impl Compiler {
 
       dynamic_resources_map = Some(dynamic_resources);
       callback();
+      self
+        .context
+        .plugin_driver
+        .update_finished(&self.context)
+        .unwrap();
     } else {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
@@ -603,6 +617,10 @@ impl Compiler {
 
         finalize_resources(&cloned_context).unwrap();
         callback();
+        cloned_context
+          .plugin_driver
+          .update_finished(&cloned_context)
+          .unwrap();
       });
     }
 
@@ -645,10 +663,11 @@ fn resolve_module(
     })));
   }
 
-  let module_graph = context.module_graph.read();
+  let module_graph = context.module_graph.write();
   if module_graph.has_module(&module_id) {
     return Ok(ResolveModuleResult::ExistingBeforeUpdate(module_id));
   }
+  drop(module_graph);
 
   let mut update_module_graph = update_context.module_graph.write();
   if update_module_graph.has_module(&module_id) {
@@ -659,8 +678,18 @@ fn resolve_module(
     let module_cache_manager = &context.cache_manager.module_cache;
 
     if module_cache_manager.has_cache(&cached_dependency) {
-      Compiler::insert_dummy_module(&cached_dependency, &mut update_module_graph);
-      return Ok(ResolveModuleResult::Cached(cached_dependency));
+      let cached_module = module_cache_manager.get_cache_ref(&cached_dependency);
+      let should_invalidate_cached_module = context
+        .plugin_driver
+        .handle_persistent_cached_module(&cached_module.module, context)?
+        .unwrap_or(false);
+
+      if should_invalidate_cached_module {
+        module_cache_manager.invalidate_cache(&cached_dependency);
+      } else {
+        Compiler::insert_dummy_module(&cached_dependency, &mut update_module_graph);
+        return Ok(ResolveModuleResult::Cached(cached_dependency));
+      }
     }
   }
 

@@ -3,13 +3,14 @@ import { Compiler } from '../src/compiler/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
 import { normalizeUserCompilationConfig } from '../src/config/index.js';
 import { fileURLToPath } from 'node:url';
-import { DefaultLogger } from '../src/index.js';
+import { Logger } from '../src/index.js';
 
 export async function getCompiler(
   root: string,
   p: string,
   plugins: JsPlugin[],
-  input?: Record<string, string>
+  input?: Record<string, string>,
+  output?: Record<string, string>
 ): Promise<Compiler> {
   const originalExit = process.exit;
   process.exit = (code) => {
@@ -27,15 +28,17 @@ export async function getCompiler(
         output: {
           path: path.join('dist', p),
           entryFilename: '[entryName].mjs',
-          targetEnv: 'node'
+          targetEnv: 'node',
+          ...(output ?? {})
         },
+        progress: false,
         lazyCompilation: false,
         sourcemap: false,
         persistentCache: false
       },
       plugins
     },
-    new DefaultLogger(),
+    new Logger(),
     'production'
   );
 

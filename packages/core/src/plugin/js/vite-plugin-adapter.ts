@@ -26,7 +26,7 @@ import {
   revertNormalizePath
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
-import type { DevServer } from '../../server/index.js';
+import type { Server } from '../../server/index.js';
 
 // only use types from vite and we do not install vite as a dependency
 import type {
@@ -242,7 +242,7 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  async configureDevServer(devServer: DevServer) {
+  async configureDevServer(devServer: Server) {
     const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer
@@ -454,11 +454,22 @@ export class VitePluginAdapter implements JsPlugin {
           const result = await hook?.(id, isSSR ? { ssr: true } : undefined);
 
           if (result) {
+            let map = undefined;
+
+            if (typeof result === 'object' && result.map) {
+              if (typeof result.map === 'string') {
+                map = result.map;
+              } else if (typeof result.map === 'object') {
+                map = JSON.stringify(result.map);
+              }
+            }
+
             return {
               content: getContentValue(result),
               // only support css as first class citizen for vite plugins
-              moduleType: formatLoadModuleType(id)
-              // TODO support meta, sourcemap and sideEffects
+              moduleType: formatLoadModuleType(id),
+              sourceMap: map
+              // does not support meta and sideEffects
             };
           }
         }
@@ -598,6 +609,10 @@ export class VitePluginAdapter implements JsPlugin {
       },
       executor: this.wrapExecutor(
         async (param: RenderResourcePotParams, ctx) => {
+          if (param.resourcePotInfo.resourcePotType !== 'js') {
+            return;
+          }
+
           const hook = this.wrapRawPluginHook(
             'renderChunk',
             this._rawPlugin.renderChunk,
@@ -648,6 +663,10 @@ export class VitePluginAdapter implements JsPlugin {
         moduleIds: this.filters
       },
       executor: this.wrapExecutor(async (param: ResourcePotInfo, context) => {
+        if (param.resourcePotType !== 'js') {
+          return;
+        }
+
         const hook = this.wrapRawPluginHook(
           'augmentChunkHash',
           this._rawPlugin.augmentChunkHash,

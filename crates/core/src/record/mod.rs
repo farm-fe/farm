@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
   module::{ModuleId, ModuleType},
   plugin::PluginAnalyzeDepsHookResultEntry,
@@ -19,6 +21,7 @@ pub struct RecordManager {
   process_map: Arc<RwLock<HashMap<String, Vec<ModuleRecord>>>>,
   analyze_deps_map: Arc<RwLock<HashMap<String, Vec<AnalyzeDepsRecord>>>>,
   resource_pot_map: Arc<RwLock<HashMap<String, Vec<ResourcePotRecord>>>>,
+  pub plugin_stats: Arc<RwLock<HashMap<String, HashMap<String, PluginStats>>>>,
   trigger: Arc<RwLock<Trigger>>,
 }
 
@@ -30,6 +33,7 @@ impl RecordManager {
       process_map: Arc::new(RwLock::new(HashMap::new())),
       analyze_deps_map: Arc::new(RwLock::new(HashMap::new())),
       resource_pot_map: Arc::new(RwLock::new(HashMap::new())),
+      plugin_stats: Arc::new(RwLock::new(HashMap::new())),
       trigger: Arc::new(RwLock::new(Trigger::Compiler)),
     }
   }
@@ -41,6 +45,7 @@ impl RecordManager {
 
   pub fn add_resolve_record(&self, source: String, mut record: ResolveRecord) {
     let mut resolve_id_map = self.resolve_id_map.write().unwrap();
+    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
     let trigger = self.trigger.read().unwrap().to_owned();
     record.trigger = trigger;
     if let Some(records) = resolve_id_map.get_mut(&source) {
@@ -52,6 +57,7 @@ impl RecordManager {
 
   pub fn add_load_record(&self, id: String, mut record: TransformRecord) {
     let mut transform_map = self.transform_map.write().unwrap();
+    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
     let trigger = self.trigger.read().unwrap().to_owned();
     record.trigger = trigger;
     if transform_map.get(&id).is_none() {
@@ -61,6 +67,7 @@ impl RecordManager {
 
   pub fn add_transform_record(&self, id: String, mut record: TransformRecord) {
     let mut transform_map = self.transform_map.write().unwrap();
+    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
     let trigger = self.trigger.read().unwrap().to_owned();
     record.trigger = trigger;
     if let Some(records) = transform_map.get_mut(&id) {
@@ -70,6 +77,7 @@ impl RecordManager {
 
   pub fn add_parse_record(&self, id: String, mut record: ModuleRecord) {
     let mut process_map = self.process_map.write().unwrap();
+    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
     let trigger = self.trigger.read().unwrap().to_owned();
     record.trigger = trigger;
     if process_map.get(&id).is_none() {
@@ -79,6 +87,7 @@ impl RecordManager {
 
   pub fn add_process_record(&self, id: String, mut record: ModuleRecord) {
     let mut process_map = self.process_map.write().unwrap();
+    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
     let trigger = self.trigger.read().unwrap().to_owned();
     record.trigger = trigger;
     if let Some(records) = process_map.get_mut(&id) {
@@ -88,6 +97,7 @@ impl RecordManager {
 
   pub fn add_analyze_deps_record(&self, id: String, mut record: AnalyzeDepsRecord) {
     let mut analyze_deps_map = self.analyze_deps_map.write().unwrap();
+    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
     let trigger = self.trigger.read().unwrap().to_owned();
     record.trigger = trigger;
     if let Some(records) = analyze_deps_map.get_mut(&id) {
@@ -146,6 +156,22 @@ impl RecordManager {
       None => Vec::new(),
     }
   }
+
+  pub fn update_plugin_stats(&self, plugin_name: String, hook_name: &str, duration: i64) {
+    let mut plugin_stats = self.plugin_stats.write().unwrap();
+
+    let plugin_entry = plugin_stats.entry(plugin_name.clone()).or_default();
+
+    let stats = plugin_entry
+      .entry(hook_name.to_string())
+      .or_insert(PluginStats {
+        total_duration: 0,
+        call_count: 0,
+      });
+
+    stats.total_duration += duration;
+    stats.call_count += 1;
+  }
 }
 
 impl Default for RecordManager {
@@ -162,6 +188,9 @@ pub struct ResolveRecord {
   pub importer: Option<String>,
   pub kind: String,
   pub trigger: Trigger,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -172,6 +201,9 @@ pub struct TransformRecord {
   pub source_maps: Option<String>,
   pub module_type: ModuleType,
   pub trigger: Trigger,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -180,6 +212,9 @@ pub struct ModuleRecord {
   pub hook: String,
   pub module_type: ModuleType,
   pub trigger: Trigger,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -189,6 +224,9 @@ pub struct AnalyzeDepsRecord {
   pub module_type: ModuleType,
   pub trigger: Trigger,
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub duration: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -197,4 +235,11 @@ pub struct ResourcePotRecord {
   pub hook: String,
   pub modules: Vec<ModuleId>,
   pub resources: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginStats {
+  pub total_duration: i64,
+  pub call_count: usize,
 }

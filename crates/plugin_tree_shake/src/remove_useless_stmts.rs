@@ -127,8 +127,6 @@ pub fn remove_useless_stmts(
     }
   }
 
-  // TODO recognize the self-executed statements and preserve all the related statements
-
   let used_stmts_indexes = used_stmts
     .iter()
     .map(|(index, _)| index)
@@ -262,7 +260,6 @@ enum PendingTransformType {
   ExportAll,
 }
 
-// 是删掉 import 还是转为 import 'xxx'
 fn filter_stmts_to_remove(
   stmts_to_remove: Vec<usize>,
   tree_shake_module_id: &ModuleId,

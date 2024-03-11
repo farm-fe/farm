@@ -161,7 +161,8 @@ cli
     const defaultOptions = {
       mode: options.mode,
       server: resolveOptions,
-      configPath
+      configPath,
+      port: options.port
     };
 
     const { preview } = await resolveCore();
@@ -186,8 +187,8 @@ cli
     try {
       await clean(rootPath, options?.recursive);
     } catch (e) {
-      const { DefaultLogger } = await import('@farmfe/core');
-      const logger = new DefaultLogger();
+      const { Logger } = await import('@farmfe/core');
+      const logger = new Logger();
       logger.error(`Failed to clean cache:\n${e.stack}`);
       process.exit(1);
     }
@@ -202,8 +203,8 @@ cli
     try {
       COMMANDS[command](args);
     } catch (e) {
-      const { DefaultLogger } = await import('@farmfe/core');
-      const logger = new DefaultLogger();
+      const { Logger } = await import('@farmfe/core');
+      const logger = new Logger();
       logger.error(
         `The command arg parameter is incorrect. If you want to create a plugin in farm. such as "farm plugin create"\n${e.stack}`
       );
@@ -213,14 +214,17 @@ cli
 
 // Listening for unknown command
 cli.on('command:*', async () => {
-  const { DefaultLogger } = await import('@farmfe/core');
-  const logger = new DefaultLogger();
+  const { Logger } = await import('@farmfe/core');
+  const logger = new Logger();
   logger.error(
     'Unknown command place Run "farm --help" to see available commands'
   );
 });
 
-// use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning
+// warning::: use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning
+// we don't use it in `@farmfe/core` package because
+// we need to prevent it in cli package but we don't prevent it in core package
+// We only keep the original code environment.
 preventExperimentalWarning();
 
 cli.help();

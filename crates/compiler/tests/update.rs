@@ -36,6 +36,7 @@ fn create_compiler_internal(
         ConfigRegex::new("^module$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
+      progress: false,
       lazy_compilation,
       minify: Box::new(BoolOrObj::from(minify)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),

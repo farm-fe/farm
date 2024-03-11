@@ -5,13 +5,13 @@
 import { relative } from 'node:path';
 import { Context, Middleware, Next } from 'koa';
 
-import { DevServer } from '../index.js';
-import { bold, cyan, green } from '../../index.js';
+import { Server } from '../index.js';
+import { bold, clearScreen, cyan, green } from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { existsSync } from 'node:fs';
 
-export function lazyCompilation(devSeverContext: DevServer): Middleware {
+export function lazyCompilation(devSeverContext: Server): Middleware {
   const compiler = devSeverContext.getCompiler();
 
   if (!compiler.config.config?.lazyCompilation) {
@@ -33,13 +33,14 @@ export function lazyCompilation(devSeverContext: DevServer): Middleware {
           return relative(compiler.config.config.root, resolvedPath);
         })
         .join(', ');
+      clearScreen();
       devSeverContext.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
       const result = await compiler.update(paths);
       devSeverContext.logger.info(
-        `${bold(green(`✓`))} Lazy compilation done in ${bold(
-          green(`${Date.now() - start}ms`)
-        )}.`
+        `${bold(green(`✓`))} Lazy compilation done(${bold(
+          cyan(pathsStr)
+        )}) in ${bold(green(`${Date.now() - start}ms`))}.`
       );
 
       devSeverContext.hmrEngine.callUpdates(result);

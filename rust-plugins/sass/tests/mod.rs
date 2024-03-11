@@ -81,6 +81,7 @@ fn test_with_compiler() {
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       minify: Box::new(BoolOrObj::from(false)),
       tree_shaking: false,
+      progress: false,
       resolve: ResolveConfig {
         alias: std::collections::HashMap::from([(
           "@".to_string(),

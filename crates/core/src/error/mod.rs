@@ -46,7 +46,7 @@ pub enum CompilationError {
   #[error("{0}")]
   GenericError(String),
 
-  /// TODO optimize using source Error
+  // TODO optimize using source Error
   #[error("{0}")]
   NAPIError(String),
 

@@ -1,21 +1,11 @@
-// change to @farmfe/core/config when resolve support conditional exports
-import { UserConfig } from '@farmfe/core';
-import farmJsPluginVue from '@farmfe/js-plugin-vue';
+import { defineConfig } from '@farmfe/core';
+import Vue from '@vitejs/plugin-vue'
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 import path from 'path';
 
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
   compilation: {
-    input: {
-      index: './index.html',
-    },
-    output: {
-      path: './build',
-    },
     resolve: {
       strictExports: true,
       alias: {
@@ -23,15 +13,6 @@ export default defineConfig({
       }
     }
   },
-  server: {
-    proxy: {
-      '/api': {
-        target: 'https://music-erkelost.vercel.app/banner',
-        changeOrigin: true,
-        rewrite: (path: any) => path.replace(/^\/api/, ''),
-      },
-    },
-    cors: true
-  },
-  plugins: [farmJsPluginVue(), farmJsPluginLess()],
+  plugins: [farmJsPluginLess()],
+  vitePlugins: [Vue()]
 });

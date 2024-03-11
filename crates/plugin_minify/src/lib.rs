@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::{bool_or_obj::BoolOrObj, Config},
+  config::{bool_or_obj::BoolOrObj, config_regex::ConfigRegex, Config},
   context::CompilationContext,
   error::Result,
   plugin::Plugin,
@@ -34,11 +34,28 @@ use farmfe_toolkit::{
   swc_html_minifier::minify_document,
 };
 
-pub struct FarmPluginMinify {}
+pub struct FarmPluginMinify {
+  options: Options,
+}
 
 impl FarmPluginMinify {
-  pub fn new(_config: &Config) -> Self {
-    Self {}
+  pub fn new(config: &Config) -> Self {
+    let default_exclude = vec![ConfigRegex::new(".+\\.min\\.(js|css|html)$")];
+    // TODO refactor plugin minify to support include and exclude
+    let options = match &*config.minify {
+      BoolOrObj::Bool(_) => Options {
+        options: JsMinifyOptions {
+          compress: BoolOrObj::Bool(true),
+          mangle: BoolOrObj::Bool(true),
+          ..Default::default()
+        },
+        include: vec![],
+        exclude: default_exclude,
+      },
+      BoolOrObj::Obj(obj) => serde_json::from_value(obj.clone()).unwrap(),
+    };
+
+    Self { options }
   }
 
   pub fn minify_js(
@@ -65,18 +82,12 @@ impl FarmPluginMinify {
         }
       };
 
-      let js_minify_options = match &*context.config.minify {
-        BoolOrObj::Bool(_) => JsMinifyOptions {
-          compress: BoolOrObj::Bool(true),
-          mangle: BoolOrObj::Bool(true),
-          ..Default::default()
-        },
-        BoolOrObj::Obj(obj) => serde_json::from_value(obj.clone()).unwrap(),
-      };
+      let js_minify_options = &self.options.options;
 
       let minify_options = MinifyOptions {
         compress: js_minify_options
           .compress
+          .clone()
           .unwrap_as_option(|default| match default {
             Some(true) => Some(Default::default()),
             _ => None,
@@ -93,6 +104,7 @@ impl FarmPluginMinify {
           }),
         mangle: js_minify_options
           .mangle
+          .clone()
           .unwrap_as_option(|default| match default {
             Some(true) => Some(Default::default()),
             _ => None,
@@ -255,6 +267,14 @@ impl Plugin for FarmPluginMinify {
 
     Ok(None)
   }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(crate = "farmfe_core::serde")]
+pub struct Options {
+  pub options: JsMinifyOptions,
+  pub include: Vec<ConfigRegex>,
+  pub exclude: Vec<ConfigRegex>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

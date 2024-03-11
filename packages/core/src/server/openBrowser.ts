@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import open from 'open';
 import { execa } from 'execa';
 import { execSync } from 'child_process';
-import { cyan, DefaultLogger, red } from '../utils/index.js';
+import { cyan, Logger, red } from '../utils/index.js';
 
 // https://github.com/sindresorhus/open#app
 const OSX_CHROME = 'google chrome';
@@ -99,7 +99,7 @@ function startBrowserProcess(browser: string | undefined, url: string) {
   // (It will always open new tab)
   try {
     const options = browser ? { app: { name: browser, arguments: [] } } : {};
-    const logger = new DefaultLogger();
+    const logger = new Logger();
     open(url, options).catch((e: Error) => {
       logger.error(e);
     }); // Prevent `unhandledRejection` error.

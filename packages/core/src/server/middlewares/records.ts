@@ -3,9 +3,9 @@
  */
 
 import { Context, Middleware } from 'koa';
-import { DevServer } from '../index.js';
+import { Server } from '../index.js';
 
-export function records(devServer: DevServer): Middleware {
+export function records(devServer: Server): Middleware {
   const compiler = devServer.getCompiler();
   return async (ctx: Context, next: () => Promise<any>) => {
     if (ctx.path === '/__record/modules') {
@@ -30,6 +30,9 @@ export function records(devServer: DevServer): Middleware {
     } else if (ctx.path === '/__record/resource_pot') {
       const id = ctx.query.id as string;
       ctx.body = compiler.getResourcePotRecordsById(id);
+      await next();
+    } else if (ctx.path === '/__record/stats') {
+      ctx.body = compiler.pluginStats();
       await next();
     } else {
       await next();

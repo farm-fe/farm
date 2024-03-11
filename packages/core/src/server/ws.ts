@@ -3,14 +3,11 @@ import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRawType } from 'ws';
 
 import { WebSocketServer as WebSocketServerRaw } from 'ws';
-import {
-  DefaultLogger,
-  Logger,
-  NormalizedServerConfig,
-  red
-} from '../index.js';
+import { Logger, NormalizedServerConfig, red } from '../index.js';
 import { Server } from './type.js';
 import { HmrEngine } from './hmr-engine.js';
+
+import type { ILogger } from '../index.js';
 
 const HMR_HEADER = 'farm_hmr';
 
@@ -47,14 +44,14 @@ export default class WsServer implements IWebSocketServer {
   public customListeners = new Map<string, Set<WebSocketCustomListener<any>>>();
   public clientsMap = new WeakMap<WebSocketRawType, WebSocketClient>();
   public bufferedError: any = null;
-  public logger: Logger;
+  public logger: ILogger;
   constructor(
     private httpServer: Server,
     private config: NormalizedServerConfig,
     private hmrEngine: HmrEngine,
-    logger?: Logger
+    logger?: ILogger
   ) {
-    this.logger = logger ?? new DefaultLogger();
+    this.logger = logger ?? new Logger();
     this.createWebSocketServer();
   }
 
@@ -114,6 +111,7 @@ export default class WsServer implements IWebSocketServer {
 
   private isHMRRequest(request: IncomingMessage): boolean {
     return (
+      // request.url === this.config.hmr.path &&
       request.url === this.config.hmr.path &&
       request.headers['sec-websocket-protocol'] === HMR_HEADER
     );

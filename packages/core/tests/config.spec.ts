@@ -8,24 +8,26 @@ import {
   resolveConfig
 } from '../src/index.js';
 import { parseUserConfig } from '../src/config/schema.js';
-import { DefaultLogger } from '../src/utils/logger.js';
+import { Logger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new DefaultLogger(),
+    new Logger(),
     'development'
   );
 
   expect(config.compilation.define).toEqual({
+    FARM_HMR_BASE: undefined,
     FARM_HMR_HOST: true,
     FARM_HMR_PATH: '/__hmr',
     FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
       NODE_ENV: 'test'
     },
+    FARM_HMR_PROTOCOL: 'ws',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test'
   });
   expect(config.compilation.input).toEqual({
@@ -62,7 +64,9 @@ test('resolveUserConfig', async () => {
       'package.json[module]': 'unknown',
       FARM_HMR_HOST: 'true',
       FARM_HMR_PATH: '/__hmr',
-      FARM_HMR_PORT: '9000'
+      FARM_HMR_PORT: '9000',
+      FARM_HMR_BASE: undefined,
+      FARM_HMR_PROTOCOL: 'ws'
     },
     moduleCacheKeyStrategy: {}
   });
@@ -76,7 +80,7 @@ test('resolveUserConfig-prod', async () => {
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new DefaultLogger(),
+    new Logger(),
     'production'
   );
 

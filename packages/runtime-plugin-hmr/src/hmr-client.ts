@@ -5,15 +5,15 @@ import { logger } from './logger';
 import { ErrorOverlay, overlayId } from './overlay';
 
 // Inject during compile time
-const port = Number(FARM_HMR_PORT || 9000);
-// TODO use import.meta to get hostname
-const host =
+const hmrPort = Number(FARM_HMR_PORT || 9000);
+const hmrHost =
   typeof FARM_HMR_HOST === 'boolean'
     ? window.location.hostname || 'localhost'
     : FARM_HMR_HOST || 'localhost';
 
-const path = FARM_HMR_PATH || '/__hmr';
-const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+const hmrBase = FARM_HMR_BASE === '/' ? '/__hmr' : FARM_HMR_BASE;
+const socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+const socketHostUrl = `${hmrHost}:${hmrPort}${hmrBase}`;
 
 export class HmrClient {
   socket: WebSocket;
@@ -25,13 +25,16 @@ export class HmrClient {
     ((data: any) => void | Promise<void>)[]
   >();
 
-  constructor(private moduleSystem: ModuleSystem) {}
+  constructor(private moduleSystem: ModuleSystem) { }
 
   connect() {
     logger.debug('connecting to the server...');
 
     // setup websocket connection
-    const socket = new WebSocket(`ws://${host}:${port}${path}`, 'farm_hmr');
+    const socket = new WebSocket(
+      `${socketProtocol}://${socketHostUrl}`,
+      'farm_hmr'
+    );
     this.socket = socket;
     // listen for the message from the server
     // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
@@ -59,7 +62,7 @@ export class HmrClient {
       this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
 
       logger.debug('disconnected from the server, please reload the page.');
-      await waitForSuccessfulPing(protocol, `${host}:${port}${path}`);
+      await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
       location.reload();
     });
 
@@ -155,7 +158,7 @@ export class HmrClient {
         } catch (err) {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
-          console.error(err);
+          logger.error(err);
           location.reload();
         }
       }

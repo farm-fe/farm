@@ -290,4 +290,8 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
     // we do not need to check the hash of immutable modules, just check the cache
     !self.has_cache(&module.id)
   }
+
+  fn cache_outdated(&self, key: &ModuleId) -> bool {
+    !self.cached_modules.contains_key(key)
+  }
 }

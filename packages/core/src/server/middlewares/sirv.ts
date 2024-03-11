@@ -1,8 +1,8 @@
 import { Middleware, Context, Next } from 'koa';
-import { DevServer } from '../index.js';
+import { Server } from '../index.js';
 import sirv from 'sirv';
 
-export function sirvMiddleware(devSeverContext: DevServer): Middleware {
+export function sirvMiddleware(devSeverContext: Server): Middleware {
   const { config } = devSeverContext;
   const handleStatic = StaticFilesHandler(config.output.path);
 

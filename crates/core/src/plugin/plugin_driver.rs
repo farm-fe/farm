@@ -1,33 +1,32 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use farmfe_utils::stringify_query;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  ChunkResourceInfo, Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
+  Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
   PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParams,
   PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-  PluginParseHookParam, PluginProcessModuleHookParam, PluginRenderResourcePotHookParam,
-  PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
-  PluginUpdateModulesHookParams,
+  PluginModuleGraphUpdatedHookParams, PluginParseHookParam, PluginProcessModuleHookParam,
+  PluginRenderResourcePotHookParam, PluginResolveHookParam, PluginResolveHookResult,
+  PluginTransformHookParam, PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId, ModuleMetaData, ModuleType,
+    module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
+    ModuleType,
   },
   record::{
     AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger,
   },
-  resource::{
-    resource_pot::{ResourcePot, ResourcePotMetaData},
-    Resource,
-  },
+  resource::resource_pot::{ResourcePot, ResourcePotInfo, ResourcePotMetaData},
   stats::Stats,
 };
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 pub struct PluginDriver {
   plugins: Vec<Arc<dyn Plugin>>,
@@ -36,6 +35,23 @@ pub struct PluginDriver {
 
 macro_rules! hook_first {
   (
+    $func_name:ident,
+    $ret_ty:ty,
+    $($arg:ident: $ty:ty),*
+  ) => {
+      pub fn $func_name(&self, $($arg: $ty),*) -> $ret_ty {
+          for plugin in &self.plugins {
+              let ret = plugin.$func_name($($arg),*)?;
+              if ret.is_some() {
+                return Ok(ret);
+              }
+          }
+
+          Ok(None)
+      }
+  };
+
+  (
       $func_name:ident,
       $ret_ty:ty,
       $callback:expr,
@@ -43,11 +59,19 @@ macro_rules! hook_first {
   ) => {
       pub fn $func_name(&self, $($arg: $ty),*) -> $ret_ty {
           for plugin in &self.plugins {
+              let start_time = SystemTime::now()
+              .duration_since(UNIX_EPOCH)
+              .expect("Time went backwards")
+              .as_micros() as i64;
               let ret = plugin.$func_name($($arg),*)?;
+              let end_time = SystemTime::now()
+              .duration_since(UNIX_EPOCH)
+              .expect("hook_first get end_time failed")
+              .as_micros() as i64;
               if ret.is_some() {
                 if self.record {
                   let plugin_name = plugin.name().to_string();
-                  $callback(&ret, plugin_name, $($arg),*);
+                  $callback(&ret, plugin_name, start_time, end_time, $($arg),*);
                 }
                 return Ok(ret);
               }
@@ -59,13 +83,31 @@ macro_rules! hook_first {
 }
 
 macro_rules! hook_serial {
+  ($func_name:ident, $param_ty:ty) => {
+    pub fn $func_name(&self, param: $param_ty, context: &Arc<CompilationContext>) -> Result<()> {
+      for plugin in &self.plugins {
+        plugin.$func_name(param, context)?;
+      }
+
+      Ok(())
+    }
+  };
+
   ($func_name:ident, $param_ty:ty, $callback:expr) => {
     pub fn $func_name(&self, param: $param_ty, context: &Arc<CompilationContext>) -> Result<()> {
       for plugin in &self.plugins {
+        let start_time = SystemTime::now()
+          .duration_since(UNIX_EPOCH)
+          .expect("Time went backwards")
+          .as_micros() as i64;
         let ret = plugin.$func_name(param, context)?;
+        let end_time = SystemTime::now()
+          .duration_since(UNIX_EPOCH)
+          .expect("hook_first get end_time failed")
+          .as_micros() as i64;
         if ret.is_some() && self.record {
           let plugin_name = plugin.name().to_string();
-          $callback(plugin_name, param, context);
+          $callback(plugin_name, start_time, end_time, param, context);
         }
       }
 
@@ -75,6 +117,18 @@ macro_rules! hook_serial {
 }
 
 macro_rules! hook_parallel {
+  ($func_name:ident) => {
+    pub fn $func_name(&self, context: &Arc<CompilationContext>) -> Result<()> {
+      self
+        .plugins
+        .par_iter()
+        .try_for_each(|plugin| {
+          let ret = plugin.$func_name(context).map(|_| ());
+          return ret;
+        })
+    }
+  };
+
   ($func_name:ident, $callback:expr) => {
     pub fn $func_name(&self, context: &Arc<CompilationContext>) -> Result<()> {
       self
@@ -86,6 +140,18 @@ macro_rules! hook_parallel {
             let plugin_name = plugin.name().to_string();
             $callback(plugin_name, context);
           }
+          return ret;
+        })
+    }
+  };
+
+  ($func_name:ident, $($arg:ident: $ty:ty),+) => {
+    pub fn $func_name(&self, $($arg: $ty),+, context: &Arc<CompilationContext>) -> Result<()> {
+      self
+        .plugins
+        .par_iter()
+        .try_for_each(|plugin| {
+          let ret = plugin.$func_name($($arg),+, context).map(|_| ());
           return ret;
         })
     }
@@ -132,18 +198,15 @@ impl PluginDriver {
     Ok(())
   }
 
-  hook_parallel!(
-    build_start,
-    |_plugin_name: String, _context: &Arc<CompilationContext>| {
-      // todo something
-    }
-  );
+  hook_parallel!(build_start);
 
   hook_first!(
     resolve,
     Result<Option<PluginResolveHookResult>>,
     |result: &Option<PluginResolveHookResult>,
      plugin_name: String,
+     start_time: i64,
+     end_time: i64,
      param: &PluginResolveHookParam,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
@@ -152,6 +215,9 @@ impl PluginDriver {
           context.record_manager.add_resolve_record(
             resolve_result.resolved_path.clone() + stringify_query(&resolve_result.query).as_str(),
             ResolveRecord {
+              start_time,
+              end_time,
+              duration: end_time - start_time,
               plugin: plugin_name,
               hook: "resolve".to_string(),
               source: param.source.clone(),
@@ -177,6 +243,8 @@ impl PluginDriver {
     Result<Option<PluginLoadHookResult>>,
     |result: &Option<PluginLoadHookResult>,
      plugin_name: String,
+     start_time: i64,
+     end_time: i64,
      param: &PluginLoadHookParam,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
@@ -191,6 +259,9 @@ impl PluginDriver {
               source_maps: None,
               module_type: load_result.module_type.clone(),
               trigger: Trigger::Compiler,
+              start_time,
+              end_time,
+              duration: end_time - start_time,
             },
           );
         }
@@ -209,13 +280,21 @@ impl PluginDriver {
   ) -> Result<PluginDriverTransformHookResult> {
     let mut result = PluginDriverTransformHookResult {
       content: String::new(),
-      source_map_chain: vec![],
+      source_map_chain: param.source_map_chain.clone(),
       module_type: None,
     };
 
     for plugin in &self.plugins {
+      let start_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_micros() as i64;
       // if the transform hook returns None, treat it as empty hook and ignore it
       if let Some(plugin_result) = plugin.transform(&param, context)? {
+        let end_time = SystemTime::now()
+          .duration_since(UNIX_EPOCH)
+          .expect("hook_first get end_time failed")
+          .as_micros() as i64;
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
@@ -235,6 +314,9 @@ impl PluginDriver {
               source_maps: plugin_result.source_map.clone(),
               module_type: param.module_type.clone(),
               trigger: Trigger::Compiler,
+              start_time,
+              end_time,
+              duration: end_time - start_time,
             },
           );
         }
@@ -258,6 +340,8 @@ impl PluginDriver {
     Result<Option<ModuleMetaData>>,
     |_result: &Option<ModuleMetaData>,
      plugin_name: String,
+     start_time: i64,
+     end_time: i64,
      param: &PluginParseHookParam,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
@@ -268,6 +352,9 @@ impl PluginDriver {
           hook: "parse".to_string(),
           module_type: param.module_type.clone(),
           trigger: Trigger::Compiler,
+          start_time,
+          end_time,
+          duration: end_time - start_time,
         },
       );
     },
@@ -280,6 +367,8 @@ impl PluginDriver {
     process_module,
     &mut PluginProcessModuleHookParam,
     |plugin_name: String,
+     start_time: i64,
+     end_time: i64,
      param: &mut PluginProcessModuleHookParam,
      context: &Arc<CompilationContext>| {
       context.record_manager.add_process_record(
@@ -289,6 +378,9 @@ impl PluginDriver {
           hook: "process".to_string(),
           module_type: param.module_type.clone(),
           trigger: Trigger::Compiler,
+          start_time,
+          end_time,
+          duration: end_time - start_time,
         },
       );
     }
@@ -298,6 +390,8 @@ impl PluginDriver {
     analyze_deps,
     &mut PluginAnalyzeDepsHookParam,
     |plugin_name: String,
+     start_time: i64,
+     end_time: i64,
      param: &mut PluginAnalyzeDepsHookParam,
      context: &Arc<CompilationContext>| {
       context.record_manager.add_analyze_deps_record(
@@ -308,53 +402,25 @@ impl PluginDriver {
           module_type: param.module.module_type.clone(),
           trigger: Trigger::Compiler,
           deps: param.deps.clone(),
+          start_time,
+          end_time,
+          duration: end_time - start_time,
         },
       );
     }
   );
 
-  hook_serial!(
-    finalize_module,
-    &mut PluginFinalizeModuleHookParam,
-    |plugin_name: String,
-     param: &mut PluginFinalizeModuleHookParam,
-     context: &Arc<CompilationContext>| {
-      // todo something
-    }
-  );
+  hook_serial!(finalize_module, &mut PluginFinalizeModuleHookParam);
 
-  hook_parallel!(
-    build_end,
-    |plugin_name: String, context: &Arc<CompilationContext>| {
-      // todo something
-    }
-  );
+  hook_parallel!(build_end);
 
-  hook_parallel!(
-    generate_start,
-    |plugin_name: String, context: &Arc<CompilationContext>| {
-      // todo something
-    }
-  );
+  hook_parallel!(generate_start);
 
-  hook_serial!(
-    optimize_module_graph,
-    &mut ModuleGraph,
-    |plugin_name: String, param: &mut ModuleGraph, context: &Arc<CompilationContext>| {
-      // todo something
-    }
-  );
+  hook_serial!(optimize_module_graph, &mut ModuleGraph);
 
   hook_first!(
     analyze_module_graph,
     Result<Option<ModuleGroupGraph>>,
-    |result: &Option<ModuleGroupGraph>,
-     plugin_name: String,
-     param: &mut ModuleGraph,
-     context: &Arc<CompilationContext>,
-     _hook_context: &PluginHookContext| {
-      // todo something
-    },
     param: &mut ModuleGraph,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
@@ -365,9 +431,12 @@ impl PluginDriver {
     Result<Option<Vec<ResourcePot>>>,
     |result: &Option<Vec<ResourcePot>>,
      plugin_name: String,
-     modules: &Vec<ModuleId>,
+     start_time: i64,
+     end_time: i64,
+     _modules: &Vec<ModuleId>,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
+      context.record_manager.update_plugin_stats(plugin_name.clone(), "partial_bundling", end_time - start_time);
       match result {
         Some(resource_pots) => {
           for resource_pot in resource_pots.iter() {
@@ -394,8 +463,11 @@ impl PluginDriver {
     process_resource_pots,
     &mut Vec<&mut ResourcePot>,
     |plugin_name: String,
+     start_time: i64,
+     end_time: i64,
      resource_pots: &mut Vec<&mut ResourcePot>,
      context: &Arc<CompilationContext>| {
+      context.record_manager.update_plugin_stats(plugin_name.clone(), "process_resource_pots", end_time - start_time);
       for resource_pot in resource_pots.iter() {
         context.record_manager.add_resource_pot_record(
           resource_pot.id.to_string(),
@@ -410,24 +482,11 @@ impl PluginDriver {
     }
   );
 
-  hook_serial!(render_start, &Config, |_plugin_name: String,
-                                       _config: &Config,
-                                       _context: &Arc<
-    CompilationContext,
-  >| {
-    // todo something
-  });
+  hook_serial!(render_start, &Config);
 
   hook_first!(
     render_resource_pot_modules,
     Result<Option<ResourcePotMetaData>>,
-    |_result: &Option<ResourcePotMetaData>,
-     _plugin_name: String,
-     _resource_pot: &ResourcePot,
-     _context: &Arc<CompilationContext>,
-     _hook_context: &PluginHookContext| {
-      // todo something
-    },
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
@@ -459,7 +518,7 @@ impl PluginDriver {
 
   pub fn augment_resource_hash(
     &self,
-    render_pot_info: &ChunkResourceInfo,
+    render_pot_info: &ResourcePotInfo,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     let mut result: Option<String> = None;
@@ -483,7 +542,12 @@ impl PluginDriver {
   hook_serial!(
     optimize_resource_pot,
     &mut ResourcePot,
-    |plugin_name: String, resource_pot: &mut ResourcePot, context: &Arc<CompilationContext>| {
+    |plugin_name: String,
+     start_time: i64,
+     end_time: i64,
+     resource_pot: &mut ResourcePot,
+     context: &Arc<CompilationContext>| {
+      
       context.record_manager.add_resource_pot_record(
         resource_pot.id.to_string(),
         ResourcePotRecord {
@@ -501,6 +565,8 @@ impl PluginDriver {
     Result<Option<PluginGenerateResourcesHookResult>>,
     |result: &Option<PluginGenerateResourcesHookResult>,
      plugin_name: String,
+     start_time: i64,
+     end_time: i64,
      resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
@@ -533,39 +599,32 @@ impl PluginDriver {
     _hook_context: &PluginHookContext
   );
 
-  hook_serial!(
-    finalize_resources,
-    &mut PluginFinalizeResourcesHookParams,
-    |_plugin_name: String,
-     _param: &mut PluginFinalizeResourcesHookParams,
-     _context: &Arc<CompilationContext>| {
-      // todo something
-    }
-  );
+  hook_serial!(finalize_resources, &mut PluginFinalizeResourcesHookParams);
 
-  hook_parallel!(
-    generate_end,
-    |plugin_name: String, context: &Arc<CompilationContext>| {
-      // todo something
-    }
-  );
+  hook_parallel!(generate_end);
 
   hook_parallel!(
     finish,
     stat: &Stats,
-    |plugin_name: String, context: &Arc<CompilationContext>| {
+    |_plugin_name: String, context: &Arc<CompilationContext>| {
       context.record_manager.set_trigger(Trigger::Update);
     }
   );
 
-  hook_serial!(
-    update_modules,
-    &mut PluginUpdateModulesHookParams,
-    |plugin_name: String,
-     param: &mut PluginUpdateModulesHookParams,
-     context: &Arc<CompilationContext>| {
-      // todo something
-    }
+  hook_serial!(update_modules, &mut PluginUpdateModulesHookParams);
+
+  hook_parallel!(
+    module_graph_updated,
+    param: &PluginModuleGraphUpdatedHookParams
+  );
+
+  hook_parallel!(update_finished);
+
+  hook_first!(
+    handle_persistent_cached_module,
+    Result<Option<bool>>,
+    module: &Module,
+    context: &Arc<CompilationContext>
   );
 
   pub fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<()> {

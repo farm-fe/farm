@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { Logger, DefaultLogger } from '../utils/logger.js';
+import { Logger } from '../utils/logger.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
 
+import type { ILogger } from '../utils/logger.js';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { JsPlugin, Resource } from '../index.js';
 
@@ -18,6 +19,17 @@ export interface UpdateQueueItem {
   resolve: (res: JsUpdateResult) => void;
 }
 
+export type PluginStats = Record<
+  string,
+  Record<
+    string,
+    {
+      totalDuration: number;
+      callCount: number;
+    }
+  >
+>;
+
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
   private _updateQueue: UpdateQueueItem[] = [];
@@ -25,10 +37,10 @@ export class Compiler {
 
   public compiling = false;
 
-  private logger: Logger;
+  private logger: ILogger;
 
   constructor(public config: Config) {
-    this.logger = new DefaultLogger();
+    this.logger = new Logger();
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 
@@ -122,6 +134,14 @@ export class Compiler {
 
   resource(path: string): Buffer {
     return this._bindingCompiler.resource(path);
+  }
+
+  resourcesMap(): Record<string, Resource> {
+    return this._bindingCompiler.resourcesMap() as Record<string, Resource>;
+  }
+
+  pluginStats() {
+    return this._bindingCompiler.pluginStats() as PluginStats;
   }
 
   writeResourcesToDisk(base = ''): void {

@@ -9,7 +9,7 @@ export type ModuleType =
   | string;
 
 export type ResolveKind =
-  | 'entry'
+  | { entry: string }
   | 'import'
   | 'dynamicImport'
   | 'require'
@@ -32,8 +32,8 @@ export interface PluginResolveHookParam {
   importer: string | null;
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   kind: ResolveKind;
-  /// resolvedPath. for example in index.ts (import App from "./App.vue")
-  /// source should be "path.resolve(process.cwd(),'./App.vue')"
+  /// source of the import. for example in index.ts (import App from "./App.vue")
+  /// source should be './App.vue'
   source: string;
 }
 
@@ -65,6 +65,8 @@ export interface PluginLoadHookResult {
   /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
   /// usually end with `.js` extension
   moduleType: ModuleType;
+  /// source map of the module
+  sourceMap?: string | null;
 }
 
 export interface PluginTransformHookParam {

@@ -4,29 +4,24 @@ import { isAbsolute, relative } from 'node:path';
 import { stat } from 'node:fs/promises';
 
 import { Compiler } from '../compiler/index.js';
-import { DevServer } from './index.js';
+import { Server } from './index.js';
 import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
 import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { WebSocketClient } from './ws.js';
+import { logError } from './error.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
   // private _updateResults: Map<string, { result: string; count: number }> =
 
   private _compiler: Compiler;
-  private _devServer: DevServer;
+  private _devServer: Server;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
-  // flag to indicate if last attempt was error
-  // private _lastAttemptWasError: boolean;
 
   private _lastModifiedTimestamp: Map<string, string>;
 
-  constructor(
-    compiler: Compiler,
-    devServer: DevServer,
-    private _logger: Logger
-  ) {
+  constructor(compiler: Compiler, devServer: Server, private _logger: Logger) {
     this._compiler = compiler;
     this._devServer = devServer;
     // this._lastAttemptWasError = false;
@@ -70,13 +65,6 @@ export class HmrEngine {
     }
 
     try {
-      // before
-      // only clear screen if last attempt was error
-      // if (this._lastAttemptWasError) {
-      //   clearScreen();
-      //   this._lastAttemptWasError = false; // clear reset flag
-      // }
-      // after allow hmr with clearScreen not care error attempt
       clearScreen();
       const start = Date.now();
       const result = await this._compiler.update(queue);
@@ -104,22 +92,23 @@ export class HmrEngine {
           }));
         }
       }
-
+      const {
+        added,
+        changed,
+        removed,
+        immutableModules,
+        mutableModules,
+        boundaries
+      } = result;
       const resultStr = `{
-      added: [${result.added
-        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
-        .join(', ')}],
-      changed: [${result.changed
-        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
-        .join(', ')}],
-      removed: [${result.removed
-        .map((r) => `'${r.replaceAll('\\', '\\\\')}'`)
-        .join(', ')}],
-      immutableModules: ${JSON.stringify(result.immutableModules.trim())},
-      mutableModules: ${JSON.stringify(result.mutableModules.trim())},
-      boundaries: ${JSON.stringify(result.boundaries)},
-      dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
-    }`;
+        added: [${formatHmrResult(added)}],
+        changed: [${formatHmrResult(changed)}],
+        removed: [${formatHmrResult(removed)}],
+        immutableModules: ${JSON.stringify(immutableModules.trim())},
+        mutableModules: ${JSON.stringify(mutableModules.trim())},
+        boundaries: ${JSON.stringify(boundaries)},
+        dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
+      }`;
 
       this.callUpdates(result);
 
@@ -138,10 +127,9 @@ export class HmrEngine {
           await this.recompileAndSendResult();
         }
       });
-    } catch (e) {
+    } catch (err) {
       clearScreen();
-      // this._lastAttemptWasError = true;
-      throw e;
+      throw new Error(logError(err) as unknown as string);
     }
   };
 
@@ -184,4 +172,8 @@ export class HmrEngine {
       }
     }
   }
+}
+
+function formatHmrResult(array: string[]) {
+  return array.map((item) => `'${item.replaceAll('\\', '\\\\')}'`).join(', ');
 }

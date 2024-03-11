@@ -1,5 +1,8 @@
 // using native ability to load resources if target env is node.
 
+import type { ModuleSystem } from './module-system';
+import type { ResourceLoadResult } from './plugin';
+
 export interface Resource {
   path: string;
   type: 'script' | 'link';
@@ -21,17 +24,38 @@ export class ResourceLoader {
 
   publicPaths: string[];
 
-  constructor(publicPaths: string[]) {
+  constructor(private moduleSystem: ModuleSystem, publicPaths: string[]) {
     this.publicPaths = publicPaths;
   }
 
   load(resource: Resource, index = 0): Promise<void> {
     // it's not running in browser
     if (!isBrowser) {
-      if (resource.type === 'script') {
-        return this._loadScript(`./${resource.path}`);
-      } else if (resource.type === 'link') {
-        return this._loadLink(`./${resource.path}`);
+      const result = this.moduleSystem.pluginContainer.hookBail(
+        'loadResource',
+        resource
+      );
+
+      if (result) {
+        return result.then((res: ResourceLoadResult) => {
+          if (!res.success && res.retryWithDefaultResourceLoader) {
+            if (resource.type === 'script') {
+              return this._loadScript(`./${resource.path}`);
+            } else if (resource.type === 'link') {
+              return this._loadLink(`./${resource.path}`);
+            }
+          } else if (!res.success) {
+            throw new Error(
+              `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". Original Error: ${res.err}`
+            );
+          }
+        });
+      } else {
+        if (resource.type === 'script') {
+          return this._loadScript(`./${resource.path}`);
+        } else if (resource.type === 'link') {
+          return this._loadLink(`./${resource.path}`);
+        }
       }
     }
 
@@ -46,6 +70,37 @@ export class ResourceLoader {
       return this._loadingResources[resource.path];
     }
 
+    const result = this.moduleSystem.pluginContainer.hookBail(
+      'loadResource',
+      resource
+    );
+
+    if (result) {
+      return result.then((res: ResourceLoadResult) => {
+        if (res.success) {
+          this.setLoadedResource(resource.path);
+        } else if (res.retryWithDefaultResourceLoader) {
+          return this._load(url, resource, index);
+        } else {
+          throw new Error(
+            `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". Original Error: ${res.err}`
+          );
+        }
+      });
+    } else {
+      return this._load(url, resource, index);
+    }
+  }
+
+  setLoadedResource(path: string) {
+    this._loadedResources[path] = true;
+  }
+
+  isResourceLoaded(path: string) {
+    return this._loadedResources[path];
+  }
+
+  private _load(url: string, resource: Resource, index: number): Promise<void> {
     let promise = Promise.resolve();
 
     if (resource.type === 'script') {
@@ -67,7 +122,7 @@ export class ResourceLoader {
         index++;
 
         if (index < this.publicPaths.length) {
-          return this.load(resource, index);
+          return this._load(url, resource, index);
         } else {
           throw new Error(
             `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". ${e}`
@@ -75,10 +130,6 @@ export class ResourceLoader {
         }
       });
     return promise;
-  }
-
-  setLoadedResource(path: string) {
-    this._loadedResources[path] = true;
   }
 
   private _loadScript(path: string): Promise<void> {

@@ -15,20 +15,19 @@ import {
   resolveFarmPlugins
 } from '../plugin/index.js';
 import { bindingPath, Config } from '../../binding/index.js';
-import { DevServer } from '../server/index.js';
+import { Server } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import {
   bold,
   clearScreen,
-  DefaultLogger,
+  Logger,
   green,
   isArray,
   isEmptyObject,
   isObject,
   isWindows,
-  Logger,
   normalizePath
 } from '../utils/index.js';
 import { urlRegex } from '../utils/http.js';
@@ -71,6 +70,7 @@ export async function resolveConfig(
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
+  inlineOptions.mode = inlineOptions.mode ?? mode;
 
   const getDefaultConfig = async () => {
     const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
@@ -159,9 +159,9 @@ export async function resolveConfig(
 
   try {
     targetWeb &&
-      (await DevServer.resolvePortConflict(resolvedUserConfig.server, logger));
+      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
     // eslint-disable-next-line no-empty
-  } catch {}
+  } catch { }
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -263,10 +263,10 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            userConfig.env[key];
-          return env;
-        }, {})
+        env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+          userConfig.env[key];
+        return env;
+      }, {})
   );
 
   const require = module.createRequire(import.meta.url);
@@ -294,6 +294,20 @@ export async function normalizeUserCompilationConfig(
 
   if (!config.runtime.plugins) {
     config.runtime.plugins = [];
+  } else {
+    // make sure all plugin paths are absolute
+    config.runtime.plugins = config.runtime.plugins.map((plugin) => {
+      if (!path.isAbsolute(plugin)) {
+        if (!plugin.startsWith('.')) {
+          // resolve plugin from node_modules
+          return require.resolve(plugin);
+        } else {
+          return path.resolve(resolvedRootPath, plugin);
+        }
+      }
+
+      return plugin;
+    });
   }
   // set namespace to package.json name field's hash
   if (!config.runtime.namespace) {
@@ -302,7 +316,7 @@ export async function normalizeUserCompilationConfig(
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
       ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-          ?.name ?? FARM_DEFAULT_NAMESPACE
+        ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
@@ -336,7 +350,10 @@ export async function normalizeUserCompilationConfig(
     config.runtime.plugins.push(hmrClientPluginPath);
     config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
+    config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
+    // may be we don't need this
     config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
+    config.define.FARM_HMR_BASE = userConfig.compilation?.output?.publicPath;
   }
 
   if (
@@ -378,12 +395,6 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.progress === undefined) {
-    if (config.output.targetEnv === 'node') {
-      config.progress = false;
-    }
-  }
-
   if (config.presetEnv === undefined && config.output?.targetEnv !== 'node') {
     if (isProduction) {
       config.presetEnv = true;
@@ -403,11 +414,11 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   host: true,
   port: 9000,
   path: '/__hmr',
+  protocol: 'ws',
   watchOptions: {}
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
-  // TODO more server options e.g: https
   headers: {},
   port: 9000,
   https: undefined,
@@ -448,12 +459,12 @@ export function normalizeDevServerOptions(
     hmr,
     https: https
       ? {
-          ...https,
-          ca: tryAsFileRead(options.https.ca),
-          cert: tryAsFileRead(options.https.cert),
-          key: tryAsFileRead(options.https.key),
-          pfx: tryAsFileRead(options.https.pfx)
-        }
+        ...https,
+        ca: tryAsFileRead(options.https.ca),
+        cert: tryAsFileRead(options.https.cert),
+        key: tryAsFileRead(options.https.key),
+        pfx: tryAsFileRead(options.https.pfx)
+      }
       : undefined
   });
 }
@@ -748,7 +759,7 @@ async function resolveMergedUserConfig(
 export async function loadConfigFile(
   configPath: string,
   inlineOptions: FarmCLIOptions,
-  logger: Logger = new DefaultLogger()
+  logger: Logger = new Logger()
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
   try {
@@ -773,7 +784,13 @@ export async function loadConfigFile(
     // throw error can solve this problem,
     // it will not continue to affect the execution of
     // external code. We just need to return the default config.
-    logger.error(`Failed to load config file: ${error.stack}`);
+    if (inlineOptions.mode === 'production') {
+      logger.error(`Failed to load config file: \n ${error.stack}`, {
+        exit: true
+      });
+    } else {
+      logger.error(`Failed to load config file: \n ${error.stack}`);
+    }
   }
 }
 
@@ -824,8 +841,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Build failed due to errors: Can not resolve ${
-          isTargetNode ? 'index.js or index.ts' : 'index.html'
+        `Build failed due to errors: Can not resolve ${isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
       );
     }
