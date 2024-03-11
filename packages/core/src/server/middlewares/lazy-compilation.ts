@@ -38,9 +38,9 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       const start = Date.now();
       const result = await compiler.update(paths);
       devSeverContext.logger.info(
-        `${bold(green(`✓`))} Lazy compilation done in ${bold(
-          green(`${Date.now() - start}ms`)
-        )}.`
+        `${bold(green(`✓`))} Lazy compilation done(${bold(
+          cyan(pathsStr)
+        )}) in ${bold(green(`${Date.now() - start}ms`))}.`
       );
 
       devSeverContext.hmrEngine.callUpdates(result);

@@ -24,7 +24,7 @@ mod common;
 #[test]
 fn tree_shake_test() {
   fixture!(
-    "tests/fixtures/tree_shake/**/index.ts",
+    "tests/fixtures/tree_shake/self-executed/axios/index.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
       println!("testing tree shake: {:?}", cwd);

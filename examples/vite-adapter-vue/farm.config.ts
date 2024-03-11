@@ -11,16 +11,18 @@ import UnpluginSvgComponent from 'unplugin-svg-component/vite';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
+import viewer from '@farmfe/js-plugin-record-viewer';
 
 export default defineConfig({
   compilation: {
     // compilation options here
-    // persistentCache: false
+    persistentCache: false
   },
   plugins: [
     '@farmfe/plugin-sass',
     less(),
     postcss(),
+    process.env.FARM_VIEWER ? viewer() : undefined,
     {
       name: 'remove-css-filter-plugin',
       priority: 0,
@@ -30,7 +32,7 @@ export default defineConfig({
             'src/components/HelloWorld.vue\\?vue&(.+)&lang\\.scss'
           ]
         },
-        executor({ content }) {
+        async executor({ content }) {
           return {
             content: content.replace('filter: alpha(opacity=0);', '')
           };

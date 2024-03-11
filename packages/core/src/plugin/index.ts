@@ -24,6 +24,10 @@ export async function resolveFarmPlugins(config: UserConfig) {
   const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
+    if (!plugin) {
+      continue;
+    }
+
     if (
       typeof plugin === 'string' ||
       (isArray(plugin) && typeof plugin[0] === 'string')

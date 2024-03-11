@@ -298,7 +298,12 @@ export async function normalizeUserCompilationConfig(
     // make sure all plugin paths are absolute
     config.runtime.plugins = config.runtime.plugins.map((plugin) => {
       if (!path.isAbsolute(plugin)) {
-        return path.resolve(resolvedRootPath, plugin);
+        if (!plugin.startsWith('.')) {
+          // resolve plugin from node_modules
+          return require.resolve(plugin);
+        } else {
+          return path.resolve(resolvedRootPath, plugin);
+        }
       }
 
       return plugin;

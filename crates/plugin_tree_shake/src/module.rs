@@ -285,6 +285,10 @@ impl TreeShakeModule {
 
       // self executed stmts
       for index in self.stmt_graph.stmts().iter().filter_map(|stmt| {
+        println!(
+          "stmt: {:?} {:?} {}",
+          stmt.id, stmt.used_idents, stmt.is_self_executed
+        );
         if stmt.is_self_executed {
           Some(stmt.id)
         } else {
@@ -358,6 +362,7 @@ impl TreeShakeModule {
       let mut visited = HashSet::new();
       let mut reference_chain = Vec::new();
 
+      println!("entries: {:?}", entries);
       for stmt in &entries {
         dfs(
           stmt,
@@ -387,10 +392,14 @@ impl TreeShakeModule {
           .filter(|index| self.stmt_graph.stmt(&index).import_info.is_none()),
       );
 
+      println!("{:?} -> {:?}", module.id, used_self_execute_stmts);
+
       // dependencies cannot be used to obtain the ident that export stmt depends on.
       for stmt in stmt_used_idents_map.keys() {
         used_self_execute_stmts.remove(stmt);
       }
+
+      println!("{:?} -> {:?}", module.id, used_self_execute_stmts);
 
       for stmt_id in used_self_execute_stmts {
         stmt_used_idents_map
