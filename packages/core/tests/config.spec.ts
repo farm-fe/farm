@@ -20,7 +20,7 @@ test('resolveUserConfig', async () => {
   );
 
   expect(config.compilation.define).toEqual({
-    FARM_HMR_BASE: undefined,
+    FARM_HMR_BASE: '/',
     FARM_HMR_HOST: true,
     FARM_HMR_PATH: '/__hmr',
     FARM_HMR_PORT: '9000',
@@ -65,7 +65,7 @@ test('resolveUserConfig', async () => {
       FARM_HMR_HOST: 'true',
       FARM_HMR_PATH: '/__hmr',
       FARM_HMR_PORT: '9000',
-      FARM_HMR_BASE: undefined,
+      FARM_HMR_BASE: '/',
       FARM_HMR_PROTOCOL: 'ws'
     },
     moduleCacheKeyStrategy: {}

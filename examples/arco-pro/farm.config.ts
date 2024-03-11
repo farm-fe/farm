@@ -5,8 +5,6 @@ import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig(async (env) => {
   console.log(env);
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  console.log(env);
   return {
     compilation: {
       input: {
@@ -21,18 +19,17 @@ export default defineConfig(async (env) => {
           '@': resolve(process.cwd(), './src'),
           'react-dom': resolve(process.cwd(), './node_modules/react-dom'),
           react: resolve(process.cwd(), './node_modules/react')
-          // mockjs: resolve(process.cwd(), "./patches/mock.js"),
         }
       },
       output: {
         path: './build',
         filename: 'assets/[resourceName].[contentHash].[ext]',
+        publicPath: '/arco-pro/',
         assetsFilename: 'static/[resourceName].[contentHash].[ext]'
       },
       partialBundling: {
         targetMinSize: 1024 * 2
       },
-      persistentCache: false,
       progress: true
     },
     server: {
