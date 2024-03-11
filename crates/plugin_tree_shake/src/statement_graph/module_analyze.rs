@@ -3,7 +3,7 @@ use std::hash::Hash;
 
 use farmfe_core::module::Module;
 use farmfe_core::petgraph::visit::EdgeRef;
-use farmfe_core::petgraph::Direction::Outgoing;
+use farmfe_core::petgraph::Direction::{self, Outgoing};
 use farmfe_core::swc_common::Mark;
 use farmfe_core::swc_ecma_ast::{
   op, BlockStmtOrExpr, Decl, DefaultDecl, ExportDecl, ExportDefaultDecl, Expr, ExprStmt, Id,
@@ -86,12 +86,25 @@ impl ModuleAnalyze {
     self.g.add_edge(from, to, edge);
   }
 
-  pub fn reference_edges(&self, n: &ItemId) -> Vec<(&ItemId, ModuleAnalyzeItemEdge)> {
+  pub fn reference_edges(
+    &self,
+    n: &ItemId,
+    direction: Direction,
+  ) -> Vec<(&ItemId, ModuleAnalyzeItemEdge)> {
     if self.id_map.contains_key(n) {
       self
         .g
-        .edges_directed(self.id_map[n], Outgoing)
-        .map(|edge| (&self.g[edge.target()], edge.weight().clone()))
+        .edges_directed(self.id_map[n], direction)
+        .map(|edge| {
+          (
+            &self.g[if matches!(direction, Direction::Incoming) {
+              edge.source()
+            } else {
+              edge.target()
+            }],
+            edge.weight().clone(),
+          )
+        })
         .collect::<Vec<_>>()
     } else {
       vec![]
@@ -433,22 +446,15 @@ impl ModuleAnalyze {
     side_effect_ids
   }
 
-  pub fn write_edges(&self) -> Vec<(&ItemId, &ItemId)> {
-    let mut write_ids = vec![];
-    for node in self.g.node_indices() {
-      let edges = self.g.edges(node);
-      for edge_reference in edges {
-        let edge = edge_reference.weight();
-        if edge.mode == Mode::Write && !edge.nested {
-          write_ids.push((
-            &self.g[edge_reference.source()],
-            &self.g[edge_reference.target()],
-          ));
-        }
-      }
-    }
-
-    return write_ids;
+  pub fn edge(&self, from: &ItemId, to: &ItemId) -> Option<&ModuleAnalyzeItemEdge> {
+    self
+      .g
+      .edges_connecting(
+        *self.id_map.get(from).unwrap(),
+        *self.id_map.get(to).unwrap(),
+      )
+      .next()
+      .map(|e| e.weight())
   }
 
   pub fn print_graph(&mut self) {

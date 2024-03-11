@@ -6,6 +6,7 @@ use std::{
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
+  petgraph::Direction,
   swc_common::{Globals, Mark},
   swc_ecma_ast::{Id, Ident},
 };
@@ -285,10 +286,6 @@ impl TreeShakeModule {
 
       // self executed stmts
       for index in self.stmt_graph.stmts().iter().filter_map(|stmt| {
-        println!(
-          "stmt: {:?} {:?} {}",
-          stmt.id, stmt.used_idents, stmt.is_self_executed
-        );
         if stmt.is_self_executed {
           Some(stmt.id)
         } else {
@@ -298,14 +295,10 @@ impl TreeShakeModule {
         entries.extend(module_analyze.items(&index));
       }
 
-      let mut used_self_execute_stmts = HashSet::new();
-
       // used export need to be the entry point to traversal
       for stmt in stmt_used_idents_map.keys() {
         entries.extend(module_analyze.items(stmt))
       }
-
-      let write_stmt = module_analyze.write_edges();
 
       fn dfs<'a>(
         entry: &'a ItemId,
@@ -314,19 +307,43 @@ impl TreeShakeModule {
         visited: &mut HashSet<&'a ItemId>,
         module_define_graph: &'a ModuleAnalyze,
         stmt_graph: &StatementGraph,
+        direction: Direction,
       ) {
         stack.push(entry);
 
-        let edges = module_define_graph.reference_edges(entry);
+        let edges = module_define_graph.reference_edges(entry, direction);
 
         if edges.is_empty()
           || visited.contains(entry)
           || !module_define_graph.has_node(entry)
-          || !edges.iter().any(|(_, edge)| {
-            matches!(edge.mode, Mode::Read) || (matches!(edge.mode, Mode::Write) && edge.nested)
-          })
+          || (matches!(direction, Direction::Outgoing)
+            && !edges.iter().any(|(_, edge)| {
+              matches!(edge.mode, Mode::Read) || (matches!(edge.mode, Mode::Write) && edge.nested)
+            }))
         {
-          result.push(stack.iter().map(|item| (*item).clone()).collect());
+          if matches!(direction, Direction::Incoming) && stack.len() > 1 {
+            // there must be a Write edge cross the chain
+            if stack.iter().enumerate().any(|(index, item)| {
+              if index > 0 && index < stack.len() {
+                let previous = &stack[index - 1];
+                if let Some(edge) = module_define_graph.edge(item, previous) {
+                  if matches!(edge.mode, Mode::Write) {
+                    true
+                  } else {
+                    false
+                  }
+                } else {
+                  false
+                }
+              } else {
+                false
+              }
+            }) {
+              result.push(stack.iter().map(|item| (*item).clone()).collect());
+            }
+          } else {
+            result.push(stack.iter().map(|item| (*item).clone()).collect());
+          }
         } else {
           visited.insert(entry);
           for (node, edge_data) in edges {
@@ -339,9 +356,10 @@ impl TreeShakeModule {
                   visited,
                   module_define_graph,
                   stmt_graph,
+                  direction,
                 );
               }
-              Mode::Write if edge_data.nested => {
+              Mode::Write if edge_data.nested || matches!(direction, Direction::Incoming) => {
                 dfs(
                   node,
                   stack,
@@ -349,6 +367,7 @@ impl TreeShakeModule {
                   visited,
                   module_define_graph,
                   stmt_graph,
+                  direction,
                 );
               }
               _ => {}
@@ -362,7 +381,6 @@ impl TreeShakeModule {
       let mut visited = HashSet::new();
       let mut reference_chain = Vec::new();
 
-      println!("entries: {:?}", entries);
       for stmt in &entries {
         dfs(
           stmt,
@@ -371,6 +389,7 @@ impl TreeShakeModule {
           &mut visited,
           &module_analyze,
           &self.stmt_graph,
+          Direction::Outgoing,
         );
       }
 
@@ -379,12 +398,31 @@ impl TreeShakeModule {
         .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
         .collect::<HashSet<_>>();
 
-      // if a write destination exists, the write operation needs to be preserved
-      for (source, target) in write_stmt {
-        if reference_stmts.contains(&target.index()) {
-          used_self_execute_stmts.insert(source.index());
-        }
+      let mut final_reference_chain = vec![];
+      let final_entries = reference_stmts
+        .iter()
+        .flat_map(|stmt| module_analyze.items(stmt))
+        .collect::<Vec<_>>();
+      let mut visited = HashSet::new();
+      // all parent statement that reference reference_stmts should be preserved too
+      for stmt in &final_entries {
+        dfs(
+          stmt,
+          &mut vec![],
+          &mut final_reference_chain,
+          &mut visited,
+          &module_analyze,
+          &self.stmt_graph,
+          Direction::Incoming,
+        );
       }
+
+      let reference_stmts: HashSet<usize> = final_reference_chain
+        .iter()
+        .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
+        .collect::<HashSet<_>>();
+
+      let mut used_self_execute_stmts = HashSet::new();
 
       used_self_execute_stmts.extend(
         reference_stmts
@@ -392,14 +430,10 @@ impl TreeShakeModule {
           .filter(|index| self.stmt_graph.stmt(&index).import_info.is_none()),
       );
 
-      println!("{:?} -> {:?}", module.id, used_self_execute_stmts);
-
       // dependencies cannot be used to obtain the ident that export stmt depends on.
       for stmt in stmt_used_idents_map.keys() {
         used_self_execute_stmts.remove(stmt);
       }
-
-      println!("{:?} -> {:?}", module.id, used_self_execute_stmts);
 
       for stmt_id in used_self_execute_stmts {
         stmt_used_idents_map
