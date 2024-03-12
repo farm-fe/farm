@@ -11,8 +11,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
-    "@farmfe/cli": "^0.6.1",
-    "@farmfe/core": "^0.16.5",
+    "@farmfe/cli": "^0.7.0",
+    "@farmfe/core": "^1.0.0-beta.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
     "@tsconfig/svelte": "^5.0.2",
     "svelte": "^4",
