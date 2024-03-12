@@ -2,6 +2,12 @@
 name = "farmfe_plugin_progress"
 version = "0.0.1"
 edition = "2021"
+authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
+license = "MIT"
+description = "Progress plugin of farm."
+homepage = "https://farm-fe.github.io"
+repository = "https://github.com/farm-fe/farm"
+documentation = "https://docs.rs/farmfe_plugin_progress"
 
 [dependencies]
 farmfe_core = { path = "../core", version = "0.3.0" }
