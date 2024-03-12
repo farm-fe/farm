@@ -5,6 +5,9 @@ edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
 description = "farm swc tranformer for vite-style import.meta.glob"
 license = "MIT"
+homepage = "https://farm-fe.github.io"
+repository = "https://github.com/farm-fe/farm"
+documentation = "https://docs.rs/farmfe_plugin_define"
 
 [dependencies]
 farmfe_core = { path = "../core", version = "0.3.0" }
