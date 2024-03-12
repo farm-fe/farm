@@ -17,6 +17,9 @@ const PKG_CORE = resolve(CWD, './packages/core');
 // Build cli
 const PKG_CLI = resolve(CWD, './packages/cli');
 
+// Build plugin-tools
+const PKG_PLUGIN_TOOLS = resolve(CWD, './packages/plugin-tools');
+
 // Build plugin dts
 const PKG_DTS = resolve(CWD, './js-plugins/dts');
 
@@ -50,6 +53,7 @@ export async function runTaskQueue() {
   await installProtoBuf();
   await runTask('Cli', buildCli);
   await runTask('Core', buildCore);
+  await runTask('PluginTools', buildPluginTools);
   await runTask('RustPlugins', buildRustPlugins);
   await runTask('JsPlugins', buildJsPlugins);
   await runTask('Artifacts', copyArtifacts);
@@ -83,6 +87,13 @@ export const buildCli = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
     cwd: PKG_CLI
   });
+
+// build farm-plugin-tools
+export const buildPluginTools = ()=>{
+  execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+    cwd: PKG_PLUGIN_TOOLS
+  });
+}
 
 // build dts command
 export const buildDts = () =>
