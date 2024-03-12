@@ -4,6 +4,7 @@ import { createSpawnCmd } from '@farmfe/utils';
 import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
 
 import { copyArtifacts } from './copy-artifacts.js';
+import { prepublish } from './prepublish.js';
 
 const getArg = (argsObj: any, args: string[], name: string) => {
   const index = args.indexOf(name);
@@ -56,14 +57,7 @@ cli
   )
   .allowUnknownOptions()
   .action(async () => {
-    const cliPath = resolveNapiRsCli();
-    // just call napi prepublish -t npm
-    try {
-      const spawn = createSpawnCmd(process.cwd(), 'inherit');
-      await spawn('node', [cliPath, 'prepublish', '-t', 'npm']);
-    } catch (e) {
-      process.exit(1);
-    }
+    await prepublish();
   });
 
 cli.parse();

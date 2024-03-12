@@ -1,0 +1,62 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.0.1](https://github.com/farm-fe/farm/releases/tag/farmfe_plugin_html-v0.0.1) - 2024-03-12
+
+### Added
+- preserve comments [#607](https://github.com/farm-fe/farm/pull/607) ([#900](https://github.com/farm-fe/farm/pull/900))
+- Support persistent cache and incremental building ([#476](https://github.com/farm-fe/farm/pull/476))
+- *(refactor)* RFC-003 New Partial Bundling Algorithm ([#559](https://github.com/farm-fe/farm/pull/559))
+- support resolve @import and url() dependencies for css ([#367](https://github.com/farm-fe/farm/pull/367))
+- support script minification ([#191](https://github.com/farm-fe/farm/pull/191))
+- tree shake ([#99](https://github.com/farm-fe/farm/pull/99))
+- add string when generate css id and change query HashMap to Vec… ([#90](https://github.com/farm-fe/farm/pull/90))
+- auto external node native module when using farm.config.ts ([#81](https://github.com/farm-fe/farm/pull/81))
+- support sourcemap ([#77](https://github.com/farm-fe/farm/pull/77))
+- react demo launched successfully! ([#20](https://github.com/farm-fe/farm/pull/20))
+- first executable html,css and script demo! ([#19](https://github.com/farm-fe/farm/pull/19))
+- set up ci for linting and testing ([#4](https://github.com/farm-fe/farm/pull/4))
+
+### Fixed
+- [#787](https://github.com/farm-fe/farm/pull/787) [#794](https://github.com/farm-fe/farm/pull/794) [#785](https://github.com/farm-fe/farm/pull/785) ([#800](https://github.com/farm-fe/farm/pull/800))
+- [#769](https://github.com/farm-fe/farm/pull/769) ([#773](https://github.com/farm-fe/farm/pull/773))
+- public path issue for css and static assets ([#561](https://github.com/farm-fe/farm/pull/561))
+- lazy compialtion error and windows css error ([#454](https://github.com/farm-fe/farm/pull/454))
+- Isolate runtime from globalThis for script entries ([#446](https://github.com/farm-fe/farm/pull/446))
+- vue migrate bugs ([#357](https://github.com/farm-fe/farm/pull/357))
+- lazy compilation and partial bundling bug ([#44](https://github.com/farm-fe/farm/pull/44))
+
+### Other
+- publish crates
+- bump 1.0.0-beta ([#1011](https://github.com/farm-fe/farm/pull/1011))
+- ready to release 1.0.0-beta ([#936](https://github.com/farm-fe/farm/pull/936))
+- support absolute path for script tag ([#927](https://github.com/farm-fe/farm/pull/927))
+- support minify options ([#907](https://github.com/farm-fe/farm/pull/907))
+- Fix transformIndexHtml does not work as expected ([#884](https://github.com/farm-fe/farm/pull/884))
+- Feat/rollup hook compatible ([#842](https://github.com/farm-fe/farm/pull/842))
+- update deps ([#740](https://github.com/farm-fe/farm/pull/740))
+- resource pot render ([#675](https://github.com/farm-fe/farm/pull/675))
+- Chore/opt vite plugin adapter ([#616](https://github.com/farm-fe/farm/pull/616))
+- Feat/js plugin adaptor ([#613](https://github.com/farm-fe/farm/pull/613))
+- *(*)* apply some lint suggestions ([#474](https://github.com/farm-fe/farm/pull/474))
+- Support SSR ([#421](https://github.com/farm-fe/farm/pull/421))
+- make resources order injected to html execution order ([#448](https://github.com/farm-fe/farm/pull/448))
+- add more features ([#387](https://github.com/farm-fe/farm/pull/387))
+- Feat/opt entry output ([#381](https://github.com/farm-fe/farm/pull/381))
+- solving bugs ([#338](https://github.com/farm-fe/farm/pull/338))
+- bugfix
+- Refactor Rust plugin system ([#82](https://github.com/farm-fe/farm/pull/82))
+- make query part of id ([#85](https://github.com/farm-fe/farm/pull/85))
+- Feat/static assets ([#61](https://github.com/farm-fe/farm/pull/61))
+- Fix/temp config add timestamp ([#46](https://github.com/farm-fe/farm/pull/46))
+- v0.3.0 support lazy compilation and partial bundling ([#42](https://github.com/farm-fe/farm/pull/42))
+- Feat/css hmr ([#36](https://github.com/farm-fe/farm/pull/36))
+- Feat/hmr ([#27](https://github.com/farm-fe/farm/pull/27))
+- Feat/hmr ([#26](https://github.com/farm-fe/farm/pull/26))
+- implement rust hmr interface ([#25](https://github.com/farm-fe/farm/pull/25))
+- Feat/dynamic rust plugin ([#22](https://github.com/farm-fe/farm/pull/22))

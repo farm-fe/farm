@@ -1,5 +1,11 @@
 # @farmfe/plugin-tools
 
+## 0.0.5
+
+### Patch Changes
+
+- Fix rust plugin prepublish
+
 ## 0.0.4
 
 ### Patch Changes
