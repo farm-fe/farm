@@ -236,10 +236,10 @@ importers:
         specifier: workspace:^
         version: link:../../js-plugins/postcss
       '@farmfe/plugin-react':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -264,7 +264,7 @@ importers:
         version: 0.1.13
     devDependencies:
       '@farmfe/cli':
-        specifier: ^0.6.0
+        specifier: ^0.7.0
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -295,7 +295,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
         specifier: ^2.5.115
@@ -384,7 +384,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -455,10 +455,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -601,10 +601,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -653,10 +653,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -696,10 +696,10 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^0.6.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^0.5.0
+        specifier: workspace:^1.0.0-beta.0
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -977,7 +977,7 @@ importers:
   examples/vite-adapter-svelte:
     devDependencies:
       '@farmfe/cli':
-        specifier: ^0.6.0
+        specifier: ^0.7.0
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -1103,7 +1103,7 @@ importers:
         version: 3.4.15(typescript@4.9.5)
     devDependencies:
       '@farmfe/cli':
-        specifier: workspace:^0.6.1
+        specifier: workspace:^0.7.0
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -1538,10 +1538,10 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.9.3
+        specifier: workspace:^0.10.0
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.4.2
+        specifier: workspace:^3.5.0
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
         specifier: workspace:*
@@ -1752,7 +1752,7 @@ importers:
         version: 3.33.2
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.9.3
+        specifier: workspace:^0.10.0
         version: link:../runtime
 
   packages/runtime-plugin-import-meta:
@@ -1762,7 +1762,7 @@ importers:
         version: 3.30.1
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.9.3
+        specifier: workspace:^0.10.0
         version: link:../runtime
 
   packages/utils: {}
