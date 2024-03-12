@@ -94,6 +94,8 @@ jobs:
           node-version: 16
       - name: Install Dependencies
         run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
+      - name: Build Plugin Tools
+        run: pnpm --filter @farmfe/plugin-tools run build
       - run: rustup target add ${{ matrix.settings.target }}
         if: ${{ matrix.settings.target }}
       - uses: arduino/setup-protoc@v1
