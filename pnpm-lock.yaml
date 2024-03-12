@@ -1719,12 +1719,6 @@ importers:
         specifier: ^2.15.2
         version: 2.16.5
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../cli
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../core
       '@farmfe/utils':
         specifier: workspace:*
         version: link:../utils
