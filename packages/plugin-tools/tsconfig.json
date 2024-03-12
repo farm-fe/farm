@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "exclude": ["node_modules"],
-  "include": ["src/*", "farm.config.ts"],
+  "include": ["src/*"],
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
   "references": [
     {
       "path": "../utils/tsconfig.json"

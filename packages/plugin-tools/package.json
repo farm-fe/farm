@@ -11,8 +11,8 @@
     "farm-plugin-tools": "bin/farm-plugin-tools.mjs"
   },
   "scripts": {
-    "build": "farm build",
-    "dev": "farm watch",
+    "build": "tsc -b",
+    "dev": "tsc -b -w",
     "prepublishOnly": "npm run build"
   },
   "license": "MIT",
@@ -36,8 +36,6 @@
     "url": "https://github.com/farm-fe/farm"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/utils": "workspace:*",
     "cac": "^6.7.14"
   },
