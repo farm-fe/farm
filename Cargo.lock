@@ -1323,7 +1323,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_core"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "blake2",
  "bytecheck 0.7.0",
@@ -1617,7 +1617,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit_plugin_types"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "farmfe_core",
  "lazy_static",
