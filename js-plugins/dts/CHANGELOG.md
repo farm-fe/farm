@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.5.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
 ## 0.4.0
 
 ### Minor Changes

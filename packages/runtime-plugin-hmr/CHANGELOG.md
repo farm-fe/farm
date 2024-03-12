@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
 ## 3.4.2
 
 ### Patch Changes

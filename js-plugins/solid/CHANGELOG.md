@@ -1,5 +1,15 @@
 # @farmfe/js-plugin-solid
 
+## 2.4.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
+### Patch Changes
+
+- @farmfe/core@0.16.11
+
 ## 2.3.1
 
 ### Patch Changes

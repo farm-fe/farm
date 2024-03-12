@@ -1,5 +1,11 @@
 # @farmfe/plugin-sass
 
+## 1.0.0-beta.0
+
+### Major Changes
+
+- 8f8366de: Release 1.0.0-beta
+
 ## 0.5.0
 
 ### Minor Changes

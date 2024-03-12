@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.2.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
 ## 0.1.2
 
 ### Patch Changes

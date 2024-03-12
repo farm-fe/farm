@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 0.7.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
 ## 0.6.2
 
 ### Patch Changes
