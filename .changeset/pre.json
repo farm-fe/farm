@@ -63,6 +63,7 @@
     "@farmfe/utils": "0.1.0"
   },
   "changesets": [
-    "dirty-colts-tie"
+    "dirty-colts-tie",
+    "strong-suns-exercise"
   ]
 }
