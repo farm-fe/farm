@@ -11,8 +11,8 @@ export default defineConfig(async (env) => {
         index: './index.html'
       },
       presetEnv: false,
-      sourcemap: false,
-      minify: false,
+      // sourcemap: false,
+      // minify: false,
       resolve: {
         symlinks: true,
         alias: {
