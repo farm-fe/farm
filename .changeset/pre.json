@@ -53,7 +53,16 @@
     "@farmfe/runtime-plugin-hmr": "3.4.0",
     "@farmfe/runtime-plugin-import-meta": "0.1.1",
     "@farmfe/plugin-react": "0.6.0",
-    "@farmfe/plugin-sass": "0.5.0"
+    "@farmfe/plugin-sass": "0.5.0",
+    "@farmfe-examples/components-classes": "0.0.0",
+    "@farmfe-examples/node-server": "0.0.0",
+    "@farmfe-examples/runtime-plugin": "0.0.87",
+    "@farmfe-examples/vue-sfc": "1.0.0",
+    "create-farm-plugin": "0.1.0",
+    "@farmfe/plugin-tools": "0.0.4",
+    "@farmfe/utils": "0.1.0"
   },
-  "changesets": []
+  "changesets": [
+    "dirty-colts-tie"
+  ]
 }

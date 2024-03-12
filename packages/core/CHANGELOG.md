@@ -1,5 +1,21 @@
 # @farmfe/core
 
+## 1.0.0-beta.0
+
+### Major Changes
+
+- 8f8366de: Release 1.0.0-beta
+
+## 0.16.11
+
+### Patch Changes
+
+- Updated dependencies [8f8366de]
+  - @farmfe/runtime-plugin-import-meta@0.2.0
+  - @farmfe/runtime-plugin-hmr@3.5.0
+  - @farmfe/runtime@0.10.0
+  - @farmfe/utils@0.1.0
+
 ## 0.16.10
 
 ### Patch Changes

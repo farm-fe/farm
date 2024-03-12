@@ -1,5 +1,15 @@
 # @farmfe/js-plugin-vue
 
+## 3.5.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
+### Patch Changes
+
+- @farmfe/core@0.16.11
+
 ## 3.4.0
 
 ### Patch Changes

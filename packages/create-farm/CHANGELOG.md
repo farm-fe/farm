@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
 ## 1.5.11
 
 ### Patch Changes

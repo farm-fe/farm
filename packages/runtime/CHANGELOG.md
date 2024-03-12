@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.10.0
+
+### Minor Changes
+
+- 8f8366de: Release Farm 1.0-beta
+
 ## 0.9.3
 
 ### Patch Changes
