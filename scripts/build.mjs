@@ -89,11 +89,10 @@ export const buildCli = () =>
   });
 
 // build farm-plugin-tools
-export const buildPluginTools = ()=>{
+export const buildPluginTools = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
     cwd: PKG_PLUGIN_TOOLS
   });
-}
 
 // build dts command
 export const buildDts = () =>
