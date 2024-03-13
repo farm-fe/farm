@@ -40,7 +40,9 @@ pub fn parse_query(path: &str) -> Vec<(String, String)> {
     .collect()
 }
 
-/// stringify `Vec<(a, b)>` to `?a=b`
+/// stringify `Vec<(a, b)>` to `?a=b`.
+/// for example: `vec![("a", "b")]` to `?a=b`
+/// `vec![("a", "")]` to `?a`
 pub fn stringify_query(query: &Vec<(String, String)>) -> String {
   if query.is_empty() {
     return String::new();
@@ -73,7 +75,9 @@ pub fn file_url_to_path(url: &str) -> String {
   }
 }
 
-// get platform independent relative path
+/// get platform independent relative path
+/// for example: from = "/desktop/farm/projects", to = "/desktop/farm/documents/report.txt"
+/// the result will be "../documents/report.txt"
 pub fn relative(from: &str, to: &str) -> String {
   let from = file_url_to_path(from);
   let to = file_url_to_path(to);
