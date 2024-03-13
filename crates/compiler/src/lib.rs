@@ -62,10 +62,6 @@ impl Compiler {
       plugins.push(Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _);
     }
 
-    if config.minify.enabled() {
-      plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
-    }
-
     if config.preset_env.enabled() {
       plugins.push(Arc::new(farmfe_plugin_polyfill::FarmPluginPolyfill::new(&config)) as _);
     }

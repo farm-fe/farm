@@ -1,9 +1,10 @@
+import { defineConfig } from '@farmfe/core';
 import { builtinModules } from 'module';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
-export default {
+export default defineConfig({
   compilation: {
     input: {
       index: './index.ts'
@@ -20,8 +21,9 @@ export default {
       ...builtinModules.map((m) => `^${m}$`)
     ],
     minify: false,
+    persistentCache: false
   },
   server: {
     hmr: false
   }
-};
+});

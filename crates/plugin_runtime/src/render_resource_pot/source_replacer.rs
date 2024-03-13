@@ -7,8 +7,10 @@
 //! const { b } = require("xxx"); // xxx is b's id.
 //! ```
 
+use std::collections::HashMap;
+
 use farmfe_core::{
-  config::Mode,
+  config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
@@ -17,10 +19,6 @@ use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
-// transformed from dynamic import, e.g `import('./xxx')`
-pub const DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
-// transformed from static import, e.g `import xxx from './xxx'`
-pub const FARM_REQUIRE: &str = "farmRequire";
 
 /// replace all `require('./xxx')` to the actual id and transform require('./xxx'). for example:
 /// ```js
@@ -166,7 +164,7 @@ impl SourceReplacer<'_> {
 
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
-          sym: DYNAMIC_REQUIRE.into(),
+          sym: FARM_DYNAMIC_REQUIRE.into(),
           optional: false,
         })));
 
@@ -217,5 +215,31 @@ impl VisitMut for ExistingCommonJsRequireVisitor {
         }))),
       });
     }
+  }
+}
+
+pub struct ReplaceIdent {
+  map: HashMap<String, String>,
+  unresolved_mark: Mark,
+}
+
+impl ReplaceIdent {
+  pub fn new(map: HashMap<String, String>, unresolved_mark: Mark) -> Self {
+    Self {
+      map,
+      unresolved_mark,
+    }
+  }
+}
+
+impl VisitMut for ReplaceIdent {
+  fn visit_mut_ident(&mut self, ident: &mut Ident) {
+    if self.unresolved_mark == ident.span.ctxt.outer() {
+      if let Some(replace) = self.map.get(&ident.sym.to_string()) {
+        ident.sym = replace.to_string().into();
+      }
+    }
+
+    ident.visit_mut_children_with(self)
   }
 }

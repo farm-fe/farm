@@ -5,7 +5,9 @@ use std::{
 };
 
 use farmfe_core::{
-  config::comments::CommentsConfig,
+  config::{
+    comments::CommentsConfig, FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE,
+  },
   context::CompilationContext,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
@@ -14,10 +16,11 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   parking_lot::Mutex,
-  rayon::prelude::*,
+  rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
-  swc_common::{comments::SingleThreadedComments, Mark},
+  swc_common::{comments::SingleThreadedComments, Mark}, // swc_ecma_ast::Function
 };
+use farmfe_plugin_minify::minify_js_module;
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
   script::{
@@ -25,6 +28,7 @@ use farmfe_toolkit::{
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
   },
+  // swc_css_parser::parser::input::State,
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
     fixer,
@@ -40,9 +44,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use self::source_replacer::{
-  ExistingCommonJsRequireVisitor, SourceReplacer, DYNAMIC_REQUIRE, FARM_REQUIRE,
-};
+use self::source_replacer::{ExistingCommonJsRequireVisitor, ReplaceIdent, SourceReplacer};
 
 // mod farm_module_system;
 mod source_replacer;
@@ -137,6 +139,16 @@ pub fn resource_pot_to_runtime_object(
           ));
         }
 
+        let mut replace_ident = ReplaceIdent::new(
+          HashMap::from([
+            ("module".to_string(), FARM_MODULE.to_string()),
+            ("exports".to_string(), FARM_MODULE_EXPORT.to_string()),
+          ]),
+          unresolved_mark,
+        );
+
+        cloned_module.visit_mut_with(&mut replace_ident);
+
         // replace import source with module id
         let mut source_replacer = SourceReplacer::new(
           unresolved_mark,
@@ -150,6 +162,17 @@ pub fn resource_pot_to_runtime_object(
           top_level_mark,
           ..Default::default()
         }));
+
+        if context.config.minify.enabled() {
+          minify_js_module(
+            context,
+            &mut cloned_module,
+            cm.clone(),
+            &comments,
+            unresolved_mark,
+            top_level_mark,
+          );
+        }
 
         cloned_module.visit_mut_with(&mut fixer(Some(&comments)));
 
@@ -172,11 +195,11 @@ pub fn resource_pot_to_runtime_object(
         } else {
           None
         },
-        false,
+        context.config.minify.enabled(),
         Some(CodeGenCommentsConfig {
           comments: &comments,
           // preserve all comments when generate module code. the comments will be handled by [farmfe_plugin_minify]
-          config: &CommentsConfig::Bool(true),
+          config: &context.config.comments,
         }),
       )
       .map_err(|e| CompilationError::RenderScriptModuleError {
@@ -222,7 +245,7 @@ pub fn resource_pot_to_runtime_object(
 
       wrap_module_code(&mut module);
 
-      module.prepend(&format!("{:?}: ", m_id.id(context.config.mode.clone())));
+      module.prepend(&format!("{:?}:", m_id.id(context.config.mode.clone())));
       module.append(",");
 
       modules.lock().push(RenderedScriptModule {
@@ -246,6 +269,11 @@ pub fn resource_pot_to_runtime_object(
 
   let mut bundle = Bundle::new(BundleOptions {
     trace_source_map_chain: Some(true),
+    separator: if context.config.minify.enabled() {
+      Some('\0')
+    } else {
+      None
+    },
     ..Default::default()
   });
   let mut rendered_modules = HashMap::new();
@@ -289,9 +317,9 @@ pub fn resource_pot_to_runtime_object(
 /// ```
 fn wrap_module_code(module: &mut MagicString) {
   module.prepend(&format!(
-    "function(module, exports, {FARM_REQUIRE}, {DYNAMIC_REQUIRE}) {{\n"
+    "function({FARM_MODULE},{FARM_MODULE_EXPORT},{FARM_REQUIRE},{FARM_DYNAMIC_REQUIRE}){{"
   ));
-  module.append("\n}");
+  module.append("}");
 }
 
 pub struct RenderedScriptModule {

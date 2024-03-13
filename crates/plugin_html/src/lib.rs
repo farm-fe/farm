@@ -19,6 +19,7 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
 };
+use farmfe_plugin_minify::minify_html_module;
 use farmfe_toolkit::{
   fs::read_file_utf8,
   get_dynamic_resources_map::get_dynamic_resources_map,
@@ -206,10 +207,14 @@ impl Plugin for FarmPluginHtml {
 
       let module_graph = context.module_graph.read();
       let html_module = module_graph.module(modules[0]).unwrap();
-      let html_module_document = &html_module.meta.as_html().ast;
+      let mut html_module_document = html_module.meta.as_html().ast.clone();
+
+      if context.config.minify.enabled() {
+        minify_html_module(&mut html_module_document);
+      }
 
       let code = Arc::new(codegen_html_document(
-        html_module_document,
+        &html_module_document,
         context.config.minify.enabled(),
       ));
 

@@ -1,7 +1,9 @@
 use farmfe_core::{
+  config::FARM_MODULE,
   swc_ecma_ast::{Module as SwcModule, ModuleDecl, ModuleItem},
   swc_ecma_parser::Syntax,
 };
+
 use farmfe_toolkit_plugin_types::{
   libloading::Library,
   swc_ast::{parse_module, ParseScriptModuleResult},
@@ -10,17 +12,21 @@ use farmfe_toolkit_plugin_types::{
 const REFRESH_RUNTIME_IMPORT: &str = "import RefreshRuntime from 'react-refresh'";
 pub const IS_REACT_REFRESH_BOUNDARY: &str = "farmfe_plugin_react_is_react_refresh_boundary";
 
-const PRE_CODE: &str = r#"
-var prevRefreshReg;
-var prevRefreshSig;
+farmfe_toolkit::lazy_static::lazy_static!(
+  pub static ref PRE_CODE: String = {
+    format!(r#"
+    var prevRefreshReg;
+    var prevRefreshSig;
 
-prevRefreshReg = window.$RefreshReg$;
-prevRefreshSig = window.$RefreshSig$;
-window.$RefreshReg$ = (type, id) => {
-  RefreshRuntime.register(type, module.id + id);
-};
-window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
-"#;
+    prevRefreshReg = window.$RefreshReg$;
+    prevRefreshSig = window.$RefreshSig$;
+    window.$RefreshReg$ = (type, id) => {{
+      RefreshRuntime.register(type, {FARM_MODULE}.id + id);
+    }};
+    window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+    "#)
+  };
+);
 
 const POST_CODE: &str = r#"
 window.$RefreshReg$ = prevRefreshReg;
@@ -78,7 +84,7 @@ fn inject_pre_code(lib: &Library, ast: &mut SwcModule) {
   let ParseScriptModuleResult { ast: module, .. } = parse_module(
     lib,
     "preCode",
-    PRE_CODE,
+    &PRE_CODE,
     Syntax::Es(Default::default()),
     Default::default(),
   )

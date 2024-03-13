@@ -11,6 +11,12 @@ use self::{
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+// transformed from dynamic import, e.g `import('./xxx')`
+pub const FARM_DYNAMIC_REQUIRE: &str = "dr";
+// transformed from static import, e.g `import xxx from './xxx'`
+pub const FARM_REQUIRE: &str = "r";
+pub const FARM_MODULE: &str = "m";
+pub const FARM_MODULE_EXPORT: &str = "e";
 
 pub mod bool_or_obj;
 pub mod comments;
