@@ -141,8 +141,8 @@ pub fn resource_pot_to_runtime_object(
 
         let mut replace_ident = ReplaceIdent::new(
           HashMap::from([
-            ("module".to_string(), FARM_MODULE.to_string()),
-            ("exports".to_string(), FARM_MODULE_EXPORT.to_string()),
+            ("module", FARM_MODULE.to_string()),
+            ("exports", FARM_MODULE_EXPORT.to_string()),
           ]),
           unresolved_mark,
         );

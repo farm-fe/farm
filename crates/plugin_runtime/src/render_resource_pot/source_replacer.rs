@@ -219,12 +219,12 @@ impl VisitMut for ExistingCommonJsRequireVisitor {
 }
 
 pub struct ReplaceIdent {
-  map: HashMap<String, String>,
+  map: HashMap<&'static str, String>,
   unresolved_mark: Mark,
 }
 
 impl ReplaceIdent {
-  pub fn new(map: HashMap<String, String>, unresolved_mark: Mark) -> Self {
+  pub fn new(map: HashMap<&'static str, String>, unresolved_mark: Mark) -> Self {
     Self {
       map,
       unresolved_mark,
@@ -234,8 +234,8 @@ impl ReplaceIdent {
 
 impl VisitMut for ReplaceIdent {
   fn visit_mut_ident(&mut self, ident: &mut Ident) {
-    if self.unresolved_mark == ident.span.ctxt.outer() {
-      if let Some(replace) = self.map.get(&ident.sym.to_string()) {
+    if let Some(replace) = self.map.get(&ident.sym.as_str()) {
+      if self.unresolved_mark == ident.span.ctxt.outer() {
         ident.sym = replace.to_string().into();
       }
     }
