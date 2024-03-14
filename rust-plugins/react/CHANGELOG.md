@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0
+
+### Major Changes
+
+- 8f8366de: Release 1.0.0-beta
+
+### Patch Changes
+
+- 56dbe2c0: Fix prepublishOnly script
+
 ## 1.0.0-beta.1
 
 ### Patch Changes
@@ -15,24 +25,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.1](https://github.com/farm-fe/farm/releases/tag/farmfe_plugin_react-v0.0.1) - 2024-03-13
 
 ### Added
+
 - preserve comments [#607](https://github.com/farm-fe/farm/pull/607) ([#900](https://github.com/farm-fe/farm/pull/900))
-- *(hmr)* refactor hmr ([#835](https://github.com/farm-fe/farm/pull/835))
+- _(hmr)_ refactor hmr ([#835](https://github.com/farm-fe/farm/pull/835))
 - support linux-x64-musl ([#838](https://github.com/farm-fe/farm/pull/838))
 - support swc plugins ([#199](https://github.com/farm-fe/farm/pull/199))
 - tree shake ([#99](https://github.com/farm-fe/farm/pull/99))
 
 ### Fixed
+
 - [#857](https://github.com/farm-fe/farm/pull/857) [#460](https://github.com/farm-fe/farm/pull/460) ([#896](https://github.com/farm-fe/farm/pull/896))
 - win32-ia32 ci build ([#826](https://github.com/farm-fe/farm/pull/826))
 - [#769](https://github.com/farm-fe/farm/pull/769) ([#773](https://github.com/farm-fe/farm/pull/773))
 - linux arm64 native plugin resolving ([#750](https://github.com/farm-fe/farm/pull/750))
-- *(WIP)* fix some bugs and optimize code ([#643](https://github.com/farm-fe/farm/pull/643))
+- _(WIP)_ fix some bugs and optimize code ([#643](https://github.com/farm-fe/farm/pull/643))
 - css modules sourcemap gen fail ([#621](https://github.com/farm-fe/farm/pull/621))
 - dev code presents in prod ([#309](https://github.com/farm-fe/farm/pull/309))
 - pnpm-v8 depsversion error ([#223](https://github.com/farm-fe/farm/pull/223))
 - release.yaml error
 
 ### Other
+
 - Version Packages (beta) ([#1016](https://github.com/farm-fe/farm/pull/1016))
 - release ([#1009](https://github.com/farm-fe/farm/pull/1009))
 - update rust plugin scripts
@@ -60,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version Packages ([#612](https://github.com/farm-fe/farm/pull/612))
 - Version Packages ([#501](https://github.com/farm-fe/farm/pull/501))
 - Version Packages ([#487](https://github.com/farm-fe/farm/pull/487))
-- *(*)* apply some lint suggestions ([#474](https://github.com/farm-fe/farm/pull/474))
+- _(_)\* apply some lint suggestions ([#474](https://github.com/farm-fe/farm/pull/474))
 - Version Packages ([#452](https://github.com/farm-fe/farm/pull/452))
 - Support SSR ([#421](https://github.com/farm-fe/farm/pull/421))
 - Version Packages ([#414](https://github.com/farm-fe/farm/pull/414))

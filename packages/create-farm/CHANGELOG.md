@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.1
+
+### Patch Changes
+
+- 504f41ce: bump template version
+
 ## 1.6.0
 
 ### Minor Changes

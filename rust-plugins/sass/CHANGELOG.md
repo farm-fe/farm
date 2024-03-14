@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0
+
+### Major Changes
+
+- 8f8366de: Release 1.0.0-beta
+
+### Patch Changes
+
+- 56dbe2c0: Fix prepublishOnly script
+
 ## 1.0.0-beta.1
 
 ### Patch Changes
@@ -15,11 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.1](https://github.com/farm-fe/farm/releases/tag/farmfe_plugin_sass-v0.0.1) - 2024-03-13
 
 ### Added
+
 - support linux-x64-musl ([#838](https://github.com/farm-fe/farm/pull/838))
 - support add extra watch file ([#470](https://github.com/farm-fe/farm/pull/470))
 - support embed sass ([#161](https://github.com/farm-fe/farm/pull/161))
 
 ### Fixed
+
 - vite migrate bugs ([#912](https://github.com/farm-fe/farm/pull/912))
 - [#909](https://github.com/farm-fe/farm/pull/909) ([#914](https://github.com/farm-fe/farm/pull/914))
 - win32-ia32 ci build ([#826](https://github.com/farm-fe/farm/pull/826))
@@ -36,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pnpm-v8 depsversion error ([#223](https://github.com/farm-fe/farm/pull/223))
 
 ### Other
+
 - Version Packages (beta) ([#1016](https://github.com/farm-fe/farm/pull/1016))
 - release ([#1009](https://github.com/farm-fe/farm/pull/1009))
 - update rust plugin scripts
