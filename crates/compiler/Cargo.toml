@@ -10,7 +10,7 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_compiler"
 
 [dependencies]
-farmfe_core = { path = "../core" }
+farmfe_core = { path = "../core", version="0.4.1" }
 farmfe_plugin_partial_bundling = { path = "../plugin_partial_bundling", version = "0.0.1" }
 farmfe_plugin_resolve = { path = "../plugin_resolve", version = "0.0.1" }
 farmfe_plugin_script = { path = "../plugin_script", version = "0.0.1" }
