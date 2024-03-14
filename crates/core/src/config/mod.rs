@@ -294,9 +294,7 @@ pub struct AssetsConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
 pub enum SourcemapConfig {
-  Bool(bool),
   /// Generate inline sourcemap instead of a separate file for mutable resources.
   #[serde(rename = "inline")]
   Inline,
@@ -306,6 +304,8 @@ pub enum SourcemapConfig {
   All,
   #[serde(rename = "all-inline")]
   AllInline,
+  #[serde(untagged)]
+  Bool(bool),
 }
 
 impl Default for SourcemapConfig {
@@ -339,5 +339,32 @@ impl SourcemapConfig {
       Self::All => true,
       Self::AllInline => true,
     }
+  }
+}
+
+mod tests {
+
+  #[test]
+  fn test_deserialize() {
+    use super::SourcemapConfig;
+    let config: SourcemapConfig = serde_json::from_str("true").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::Bool(true)));
+
+    let config: SourcemapConfig = serde_json::from_str("false").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::Bool(false)));
+
+    let config: SourcemapConfig = serde_json::from_str("\"all-inline\"").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::AllInline));
+
+    let config: SourcemapConfig = serde_json::from_str("\"inline\"").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::Inline));
+
+    let config: SourcemapConfig = serde_json::from_str("\"all\"").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::All));
   }
 }

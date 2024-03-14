@@ -139,7 +139,7 @@ const compilationConfigSchema = z
       .strict()
       .optional(),
     sourcemap: z
-      .union([z.boolean(), z.literal('all'), z.literal('inline')])
+      .union([z.boolean(), z.literal('all'), z.literal('inline'), z.literal('all-inline')])
       .optional(),
     partialBundling: z
       .object({
