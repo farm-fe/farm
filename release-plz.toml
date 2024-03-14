@@ -6,6 +6,14 @@ git_release_enable = false
 name = "farmfe_node"
 release = false
 
+[[package]]
+name = "farmfe_plugin_sass"
+release = false
+
+[[package]]
+name = "farmfe_plugin_react"
+release = false
+
 # [[package]]
 # name = "farmfe_utils"
 # release = true
