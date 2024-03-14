@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 1.0.0
+
+### Major Changes
+
+- Release 1.0 stable
+
 ## 0.7.0
 
 ### Minor Changes

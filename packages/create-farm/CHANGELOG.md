@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.2
+
+### Patch Changes
+
+- update farm core to 1.0 for all templates
+
 ## 1.6.1
 
 ### Patch Changes
