@@ -20,15 +20,17 @@ jobs:
           fetch-depth: 0
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-      - uses: Wandalen/wretry.action@master
-        with:
-          action: MarcoIeni/release-plz-action@v0.5
-          with: |
-            env: |
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          attempt_limit: 5
-          attempt_interval: 60000
+      - name: Run release-plz
+        uses: MarcoIeni/release-plz-action@v0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Run release-plz # retry 3 times
+        uses: MarcoIeni/release-plz-action@v0.5
+        if: ${{ failure() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         if: ${{ failure() }}
