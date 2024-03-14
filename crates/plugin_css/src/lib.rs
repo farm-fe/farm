@@ -482,13 +482,15 @@ impl Plugin for FarmPluginCss {
       let module_graph = context.module_graph.read();
 
       let mut modules = vec![];
+      let mut module_execution_order = HashMap::new();
 
       for module_id in resource_pot.modules() {
         let module = module_graph.module(module_id).unwrap();
+        module_execution_order.insert(&module.id, module.execution_order);
         modules.push(module);
       }
 
-      modules.sort_by_key(|module| module.execution_order);
+      // modules.sort_by_key(|module| module.execution_order);
       let resources_map = context.resources_map.lock();
 
       let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
@@ -536,7 +538,9 @@ impl Plugin for FarmPluginCss {
         Ok::<(), CompilationError>(())
       })?;
 
-      let rendered_modules = rendered_modules.into_inner();
+      let mut rendered_modules = rendered_modules.into_inner();
+
+      rendered_modules.sort_by_key(|module| module_execution_order[&module.id]);
 
       let mut bundle = Bundle::new(BundleOptions {
         trace_source_map_chain: Some(true),
