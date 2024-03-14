@@ -22,7 +22,6 @@ use farmfe_toolkit::{
       ExtraOptions, MangleOptions, MinifyOptions,
     },
   },
-  swc_ecma_transforms::fixer,
   swc_ecma_transforms_base::{fixer::paren_remover, resolver},
   swc_ecma_visit::VisitMutWith,
   swc_html_minifier::minify_document,

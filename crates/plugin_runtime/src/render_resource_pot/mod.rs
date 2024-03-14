@@ -198,7 +198,7 @@ pub fn resource_pot_to_runtime_object(
         context.config.minify.enabled(),
         Some(CodeGenCommentsConfig {
           comments: &comments,
-          // preserve all comments when generate module code. the comments will be handled by [farmfe_plugin_minify]
+          // preserve all comments when generate module code.
           config: &context.config.comments,
         }),
       )

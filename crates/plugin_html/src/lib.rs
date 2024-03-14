@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::sync::Arc;
+use std::{collections::HashMap, path::PathBuf};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -20,11 +20,12 @@ use farmfe_core::{
   },
 };
 use farmfe_plugin_minify::minify_html_module;
+use farmfe_toolkit::common::{create_swc_source_map, Source};
 use farmfe_toolkit::{
   fs::read_file_utf8,
   get_dynamic_resources_map::get_dynamic_resources_map,
   html::{codegen_html_document, parse_html_document},
-  script::module_type_from_id,
+  script::{module_type_from_id, swc_try_with::try_with},
 };
 use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
 
@@ -210,7 +211,14 @@ impl Plugin for FarmPluginHtml {
       let mut html_module_document = html_module.meta.as_html().ast.clone();
 
       if context.config.minify.enabled() {
-        minify_html_module(&mut html_module_document);
+        let (cm, _) = create_swc_source_map(Source {
+          path: PathBuf::from(&resource_pot.name),
+          content: resource_pot.meta.rendered_content.clone(),
+        });
+
+        try_with(cm, &context.meta.html.globals, || {
+          minify_html_module(&mut html_module_document);
+        })?;
       }
 
       let code = Arc::new(codegen_html_document(
