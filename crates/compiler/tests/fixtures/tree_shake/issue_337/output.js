@@ -1,65 +1,18 @@
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
-            var cache = {};
-
-            function dynamicRequire(id) {
-              return Promise.resolve(require(id));
-            }
-          
-            function require(id) {
-              if (cache[id]) return cache[id].exports;
-          
-              var module = {
-                id: id,
-                exports: {}
-              };
-          
-              modules[id](module, module.exports, require, dynamicRequire);
-              cache[id] = module;
-              return module.exports;
-            }
-          
-            require(entryModule);
-          })({"d2214aaa": function(module, exports, farmRequire, farmDynamicRequire) {
-console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-
-},}, "d2214aaa");(function (modules) {
-            for (var key in modules) {
-              modules[key].__farm_resource_pot__ = 'index_a93b.js';
-                (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
-            }
-        })({"066a321b": function(module, exports, farmRequire, farmDynamicRequire) {
-// Matches the scheme of a URL, eg "http://"
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+ (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"d2214aaa":function(m,e,r,dr){console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+},},"d2214aaa");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_a93b.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"066a321b":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-Object.defineProperty(exports, "default", {
+Object.defineProperty(e, "default", {
     enumerable: true,
     get: function() {
         return resolve;
     }
 });
 const schemeRegex = /^[\w+.-]+:\/\//;
-/**
- * Matches the parts of a URL:
- * 1. Scheme, including ":", guaranteed.
- * 2. User/password, including "@", optional.
- * 3. Host, guaranteed.
- * 4. Port, including ":", optional.
- * 5. Path, including "/", optional.
- * 6. Query, including "?", optional.
- * 7. Hash, including "#", optional.
- */ const urlRegex = /^([\w+.-]+:)\/\/([^@/#?]*@)?([^:/#?]*)(:\d+)?(\/[^#?]*)?(\?[^#]*)?(#.*)?/;
-/**
- * File URLs are weird. They dont' need the regular `//` in the scheme, they may or may not start
- * with a leading `/`, they can have a domain (but only if they don't start with a Windows drive).
- *
- * 1. Host, optional.
- * 2. Path, which may include "/", guaranteed.
- * 3. Query, including "?", optional.
- * 4. Hash, including "#", optional.
- */ const fileRegex = /^file:(?:\/\/((?![a-z]:)[^/#?]*)?)?(\/?[^#?]*)(\?[^#]*)?(#.*)?/i;
+const urlRegex = /^([\w+.-]+:)\/\/([^@/#?]*@)?([^:/#?]*)(:\d+)?(\/[^#?]*)?(\?[^#]*)?(#.*)?/;
+const fileRegex = /^file:(?:\/\/((?![a-z]:)[^/#?]*)?)?(\/?[^#?]*)(\?[^#]*)?(#.*)?/i;
 var UrlType;
 (function(UrlType) {
     UrlType[UrlType["Empty"] = 1] = "Empty";
@@ -129,66 +82,42 @@ function parseUrl(input) {
     return url;
 }
 function stripPathFilename(path) {
-    // If a path ends with a parent directory "..", then it's a relative path with excess parent
-    // paths. It's not a file, so we can't strip it.
     if (path.endsWith("/..")) return path;
     const index = path.lastIndexOf("/");
     return path.slice(0, index + 1);
 }
 function mergePaths(url, base) {
     normalizePath(base, base.type);
-    // If the path is just a "/", then it was an empty path to begin with (remember, we're a relative
-    // path).
     if (url.path === "/") {
         url.path = base.path;
     } else {
-        // Resolution happens relative to the base path's directory, not the file.
         url.path = stripPathFilename(base.path) + url.path;
     }
 }
-/**
- * The path can have empty directories "//", unneeded parents "foo/..", or current directory
- * "foo/.". We need to normalize to a standard representation.
- */ function normalizePath(url, type) {
+function normalizePath(url, type) {
     const rel = type <= UrlType.RelativePath;
     const pieces = url.path.split("/");
-    // We need to preserve the first piece always, so that we output a leading slash. The item at
-    // pieces[0] is an empty string.
     let pointer = 1;
-    // Positive is the number of real directories we've output, used for popping a parent directory.
-    // Eg, "foo/bar/.." will have a positive 2, and we can decrement to be left with just "foo".
     let positive = 0;
-    // We need to keep a trailing slash if we encounter an empty directory (eg, splitting "foo/" will
-    // generate `["foo", ""]` pieces). And, if we pop a parent directory. But once we encounter a
-    // real directory, we won't need to append, unless the other conditions happen again.
     let addTrailingSlash = false;
     for(let i = 1; i < pieces.length; i++){
         const piece = pieces[i];
-        // An empty directory, could be a trailing slash, or just a double "//" in the path.
         if (!piece) {
             addTrailingSlash = true;
             continue;
         }
-        // If we encounter a real directory, then we don't need to append anymore.
         addTrailingSlash = false;
-        // A current directory, which we can always drop.
         if (piece === ".") continue;
-        // A parent directory, we need to see if there are any real directories we can pop. Else, we
-        // have an excess of parents, and we'll need to keep the "..".
         if (piece === "..") {
             if (positive) {
                 addTrailingSlash = true;
                 positive--;
                 pointer--;
             } else if (rel) {
-                // If we're in a relativePath, then we need to keep the excess parents. Else, in an absolute
-                // URL, protocol relative URL, or an absolute path, we don't need to keep excess.
                 pieces[pointer++] = piece;
             }
             continue;
         }
-        // We've encountered a real directory. Move it to the next insertion pointer, which accounts for
-        // any popped or dropped directories.
         pieces[pointer++] = piece;
         positive++;
     }
@@ -201,9 +130,7 @@ function mergePaths(url, base) {
     }
     url.path = path;
 }
-/**
- * Attempts to resolve `input` URL/path relative to `base`.
- */ function resolve(input, base) {
+function resolve(input, base) {
     if (!input && !base) return "";
     const url = parseUrl(input);
     let inputType = url.type;
@@ -213,22 +140,16 @@ function mergePaths(url, base) {
         switch(inputType){
             case UrlType.Empty:
                 url.hash = baseUrl.hash;
-            // fall through
             case UrlType.Hash:
                 url.query = baseUrl.query;
-            // fall through
             case UrlType.Query:
             case UrlType.RelativePath:
                 mergePaths(url, baseUrl);
-            // fall through
             case UrlType.AbsolutePath:
-                // The host, user, and port are joined, you can't copy one without the others.
                 url.user = baseUrl.user;
                 url.host = baseUrl.host;
                 url.port = baseUrl.port;
-            // fall through
             case UrlType.SchemeRelative:
-                // The input doesn't have a schema at least, so we need to copy at least that over.
                 url.scheme = baseUrl.scheme;
         }
         if (baseType > inputType) inputType = baseType;
@@ -236,20 +157,14 @@ function mergePaths(url, base) {
     normalizePath(url, inputType);
     const queryHash = url.query + url.hash;
     switch(inputType){
-        // This is impossible, because of the empty checks at the start of the function.
-        // case UrlType.Empty:
         case UrlType.Hash:
         case UrlType.Query:
             return queryHash;
         case UrlType.RelativePath:
             {
-                // The first char is always a "/", and we need it to be relative.
                 const path = url.path.slice(1);
                 if (!path) return queryHash || ".";
                 if (isRelative(base || input) && !isRelative(path)) {
-                    // If base started with a leading ".", or there is no base and input started with a ".",
-                    // then we need to ensure that the relative path starts with a ".". We don't know if
-                    // relative starts with a "..", though, so check before prepending.
                     return "./" + path + queryHash;
                 }
                 return path + queryHash;
@@ -260,34 +175,24 @@ function mergePaths(url, base) {
             return url.scheme + "//" + url.user + url.host + url.port + url.path + queryHash;
     }
 }
- //# sourceMappingURL=resolve-uri.mjs.map
-
 },
-"7cd09bc5": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+"7cd09bc5":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-Object.defineProperty(exports, "default", {
+Object.defineProperty(e, "default", {
     enumerable: true,
     get: function() {
         return _default;
     }
 });
-var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-var _root = /*#__PURE__*/ _interop_require_default._(farmRequire("b5147996"));
-/** Detect free variable `exports`. */ var freeExports = typeof exports == "object" && exports && !exports.nodeType && exports;
-/** Detect free variable `module`. */ var freeModule = freeExports && typeof module == "object" && module && !module.nodeType && module;
-/** Detect the popular CommonJS extension `module.exports`. */ var moduleExports = freeModule && freeModule.exports === freeExports;
-/** Built-in value references. */ var Buffer = moduleExports ? _root.default.Buffer : undefined, allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined;
-/**
- * Creates a clone of  `buffer`.
- *
- * @private
- * @param {Buffer} buffer The buffer to clone.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @returns {Buffer} Returns the cloned buffer.
- */ function cloneBuffer(buffer, isDeep) {
+var _interop_require_default = r("@swc/helpers/_/_interop_require_default");
+var _root = _interop_require_default._(r("b5147996"));
+var freeExports = typeof e == "object" && e && !e.nodeType && e;
+var freeModule = freeExports && typeof m == "object" && m && !m.nodeType && m;
+var moduleExports = freeModule && freeModule.exports === freeExports;
+var Buffer = moduleExports ? _root.default.Buffer : undefined, allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined;
+function cloneBuffer(buffer, isDeep) {
     if (isDeep) {
         return buffer.slice();
     }
@@ -296,31 +201,26 @@ var _root = /*#__PURE__*/ _interop_require_default._(farmRequire("b5147996"));
     return result;
 }
 var _default = cloneBuffer;
-
 },
-"b5147996": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+"b5147996":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-Object.defineProperty(exports, "default", {
+Object.defineProperty(e, "default", {
     enumerable: true,
     get: function() {
         return _default;
     }
 });
 var _default = "/home";
-
 },
-"b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+"b5d64806":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-var _cloneBuffer = /*#__PURE__*/ _interop_require_default._(farmRequire("7cd09bc5"));
-var _resolveuri = /*#__PURE__*/ _interop_require_default._(farmRequire("066a321b"));
+var _interop_require_default = r("@swc/helpers/_/_interop_require_default");
+var _cloneBuffer = _interop_require_default._(r("7cd09bc5"));
+var _resolveuri = _interop_require_default._(r("066a321b"));
 console.log((0, _cloneBuffer.default)(Buffer.from("test")));
 console.log((0, _resolveuri.default)("test"));
-
 },});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

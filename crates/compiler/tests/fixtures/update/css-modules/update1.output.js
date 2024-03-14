@@ -1,22 +1,19 @@
-({"index.module.css": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+({"index.module.css":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-Object.defineProperty(exports, "default", {
+Object.defineProperty(e, "default", {
     enumerable: true,
     get: function() {
         return _default;
     }
 });
-farmRequire("index.module.css?farm_css_modules");
+r("index.module.css?farm_css_modules");
 var _default = {
     "className": `className-ec324e46`
 };
-
 },
-"index.module.css?farm_css_modules": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
+"index.module.css?farm_css_modules":function(m,e,r,dr){"use strict";
 const cssCode = `.className-ec324e46 {
   color: red;
 }
@@ -31,23 +28,20 @@ if (previousStyle) {
 } else {
     document.head.appendChild(style);
 }
-if (module.meta.hot) {
-    module.meta.hot.accept();
-    module.meta.hot.prune(()=>{
+if (m.meta.hot) {
+    m.meta.hot.accept();
+    m.meta.hot.prune(()=>{
         style.remove();
     });
 }
-
 },
-"index.ts": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+"index.ts":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-farmRequire("index.css");
-var _indexmodulecss = /*#__PURE__*/ _interop_require_default._(farmRequire("index.module.css"));
+var _interop_require_default = r("@swc/helpers/_/_interop_require_default");
+r("index.css");
+var _indexmodulecss = _interop_require_default._(r("index.module.css"));
 console.log(_indexmodulecss.default);
-
 },})
 {}

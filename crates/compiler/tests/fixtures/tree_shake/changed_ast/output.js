@@ -1,46 +1,17 @@
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function (modules, entryModule) {
-            var cache = {};
-
-            function dynamicRequire(id) {
-              return Promise.resolve(require(id));
-            }
-          
-            function require(id) {
-              if (cache[id]) return cache[id].exports;
-          
-              var module = {
-                id: id,
-                exports: {}
-              };
-          
-              modules[id](module, module.exports, require, dynamicRequire);
-              cache[id] = module;
-              return module.exports;
-            }
-          
-            require(entryModule);
-          })({"../../_internal/runtime/index.js.farm-runtime": function(module, exports, farmRequire, farmDynamicRequire) {
-console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-
-},}, "../../_internal/runtime/index.js.farm-runtime");(function (modules) {
-            for (var key in modules) {
-              modules[key].__farm_resource_pot__ = 'index_4924.js';
-                (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(key, modules[key]);
-            }
-        })({"comp.tsx": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+ (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"../../_internal/runtime/index.js.farm-runtime":function(m,e,r,dr){console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+},},"../../_internal/runtime/index.js.farm-runtime");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4924.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"comp.tsx":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-Object.defineProperty(exports, "Description", {
+Object.defineProperty(e, "Description", {
     enumerable: true,
     get: function() {
         return Description;
     }
 });
-var _interop_require_wildcard = farmRequire("@swc/helpers/_/_interop_require_wildcard");
-var _dep = /*#__PURE__*/ _interop_require_wildcard._(farmRequire("dep.ts"));
+var _interop_require_wildcard = r("@swc/helpers/_/_interop_require_wildcard");
+var _dep = _interop_require_wildcard._(r("dep.ts"));
 const LazyComp = _dep.default.lazy(()=>Promise.resolve({
         default: ()=>_dep.default.createElement("div", {
                 __source: {
@@ -81,11 +52,9 @@ _c1 = Description;
 var _c, _c1;
 $RefreshReg$(_c, "LazyComp");
 $RefreshReg$(_c1, "Description");
-
 },
-"dep.ts": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+"dep.ts":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
 function _export(target, all) {
@@ -94,7 +63,7 @@ function _export(target, all) {
         get: all[name]
     });
 }
-_export(exports, {
+_export(e, {
     Suspense: function() {
         return Suspense;
     },
@@ -113,14 +82,11 @@ var _default = {
         console.log("lazy", promise);
     }
 };
-
 },
-"entry.ts": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+"entry.ts":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-var _comp = farmRequire("comp.tsx");
+var _comp = r("comp.tsx");
 console.log((0, _comp.Description)());
-
 },});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("entry.ts");

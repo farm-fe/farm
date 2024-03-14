@@ -1,20 +1,17 @@
-({"index.module.css": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+({"index.module.css":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-Object.defineProperty(exports, "default", {
+Object.defineProperty(e, "default", {
     enumerable: true,
     get: function() {
         return _default;
     }
 });
-farmRequire("index.module.css?farm_css_modules");
+r("index.module.css?farm_css_modules");
 var _default = {};
-
 },
-"index.module.css?farm_css_modules": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
+"index.module.css?farm_css_modules":function(m,e,r,dr){"use strict";
 const cssCode = `body {
   color: red;
 }
@@ -29,26 +26,23 @@ if (previousStyle) {
 } else {
     document.head.appendChild(style);
 }
-if (module.meta.hot) {
-    module.meta.hot.accept();
-    module.meta.hot.prune(()=>{
+if (m.meta.hot) {
+    m.meta.hot.accept();
+    m.meta.hot.prune(()=>{
         style.remove();
     });
 }
-
 },
-"index.module.css?raw": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+"index.module.css?raw":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-Object.defineProperty(exports, "default", {
+Object.defineProperty(e, "default", {
     enumerable: true,
     get: function() {
         return _default;
     }
 });
 var _default = "body {\n  color: red;\n}";
-
 },})
 {}

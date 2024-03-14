@@ -1,10 +1,8 @@
-({"index.ts": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
-Object.defineProperty(exports, "__esModule", {
+({"index.ts":function(m,e,r,dr){"use strict";
+Object.defineProperty(e, "__esModule", {
     value: true
 });
-farmRequire("index.css");
+r("index.css");
 console.log("Hello, world!");
-
 },})
 {}

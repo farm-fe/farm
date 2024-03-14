@@ -1,5 +1,4 @@
-({"index.css": function(module, exports, farmRequire, farmDynamicRequire) {
-"use strict";
+({"index.css":function(m,e,r,dr){"use strict";
 const cssCode = `body {
   color: red;
 }
@@ -14,12 +13,11 @@ if (previousStyle) {
 } else {
     document.head.appendChild(style);
 }
-if (module.meta.hot) {
-    module.meta.hot.accept();
-    module.meta.hot.prune(()=>{
+if (m.meta.hot) {
+    m.meta.hot.accept();
+    m.meta.hot.prune(()=>{
         style.remove();
     });
 }
-
 },})
 {}
