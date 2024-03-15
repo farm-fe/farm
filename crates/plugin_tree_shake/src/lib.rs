@@ -5,10 +5,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use farmfe_core::{
   config::Config,
-  module::{
-    module_graph::{self, ModuleGraph},
-    ModuleId, ModuleSystem, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, ModuleId},
   plugin::Plugin,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
@@ -552,6 +549,10 @@ impl Plugin for FarmPluginTreeShake {
     for module_id in modules_to_remove {
       module_graph.remove_module(&module_id);
     }
+    // 对已有模块进行code的tree-shake
+    module_graph.modules().iter().for_each(|module| {
+      let mut ast = module.meta.as_script().ast.clone();
+    });
 
     Ok(Some(()))
   }
