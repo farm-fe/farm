@@ -4,7 +4,7 @@ import HelloWorld from './components/HelloWorld.vue';
 
 <template>
   <div>
-    <a href="https://farm-fe.github.io/" target="_blank">
+    <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" />
     </a>
     <a href="https://vuejs.org/" target="_blank">

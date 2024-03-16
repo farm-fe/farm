@@ -9,7 +9,7 @@ export function App() {
   return (
     <>
       <div>
-        <a href="https://farm-fe.github.io/" target="_blank">
+        <a href="https://farmfe.org/" target="_blank">
           <img src={FarmLogo} class="logo" alt="Farm logo" />
         </a>
         <a href="https://preactjs.com" target="_blank">

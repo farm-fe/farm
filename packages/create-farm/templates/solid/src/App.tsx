@@ -9,7 +9,7 @@ function App() {
   return (
     <>
       <div>
-        <a href="https://farm-fe.github.io/" target="_blank">
+        <a href="https://farmfe.org/" target="_blank">
           <img src={farmLogo} class="logo" alt="Farm logo" />
         </a>
         <a href="https://solidjs.com" target="_blank">

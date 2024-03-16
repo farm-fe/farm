@@ -38,7 +38,7 @@ Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件�
 
 ## 为什么选择 Farm？
 
-> 详情请参阅[Why Farm](https://farm-fe.github.io/docs/why-farm)。
+> 详情请参阅[Why Farm](https://farmfe.org/docs/why-farm)。
 
 总之，像 webpack 这样的工具太慢了，但像 Vite 这样的新工具也不完美，Vite 在大型项目上有很多缺点：
 
@@ -50,9 +50,9 @@ Farm 可以完美解决这些问题，而且速度非常快。 Farm 的目标是
 
 ## 特性
 
-> - 从 0.13 版本起，Vite 插件可以直接在 Farm 中使用。参考 [使用插件](https://farm-fe.github.io/zh/docs/using-plugins)
-> - 从 0.14 版本起，Farm 支持持久缓存。参考 [增量构建](https://farm-fe.github.io/zh/docs/advanced/persistent-cache)
-> - Farm 当前已经发布 1.0 稳定版本，可在生产环境使用，查看 [官网](https://farm-fe.github.io/zh) 开始使用 Farm
+> - 从 0.13 版本起，Vite 插件可以直接在 Farm 中使用。参考 [使用插件](https://farmfe.org/zh/docs/using-plugins)
+> - 从 0.14 版本起，Farm 支持持久缓存。参考 [增量构建](https://farmfe.org/zh/docs/advanced/persistent-cache)
+> - Farm 当前已经发布 1.0 稳定版本，可在生产环境使用，查看 [官网](https://farmfe.org/zh) 开始使用 Farm
 
 - ⚡ **超级快**: 使用 Rust 编写, 可以在毫秒级别内启动一个 React 或 Vue 项目。 在大多数情况下, 可以在 10ms 内执行 HMR 的更新。
 - ⚡ **增量构建**: 支持持久缓存，以模块粒度进行缓存复用，任何一个模块如果没有改变，始终只会编译一次！

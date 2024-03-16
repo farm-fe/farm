@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
 description = "Define plugin of farm."
-homepage = "https://farm-fe.github.io"
+homepage = "https://farmfe.org"
 repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_plugin_define"
 
