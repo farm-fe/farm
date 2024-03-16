@@ -84,6 +84,8 @@ yarn create farm@latest
 pnpm create farm@latest
 ```
 
+查看 [Farm 文档](https://farmfe.org) 了解更多用法。
+
 ## 基准测试
 
 Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm 比 Webpack 快 **20 倍**，比 Vite 快 **10 倍**：

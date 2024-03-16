@@ -86,6 +86,8 @@ yarn create farm@latest
 pnpm create farm@latest
 ```
 
+Visit [Farm Documentation](https://farmfe.org) to learn more about Farm.
+
 ## Benchmark
 
 Farm is much faster than similar tool， **20x** faster than webpack and **10x** faster than Vite in the benchmark:
