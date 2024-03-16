@@ -14,7 +14,7 @@ export class MyElement extends LitElement {
   render() {
     return html`
       <div>
-        <a href="https://farm-fe.github.io/" target="_blank">
+        <a href="https://farmfe.org/" target="_blank">
           <img src=${FarmLogo} class="logo" alt="Vite logo" />
         </a>
         <a href="https://lit.dev" target="_blank">

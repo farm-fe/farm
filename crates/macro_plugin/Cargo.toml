@@ -4,7 +4,7 @@ version = "0.0.3"
 edition = "2021"
 license = "MIT"
 description = "macro for farm plugins"
-homepage = "https://farm-fe.github.io"
+homepage = "https://farmfe.org"
 repository = "https://github.com/farm-fe/farm"
 readme = "README.md"
 

@@ -370,15 +370,15 @@ export interface Config {
      */
     sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
     /**
-     * Configure the behavior of Farm's partial bundling. For details, please refer to https://farm-fe.github.io/docs/features/partial-bundling
+     * Configure the behavior of Farm's partial bundling. For details, please refer to https://farmfe.org/docs/features/partial-bundling
      */
     partialBundling?: PartialBundlingConfig;
     /**
-     * Whether to enable lazy compilation, configure to false to disabled. See https://farm-fe.github.io/docs/features/lazy-compilation
+     * Whether to enable lazy compilation, configure to false to disabled. See https://farmfe.org/docs/features/lazy-compilation
      */
     lazyCompilation?: boolean;
     /**
-     * Whether to enable tree shake, set to false to disable. See https://farm-fe.github.io/docs/features/tree-shake
+     * Whether to enable tree shake, set to false to disable. See https://farmfe.org/docs/features/tree-shake
      */
     treeShaking?: boolean;
     minify?: boolean | JsMinifyOptions;

@@ -67,10 +67,10 @@ export function Welcome() {
               </div>
             </div>
             <div className="action">
-              <ButtonAction to="https://farm-fe.github.io/docs/quick-start">
+              <ButtonAction to="https://farmfe.org/docs/quick-start">
                 Quick Start
               </ButtonAction>
-              <ButtonAction to="https://farm-fe.github.io/docs/why-farm">
+              <ButtonAction to="https://farmfe.org/docs/why-farm">
                 Why Farm ?
               </ButtonAction>
             </div>

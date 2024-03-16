@@ -38,7 +38,7 @@ Farm is a extremely fast vite-compatible web-building tool written in Rust. It's
 
 ## Why Farm?
 
-> See [Why Farm](https://farm-fe.github.io/docs/why-farm) for details.
+> See [Why Farm](https://farmfe.org/docs/why-farm) for details.
 
 In short, tools like webpack are too slow, but new tools like Vite are not perfect, Vite has a lot of drawbacks when comes to a large project:
 
@@ -52,9 +52,9 @@ Farm can solve these problems perfectly, and it's really fast cause it's written
 
 > [!NOTE]
 >
-> - Since Farm v0.13, Vite plugins can be used directly in Farm. Refer to [Using vite plugins in Farm](https://farm-fe.github.io/docs/using-plugins#using-vite-plugins-in-farm)
-> - Since Farm v0.14, persistent disk cache enabled by default. Refer to [Incremental Building](https://farm-fe.github.io/docs/advanced/persistent-cache)
-> - Now Farm is **1.0 stable** and **production ready!**. See [Farm official website](https://farm-fe.github.io/) to get started.
+> - Since Farm v0.13, Vite plugins can be used directly in Farm. Refer to [Using vite plugins in Farm](https://farmfe.org/docs/using-plugins#using-vite-plugins-in-farm)
+> - Since Farm v0.14, persistent disk cache enabled by default. Refer to [Incremental Building](https://farmfe.org/docs/advanced/persistent-cache)
+> - Now Farm is **1.0 stable** and **production ready!**. See [Farm official website](https://farmfe.org/) to get started.
 
 - ⚡ **Extremely Fast**: Written in Rust, start a React / Vue project in milliseconds and perform an HMR update within 20ms for most situations.
 - ⚡ **Incremental Building**: Support persistent cache, module level cache enabled by default, any module won't be compiled twice until it's changed!
@@ -86,9 +86,15 @@ yarn create farm@latest
 pnpm create farm@latest
 ```
 
+Visit [Farm Documentation](https://farmfe.org) to learn more about Farm.
+
 ## Benchmark
 
-See [Benchmark Performance Compare](https://github.com/farm-fe/performance-compare)
+Farm is much faster than similar tool， **20x** faster than webpack and **10x** faster than Vite in the benchmark:
+
+![benchmark](./assets/benchmark-full.png)
+
+See [Benchmark](https://github.com/farm-fe/performance-compare) for details.
 
 ## Contribution
 
@@ -163,6 +169,13 @@ Thanks to:
 
 - The [Vite](https://github.com/vitejs/vite) project created by [Evan You](https://github.com/yyx990803), which inspired Farm's compatibility design of ecosystem.
 
-## Author
+## Author & Maintainer
 
-[brightwu（吴明亮）](https://github.com/wre232114), worked at Bytedance.
+Author:
+
+- [brightwu（吴明亮）](https://github.com/wre232114)，worked at bytedance. [Twitter](https://twitter.com/brightwwu46799)
+
+Maintainer:
+
+- [ErKeLost](https://github.com/ErKeLost)
+- [shulandmimi](https://github.com/shulandmimi)

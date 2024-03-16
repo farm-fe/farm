@@ -153,7 +153,8 @@
     "Yuxi",
     "struct",
     "rfind",
-    "srcset"
+    "srcset",
+    "shulandmimi"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

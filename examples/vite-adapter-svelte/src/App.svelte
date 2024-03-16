@@ -6,7 +6,7 @@
 
 <main>
   <div>
-    <a href="https://farm-fe.github.io" target="_blank" rel="noreferrer">
+    <a href="https://farmfe.org" target="_blank" rel="noreferrer">
       <img src={farmLogo} class="logo" alt="Farm Logo" />
     </a>
     <a href="https://svelte.dev" target="_blank" rel="noreferrer">
@@ -20,7 +20,7 @@
   </div>
 
   <p>
-    Powered by <a href="https://farm-fe.github.io">Farm</a> and svelet vite plugin
+    Powered by <a href="https://farmfe.org">Farm</a> and svelet vite plugin
   </p>
 
   <p class="read-the-docs">
