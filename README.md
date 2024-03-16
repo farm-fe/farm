@@ -88,7 +88,11 @@ pnpm create farm@latest
 
 ## Benchmark
 
-See [Benchmark Performance Compare](https://github.com/farm-fe/performance-compare)
+Farm is much faster than similar tool， **20x** faster than webpack and **10x** faster than Vite in the benchmark:
+
+![benchmark](./assets/benchmark-full.png)
+
+See [Benchmark](https://github.com/farm-fe/performance-compare) for details.
 
 ## Contribution
 
@@ -163,6 +167,13 @@ Thanks to:
 
 - The [Vite](https://github.com/vitejs/vite) project created by [Evan You](https://github.com/yyx990803), which inspired Farm's compatibility design of ecosystem.
 
-## Author
+## Author & Maintainer
 
-[brightwu（吴明亮）](https://github.com/wre232114), worked at Bytedance.
+Author:
+
+- [brightwu（吴明亮）](https://github.com/wre232114)，worked at bytedance. [Twitter](https://twitter.com/brightwwu46799)
+
+Maintainer:
+
+- [ErKeLost](https://github.com/ErKeLost)
+- [shulandmimi](https://github.com/shulandmimi)

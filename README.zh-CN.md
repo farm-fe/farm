@@ -86,7 +86,11 @@ pnpm create farm@latest
 
 ## 基准测试
 
-查看 [基准测试仓库](https://github.com/farm-fe/performance-compare)
+Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm 比 Webpack 快 **20 倍**，比 Vite 快 **10 倍**：
+
+![benchmark](./assets/benchmark-full.png)
+
+详情查看 [Benchmark](https://github.com/farm-fe/performance-compare).
 
 ## 贡献
 
@@ -100,7 +104,7 @@ pnpm create farm@latest
 
 - 微信群
 
-<br><img src="https://github.com/farm-fe/farm/assets/66500121/f1502472-4841-4c5e-9c78-42fe8f98f905" width="30%" />
+<br><img src="https://github.com/farm-fe/farm/assets/66500121/d59a3e8b-3083-4c5e-a746-f8a9194a6209" width="30%" />
 
 ## 感谢贡献者们做出的努力
 
@@ -161,8 +165,13 @@ pnpm create farm@latest
 
 - [Vite](https://github.com/vitejs/vite) 项目由 [Evan You](https://github.com/yyx990803)创建, 针对 Vite 插件生态的兼容性设计提供了启发。
 
-## 作者
+## 作者 & 维护者
 
-> Twitter: https://twitter.com/brightwwu46799
+作者：
 
-brightwu（吴明亮）, 曾就职于字节跳动。
+- [brightwu（吴明亮）](https://github.com/wre232114)，, 曾就职于字节跳动。[推特](https://twitter.com/brightwwu46799)
+
+维护者：
+
+- [ErKeLost](https://github.com/ErKeLost)
+- [shulandmimi](https://github.com/shulandmimi)
