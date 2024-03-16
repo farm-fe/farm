@@ -7,8 +7,6 @@
 //! const { b } = require("xxx"); // xxx is b's id.
 //! ```
 
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
@@ -215,31 +213,5 @@ impl VisitMut for ExistingCommonJsRequireVisitor {
         }))),
       });
     }
-  }
-}
-
-pub struct ReplaceIdent {
-  map: HashMap<&'static str, String>,
-  unresolved_mark: Mark,
-}
-
-impl ReplaceIdent {
-  pub fn new(map: HashMap<&'static str, String>, unresolved_mark: Mark) -> Self {
-    Self {
-      map,
-      unresolved_mark,
-    }
-  }
-}
-
-impl VisitMut for ReplaceIdent {
-  fn visit_mut_ident(&mut self, ident: &mut Ident) {
-    if let Some(replace) = self.map.get(&ident.sym.as_str()) {
-      if self.unresolved_mark == ident.span.ctxt.outer() {
-        ident.sym = replace.to_string().into();
-      }
-    }
-
-    ident.visit_mut_children_with(self)
   }
 }

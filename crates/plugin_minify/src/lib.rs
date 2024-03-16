@@ -417,6 +417,8 @@ pub fn minify_js_module(
           v.toplevel = Some(TerserTopLevelOptions::Bool(true));
         }
 
+        v.unused = Some(false);
+
         v.into_config(cm.clone())
       }),
     mangle: js_minify_options
@@ -425,23 +427,8 @@ pub fn minify_js_module(
       .unwrap_as_option(|default| match default {
         Some(true) => Some(Default::default()),
         _ => None,
-      })
-      .map(|mut item| {
-        item.reserved = vec![
-          FARM_MODULE,
-          FARM_MODULE_EXPORT,
-          FARM_DYNAMIC_REQUIRE,
-          FARM_REQUIRE,
-        ]
-        .into_iter()
-        .map(|item| item.into())
-        .collect();
-
-        // minify module should set it to true
-        item.top_level = Some(true);
-        item
       }),
-    ..Default::default()
+      ..Default::default()
   };
 
   ast.visit_mut_with(&mut paren_remover(Some(&comments)));

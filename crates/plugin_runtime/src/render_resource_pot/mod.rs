@@ -5,9 +5,7 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{
-    comments::CommentsConfig, FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE,
-  },
+  config::{FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE},
   context::CompilationContext,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
@@ -18,7 +16,8 @@ use farmfe_core::{
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
-  swc_common::{comments::SingleThreadedComments, Mark}, // swc_ecma_ast::Function
+  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
+  swc_ecma_ast::{BindingIdent, BlockStmt, FnDecl, Function, Module, ModuleItem, Param, Stmt}, // swc_ecma_ast::Function
 };
 use farmfe_plugin_minify::minify_js_module;
 use farmfe_toolkit::{
@@ -44,7 +43,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use self::source_replacer::{ExistingCommonJsRequireVisitor, ReplaceIdent, SourceReplacer};
+use self::source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer};
 
 // mod farm_module_system;
 mod source_replacer;
@@ -139,16 +138,6 @@ pub fn resource_pot_to_runtime_object(
           ));
         }
 
-        let mut replace_ident = ReplaceIdent::new(
-          HashMap::from([
-            ("module", FARM_MODULE.to_string()),
-            ("exports", FARM_MODULE_EXPORT.to_string()),
-          ]),
-          unresolved_mark,
-        );
-
-        cloned_module.visit_mut_with(&mut replace_ident);
-
         // replace import source with module id
         let mut source_replacer = SourceReplacer::new(
           unresolved_mark,
@@ -163,6 +152,8 @@ pub fn resource_pot_to_runtime_object(
           ..Default::default()
         }));
 
+        wrap_function(&mut cloned_module, unresolved_mark);
+
         if context.config.minify.enabled() {
           minify_js_module(
             context,
@@ -173,6 +164,8 @@ pub fn resource_pot_to_runtime_object(
             top_level_mark,
           );
         }
+
+        println!("{:#?}", cloned_module);
 
         cloned_module.visit_mut_with(&mut fixer(Some(&comments)));
 
@@ -242,8 +235,6 @@ pub fn resource_pot_to_runtime_object(
           ..Default::default()
         }),
       );
-
-      wrap_module_code(&mut module);
 
       module.prepend(&format!("{:?}:", m_id.id(context.config.mode.clone())));
       module.append(",");
@@ -315,11 +306,67 @@ pub fn resource_pot_to_runtime_object(
 ///   exports.b = b;
 /// }
 /// ```
-fn wrap_module_code(module: &mut MagicString) {
-  module.prepend(&format!(
-    "function({FARM_MODULE},{FARM_MODULE_EXPORT},{FARM_REQUIRE},{FARM_DYNAMIC_REQUIRE}){{"
-  ));
-  module.append("}");
+fn wrap_function(module: &mut Module, unresolved_mark: Mark) {
+  let bodys = module.body.take();
+
+  module.body.push(ModuleItem::Stmt(Stmt::Decl(
+    farmfe_core::swc_ecma_ast::Decl::Fn(FnDecl {
+      ident: " ".into(),
+      declare: false,
+      function: Box::new(Function {
+        params: vec![
+          Param {
+            span: DUMMY_SP.apply_mark(unresolved_mark),
+            decorators: vec![],
+            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+              id: FARM_MODULE.into(),
+              type_ann: None,
+            }),
+          },
+          Param {
+            span: DUMMY_SP.apply_mark(unresolved_mark),
+            decorators: vec![],
+            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+              id: FARM_MODULE_EXPORT.into(),
+              type_ann: None,
+            }),
+          },
+          Param {
+            span: DUMMY_SP.apply_mark(unresolved_mark),
+            decorators: vec![],
+            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+              id: FARM_REQUIRE.into(),
+              type_ann: None,
+            }),
+          },
+          Param {
+            span: DUMMY_SP.apply_mark(unresolved_mark),
+            decorators: vec![],
+            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+              id: FARM_DYNAMIC_REQUIRE.into(),
+              type_ann: None,
+            }),
+          },
+        ],
+        decorators: vec![],
+        span: DUMMY_SP.apply_mark(unresolved_mark),
+        body: Some(BlockStmt {
+          span: DUMMY_SP.apply_mark(unresolved_mark),
+          stmts: bodys
+            .into_iter()
+            .map(|body| match body {
+              ModuleItem::ModuleDecl(_) => unreachable!(),
+              ModuleItem::Stmt(stmt) => stmt,
+            })
+            .collect(),
+        }),
+        is_generator: false,
+        is_async: false,
+        type_params: None,
+        return_type: None,
+      }),
+    }),
+  )));
 }
 
 pub struct RenderedScriptModule {
