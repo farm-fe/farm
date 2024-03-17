@@ -1,5 +1,5 @@
 //dep_8b00.js:
- (function(_){for(var r in _){_[r].__farm_resource_pot__='dep_8b00.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, require, farmDynamicRequire) {
+ (function(_){for(var r in _){_[r].__farm_resource_pot__='dep_8b00.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -18,8 +18,8 @@
             return dep;
         }
     });
-    var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-    var _dep1 = _interop_require_default._(require("ef0c4c9d"));
+    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    var _dep1 = _interop_require_default._(farmRequire("ef0c4c9d"));
     const dep = "dep";
     function _default() {
         return (0, _dep1.default)();
@@ -27,7 +27,7 @@
     console.log("side effect in dep.ts");
 }
 ,
-"ef0c4c9d":function  (module, exports, require, farmDynamicRequire) {
+"ef0c4c9d":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -45,10 +45,10 @@
 ,});
 
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"d2214aaa":function  (module, exports, require, farmDynamicRequire) {
+ (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"d2214aaa":function  (module, exports, farmRequire, farmDynamicRequire) {
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 }
-,},"d2214aaa");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, require, farmDynamicRequire) {
+,},"d2214aaa");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     farmDynamicRequire("05ee5ec7").then((dep)=>{
         console.log(dep);

@@ -1,4 +1,4 @@
-({"index.module.css":function  (module, exports, require, farmDynamicRequire) {
+({"index.module.css":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -9,13 +9,13 @@
             return _default;
         }
     });
-    require("index.module.css?farm_css_modules");
+    farmRequire("index.module.css?farm_css_modules");
     var _default = {
         "className": `className-ec324e46`
     };
 }
 ,
-"index.module.css?farm_css_modules":function  (module, exports, require, farmDynamicRequire) {
+"index.module.css?farm_css_modules":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     const cssCode = `.className-ec324e46 {
   color: red;
@@ -39,14 +39,14 @@
     }
 }
 ,
-"index.ts":function  (module, exports, require, farmDynamicRequire) {
+"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-    require("index.css");
-    var _indexmodulecss = _interop_require_default._(require("index.module.css"));
+    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    farmRequire("index.css");
+    var _indexmodulecss = _interop_require_default._(farmRequire("index.module.css"));
     console.log(_indexmodulecss.default);
 }
 ,})

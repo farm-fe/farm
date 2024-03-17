@@ -1,8 +1,8 @@
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"ec853507":function  (module, exports, require, farmDynamicRequire) {
+ (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"ec853507":function  (module, exports, farmRequire, farmDynamicRequire) {
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 }
-,},"ec853507");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_d7f6.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"446ec84b":function  (module, exports, require, farmDynamicRequire) {
+,},"ec853507");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_d7f6.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"446ec84b":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -13,12 +13,12 @@
             return _use.default;
         }
     });
-    var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-    require("bebcbd1b");
-    var _use = _interop_require_default._(require("e0004d19"));
+    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    farmRequire("bebcbd1b");
+    var _use = _interop_require_default._(farmRequire("e0004d19"));
 }
 ,
-"8fb552f8":function  (module, exports, require, farmDynamicRequire) {
+"8fb552f8":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -46,21 +46,21 @@
     }
 }
 ,
-"b5d64806":function  (module, exports, require, farmDynamicRequire) {
+"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    var _export = require("446ec84b");
+    var _export = farmRequire("446ec84b");
     console.log(_export.result);
 }
 ,
-"bebcbd1b":function  (module, exports, require, farmDynamicRequire) {
+"bebcbd1b":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    var _cache = require("8fb552f8");
+    var _cache = farmRequire("8fb552f8");
     (0, _cache.set)("1", {
         a: 1
     });
@@ -81,7 +81,7 @@
     });
 }
 ,
-"e0004d19":function  (module, exports, require, farmDynamicRequire) {
+"e0004d19":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -92,7 +92,7 @@
             return _default;
         }
     });
-    var _cache = require("8fb552f8");
+    var _cache = farmRequire("8fb552f8");
     console.log((0, _cache.get)("1").a);
     const r = (0, _cache.get)("1").a;
     var _default = r;

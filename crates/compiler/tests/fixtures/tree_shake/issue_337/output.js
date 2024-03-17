@@ -1,8 +1,8 @@
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"d2214aaa":function  (module, exports, require, farmDynamicRequire) {
+ (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"d2214aaa":function  (module, exports, farmRequire, farmDynamicRequire) {
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 }
-,},"d2214aaa");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_a93b.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"066a321b":function  (module, exports, require, farmDynamicRequire) {
+,},"d2214aaa");(function(_){for(var r in _){_[r].__farm_resource_pot__='index_a93b.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"066a321b":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -180,7 +180,7 @@
     }
 }
 ,
-"7cd09bc5":function  (module, exports, require, farmDynamicRequire) {
+"7cd09bc5":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -191,8 +191,8 @@
             return _default;
         }
     });
-    var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-    var _root = _interop_require_default._(require("b5147996"));
+    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    var _root = _interop_require_default._(farmRequire("b5147996"));
     var freeExports = typeof exports == "object" && exports && !exports.nodeType && exports;
     var freeModule = freeExports && typeof module == "object" && module && !module.nodeType && module;
     var moduleExports = freeModule && freeModule.exports === freeExports;
@@ -208,7 +208,7 @@
     var _default = cloneBuffer;
 }
 ,
-"b5147996":function  (module, exports, require, farmDynamicRequire) {
+"b5147996":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
@@ -222,14 +222,14 @@
     var _default = "/home";
 }
 ,
-"b5d64806":function  (module, exports, require, farmDynamicRequire) {
+"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    var _interop_require_default = require("@swc/helpers/_/_interop_require_default");
-    var _cloneBuffer = _interop_require_default._(require("7cd09bc5"));
-    var _resolveuri = _interop_require_default._(require("066a321b"));
+    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    var _cloneBuffer = _interop_require_default._(farmRequire("7cd09bc5"));
+    var _resolveuri = _interop_require_default._(farmRequire("066a321b"));
     console.log((0, _cloneBuffer.default)(Buffer.from("test")));
     console.log((0, _resolveuri.default)("test"));
 }
