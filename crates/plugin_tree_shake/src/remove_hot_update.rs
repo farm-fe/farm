@@ -26,7 +26,6 @@ impl VisitMut for UselessHotUpdateStmtRemover {
   fn visit_mut_stmt(&mut self, stmt: &mut Stmt) {
     match stmt {
       Stmt::If(if_stmt) => {
-        println!("if_stmt: {:?}", if_stmt);
         if let Expr::Member(MemberExpr {
           obj:
             box Expr::Member(MemberExpr {
