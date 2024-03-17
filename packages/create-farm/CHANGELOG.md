@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.3
+
+### Patch Changes
+
+- 633f5524: Fix #1029
+
 ## 1.6.2
 
 ### Patch Changes
