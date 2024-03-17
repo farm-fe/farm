@@ -29,12 +29,6 @@ pub struct MinifyOptions {
   pub mode: MinifyMode,
 }
 
-impl MinifyOptions {
-  pub fn is_includes(&self, path: &str) -> bool {
-    self.include.iter().any(|regex| regex.is_match(path))
-  }
-}
-
 impl Default for MinifyOptions {
   fn default() -> Self {
     Self {

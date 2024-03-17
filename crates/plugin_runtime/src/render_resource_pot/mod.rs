@@ -21,15 +21,14 @@ use farmfe_core::{
   swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{BindingIdent, BlockStmt, FnDecl, Function, Module, ModuleItem, Param, Stmt}, // swc_ecma_ast::Function
 };
-use farmfe_plugin_minify::minify_js_module;
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, PathFilter, Source},
+  minify::minify_js_module,
   script::{
     codegen_module,
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
   },
-  // swc_css_parser::parser::input::State,
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
     fixer,
@@ -79,6 +78,11 @@ pub fn resource_pot_to_runtime_object(
   let minify_options = context.config.minify.clone().unwrap_or_default();
   let path_filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
 
+  let minify_enabled =
+    matches!(minify_options.mode, MinifyMode::Module) && context.config.minify.enabled();
+  let is_enabled_minify =
+    |module_id: &ModuleId| minify_enabled && path_filter.execute(module_id.relative_path());
+
   resource_pot
     .modules()
     .into_par_iter()
@@ -94,6 +98,7 @@ pub fn resource_pot_to_runtime_object(
       });
       let mut external_modules = vec![];
       let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
+      let minify_enabled = is_enabled_minify(&module.id);
 
       try_with(cm.clone(), &context.meta.script.globals, || {
         let (unresolved_mark, top_level_mark) = if module.meta.as_script().unresolved_mark == 0
@@ -163,12 +168,12 @@ pub fn resource_pot_to_runtime_object(
           && path_filter.execute(module.id.relative_path())
         {
           minify_js_module(
-            context,
             &mut cloned_module,
             cm.clone(),
             &comments,
             unresolved_mark,
             top_level_mark,
+            &minify_options,
           );
         }
 
@@ -193,7 +198,7 @@ pub fn resource_pot_to_runtime_object(
         } else {
           None
         },
-        context.config.minify.enabled(),
+        minify_enabled,
         Some(CodeGenCommentsConfig {
           comments: &comments,
           // preserve all comments when generate module code.

@@ -19,8 +19,8 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
 };
-use farmfe_plugin_minify::minify_html_module;
-use farmfe_toolkit::common::{create_swc_source_map, Source};
+use farmfe_toolkit::common::{create_swc_source_map, PathFilter, Source};
+use farmfe_toolkit::minify::minify_html_module;
 use farmfe_toolkit::{
   fs::read_file_utf8,
   get_dynamic_resources_map::get_dynamic_resources_map,
@@ -198,6 +198,16 @@ impl Plugin for FarmPluginHtml {
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
       let modules = resource_pot.modules();
+      let is_enabled_minify = |module_id: &ModuleId| {
+        let minify_options = context.config.minify.clone().unwrap_or_default();
+        context.config.minify.enabled()
+          && matches!(
+            minify_options.mode,
+            farmfe_core::config::minify::MinifyMode::Module
+          )
+          && PathFilter::new(&minify_options.include, &minify_options.exclude)
+            .execute(&module_id.resolved_path(&context.config.root))
+      };
 
       if modules.len() != 1 {
         return Err(CompilationError::RenderHtmlResourcePotError {
@@ -210,7 +220,9 @@ impl Plugin for FarmPluginHtml {
       let html_module = module_graph.module(modules[0]).unwrap();
       let mut html_module_document = html_module.meta.as_html().ast.clone();
 
-      if context.config.minify.enabled() {
+      let minify_enabled = is_enabled_minify(&html_module.id);
+
+      if minify_enabled {
         let (cm, _) = create_swc_source_map(Source {
           path: PathBuf::from(&resource_pot.name),
           content: resource_pot.meta.rendered_content.clone(),
@@ -221,10 +233,7 @@ impl Plugin for FarmPluginHtml {
         })?;
       }
 
-      let code = Arc::new(codegen_html_document(
-        &html_module_document,
-        context.config.minify.enabled(),
-      ));
+      let code = Arc::new(codegen_html_document(&html_module_document, minify_enabled));
 
       Ok(Some(ResourcePotMetaData {
         rendered_modules: std::collections::HashMap::from([(

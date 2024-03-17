@@ -32,10 +32,10 @@ use farmfe_core::{
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
-use farmfe_plugin_minify::minify_css_module;
-use farmfe_toolkit::common::{create_swc_source_map, load_source_original_source_map};
+use farmfe_toolkit::common::{create_swc_source_map, load_source_original_source_map, PathFilter};
 use farmfe_toolkit::css::ParseCssModuleResult;
 use farmfe_toolkit::lazy_static::lazy_static;
+use farmfe_toolkit::minify::minify_css_module;
 use farmfe_toolkit::script::swc_try_with::try_with;
 use farmfe_toolkit::{
   common::Source,
@@ -478,8 +478,18 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
-      let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
       let module_graph = context.module_graph.read();
+
+      let minify_options = context.config.minify.clone().unwrap_or_default();
+      let filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
+      let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
+      let minify_enabled = matches!(
+        minify_options.mode,
+        farmfe_core::config::minify::MinifyMode::Module
+      ) && context.config.minify.enabled();
+      let is_minify_enabled = |module_id: &ModuleId| {
+        minify_enabled && filter.execute(&module_id.resolved_path(&context.config.root))
+      };
 
       let mut modules = vec![];
       let mut module_execution_order = HashMap::new();
@@ -500,6 +510,7 @@ impl Plugin for FarmPluginCss {
           content: module.content.clone(),
         });
         let mut css_stylesheet = module.meta.as_css().ast.clone();
+        let minify_enabled = is_minify_enabled(&module.id);
 
         try_with(cm, &context.meta.css.globals, || {
           source_replace(
@@ -509,7 +520,7 @@ impl Plugin for FarmPluginCss {
             &resources_map,
           );
 
-          if context.config.minify.enabled() {
+          if minify_enabled {
             minify_css_module(&mut css_stylesheet);
           }
         })?;
@@ -524,7 +535,7 @@ impl Plugin for FarmPluginCss {
           } else {
             None
           },
-          false,
+          minify_enabled,
         );
 
         rendered_modules.lock().push(RenderedModule {

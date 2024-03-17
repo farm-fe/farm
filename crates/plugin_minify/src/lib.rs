@@ -9,29 +9,21 @@ use farmfe_core::{
   error::Result,
   plugin::Plugin,
   resource::resource_pot::{ResourcePot, ResourcePotType},
-  serde_json::{self, Value},
-  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, SourceMap},
-  swc_css_ast::Stylesheet,
+  swc_common::{util::take::Take, Mark},
   swc_ecma_ast::EsVersion,
   swc_ecma_parser::Syntax,
-  swc_html_ast::Document,
 };
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::parse_html_document,
+  minify::config::NormaledMinifyOptions,
   script::{
     codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
     ParseScriptModuleResult,
   },
   swc_css_minifier::minify,
-  swc_ecma_minifier::{
-    optimize,
-    option::{
-      terser::{TerserCompressorOptions, TerserTopLevelOptions},
-      ExtraOptions, MangleOptions, MinifyOptions as JsMinifyOptions,
-    },
-  },
+  swc_ecma_minifier::{optimize, option::ExtraOptions},
   swc_ecma_transforms::fixer,
   swc_ecma_transforms_base::{fixer::paren_remover, resolver},
   swc_ecma_visit::VisitMutWith,
@@ -73,7 +65,7 @@ impl FarmPluginMinify {
         }
       };
 
-      let options = NormaledOptions::minify_options_for_resource_pot(&self.minify_options)
+      let options = NormaledMinifyOptions::minify_options_for_resource_pot(&self.minify_options)
         .into_js_minify_options(cm.clone());
 
       let unresolved_mark = Mark::new();
@@ -219,7 +211,9 @@ impl Plugin for FarmPluginMinify {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot) {
+    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot)
+      || !context.config.minify.enabled()
+    {
       return Ok(None);
     }
 
@@ -236,108 +230,4 @@ impl Plugin for FarmPluginMinify {
 
     Ok(None)
   }
-}
-
-#[derive(Clone)]
-struct NormaledOptions {
-  compress: Option<TerserCompressorOptions>,
-  mangle: Option<MangleOptions>,
-}
-
-impl NormaledOptions {
-  pub fn minify_options_for_resource_pot(minify: &MinifyOptions) -> NormaledOptions {
-    // compress
-    let mut compress = minify
-      .compress
-      .clone()
-      .map(|value| {
-        serde_json::from_value::<TerserCompressorOptions>(value)
-          .expect("FarmPluginMinify.compress option is invalid")
-      })
-      .unwrap_or_default();
-
-    if compress.const_to_let.is_none() {
-      compress.const_to_let = Some(true);
-    }
-
-    if compress.toplevel.is_none() {
-      compress.toplevel = Some(TerserTopLevelOptions::Bool(true));
-    }
-
-    // mangle
-    let mangle = minify
-      .mangle
-      .clone()
-      .map(|value| {
-        serde_json::from_value::<MangleOptions>(value)
-          .expect("FarmPluginMinify.mangle option is invalid")
-      })
-      .unwrap_as_option(|default| match default {
-        Some(true) => Some(Default::default()),
-        _ => None,
-      });
-
-    NormaledOptions {
-      compress: Some(compress),
-      mangle,
-    }
-  }
-
-  pub fn minify_options_for_module(minify: &MinifyOptions) -> NormaledOptions {
-    let mut minify_options = Self::minify_options_for_resource_pot(minify);
-
-    minify_options.compress = minify_options.compress.map(|mut v| {
-      v.unused = Some(false);
-      v
-    });
-
-    minify_options
-  }
-
-  fn into_js_minify_options(self, cm: Arc<SourceMap>) -> JsMinifyOptions {
-    JsMinifyOptions {
-      compress: self.compress.map(|item| item.into_config(cm)),
-      mangle: self.mangle,
-      ..Default::default()
-    }
-  }
-}
-
-pub fn minify_js_module(
-  context: &Arc<CompilationContext>,
-  ast: &mut farmfe_core::swc_ecma_ast::Module,
-  cm: Arc<SourceMap>,
-  comments: &SingleThreadedComments,
-  unresolved_mark: Mark,
-  top_level_mark: Mark,
-) {
-  let options =
-    NormaledOptions::minify_options_for_module(&context.config.minify.clone().unwrap_or_default())
-      .into_js_minify_options(cm.clone());
-  ast.visit_mut_with(&mut paren_remover(Some(&comments)));
-
-  ast.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
-
-  ast.map_with_mut(|m| {
-    optimize(
-      m.into(),
-      cm.clone(),
-      Some(&comments),
-      None,
-      &options,
-      &ExtraOptions {
-        unresolved_mark,
-        top_level_mark,
-      },
-    )
-    .expect_module()
-  });
-}
-
-pub fn minify_css_module(ast: &mut Stylesheet) {
-  minify(ast, Default::default());
-}
-
-pub fn minify_html_module(ast: &mut Document) {
-  minify_document(ast, &Default::default());
 }
