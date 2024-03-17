@@ -24,12 +24,12 @@ const visite = async (path) => {
   logger(`open the page: ${path}`);
   try {
     page.on('console', (msg) => {
-      logger(`${path}:${msg.text()}`);
+      logger(`${path}:  ${msg.text()}`);
       browserLogs.push(msg.text())
     });
 
     page.on('pageerror', (error) => {
-      logger(`${path}:${error}`, {
+      logger(`${path}:  ${error}`, {
         color: "red"
       });
       browserErrors.push(error)
@@ -78,7 +78,6 @@ async function startE2eTest() {
   setup();
   const examples = fs.readdirSync(("./examples"));
   await Promise.all(concurrentMap(examples, concurrencyLimit, async (example) => {
-    console.log(example, "example");
     const examplePath = join('./examples', example)
     if (fs.statSync(examplePath).isDirectory()) {
       startProjectAndVisite(examplePath);
