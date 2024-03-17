@@ -347,6 +347,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/javascript-api:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/js-plugin-cache:
     devDependencies:
       '@farmfe/cli':

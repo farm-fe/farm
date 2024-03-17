@@ -19,8 +19,8 @@ export default defineFarmConfig({
     sourcemap: false,
     presetEnv: false,
   },
-  server: {
-    open: true,
-  },
+  // server: {
+  //   open: true,
+  // },
   vitePlugins: [solid()],
 });
