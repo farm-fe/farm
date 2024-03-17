@@ -2,10 +2,9 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
-  swc_common::{Globals, Mark, DUMMY_SP},
+  swc_common::{Globals, Mark},
   swc_ecma_ast::{
-    self, CallExpr, Callee, EmptyStmt, Expr, Ident, ImportDecl, ImportSpecifier, MemberExpr,
-    MemberProp, MetaPropExpr, MetaPropKind, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
+    self, Ident, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith};

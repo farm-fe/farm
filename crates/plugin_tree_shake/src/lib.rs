@@ -13,7 +13,10 @@ use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
 use module::TreeShakeModule;
 use statement_graph::{ExportInfo, ImportInfo};
 
+use crate::remove_hot_update::remove_useless_hot_update_stmts;
+
 pub mod module;
+pub mod remove_hot_update;
 pub mod remove_useless_stmts;
 pub mod statement_graph;
 
@@ -549,9 +552,15 @@ impl Plugin for FarmPluginTreeShake {
     for module_id in modules_to_remove {
       module_graph.remove_module(&module_id);
     }
-    // 对已有模块进行code的tree-shake
-    module_graph.modules().iter().for_each(|module| {
-      let mut ast = module.meta.as_script().ast.clone();
+    // remove useless hot update statements
+    module_graph.modules_mut().iter_mut().for_each(|module| {
+      if !module.module_type.is_script() || module.external {
+        return;
+      }
+      let ast = &mut module.meta.as_script_mut().take_ast();
+
+      let normalize_ast = remove_useless_hot_update_stmts(ast);
+      module.meta.as_script_mut().set_ast(normalize_ast.clone());
     });
 
     Ok(Some(()))
