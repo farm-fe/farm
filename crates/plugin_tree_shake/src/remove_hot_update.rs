@@ -1,7 +1,7 @@
 use farmfe_core::{
   module::module_graph::ModuleGraph,
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{EmptyStmt, Expr, Ident, MemberExpr, MemberProp, Module, Stmt},
+  swc_ecma_ast::{EmptyStmt, Expr, Ident, MemberExpr, MemberProp, Stmt},
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
@@ -12,9 +12,10 @@ pub fn remove_useless_hot_update_stmts(module_graph: &mut ModuleGraph) {
     if !module.module_type.is_script() || module.external {
       return;
     }
-    let ast = &mut module.meta.as_script_mut().take_ast();
+    let script_meta_data = module.meta.as_script_mut();
+    let ast = &mut script_meta_data.take_ast();
     ast.visit_mut_with(&mut remover);
-    module.meta.as_script_mut().set_ast(ast.clone());
+    script_meta_data.set_ast(ast.clone());
   });
 }
 
