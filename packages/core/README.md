@@ -12,4 +12,4 @@ Install Farm CLI:
 pnpm create farm && cd farm-project && pnpm start
 ```
 
-visit [official document](https://farm-fe.github.io/) to learn more about Farm.
+visit [official document](https://farmfe.org/) to learn more about Farm.

@@ -8,11 +8,11 @@ import Formatter from '../components/Formatter.vue';
   <el-button type="primary" @click="$router.push('/about')">to about page</el-button>
 
   <div class="container">
-    <a href="https://farm-fe.github.io/" target="_blank">
+    <a href="https://farmfe.org/" target="_blank">
       <div class="logo1" />
       <div class="logo2" />
     </a>
-    <a href="https://farm-fe.github.io/" target="_blank">
+    <a href="https://farmfe.org/" target="_blank">
       <img src="../assets/logo.png" class="logo" alt="Farm logo" />
     </a>
     <a href="https://vuejs.org/" target="_blank">

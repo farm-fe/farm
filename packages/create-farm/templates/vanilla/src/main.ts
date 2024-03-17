@@ -5,7 +5,7 @@ import { setupCounter } from './counter.ts'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
-    <a href="https://farm-fe.github.io/" target="_blank">
+    <a href="https://farmfe.org/" target="_blank">
       <img src="${Logo}" class="logo" alt="Vite logo" />
     </a>
     <a href="https://www.typescriptlang.org/" target="_blank">

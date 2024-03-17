@@ -22,8 +22,7 @@
               <span class="rich-content">
                 Farm support compiling Html, Css, Js/Jsx/Ts/Tsx, Static Assets
                 natively, support lazy compiling, partial bundling and
-                more.</span
-              >
+                more.</span>
             </div>
           </div>
         </FarmCard>
@@ -36,8 +35,7 @@
                 <span class="fully-content">
                   Everything inside Farm is powered by plugins, you can achieve
                   anything you want by writing a plugin. Support both Rust and
-                  Js plugins.</span
-                >
+                  Js plugins.</span>
               </div>
             </div>
           </FarmCard>
@@ -53,17 +51,12 @@
                 Farm's compiler is written in Rust, with multi-threading,
                 lazy/asynchronous compilation and persist caching, Farm can
                 start a project in milliseconds, perform a HMR update within
-                10ms.</span
-              >
+                10ms.</span>
             </div>
           </div>
           <div class="action">
-            <ButtonAction to="https://farm-fe.github.io/docs/quick-start"
-              >Quick Start</ButtonAction
-            >
-            <ButtonAction to="https://farm-fe.github.io/docs/why-farm"
-              >Why Farm ?</ButtonAction
-            >
+            <ButtonAction to="https://farmfe.org/docs/quick-start">Quick Start</ButtonAction>
+            <ButtonAction to="https://farmfe.org/docs/why-farm">Why Farm ?</ButtonAction>
           </div>
         </div>
       </FarmCard>
@@ -88,6 +81,7 @@ import ButtonAction from './Button.vue';
   background-size: 400%;
   background-position: 0%;
 }
+
 .action-box {
   display: flex;
   flex-direction: column;
@@ -95,10 +89,12 @@ import ButtonAction from './Button.vue';
   gap: 40px;
   height: 100%;
 }
+
 .action {
   display: flex;
   gap: 40px;
 }
+
 .farm-container {
   display: flex;
   flex-direction: column;
@@ -108,6 +104,7 @@ import ButtonAction from './Button.vue';
   padding: 0rem 1rem;
   gap: 1.7rem;
 }
+
 .farm-desc {
   display: flex;
   justify-content: space-between;
@@ -119,10 +116,12 @@ import ButtonAction from './Button.vue';
   align-items: center;
   gap: 2rem;
 }
+
 .container-box img {
   width: 70px;
   height: 70px;
 }
+
 .farm-desc-left {
   display: flex;
   flex-direction: column;
@@ -165,6 +164,7 @@ import ButtonAction from './Button.vue';
     justify-content: space-between;
     gap: 32px;
   }
+
   .farm-container {
     width: 60vw;
   }
