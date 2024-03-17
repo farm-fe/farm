@@ -41,6 +41,13 @@ impl Default for MinifyOptions {
   }
 }
 
+impl From<Value> for MinifyOptions {
+  fn from(val: Value) -> Self {
+    serde_json::from_value(val)
+      .expect("failed parser MinifyOptions, please ensure your options is correct")
+  }
+}
+
 mod tests {
 
   #[test]

@@ -8,13 +8,15 @@ use farmfe_toolkit_plugin_types::{
   libloading::Library,
   swc_ast::{parse_module, ParseScriptModuleResult},
 };
+use lazy_static::lazy_static;
 
 const REFRESH_RUNTIME_IMPORT: &str = "import RefreshRuntime from 'react-refresh'";
 pub const IS_REACT_REFRESH_BOUNDARY: &str = "farmfe_plugin_react_is_react_refresh_boundary";
 
-farmfe_toolkit::lazy_static::lazy_static!(
+lazy_static! {
   pub static ref PRE_CODE: String = {
-    format!(r#"
+    format!(
+      r#"
     var prevRefreshReg;
     var prevRefreshSig;
 
@@ -24,9 +26,10 @@ farmfe_toolkit::lazy_static::lazy_static!(
       RefreshRuntime.register(type, {FARM_MODULE}.id + id);
     }};
     window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
-    "#)
+    "#
+    )
   };
-);
+}
 
 const POST_CODE: &str = r#"
 window.$RefreshReg$ = prevRefreshReg;

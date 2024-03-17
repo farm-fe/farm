@@ -7,8 +7,7 @@ use swc_ecma_parser::{EsConfig, TsConfig};
 
 use self::{
   bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
-  minify::MinifyOptions, partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig,
-  script::ScriptConfig,
+  partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
@@ -49,7 +48,7 @@ pub struct Config {
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
   pub tree_shaking: bool,
-  pub minify: Box<BoolOrObj<MinifyOptions>>,
+  pub minify: Box<BoolOrObj<serde_json::Value>>,
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
   pub progress: bool,

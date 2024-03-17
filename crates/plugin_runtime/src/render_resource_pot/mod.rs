@@ -6,7 +6,8 @@ use std::{
 
 use farmfe_core::{
   config::{
-    minify::MinifyMode, FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE,
+    minify::{MinifyMode, MinifyOptions},
+    FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE,
   },
   context::CompilationContext,
   enhanced_magic_string::{
@@ -75,7 +76,12 @@ pub fn resource_pot_to_runtime_object(
   context: &Arc<CompilationContext>,
 ) -> Result<RenderedJsResourcePot> {
   let modules = Mutex::new(vec![]);
-  let minify_options = context.config.minify.clone().unwrap_or_default();
+  let minify_options = context
+    .config
+    .minify
+    .clone()
+    .map(|val| MinifyOptions::from(val))
+    .unwrap_or_default();
   let path_filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
 
   let minify_enabled =

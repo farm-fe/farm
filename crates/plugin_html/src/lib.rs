@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 
 use deps_analyzer::DepsAnalyzer;
+use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
@@ -199,7 +200,13 @@ impl Plugin for FarmPluginHtml {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
       let modules = resource_pot.modules();
       let is_enabled_minify = |module_id: &ModuleId| {
-        let minify_options = context.config.minify.clone().unwrap_or_default();
+        let minify_options = context
+          .config
+          .minify
+          .clone()
+          .map(|val| MinifyOptions::from(val))
+          .unwrap_or_default();
+
         context.config.minify.enabled()
           && matches!(
             minify_options.mode,

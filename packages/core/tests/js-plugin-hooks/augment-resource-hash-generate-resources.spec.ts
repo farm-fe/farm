@@ -1,6 +1,5 @@
 import { expect, test } from 'vitest';
 import { getCompiler } from './common.js';
-import { ResourcePotInfo } from '../../src/index.js';
 
 test('Js Plugin Execution - augmentResourceHash', async () => {
   const hookName = 'augment-resource-hash-generate-resources';
@@ -15,7 +14,8 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
             calledHooks0.push('finalizeResources');
             const keys = Object.keys(param.resourcesMap);
             keys.sort();
-            expect(keys).toEqual(['FARM_RUNTIME_runtime', 'index.cc2ddd27.js']);
+
+            expect(keys).matchSnapshot();
             return param.resourcesMap;
           }
         }
@@ -53,43 +53,9 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
             ) {
               resourcePotInfo.modules['index.ts?foo=bar'].originalLength = 51;
             }
-            expect(resourcePotInfo).toEqual({
-              id: 'index_eab4_js',
-              name: 'index_eab4',
-              resourcePotType: 'js',
-              moduleIds: ['index.ts?foo=bar'],
-              map: null,
-              modules: {
-                'index.ts?foo=bar': {
-                  id: 'index.ts?foo=bar',
-                  renderedContent:
-                    '"use strict";\n' +
-                    'Object.defineProperty(exports, "__esModule", {\n' +
-                    '    value: true\n' +
-                    '});\n' +
-                    'Object.defineProperty(exports, "default", {\n' +
-                    '    enumerable: true,\n' +
-                    '    get: function() {\n' +
-                    '        return _default;\n' +
-                    '    }\n' +
-                    '});\n' +
-                    "const _default = 'render-resource-pot-return-value';\n",
-                  renderedMap: null,
-                  renderedLength: 257,
-                  originalLength: 51
-                }
-              },
-              data: {
-                dynamicImports: [],
-                exports: [],
-                imports: [],
-                importedBindings: {},
-                isDynamicEntry: false,
-                isEntry: true,
-                isImplicitEntry: false
-              },
-              custom: {}
-            } as ResourcePotInfo);
+
+            expect(resourcePotInfo).matchSnapshot();
+
             calledHooks.push('augmentResourceHash');
             return 'augmented-hash';
           }
@@ -100,10 +66,7 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
             const keys = Object.keys(param.resourcesMap);
             keys.sort();
             console.log(keys);
-            expect(keys).toEqual(['FARM_RUNTIME_runtime', 'index.3dc3d75a.js']);
-            expect(param.resourcesMap['index.3dc3d75a.js'].name).toBe(
-              'index.3dc3d75a.js'
-            );
+            expect(keys).matchSnapshot();
             return param.resourcesMap;
           }
         }

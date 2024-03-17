@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
+use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
@@ -480,13 +481,19 @@ impl Plugin for FarmPluginCss {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       let module_graph = context.module_graph.read();
 
-      let minify_options = context.config.minify.clone().unwrap_or_default();
+      let minify_options = context
+        .config
+        .minify
+        .clone()
+        .map(|val| MinifyOptions::from(val))
+        .unwrap_or_default();
       let filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
       let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
       let minify_enabled = matches!(
         minify_options.mode,
         farmfe_core::config::minify::MinifyMode::Module
       ) && context.config.minify.enabled();
+
       let is_minify_enabled = |module_id: &ModuleId| {
         minify_enabled && filter.execute(&module_id.resolved_path(&context.config.root))
       };
