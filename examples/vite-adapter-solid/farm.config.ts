@@ -1,11 +1,7 @@
-import type { UserConfig } from "@farmfe/core";
+import { defineConfig } from "@farmfe/core";
 import solid from "vite-plugin-solid";
 
-function defineFarmConfig(config: UserConfig) {
-  return config;
-}
-
-export default defineFarmConfig({
+export default defineConfig({
   compilation: {
     input: {
       index: "index.html",
@@ -16,11 +12,13 @@ export default defineFarmConfig({
     define: {
       __DEV__: true,
     },
-    sourcemap: false,
-    presetEnv: false,
+    persistentCache: false,
   },
   server: {
     open: true,
   },
-  vitePlugins: [solid()],
+  vitePlugins: [() => ({ vitePlugin: solid(), filters: [
+    '\\.jsx$',
+    '\\.tsx$',
+  ] })],
 });

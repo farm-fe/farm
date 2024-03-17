@@ -326,7 +326,7 @@ export function proxyViteConfig(
 export function viteConfigToFarmConfig(
   config: ViteUserConfig,
   origFarmConfig: UserConfig,
-  pluginName: string
+  _pluginName: string
 ): UserConfig {
   const farmConfig: UserConfig = {};
 
@@ -371,10 +371,20 @@ export function viteConfigToFarmConfig(
           any
         >;
       } else {
-        // TODO support array alias
-        console.warn(
-          `[vite-plugin] ${pluginName}: farm do not support array 'resolve.alias', it will be ignored. you should transform it to farm's alias manually for now.`
-        );
+        if (!farmConfig.compilation.resolve.alias) {
+          farmConfig.compilation.resolve.alias = {};
+        }
+
+        const farmRegexPrefix = '$__farm_regex:';
+
+        for (const { find, replacement } of config.resolve.alias) {
+          if (find instanceof RegExp) {
+            const key = farmRegexPrefix + find.source;
+            farmConfig.compilation.resolve.alias[key] = replacement;
+          } else {
+            farmConfig.compilation.resolve.alias[find] = replacement;
+          }
+        }
       }
     }
 

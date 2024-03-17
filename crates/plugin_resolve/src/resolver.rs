@@ -5,6 +5,7 @@ use std::{
   sync::Arc,
 };
 
+use farmfe_core::regex;
 use farmfe_core::{
   common::PackageJsonInfo,
   config::TargetEnv,
@@ -26,6 +27,8 @@ use crate::resolver::utils::{
 };
 
 use self::browser::{BrowserMapResult, BrowserMapType};
+
+const REGEX_PREFIX: &str = "$__farm_regex:";
 
 mod browser;
 mod exports;
@@ -382,6 +385,15 @@ impl Resolver {
 
     for alias in alias_list {
       let replaced = context.config.resolve.alias.get(alias).unwrap();
+
+      // try regex alias first
+      if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
+        let regex = regex::Regex::new(alias).unwrap();
+        if regex.is_match(source) {
+          let replaced = regex.replace(source, replaced.as_str()).to_string();
+          return self.resolve(&replaced, base_dir, kind, context);
+        }
+      }
 
       if alias.ends_with('$') && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind, context);
