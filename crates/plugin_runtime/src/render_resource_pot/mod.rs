@@ -5,7 +5,9 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE},
+  config::{
+    minify::MinifyMode, FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE,
+  },
   context::CompilationContext,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
@@ -21,7 +23,7 @@ use farmfe_core::{
 };
 use farmfe_plugin_minify::minify_js_module;
 use farmfe_toolkit::{
-  common::{build_source_map, create_swc_source_map, Source},
+  common::{build_source_map, create_swc_source_map, PathFilter, Source},
   script::{
     codegen_module,
     swc_try_with::{resolve_module_mark, try_with},
@@ -74,6 +76,8 @@ pub fn resource_pot_to_runtime_object(
   context: &Arc<CompilationContext>,
 ) -> Result<RenderedJsResourcePot> {
   let modules = Mutex::new(vec![]);
+  let minify_options = context.config.minify.clone().unwrap_or_default();
+  let path_filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
 
   resource_pot
     .modules()
@@ -154,7 +158,10 @@ pub fn resource_pot_to_runtime_object(
 
         wrap_function(&mut cloned_module, unresolved_mark);
 
-        if context.config.minify.enabled() {
+        if matches!(minify_options.mode, MinifyMode::Module)
+          && context.config.minify.enabled()
+          && path_filter.execute(module.id.relative_path())
+        {
           minify_js_module(
             context,
             &mut cloned_module,
@@ -164,8 +171,6 @@ pub fn resource_pot_to_runtime_object(
             top_level_mark,
           );
         }
-
-        println!("{:#?}", cloned_module);
 
         cloned_module.visit_mut_with(&mut fixer(Some(&comments)));
 

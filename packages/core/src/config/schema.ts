@@ -139,7 +139,12 @@ const compilationConfigSchema = z
       .strict()
       .optional(),
     sourcemap: z
-      .union([z.boolean(), z.literal('all'), z.literal('inline'), z.literal('all-inline')])
+      .union([
+        z.boolean(),
+        z.literal('all'),
+        z.literal('inline'),
+        z.literal('all-inline')
+      ])
       .optional(),
     partialBundling: z
       .object({
@@ -175,7 +180,23 @@ const compilationConfigSchema = z
       .optional(),
     lazyCompilation: z.boolean().optional(),
     treeShaking: z.boolean().optional(),
-    minify: z.boolean().optional(),
+    minify: z
+      .union([
+        z.boolean(),
+        z.object({
+          compress: z.union([z.any(), z.boolean()]).optional(),
+          mangle: z.union([z.any(), z.boolean()]).optional(),
+          exclude: z.array(z.string()).optional(),
+          include: z.array(z.string()).optional(),
+          mode: z
+            .union([
+              z.literal('minify-module'),
+              z.literal('minify-resource-pot')
+            ])
+            .optional()
+        })
+      ])
+      .optional(),
     record: z.boolean().optional(),
     progress: z.boolean().optional(),
     presetEnv: z
