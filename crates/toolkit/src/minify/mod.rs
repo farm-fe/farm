@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use self::config::NormaledMinifyOptions;
+use self::config::NormalizedMinifyOptions;
 use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::swc_common::util::take::Take;
 use farmfe_core::{
@@ -25,7 +25,7 @@ pub fn minify_js_module(
   top_level_mark: Mark,
   minify_options: &MinifyOptions,
 ) {
-  let options = NormaledMinifyOptions::minify_options_for_module(minify_options)
+  let options = NormalizedMinifyOptions::minify_options_for_module(minify_options)
     .into_js_minify_options(cm.clone());
   ast.visit_mut_with(&mut paren_remover(Some(&comments)));
 

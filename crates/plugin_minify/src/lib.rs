@@ -17,7 +17,7 @@ use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::parse_html_document,
-  minify::config::NormaledMinifyOptions,
+  minify::config::NormalizedMinifyOptions,
   script::{
     codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
     ParseScriptModuleResult,
@@ -65,7 +65,7 @@ impl FarmPluginMinify {
         }
       };
 
-      let options = NormaledMinifyOptions::minify_options_for_resource_pot(&self.minify_options)
+      let options = NormalizedMinifyOptions::minify_options_for_resource_pot(&self.minify_options)
         .into_js_minify_options(cm.clone());
 
       let unresolved_mark = Mark::new();

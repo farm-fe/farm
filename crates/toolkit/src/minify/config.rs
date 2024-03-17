@@ -7,13 +7,13 @@ use swc_ecma_minifier::option::{
 };
 
 #[derive(Clone)]
-pub struct NormaledMinifyOptions {
+pub struct NormalizedMinifyOptions {
   pub compress: Option<TerserCompressorOptions>,
   pub mangle: Option<MangleOptions>,
 }
 
-impl NormaledMinifyOptions {
-  pub fn minify_options_for_resource_pot(minify: &MinifyOptions) -> NormaledMinifyOptions {
+impl NormalizedMinifyOptions {
+  pub fn minify_options_for_resource_pot(minify: &MinifyOptions) -> NormalizedMinifyOptions {
     // compress
     let mut compress = minify
       .compress
@@ -45,13 +45,13 @@ impl NormaledMinifyOptions {
         _ => None,
       });
 
-    NormaledMinifyOptions {
+    NormalizedMinifyOptions {
       compress: Some(compress),
       mangle,
     }
   }
 
-  pub fn minify_options_for_module(minify: &MinifyOptions) -> NormaledMinifyOptions {
+  pub fn minify_options_for_module(minify: &MinifyOptions) -> NormalizedMinifyOptions {
     let mut minify_options = Self::minify_options_for_resource_pot(minify);
 
     minify_options.compress = minify_options.compress.map(|mut v| {

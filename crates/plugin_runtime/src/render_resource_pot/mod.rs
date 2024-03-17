@@ -317,7 +317,7 @@ pub fn resource_pot_to_runtime_object(
 /// }
 /// ```
 fn wrap_function(module: &mut Module, unresolved_mark: Mark) {
-  let bodys = module.body.take();
+  let body = module.body.take();
 
   module.body.push(ModuleItem::Stmt(Stmt::Decl(
     farmfe_core::swc_ecma_ast::Decl::Fn(FnDecl {
@@ -362,7 +362,7 @@ fn wrap_function(module: &mut Module, unresolved_mark: Mark) {
         span: DUMMY_SP.apply_mark(unresolved_mark),
         body: Some(BlockStmt {
           span: DUMMY_SP.apply_mark(unresolved_mark),
-          stmts: bodys
+          stmts: body
             .into_iter()
             .map(|body| match body {
               ModuleItem::ModuleDecl(_) => unreachable!(),
