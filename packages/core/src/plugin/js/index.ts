@@ -207,6 +207,14 @@ export function convertPlugin(plugin: JsPlugin): void {
     }
   }
 
+  if (plugin.resolve?.filters?.importers?.length) {
+    if (process.platform === 'win32') {
+      // replace / to \
+      plugin.resolve.filters.importers =
+        plugin.resolve.filters.importers.map(compatibleWin32Path);
+    }
+  }
+
   if (plugin.load?.filters?.resolvedPaths?.length) {
     if (process.platform === 'win32') {
       // replace / to \
