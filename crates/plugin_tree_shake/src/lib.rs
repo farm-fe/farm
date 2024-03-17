@@ -552,16 +552,8 @@ impl Plugin for FarmPluginTreeShake {
     for module_id in modules_to_remove {
       module_graph.remove_module(&module_id);
     }
-    // remove useless hot update statements
-    module_graph.modules_mut().iter_mut().for_each(|module| {
-      if !module.module_type.is_script() || module.external {
-        return;
-      }
-      let ast = &mut module.meta.as_script_mut().take_ast();
-
-      let normalize_ast = remove_useless_hot_update_stmts(ast);
-      module.meta.as_script_mut().set_ast(normalize_ast.clone());
-    });
+    // if production remove useless hot update statements
+    remove_useless_hot_update_stmts(module_graph);
 
     Ok(Some(()))
   }
