@@ -4,7 +4,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Globals, Mark},
   swc_ecma_ast::{
-    self, Ident, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem,
+    self, Ident, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith};
