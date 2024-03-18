@@ -46,18 +46,6 @@ pub struct ItemData {
   pub side_effect_call: Vec<Id>,
 }
 
-impl ItemData {
-  pub fn merge(&mut self, other: ItemData) {
-    self.var_decls.extend(other.var_decls);
-    self.read_vars.extend(other.read_vars);
-    self.write_vars.extend(other.write_vars);
-    self.nested_read_vars.extend(other.nested_read_vars);
-    self.nested_write_vars.extend(other.nested_write_vars);
-    self.side_effects = self.side_effects || other.side_effects;
-    self.side_effect_call.extend(other.side_effect_call);
-  }
-}
-
 fn class_collection(class: &Class) -> ItemData {
   let collect = collect_all_usage(class, None);
 
@@ -522,6 +510,7 @@ impl ModuleAnalyze {
       .map(|e| e.weight())
   }
 
+  #[allow(unused)]
   pub fn print_graph(&mut self) {
     println!("nodes: ");
     for node in self.g.node_indices() {
