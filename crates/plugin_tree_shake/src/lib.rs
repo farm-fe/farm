@@ -5,10 +5,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use farmfe_core::{
   config::Config,
-  module::{
-    module_graph::{self, ModuleGraph},
-    ModuleId, ModuleSystem, ModuleType,
-  },
+  module::{module_graph::ModuleGraph, ModuleId},
   plugin::Plugin,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
@@ -16,7 +13,10 @@ use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
 use module::TreeShakeModule;
 use statement_graph::{ExportInfo, ImportInfo};
 
+use crate::remove_hot_update::remove_useless_hot_update_stmts;
+
 pub mod module;
+pub mod remove_hot_update;
 pub mod remove_useless_stmts;
 pub mod statement_graph;
 
@@ -552,6 +552,8 @@ impl Plugin for FarmPluginTreeShake {
     for module_id in modules_to_remove {
       module_graph.remove_module(&module_id);
     }
+    // if production remove useless hot update statements
+    remove_useless_hot_update_stmts(module_graph);
 
     Ok(Some(()))
   }

@@ -5,6 +5,7 @@ use std::{
   sync::Arc,
 };
 
+use farmfe_core::regex;
 use farmfe_core::{
   common::PackageJsonInfo,
   config::TargetEnv,
@@ -26,6 +27,8 @@ use crate::resolver::utils::{
 };
 
 use self::browser::{BrowserMapResult, BrowserMapType};
+
+const REGEX_PREFIX: &str = "$__farm_regex:";
 
 mod browser;
 mod exports;
@@ -383,6 +386,15 @@ impl Resolver {
     for alias in alias_list {
       let replaced = context.config.resolve.alias.get(alias).unwrap();
 
+      // try regex alias first
+      if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
+        let regex = regex::Regex::new(alias).unwrap();
+        if regex.is_match(source) {
+          let replaced = regex.replace(source, replaced.as_str()).to_string();
+          return self.resolve(&replaced, base_dir, kind, context);
+        }
+      }
+
       if alias.ends_with('$') && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind, context);
       } else if !alias.ends_with('$') && source.starts_with(alias) {
@@ -467,10 +479,16 @@ impl Resolver {
 
       let maybe_node_modules_path = current.join(NODE_MODULES);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
+        let parse_package_source_result = utils::parse_package_source(source);
+
+        if parse_package_source_result.is_none() {
+          return (None, tried_paths);
+        }
+
         let ParsePackageSourceResult {
           package_name,
           sub_path,
-        } = utils::parse_package_source(source);
+        } = parse_package_source_result.unwrap();
 
         let package_path = if context.config.resolve.symlinks {
           follow_symlinks(

@@ -112,6 +112,8 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
+      - name: Build Core CJS
+        run: cd packages/core && pnpm run build:cjs
       - name: Test - ${{ matrix.settings.abi }}
         run: npx vitest # use npx vitest to avoid random exit 1
       # - name: Setup tmate session

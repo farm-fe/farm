@@ -20,7 +20,7 @@ pub fn partial_bundling(
   #[cfg(feature = "profile")]
   farmfe_core::puffin::profile_function!();
 
-  let module_group_graph = analyze_module_graph(context, hook_context)?;
+  let module_group_graph: ModuleGroupGraph = analyze_module_graph(context, hook_context)?;
   // insert the module group map into the context
   let mut context_module_group_graph = context.module_group_graph.write();
   context_module_group_graph.replace(module_group_graph);

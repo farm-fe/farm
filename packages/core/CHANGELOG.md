@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.1
+
+### Patch Changes
+
+- 633f5524: Fix #1029
+
 ## 1.0.0
 
 ### Major Changes

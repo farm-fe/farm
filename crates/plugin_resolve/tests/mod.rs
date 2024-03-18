@@ -197,6 +197,10 @@ fn resolve_alias() {
                 "@/components".to_string(),
                 cwd.join("components").to_string_lossy().to_string(),
               ),
+              (
+                "$__farm_regex:^/(utils)$".to_string(),
+                cwd.join("$1").to_string_lossy().to_string(),
+              ),
             ]),
             ..Default::default()
           },
@@ -248,6 +252,20 @@ fn resolve_alias() {
       cwd
         .join("components")
         .join("button.tsx")
+        .to_string_lossy()
+        .to_string()
+    );
+
+    let resolved = resolver.resolve("/utils", cwd.clone(), &ResolveKind::Import, &context);
+
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("utils")
+        .join("index.ts")
         .to_string_lossy()
         .to_string()
     );

@@ -44,14 +44,14 @@ pub struct ParsePackageSourceResult {
   pub sub_path: Option<String>,
 }
 
-pub fn parse_package_source(source: &str) -> ParsePackageSourceResult {
+pub fn parse_package_source(source: &str) -> Option<ParsePackageSourceResult> {
   farm_profile_function!("get_sub_path_of_source".to_string());
 
   // clean query of source
   let source = source.split('?').collect::<Vec<&str>>()[0];
 
   let regex = regex::Regex::new(PACKAGE_REGEX).unwrap();
-  let captures = regex.captures(source).unwrap();
+  let captures = regex.captures(source)?;
 
   let package_name = if let Some(group1) = captures.name("group1") {
     group1.as_str()
@@ -67,10 +67,10 @@ pub fn parse_package_source(source: &str) -> ParsePackageSourceResult {
     Some(format!(".{}", source.strip_prefix(package_name).unwrap()))
   };
 
-  ParsePackageSourceResult {
+  Some(ParsePackageSourceResult {
     package_name: package_name.to_string(),
     sub_path,
-  }
+  })
 }
 
 #[cfg(test)]
@@ -78,7 +78,7 @@ mod tests {
   #[test]
   fn get_sub_path_of_source() {
     let source = "lodash/clone";
-    let result = super::parse_package_source(source);
+    let result = super::parse_package_source(source).unwrap();
     assert_eq!(
       result,
       super::ParsePackageSourceResult {
@@ -88,7 +88,7 @@ mod tests {
     );
 
     let source = "@babel/core/clone";
-    let result = super::parse_package_source(source);
+    let result = super::parse_package_source(source).unwrap();
     assert_eq!(
       result,
       super::ParsePackageSourceResult {
@@ -98,7 +98,7 @@ mod tests {
     );
 
     let source = "clone";
-    let result = super::parse_package_source(source);
+    let result = super::parse_package_source(source).unwrap();
     assert_eq!(
       result,
       super::ParsePackageSourceResult {
@@ -108,7 +108,7 @@ mod tests {
     );
 
     let source = "http-proxy/lib/http-proxy/common";
-    let result = super::parse_package_source(source);
+    let result = super::parse_package_source(source).unwrap();
     assert_eq!(
       result,
       super::ParsePackageSourceResult {
@@ -116,5 +116,9 @@ mod tests {
         sub_path: Some("./lib/http-proxy/common".to_string())
       }
     );
+
+    let source = "@/styles/index.css";
+    let result = super::parse_package_source(source);
+    assert_eq!(result, None);
   }
 }

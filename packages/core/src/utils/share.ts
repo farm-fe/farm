@@ -2,10 +2,11 @@
 import os from 'node:os';
 import fs from 'node:fs';
 import readline from 'node:readline';
-import path, { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import fse from 'fs-extra';
+import path from 'node:path';
 import { Config } from '../../binding/index.js';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore import packageJson from '../../package.json';
+import packageJson from '../../package.json' assert { type: 'json' };
 
 const splitRE = /\r?\n/;
 
@@ -139,9 +140,7 @@ export function preventExperimentalWarning() {
   };
 }
 
-export const version = fse.readJSONSync(
-  join(fileURLToPath(import.meta.url), '../../../package.json')
-).version;
+export const version = packageJson.version;
 
 export function mapTargetEnvValue(config: Config['config']) {
   if (FARM_TARGET_NODE_ENVS.includes(config.output.targetEnv)) {

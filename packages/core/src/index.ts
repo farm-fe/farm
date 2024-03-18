@@ -330,7 +330,9 @@ export async function createFileWatcher(
   await fileWatcher.watch();
 
   // const farmWatcher = new ConfigWatcher(resolvedUserConfig);
-  const configFilePath = await getConfigFilePath(inlineConfig.configPath);
+  const configFilePath = await getConfigFilePath(
+    inlineConfig.configPath ?? resolvedUserConfig.root
+  );
   const farmWatcher = new ConfigWatcher({
     ...resolvedUserConfig,
     configFilePath
