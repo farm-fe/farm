@@ -4,7 +4,7 @@ export default defineConfig({
   compilation: {
     sourcemap: false,
     persistentCache: false,
-    // presetEnv: false
+    presetEnv: false
   },
   // server: {
   //   open: true
