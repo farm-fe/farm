@@ -6,7 +6,7 @@ use farmfe_core::petgraph::visit::EdgeRef;
 use farmfe_core::petgraph::Direction::{self, Outgoing};
 use farmfe_core::swc_common::Mark;
 use farmfe_core::swc_ecma_ast::{
-  op, BlockStmtOrExpr, Decl, DefaultDecl, ExportDecl, ExportDefaultDecl, Expr, ExprStmt, Id,
+  op, BlockStmtOrExpr, Class, Decl, DefaultDecl, ExportDecl, ExportDefaultDecl, Expr, ExprStmt, Id,
   ImportSpecifier, MemberProp, ModuleDecl, PatOrExpr, PropName, Stmt,
 };
 use farmfe_core::{
@@ -44,6 +44,32 @@ pub struct ItemData {
   pub nested_write_vars: Vec<Id>,
   pub side_effects: bool,
   pub side_effect_call: Vec<Id>,
+}
+
+impl ItemData {
+  pub fn merge(&mut self, other: ItemData) {
+    self.var_decls.extend(other.var_decls);
+    self.read_vars.extend(other.read_vars);
+    self.write_vars.extend(other.write_vars);
+    self.nested_read_vars.extend(other.nested_read_vars);
+    self.nested_write_vars.extend(other.nested_write_vars);
+    self.side_effects = self.side_effects || other.side_effects;
+    self.side_effect_call.extend(other.side_effect_call);
+  }
+}
+
+fn class_collection(class: &Class) -> ItemData {
+  let collect = collect_all_usage(class, None);
+
+  let data = ItemData {
+    var_decls: vec![],
+    nested_read_vars: collect.vars.read,
+    nested_write_vars: collect.vars.write,
+    side_effect_call: collect.call_reads,
+    ..Default::default()
+  };
+
+  data
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Default)]
@@ -233,6 +259,45 @@ impl ModuleAnalyze {
             index,
             kind: ItemIdType::Normal,
           };
+          ids.push(id.clone());
+          items_map.insert(id, data);
+        }
+
+        ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(ExportDefaultDecl {
+          decl: DefaultDecl::Class(class),
+          ..
+        })) => {
+          let mut data = class_collection(&class.class);
+
+          if let Some(ident) = &class.ident {
+            data.var_decls.push(ident.to_id());
+          }
+
+          let id = ItemId::Item {
+            index,
+            kind: ItemIdType::Normal,
+          };
+
+          ids.push(id.clone());
+
+          items_map.insert(id, data);
+        }
+
+        ModuleItem::Stmt(Stmt::Decl(Decl::Class(class)))
+        | ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(ExportDecl {
+          decl: Decl::Class(class),
+          ..
+        })) => {
+          let id = class.ident.to_id();
+          let mut data = class_collection(&class.class);
+
+          data.var_decls.push(id);
+
+          let id = ItemId::Item {
+            index,
+            kind: ItemIdType::Normal,
+          };
+
           ids.push(id.clone());
           items_map.insert(id, data);
         }
