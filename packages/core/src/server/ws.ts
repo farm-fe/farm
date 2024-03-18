@@ -207,6 +207,7 @@ export default class WsServer implements IWebSocketServer {
           client.send(JSON.stringify({ type: 'closing' }));
           client.close(1000, 'Server shutdown');
         }
+        // Temporarily remove the direct shutdown of ws
         // client.terminate();
         client.once('close', () => resolve(true));
       });
