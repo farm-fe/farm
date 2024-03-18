@@ -479,10 +479,16 @@ impl Resolver {
 
       let maybe_node_modules_path = current.join(NODE_MODULES);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
+        let parse_package_source_result = utils::parse_package_source(source);
+
+        if parse_package_source_result.is_none() {
+          return (None, tried_paths);
+        }
+
         let ParsePackageSourceResult {
           package_name,
           sub_path,
-        } = utils::parse_package_source(source);
+        } = parse_package_source_result.unwrap();
 
         let package_path = if context.config.resolve.symlinks {
           follow_symlinks(
