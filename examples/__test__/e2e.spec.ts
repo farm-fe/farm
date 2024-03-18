@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
-import { pageMap } from "~utils"
+import { browserErrors } from "~utils"
 
-test("e2e tests for example", async => {
-  console.log(JSON.stringify(pageMap));
+test("e2e tests for example", () => {
+  expect(browserErrors).is.empty;
 });

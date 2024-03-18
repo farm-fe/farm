@@ -15,3 +15,7 @@ export async function setup({ provide }: GlobalSetupContext): Promise<void> {
   provide('wsEndpoint', browserServer.wsEndpoint())
 
 }
+
+export async function teardown(): Promise<void> {
+  await browserServer?.close()
+}

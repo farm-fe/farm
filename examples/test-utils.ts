@@ -1,6 +1,6 @@
 
 export * from './vitestSetup'
-export * from './vitestGlobalSetup'
+// export * from './vitestGlobalSetup'
 
 
 

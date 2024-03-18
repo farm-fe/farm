@@ -7,10 +7,11 @@ import { beforeAll, inject } from 'vitest'
 import type { File } from 'vitest'
 
 
-const browserLogs: string[] = []
-const browserErrors: Error[] = []
-const concurrencyLimit = 50
+export const browserLogs: string[] = []
+export const browserErrors: Error[] = []
+export const concurrencyLimit = 50
 export const pageMap = new Map<String, Page>()
+
 
 const visite = async (path: string, examplePath) => {
   if (!path) return;
@@ -38,7 +39,7 @@ const visite = async (path: string, examplePath) => {
     });
     await page?.goto(path);
   } catch (e) {
-    await page?.close()
+    await page?.close();
     throw e
   }
 }
@@ -50,7 +51,7 @@ let exampleHasStartCommond = (examplePath) => {
     return packageJson && packageJson.scripts && packageJson.scripts.start
       && packageJson.scripts.start.includes("start");
   } catch (error) {
-    console.error(' read json failed', error);
+    // console.error(' read json failed', error);
     return false;
   }
 }
@@ -59,45 +60,60 @@ let startProjectAndVisite = async (examplePath: string) => {
   if (!exampleHasStartCommond(examplePath)) {
     return
   };
-  await new Promise(async (resolve, reject) => {
-    const { stdout } = execa('npm', ['run', 'start'], {
+  await new Promise(async (resolve) => {
+    const { stdout,stderr } = execa('npm', ['run', 'start'], {
       cwd: examplePath,
       stdin: 'pipe',
+      encoding: 'utf8',
       env: {
         BROWSER: "none",
-        encoding: 'Buffer',
+        NO_COLOR: "true"
       },
-      maxBuffer: 100 * 1024 * 1024
     });
     let pagePath;
-    let result = '';
-    const urlRegex = /(http|https):\/\/((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d+)?(\/[^\s]*)?$/g;
-    stdout && stdout.on("data", async (res) => {
+    let result = Buffer.alloc(0);
+    const urlRegex = /((http|https):\/\/(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d+)?(\/[^\s]*)?/g;
+    
+    stdout.on(("data"), async (chunk) => {
+      result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
       if (pagePath) return;
-      result += res.toString('utf8');
-      let replacer = result.replace(/\n/g, '')
-      console.log(examplePath,replacer, 9999);
+      let res = result.toString();
+      let replacer = res.replace(/\n/g, '')
 
       let matches = replacer.match(urlRegex);
-      pagePath = matches && matches[0];
+      pagePath = matches && (matches[1] || matches[0]);
       
       if (pagePath) {
         await visite(pagePath, examplePath);
         resolve(pagePath);
       }
     });
+
+    stdout.on("end", () => {
+      resolve(null);
+    });
+    
+    stdout.on("error", (error)=> {
+      console.log(error);
+      resolve(error);
+    });
+
+    stderr.on('close', (error)=> {
+      console.log(error);
+      resolve(error);
+    });
   })
 }
 
 async function startTest() {
   const examples = readdirSync(("./examples"));
-  // [examples[1], examples[0]
-  await Promise.all(concurrentMap(examples.slice(1, 10), concurrencyLimit, async (example) => {
+  await Promise.all(concurrentMap(examples, concurrencyLimit, async (example) => {
     const examplePath = join('./examples', example)
 
     if (statSync(examplePath).isDirectory()) {
       return await startProjectAndVisite(examplePath);
     }
+    return;
   })).catch((e) => {
     console.log(e)
   });
@@ -113,6 +129,6 @@ beforeAll(async (s) => {
   await startTest()
 
   return async () => {
-    startTest();
+    // startTest();
   }
 })
