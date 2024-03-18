@@ -1,56 +1,115 @@
 name: Building Rust Binding And Upload Artifacts
 on: workflow_call
 
-env:
-  DEBUG: 'napi:*'
-  MACOSX_DEPLOYMENT_TARGET: '10.13'
-
 jobs:
   build:
+    name: Build and Upload Artifacts - ${{ matrix.settings.abi }}
+    runs-on: ${{ matrix.settings.os }}
     strategy:
       fail-fast: false
       matrix:
         settings:
-          - target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
             abi: linux-x64-gnu
-          - target: x86_64-unknown-linux-musl
+            build: >-
+              set -e &&
+              unset CC_x86_64_unknown_linux_gnu &&
+              unset CC &&
+              npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu
+          - os: ubuntu-latest
+            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
             abi: linux-x64-musl
-          - target: x86_64-apple-darwin
-            abi: darwin-x64
-          - target: x86_64-pc-windows-msvc
+            build: >-
+              set -e &&
+              unset CC_x86_64_unknown_linux_musl &&
+              unset CC &&
+              npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl
+          - os: windows-latest
             abi: win32-x64-msvc
-          - target: i686-pc-windows-msvc
+          - os: macos-latest
+            abi: darwin-x64
+
+          # cross compile
+          # windows. Note swc plugins is not supported on ia32 and arm64
+          - os: windows-latest
             abi: win32-ia32-msvc
-          - target: aarch64-pc-windows-msvc
+            target: i686-pc-windows-msvc
+            build: |
+              export CARGO_PROFILE_RELEASE_LTO=false
+              cargo install cargo-xwin
+              npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc --cargo-flags="--no-default-features"
+          - os: windows-latest
             abi: win32-arm64-msvc
-          - target: aarch64-unknown-linux-gnu
-            abi: linux-arm64-gnu
-          - target: aarch64-unknown-linux-musl
+            target: aarch64-pc-windows-msvc
+            build: |
+              export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
+              export CARGO_PROFILE_RELEASE_LTO=false
+              cargo install cargo-xwin
+              npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc --cargo-flags="--no-default-features"
+          # linux
+          - os: ubuntu-latest
             abi: linux-arm64-musl
-          - target: aarch64-apple-darwin
+            target: aarch64-unknown-linux-musl
+            zig: true
+          - os: ubuntu-latest
+            abi: linux-arm64-gnu
+            target: aarch64-unknown-linux-gnu
+            zig: true
+          # macos
+          - os: macos-latest
             abi: darwin-arm64
-    runs-on: ubuntu-latest
+            target: aarch64-apple-darwin
+            zig: false
+          # - os: ubuntu-latest
+          #   abi: darwin-x64
+          #   target: x86_64-apple-darwin
+          #   osxcross: true
+          #   zig: true
+          # - os: ubuntu-latest
+          #   abi: darwin-arm64
+          #   target: aarch64-apple-darwin
+          #   osxcross: true
+          #   zig: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: rust-build-${{ matrix.settings.abi }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
       - run: rustup target add ${{ matrix.settings.target }}
-      - uses: actions/setup-node@v4
+        if: ${{ matrix.settings.target }}
+      # Use the v1 of this action
+      - uses: mbround18/setup-osxcross@v1
+        if: ${{ matrix.settings.osxcross }}
+        # This builds executables & sets env variables for rust to consume.
         with:
-          node-version: '18'
-          cache: 'pnpm'
-      - name: Install ziglang
-        uses: goto-bus-stop/setup-zig@v1
+          osx-version: '12.3'
+      - uses: goto-bus-stop/setup-zig@v2
+        if: ${{ matrix.settings.zig }}
+      - name: Build in docker
+        uses: addnab/docker-run-action@v3
+        if: ${{ matrix.settings.docker }}
         with:
-          version: 0.11.0
-      - run: cargo install cargo-xwin
-      - run: pnpm install
-      - run: pnpm build --target ${{ matrix.settings.target }}
-      - uses: actions/upload-artifact@v3
+          image: ${{ matrix.settings.docker }}
+          options: -v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build
+          run: ${{ matrix.settings.build }}
+      - name: Default Build
+        if: ${{ !matrix.settings.docker && !matrix.settings.build }}
+        run: >-
+          npm run build -- --abi ${{ matrix.settings.abi }} ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }}
+        shell: bash
+      - name: Build
+        if: ${{ !matrix.settings.docker && matrix.settings.build }}
+        run: ${{ matrix.settings.build }}
+        shell: bash
+      - name: Upload Plugin
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: npm/**/index.farm
-          if-no-files-found: error
- 
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin
+          path: npm/${{ matrix.settings.abi }}/index.farm
