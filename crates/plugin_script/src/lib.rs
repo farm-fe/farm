@@ -1,10 +1,7 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{
-  path::{Path, PathBuf},
-  sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{

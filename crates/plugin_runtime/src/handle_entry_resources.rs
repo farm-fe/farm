@@ -263,11 +263,13 @@ pub fn get_entry_resource_and_dep_resources_name(
 
 pub fn handle_entry_resources(
   resources_map: &mut HashMap<String, Resource>,
+  original_entry_resource_code: &HashMap<String, String>,
   context: &Arc<CompilationContext>,
-) {
+) -> HashMap<String, String> {
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
 
+  let mut result = HashMap::new();
   // create a runtime resource
   let mut runtime_code = None;
   let mut runtime_resource = None;
@@ -290,21 +292,8 @@ pub fn handle_entry_resources(
         );
       dep_resources.sort();
 
-      let entry_js_resource_code = String::from_utf8(
-        resources_map
-          .get(&entry_js_resource_name)
-          .expect("entry resource is not found")
-          .bytes
-          .clone(),
-      )
-      .unwrap();
-
       if !should_inject_runtime {
         should_inject_runtime = !dep_resources.is_empty();
-      }
-      // the script entry resource is not changed, we should not inject other resources
-      if !is_entry_js_resource_changed(&entry_js_resource_code, should_inject_runtime, context) {
-        continue;
       }
 
       // 1. import 'dep' or require('dep') to entry resource if target env is node
@@ -342,6 +331,22 @@ pub fn handle_entry_resources(
 
       // 6. append export code
       let export_info_code = get_export_info_code(entry, &module_graph, context);
+
+      let entry_js_resource_code =
+        if let Some(code) = original_entry_resource_code.get(&entry_js_resource_name) {
+          code.clone()
+        } else {
+          let code = String::from_utf8(
+            resources_map
+              .get(&entry_js_resource_name)
+              .expect("entry resource is not found")
+              .bytes
+              .clone(),
+          )
+          .unwrap();
+          result.insert(entry_js_resource_name.clone(), code.clone());
+          code
+        };
 
       // split last line
       let (entry_js_resource_code, entry_js_resource_source_map) =
@@ -401,9 +406,14 @@ pub fn handle_entry_resources(
       resources_map.insert(runtime_resource.name.clone(), runtime_resource);
     }
   }
+
+  return result;
 }
 
-fn create_runtime_code_init(context: &Arc<CompilationContext>) -> String {
+fn create_runtime_code(
+  resources_map: &HashMap<String, Resource>,
+  context: &Arc<CompilationContext>,
+) -> String {
   let node_specific_code = if context.config.output.target_env == TargetEnv::Node {
     match context.config.output.format {
       ModuleFormat::EsModule => {
@@ -427,37 +437,6 @@ fn create_runtime_code_init(context: &Arc<CompilationContext>) -> String {
     }
   );
 
-  format!("{node_specific_code}{farm_global_this_code}")
-}
-
-fn is_entry_js_resource_changed(
-  entry_js_resource_code: &str,
-  should_inject_runtime: bool,
-  context: &Arc<CompilationContext>,
-) -> bool {
-  if entry_js_resource_code.starts_with(&create_runtime_code_init(context)) {
-    return false;
-  }
-
-  if should_inject_runtime {
-    let runtime_import = match context.config.output.format {
-      ModuleFormat::EsModule => "import \"./__farm_runtime",
-      ModuleFormat::CommonJs => "require(\"./__farm_runtime",
-    };
-    if entry_js_resource_code.starts_with(runtime_import) {
-      return false;
-    }
-  }
-
-  true
-}
-
-fn create_runtime_code(
-  resources_map: &HashMap<String, Resource>,
-  context: &Arc<CompilationContext>,
-) -> String {
-  let init_code = create_runtime_code_init(context);
-
   // 3. find runtime resource
   let runtime_resource_code = String::from_utf8(
     resources_map
@@ -469,7 +448,7 @@ fn create_runtime_code(
   )
   .unwrap();
 
-  format!("{init_code}{runtime_resource_code}")
+  format!("{node_specific_code}{farm_global_this_code}{runtime_resource_code}")
 }
 
 fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationContext>) -> Resource {

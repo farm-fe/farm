@@ -8,6 +8,7 @@ use farmfe_compiler::Compiler;
 use farmfe_core::config::bool_or_obj::BoolOrObj;
 use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_core::config::persistent_cache::PersistentCacheConfig;
+use farmfe_core::config::TargetEnv;
 use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
 use farmfe_core::plugin::UpdateType;
 use farmfe_testing_helpers::fixture;
@@ -20,6 +21,7 @@ fn create_compiler_internal(
   crate_path: PathBuf,
   minify: bool,
   lazy_compilation: bool,
+  target_env: TargetEnv,
 ) -> Compiler {
   let compiler = Compiler::new(
     Config {
@@ -28,6 +30,7 @@ fn create_compiler_internal(
       runtime: generate_runtime(crate_path),
       output: farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
+        target_env,
         ..Default::default()
       },
       mode: Mode::Development,
@@ -56,7 +59,7 @@ fn create_update_compiler(
   crate_path: PathBuf,
   minify: bool,
 ) -> Compiler {
-  create_compiler_internal(input, cwd, crate_path, minify, false)
+  create_compiler_internal(input, cwd, crate_path, minify, false, TargetEnv::Browser)
 }
 
 fn create_lazy_update_compiler(
@@ -64,8 +67,9 @@ fn create_lazy_update_compiler(
   cwd: PathBuf,
   crate_path: PathBuf,
   minify: bool,
+  target_env: TargetEnv,
 ) -> Compiler {
-  create_compiler_internal(input, cwd, crate_path, minify, true)
+  create_compiler_internal(input, cwd, crate_path, minify, true, target_env)
 }
 
 fn asset_update_result_code(
@@ -343,6 +347,7 @@ fn update_lazy_compilation() {
         cwd.clone(),
         crate_path,
         false,
+        TargetEnv::Browser,
       );
 
       compiler.compile().unwrap();
@@ -360,6 +365,41 @@ fn update_lazy_compilation() {
       assert_eq!(result.added_module_ids, vec!["dep.ts".into()]);
       assert_eq!(result.updated_module_ids, vec![update_module_id.into()]);
       assert_eq!(result.removed_module_ids.len(), 0);
+    }
+  );
+}
+
+#[test]
+fn update_lazy_compilation_node() {
+  fixture!(
+    "tests/fixtures/update/lazy-compilation/index.ts",
+    |file, crate_path| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let compiler = create_lazy_update_compiler(
+        HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+        cwd.clone(),
+        crate_path,
+        false,
+        TargetEnv::Node,
+      );
+
+      compiler.compile().unwrap();
+
+      let update_file = cwd.join("dep.ts").to_string_lossy().to_string();
+      let update_module_id = format!("virtual:FARMFE_DYNAMIC_IMPORT:{}", update_file);
+      let result = compiler
+        .update(
+          vec![(update_module_id.clone(), UpdateType::Updated)],
+          || {},
+          true,
+        )
+        .unwrap();
+
+      assert_eq!(result.added_module_ids, vec!["dep.ts".into()]);
+      assert_eq!(result.updated_module_ids, vec![update_module_id.into()]);
+      assert_eq!(result.removed_module_ids.len(), 0);
+
+      asset_update_result_code(cwd, &result, Some("update0"));
     }
   );
 }

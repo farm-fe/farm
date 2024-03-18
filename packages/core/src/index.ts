@@ -33,6 +33,8 @@ import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 import { clearScreen } from './utils/share.js';
 import { logError } from './server/error.js';
+import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
+import { resolveHostname } from './utils/http.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -145,16 +147,41 @@ export async function watch(
     false
   );
 
+  const hostname = await resolveHostname(resolvedUserConfig.server.host);
+  resolvedUserConfig.compilation.define = {
+    ...(resolvedUserConfig.compilation.define ?? {}),
+    [`'FARM_NODE_LAZY_COMPILE_SERVER_URL'`]: `http://${
+      hostname.host || 'localhost'
+    }:${resolvedUserConfig.server.port}`
+  };
+
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,
     true
   );
+
+  const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
+  let devServer: Server | undefined;
+  // create dev server for lazy compilation
+  if (lazyEnabled) {
+    devServer = new Server({
+      logger,
+      compiler: compilerFileWatcher.serverOrCompiler as Compiler
+    });
+    await devServer.createServer(resolvedUserConfig.server);
+    devServer.applyMiddlewares([lazyCompilation]);
+    await devServer.startServer(resolvedUserConfig.server);
+  }
 
   async function handleFileChange(files: string[]) {
     logFileChanges(files, resolvedUserConfig.root, logger);
 
     try {
       farmWatcher.close();
+
+      if (lazyEnabled && devServer) {
+        devServer.close();
+      }
 
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
 
