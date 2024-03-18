@@ -12,6 +12,6 @@ export default defineConfig({
     setupFiles: ['./examples/vitestSetup.ts'],
     globalSetup: ['./examples/vitestGlobalSetup.ts'],
     include: ['examples/**/*.spec.ts'],
-    hookTimeout: 4555555
+    hookTimeout: 50_000
   }
 });

@@ -13,7 +13,7 @@ export const concurrencyLimit = 50
 export const pageMap = new Map<String, Page>()
 
 
-const visite = async (path: string, examplePath) => {
+const visite = async (path: string, examplePath: string) => {
   if (!path) return;
   // @ts-ignore
   const wsEndpoint = inject('wsEndpoint')
