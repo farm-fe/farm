@@ -26,7 +26,6 @@ export default <UserConfig>{
     minify: false,
     sourcemap: false,
     persistentCache: false,
-    treeShaking: false,
     progress: false,
     partialBundling: {
       enforceResources: [
