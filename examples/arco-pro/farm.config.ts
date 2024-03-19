@@ -4,15 +4,14 @@ import farmJsPluginLess from '@farmfe/js-plugin-less';
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig(async (env) => {
-  console.log(env);
   return {
     compilation: {
       input: {
         index: './index.html'
       },
-      // presetEnv: false,
-      sourcemap: false,
-      minify: false,
+      // minify: false,
+      presetEnv: false,
+      persistentCache: false,
       resolve: {
         symlinks: true,
         alias: {
@@ -24,7 +23,6 @@ export default defineConfig(async (env) => {
       output: {
         path: './build',
         filename: 'assets/[resourceName].[contentHash].[ext]',
-        publicPath: '/arco-pro/',
         assetsFilename: 'static/[resourceName].[contentHash].[ext]'
       },
       partialBundling: {

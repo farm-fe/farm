@@ -4,13 +4,8 @@ import { createFarmJsPluginBuildConfig } from '../../configs/farm-js-plugin.base
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
-export default createFarmJsPluginBuildConfig(
-  [
-    farmDtsPlugin({
-      tsConfigPath: './tsconfig.build.json'
-    })
-  ],
-  {
-    external: ['@svgr/core', '@svgr/plugin-jsx']
-  }
-);
+export default createFarmJsPluginBuildConfig([
+  farmDtsPlugin({
+    tsConfigPath: './tsconfig.build.json'
+  })
+]);
