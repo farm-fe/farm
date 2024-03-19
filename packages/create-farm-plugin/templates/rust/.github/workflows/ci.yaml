@@ -1,8 +1,36 @@
-name: Cross Build On Linux
+name: Test Plugin
 on:
-  branches:
-    - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   call-rust-build:
     uses: ./.github/workflows/build.yaml
+
+  test-artifacts:
+    name: Test Artifacts
+    needs: [call-rust-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # batch download artifacts
+      - uses: actions/download-artifact@v3
+        with:
+          path: /tmp/artifacts
+      - name: Check Artifacts
+        run: |
+          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
+          do
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin/* ./npm/${abi}
+
+            test -f ./npm/${abi}/index.farm
+          done
+      - name: Setup Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+      - name: Install Dependencies
+        run: npm install -g pnpm@8.15.1
+      - name: Test Example
+        run: cd example && pnpm i && pnpm build
