@@ -14,7 +14,7 @@ import {
   UserServerConfig
 } from '../config/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { openBrowser } from './openBrowser.js';
+import { openBrowser } from './open.js';
 import {
   bootstrap,
   clearScreen,

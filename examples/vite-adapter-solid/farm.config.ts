@@ -14,9 +14,6 @@ export default defineConfig({
     },
     persistentCache: false,
   },
-  server: {
-    open: true,
-  },
   vitePlugins: [() => ({ vitePlugin: solid(), filters: [
     '\\.jsx$',
     '\\.tsx$',

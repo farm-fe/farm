@@ -23,7 +23,7 @@ pub unsafe fn load_rust_plugin<P: AsRef<OsStr> + std::fmt::Display>(
 
   if core_version != VERSION {
     panic!(
-      "Incompatible Rust Plugin: Current core's version({}) is not compatible with the plugin `{:?}` used ({}).\nRefer to xxx(TODO) for details.",
+      "Incompatible Rust Plugin: Current core's version({}) is not compatible with the plugin `{:?}` used ({}).\nPlease upgrade or downgrade the plugin to match the core's version.",
       VERSION, core_version, filename
     );
   }
