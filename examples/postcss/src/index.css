@@ -1,4 +1,5 @@
-@import './base.css';
+@import '@/base.css';
+@import url('normalize.css');
 
 #root {
   width: 400px;

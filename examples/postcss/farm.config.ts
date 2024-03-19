@@ -1,10 +1,19 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
+import path from 'path';
 
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
-  plugins: [farmPostcssPlugin() ],
+  plugins: [farmPostcssPlugin({
+    internalPlugins: {
+      postcssImport: true
+    }
+  })],
+  compilation: {
+    resolve: {
+      alias: {
+        "@/": path.resolve(process.cwd(), 'src')
+      }
+    }
+  }
 });
