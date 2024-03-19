@@ -58,7 +58,7 @@ export class HmrClient {
       { once: true }
     );
 
-    socket.addEventListener('close', async ({ wasClean }) => {
+    socket.addEventListener('close', async () => {
       // TODO Do you want to do an elegant cleaning?
       // if (wasClean) return;
 
