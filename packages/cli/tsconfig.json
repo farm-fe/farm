@@ -5,7 +5,8 @@
     "outDir": "dist",
     "declaration": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "module": "NodeNext"
   },
   "exclude": [
     "node_modules"
