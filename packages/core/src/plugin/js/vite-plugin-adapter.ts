@@ -44,7 +44,7 @@ import type {
   OutputBundle,
   FunctionPluginHooks
 } from 'rollup';
-import path from 'path';
+import path, { isAbsolute } from 'path';
 import {
   Config,
   PluginLoadHookParam,
@@ -392,6 +392,7 @@ export class VitePluginAdapter implements JsPlugin {
             absImporterPath,
             { isEntry: params.kind === 'entry' }
           );
+
           const removeQuery = (path: string) => {
             const queryIndex = path.indexOf('?');
             if (queryIndex !== -1) {
@@ -401,6 +402,18 @@ export class VitePluginAdapter implements JsPlugin {
           };
 
           if (isString(resolveIdResult)) {
+            // TODO 完善判断条件
+            if (isAbsolute(resolveIdResult)) {
+              return {
+                resolvedPath: removeQuery(
+                  encodeStr('virtual-adapter:' + resolveIdResult)
+                ),
+                query: customParseQueryString(resolveIdResult),
+                sideEffects: false,
+                external: false,
+                meta: {}
+              };
+            }
             return {
               resolvedPath: removeQuery(encodeStr(resolveIdResult)),
               query: customParseQueryString(resolveIdResult),
@@ -437,7 +450,6 @@ export class VitePluginAdapter implements JsPlugin {
           if (VitePluginAdapter.isFarmInternalVirtualModule(params.moduleId)) {
             return null;
           }
-
           const hook = this.wrapRawPluginHook(
             'load',
             this._rawPlugin.load,
@@ -449,8 +461,11 @@ export class VitePluginAdapter implements JsPlugin {
             this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = normalizePath(decodeStr(params.resolvedPath));
 
+          const parsedPath = resolvedPath?.includes('virtual-adapter:')
+            ? resolvedPath?.split('virtual-adapter:')?.[1]
+            : resolvedPath;
           // append query
-          const id = formatId(resolvedPath, params.query);
+          const id = formatId(parsedPath, params.query);
           const result = await hook?.(id, isSSR ? { ssr: true } : undefined);
 
           if (result) {

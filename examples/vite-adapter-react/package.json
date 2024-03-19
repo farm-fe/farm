@@ -1,0 +1,25 @@
+{
+  "name": "@farmfe-examples/vite-adapter-react",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "18",
+    "react-dom": "18",
+    "react-router": "^6.22.3",
+    "react-router-dom": "^6.22.3"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/plugin-react": "^1.0.0",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0",
+    "vite-plugin-pages": "^0.32.0"
+  },
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  }
+}
