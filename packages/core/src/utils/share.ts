@@ -6,7 +6,6 @@ import path from 'node:path';
 import { Config } from '../../binding/index.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
-// import packageJson from '../../package.json' assert { type: 'json' };
 
 export const { version } = JSON.parse(
   fs.readFileSync(new URL('../../package.json', import.meta.url)).toString()
