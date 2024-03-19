@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.2
+
+### Patch Changes
+
+- 6f5f7ac8: treeshake class decl assign
+
 ## 1.0.1
 
 ### Patch Changes

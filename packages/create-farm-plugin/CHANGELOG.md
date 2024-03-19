@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.1
+
+### Patch Changes
+
+- 8e4e350a: update rust plugin template ci
+
 ## 0.1.0
 
 ### Minor Changes
