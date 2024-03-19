@@ -42,7 +42,8 @@ export type HMRPayload =
   | FullReloadPayload
   | CustomPayload
   | ErrorPayload
-  | PrunePayload;
+  | PrunePayload
+  | ClosingPayload;
 
 export interface FarmHmrPayload {
   type: 'farm-update';
@@ -83,6 +84,10 @@ export interface CustomPayload {
   type: 'custom';
   event: string;
   data?: any;
+}
+
+export interface ClosingPayload {
+  type: 'closing';
 }
 
 export interface ErrorPayload {
