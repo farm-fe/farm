@@ -6,8 +6,8 @@ import {
   resolveCore,
   getConfigPath,
   resolveCommandOptions,
-  handleAsyncOperationErrors
-  // preventExperimentalWarning
+  handleAsyncOperationErrors,
+  preventExperimentalWarning
 } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
@@ -225,7 +225,7 @@ cli.on('command:*', async () => {
 // we don't use it in `@farmfe/core` package because
 // we need to prevent it in cli package but we don't prevent it in core package
 // We only keep the original code environment.
-// preventExperimentalWarning();
+preventExperimentalWarning();
 
 cli.help();
 
