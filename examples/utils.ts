@@ -1,6 +1,6 @@
 export type SimpleUnwrapArray<T> = T extends ReadonlyArray<infer P> ? P : T;
 
-export function logger(msg, { title = 'FARM INFO', color = 'green' } = {}) {
+export function logger(msg: any, { title = 'FARM INFO', color = 'green' } = {}) {
   const COLOR_CODE = [
     'black',
     'red',
