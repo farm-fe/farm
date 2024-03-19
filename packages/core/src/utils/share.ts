@@ -2,11 +2,14 @@
 import os from 'node:os';
 import fs from 'node:fs';
 import readline from 'node:readline';
-import path from 'node:path';
+import path, { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Config } from '../../binding/index.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
-import packageJson from '../../package.json' assert { type: 'json' };
+
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const splitRE = /\r?\n/;
 
@@ -63,6 +66,8 @@ export function clearScreen() {
     console.error('Failed to clear screen:', error);
   }
 }
+
+export const version = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json')).toString()).version;
 
 export function normalizePath(id: string): string {
   return path.posix.normalize(id);
@@ -139,8 +144,6 @@ export function preventExperimentalWarning() {
     return defaultEmit.call(this, ...args);
   };
 }
-
-export const version = packageJson.version;
 
 export function mapTargetEnvValue(config: Config['config']) {
   if (FARM_TARGET_NODE_ENVS.includes(config.output.targetEnv)) {
