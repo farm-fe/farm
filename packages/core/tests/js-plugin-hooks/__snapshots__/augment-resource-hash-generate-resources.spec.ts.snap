@@ -1,0 +1,46 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Js Plugin Execution - augmentResourceHash 1`] = `
+[
+  "FARM_RUNTIME_runtime",
+  "index.75ce7c1d.js",
+]
+`;
+
+exports[`Js Plugin Execution - augmentResourceHash 2`] = `
+{
+  "custom": {},
+  "data": {
+    "dynamicImports": [],
+    "exports": [],
+    "importedBindings": {},
+    "imports": [],
+    "isDynamicEntry": false,
+    "isEntry": true,
+    "isImplicitEntry": false,
+  },
+  "id": "index_eab4_js",
+  "map": null,
+  "moduleIds": [
+    "index.ts?foo=bar",
+  ],
+  "modules": {
+    "index.ts?foo=bar": {
+      "id": "index.ts?foo=bar",
+      "originalLength": 51,
+      "renderedContent": "function  (e,r,t,u){"use strict";Object.defineProperty(r,"__esModule",{value:!0}),Object.defineProperty(r,"default",{enumerable:!0,get:function(){return n;}});let n="render-resource-pot-return-value";}",
+      "renderedLength": 201,
+      "renderedMap": null,
+    },
+  },
+  "name": "index_eab4",
+  "resourcePotType": "js",
+}
+`;
+
+exports[`Js Plugin Execution - augmentResourceHash 3`] = `
+[
+  "FARM_RUNTIME_runtime",
+  "index.ce8f112d.js",
+]
+`;

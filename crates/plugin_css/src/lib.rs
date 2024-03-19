@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
+use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
@@ -32,9 +33,11 @@ use farmfe_core::{
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
-use farmfe_toolkit::common::load_source_original_source_map;
+use farmfe_toolkit::common::{create_swc_source_map, load_source_original_source_map, PathFilter};
 use farmfe_toolkit::css::ParseCssModuleResult;
 use farmfe_toolkit::lazy_static::lazy_static;
+use farmfe_toolkit::minify::minify_css_module;
+use farmfe_toolkit::script::swc_try_with::try_with;
 use farmfe_toolkit::{
   common::Source,
   css::{codegen_css_stylesheet, parse_css_stylesheet},
@@ -51,7 +54,6 @@ use farmfe_toolkit::{
 use farmfe_utils::{parse_query, relative, stringify_query};
 use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
-use transform_css_to_script::transform_css_to_script_modules;
 
 pub const FARM_CSS_MODULES: &str = "farm_css_modules";
 
@@ -477,24 +479,47 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
-      let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
       let module_graph = context.module_graph.read();
 
+      let minify_options = context
+        .config
+        .minify
+        .clone()
+        .map(|val| MinifyOptions::from(val))
+        .unwrap_or_default();
+      let filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
+      let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
+      let minify_enabled = matches!(
+        minify_options.mode,
+        farmfe_core::config::minify::MinifyMode::Module
+      ) && context.config.minify.enabled();
+
+      let is_minify_enabled = |module_id: &ModuleId| {
+        minify_enabled && filter.execute(&module_id.resolved_path(&context.config.root))
+      };
+
       let mut modules = vec![];
+      let mut module_execution_order = HashMap::new();
 
       for module_id in resource_pot.modules() {
         let module = module_graph.module(module_id).unwrap();
+        module_execution_order.insert(&module.id, module.execution_order);
         modules.push(module);
       }
 
-      modules.sort_by_key(|module| module.execution_order);
+      // modules.sort_by_key(|module| module.execution_order);
       let resources_map = context.resources_map.lock();
 
-      let rendered_modules = modules
-        .into_par_iter()
-        .map(|module| {
-          let mut css_stylesheet = module.meta.as_css().ast.clone();
+      let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
+      modules.into_par_iter().try_for_each(|module| {
+        let (cm, _) = create_swc_source_map(Source {
+          path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
+          content: module.content.clone(),
+        });
+        let mut css_stylesheet = module.meta.as_css().ast.clone();
+        let minify_enabled = is_minify_enabled(&module.id);
 
+        try_with(cm, &context.meta.css.globals, || {
           source_replace(
             &mut css_stylesheet,
             &module.id,
@@ -502,28 +527,38 @@ impl Plugin for FarmPluginCss {
             &resources_map,
           );
 
-          let (css_code, src_map) = codegen_css_stylesheet(
-            &css_stylesheet,
-            if source_map_enabled {
-              Some(Source {
-                path: PathBuf::from(&module.id.resolved_path_with_query(&context.config.root)),
-                content: module.content.clone(),
-              })
-            } else {
-              None
-            },
-            false,
-          );
-
-          RenderedModule {
-            id: module.id.clone(),
-            rendered_length: css_code.len(),
-            original_length: module.size,
-            rendered_content: Arc::new(css_code),
-            rendered_map: src_map.map(|s| Arc::new(s)),
+          if minify_enabled {
+            minify_css_module(&mut css_stylesheet);
           }
-        })
-        .collect::<Vec<_>>();
+        })?;
+
+        let (css_code, src_map) = codegen_css_stylesheet(
+          &css_stylesheet,
+          if source_map_enabled {
+            Some(Source {
+              path: PathBuf::from(&module.id.resolved_path_with_query(&context.config.root)),
+              content: module.content.clone(),
+            })
+          } else {
+            None
+          },
+          minify_enabled,
+        );
+
+        rendered_modules.lock().push(RenderedModule {
+          id: module.id.clone(),
+          rendered_length: css_code.len(),
+          original_length: module.size,
+          rendered_content: Arc::new(css_code),
+          rendered_map: src_map.map(|s| Arc::new(s)),
+        });
+
+        Ok::<(), CompilationError>(())
+      })?;
+
+      let mut rendered_modules = rendered_modules.into_inner();
+
+      rendered_modules.sort_by_key(|module| module_execution_order[&module.id]);
 
       let mut bundle = Bundle::new(BundleOptions {
         trace_source_map_chain: Some(true),

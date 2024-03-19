@@ -16,8 +16,8 @@ pub use swc_ecma_parser;
 pub use swc_ecma_preset_env;
 pub use swc_ecma_transforms;
 pub use swc_ecma_transforms_base;
-pub use swc_ecma_visit;
 pub use swc_ecma_utils;
+pub use swc_ecma_visit;
 
 pub use swc_css_codegen;
 pub use swc_css_minifier;
@@ -39,3 +39,4 @@ pub use lazy_static;
 pub use sourcemap;
 
 pub mod get_dynamic_resources_map;
+pub mod minify;

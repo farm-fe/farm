@@ -274,33 +274,12 @@ impl Plugin for FarmPluginRuntime {
           resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
 
         bundle.prepend(
-          r#"(function (modules, entryModule) {
-            var cache = {};
-
-            function dynamicRequire(id) {
-              return Promise.resolve(require(id));
-            }
-          
-            function require(id) {
-              if (cache[id]) return cache[id].exports;
-          
-              var module = {
-                id: id,
-                exports: {}
-              };
-          
-              modules[id](module, module.exports, require, dynamicRequire);
-              cache[id] = module;
-              return module.exports;
-            }
-          
-            require(entryModule);
-          })("#,
+          r#"(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})("#,
         );
 
         bundle.append(
           &format!(
-            ", {:?});",
+            ",{:?});",
             resource_pot
               .entry_module
               .as_ref()
@@ -367,12 +346,12 @@ impl Plugin for FarmPluginRuntime {
 
         let mut prepend_str = import_strings.join("");
         prepend_str.push_str(&format!(
-          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
+          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{{}}});",
           source_to_names
             .into_iter()
             .map(
               |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
-                format!("{source:?}: {{ ...{name}, __esModule: true }}")
+                format!("{source:?}: {{...{name},__esModule:true}}")
               } else {
                 format!("{source:?}: {name}")
               }
@@ -386,14 +365,14 @@ impl Plugin for FarmPluginRuntime {
         && context.config.output.target_env == TargetEnv::Browser
       {
         let prepend_str = format!(
-          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{ {} }});",
+          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{{}}});",
           external_modules
             .into_iter()
             .map(|source| {
               // TODO: make window['{source}'] configurable.
-              let source_obj = format!("(globalThis || window || {{}})['{}'] || {{}}", source);
+              let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", source);
               if context.config.output.format == ModuleFormat::EsModule {
-                format!("{source:?}: {{ ...({source_obj}), __esModule: true }}")
+                format!("{source:?}: {{...({source_obj}),__esModule:true}}")
               } else {
                 format!("{source:?}: {source_obj}")
               }
@@ -408,14 +387,9 @@ impl Plugin for FarmPluginRuntime {
         && context.config.output.format == ModuleFormat::CommonJs;
 
       let str = format!(
-        r#"(function (modules) {{
-            for (var key in modules) {{
-              modules[key].__farm_resource_pot__ = {};
-                {farm_global_this}.{FARM_MODULE_SYSTEM}.register(key, modules[key]);
-            }}
-        }})("#,
+        r#"(function(_){{for(var r in _){{_[r].__farm_resource_pot__={};{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
         if is_target_node_and_cjs {
-          "'file://' + __filename".to_string()
+          "'file://'+__filename".to_string()
         } else {
           // TODO make it final output file name
           format!("'{}'", resource_pot.name.to_string() + ".js")

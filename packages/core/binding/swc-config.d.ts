@@ -47,7 +47,7 @@ export interface ScriptDecoratorsConfig {
  * Configuration ported from babel-preset-env
  */
 export interface SwcPresetEnvOptions {
-  mode?: "usage" | "entry";
+  mode?: 'usage' | 'entry';
   debug?: boolean;
   dynamicImport?: boolean;
 
@@ -199,14 +199,14 @@ export interface TerserCompressOptions {
  * @example ToSnakeCase<'indentLevel'> == 'indent_level'
  */
 type ToSnakeCase<T extends string> = T extends `${infer A}${infer B}`
-    ? `${A extends Lowercase<A> ? A : `_${Lowercase<A>}`}${ToSnakeCase<B>}`
-    : T;
+  ? `${A extends Lowercase<A> ? A : `_${Lowercase<A>}`}${ToSnakeCase<B>}`
+  : T;
 
 /**
  * @example ToSnakeCaseProperties<{indentLevel: 3}> == {indent_level: 3}
  */
 type ToSnakeCaseProperties<T> = {
-    [K in keyof T as K extends string ? ToSnakeCase<K> : K]: T[K];
+  [K in keyof T as K extends string ? ToSnakeCase<K> : K]: T[K];
 };
 
 export interface TerserMangleOptions {
@@ -231,4 +231,17 @@ export interface JsMinifyOptions {
   compress?: ToSnakeCaseProperties<TerserCompressOptions> | boolean;
 
   mangle?: ToSnakeCaseProperties<TerserMangleOptions> | boolean;
+
+  include?: string[];
+
+  /**
+   * @example ['.min.js$']
+   */
+  exclude?: string[];
+
+  /**
+   *
+   * @default 'minify-module'
+   */
+  mode?: 'minify-module' | 'minify-resource-pot';
 }

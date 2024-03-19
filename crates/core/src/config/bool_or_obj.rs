@@ -24,6 +24,23 @@ impl<T> BoolOrObj<T> {
       BoolOrObj::Bool(b) => default(Some(b)),
     }
   }
+
+  pub fn unwrap_or_default(self) -> T
+  where
+    T: Default,
+  {
+    match self {
+      BoolOrObj::Obj(v) => v,
+      _ => T::default(),
+    }
+  }
+
+  pub fn map<R>(self, f: impl FnOnce(T) -> R) -> BoolOrObj<R> {
+    match self {
+      BoolOrObj::Obj(v) => BoolOrObj::Obj(f(v)),
+      BoolOrObj::Bool(bool) => BoolOrObj::Bool(bool),
+    }
+  }
 }
 
 impl<T> Default for BoolOrObj<T> {
@@ -35,5 +52,22 @@ impl<T> Default for BoolOrObj<T> {
 impl<T> From<bool> for BoolOrObj<T> {
   fn from(value: bool) -> Self {
     Self::Bool(value)
+  }
+}
+
+mod tests {
+  #[test]
+  fn test_bool_or_obj() {
+    use super::BoolOrObj;
+    use serde_json::json;
+
+    let value = json!(true);
+    let value: BoolOrObj<String> = serde_json::from_value(value).unwrap();
+    assert!(matches!(value, BoolOrObj::Bool(true)));
+
+    let value = json!("value");
+    let value: BoolOrObj<String> = serde_json::from_value(value).unwrap();
+    assert!(matches!(value, BoolOrObj::Obj(_)));
+    println!("{:?}", value);
   }
 }
