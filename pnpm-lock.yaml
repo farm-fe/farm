@@ -1606,9 +1606,6 @@ importers:
       open:
         specifier: ^9.1.0
         version: 9.1.0
-      sirv:
-        specifier: ^2.0.3
-        version: 2.0.3
       slashes:
         specifier: ^3.0.12
         version: 3.0.12

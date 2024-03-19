@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -118,7 +118,6 @@
     "loglevel": "^1.8.1",
     "mime-types": "^2.1.35",
     "open": "^9.1.0",
-    "sirv": "^2.0.3",
     "slashes": "^3.0.12",
     "ws": "^8.12.0",
     "zod": "^3.21.4",
