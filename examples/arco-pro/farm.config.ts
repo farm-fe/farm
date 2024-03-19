@@ -10,7 +10,7 @@ export default defineConfig(async (env) => {
       input: {
         index: './index.html'
       },
-      presetEnv: false,
+      // presetEnv: false,
       sourcemap: false,
       minify: false,
       resolve: {

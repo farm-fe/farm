@@ -25,7 +25,7 @@ export class HmrClient {
     ((data: any) => void | Promise<void>)[]
   >();
 
-  constructor(private moduleSystem: ModuleSystem) { }
+  constructor(private moduleSystem: ModuleSystem) {}
 
   connect() {
     logger.debug('connecting to the server...');
@@ -42,7 +42,10 @@ export class HmrClient {
     // the client will apply the update
     socket.addEventListener('message', (event) => {
       const result: HMRPayload = eval(`(${event.data})`);
-
+      if (result?.type === 'closing') {
+        this.closeConnectionGracefully();
+        return;
+      }
       this.handleMessage(result);
     });
 
@@ -55,8 +58,9 @@ export class HmrClient {
       { once: true }
     );
 
-    socket.addEventListener('close', async ({ wasClean }) => {
-      if (wasClean) return;
+    socket.addEventListener('close', async () => {
+      // TODO Do you want to do an elegant cleaning?
+      // if (wasClean) return;
 
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
@@ -67,6 +71,16 @@ export class HmrClient {
     });
 
     return socket;
+  }
+
+  closeConnectionGracefully() {
+    if (
+      this.socket.readyState === WebSocket.CLOSING ||
+      this.socket.readyState === WebSocket.CLOSED
+    ) {
+      return;
+    }
+    this.socket.close(1000, 'Client closing connection');
   }
 
   async applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {

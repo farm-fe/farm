@@ -2,7 +2,7 @@ import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRawType } from 'ws';
 
-import { WebSocketServer as WebSocketServerRaw } from 'ws';
+import { WebSocketServer as WebSocketServerRaw, WebSocket } from 'ws';
 import { Logger, NormalizedServerConfig, red } from '../index.js';
 import { Server } from './type.js';
 import { HmrEngine } from './hmr-engine.js';
@@ -203,7 +203,12 @@ export default class WsServer implements IWebSocketServer {
   private terminateAllClients() {
     const terminatePromises = Array.from(this.wss.clients).map((client) => {
       return new Promise((resolve) => {
-        client.terminate();
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'closing' }));
+          client.close(1000, 'Server shutdown');
+        }
+        // Temporarily remove the direct shutdown of ws
+        // client.terminate();
         client.once('close', () => resolve(true));
       });
     });
