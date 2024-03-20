@@ -1,13 +1,14 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::{bool_or_obj::BoolOrObj, config_regex::ConfigRegex, Config},
+  config::{
+    minify::{MinifyMode, MinifyOptions},
+    Config,
+  },
   context::CompilationContext,
   error::Result,
   plugin::Plugin,
   resource::resource_pot::{ResourcePot, ResourcePotType},
-  serde::{Deserialize, Serialize},
-  serde_json,
   swc_common::{util::take::Take, Mark},
   swc_ecma_ast::EsVersion,
   swc_ecma_parser::Syntax,
@@ -16,18 +17,13 @@ use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::parse_html_document,
+  minify::config::NormalizedMinifyOptions,
   script::{
     codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
     ParseScriptModuleResult,
   },
   swc_css_minifier::minify,
-  swc_ecma_minifier::{
-    optimize,
-    option::{
-      terser::{TerserCompressorOptions, TerserTopLevelOptions},
-      ExtraOptions, MangleOptions, MinifyOptions,
-    },
-  },
+  swc_ecma_minifier::{optimize, option::ExtraOptions},
   swc_ecma_transforms::fixer,
   swc_ecma_transforms_base::{fixer::paren_remover, resolver},
   swc_ecma_visit::VisitMutWith,
@@ -35,27 +31,18 @@ use farmfe_toolkit::{
 };
 
 pub struct FarmPluginMinify {
-  options: Options,
+  minify_options: MinifyOptions,
 }
 
 impl FarmPluginMinify {
   pub fn new(config: &Config) -> Self {
-    let default_exclude = vec![ConfigRegex::new(".+\\.min\\.(js|css|html)$")];
-    // TODO refactor plugin minify to support include and exclude
-    let options = match &*config.minify {
-      BoolOrObj::Bool(_) => Options {
-        options: JsMinifyOptions {
-          compress: BoolOrObj::Bool(true),
-          mangle: BoolOrObj::Bool(true),
-          ..Default::default()
-        },
-        include: vec![],
-        exclude: default_exclude,
-      },
-      BoolOrObj::Obj(obj) => serde_json::from_value(obj.clone()).unwrap(),
-    };
-
-    Self { options }
+    Self {
+      minify_options: config
+        .minify
+        .clone()
+        .map(|val| MinifyOptions::from(val))
+        .unwrap_or_default(),
+    }
   }
 
   pub fn minify_js(
@@ -82,35 +69,8 @@ impl FarmPluginMinify {
         }
       };
 
-      let js_minify_options = &self.options.options;
-
-      let minify_options = MinifyOptions {
-        compress: js_minify_options
-          .compress
-          .clone()
-          .unwrap_as_option(|default| match default {
-            Some(true) => Some(Default::default()),
-            _ => None,
-          })
-          .map(|mut v| {
-            if v.const_to_let.is_none() {
-              v.const_to_let = Some(true);
-            }
-            if v.toplevel.is_none() {
-              v.toplevel = Some(TerserTopLevelOptions::Bool(true));
-            }
-
-            v.into_config(cm.clone())
-          }),
-        mangle: js_minify_options
-          .mangle
-          .clone()
-          .unwrap_as_option(|default| match default {
-            Some(true) => Some(Default::default()),
-            _ => None,
-          }),
-        ..Default::default()
-      };
+      let options = NormalizedMinifyOptions::minify_options_for_resource_pot(&self.minify_options)
+        .into_js_minify_options(cm.clone());
 
       let unresolved_mark = Mark::new();
       let top_level_mark = Mark::new();
@@ -125,7 +85,7 @@ impl FarmPluginMinify {
           cm.clone(),
           Some(&comments),
           None,
-          &minify_options,
+          &options,
           &ExtraOptions {
             unresolved_mark,
             top_level_mark,
@@ -191,6 +151,7 @@ impl FarmPluginMinify {
         resource_pot.meta.rendered_content.clone(),
       )
       .unwrap();
+
       // TODO support css minify options
       minify(&mut ast, Default::default());
 
@@ -254,6 +215,12 @@ impl Plugin for FarmPluginMinify {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot)
+      || !context.config.minify.enabled()
+    {
+      return Ok(None);
+    }
+
     if matches!(
       resource_pot.resource_pot_type,
       ResourcePotType::Js | ResourcePotType::Runtime
@@ -267,26 +234,4 @@ impl Plugin for FarmPluginMinify {
 
     Ok(None)
   }
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(crate = "farmfe_core::serde")]
-pub struct Options {
-  pub options: JsMinifyOptions,
-  pub include: Vec<ConfigRegex>,
-  pub exclude: Vec<ConfigRegex>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(
-  crate = "farmfe_core::serde",
-  deny_unknown_fields,
-  rename_all = "camelCase"
-)]
-pub struct JsMinifyOptions {
-  #[serde(default)]
-  pub compress: BoolOrObj<TerserCompressorOptions>,
-
-  #[serde(default)]
-  pub mangle: BoolOrObj<MangleOptions>,
 }

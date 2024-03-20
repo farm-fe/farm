@@ -1487,8 +1487,8 @@ dependencies = [
  "farmfe_core",
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
- "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
+ "lazy_static",
  "serde",
 ]
 

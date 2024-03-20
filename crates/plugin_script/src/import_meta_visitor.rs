@@ -1,13 +1,9 @@
 use std::{collections::HashSet, sync::Arc};
 
 use farmfe_core::{
-  context::CompilationContext,
-  module::ModuleId,
-  plugin::{PluginResolveHookParam, ResolveKind},
-  swc_common::DUMMY_SP,
-  swc_ecma_ast::{
+  config::FARM_MODULE, context::CompilationContext, module::ModuleId, plugin::{PluginResolveHookParam, ResolveKind}, swc_common::DUMMY_SP, swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, MetaPropKind, Str,
-  },
+  }
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::stringify_query;
@@ -29,7 +25,7 @@ impl VisitMut for ImportMetaVisitor {
           // check if it's hmr accepted
           *expr = Expr::Member(MemberExpr {
             span: DUMMY_SP,
-            obj: Box::new(Expr::Ident(Ident::new("module".into(), DUMMY_SP))),
+            obj: Box::new(Expr::Ident(Ident::new(FARM_MODULE.into(), DUMMY_SP))),
             prop: MemberProp::Ident(Ident::new("meta".into(), DUMMY_SP)),
           });
         }
@@ -84,7 +80,7 @@ impl VisitMut for HmrAcceptedVisitor {
       ..
     }) = expr
     {
-      if &module.to_string() == "module"
+      if &module.to_string() == FARM_MODULE
         && &meta.to_string() == "meta"
         && &hot.to_string() == "hot"
         && &accept.to_string() == "accept"

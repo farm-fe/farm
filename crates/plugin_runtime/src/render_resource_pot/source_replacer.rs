@@ -8,7 +8,7 @@
 //! ```
 
 use farmfe_core::{
-  config::Mode,
+  config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
@@ -17,10 +17,6 @@ use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
-// transformed from dynamic import, e.g `import('./xxx')`
-pub const DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
-// transformed from static import, e.g `import xxx from './xxx'`
-pub const FARM_REQUIRE: &str = "farmRequire";
 
 /// replace all `require('./xxx')` to the actual id and transform require('./xxx'). for example:
 /// ```js
@@ -166,7 +162,7 @@ impl SourceReplacer<'_> {
 
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
-          sym: DYNAMIC_REQUIRE.into(),
+          sym: FARM_DYNAMIC_REQUIRE.into(),
           optional: false,
         })));
 

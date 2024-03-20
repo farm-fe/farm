@@ -11,11 +11,18 @@ use self::{
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+// transformed from dynamic import, e.g `import('./xxx')`
+pub const FARM_DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
+// transformed from static import, e.g `import xxx from './xxx'`
+pub const FARM_REQUIRE: &str = "farmRequire";
+pub const FARM_MODULE: &str = "module";
+pub const FARM_MODULE_EXPORT: &str = "exports";
 
 pub mod bool_or_obj;
 pub mod comments;
 pub mod config_regex;
 pub mod html;
+pub mod minify;
 pub mod partial_bundling;
 pub mod persistent_cache;
 pub mod preset_env;
@@ -288,9 +295,7 @@ pub struct AssetsConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
 pub enum SourcemapConfig {
-  Bool(bool),
   /// Generate inline sourcemap instead of a separate file for mutable resources.
   #[serde(rename = "inline")]
   Inline,
@@ -300,6 +305,8 @@ pub enum SourcemapConfig {
   All,
   #[serde(rename = "all-inline")]
   AllInline,
+  #[serde(untagged)]
+  Bool(bool),
 }
 
 impl Default for SourcemapConfig {
@@ -333,5 +340,32 @@ impl SourcemapConfig {
       Self::All => true,
       Self::AllInline => true,
     }
+  }
+}
+
+mod tests {
+
+  #[test]
+  fn test_deserialize() {
+    use super::SourcemapConfig;
+    let config: SourcemapConfig = serde_json::from_str("true").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::Bool(true)));
+
+    let config: SourcemapConfig = serde_json::from_str("false").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::Bool(false)));
+
+    let config: SourcemapConfig = serde_json::from_str("\"all-inline\"").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::AllInline));
+
+    let config: SourcemapConfig = serde_json::from_str("\"inline\"").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::Inline));
+
+    let config: SourcemapConfig = serde_json::from_str("\"all\"").expect("failed to parse");
+
+    assert!(matches!(config, SourcemapConfig::All));
   }
 }

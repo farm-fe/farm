@@ -36,6 +36,9 @@ await execa(
   { cwd }
 );
 
+console.log('Unit Test');
+await execa(DEFAULT_PACKAGE_MANAGER, ['run', 'test'], { cwd });
+
 console.log('Cargo test');
 await execa(
   'cargo',

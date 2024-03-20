@@ -9,7 +9,7 @@ export default <UserConfig>{
       index: 'src/index.ts'
     },
     output: {
-      path: 'cjs',
+      path: 'dist/cjs',
       format: 'cjs',
       targetEnv: 'node',
       entryFilename: 'index.cjs'
@@ -64,7 +64,7 @@ export default <UserConfig>{
               relativePath === 'binding/resolve-binding.cjs'
             ) {
               return {
-                resolvedPath: `../${relativePath}`,
+                resolvedPath: `../../${relativePath}`,
                 external: true
               };
             }
@@ -104,7 +104,7 @@ export default <UserConfig>{
               relativePath === 'binding/resolve-binding.cjs'
             ) {
               return {
-                content: `module.exports = require('../${relativePath}');`,
+                content: `module.exports = require('../../${relativePath}');`,
                 moduleType: 'js'
               };
             }

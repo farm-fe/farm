@@ -41,7 +41,9 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:^1.0.0",
-    "@farmfe/js-plugin-dts": "workspace:^",
+    "@farmfe/js-plugin-dts": "workspace:^"
+  },
+  "dependencies": {
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0"
   },

@@ -7,7 +7,7 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./cjs/index.cjs",
+      "require": "./dist/cjs/index.cjs",
       "types": "./dist/index.d.ts"
     },
     "./client": {
