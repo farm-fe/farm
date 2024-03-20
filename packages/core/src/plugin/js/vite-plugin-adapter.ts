@@ -24,7 +24,8 @@ import {
   VITE_PLUGIN_DEFAULT_MODULE_TYPE,
   normalizePath,
   revertNormalizePath,
-  normalizeAdapterVirtualModule
+  normalizeAdapterVirtualModule,
+  isStartsWithSlash
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { Server } from '../../server/index.js';
@@ -46,6 +47,7 @@ import type {
   FunctionPluginHooks
 } from 'rollup';
 import path from 'path';
+import fse from 'fs-extra';
 import {
   Config,
   PluginLoadHookParam,
@@ -421,6 +423,27 @@ export class VitePluginAdapter implements JsPlugin {
               meta: resolveIdResult.meta ?? {}
             };
           }
+
+          // handles paths starting with / in the vite plugin,
+          // returning the correct path if the file exists in our root path
+          const rootAbsolutePath = path.join(
+            this._farmConfig.root,
+            params.source
+          );
+
+          if (
+            isStartsWithSlash(params.source) &&
+            fse.pathExistsSync(rootAbsolutePath)
+          ) {
+            return {
+              resolvedPath: removeQuery(encodeStr(rootAbsolutePath)),
+              query: customParseQueryString(rootAbsolutePath),
+              sideEffects: false,
+              external: false,
+              meta: {}
+            };
+          }
+
           return null;
         }
       )

@@ -1,7 +1,7 @@
 declare module '*.svg';
 declare module '*.png';
 declare module '*.css';
-declare module '~react-page' {
+declare module '~react-pages' {
   import type { RouteObject } from 'react-router'
 
   const routes: RouteObject[]
