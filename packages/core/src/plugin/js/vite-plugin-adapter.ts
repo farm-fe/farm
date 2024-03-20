@@ -23,7 +23,9 @@ import {
   transformRollupResource2FarmResource,
   VITE_PLUGIN_DEFAULT_MODULE_TYPE,
   normalizePath,
-  revertNormalizePath
+  revertNormalizePath,
+  normalizeAdapterVirtualModule,
+  isStartsWithSlash
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { Server } from '../../server/index.js';
@@ -45,6 +47,7 @@ import type {
   FunctionPluginHooks
 } from 'rollup';
 import path from 'path';
+import fse from 'fs-extra';
 import {
   Config,
   PluginLoadHookParam,
@@ -387,11 +390,12 @@ export class VitePluginAdapter implements JsPlugin {
           const absImporterPath = normalizePath(
             path.resolve(process.cwd(), params.importer ?? '')
           );
-          const resolveIdResult: ResolveIdResult = await hook?.(
+          let resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
             absImporterPath,
             { isEntry: params.kind === 'entry' }
           );
+
           const removeQuery = (path: string) => {
             const queryIndex = path.indexOf('?');
             if (queryIndex !== -1) {
@@ -401,6 +405,7 @@ export class VitePluginAdapter implements JsPlugin {
           };
 
           if (isString(resolveIdResult)) {
+            resolveIdResult = normalizeAdapterVirtualModule(resolveIdResult);
             return {
               resolvedPath: removeQuery(encodeStr(resolveIdResult)),
               query: customParseQueryString(resolveIdResult),
@@ -409,15 +414,39 @@ export class VitePluginAdapter implements JsPlugin {
               meta: {}
             };
           } else if (isObject(resolveIdResult)) {
+            const resolveId = normalizeAdapterVirtualModule(
+              resolveIdResult?.id
+            );
             return {
-              resolvedPath: removeQuery(encodeStr(resolveIdResult?.id)),
-              query: customParseQueryString(resolveIdResult!.id),
+              resolvedPath: removeQuery(encodeStr(resolveId)),
+              query: customParseQueryString(resolveId),
               sideEffects: Boolean(resolveIdResult?.moduleSideEffects),
               // TODO support relative and absolute external
               external: Boolean(resolveIdResult?.external),
               meta: resolveIdResult.meta ?? {}
             };
           }
+
+          // handles paths starting with / in the vite plugin,
+          // returning the correct path if the file exists in our root path
+          const rootAbsolutePath = path.join(
+            this._farmConfig.root,
+            params.source
+          );
+
+          if (
+            isStartsWithSlash(params.source) &&
+            fse.pathExistsSync(rootAbsolutePath)
+          ) {
+            return {
+              resolvedPath: removeQuery(encodeStr(rootAbsolutePath)),
+              query: customParseQueryString(rootAbsolutePath),
+              sideEffects: false,
+              external: false,
+              meta: {}
+            };
+          }
+
           return null;
         }
       )
@@ -437,7 +466,6 @@ export class VitePluginAdapter implements JsPlugin {
           if (VitePluginAdapter.isFarmInternalVirtualModule(params.moduleId)) {
             return null;
           }
-
           const hook = this.wrapRawPluginHook(
             'load',
             this._rawPlugin.load,
