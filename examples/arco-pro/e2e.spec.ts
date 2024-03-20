@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-test('e2e tests - ' + name, async () => {
+test(`e2e tests - ${name}`, async () => {
   await startProjectAndTest(projectPath, async (page) => {
     await page.waitForSelector('button.arco-btn.arco-btn-primary', {
       timeout: 10000

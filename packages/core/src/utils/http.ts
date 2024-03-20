@@ -10,6 +10,7 @@
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
 import { UserServerConfig } from '../index.js';
+import { Server as DevServer } from '../server/index.js';
 
 export interface ResolvedServerUrls {
   local: string[];
@@ -123,4 +124,14 @@ function createServerUrl(
 ): string {
   const hostnameName = hostname.includes(':') ? `[${hostname}]` : hostname;
   return `${protocol}://${hostnameName}:${port}${publicPath}`;
+}
+
+export function gracefullyShutdownServer(server: DevServer) {
+  // gracefully shutdown
+  process.on('SIGINT', () => {
+    server.close();
+  });
+  process.on('SIGTERM', () => {
+    server.close();
+  });
 }

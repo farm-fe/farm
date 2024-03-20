@@ -4,6 +4,6 @@ import QRCode from 'qrcode';
 QRCode.toCanvas('text', { errorCorrectionLevel: 'H' }, function (err, canvas) {
   if (err) throw err;
 
-  var container = document.getElementById('canvas');
+  var container = document.getElementById('root');
   container.appendChild(canvas);
 });

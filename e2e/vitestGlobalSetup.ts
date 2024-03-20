@@ -9,6 +9,7 @@ export async function setup({ provide }: GlobalSetupContext): Promise<void> {
     headless: true
   });
 
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   provide('wsEndpoint', browserServer.wsEndpoint());
 }

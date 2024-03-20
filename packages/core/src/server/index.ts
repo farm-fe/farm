@@ -185,6 +185,10 @@ export class Server implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
+    // the server is already closed
+    if (!this.server.listening) {
+      return;
+    }
     const promises = [];
     if (this.ws) {
       promises.push(this.ws.close());
@@ -217,6 +221,7 @@ export class Server implements ImplDevServer {
     const hmrPath = publicPath === '/' ? DEFAULT_HMR_OPTIONS.path : publicPath;
     this.config = {
       ...options,
+      port: Number(process.env.FARM_DEV_SERVER_PORT || options.port),
       hmr: {
         ...options.hmr,
         path: hmrPath
