@@ -2,7 +2,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { expect, test } from 'vitest';
 
-import { normalizeDevServerOptions, resolveConfig } from '../cjs/index.cjs';
+import {
+  normalizeDevServerOptions,
+  resolveConfig
+} from '../dist/cjs/index.cjs';
 import { Logger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {
