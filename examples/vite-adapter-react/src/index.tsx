@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router, useRoutes } from 'react-router-dom';
 import './index.css';
 import routes from '~react-page';
+console.log("🤖 == routes:", routes)
 
 const container = document.querySelector('#root');
 const root = createRoot(container);

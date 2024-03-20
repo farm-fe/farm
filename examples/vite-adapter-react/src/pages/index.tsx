@@ -1,10 +1,10 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import FarmLogo from './assets/logo.png';
-import reactLogo from './assets/react.svg';
+import FarmLogo from '../assets/logo.png';
+import reactLogo from '../assets/react.svg';
 import './main.css';
 
-export function Main() {
+ export default function () {
   const [count, setCount] = useState(0);
   const go = useNavigate();
 
@@ -31,3 +31,4 @@ export function Main() {
     </>
   );
 }
+// export default Index;

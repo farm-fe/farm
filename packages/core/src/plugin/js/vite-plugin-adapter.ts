@@ -23,7 +23,8 @@ import {
   transformRollupResource2FarmResource,
   VITE_PLUGIN_DEFAULT_MODULE_TYPE,
   normalizePath,
-  revertNormalizePath
+  revertNormalizePath,
+  normalizeAdapterVirtualModule
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { Server } from '../../server/index.js';
@@ -44,7 +45,7 @@ import type {
   OutputBundle,
   FunctionPluginHooks
 } from 'rollup';
-import path, { isAbsolute } from 'path';
+import path from 'path';
 import {
   Config,
   PluginLoadHookParam,
@@ -387,7 +388,7 @@ export class VitePluginAdapter implements JsPlugin {
           const absImporterPath = normalizePath(
             path.resolve(process.cwd(), params.importer ?? '')
           );
-          const resolveIdResult: ResolveIdResult = await hook?.(
+          let resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
             absImporterPath,
             { isEntry: params.kind === 'entry' }
@@ -402,18 +403,7 @@ export class VitePluginAdapter implements JsPlugin {
           };
 
           if (isString(resolveIdResult)) {
-            // TODO 完善判断条件
-            if (isAbsolute(resolveIdResult)) {
-              return {
-                resolvedPath: removeQuery(
-                  encodeStr('virtual-adapter:' + resolveIdResult)
-                ),
-                query: customParseQueryString(resolveIdResult),
-                sideEffects: false,
-                external: false,
-                meta: {}
-              };
-            }
+            resolveIdResult = normalizeAdapterVirtualModule(resolveIdResult);
             return {
               resolvedPath: removeQuery(encodeStr(resolveIdResult)),
               query: customParseQueryString(resolveIdResult),
@@ -461,11 +451,8 @@ export class VitePluginAdapter implements JsPlugin {
             this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = normalizePath(decodeStr(params.resolvedPath));
 
-          const parsedPath = resolvedPath?.includes('virtual-adapter:')
-            ? resolvedPath?.split('virtual-adapter:')?.[1]
-            : resolvedPath;
           // append query
-          const id = formatId(parsedPath, params.query);
+          const id = formatId(resolvedPath, params.query);
           const result = await hook?.(id, isSSR ? { ssr: true } : undefined);
 
           if (result) {
