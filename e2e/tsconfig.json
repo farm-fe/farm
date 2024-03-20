@@ -15,9 +15,6 @@
     "allowSyntheticDefaultImports": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "paths": {
-      "~utils": ["./test-utils.ts"]
-    }
+    "resolveJsonModule": true
   }
 }

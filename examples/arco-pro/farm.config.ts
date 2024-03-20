@@ -32,7 +32,7 @@ export default defineConfig(async (env) => {
     },
     server: {
       cors: true,
-      port: 6260
+      port: 6290
     },
     plugins: [
       [

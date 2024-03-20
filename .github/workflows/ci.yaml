@@ -48,8 +48,11 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
-      - name: Test Examples - ${{ matrix.settings.abi }}
+      - name: Build Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
+
+      - name: E2E Test Examples - ${{ matrix.settings.abi }}
+        run: npm run test-e2e
 
       # test create farm
       - name: Build Create Farm

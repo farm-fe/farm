@@ -1,17 +1,11 @@
-import { resolve } from 'node:path';
-import { defineConfig } from 'vitest/config'
-
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      '~utils': resolve(__dirname, './examples/test-utils'),
-    }
-  },
   test: {
-    setupFiles: ['./examples/vitestSetup.ts'],
-    globalSetup: ['./examples/vitestGlobalSetup.ts'],
-    include: ['examples/**/*.spec.ts'],
-    hookTimeout: 50_000
+    setupFiles: ['./e2e/vitestSetup.ts'],
+    globalSetup: ['./e2e/vitestGlobalSetup.ts'],
+    include: ['examples/**/*.spec.ts', `e2e/**/*.spec.ts`],
+    hookTimeout: 600_000,
+    testTimeout: 30000
   }
 });
