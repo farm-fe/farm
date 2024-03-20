@@ -414,9 +414,12 @@ export class VitePluginAdapter implements JsPlugin {
               meta: {}
             };
           } else if (isObject(resolveIdResult)) {
+            const resolveId = normalizeAdapterVirtualModule(
+              resolveIdResult?.id
+            );
             return {
-              resolvedPath: removeQuery(encodeStr(resolveIdResult?.id)),
-              query: customParseQueryString(resolveIdResult!.id),
+              resolvedPath: removeQuery(encodeStr(resolveId)),
+              query: customParseQueryString(resolveId),
               sideEffects: Boolean(resolveIdResult?.moduleSideEffects),
               // TODO support relative and absolute external
               external: Boolean(resolveIdResult?.external),
