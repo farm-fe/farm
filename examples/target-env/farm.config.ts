@@ -6,8 +6,7 @@ export default defineConfig({
       targetEnv: 'browser-esnext',
     },
     persistentCache: false,
-    minify: false,
-    mode: 'development'
+    minify: false
   },
   plugins: ['@farmfe/plugin-react']
 });

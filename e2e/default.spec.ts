@@ -13,7 +13,7 @@ const excludeExamples: string[] = [
 
 test('Default E2E Tests', async () => {
   // const examples = readdirSync('./examples');
-  const examples = ['env'];
+  const examples = ['x-data-spreadsheet'];
   logger(`Running E2E tests for ${examples.length} examples`);
 
   for (const example of examples) {
@@ -39,12 +39,20 @@ test('Default E2E Tests', async () => {
     console.log(`Testing ${example}`);
 
     if (statSync(examplePath).isDirectory()) {
-      await startProjectAndTest(examplePath, async (page) => {
-        // id root should be in the page
-        await page.waitForSelector('#root > *', { timeout: 10000 });
-        const child = await page.$('#root > *');
-        expect(child).toBeTruthy();
-      });
+      const runTest = (command?: 'start' | 'preview') =>
+        startProjectAndTest(
+          examplePath,
+          async (page) => {
+            // id root should be in the page
+            await page.waitForSelector('#root > *', { timeout: 10000 });
+            const child = await page.$('#root > *');
+            expect(child).toBeTruthy();
+          },
+          command
+        );
+
+      await runTest();
+      await runTest('preview');
     }
   }
 });

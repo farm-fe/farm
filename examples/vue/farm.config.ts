@@ -1,9 +1,5 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
   compilation: {
@@ -14,6 +10,14 @@ export default defineConfig({
       path: './build'
     }
   },
-  server: {},
+  server: {
+    proxy: {
+      '^/api': {
+        target: 'https://music-erkelost.vercel.app/banner',
+        changeOrigin: true,
+        rewrite: (path: any) => path.replace(/^\/api/, '')
+      }
+    }
+  },
   plugins: [farmJsPluginVue()]
 });

@@ -324,7 +324,10 @@ export class Server implements ImplDevServer {
 
     let isPortAvailableResult = await isPortAvailable(devPort);
     while (isPortAvailableResult === false) {
-      normalizedDevConfig.hmr.port = ++hmrPort;
+      if (typeof normalizedDevConfig.hmr === 'object') {
+        normalizedDevConfig.hmr.port = ++hmrPort;
+      }
+
       normalizedDevConfig.port = ++devPort;
       isPortAvailableResult = await isPortAvailable(devPort);
     }

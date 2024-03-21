@@ -1,7 +1,6 @@
 use std::{any::Any, path::PathBuf, sync::Arc};
 
 use dashmap::DashMap;
-use farmfe_utils::hash::sha256;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

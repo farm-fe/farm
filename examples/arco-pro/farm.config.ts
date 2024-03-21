@@ -20,6 +20,8 @@ export default defineConfig(async (env) => {
           react: resolve(process.cwd(), './node_modules/react')
         }
       },
+      minify: false,
+      mode: 'development',
       output: {
         path: './build',
         filename: 'assets/[resourceName].[contentHash].[ext]',

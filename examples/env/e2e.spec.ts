@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { test, expect } from 'vitest';
 import { startProjectAndTest } from '../../e2e/vitestSetup';
 import { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -11,8 +11,8 @@ test(`e2e tests - ${name}`, async () => {
     startProjectAndTest(
       projectPath,
       async (page) => {
-        const app = await page.$('#app');
-        expect(await app?.innerHTML()).toBe('app');
+        const rootHtml = await page.innerHTML('body');
+        expect(rootHtml).matchSnapshot();
       },
       command
     );

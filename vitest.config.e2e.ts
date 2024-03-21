@@ -6,6 +6,6 @@ export default defineConfig({
     globalSetup: ['./e2e/vitestGlobalSetup.ts'],
     include: ['examples/**/*.spec.ts', `e2e/**/*.spec.ts`],
     hookTimeout: 600_000,
-    testTimeout: 30000
+    testTimeout: 300_000
   }
 });

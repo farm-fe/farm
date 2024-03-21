@@ -2,12 +2,12 @@ import { chromium, type Page } from 'playwright-chromium';
 import { join } from 'path';
 import { readFileSync } from 'node:fs';
 import { logger } from './utils.js';
-import { inject, onTestFailed } from 'vitest';
+import { inject, onTestFinished } from 'vitest';
 import { execa } from 'execa';
 import { existsSync } from 'fs';
 
-export const browserLogs: string[] = [];
-export const browserErrors: Error[] = [];
+// export const browserLogs: string[] = [];
+// export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
 export const pageMap = new Map<string, Page>();
 
@@ -31,29 +31,32 @@ const visitPage = async (
   try {
     page?.on('console', (msg) => {
       logger(`${examplePath} -> ${path}: ${msg.text()}`);
-      browserLogs.push(msg.text());
+      // browserLogs.push(msg.text());
+    });
+    let resolve: (data: any) => void, reject: (e: Error) => void;
+    const promise = new Promise((r, re) => {
+      resolve = r;
+      reject = re;
     });
 
     page?.on('pageerror', (error) => {
       logger(`${examplePath} -> ${path}: ${error}`, {
         color: 'red'
       });
-      browserErrors.push(error);
+      reject(error);
     });
 
-    const promise = new Promise((resolve, reject) => {
-      page?.on('load', async () => {
-        cb(page)
-          .then(() => {
-            resolve(null);
-          })
-          .catch((e) => {
-            logger(`${examplePath} start failed with error ${e}`, {
-              color: 'red'
-            });
-            reject(e);
+    page?.on('load', async () => {
+      cb(page)
+        .then(() => {
+          resolve(null);
+        })
+        .catch((e) => {
+          logger(`${examplePath} start failed with error ${e}`, {
+            color: 'red'
           });
-      });
+          reject(e);
+        });
     });
 
     await page?.goto(path);
@@ -81,7 +84,8 @@ const getFarmCLIBinPath = (examplePath: string) => {
 
 export const startProjectAndTest = async (
   examplePath: string,
-  cb: (page: Page) => Promise<void>
+  cb: (page: Page) => Promise<void>,
+  command = 'start'
 ) => {
   // using bin path to spawn child process to avoid port conflicts issue
   const cliBinPath = getFarmCLIBinPath(examplePath);
@@ -91,8 +95,8 @@ export const startProjectAndTest = async (
   }
 
   await new Promise((resolve, reject) => {
-    logger('execute' + `node ${cliBinPath} start`);
-    const child = execa('node', [cliBinPath, 'start'], {
+    logger(`Executing node ${cliBinPath} ${command} in ${examplePath}`);
+    const child = execa('node', [cliBinPath, command], {
       cwd: examplePath,
       stdin: 'pipe',
       encoding: 'utf8',
@@ -128,22 +132,22 @@ export const startProjectAndTest = async (
     });
 
     child.on('error', (error) => {
-      logger(`${examplePath} start failed with error ${error}`, {
+      logger(`${examplePath} ${command} failed with error ${error}`, {
         color: 'red'
       });
-      reject(`${examplePath} start failed with error ${error}`);
+      reject(`${examplePath} ${command} failed with error ${error}`);
     });
 
     child.on('exit', (code) => {
       if (code) {
-        logger(`${examplePath} start failed with code ${code}`, {
+        logger(`${examplePath} ${command} failed with code ${code}`, {
           color: 'red'
         });
-        reject(new Error(`${examplePath} start failed with code ${code}`));
+        reject(new Error(`${examplePath} ${command} failed with code ${code}`));
       }
     });
 
-    onTestFailed(() => {
+    onTestFinished(() => {
       logger('try kill child process: ' + child.pid);
       logger('current process id: ' + process.pid);
       if (!child.killed) {

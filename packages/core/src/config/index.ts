@@ -59,6 +59,51 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
 
+async function getDefaultConfig(
+  inlineOptions: FarmCLIOptions,
+  logger: Logger,
+  mode?: CompilationMode,
+  isHandleServerPortConflict = true
+) {
+  const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
+
+  const resolvedUserConfig = await resolveMergedUserConfig(
+    mergedUserConfig,
+    undefined,
+    inlineOptions.mode ?? mode
+  );
+  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
+
+  if (isHandleServerPortConflict) {
+    await handleServerPortConflict(resolvedUserConfig, logger, mode);
+  }
+
+  resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
+    resolvedUserConfig,
+    logger,
+    mode
+  );
+  resolvedUserConfig.root = resolvedUserConfig.compilation.root;
+  resolvedUserConfig.jsPlugins = [];
+  resolvedUserConfig.rustPlugins = [];
+
+  return resolvedUserConfig;
+}
+
+async function handleServerPortConflict(
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger,
+  mode?: CompilationMode
+) {
+  // check port availability: auto increment the port if a conflict occurs
+
+  try {
+    mode !== 'production' &&
+      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
+    // eslint-disable-next-line no-empty
+  } catch {}
+}
+
 /**
  * Resolve and load user config from the specified path
  * @param configPath
@@ -66,36 +111,23 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
 export async function resolveConfig(
   inlineOptions: FarmCLIOptions,
   logger: Logger,
-  mode?: CompilationMode
+  mode?: CompilationMode,
+  isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
   inlineOptions.mode = inlineOptions.mode ?? mode;
 
-  const getDefaultConfig = async () => {
-    const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
-
-    const resolvedUserConfig = await resolveMergedUserConfig(
-      mergedUserConfig,
-      undefined,
-      inlineOptions.mode ?? mode
-    );
-    resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
-    resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
-      resolvedUserConfig,
-      logger,
-      mode
-    );
-    resolvedUserConfig.root = resolvedUserConfig.compilation.root;
-    resolvedUserConfig.jsPlugins = [];
-    resolvedUserConfig.rustPlugins = [];
-    return resolvedUserConfig;
-  };
   // configPath may be file or directory
   const { configPath } = inlineOptions;
   // if the config file can not found, just merge cli options and return default
   if (!configPath) {
-    return getDefaultConfig();
+    return getDefaultConfig(
+      inlineOptions,
+      logger,
+      mode,
+      isHandleServerPortConflict
+    );
   }
 
   if (!path.isAbsolute(configPath)) {
@@ -109,7 +141,12 @@ export async function resolveConfig(
   );
 
   if (!loadedUserConfig) {
-    return getDefaultConfig();
+    return getDefaultConfig(
+      inlineOptions,
+      logger,
+      mode,
+      isHandleServerPortConflict
+    );
   }
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
@@ -151,17 +188,10 @@ export async function resolveConfig(
     resolvedUserConfig.server,
     mode
   );
-  // check port availability: auto increment the port if a conflict occurs
-  const targetWeb = !(
-    userConfig.compilation?.output?.targetEnv === 'node' ||
-    mode === 'production'
-  );
 
-  try {
-    targetWeb &&
-      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
-    // eslint-disable-next-line no-empty
-  } catch { }
+  if (isHandleServerPortConflict) {
+    await handleServerPortConflict(resolvedUserConfig, logger, mode);
+  }
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -263,10 +293,10 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-        env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-          userConfig.env[key];
-        return env;
-      }, {})
+          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+            userConfig.env[key];
+          return env;
+        }, {})
   );
 
   const require = module.createRequire(import.meta.url);
@@ -316,7 +346,7 @@ export async function normalizeUserCompilationConfig(
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
       ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-        ?.name ?? FARM_DEFAULT_NAMESPACE
+          ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
@@ -353,7 +383,8 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
     // may be we don't need this
     config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
-    config.define.FARM_HMR_BASE = userConfig.compilation?.output?.publicPath ?? '/';
+    config.define.FARM_HMR_BASE =
+      userConfig.compilation?.output?.publicPath ?? '/';
   }
 
   if (
@@ -459,12 +490,12 @@ export function normalizeDevServerOptions(
     hmr,
     https: https
       ? {
-        ...https,
-        ca: tryAsFileRead(options.https.ca),
-        cert: tryAsFileRead(options.https.cert),
-        key: tryAsFileRead(options.https.key),
-        pfx: tryAsFileRead(options.https.pfx)
-      }
+          ...https,
+          ca: tryAsFileRead(options.https.ca),
+          cert: tryAsFileRead(options.https.cert),
+          key: tryAsFileRead(options.https.key),
+          pfx: tryAsFileRead(options.https.pfx)
+        }
       : undefined
   });
 }
@@ -841,7 +872,8 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Build failed due to errors: Can not resolve ${isTargetNode ? 'index.js or index.ts' : 'index.html'
+        `Build failed due to errors: Can not resolve ${
+          isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
       );
     }

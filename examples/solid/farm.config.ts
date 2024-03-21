@@ -1,15 +1,10 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmJsPluginSolid from '@farmfe/js-plugin-solid';
 
-function defineFarmConfig(config: UserConfig) {
-  return config;
-}
-
-export default defineFarmConfig({
+export default defineConfig({
   compilation: {
     minify: false,
     presetEnv: false,
-    mode: process.env.NODE_ENV,
     input: {
       index: 'index.html'
     },
