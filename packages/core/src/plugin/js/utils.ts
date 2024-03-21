@@ -12,6 +12,8 @@ import {
 } from 'rollup';
 import { Config } from '../../../binding/index.js';
 import path from 'node:path';
+import fse from 'fs-extra';
+import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -107,11 +109,37 @@ export const stringifyQuery = (query: [string, string][]) => {
 };
 
 export function formatId(id: string, query: [string, string][]): string {
+  // remove the adapter internal virtual module flag
+  if (isStartAdapterVirtualModule(id)) {
+    id = id?.replace(VITE_ADAPTER_VIRTUAL_MODULE, '');
+  }
+
   if (!query.length) {
     return id;
   }
 
   return `${id}?${stringifyQuery(query)}`;
+}
+
+// determine if it is the adapter's internal virtual module
+export function isStartAdapterVirtualModule(id: string) {
+  return id?.startsWith(VITE_ADAPTER_VIRTUAL_MODULE);
+}
+
+export function isStartsWithSlash(str: string) {
+  return str?.startsWith('/');
+}
+
+export function addAdapterVirtualModuleFlag(id: string) {
+  return VITE_ADAPTER_VIRTUAL_MODULE + id;
+}
+
+export function normalizeAdapterVirtualModule(id: string) {
+  // If resolveIdResult is a path starting with / and the file at that path does not exist
+  // then it is considered an internal virtual module
+  if (isStartsWithSlash(id) && !fse.pathExistsSync(id))
+    return addAdapterVirtualModuleFlag(id);
+  return id;
 }
 
 // normalize path for windows the same as Vite
