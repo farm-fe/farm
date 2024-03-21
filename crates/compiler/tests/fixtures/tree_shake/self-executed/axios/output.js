@@ -7,9 +7,17 @@
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
+    function _export(target, all) {
+        for(var name in all)Object.defineProperty(target, name, {
+            enumerable: true,
+            get: all[name]
+        });
+    }
+    _export(exports, {
+        AxiosURLSearchParams2: function() {
+            return AxiosURLSearchParams2;
+        },
+        default: function() {
             return _default;
         }
     });
@@ -47,6 +55,10 @@
         }, "").join("&");
     };
     var _default = AxiosURLSearchParams;
+    function AxiosURLSearchParams2(params, options) {
+        this._pairs = [];
+        params;
+    }
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -54,8 +66,8 @@
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _dep = _interop_require_default._(farmRequire("05ee5ec7"));
-    console.log(_dep.default);
+    var _interop_require_wildcard = farmRequire("@swc/helpers/_/_interop_require_wildcard");
+    var _dep = _interop_require_wildcard._(farmRequire("05ee5ec7"));
+    console.log(_dep.default, _dep.AxiosURLSearchParams2);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

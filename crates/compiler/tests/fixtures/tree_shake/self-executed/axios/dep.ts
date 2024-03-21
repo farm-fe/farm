@@ -64,3 +64,34 @@ prototype.toString = function toString(encoder) {
 };
 
 export default AxiosURLSearchParams;
+
+function AxiosURLSearchParams2(params, options) {
+  this._pairs = [];
+
+  // params && toFormData(params, this, options);
+  params;
+}
+
+function attach() {
+  const prototype = AxiosURLSearchParams2.prototype;
+
+  prototype.append = function append(name, value) {
+    this._pairs.push([name, value]);
+  };
+
+  prototype.toString = function toString(encoder) {
+    const _encode = encoder
+      ? function (value) {
+          return encoder.call(this, value, encode);
+        }
+      : encode;
+
+    return this._pairs
+      .map(function each(pair) {
+        return _encode(pair[0]) + '=' + _encode(pair[1]);
+      }, '')
+      .join('&');
+  };
+}
+
+export { AxiosURLSearchParams2 };

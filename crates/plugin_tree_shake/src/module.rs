@@ -1,19 +1,17 @@
 use std::{
   collections::{HashMap, HashSet},
   mem,
-  slice::Iter,
 };
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
-  petgraph::Direction,
   swc_common::{Globals, Mark},
-  swc_ecma_ast::{Id, Ident},
+  swc_ecma_ast::Ident,
 };
 use farmfe_toolkit::script::swc_try_with::try_with;
 
 use crate::statement_graph::{
-  module_analyze::{ItemId, Mode, ModuleAnalyze, ModuleAnalyzeItemEdge},
+  module_analyze::{ItemId, ItemIdType, Mode, ModuleAnalyze, ModuleAnalyzeItemEdge},
   ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,
 };
 
@@ -303,74 +301,104 @@ impl TreeShakeModule {
       fn dfs<'a>(
         entry: &'a ItemId,
         stack: &mut Vec<&'a ItemId>,
-        result: &mut Vec<Vec<ItemId>>,
+        result: &mut HashSet<ItemId>,
         visited: &mut HashSet<&'a ItemId>,
         module_define_graph: &'a ModuleAnalyze,
         stmt_graph: &StatementGraph,
-        direction: Direction,
       ) {
         stack.push(entry);
 
-        let edges = module_define_graph.reference_edges(entry, direction);
+        let edges = module_define_graph.reference_edges(entry);
 
-        if edges.is_empty()
-          || visited.contains(entry)
-          || !module_define_graph.has_node(entry)
-          || (matches!(direction, Direction::Outgoing)
-            && !edges.iter().any(|(_, edge)| {
-              matches!(edge.mode, Mode::Read) || (matches!(edge.mode, Mode::Write) && edge.nested)
-            }))
-        {
-          if matches!(direction, Direction::Incoming) && stack.len() > 1 {
-            // there must be a Write edge cross the chain
-            if stack.iter().enumerate().any(|(index, item)| {
-              if index > 0 && index < stack.len() {
-                let previous = &stack[index - 1];
-                if let Some(edge) = module_define_graph.edge(item, previous) {
-                  if matches!(edge.mode, Mode::Write) {
-                    true
-                  } else {
-                    false
-                  }
-                } else {
-                  false
-                }
-              } else {
-                false
-              }
-            }) {
-              result.push(stack.iter().map(|item| (*item).clone()).collect());
-            }
-          } else {
-            result.push(stack.iter().map(|item| (*item).clone()).collect());
-          }
+        let collection_result = |result: &mut HashSet<ItemId>, stack: &mut Vec<&'a ItemId>| {
+          result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
+          stack.clear();
+        };
+
+        if visited.contains(entry) || !module_define_graph.has_node(entry) {
+          collection_result(result, stack);
+          return;
+        }
+
+        if edges.is_empty() {
+          collection_result(result, stack);
         } else {
           visited.insert(entry);
-          for (node, edge_data) in edges {
-            match edge_data.mode {
-              Mode::Read => {
+          for (source, target, edge) in edges {
+            match (edge.mode, edge.nested) {
+              (Mode::Read, _) => {
                 dfs(
-                  node,
+                  target,
                   stack,
                   result,
                   visited,
                   module_define_graph,
                   stmt_graph,
-                  direction,
                 );
+
+                // ignore nested
+                // cache -> readCache { cache }
+                //
+                //```js
+                // const cache = {};
+                //
+                // function readCache(key) {
+                //   cache[key]
+                // }
+                //```
+                //
+
+                // ignore bar
+                //
+                // foo:2 -> foo:1,bar:1 -> bar:3
+                // ```js
+                // // bar.js
+                // 1: import { bar, foo } from './foo';
+                // 2: foo()
+                // 3: export { bar, foo }
+                //```
+
+                if !edge.nested
+                  && !matches!(
+                    target,
+                    ItemId::Item {
+                      kind: ItemIdType::Import(_),
+                      ..
+                    }
+                  )
+                {
+                  dfs(
+                    source,
+                    stack,
+                    result,
+                    visited,
+                    module_define_graph,
+                    stmt_graph,
+                  );
+                }
               }
-              Mode::Write if edge_data.nested || matches!(direction, Direction::Incoming) => {
+
+              (Mode::Write, false) => {
                 dfs(
-                  node,
+                  source,
                   stack,
                   result,
                   visited,
                   module_define_graph,
                   stmt_graph,
-                  direction,
                 );
               }
-              _ => {}
+
+              (Mode::Write, true) => {
+                dfs(
+                  target,
+                  stack,
+                  result,
+                  visited,
+                  module_define_graph,
+                  stmt_graph,
+                );
+              }
             }
           }
         }
@@ -379,7 +407,7 @@ impl TreeShakeModule {
       }
 
       let mut visited = HashSet::new();
-      let mut reference_chain = Vec::new();
+      let mut reference_chain = HashSet::new();
 
       for stmt in &entries {
         dfs(
@@ -389,37 +417,12 @@ impl TreeShakeModule {
           &mut visited,
           &module_analyze,
           &self.stmt_graph,
-          Direction::Outgoing,
         );
       }
 
       let reference_stmts = reference_chain
         .iter()
-        .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
-        .collect::<HashSet<_>>();
-
-      let mut final_reference_chain = vec![];
-      let final_entries = reference_stmts
-        .iter()
-        .flat_map(|stmt| module_analyze.items(stmt))
-        .collect::<Vec<_>>();
-      let mut visited = HashSet::new();
-      // all parent statement that reference reference_stmts should be preserved too
-      for stmt in &final_entries {
-        dfs(
-          stmt,
-          &mut vec![],
-          &mut final_reference_chain,
-          &mut visited,
-          &module_analyze,
-          &self.stmt_graph,
-          Direction::Incoming,
-        );
-      }
-
-      let reference_stmts: HashSet<usize> = final_reference_chain
-        .iter()
-        .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
+        .map(|item| item.index())
         .collect::<HashSet<_>>();
 
       let mut used_self_execute_stmts = HashSet::new();
