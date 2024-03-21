@@ -20,13 +20,16 @@ export class ConfigWatcher {
       callback(file);
     }
 
-    const watchedFilesSet = new Set<string>([
-      ...(this.resolvedUserConfig.envFiles ?? []),
-      ...(this.resolvedUserConfig.configFileDependencies ?? []),
-      ...(this.resolvedUserConfig.configFilePath
-        ? [this.resolvedUserConfig.configFilePath]
-        : [])
-    ]);
+    const { envFiles, configFileDependencies, configFilePath } =
+      this.resolvedUserConfig;
+    const watchedFilesSet = new Set(
+      Array.from(
+        (envFiles ?? []).concat(
+          configFileDependencies ?? [],
+          configFilePath ? [configFilePath] : []
+        )
+      )
+    );
 
     const watchedFiles = Array.from(watchedFilesSet).filter(
       (file) => file && existsSync(file)
@@ -56,6 +59,7 @@ export class ConfigWatcher {
   }
 
   close() {
+    if (!this.watcher) return;
     this._close = true;
     this.watcher = null;
   }

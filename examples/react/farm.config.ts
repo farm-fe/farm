@@ -5,7 +5,7 @@ export default defineConfig({
     sourcemap: false,
     persistentCache: false,
     presetEnv: false,
-    // progress: false
+    progress: false
   },
   plugins: [
     ['@farmfe/plugin-react', { runtime: 'automatic' }],
