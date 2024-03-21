@@ -2,15 +2,15 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use farmfe_core::module::Module;
-use farmfe_core::petgraph::visit::EdgeRef;
-use farmfe_core::petgraph::Direction::{self, Outgoing};
+use farmfe_core::petgraph::visit::{EdgeRef, GraphProp, NodeRef};
+use farmfe_core::petgraph::Direction::Outgoing;
 use farmfe_core::swc_common::Mark;
 use farmfe_core::swc_ecma_ast::{
   op, BlockStmtOrExpr, Class, Decl, DefaultDecl, ExportDecl, ExportDefaultDecl, Expr, ExprStmt, Id,
   ImportSpecifier, MemberProp, ModuleDecl, PatOrExpr, PropName, Stmt,
 };
 use farmfe_core::{
-  petgraph::{self, stable_graph::NodeIndex},
+  petgraph::{self, stable_graph::NodeIndex, stable_graph::StableDiGraph, EdgeDirection},
   swc_ecma_ast::ModuleItem,
 };
 use farmfe_toolkit::swc_ecma_utils::find_pat_ids;
@@ -32,10 +32,11 @@ impl ItemId {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ItemIdType {
   Var(usize),
+  Import(usize),
   Normal,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ItemData {
   pub var_decls: Vec<Id>,
   pub read_vars: Vec<Id>,
@@ -51,8 +52,10 @@ fn class_collection(class: &Class) -> ItemData {
 
   let data = ItemData {
     var_decls: vec![],
-    nested_read_vars: collect.vars.read,
-    nested_write_vars: collect.vars.write,
+    read_vars: collect.vars.read,
+    write_vars: collect.vars.write,
+    nested_read_vars: collect.vars.nested_read,
+    nested_write_vars: collect.vars.nested_write,
     side_effect_call: collect.call_reads,
     ..Default::default()
   };
@@ -100,26 +103,21 @@ impl ModuleAnalyze {
     self.g.add_edge(from, to, edge);
   }
 
-  pub fn reference_edges(
-    &self,
-    n: &ItemId,
-    direction: Direction,
-  ) -> Vec<(&ItemId, ModuleAnalyzeItemEdge)> {
+  pub fn reference_edges(&self, n: &ItemId) -> Vec<(&ItemId, &ItemId, ModuleAnalyzeItemEdge)> {
     if self.id_map.contains_key(n) {
-      self
-        .g
-        .edges_directed(self.id_map[n], direction)
-        .map(|edge| {
-          (
-            &self.g[if matches!(direction, Direction::Incoming) {
-              edge.source()
-            } else {
-              edge.target()
-            }],
-            edge.weight().clone(),
-          )
-        })
-        .collect::<Vec<_>>()
+      let mut walk = self.g.neighbors_undirected(self.id_map[n]).detach();
+
+      let mut res = vec![];
+
+      while let Some((edge_index, node_index)) = walk.next(&self.g) {
+        let (source, target) = self.g.edge_endpoints(edge_index).unwrap();
+
+        let edge = self.g.edge_weight(edge_index).unwrap().clone();
+
+        res.push((&self.g[source], &self.g[target], edge));
+      }
+
+      res
     } else {
       vec![]
     }
@@ -155,7 +153,7 @@ impl ModuleAnalyze {
 
             let id = ItemId::Item {
               index,
-              kind: ItemIdType::Var(i),
+              kind: ItemIdType::Import(i),
             };
             ids.push(id.clone());
             items_map.insert(id, data);
@@ -177,8 +175,10 @@ impl ModuleAnalyze {
 
           let data = ItemData {
             var_decls: vec![id],
-            nested_read_vars: collect.vars.read,
-            nested_write_vars: collect.vars.write,
+            read_vars: collect.vars.read,
+            write_vars: collect.vars.write,
+            nested_read_vars: collect.vars.nested_read,
+            nested_write_vars: collect.vars.nested_write,
             side_effects: is_side_effect_fn,
             side_effect_call: collect.call_reads,
             ..Default::default()
@@ -200,12 +200,14 @@ impl ModuleAnalyze {
           for (i, decl) in vars.decls.iter().enumerate() {
             let decl_ids: Vec<Id> = find_pat_ids(&decl.name);
 
-            let collect_ident = collect_usage_ignore_nested(&decl.init, None);
+            let collect_ident = collect_all_usage(&decl.init, None);
 
             let data = ItemData {
               var_decls: decl_ids.clone(),
               read_vars: collect_ident.vars.read,
               write_vars: [collect_ident.vars.write, decl_ids].concat(),
+              nested_read_vars: collect_ident.vars.nested_read,
+              nested_write_vars: collect_ident.vars.nested_write,
               side_effect_call: collect_ident.call_reads,
               ..Default::default()
             };
@@ -311,17 +313,27 @@ impl ModuleAnalyze {
           expr: box Expr::Assign(assign),
           ..
         })) => {
-          let mut used_ident = collect_usage_ignore_nested(stmt, None);
+          let mut used_ident = collect_all_usage(stmt, None);
 
           if assign.op != op!("=") {
             let extra_ids = collect_usage_ignore_nested(&assign.left, None);
             used_ident.vars.read.extend(extra_ids.vars.read);
             used_ident.vars.write.extend(extra_ids.vars.write);
+            used_ident
+              .vars
+              .nested_read
+              .extend(extra_ids.vars.nested_read);
+            used_ident
+              .vars
+              .nested_write
+              .extend(extra_ids.vars.nested_write);
           }
 
           let data = ItemData {
             read_vars: used_ident.vars.read,
             write_vars: used_ident.vars.write,
+            nested_read_vars: used_ident.vars.nested_read,
+            nested_write_vars: used_ident.vars.nested_write,
             side_effect_call: used_ident.call_reads,
             ..Default::default()
           };
@@ -541,6 +553,8 @@ pub enum Mode {
 struct Vars {
   read: Vec<Id>,
   write: Vec<Id>,
+  nested_read: Vec<Id>,
+  nested_write: Vec<Id>,
 }
 
 fn collect_usage_ignore_nested<N>(n: &N, c: Option<Mode>) -> CollectIdent
@@ -552,6 +566,8 @@ where
     vars: Vars {
       read: vec![],
       write: vec![],
+      nested_read: vec![],
+      nested_write: vec![],
     },
     mode: c.unwrap_or(Mode::Write),
     enforce: None,
@@ -572,6 +588,8 @@ where
     vars: Vars {
       read: vec![],
       write: vec![],
+      nested_read: vec![],
+      nested_write: vec![],
     },
     mode: c.unwrap_or(Mode::Write),
     enforce: None,
@@ -591,6 +609,7 @@ struct CollectIdent {
   enforce: Option<Mode>,
   call: bool,
   call_reads: Vec<Id>,
+  nested: bool,
 }
 
 impl CollectIdent {
@@ -604,6 +623,7 @@ impl CollectIdent {
     f(self);
     self.mode = prev;
   }
+
   fn with_enforce<F>(&mut self, mode: Mode, f: F)
   where
     F: FnOnce(&mut Self),
@@ -625,6 +645,17 @@ impl CollectIdent {
     f(self);
     self.call = prev;
   }
+
+  fn with_nested<F>(&mut self, f: F)
+  where
+    F: FnOnce(&mut Self),
+  {
+    let prev = self.nested;
+
+    self.nested = true;
+    f(self);
+    self.nested = prev;
+  }
 }
 impl Visit for CollectIdent {
   fn visit_block_stmt_or_expr(&mut self, n: &BlockStmtOrExpr) {
@@ -632,7 +663,7 @@ impl Visit for CollectIdent {
       return;
     }
 
-    n.visit_children_with(self);
+    self.with_nested(|this| n.visit_children_with(this));
   }
 
   fn visit_constructor(&mut self, n: &farmfe_core::swc_ecma_ast::Constructor) {
@@ -640,7 +671,7 @@ impl Visit for CollectIdent {
       return;
     }
 
-    n.visit_children_with(self);
+    self.with_nested(|this| n.visit_children_with(this));
   }
 
   fn visit_function(&mut self, n: &farmfe_core::swc_ecma_ast::Function) {
@@ -648,16 +679,29 @@ impl Visit for CollectIdent {
       return;
     }
 
-    n.visit_children_with(self);
+    self.with_nested(|this| n.visit_children_with(this));
   }
 
   fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
     if self.call {
       self.call_reads.push(n.to_id());
     }
+
     match self.enforce.as_ref().unwrap_or(&self.mode) {
-      Mode::Read => self.vars.read.push(n.to_id()),
-      Mode::Write => self.vars.write.push(n.to_id()),
+      Mode::Read => {
+        if self.nested {
+          self.vars.nested_read.push(n.to_id());
+        } else {
+          self.vars.read.push(n.to_id())
+        }
+      }
+      Mode::Write => {
+        if self.nested {
+          self.vars.nested_write.push(n.to_id())
+        } else {
+          self.vars.write.push(n.to_id())
+        }
+      }
     }
   }
 
