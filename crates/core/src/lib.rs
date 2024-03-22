@@ -25,7 +25,6 @@ pub const VERSION: &str = "0.4.0";
 // re-export common external crates
 pub use dashmap;
 pub use enhanced_magic_string;
-pub use glob;
 pub use parking_lot;
 pub use petgraph;
 #[cfg(feature = "profile")]
@@ -43,6 +42,7 @@ pub use swc_css_ast;
 pub use swc_ecma_ast;
 pub use swc_ecma_parser;
 pub use swc_html_ast;
+pub use wax;
 
 #[macro_export]
 macro_rules! farm_profile_scope {
