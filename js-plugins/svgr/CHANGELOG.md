@@ -1,5 +1,14 @@
 # @farmfe/js-plugin-svgr
 
+## 1.3.1
+
+### Patch Changes
+
+- d597e05e: move @svg/core to the production dependency
+- Updated dependencies [f0cfdce1]
+- Updated dependencies [f58fd07e]
+  - @farmfe/core@1.0.3
+
 ## 1.3.0
 
 ### Patch Changes
