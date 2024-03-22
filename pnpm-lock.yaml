@@ -239,7 +239,7 @@ importers:
         specifier: workspace:^
         version: link:../../js-plugins/postcss
       '@farmfe/plugin-react':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^1.0.0
@@ -298,7 +298,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
         specifier: ^2.5.115
@@ -387,7 +387,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/less
       '@farmfe/plugin-react':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -458,7 +458,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^1.0.0
@@ -604,7 +604,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^1.0.0
@@ -656,7 +656,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^1.0.0
@@ -699,7 +699,7 @@ importers:
         specifier: workspace:*
         version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
-        specifier: workspace:^1.0.0
+        specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
         specifier: workspace:^1.0.0
@@ -986,7 +986,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: ^1.0.0
+        specifier: ^1.0.1
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -1177,7 +1177,7 @@ importers:
         version: 3.33.2
       vue:
         specifier: ^3.3.0
-        version: 3.3.7
+        version: 3.3.7(typescript@4.9.5)
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -6334,7 +6334,7 @@ packages:
     dependencies:
       '@vue/compiler-ssr': 3.3.7
       '@vue/shared': 3.3.7
-      vue: 3.3.7
+      vue: 3.3.7(typescript@4.9.5)
 
   /@vue/server-renderer@3.4.15(vue@3.4.15):
     resolution: {integrity: sha512-3HYzaidu9cHjrT+qGUuDhFYvF/j643bHC6uUN9BgM11DVy+pM6ATsG6uPBLnkwOgs7BpJABReLmpL3ZPAsUaqw==}
@@ -15800,20 +15800,6 @@ packages:
       '@vue/server-renderer': 3.3.12(vue@3.3.12)
       '@vue/shared': 3.3.12
       typescript: 4.9.5
-
-  /vue@3.3.7:
-    resolution: {integrity: sha512-YEMDia1ZTv1TeBbnu6VybatmSteGOS3A3YgfINOfraCbf85wdKHzscD6HSS/vB4GAtI7sa1XPX7HcQaJ1l24zA==}
-    peerDependencies:
-      typescript: '*'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-    dependencies:
-      '@vue/compiler-dom': 3.3.7
-      '@vue/compiler-sfc': 3.3.7
-      '@vue/runtime-dom': 3.3.7
-      '@vue/server-renderer': 3.3.7(vue@3.3.7)
-      '@vue/shared': 3.3.7
 
   /vue@3.3.7(typescript@4.9.5):
     resolution: {integrity: sha512-YEMDia1ZTv1TeBbnu6VybatmSteGOS3A3YgfINOfraCbf85wdKHzscD6HSS/vB4GAtI7sa1XPX7HcQaJ1l24zA==}
