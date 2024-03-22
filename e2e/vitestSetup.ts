@@ -68,10 +68,6 @@ const visitPage = async (
             color: 'red'
           });
           reject(e);
-        })
-        .finally(() => {
-          console.log('close page');
-          page.close();
         });
     });
 
