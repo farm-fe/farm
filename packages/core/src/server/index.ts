@@ -19,6 +19,7 @@ import {
   bootstrap,
   clearScreen,
   Logger,
+  normalizePath,
   printServerUrls
 } from '../utils/index.js';
 import {
@@ -38,6 +39,7 @@ import { Server as httpServer } from './type.js';
 import { promisify } from 'node:util';
 import { FileWatcher } from '../watcher/index.js';
 import { logError } from './error.js';
+import path from 'node:path';
 
 /**
  * Farm Dev Server, responsible for:
@@ -211,10 +213,10 @@ export class Server implements ImplDevServer {
   public async createServer(options: NormalizedServerConfig) {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
-
     const hostname = await resolveHostname(host);
     const publicPath = this.compiler?.config.config.output?.publicPath;
-    const hmrPath = publicPath === '/' ? DEFAULT_HMR_OPTIONS.path : publicPath;
+    const hmrPath = normalizePath(path.join(publicPath, options.hmr.path));
+    
     this.config = {
       ...options,
       hmr: {
