@@ -1,0 +1,72 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`e2e tests - e2e.spec.ts 1`] = `
+"
+    <h1>Environment Variables</h1>
+    <p>FARM_CUSTOM_ENV_VARIABLE: <code class="custom">1</code></p>
+    <p>FARM_EFFECTIVE_MODE_FILE_NAME: <code class="file">.env.development</code></p>
+    <p>FARM_BOOL: <code class="bool">true</code></p>
+    <p>FARM_EXPAND_A: <code class="expand_a">8asdasd</code></p>
+    <p>CUSTOM_PREFIX_ENV_VARIABLE: <code class="prefix">1</code></p>
+    <p>
+      FARM_EXPAND_B:
+      <code class="expand_b"></code>
+    </p>
+    <p>
+      FARM_ESCAPE_A:
+      <code class="escape_a">escape$</code>
+    </p>
+    <p>FARM_ESCAPE_B: <code class="escape_b">escape$</code></p>
+    <p>
+      FARM_CUSTOM_ENV_VARIABLE(globalThis process env):
+      <code class="globalThis">1</code>
+    </p>
+    <p>
+      FARM_CUSTOM_ENV_VARIABLE(global process env): <code class="global">1</code>
+    </p>
+    <script>
+      // console.log(process.env);
+      text('.custom', "1");
+      text('.file', ".env.development");
+      text('.bool', "true");
+      text('.prefix', "1");
+      text('.expand_a', "8asdasd");
+      text('.expand_b', "");
+      text('.escape_b', "escape$");
+      text('.escape_a', "escape$");
+      text('.globalThis', "1");
+      text('.global', "1");
+      function text(el, text) {
+        document.querySelector(el).textContent = text;
+      }
+    </script>
+  
+
+<script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setInitialLoadedResources([]);</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.bootstrap();</script>"
+`;
+
+exports[`e2e tests - e2e.spec.ts 2`] = `
+"<h1>Environment Variables</h1>
+    <p>FARM_CUSTOM_ENV_VARIABLE: <code class="custom">2</code></p>
+    <p>FARM_EFFECTIVE_MODE_FILE_NAME: <code class="file">.env.production</code></p>
+    <p>FARM_BOOL: <code class="bool">true</code></p>
+    <p>FARM_EXPAND_A: <code class="expand_a"></code></p>
+    <p>CUSTOM_PREFIX_ENV_VARIABLE: <code class="prefix">2</code></p>
+    <p>
+      FARM_EXPAND_B:
+      <code class="expand_b"></code>
+    </p>
+    <p>
+      FARM_ESCAPE_A:
+      <code class="escape_a">escape$</code>
+    </p>
+    <p>FARM_ESCAPE_B: <code class="escape_b">escape$</code></p>
+    <p>
+      FARM_CUSTOM_ENV_VARIABLE(globalThis process env):
+      <code class="globalThis">2</code>
+    </p>
+    <p>
+      FARM_CUSTOM_ENV_VARIABLE(global process env): <code class="global">2</code>
+    </p>
+    <script>function text(t,e){document.querySelector(t).textContent=e}text(".custom","2"),text(".file",".env.production"),text(".bool","true"),text(".prefix","2"),text(".expand_a",""),text(".expand_b",""),text(".escape_b","escape$"),text(".escape_a","escape$"),text(".globalThis","2"),text(".global","2")</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setInitialLoadedResources([]);</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setDynamicModuleResourcesMap({  });</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.bootstrap();</script>"
+`;

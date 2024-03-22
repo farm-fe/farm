@@ -4,4 +4,4 @@ import App from './App.vue';
 
 import './a';
 
-createApp(App).mount('#app');
+createApp(App).mount('#root');

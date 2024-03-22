@@ -9,8 +9,8 @@ body:
         This form is only for submitting bug reports. If you have a usage question
         or are unsure if this is really a bug, make sure to:
 
-        - Node version greater than or equal to 16
-        
+        - Node version greater than or equal to 16.8
+
         Also try to search for your issue - it may have already been answered or even fixed in the development branch.
         However, if you find that an old, closed issue still persists in the latest version,
         you should open a new issue using the form below instead of commenting on the old issue.
