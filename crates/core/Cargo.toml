@@ -32,7 +32,10 @@ rayon = "1.5"
 petgraph = "0.6"
 bytecheck = "0.7.0"
 downcast-rs = "1.2"
-glob = "0.3"
+wax = { version = "0.6", default-features = false, features = [
+  "miette",
+  "walk",
+] }
 swc_ecma_ast = { version = "0.111.0", features = ["rkyv-impl", "serde-impl"] }
 swc_ecma_parser = { version = "0.142.0" }
 swc_common = { version = "0.33.14", features = [
