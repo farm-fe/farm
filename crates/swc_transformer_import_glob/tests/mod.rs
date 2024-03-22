@@ -8,6 +8,7 @@ use farmfe_toolkit::script::{codegen_module, parse_module, ParseScriptModuleResu
 #[test]
 fn test_import_meta_glob() {
   fixture!("tests/fixtures/**/input.js", |file, _crate_path| {
+    println!("Testing {:?}...", file);
     let file_content = std::fs::read_to_string(&file).unwrap();
     let cm = Arc::new(SourceMap::default());
     let ParseScriptModuleResult { ast: mut ast, .. } = parse_module(

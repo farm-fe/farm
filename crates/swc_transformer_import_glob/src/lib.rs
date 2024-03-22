@@ -16,14 +16,17 @@
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::path::Component;
+use std::path::PathBuf;
 
+use farmfe_core::relative_path::RelativePath;
 use farmfe_core::swc_common::DUMMY_SP;
 use farmfe_core::swc_ecma_ast::{
   self, ArrayLit, ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Callee, Expr, ExprOrSpread,
   Ident, Import, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
   Module as SwcModule, ModuleItem, ObjectLit, Pat, Prop, PropOrSpread,
 };
-use farmfe_core::{glob, relative_path::RelativePath};
+use farmfe_core::wax::Glob;
 
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
@@ -294,24 +297,44 @@ impl ImportGlobVisitor {
 
       // relative to root when source starts with '/'.
       // and alias
-      let p = if source.starts_with('/') {
-        let rel_source = RelativePath::new(&source[1..]);
-        let abs_source = rel_source
-          .to_logical_path(&self.root)
-          .to_string_lossy()
-          .to_string();
-        glob::glob(&abs_source)
+      let rel_path = if source.starts_with('/') {
+        RelativePath::new(&source[1..])
       } else {
-        let rel_source = RelativePath::new(&source);
-        let abs_source = rel_source
-          .to_logical_path(&self.cur_dir)
-          .to_string_lossy()
-          .to_string();
-        glob::glob(&abs_source)
+        RelativePath::new(&source)
+      };
+      let rel_source = relative(
+        &self.root,
+        &rel_path.to_logical_path(&self.cur_dir).to_string_lossy(),
+      );
+      // wax::Glob does not support ../, so we need to convert it to relative path
+      let (root, rel_source) = if rel_source.starts_with("../") {
+        let mut root_path = PathBuf::from(&self.root);
+        let rel_source_path = PathBuf::from(&rel_source);
+
+        for comp in rel_source_path.components() {
+          match comp {
+            Component::ParentDir => {
+              root_path.pop();
+            }
+            _ => {}
+          }
+        }
+
+        (
+          root_path.to_string_lossy().to_string(),
+          rel_source.replace("../", ""),
+        )
+      } else {
+        (self.root.clone(), rel_source.clone())
       };
 
-      match p {
-        Ok(p) => {
+      let glob = Glob::new(&rel_source);
+      match glob {
+        Ok(glob) => {
+          let p = glob
+            .walk(&root)
+            .map(|p| p.map(|p| p.path().to_string_lossy().to_string()))
+            .collect::<Vec<_>>();
           paths.push((negative, p));
         }
         Err(err) => {
@@ -328,7 +351,7 @@ impl ImportGlobVisitor {
       for entry in path {
         match entry {
           Ok(file) => {
-            let mut relative_file = relative(&self.cur_dir, &file.to_string_lossy());
+            let mut relative_file = relative(&self.cur_dir, &file);
 
             if !relative_file.starts_with('.') {
               relative_file = format!("./{}", relative_file);
