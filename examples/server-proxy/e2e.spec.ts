@@ -12,11 +12,40 @@ test(`e2e tests - ${name}`, async () => {
       projectPath,
       async (page) => {
         const app = await page.$('#app');
+        console.log(await page.innerHTML('body'));
         expect(await app?.innerHTML()).toBe('app');
       },
       command
     );
-
-  await runTest();
-  await runTest('preview');
+  await launchServer();
+  try {
+    await runTest();
+    await runTest('preview');
+  } catch (e) {
+    throw e;
+  } finally {
+    await closeServer();
+  }
 });
+
+let server;
+
+async function launchServer() {
+  const { default: express } = await import('express');
+  const app = express();
+  app.use(async (req, res, next) => {
+    res.json({
+      hello: 'world'
+    });
+  });
+  return new Promise((r) => {
+    server = app.listen(3000, () => {
+      console.log('server up');
+      r(null);
+    });
+  });
+}
+
+async function closeServer() {
+  server.close();
+}

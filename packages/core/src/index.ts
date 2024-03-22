@@ -113,7 +113,9 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const serverConfig = {
     ...resolvedUserConfig.server,
     host: inlineConfig.host ?? true,
-    port: inlineConfig.port ?? 1911
+    port:
+      inlineConfig.port ??
+      (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
   };
   await Server.resolvePortConflict(serverConfig, logger);
   const port = serverConfig.port;

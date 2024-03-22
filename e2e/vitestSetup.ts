@@ -1,6 +1,5 @@
 import { chromium, type Page } from 'playwright-chromium';
 import { join } from 'path';
-import { readFileSync } from 'node:fs';
 import { logger } from './utils.js';
 import { inject, onTestFinished } from 'vitest';
 import { execa } from 'execa';
@@ -10,6 +9,19 @@ import { existsSync } from 'fs';
 // export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
 export const pageMap = new Map<string, Page>();
+const serverPorts = new Set();
+
+function getServerPort(): number {
+  const getRandomPort = () => Math.floor(Math.random() * 1000 + 9100);
+  let port = getRandomPort();
+
+  while (serverPorts.has(port)) {
+    port = getRandomPort();
+  }
+
+  serverPorts.add(port);
+  return port;
+}
 
 const visitPage = async (
   path: string,
@@ -52,10 +64,14 @@ const visitPage = async (
           resolve(null);
         })
         .catch((e) => {
-          logger(`${examplePath} start failed with error ${e}`, {
+          logger(`test error: ${examplePath} start failed with error ${e}`, {
             color: 'red'
           });
           reject(e);
+        })
+        .finally(() => {
+          console.log('close page');
+          page.close();
         });
     });
 
@@ -93,7 +109,7 @@ export const startProjectAndTest = async (
   if (!cliBinPath) {
     throw new Error(`example ${examplePath} does not install @farmfe/cli`);
   }
-
+  const port = getServerPort();
   await new Promise((resolve, reject) => {
     logger(`Executing node ${cliBinPath} ${command} in ${examplePath}`);
     const child = execa('node', [cliBinPath, command], {
@@ -102,7 +118,8 @@ export const startProjectAndTest = async (
       encoding: 'utf8',
       env: {
         BROWSER: 'none',
-        NO_COLOR: 'true'
+        NO_COLOR: 'true',
+        FARM_DEFAULT_SERVER_PORT: String(port)
       }
     });
 
@@ -123,6 +140,9 @@ export const startProjectAndTest = async (
         try {
           await visitPage(pagePath, examplePath, cb);
           resolve(pagePath);
+        } catch (e) {
+          console.log('visit page error: ', e);
+          reject(e);
         } finally {
           if (!child.killed) {
             child.kill();
@@ -132,10 +152,15 @@ export const startProjectAndTest = async (
     });
 
     child.on('error', (error) => {
-      logger(`${examplePath} ${command} failed with error ${error}`, {
-        color: 'red'
-      });
-      reject(`${examplePath} ${command} failed with error ${error}`);
+      logger(
+        `child process error: ${examplePath} ${command} failed with error ${error}`,
+        {
+          color: 'red'
+        }
+      );
+      reject(
+        `child process error: ${examplePath} ${command} failed with error ${error}`
+      );
     });
 
     child.on('exit', (code) => {
