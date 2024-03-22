@@ -1,3 +1,3 @@
-import Param from './dep';
+import Param, { AxiosURLSearchParams2 } from './dep';
 
-console.log(Param);
+console.log(Param, AxiosURLSearchParams2);
