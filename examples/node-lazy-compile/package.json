@@ -1,0 +1,17 @@
+{
+  "name": "@farmfe-examples/node-lazy-compile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  },
+  "scripts": {
+    "start": "farm watch",
+    "build": "farm build && node dist/index.mjs"
+  },
+  "dependencies": {
+    "core-js": "^3.35.1"
+  }
+}

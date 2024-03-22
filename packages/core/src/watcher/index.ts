@@ -8,7 +8,7 @@ import { compilerHandler, Logger } from '../utils/index.js';
 
 import type { ResolvedUserConfig } from '../config/index.js';
 import { createWatcher } from './create-watcher.js';
-import { existsSync } from 'node:fs';
+// import { existsSync } from 'node:fs';
 import { JsUpdateResult } from '../../binding/binding.js';
 
 interface ImplFileWatcher {
@@ -73,9 +73,7 @@ export class FileWatcher implements ImplFileWatcher {
       ...compiler.resolvedWatchPaths()
     ].filter(
       (file) =>
-        !file.startsWith(this.options.root) &&
-        !file.includes('node_modules/') &&
-        existsSync(file)
+        !file.startsWith(this.options.root) && !file.includes('node_modules/')
     );
 
     const files = [this.options.root, ...watchedFiles];
@@ -120,7 +118,7 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   close() {
-    this._close = false;
+    this._close = true;
     this._watcher = null;
     this.serverOrCompiler = null;
   }

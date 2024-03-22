@@ -161,7 +161,7 @@ export async function resolveConfig(
     targetWeb &&
       (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
     // eslint-disable-next-line no-empty
-  } catch { }
+  } catch {}
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -263,10 +263,10 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-        env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-          userConfig.env[key];
-        return env;
-      }, {})
+          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+            userConfig.env[key];
+          return env;
+        }, {})
   );
 
   const require = module.createRequire(import.meta.url);
@@ -316,7 +316,7 @@ export async function normalizeUserCompilationConfig(
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
       ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-        ?.name ?? FARM_DEFAULT_NAMESPACE
+          ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
@@ -353,7 +353,8 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
     // may be we don't need this
     config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
-    config.define.FARM_HMR_BASE = userConfig.compilation?.output?.publicPath ?? '/';
+    config.define.FARM_HMR_BASE =
+      userConfig.compilation?.output?.publicPath ?? '/';
   }
 
   if (
@@ -395,7 +396,7 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.presetEnv === undefined && config.output?.targetEnv !== 'node') {
+  if (config.presetEnv === undefined) {
     if (isProduction) {
       config.presetEnv = true;
     } else {
@@ -459,12 +460,12 @@ export function normalizeDevServerOptions(
     hmr,
     https: https
       ? {
-        ...https,
-        ca: tryAsFileRead(options.https.ca),
-        cert: tryAsFileRead(options.https.cert),
-        key: tryAsFileRead(options.https.key),
-        pfx: tryAsFileRead(options.https.pfx)
-      }
+          ...https,
+          ca: tryAsFileRead(options.https.ca),
+          cert: tryAsFileRead(options.https.cert),
+          key: tryAsFileRead(options.https.key),
+          pfx: tryAsFileRead(options.https.pfx)
+        }
       : undefined
   });
 }
@@ -841,7 +842,8 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Build failed due to errors: Can not resolve ${isTargetNode ? 'index.js or index.ts' : 'index.html'
+        `Build failed due to errors: Can not resolve ${
+          isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
       );
     }

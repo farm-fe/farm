@@ -261,11 +261,13 @@ pub fn get_entry_resource_and_dep_resources_name(
 
 pub fn handle_entry_resources(
   resources_map: &mut HashMap<String, Resource>,
+  original_entry_resource_code: &HashMap<String, String>,
   context: &Arc<CompilationContext>,
-) {
+) -> HashMap<String, String> {
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
 
+  let mut result = HashMap::new();
   // create a runtime resource
   let mut runtime_code = None;
   let mut runtime_resource = None;
@@ -328,14 +330,22 @@ pub fn handle_entry_resources(
       // 6. append export code
       let export_info_code = get_export_info_code(entry, &module_graph, context);
 
-      let entry_js_resource_code = String::from_utf8(
-        resources_map
-          .get(&entry_js_resource_name)
-          .expect("entry resource is not found")
-          .bytes
-          .clone(),
-      )
-      .unwrap();
+      let entry_js_resource_code =
+        if let Some(code) = original_entry_resource_code.get(&entry_js_resource_name) {
+          code.clone()
+        } else {
+          let code = String::from_utf8(
+            resources_map
+              .get(&entry_js_resource_name)
+              .expect("entry resource is not found")
+              .bytes
+              .clone(),
+          )
+          .unwrap();
+          result.insert(entry_js_resource_name.clone(), code.clone());
+          code
+        };
+
       // split last line
       let (entry_js_resource_code, entry_js_resource_source_map) =
         if let Some((c, m)) = entry_js_resource_code.rsplit_once('\n') {
@@ -394,6 +404,8 @@ pub fn handle_entry_resources(
       resources_map.insert(runtime_resource.name.clone(), runtime_resource);
     }
   }
+
+  return result;
 }
 
 fn create_runtime_code(

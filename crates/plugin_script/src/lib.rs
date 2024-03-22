@@ -1,10 +1,7 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{
-  path::{Path, PathBuf},
-  sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -18,7 +15,6 @@ use farmfe_core::{
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
-  relative_path::RelativePath,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -39,7 +35,6 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use farmfe_utils::hash::base64_decode;
 use import_meta_visitor::ImportMetaVisitor;
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};

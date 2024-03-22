@@ -1,5 +1,5 @@
 /**
- * Lazy compilation middleware. Using the same logic as HMR middleware, but
+ * Lazy compilation middleware. Using the same logic as HMR middleware
  */
 
 import { relative } from 'node:path';
@@ -36,14 +36,20 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       clearScreen();
       devSeverContext.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
-      const result = await compiler.update(paths);
+      // sync update when node is true
+      const result = await compiler.update(paths, Boolean(ctx.query.node));
+
+      if (ctx.query.node) {
+        compiler.writeResourcesToDisk();
+      }
+
       devSeverContext.logger.info(
         `${bold(green(`✓`))} Lazy compilation done(${bold(
           cyan(pathsStr)
         )}) in ${bold(green(`${Date.now() - start}ms`))}.`
       );
 
-      devSeverContext.hmrEngine.callUpdates(result);
+      devSeverContext.hmrEngine?.callUpdates?.(result);
 
       if (result) {
         let dynamicResourcesMap: Record<string, Resource[]> = null;
@@ -63,12 +69,20 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           }
         }
 
-        const code = `export default {
+        const code = !ctx.query.node
+          ? `export default {
           immutableModules: ${JSON.stringify(result.immutableModules.trim())},
           mutableModules: ${JSON.stringify(result.mutableModules.trim())},
           dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
+        }`
+          : `{
+          "immutableModules": ${JSON.stringify(result.immutableModules.trim())},
+          "mutableModules": ${JSON.stringify(result.mutableModules.trim())},
+          "dynamicResourcesMap": ${JSON.stringify(dynamicResourcesMap)}
         }`;
-        ctx.type = 'application/javascript';
+        ctx.type = !ctx.query.node
+          ? 'application/javascript'
+          : 'application/json';
         ctx.body = code;
       } else {
         throw new Error(`Lazy compilation result not found for paths ${paths}`);

@@ -50,6 +50,7 @@ pub mod render_resource_pot;
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
 pub struct FarmPluginRuntime {
   runtime_code: Mutex<Arc<String>>,
+  original_entry_resource_code: Mutex<HashMap<String, String>>,
 }
 
 impl Plugin for FarmPluginRuntime {
@@ -471,7 +472,19 @@ impl Plugin for FarmPluginRuntime {
     param: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    handle_entry_resources::handle_entry_resources(param.resources_map, context);
+    let mut original_entry_resource_code = self.original_entry_resource_code.lock();
+    let original_entry_map = handle_entry_resources::handle_entry_resources(
+      param.resources_map,
+      &original_entry_resource_code,
+      context,
+    );
+
+    for (name, code) in original_entry_map {
+      if !original_entry_resource_code.contains_key(&name) {
+        original_entry_resource_code.insert(name, code);
+      }
+    }
+
     Ok(Some(()))
   }
 }
@@ -480,6 +493,7 @@ impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
     Self {
       runtime_code: Mutex::new(Arc::new(String::new())),
+      original_entry_resource_code: Mutex::new(HashMap::new()),
     }
   }
 }
