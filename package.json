@@ -29,7 +29,8 @@
     "simple-git-hooks": "^2.10.0",
     "typescript": "^4.9.4",
     "vite": "^4.4.11",
-    "vitest": "^1.2.2"
+    "vitest": "^1.4.0",
+    "playwright-chromium": "^1.42.1"
   },
   "scripts": {
     "postinstall": "simple-git-hooks",
@@ -41,7 +42,8 @@
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
     "bump": "node scripts/bump.mjs",
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler",
-    "ready": "node scripts/ready.mjs"
+    "ready": "node scripts/ready.mjs",
+    "test-e2e": "vitest run -c vitest.config.e2e.ts"
   },
   "lint-staged": {
     "packages/**/*.ts": [

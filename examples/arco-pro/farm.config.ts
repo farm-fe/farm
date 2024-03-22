@@ -20,6 +20,8 @@ export default defineConfig(async (env) => {
           react: resolve(process.cwd(), './node_modules/react')
         }
       },
+      minify: false,
+      mode: 'development',
       output: {
         path: './build',
         filename: 'assets/[resourceName].[contentHash].[ext]',
@@ -32,7 +34,7 @@ export default defineConfig(async (env) => {
     },
     server: {
       cors: true,
-      port: 6260
+      port: 6290
     },
     plugins: [
       [

@@ -19,9 +19,8 @@ export default defineConfig({
   server: {
     proxy: {
       '^/api': {
-        target: 'https://music-erkelost.vercel.app/banner',
+        target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path: any) => path.replace(/^\/api/, '')
       }
     }
   }

@@ -1,9 +1,5 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
   compilation: {
@@ -14,6 +10,5 @@ export default defineConfig({
       path: './build'
     }
   },
-  server: {},
   plugins: [farmJsPluginVue()]
 });

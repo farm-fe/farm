@@ -2,7 +2,7 @@ import { execa } from 'execa';
 import { createSpinner } from 'nanospinner';
 import { resolve, join } from 'node:path';
 import os from 'node:os';
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 
 import { logger } from './logger.mjs';
 
@@ -38,6 +38,9 @@ export const buildExamples = async () => {
 
   for (const example of examples) {
     const examplePath = join('./examples', example);
+    if (!existsSync(join(examplePath, 'package.json'))) {
+      continue;
+    }
     console.log('Building', examplePath);
 
     if (fs.statSync(examplePath).isDirectory()) {
