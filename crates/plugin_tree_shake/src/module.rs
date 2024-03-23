@@ -1,4 +1,5 @@
 use std::{
+  borrow::Cow,
   collections::{HashMap, HashSet},
   mem,
 };
@@ -305,28 +306,81 @@ impl TreeShakeModule {
         visited: &mut HashSet<&'a ItemId>,
         module_define_graph: &'a ModuleAnalyze,
         stmt_graph: &StatementGraph,
+        reverse_terser_chain: &mut Vec<Mode>,
       ) {
-        stack.push(entry);
-
-        let edges = module_define_graph.reference_edges(entry);
-
-        let collection_result = |result: &mut HashSet<ItemId>, stack: &mut Vec<&'a ItemId>| {
-          result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
-          stack.clear();
+        let collection_result = |reverse_terser_chain: &mut Vec<Mode>,
+                                 result: &mut HashSet<ItemId>,
+                                 stack: &mut Vec<&'a ItemId>| {
+          println!(
+            "reverse_terser_chain: {:?}, stack: {:?}",
+            reverse_terser_chain,
+            stack.iter().map(|item| item.index()).collect::<Vec<_>>()
+          );
+          if !reverse_terser_chain.is_empty() {
+            if reverse_terser_chain
+              .iter()
+              .any(|mode| matches!(mode, Mode::Write))
+            {
+              result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
+            }
+          } else {
+            result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
+          }
         };
 
-        if visited.contains(entry) || !module_define_graph.has_node(entry) {
-          collection_result(result, stack);
+        let break_tenser = |stack: &mut Vec<&'a ItemId>| {
+          stack.pop();
+        };
+
+        if visited.contains(entry) {
+          collection_result(reverse_terser_chain, result, stack);
+          break_tenser(stack);
           return;
         }
 
-        if edges.is_empty() {
-          collection_result(result, stack);
+        stack.push(entry);
+
+        if !module_define_graph.has_node(entry) {
+          collection_result(reverse_terser_chain, result, stack);
+          break_tenser(stack);
+          return;
+        }
+
+        println!("\n\nentry: {:?} {:?}", entry.index(), reverse_terser_chain);
+
+        let edges = module_define_graph.reference_edges(entry);
+
+        println!("edges: {:?}", edges);
+
+        if edges.is_empty() || edges.iter().all(|(source, target, _)| source == target) {
+          collection_result(reverse_terser_chain, result, stack);
         } else {
           visited.insert(entry);
+          let push_reverse_terser_chain =
+            |reverse_terser_chain: &mut Vec<Mode>, mode: Mode, create| {
+              if !reverse_terser_chain.is_empty() || create {
+                reverse_terser_chain.push(mode);
+              }
+            };
+
+          let pop_reverse_terser_chain = |reverse_terser_chain: &mut Vec<Mode>| {
+            reverse_terser_chain.pop();
+          };
+
           for (source, target, edge) in edges {
+            if source == target {
+              continue;
+            }
+            println!(
+              "source: {}, target: {}, edge: {:?}",
+              source.index(),
+              target.index(),
+              edge
+            );
             match (edge.mode, edge.nested) {
               (Mode::Read, _) => {
+                // push_reverse_terser_chain(reverse_terser_chain, Mode::Read, true);
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Read, false);
                 dfs(
                   target,
                   stack,
@@ -334,7 +388,9 @@ impl TreeShakeModule {
                   visited,
                   module_define_graph,
                   stmt_graph,
+                  reverse_terser_chain,
                 );
+                pop_reverse_terser_chain(reverse_terser_chain);
 
                 // ignore nested
                 // cache -> readCache { cache }
@@ -367,6 +423,7 @@ impl TreeShakeModule {
                     }
                   )
                 {
+                  push_reverse_terser_chain(reverse_terser_chain, Mode::Read, true);
                   dfs(
                     source,
                     stack,
@@ -374,11 +431,14 @@ impl TreeShakeModule {
                     visited,
                     module_define_graph,
                     stmt_graph,
+                    reverse_terser_chain,
                   );
+                  pop_reverse_terser_chain(reverse_terser_chain);
                 }
               }
 
               (Mode::Write, false) => {
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
                 dfs(
                   source,
                   stack,
@@ -386,10 +446,13 @@ impl TreeShakeModule {
                   visited,
                   module_define_graph,
                   stmt_graph,
+                  reverse_terser_chain,
                 );
+                pop_reverse_terser_chain(reverse_terser_chain);
               }
 
               (Mode::Write, true) => {
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
                 dfs(
                   target,
                   stack,
@@ -397,17 +460,25 @@ impl TreeShakeModule {
                   visited,
                   module_define_graph,
                   stmt_graph,
+                  reverse_terser_chain,
                 );
+                pop_reverse_terser_chain(reverse_terser_chain);
               }
             }
           }
         }
 
-        stack.pop();
+        break_tenser(stack);
       }
 
       let mut visited = HashSet::new();
       let mut reference_chain = HashSet::new();
+
+      let mut entries = entries.into_iter().collect::<Vec<_>>();
+
+      entries.sort_by(|a, b| a.index().cmp(&b.index()));
+
+      println!("entries: {:#?}", entries);
 
       for stmt in &entries {
         dfs(
@@ -417,8 +488,11 @@ impl TreeShakeModule {
           &mut visited,
           &module_analyze,
           &self.stmt_graph,
+          &mut vec![],
         );
       }
+
+      println!("reference_chain: {:?}", reference_chain);
 
       let reference_stmts = reference_chain
         .iter()
