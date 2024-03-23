@@ -84,7 +84,7 @@ export default function farmPostcssPlugin(
                     const resolvedInfo = await context.resolve(
                       {
                         kind: 'import',
-                        importer: param.moduleId,
+                        importer: path.resolve(basedir, '*'),
                         source: id
                       },
                       {
@@ -120,6 +120,7 @@ export default function farmPostcssPlugin(
               map: sourceMapEnabled
             }
           );
+
           // record CSS dependencies from @imports
           if (process.env.NODE_ENV === 'development') {
             for (const message of messages) {

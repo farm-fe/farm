@@ -8,5 +8,4 @@ export default createFarmJsPluginBuildConfig([
   farmDtsPlugin({
     tsConfigPath: './tsconfig.build.json'
   })
-]
-);
+]);
