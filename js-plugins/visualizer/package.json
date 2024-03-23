@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/js-plugin-record-viewer",
+  "name": "@farmfe/visualizer",
   "version": "2.2.0",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
