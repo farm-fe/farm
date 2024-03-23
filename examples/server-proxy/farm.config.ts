@@ -1,9 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
-
+import { defineConfig } from '@farmfe/core'
 export default defineConfig({
   compilation: {
     input: {
