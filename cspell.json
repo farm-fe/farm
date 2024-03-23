@@ -154,7 +154,9 @@
     "struct",
     "rfind",
     "srcset",
-    "shulandmimi"
+    "shulandmimi",
+    "concurrentify",
+    "pageerror"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

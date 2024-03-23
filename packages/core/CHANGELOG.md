@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.0.3
+
+### Patch Changes
+
+- f0cfdce1: minify modules instead of resource pots
+- f58fd07e: variable assign need to retain
+
 ## 1.0.2
 
 ### Patch Changes

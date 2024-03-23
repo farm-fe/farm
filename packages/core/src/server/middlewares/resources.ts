@@ -101,7 +101,7 @@ export function resourcesMiddleware(
         ctx.status = 404;
       }
     } else {
-      ctx.type = extname(ctx?.path.slice(1) || 'index.html');
+      ctx.type = extname(ctx?.path?.slice?.(1) || 'index.html');
       ctx.body = resource;
     }
   };

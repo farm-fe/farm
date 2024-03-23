@@ -2,4 +2,4 @@
 '@farmfe/core': patch
 ---
 
-variable assign need to retain
+add import meta hot condition

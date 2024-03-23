@@ -16,4 +16,4 @@ const router = createRouter({
   routes
 });
 
-app.use(router).mount('#app');
+app.use(router).mount('#root');

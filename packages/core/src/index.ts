@@ -91,7 +91,6 @@ export async function build(
 
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new Logger();
-  const port = inlineConfig.port ?? 1911;
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
@@ -110,11 +109,23 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     }
   }
 
+  // reusing port conflict check from DevServer
+  const serverConfig = {
+    ...resolvedUserConfig.server,
+    host: inlineConfig.host ?? true,
+    port:
+      inlineConfig.port ??
+      (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
+  };
+  await Server.resolvePortConflict(serverConfig, logger);
+  const port = serverConfig.port;
+  const host = serverConfig.host;
   const previewOptions: UserPreviewServerConfig = {
+    ...serverConfig,
     distDir,
     output: { path: output.path, publicPath: output.publicPath },
     port,
-    host: inlineConfig.host ?? true
+    host
   };
   const server = new Server({ logger });
   server.createPreviewServer(previewOptions);
@@ -129,7 +140,8 @@ export async function watch(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'development'
+    'development',
+    false
   );
 
   setProcessEnv(resolvedUserConfig.compilation.mode);

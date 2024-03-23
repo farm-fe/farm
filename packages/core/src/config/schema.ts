@@ -280,7 +280,7 @@ const FarmConfigSchema = z
           .record(
             z.object({
               target: z.string(),
-              changeOrigin: z.boolean(),
+              changeOrigin: z.boolean().optional(),
               agent: z.any().optional(),
               secure: z.boolean().optional(),
               logs: z.any().optional(),

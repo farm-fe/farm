@@ -1,4 +1,4 @@
 import { createApp } from 'vue';
 import Index from './src/index';
 
-createApp(Index).mount('#app');
+createApp(Index).mount('#root');
