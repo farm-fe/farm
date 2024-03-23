@@ -92,7 +92,7 @@ export interface UserConfig {
   envPrefix?: string | string[];
   publicDir?: string;
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
-  plugins?: (RustPlugin | JsPlugin | JsPlugin[])[];
+  plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null)[];
   /** vite plugins */
   vitePlugins?: (object | (() => { vitePlugin: any; filters: string[] }))[];
   /** config related to compilation */

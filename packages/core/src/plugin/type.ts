@@ -97,12 +97,12 @@ export interface JsResourcePotInfoData {
   isImplicitEntry: boolean;
 }
 
-export interface RenderResourcePotParams {
+export interface PluginRenderResourcePotParams {
   content: string;
   sourceMapChain: string[];
   resourcePotInfo: ResourcePotInfo;
 }
-export interface RenderResourcePotResult {
+export interface PluginRenderResourcePotResult {
   content: string;
   sourceMap?: string;
 }
@@ -116,7 +116,7 @@ export interface Resource {
   info?: ResourcePotInfo;
 }
 
-export type FinalizeResourcesHookParams = {
+export type PluginFinalizeResourcesHookParams = {
   resourcesMap: Record<string, Resource>;
   config: Config['config'];
 };
@@ -187,8 +187,8 @@ export interface JsPlugin {
       resourcePotTypes?: ResourcePotType[];
       moduleIds?: string[];
     },
-    RenderResourcePotParams,
-    RenderResourcePotResult
+    PluginRenderResourcePotParams,
+    PluginRenderResourcePotResult
   >;
 
   augmentResourceHash?: JsPluginHook<
@@ -202,8 +202,8 @@ export interface JsPlugin {
 
   finalizeResources?: {
     executor: Callback<
-      FinalizeResourcesHookParams,
-      FinalizeResourcesHookParams['resourcesMap']
+      PluginFinalizeResourcesHookParams,
+      PluginFinalizeResourcesHookParams['resourcesMap']
     >;
   };
 
@@ -212,7 +212,9 @@ export interface JsPlugin {
   };
 
   writeResources?: {
-    executor: (param: FinalizeResourcesHookParams) => void | Promise<void>;
+    executor: (
+      param: PluginFinalizeResourcesHookParams
+    ) => void | Promise<void>;
   };
 
   pluginCacheLoaded?: {
@@ -234,3 +236,11 @@ export interface JsPlugin {
 }
 
 export { rustPluginResolver } from './rust/rustPluginResolver.js';
+export type {
+  PluginResolveHookParam,
+  PluginResolveHookResult,
+  PluginLoadHookParam,
+  PluginLoadHookResult,
+  PluginTransformHookParam,
+  PluginTransformHookResult
+} from '../../binding/index.js';

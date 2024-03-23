@@ -34,7 +34,7 @@
   ],
   "scripts": {
     "build": "pnpm clean && farm build && cross-env FARM_FORMAT=esm farm build",
-    "start": "pnpm build -w",
+    "start": "cross-env FARM_FORMAT=esm farm watch",
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"

@@ -27,8 +27,8 @@ async function getDefaultSassImplementation() {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getSassImplementation(implementation?: string) {
-  let resolvedImplementation;
+export function getSassImplementation(implementation?: string | any) {
+  let resolvedImplementation = implementation;
   // if empty
   if (!implementation) {
     try {

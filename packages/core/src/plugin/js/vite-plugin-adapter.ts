@@ -1,8 +1,8 @@
 import {
   JsPlugin,
   CompilationContext,
-  RenderResourcePotParams,
-  FinalizeResourcesHookParams,
+  PluginRenderResourcePotParams,
+  PluginFinalizeResourcesHookParams,
   ResourcePotInfo,
   Resource
 } from '../type.js';
@@ -57,7 +57,6 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../../binding/index.js';
-import merge from 'lodash.merge';
 import { readFile } from 'fs/promises';
 import {
   ViteDevServerAdapter,
@@ -76,6 +75,8 @@ import {
 } from './utils.js';
 import { Logger } from '../../index.js';
 import { applyHtmlTransform } from './apply-html-transform.js';
+import merge from '../../utils/merge.js';
+import { CompilationMode } from '../../config/env.js';
 
 type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
   this: any,
@@ -119,7 +120,8 @@ export class VitePluginAdapter implements JsPlugin {
     rawPlugin: Plugin,
     farmConfig: UserConfig,
     filters: string[],
-    logger: Logger
+    logger: Logger,
+    mode: CompilationMode
   ) {
     this.name = rawPlugin.name;
     if (!rawPlugin.name) {
@@ -143,7 +145,7 @@ export class VitePluginAdapter implements JsPlugin {
       load: () => (this.load = this.viteLoadToFarmLoad()),
       transform: () => (this.transform = this.viteTransformToFarmTransform()),
       buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
-      closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
+      // closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
       handleHotUpdate: () =>
         (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
       renderChunk: () =>
@@ -159,18 +161,33 @@ export class VitePluginAdapter implements JsPlugin {
           this.viteGenerateBundleToFarmFinalizeResources()),
       transformIndexHtml: () =>
         (this.transformHtml = this.viteTransformIndexHtmlToFarmTransformHtml()),
-      writeBundle: () =>
-        (this.writeResources = this.viteWriteBundleToFarmWriteResources())
+      'writeBundle|closeBundle': () =>
+        (this.writeResources = this.viteWriteCloseBundleToFarmWriteResources())
     };
     const alwaysExecutedHooks = ['buildStart'];
+    const productionOnlyHooks = [
+      'renderChunk',
+      'generateBundle',
+      'renderStart',
+      'closeBundle',
+      'writeBundle'
+    ];
 
     // convert hooks
-    for (const [hookName, fn] of Object.entries(hooksMap)) {
-      if (
-        rawPlugin[hookName as keyof Plugin] ||
-        alwaysExecutedHooks.includes(hookName)
-      ) {
-        fn();
+    for (const [hookNameGroup, fn] of Object.entries(hooksMap)) {
+      const hookNames = hookNameGroup.split('|');
+
+      for (const hookName of hookNames) {
+        if (
+          rawPlugin[hookName as keyof Plugin] ||
+          alwaysExecutedHooks.includes(hookName)
+        ) {
+          if (mode !== 'production' && productionOnlyHooks.includes(hookName)) {
+            continue;
+          }
+
+          fn();
+        }
       }
     }
 
@@ -193,6 +210,10 @@ export class VitePluginAdapter implements JsPlugin {
         );
       }
     }
+  }
+
+  get api() {
+    return this._rawPlugin.api;
   }
 
   // call both config and configResolved
@@ -569,18 +590,6 @@ export class VitePluginAdapter implements JsPlugin {
     };
   }
 
-  private viteCloseBundleToFarmFinish(): JsPlugin['finish'] {
-    return {
-      executor: this.wrapExecutor(() => {
-        const hook = this.wrapRawPluginHook(
-          'closeBundle',
-          this._rawPlugin.closeBundle
-        );
-        return hook?.();
-      })
-    };
-  }
-
   private viteHandleHotUpdateToFarmUpdateModules(): JsPlugin['updateModules'] {
     return {
       executor: this.wrapExecutor(
@@ -636,7 +645,7 @@ export class VitePluginAdapter implements JsPlugin {
         moduleIds: this.filters
       },
       executor: this.wrapExecutor(
-        async (param: RenderResourcePotParams, ctx) => {
+        async (param: PluginRenderResourcePotParams, ctx) => {
           if (param.resourcePotInfo.resourcePotType !== 'js') {
             return;
           }
@@ -713,7 +722,7 @@ export class VitePluginAdapter implements JsPlugin {
   private viteGenerateBundleToFarmFinalizeResources(): JsPlugin['finalizeResources'] {
     return {
       executor: this.wrapExecutor(
-        async (param: FinalizeResourcesHookParams, context) => {
+        async (param: PluginFinalizeResourcesHookParams, context) => {
           const hook = this.wrapRawPluginHook(
             'generateBundle',
             this._rawPlugin.generateBundle,
@@ -739,7 +748,7 @@ export class VitePluginAdapter implements JsPlugin {
               param.resourcesMap[key]
             );
             return res;
-          }, {} as FinalizeResourcesHookParams['resourcesMap']);
+          }, {} as PluginFinalizeResourcesHookParams['resourcesMap']);
 
           return result;
         }
@@ -775,28 +784,36 @@ export class VitePluginAdapter implements JsPlugin {
     };
   }
 
-  private viteWriteBundleToFarmWriteResources(): JsPlugin['writeResources'] {
+  private viteWriteCloseBundleToFarmWriteResources(): JsPlugin['writeResources'] {
     return {
       executor: this.wrapExecutor(
-        async (param: FinalizeResourcesHookParams, context) => {
+        async (param: PluginFinalizeResourcesHookParams, context) => {
           const hook = this.wrapRawPluginHook(
             'writeBundle',
             this._rawPlugin.writeBundle,
             context
           );
 
-          const bundles = Object.entries(param.resourcesMap).reduce(
-            (res, [key, val]) => {
-              res[key] = transformResourceInfo2RollupResource(val);
-              return res;
-            },
-            {} as OutputBundle
-          );
+          if (hook) {
+            const bundles = Object.entries(param.resourcesMap).reduce(
+              (res, [key, val]) => {
+                res[key] = transformResourceInfo2RollupResource(val);
+                return res;
+              },
+              {} as OutputBundle
+            );
 
-          await hook?.(
-            transformFarmConfigToRollupNormalizedOutputOptions(param.config),
-            bundles
+            await hook?.(
+              transformFarmConfigToRollupNormalizedOutputOptions(param.config),
+              bundles
+            );
+          }
+
+          const closeBundle = this.wrapRawPluginHook(
+            'closeBundle',
+            this._rawPlugin.closeBundle
           );
+          return closeBundle?.();
         }
       )
     };
