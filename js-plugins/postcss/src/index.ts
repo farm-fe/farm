@@ -23,7 +23,7 @@ export type PostcssPluginOptions = {
   implementation?: string;
   internalPlugins?: {
     /**
-     * @default true
+     * @default false
      * @description please see https://www.npmjs.com/package/postcss-import
      */
     postcssImport?: boolean;
@@ -65,7 +65,7 @@ export default function farmPostcssPlugin(
         try {
           const sourceMapEnabled = context.sourceMapEnabled(param.moduleId);
           const enablePostcssImport =
-            options.internalPlugins?.postcssImport || true;
+            options.internalPlugins?.postcssImport ?? false;
 
           if (enablePostcssImport) {
             postcssPlugins.unshift(
