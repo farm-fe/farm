@@ -83,7 +83,7 @@ pub fn relative(from: &str, to: &str) -> String {
   let to = file_url_to_path(to);
 
   if !PathBuf::from(&from).is_absolute() {
-    panic!("from path must be absolute");
+    panic!("from path must be absolute. from: {} to: {}", from, to);
   }
 
   let rp = diff_paths(&to, &from).unwrap_or_else(|| {
@@ -174,8 +174,17 @@ mod tests {
 
   #[test]
   fn test_relative() {
-    let from = "/desktop/farm/projects";
-    let to = "/desktop/farm/documents/report.txt";
+    let from = if cfg!(windows) {
+      "C:\\desktop\\farm\\projects"
+    } else {
+      "/desktop/farm/projects"
+    };
+    let to = if cfg!(windows) {
+      "C:\\desktop\\farm\\documents\\report.txt"
+    } else {
+      "/desktop/farm/documents/report.txt"
+    };
+
     assert_eq!(relative(from, to), "../documents/report.txt");
   }
 }

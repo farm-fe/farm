@@ -111,12 +111,12 @@ async function handleServerPortConflict(
 export async function resolveConfig(
   inlineOptions: FarmCLIOptions,
   logger: Logger,
-  defaultMode?: CompilationMode,
+  mode?: CompilationMode,
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
-  inlineOptions.mode = inlineOptions.mode ?? defaultMode;
+  inlineOptions.mode = inlineOptions.mode ?? mode;
 
   // configPath may be file or directory
   const { configPath } = inlineOptions;
@@ -125,7 +125,7 @@ export async function resolveConfig(
     return getDefaultConfig(
       inlineOptions,
       logger,
-      defaultMode,
+      mode,
       isHandleServerPortConflict
     );
   }
@@ -144,14 +144,12 @@ export async function resolveConfig(
     return getDefaultConfig(
       inlineOptions,
       logger,
-      defaultMode,
+      mode,
       isHandleServerPortConflict
     );
   }
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
-  const mode = userConfig.compilation?.mode ?? defaultMode;
-  setProcessEnv(mode);
 
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
