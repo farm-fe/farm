@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/visualizer",
-  "version": "2.2.0",
+  "version": "1.0.0",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
   "type": "module",
