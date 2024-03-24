@@ -243,9 +243,12 @@ impl Default for ResolveConfig {
       extensions: vec![
         String::from("tsx"),
         String::from("ts"),
+        String::from("mts"),
+        String::from("cts"),
         String::from("jsx"),
         String::from("mjs"),
         String::from("js"),
+        String::from("cjs"),
         String::from("json"),
         String::from("html"),
         String::from("css"),

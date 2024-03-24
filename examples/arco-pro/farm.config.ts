@@ -40,8 +40,8 @@ export default defineConfig(async (env) => {
       [
         '@farmfe/plugin-react',
         {
-          refresh: process.env.NODE_ENV === 'development',
-          development: process.env.NODE_ENV === 'development'
+          refresh: env.mode === 'development',
+          development: env.mode === 'development'
         }
       ],
       farmJsPluginLess(),

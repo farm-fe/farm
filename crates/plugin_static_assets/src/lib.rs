@@ -9,7 +9,7 @@ use farmfe_core::{
   context::{CompilationContext, EmitFileParams},
   deserialize,
   error::CompilationError,
-  module::{ModuleId, ModuleType},
+  module::ModuleType,
   // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,

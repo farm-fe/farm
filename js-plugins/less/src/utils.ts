@@ -5,8 +5,9 @@ const __require = createRequire(import.meta.url);
 
 export const { name: pluginName } = __require('../../package.json');
 
-export function getLessImplementation(implementation?: string) {
-  let resolvedImplementation;
+export function getLessImplementation(implementation?: string | any) {
+  let resolvedImplementation = implementation;
+
   if (!implementation || typeof implementation === 'string') {
     const lessImplPkg = implementation || 'less';
     try {
@@ -15,6 +16,7 @@ export function getLessImplementation(implementation?: string) {
       throwError('Implementation', e);
     }
   }
+
   return resolvedImplementation;
 }
 

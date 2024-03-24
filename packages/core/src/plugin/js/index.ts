@@ -1,4 +1,3 @@
-import merge from 'lodash.merge';
 import {
   type JsPlugin,
   normalizeDevServerOptions,
@@ -13,6 +12,8 @@ import {
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolveAsyncPlugins } from '../index.js';
+import merge from '../../utils/merge.js';
+import { CompilationMode } from '../../config/env.js';
 
 // export * from './jsPluginAdapter.js';
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
@@ -23,7 +24,8 @@ type VitePluginsType = VitePluginType[];
 export async function handleVitePlugins(
   vitePlugins: VitePluginsType,
   userConfig: UserConfig,
-  logger: Logger
+  logger: Logger,
+  mode: CompilationMode
 ): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
 
@@ -32,7 +34,7 @@ export async function handleVitePlugins(
       compilation: userConfig.compilation,
       server: normalizeDevServerOptions(
         userConfig.server,
-        userConfig.compilation?.mode ?? 'development'
+        userConfig.compilation?.mode ?? mode
       )
     });
   }
@@ -48,7 +50,7 @@ export async function handleVitePlugins(
       filters = f;
     }
 
-    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger);
+    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
   }
 
   // if vitePlugins is not empty, append a load plugin to load file
@@ -127,14 +129,16 @@ export function processVitePlugin(
   userConfig: UserConfig,
   filters: string[],
   jsPlugins: JsPlugin[],
-  logger: Logger
+  logger: Logger,
+  mode: CompilationMode
 ) {
   const processPlugin = (plugin: any) => {
     const vitePluginAdapter = new VitePluginAdapter(
       plugin as any,
       userConfig,
       filters,
-      logger
+      logger,
+      mode
     );
     convertPlugin(vitePluginAdapter);
     jsPlugins.push(vitePluginAdapter);

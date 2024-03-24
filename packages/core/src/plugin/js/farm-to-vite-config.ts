@@ -4,7 +4,7 @@ import {
   deleteUndefinedPropertyDeeply,
   throwIncompatibleError
 } from './utils.js';
-import merge from 'lodash.merge';
+import merge from '../../utils/merge.js';
 import { Logger } from '../../index.js';
 import { VITE_DEFAULT_ASSETS } from './constants.js';
 
@@ -59,9 +59,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore ignore this error
     isProduction: config.compilation?.mode === 'production',
-    css: {
-      devSourcemap: false
-    },
+    css: config.compilation?.css?._viteCssOptions ?? {},
     build: {
       outDir: config.compilation?.output?.path,
       sourcemap,
@@ -328,42 +326,34 @@ export function viteConfigToFarmConfig(
   origFarmConfig: UserConfig,
   _pluginName: string
 ): UserConfig {
-  const farmConfig: UserConfig = {};
+  const farmConfig: UserConfig = {
+    compilation: {}
+  };
 
   if (config.root) {
     farmConfig.root = config.root;
   }
+  if (config?.css) {
+    farmConfig.compilation.css ??= {};
+    farmConfig.compilation.css._viteCssOptions = config.css;
+  }
+
   if (config.base) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    if (!farmConfig.compilation.output) {
-      farmConfig.compilation.output = {};
-    }
+    farmConfig.compilation.output ??= {};
     farmConfig.compilation.output.publicPath = config.base;
   }
   if (config.publicDir) {
     farmConfig.publicDir = config.publicDir;
   }
   if (config.mode === 'development' || config.mode === 'production') {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
     farmConfig.compilation.mode = config.mode;
   }
   if (config.define) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
     farmConfig.compilation.define = config.define;
   }
   if (config.resolve) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    if (!farmConfig.compilation.resolve) {
-      farmConfig.compilation.resolve = {};
-    }
+    farmConfig.compilation.resolve ??= {};
+
     if (config.resolve.alias) {
       if (!Array.isArray(config.resolve.alias)) {
         farmConfig.compilation.resolve.alias = config.resolve.alias as Record<
@@ -396,9 +386,7 @@ export function viteConfigToFarmConfig(
   }
 
   if (config.server) {
-    if (!farmConfig.server) {
-      farmConfig.server = {};
-    }
+    farmConfig.server ??= {};
     farmConfig.server.hmr = config.server.hmr;
     farmConfig.server.port = config.server.port;
 
@@ -430,12 +418,7 @@ export function viteConfigToFarmConfig(
   }
 
   if (config.build) {
-    if (!farmConfig.compilation) {
-      farmConfig.compilation = {};
-    }
-    if (!farmConfig.compilation.output) {
-      farmConfig.compilation.output = {};
-    }
+    farmConfig.compilation.output ??= {};
     farmConfig.compilation.output.path = config.build.outDir;
 
     if (

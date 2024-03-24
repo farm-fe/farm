@@ -66,16 +66,10 @@ fn html_build_stage() {
 
     assert_eq!(
       analyze_deps_param.deps,
-      vec![
-        PluginAnalyzeDepsHookResultEntry {
-          source: "/favicon.ico".to_string(),
-          kind: ResolveKind::LinkHref
-        },
-        PluginAnalyzeDepsHookResultEntry {
-          source: "./src/main.ts".to_string(),
-          kind: ResolveKind::ScriptSrc
-        }
-      ]
+      vec![PluginAnalyzeDepsHookResultEntry {
+        source: "./src/main.ts".to_string(),
+        kind: ResolveKind::ScriptSrc
+      }]
     );
   });
 }

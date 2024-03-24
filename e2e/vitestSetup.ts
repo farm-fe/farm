@@ -26,7 +26,7 @@ function getServerPort(): number {
 const visitPage = async (
   path: string,
   examplePath: string,
-  cb: (page: Page) => Promise<void>
+  rawCb: (page: Page) => Promise<void>
 ) => {
   if (!path) return;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -35,6 +35,16 @@ const visitPage = async (
   if (!wsEndpoint) {
     throw new Error('wsEndpoint not found');
   }
+
+  // make sure rawCb is called only once
+  const cb = (function () {
+    let called = false;
+    return async (page: Page) => {
+      if (called) return;
+      called = true;
+      return rawCb(page);
+    };
+  })();
 
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();

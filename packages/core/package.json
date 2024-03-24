@@ -62,7 +62,6 @@
     "@types/koa-static": "^4.0.2",
     "@types/koa__cors": "^4.0.0",
     "@types/lodash.debounce": "^4.0.7",
-    "@types/lodash.merge": "^4.6.7",
     "@types/mime-types": "^2.1.2",
     "@types/ws": "^8.5.4",
     "react-refresh": "^0.14.0"
@@ -114,7 +113,6 @@
     "koa-proxies": "^0.12.3",
     "koa-static": "^5.0.0",
     "lodash.debounce": "^4.0.8",
-    "lodash.merge": "^4.6.2",
     "loglevel": "^1.8.1",
     "mime-types": "^2.1.35",
     "open": "^9.1.0",

@@ -12,14 +12,12 @@ export default defineConfig({
       format: 'esm'
     },
     mode: 'development',
+    lazyCompilation: false,
     minify: false,
     sourcemap: false,
     persistentCache: false,
     runtime: {
       plugins: ['./src/runtime-plugin.ts']
     }
-  },
-  server: {
-    hmr: false
   }
 });

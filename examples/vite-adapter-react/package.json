@@ -1,6 +1,7 @@
 {
   "name": "@farmfe-examples/vite-adapter-react",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "core-js": "^3.36.1",
     "react": "18",
