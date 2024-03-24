@@ -11,6 +11,6 @@ export default createFarmJsPluginBuildConfig(
     })
   ],
   {
-    external: ['@farmfe/core']
+    external: ['@farmfe/core', 'postcss-url', 'postcss-import']
   }
 );

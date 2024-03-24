@@ -4,7 +4,8 @@ import { ProcessOptions, Processor } from 'postcss';
 import path from 'path';
 import glob from 'fast-glob';
 import atImport from 'postcss-import';
-import { getPostcssImplementation, pluginName } from './utils.js';
+import { getPostcssImplementation, pluginName, tryRead } from './utils.js';
+import postcssUrl from 'postcss-url';
 
 export type PostcssPluginOptions = {
   /**
@@ -88,7 +89,6 @@ export default function farmPostcssPlugin(
                         caller: pluginName
                       }
                     );
-
                     if (resolvedInfo.resolvedPath) {
                       return path.resolve(resolvedInfo.resolvedPath);
                     }
@@ -102,6 +102,21 @@ export default function farmPostcssPlugin(
                   }
 
                   return id;
+                },
+                load: async (id) => {
+                  // inline 之后 文件文件里面的 url 里面的相对路径需要相对于入口的 css 文件处理
+                  const content = await tryRead(id);
+                  const implementation = getPostcssImplementation();
+                  const urlRebasePostcssProcessor: Processor = implementation([
+                    postcssUrl({
+                      url: 'rebase'
+                    })
+                  ]);
+                  const { css } = await urlRebasePostcssProcessor.process(
+                    content,
+                    { from: id, to: param.resolvedPath }
+                  );
+                  return css;
                 }
               })
             );

@@ -43,10 +43,12 @@
     "@farmfe/core": "workspace:^1.0.0",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@types/postcss-import": "^14.0.3",
+    "@types/postcss-url": "^10.0.4",
     "fast-glob": "^3.3.1",
     "postcss": "^8.4.24",
     "postcss-import": "^16.0.1",
     "postcss-load-config": "^4.0.1",
+    "postcss-url": "^10.1.3",
     "sugarss": "^4.0.1"
   },
   "peerDependencies": {

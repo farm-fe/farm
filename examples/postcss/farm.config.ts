@@ -15,6 +15,7 @@ export default defineConfig({
         "@/": path.resolve(process.cwd(), 'src')
       }
     },
-    persistentCache: false
-  }
+    persistentCache:false
+  },
+  publicDir: "public"
 });

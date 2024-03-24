@@ -1,4 +1,5 @@
 @import '@/base01.css';
+@import "@/styles/rebase.css";
 
 @tailwind base;
 @tailwind components;
