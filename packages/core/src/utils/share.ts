@@ -73,6 +73,10 @@ export function normalizePath(id: string): string {
   return path.posix.normalize(id);
 }
 
+export function normalizeBasePath(basePath: string): string {
+  return path.posix.normalize(isWindows ? basePath.replace(/\\/g, '/') : basePath);
+}
+
 export function arraify<T>(target: T | T[]): T[] {
   return Array.isArray(target) ? target : [target];
 }
