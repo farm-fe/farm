@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.0.4
+
+### Patch Changes
+
+- a749b5af: Fix Vite project migrations issues
+- 5b9cb22c: add import meta hot condition
+
 ## 1.0.3
 
 ### Patch Changes
