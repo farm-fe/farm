@@ -39,7 +39,7 @@ impl JsPluginTransformHtmlHook {
       .expect("executor should be checked in js side");
     let order = obj
       .get_named_property::<JsPluginTransformHtmlHookOrder>("order")
-      .unwrap();
+      .unwrap_or(JsPluginTransformHtmlHookOrder::Normal);
 
     Self {
       tsfn: ThreadSafeJsPluginHook::new::<JsPluginTransformHtmlHookParams, Resource>(env, func),

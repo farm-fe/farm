@@ -150,7 +150,7 @@ export async function resolveConfig(
   }
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
-  const mode = userConfig.compilation.mode ?? defaultMode;
+  const mode = userConfig.compilation?.mode ?? defaultMode;
   setProcessEnv(mode);
 
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
@@ -379,12 +379,14 @@ export async function normalizeUserCompilationConfig(
   ) {
     const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
     const hmrPath = userConfig.server.hmr.path;
-    
+
     config.runtime.plugins.push(hmrClientPluginPath);
     config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-    config.define.FARM_HMR_PATH = normalizeBasePath(path.join(publicPath, hmrPath));
+    config.define.FARM_HMR_PATH = normalizeBasePath(
+      path.join(publicPath, hmrPath)
+    );
   }
 
   if (
@@ -426,7 +428,7 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.presetEnv === undefined && config.output?.targetEnv !== 'node') {
+  if (config.presetEnv === undefined) {
     if (isProduction) {
       config.presetEnv = true;
     } else {

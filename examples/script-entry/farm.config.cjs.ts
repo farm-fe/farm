@@ -13,6 +13,7 @@ const config: UserConfig = {
       targetEnv: 'node-legacy',
       format: 'cjs'
     },
+    lazyCompilation: false,
     resolve: {
       alias: {
         '@/': path.join(process.cwd(), 'src')
