@@ -78,5 +78,10 @@ type RecordViewerOptions = {
 
 Default: undefined
 
+## Credits
 
+Thanks to:
 
+- The [vite-plugin-inspect](https://github.com/antfu/vite-plugin-inspect) project created by [Anthony Fu](https://github.com/antfu), inspiring the module analysis feature in Farm's Visualizer.
+
+- The [rsdoctor](https://github.com/web-infra-dev/rsdoctor) project created by [web-infra](https://github.com/web-infra-dev), influencing the design of Farm's Visualizer.
