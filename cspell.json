@@ -156,7 +156,8 @@
     "srcset",
     "shulandmimi",
     "concurrentify",
-    "pageerror"
+    "pageerror",
+    "rsdoctor"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
