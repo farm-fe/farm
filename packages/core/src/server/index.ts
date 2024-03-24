@@ -19,6 +19,7 @@ import {
   bootstrap,
   clearScreen,
   Logger,
+  normalizePath,
   printServerUrls
 } from '../utils/index.js';
 import {
@@ -38,6 +39,7 @@ import { Server as httpServer } from './type.js';
 import { promisify } from 'node:util';
 import { FileWatcher } from '../watcher/index.js';
 import { logError } from './error.js';
+import path from 'node:path';
 
 /**
  * Farm Dev Server, responsible for:
@@ -212,13 +214,20 @@ export class Server implements ImplDevServer {
     this._app = new Koa();
   }
 
-  public async createServer(options: NormalizedServerConfig) {
+  public async createServer(
+    options: NormalizedServerConfig & UserPreviewServerConfig
+  ) {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
-
     const hostname = await resolveHostname(host);
-    const publicPath = this.compiler?.config.config.output?.publicPath;
-    const hmrPath = publicPath === '/' ? DEFAULT_HMR_OPTIONS.path : publicPath;
+    const publicPath =
+      this.compiler?.config.config.output?.publicPath ??
+      options?.output.publicPath;
+    // TODO refactor previewServer If it's preview server, then you can't use create server. we need to create a new one because hmr is false when you preview.
+    const hmrPath = normalizePath(
+      path.join(publicPath, options.hmr.path ?? DEFAULT_HMR_OPTIONS.path)
+    );
+
     this.config = {
       ...options,
       port: Number(process.env.FARM_DEV_SERVER_PORT || options.port),

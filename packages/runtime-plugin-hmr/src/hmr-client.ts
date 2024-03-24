@@ -11,9 +11,8 @@ const hmrHost =
     ? window.location.hostname || 'localhost'
     : FARM_HMR_HOST || 'localhost';
 
-const hmrBase = FARM_HMR_BASE === '/' ? '/__hmr' : FARM_HMR_BASE;
 const socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
-const socketHostUrl = `${hmrHost}:${hmrPort}${hmrBase}`;
+const socketHostUrl = `${hmrHost}:${hmrPort}${FARM_HMR_PATH}`;
 
 export class HmrClient {
   socket: WebSocket;
