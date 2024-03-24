@@ -15,7 +15,8 @@ use farmfe_toolkit::{
 };
 
 use crate::utils::{
-  is_link_href, is_script_entry, is_script_resource, is_script_src, FARM_ENTRY, FARM_RESOURCE,
+  is_link_css_or_code, is_script_entry, is_script_resource, is_script_src_or_type_module_code,
+  FARM_ENTRY, FARM_RESOURCE,
 };
 
 pub struct ResourcesInjectorOptions {
@@ -124,9 +125,13 @@ impl VisitMut for ResourcesInjector {
       // remove all non-http existing <href /> and <script /> first
       for (i, child) in element.children.iter().enumerate() {
         if let Child::Element(e) = child {
-          if is_script_src(e, &self.options.current_html_id, &self.options.context)
+          if is_link_css_or_code(e, &self.options.current_html_id, &self.options.context)
             || is_script_entry(e)
-            || is_link_href(e, &self.options.current_html_id, &self.options.context)
+            || is_script_src_or_type_module_code(
+              e,
+              &self.options.current_html_id,
+              &self.options.context,
+            )
             || is_script_resource(e)
           {
             children_to_remove.push(i);

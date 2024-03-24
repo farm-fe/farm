@@ -111,6 +111,18 @@ impl Plugin for FarmPluginSass {
     101
   }
 
+  fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    let extra_extensions = vec!["sass", "scss"];
+
+    for ext in extra_extensions {
+      if config.resolve.extensions.iter().all(|e| e != ext) {
+        config.resolve.extensions.push(ext.to_string());
+      }
+    }
+
+    Ok(Some(()))
+  }
+
   fn load(
     &self,
     param: &farmfe_core::plugin::PluginLoadHookParam,

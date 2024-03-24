@@ -1441,6 +1441,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
+ "rkyv",
 ]
 
 [[package]]

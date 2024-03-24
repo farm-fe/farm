@@ -50,5 +50,8 @@ await execa(
 console.log('Building core CJS...');
 await buildCoreCjs();
 
-console.log('build examples');
+console.log('Building examples');
 await buildExamples();
+
+console.log('E2E Test');
+await execa(DEFAULT_PACKAGE_MANAGER, ['run', 'test-e2e'], { cwd });

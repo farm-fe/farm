@@ -6,6 +6,7 @@ export default defineConfig({
     coverage: {
       reporter: ['json'],
     },
+    pool: 'forks',
     environment: 'node',
     deps: {
       interopDefault: false,

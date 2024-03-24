@@ -19,7 +19,7 @@ import {
   bootstrap,
   clearScreen,
   Logger,
-  normalizePath,
+  normalizeBasePath,
   printServerUrls
 } from '../utils/index.js';
 import {
@@ -147,8 +147,6 @@ export class Server implements ImplDevServer {
       throw new Error(logError(err) as unknown as string);
     }
 
-    // 将所有错误信息连接成一个字符串，每个错误信息占一行
-
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this.compiler.writeResourcesToDisk(base);
@@ -224,7 +222,7 @@ export class Server implements ImplDevServer {
       this.compiler?.config.config.output?.publicPath ??
       options?.output.publicPath;
     // TODO refactor previewServer If it's preview server, then you can't use create server. we need to create a new one because hmr is false when you preview.
-    const hmrPath = normalizePath(
+    const hmrPath = normalizeBasePath(
       path.join(publicPath, options.hmr.path ?? DEFAULT_HMR_OPTIONS.path)
     );
 

@@ -19,7 +19,13 @@ fn test_import_meta_glob() {
     )
     .unwrap();
     let dir = file.parent().unwrap().to_str().unwrap();
-    transform_import_meta_glob(&mut ast, dir.to_string(), dir.to_string()).unwrap();
+    let root = if dir.contains("glob_embrace_url") {
+      file.parent().unwrap().parent().unwrap().to_str().unwrap()
+    } else {
+      dir
+    };
+
+    transform_import_meta_glob(&mut ast, root.to_string(), dir.to_string()).unwrap();
 
     let code = codegen_module(&ast, EsVersion::EsNext, cm, None, false, None).unwrap();
     let code = String::from_utf8(code).unwrap();

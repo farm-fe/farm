@@ -15,6 +15,9 @@ test('Binding - should parse config to rust correctly', async () => {
   const compilationConfig = await normalizeUserCompilationConfig(
     {
       root: path.resolve(currentDir, 'fixtures', 'binding'),
+      compilation: {
+        progress: false
+      },
       server: serverConfig
     },
     new Logger()

@@ -252,6 +252,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { Compiler } = nativeBinding
+const { JsPluginTransformHtmlHookOrder, Compiler } = nativeBinding
 
+module.exports.JsPluginTransformHtmlHookOrder = JsPluginTransformHtmlHookOrder
 module.exports.Compiler = Compiler
