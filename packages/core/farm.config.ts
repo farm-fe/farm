@@ -103,6 +103,7 @@ export default <UserConfig>{
               relativePath === 'binding/binding.cjs' ||
               relativePath === 'binding/resolve-binding.cjs'
             ) {
+              console.log(`module.exports = require('../../${relativePath}');`);
               return {
                 content: `module.exports = require('../../${relativePath}');`,
                 moduleType: 'js'

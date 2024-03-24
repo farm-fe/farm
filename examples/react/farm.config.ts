@@ -5,7 +5,15 @@ export default defineConfig({
     sourcemap: false,
     persistentCache: false,
     presetEnv: false,
-    // progress: false
+    progress: false,
+    output: {
+      publicPath: '/dist/',
+    },
+  },
+  server: {
+    hmr: {
+      path: "/__farm_hmr",
+    }
   },
   plugins: [
     ['@farmfe/plugin-react', { runtime: 'automatic' }],

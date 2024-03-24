@@ -28,7 +28,8 @@ import {
   isEmptyObject,
   isObject,
   isWindows,
-  normalizePath
+  normalizePath,
+  normalizeBasePath
 } from '../utils/index.js';
 import { urlRegex } from '../utils/http.js';
 import { JsPlugin } from '../index.js';
@@ -377,14 +378,14 @@ export async function normalizeUserCompilationConfig(
     userConfig.server.hmr &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
+    const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
+    const hmrPath = userConfig.server.hmr.path;
+    
     config.runtime.plugins.push(hmrClientPluginPath);
     config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-    // may be we don't need this
-    config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
-    config.define.FARM_HMR_BASE =
-      userConfig.compilation?.output?.publicPath ?? '/';
+    config.define.FARM_HMR_PATH = normalizeBasePath(path.join(publicPath, hmrPath));
   }
 
   if (

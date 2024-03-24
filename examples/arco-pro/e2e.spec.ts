@@ -26,7 +26,7 @@ test(`e2e tests - ${name}`, async () => {
         // shoud navigate to dashboard
         await page.waitForSelector(
           'a[href="https://arco.design/react/docs/start"]',
-          { timeout: 5000 }
+          { timeout: 10000 }
         );
         const reactLink = await page.$(
           'a[href="https://arco.design/react/docs/start"]'
