@@ -16,6 +16,7 @@ test('resolveUserConfig', async () => {
     new Logger(),
     'development'
   );
+    console.log(config.compilation.define);
     
   expect(config.compilation.define).toEqual({
     FARM_HMR_HOST: true,
