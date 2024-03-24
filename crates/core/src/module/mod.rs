@@ -1,6 +1,4 @@
-use std::{
-  any::Any, cell::RefCell, collections::HashMap, hash::Hash, path::Path, rc::Rc, sync::Arc,
-};
+use std::{any::Any, cell::RefCell, hash::Hash, path::Path, rc::Rc, sync::Arc};
 
 use blake2::{
   digest::{Update, VariableOutput},
@@ -32,6 +30,8 @@ use self::module_group::ModuleGroupId;
 pub mod module_graph;
 pub mod module_group;
 pub mod watch_graph;
+
+pub const VIRTUAL_MODULE_PREFIX: &str = "virtual:";
 
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage
@@ -513,7 +513,8 @@ impl ModuleId {
   /// transform the id back to resolved path
   pub fn resolved_path(&self, root: &str) -> String {
     // if self.relative_path is absolute path, return it directly
-    if Path::new(self.relative_path()).is_absolute() || self.relative_path().starts_with("virtual:")
+    if Path::new(self.relative_path()).is_absolute()
+      || self.relative_path().starts_with(VIRTUAL_MODULE_PREFIX)
     {
       return self.relative_path().to_string();
     }

@@ -1,5 +1,5 @@
-//! This hook is only JS plugin hook, it's to be compatible with Vite's `transformIndexHtml` hook in dev mode.
-//! It's used to transform the HTML content of the `.html` file.
+//! This hook is only JS plugin hook, it's to be compatible with Vite's `transformIndexHtml` hook.
+//! If you are a Farm plugin author, you should not use this hook, use `transform` or `process_module` or other hooks instead, cause farm treat HTML as a basic module.
 
 use std::sync::Arc;
 
@@ -14,6 +14,8 @@ use crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::Threa
 
 pub struct JsPluginTransformHtmlHook {
   tsfn: ThreadSafeJsPluginHook,
+  /// pre/post/normal
+  pub order: JsPluginTransformHtmlHookOrder,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,14 +24,26 @@ pub struct JsPluginTransformHtmlHookParams {
   pub html_resource: Resource,
 }
 
+#[napi]
+#[derive(Debug)]
+pub enum JsPluginTransformHtmlHookOrder {
+  Pre,
+  Normal,
+  Post,
+}
+
 impl JsPluginTransformHtmlHook {
   pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
     let func = obj
       .get_named_property::<napi::JsFunction>("executor")
       .expect("executor should be checked in js side");
+    let order = obj
+      .get_named_property::<JsPluginTransformHtmlHookOrder>("order")
+      .unwrap_or(JsPluginTransformHtmlHookOrder::Normal);
 
     Self {
       tsfn: ThreadSafeJsPluginHook::new::<JsPluginTransformHtmlHookParams, Resource>(env, func),
+      order,
     }
   }
 

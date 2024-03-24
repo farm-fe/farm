@@ -21,7 +21,8 @@ export default defineConfig({
       ...builtinModules.map((m) => `^${m}$`)
     ],
     minify: false,
-    persistentCache: false
+    persistentCache: false,
+    lazyCompilation: false,
   },
   server: {
     hmr: false

@@ -4,7 +4,7 @@ import { rustPluginResolver } from './rust/index.js';
 
 import type { JsPlugin } from './type.js';
 import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
-import merge from 'lodash.merge';
+import merge from '../utils/merge.js';
 
 export * from './js/index.js';
 export * from './rust/index.js';

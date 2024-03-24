@@ -78,8 +78,6 @@ export async function build(
     'production'
   );
 
-  setProcessEnv(resolvedUserConfig.compilation.mode);
-
   try {
     await createBundleHandler(resolvedUserConfig);
     // copy resources under publicDir to output.path
@@ -143,8 +141,6 @@ export async function watch(
     'development',
     false
   );
-
-  setProcessEnv(resolvedUserConfig.compilation.mode);
 
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,

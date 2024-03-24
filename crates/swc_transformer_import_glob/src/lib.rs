@@ -15,7 +15,6 @@
 #![feature(box_patterns)]
 
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::path::Component;
 use std::path::PathBuf;
 
@@ -277,7 +276,7 @@ impl ImportGlobVisitor {
   }
 
   /// Glob the sources and filter negative sources, return globs relative paths
-  fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> Vec<String> {
+  fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
     let mut paths = vec![];
 
     for source in sources {
@@ -298,13 +297,16 @@ impl ImportGlobVisitor {
       // relative to root when source starts with '/'.
       // and alias
       let rel_path = if source.starts_with('/') {
-        RelativePath::new(&source[1..])
+        let abs_path = RelativePath::new(&source[1..]).to_logical_path(&self.root);
+        relative(&self.cur_dir, &abs_path.to_string_lossy())
       } else {
-        RelativePath::new(&source)
+        source.clone()
       };
       let rel_source = relative(
         &self.root,
-        &rel_path.to_logical_path(&self.cur_dir).to_string_lossy(),
+        &RelativePath::new(&rel_path)
+          .to_logical_path(&self.cur_dir)
+          .to_string_lossy(),
       );
       // wax::Glob does not support ../, so we need to convert it to relative path
       let (root, rel_source) = if rel_source.starts_with("../") {
@@ -333,7 +335,12 @@ impl ImportGlobVisitor {
         Ok(glob) => {
           let p = glob
             .walk(&root)
-            .map(|p| p.map(|p| p.path().to_string_lossy().to_string()))
+            .map(|p| {
+              (
+                source.clone(),
+                p.map(|p| p.path().to_string_lossy().to_string()),
+              )
+            })
             .collect::<Vec<_>>();
           paths.push((negative, p));
         }
@@ -345,22 +352,41 @@ impl ImportGlobVisitor {
       }
     }
 
-    let mut filtered_paths = HashSet::new();
+    let mut filtered_paths = HashMap::new();
 
     for (negative, path) in paths {
-      for entry in path {
+      for (source, entry) in path {
         match entry {
           Ok(file) => {
+            // if source starts with '/', we need make source relative to root, otherwise, relative to cur_dir
+            let source: String = if source.starts_with('/') {
+              let rel_source = relative(&self.root, &file);
+
+              if !rel_source.starts_with('/') {
+                format!("/{}", rel_source)
+              } else {
+                rel_source
+              }
+            } else {
+              let rel_source = relative(&self.cur_dir, &file);
+
+              if !rel_source.starts_with('.') {
+                format!("./{}", rel_source)
+              } else {
+                rel_source
+              }
+            };
+
             let mut relative_file = relative(&self.cur_dir, &file);
 
             if !relative_file.starts_with('.') {
               relative_file = format!("./{}", relative_file);
             }
 
-            if negative && filtered_paths.contains(&relative_file) {
+            if negative && filtered_paths.contains_key(&relative_file) {
               filtered_paths.remove(&relative_file);
             } else if !negative {
-              filtered_paths.insert(relative_file);
+              filtered_paths.insert(relative_file, source);
             }
           }
           Err(err) => {
@@ -372,9 +398,6 @@ impl ImportGlobVisitor {
       }
     }
 
-    let mut filtered_paths = filtered_paths.into_iter().collect::<Vec<_>>();
-    filtered_paths.sort();
-
     filtered_paths
   }
 
@@ -382,6 +405,7 @@ impl ImportGlobVisitor {
     &mut self,
     glob_import_as: &str,
     relative_file: &str,
+    source: &str,
     cur_index: usize,
     entry_index: usize,
     sources: &Vec<String>,
@@ -390,7 +414,7 @@ impl ImportGlobVisitor {
       let file = RelativePath::new(&relative_file).to_logical_path(&self.cur_dir);
       let content = std::fs::read_to_string(file).unwrap();
       Some((
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Lit(Lit::Str(swc_ecma_ast::Str {
           span: DUMMY_SP,
           value: content.into(),
@@ -400,7 +424,7 @@ impl ImportGlobVisitor {
     } else if glob_import_as == "url" {
       // add "./dir/foo.js": __glob__0_0
       Some((
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Ident(Ident::new(
           format!("__glob__{}_{}", cur_index, entry_index).into(),
           DUMMY_SP,
@@ -418,6 +442,7 @@ impl ImportGlobVisitor {
   fn deal_with_non_eager(
     &self,
     relative_file: &str,
+    source: &str,
     import: &Option<String>,
   ) -> (String, Box<Expr>) {
     let import_call_expr = Box::new(Expr::Call(CallExpr {
@@ -440,7 +465,7 @@ impl ImportGlobVisitor {
     if let Some(import) = import.as_ref() {
       // () => import('./dir/foo.js').then((m) => m.setup)
       (
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Arrow(ArrowExpr {
           span: DUMMY_SP,
           params: vec![],
@@ -480,7 +505,7 @@ impl ImportGlobVisitor {
       )
     } else {
       (
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Arrow(ArrowExpr {
           span: DUMMY_SP,
           params: vec![],
@@ -532,15 +557,18 @@ impl VisitMut for ImportGlobVisitor {
             // search source using glob
             let sources = &import_glob_info.sources;
             let filtered_paths = self.glob_and_filter_sources(sources);
+            let mut filtered_paths = filtered_paths.into_iter().collect::<Vec<_>>();
+            filtered_paths.sort();
 
             let mut props = vec![];
 
-            for (entry_index, relative_file) in filtered_paths.into_iter().enumerate() {
+            for (entry_index, (relative_file, source)) in filtered_paths.into_iter().enumerate() {
               // deal with as
               if let Some(glob_import_as) = &import_glob_info.glob_import_as {
                 if let Some(prop) = self.deal_with_import_as(
                   glob_import_as,
                   &relative_file,
+                  &source,
                   cur_index,
                   entry_index,
                   sources,
@@ -550,7 +578,7 @@ impl VisitMut for ImportGlobVisitor {
               } else if import_glob_info.eager {
                 // add "./dir/foo.js": __glob__0_0
                 props.push((
-                  relative_file.clone(),
+                  source.clone(),
                   Box::new(Expr::Ident(Ident::new(
                     format!("__glob__{}_{}", cur_index, entry_index).into(),
                     DUMMY_SP,
@@ -558,13 +586,16 @@ impl VisitMut for ImportGlobVisitor {
                 ));
               } else {
                 // add "./dir/foo.js": () => import('./dir/foo.js')
-                let rel_file = if let Some(query) = &import_glob_info.query {
-                  format!("{}?{}", relative_file, query)
+                let (rel_file, source) = if let Some(query) = &import_glob_info.query {
+                  (
+                    format!("{}?{}", relative_file, query),
+                    format!("{}?{}", source, query),
+                  )
                 } else {
-                  relative_file.clone()
+                  (relative_file.clone(), source.clone())
                 };
 
-                props.push(self.deal_with_non_eager(&rel_file, &import_glob_info.import));
+                props.push(self.deal_with_non_eager(&rel_file, &source, &import_glob_info.import));
               }
 
               import_glob_info.globed_sources.push(relative_file);

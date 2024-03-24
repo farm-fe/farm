@@ -147,8 +147,6 @@ export class Server implements ImplDevServer {
       throw new Error(logError(err) as unknown as string);
     }
 
-    // 将所有错误信息连接成一个字符串，每个错误信息占一行
-
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this.compiler.writeResourcesToDisk(base);
