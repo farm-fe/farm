@@ -2,7 +2,7 @@ use farmfe_core::{
   config::Config, context::CompilationContext, error::Result, parking_lot::Mutex, plugin::Plugin,
 };
 use indicatif::{ProgressBar, ProgressStyle};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 pub struct FarmPluginProgress {
   module_count: Arc<Mutex<u32>>,
@@ -20,6 +20,9 @@ impl FarmPluginProgress {
     let progress_bar = ProgressBar::new(1);
     progress_bar.set_style(spinner_style.clone());
     progress_bar.set_prefix("[ building ]");
+
+    // tick every 200ms
+    progress_bar.enable_steady_tick(Duration::from_millis(200));
 
     Self {
       module_count: Arc::new(Mutex::new(0)),
@@ -47,6 +50,10 @@ impl FarmPluginProgress {
 impl Plugin for FarmPluginProgress {
   fn name(&self) -> &'static str {
     "FarmPluginProgress"
+  }
+
+  fn priority(&self) -> i32 {
+    i32::MAX
   }
 
   fn update_modules(
@@ -111,6 +118,39 @@ impl Plugin for FarmPluginProgress {
     Ok(None)
   }
 
+  fn optimize_module_graph(
+    &self,
+    _module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    let first_build = self.first_build.lock();
+
+    if *first_build {
+      self.progress_bar.set_message("optimize module graph");
+      self.progress_bar.inc(1);
+    }
+
+    Ok(None)
+  }
+
+  fn render_resource_pot_modules(
+    &self,
+    resource_pot: &farmfe_core::resource::resource_pot::ResourcePot,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>> {
+    let first_build = self.first_build.lock();
+
+    if *first_build {
+      self
+        .progress_bar
+        .set_message(format!("render resource pot modules {}", resource_pot.name));
+      self.progress_bar.inc(1);
+    }
+
+    Ok(None)
+  }
+
   fn render_resource_pot(
     &self,
     param: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
@@ -127,7 +167,62 @@ impl Plugin for FarmPluginProgress {
     Ok(None)
   }
 
-  fn generate_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
+  fn optimize_resource_pot(
+    &self,
+    resource: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    let first_build = self.first_build.lock();
+
+    if *first_build {
+      self
+        .progress_bar
+        .set_message(format!("optimize resource pot {}", resource.name));
+      self.progress_bar.inc(1);
+    }
+
+    Ok(None)
+  }
+
+  fn generate_resources(
+    &self,
+    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> Result<Option<farmfe_core::plugin::PluginGenerateResourcesHookResult>> {
+    let first_build = self.first_build.lock();
+
+    if *first_build {
+      self.progress_bar.set_message(format!(
+        "generate resources for resource pot {}",
+        resource_pot.name
+      ));
+      self.progress_bar.inc(1);
+    }
+
+    Ok(None)
+  }
+
+  fn finalize_resources(
+    &self,
+    _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    let first_build = self.first_build.lock();
+
+    if *first_build {
+      self.progress_bar.set_message("finalize resources...");
+      self.progress_bar.inc(1);
+    }
+
+    Ok(None)
+  }
+
+  fn finish(
+    &self,
+    _stat: &farmfe_core::stats::Stats,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
     let mut first_build = self.first_build.lock();
 
     if *first_build {

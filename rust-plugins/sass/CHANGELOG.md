@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+### Patch Changes
+
+- a749b5af: Fix Vite project migrations issues
+
 ## 1.0.0
 
 ### Major Changes

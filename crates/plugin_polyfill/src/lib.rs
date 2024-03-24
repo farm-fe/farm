@@ -14,7 +14,7 @@ use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
-  swc_ecma_preset_env::{self, preset_env, Mode, Targets, Version},
+  swc_ecma_preset_env::{self, preset_env, Mode, Targets},
   swc_ecma_transforms::Assumptions,
   swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
   swc_ecma_visit::{FoldWith, VisitMutWith},
@@ -80,6 +80,10 @@ impl FarmPluginPolyfill {
 impl Plugin for FarmPluginPolyfill {
   fn name(&self) -> &str {
     "FarmPluginPolyfill"
+  }
+  /// The polyfill plugin should run after all other plugins
+  fn priority(&self) -> i32 {
+    i32::MIN
   }
 
   fn process_module(

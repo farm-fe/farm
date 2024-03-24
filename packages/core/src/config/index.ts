@@ -4,8 +4,6 @@ import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
-import merge from 'lodash.merge';
-
 import {
   getSortedPlugins,
   handleVitePlugins,
@@ -49,6 +47,7 @@ import type {
 } from './types.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
+import merge from '../utils/merge.js';
 
 export * from './types.js';
 export function defineFarmConfig(config: UserConfig): UserConfig;
@@ -165,7 +164,8 @@ export async function resolveConfig(
     vitePluginAdapters = await handleVitePlugins(
       vitePlugins,
       userConfig,
-      logger
+      logger,
+      mode
     );
   }
 
@@ -238,13 +238,10 @@ export async function normalizeUserCompilationConfig(
 
   const inputIndexConfig = checkCompilationInputValue(userConfig, logger);
   const config: Config['config'] & ServerConfig = merge(
+    {},
+    DEFAULT_COMPILATION_OPTIONS,
     {
-      input: inputIndexConfig,
-      output: {
-        path: './dist',
-        publicPath: '/'
-      },
-      sourcemap: true
+      input: inputIndexConfig
     },
     compilation
   );
@@ -380,12 +377,14 @@ export async function normalizeUserCompilationConfig(
   ) {
     const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
     const hmrPath = userConfig.server.hmr.path;
-    
+
     config.runtime.plugins.push(hmrClientPluginPath);
     config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-    config.define.FARM_HMR_PATH = normalizeBasePath(path.join(publicPath, hmrPath));
+    config.define.FARM_HMR_PATH = normalizeBasePath(
+      path.join(publicPath, hmrPath)
+    );
   }
 
   if (
@@ -427,7 +426,7 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.presetEnv === undefined && config.output?.targetEnv !== 'node') {
+  if (config.presetEnv === undefined) {
     if (isProduction) {
       config.presetEnv = true;
     } else {
@@ -467,6 +466,29 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   writeToDisk: false
 };
 
+export const DEFAULT_COMPILATION_OPTIONS: Partial<Config['config']> = {
+  output: {
+    path: './dist',
+    publicPath: '/'
+  },
+  sourcemap: true,
+  resolve: {
+    extensions: [
+      'tsx',
+      'mts',
+      'cts',
+      'ts',
+      'jsx',
+      'mjs',
+      'js',
+      'cjs',
+      'json',
+      'html',
+      'css'
+    ]
+  }
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function tryAsFileRead(value?: any): string | Buffer {
   if (typeof value === 'string' && fs.existsSync(value)) {
@@ -485,7 +507,12 @@ export function normalizeDevServerOptions(
   const hmr =
     isProductionMode || hmrConfig === false
       ? false
-      : merge({}, DEFAULT_HMR_OPTIONS, { host, port }, hmrConfig || {});
+      : merge(
+          {},
+          DEFAULT_HMR_OPTIONS,
+          { host, port },
+          hmrConfig === true ? {} : hmrConfig
+        );
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
     hmr,
@@ -498,7 +525,7 @@ export function normalizeDevServerOptions(
           pfx: tryAsFileRead(options.https.pfx)
         }
       : undefined
-  });
+  }) as NormalizedServerConfig;
 }
 
 async function readConfigFile(
@@ -776,7 +803,7 @@ async function resolveMergedUserConfig(
 
   resolvedUserConfig.env = {
     ...userEnv,
-    NODE_ENV: process.env.NODE_ENV || mode
+    NODE_ENV: mode
   };
 
   return resolvedUserConfig;
@@ -820,9 +847,11 @@ export async function loadConfigFile(
       logger.error(`Failed to load config file: \n ${error.stack}`, {
         exit: true
       });
-    } else {
-      logger.error(`Failed to load config file: \n ${error.stack}`);
     }
+
+    throw new Error(
+      'Failed to load farm config file: ' + error + ' ' + error.stack
+    );
   }
 }
 

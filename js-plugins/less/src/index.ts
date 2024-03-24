@@ -31,8 +31,27 @@ export default function farmLessPlugin(
 
   return {
     name: pluginName,
+    config(config) {
+      if (!config?.compilation?.resolve?.extensions) {
+        config.compilation ??= {};
+        config.compilation.resolve ??= {};
+        config.compilation.resolve.extensions ??= [];
+      }
+
+      config.compilation.resolve.extensions = [
+        ...new Set(config.compilation.resolve.extensions.concat('less'))
+      ];
+      return config;
+    },
     configResolved: (config) => {
       farmConfig = config.compilation;
+      const preprocessorOptions =
+        config.compilation?.css?._viteCssOptions?.preprocessorOptions?.less ??
+        {};
+      options.lessOptions = {
+        ...options.lessOptions,
+        ...preprocessorOptions
+      };
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore it will be removed in the future

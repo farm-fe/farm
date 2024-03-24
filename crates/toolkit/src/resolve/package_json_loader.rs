@@ -76,10 +76,6 @@ impl PackageJsonLoader {
         });
       }
 
-      if options.follow_symlinks && current.is_symlink() {
-        current = current.read_link().unwrap();
-      }
-
       visited_stack.push(current.clone());
 
       let package_json_path = if options.follow_symlinks {

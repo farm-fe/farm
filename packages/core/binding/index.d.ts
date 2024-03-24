@@ -257,6 +257,10 @@ export interface CssConfig {
   prefixer?: {
     targets?: string[] | string | BrowserTargetsRecord;
   } | null;
+  /**
+   * You SHOULD NOT use this option. It's preserved vite css options for compatibility of vite plugins
+   */
+  _viteCssOptions?: any;
 }
 
 export interface PersistentCacheConfig {
