@@ -803,7 +803,7 @@ async function resolveMergedUserConfig(
 
   resolvedUserConfig.env = {
     ...userEnv,
-    NODE_ENV: process.env.NODE_ENV || mode
+    NODE_ENV: mode
   };
 
   return resolvedUserConfig;
