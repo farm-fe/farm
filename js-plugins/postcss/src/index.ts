@@ -104,7 +104,7 @@ export default function farmPostcssPlugin(
                   return id;
                 },
                 load: async (id) => {
-                  // inline 之后 文件文件里面的 url 里面的相对路径需要相对于入口的 css 文件处理
+                  // After postcss-import inline process, the `url()` relative paths in the css file need to be recomputed relative to the entry CSS file.
                   const content = await tryRead(id);
                   const implementation = getPostcssImplementation();
                   const urlRebasePostcssProcessor: Processor = implementation([
