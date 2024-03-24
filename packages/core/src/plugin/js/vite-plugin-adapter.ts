@@ -344,8 +344,9 @@ export class VitePluginAdapter implements JsPlugin {
           `Farm does not support '${name}' property of vite plugin ${this.name} hook ${hookName} for now. '${name}' property will be ignored.`
         );
       };
+      const supportedHooks = ['transformIndexHtml'];
       // TODO support order, if a hook has order, it should be split into two plugins
-      if (hook.order) {
+      if (hook.order && !supportedHooks.includes(hookName)) {
         logWarn('order');
       }
       if (hook.sequential) {
@@ -757,7 +758,21 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   private viteTransformIndexHtmlToFarmTransformHtml(): JsPlugin['transformHtml'] {
+    const rawTransformHtmlHook: any = this._rawPlugin.transformIndexHtml;
+    const order: 'pre' | 'post' | 'normal' =
+      rawTransformHtmlHook?.order ??
+      rawTransformHtmlHook?.enforce ??
+      this._rawPlugin.enforce ??
+      'normal';
+
+    const orderMap: Record<string, 0 | 1 | 2> = {
+      pre: 0,
+      normal: 1,
+      post: 2
+    };
+
     return {
+      order: orderMap[order] ?? 1,
       executor: this.wrapExecutor(
         async (params: { htmlResource: Resource }, context) => {
           const { htmlResource } = params;

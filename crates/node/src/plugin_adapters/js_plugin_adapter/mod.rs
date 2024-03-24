@@ -5,12 +5,13 @@ use farmfe_compiler::{DYNAMIC_VIRTUAL_PREFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_S
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
+  module::ModuleType,
   plugin::{
     EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParams, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
-  resource::ResourceType,
+  resource::{Resource, ResourceOrigin, ResourceType},
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
@@ -26,7 +27,9 @@ use self::hooks::{
   render_start::JsPluginRenderStartHook,
   resolve::JsPluginResolveHook,
   transform::JsPluginTransformHook,
-  transform_html::{JsPluginTransformHtmlHook, JsPluginTransformHtmlHookParams},
+  transform_html::{
+    JsPluginTransformHtmlHook, JsPluginTransformHtmlHookOrder, JsPluginTransformHtmlHookParams,
+  },
   update_modules::JsPluginUpdateModulesHook,
   write_plugin_cache::JsPluginWritePluginCacheHook,
 };
@@ -184,9 +187,51 @@ impl Plugin for JsPluginAdapter {
       return Ok(None);
     }
 
+    // call pre transformHtml hook first
+    let result = if let Some(js_transform_html_hook) = &self.js_transform_html_hook {
+      if matches!(param.module_type, ModuleType::Html)
+        && matches!(
+          js_transform_html_hook.order,
+          JsPluginTransformHtmlHookOrder::Pre
+        )
+      {
+        let params = JsPluginTransformHtmlHookParams {
+          html_resource: Resource {
+            name: param.module_id.clone(),
+            bytes: param.content.clone().into_bytes(),
+            resource_type: ResourceType::Html,
+            origin: ResourceOrigin::Module(param.module_id.as_str().into()),
+            ..Default::default()
+          },
+        };
+        let transformed_html_resource = js_transform_html_hook.call(params, context.clone())?;
+
+        if let Some(transformed_html_resource) = transformed_html_resource {
+          Ok(Some(
+            String::from_utf8(transformed_html_resource.bytes).unwrap(),
+          ))
+        } else {
+          Ok(None)
+        }
+      } else {
+        Ok(None)
+      }
+    } else {
+      Ok(None)
+    }?;
+
     if let Some(js_transform_hook) = &self.js_transform_hook {
-      let cp = param.clone();
+      let cloned_param = param.clone();
+      let cp = PluginTransformHookParam {
+        content: result.unwrap_or(cloned_param.content),
+        ..cloned_param
+      };
       js_transform_hook.call(cp, context.clone())
+    } else if let Some(result) = result {
+      Ok(Some(PluginTransformHookResult {
+        content: result,
+        ..Default::default()
+      }))
     } else {
       Ok(None)
     }
@@ -306,7 +351,12 @@ impl Plugin for JsPluginAdapter {
 
     if let Some(js_transform_html_hook) = &self.js_transform_html_hook {
       for (_, v) in params.resources_map.iter_mut() {
-        if matches!(v.resource_type, ResourceType::Html) {
+        if matches!(v.resource_type, ResourceType::Html)
+          && matches!(
+            js_transform_html_hook.order,
+            JsPluginTransformHtmlHookOrder::Normal | JsPluginTransformHtmlHookOrder::Post
+          )
+        {
           let params = JsPluginTransformHtmlHookParams {
             html_resource: v.clone(),
           };

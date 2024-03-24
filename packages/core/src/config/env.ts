@@ -43,7 +43,5 @@ export function loadEnv(
 export type CompilationMode = 'development' | 'production';
 
 export function setProcessEnv(mode: CompilationMode) {
-  if (!process.env.NODE_ENV) {
-    process.env.NODE_ENV = mode;
-  }
+  process.env.NODE_ENV = mode;
 }

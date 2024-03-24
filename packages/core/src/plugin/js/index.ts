@@ -34,7 +34,7 @@ export async function handleVitePlugins(
       compilation: userConfig.compilation,
       server: normalizeDevServerOptions(
         userConfig.server,
-        userConfig.compilation?.mode ?? 'development'
+        userConfig.compilation?.mode ?? mode
       )
     });
   }

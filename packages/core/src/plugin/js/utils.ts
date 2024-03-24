@@ -287,8 +287,9 @@ export function transformResourceInfo2RollupRenderedChunk(
 export function transformResourceInfo2RollupResource(
   resource: Resource
 ): OutputChunk | OutputAsset {
-  const source = Buffer.from(resource.bytes).toString('utf-8');
-  if (resource.info) {
+  // Rollup/Vite only treat js files as chunk
+  if (resource.info && resource.resourceType === 'js') {
+    const source = Buffer.from(resource.bytes).toString('utf-8');
     return {
       ...transformResourceInfo2RollupRenderedChunk(resource.info),
       type: 'chunk',
@@ -303,7 +304,7 @@ export function transformResourceInfo2RollupResource(
       fileName: resource.name,
       name: resource.name,
       needsCodeReference: false,
-      source,
+      source: Uint8Array.from(resource.bytes),
       type: 'asset'
     } satisfies OutputAsset;
   }
@@ -316,13 +317,13 @@ export function transformRollupResource2FarmResource(
   if (chunk.type === 'chunk') {
     return {
       ...originResource,
-      bytes: Array.from(Buffer.from(chunk.code)) as any,
+      bytes: Array.from(Buffer.from(chunk.code)) as number[],
       emitted: originResource.emitted,
       name: chunk.name
     };
   } else {
     return {
-      bytes: Array.from(Buffer.from(chunk.source)) as any,
+      bytes: Array.from(chunk.source as Uint8Array) as number[],
       emitted: originResource.emitted,
       name: chunk.name,
       origin: originResource.origin,

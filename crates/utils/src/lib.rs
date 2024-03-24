@@ -81,6 +81,11 @@ pub fn file_url_to_path(url: &str) -> String {
 pub fn relative(from: &str, to: &str) -> String {
   let from = file_url_to_path(from);
   let to = file_url_to_path(to);
+
+  if !PathBuf::from(&from).is_absolute() {
+    panic!("from path must be absolute");
+  }
+
   let rp = diff_paths(&to, &from).unwrap_or_else(|| {
     if !PathBuf::from(&to).is_absolute() {
       return PathBuf::from(&to);
@@ -100,7 +105,7 @@ pub fn relative(from: &str, to: &str) -> String {
         if result.is_empty() {
           result += ".";
         } else {
-          unreachable!();
+          unreachable!("Invalid relative: {from} -> {to}");
         }
       }
       std::path::Component::ParentDir => {
