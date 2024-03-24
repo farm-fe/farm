@@ -48,8 +48,7 @@
     "postcss": "^8.4.24",
     "postcss-import": "^16.0.1",
     "postcss-load-config": "^4.0.1",
-    "postcss-url": "^10.1.3",
-    "sugarss": "^4.0.1"
+    "postcss-url": "^10.1.3"
   },
   "peerDependencies": {
     "@farmfe/core": "workspace:^1.0.0",

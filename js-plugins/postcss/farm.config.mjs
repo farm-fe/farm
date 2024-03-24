@@ -11,6 +11,6 @@ export default createFarmJsPluginBuildConfig(
     })
   ],
   {
-    external: ['@farmfe/core', 'postcss-url', 'postcss-import']
+    external: ['@farmfe/core', 'postcss-url', 'postcss-import', '@farmfe/js-plugin-dts', "fast-glob", "postcss-import", "postcss-load-config"]
   }
 );
