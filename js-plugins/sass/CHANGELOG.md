@@ -1,5 +1,14 @@
 # @farmfe/js-plugin-sass
 
+## 2.5.1
+
+### Patch Changes
+
+- a749b5af: Fix Vite project migrations issues
+- Updated dependencies [a749b5af]
+- Updated dependencies [5b9cb22c]
+  - @farmfe/core@1.0.4
+
 ## 2.5.0
 
 ### Patch Changes
