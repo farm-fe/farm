@@ -69,10 +69,8 @@ export function clearScreen() {
 
 export const version = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json')).toString()).version;
 
-export function normalizePath(p: string): string {
-  return path.posix.normalize(
-    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
-  );
+export function normalizePath(id: string): string {
+  return path.posix.normalize(id);
 }
 
 export function arraify<T>(target: T | T[]): T[] {
