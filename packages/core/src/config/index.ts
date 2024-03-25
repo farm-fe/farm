@@ -384,8 +384,6 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
 
     const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
-    // for backward compatibility
-    config.define.FARM_HMR_BASE = defineHmrPath;
     config.define.FARM_HMR_PATH = defineHmrPath;
   }
 
