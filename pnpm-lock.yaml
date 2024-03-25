@@ -1591,13 +1591,13 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.10.0
+        specifier: workspace:0.10.0
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.5.1
+        specifier: workspace:3.5.1
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
-        specifier: workspace:*
+        specifier: workspace:0.2.0
         version: link:../runtime-plugin-import-meta
       '@farmfe/utils':
         specifier: workspace:*
