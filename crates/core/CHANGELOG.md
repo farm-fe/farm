@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2](https://github.com/farm-fe/farm/compare/farmfe_core-v0.4.1...farmfe_core-v0.4.2) - 2024-03-24
+
+### Added
+- farm e2e test ([#1041](https://github.com/farm-fe/farm/pull/1041)) ([#1049](https://github.com/farm-fe/farm/pull/1049))
+- minify modules instead of resource pots ([#1025](https://github.com/farm-fe/farm/pull/1025))
+
+### Fixed
+- vite project migration issues ([#1060](https://github.com/farm-fe/farm/pull/1060))
+
+### Other
+- support glob brace ([#1055](https://github.com/farm-fe/farm/pull/1055))
+- Feat/update readme ([#1028](https://github.com/farm-fe/farm/pull/1028))
+
 ## [0.4.1](https://github.com/farm-fe/farm/compare/farmfe_core-v0.4.0...farmfe_core-v0.4.1) - 2024-03-13
 
 ### Other

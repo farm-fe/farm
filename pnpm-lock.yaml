@@ -1594,7 +1594,7 @@ importers:
         specifier: workspace:^0.10.0
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:^3.5.0
+        specifier: workspace:^3.5.1
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
         specifier: workspace:*

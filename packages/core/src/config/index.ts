@@ -382,9 +382,11 @@ export async function normalizeUserCompilationConfig(
     config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-    config.define.FARM_HMR_PATH = normalizeBasePath(
-      path.join(publicPath, hmrPath)
-    );
+
+    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
+    // for backward compatibility
+    config.define.FARM_HMR_BASE = defineHmrPath;
+    config.define.FARM_HMR_PATH = defineHmrPath;
   }
 
   if (

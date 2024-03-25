@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2](https://github.com/farm-fe/farm/compare/farmfe_plugin_tree_shake-v0.0.1...farmfe_plugin_tree_shake-v0.0.2) - 2024-03-24
+
+### Added
+- remove if (import.meta.hot) guard for production ([#1030](https://github.com/farm-fe/farm/pull/1030))
+
+### Fixed
+- add remove import meta hot condition ([#1056](https://github.com/farm-fe/farm/pull/1056))
+- tree shake variable assign ([#1054](https://github.com/farm-fe/farm/pull/1054))
+- treeshake class decl assign ([#1038](https://github.com/farm-fe/farm/pull/1038))
+
+### Other
+- Feat/update readme ([#1028](https://github.com/farm-fe/farm/pull/1028))
+
 ## [0.0.1](https://github.com/farm-fe/farm/releases/tag/farmfe_plugin_tree_shake-v0.0.1) - 2024-03-12
 
 ### Added
