@@ -80,9 +80,9 @@ export async function recursiveReaddir(dir: string): Promise<string[]> {
   if (!fs.existsSync(dir)) {
     return [];
   }
-  let dirents: fs.Dirent[];
+  let directs: fs.Dirent[];
   try {
-    dirents = await fsp.readdir(dir, { withFileTypes: true });
+    directs = await fsp.readdir(dir, { withFileTypes: true });
   } catch (e) {
     if (e.code === 'EACCES') {
       // Ignore permission errors
@@ -90,7 +90,7 @@ export async function recursiveReaddir(dir: string): Promise<string[]> {
     }
     throw e;
   }
-  if (dirents.some((dirent) => dirent.isSymbolicLink())) {
+  if (directs.some((dirent) => dirent.isSymbolicLink())) {
     const err: any = new Error(
       'Symbolic links are not supported in recursiveReaddir'
     );
@@ -98,7 +98,7 @@ export async function recursiveReaddir(dir: string): Promise<string[]> {
     throw err;
   }
   const files = await Promise.all(
-    dirents.map((dirent) => {
+    directs.map((dirent) => {
       const res = path.resolve(dir, dirent.name);
       return dirent.isDirectory() ? recursiveReaddir(res) : normalizePath(res);
     })
