@@ -539,13 +539,13 @@ impl ModuleId {
   }
 
   fn split_query(p: &str) -> (String, String) {
-    let comps = p.split('?').collect::<Vec<&str>>();
+    let (resolved_path, query) = p.split_once("?").unwrap_or((p, ""));
 
-    if comps.len() == 2 {
-      return (comps[0].to_string(), format!("?{}", comps[1]));
+    if !query.is_empty() {
+      return (resolved_path.to_string(), format!("?{}", query));
     }
 
-    (p.to_string(), "".to_string())
+    (p.to_string(), query.to_string())
   }
 }
 

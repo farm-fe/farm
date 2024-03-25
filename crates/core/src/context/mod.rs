@@ -1,4 +1,4 @@
-use std::{any::Any, path::PathBuf, sync::Arc};
+use std::{any::Any, path::Path, sync::Arc};
 
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
@@ -103,13 +103,12 @@ impl CompilationContext {
   /// 1. if resolved_path is a absolute path, try generate module id from it
   /// 2. if resolved_path is a relative path, treat it as module id
   pub fn str_to_module_id(&self, id: &str) -> ModuleId {
-    if PathBuf::from(id).is_absolute() {
-      let splits = id.split('?').collect::<Vec<_>>();
-      let resolved_path = splits[0];
-      let query = splits.get(1).unwrap_or(&EMPTY_STR);
+    let is_absolute = Path::new(id).is_absolute();
+    if is_absolute {
+      let (resolved_path, query) = id.split_once("?").unwrap_or((id, EMPTY_STR));
       ModuleId::new(resolved_path, query, &self.config.root)
     } else {
-      id.into()
+      ModuleId::from(id)
     }
   }
 
