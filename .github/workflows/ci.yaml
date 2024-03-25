@@ -84,6 +84,8 @@ jobs:
         run: pnpm --filter @farmfe/cli run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
+      - name: Changesets Check
+        run: changeset status --since=main
 
   ts-test:
     name: Typescript Test
