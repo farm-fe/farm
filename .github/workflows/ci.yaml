@@ -85,7 +85,7 @@ jobs:
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
-        run: npx changeset status --since=main
+        run: npx changeset status --since=origin/main
 
   ts-test:
     name: Typescript Test
