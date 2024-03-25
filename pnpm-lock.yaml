@@ -1373,9 +1373,6 @@ importers:
       postcss-url:
         specifier: ^10.1.3
         version: 10.1.3(postcss@8.4.31)
-      sugarss:
-        specifier: ^4.0.1
-        version: 4.0.1(postcss@8.4.31)
 
   js-plugins/record-viewer:
     dependencies:
@@ -14607,15 +14604,6 @@ packages:
       mz: 2.7.0
       pirates: 4.0.6
       ts-interface-checker: 0.1.13
-    dev: true
-
-  /sugarss@4.0.1(postcss@8.4.31):
-    resolution: {integrity: sha512-WCjS5NfuVJjkQzK10s8WOBY+hhDxxNt/N6ZaGwxFZ+wN3/lKKFSaaKUNecULcTTvE4urLcKaZFQD8vO0mOZujw==}
-    engines: {node: '>=12.0'}
-    peerDependencies:
-      postcss: ^8.3.3
-    dependencies:
-      postcss: 8.4.31
     dev: true
 
   /supports-color@2.0.0:
