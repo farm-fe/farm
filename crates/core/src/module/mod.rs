@@ -539,7 +539,7 @@ impl ModuleId {
   }
 
   fn split_query(p: &str) -> (String, String) {
-    let (resolved_path, query) = p.split_once("?").unwrap_or((p, ""));
+    let (resolved_path, query) = p.split_once('?').unwrap_or((p, ""));
 
     if !query.is_empty() {
       return (resolved_path.to_string(), format!("?{}", query));

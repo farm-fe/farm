@@ -105,7 +105,7 @@ impl CompilationContext {
   pub fn str_to_module_id(&self, id: &str) -> ModuleId {
     let is_absolute = Path::new(id).is_absolute();
     if is_absolute {
-      let (resolved_path, query) = id.split_once("?").unwrap_or((id, EMPTY_STR));
+      let (resolved_path, query) = id.split_once('?').unwrap_or((id, EMPTY_STR));
       ModuleId::new(resolved_path, query, &self.config.root)
     } else {
       ModuleId::from(id)
