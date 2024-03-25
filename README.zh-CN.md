@@ -106,7 +106,7 @@ Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm �
 
 - 微信群
 
-<br><img src="https://github.com/farm-fe/farm/assets/66500121/d59a3e8b-3083-4c5e-a746-f8a9194a6209" width="30%" />
+<br><img src="https://github.com/farm-fe/farm/assets/66500121/98227b2b-91d0-4ad0-b46d-96e231a425fe" width="30%" />
 
 ## 感谢贡献者们做出的努力
 
