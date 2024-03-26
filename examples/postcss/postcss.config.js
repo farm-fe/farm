@@ -1,9 +1,10 @@
 module.exports = {
-  plugins: [
-    require('postcss-pxtorem')({
+  plugins: {
+    'postcss-pxtorem': {
       rootValue: 16,
-      propList: ['*'],
-    }),
-    require('tailwindcss'),
-  ]
-}
+      propList: ['*']
+    },
+    'tailwindcss/nesting': {},
+    tailwindcss: {}
+  }
+};
