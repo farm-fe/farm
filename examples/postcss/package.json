@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "core-js": "^3.30.1"
+    "core-js": "^3.30.1",
+    "normalize.css": "^8.0.1"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
