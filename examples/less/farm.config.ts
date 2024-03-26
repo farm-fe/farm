@@ -1,10 +1,6 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmLessPlugin from '@farmfe/js-plugin-less';
 import path from 'path';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
   compilation: {
@@ -13,6 +9,9 @@ export default defineConfig({
     },
     resolve: {
       symlinks: true,
+      alias: {
+        '@': path.resolve('src')
+      }
     },
     define: {
       BTN: 'Click me',
@@ -20,7 +19,6 @@ export default defineConfig({
     output: {
       path: './build',
     },
-    sourcemap: false
     // treeShaking: true,
     // minify: true,
   },

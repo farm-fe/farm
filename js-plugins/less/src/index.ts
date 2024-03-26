@@ -115,6 +115,7 @@ export default function farmLessPlugin(
           const { css, map, imports } = await implementation.render(relData, {
             ...(options?.lessOptions ?? {}),
             filename: param.resolvedPath,
+            plugins: [pluginResolve, ...(options.lessOptions?.plugins ?? [])],
             sourceMap:
               (options.lessOptions?.sourceMap ?? sourceMapEnabled) && {},
             paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]

@@ -9,18 +9,16 @@ import { existsSync } from 'fs';
 // export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
 export const pageMap = new Map<string, Page>();
-const serverPorts = new Set();
+
+const globalVar = globalThis as any;
+globalVar.CURRENT_PORT = 9100;
 
 function getServerPort(): number {
-  const getRandomPort = () => Math.floor(Math.random() * 1000 + 9100);
-  let port = getRandomPort();
-
-  while (serverPorts.has(port)) {
-    port = getRandomPort();
-  }
-
-  serverPorts.add(port);
-  return port;
+  const incPort = () => {
+    globalVar.CURRENT_PORT += 10;
+    return globalVar.CURRENT_PORT;
+  };
+  return incPort();
 }
 
 const visitPage = async (
@@ -78,6 +76,12 @@ const visitPage = async (
             color: 'red'
           });
           reject(e);
+        })
+        .finally(() => {
+          page?.close({
+            reason: 'test finished',
+            runBeforeUnload: false
+          });
         });
     });
 
@@ -116,45 +120,33 @@ export const startProjectAndTest = async (
     throw new Error(`example ${examplePath} does not install @farmfe/cli`);
   }
   const port = getServerPort();
-  await new Promise((resolve, reject) => {
-    logger(`Executing node ${cliBinPath} ${command} in ${examplePath}`);
-    const child = execa('node', [cliBinPath, command], {
-      cwd: examplePath,
-      stdin: 'pipe',
-      encoding: 'utf8',
-      env: {
-        BROWSER: 'none',
-        NO_COLOR: 'true',
-        FARM_DEFAULT_SERVER_PORT: String(port),
-        FARM_DEFAULT_HMR_PORT: String(port),
-      }
-    });
+  logger(`Executing node ${cliBinPath} ${command} in ${examplePath}`);
+  const child = execa('node', [cliBinPath, command], {
+    cwd: examplePath,
+    stdin: 'pipe',
+    encoding: 'utf8',
+    env: {
+      BROWSER: 'none',
+      NO_COLOR: 'true',
+      FARM_DEFAULT_SERVER_PORT: String(port),
+      FARM_DEFAULT_HMR_PORT: String(port)
+    }
+  });
 
-    let pagePath: null | string;
+  const pagePath = await new Promise<string>((resolve, reject) => {
     let result = Buffer.alloc(0);
     const urlRegex =
       /((http|https):\/\/(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d+)?(\/[^\s]*)?/g;
     child.stdout?.on('data', async (chunk) => {
       result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
-      if (pagePath) return;
       const res = result.toString();
       const replacer = res.replace(/\n/g, '');
 
       const matches = replacer.match(urlRegex);
-      pagePath = matches && (matches[1] || matches[0]);
+      const pagePath = matches && (matches[1] || matches[0]);
 
       if (pagePath) {
-        try {
-          await visitPage(pagePath, examplePath, cb);
-          resolve(pagePath);
-        } catch (e) {
-          console.log('visit page error: ', e);
-          reject(e);
-        } finally {
-          if (!child.killed) {
-            child.kill();
-          }
-        }
+        resolve(pagePath);
       }
     });
 
@@ -187,4 +179,15 @@ export const startProjectAndTest = async (
       }
     });
   });
+
+  try {
+    await visitPage(pagePath, examplePath, cb);
+  } catch (e) {
+    console.log('visit page error: ', e);
+    throw e;
+  } finally {
+    if (!child.killed) {
+      child.kill();
+    }
+  }
 };
