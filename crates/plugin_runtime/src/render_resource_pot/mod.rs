@@ -5,11 +5,13 @@ use std::{
 };
 
 use farmfe_core::{
+  cache::cache_store::CacheStoreKey,
   config::{
     minify::{MinifyMode, MinifyOptions},
     FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE,
   },
   context::CompilationContext,
+  deserialize,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
     magic_string::{MagicString, MagicStringOptions},
@@ -19,6 +21,7 @@ use farmfe_core::{
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
+  serialize,
   swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{BindingIdent, BlockStmt, FnDecl, Function, Module, ModuleItem, Param, Stmt}, // swc_ecma_ast::Function
 };
@@ -44,6 +47,7 @@ use farmfe_toolkit::{
   swc_ecma_transforms_base::fixer::paren_remover,
   swc_ecma_visit::VisitMutWith,
 };
+use farmfe_utils::hash::sha256;
 
 use self::source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer};
 
@@ -89,6 +93,9 @@ pub fn resource_pot_to_runtime_object(
   let is_enabled_minify =
     |module_id: &ModuleId| minify_enabled && path_filter.execute(module_id.relative_path());
 
+  let mut cache_store_key = None;
+  let cache_manage = &context.cache_manager;
+
   resource_pot
     .modules()
     .into_par_iter()
@@ -97,7 +104,26 @@ pub fn resource_pot_to_runtime_object(
         .module(m_id)
         .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
 
-      // TODO initialize the cache
+      // enable persistent cache
+      if context.config.persistent_cache.enabled() {
+        let content_hash = module.content_hash.clone();
+        let store_key = CacheStoreKey {
+          name: m_id.to_string() + "-resource_pot_to_runtime_object",
+          key: sha256(
+            format!("{}{}", content_hash, m_id.to_string()).as_bytes(),
+            32,
+          ),
+        };
+        // determine whether the cache exists,and store_key not change
+        if cache_manage.custom.has_cache(&store_key.name)
+          && !cache_manage.custom.is_cache_changed(&store_key)
+        {
+          let cache = cache_manage.custom.read_cache(&store_key.name).unwrap();
+          let render_pot = deserialize!(&cache, RenderedJsResourcePot);
+          return Ok(render_pot);
+        }
+        cache_store_key = Some(store_key);
+      }
 
       let mut cloned_module = module.meta.as_script().ast.clone();
       let (cm, _) = create_swc_source_map(Source {
@@ -300,13 +326,19 @@ pub fn resource_pot_to_runtime_object(
   bundle.prepend("{");
   bundle.append("}", None);
 
-  // TODO:  final output, which is cached here
-
-  Ok(RenderedJsResourcePot {
+  let rendered_js_resource_pot = RenderedJsResourcePot {
     bundle,
     rendered_modules,
     external_modules,
-  })
+  };
+
+  if context.config.persistent_cache.enabled() {
+    let store_key = cache_store_key.unwrap();
+    let bytes = serialize!(&rendered_js_resource_pot);
+    cache_manage.custom.write_single_cache(store_key, bytes);
+  }
+
+  Ok(rendered_js_resource_pot)
 }
 
 /// Wrap the module ast to follow Farm's commonjs-style module system.
