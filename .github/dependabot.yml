@@ -5,14 +5,58 @@
 
 version: 2
 updates:
+# create-farm templates
   - package-ecosystem: "npm"
-    directory: "/packages/create-farm/templates"
+    directory: "/packages/create-farm/templates/lit"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "@farmfe/*"
+  - package-ecosystem: "npm"
+    directory: "/packages/create-farm/templates/preact"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "@farmfe/*"
+  - package-ecosystem: "npm"
+    directory: "/packages/create-farm/templates/react"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "@farmfe/*"
+  - package-ecosystem: "npm"
+    directory: "/packages/create-farm/templates/solid"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "@farmfe/*"
+  - package-ecosystem: "npm"
+    directory: "/packages/create-farm/templates/svelte"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "@farmfe/*"
+  - package-ecosystem: "npm"
+    directory: "/packages/create-farm/templates/vanilla"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "@farmfe/*"
+  - package-ecosystem: "npm"
+    directory: "/packages/create-farm/templates/vue"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "@farmfe/*"
+# create-farm-plugin templates 
+  - package-ecosystem: "npm" 
+    directory: "/packages/create-farm-plugin/templates/js"
     schedule:
       interval: "daily"
     allow:
       - dependency-name: "@farmfe/*"
   - package-ecosystem: "npm" 
-    directory: "/packages/create-farm-plugin/templates"
+    directory: "/packages/create-farm-plugin/templates/rs"
     schedule:
       interval: "daily"
     allow:
