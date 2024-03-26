@@ -1,7 +1,4 @@
-use std::f32::consts::E;
-
 use farmfe_macro_cache_item::cache_item;
-use relative_path::RelativePath;
 use serde_json::{Map, Value};
 use wax::Glob;
 
