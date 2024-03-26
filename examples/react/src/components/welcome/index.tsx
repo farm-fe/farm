@@ -30,7 +30,7 @@ export function Welcome() {
       <FarmCard>
         <div className="main-desc">
           <h2 className="main-sub-title">
-            Get started With
+            Get started Withasdasd
             <span className="main-content"> React + Farm</span>
           </h2>
           <span className="main-content">

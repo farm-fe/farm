@@ -101,7 +101,7 @@ async function handleServerPortConflict(
     mode !== 'production' &&
       (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
     // eslint-disable-next-line no-empty
-  } catch {}
+  } catch { }
 }
 
 /**
@@ -291,10 +291,10 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            userConfig.env[key];
-          return env;
-        }, {})
+        env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+          userConfig.env[key];
+        return env;
+      }, {})
   );
 
   const require = module.createRequire(import.meta.url);
@@ -344,7 +344,7 @@ export async function normalizeUserCompilationConfig(
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
       ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-          ?.name ?? FARM_DEFAULT_NAMESPACE
+        ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
@@ -377,13 +377,14 @@ export async function normalizeUserCompilationConfig(
   ) {
     const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
     const hmrPath = userConfig.server.hmr.path;
+    const serverOptions = userConfig.server;
+    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
 
     config.runtime.plugins.push(hmrClientPluginPath);
-    config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
+    
+    config.define.FARM_HMR_PORT = String(serverOptions.hmr.port ?? serverOptions.port ?? DEFAULT_DEV_SERVER_OPTIONS.port);
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-
-    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
     config.define.FARM_HMR_PATH = defineHmrPath;
   }
 
@@ -443,7 +444,7 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: true,
-  port: Number(process.env.FARM_DEFAULT_SERVER_PORT) || 9000,
+  port: Number(process.env.FARM_DEFAULT_HMR_PORT) ?? undefined,
   path: '/__hmr',
   protocol: 'ws',
   watchOptions: {}
@@ -508,22 +509,22 @@ export function normalizeDevServerOptions(
     isProductionMode || hmrConfig === false
       ? false
       : merge(
-          {},
-          DEFAULT_HMR_OPTIONS,
-          { host, port },
-          hmrConfig === true ? {} : hmrConfig
-        );
+        {},
+        DEFAULT_HMR_OPTIONS,
+        { host, port },
+        hmrConfig === true ? {} : hmrConfig
+      );
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
     hmr,
     https: https
       ? {
-          ...https,
-          ca: tryAsFileRead(options.https.ca),
-          cert: tryAsFileRead(options.https.cert),
-          key: tryAsFileRead(options.https.key),
-          pfx: tryAsFileRead(options.https.pfx)
-        }
+        ...https,
+        ca: tryAsFileRead(options.https.ca),
+        cert: tryAsFileRead(options.https.cert),
+        key: tryAsFileRead(options.https.key),
+        pfx: tryAsFileRead(options.https.pfx)
+      }
       : undefined
   }) as NormalizedServerConfig;
 }
@@ -902,8 +903,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Build failed due to errors: Can not resolve ${
-          isTargetNode ? 'index.js or index.ts' : 'index.html'
+        `Build failed due to errors: Can not resolve ${isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
       );
     }
