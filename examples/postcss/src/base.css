@@ -1,3 +1,11 @@
+@import '@/styles/base01.css';
+@import "@/styles/rebase.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.text-red {
+  color: red;
+}
