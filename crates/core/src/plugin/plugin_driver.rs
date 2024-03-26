@@ -467,7 +467,11 @@ impl PluginDriver {
      end_time: i64,
      resource_pots: &mut Vec<&mut ResourcePot>,
      context: &Arc<CompilationContext>| {
-      context.record_manager.update_plugin_stats(plugin_name.clone(), "process_resource_pots", end_time - start_time);
+      context.record_manager.update_plugin_stats(
+        plugin_name.clone(),
+        "process_resource_pots",
+        end_time - start_time,
+      );
       for resource_pot in resource_pots.iter() {
         context.record_manager.add_resource_pot_record(
           resource_pot.id.to_string(),
@@ -543,11 +547,10 @@ impl PluginDriver {
     optimize_resource_pot,
     &mut ResourcePot,
     |plugin_name: String,
-     start_time: i64,
-     end_time: i64,
+     _start_time: i64,
+     _end_time: i64,
      resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>| {
-      
       context.record_manager.add_resource_pot_record(
         resource_pot.id.to_string(),
         ResourcePotRecord {
@@ -565,8 +568,8 @@ impl PluginDriver {
     Result<Option<PluginGenerateResourcesHookResult>>,
     |result: &Option<PluginGenerateResourcesHookResult>,
      plugin_name: String,
-     start_time: i64,
-     end_time: i64,
+     _start_time: i64,
+     _end_time: i64,
      resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>,
      _hook_context: &PluginHookContext| {
