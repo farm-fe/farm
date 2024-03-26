@@ -11,7 +11,7 @@ import UnpluginSvgComponent from 'unplugin-svg-component/vite';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
-import viewer from '@farmfe/visualizer';
+import viewer from '@farmfe/js-plugin-visualizer';
 
 export default defineConfig({
   compilation: {

@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/visualizer",
+  "name": "@farmfe/js-plugin-visualizer",
   "version": "1.0.0",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
