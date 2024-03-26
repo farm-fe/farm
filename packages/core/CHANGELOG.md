@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 1.0.6
+
+### Patch Changes
+
+- 48a36cca: feat: support postcss-import for @farmfe/js-plugin-postcss
+
+## 1.0.5
+
+### Patch Changes
+
+- Update dep runtime plugin hmr
+
 ## 1.0.4
 
 ### Patch Changes
