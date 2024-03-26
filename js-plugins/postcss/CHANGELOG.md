@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-postcss
 
+## 1.5.1
+
+### Patch Changes
+
+- 48a36cca: feat: support postcss-import for @farmfe/js-plugin-postcss
+- Updated dependencies [48a36cca]
+  - @farmfe/core@1.0.6
+
 ## 1.5.0
 
 ### Patch Changes
