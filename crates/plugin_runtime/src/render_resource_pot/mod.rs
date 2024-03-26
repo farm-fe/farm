@@ -97,6 +97,8 @@ pub fn resource_pot_to_runtime_object(
         .module(m_id)
         .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
 
+      // TODO initialize the cache
+
       let mut cloned_module = module.meta.as_script().ast.clone();
       let (cm, _) = create_swc_source_map(Source {
         path: PathBuf::from(m_id.resolved_path_with_query(&context.config.root)),
@@ -297,6 +299,8 @@ pub fn resource_pot_to_runtime_object(
 
   bundle.prepend("{");
   bundle.append("}", None);
+
+  // TODO:  final output, which is cached here
 
   Ok(RenderedJsResourcePot {
     bundle,
