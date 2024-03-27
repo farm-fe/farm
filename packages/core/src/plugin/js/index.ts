@@ -28,6 +28,7 @@ export async function handleVitePlugins(
   mode: CompilationMode
 ): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
+  const filtersUnion = new Set<string>();
 
   if (vitePlugins.length) {
     userConfig = merge({}, userConfig, {
@@ -49,7 +50,7 @@ export async function handleVitePlugins(
       vitePlugin = plugin;
       filters = f;
     }
-
+    filters?.forEach((filter) => filtersUnion.add(filter));
     processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
   }
 
@@ -62,7 +63,7 @@ export async function handleVitePlugins(
       priority: -100,
       load: {
         filters: {
-          resolvedPaths: DEFAULT_FILTERS
+          resolvedPaths: Array.from(filtersUnion)
         },
         executor: async (params) => {
           const { resolvedPath } = params;
