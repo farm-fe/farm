@@ -1,36 +1,79 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ignore type check
-import isPlainObject from 'is-plain-object';
-import deepmerge from 'deepmerge';
+import { isPlainObject } from 'is-plain-object';
+import deepmerge, { Options } from 'deepmerge';
 
-export default function merge(
-  target: Record<string, unknown>,
-  ...sources: Record<string, unknown>[]
-): Record<string, unknown> {
-  target = { ...target };
-
-  for (const source of sources) {
-    target = deepmerge(target, source, {
-      arrayMerge: (target, source, options) => {
-        const destination = target.slice();
-
-        source.forEach((item, index) => {
-          if (typeof destination[index] === 'undefined') {
-            destination[index] = options.cloneUnlessOtherwiseSpecified(
-              item,
-              options
-            );
-          } else if (options.isMergeableObject(item)) {
-            destination[index] = deepmerge(target[index], item, options);
-          } else if (target.indexOf(item) === -1) {
-            destination.push(item);
-          }
-        });
-        return destination;
-      },
-      isMergeableObject: isPlainObject
-    });
+function isValueSameDeep(target: any, source: any): boolean {
+  if (target === source) {
+    return true;
   }
 
-  return target;
+  if (!isPlainObject(target) || !isPlainObject(source)) {
+    return false;
+  }
+
+  if (Object.keys(target).length !== Object.keys(source).length) {
+    return false;
+  }
+
+  for (const key in source) {
+    if (!isValueSameDeep(target[key], source[key])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isMergeableObject(obj: any) {
+  return isPlainObject(obj) || Array.isArray(obj);
+}
+
+const arrayMerge: Options['arrayMerge'] = (target, source, options) => {
+  const destination = target.slice();
+
+  source.forEach((item, index) => {
+    if (typeof destination[index] === 'undefined') {
+      destination[index] = options.cloneUnlessOtherwiseSpecified(item, options);
+    } else if (!destination.find((dest) => isValueSameDeep(dest, item))) {
+      destination.push(item);
+    }
+  });
+
+  return destination.filter((item) => item !== undefined);
+};
+
+const options = {
+  arrayMerge,
+  isMergeableObject
+};
+
+export default function merge<T>(target: T, ...sources: Partial<T>[]): T {
+  let destination: any = { ...target };
+
+  for (const source of sources) {
+    if (!source) continue;
+
+    // should not preserve target and source
+    if (isPlainObject(destination) && isPlainObject(source)) {
+      for (const key of Object.keys(source)) {
+        const sourceValue = (source as any)[key];
+
+        if (sourceValue === undefined) {
+          continue;
+        } else if (
+          isMergeableObject(destination[key]) &&
+          isMergeableObject(sourceValue)
+        ) {
+          destination[key] = deepmerge(destination[key], sourceValue, options);
+        } else {
+          destination[key] = sourceValue;
+        }
+      }
+    } else {
+      destination = deepmerge(destination, source, options);
+    }
+  }
+
+  return destination;
 }

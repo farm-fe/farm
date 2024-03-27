@@ -4,14 +4,10 @@ import type {
   PluginTransformHookParam,
   CompilationContext
 } from '@farmfe/core';
+import { getAdditionContext, rebaseUrls } from '@farmfe/core';
 import type { StringOptions, CompileResult, LegacyOptions } from 'sass';
 import * as Sass from 'sass';
-import {
-  getAdditionContext,
-  pluginName,
-  throwError,
-  tryRead
-} from './options.js';
+import { pluginName, throwError, tryRead } from './options.js';
 import { pathToFileURL } from 'url';
 import { getSassImplementation } from './utils.js';
 import path, { isAbsolute } from 'path';
@@ -56,6 +52,7 @@ export default function farmSassPlugin(
   const cwd = () => farmConfig.root ?? process.cwd();
 
   const resolvedPaths = options.filters?.resolvedPaths ?? DEFAULT_PATHS_REGEX;
+  options.legacy ??= true;
 
   return {
     name: pluginName,
@@ -107,7 +104,8 @@ export default function farmSassPlugin(
             options,
             param.resolvedPath,
             param.content,
-            ctx
+            ctx,
+            pluginName
           );
 
           const sourceMapEnabled = ctx.sourceMapEnabled(param.moduleId);
@@ -235,9 +233,32 @@ async function compileScssLegacy(param: CompileCssParams) {
         sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
         outFile: transformParam.resolvedPath,
         importer: [
-          function (url, _prev, done) {
-            resolveDependency(url, transformParam, ctx).then((resolvedPath) => {
-              done({ file: resolvedPath });
+          function (url, importer, done) {
+            resolveDependency(
+              url,
+              {
+                ...transformParam,
+                moduleId: importer
+              },
+              ctx
+            ).then((resolvedPath) => {
+              rebaseUrls(
+                resolvedPath,
+                transformParam.resolvedPath,
+                '$',
+                (id, importer) => {
+                  return resolveDependency(
+                    id,
+                    {
+                      ...transformParam,
+                      moduleId: importer
+                    },
+                    ctx
+                  );
+                }
+              ).then(({ contents }) => {
+                done({ file: resolvedPath, contents });
+              });
             });
           }
         ]

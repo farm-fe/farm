@@ -1,5 +1,5 @@
 import { defineConfig } from '@farmfe/core';
-import farmLessPlugin from '@farmfe/js-plugin-less';
+import farmSassPlugin from '@farmfe/js-plugin-sass';
 import path from 'path';
 
 export default defineConfig({
@@ -27,10 +27,10 @@ export default defineConfig({
   server: {
     hmr: true,
   },
-  plugins: ['@farmfe/plugin-react',farmLessPlugin({
+  plugins: ['@farmfe/plugin-react',farmSassPlugin({
     additionalData: (content:string, resolvePath:string) => {
-      if (path.basename(resolvePath,'.less') === 'index') {
-        return `@hoverColor: #f10215;`;
+      if (path.basename(resolvePath, '.scss') === 'index') {
+        return `$hoverColor: #f10215;`;
       }
     },
   }) ],

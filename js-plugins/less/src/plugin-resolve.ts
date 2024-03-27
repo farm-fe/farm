@@ -1,6 +1,9 @@
-import type { CompilationContext } from '@farmfe/core';
-import type Less from 'less';
 import path from 'node:path';
+import fs from 'fs/promises';
+
+import type { CompilationContext } from '@farmfe/core';
+import { rebaseUrls } from '@farmfe/core';
+import type Less from 'less';
 
 let CustomLessManager: any;
 
@@ -31,7 +34,7 @@ export function createLessResolvePlugin(
       opts: any,
       env: any
     ): Promise<Less.FileLoadResult> {
-      const result = await ctx.resolve(
+      const resolved = await ctx.resolve(
         {
           source: filename,
           importer: path.join(dir, '*'),
@@ -42,11 +45,31 @@ export function createLessResolvePlugin(
           caller: 'js-plugin-less'
         }
       );
-      if (result) {
+      if (resolved) {
+        const result = await rebaseUrls(
+          resolved.resolvedPath,
+          this.rootPath,
+          '@',
+          async (url, importer) => {
+            const res = await ctx.resolve(
+              {
+                source: url,
+                importer,
+                kind: 'cssUrl'
+              },
+              {
+                meta: {},
+                caller: 'js-plugin-less'
+              }
+            );
+            return res.resolvedPath;
+          }
+        );
         return {
-          filename: path.resolve(result.resolvedPath),
+          filename: resolved.resolvedPath,
           contents:
-            result.contents ?? (await fsp.readFile(result.resolved, 'utf-8'))
+            result.contents ??
+            (await fs.readFile(resolved.resolvedPath, 'utf-8'))
         };
       } else {
         return super.loadFile(filename, dir, opts, env);
