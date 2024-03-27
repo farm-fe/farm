@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.0.7
+
+### Patch Changes
+
+- 1d1ae1f2: fix: Multiple server startups result in WebSocket connection interruptions.
+- 7ae9cb8d: fix: problems with the load filter not working
+
 ## 1.0.6
 
 ### Patch Changes
