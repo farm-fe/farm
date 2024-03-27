@@ -1,5 +1,5 @@
 #![deny(clippy::all)]
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use farmfe_core::{
   config::Config,
@@ -12,7 +12,7 @@ use farmfe_core::{
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{fs, regex::Regex};
 use sass_embedded::{
-  FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Syntax, Url,
+  FileImporter, Importer, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Syntax, Url,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -51,6 +51,38 @@ impl FarmPluginSass {
 struct FileImporterCollection {
   importer: ModuleId,
   context: Arc<CompilationContext>,
+}
+
+struct ImporterCollection {
+  root_importer: ModuleId,
+  context: Arc<CompilationContext>,
+}
+
+impl Importer for ImporterCollection {
+  fn canonicalize(
+    &self,
+    url: &str,
+    _options: &sass_embedded::ImporterOptions,
+  ) -> sass_embedded::Result<Option<Url>> {
+    let resolved_path = RelativePath::new(url).to_logical_path(&self.context.config.root);
+    Ok(Some(Url::from_file_path(resolved_path).unwrap()))
+  }
+
+  fn load(
+    &self,
+    canonical_url: &Url,
+  ) -> sass_embedded::Result<Option<sass_embedded::ImporterResult>> {
+    let original_url = relative(&self.context.config.root, canonical_url.path());
+    Ok(None)
+  }
+}
+
+impl Debug for ImporterCollection {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ImporterCollection")
+      .field("root_importer", &self.root_importer)
+      .finish()
+  }
 }
 
 impl Debug for FileImporterCollection {
@@ -167,8 +199,8 @@ impl Plugin for FarmPluginSass {
 
       let cloned_context = context.clone();
 
-      let import_collection = Box::new(FileImporterCollection {
-        importer: param.module_id.clone().into(),
+      let import_collection = Box::new(ImporterCollection {
+        root_importer: param.module_id.clone().into(),
         context: cloned_context,
       });
       // TODO support source map for additionalData
@@ -181,7 +213,7 @@ impl Plugin for FarmPluginSass {
       string_options
         .common
         .importers
-        .push(sass_embedded::SassImporter::FileImporter(import_collection));
+        .push(sass_embedded::SassImporter::Importer(import_collection));
       string_options.url = Some(Url::from_file_path(param.resolved_path).unwrap());
 
       let compile_result = sass.compile_string(&content, string_options).map_err(|e| {
