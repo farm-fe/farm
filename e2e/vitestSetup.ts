@@ -125,7 +125,8 @@ export const startProjectAndTest = async (
       env: {
         BROWSER: 'none',
         NO_COLOR: 'true',
-        FARM_DEFAULT_SERVER_PORT: String(port)
+        FARM_DEFAULT_SERVER_PORT: String(port),
+        FARM_DEFAULT_HMR_PORT: String(port),
       }
     });
 
