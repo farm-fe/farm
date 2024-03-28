@@ -115,3 +115,52 @@ fn test_with_compiler() {
     assert!(watch_graph.modules().len() > 0);
   });
 }
+
+#[test]
+fn test_rebase_url() {
+  fixture!(
+    "tests/fixtures/rebase_urls/rebase-index.scss",
+    |file, _cwd| {
+      let resolved_path = file.to_string_lossy().to_string();
+      let root = file.parent().unwrap().to_string_lossy().to_string();
+      let config = Config {
+        input: HashMap::from([("button".to_string(), resolved_path.clone())]),
+        resolve: ResolveConfig {
+          alias: HashMap::from([("@".to_string(), root.clone())]),
+          ..Default::default()
+        },
+        ..Default::default()
+      };
+      let plugin = Arc::new(FarmPluginSass::new(
+        &config,
+        r#"
+      {
+        "sourceMap": true,
+        "style":"expanded"
+      }
+    "#
+        .to_string(),
+      ));
+      let context = CompilationContext::new(config, vec![plugin.clone()]).unwrap();
+      let content = read_file_utf8(&resolved_path).unwrap();
+      let transformed = plugin
+        .transform(
+          &PluginTransformHookParam {
+            resolved_path: &resolved_path,
+            content,
+            module_type: ModuleType::Custom(String::from("sass")),
+            query: vec![],
+            meta: HashMap::from([]),
+            module_id: resolved_path.clone(),
+            source_map_chain: vec![],
+          },
+          &Arc::new(context),
+        )
+        .unwrap()
+        .unwrap();
+      let expected =
+        "body {\n  color: #000;\n}\nbody .description:hover {\n  background-color: #f8f9fa;\n}";
+      assert_eq!(transformed.content, expected);
+    }
+  );
+}
