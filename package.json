@@ -37,6 +37,7 @@
     "preinstall": "npx only-allow pnpm",
     "bootstrap": "pnpm install && node scripts/clean.mjs && node scripts/bootstrap.mjs && pnpm start",
     "test": "cross-env NODE_OPTIONS=--trace-exit vitest run",
+    "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
     "start": "pnpm --filter @farmfe/cli start",
     "release": "node scripts/release.mjs",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
