@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+### Patch Changes
+
+- cb7df71f: Support alias resolve and url rebase for import.meta.glob, sass and less plugins
+
 ## 1.0.1
 
 ### Patch Changes

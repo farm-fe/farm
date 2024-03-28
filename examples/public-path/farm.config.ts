@@ -1,8 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
+import { defineConfig } from '@farmfe/core';
 
 export default defineConfig({
   compilation: {
@@ -28,6 +24,7 @@ export default defineConfig({
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
+    persistentCache: false,
     treeShaking: true,
     minify: false
   },

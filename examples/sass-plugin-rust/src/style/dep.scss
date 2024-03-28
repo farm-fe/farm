@@ -1,0 +1,10 @@
+@import './variables.scss';
+
+.dep {
+  background-image: url(../../assets/logo.png);
+  background-size: contain;
+  background-repeat: no-repeat;
+  color: $test;
+  width: 200px;
+  height: 50px;
+}

@@ -242,7 +242,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.1
+        specifier: workspace:^1.0.2
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -461,7 +461,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.1
+        specifier: workspace:^1.0.2
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -610,7 +610,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.1
+        specifier: workspace:^1.0.2
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -662,7 +662,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.1
+        specifier: workspace:^1.0.2
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -705,7 +705,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.1
+        specifier: workspace:^1.0.2
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -793,6 +793,86 @@ importers:
       '@farmfe/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+
+  examples/sass:
+    dependencies:
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.36.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-sass':
+        specifier: workspace:*
+        version: link:../../js-plugins/sass
+      '@farmfe/plugin-react':
+        specifier: workspace:^1.0.1
+        version: link:../../rust-plugins/react
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      less:
+        specifier: ^4.1.3
+        version: 4.2.0
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
+
+  examples/sass-plugin-rust:
+    dependencies:
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.36.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/plugin-react':
+        specifier: workspace:^1.0.1
+        version: link:../../rust-plugins/react
+      '@farmfe/plugin-sass':
+        specifier: workspace:*
+        version: link:../../rust-plugins/sass
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      less:
+        specifier: ^4.1.3
+        version: 4.2.0
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
 
   examples/script-entry:
     dependencies:
@@ -1618,8 +1698,8 @@ importers:
         specifier: workspace:*
         version: link:../utils
       '@koa/cors':
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: ^5.0.0
+        version: 5.0.0
       '@swc/helpers':
         specifier: ^0.5.0
         version: 0.5.3
@@ -1629,6 +1709,9 @@ importers:
       chokidar:
         specifier: ^3.5.3
         version: 3.5.3
+      deepmerge:
+        specifier: ^4.3.1
+        version: 4.3.1
       dotenv:
         specifier: ^16.3.1
         version: 16.3.1
@@ -1644,6 +1727,9 @@ importers:
       fs-extra:
         specifier: ^11.1.1
         version: 11.1.1
+      is-plain-object:
+        specifier: ^5.0.0
+        version: 5.0.0
       koa:
         specifier: ^2.13.4
         version: 2.14.2
@@ -1700,8 +1786,8 @@ importers:
         specifier: ^4.0.2
         version: 4.0.3
       '@types/koa__cors':
-        specifier: ^4.0.0
-        version: 4.0.2
+        specifier: ^5.0.0
+        version: 5.0.0
       '@types/lodash.debounce':
         specifier: ^4.0.7
         version: 4.0.8
@@ -3277,7 +3363,7 @@ packages:
       '@emotion/memoize': 0.8.1
       '@emotion/unitless': 0.8.1
       '@emotion/utils': 1.2.1
-      csstype: 3.1.2
+      csstype: 3.1.3
     dev: false
 
   /@emotion/sheet@1.2.2:
@@ -3836,8 +3922,8 @@ packages:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
     dev: false
 
-  /@koa/cors@4.0.0:
-    resolution: {integrity: sha512-Y4RrbvGTlAaa04DBoPBWJqDR5gPj32OOz827ULXfgB1F7piD1MB/zwn8JR2LAnvdILhxUbXbkXGWuNVsFuVFCQ==}
+  /@koa/cors@5.0.0:
+    resolution: {integrity: sha512-x/iUDjcS90W69PryLDIMgFyV21YLTnG9zOpPXS7Bkt2b8AsY3zZsIpOLBkYr9fBcF3HbkKaER5hOBZLfpLgYNw==}
     engines: {node: '>= 14.0.0'}
     dependencies:
       vary: 1.1.2
@@ -4218,7 +4304,7 @@ packages:
   /@simonwep/pickr@1.8.2:
     resolution: {integrity: sha512-/l5w8BIkrpP6n1xsetx9MWPWlU6OblN5YgZZphxan0Tq4BByTCETL6lyIeY8lagalS2Nbt4F2W034KHLIiunKA==}
     dependencies:
-      core-js: 3.35.1
+      core-js: 3.36.1
       nanopop: 2.3.0
     dev: false
 
@@ -5698,8 +5784,8 @@ packages:
       '@types/node': 18.18.8
     dev: true
 
-  /@types/koa__cors@4.0.2:
-    resolution: {integrity: sha512-EV1S9t1PbauzUlKyI4KKrw1E/JWHI15OtdVXkaBm6sI+vXvvSW6JoKcsmAiIqY0PYvt94fycvdrWMTtM15uZmw==}
+  /@types/koa__cors@5.0.0:
+    resolution: {integrity: sha512-LCk/n25Obq5qlernGOK/2LUwa/2YJb2lxHUkkvYFDOpLXlVI6tKcdfCHRBQnOY4LwH6el5WOLs6PD/a8Uzau6g==}
     dependencies:
       '@types/koa': 2.13.10
     dev: true
@@ -5830,7 +5916,7 @@ packages:
     dependencies:
       '@types/prop-types': 15.7.9
       '@types/scheduler': 0.16.5
-      csstype: 3.1.2
+      csstype: 3.1.3
 
   /@types/sass@1.43.1:
     resolution: {integrity: sha512-BPdoIt1lfJ6B7rw35ncdwBZrAssjcwzI5LByIrYs+tpXlj/CAkuVdRsgZDdP4lq5EjyWzwxZCqAoFyHKFwp32g==}
@@ -7914,7 +8000,6 @@ packages:
   /core-js@3.36.1:
     resolution: {integrity: sha512-BTvUrwxVBezj5SZ3f10ImnX2oRByMxql3EimVqMysepbC9EeMUOpLwdy6Eoili2x6E4kf+ZUB5k/+Jv55alPfA==}
     requiresBuild: true
-    dev: false
 
   /core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -8465,7 +8550,6 @@ packages:
   /deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
-    dev: true
 
   /default-browser-id@3.0.0:
     resolution: {integrity: sha512-OZ1y3y0SqSICtE8DE4S8YOE9UZOJ8wO16fKWVP5J1Qz42kV9jcnMVFrEE/noXb/ss3Q4pZIH79kxofzyNNtUNA==}
@@ -10364,6 +10448,11 @@ packages:
 
   /is-plain-object@3.0.1:
     resolution: {integrity: sha512-Xnpx182SBMrr/aBik8y+GuR4U1L9FqMSojwDQwPMmxyC6bvEqly9UBCxhauBF5vNh2gwWJNX6oDV7O+OM4z34g==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
+  /is-plain-object@5.0.0:
+    resolution: {integrity: sha512-VRSzKkbMm5jMDoKLbltAkFQ5Qr7VDiTFGXxYFXXowVj387GeGNOCsOH6Msy00SGZ3Fp84b1Naa1psqgcCIEP5Q==}
     engines: {node: '>=0.10.0'}
     dev: false
 
@@ -12326,7 +12415,7 @@ packages:
       camelcase-keys: 7.0.2
       chalk: 4.1.2
       common-tags: 1.8.2
-      core-js: 3.35.1
+      core-js: 3.36.1
       eslint: 8.53.0
       find-up: 5.0.0
       get-stdin: 8.0.0

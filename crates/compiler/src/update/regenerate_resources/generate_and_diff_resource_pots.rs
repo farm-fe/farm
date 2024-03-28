@@ -108,8 +108,23 @@ fn handle_enforce_resource_pots(
   let mut un_enforced_modules = HashSet::new();
   let mut affected_resource_pot_ids = HashSet::new();
 
+  let is_module_external = |module_id: &ModuleId| {
+    let module = if let Some(module) = removed_modules.get(module_id) {
+      module
+    } else {
+      module_graph.module(module_id).unwrap()
+    };
+
+    module.external
+  };
+
   let mut handle_changed_modules = |module_ids: &HashSet<ModuleId>, ty: ChangedModuleType| {
     for module_id in module_ids {
+      // ignore external module
+      if is_module_external(module_id) {
+        continue;
+      }
+
       if let Some(name) = get_enforce_resource_name_for_module(
         module_id,
         &context.config.partial_bundling.enforce_resources,
@@ -152,6 +167,10 @@ fn handle_enforce_resource_pots(
 
   // Filter out the modules that are not in any enforce resource pot
   for module_id in affected_modules {
+    if is_module_external(module_id) {
+      continue;
+    }
+
     if let Some(name) = get_enforce_resource_name_for_module(
       module_id,
       &context.config.partial_bundling.enforce_resources,

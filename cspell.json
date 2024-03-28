@@ -156,7 +156,9 @@
     "srcset",
     "shulandmimi",
     "concurrentify",
-    "pageerror"
+    "pageerror",
+    "deepmerge",
+    "Mergeable"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
