@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-postcss
 
+## 1.5.2
+
+### Patch Changes
+
+- cb7df71f: Support alias resolve and url rebase for import.meta.glob, sass and less plugins
+- Updated dependencies [cb7df71f]
+  - @farmfe/core@1.0.8
+
 ## 1.5.1
 
 ### Patch Changes
