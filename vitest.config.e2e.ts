@@ -7,6 +7,11 @@ export default defineConfig({
     include: ['examples/**/*.spec.ts', `e2e/**/*.spec.ts`],
     hookTimeout: 600_000,
     testTimeout: 300_000,
-    isolate: false
+    isolate: false,
+    poolOptions: {
+      threads: {
+        singleThread: true
+      }
+    }
   }
 });

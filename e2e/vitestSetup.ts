@@ -16,6 +16,7 @@ globalVar.CURRENT_PORT = 9100;
 function getServerPort(): number {
   const incPort = () => {
     globalVar.CURRENT_PORT += 10;
+    console.log('generate port', globalVar.CURRENT_PORT);
     return globalVar.CURRENT_PORT;
   };
   return incPort();
