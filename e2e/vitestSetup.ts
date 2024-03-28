@@ -164,9 +164,14 @@ export const startProjectAndTest = async (
 
     child.on('exit', (code) => {
       if (code) {
-        logger(`${examplePath} ${command} failed with code ${code}`, {
-          color: 'red'
-        });
+        logger(
+          `${examplePath} ${command} failed with code ${code}. ${result.toString(
+            'utf-8'
+          )}`,
+          {
+            color: 'red'
+          }
+        );
         reject(new Error(`${examplePath} ${command} failed with code ${code}`));
       }
     });

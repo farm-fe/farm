@@ -62,9 +62,9 @@ fn replace_url(
   context: &Arc<CompilationContext>,
 ) -> sass_embedded::Result<String> {
   replace(content, &CSS_URL_RE, |_, matched| {
-    let (wrap, raw_url) = if matched.starts_with("'") {
+    let (wrap, raw_url) = if matched.starts_with('\'') {
       ("'", matched.trim_matches('\''))
-    } else if matched.starts_with("\"") {
+    } else if matched.starts_with('\"') {
       ("\"", matched.trim_matches('"'))
     } else {
       ("", matched)
@@ -83,9 +83,9 @@ fn replace_import(
   context: &Arc<CompilationContext>,
 ) -> sass_embedded::Result<String> {
   replace(content, &CSS_URL_RE, |_, matched| {
-    let (wrap, raw_url) = if matched.starts_with("'") {
+    let (wrap, raw_url) = if matched.starts_with('\'') {
       ("'", matched.trim_matches('\''))
-    } else if matched.starts_with("\"") {
+    } else if matched.starts_with('"') {
       ("\"", matched.trim_matches('"'))
     } else {
       ("", matched)
@@ -101,7 +101,7 @@ fn replace_import(
 fn ignore_url(url: &str) -> bool {
   EXTERNAL_RE.is_match(url)
     || DATA_URL_RE.is_match(url)
-    || url.starts_with("#")
+    || url.starts_with('#')
     || FUNCTION_CALL_RE.is_match(url)
 }
 

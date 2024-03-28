@@ -109,58 +109,13 @@ fn test_with_compiler() {
     let css = resources_map.get("index.css").unwrap();
     let css_code = String::from_utf8(css.bytes.clone()).unwrap();
 
-    let expected = "body {\n  color: red;\n}";
+    let expected = if cwd.to_str().unwrap().contains("rebase_urls") {
+      ".dep {\n  background-image: url(\"/logo-90580d.png\");\n  -webkit-background-size: contain;\n  -moz-background-size: contain;\n  -o-background-size: contain;\n  background-size: contain;\n  background-repeat: no-repeat;\n  color: red;\n  width: 200px;\n  height: 50px;\n}\n.description .description:hover {\n  color: red;\n}"
+    } else {
+      "body {\n  color: red;\n}"
+    };
     assert_eq!(css_code, expected);
     let watch_graph = compiler.context().watch_graph.read();
     assert!(watch_graph.modules().len() > 0);
   });
-}
-
-#[test]
-fn test_rebase_url() {
-  fixture!(
-    "tests/fixtures/rebase_urls/rebase-index.scss",
-    |file, _cwd| {
-      let resolved_path = file.to_string_lossy().to_string();
-      let root = file.parent().unwrap().to_string_lossy().to_string();
-      let config = Config {
-        input: HashMap::from([("button".to_string(), resolved_path.clone())]),
-        resolve: ResolveConfig {
-          alias: HashMap::from([("@".to_string(), root.clone())]),
-          ..Default::default()
-        },
-        ..Default::default()
-      };
-      let plugin = Arc::new(FarmPluginSass::new(
-        &config,
-        r#"
-      {
-        "sourceMap": true,
-        "style":"expanded"
-      }
-    "#
-        .to_string(),
-      ));
-      let context = CompilationContext::new(config, vec![plugin.clone()]).unwrap();
-      let content = read_file_utf8(&resolved_path).unwrap();
-      let transformed = plugin
-        .transform(
-          &PluginTransformHookParam {
-            resolved_path: &resolved_path,
-            content,
-            module_type: ModuleType::Custom(String::from("sass")),
-            query: vec![],
-            meta: HashMap::from([]),
-            module_id: resolved_path.clone(),
-            source_map_chain: vec![],
-          },
-          &Arc::new(context),
-        )
-        .unwrap()
-        .unwrap();
-      let expected =
-        "body {\n  color: #000;\n}\nbody .description:hover {\n  background-color: #f8f9fa;\n}";
-      assert_eq!(transformed.content, expected);
-    }
-  );
 }

@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
-use std::collections::HashMap;
+#![allow(clippy::result_large_err)]
+use std::{collections::HashMap, str::FromStr};
 
 use farmfe_core::{
   config::Config,
@@ -66,17 +67,21 @@ impl Importer for ImporterCollection {
     url: &str,
     _options: &sass_embedded::ImporterOptions,
   ) -> sass_embedded::Result<Option<Url>> {
-    let resolved_path = if url.strip_prefix("file:").is_some()
-      || url.starts_with("/")
+    let url = if url.strip_prefix("file:").is_some()
+      || url.starts_with('/')
       || PathBuf::from(url).is_absolute()
     {
-      PathBuf::from(url.strip_prefix("file:").unwrap_or(url))
+      Url::from_str(url).unwrap_or(
+        Url::from_file_path(PathBuf::from(url))
+          .map_err(|_| Exception::new(format!("parse {:?} to Url failed.", url)))?,
+      )
     } else {
-      RelativePath::new(url).to_logical_path(&self.context.config.root)
+      let resolved_path = RelativePath::new(url).to_logical_path(&self.context.config.root);
+      Url::from_file_path(&resolved_path)
+        .map_err(|_| Exception::new(format!("parse {:?} to Url failed.", resolved_path)))?
     };
-    Ok(Some(Url::from_file_path(&resolved_path).map_err(|_| {
-      Exception::new(format!("parse {:?} to Url failed.", resolved_path))
-    })?))
+
+    Ok(Some(url))
   }
 
   fn load(
