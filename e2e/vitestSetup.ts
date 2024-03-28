@@ -24,7 +24,8 @@ function getServerPort(): number {
 const visitPage = async (
   path: string,
   examplePath: string,
-  rawCb: (page: Page) => Promise<void>
+  rawCb: (page: Page) => Promise<void>,
+  command: string
 ) => {
   if (!path) return;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -50,7 +51,7 @@ const visitPage = async (
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
-      logger(`${examplePath} -> ${path}: ${msg.text()}`);
+      logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
       // browserLogs.push(msg.text());
     });
     let resolve: (data: any) => void, reject: (e: Error) => void;
@@ -60,32 +61,38 @@ const visitPage = async (
     });
 
     page?.on('pageerror', (error) => {
-      logger(`${examplePath} -> ${path}: ${error}`, {
+      logger(`command ${command} ${examplePath} -> ${path}: ${error}`, {
         color: 'red'
       });
       reject(error);
     });
 
     page?.on('load', async () => {
-      cb(page)
-        .then(() => {
-          resolve(null);
-        })
-        .catch((e) => {
-          logger(`test error: ${examplePath} start failed with error ${e}`, {
-            color: 'red'
-          });
-          reject(e);
-        })
-        .finally(() => {
-          page?.close({
-            reason: 'test finished',
-            runBeforeUnload: false
-          });
-        });
+      console.log(command, 'page load');
     });
 
     await page?.goto(path);
+
+    cb(page)
+      .then(() => {
+        resolve(null);
+      })
+      .catch((e) => {
+        logger(
+          `command ${command} test error: ${examplePath} start failed with error ${e}`,
+          {
+            color: 'red'
+          }
+        );
+        reject(e);
+      })
+      .finally(() => {
+        page?.close({
+          reason: 'test finished',
+          runBeforeUnload: false
+        });
+      });
+
     return promise;
   } catch (e) {
     await page?.close();
@@ -186,7 +193,7 @@ export const startProjectAndTest = async (
   });
 
   try {
-    await visitPage(pagePath, examplePath, cb);
+    await visitPage(pagePath, examplePath, cb, command);
   } catch (e) {
     console.log('visit page error: ', e);
     throw e;
