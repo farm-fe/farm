@@ -54,7 +54,7 @@ export async function handleVitePlugins(
     processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
   }
 
-  const resolvedPaths = Array.from(filtersUnion);
+  const resolvedPaths = Array.from(filtersUnion).map(compatibleWin32Path);
   // if vitePlugins is not empty, append a load plugin to load file
   // this plugin is only for compatibility
   if (vitePlugins.length) {
