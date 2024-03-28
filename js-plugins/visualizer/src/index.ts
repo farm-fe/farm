@@ -16,7 +16,7 @@ export default function farmRecorderPlugin(
   const recordViewerOptions: RecordViewerOptions = options;
 
   return {
-    name: 'farm-plugin-record-viewer',
+    name: 'farm-visualizer',
     config(config) {
       farmConfig = config.compilation || {};
       farmConfig.record = true;

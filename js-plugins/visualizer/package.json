@@ -1,6 +1,6 @@
 {
-  "name": "@farmfe/js-plugin-record-viewer",
-  "version": "2.2.0",
+  "name": "@farmfe/js-plugin-visualizer",
+  "version": "1.0.0",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
   "type": "module",
