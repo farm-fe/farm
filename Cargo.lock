@@ -1543,6 +1543,7 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
+ "farmfe_utils 0.1.4",
  "sass-embedded",
  "serde",
 ]

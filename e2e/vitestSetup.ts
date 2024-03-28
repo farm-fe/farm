@@ -9,24 +9,24 @@ import { existsSync } from 'fs';
 // export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
 export const pageMap = new Map<string, Page>();
-const serverPorts = new Set();
+
+const globalVar = globalThis as any;
+globalVar.CURRENT_PORT = 9100;
 
 function getServerPort(): number {
-  const getRandomPort = () => Math.floor(Math.random() * 1000 + 9100);
-  let port = getRandomPort();
-
-  while (serverPorts.has(port)) {
-    port = getRandomPort();
-  }
-
-  serverPorts.add(port);
-  return port;
+  const incPort = () => {
+    globalVar.CURRENT_PORT += 10;
+    console.log('generate port', globalVar.CURRENT_PORT);
+    return globalVar.CURRENT_PORT;
+  };
+  return incPort();
 }
 
 const visitPage = async (
   path: string,
   examplePath: string,
-  rawCb: (page: Page) => Promise<void>
+  rawCb: (page: Page) => Promise<void>,
+  command: string
 ) => {
   if (!path) return;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -52,7 +52,7 @@ const visitPage = async (
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
-      logger(`${examplePath} -> ${path}: ${msg.text()}`);
+      logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
       // browserLogs.push(msg.text());
     });
     let resolve: (data: any) => void, reject: (e: Error) => void;
@@ -62,26 +62,38 @@ const visitPage = async (
     });
 
     page?.on('pageerror', (error) => {
-      logger(`${examplePath} -> ${path}: ${error}`, {
+      logger(`command ${command} ${examplePath} -> ${path}: ${error}`, {
         color: 'red'
       });
       reject(error);
     });
 
     page?.on('load', async () => {
-      cb(page)
-        .then(() => {
-          resolve(null);
-        })
-        .catch((e) => {
-          logger(`test error: ${examplePath} start failed with error ${e}`, {
-            color: 'red'
-          });
-          reject(e);
-        });
+      console.log(command, 'page load');
     });
 
     await page?.goto(path);
+
+    cb(page)
+      .then(() => {
+        resolve(null);
+      })
+      .catch((e) => {
+        logger(
+          `command ${command} test error: ${examplePath} start failed with error ${e}`,
+          {
+            color: 'red'
+          }
+        );
+        reject(e);
+      })
+      .finally(() => {
+        page?.close({
+          reason: 'test finished',
+          runBeforeUnload: false
+        });
+      });
+
     return promise;
   } catch (e) {
     await page?.close();
@@ -116,45 +128,33 @@ export const startProjectAndTest = async (
     throw new Error(`example ${examplePath} does not install @farmfe/cli`);
   }
   const port = getServerPort();
-  await new Promise((resolve, reject) => {
-    logger(`Executing node ${cliBinPath} ${command} in ${examplePath}`);
-    const child = execa('node', [cliBinPath, command], {
-      cwd: examplePath,
-      stdin: 'pipe',
-      encoding: 'utf8',
-      env: {
-        BROWSER: 'none',
-        NO_COLOR: 'true',
-        FARM_DEFAULT_SERVER_PORT: String(port),
-        FARM_DEFAULT_HMR_PORT: String(port),
-      }
-    });
+  logger(`Executing node ${cliBinPath} ${command} in ${examplePath}`);
+  const child = execa('node', [cliBinPath, command], {
+    cwd: examplePath,
+    stdin: 'pipe',
+    encoding: 'utf8',
+    env: {
+      BROWSER: 'none',
+      NO_COLOR: 'true',
+      FARM_DEFAULT_SERVER_PORT: String(port),
+      FARM_DEFAULT_HMR_PORT: String(port)
+    }
+  });
 
-    let pagePath: null | string;
+  const pagePath = await new Promise<string>((resolve, reject) => {
     let result = Buffer.alloc(0);
     const urlRegex =
       /((http|https):\/\/(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d+)?(\/[^\s]*)?/g;
     child.stdout?.on('data', async (chunk) => {
       result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
-      if (pagePath) return;
       const res = result.toString();
       const replacer = res.replace(/\n/g, '');
 
       const matches = replacer.match(urlRegex);
-      pagePath = matches && (matches[1] || matches[0]);
+      const pagePath = matches && (matches[1] || matches[0]);
 
       if (pagePath) {
-        try {
-          await visitPage(pagePath, examplePath, cb);
-          resolve(pagePath);
-        } catch (e) {
-          console.log('visit page error: ', e);
-          reject(e);
-        } finally {
-          if (!child.killed) {
-            child.kill();
-          }
-        }
+        resolve(pagePath);
       }
     });
 
@@ -172,9 +172,14 @@ export const startProjectAndTest = async (
 
     child.on('exit', (code) => {
       if (code) {
-        logger(`${examplePath} ${command} failed with code ${code}`, {
-          color: 'red'
-        });
+        logger(
+          `${examplePath} ${command} failed with code ${code}. ${result.toString(
+            'utf-8'
+          )}`,
+          {
+            color: 'red'
+          }
+        );
         reject(new Error(`${examplePath} ${command} failed with code ${code}`));
       }
     });
@@ -187,4 +192,15 @@ export const startProjectAndTest = async (
       }
     });
   });
+
+  try {
+    await visitPage(pagePath, examplePath, cb, command);
+  } catch (e) {
+    console.log('visit page error: ', e);
+    throw e;
+  } finally {
+    if (!child.killed) {
+      child.kill();
+    }
+  }
 };

@@ -1,0 +1,9 @@
+@import '@/style/dep.scss';
+
+.description {
+  .description {
+    &:hover {
+      color: $hoverColor;
+    }
+  }
+}

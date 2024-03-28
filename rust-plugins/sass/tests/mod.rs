@@ -109,7 +109,11 @@ fn test_with_compiler() {
     let css = resources_map.get("index.css").unwrap();
     let css_code = String::from_utf8(css.bytes.clone()).unwrap();
 
-    let expected = "body {\n  color: red;\n}";
+    let expected = if cwd.to_str().unwrap().contains("rebase_urls") {
+      ".dep {\n  background-image: url(\"/logo-90580d.png\");\n  -webkit-background-size: contain;\n  -moz-background-size: contain;\n  -o-background-size: contain;\n  background-size: contain;\n  background-repeat: no-repeat;\n  color: red;\n  width: 200px;\n  height: 50px;\n}\n.description .description:hover {\n  color: red;\n}"
+    } else {
+      "body {\n  color: red;\n}"
+    };
     assert_eq!(css_code, expected);
     let watch_graph = compiler.context().watch_graph.read();
     assert!(watch_graph.modules().len() > 0);
