@@ -71,10 +71,12 @@ impl Importer for ImporterCollection {
       || url.starts_with('/')
       || PathBuf::from(url).is_absolute()
     {
-      Url::from_str(url).unwrap_or(
-        Url::from_file_path(PathBuf::from(url))
-          .map_err(|_| Exception::new(format!("parse {:?} to Url failed.", url)))?,
-      )
+      if let Ok(url) = Url::from_str(url) {
+        url
+      } else {
+        Url::from_file_path(url)
+          .map_err(|_| Exception::new(format!("parse raw {:?} to Url failed.", url)))?
+      }
     } else {
       let resolved_path = RelativePath::new(url).to_logical_path(&self.context.config.root);
       Url::from_file_path(&resolved_path)
