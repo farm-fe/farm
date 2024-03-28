@@ -17,8 +17,7 @@ use farmfe_toolkit::{
 use farmfe_utils::relative;
 use rebase_urls::rebase_urls;
 use sass_embedded::{
-  Exception, FileImporter, Importer, OutputStyle, Sass, StringOptions, StringOptionsBuilder,
-  Syntax, Url,
+  Exception, Importer, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Syntax, Url,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -56,11 +55,6 @@ impl FarmPluginSass {
   }
 }
 
-struct FileImporterCollection {
-  importer: ModuleId,
-  context: Arc<CompilationContext>,
-}
-
 struct ImporterCollection {
   root_importer: ModuleId,
   context: Arc<CompilationContext>,
@@ -89,11 +83,9 @@ impl Importer for ImporterCollection {
     &self,
     canonical_url: &Url,
   ) -> sass_embedded::Result<Option<sass_embedded::ImporterResult>> {
-    let canonical_root = Url::from_file_path(&self.context.config.root).unwrap();
-    let url = relative(canonical_root.path(), canonical_url.path());
-    println!(
-      "resolved {:?}({:?}) from {:?}",
-      url, canonical_url, self.root_importer
+    let url = relative(
+      &self.context.config.root,
+      &canonical_url.to_file_path().unwrap().to_string_lossy(),
     );
     let context = &self.context;
     let resolve_result = context
@@ -113,8 +105,6 @@ impl Importer for ImporterCollection {
           url, self.root_importer, e
         ))
       })?;
-
-    println!("resolved {:?}", resolve_result);
 
     if let Some(resolve_result) = resolve_result {
       if let Ok(file_content) = read_file_utf8(&resolve_result.resolved_path) {
@@ -148,54 +138,6 @@ impl Debug for ImporterCollection {
     f.debug_struct("ImporterCollection")
       .field("root_importer", &self.root_importer)
       .finish()
-  }
-}
-
-impl Debug for FileImporterCollection {
-  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("FileImporterCollection")
-      .field("importer", &self.importer)
-      .finish()
-  }
-}
-
-impl FileImporter for FileImporterCollection {
-  fn find_file_url(
-    &self,
-    url: &str,
-    _options: &sass_embedded::ImporterOptions,
-  ) -> sass_embedded::Result<Option<Url>> {
-    let context = &self.context;
-    // try to resolve url using relative path first
-    let importer_path = PathBuf::from(self.importer.resolved_path(&context.config.root));
-    let importer_dir = importer_path.parent().unwrap();
-    let relative_url = RelativePath::new(url);
-    let resolved_url = relative_url.to_logical_path(importer_dir);
-
-    if resolved_url.exists() {
-      return Ok(Some(Url::from_file_path(resolved_url).unwrap()));
-    }
-
-    let resolve_result = context
-      .plugin_driver
-      .resolve(
-        &PluginResolveHookParam {
-          source: url.to_string(),
-          importer: Some(self.importer.clone()),
-          kind: ResolveKind::CssAtImport,
-        },
-        context,
-        &PluginHookContext::default(),
-      )
-      .unwrap();
-
-    if let Some(resolve_result) = resolve_result {
-      return Ok(Some(
-        Url::from_file_path(resolve_result.resolved_path).unwrap(),
-      ));
-    }
-
-    sass_embedded::Result::Ok(None)
   }
 }
 

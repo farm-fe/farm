@@ -525,6 +525,7 @@ impl Plugin for FarmPluginCss {
             &module.id,
             &module_graph,
             &resources_map,
+            context.config.output.public_path.clone(),
           );
 
           if minify_enabled {
@@ -768,7 +769,9 @@ pub fn source_replace(
   module_id: &ModuleId,
   module_graph: &ModuleGraph,
   resources_map: &HashMap<String, Resource>,
+  public_path: String,
 ) {
-  let mut source_replacer = SourceReplacer::new(module_id.clone(), module_graph, resources_map);
+  let mut source_replacer =
+    SourceReplacer::new(module_id.clone(), module_graph, resources_map, public_path);
   stylesheet.visit_mut_with(&mut source_replacer);
 }

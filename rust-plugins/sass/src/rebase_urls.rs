@@ -47,7 +47,9 @@ pub fn rebase_urls(
     content = replace_url(file, root_file, content, "data-uri", context)?;
   }
 
-  if IMPORT_CSS_RE.is_match(&content) {}
+  if IMPORT_CSS_RE.is_match(&content) {
+    content = replace_import(file, root_file, content, context)?;
+  }
 
   Ok(content)
 }
@@ -59,7 +61,7 @@ fn replace_url(
   func_name: &str,
   context: &Arc<CompilationContext>,
 ) -> sass_embedded::Result<String> {
-  replace(content, &CSS_URL_RE, |raw, matched| {
+  replace(content, &CSS_URL_RE, |_, matched| {
     let (wrap, raw_url) = if matched.starts_with("'") {
       ("'", matched.trim_matches('\''))
     } else if matched.starts_with("\"") {
@@ -69,7 +71,6 @@ fn replace_url(
     };
 
     let new_url = resolve(raw_url, file, root_file, context)?;
-
     Ok(format!("{func_name}({wrap}{new_url}{wrap})"))
   })
   .map_err(|e| Exception::new(e.to_string()))
@@ -81,7 +82,7 @@ fn replace_import(
   content: String,
   context: &Arc<CompilationContext>,
 ) -> sass_embedded::Result<String> {
-  replace(content, &CSS_URL_RE, |raw, matched| {
+  replace(content, &CSS_URL_RE, |_, matched| {
     let (wrap, raw_url) = if matched.starts_with("'") {
       ("'", matched.trim_matches('\''))
     } else if matched.starts_with("\"") {
@@ -97,13 +98,6 @@ fn replace_import(
   .map_err(|e| Exception::new(e.to_string()))
 }
 
-/**
- * export const externalRE = /^(https?:)?\/\//;
-export const isExternalUrl = (url: string): boolean => externalRE.test(url);
-
-export const dataUrlRE = /^\s*data:/i;
-export const isDataUrl = (url: string): boolean => dataUrlRE.test(url);
- */
 fn ignore_url(url: &str) -> bool {
   EXTERNAL_RE.is_match(url)
     || DATA_URL_RE.is_match(url)
@@ -139,7 +133,8 @@ fn resolve(
     .map(|res| (res.resolved_path, res.external))?;
 
   Ok(if !external {
-    relative(root_file, &resolved_path)
+    let root_dir = PathBuf::from(root_file).parent().unwrap().to_path_buf();
+    relative(&root_dir.to_string_lossy(), &resolved_path)
   } else {
     url.to_string()
   })
