@@ -28,6 +28,7 @@ export async function handleVitePlugins(
   mode: CompilationMode
 ): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
+  const filtersUnion = new Set<string>();
 
   if (vitePlugins.length) {
     userConfig = merge({}, userConfig, {
@@ -49,10 +50,11 @@ export async function handleVitePlugins(
       vitePlugin = plugin;
       filters = f;
     }
-
+    filters?.forEach((filter) => filtersUnion.add(filter));
     processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
   }
 
+  const resolvedPaths = Array.from(filtersUnion);
   // if vitePlugins is not empty, append a load plugin to load file
   // this plugin is only for compatibility
   if (vitePlugins.length) {
@@ -62,7 +64,7 @@ export async function handleVitePlugins(
       priority: -100,
       load: {
         filters: {
-          resolvedPaths: DEFAULT_FILTERS
+          resolvedPaths
         },
         executor: async (params) => {
           const { resolvedPath } = params;
@@ -85,7 +87,7 @@ export async function handleVitePlugins(
       },
       transform: {
         filters: {
-          resolvedPaths: DEFAULT_FILTERS,
+          resolvedPaths,
           moduleTypes: []
         },
         executor: async (params) => {
