@@ -521,7 +521,10 @@ export function normalizeDevServerOptions(
       : merge(
           {},
           DEFAULT_HMR_OPTIONS,
-          { host, port },
+          {
+            host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
+            port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
+          },
           hmrConfig === true ? {} : hmrConfig
         );
 
