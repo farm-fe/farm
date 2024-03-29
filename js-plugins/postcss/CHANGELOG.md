@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-postcss
 
+## 1.5.3
+
+### Patch Changes
+
+- f6196f14: fix postcss internal plugins
+- Updated dependencies [6425c763]
+  - @farmfe/core@1.0.9
+
 ## 1.5.2
 
 ### Patch Changes

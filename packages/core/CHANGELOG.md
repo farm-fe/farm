@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.9
+
+### Patch Changes
+
+- 6425c763: Fix vite plugin adapter
+
 ## 1.0.8
 
 ### Patch Changes
