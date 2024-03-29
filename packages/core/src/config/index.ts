@@ -448,7 +448,10 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: true,
-  port: Number(process.env.FARM_DEFAULT_HMR_PORT) ?? undefined,
+  port:
+    (process.env.FARM_DEFAULT_HMR_PORT &&
+      Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
+    undefined,
   path: '/__hmr',
   protocol: 'ws',
   watchOptions: {}
@@ -456,7 +459,10 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   headers: {},
-  port: Number(process.env.FARM_DEFAULT_SERVER_PORT) || 9000,
+  port:
+    (process.env.FARM_DEFAULT_SERVER_PORT &&
+      Number(process.env.FARM_DEFAULT_SERVER_PORT)) ||
+    9000,
   https: undefined,
   protocol: 'http',
   hostname: { name: 'localhost', host: undefined },
