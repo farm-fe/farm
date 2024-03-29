@@ -104,7 +104,12 @@ export function proxyViteConfig(
         return target[key as unknown as keyof typeof target];
       }
 
-      if (key === 'then' || key === 'length' || key === 'constructor') {
+      if (
+        key === 'then' ||
+        key === 'length' ||
+        key === 'constructor' ||
+        key === 'prototype'
+      ) {
         return (target as Record<string, any>)[key];
       }
 
@@ -162,7 +167,8 @@ export function proxyViteConfig(
               if (
                 resolveKey === 'then' ||
                 resolveKey === 'length' ||
-                resolveKey === 'constructor'
+                resolveKey === 'constructor' ||
+                resolveKey === 'prototype'
               ) {
                 return (target as Record<string, any>)[key];
               }
@@ -201,7 +207,8 @@ export function proxyViteConfig(
               if (
                 serverKey === 'then' ||
                 serverKey === 'length' ||
-                serverKey === 'constructor'
+                serverKey === 'constructor' ||
+                serverKey === 'prototype'
               ) {
                 return (target as Record<string, any>)[key];
               }
@@ -236,7 +243,8 @@ export function proxyViteConfig(
               if (
                 cssKey === 'then' ||
                 cssKey === 'length' ||
-                cssKey === 'constructor'
+                cssKey === 'constructor' ||
+                cssKey === 'prototype'
               ) {
                 return (target as Record<string, any>)[key];
               }
@@ -273,7 +281,8 @@ export function proxyViteConfig(
               if (
                 buildKey === 'then' ||
                 buildKey === 'length' ||
-                buildKey === 'constructor'
+                buildKey === 'constructor' ||
+                buildKey === 'prototype'
               ) {
                 return (target as Record<string, any>)[key];
               }
