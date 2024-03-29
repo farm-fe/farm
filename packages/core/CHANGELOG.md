@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.10
+
+### Patch Changes
+
+- cf14295b: Fix vite config adapter error
+
 ## 1.0.9
 
 ### Patch Changes
