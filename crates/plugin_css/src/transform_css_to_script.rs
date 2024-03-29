@@ -187,7 +187,13 @@ pub fn transform_css_stylesheet(
   };
 
   let resources_map = context.resources_map.lock();
-  source_replace(&mut stylesheet, module_id, &module_graph, &resources_map);
+  source_replace(
+    &mut stylesheet,
+    module_id,
+    &module_graph,
+    &resources_map,
+    context.config.output.public_path.clone(),
+  );
 
   stylesheet
 }

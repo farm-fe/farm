@@ -1,5 +1,30 @@
 # @farmfe/core
 
+## 1.0.10
+
+### Patch Changes
+
+- cf14295b: Fix vite config adapter error
+
+## 1.0.9
+
+### Patch Changes
+
+- 6425c763: Fix vite plugin adapter
+
+## 1.0.8
+
+### Patch Changes
+
+- cb7df71f: Support alias resolve and url rebase for import.meta.glob, sass and less plugins
+
+## 1.0.7
+
+### Patch Changes
+
+- 1d1ae1f2: fix: Multiple server startups result in WebSocket connection interruptions.
+- 7ae9cb8d: fix: problems with the load filter not working
+
 ## 1.0.6
 
 ### Patch Changes

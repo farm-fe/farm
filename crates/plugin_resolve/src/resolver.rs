@@ -77,7 +77,10 @@ impl Resolver {
     };
 
     if let Some(result) = self.resolve_cache.lock().get(&cache_key) {
-      return result.clone();
+      // None result should not be cached
+      if let Some(result) = result {
+        return Some(result.clone());
+      }
     }
 
     let result = self._resolve(source, base_dir, kind, context);

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{swc_common::SourceMap, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax};
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
@@ -25,7 +25,22 @@ fn test_import_meta_glob() {
       dir
     };
 
-    transform_import_meta_glob(&mut ast, root.to_string(), dir.to_string()).unwrap();
+    transform_import_meta_glob(
+      &mut ast,
+      root.to_string(),
+      dir.to_string(),
+      &HashMap::from([(
+        "@".to_string(),
+        file
+          .parent()
+          .unwrap()
+          .to_path_buf()
+          .join("dir")
+          .to_string_lossy()
+          .to_string(),
+      )]),
+    )
+    .unwrap();
 
     let code = codegen_module(&ast, EsVersion::EsNext, cm, None, false, None).unwrap();
     let code = String::from_utf8(code).unwrap();

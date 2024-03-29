@@ -1,3 +1,4 @@
+import { throwError as t } from '@farmfe/core';
 import fs from 'fs';
 import { createRequire } from 'module';
 
@@ -28,10 +29,6 @@ export async function tryRead(filename: string) {
   }
 }
 
-export function formatError(type: string, error: Error) {
-  return `[${pluginName} ${type} Error] ${error}`;
-}
-
 export function throwError(type: string, error: Error) {
-  throw new Error(formatError(type, error));
+  t(pluginName, type, error);
 }
