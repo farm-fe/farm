@@ -11,12 +11,12 @@
     "clean": "farm clean"
   },
   "dependencies": {
-    "preact": "^10.19.5"
+    "preact": "^10.20.1"
   },
   "devDependencies": {
     "@farmfe/cli": "^1.0.0",
-    "@farmfe/core": "^1.0.0",
+    "@farmfe/core": "^1.0.10",
     "@preact/preset-vite": "^2.8.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.4.3"
   }
 }

@@ -1,4 +1,4 @@
-# Farm Project
+# Farm + Lit
 
 ## Setup
 

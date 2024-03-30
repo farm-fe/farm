@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "use create-farm to create farm project",
   "exports": {
     ".": "./bin/create-farm.mjs"
@@ -43,5 +43,8 @@
     "minimist": "^1.2.8",
     "ora": "^6.3.0",
     "prompts": "^2.4.2"
+  },
+  "dependencies": {
+    "create-farm": "^1.6.3"
   }
 }
