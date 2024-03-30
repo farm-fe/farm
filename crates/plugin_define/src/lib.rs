@@ -1,7 +1,7 @@
 #![feature(path_file_prefix)]
 
 use farmfe_core::{config::Config, plugin::Plugin, regex::Regex, serde_json};
-use farmfe_toolkit::lazy_static::lazy_static;
+use farmfe_toolkit::{common::load_source_original_source_map, lazy_static::lazy_static};
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
@@ -65,10 +65,13 @@ impl Plugin for FarmPluginDefine {
           }
         };
       }
-
+      
+      let map =
+        load_source_original_source_map(&content, param.resolved_path, "//# sourceMappingURL");
+      
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
         content,
-        // TODO support source map
+        source_map: map,
         ..Default::default()
       }));
     }
