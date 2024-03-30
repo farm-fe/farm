@@ -81,7 +81,6 @@ impl Plugin for FarmPluginHtml {
           source: format!(".{}", param.source),
           importer: param.importer.clone(),
           kind: param.kind.clone(),
-          try_prefix: param.try_prefix.clone()
         },
         context,
         &PluginHookContext {

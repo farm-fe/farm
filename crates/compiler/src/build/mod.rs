@@ -115,7 +115,6 @@ impl Compiler {
           source: source.clone(),
           importer: None,
           kind: ResolveKind::Entry(name.clone()),
-          ..Default::default()
         },
         context: self.context.clone(),
         err_sender: err_sender.clone(),
@@ -500,7 +499,6 @@ impl Compiler {
           source: dep.source,
           importer: Some(module_id.clone()),
           kind: dep.kind,
-          ..Default::default()
         },
         context: context.clone(),
         err_sender: err_sender.clone(),

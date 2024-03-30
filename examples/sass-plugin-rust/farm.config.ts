@@ -30,6 +30,6 @@ export default defineConfig({
     '@farmfe/plugin-react',
     ['@farmfe/plugin-sass', {
       additionalData:  `$hoverColor: #f10215;`
-    }] 
+    }]
   ],
 });

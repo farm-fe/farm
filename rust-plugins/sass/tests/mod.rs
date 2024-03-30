@@ -112,14 +112,16 @@ fn test_with_compiler() {
 
     let resources_map = compiler.context().resources_map.lock();
     let css = resources_map.get("index.css").unwrap();
-    let css_code = String::from_utf8(css.bytes.clone()).unwrap();
+    let css_code = String::from_utf8(css.bytes.clone())
+      .unwrap()
+      .replace("\r\n", "\n");
 
     let output_filename = PathBuf::from_iter(vec![cwd.to_str().unwrap(), "output.css".into()]);
 
     if is_update_snapshot_from_env() || !output_filename.exists() {
       let mut output_file = std::fs::File::create(output_filename).unwrap();
-      output_file.write_all(css.bytes.as_slice()).unwrap();
-    }else {
+      output_file.write_all(css_code.as_bytes()).unwrap();
+    } else {
       let expected = read_file_utf8(&output_filename.to_str().unwrap()).unwrap();
       assert_eq!(css_code, expected);
     }

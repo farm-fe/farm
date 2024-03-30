@@ -14,7 +14,6 @@ fn resolve_side_effects_entry() {
       "array",
       cwd.clone(),
       &ResolveKind::Entry(String::new()),
-      &None,
       &Arc::new(CompilationContext::default()),
     );
     assert!(resolved.is_some());
@@ -42,7 +41,6 @@ fn resolve_side_effects_subpath() {
       "array/index.css",
       cwd.clone(),
       &ResolveKind::Entry(String::new()),
-      &None,
       &Arc::new(CompilationContext::default()),
     );
     assert!(resolved.is_some());
@@ -70,7 +68,6 @@ fn resolve_side_effects_bool() {
       "bool",
       cwd.clone(),
       &ResolveKind::Entry(String::new()),
-      &None,
       &Arc::new(CompilationContext::default()),
     );
     assert!(resolved.is_some());

@@ -16,7 +16,6 @@ fn resolve_exports_basic() {
         "basic",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -47,7 +46,6 @@ fn resolve_exports_replace() {
         "replace/submodule.js",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -67,7 +65,6 @@ fn resolve_exports_replace() {
         "replace/lib/basic-exports.js",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -87,7 +84,6 @@ fn resolve_exports_replace() {
         "replace",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -107,7 +103,6 @@ fn resolve_exports_replace() {
         "replace/feature",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -138,7 +133,6 @@ fn resolve_exports_nesting() {
         "nesting/config",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -169,7 +163,6 @@ fn resolve_exports_nesting_default() {
         "nest-resolve",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -199,7 +192,6 @@ fn resolve_exports_degrade() {
         "degrade",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -229,7 +221,6 @@ fn resolve_exports_direct_analysis() {
         "direct-analysis/module",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -248,7 +239,6 @@ fn resolve_exports_direct_analysis() {
         "direct-analysis",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -278,7 +268,6 @@ fn resolve_no_fields() {
         "no-fields",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -309,7 +298,6 @@ fn resolve_priority() {
         "priority",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -339,7 +327,6 @@ fn resolve_exports_require() {
         "nesting-require",
         cwd.clone(),
         &ResolveKind::Require,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -372,7 +359,6 @@ fn resolve_exports_import_require() {
         "require-import/config",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -392,7 +378,6 @@ fn resolve_exports_import_require() {
         "require-import/config",
         cwd.clone(),
         &ResolveKind::Require,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -423,7 +408,6 @@ fn resolve_exports_jsnext() {
         "resolve-jsnext",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -453,7 +437,6 @@ fn resolve_exports_issue_997() {
         "@issues/997/query/react",
         cwd.clone(),
         &ResolveKind::Import,
-        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());

@@ -122,7 +122,6 @@ fn resolve(
         source: url.to_string(),
         importer: Some(ModuleId::new(file, "", &context.config.root)),
         kind: ResolveKind::CssAtImport,
-        try_prefix: Some("_".to_string()),
       },
       context,
       &PluginHookContext {

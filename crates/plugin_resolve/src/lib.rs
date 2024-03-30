@@ -83,13 +83,7 @@ impl Plugin for FarmPluginResolve {
     }
 
     let resolver = &self.resolver;
-    let result = resolver.resolve(
-      source,
-      basedir.clone(),
-      &param.kind,
-      &param.try_prefix,
-      context,
-    );
+    let result = resolver.resolve(source, basedir.clone(), &param.kind, context);
 
     // remove the .js if the result is not found to support using native esm with typescript
     let mut resolve_result = if result.is_none() && source.ends_with(".js") {
@@ -97,7 +91,7 @@ impl Plugin for FarmPluginResolve {
       let source = source.replace(".js", "");
 
       resolver
-        .resolve(&source, basedir, &param.kind, &param.try_prefix, context)
+        .resolve(&source, basedir, &param.kind, context)
         .map(|result| PluginResolveHookResult { query, ..result })
     } else {
       result.map(|result| PluginResolveHookResult { query, ..result })

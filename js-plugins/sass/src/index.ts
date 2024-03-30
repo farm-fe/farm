@@ -164,21 +164,27 @@ async function resolveDependency(
     }
   }
 
-  const result = await ctx.resolve(
-    {
-      source: url,
-      importer: transformParam.moduleId,
-      kind: 'cssAtImport',
-      tryPrefix: '_'
-    },
-    {
-      meta: {},
-      caller: '@farmfe/js-plugin-sass'
-    }
-  );
+  const pathSchema = path.parse(url);
 
-  if (result?.resolvedPath) {
-    return result.resolvedPath;
+  const try_prefix_list = ['', '_'];
+
+  for (const prefix of try_prefix_list) {
+    const filename = path.join(pathSchema.dir, `${prefix}${pathSchema.base}`);
+    const result = await ctx.resolve(
+      {
+        source: filename,
+        importer: transformParam.moduleId,
+        kind: 'cssAtImport'
+      },
+      {
+        meta: {},
+        caller: '@farmfe/js-plugin-sass'
+      }
+    );
+
+    if (result?.resolvedPath) {
+      return result.resolvedPath;
+    }
   }
 }
 

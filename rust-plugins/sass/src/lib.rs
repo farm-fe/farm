@@ -70,19 +70,23 @@ fn extension_from_path(path: &str) -> Syntax {
   }
 }
 
-fn resolve_importer(
-  url: String,
+fn resolve_importer_with_prefix(
+  mut url: PathBuf,
+  prefix: &str,
   root_importer: &ModuleId,
   context: &Arc<CompilationContext>,
 ) -> Result<Option<String>, Exception> {
-  let resolve_result = context
+  if let Some(filename) = url.file_name() {
+    url.set_file_name(format!("{}{}", prefix, filename.to_string_lossy()));
+  }
+
+  context
     .plugin_driver
     .resolve(
       &PluginResolveHookParam {
-        source: url.clone(),
+        source: url.to_string_lossy().to_string(),
         importer: Some(root_importer.clone()),
         kind: ResolveKind::CssAtImport,
-        try_prefix: Some("_".to_string()),
       },
       context,
       &PluginHookContext::default(),
@@ -90,11 +94,42 @@ fn resolve_importer(
     .map_err(|e| {
       Exception::new(format!(
         "can not resolve {:?} from {:?}: Error: {:?}",
-        url, root_importer, e
+        url.to_string_lossy().to_string(),
+        prefix,
+        e
       ))
-    });
+    })
+    .map(|item| item.map(|item| item.resolved_path))
+}
 
-  resolve_result.map(|item| item.map(|item| item.resolved_path))
+fn resolve_importer(
+  url: String,
+  root_importer: &ModuleId,
+  context: &Arc<CompilationContext>,
+) -> Result<Option<String>, Exception> {
+  if let Ok(file_path) = PathBuf::from_str(&url) {
+    let try_prefix_list = ["_"];
+
+    let default_import_result =
+      resolve_importer_with_prefix(file_path.clone(), "", root_importer, context);
+
+    if let Ok(Some(resolved_path)) = default_import_result {
+      return Ok(Some(resolved_path));
+    }
+
+    for prefix in try_prefix_list {
+      let resolved_path =
+        resolve_importer_with_prefix(file_path.clone(), prefix, root_importer, context);
+
+      if let Ok(Some(resolved_path)) = resolved_path {
+        return Ok(Some(resolved_path));
+      }
+    }
+
+    return default_import_result;
+  };
+
+  Ok(None)
 }
 
 impl ImporterCollection {
@@ -336,7 +371,6 @@ fn get_exe_path(context: &Arc<CompilationContext>) -> PathBuf {
         source: PKG_NAME.to_string(),
         importer: None,
         kind: ResolveKind::Import,
-        ..Default::default()
       },
       context,
       &PluginHookContext::default(),

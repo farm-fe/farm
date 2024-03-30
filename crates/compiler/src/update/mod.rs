@@ -147,7 +147,6 @@ impl Compiler {
             kind: ResolveKind::HmrUpdate,
             source: path,
             importer: None,
-            ..Default::default()
           };
 
           let params = BuildUpdateModuleGraphThreadedParams {
@@ -442,7 +441,6 @@ impl Compiler {
             source: dep.source,
             importer: Some(module_id.clone()),
             kind: dep.kind,
-            ..Default::default()
           },
           context: context.clone(),
           err_sender: err_sender.clone(),

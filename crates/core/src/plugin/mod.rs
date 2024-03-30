@@ -334,8 +334,6 @@ pub struct PluginResolveHookParam {
   pub importer: Option<ModuleId>,
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   pub kind: ResolveKind,
-  /// the source try prefix
-  pub try_prefix: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
