@@ -9,10 +9,25 @@ export default defineConfig({
     },
     output: {
       path: './build'
-    }
+    },
+    persistentCache: false
   },
   plugins: [
     farmJsPluginVue(),
-    sass({ legacy: true })
+    sass({ legacy: true }),
+    {
+      name: 'remove-css-filter-plugin',
+      priority: 0,
+      transform: {
+        filters: {
+          resolvedPaths: ['.scss']
+        },
+        async executor({ content }) {
+          return {
+            content: content.replaceAll('filter: alpha(opacity=0);', '')
+          };
+        }
+      }
+    }
   ]
 });
