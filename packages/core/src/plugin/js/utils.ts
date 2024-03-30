@@ -135,9 +135,10 @@ export function addAdapterVirtualModuleFlag(id: string) {
 }
 
 export function normalizeAdapterVirtualModule(id: string) {
+  const path = removeQuery(id);
   // If resolveIdResult is a path starting with / and the file at that path does not exist
   // then it is considered an internal virtual module
-  if (isStartsWithSlash(id) && !fse.pathExistsSync(id))
+  if (isStartsWithSlash(path) && !fse.pathExistsSync(path))
     return addAdapterVirtualModuleFlag(id);
   return id;
 }
@@ -148,6 +149,14 @@ export function normalizePath(p: string): string {
     process.platform === 'win32' ? p.replace(/\\/g, '/') : p
   );
 }
+
+export const removeQuery = (path: string) => {
+  const queryIndex = path.indexOf('?');
+  if (queryIndex !== -1) {
+    return path.slice(0, queryIndex);
+  }
+  return revertNormalizePath(path.concat(''));
+};
 
 export function revertNormalizePath(p: string): string {
   return process.platform === 'win32' ? p.replace(/\//g, '\\') : p;

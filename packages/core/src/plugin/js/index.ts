@@ -54,7 +54,7 @@ export async function handleVitePlugins(
     processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
   }
 
-  const resolvedPaths = Array.from(filtersUnion);
+  const resolvedPaths = Array.from(filtersUnion).map(normalizeFilterPath);
   // if vitePlugins is not empty, append a load plugin to load file
   // this plugin is only for compatibility
   if (vitePlugins.length) {
@@ -153,6 +153,14 @@ export function processVitePlugin(
   }
 }
 
+function normalizeFilterPath(path: string): string {
+  if (process.platform === 'win32') {
+    return compatibleWin32Path(path);
+  }
+
+  return path;
+}
+
 function compatibleWin32Path(path: string): string {
   return path.replaceAll('/', '\\\\');
 }
@@ -214,41 +222,26 @@ export function convertPlugin(plugin: JsPlugin): void {
   }
 
   if (plugin.resolve?.filters?.importers?.length) {
-    if (process.platform === 'win32') {
-      // replace / to \
-      plugin.resolve.filters.importers =
-        plugin.resolve.filters.importers.map(compatibleWin32Path);
-    }
+    plugin.resolve.filters.importers =
+      plugin.resolve.filters.importers.map(normalizeFilterPath);
   }
 
   if (plugin.load?.filters?.resolvedPaths?.length) {
-    if (process.platform === 'win32') {
-      // replace / to \
-      plugin.load.filters.resolvedPaths =
-        plugin.load.filters.resolvedPaths.map(compatibleWin32Path);
-    }
+    plugin.load.filters.resolvedPaths =
+      plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
   }
 
   if (plugin.transform?.filters?.resolvedPaths?.length) {
-    if (process.platform === 'win32') {
-      // replace / to \
-      plugin.transform.filters.resolvedPaths =
-        plugin.transform.filters.resolvedPaths.map(compatibleWin32Path);
-    }
+    plugin.transform.filters.resolvedPaths =
+      plugin.transform.filters.resolvedPaths.map(normalizeFilterPath);
   }
-  if (
-    plugin.augmentResourceHash?.filters?.moduleIds &&
-    process.platform === 'win32'
-  ) {
+  if (plugin.augmentResourceHash?.filters?.moduleIds) {
     plugin.augmentResourceHash.filters.moduleIds =
-      plugin.augmentResourceHash.filters.moduleIds.map(compatibleWin32Path);
+      plugin.augmentResourceHash.filters.moduleIds.map(normalizeFilterPath);
   }
 
-  if (
-    plugin.renderResourcePot?.filters?.moduleIds &&
-    process.platform === 'win32'
-  ) {
+  if (plugin.renderResourcePot?.filters?.moduleIds) {
     plugin.renderResourcePot.filters.moduleIds =
-      plugin.renderResourcePot.filters.moduleIds.map(compatibleWin32Path);
+      plugin.renderResourcePot.filters.moduleIds.map(normalizeFilterPath);
   }
 }

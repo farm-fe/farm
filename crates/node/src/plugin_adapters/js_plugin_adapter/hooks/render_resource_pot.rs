@@ -70,7 +70,7 @@ impl JsPluginRenderResourcePotHook {
           .resource_pot_info
           .module_ids
           .iter()
-          .any(|id| f.is_match(&id.resolved_path_with_query(&ctx.config.root)))
+          .any(|id| f.is_match(&id.to_string()))
       })
     {
       self.tsfn.call(param, ctx, None)
