@@ -164,12 +164,13 @@ async function resolveDependency(
     }
   }
 
-  const pathSchema = path.parse(url);
-
   const try_prefix_list = ['', '_'];
 
   for (const prefix of try_prefix_list) {
-    const filename = path.join(pathSchema.dir, `${prefix}${pathSchema.base}`);
+    const filename = path.join(
+      path.dirname(url),
+      `${prefix}${path.basename(url)}`
+    );
     const result = await ctx.resolve(
       {
         source: filename,

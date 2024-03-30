@@ -83,7 +83,7 @@ impl Resolver {
       }
     }
 
-    let result = self._resolve(source, base_dir.clone(), kind, context);
+    let result = self._resolve(source, base_dir, kind, context);
     self.resolve_cache.lock().insert(cache_key, result.clone());
     result
   }
@@ -126,7 +126,7 @@ impl Resolver {
           context,
         )
       })
-      .or_else(|| self.try_node_modules(source, base_dir.clone(), kind, context))
+      .or_else(|| self.try_node_modules(source, base_dir, kind, context))
   }
 
   fn try_browser(
@@ -359,24 +359,19 @@ impl Resolver {
   fn try_file(&self, file: &PathBuf, context: &Arc<CompilationContext>) -> Option<String> {
     // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
     if file.exists() && file.is_file() {
-      return Some(file.to_string_lossy().to_string());
+      Some(file.to_string_lossy().to_string())
     } else {
       let append_extension = |file: &PathBuf, ext: &str| {
         let file_name = file.file_name().unwrap().to_string_lossy().to_string();
         file.with_file_name(format!("{}.{}", file_name, ext))
       };
-
       let ext = context.config.resolve.extensions.iter().find(|&ext| {
-        let new_file = append_extension(&file, ext);
+        let new_file = append_extension(file, ext);
         new_file.exists() && new_file.is_file()
       });
 
-      if ext.is_some() {
-        return ext.map(|ext| append_extension(&file, ext).to_string_lossy().to_string());
-      };
+      ext.map(|ext| append_extension(file, ext).to_string_lossy().to_string())
     }
-
-    None
   }
 
   fn try_alias(

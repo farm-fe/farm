@@ -325,7 +325,7 @@ pub struct PluginHookContext {
 }
 
 /// Parameter of the resolve hook
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginResolveHookParam {
   /// the source would like to resolve, for example, './index'
