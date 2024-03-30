@@ -377,13 +377,18 @@ export async function normalizeUserCompilationConfig(
   ) {
     const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
     const hmrPath = userConfig.server.hmr.path;
+    const serverOptions = userConfig.server;
+    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
 
     config.runtime.plugins.push(hmrClientPluginPath);
-    config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
+    // TODO optimize get hmr logic
+    config.define.FARM_HMR_PORT = String(
+      (serverOptions.hmr.port || undefined) ??
+        serverOptions.port ??
+        DEFAULT_DEV_SERVER_OPTIONS.port
+    );
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-
-    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
     config.define.FARM_HMR_PATH = defineHmrPath;
   }
 
@@ -443,7 +448,10 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: true,
-  port: Number(process.env.FARM_DEFAULT_SERVER_PORT) || 9000,
+  port:
+    (process.env.FARM_DEFAULT_HMR_PORT &&
+      Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
+    undefined,
   path: '/__hmr',
   protocol: 'ws',
   watchOptions: {}
@@ -451,7 +459,10 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   headers: {},
-  port: Number(process.env.FARM_DEFAULT_SERVER_PORT) || 9000,
+  port:
+    (process.env.FARM_DEFAULT_SERVER_PORT &&
+      Number(process.env.FARM_DEFAULT_SERVER_PORT)) ||
+    9000,
   https: undefined,
   protocol: 'http',
   hostname: { name: 'localhost', host: undefined },
@@ -510,7 +521,10 @@ export function normalizeDevServerOptions(
       : merge(
           {},
           DEFAULT_HMR_OPTIONS,
-          { host, port },
+          {
+            host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
+            port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
+          },
           hmrConfig === true ? {} : hmrConfig
         );
 

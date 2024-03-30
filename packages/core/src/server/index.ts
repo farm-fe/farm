@@ -299,13 +299,13 @@ export class Server implements ImplDevServer {
     logger: Logger
   ): Promise<void> {
     let devPort = normalizedDevConfig.port;
-    let hmrPort = DEFAULT_HMR_OPTIONS.port;
+    let hmrPort = normalizedDevConfig.hmr.port;
+    
     const { strictPort, host } = normalizedDevConfig;
     const httpServer = http.createServer();
     const isPortAvailable = (portToCheck: number) => {
       return new Promise((resolve, reject) => {
         const onError = async (error: { code: string }) => {
-          logger.error(`Error in httpServer: ${error} `);
           if (error.code === 'EADDRINUSE') {
             clearScreen();
             if (strictPort) {
@@ -317,6 +317,7 @@ export class Server implements ImplDevServer {
               resolve(false);
             }
           } else {
+            logger.error(`Error in httpServer: ${error} `);
             reject(true);
           }
         };
@@ -330,6 +331,7 @@ export class Server implements ImplDevServer {
     };
 
     let isPortAvailableResult = await isPortAvailable(devPort);
+    
     while (isPortAvailableResult === false) {
       if (typeof normalizedDevConfig.hmr === 'object') {
         normalizedDevConfig.hmr.port = ++hmrPort;

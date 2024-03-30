@@ -1,15 +1,14 @@
-function isObject(value: any): boolean {
-  return value !== null && typeof value === 'object';
-}
-
-type T = Record<string, any>;
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore ignore type check
+import { isPlainObject } from 'is-plain-object';
+import deepmerge, { Options } from 'deepmerge';
 
 function isValueSameDeep(target: any, source: any): boolean {
   if (target === source) {
     return true;
   }
 
-  if (!isObject(target) || !isObject(source)) {
+  if (!isPlainObject(target) || !isPlainObject(source)) {
     return false;
   }
 
@@ -26,39 +25,55 @@ function isValueSameDeep(target: any, source: any): boolean {
   return true;
 }
 
-export default function merge(target: T, ...sources: Partial<T>[]): T {
-  target = { ...target };
+function isMergeableObject(obj: any) {
+  return isPlainObject(obj) || Array.isArray(obj);
+}
 
-  if (!isObject(target)) {
-    return target;
-  }
+const arrayMerge: Options['arrayMerge'] = (target, source, options) => {
+  const destination = target.slice();
+
+  source.forEach((item, index) => {
+    if (typeof destination[index] === 'undefined') {
+      destination[index] = options.cloneUnlessOtherwiseSpecified(item, options);
+    } else if (!destination.find((dest) => isValueSameDeep(dest, item))) {
+      destination.push(item);
+    }
+  });
+
+  return destination.filter((item) => item !== undefined);
+};
+
+const options = {
+  arrayMerge,
+  isMergeableObject
+};
+
+export default function merge<T>(target: T, ...sources: Partial<T>[]): T {
+  let destination: any = { ...target };
 
   for (const source of sources) {
-    if (!isObject(source)) {
-      continue;
-    }
+    if (!source) continue;
 
-    for (const key in source) {
-      const targetValue = target[key];
-      const sourceValue = source[key];
+    // should not preserve target and source
+    if (isPlainObject(destination) && isPlainObject(source)) {
+      for (const key of Object.keys(source)) {
+        const sourceValue = (source as any)[key];
 
-      if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
-        // remove duplicates
-        const value = [...targetValue];
-        for (const item of sourceValue) {
-          if (value.some((v) => isValueSameDeep(v, item))) {
-            continue;
-          }
-          value.push(item);
+        if (sourceValue === undefined) {
+          continue;
+        } else if (
+          isMergeableObject(destination[key]) &&
+          isMergeableObject(sourceValue)
+        ) {
+          destination[key] = deepmerge(destination[key], sourceValue, options);
+        } else {
+          destination[key] = sourceValue;
         }
-        target[key] = value;
-      } else if (isObject(targetValue) && isObject(sourceValue)) {
-        target[key] = merge(targetValue, sourceValue);
-      } else if (sourceValue !== undefined) {
-        target[key] = sourceValue;
       }
+    } else {
+      destination = deepmerge(destination, source, options);
     }
   }
 
-  return target;
+  return destination;
 }

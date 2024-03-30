@@ -5,7 +5,8 @@ import { logger } from './logger';
 import { ErrorOverlay, overlayId } from './overlay';
 
 // Inject during compile time
-const hmrPort = Number(FARM_HMR_PORT || 9000);
+const hmrPort = Number(FARM_HMR_PORT);
+
 const hmrHost =
   typeof FARM_HMR_HOST === 'boolean'
     ? window.location.hostname || 'localhost'

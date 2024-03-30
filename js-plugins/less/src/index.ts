@@ -1,4 +1,9 @@
-import { Compiler, JsPlugin, UserConfig } from '@farmfe/core';
+import {
+  Compiler,
+  JsPlugin,
+  UserConfig,
+  getAdditionContext
+} from '@farmfe/core';
 import {
   getLessImplementation,
   pluginName,
@@ -7,6 +12,7 @@ import {
 } from './utils.js';
 import path from 'path';
 import { existsSync } from 'fs';
+import { createLessResolvePlugin } from './plugin-resolve.js';
 
 export type LessPluginOptions = {
   lessOptions?: Less.Options;
@@ -28,6 +34,10 @@ export default function farmLessPlugin(
   const implementation: LessStatic = getLessImplementation(
     options?.implementation
   );
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore TODO fix it
+  const cwd = () => farmConfig.root ?? process.cwd();
 
   return {
     name: pluginName,
@@ -91,17 +101,16 @@ export default function farmLessPlugin(
           let relData = '';
           const fileRoot = path.dirname(param.resolvedPath);
           const configPaths = options.lessOptions?.paths;
-          if (
-            typeof options.additionalData !== 'undefined' &&
-            options.additionalData
-          ) {
-            relData =
-              typeof options.additionalData === 'function'
-                ? `${await options.additionalData(
-                    param.content,
-                    param.resolvedPath
-                  )}`
-                : `${options.additionalData}\n${param.content}`;
+          const additionContext = await getAdditionContext(
+            cwd(),
+            options,
+            param.resolvedPath,
+            param.content,
+            ctx,
+            pluginName
+          );
+          if (additionContext) {
+            relData = `${additionContext}\n${param.content}`;
             //  If the additionalData is a function, it might be return null or undefined, so we need to check it
             if (typeof relData !== 'string') {
               relData = param.content;
@@ -111,10 +120,16 @@ export default function farmLessPlugin(
           }
 
           const sourceMapEnabled = ctx.sourceMapEnabled(param.moduleId);
+          const pluginResolve = createLessResolvePlugin(
+            implementation,
+            ctx,
+            param.resolvedPath
+          );
 
           const { css, map, imports } = await implementation.render(relData, {
             ...(options?.lessOptions ?? {}),
             filename: param.resolvedPath,
+            plugins: [pluginResolve, ...(options.lessOptions?.plugins ?? [])],
             sourceMap:
               (options.lessOptions?.sourceMap ?? sourceMapEnabled) && {},
             paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]

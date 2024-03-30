@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::path::Component;
 use std::path::PathBuf;
 
+use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
 use farmfe_core::swc_common::DUMMY_SP;
 use farmfe_core::swc_ecma_ast::{
@@ -30,12 +31,15 @@ use farmfe_core::wax::Glob;
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
 
+const REGEX_PREFIX: &str = "$__farm_regex:";
+
 pub fn transform_import_meta_glob(
   ast: &mut SwcModule,
   root: String,
   cur_dir: String,
+  alias: &HashMap<String, String>,
 ) -> farmfe_core::error::Result<()> {
-  let mut visitor = ImportGlobVisitor::new(cur_dir, root);
+  let mut visitor = ImportGlobVisitor::new(cur_dir, root, alias);
   ast.visit_mut_with(&mut visitor);
 
   if visitor.errors.len() > 0 {
@@ -220,20 +224,22 @@ pub struct ImportMetaGlobInfo {
   pub query: Option<String>,
 }
 
-pub struct ImportGlobVisitor {
+pub struct ImportGlobVisitor<'a> {
   import_globs: Vec<ImportMetaGlobInfo>,
   cur_dir: String,
   root: String,
+  alias: &'a HashMap<String, String>,
   pub errors: Vec<String>,
 }
 
-impl ImportGlobVisitor {
-  pub fn new(cur_dir: String, root: String) -> Self {
+impl<'a> ImportGlobVisitor<'a> {
+  pub fn new(cur_dir: String, root: String, alias: &'a HashMap<String, String>) -> Self {
     Self {
       import_globs: vec![],
       cur_dir,
       root,
       errors: vec![],
+      alias,
     }
   }
 
@@ -275,6 +281,56 @@ impl ImportGlobVisitor {
     import_glob_info
   }
 
+  fn try_alias(&self, source: &str) -> String {
+    let (source, negative) = if source.starts_with('!') {
+      (&source[1..], true)
+    } else {
+      (source, false)
+    };
+    let mut result = source.to_string();
+    // sort the alias by length, so that the longest alias will be matched first
+    let mut alias_list: Vec<_> = self.alias.keys().collect();
+    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+
+    for alias in alias_list {
+      let replaced = self.alias.get(alias).unwrap();
+
+      // try regex alias first
+      if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
+        let regex = regex::Regex::new(alias).unwrap();
+        if regex.is_match(source) {
+          let replaced = regex.replace(source, replaced.as_str()).to_string();
+          result = replaced;
+          break;
+        }
+      }
+
+      if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+        result = replaced.to_string();
+        break;
+      } else if !alias.ends_with('$') && source.starts_with(alias) {
+        let source_left = RelativePath::new(source.trim_start_matches(alias));
+        let new_source = source_left.to_logical_path(replaced);
+
+        result = if new_source.is_absolute() {
+          format!(
+            "/{}",
+            relative(&self.root, &new_source.to_string_lossy().to_string())
+          )
+        } else {
+          new_source.to_string_lossy().to_string()
+        };
+        break;
+      }
+    }
+
+    if negative {
+      format!("!{}", result)
+    } else {
+      result
+    }
+  }
+
   /// Glob the sources and filter negative sources, return globs relative paths
   fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
     let mut paths = vec![];
@@ -288,6 +344,7 @@ impl ImportGlobVisitor {
       } else {
         &source[..]
       };
+
       let source = if !source.starts_with('.') && !source.starts_with('/') {
         format!("./{}", source)
       } else {
@@ -520,7 +577,7 @@ impl ImportGlobVisitor {
   }
 }
 
-impl VisitMut for ImportGlobVisitor {
+impl<'a> VisitMut for ImportGlobVisitor<'a> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     match expr {
       Expr::Call(CallExpr {
@@ -538,8 +595,12 @@ impl VisitMut for ImportGlobVisitor {
         ..
       }) => {
         if *sym == *"glob" && !args.is_empty() {
-          if let Some(sources) = get_string_literal(&args[0]) {
-            for source in &sources {
+          if let Some(original_sources) = get_string_literal(&args[0]) {
+            let mut sources = vec![];
+
+            for source in original_sources {
+              let source = self.try_alias(&source);
+
               if !source.starts_with('.')
                 && !source.starts_with('/')
                 && !source.starts_with('!')
@@ -550,6 +611,8 @@ impl VisitMut for ImportGlobVisitor {
                   .push(format!("Error when glob {source}: source must be relative path. e.g. './dir/*.js' or '/dir/*.js'(relative to root) or '!/dir/*.js'(exclude) or '!**/bar.js'(exclude) or '**/*.js'(relative to current dir)"));
                 return;
               }
+
+              sources.push(source);
             }
 
             let cur_index = self.import_globs.len();

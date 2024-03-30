@@ -6,3 +6,5 @@ export * from './color.js';
 export * from './url.js';
 export * from './path.js';
 export * from './publicDir.js';
+export * from './rebase-url.js';
+export * from './plugin-utils.js';
