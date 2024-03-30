@@ -100,6 +100,7 @@ impl VisitMut for HmrAcceptedVisitor {
                 source: s.value.to_string(),
                 importer: Some(self.module_id.clone()),
                 kind: ResolveKind::Import,
+                ..Default::default()
               },
               &self.context,
               &Default::default(),

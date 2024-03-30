@@ -1,5 +1,6 @@
 import { defineConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
+import sass from '@farmfe/js-plugin-sass';
 
 export default defineConfig({
   compilation: {
@@ -10,5 +11,8 @@ export default defineConfig({
       path: './build'
     }
   },
-  plugins: [farmJsPluginVue()]
+  plugins: [
+    farmJsPluginVue(),
+    sass({ legacy: true })
+  ]
 });

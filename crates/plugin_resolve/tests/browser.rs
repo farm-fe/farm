@@ -22,6 +22,7 @@ fn resolve_browser_basic() {
         "basic",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -43,6 +44,7 @@ fn resolve_browser_basic() {
         "basic",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(
           CompilationContext::new(
             Config {
@@ -85,6 +87,7 @@ fn resolve_browser_replace() {
         "module-a",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -103,6 +106,7 @@ fn resolve_browser_replace() {
         "./only.js",
         cwd.join("server"),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -122,6 +126,7 @@ fn resolve_browser_replace() {
         "./module-a.js",
         cwd.join("shims"),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -151,6 +156,7 @@ fn resolve_browser_ignore() {
         "module-a",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -163,6 +169,7 @@ fn resolve_browser_ignore() {
         "./only.js",
         cwd.join("server"),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -194,6 +201,7 @@ fn resolve_browser_target_env_node() {
         "./only.js",
         cwd.join("server"),
         &ResolveKind::Import,
+        &None,
         &Arc::new(
           CompilationContext::new(
             Config {
@@ -225,6 +233,7 @@ fn resolve_browser_target_env_node() {
         "./module-a.js",
         cwd.join("shims"),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -254,6 +263,7 @@ fn resolve_browser_entry_replace() {
         "entry-replace",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -273,6 +283,7 @@ fn resolve_browser_entry_replace() {
         "priority",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved1.is_some());
@@ -304,6 +315,7 @@ fn resolve_browser_issue_941() {
         "indexof",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -322,6 +334,7 @@ fn resolve_browser_issue_941() {
         "component-indexof",
         cwd.clone(),
         &ResolveKind::Import,
+        &None,
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved1.is_some());

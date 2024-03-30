@@ -325,7 +325,7 @@ pub struct PluginHookContext {
 }
 
 /// Parameter of the resolve hook
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginResolveHookParam {
   /// the source would like to resolve, for example, './index'
@@ -334,6 +334,8 @@ pub struct PluginResolveHookParam {
   pub importer: Option<ModuleId>,
   /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
   pub kind: ResolveKind,
+  /// the source try prefix
+  pub try_prefix: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]

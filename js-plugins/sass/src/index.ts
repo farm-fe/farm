@@ -168,7 +168,8 @@ async function resolveDependency(
     {
       source: url,
       importer: transformParam.moduleId,
-      kind: 'cssAtImport'
+      kind: 'cssAtImport',
+      tryPrefix: '_'
     },
     {
       meta: {},
@@ -186,6 +187,18 @@ const syntaxMap: Record<string, string> = {
   '.sass': 'indent'
 };
 
+function normalizePath(file: string, root: string) {
+  if (URL.canParse(file)) {
+    return normalizePath(fileURLToPath(new URL(file)), root);
+  }
+
+  if (path.isAbsolute(file)) {
+    return file;
+  }
+
+  return path.relative(root, path.join(root, file));
+}
+
 async function compileScss(param: CompileCssParams) {
   const {
     transformParam,
@@ -196,16 +209,26 @@ async function compileScss(param: CompileCssParams) {
     ctx,
     root
   } = param;
+
+  const normalizeFilename = normalizePath(transformParam.resolvedPath, root);
+
+  const file =
+    (await resolveDependency(normalizeFilename, transformParam, ctx)) ??
+    normalizeFilename;
+
   const { css, sourceMap } = (await sassImpl.compileStringAsync(
     `${additionContext}\n${transformParam.content}`,
     {
       ...(options?.sassOptions ?? {}),
       sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
-      url: pathToFileURL(transformParam.resolvedPath),
+      url: pathToFileURL(file),
       importers: [
         {
           canonicalize(url, _) {
-            return pathToFileURL(path.join(root, url));
+            // file:///xxxx
+            // /xxx
+            // ./xxx
+            return pathToFileURL(normalizePath(url, root));
           },
           async load(canonicalUrl) {
             const file = fileURLToPath(canonicalUrl);

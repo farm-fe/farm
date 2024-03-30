@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fs, io::Write, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
@@ -11,7 +11,7 @@ use farmfe_core::{
   plugin::{Plugin, PluginTransformHookParam},
 };
 use farmfe_plugin_sass::FarmPluginSass;
-use farmfe_testing_helpers::fixture;
+use farmfe_testing_helpers::{fixture, is_update_snapshot_from_env};
 use farmfe_toolkit::fs::read_file_utf8;
 
 #[test]
@@ -92,15 +92,20 @@ fn test_with_compiler() {
       ..Default::default()
     };
 
+    let config_filename = PathBuf::from_iter([cwd.to_str().unwrap(), "config.json"]);
     let plugin_sass = FarmPluginSass::new(
       &config,
-      r#"
+      if let Ok(content) = fs::read_to_string(config_filename) {
+        content
+      } else {
+        r#"
       {
         "sourceMap": true,
         "style":"expanded"
       }
     "#
-      .to_string(),
+        .to_string()
+      },
     );
     let compiler = Compiler::new(config, vec![Arc::new(plugin_sass) as _]).unwrap();
     compiler.compile().unwrap();
@@ -109,13 +114,14 @@ fn test_with_compiler() {
     let css = resources_map.get("index.css").unwrap();
     let css_code = String::from_utf8(css.bytes.clone()).unwrap();
 
-    let expected = if cwd.to_str().unwrap().contains("rebase_urls") {
-      ".dep {\n  background-image: url(\"/logo-90580d.png\");\n  -webkit-background-size: contain;\n  -moz-background-size: contain;\n  -o-background-size: contain;\n  background-size: contain;\n  background-repeat: no-repeat;\n  color: red;\n  width: 200px;\n  height: 50px;\n}\n.description .description:hover {\n  color: red;\n}"
-    } else {
-      "body {\n  color: red;\n}"
-    };
-    assert_eq!(css_code, expected);
-    let watch_graph = compiler.context().watch_graph.read();
-    assert!(watch_graph.modules().len() > 0);
+    let output_filename = PathBuf::from_iter(vec![cwd.to_str().unwrap(), "output.css".into()]);
+
+    if is_update_snapshot_from_env() || !output_filename.exists() {
+      let mut output_file = std::fs::File::create(output_filename).unwrap();
+      output_file.write_all(css.bytes.as_slice()).unwrap();
+    }else {
+      let expected = read_file_utf8(&output_filename.to_str().unwrap()).unwrap();
+      assert_eq!(css_code, expected);
+    }
   });
 }

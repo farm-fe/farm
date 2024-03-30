@@ -35,6 +35,7 @@ export interface PluginResolveHookParam {
   /// source of the import. for example in index.ts (import App from "./App.vue")
   /// source should be './App.vue'
   source: string;
+  tryPrefix?: string,
 }
 
 export interface PluginResolveHookResult {

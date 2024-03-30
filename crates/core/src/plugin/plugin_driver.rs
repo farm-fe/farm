@@ -712,9 +712,9 @@ mod tests {
     );
 
     let param = PluginResolveHookParam {
-      importer: None,
       source: "./any".to_string(),
       kind: ResolveKind::Import,
+      ..Default::default()
     };
     let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
     let hook_context = PluginHookContext {
