@@ -187,8 +187,17 @@ const syntaxMap: Record<string, string> = {
   '.sass': 'indent'
 };
 
-function normalizePath(file: string, root: string) {
-  if (URL.canParse(file)) {
+function urlCanParse(file: string): boolean {
+  try {
+    new URL(file);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizePath(file: string, root: string): string {
+  if (urlCanParse(file)) {
     return normalizePath(fileURLToPath(new URL(file)), root);
   }
 
