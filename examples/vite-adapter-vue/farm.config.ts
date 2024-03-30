@@ -14,6 +14,16 @@ import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
 import viewer from '@farmfe/js-plugin-record-viewer';
 
+function configureVitePluginVue() {
+  // return plugin and its filters
+  return {
+    // using plugin vue
+    vitePlugin: vue(),
+    // configuring filters for it. Unmatched module paths will be skipped.
+    filters:  ["!node_modules", "node_modules/my-ui"]
+  };
+}
+
 export default defineConfig({
   compilation: {
     // compilation options here
@@ -43,7 +53,7 @@ export default defineConfig({
   ],
   vitePlugins: [
     VueRouter(),
-    vue(),
+    configureVitePluginVue,
     vueJsx(),
     AutoImport({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
