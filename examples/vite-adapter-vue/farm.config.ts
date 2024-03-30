@@ -2,6 +2,7 @@ import path from 'path';
 
 import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
@@ -53,6 +54,7 @@ export default defineConfig({
   vitePlugins: [
     VueRouter(),
     configureVitePluginVue,
+    vueJsx(),
     AutoImport({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
       imports: [
