@@ -35,9 +35,10 @@ pub fn create_filter<'a>(
 }
 #[cfg(test)]
 mod tests {
+  use super::*;
+  use std::path::PathBuf;
   use crate::pluginutils::normalize_path::normalize_path;
 
-  use super::*;
   #[test]
   fn includes_by_default() -> Result<(), Box<dyn Error>> {
     let filter = create_filter(None, None)?;
