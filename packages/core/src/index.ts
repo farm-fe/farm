@@ -81,7 +81,7 @@ export async function build(
   try {
     await createBundleHandler(resolvedUserConfig);
     // copy resources under publicDir to output.path
-    await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
+    await copyPublicDirectory(resolvedUserConfig, logger);
   } catch (err) {
     logger.error(`Failed to build: ${err}`, { exit: true });
   }
@@ -279,12 +279,11 @@ export async function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
 
 async function copyPublicDirectory(
   resolvedUserConfig: ResolvedUserConfig,
-  inlineConfig: FarmCLIOptions & UserConfig,
   logger: Logger
 ): Promise<void> {
   const absPublicDirPath = normalizePublicDir(
     resolvedUserConfig.root,
-    inlineConfig.publicDir
+    resolvedUserConfig.publicDir
   );
 
   try {
