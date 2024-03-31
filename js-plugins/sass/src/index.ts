@@ -196,8 +196,7 @@ const syntaxMap: Record<string, string> = {
 
 function urlCanParse(file: string): boolean {
   try {
-    new URL(file);
-    return true;
+    return !!new URL(file);
   } catch (error) {
     return false;
   }
@@ -226,18 +225,12 @@ async function compileScss(param: CompileCssParams) {
     root
   } = param;
 
-  const normalizeFilename = normalizePath(transformParam.resolvedPath, root);
-
-  const file =
-    (await resolveDependency(normalizeFilename, transformParam, ctx)) ??
-    normalizeFilename;
-
   const { css, sourceMap } = (await sassImpl.compileStringAsync(
     `${additionContext}\n${transformParam.content}`,
     {
       ...(options?.sassOptions ?? {}),
       sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
-      url: pathToFileURL(file),
+      url: pathToFileURL(transformParam.resolvedPath),
       importers: [
         {
           canonicalize(url, _) {

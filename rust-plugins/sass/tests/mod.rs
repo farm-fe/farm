@@ -55,6 +55,10 @@ fn test() {
   });
 }
 
+fn normalize_css(css: &str) -> String {
+  css.replace("\r\n", "\n")
+}
+
 #[test]
 fn test_with_compiler() {
   fixture!("tests/fixtures/**/*/index.scss", |file, crate_path| {
@@ -112,9 +116,7 @@ fn test_with_compiler() {
 
     let resources_map = compiler.context().resources_map.lock();
     let css = resources_map.get("index.css").unwrap();
-    let css_code = String::from_utf8(css.bytes.clone())
-      .unwrap()
-      .replace("\r\n", "\n");
+    let css_code = normalize_css(&String::from_utf8(css.bytes.clone()).unwrap());
 
     let output_filename = PathBuf::from_iter(vec![cwd.to_str().unwrap(), "output.css".into()]);
 
@@ -122,7 +124,7 @@ fn test_with_compiler() {
       let mut output_file = std::fs::File::create(output_filename).unwrap();
       output_file.write_all(css_code.as_bytes()).unwrap();
     } else {
-      let expected = read_file_utf8(&output_filename.to_str().unwrap()).unwrap();
+      let expected = normalize_css(&read_file_utf8(&output_filename.to_str().unwrap()).unwrap());
       assert_eq!(css_code, expected);
     }
   });

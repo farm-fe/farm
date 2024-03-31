@@ -113,16 +113,16 @@ fn resolve_importer(
     let default_import_result =
       resolve_importer_with_prefix(file_path.clone(), "", root_importer, context);
 
-    if let Ok(Some(resolved_path)) = default_import_result {
-      return Ok(Some(resolved_path));
+    if matches!(default_import_result, Ok(Some(_))) {
+      return default_import_result;
     }
 
     for prefix in try_prefix_list {
       let resolved_path =
         resolve_importer_with_prefix(file_path.clone(), prefix, root_importer, context);
 
-      if let Ok(Some(resolved_path)) = resolved_path {
-        return Ok(Some(resolved_path));
+      if matches!(resolved_path, Ok(Some(_))) {
+        return resolved_path;
       }
     }
 
