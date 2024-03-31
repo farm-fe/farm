@@ -1295,6 +1295,9 @@ importers:
       core-js:
         specifier: ^3.30.1
         version: 3.33.2
+      element-plus:
+        specifier: ^2.4.1
+        version: 2.4.2(vue@3.3.7)
       vue:
         specifier: ^3.3.0
         version: 3.3.7(typescript@4.9.5)
@@ -1305,9 +1308,15 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@farmfe/js-plugin-sass':
+        specifier: workspace:^
+        version: link:../../js-plugins/sass
       '@farmfe/js-plugin-vue':
         specifier: workspace:*
         version: link:../../js-plugins/vue
+      '@farmfe/plugin-sass':
+        specifier: workspace:^
+        version: link:../../rust-plugins/sass
       sass:
         specifier: ^1.62.1
         version: 1.69.5
@@ -1952,26 +1961,26 @@ importers:
   rust-plugins/sass:
     optionalDependencies:
       sass-embedded-darwin-arm64:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.62.0
+        version: 1.62.0
       sass-embedded-darwin-x64:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.62.0
+        version: 1.62.0
       sass-embedded-linux-arm64:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.62.0
+        version: 1.62.0
       sass-embedded-linux-ia32:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.62.0
+        version: 1.62.0
       sass-embedded-linux-x64:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.62.0
+        version: 1.62.0
       sass-embedded-win32-ia32:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.62.0
+        version: 1.62.0
       sass-embedded-win32-x64:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.62.0
+        version: 1.62.0
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -8797,6 +8806,7 @@ packages:
 
   /debug@3.2.7:
     resolution: {integrity: sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==}
+    requiresBuild: true
     peerDependencies:
       supports-color: '*'
     peerDependenciesMeta:
@@ -10202,6 +10212,7 @@ packages:
 
   /graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+    requiresBuild: true
 
   /gradient-string@2.0.2:
     resolution: {integrity: sha512-rEDCuqUQ4tbD78TpzsMtt5OIf0cBCSDWSJtUDaF6JsAh+k0v9r++NzxNEG87oDZx9ZwGhD8DaezR2L/yrw0Jdw==}
@@ -10455,6 +10466,7 @@ packages:
   /iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
+    requiresBuild: true
     dependencies:
       safer-buffer: 2.1.2
 
@@ -11722,6 +11734,7 @@ packages:
     resolution: {integrity: sha512-x0Vn8spI+wuJ1O6S7gnbaQg8Pxh4NNHb7KSINmEWKiPE4RKOplvijn+NkmYmmRgP68mc70j2EbeTFRsrswaQeg==}
     engines: {node: '>=4'}
     hasBin: true
+    requiresBuild: true
 
   /mime@2.5.2:
     resolution: {integrity: sha512-tqkh47FzKeCPD2PUiPB6pkbMzsCasjxAfC62/Wap5qrUWcb+sFasXUC5I3gYM5iBM8v/Qpn4UK0x+j0iHyFPDg==}
@@ -11862,6 +11875,7 @@ packages:
 
   /ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+    requiresBuild: true
 
   /mute-stream@0.0.7:
     resolution: {integrity: sha512-r65nCZhrbXXb6dXOACihYApHw2Q6pV0M3V0PSxd74N0+D8nzAdEAITq2oAjA1jVnKI+tGvEBUpqiMh0+rW6zDQ==}
@@ -12434,6 +12448,7 @@ packages:
   /pify@4.0.1:
     resolution: {integrity: sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==}
     engines: {node: '>=6'}
+    requiresBuild: true
     dev: true
 
   /pinia@2.1.7(typescript@4.9.5)(vue@3.3.7):
@@ -14155,6 +14170,7 @@ packages:
 
   /safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
+    requiresBuild: true
 
   /sander@0.5.1:
     resolution: {integrity: sha512-3lVqBir7WuKDHGrKRDn/1Ye3kwpXaDOMsiRP1wd6wpZW56gJhsbp5RqQpA6JG/P+pkXizygnr1dKR8vzWaVsfA==}
@@ -14165,8 +14181,8 @@ packages:
       rimraf: 2.7.1
     dev: true
 
-  /sass-embedded-darwin-arm64@1.60.0:
-    resolution: {integrity: sha512-vgHLlLo+HggvmDT60fwMDJjjSUBRp65yZBbaXNEigUjHCAt4ghQ0fsWmcyWRXX8yFAOVH3Ya8qtbUlkvE1e3qw==}
+  /sass-embedded-darwin-arm64@1.62.0:
+    resolution: {integrity: sha512-bYEM6DY7kteOd/aJXUisiavm8B1acRhpIn+rhzKZeTn87kUW5RzZv2nKaSmb1vUd4ZptDGaJ144qz/d20rnogQ==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [darwin]
@@ -14184,8 +14200,8 @@ packages:
     dev: true
     optional: true
 
-  /sass-embedded-darwin-x64@1.60.0:
-    resolution: {integrity: sha512-K7uFEzL5CnzPh7uNscstd2v4NooTJoQyjd64z6y3MWb3ArCl57w4ig/QAzwnydJ2YgaJD2YYVQrokCHyu4tjOw==}
+  /sass-embedded-darwin-x64@1.62.0:
+    resolution: {integrity: sha512-2sBQ4uWjZbf8TKXF8Aq7N0p5V2tKUr4zX9gQAiKvm1NBYwsW22+m8D34heOWu50ikpIxebvt7i/z7hafH5kzKg==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [darwin]
@@ -14203,8 +14219,8 @@ packages:
     dev: true
     optional: true
 
-  /sass-embedded-linux-arm64@1.60.0:
-    resolution: {integrity: sha512-VoN/aLHWnSNZbRR0eifsylrPBWzqQsG++J2qPbzvnuakRspaIRDCirw2QGFhksmyty5bn/syekKAIUUaCamBJQ==}
+  /sass-embedded-linux-arm64@1.62.0:
+    resolution: {integrity: sha512-FexUt8aE7I7fJub3N6+NsDdbPRP/O8o400qpbEbY7BWgiWEdpr81OBulQZY/2LzZUnz9keUhfpmltNY3SNg3kg==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [linux]
@@ -14232,8 +14248,8 @@ packages:
     dev: true
     optional: true
 
-  /sass-embedded-linux-ia32@1.60.0:
-    resolution: {integrity: sha512-2XkIOT+7rNkjuDMugFASnbvwh9Fg48hZZh8kW4ZPGj1QxHtZNlGLXt0C/i0jAZUdjhhyjd9l+xUIxZj5/JClPg==}
+  /sass-embedded-linux-ia32@1.62.0:
+    resolution: {integrity: sha512-VpDHtMIwcoWqDsiskjhDYAle0SJV4mUiZJTXg5RkMzoX1ZyNiVz+uNaZ88kDqcGXsWpe2i0sIlljD4ryaiMAhA==}
     engines: {node: '>=14.0.0'}
     cpu: [ia32]
     os: [linux]
@@ -14251,8 +14267,8 @@ packages:
     dev: true
     optional: true
 
-  /sass-embedded-linux-x64@1.60.0:
-    resolution: {integrity: sha512-V0ZooknRIkS3lqn+3Yh2xrpfgd82A4n9PvzV/1KJWs4p5eJsapRIx/yGXHPFHfooHagN57kDWaFFdQYUfuYHrw==}
+  /sass-embedded-linux-x64@1.62.0:
+    resolution: {integrity: sha512-dntYMsu0QonlerFB8VDlzxoJcpMEtN9lPHstKOQ6rk6hbSFPvcI8MqqUomlOjmpakKeVrpyZ04nm9jHrzlFmYg==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [linux]
@@ -14270,8 +14286,8 @@ packages:
     dev: true
     optional: true
 
-  /sass-embedded-win32-ia32@1.60.0:
-    resolution: {integrity: sha512-pMNKxcysEVK4Dh27yLFNBAMqAKAJoVsl67lQ79LNrlZIVlIIwo/s1ajvImbf2srhWzizDJ1irxH2oBpF0kvxEA==}
+  /sass-embedded-win32-ia32@1.62.0:
+    resolution: {integrity: sha512-rTCZCVkQa6XcreyQ8gYqnsEG13HCzqKoN2mCvIuGwJro8IjyT2PzWauouO0M06T0FLH0pc3EvKdKaLdtijf9AQ==}
     engines: {node: '>=14.0.0'}
     cpu: [ia32]
     os: [win32]
@@ -14289,8 +14305,8 @@ packages:
     dev: true
     optional: true
 
-  /sass-embedded-win32-x64@1.60.0:
-    resolution: {integrity: sha512-vGPeil9FzxJhPnWZ0zMLrY+GTT/fAUDVrKWQoXTxPfc7EugngbrqZ1qwVIVVCOC5zXDULB6LixCLFS8ut9R3KA==}
+  /sass-embedded-win32-x64@1.62.0:
+    resolution: {integrity: sha512-g6DZBPGfIDKLBarvYRVKJ+7rJAHJXkOQQVrYSWm22klA9ZNZ0CaVyqLqejttZPKGreD8h/xh2uz/s6w/P900Sw==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [win32]
@@ -14390,6 +14406,7 @@ packages:
   /semver@5.7.2:
     resolution: {integrity: sha512-cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g==}
     hasBin: true
+    requiresBuild: true
     dev: true
 
   /semver@6.3.1:
@@ -14744,6 +14761,7 @@ packages:
   /source-map@0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
+    requiresBuild: true
     dev: true
 
   /source-map@0.7.4:

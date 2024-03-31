@@ -46,5 +46,5 @@ export const getAdditionContext = async (
 };
 
 export function throwError(pluginName: string, type: string, error: Error) {
-  throw new Error(`[${pluginName} ${type} Error] ${error}`);
+  throw new Error(`[${pluginName} ${type} Error] ${error?.stack ?? error}`);
 }

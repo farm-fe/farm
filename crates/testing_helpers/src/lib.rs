@@ -12,6 +12,10 @@ use farmfe_core::{
   wax::Glob,
 };
 
+pub fn is_update_snapshot_from_env() -> bool {
+  std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok()
+}
+
 /// construct a test module graph like below:
 /// ```plain
 ///           A   B

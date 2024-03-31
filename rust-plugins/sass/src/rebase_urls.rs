@@ -73,7 +73,7 @@ fn replace_url(
     let new_url = resolve(raw_url, file, root_file, context)?;
     Ok(format!("{func_name}({wrap}{new_url}{wrap})"))
   })
-  .map_err(|e| Exception::new(e.to_string()))
+  .map_err(|e| Box::new(Exception::new(e.to_string())))
 }
 
 fn replace_import(
@@ -95,7 +95,7 @@ fn replace_import(
 
     Ok(format!("@import {wrap}{new_url}{wrap}"))
   })
-  .map_err(|e| Exception::new(e.to_string()))
+  .map_err(|e| Box::new(Exception::new(e.to_string())))
 }
 
 fn ignore_url(url: &str) -> bool {
