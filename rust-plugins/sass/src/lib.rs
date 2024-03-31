@@ -46,7 +46,7 @@ impl FarmPluginSass {
     }
   }
 
-  pub fn get_sass_options(
+  fn get_sass_options(
     &self,
     resolved_path_with_query: String,
     sourcemap_enabled: bool,
@@ -59,6 +59,96 @@ impl FarmPluginSass {
 struct ImporterCollection {
   root_importer: ModuleId,
   context: Arc<CompilationContext>,
+}
+
+fn extension_from_path(path: &str) -> Syntax {
+  match PathBuf::from(path).extension().and_then(|ext| ext.to_str()) {
+    Some("sass") => Syntax::Indented,
+    Some("css") => Syntax::Css,
+    Some("scss") => Syntax::Scss,
+    _ => Syntax::Scss,
+  }
+}
+
+fn resolve_importer_with_prefix(
+  mut url: PathBuf,
+  prefix: &str,
+  root_importer: &ModuleId,
+  context: &Arc<CompilationContext>,
+) -> Result<Option<String>, Exception> {
+  if let Some(filename) = url.file_name() {
+    url.set_file_name(format!("{}{}", prefix, filename.to_string_lossy()));
+  }
+
+  context
+    .plugin_driver
+    .resolve(
+      &PluginResolveHookParam {
+        source: url.to_string_lossy().to_string(),
+        importer: Some(root_importer.clone()),
+        kind: ResolveKind::CssAtImport,
+      },
+      context,
+      &PluginHookContext::default(),
+    )
+    .map_err(|e| {
+      Exception::new(format!(
+        "can not resolve {:?} from {:?}: Error: {:?}",
+        url.to_string_lossy().to_string(),
+        prefix,
+        e
+      ))
+    })
+    .map(|item| item.map(|item| item.resolved_path))
+}
+
+fn resolve_importer(
+  url: String,
+  root_importer: &ModuleId,
+  context: &Arc<CompilationContext>,
+) -> Result<Option<String>, Exception> {
+  if let Ok(file_path) = PathBuf::from_str(&url) {
+    let try_prefix_list = ["_"];
+
+    let default_import_result =
+      resolve_importer_with_prefix(file_path.clone(), "", root_importer, context);
+
+    if matches!(default_import_result, Ok(Some(_))) {
+      return default_import_result;
+    }
+
+    for prefix in try_prefix_list {
+      let resolved_path =
+        resolve_importer_with_prefix(file_path.clone(), prefix, root_importer, context);
+
+      if matches!(resolved_path, Ok(Some(_))) {
+        return resolved_path;
+      }
+    }
+
+    return default_import_result;
+  };
+
+  Ok(None)
+}
+
+impl ImporterCollection {
+  fn load(&self, resolved_path: &str) -> Result<Option<String>, Box<Exception>> {
+    let context = &self.context;
+
+    if let Ok(file_content) = read_file_utf8(resolved_path) {
+      let root_file = self.root_importer.resolved_path(&context.config.root);
+
+      return Ok(Some(rebase_urls(
+        resolved_path,
+        &root_file,
+        file_content,
+        context,
+      )?));
+    }
+
+    Ok(None)
+  }
 }
 
 impl Importer for ImporterCollection {
@@ -94,47 +184,18 @@ impl Importer for ImporterCollection {
       &self.context.config.root,
       &canonical_url.to_file_path().unwrap().to_string_lossy(),
     );
-    let context = &self.context;
-    let resolve_result = context
-      .plugin_driver
-      .resolve(
-        &PluginResolveHookParam {
-          source: url.clone(),
-          importer: Some(self.root_importer.clone()),
-          kind: ResolveKind::CssAtImport,
-        },
-        context,
-        &PluginHookContext::default(),
-      )
-      .map_err(|e| {
-        Exception::new(format!(
-          "can not resolve {:?} from {:?}: Error: {:?}",
-          url, self.root_importer, e
-        ))
-      })?;
 
-    if let Some(resolve_result) = resolve_result {
-      if let Ok(file_content) = read_file_utf8(&resolve_result.resolved_path) {
-        let root_file = self.root_importer.resolved_path(&context.config.root);
+    if let Some(resolve_result) = resolve_importer(url, &self.root_importer, &self.context)? {
+      let content = self.load(&resolve_result)?;
 
+      if let Some(file_content) = content {
         return Ok(Some(sass_embedded::ImporterResult {
-          contents: rebase_urls(
-            &resolve_result.resolved_path,
-            &root_file,
-            file_content,
-            context,
-          )?,
+          contents: file_content,
           source_map_url: None,
-          syntax: if resolve_result.resolved_path.ends_with(".css") {
-            Syntax::Css
-          } else if resolve_result.resolved_path.ends_with(".sass") {
-            Syntax::Indented
-          } else {
-            Syntax::Scss
-          },
+          syntax: extension_from_path(&resolve_result),
         }));
       }
-    }
+    };
 
     Ok(None)
   }

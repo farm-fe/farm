@@ -164,20 +164,28 @@ async function resolveDependency(
     }
   }
 
-  const result = await ctx.resolve(
-    {
-      source: url,
-      importer: transformParam.moduleId,
-      kind: 'cssAtImport'
-    },
-    {
-      meta: {},
-      caller: '@farmfe/js-plugin-sass'
-    }
-  );
+  const try_prefix_list = ['', '_'];
 
-  if (result?.resolvedPath) {
-    return result.resolvedPath;
+  for (const prefix of try_prefix_list) {
+    const filename = path.join(
+      path.dirname(url),
+      `${prefix}${path.basename(url)}`
+    );
+    const result = await ctx.resolve(
+      {
+        source: filename,
+        importer: transformParam.moduleId,
+        kind: 'cssAtImport'
+      },
+      {
+        meta: {},
+        caller: '@farmfe/js-plugin-sass'
+      }
+    );
+
+    if (result?.resolvedPath) {
+      return result.resolvedPath;
+    }
   }
 }
 
@@ -185,6 +193,26 @@ const syntaxMap: Record<string, string> = {
   '.css': 'css',
   '.sass': 'indent'
 };
+
+function urlCanParse(file: string): boolean {
+  try {
+    return !!new URL(file);
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizePath(file: string, root: string): string {
+  if (urlCanParse(file)) {
+    return normalizePath(fileURLToPath(new URL(file)), root);
+  }
+
+  if (path.isAbsolute(file)) {
+    return file;
+  }
+
+  return path.relative(root, path.join(root, file));
+}
 
 async function compileScss(param: CompileCssParams) {
   const {
@@ -196,6 +224,7 @@ async function compileScss(param: CompileCssParams) {
     ctx,
     root
   } = param;
+
   const { css, sourceMap } = (await sassImpl.compileStringAsync(
     `${additionContext}\n${transformParam.content}`,
     {
@@ -205,7 +234,10 @@ async function compileScss(param: CompileCssParams) {
       importers: [
         {
           canonicalize(url, _) {
-            return pathToFileURL(path.join(root, url));
+            // file:///xxxx
+            // /xxx
+            // ./xxx
+            return pathToFileURL(normalizePath(url, root));
           },
           async load(canonicalUrl) {
             const file = fileURLToPath(canonicalUrl);

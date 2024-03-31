@@ -1,0 +1,7 @@
+@import './bar';
+@import './foo';
+
+.box {
+  color: $bar;
+  background-color: $foo;
+}
