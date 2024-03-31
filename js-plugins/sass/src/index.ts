@@ -151,6 +151,34 @@ interface CompileCssParams {
   root: string;
 }
 
+async function resolveDependencyWithPrefix(
+  url: string,
+  transformParam: PluginTransformHookParam,
+  prefix: string,
+  ctx: CompilationContext
+) {
+  const filename = path.posix.join(
+    path.posix.dirname(url),
+    `${prefix}${path.posix.basename(url)}`
+  );
+
+  const result = await ctx.resolve(
+    {
+      source: filename,
+      importer: transformParam.moduleId,
+      kind: 'cssAtImport'
+    },
+    {
+      meta: {},
+      caller: '@farmfe/js-plugin-sass'
+    }
+  );
+
+  if (result?.resolvedPath) {
+    return result.resolvedPath;
+  }
+}
+
 async function resolveDependency(
   url: string,
   transformParam: PluginTransformHookParam,
@@ -164,28 +192,34 @@ async function resolveDependency(
     }
   }
 
-  const try_prefix_list = ['', '_'];
+  const try_prefix_list = ['_'];
+  let default_import_error;
+  try {
+    const result = await resolveDependencyWithPrefix(
+      url,
+      transformParam,
+      '',
+      ctx
+    );
+    if (result) return result;
+  } catch (error) {
+    default_import_error = error;
+  }
 
   for (const prefix of try_prefix_list) {
-    const filename = path.join(
-      path.dirname(url),
-      `${prefix}${path.basename(url)}`
-    );
-    const result = await ctx.resolve(
-      {
-        source: filename,
-        importer: transformParam.moduleId,
-        kind: 'cssAtImport'
-      },
-      {
-        meta: {},
-        caller: '@farmfe/js-plugin-sass'
-      }
-    );
+    try {
+      const result = await resolveDependencyWithPrefix(
+        url,
+        transformParam,
+        prefix,
+        ctx
+      );
+      if (result) return result;
+    } catch (_error) {}
+  }
 
-    if (result?.resolvedPath) {
-      return result.resolvedPath;
-    }
+  if (default_import_error) {
+    throw default_import_error;
   }
 }
 
