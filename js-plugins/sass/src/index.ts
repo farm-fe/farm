@@ -151,22 +151,20 @@ interface CompileCssParams {
   root: string;
 }
 
-async function resolveDependency(
+async function resolveDependencyWithPrefix(
   url: string,
   transformParam: PluginTransformHookParam,
+  prefix: string,
   ctx: CompilationContext
 ) {
-  if (!isAbsolute(url)) {
-    const relPath = path.join(path.dirname(transformParam.resolvedPath), url);
-
-    if (existsSync(relPath)) {
-      return relPath;
-    }
-  }
+  const filename = path.posix.join(
+    path.posix.dirname(url),
+    `${prefix}${path.posix.basename(url)}`
+  );
 
   const result = await ctx.resolve(
     {
-      source: url,
+      source: filename,
       importer: transformParam.moduleId,
       kind: 'cssAtImport'
     },
@@ -181,10 +179,74 @@ async function resolveDependency(
   }
 }
 
+async function resolveDependency(
+  url: string,
+  transformParam: PluginTransformHookParam,
+  ctx: CompilationContext
+) {
+  if (!isAbsolute(url)) {
+    const relPath = path.join(path.dirname(transformParam.resolvedPath), url);
+
+    if (existsSync(relPath)) {
+      return relPath;
+    }
+  }
+
+  const try_prefix_list = ['_'];
+  let default_import_error;
+  try {
+    const result = await resolveDependencyWithPrefix(
+      url,
+      transformParam,
+      '',
+      ctx
+    );
+    if (result) return result;
+  } catch (error) {
+    default_import_error = error;
+  }
+
+  for (const prefix of try_prefix_list) {
+    try {
+      const result = await resolveDependencyWithPrefix(
+        url,
+        transformParam,
+        prefix,
+        ctx
+      );
+      if (result) return result;
+    } catch (_error) {}
+  }
+
+  if (default_import_error) {
+    throw default_import_error;
+  }
+}
+
 const syntaxMap: Record<string, string> = {
   '.css': 'css',
   '.sass': 'indent'
 };
+
+function urlCanParse(file: string): boolean {
+  try {
+    return !!new URL(file);
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizePath(file: string, root: string): string {
+  if (urlCanParse(file)) {
+    return normalizePath(fileURLToPath(new URL(file)), root);
+  }
+
+  if (path.isAbsolute(file)) {
+    return file;
+  }
+
+  return path.relative(root, path.join(root, file));
+}
 
 async function compileScss(param: CompileCssParams) {
   const {
@@ -196,6 +258,7 @@ async function compileScss(param: CompileCssParams) {
     ctx,
     root
   } = param;
+
   const { css, sourceMap } = (await sassImpl.compileStringAsync(
     `${additionContext}\n${transformParam.content}`,
     {
@@ -205,7 +268,10 @@ async function compileScss(param: CompileCssParams) {
       importers: [
         {
           canonicalize(url, _) {
-            return pathToFileURL(path.join(root, url));
+            // file:///xxxx
+            // /xxx
+            // ./xxx
+            return pathToFileURL(normalizePath(url, root));
           },
           async load(canonicalUrl) {
             const file = fileURLToPath(canonicalUrl);

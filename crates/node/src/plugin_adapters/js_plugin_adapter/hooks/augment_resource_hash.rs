@@ -34,11 +34,12 @@ impl JsPluginAugmentResourceHashHook {
       .filters
       .resource_pot_types
       .contains(&param.resource_pot_type)
-      && self
-        .filters
-        .module_ids
-        .iter()
-        .any(|p| param.module_ids.iter().any(|m| p.is_match(&m.to_string())))
+      || self.filters.module_ids.iter().any(|f| {
+        param
+          .module_ids
+          .iter()
+          .any(|id| f.is_match(&id.to_string()))
+      })
     {
       self.tsfn.call(param, ctx, None)
     } else {
