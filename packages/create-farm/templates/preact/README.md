@@ -1,6 +1,6 @@
-# Farm + Vue
+# Farm + Preact
 
-This template should help you start developing using Vue and TypeScript in Farm.
+This template should help you start developing using Preact and TypeScript in Farm.
 
 ## Setup
 

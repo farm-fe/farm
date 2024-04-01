@@ -1,5 +1,7 @@
 # Farm + Lit
 
+This template should help you start developing using Lit and TypeScript in Farm.
+
 ## Setup
 
 Install the dependencies:
