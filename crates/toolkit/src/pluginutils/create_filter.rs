@@ -1,25 +1,12 @@
-use globset::{GlobBuilder, GlobSetBuilder};
+use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use std::error::Error;
 
 pub fn create_filter<'a>(
   include_patterns: Option<&'a [&str]>,
   exclude_patterns: Option<&'a [&str]>,
 ) -> Result<impl Fn(&str) -> bool + 'a, Box<dyn Error>> {
-  let mut include_builder = GlobSetBuilder::new();
-  if let Some(patterns) = include_patterns {
-    for pattern in patterns {
-      include_builder.add(GlobBuilder::new(pattern.as_ref()).build()?);
-    }
-  }
-  let include_set = include_builder.build()?;
-
-  let mut exclude_builder = GlobSetBuilder::new();
-  if let Some(patterns) = exclude_patterns {
-    for pattern in patterns {
-      exclude_builder.add(GlobBuilder::new(pattern.as_ref()).build()?);
-    }
-  }
-  let exclude_set = exclude_builder.build()?;
+  let include_set = patterns_builder(include_patterns)?;
+  let exclude_set = patterns_builder(exclude_patterns)?;
 
   Ok(move |path: &str| {
     let match_include = match include_patterns {
@@ -33,11 +20,22 @@ pub fn create_filter<'a>(
     match_include && !match_exclude
   })
 }
+
+fn patterns_builder<'a>(patterns: Option<&'a [&str]>) -> Result<GlobSet, Box<dyn Error>> {
+  let mut builder = GlobSetBuilder::new();
+  if let Some(patterns) = patterns {
+    for pattern in patterns {
+      builder.add(GlobBuilder::new(pattern.as_ref()).build()?);
+    }
+  }
+  Ok(builder.build()?)
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
-  use std::path::PathBuf;
   use crate::pluginutils::normalize_path::normalize_path;
+  use std::path::PathBuf;
 
   #[test]
   fn includes_by_default() -> Result<(), Box<dyn Error>> {
