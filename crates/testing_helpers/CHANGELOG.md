@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/farm-fe/farm/compare/farmfe_testing_helpers-v0.0.3...farmfe_testing_helpers-v0.0.4) - 2024-04-01
+
+### Fixed
+- sass resolver import ([#1098](https://github.com/farm-fe/farm/pull/1098))
+
 ## [0.0.3](https://github.com/farm-fe/farm/compare/farmfe_testing_helpers-v0.0.2...farmfe_testing_helpers-v0.0.3) - 2024-03-24
 
 ### Other

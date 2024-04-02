@@ -1,0 +1,3 @@
+{
+  "additionalData": "@use \"@/common.scss\" as *;"
+}
