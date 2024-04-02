@@ -40,3 +40,6 @@ pub use sourcemap;
 
 pub mod get_dynamic_resources_map;
 pub mod minify;
+
+// pluginutils
+pub mod pluginutils;
