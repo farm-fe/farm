@@ -10,7 +10,7 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_compiler"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "0.4.3" }
+farmfe_core = { path = "../core", version = "0.4.4" }
 farmfe_plugin_partial_bundling = { path = "../plugin_partial_bundling", version = "0.0.3" }
 farmfe_plugin_resolve = { path = "../plugin_resolve", version = "0.0.3" }
 farmfe_plugin_script = { path = "../plugin_script", version = "0.0.3" }
@@ -23,7 +23,7 @@ farmfe_plugin_static_assets = { path = "../plugin_static_assets", version = "0.0
 farmfe_plugin_minify = { path = "../plugin_minify", version = "0.0.3" }
 farmfe_toolkit = { path = "../toolkit", version = "0.0.4" }
 farmfe_utils = { path = "../utils", version = "0.1.4" }
-farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.4" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.5" }
 farmfe_plugin_json = { path = "../plugin_json", version = "0.0.3" }
 farmfe_plugin_polyfill = { path = "../plugin_polyfill", version = "0.0.3" }
 farmfe_plugin_progress = { path = "../plugin_progress", version = "0.0.3" }
