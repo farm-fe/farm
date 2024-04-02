@@ -1414,7 +1414,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
@@ -1606,7 +1606,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "farmfe_core",
