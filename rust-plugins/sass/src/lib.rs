@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
-use std::collections::HashMap;
+#![allow(clippy::result_large_err)]
+use std::{collections::HashMap, str::FromStr};
 
 use farmfe_core::{
   config::Config,
@@ -10,9 +11,14 @@ use farmfe_core::{
   serde_json::{self, Value},
 };
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::{fs, regex::Regex};
+use farmfe_toolkit::{
+  fs::{self, read_file_utf8},
+  regex::Regex,
+};
+use farmfe_utils::relative;
+use rebase_urls::rebase_urls;
 use sass_embedded::{
-  FileImporter, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Syntax, Url,
+  Exception, Importer, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Syntax, Url,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -23,6 +29,8 @@ use std::{
 };
 
 const PKG_NAME: &str = "@farmfe/plugin-sass";
+
+mod rebase_urls;
 
 #[farm_plugin]
 pub struct FarmPluginSass {
@@ -38,7 +46,7 @@ impl FarmPluginSass {
     }
   }
 
-  pub fn get_sass_options(
+  fn get_sass_options(
     &self,
     resolved_path_with_query: String,
     sourcemap_enabled: bool,
@@ -48,56 +56,158 @@ impl FarmPluginSass {
   }
 }
 
-struct FileImporterCollection {
-  importer: ModuleId,
+struct ImporterCollection {
+  root_importer: ModuleId,
   context: Arc<CompilationContext>,
 }
 
-impl Debug for FileImporterCollection {
-  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("FileImporterCollection")
-      .field("importer", &self.importer)
-      .finish()
+fn extension_from_path(path: &str) -> Syntax {
+  match PathBuf::from(path).extension().and_then(|ext| ext.to_str()) {
+    Some("sass") => Syntax::Indented,
+    Some("css") => Syntax::Css,
+    Some("scss") => Syntax::Scss,
+    _ => Syntax::Scss,
   }
 }
 
-impl FileImporter for FileImporterCollection {
-  fn find_file_url(
+fn resolve_importer_with_prefix(
+  mut url: PathBuf,
+  prefix: &str,
+  root_importer: &ModuleId,
+  context: &Arc<CompilationContext>,
+) -> Result<Option<String>, Exception> {
+  if let Some(filename) = url.file_name() {
+    url.set_file_name(format!("{}{}", prefix, filename.to_string_lossy()));
+  }
+
+  context
+    .plugin_driver
+    .resolve(
+      &PluginResolveHookParam {
+        source: url.to_string_lossy().to_string().replace('\\', "/"),
+        importer: Some(root_importer.clone()),
+        kind: ResolveKind::CssAtImport,
+      },
+      context,
+      &PluginHookContext::default(),
+    )
+    .map_err(|e| {
+      Exception::new(format!(
+        "can not resolve {:?} from {:?}: Error: {:?}",
+        url.to_string_lossy().to_string(),
+        prefix,
+        e
+      ))
+    })
+    .map(|item| item.map(|item| item.resolved_path))
+}
+
+fn resolve_importer(
+  url: String,
+  root_importer: &ModuleId,
+  context: &Arc<CompilationContext>,
+) -> Result<Option<String>, Exception> {
+  if let Ok(file_path) = PathBuf::from_str(&url) {
+    let try_prefix_list = ["_"];
+
+    let default_import_result =
+      resolve_importer_with_prefix(file_path.clone(), "", root_importer, context);
+
+    if matches!(default_import_result, Ok(Some(_))) {
+      return default_import_result;
+    }
+
+    for prefix in try_prefix_list {
+      let resolved_path =
+        resolve_importer_with_prefix(file_path.clone(), prefix, root_importer, context);
+
+      if matches!(resolved_path, Ok(Some(_))) {
+        return resolved_path;
+      }
+    }
+
+    return default_import_result;
+  };
+
+  Ok(None)
+}
+
+impl ImporterCollection {
+  fn load(&self, resolved_path: &str) -> Result<Option<String>, Box<Exception>> {
+    let context = &self.context;
+
+    if let Ok(file_content) = read_file_utf8(resolved_path) {
+      let root_file = self.root_importer.resolved_path(&context.config.root);
+
+      return Ok(Some(rebase_urls(
+        resolved_path,
+        &root_file,
+        file_content,
+        context,
+      )?));
+    }
+
+    Ok(None)
+  }
+}
+
+impl Importer for ImporterCollection {
+  fn canonicalize(
     &self,
     url: &str,
     _options: &sass_embedded::ImporterOptions,
   ) -> sass_embedded::Result<Option<Url>> {
-    let context = &self.context;
-    // try to resolve url using relative path first
-    let importer_path = PathBuf::from(self.importer.resolved_path(&context.config.root));
-    let importer_dir = importer_path.parent().unwrap();
-    let relative_url = RelativePath::new(url);
-    let resolved_url = relative_url.to_logical_path(importer_dir);
+    let url = if url.strip_prefix("file:").is_some()
+      || url.starts_with('/')
+      || PathBuf::from(url).is_absolute()
+    {
+      if let Ok(url) = Url::from_str(url) {
+        url
+      } else {
+        Url::from_file_path(url)
+          .map_err(|_| Exception::new(format!("parse raw {:?} to Url failed.", url)))?
+      }
+    } else {
+      let resolved_path = RelativePath::new(url).to_logical_path(&self.context.config.root);
+      Url::from_file_path(&resolved_path)
+        .map_err(|_| Exception::new(format!("parse {:?} to Url failed.", resolved_path)))?
+    };
 
-    if resolved_url.exists() {
-      return Ok(Some(Url::from_file_path(resolved_url).unwrap()));
-    }
+    Ok(Some(url))
+  }
 
-    let resolve_result = context
-      .plugin_driver
-      .resolve(
-        &PluginResolveHookParam {
-          source: url.to_string(),
-          importer: Some(self.importer.clone()),
-          kind: ResolveKind::CssAtImport,
-        },
-        context,
-        &PluginHookContext::default(),
-      )
-      .unwrap();
+  fn load(
+    &self,
+    canonical_url: &Url,
+  ) -> sass_embedded::Result<Option<sass_embedded::ImporterResult>> {
 
-    if let Some(resolve_result) = resolve_result {
-      return Ok(Some(
-        Url::from_file_path(resolve_result.resolved_path).unwrap(),
-      ));
-    }
+    let url = relative(
+      &self.context.config.root,
+      &canonical_url.to_file_path().unwrap().to_string_lossy(),
+    );
+    println!("origin url: {}", url);
 
-    sass_embedded::Result::Ok(None)
+    if let Some(resolve_result) = resolve_importer(url, &self.root_importer, &self.context)? {
+      let content = self.load(&resolve_result)?;
+
+      if let Some(file_content) = content {
+        return Ok(Some(sass_embedded::ImporterResult {
+          contents: file_content,
+          source_map_url: None,
+          syntax: extension_from_path(&resolve_result),
+        }));
+      }
+    };
+
+    Ok(None)
+  }
+}
+
+impl Debug for ImporterCollection {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ImporterCollection")
+      .field("root_importer", &self.root_importer)
+      .finish()
   }
 }
 
@@ -167,8 +277,8 @@ impl Plugin for FarmPluginSass {
 
       let cloned_context = context.clone();
 
-      let import_collection = Box::new(FileImporterCollection {
-        importer: param.module_id.clone().into(),
+      let import_collection = Box::new(ImporterCollection {
+        root_importer: param.module_id.clone().into(),
         context: cloned_context,
       });
       // TODO support source map for additionalData
@@ -181,7 +291,7 @@ impl Plugin for FarmPluginSass {
       string_options
         .common
         .importers
-        .push(sass_embedded::SassImporter::FileImporter(import_collection));
+        .push(sass_embedded::SassImporter::Importer(import_collection));
       string_options.url = Some(Url::from_file_path(param.resolved_path).unwrap());
 
       let compile_result = sass.compile_string(&content, string_options).map_err(|e| {

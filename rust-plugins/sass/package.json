@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-sass",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -12,13 +12,13 @@
     "@farmfe/plugin-tools": "workspace:*"
   },
   "optionalDependencies": {
-    "sass-embedded-darwin-arm64": "1.60.0",
-    "sass-embedded-darwin-x64": "1.60.0",
-    "sass-embedded-linux-arm64": "1.60.0",
-    "sass-embedded-linux-ia32": "1.60.0",
-    "sass-embedded-linux-x64": "1.60.0",
-    "sass-embedded-win32-ia32": "1.60.0",
-    "sass-embedded-win32-x64": "1.60.0"
+    "sass-embedded-darwin-arm64": "1.62.0",
+    "sass-embedded-darwin-x64": "1.62.0",
+    "sass-embedded-linux-arm64": "1.62.0",
+    "sass-embedded-linux-ia32": "1.62.0",
+    "sass-embedded-linux-x64": "1.62.0",
+    "sass-embedded-win32-ia32": "1.62.0",
+    "sass-embedded-win32-x64": "1.62.0"
   },
   "napi": {
     "name": "farm-plugin-sass",

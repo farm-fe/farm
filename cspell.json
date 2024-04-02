@@ -157,7 +157,9 @@
     "shulandmimi",
     "concurrentify",
     "pageerror",
-    "rsdoctor"
+    "rsdoctor",
+    "deepmerge",
+    "Mergeable"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

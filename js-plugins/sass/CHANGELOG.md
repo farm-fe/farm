@@ -1,5 +1,22 @@
 # @farmfe/js-plugin-sass
 
+## 2.5.3
+
+### Patch Changes
+
+- 1ec7dd74: fix resolve path
+- Updated dependencies [1ec7dd74]
+- Updated dependencies [6c03e7e0]
+  - @farmfe/core@1.0.11
+
+## 2.5.2
+
+### Patch Changes
+
+- cb7df71f: Support alias resolve and url rebase for import.meta.glob, sass and less plugins
+- Updated dependencies [cb7df71f]
+  - @farmfe/core@1.0.8
+
 ## 2.5.1
 
 ### Patch Changes

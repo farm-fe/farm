@@ -3,9 +3,7 @@ import postcssLoadConfig from 'postcss-load-config';
 import { ProcessOptions, Processor } from 'postcss';
 import path from 'path';
 import glob from 'fast-glob';
-import atImport from 'postcss-import';
 import { getPostcssImplementation, pluginName, tryRead } from './utils.js';
-import postcssUrl from 'postcss-url';
 
 export type PostcssPluginOptions = {
   /**
@@ -69,9 +67,12 @@ export default function farmPostcssPlugin(
             options.internalPlugins?.postcssImport ?? false;
 
           if (enablePostcssImport) {
+            const atImport = getPostcssImplementation('postcss-import');
+            const postcssUrl = getPostcssImplementation('postcss-url');
+
             postcssPlugins.unshift(
               atImport({
-                resolve: async (id, basedir) => {
+                resolve: async (id: string, basedir: string) => {
                   const publicFile = await checkPublicFile(id, userConfig);
                   if (publicFile) {
                     return publicFile;
@@ -103,7 +104,7 @@ export default function farmPostcssPlugin(
 
                   return id;
                 },
-                load: async (id) => {
+                load: async (id: string) => {
                   // After postcss-import inline process, the `url()` relative paths in the css file need to be recomputed relative to the entry CSS file.
                   const content = await tryRead(id);
                   const implementation = getPostcssImplementation();

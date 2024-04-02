@@ -1,5 +1,30 @@
 # @farmfe/core
 
+## 1.0.11
+
+### Patch Changes
+
+- 1ec7dd74: throwError retain origin error stack
+- 6c03e7e0: fix: publicDir resources are not copied correctly into the package file
+
+## 1.0.10
+
+### Patch Changes
+
+- cf14295b: Fix vite config adapter error
+
+## 1.0.9
+
+### Patch Changes
+
+- 6425c763: Fix vite plugin adapter
+
+## 1.0.8
+
+### Patch Changes
+
+- cb7df71f: Support alias resolve and url rebase for import.meta.glob, sass and less plugins
+
 ## 1.0.7
 
 ### Patch Changes

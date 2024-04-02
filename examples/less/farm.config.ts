@@ -1,10 +1,6 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmLessPlugin from '@farmfe/js-plugin-less';
 import path from 'path';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
   compilation: {
@@ -13,6 +9,9 @@ export default defineConfig({
     },
     resolve: {
       symlinks: true,
+      alias: {
+        '@': path.resolve('src')
+      }
     },
     define: {
       BTN: 'Click me',
@@ -20,7 +19,8 @@ export default defineConfig({
     output: {
       path: './build',
     },
-    sourcemap: false
+    sourcemap: false,
+    persistentCache: false,
     // treeShaking: true,
     // minify: true,
   },
@@ -30,9 +30,8 @@ export default defineConfig({
   plugins: ['@farmfe/plugin-react',farmLessPlugin({
     additionalData: (content:string, resolvePath:string) => {
       if (path.basename(resolvePath,'.less') === 'index') {
-        return `@hoverColor: #f10215;` + content;
+        return `@hoverColor: #f10215;`;
       }
-      return content;
     },
   }) ],
 });

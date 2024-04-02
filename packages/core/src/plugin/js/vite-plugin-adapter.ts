@@ -25,7 +25,8 @@ import {
   normalizePath,
   revertNormalizePath,
   normalizeAdapterVirtualModule,
-  isStartsWithSlash
+  isStartsWithSlash,
+  removeQuery
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { Server } from '../../server/index.js';
@@ -417,14 +418,6 @@ export class VitePluginAdapter implements JsPlugin {
             absImporterPath,
             { isEntry: params.kind === 'entry' }
           );
-
-          const removeQuery = (path: string) => {
-            const queryIndex = path.indexOf('?');
-            if (queryIndex !== -1) {
-              return path.slice(0, queryIndex);
-            }
-            return revertNormalizePath(path.concat(''));
-          };
 
           if (isString(resolveIdResult)) {
             resolveIdResult = normalizeAdapterVirtualModule(resolveIdResult);

@@ -187,7 +187,12 @@ impl Plugin for FarmPluginScript {
           .to_string_lossy()
           .to_string()
       };
-      transform_import_meta_glob(ast, context.config.root.clone(), cur_dir)?;
+      transform_import_meta_glob(
+        ast,
+        context.config.root.clone(),
+        cur_dir,
+        &context.config.resolve.alias,
+      )?;
     }
 
     Ok(Some(()))
