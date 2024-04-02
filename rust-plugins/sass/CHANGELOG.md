@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+### Patch Changes
+
+- 1ec7dd74: fix resolve path
+
 ## 1.0.2
 
 ### Patch Changes
