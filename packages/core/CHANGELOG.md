@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.0.12
+
+### Patch Changes
+
+- 6435db41: - remove unused reverse read variable
+  - disable treeShaking and lazyCompilation same time in development mode
+- b1a5b8dd: feat: Optimize persistentCache when rendering modules
+
 ## 1.0.11
 
 ### Patch Changes

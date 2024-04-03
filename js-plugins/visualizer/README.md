@@ -6,33 +6,33 @@
 
 ---
 
-# Record Viewer Plugin for Farm
+# Visualizer Plugin for Farm
 
 ## Getting Started
 
-To begin, you'll need to install `@farmfe/js-plugin-record-viewer`:
+To begin, you'll need to install `@farmfe/visualizer`:
 
 ```console
-npm install @farmfe/js-plugin-record-viewer --save-dev
+npm install @farmfe/visualizer --save-dev
 ```
 
 or
 
 ```console
-yarn add -D @farmfe/js-plugin-record-viewer
+yarn add -D @farmfe/visualizer
 ```
 
 or
 
 ```console
-pnpm add -D @farmfe/js-plugin-record-viewer
+pnpm add -D @farmfe/visualizer
 ```
 
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
 import { defineFarmConfig } from '@farmfe/core/dist/config';
-import record from '@farmfe/js-plugin-record-viewer'; //  import the plugin
+import visualizer from '@farmfe/visualizer'; //  import the plugin
 
 export default defineFarmConfig({
   compilation: {
@@ -44,8 +44,8 @@ export default defineFarmConfig({
     }
   },
   plugins: [
-    // use the record viewer plugin.
-    record({
+    // use the visualizer plugin.
+    visualizer({
       // custom options here
     })
   ]
@@ -78,5 +78,10 @@ type RecordViewerOptions = {
 
 Default: undefined
 
+## Credits
 
+Thanks to:
 
+- The [vite-plugin-inspect](https://github.com/antfu/vite-plugin-inspect) project created by [Anthony Fu](https://github.com/antfu), inspiring the module analysis feature in Farm's Visualizer.
+
+- The [rsdoctor](https://github.com/web-infra-dev/rsdoctor) project created by [web-infra](https://github.com/web-infra-dev), influencing the design of Farm's Visualizer.
