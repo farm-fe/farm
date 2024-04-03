@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.5.1
+
+### Patch Changes
+
+- 565ffcf4: chore-del-never used code
+
 ## 0.5.0
 
 ### Minor Changes

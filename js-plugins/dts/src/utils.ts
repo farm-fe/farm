@@ -6,14 +6,12 @@ import path, {
   sep,
   resolve
 } from 'node:path';
-import { existsSync, lstatSync, readdirSync, rmdirSync } from 'node:fs';
 
 import typescript from 'typescript';
 import extra from 'fs-extra';
 
 import crypto from 'crypto';
 import fs from 'node:fs';
-import { createRequire } from 'module';
 import { CompilerOptions } from 'ts-morph';
 import { throwError } from './options.js';
 
@@ -229,7 +227,7 @@ export function getTsConfig(
     extends?: string | string[];
   } = {
     compilerOptions: {},
-    ...(typescript.readConfigFile(tsConfigPath, readFileSync).config ?? {})
+    ...typescript.readConfigFile(tsConfigPath, readFileSync)?.config
   };
 
   if (tsConfig.extends) {

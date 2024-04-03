@@ -1318,7 +1318,7 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "farmfe_compiler"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_css",
@@ -1343,7 +1343,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_core"
-version = "0.4.2"
+version = "0.4.4"
 dependencies = [
  "blake2",
  "bytecheck 0.7.0",
@@ -1414,7 +1414,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "0.0.2"
+version = "0.0.4"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
@@ -1426,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_define"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1436,7 +1436,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_html"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1446,7 +1446,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_json"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1465,7 +1465,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_minify"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1474,7 +1474,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_partial_bundling"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1483,7 +1483,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_polyfill"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1492,7 +1492,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_progress"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "console",
  "farmfe_core",
@@ -1515,7 +1515,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_resolve"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1525,12 +1525,13 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_runtime"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.4",
+ "rkyv",
 ]
 
 [[package]]
@@ -1550,7 +1551,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_script"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_swc_transformer_import_glob",
@@ -1565,7 +1566,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_static_assets"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "base64 0.21.0",
  "farmfe_core",
@@ -1578,7 +1579,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_tree_shake"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1588,7 +1589,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_swc_transformer_import_glob"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1598,14 +1599,14 @@ dependencies = [
 
 [[package]]
 name = "farmfe_testing_helpers"
-version = "0.0.3"
+version = "0.0.5"
 dependencies = [
  "farmfe_core",
 ]
 
 [[package]]
 name = "farmfe_toolkit"
-version = "0.0.3"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "farmfe_core",
@@ -1639,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit_plugin_types"
-version = "0.0.10"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "lazy_static",
@@ -2780,12 +2781,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 
 [[package]]
-name = "multimap"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
-
-[[package]]
 name = "napi"
 version = "2.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3358,16 +3353,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "prettyplease"
-version = "0.1.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c8646e95016a7a6c4adea95bafa8a16baab64b583356217f2c85db4a39d9a86"
-dependencies = [
- "proc-macro2",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "proc-macro-crate"
 version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3427,28 +3412,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "prost-build"
-version = "0.11.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "119533552c9a7ffacc21e099c24a0ac8bb19c2a2a3f363de84cd9b844feab270"
-dependencies = [
- "bytes",
- "heck 0.4.1",
- "itertools 0.10.5",
- "lazy_static",
- "log",
- "multimap",
- "petgraph",
- "prettyplease",
- "prost",
- "prost-types",
- "regex",
- "syn 1.0.109",
- "tempfile",
- "which",
-]
-
-[[package]]
 name = "prost-derive"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3459,15 +3422,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "prost-types"
-version = "0.11.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
-dependencies = [
- "prost",
 ]
 
 [[package]]
@@ -3876,16 +3830,15 @@ dependencies = [
 
 [[package]]
 name = "sass-embedded"
-version = "0.6.2"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91bc40eea43391e185d1760f78b7d254f8f8348da7ff7963e98c10ecd1ed0f15"
+checksum = "043fea16ac00f7132b50dce6094873fee0d328bd43c0f552faeb33d989d97b77"
 dependencies = [
  "atty",
  "crossbeam-channel",
  "dashmap",
  "parking_lot",
  "prost",
- "prost-build",
  "regex",
  "rustc-hash",
  "serde",
@@ -6632,17 +6585,6 @@ name = "weezl"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9193164d4de03a926d909d3bc7c30543cecb35400c02114792c2cae20d5e2dbb"
-
-[[package]]
-name = "which"
-version = "4.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2441c784c52b289a054b7201fc93253e288f094e2f4be9058343127c4226a269"
-dependencies = [
- "either",
- "libc",
- "once_cell",
-]
 
 [[package]]
 name = "winapi"

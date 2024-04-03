@@ -1,4 +1,5 @@
 use std::{
+  borrow::Cow,
   collections::{HashMap, HashSet},
   mem,
 };
@@ -42,6 +43,18 @@ impl ToString for UsedIdent {
 pub enum UsedExports {
   All(HashMap<ModuleId, Vec<String>>),
   Partial(HashMap<ModuleId, Vec<String>>),
+}
+
+#[derive(Debug)]
+enum VisitedMode {
+  Normal,
+  Enforce,
+}
+
+impl VisitedMode {
+  fn removable(&self) -> bool {
+    !matches!(self, VisitedMode::Enforce)
+  }
 }
 
 impl UsedExports {
@@ -302,39 +315,93 @@ impl TreeShakeModule {
         entry: &'a ItemId,
         stack: &mut Vec<&'a ItemId>,
         result: &mut HashSet<ItemId>,
-        visited: &mut HashSet<&'a ItemId>,
+        visited: &mut HashMap<&'a ItemId, VisitedMode>,
         module_define_graph: &'a ModuleAnalyze,
         stmt_graph: &StatementGraph,
-      ) {
+        reverse_terser_chain: &mut Vec<Mode>,
+      ) -> bool {
+        let collection_result = |visited: &mut HashMap<&'a ItemId, VisitedMode>,
+                                 reverse_terser_chain: &mut Vec<Mode>,
+                                 result: &mut HashSet<ItemId>,
+                                 stack: &mut Vec<&'a ItemId>| {
+          if !reverse_terser_chain.is_empty() {
+            if reverse_terser_chain
+              .iter()
+              .any(|mode| matches!(mode, Mode::Write))
+            {
+              let collections = stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>();
+
+              for item in collections {
+                visited
+                  .get_mut(&item)
+                  .map(|item| *item = VisitedMode::Enforce);
+                result.insert(item);
+              }
+              true
+            } else {
+              false
+            }
+          } else {
+            result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
+            true
+          }
+        };
+
+        let break_tenser = |stack: &mut Vec<&'a ItemId>| {
+          stack.pop();
+        };
+
+        if visited.contains_key(entry) {
+          return collection_result(visited, reverse_terser_chain, result, stack);
+        }
+
         stack.push(entry);
+
+        if !module_define_graph.has_node(entry) {
+          let is_collected = collection_result(visited, reverse_terser_chain, result, stack);
+          break_tenser(stack);
+          return is_collected;
+        }
 
         let edges = module_define_graph.reference_edges(entry);
 
-        let collection_result = |result: &mut HashSet<ItemId>, stack: &mut Vec<&'a ItemId>| {
-          result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
-          stack.clear();
-        };
-
-        if visited.contains(entry) || !module_define_graph.has_node(entry) {
-          collection_result(result, stack);
-          return;
-        }
-
-        if edges.is_empty() {
-          collection_result(result, stack);
+        if edges.is_empty() || edges.iter().all(|(source, target, _)| source == target) {
+          let is_collected = collection_result(visited, reverse_terser_chain, result, stack);
+          break_tenser(stack);
+          is_collected
         } else {
-          visited.insert(entry);
+          visited.insert(entry, VisitedMode::Normal);
+          let mut is_contain_reverse_edge = false;
+          let mut is_collected = false;
+          let push_reverse_terser_chain =
+            |reverse_terser_chain: &mut Vec<Mode>, mode: Mode, create| {
+              if !reverse_terser_chain.is_empty() || create {
+                reverse_terser_chain.push(mode);
+              }
+            };
+
+          let pop_reverse_terser_chain = |reverse_terser_chain: &mut Vec<Mode>| {
+            reverse_terser_chain.pop();
+          };
+
           for (source, target, edge) in edges {
+            if source == target {
+              continue;
+            }
+
             match (edge.mode, edge.nested) {
               (Mode::Read, _) => {
-                dfs(
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Read, false);
+                is_collected = dfs(
                   target,
                   stack,
                   result,
                   visited,
                   module_define_graph,
                   stmt_graph,
-                );
+                  reverse_terser_chain,
+                ) || is_collected;
+                pop_reverse_terser_chain(reverse_terser_chain);
 
                 // ignore nested
                 // cache -> readCache { cache }
@@ -367,47 +434,71 @@ impl TreeShakeModule {
                     }
                   )
                 {
-                  dfs(
+                  is_contain_reverse_edge = true;
+                  push_reverse_terser_chain(reverse_terser_chain, Mode::Read, true);
+                  is_collected = dfs(
                     source,
                     stack,
                     result,
                     visited,
                     module_define_graph,
                     stmt_graph,
-                  );
+                    reverse_terser_chain,
+                  ) || is_collected;
+                  pop_reverse_terser_chain(reverse_terser_chain);
                 }
               }
 
               (Mode::Write, false) => {
-                dfs(
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
+                is_collected = dfs(
                   source,
                   stack,
                   result,
                   visited,
                   module_define_graph,
                   stmt_graph,
-                );
+                  reverse_terser_chain,
+                ) || is_collected;
+                pop_reverse_terser_chain(reverse_terser_chain);
               }
 
               (Mode::Write, true) => {
-                dfs(
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
+                is_collected = dfs(
                   target,
                   stack,
                   result,
                   visited,
                   module_define_graph,
                   stmt_graph,
-                );
+                  reverse_terser_chain,
+                ) || is_collected;
+                pop_reverse_terser_chain(reverse_terser_chain);
               }
             }
           }
-        }
 
-        stack.pop();
+          if is_contain_reverse_edge && !is_collected {
+            if let Some(mode) = visited.get(entry) {
+              if mode.removable() {
+                visited.remove(entry);
+              }
+            }
+          }
+
+          break_tenser(stack);
+
+          is_collected
+        }
       }
 
-      let mut visited = HashSet::new();
+      let mut visited = HashMap::new();
       let mut reference_chain = HashSet::new();
+
+      let mut entries = entries.into_iter().collect::<Vec<_>>();
+
+      entries.sort_by(|a, b| a.index().cmp(&b.index()));
 
       for stmt in &entries {
         dfs(
@@ -417,6 +508,7 @@ impl TreeShakeModule {
           &mut visited,
           &module_analyze,
           &self.stmt_graph,
+          &mut vec![],
         );
       }
 
