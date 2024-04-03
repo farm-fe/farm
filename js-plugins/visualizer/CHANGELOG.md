@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 2.0.0
+
+### Major Changes
+
+- 423a5ad7: rename as js-plugin-visualizer
+
 ## 2.2.0
 
 ### Minor Changes
