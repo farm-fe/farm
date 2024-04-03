@@ -12,7 +12,7 @@ import UnpluginSvgComponent from 'unplugin-svg-component/vite';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
-import viewer from '@farmfe/js-plugin-record-viewer';
+import viewer from '@farmfe/js-plugin-visualizer';
 
 function configureVitePluginVue() {
   // return plugin and its filters
