@@ -347,10 +347,14 @@ impl ModuleAnalyze {
         }
 
         _ => {
-          let used_ids = collect_usage_ignore_nested(stmt, None);
+          let used_ids = collect_all_usage(stmt, None);
+
           let data = ItemData {
             read_vars: used_ids.vars.read,
             write_vars: used_ids.vars.write,
+            nested_read_vars: used_ids.vars.nested_read,
+            nested_write_vars: used_ids.vars.nested_write,
+            side_effect_call: used_ids.call_reads,
             ..Default::default()
           };
 
