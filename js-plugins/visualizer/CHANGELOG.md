@@ -1,6 +1,6 @@
 # @farmfe/js-plugin-record-viewer
 
-## 2.0.0
+## 1.0.0
 
 ### Major Changes
 
