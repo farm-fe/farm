@@ -1,4 +1,6 @@
-# Farm Project
+# Farm + Solid
+
+This template should help you start developing using Solid and TypeScript in Farm.
 
 ## Setup
 

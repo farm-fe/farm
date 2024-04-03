@@ -1,6 +1,13 @@
 {
   "name": "react-template",
   "version": "1.0.0",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
   "dependencies": {
     "clsx": "^1.2.1",
     "react": "18",
@@ -8,18 +15,11 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^1.0.0",
-    "@farmfe/core": "^1.0.0",
-    "@farmfe/plugin-react": "^1.0.0",
+    "@farmfe/core": "^1.0.11",
+    "@farmfe/plugin-react": "^1.0.1",
     "@types/react": "18",
-    "core-js": "^3.30.1",
+    "core-js": "^3.36.1",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"
-  },
-  "scripts": {
-    "dev": "farm start",
-    "start": "farm start",
-    "build": "farm build",
-    "preview": "farm preview",
-    "clean": "farm clean"
   }
 }
