@@ -1,4 +1,6 @@
-# Farm Project
+# Farm + Svelte
+
+This template should help you start developing using TypeScript in Farm.
 
 ## Setup
 
