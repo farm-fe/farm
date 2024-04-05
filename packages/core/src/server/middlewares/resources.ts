@@ -66,6 +66,19 @@ export function resourcesMiddleware(
         ctx.body = readFileSync(absPath);
         return;
       }
+
+      // try local file system with publicDir
+      const absPathPublicDir = path.resolve(
+        compiler.config.config.root,
+        compiler.config.config.assets.publicDir,
+        finalResourcePath
+      );
+
+      if (existsSync(absPathPublicDir) && statSync(absPathPublicDir).isFile()) {
+        ctx.type = extname(resourcePath);
+        ctx.body = readFileSync(absPathPublicDir);
+        return;
+      }
     }
 
     // if resource is not found and spa is not disabled, find the closest index.html from resourcePath

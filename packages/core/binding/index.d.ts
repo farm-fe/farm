@@ -358,6 +358,7 @@ export interface Config {
     watch?: boolean | WatchOptions;
     assets?: {
       include?: string[];
+      publicDir?: string;
     };
     script?: ScriptConfig;
     css?: CssConfig;
