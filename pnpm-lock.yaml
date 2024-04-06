@@ -242,7 +242,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.3
+        specifier: workspace:^1.0.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -461,7 +461,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.3
+        specifier: workspace:^1.0.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -644,7 +644,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.3
+        specifier: workspace:^1.0.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -696,7 +696,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.3
+        specifier: workspace:^1.0.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
@@ -739,7 +739,7 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@farmfe/plugin-sass':
-        specifier: workspace:^1.0.3
+        specifier: workspace:^1.0.4
         version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
