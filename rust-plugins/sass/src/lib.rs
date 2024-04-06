@@ -180,12 +180,10 @@ impl Importer for ImporterCollection {
     &self,
     canonical_url: &Url,
   ) -> sass_embedded::Result<Option<sass_embedded::ImporterResult>> {
-
     let url = relative(
       &self.context.config.root,
       &canonical_url.to_file_path().unwrap().to_string_lossy(),
     );
-    println!("origin url: {}", url);
 
     if let Some(resolve_result) = resolve_importer(url, &self.root_importer, &self.context)? {
       let content = self.load(&resolve_result)?;
