@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 
+use absolute_path_handler::AbsolutePathHandler;
 use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
 use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::parking_lot::Mutex;
@@ -32,6 +33,7 @@ use farmfe_toolkit::{
 };
 use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
 
+mod absolute_path_handler;
 mod deps_analyzer;
 mod resources_injector;
 mod utils;
@@ -404,6 +406,7 @@ impl Plugin for FarmPluginTransformHtml {
 
     for (html_entry_id, _) in &html_entries_ids {
       let module_group_id = html_entry_id.clone();
+
       let resource_pot_map = context.resource_pot_map.read();
       let module_group_graph = context.module_group_graph.read();
       let module_group = module_group_graph.module_group(&module_group_id).unwrap();
@@ -525,6 +528,11 @@ impl Plugin for FarmPluginTransformHtml {
       let mut html_ast =
         parse_html_document(&resource_pot.id, resource_pot.meta.rendered_content.clone())?;
       resources_injector.inject(&mut html_ast);
+      // set publicPath prefix
+      let mut absolute_path_handler = AbsolutePathHandler {
+        public_path: context.config.output.public_path.clone(),
+      };
+      absolute_path_handler.add_public_path_prefix(&mut html_ast);
 
       let code = codegen_html_document(&html_ast, context.config.minify.enabled());
       html_resource.bytes = code.bytes().collect();
