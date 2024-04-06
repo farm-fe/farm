@@ -7,4 +7,4 @@ import App from './App.vue';
 Vue.use(TDesign);
 new Vue({
   render: (h) => h(App)
-}).$mount('#app');
+}).$mount('#root');
