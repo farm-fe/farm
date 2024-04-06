@@ -441,6 +441,8 @@ impl<T: AsRef<str>> From<T> for ModuleType {
       "tsx" => Self::Tsx,
       "css" => Self::Css,
       "html" => Self::Html,
+      "asset" => Self::Asset,
+      "runtime" => Self::Runtime,
       custom => Self::Custom(custom.to_string()),
     }
   }
