@@ -627,7 +627,7 @@ async function readConfigFile(
         // Change to vm.module of node or loaders as far as it is stable
         userConfig = (await import(filePath as string)).default;
       } finally {
-        fs.unlink(filePath, () => void 0);
+        // fs.unlink(filePath, () => void 0);
       }
     } else {
       const filePath = isWindows
