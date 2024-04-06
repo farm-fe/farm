@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.0.13
+
+### Patch Changes
+
+- af14caa7: Fix static assets plugin compatibility issue
+- ce5b0d18: fix: Make publicPath and publicDir configuration work properly.
+
 ## 1.0.12
 
 ### Patch Changes

@@ -17,7 +17,7 @@
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-sass": "workspace:*",
     "@farmfe/plugin-react": "workspace:^1.0.1",
-    "@farmfe/plugin-sass": "workspace:^1.0.3",
+    "@farmfe/plugin-sass": "workspace:^1.0.4",
     "@types/react": "18",
     "@types/react-dom": "18",
     "@types/react-redux": "^7.1.33",
