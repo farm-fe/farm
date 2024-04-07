@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.14
+
+### Patch Changes
+
+- 9ae86438: Fix persistent cache conflicts
+
 ## 1.0.13
 
 ### Patch Changes
