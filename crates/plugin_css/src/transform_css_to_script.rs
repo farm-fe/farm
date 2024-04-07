@@ -53,7 +53,12 @@ pub fn transform_css_to_script_modules(
         let store_key = CacheStoreKey {
           name: module_id.to_string() + "-transform_css_to_script_modules",
           key: sha256(
-            format!("{}{}", content_hash, module_id.to_string()).as_bytes(),
+            format!(
+              "transform_css_to_script_modules_{}_{}",
+              content_hash,
+              module_id.to_string()
+            )
+            .as_bytes(),
             32,
           ),
         };
