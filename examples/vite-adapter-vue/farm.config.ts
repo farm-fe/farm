@@ -27,7 +27,7 @@ function configureVitePluginVue() {
 export default defineConfig({
   compilation: {
     // compilation options here
-    persistentCache: false
+    // persistentCache: false
   },
   plugins: [
     '@farmfe/plugin-sass',

@@ -110,7 +110,12 @@ pub fn resource_pot_to_runtime_object(
         let store_key = CacheStoreKey {
           name: m_id.to_string() + "-resource_pot_to_runtime_object",
           key: sha256(
-            format!("{}{}", content_hash, m_id.to_string()).as_bytes(),
+            format!(
+              "resource_pot_to_runtime_object_{}_{}",
+              content_hash,
+              m_id.to_string()
+            )
+            .as_bytes(),
             32,
           ),
         };
