@@ -215,7 +215,6 @@ export async function resolveConfig(
     );
   }
 
-  console.log(resolvedUserConfig.compilation?.resolve);
   return resolvedUserConfig;
 }
 

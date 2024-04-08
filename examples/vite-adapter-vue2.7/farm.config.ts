@@ -5,7 +5,8 @@ import { createSvgPlugin } from 'vite-plugin-vue2-svg';
 
 export default defineConfig({
   compilation: {
-    persistentCache: false,
+    // persistentCache: false,
+    progress: false,
     resolve: {
       alias: {
         '@': path.resolve(process.cwd(), 'src'),
