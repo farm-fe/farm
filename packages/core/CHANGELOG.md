@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.15
+
+### Patch Changes
+
+- b2103287: Less strict html parsing
+
 ## 1.0.14
 
 ### Patch Changes
