@@ -20,15 +20,14 @@ test('resolveUserConfig', async () => {
   );
 
   expect(config.compilation.define).toEqual({
-    FARM_HMR_BASE: '/',
     FARM_HMR_HOST: true,
     FARM_HMR_PATH: '/__hmr',
     FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'test'
+      NODE_ENV: 'development'
     },
     FARM_HMR_PROTOCOL: 'ws',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'development'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -53,11 +52,12 @@ test('resolveUserConfig', async () => {
       'yarn.lock'
     ],
     envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"test"}',
-      NODE_ENV: 'test',
+      FARM_PROCESS_ENV: '{"NODE_ENV":"development"}',
+      NODE_ENV: 'development',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+        'development',
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
@@ -65,7 +65,6 @@ test('resolveUserConfig', async () => {
       FARM_HMR_HOST: 'true',
       FARM_HMR_PATH: '/__hmr',
       FARM_HMR_PORT: '9000',
-      FARM_HMR_BASE: '/',
       FARM_HMR_PROTOCOL: 'ws'
     },
     moduleCacheKeyStrategy: {}
@@ -86,9 +85,9 @@ test('resolveUserConfig-prod', async () => {
 
   expect(config.compilation.define).toEqual({
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'test'
+      NODE_ENV: 'production'
     },
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'production'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -146,15 +145,15 @@ test('resolveUserConfig-prod', async () => {
       'yarn.lock'
     ],
     envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"test"}',
-      NODE_ENV: 'test',
+      FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
+      NODE_ENV: 'production',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
       'package.json[module]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'test'
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'production'
     },
     moduleCacheKeyStrategy: {}
   });

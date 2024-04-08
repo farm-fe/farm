@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{swc_common::SourceMap, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax};
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
@@ -8,6 +8,7 @@ use farmfe_toolkit::script::{codegen_module, parse_module, ParseScriptModuleResu
 #[test]
 fn test_import_meta_glob() {
   fixture!("tests/fixtures/**/input.js", |file, _crate_path| {
+    println!("Testing {:?}...", file);
     let file_content = std::fs::read_to_string(&file).unwrap();
     let cm = Arc::new(SourceMap::default());
     let ParseScriptModuleResult { ast: mut ast, .. } = parse_module(
@@ -18,7 +19,28 @@ fn test_import_meta_glob() {
     )
     .unwrap();
     let dir = file.parent().unwrap().to_str().unwrap();
-    transform_import_meta_glob(&mut ast, dir.to_string(), dir.to_string()).unwrap();
+    let root = if dir.contains("glob_embrace_url") {
+      file.parent().unwrap().parent().unwrap().to_str().unwrap()
+    } else {
+      dir
+    };
+
+    transform_import_meta_glob(
+      &mut ast,
+      root.to_string(),
+      dir.to_string(),
+      &HashMap::from([(
+        "@".to_string(),
+        file
+          .parent()
+          .unwrap()
+          .to_path_buf()
+          .join("dir")
+          .to_string_lossy()
+          .to_string(),
+      )]),
+    )
+    .unwrap();
 
     let code = codegen_module(&ast, EsVersion::EsNext, cm, None, false, None).unwrap();
     let code = String::from_utf8(code).unwrap();

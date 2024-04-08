@@ -15,25 +15,31 @@
 #![feature(box_patterns)]
 
 use std::collections::HashMap;
-use std::collections::HashSet;
+use std::path::Component;
+use std::path::PathBuf;
 
+use farmfe_core::regex;
+use farmfe_core::relative_path::RelativePath;
 use farmfe_core::swc_common::DUMMY_SP;
 use farmfe_core::swc_ecma_ast::{
   self, ArrayLit, ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Callee, Expr, ExprOrSpread,
   Ident, Import, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
   Module as SwcModule, ModuleItem, ObjectLit, Pat, Prop, PropOrSpread,
 };
-use farmfe_core::{glob, relative_path::RelativePath};
+use farmfe_core::wax::Glob;
 
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
+
+const REGEX_PREFIX: &str = "$__farm_regex:";
 
 pub fn transform_import_meta_glob(
   ast: &mut SwcModule,
   root: String,
   cur_dir: String,
+  alias: &HashMap<String, String>,
 ) -> farmfe_core::error::Result<()> {
-  let mut visitor = ImportGlobVisitor::new(cur_dir, root);
+  let mut visitor = ImportGlobVisitor::new(cur_dir, root, alias);
   ast.visit_mut_with(&mut visitor);
 
   if visitor.errors.len() > 0 {
@@ -218,20 +224,22 @@ pub struct ImportMetaGlobInfo {
   pub query: Option<String>,
 }
 
-pub struct ImportGlobVisitor {
+pub struct ImportGlobVisitor<'a> {
   import_globs: Vec<ImportMetaGlobInfo>,
   cur_dir: String,
   root: String,
+  alias: &'a HashMap<String, String>,
   pub errors: Vec<String>,
 }
 
-impl ImportGlobVisitor {
-  pub fn new(cur_dir: String, root: String) -> Self {
+impl<'a> ImportGlobVisitor<'a> {
+  pub fn new(cur_dir: String, root: String, alias: &'a HashMap<String, String>) -> Self {
     Self {
       import_globs: vec![],
       cur_dir,
       root,
       errors: vec![],
+      alias,
     }
   }
 
@@ -273,8 +281,58 @@ impl ImportGlobVisitor {
     import_glob_info
   }
 
+  fn try_alias(&self, source: &str) -> String {
+    let (source, negative) = if source.starts_with('!') {
+      (&source[1..], true)
+    } else {
+      (source, false)
+    };
+    let mut result = source.to_string();
+    // sort the alias by length, so that the longest alias will be matched first
+    let mut alias_list: Vec<_> = self.alias.keys().collect();
+    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+
+    for alias in alias_list {
+      let replaced = self.alias.get(alias).unwrap();
+
+      // try regex alias first
+      if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
+        let regex = regex::Regex::new(alias).unwrap();
+        if regex.is_match(source) {
+          let replaced = regex.replace(source, replaced.as_str()).to_string();
+          result = replaced;
+          break;
+        }
+      }
+
+      if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+        result = replaced.to_string();
+        break;
+      } else if !alias.ends_with('$') && source.starts_with(alias) {
+        let source_left = RelativePath::new(source.trim_start_matches(alias));
+        let new_source = source_left.to_logical_path(replaced);
+
+        result = if new_source.is_absolute() {
+          format!(
+            "/{}",
+            relative(&self.root, &new_source.to_string_lossy().to_string())
+          )
+        } else {
+          new_source.to_string_lossy().to_string()
+        };
+        break;
+      }
+    }
+
+    if negative {
+      format!("!{}", result)
+    } else {
+      result
+    }
+  }
+
   /// Glob the sources and filter negative sources, return globs relative paths
-  fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> Vec<String> {
+  fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
     let mut paths = vec![];
 
     for source in sources {
@@ -286,6 +344,7 @@ impl ImportGlobVisitor {
       } else {
         &source[..]
       };
+
       let source = if !source.starts_with('.') && !source.starts_with('/') {
         format!("./{}", source)
       } else {
@@ -294,24 +353,52 @@ impl ImportGlobVisitor {
 
       // relative to root when source starts with '/'.
       // and alias
-      let p = if source.starts_with('/') {
-        let rel_source = RelativePath::new(&source[1..]);
-        let abs_source = rel_source
-          .to_logical_path(&self.root)
-          .to_string_lossy()
-          .to_string();
-        glob::glob(&abs_source)
+      let rel_path = if source.starts_with('/') {
+        let abs_path = RelativePath::new(&source[1..]).to_logical_path(&self.root);
+        relative(&self.cur_dir, &abs_path.to_string_lossy())
       } else {
-        let rel_source = RelativePath::new(&source);
-        let abs_source = rel_source
+        source.clone()
+      };
+      let rel_source = relative(
+        &self.root,
+        &RelativePath::new(&rel_path)
           .to_logical_path(&self.cur_dir)
-          .to_string_lossy()
-          .to_string();
-        glob::glob(&abs_source)
+          .to_string_lossy(),
+      );
+      // wax::Glob does not support ../, so we need to convert it to relative path
+      let (root, rel_source) = if rel_source.starts_with("../") {
+        let mut root_path = PathBuf::from(&self.root);
+        let rel_source_path = PathBuf::from(&rel_source);
+
+        for comp in rel_source_path.components() {
+          match comp {
+            Component::ParentDir => {
+              root_path.pop();
+            }
+            _ => {}
+          }
+        }
+
+        (
+          root_path.to_string_lossy().to_string(),
+          rel_source.replace("../", ""),
+        )
+      } else {
+        (self.root.clone(), rel_source.clone())
       };
 
-      match p {
-        Ok(p) => {
+      let glob = Glob::new(&rel_source);
+      match glob {
+        Ok(glob) => {
+          let p = glob
+            .walk(&root)
+            .map(|p| {
+              (
+                source.clone(),
+                p.map(|p| p.path().to_string_lossy().to_string()),
+              )
+            })
+            .collect::<Vec<_>>();
           paths.push((negative, p));
         }
         Err(err) => {
@@ -322,22 +409,41 @@ impl ImportGlobVisitor {
       }
     }
 
-    let mut filtered_paths = HashSet::new();
+    let mut filtered_paths = HashMap::new();
 
     for (negative, path) in paths {
-      for entry in path {
+      for (source, entry) in path {
         match entry {
           Ok(file) => {
-            let mut relative_file = relative(&self.cur_dir, &file.to_string_lossy());
+            // if source starts with '/', we need make source relative to root, otherwise, relative to cur_dir
+            let source: String = if source.starts_with('/') {
+              let rel_source = relative(&self.root, &file);
+
+              if !rel_source.starts_with('/') {
+                format!("/{}", rel_source)
+              } else {
+                rel_source
+              }
+            } else {
+              let rel_source = relative(&self.cur_dir, &file);
+
+              if !rel_source.starts_with('.') {
+                format!("./{}", rel_source)
+              } else {
+                rel_source
+              }
+            };
+
+            let mut relative_file = relative(&self.cur_dir, &file);
 
             if !relative_file.starts_with('.') {
               relative_file = format!("./{}", relative_file);
             }
 
-            if negative && filtered_paths.contains(&relative_file) {
+            if negative && filtered_paths.contains_key(&relative_file) {
               filtered_paths.remove(&relative_file);
             } else if !negative {
-              filtered_paths.insert(relative_file);
+              filtered_paths.insert(relative_file, source);
             }
           }
           Err(err) => {
@@ -349,9 +455,6 @@ impl ImportGlobVisitor {
       }
     }
 
-    let mut filtered_paths = filtered_paths.into_iter().collect::<Vec<_>>();
-    filtered_paths.sort();
-
     filtered_paths
   }
 
@@ -359,6 +462,7 @@ impl ImportGlobVisitor {
     &mut self,
     glob_import_as: &str,
     relative_file: &str,
+    source: &str,
     cur_index: usize,
     entry_index: usize,
     sources: &Vec<String>,
@@ -367,7 +471,7 @@ impl ImportGlobVisitor {
       let file = RelativePath::new(&relative_file).to_logical_path(&self.cur_dir);
       let content = std::fs::read_to_string(file).unwrap();
       Some((
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Lit(Lit::Str(swc_ecma_ast::Str {
           span: DUMMY_SP,
           value: content.into(),
@@ -377,7 +481,7 @@ impl ImportGlobVisitor {
     } else if glob_import_as == "url" {
       // add "./dir/foo.js": __glob__0_0
       Some((
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Ident(Ident::new(
           format!("__glob__{}_{}", cur_index, entry_index).into(),
           DUMMY_SP,
@@ -395,6 +499,7 @@ impl ImportGlobVisitor {
   fn deal_with_non_eager(
     &self,
     relative_file: &str,
+    source: &str,
     import: &Option<String>,
   ) -> (String, Box<Expr>) {
     let import_call_expr = Box::new(Expr::Call(CallExpr {
@@ -417,7 +522,7 @@ impl ImportGlobVisitor {
     if let Some(import) = import.as_ref() {
       // () => import('./dir/foo.js').then((m) => m.setup)
       (
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Arrow(ArrowExpr {
           span: DUMMY_SP,
           params: vec![],
@@ -457,7 +562,7 @@ impl ImportGlobVisitor {
       )
     } else {
       (
-        relative_file.to_string(),
+        source.to_string(),
         Box::new(Expr::Arrow(ArrowExpr {
           span: DUMMY_SP,
           params: vec![],
@@ -472,7 +577,7 @@ impl ImportGlobVisitor {
   }
 }
 
-impl VisitMut for ImportGlobVisitor {
+impl<'a> VisitMut for ImportGlobVisitor<'a> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     match expr {
       Expr::Call(CallExpr {
@@ -490,8 +595,12 @@ impl VisitMut for ImportGlobVisitor {
         ..
       }) => {
         if *sym == *"glob" && !args.is_empty() {
-          if let Some(sources) = get_string_literal(&args[0]) {
-            for source in &sources {
+          if let Some(original_sources) = get_string_literal(&args[0]) {
+            let mut sources = vec![];
+
+            for source in original_sources {
+              let source = self.try_alias(&source);
+
               if !source.starts_with('.')
                 && !source.starts_with('/')
                 && !source.starts_with('!')
@@ -502,6 +611,8 @@ impl VisitMut for ImportGlobVisitor {
                   .push(format!("Error when glob {source}: source must be relative path. e.g. './dir/*.js' or '/dir/*.js'(relative to root) or '!/dir/*.js'(exclude) or '!**/bar.js'(exclude) or '**/*.js'(relative to current dir)"));
                 return;
               }
+
+              sources.push(source);
             }
 
             let cur_index = self.import_globs.len();
@@ -509,15 +620,18 @@ impl VisitMut for ImportGlobVisitor {
             // search source using glob
             let sources = &import_glob_info.sources;
             let filtered_paths = self.glob_and_filter_sources(sources);
+            let mut filtered_paths = filtered_paths.into_iter().collect::<Vec<_>>();
+            filtered_paths.sort();
 
             let mut props = vec![];
 
-            for (entry_index, relative_file) in filtered_paths.into_iter().enumerate() {
+            for (entry_index, (relative_file, source)) in filtered_paths.into_iter().enumerate() {
               // deal with as
               if let Some(glob_import_as) = &import_glob_info.glob_import_as {
                 if let Some(prop) = self.deal_with_import_as(
                   glob_import_as,
                   &relative_file,
+                  &source,
                   cur_index,
                   entry_index,
                   sources,
@@ -527,7 +641,7 @@ impl VisitMut for ImportGlobVisitor {
               } else if import_glob_info.eager {
                 // add "./dir/foo.js": __glob__0_0
                 props.push((
-                  relative_file.clone(),
+                  source.clone(),
                   Box::new(Expr::Ident(Ident::new(
                     format!("__glob__{}_{}", cur_index, entry_index).into(),
                     DUMMY_SP,
@@ -535,13 +649,16 @@ impl VisitMut for ImportGlobVisitor {
                 ));
               } else {
                 // add "./dir/foo.js": () => import('./dir/foo.js')
-                let rel_file = if let Some(query) = &import_glob_info.query {
-                  format!("{}?{}", relative_file, query)
+                let (rel_file, source) = if let Some(query) = &import_glob_info.query {
+                  (
+                    format!("{}?{}", relative_file, query),
+                    format!("{}?{}", source, query),
+                  )
                 } else {
-                  relative_file.clone()
+                  (relative_file.clone(), source.clone())
                 };
 
-                props.push(self.deal_with_non_eager(&rel_file, &import_glob_info.import));
+                props.push(self.deal_with_non_eager(&rel_file, &source, &import_glob_info.import));
               }
 
               import_glob_info.globed_sources.push(relative_file);

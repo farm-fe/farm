@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+### Patch Changes
+
+- f0cfdce1: minify modules instead of resource pots
+
 ## 1.0.0
 
 ### Major Changes

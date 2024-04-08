@@ -12,6 +12,8 @@ import {
 } from 'rollup';
 import { Config } from '../../../binding/index.js';
 import path from 'node:path';
+import fse from 'fs-extra';
+import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -107,11 +109,38 @@ export const stringifyQuery = (query: [string, string][]) => {
 };
 
 export function formatId(id: string, query: [string, string][]): string {
+  // remove the adapter internal virtual module flag
+  if (isStartAdapterVirtualModule(id)) {
+    id = id?.replace(VITE_ADAPTER_VIRTUAL_MODULE, '');
+  }
+
   if (!query.length) {
     return id;
   }
 
   return `${id}?${stringifyQuery(query)}`;
+}
+
+// determine if it is the adapter's internal virtual module
+export function isStartAdapterVirtualModule(id: string) {
+  return id?.startsWith(VITE_ADAPTER_VIRTUAL_MODULE);
+}
+
+export function isStartsWithSlash(str: string) {
+  return str?.startsWith('/');
+}
+
+export function addAdapterVirtualModuleFlag(id: string) {
+  return VITE_ADAPTER_VIRTUAL_MODULE + id;
+}
+
+export function normalizeAdapterVirtualModule(id: string) {
+  const path = removeQuery(id);
+  // If resolveIdResult is a path starting with / and the file at that path does not exist
+  // then it is considered an internal virtual module
+  if (isStartsWithSlash(path) && !fse.pathExistsSync(path))
+    return addAdapterVirtualModuleFlag(id);
+  return id;
 }
 
 // normalize path for windows the same as Vite
@@ -120,6 +149,14 @@ export function normalizePath(p: string): string {
     process.platform === 'win32' ? p.replace(/\\/g, '/') : p
   );
 }
+
+export const removeQuery = (path: string) => {
+  const queryIndex = path.indexOf('?');
+  if (queryIndex !== -1) {
+    return path.slice(0, queryIndex);
+  }
+  return revertNormalizePath(path.concat(''));
+};
 
 export function revertNormalizePath(p: string): string {
   return process.platform === 'win32' ? p.replace(/\//g, '\\') : p;
@@ -259,8 +296,9 @@ export function transformResourceInfo2RollupRenderedChunk(
 export function transformResourceInfo2RollupResource(
   resource: Resource
 ): OutputChunk | OutputAsset {
-  const source = Buffer.from(resource.bytes).toString('utf-8');
-  if (resource.info) {
+  // Rollup/Vite only treat js files as chunk
+  if (resource.info && resource.resourceType === 'js') {
+    const source = Buffer.from(resource.bytes).toString('utf-8');
     return {
       ...transformResourceInfo2RollupRenderedChunk(resource.info),
       type: 'chunk',
@@ -275,7 +313,7 @@ export function transformResourceInfo2RollupResource(
       fileName: resource.name,
       name: resource.name,
       needsCodeReference: false,
-      source,
+      source: Uint8Array.from(resource.bytes),
       type: 'asset'
     } satisfies OutputAsset;
   }
@@ -288,13 +326,13 @@ export function transformRollupResource2FarmResource(
   if (chunk.type === 'chunk') {
     return {
       ...originResource,
-      bytes: Array.from(Buffer.from(chunk.code)) as any,
+      bytes: Array.from(Buffer.from(chunk.code)) as number[],
       emitted: originResource.emitted,
       name: chunk.name
     };
   } else {
     return {
-      bytes: Array.from(Buffer.from(chunk.source)) as any,
+      bytes: Array.from(chunk.source as Uint8Array) as number[],
       emitted: originResource.emitted,
       name: chunk.name,
       origin: originResource.origin,

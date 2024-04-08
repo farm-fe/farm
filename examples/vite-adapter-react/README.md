@@ -1,0 +1,1 @@
+# adapter vite-plugin-pages

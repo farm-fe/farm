@@ -14,6 +14,7 @@ pub struct SourceReplacer<'a> {
   module_id: ModuleId,
   module_graph: &'a ModuleGraph,
   resources_map: &'a HashMap<String, Resource>,
+  public_path: String,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -21,11 +22,13 @@ impl<'a> SourceReplacer<'a> {
     module_id: ModuleId,
     module_graph: &'a ModuleGraph,
     resources_map: &'a HashMap<String, Resource>,
+    public_path: String,
   ) -> Self {
     Self {
       module_id,
       module_graph,
       resources_map,
+      public_path,
     }
   }
 }
@@ -45,7 +48,19 @@ impl<'a> VisitMut for SourceReplacer<'a> {
             for resource in self.resources_map.values() {
               if let ResourceOrigin::Module(m_id) = &resource.origin {
                 if &dep_module == m_id {
-                  return format!("/{}", resource.name);
+                  // fix #1076. url prefixed by publicPath
+                  let normalized_public_path = if self.public_path.is_empty() {
+                    ""
+                  } else {
+                    self.public_path.trim_matches('/')
+                  };
+                  let normalized_public_path = if normalized_public_path.is_empty() {
+                    "/".to_string()
+                  } else {
+                    format!("/{normalized_public_path}/")
+                  };
+
+                  return format!("{normalized_public_path}{}", resource.name);
                 }
               }
             }

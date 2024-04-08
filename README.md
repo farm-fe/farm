@@ -11,8 +11,8 @@
     <a href="https://discord.gg/mDErq9aFnF">
       <img src="https://img.shields.io/badge/chat-discord-blueviolet?style=flat&logo=discord&colorA=ffe3f5&colorB=711a5f" alt="discord chat" />
     </a>
-    <a href="https://codecov.io/gh/farm-fe/farm" > 
-    <img src="https://codecov.io/gh/farm-fe/farm/graph/badge.svg?token=AJM5HMP07F"/> 
+    <a href="https://twitter.com/fe_farm" > 
+      <img src="https://img.shields.io/twitter/url.svg?label=@fe_farm&style=social&url=https://twitter.com/fe_farm"/> 
     </a>
     <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="npm package"></a>
     <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="node compatibility"></a>
@@ -108,7 +108,9 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 - Wechat group
 
-<br><img src="https://github.com/farm-fe/farm/assets/66500121/d59a3e8b-3083-4c5e-a746-f8a9194a6209" width="30%" />
+<br><img src="https://github.com/farm-fe/farm/assets/66500121/fb52ead8-7bb3-4a95-baae-2c0ef0eca6ee" width="30%" />
+
+
 
 ## Contributors
 

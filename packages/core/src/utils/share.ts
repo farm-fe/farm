@@ -8,7 +8,6 @@ import { Config } from '../../binding/index.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const splitRE = /\r?\n/;
@@ -67,10 +66,18 @@ export function clearScreen() {
   }
 }
 
-export const version = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json')).toString()).version;
+export const version = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../../package.json')).toString()
+).version;
 
 export function normalizePath(id: string): string {
   return path.posix.normalize(id);
+}
+
+export function normalizeBasePath(basePath: string): string {
+  return path.posix.normalize(
+    isWindows ? basePath.replace(/\\/g, '/') : basePath
+  );
 }
 
 export function arraify<T>(target: T | T[]): T[] {

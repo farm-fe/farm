@@ -1,3 +1,4 @@
+import { throwError as t } from '@farmfe/core';
 import fs from 'fs';
 import { createRequire } from 'module';
 
@@ -5,8 +6,9 @@ const __require = createRequire(import.meta.url);
 
 export const { name: pluginName } = __require('../../package.json');
 
-export function getLessImplementation(implementation?: string) {
-  let resolvedImplementation;
+export function getLessImplementation(implementation?: string | any) {
+  let resolvedImplementation = implementation;
+
   if (!implementation || typeof implementation === 'string') {
     const lessImplPkg = implementation || 'less';
     try {
@@ -15,6 +17,7 @@ export function getLessImplementation(implementation?: string) {
       throwError('Implementation', e);
     }
   }
+
   return resolvedImplementation;
 }
 
@@ -26,10 +29,6 @@ export async function tryRead(filename: string) {
   }
 }
 
-export function formatError(type: string, error: Error) {
-  return `[${pluginName} ${type} Error] ${error}`;
-}
-
 export function throwError(type: string, error: Error) {
-  throw new Error(formatError(type, error));
+  t(pluginName, type, error);
 }

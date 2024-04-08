@@ -1,8 +1,8 @@
 import {
   JsPlugin,
   CompilationContext,
-  RenderResourcePotParams,
-  FinalizeResourcesHookParams,
+  PluginRenderResourcePotParams,
+  PluginFinalizeResourcesHookParams,
   ResourcePotInfo,
   Resource
 } from '../type.js';
@@ -23,7 +23,10 @@ import {
   transformRollupResource2FarmResource,
   VITE_PLUGIN_DEFAULT_MODULE_TYPE,
   normalizePath,
-  revertNormalizePath
+  revertNormalizePath,
+  normalizeAdapterVirtualModule,
+  isStartsWithSlash,
+  removeQuery
 } from './utils.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { Server } from '../../server/index.js';
@@ -45,6 +48,7 @@ import type {
   FunctionPluginHooks
 } from 'rollup';
 import path from 'path';
+import fse from 'fs-extra';
 import {
   Config,
   PluginLoadHookParam,
@@ -54,7 +58,6 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../../binding/index.js';
-import merge from 'lodash.merge';
 import { readFile } from 'fs/promises';
 import {
   ViteDevServerAdapter,
@@ -73,6 +76,8 @@ import {
 } from './utils.js';
 import { Logger } from '../../index.js';
 import { applyHtmlTransform } from './apply-html-transform.js';
+import merge from '../../utils/merge.js';
+import { CompilationMode } from '../../config/env.js';
 
 type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
   this: any,
@@ -116,7 +121,8 @@ export class VitePluginAdapter implements JsPlugin {
     rawPlugin: Plugin,
     farmConfig: UserConfig,
     filters: string[],
-    logger: Logger
+    logger: Logger,
+    mode: CompilationMode
   ) {
     this.name = rawPlugin.name;
     if (!rawPlugin.name) {
@@ -140,7 +146,7 @@ export class VitePluginAdapter implements JsPlugin {
       load: () => (this.load = this.viteLoadToFarmLoad()),
       transform: () => (this.transform = this.viteTransformToFarmTransform()),
       buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
-      closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
+      // closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
       handleHotUpdate: () =>
         (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
       renderChunk: () =>
@@ -156,18 +162,33 @@ export class VitePluginAdapter implements JsPlugin {
           this.viteGenerateBundleToFarmFinalizeResources()),
       transformIndexHtml: () =>
         (this.transformHtml = this.viteTransformIndexHtmlToFarmTransformHtml()),
-      writeBundle: () =>
-        (this.writeResources = this.viteWriteBundleToFarmWriteResources())
+      'writeBundle|closeBundle': () =>
+        (this.writeResources = this.viteWriteCloseBundleToFarmWriteResources())
     };
     const alwaysExecutedHooks = ['buildStart'];
+    const productionOnlyHooks = [
+      'renderChunk',
+      'generateBundle',
+      'renderStart',
+      'closeBundle',
+      'writeBundle'
+    ];
 
     // convert hooks
-    for (const [hookName, fn] of Object.entries(hooksMap)) {
-      if (
-        rawPlugin[hookName as keyof Plugin] ||
-        alwaysExecutedHooks.includes(hookName)
-      ) {
-        fn();
+    for (const [hookNameGroup, fn] of Object.entries(hooksMap)) {
+      const hookNames = hookNameGroup.split('|');
+
+      for (const hookName of hookNames) {
+        if (
+          rawPlugin[hookName as keyof Plugin] ||
+          alwaysExecutedHooks.includes(hookName)
+        ) {
+          if (mode !== 'production' && productionOnlyHooks.includes(hookName)) {
+            continue;
+          }
+
+          fn();
+        }
       }
     }
 
@@ -190,6 +211,10 @@ export class VitePluginAdapter implements JsPlugin {
         );
       }
     }
+  }
+
+  get api() {
+    return this._rawPlugin.api;
   }
 
   // call both config and configResolved
@@ -320,8 +345,9 @@ export class VitePluginAdapter implements JsPlugin {
           `Farm does not support '${name}' property of vite plugin ${this.name} hook ${hookName} for now. '${name}' property will be ignored.`
         );
       };
+      const supportedHooks = ['transformIndexHtml'];
       // TODO support order, if a hook has order, it should be split into two plugins
-      if (hook.order) {
+      if (hook.order && !supportedHooks.includes(hookName)) {
         logWarn('order');
       }
       if (hook.sequential) {
@@ -387,20 +413,14 @@ export class VitePluginAdapter implements JsPlugin {
           const absImporterPath = normalizePath(
             path.resolve(process.cwd(), params.importer ?? '')
           );
-          const resolveIdResult: ResolveIdResult = await hook?.(
+          let resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
             absImporterPath,
             { isEntry: params.kind === 'entry' }
           );
-          const removeQuery = (path: string) => {
-            const queryIndex = path.indexOf('?');
-            if (queryIndex !== -1) {
-              return path.slice(0, queryIndex);
-            }
-            return revertNormalizePath(path.concat(''));
-          };
 
           if (isString(resolveIdResult)) {
+            resolveIdResult = normalizeAdapterVirtualModule(resolveIdResult);
             return {
               resolvedPath: removeQuery(encodeStr(resolveIdResult)),
               query: customParseQueryString(resolveIdResult),
@@ -409,15 +429,39 @@ export class VitePluginAdapter implements JsPlugin {
               meta: {}
             };
           } else if (isObject(resolveIdResult)) {
+            const resolveId = normalizeAdapterVirtualModule(
+              resolveIdResult?.id
+            );
             return {
-              resolvedPath: removeQuery(encodeStr(resolveIdResult?.id)),
-              query: customParseQueryString(resolveIdResult!.id),
+              resolvedPath: removeQuery(encodeStr(resolveId)),
+              query: customParseQueryString(resolveId),
               sideEffects: Boolean(resolveIdResult?.moduleSideEffects),
               // TODO support relative and absolute external
               external: Boolean(resolveIdResult?.external),
               meta: resolveIdResult.meta ?? {}
             };
           }
+
+          // handles paths starting with / in the vite plugin,
+          // returning the correct path if the file exists in our root path
+          const rootAbsolutePath = path.join(
+            this._farmConfig.root,
+            params.source
+          );
+
+          if (
+            isStartsWithSlash(params.source) &&
+            fse.pathExistsSync(rootAbsolutePath)
+          ) {
+            return {
+              resolvedPath: removeQuery(encodeStr(rootAbsolutePath)),
+              query: customParseQueryString(rootAbsolutePath),
+              sideEffects: false,
+              external: false,
+              meta: {}
+            };
+          }
+
           return null;
         }
       )
@@ -437,7 +481,6 @@ export class VitePluginAdapter implements JsPlugin {
           if (VitePluginAdapter.isFarmInternalVirtualModule(params.moduleId)) {
             return null;
           }
-
           const hook = this.wrapRawPluginHook(
             'load',
             this._rawPlugin.load,
@@ -541,18 +584,6 @@ export class VitePluginAdapter implements JsPlugin {
     };
   }
 
-  private viteCloseBundleToFarmFinish(): JsPlugin['finish'] {
-    return {
-      executor: this.wrapExecutor(() => {
-        const hook = this.wrapRawPluginHook(
-          'closeBundle',
-          this._rawPlugin.closeBundle
-        );
-        return hook?.();
-      })
-    };
-  }
-
   private viteHandleHotUpdateToFarmUpdateModules(): JsPlugin['updateModules'] {
     return {
       executor: this.wrapExecutor(
@@ -608,7 +639,7 @@ export class VitePluginAdapter implements JsPlugin {
         moduleIds: this.filters
       },
       executor: this.wrapExecutor(
-        async (param: RenderResourcePotParams, ctx) => {
+        async (param: PluginRenderResourcePotParams, ctx) => {
           if (param.resourcePotInfo.resourcePotType !== 'js') {
             return;
           }
@@ -685,7 +716,7 @@ export class VitePluginAdapter implements JsPlugin {
   private viteGenerateBundleToFarmFinalizeResources(): JsPlugin['finalizeResources'] {
     return {
       executor: this.wrapExecutor(
-        async (param: FinalizeResourcesHookParams, context) => {
+        async (param: PluginFinalizeResourcesHookParams, context) => {
           const hook = this.wrapRawPluginHook(
             'generateBundle',
             this._rawPlugin.generateBundle,
@@ -711,7 +742,7 @@ export class VitePluginAdapter implements JsPlugin {
               param.resourcesMap[key]
             );
             return res;
-          }, {} as FinalizeResourcesHookParams['resourcesMap']);
+          }, {} as PluginFinalizeResourcesHookParams['resourcesMap']);
 
           return result;
         }
@@ -720,7 +751,21 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   private viteTransformIndexHtmlToFarmTransformHtml(): JsPlugin['transformHtml'] {
+    const rawTransformHtmlHook: any = this._rawPlugin.transformIndexHtml;
+    const order: 'pre' | 'post' | 'normal' =
+      rawTransformHtmlHook?.order ??
+      rawTransformHtmlHook?.enforce ??
+      this._rawPlugin.enforce ??
+      'normal';
+
+    const orderMap: Record<string, 0 | 1 | 2> = {
+      pre: 0,
+      normal: 1,
+      post: 2
+    };
+
     return {
+      order: orderMap[order] ?? 1,
       executor: this.wrapExecutor(
         async (params: { htmlResource: Resource }, context) => {
           const { htmlResource } = params;
@@ -747,28 +792,36 @@ export class VitePluginAdapter implements JsPlugin {
     };
   }
 
-  private viteWriteBundleToFarmWriteResources(): JsPlugin['writeResources'] {
+  private viteWriteCloseBundleToFarmWriteResources(): JsPlugin['writeResources'] {
     return {
       executor: this.wrapExecutor(
-        async (param: FinalizeResourcesHookParams, context) => {
+        async (param: PluginFinalizeResourcesHookParams, context) => {
           const hook = this.wrapRawPluginHook(
             'writeBundle',
             this._rawPlugin.writeBundle,
             context
           );
 
-          const bundles = Object.entries(param.resourcesMap).reduce(
-            (res, [key, val]) => {
-              res[key] = transformResourceInfo2RollupResource(val);
-              return res;
-            },
-            {} as OutputBundle
-          );
+          if (hook) {
+            const bundles = Object.entries(param.resourcesMap).reduce(
+              (res, [key, val]) => {
+                res[key] = transformResourceInfo2RollupResource(val);
+                return res;
+              },
+              {} as OutputBundle
+            );
 
-          await hook?.(
-            transformFarmConfigToRollupNormalizedOutputOptions(param.config),
-            bundles
+            await hook?.(
+              transformFarmConfigToRollupNormalizedOutputOptions(param.config),
+              bundles
+            );
+          }
+
+          const closeBundle = this.wrapRawPluginHook(
+            'closeBundle',
+            this._rawPlugin.closeBundle
           );
+          return closeBundle?.();
         }
       )
     };

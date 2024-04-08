@@ -17,7 +17,10 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use crate::common::{assert_compiler_result, create_compiler, create_compiler_with_plugins};
+use crate::common::{
+  assert_compiler_result, create_compiler, create_compiler_with_plugins, create_config,
+  create_with_compiler,
+};
 
 mod common;
 
@@ -39,6 +42,28 @@ fn tree_shake_test() {
       compiler.compile().unwrap();
 
       assert_compiler_result(&compiler, Some(&entry_name));
+    }
+  );
+}
+
+#[test]
+fn tree_shake_development() {
+  fixture!(
+    "tests/fixtures/tree_shake_development/**/index.ts",
+    |file, crate_path| {
+      let cwd = file.parent().unwrap();
+      let entry_name = "index".to_string();
+
+      let mut config = create_config(cwd.into(), crate_path);
+
+      config.input = HashMap::from([(entry_name.clone(), "./index.ts".to_string())]);
+      config.mode = farmfe_core::config::Mode::Development;
+
+      let compiler = create_with_compiler(config, vec![]);
+
+      compiler.compile().expect("failed compile");
+
+      assert_compiler_result(&compiler, Some(&entry_name))
     }
   );
 }

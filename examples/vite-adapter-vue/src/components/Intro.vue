@@ -1,7 +1,7 @@
 <script lang="ts"></script>
 
 <template>
-   <p>
+  <p>
     Install
     <a href="https://github.com/vuejs/language-tools" target="_blank">Volar</a>
     in your IDE for a better DX

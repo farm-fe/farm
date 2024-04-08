@@ -154,7 +154,12 @@
     "struct",
     "rfind",
     "srcset",
-    "shulandmimi"
+    "shulandmimi",
+    "concurrentify",
+    "pageerror",
+    "rsdoctor",
+    "deepmerge",
+    "Mergeable"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

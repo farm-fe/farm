@@ -1,5 +1,22 @@
 # @farmfe/js-plugin-less
 
+## 1.6.2
+
+### Patch Changes
+
+- cb7df71f: Support alias resolve and url rebase for import.meta.glob, sass and less plugins
+- Updated dependencies [cb7df71f]
+  - @farmfe/core@1.0.8
+
+## 1.6.1
+
+### Patch Changes
+
+- a749b5af: Fix Vite project migrations issues
+- Updated dependencies [a749b5af]
+- Updated dependencies [5b9cb22c]
+  - @farmfe/core@1.0.4
+
 ## 1.6.0
 
 ### Patch Changes

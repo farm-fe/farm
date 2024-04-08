@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - name: Install Dependencies
         run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
 
@@ -48,8 +48,11 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
-      - name: Test Examples - ${{ matrix.settings.abi }}
+      - name: Build Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
+
+      - name: E2E Test Examples - ${{ matrix.settings.abi }}
+        run: npm run test-e2e
 
       # test create farm
       - name: Build Create Farm
@@ -72,15 +75,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - name: Install Dependencies
         run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
+      - name: Changesets Check
+        run: npx changeset status --since=origin/main
 
   ts-test:
     name: Typescript Test
@@ -102,7 +109,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - name: Install Dependencies
         run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
@@ -115,10 +122,10 @@ jobs:
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
       - name: Test - ${{ matrix.settings.abi }}
-        run: npx vitest # use npx vitest to avoid random exit 1
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
+        run: npm run test
+      # - name: Setup tmate session
+      #   if: ${{ failure() }}
+      #   uses: mxschmitt/action-tmate@v3
 
   check-core-artifacts:
     name: Check Core Artifacts

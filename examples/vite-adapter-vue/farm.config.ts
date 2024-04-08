@@ -2,6 +2,7 @@ import path from 'path';
 
 import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
@@ -11,12 +12,22 @@ import UnpluginSvgComponent from 'unplugin-svg-component/vite';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
-import viewer from '@farmfe/js-plugin-record-viewer';
+import viewer from '@farmfe/js-plugin-visualizer';
+
+function configureVitePluginVue() {
+  // return plugin and its filters
+  return {
+    // using plugin vue
+    vitePlugin: vue(),
+    // configuring filters for it. Unmatched module paths will be skipped.
+    filters:  ["!node_modules", "node_modules/my-ui"]
+  };
+}
 
 export default defineConfig({
   compilation: {
     // compilation options here
-    persistentCache: false
+    // persistentCache: false
   },
   plugins: [
     '@farmfe/plugin-sass',
@@ -42,7 +53,8 @@ export default defineConfig({
   ],
   vitePlugins: [
     VueRouter(),
-    vue(),
+    configureVitePluginVue,
+    vueJsx(),
     AutoImport({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
       imports: [

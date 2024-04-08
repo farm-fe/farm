@@ -78,12 +78,10 @@ export async function build(
     'production'
   );
 
-  setProcessEnv(resolvedUserConfig.compilation.mode);
-
   try {
     await createBundleHandler(resolvedUserConfig);
     // copy resources under publicDir to output.path
-    await copyPublicDirectory(resolvedUserConfig, inlineConfig, logger);
+    await copyPublicDirectory(resolvedUserConfig, logger);
   } catch (err) {
     logger.error(`Failed to build: ${err}`, { exit: true });
   }
@@ -91,7 +89,6 @@ export async function build(
 
 export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new Logger();
-  const port = inlineConfig.port ?? 1911;
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
@@ -110,11 +107,23 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     }
   }
 
+  // reusing port conflict check from DevServer
+  const serverConfig = {
+    ...resolvedUserConfig.server,
+    host: inlineConfig.host ?? true,
+    port:
+      inlineConfig.port ??
+      (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
+  };
+  await Server.resolvePortConflict(serverConfig, logger);
+  const port = serverConfig.port;
+  const host = serverConfig.host;
   const previewOptions: UserPreviewServerConfig = {
+    ...serverConfig,
     distDir,
     output: { path: output.path, publicPath: output.publicPath },
     port,
-    host: inlineConfig.host ?? true
+    host
   };
   const server = new Server({ logger });
   server.createPreviewServer(previewOptions);
@@ -129,10 +138,9 @@ export async function watch(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'development'
+    'development',
+    false
   );
-
-  setProcessEnv(resolvedUserConfig.compilation.mode);
 
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,
@@ -271,12 +279,11 @@ export async function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
 
 async function copyPublicDirectory(
   resolvedUserConfig: ResolvedUserConfig,
-  inlineConfig: FarmCLIOptions & UserConfig,
   logger: Logger
 ): Promise<void> {
   const absPublicDirPath = normalizePublicDir(
     resolvedUserConfig.root,
-    inlineConfig.publicDir
+    resolvedUserConfig.publicDir
   );
 
   try {

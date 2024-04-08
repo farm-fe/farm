@@ -71,6 +71,29 @@ pub fn create_css_compiler(
   compiler
 }
 
+#[allow(dead_code)]
+pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
+  Config {
+    input: HashMap::new(),
+    root: cwd.to_string_lossy().to_string(),
+    runtime: generate_runtime(crate_path),
+    output: farmfe_core::config::OutputConfig::default(),
+    mode: Mode::Production,
+    external: vec![],
+    sourcemap: SourcemapConfig::Bool(false),
+    lazy_compilation: false,
+    progress: false,
+    minify: Box::new(BoolOrObj::Bool(false)),
+    preset_env: Box::new(PresetEnvConfig::Bool(false)),
+    persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
+    ..Default::default()
+  }
+}
+
+pub fn create_with_compiler(config: Config, plugin_adapters: Vec<Arc<dyn Plugin>>) -> Compiler {
+  Compiler::new(config, plugin_adapters).expect("faile to create compiler")
+}
+
 pub fn create_compiler(
   input: HashMap<String, String>,
   cwd: PathBuf,

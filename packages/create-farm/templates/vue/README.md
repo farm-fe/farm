@@ -1,4 +1,6 @@
-# Farm Project
+# Farm + Vue
+
+This template should help you start developing using Vue and TypeScript in Farm.
 
 ## Setup
 

@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5](https://github.com/farm-fe/farm/compare/farmfe_core-v0.4.4...farmfe_core-v0.4.5) - 2024-04-08
+
+### Fixed
+- persistent cache conflicts ([#1131](https://github.com/farm-fe/farm/pull/1131))
+
+### Other
+- Chore/example vue2 ([#1127](https://github.com/farm-fe/farm/pull/1127))
+
+## [0.4.4](https://github.com/farm-fe/farm/compare/farmfe_core-v0.4.3...farmfe_core-v0.4.4) - 2024-04-02
+
+### Other
+- lock swc version ([#1113](https://github.com/farm-fe/farm/pull/1113))
+
+## [0.4.3](https://github.com/farm-fe/farm/compare/farmfe_core-v0.4.2...farmfe_core-v0.4.3) - 2024-04-01
+
+### Fixed
+- less/sass url rebase and url publicPath ([#1071](https://github.com/farm-fe/farm/pull/1071))
+
+### Other
+- *(splitQuery)* change split to splitOnce ([#1068](https://github.com/farm-fe/farm/pull/1068))
+
+## [0.4.2](https://github.com/farm-fe/farm/compare/farmfe_core-v0.4.1...farmfe_core-v0.4.2) - 2024-03-24
+
+### Added
+- farm e2e test ([#1041](https://github.com/farm-fe/farm/pull/1041)) ([#1049](https://github.com/farm-fe/farm/pull/1049))
+- minify modules instead of resource pots ([#1025](https://github.com/farm-fe/farm/pull/1025))
+
+### Fixed
+- vite project migration issues ([#1060](https://github.com/farm-fe/farm/pull/1060))
+
+### Other
+- support glob brace ([#1055](https://github.com/farm-fe/farm/pull/1055))
+- Feat/update readme ([#1028](https://github.com/farm-fe/farm/pull/1028))
+
 ## [0.4.1](https://github.com/farm-fe/farm/compare/farmfe_core-v0.4.0...farmfe_core-v0.4.1) - 2024-03-13
 
 ### Other

@@ -91,7 +91,7 @@ jobs:
           shared-key: rust-build-${{ matrix.settings.abi }}
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - name: Install Dependencies
         run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
       - name: Build Plugin Tools

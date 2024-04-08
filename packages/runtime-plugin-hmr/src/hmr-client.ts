@@ -5,15 +5,15 @@ import { logger } from './logger';
 import { ErrorOverlay, overlayId } from './overlay';
 
 // Inject during compile time
-const hmrPort = Number(FARM_HMR_PORT || 9000);
+const hmrPort = Number(FARM_HMR_PORT);
+
 const hmrHost =
   typeof FARM_HMR_HOST === 'boolean'
     ? window.location.hostname || 'localhost'
     : FARM_HMR_HOST || 'localhost';
 
-const hmrBase = FARM_HMR_BASE === '/' ? '/__hmr' : FARM_HMR_BASE;
 const socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
-const socketHostUrl = `${hmrHost}:${hmrPort}${hmrBase}`;
+const socketHostUrl = `${hmrHost}:${hmrPort}${FARM_HMR_PATH}`;
 
 export class HmrClient {
   socket: WebSocket;

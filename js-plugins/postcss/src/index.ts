@@ -1,9 +1,9 @@
-import { JsPlugin, ResolvedUserConfig } from '@farmfe/core';
+import { JsPlugin, ResolvedUserConfig, checkPublicFile } from '@farmfe/core';
 import postcssLoadConfig from 'postcss-load-config';
 import { ProcessOptions, Processor } from 'postcss';
 import path from 'path';
 import glob from 'fast-glob';
-import { getPostcssImplementation, pluginName } from './utils.js';
+import { getPostcssImplementation, pluginName, tryRead } from './utils.js';
 
 export type PostcssPluginOptions = {
   /**
@@ -20,6 +20,13 @@ export type PostcssPluginOptions = {
     moduleTypes?: string[];
   };
   implementation?: string;
+  internalPlugins?: {
+    /**
+     * @default false
+     * @description please see https://www.npmjs.com/package/postcss-import
+     */
+    postcssImport?: boolean;
+  };
 };
 
 export default function farmPostcssPlugin(
@@ -27,6 +34,8 @@ export default function farmPostcssPlugin(
 ): JsPlugin {
   let postcssProcessor: Processor;
   let postcssOptions: ProcessOptions;
+  let postcssPlugins: postcssLoadConfig.ResultPlugin[] = [];
+  let userConfig: ResolvedUserConfig;
 
   const implementation = getPostcssImplementation(options?.implementation);
 
@@ -42,7 +51,8 @@ export default function farmPostcssPlugin(
         options.postcssLoadConfig?.options
       );
       postcssOptions = _options;
-      postcssProcessor = implementation(plugins);
+      postcssPlugins = plugins;
+      userConfig = config;
     },
 
     transform: {
@@ -53,6 +63,66 @@ export default function farmPostcssPlugin(
       async executor(param, context) {
         try {
           const sourceMapEnabled = context.sourceMapEnabled(param.moduleId);
+          const enablePostcssImport =
+            options.internalPlugins?.postcssImport ?? false;
+
+          if (enablePostcssImport) {
+            const atImport = getPostcssImplementation('postcss-import');
+            const postcssUrl = getPostcssImplementation('postcss-url');
+
+            postcssPlugins.unshift(
+              atImport({
+                resolve: async (id: string, basedir: string) => {
+                  const publicFile = await checkPublicFile(id, userConfig);
+                  if (publicFile) {
+                    return publicFile;
+                  }
+
+                  try {
+                    const resolvedInfo = await context.resolve(
+                      {
+                        kind: 'import',
+                        importer: path.resolve(basedir, '*'),
+                        source: id
+                      },
+                      {
+                        meta: param.meta,
+                        caller: pluginName
+                      }
+                    );
+                    if (resolvedInfo.resolvedPath) {
+                      return path.resolve(resolvedInfo.resolvedPath);
+                    }
+                  } catch {
+                    // context.resolve will throw an error if it doesn't resolve, so it needs to be wrapped in a try block here.
+                  }
+                  if (!path.isAbsolute(id)) {
+                    console.error(
+                      `Unable to resolve \`@import "${id}"\` from ${basedir}`
+                    );
+                  }
+
+                  return id;
+                },
+                load: async (id: string) => {
+                  // After postcss-import inline process, the `url()` relative paths in the css file need to be recomputed relative to the entry CSS file.
+                  const content = await tryRead(id);
+                  const implementation = getPostcssImplementation();
+                  const urlRebasePostcssProcessor: Processor = implementation([
+                    postcssUrl({
+                      url: 'rebase'
+                    })
+                  ]);
+                  const { css } = await urlRebasePostcssProcessor.process(
+                    content,
+                    { from: id, to: param.resolvedPath }
+                  );
+                  return css;
+                }
+              })
+            );
+          }
+          postcssProcessor = implementation(postcssPlugins);
 
           const { css, map, messages } = await postcssProcessor.process(
             param.content,
@@ -62,6 +132,7 @@ export default function farmPostcssPlugin(
               map: sourceMapEnabled
             }
           );
+
           // record CSS dependencies from @imports
           if (process.env.NODE_ENV === 'development') {
             for (const message of messages) {

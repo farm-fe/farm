@@ -2,7 +2,6 @@ import React from 'react';
 import { FarmCard } from '../card/index';
 import { ButtonAction } from '../button/index';
 import feature from '../../../assets/feature.svg';
-import logo from '../../../assets/logo.png';
 import light from '../../../assets/light.svg';
 import plugin from '../../../assets/plugin.svg';
 import './index.css';
@@ -10,7 +9,9 @@ import './index.css';
 export function Welcome() {
   return (
     <div className="farm-container">
-      <img className="logo" src={logo} alt="" />
+      {/* <img className="logo" src={logo} alt="" /> */}
+      <div className="logo" />
+
       <FarmCard>
         <div className="main-desc">
           <h2 className="main-sub-title">

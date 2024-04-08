@@ -20,6 +20,8 @@ export default defineConfig(async (env) => {
           react: resolve(process.cwd(), './node_modules/react')
         }
       },
+      minify: false,
+      mode: 'development',
       output: {
         path: './build',
         filename: 'assets/[resourceName].[contentHash].[ext]',
@@ -32,14 +34,14 @@ export default defineConfig(async (env) => {
     },
     server: {
       cors: true,
-      port: 6260
+      port: 6290
     },
     plugins: [
       [
         '@farmfe/plugin-react',
         {
-          refresh: process.env.NODE_ENV === 'development',
-          development: process.env.NODE_ENV === 'development'
+          refresh: env.mode === 'development',
+          development: env.mode === 'development'
         }
       ],
       farmJsPluginLess(),

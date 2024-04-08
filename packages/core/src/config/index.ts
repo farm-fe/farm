@@ -4,8 +4,6 @@ import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
-import merge from 'lodash.merge';
-
 import {
   getSortedPlugins,
   handleVitePlugins,
@@ -28,7 +26,8 @@ import {
   isEmptyObject,
   isObject,
   isWindows,
-  normalizePath
+  normalizePath,
+  normalizeBasePath
 } from '../utils/index.js';
 import { urlRegex } from '../utils/http.js';
 import { JsPlugin } from '../index.js';
@@ -48,6 +47,7 @@ import type {
 } from './types.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
+import merge from '../utils/merge.js';
 
 export * from './types.js';
 export function defineFarmConfig(config: UserConfig): UserConfig;
@@ -59,6 +59,51 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
 
+async function getDefaultConfig(
+  inlineOptions: FarmCLIOptions,
+  logger: Logger,
+  mode?: CompilationMode,
+  isHandleServerPortConflict = true
+) {
+  const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
+
+  const resolvedUserConfig = await resolveMergedUserConfig(
+    mergedUserConfig,
+    undefined,
+    inlineOptions.mode ?? mode
+  );
+  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
+
+  if (isHandleServerPortConflict) {
+    await handleServerPortConflict(resolvedUserConfig, logger, mode);
+  }
+
+  resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
+    resolvedUserConfig,
+    logger,
+    mode
+  );
+  resolvedUserConfig.root = resolvedUserConfig.compilation.root;
+  resolvedUserConfig.jsPlugins = [];
+  resolvedUserConfig.rustPlugins = [];
+
+  return resolvedUserConfig;
+}
+
+async function handleServerPortConflict(
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger,
+  mode?: CompilationMode
+) {
+  // check port availability: auto increment the port if a conflict occurs
+
+  try {
+    mode !== 'production' &&
+      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
+    // eslint-disable-next-line no-empty
+  } catch {}
+}
+
 /**
  * Resolve and load user config from the specified path
  * @param configPath
@@ -66,36 +111,23 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
 export async function resolveConfig(
   inlineOptions: FarmCLIOptions,
   logger: Logger,
-  mode?: CompilationMode
+  mode?: CompilationMode,
+  isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
   inlineOptions.mode = inlineOptions.mode ?? mode;
 
-  const getDefaultConfig = async () => {
-    const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
-
-    const resolvedUserConfig = await resolveMergedUserConfig(
-      mergedUserConfig,
-      undefined,
-      inlineOptions.mode ?? mode
-    );
-    resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
-    resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
-      resolvedUserConfig,
-      logger,
-      mode
-    );
-    resolvedUserConfig.root = resolvedUserConfig.compilation.root;
-    resolvedUserConfig.jsPlugins = [];
-    resolvedUserConfig.rustPlugins = [];
-    return resolvedUserConfig;
-  };
   // configPath may be file or directory
   const { configPath } = inlineOptions;
   // if the config file can not found, just merge cli options and return default
   if (!configPath) {
-    return getDefaultConfig();
+    return getDefaultConfig(
+      inlineOptions,
+      logger,
+      mode,
+      isHandleServerPortConflict
+    );
   }
 
   if (!path.isAbsolute(configPath)) {
@@ -109,7 +141,12 @@ export async function resolveConfig(
   );
 
   if (!loadedUserConfig) {
-    return getDefaultConfig();
+    return getDefaultConfig(
+      inlineOptions,
+      logger,
+      mode,
+      isHandleServerPortConflict
+    );
   }
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
@@ -127,7 +164,8 @@ export async function resolveConfig(
     vitePluginAdapters = await handleVitePlugins(
       vitePlugins,
       userConfig,
-      logger
+      logger,
+      mode
     );
   }
 
@@ -151,17 +189,10 @@ export async function resolveConfig(
     resolvedUserConfig.server,
     mode
   );
-  // check port availability: auto increment the port if a conflict occurs
-  const targetWeb = !(
-    userConfig.compilation?.output?.targetEnv === 'node' ||
-    mode === 'production'
-  );
 
-  try {
-    targetWeb &&
-      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
-    // eslint-disable-next-line no-empty
-  } catch { }
+  if (isHandleServerPortConflict) {
+    await handleServerPortConflict(resolvedUserConfig, logger, mode);
+  }
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -207,13 +238,10 @@ export async function normalizeUserCompilationConfig(
 
   const inputIndexConfig = checkCompilationInputValue(userConfig, logger);
   const config: Config['config'] & ServerConfig = merge(
+    {},
+    DEFAULT_COMPILATION_OPTIONS,
     {
-      input: inputIndexConfig,
-      output: {
-        path: './dist',
-        publicPath: '/'
-      },
-      sourcemap: true
+      input: inputIndexConfig
     },
     compilation
   );
@@ -263,10 +291,10 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-        env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-          userConfig.env[key];
-        return env;
-      }, {})
+          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+            userConfig.env[key];
+          return env;
+        }, {})
   );
 
   const require = module.createRequire(import.meta.url);
@@ -316,7 +344,7 @@ export async function normalizeUserCompilationConfig(
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
       ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-        ?.name ?? FARM_DEFAULT_NAMESPACE
+          ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
@@ -347,13 +375,21 @@ export async function normalizeUserCompilationConfig(
     userConfig.server.hmr &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
+    const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
+    const hmrPath = userConfig.server.hmr.path;
+    const serverOptions = userConfig.server;
+    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
+
     config.runtime.plugins.push(hmrClientPluginPath);
-    config.define.FARM_HMR_PORT = String(userConfig.server.hmr.port);
+    // TODO optimize get hmr logic
+    config.define.FARM_HMR_PORT = String(
+      (serverOptions.hmr.port || undefined) ??
+        serverOptions.port ??
+        DEFAULT_DEV_SERVER_OPTIONS.port
+    );
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-    // may be we don't need this
-    config.define.FARM_HMR_PATH = userConfig.server.hmr.path;
-    config.define.FARM_HMR_BASE = userConfig.compilation?.output?.publicPath ?? '/';
+    config.define.FARM_HMR_PATH = defineHmrPath;
   }
 
   if (
@@ -387,6 +423,16 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  // lazyCompilation should be disabled in production mode
+  // so, it only happens in development mode
+  // https://github.com/farm-fe/farm/issues/962
+  if (config.treeShaking && config.lazyCompilation) {
+    logger.error(
+      'treeShaking option is not supported in lazyCompilation mode, treeShaking will be disabled.'
+    );
+    config.treeShaking = false;
+  }
+
   if (config.minify === undefined) {
     if (isProduction) {
       config.minify = true;
@@ -395,7 +441,7 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (config.presetEnv === undefined && config.output?.targetEnv !== 'node') {
+  if (config.presetEnv === undefined) {
     if (isProduction) {
       config.presetEnv = true;
     } else {
@@ -412,7 +458,10 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   ignores: [],
   host: true,
-  port: 9000,
+  port:
+    (process.env.FARM_DEFAULT_HMR_PORT &&
+      Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
+    undefined,
   path: '/__hmr',
   protocol: 'ws',
   watchOptions: {}
@@ -420,7 +469,10 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   headers: {},
-  port: 9000,
+  port:
+    (process.env.FARM_DEFAULT_SERVER_PORT &&
+      Number(process.env.FARM_DEFAULT_SERVER_PORT)) ||
+    9000,
   https: undefined,
   protocol: 'http',
   hostname: { name: 'localhost', host: undefined },
@@ -433,6 +485,29 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   spa: true,
   middlewares: [],
   writeToDisk: false
+};
+
+export const DEFAULT_COMPILATION_OPTIONS: Partial<Config['config']> = {
+  output: {
+    path: './dist',
+    publicPath: '/'
+  },
+  sourcemap: true,
+  resolve: {
+    extensions: [
+      'tsx',
+      'mts',
+      'cts',
+      'ts',
+      'jsx',
+      'mjs',
+      'js',
+      'cjs',
+      'json',
+      'html',
+      'css'
+    ]
+  }
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -453,20 +528,28 @@ export function normalizeDevServerOptions(
   const hmr =
     isProductionMode || hmrConfig === false
       ? false
-      : merge({}, DEFAULT_HMR_OPTIONS, { host, port }, hmrConfig || {});
+      : merge(
+          {},
+          DEFAULT_HMR_OPTIONS,
+          {
+            host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
+            port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
+          },
+          hmrConfig === true ? {} : hmrConfig
+        );
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
     hmr,
     https: https
       ? {
-        ...https,
-        ca: tryAsFileRead(options.https.ca),
-        cert: tryAsFileRead(options.https.cert),
-        key: tryAsFileRead(options.https.key),
-        pfx: tryAsFileRead(options.https.pfx)
-      }
+          ...https,
+          ca: tryAsFileRead(options.https.ca),
+          cert: tryAsFileRead(options.https.cert),
+          key: tryAsFileRead(options.https.key),
+          pfx: tryAsFileRead(options.https.pfx)
+        }
       : undefined
-  });
+  }) as NormalizedServerConfig;
 }
 
 async function readConfigFile(
@@ -544,7 +627,7 @@ async function readConfigFile(
         // Change to vm.module of node or loaders as far as it is stable
         userConfig = (await import(filePath as string)).default;
       } finally {
-        fs.unlink(filePath, () => void 0);
+        // fs.unlink(filePath, () => void 0);
       }
     } else {
       const filePath = isWindows
@@ -744,7 +827,7 @@ async function resolveMergedUserConfig(
 
   resolvedUserConfig.env = {
     ...userEnv,
-    NODE_ENV: process.env.NODE_ENV || mode
+    NODE_ENV: mode
   };
 
   return resolvedUserConfig;
@@ -788,9 +871,11 @@ export async function loadConfigFile(
       logger.error(`Failed to load config file: \n ${error.stack}`, {
         exit: true
       });
-    } else {
-      logger.error(`Failed to load config file: \n ${error.stack}`);
     }
+
+    throw new Error(
+      'Failed to load farm config file: ' + error + ' ' + error.stack
+    );
   }
 }
 
@@ -841,7 +926,8 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Build failed due to errors: Can not resolve ${isTargetNode ? 'index.js or index.ts' : 'index.html'
+        `Build failed due to errors: Can not resolve ${
+          isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
       );
     }

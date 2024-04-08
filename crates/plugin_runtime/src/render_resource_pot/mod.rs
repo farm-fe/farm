@@ -5,11 +5,14 @@ use std::{
 };
 
 use farmfe_core::{
+  cache::cache_store::CacheStoreKey,
+  cache_item,
   config::{
     minify::{MinifyMode, MinifyOptions},
     FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE,
   },
   context::CompilationContext,
+  deserialize,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
     magic_string::{MagicString, MagicStringOptions},
@@ -19,6 +22,7 @@ use farmfe_core::{
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
+  serialize,
   swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{BindingIdent, BlockStmt, FnDecl, Function, Module, ModuleItem, Param, Stmt}, // swc_ecma_ast::Function
 };
@@ -44,6 +48,7 @@ use farmfe_toolkit::{
   swc_ecma_transforms_base::fixer::paren_remover,
   swc_ecma_visit::VisitMutWith,
 };
+use farmfe_utils::hash::sha256;
 
 use self::source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer};
 
@@ -96,6 +101,47 @@ pub fn resource_pot_to_runtime_object(
       let module = module_graph
         .module(m_id)
         .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
+
+      let mut cache_store_key = None;
+
+      // enable persistent cache
+      if context.config.persistent_cache.enabled() {
+        let content_hash = module.content_hash.clone();
+        let store_key = CacheStoreKey {
+          name: m_id.to_string() + "-resource_pot_to_runtime_object",
+          key: sha256(
+            format!(
+              "resource_pot_to_runtime_object_{}_{}",
+              content_hash,
+              m_id.to_string()
+            )
+            .as_bytes(),
+            32,
+          ),
+        };
+        cache_store_key = Some(store_key.clone());
+
+        // determine whether the cache exists,and store_key not change
+        if context.cache_manager.custom.has_cache(&store_key.name)
+          && !context.cache_manager.custom.is_cache_changed(&store_key)
+        {
+          let cache = context
+            .cache_manager
+            .custom
+            .read_cache(&store_key.name)
+            .unwrap();
+          let cached_rendered_script_module = deserialize!(&cache, CacheRenderedScriptModule);
+          let module = cached_rendered_script_module.to_magic_string(&context);
+
+          modules.lock().push(RenderedScriptModule {
+            module,
+            id: cached_rendered_script_module.id,
+            rendered_module: cached_rendered_script_module.rendered_module,
+            external_modules: cached_rendered_script_module.external_modules,
+          });
+          return Ok(());
+        }
+      }
 
       let mut cloned_module = module.meta.as_script().ast.clone();
       let (cm, _) = create_swc_source_map(Source {
@@ -241,6 +287,24 @@ pub fn resource_pot_to_runtime_object(
 
         source_map_chain = module.source_map_chain.clone();
         source_map_chain.push(map);
+      }
+
+      // cache the code and sourcemap
+      if context.config.persistent_cache.enabled() {
+        let cache_rendered_script_module = CacheRenderedScriptModule::new(
+          m_id.clone(),
+          code.clone(),
+          // TODO Does clone affect performance? Is there any other way to handle this?
+          rendered_module.clone(),
+          external_modules.clone(),
+          source_map_chain.clone(),
+        );
+        let bytes = serialize!(&cache_rendered_script_module);
+        context
+          .cache_manager
+          .custom
+          .write_single_cache(cache_store_key.unwrap(), bytes)
+          .expect("failed to write resource pot to runtime object cache");
       }
 
       let mut module = MagicString::new(
@@ -396,4 +460,42 @@ pub struct RenderedJsResourcePot {
   pub bundle: Bundle,
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
   pub external_modules: Vec<String>,
+}
+
+#[cache_item]
+pub struct CacheRenderedScriptModule {
+  pub id: ModuleId,
+  pub code: Arc<String>,
+  pub rendered_module: RenderedModule,
+  pub external_modules: Vec<String>,
+  pub source_map_chain: Vec<Arc<String>>,
+}
+
+impl CacheRenderedScriptModule {
+  fn new(
+    id: ModuleId,
+    code: Arc<String>,
+    rendered_module: RenderedModule,
+    external_modules: Vec<String>,
+    source_map_chain: Vec<Arc<String>>,
+  ) -> Self {
+    Self {
+      id,
+      code,
+      rendered_module,
+      external_modules,
+      source_map_chain,
+    }
+  }
+  fn to_magic_string(&self, context: &Arc<CompilationContext>) -> MagicString {
+    let magic_string_option = MagicStringOptions {
+      filename: Some(self.id.resolved_path_with_query(&context.config.root)),
+      source_map_chain: self.source_map_chain.clone(),
+      ..Default::default()
+    };
+    let mut module = MagicString::new(&self.code, Some(magic_string_option));
+    module.prepend(&format!("{:?}:", self.id.id(context.config.mode.clone())));
+    module.append(",");
+    module
+  }
 }

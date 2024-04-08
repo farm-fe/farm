@@ -4,7 +4,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use farmfe_core::{
-  config::Config,
+  config::{Config, Mode},
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::Plugin,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
@@ -553,7 +553,9 @@ impl Plugin for FarmPluginTreeShake {
       module_graph.remove_module(&module_id);
     }
     // if production remove useless hot update statements
-    remove_useless_hot_update_stmts(module_graph);
+    if matches!(context.config.mode, Mode::Production) {
+      remove_useless_hot_update_stmts(module_graph);
+    }
 
     Ok(Some(()))
   }

@@ -9,7 +9,7 @@ use farmfe_core::{
   context::{CompilationContext, EmitFileParams},
   deserialize,
   error::CompilationError,
-  module::{ModuleId, ModuleType},
+  module::ModuleType,
   // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
@@ -124,6 +124,11 @@ impl Plugin for FarmPluginStaticAssets {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let path = Path::new(param.resolved_path);
     let extension = path.extension().and_then(|s| s.to_str());
+    let is_query_valid = param.query.is_empty() || is_asset_query(&param.query);
+    // ignore invalid query
+    if !is_query_valid {
+      return Ok(None);
+    }
 
     if let Some(source) = param.resolved_path.strip_prefix(PUBLIC_ASSET_PREFIX) {
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
@@ -190,12 +195,8 @@ impl Plugin for FarmPluginStaticAssets {
         let bytes = if param.content.is_empty() {
           read_file_raw(param.resolved_path)?
         } else {
-          general_purpose::STANDARD
-            .decode(param.content.clone())
-            .map_err(|e| CompilationError::GenericError(
-                format!("Invalid assets: Assets returned by plugins in transform hook should be encoded in base64. {:?}", e)
-              )
-            )?
+          // if content is not empty, it means the content is already read by the load hook in other plugins
+          return Ok(None);
         };
 
         let ext = Path::new(param.resolved_path)

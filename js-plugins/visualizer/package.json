@@ -1,0 +1,59 @@
+{
+  "name": "@farmfe/js-plugin-visualizer",
+  "version": "1.0.0",
+  "main": "./build/cjs/index.cjs",
+  "types": "./build/cjs/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./build/esm/index.mjs",
+      "types": "./build/cjs/index.d.ts",
+      "require": "./build/cjs/index.cjs",
+      "default": "./build/cjs/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
+    "@guolao/vue-monaco-editor": "^1.5.1",
+    "@types/ws": "^8.5.4",
+    "ant-design-vue": "^4.1.2",
+    "axios": "^1.5.0",
+    "bufferutil": "^4.0.8",
+    "core-js": "^3.30.1",
+    "envinfo": "^7.11.1",
+    "pinia": "^2.1.7",
+    "sirv": "^2.0.3",
+    "utf-8-validate": "^6.0.3",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.1",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:*",
+    "@farmfe/js-plugin-less": "workspace:*",
+    "@farmfe/js-plugin-postcss": "workspace:*",
+    "@farmfe/js-plugin-vue": "workspace:*",
+    "@types/envinfo": "^7.8.3",
+    "@types/koa": "^2.13.5",
+    "@vitejs/plugin-vue": "^4.4.0",
+    "autoprefixer": "^10.4.14",
+    "koa": "^2.13.4",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.2"
+  },
+  "scripts": {
+    "start": "cd src/client && farm start",
+    "build": "pnpm build:plugin && cross-env FARM_FORMAT=esm farm build && pnpm build:client",
+    "build:plugin": "farm build",
+    "build:client": "cd src/client && farm build",
+    "preview": "cd src/client && farm preview",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "build"
+  ]
+}

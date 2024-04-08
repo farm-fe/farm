@@ -280,7 +280,7 @@ const FarmConfigSchema = z
           .record(
             z.object({
               target: z.string(),
-              changeOrigin: z.boolean(),
+              changeOrigin: z.boolean().optional(),
               agent: z.any().optional(),
               secure: z.boolean().optional(),
               logs: z.any().optional(),
@@ -299,6 +299,7 @@ const FarmConfigSchema = z
                 ignores: z.array(z.string()).optional(),
                 host: z.union([z.string().nonempty(), z.boolean()]).optional(),
                 port: z.number().positive().int().optional(),
+                path: z.string().optional(),
                 watchOptions: z
                   .object({
                     awaitWriteFinish: z.number().positive().int().optional()

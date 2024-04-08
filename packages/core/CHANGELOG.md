@@ -1,5 +1,90 @@
 # @farmfe/core
 
+## 1.0.15
+
+### Patch Changes
+
+- b2103287: Less strict html parsing
+
+## 1.0.14
+
+### Patch Changes
+
+- 9ae86438: Fix persistent cache conflicts
+
+## 1.0.13
+
+### Patch Changes
+
+- af14caa7: Fix static assets plugin compatibility issue
+- ce5b0d18: fix: Make publicPath and publicDir configuration work properly.
+
+## 1.0.12
+
+### Patch Changes
+
+- 6435db41: - remove unused reverse read variable
+  - disable treeShaking and lazyCompilation same time in development mode
+- b1a5b8dd: feat: Optimize persistentCache when rendering modules
+
+## 1.0.11
+
+### Patch Changes
+
+- 1ec7dd74: throwError retain origin error stack
+- 6c03e7e0: fix: publicDir resources are not copied correctly into the package file
+
+## 1.0.10
+
+### Patch Changes
+
+- cf14295b: Fix vite config adapter error
+
+## 1.0.9
+
+### Patch Changes
+
+- 6425c763: Fix vite plugin adapter
+
+## 1.0.8
+
+### Patch Changes
+
+- cb7df71f: Support alias resolve and url rebase for import.meta.glob, sass and less plugins
+
+## 1.0.7
+
+### Patch Changes
+
+- 1d1ae1f2: fix: Multiple server startups result in WebSocket connection interruptions.
+- 7ae9cb8d: fix: problems with the load filter not working
+
+## 1.0.6
+
+### Patch Changes
+
+- 48a36cca: feat: support postcss-import for @farmfe/js-plugin-postcss
+
+## 1.0.5
+
+### Patch Changes
+
+- Update dep runtime plugin hmr
+
+## 1.0.4
+
+### Patch Changes
+
+- a749b5af: Fix Vite project migrations issues
+- 5b9cb22c: add import meta hot condition
+
+## 1.0.3
+
+### Patch Changes
+
+- f0cfdce1: minify modules instead of resource pots
+- f58fd07e: variable assign need to retain
+
 ## 1.0.2
 
 ### Patch Changes

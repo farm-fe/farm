@@ -1,4 +1,3 @@
-import merge from 'lodash.merge';
 import {
   type JsPlugin,
   normalizeDevServerOptions,
@@ -13,6 +12,8 @@ import {
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolveAsyncPlugins } from '../index.js';
+import merge from '../../utils/merge.js';
+import { CompilationMode } from '../../config/env.js';
 
 // export * from './jsPluginAdapter.js';
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
@@ -23,16 +24,18 @@ type VitePluginsType = VitePluginType[];
 export async function handleVitePlugins(
   vitePlugins: VitePluginsType,
   userConfig: UserConfig,
-  logger: Logger
+  logger: Logger,
+  mode: CompilationMode
 ): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
+  const filtersUnion = new Set<string>();
 
   if (vitePlugins.length) {
     userConfig = merge({}, userConfig, {
       compilation: userConfig.compilation,
       server: normalizeDevServerOptions(
         userConfig.server,
-        userConfig.compilation?.mode ?? 'development'
+        userConfig.compilation?.mode ?? mode
       )
     });
   }
@@ -47,10 +50,11 @@ export async function handleVitePlugins(
       vitePlugin = plugin;
       filters = f;
     }
-
-    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger);
+    filters?.forEach((filter) => filtersUnion.add(filter));
+    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
   }
 
+  const resolvedPaths = Array.from(filtersUnion).map(normalizeFilterPath);
   // if vitePlugins is not empty, append a load plugin to load file
   // this plugin is only for compatibility
   if (vitePlugins.length) {
@@ -60,7 +64,7 @@ export async function handleVitePlugins(
       priority: -100,
       load: {
         filters: {
-          resolvedPaths: DEFAULT_FILTERS
+          resolvedPaths
         },
         executor: async (params) => {
           const { resolvedPath } = params;
@@ -83,7 +87,7 @@ export async function handleVitePlugins(
       },
       transform: {
         filters: {
-          resolvedPaths: DEFAULT_FILTERS,
+          resolvedPaths,
           moduleTypes: []
         },
         executor: async (params) => {
@@ -127,14 +131,16 @@ export function processVitePlugin(
   userConfig: UserConfig,
   filters: string[],
   jsPlugins: JsPlugin[],
-  logger: Logger
+  logger: Logger,
+  mode: CompilationMode
 ) {
   const processPlugin = (plugin: any) => {
     const vitePluginAdapter = new VitePluginAdapter(
       plugin as any,
       userConfig,
       filters,
-      logger
+      logger,
+      mode
     );
     convertPlugin(vitePluginAdapter);
     jsPlugins.push(vitePluginAdapter);
@@ -145,6 +151,14 @@ export function processVitePlugin(
   } else {
     processPlugin(vitePlugin);
   }
+}
+
+function normalizeFilterPath(path: string): string {
+  if (process.platform === 'win32') {
+    return compatibleWin32Path(path);
+  }
+
+  return path;
 }
 
 function compatibleWin32Path(path: string): string {
@@ -304,4 +318,28 @@ export function convertPlugin(plugin: JsPlugin): void {
   pathCompatibleParts.forEach(({ part, fields }) => {
     ensurePathCompatibility(part, fields);
   });
+  
+  if (plugin.resolve?.filters?.importers?.length) {
+    plugin.resolve.filters.importers =
+      plugin.resolve.filters.importers.map(normalizeFilterPath);
+  }
+
+  if (plugin.load?.filters?.resolvedPaths?.length) {
+    plugin.load.filters.resolvedPaths =
+      plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
+  }
+
+  if (plugin.transform?.filters?.resolvedPaths?.length) {
+    plugin.transform.filters.resolvedPaths =
+      plugin.transform.filters.resolvedPaths.map(normalizeFilterPath);
+  }
+  if (plugin.augmentResourceHash?.filters?.moduleIds) {
+    plugin.augmentResourceHash.filters.moduleIds =
+      plugin.augmentResourceHash.filters.moduleIds.map(normalizeFilterPath);
+  }
+
+  if (plugin.renderResourcePot?.filters?.moduleIds) {
+    plugin.renderResourcePot.filters.moduleIds =
+      plugin.renderResourcePot.filters.moduleIds.map(normalizeFilterPath);
+  }
 }

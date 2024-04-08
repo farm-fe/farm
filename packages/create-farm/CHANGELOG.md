@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.4
+
+### Patch Changes
+
+- 728bd848: feat(create-farm): unified `create-farm` template
+
 ## 1.6.3
 
 ### Patch Changes

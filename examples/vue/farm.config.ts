@@ -1,9 +1,6 @@
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
+import sass from '@farmfe/js-plugin-sass';
 
 export default defineConfig({
   compilation: {
@@ -12,8 +9,25 @@ export default defineConfig({
     },
     output: {
       path: './build'
-    }
+    },
+    persistentCache: false
   },
-  server: {},
-  plugins: [farmJsPluginVue()]
+  plugins: [
+    farmJsPluginVue(),
+    sass({ legacy: true }),
+    {
+      name: 'remove-css-filter-plugin',
+      priority: 0,
+      transform: {
+        filters: {
+          resolvedPaths: ['.scss']
+        },
+        async executor({ content }) {
+          return {
+            content: content.replaceAll('filter: alpha(opacity=0);', '')
+          };
+        }
+      }
+    }
+  ]
 });

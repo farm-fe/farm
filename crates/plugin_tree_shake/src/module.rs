@@ -1,19 +1,18 @@
 use std::{
+  borrow::Cow,
   collections::{HashMap, HashSet},
   mem,
-  slice::Iter,
 };
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
-  petgraph::Direction,
   swc_common::{Globals, Mark},
-  swc_ecma_ast::{Id, Ident},
+  swc_ecma_ast::Ident,
 };
 use farmfe_toolkit::script::swc_try_with::try_with;
 
 use crate::statement_graph::{
-  module_analyze::{ItemId, Mode, ModuleAnalyze, ModuleAnalyzeItemEdge},
+  module_analyze::{ItemId, ItemIdType, Mode, ModuleAnalyze, ModuleAnalyzeItemEdge},
   ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,
 };
 
@@ -44,6 +43,18 @@ impl ToString for UsedIdent {
 pub enum UsedExports {
   All(HashMap<ModuleId, Vec<String>>),
   Partial(HashMap<ModuleId, Vec<String>>),
+}
+
+#[derive(Debug)]
+enum VisitedMode {
+  Normal,
+  Enforce,
+}
+
+impl VisitedMode {
+  fn removable(&self) -> bool {
+    !matches!(self, VisitedMode::Enforce)
+  }
 }
 
 impl UsedExports {
@@ -303,83 +314,191 @@ impl TreeShakeModule {
       fn dfs<'a>(
         entry: &'a ItemId,
         stack: &mut Vec<&'a ItemId>,
-        result: &mut Vec<Vec<ItemId>>,
-        visited: &mut HashSet<&'a ItemId>,
+        result: &mut HashSet<ItemId>,
+        visited: &mut HashMap<&'a ItemId, VisitedMode>,
         module_define_graph: &'a ModuleAnalyze,
         stmt_graph: &StatementGraph,
-        direction: Direction,
-      ) {
-        stack.push(entry);
+        reverse_terser_chain: &mut Vec<Mode>,
+      ) -> bool {
+        let collection_result = |visited: &mut HashMap<&'a ItemId, VisitedMode>,
+                                 reverse_terser_chain: &mut Vec<Mode>,
+                                 result: &mut HashSet<ItemId>,
+                                 stack: &mut Vec<&'a ItemId>| {
+          if !reverse_terser_chain.is_empty() {
+            if reverse_terser_chain
+              .iter()
+              .any(|mode| matches!(mode, Mode::Write))
+            {
+              let collections = stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>();
 
-        let edges = module_define_graph.reference_edges(entry, direction);
-
-        if edges.is_empty()
-          || visited.contains(entry)
-          || !module_define_graph.has_node(entry)
-          || (matches!(direction, Direction::Outgoing)
-            && !edges.iter().any(|(_, edge)| {
-              matches!(edge.mode, Mode::Read) || (matches!(edge.mode, Mode::Write) && edge.nested)
-            }))
-        {
-          if matches!(direction, Direction::Incoming) && stack.len() > 1 {
-            // there must be a Write edge cross the chain
-            if stack.iter().enumerate().any(|(index, item)| {
-              if index > 0 && index < stack.len() {
-                let previous = &stack[index - 1];
-                if let Some(edge) = module_define_graph.edge(item, previous) {
-                  if matches!(edge.mode, Mode::Write) {
-                    true
-                  } else {
-                    false
-                  }
-                } else {
-                  false
-                }
-              } else {
-                false
+              for item in collections {
+                visited
+                  .get_mut(&item)
+                  .map(|item| *item = VisitedMode::Enforce);
+                result.insert(item);
               }
-            }) {
-              result.push(stack.iter().map(|item| (*item).clone()).collect());
+              true
+            } else {
+              false
             }
           } else {
-            result.push(stack.iter().map(|item| (*item).clone()).collect());
+            result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
+            true
           }
-        } else {
-          visited.insert(entry);
-          for (node, edge_data) in edges {
-            match edge_data.mode {
-              Mode::Read => {
-                dfs(
-                  node,
-                  stack,
-                  result,
-                  visited,
-                  module_define_graph,
-                  stmt_graph,
-                  direction,
-                );
-              }
-              Mode::Write if edge_data.nested || matches!(direction, Direction::Incoming) => {
-                dfs(
-                  node,
-                  stack,
-                  result,
-                  visited,
-                  module_define_graph,
-                  stmt_graph,
-                  direction,
-                );
-              }
-              _ => {}
-            }
-          }
+        };
+
+        let break_tenser = |stack: &mut Vec<&'a ItemId>| {
+          stack.pop();
+        };
+
+        if visited.contains_key(entry) {
+          return collection_result(visited, reverse_terser_chain, result, stack);
         }
 
-        stack.pop();
+        stack.push(entry);
+
+        if !module_define_graph.has_node(entry) {
+          let is_collected = collection_result(visited, reverse_terser_chain, result, stack);
+          break_tenser(stack);
+          return is_collected;
+        }
+
+        let edges = module_define_graph.reference_edges(entry);
+
+        if edges.is_empty() || edges.iter().all(|(source, target, _)| source == target) {
+          let is_collected = collection_result(visited, reverse_terser_chain, result, stack);
+          break_tenser(stack);
+          is_collected
+        } else {
+          visited.insert(entry, VisitedMode::Normal);
+          let mut is_contain_reverse_edge = false;
+          let mut is_collected = false;
+          let push_reverse_terser_chain =
+            |reverse_terser_chain: &mut Vec<Mode>, mode: Mode, create| {
+              if !reverse_terser_chain.is_empty() || create {
+                reverse_terser_chain.push(mode);
+              }
+            };
+
+          let pop_reverse_terser_chain = |reverse_terser_chain: &mut Vec<Mode>| {
+            reverse_terser_chain.pop();
+          };
+
+          for (source, target, edge) in edges {
+            if source == target {
+              continue;
+            }
+
+            match (edge.mode, edge.nested) {
+              (Mode::Read, _) => {
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Read, false);
+                is_collected = dfs(
+                  target,
+                  stack,
+                  result,
+                  visited,
+                  module_define_graph,
+                  stmt_graph,
+                  reverse_terser_chain,
+                ) || is_collected;
+                pop_reverse_terser_chain(reverse_terser_chain);
+
+                // ignore nested
+                // cache -> readCache { cache }
+                //
+                //```js
+                // const cache = {};
+                //
+                // function readCache(key) {
+                //   cache[key]
+                // }
+                //```
+                //
+
+                // ignore bar
+                //
+                // foo:2 -> foo:1,bar:1 -> bar:3
+                // ```js
+                // // bar.js
+                // 1: import { bar, foo } from './foo';
+                // 2: foo()
+                // 3: export { bar, foo }
+                //```
+
+                if !edge.nested
+                  && !matches!(
+                    target,
+                    ItemId::Item {
+                      kind: ItemIdType::Import(_),
+                      ..
+                    }
+                  )
+                {
+                  is_contain_reverse_edge = true;
+                  push_reverse_terser_chain(reverse_terser_chain, Mode::Read, true);
+                  is_collected = dfs(
+                    source,
+                    stack,
+                    result,
+                    visited,
+                    module_define_graph,
+                    stmt_graph,
+                    reverse_terser_chain,
+                  ) || is_collected;
+                  pop_reverse_terser_chain(reverse_terser_chain);
+                }
+              }
+
+              (Mode::Write, false) => {
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
+                is_collected = dfs(
+                  source,
+                  stack,
+                  result,
+                  visited,
+                  module_define_graph,
+                  stmt_graph,
+                  reverse_terser_chain,
+                ) || is_collected;
+                pop_reverse_terser_chain(reverse_terser_chain);
+              }
+
+              (Mode::Write, true) => {
+                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
+                is_collected = dfs(
+                  target,
+                  stack,
+                  result,
+                  visited,
+                  module_define_graph,
+                  stmt_graph,
+                  reverse_terser_chain,
+                ) || is_collected;
+                pop_reverse_terser_chain(reverse_terser_chain);
+              }
+            }
+          }
+
+          if is_contain_reverse_edge && !is_collected {
+            if let Some(mode) = visited.get(entry) {
+              if mode.removable() {
+                visited.remove(entry);
+              }
+            }
+          }
+
+          break_tenser(stack);
+
+          is_collected
+        }
       }
 
-      let mut visited = HashSet::new();
-      let mut reference_chain = Vec::new();
+      let mut visited = HashMap::new();
+      let mut reference_chain = HashSet::new();
+
+      let mut entries = entries.into_iter().collect::<Vec<_>>();
+
+      entries.sort_by(|a, b| a.index().cmp(&b.index()));
 
       for stmt in &entries {
         dfs(
@@ -389,37 +508,13 @@ impl TreeShakeModule {
           &mut visited,
           &module_analyze,
           &self.stmt_graph,
-          Direction::Outgoing,
+          &mut vec![],
         );
       }
 
       let reference_stmts = reference_chain
         .iter()
-        .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
-        .collect::<HashSet<_>>();
-
-      let mut final_reference_chain = vec![];
-      let final_entries = reference_stmts
-        .iter()
-        .flat_map(|stmt| module_analyze.items(stmt))
-        .collect::<Vec<_>>();
-      let mut visited = HashSet::new();
-      // all parent statement that reference reference_stmts should be preserved too
-      for stmt in &final_entries {
-        dfs(
-          stmt,
-          &mut vec![],
-          &mut final_reference_chain,
-          &mut visited,
-          &module_analyze,
-          &self.stmt_graph,
-          Direction::Incoming,
-        );
-      }
-
-      let reference_stmts: HashSet<usize> = final_reference_chain
-        .iter()
-        .flat_map(|chain| chain.iter().map(|item| item.index()).collect::<Vec<_>>())
+        .map(|item| item.index())
         .collect::<HashSet<_>>();
 
       let mut used_self_execute_stmts = HashSet::new();

@@ -19,6 +19,7 @@ import {
   bootstrap,
   clearScreen,
   Logger,
+  normalizeBasePath,
   printServerUrls
 } from '../utils/index.js';
 import {
@@ -38,6 +39,7 @@ import { Server as httpServer } from './type.js';
 import { promisify } from 'node:util';
 import { FileWatcher } from '../watcher/index.js';
 import { logError } from './error.js';
+import path from 'node:path';
 
 /**
  * Farm Dev Server, responsible for:
@@ -145,8 +147,6 @@ export class Server implements ImplDevServer {
       throw new Error(logError(err) as unknown as string);
     }
 
-    // 将所有错误信息连接成一个字符串，每个错误信息占一行
-
     if (this.config.writeToDisk) {
       const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
       this.compiler.writeResourcesToDisk(base);
@@ -185,6 +185,10 @@ export class Server implements ImplDevServer {
     if (!this.server) {
       this.logger.error('HTTP server is not created yet');
     }
+    // the server is already closed
+    if (!this.server.listening) {
+      return;
+    }
     const promises = [];
     if (this.ws) {
       promises.push(this.ws.close());
@@ -208,15 +212,23 @@ export class Server implements ImplDevServer {
     this._app = new Koa();
   }
 
-  public async createServer(options: NormalizedServerConfig) {
+  public async createServer(
+    options: NormalizedServerConfig & UserPreviewServerConfig
+  ) {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
-
     const hostname = await resolveHostname(host);
-    const publicPath = this.compiler?.config.config.output?.publicPath;
-    const hmrPath = publicPath === '/' ? DEFAULT_HMR_OPTIONS.path : publicPath;
+    const publicPath =
+      this.compiler?.config.config.output?.publicPath ??
+      options?.output.publicPath;
+    // TODO refactor previewServer If it's preview server, then you can't use create server. we need to create a new one because hmr is false when you preview.
+    const hmrPath = normalizeBasePath(
+      path.join(publicPath, options.hmr.path ?? DEFAULT_HMR_OPTIONS.path)
+    );
+
     this.config = {
       ...options,
+      port: Number(process.env.FARM_DEV_SERVER_PORT || options.port),
       hmr: {
         ...options.hmr,
         path: hmrPath
@@ -287,13 +299,13 @@ export class Server implements ImplDevServer {
     logger: Logger
   ): Promise<void> {
     let devPort = normalizedDevConfig.port;
-    let hmrPort = DEFAULT_HMR_OPTIONS.port;
+    let hmrPort = normalizedDevConfig.hmr.port;
+    
     const { strictPort, host } = normalizedDevConfig;
     const httpServer = http.createServer();
     const isPortAvailable = (portToCheck: number) => {
       return new Promise((resolve, reject) => {
         const onError = async (error: { code: string }) => {
-          logger.error(`Error in httpServer: ${error} `);
           if (error.code === 'EADDRINUSE') {
             clearScreen();
             if (strictPort) {
@@ -305,6 +317,7 @@ export class Server implements ImplDevServer {
               resolve(false);
             }
           } else {
+            logger.error(`Error in httpServer: ${error} `);
             reject(true);
           }
         };
@@ -318,8 +331,12 @@ export class Server implements ImplDevServer {
     };
 
     let isPortAvailableResult = await isPortAvailable(devPort);
+    
     while (isPortAvailableResult === false) {
-      normalizedDevConfig.hmr.port = ++hmrPort;
+      if (typeof normalizedDevConfig.hmr === 'object') {
+        normalizedDevConfig.hmr.port = ++hmrPort;
+      }
+
       normalizedDevConfig.port = ++devPort;
       isPortAvailableResult = await isPortAvailable(devPort);
     }

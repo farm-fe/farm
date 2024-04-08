@@ -1,6 +1,4 @@
-use std::{
-  any::Any, cell::RefCell, collections::HashMap, hash::Hash, path::Path, rc::Rc, sync::Arc,
-};
+use std::{any::Any, cell::RefCell, hash::Hash, path::Path, rc::Rc, sync::Arc};
 
 use blake2::{
   digest::{Update, VariableOutput},
@@ -32,6 +30,8 @@ use self::module_group::ModuleGroupId;
 pub mod module_graph;
 pub mod module_group;
 pub mod watch_graph;
+
+pub const VIRTUAL_MODULE_PREFIX: &str = "virtual:";
 
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage
@@ -441,6 +441,8 @@ impl<T: AsRef<str>> From<T> for ModuleType {
       "tsx" => Self::Tsx,
       "css" => Self::Css,
       "html" => Self::Html,
+      "asset" => Self::Asset,
+      "runtime" => Self::Runtime,
       custom => Self::Custom(custom.to_string()),
     }
   }
@@ -513,7 +515,8 @@ impl ModuleId {
   /// transform the id back to resolved path
   pub fn resolved_path(&self, root: &str) -> String {
     // if self.relative_path is absolute path, return it directly
-    if Path::new(self.relative_path()).is_absolute() || self.relative_path().starts_with("virtual:")
+    if Path::new(self.relative_path()).is_absolute()
+      || self.relative_path().starts_with(VIRTUAL_MODULE_PREFIX)
     {
       return self.relative_path().to_string();
     }
@@ -538,13 +541,13 @@ impl ModuleId {
   }
 
   fn split_query(p: &str) -> (String, String) {
-    let comps = p.split('?').collect::<Vec<&str>>();
+    let (resolved_path, query) = p.split_once('?').unwrap_or((p, ""));
 
-    if comps.len() == 2 {
-      return (comps[0].to_string(), format!("?{}", comps[1]));
+    if !query.is_empty() {
+      return (resolved_path.to_string(), format!("?{}", query));
     }
 
-    (p.to_string(), "".to_string())
+    (p.to_string(), query.to_string())
   }
 }
 

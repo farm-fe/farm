@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use farmfe_core::{
-  glob::glob,
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
@@ -10,7 +9,12 @@ use farmfe_core::{
   },
   plugin::ResolveKind,
   relative_path::RelativePath,
+  wax::Glob,
 };
+
+pub fn is_update_snapshot_from_env() -> bool {
+  std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok()
+}
 
 /// construct a test module graph like below:
 /// ```plain
@@ -217,11 +221,10 @@ where
   F: FnMut(PathBuf, PathBuf),
 {
   let base_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-  let abs_pattern = RelativePath::new(pattern).to_path(base_dir.clone());
-  let paths = glob(&abs_pattern.to_string_lossy()).unwrap();
+  let glob = Glob::new(pattern).unwrap();
 
-  for path in paths {
-    op(path.unwrap(), base_dir.clone());
+  for path in glob.walk(base_dir.clone()).flatten() {
+    op(path.path().to_path_buf(), base_dir.clone());
   }
 }
 
@@ -258,14 +261,13 @@ where
   }
 
   let base_dir = file_path.parent().unwrap().to_path_buf();
-  let abs_pattern = RelativePath::new(pattern).to_path(base_dir.clone());
-  let paths = glob(&abs_pattern.to_string_lossy()).unwrap();
+  let glob = Glob::new(pattern).unwrap();
 
   let mut exists = false;
 
-  for path in paths {
+  for path in glob.walk(base_dir.clone()).flatten() {
     exists = true;
-    op(path.unwrap(), base_dir.clone());
+    op(path.path().to_path_buf(), base_dir.clone());
   }
 
   if !exists {

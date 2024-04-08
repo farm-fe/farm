@@ -1,6 +1,6 @@
 use farmfe_macro_cache_item::cache_item;
-use relative_path::RelativePath;
 use serde_json::{Map, Value};
+use wax::Glob;
 
 #[cache_item]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -77,12 +77,18 @@ impl PackageJsonInfo {
 
         for item in arr {
           if let Value::String(str) = item {
-            let abs_path = RelativePath::new(str).to_logical_path(self.dir());
-            // TODO throw a graceful error
-            let paths = glob::glob(abs_path.to_str().unwrap()).unwrap();
+            let glob = Glob::new(str);
+
+            if let Err(e) = glob {
+              println!("error parsing glob: {:?}", e);
+              continue;
+            }
+            let glob = glob.unwrap();
+
+            let paths = glob.walk(self.dir());
 
             for p in paths.flatten() {
-              let path = p.to_str().unwrap().to_string();
+              let path = p.path().to_string_lossy().to_string();
               res.push(path);
             }
           }

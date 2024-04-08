@@ -12,13 +12,15 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain,
   error::Result,
-  module::{CommentsMetaData, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData},
+  module::{
+    CommentsMetaData, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData,
+    VIRTUAL_MODULE_PREFIX,
+  },
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
-  relative_path::RelativePath,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -39,7 +41,6 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use farmfe_utils::hash::base64_decode;
 use import_meta_visitor::ImportMetaVisitor;
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
@@ -176,11 +177,21 @@ impl Plugin for FarmPluginScript {
     if param.module_type.is_script() {
       // transform vite-style `import.meta.glob`
       let ast = &mut param.meta.as_script_mut().ast;
-      let cur_dir = PathBuf::from(&param.module_id.resolved_path(&context.config.root));
+      let resolved_path = param.module_id.resolved_path(&context.config.root);
+      let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
+        context.config.root.clone()
+      } else {
+        Path::new(&resolved_path)
+          .parent()
+          .unwrap()
+          .to_string_lossy()
+          .to_string()
+      };
       transform_import_meta_glob(
         ast,
         context.config.root.clone(),
-        cur_dir.parent().unwrap().to_string_lossy().to_string(),
+        cur_dir,
+        &context.config.resolve.alias,
       )?;
     }
 

@@ -7,12 +7,12 @@
     <title>Document</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">app</div>
     <script>
       var process = { env: { NODE_ENV: 'development' } };
       __FARM_TARGET_ENV__ = 'browser';
       fetch('/api', {
-        method: 'get'
+        method: 'post'
       });
     </script>
   </body>
