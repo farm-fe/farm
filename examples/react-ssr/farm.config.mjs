@@ -30,18 +30,19 @@ export default {
           await next();
 
           if (ctx.path === '/' || ctx.status === 404) {
-            console.log('ctx.path', ctx.path);
+            // console.log('ctx.path', ctx.path);
             const template = server
               .getCompiler()
               .resource('index_client.html')
               .toString();
+            console.log('html template', template);
             const render = await import('./dist/index.js').then(
               (m) => m.default
             );
             const renderedHtml = render(ctx.path);
-            console.log(renderedHtml);
+            // console.log(renderedHtml);
             const html = template.replace(
-              '<div>app-html-to-replace</div>',
+              '{app-html-to-replace}',
               renderedHtml
             );
             ctx.body = html;

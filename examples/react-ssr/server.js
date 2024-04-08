@@ -25,11 +25,11 @@ async function createServer() {
       console.log(renderedHtml);
 
       let html = template.replace(
-        '<div>app-html-to-replace</div>',
+        '{app-html-to-replace}',
         renderedHtml
       );
-      console.log(template.includes('<div>app-html-to-replace</div>'));
-      console.log(html.includes('<div>app-html-to-replace</div>'));
+      console.log(template.includes('{app-html-to-replace}'));
+      console.log(html.includes('{app-html-to-replace}'));
 
       res.setHeader('Content-Type', 'text/html');
       return res.status(200).end(html);
