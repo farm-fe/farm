@@ -27,7 +27,9 @@ import {
   isObject,
   isWindows,
   normalizePath,
-  normalizeBasePath
+  normalizeBasePath,
+  getAliasEntries,
+  transformAliasWithVite
 } from '../utils/index.js';
 import { urlRegex } from '../utils/http.js';
 import { JsPlugin } from '../index.js';
@@ -36,6 +38,7 @@ import { normalizeOutput } from './normalize-config/normalize-output.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
 
 import type {
+  Alias,
   FarmCLIOptions,
   FarmCLIServerOptions,
   NormalizedServerConfig,
@@ -204,6 +207,13 @@ export async function resolveConfig(
   resolvedUserConfig.rustPlugins = rustPlugins;
 
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
+
+  // Temporarily solve the problem of alias adaptation to vite
+  if (resolvedUserConfig.compilation?.resolve?.alias) {
+    resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
+      resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
+    );
+  }
 
   return resolvedUserConfig;
 }
@@ -447,6 +457,11 @@ export async function normalizeUserCompilationConfig(
     } else {
       config.presetEnv = false;
     }
+  }
+  // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
+
+  if (config.resolve?.alias) {
+    config.resolve.alias = getAliasEntries(config.resolve.alias);
   }
 
   // normalize persistent cache at last
