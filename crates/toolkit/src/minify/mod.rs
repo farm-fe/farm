@@ -4,7 +4,6 @@ use self::config::NormalizedMinifyOptions;
 use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::swc_common::util::take::Take;
 use farmfe_core::{
-  context::CompilationContext,
   swc_common::{comments::SingleThreadedComments, Mark, SourceMap},
   swc_css_ast::Stylesheet,
   swc_html_ast::Document,

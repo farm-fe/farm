@@ -24,7 +24,13 @@ pub fn parse_html_document(id: &str, content: Arc<String>) -> farmfe_core::error
     content,
   });
   let html_lexer = Lexer::new(SourceFileInput::from(&*source_file));
-  let mut parser = Parser::new(html_lexer, ParserConfig::default());
+  let mut parser = Parser::new(
+    html_lexer,
+    ParserConfig {
+      allow_self_closing: true,
+      ..Default::default()
+    },
+  );
 
   let parse_result = parser.parse_document();
   let mut recovered_errors = parser.take_errors();
