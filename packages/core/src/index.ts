@@ -72,6 +72,7 @@ export async function build(
 ): Promise<void> {
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('production');
+
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
