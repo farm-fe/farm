@@ -206,10 +206,17 @@ export async function resolveConfig(
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
 
+  // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
+  if (resolvedUserConfig.compilation.resolve?.alias && vitePlugins.length) {
+    resolvedUserConfig.compilation.resolve.alias = getAliasEntries(
+      resolvedUserConfig.compilation.resolve.alias
+    );
+  }
+
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
-  // Temporarily solve the problem of alias adaptation to vite
-  if (resolvedUserConfig.compilation?.resolve?.alias) {
+  // TODO Temporarily solve the problem of alias adaptation to vite
+  if (resolvedUserConfig.compilation?.resolve?.alias && vitePlugins.length) {
     resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
       resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
     );
@@ -457,11 +464,6 @@ export async function normalizeUserCompilationConfig(
     } else {
       config.presetEnv = false;
     }
-  }
-  // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
-
-  if (config.resolve?.alias) {
-    config.resolve.alias = getAliasEntries(config.resolve.alias);
   }
 
   // normalize persistent cache at last

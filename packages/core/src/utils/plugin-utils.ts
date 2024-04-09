@@ -75,7 +75,9 @@ export function getAliasEntries(
   return [];
 }
 
-export function transformAliasWithVite(alias: Array<Alias>) {
+export function transformAliasWithVite(
+  alias: Array<Alias>
+): Record<string, string> {
   return alias.reduce<Record<string, string>>((acc, item) => {
     acc[item.find] = item.replacement;
     return acc;
