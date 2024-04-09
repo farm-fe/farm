@@ -1,16 +1,17 @@
 import { defineConfig } from '@farmfe/core';
 import path from 'node:path';
-import { createVuePlugin } from "vite-plugin-vue2";
+import vue from '@vitejs/plugin-vue2'
 import { createSvgPlugin } from 'vite-plugin-vue2-svg';
 
 export default defineConfig({
   compilation: {
-    persistentCache: false,
+    // persistentCache: false,
+    progress: false,
     resolve: {
       alias: {
-        '@': path.resolve(process.cwd(), 'src')
+        '@': path.resolve(process.cwd(), 'src'),
       }
     }
   },
-  vitePlugins: [createVuePlugin(), createSvgPlugin()]
+  vitePlugins: [vue(), createSvgPlugin()]
 });

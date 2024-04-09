@@ -1318,6 +1318,37 @@ importers:
         specifier: ~2.6.14
         version: 2.6.14(vue@2.6.14)
 
+  examples/vite-adapter-vue2.7:
+    dependencies:
+      tdesign-icons-vue:
+        specifier: latest
+        version: 0.2.2(vue@2.7.16)
+      tdesign-vue:
+        specifier: latest
+        version: 1.9.1(vue@2.7.16)
+      vite-plugin-vue2-svg:
+        specifier: ^0.4.0
+        version: 0.4.0(vue-template-compiler@2.6.14)
+      vue:
+        specifier: ~2.7.16
+        version: 2.7.16
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:^1.0.0
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@vitejs/plugin-vue2':
+        specifier: ^2.3.1
+        version: 2.3.1(vite@4.5.0)(vue@2.7.16)
+      core-js:
+        specifier: ^3.30.1
+        version: 3.36.1
+      vue-template-compiler:
+        specifier: ~2.6.14
+        version: 2.6.14(vue@2.7.16)
+
   examples/vue:
     dependencies:
       axios:
@@ -6618,6 +6649,17 @@ packages:
       - supports-color
     dev: true
 
+  /@vitejs/plugin-vue2@2.3.1(vite@4.5.0)(vue@2.7.16):
+    resolution: {integrity: sha512-/ksaaz2SRLN11JQhLdEUhDzOn909WEk99q9t9w+N12GjQCljzv7GyvAbD/p20aBUjHkvpGOoQ+FCOkG+mjDF4A==}
+    engines: {node: ^14.18.0 || >= 16.0.0}
+    peerDependencies:
+      vite: ^3.0.0 || ^4.0.0 || ^5.0.0
+      vue: ^2.7.0-0
+    dependencies:
+      vite: 4.5.0(@types/node@18.18.8)
+      vue: 2.7.16
+    dev: true
+
   /@vitejs/plugin-vue@4.4.0(vite@4.5.0)(vue@3.3.12):
     resolution: {integrity: sha512-xdguqb+VUwiRpSg+nsc2HtbAUSGak25DXYvpQQi4RVU1Xq1uworyoH/md9Rfd8zMmPR/pSghr309QNcftUVseg==}
     engines: {node: ^14.18.0 || >=16.0.0}
@@ -6937,6 +6979,15 @@ packages:
       '@vue/compiler-core': 3.4.15
       '@vue/shared': 3.4.15
 
+  /@vue/compiler-sfc@2.7.16:
+    resolution: {integrity: sha512-KWhJ9k5nXuNtygPU7+t1rX6baZeqOYLEforUPjgNDBnLicfHCoi48H87Q8XyLZOrNNsmhuwKqtpDQWjEFe6Ekg==}
+    dependencies:
+      '@babel/parser': 7.24.1
+      postcss: 8.4.35
+      source-map: 0.6.1
+    optionalDependencies:
+      prettier: 2.8.8
+
   /@vue/compiler-sfc@3.3.12:
     resolution: {integrity: sha512-yy5b9e7b79dsGbMmglCe/YnhCQgBkHO7Uf6JfjWPSf2/5XH+MKn18LhzhHyxbHdJgnA4lZCqtXzLaJz8Pd8lMw==}
     dependencies:
@@ -7070,6 +7121,14 @@ packages:
       vue: '>= 2.5 < 2.7'
     dependencies:
       vue: 2.6.14
+    dev: false
+
+  /@vue/composition-api@1.7.2(vue@2.7.16):
+    resolution: {integrity: sha512-M8jm9J/laYrYT02665HkZ5l2fWTK4dcVg3BsDHm/pfz+MjDYwX+9FUaZyGwEyXEDonQYRCo0H7aLgdklcIELjw==}
+    peerDependencies:
+      vue: '>= 2.5 < 2.7'
+    dependencies:
+      vue: 2.7.16
     dev: false
 
   /@vue/devtools-api@6.5.1:
@@ -16115,6 +16174,16 @@ packages:
       vue: 2.6.14
     dev: false
 
+  /tdesign-icons-vue@0.2.2(vue@2.7.16):
+    resolution: {integrity: sha512-aAHrd5K2O9pQSUZb09A58qIH9b6fOP9pUapvxzvByuc5Ri3YLLgoz+6/XZcRu5S8insx7OzfhH951qjKxfzLtg==}
+    peerDependencies:
+      vue: ^2.6.12
+    dependencies:
+      '@babel/runtime': 7.23.2
+      classnames: 2.3.2
+      vue: 2.7.16
+    dev: false
+
   /tdesign-vue@1.9.1(vue@2.6.14):
     resolution: {integrity: sha512-vWxPgPx74IMfZHbxBjELJn4Nq0RkNcpW1qVaejs9vlMP2VcqgE4ivzIYCXTiImQmm3hdAunhF6LiuYFQpsT3pA==}
     peerDependencies:
@@ -16139,6 +16208,32 @@ packages:
       tinycolor2: 1.6.0
       validator: 13.11.0
       vue: 2.6.14
+    dev: false
+
+  /tdesign-vue@1.9.1(vue@2.7.16):
+    resolution: {integrity: sha512-vWxPgPx74IMfZHbxBjELJn4Nq0RkNcpW1qVaejs9vlMP2VcqgE4ivzIYCXTiImQmm3hdAunhF6LiuYFQpsT3pA==}
+    peerDependencies:
+      vue: ~2.6.10
+    dependencies:
+      '@babel/runtime': 7.23.2
+      '@popperjs/core': 2.11.8
+      '@types/clipboard': 2.0.7
+      '@types/lodash': 4.14.182
+      '@types/raf': 3.4.3
+      '@types/sortablejs': 1.15.8
+      '@types/tinycolor2': 1.4.5
+      '@types/validator': 13.11.9
+      '@vue/composition-api': 1.7.2(vue@2.7.16)
+      clipboard: 2.0.11
+      dayjs: 1.11.10
+      lodash: 4.17.21
+      mitt: 3.0.1
+      raf: 3.4.1
+      sortablejs: 1.15.2
+      tdesign-icons-vue: 0.2.2(vue@2.7.16)
+      tinycolor2: 1.6.0
+      validator: 13.11.0
+      vue: 2.7.16
     dev: false
 
   /term-size@2.2.1:
@@ -17361,6 +17456,16 @@ packages:
       he: 1.2.0
       vue: 2.6.14
 
+  /vue-template-compiler@2.6.14(vue@2.7.16):
+    resolution: {integrity: sha512-ODQS1SyMbjKoO1JBJZojSw6FE4qnh9rIpUZn2EUT86FKizx9uH5z6uXiIrm4/Nb/gwxTi/o17ZDEGWAXHvtC7g==}
+    peerDependencies:
+      vue: 2.6.14
+    dependencies:
+      de-indent: 1.0.2
+      he: 1.2.0
+      vue: 2.7.16
+    dev: true
+
   /vue-template-es2015-compiler@1.9.1:
     resolution: {integrity: sha512-4gDntzrifFnCEvyoO8PqyJDmguXgVPxKiIxrBKjIowvL9l+N66196+72XVYR8BBf1Uv1Fgt3bGevJ+sEmxfZzw==}
 
@@ -17387,6 +17492,13 @@ packages:
   /vue@2.6.14:
     resolution: {integrity: sha512-x2284lgYvjOMj3Za7kqzRcUSxBboHqtgRE2zlos1qWaOye5yUmHn42LB1250NJBLRwEcdrB0JRwyPTEPhfQjiQ==}
     deprecated: Vue 2 has reached EOL and is no longer actively maintained. See https://v2.vuejs.org/eol/ for more details.
+
+  /vue@2.7.16:
+    resolution: {integrity: sha512-4gCtFXaAA3zYZdTp5s4Hl2sozuySsgz4jy1EnpBHNfpMa9dK1ZCG7viqBPCwXtmgc8nHqUsAu3G4gtmXkkY3Sw==}
+    deprecated: Vue 2 has reached EOL and is no longer actively maintained. See https://v2.vuejs.org/eol/ for more details.
+    dependencies:
+      '@vue/compiler-sfc': 2.7.16
+      csstype: 3.1.3
 
   /vue@3.3.12(typescript@4.9.5):
     resolution: {integrity: sha512-jYNv2QmET2OTHsFzfWHMnqgCfqL4zfo97QwofdET+GBRCHhSCHuMTTvNIgeSn0/xF3JRT5OGah6MDwUFN7MPlg==}
