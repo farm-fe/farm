@@ -7,7 +7,10 @@ import { Button } from '@farmfe-examples/lib-for-browser';
 
 export function Main() {
   const store = useStore();
-
+  console.log(process.env.NODE_ENV);
+  console.log(import.meta);
+  
+  
   return (
     <>
       <div>
