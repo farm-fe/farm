@@ -998,6 +998,18 @@ importers:
         specifier: ^2.7.0
         version: 2.7.2(solid-js@1.8.5)(vite@4.5.0)
 
+  examples/static-assets:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-sass':
+        specifier: workspace:*
+        version: link:../../js-plugins/sass
+
   examples/tailwind:
     dependencies:
       clsx:

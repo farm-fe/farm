@@ -1,6 +1,7 @@
 {
-  "name": "public-dir",
+  "name": "@farmfe-examples/public-dir",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "clsx": "^1.2.1",
     "react": "18",
