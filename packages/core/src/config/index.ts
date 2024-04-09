@@ -623,7 +623,8 @@ async function readConfigFile(
             progress: false
           }
         },
-        logger
+        logger,
+        inlineOptions.mode as CompilationMode
       );
 
       const compiler = new Compiler({
