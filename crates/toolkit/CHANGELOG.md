@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.5...farmfe_toolkit-v0.0.6) - 2024-04-08
+
+### Other
+- less strict html parsing ([#1138](https://github.com/farm-fe/farm/pull/1138))
+
 ## [0.0.5](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.4...farmfe_toolkit-v0.0.5) - 2024-04-02
 
 ### Other
