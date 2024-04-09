@@ -334,6 +334,7 @@ export function viteConfigToFarmConfig(
   if (config.define) {
     farmConfig.compilation.define = config.define;
   }
+
   if (config.resolve) {
     farmConfig.compilation.resolve ??= {};
 

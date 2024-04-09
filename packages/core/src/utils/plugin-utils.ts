@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { CompilationContext } from '../plugin/type.js';
+import { Alias } from '../config/types.js';
 
 export const getAdditionContext = async (
   cwd: string,
@@ -47,4 +48,38 @@ export const getAdditionContext = async (
 
 export function throwError(pluginName: string, type: string, error: Error) {
   throw new Error(`[${pluginName} ${type} Error] ${error?.stack ?? error}`);
+}
+
+export function getAliasEntries(
+  entries: Record<string, string> | Array<Alias>
+): any {
+  if (!entries) {
+    return [];
+  }
+
+  if (Array.isArray(entries)) {
+    return entries.map((entry) => {
+      return {
+        find: entry.find,
+        replacement: entry.replacement
+        // TODO add support for customResolver
+      };
+    });
+  } else if (typeof entries === 'object') {
+    return Object.entries(entries).map(([key, value]) => {
+      return { find: key, replacement: value };
+    });
+  }
+
+  // If entries is neither an array nor an object, return an empty array
+  return [];
+}
+
+export function transformAliasWithVite(
+  alias: Array<Alias>
+): Record<string, string> {
+  return alias.reduce<Record<string, string>>((acc, item) => {
+    acc[item.find] = item.replacement;
+    return acc;
+  }, {});
 }

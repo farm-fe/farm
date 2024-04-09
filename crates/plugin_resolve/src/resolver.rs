@@ -385,7 +385,6 @@ impl Resolver {
     // sort the alias by length, so that the longest alias will be matched first
     let mut alias_list: Vec<_> = context.config.resolve.alias.keys().collect();
     alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
-
     for alias in alias_list {
       let replaced = context.config.resolve.alias.get(alias).unwrap();
 
@@ -401,13 +400,22 @@ impl Resolver {
       if alias.ends_with('$') && source == alias.trim_end_matches('$') {
         return self.resolve(replaced, base_dir, kind, context);
       } else if !alias.ends_with('$') && source.starts_with(alias) {
+        // Add absolute path and values in node_modules package
+
         let source_left = RelativePath::new(source.trim_start_matches(alias));
         let new_source = source_left
           .to_logical_path(replaced)
           .to_string_lossy()
           .to_string();
-
-        return self.resolve(&new_source, base_dir, kind, context);
+        if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
+          return self.resolve(&new_source, base_dir, kind, context);
+        }
+        let (result, _) =
+          self._try_node_modules_internal(new_source.as_str(), base_dir.clone(), kind, context);
+        if let Some(resolve_result) = result {
+          let resolved_path = resolve_result.resolved_path;
+          return self.resolve(&resolved_path, base_dir, kind, context);
+        }
       }
     }
 

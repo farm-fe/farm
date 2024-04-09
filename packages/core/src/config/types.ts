@@ -165,3 +165,9 @@ export interface FarmCLIOptions
 }
 
 export type DevServerMiddleware = (context: Server) => Middleware | undefined;
+
+export interface Alias {
+  // TODO support RegExp
+  find: string;
+  replacement: string;
+}
