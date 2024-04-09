@@ -8,18 +8,34 @@ test('Js Plugin Execution - transformHtml', async () => {
     '',
     [
       {
-        name: 'test-transform-html',
+        name: 'test-transform-html-pre',
         transformHtml: {
+          order: 0, // 0 means call this hook before parse and generate resources
           executor: async ({ htmlResource }) => {
-            calledHooks.push('transformHtml');
-            const html = Buffer.from(htmlResource.bytes).toString();
-            expect(html).toContain('<div id=app-container></div>');
+            const code = Buffer.from(htmlResource.bytes as any).toString();
+            calledHooks.push('transformHtmlPre');
+            const replacedCode = code
+              .replace('{head}', '<meta head />')
+              .replace('{style}', '<meta style />')
+              .replace('{ssr}', '<meta ssr />');
             return {
               ...htmlResource,
-              bytes: [
-                ...Buffer.from(html.replace('app-container', 'app-container2'))
-              ]
+              bytes: [...Buffer.from(replacedCode)]
             };
+          }
+        }
+      },
+      {
+        name: 'test-transform-html-post',
+        transformHtml: {
+          order: 2, // 2 means call this hook after parse and generate resources
+          executor: async ({ htmlResource }) => {
+            calledHooks.push('transformHtmlPost');
+            const replacedCode = Buffer.from(htmlResource.bytes as any)
+              .toString()
+              .replace(/<meta (\w+?)>/g, '{$1}');
+            htmlResource.bytes = [...Buffer.from(replacedCode)];
+            return htmlResource;
           }
         }
       }
@@ -35,11 +51,9 @@ test('Js Plugin Execution - transformHtml', async () => {
 
   await compiler.compile();
 
-  expect(calledHooks).toEqual(['transformHtml']);
+  expect(calledHooks).toEqual(['transformHtmlPre', 'transformHtmlPost']);
 
   const resourcesMap = compiler.resources();
   const html = resourcesMap['index.html'];
-  expect(Buffer.from(html).toString()).toContain(
-    '<div id=app-container2></div>'
-  );
+  expect(Buffer.from(html).toString()).matchSnapshot();
 });

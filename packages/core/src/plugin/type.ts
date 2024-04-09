@@ -208,6 +208,7 @@ export interface JsPlugin {
   };
 
   transformHtml?: {
+    /** 0: pre, 1: normal, 2: post */
     order?: 0 | 1 | 2;
     executor: Callback<{ htmlResource: Resource }, Resource>;
   };
