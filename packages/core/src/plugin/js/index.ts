@@ -147,199 +147,95 @@ export function processVitePlugin(
   };
 
   if (Array.isArray(vitePlugin)) {
-    vitePlugin.forEach(processPlugin);
+    vitePlugin.forEach((plugin) => processPlugin(plugin));
   } else {
     processPlugin(vitePlugin);
   }
 }
 
 function normalizeFilterPath(path: string): string {
-  if (process.platform === 'win32') {
-    return compatibleWin32Path(path);
-  }
-
-  return path;
+  return process.platform === 'win32' ? compatibleWin32Path(path) : path;
 }
 
 function compatibleWin32Path(path: string): string {
   return path.replaceAll('/', '\\\\');
 }
 
-// export function convertPlugin(plugin: JsPlugin): void {
-//   if (
-//     plugin.transform &&
-//     !plugin.transform.filters?.moduleTypes &&
-//     !plugin.transform.filters?.resolvedPaths
-//   ) {
-//     throw new Error(
-//       `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
-//     );
-//   }
-//   if (plugin.transform) {
-//     if (!plugin.transform.filters.moduleTypes) {
-//       plugin.transform.filters.moduleTypes = [];
-//     } else if (!plugin.transform.filters.resolvedPaths) {
-//       plugin.transform.filters.resolvedPaths = [];
-//     }
-//   }
+export function convertPlugin(plugin: JsPlugin): void {
+  const ensureFilterExists = (filters: any, filterName: string): void => {
+    filters[filterName] ??= [];
+  };
 
-//   if (plugin.renderResourcePot) {
-//     plugin.renderResourcePot.filters ??= {};
+  const ensureHookFiltersExist = (hook: any, hookName: string): void => {
+    if (!hook) return;
 
-//     if (
-//       !plugin.renderResourcePot?.filters?.moduleIds &&
-//       !plugin.renderResourcePot?.filters?.resourcePotTypes
-//     ) {
-//       throw new Error(
-//         `renderResourcePot hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
-//       );
-//     }
+    hook.filters ||= {};
 
-//     if (!plugin.renderResourcePot.filters?.resourcePotTypes) {
-//       plugin.renderResourcePot.filters.resourcePotTypes = [];
-//     } else if (!plugin.renderResourcePot.filters?.moduleIds) {
-//       plugin.renderResourcePot.filters.moduleIds = [];
-//     }
-//   }
+    if (!hook.filters.moduleIds || !hook.filters.resourcePotTypes) {
+      throw new Error(
+        `${hookName} hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+      );
+    }
 
-//   if (plugin.augmentResourceHash) {
-//     plugin.augmentResourceHash.filters ??= {};
+    ensureFilterExists(hook.filters, 'moduleIds');
+    ensureFilterExists(hook.filters, 'resourcePotTypes');
+  };
 
-//     if (
-//       !plugin.augmentResourceHash?.filters?.moduleIds &&
-//       !plugin.augmentResourceHash?.filters?.resourcePotTypes
-//     ) {
-//       throw new Error(
-//         `augmentResourceHash hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
-//       );
-//     }
+  if (plugin.transform) {
+    if (
+      !plugin.transform.filters?.moduleTypes &&
+      !plugin.transform.filters?.resolvedPaths
+    ) {
+      throw new Error(
+        `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
+      );
+    }
 
-//     if (!plugin.augmentResourceHash.filters?.resourcePotTypes) {
-//       plugin.augmentResourceHash.filters.resourcePotTypes = [];
-//     } else if (!plugin.augmentResourceHash.filters?.moduleIds) {
-//       plugin.augmentResourceHash.filters.moduleIds = [];
-//     }
-//   }
+    ensureFilterExists(plugin.transform.filters, 'moduleTypes');
+    ensureFilterExists(plugin.transform.filters, 'resolvedPaths');
+  }
 
-//   if (plugin.resolve?.filters?.importers?.length) {
-//     if (process.platform === 'win32') {
-//       // replace / to \
-//       plugin.resolve.filters.importers =
-//         plugin.resolve.filters.importers.map(compatibleWin32Path);
-//     }
-//   }
+  const normalizeFilters = (filters: string[]): string[] => {
+    return filters.map(normalizeFilterPath);
+  };
 
-//   if (plugin.load?.filters?.resolvedPaths?.length) {
-//     if (process.platform === 'win32') {
-//       // replace / to \
-//       plugin.load.filters.resolvedPaths =
-//         plugin.load.filters.resolvedPaths.map(compatibleWin32Path);
-//     }
-//   }
+  const hookNames = {
+    renderResourcePot: 'renderResourcePot',
+    augmentResourceHash: 'augmentResourceHash'
+  };
 
-//   if (plugin.transform?.filters?.resolvedPaths?.length) {
-//     if (process.platform === 'win32') {
-//       // replace / to \
-//       plugin.transform.filters.resolvedPaths =
-//         plugin.transform.filters.resolvedPaths.map(compatibleWin32Path);
-//     }
-//   }
-//   if (
-//     plugin.augmentResourceHash?.filters?.moduleIds &&
-//     process.platform === 'win32'
-//   ) {
-//     plugin.augmentResourceHash.filters.moduleIds =
-//       plugin.augmentResourceHash.filters.moduleIds.map(compatibleWin32Path);
-//   }
+  Object.keys(hookNames).forEach((hookKey) => {
+    const hook = plugin[hookKey as keyof JsPlugin];
+    ensureHookFiltersExist(hook, hookNames[hookKey as keyof typeof hookNames]);
+  });
 
-//   if (
-//     plugin.renderResourcePot?.filters?.moduleIds &&
-//     process.platform === 'win32'
-//   ) {
-//     plugin.renderResourcePot.filters.moduleIds =
-//       plugin.renderResourcePot.filters.moduleIds.map(compatibleWin32Path);
-//   }
-// }
-
-function ensureFilters(pluginPart: any, requiredFields: string[]): void {
-  pluginPart.filters ??= {};
-
-  const hasAtLeastOneFilter = requiredFields.some((field) =>
-    Boolean(pluginPart.filters![field])
-  );
-  if (!hasAtLeastOneFilter) {
-    throw new Error(
-      `Farm Javascript Plugin part must have at least one filter: ${requiredFields.join(
-        ' or '
-      )}`
+  if (plugin.resolve?.filters?.importers?.length) {
+    plugin.resolve.filters.importers = normalizeFilters(
+      plugin.resolve.filters.importers
     );
   }
 
-  requiredFields.forEach((field) => {
-    pluginPart.filters![field] ??= [];
-  });
-}
-
-function ensurePathCompatibility(pluginPart: any, fields: string[]): void {
-  if (process.platform === 'win32' && pluginPart.filters) {
-    fields.forEach((field) => {
-      if (pluginPart.filters[field]?.length) {
-        pluginPart.filters[field] =
-          pluginPart.filters[field].map(compatibleWin32Path);
-      }
-    });
-  }
-}
-
-export function convertPlugin(plugin: JsPlugin): void {
-  if (plugin.transform) {
-    ensureFilters(plugin.transform, ['moduleTypes', 'resolvedPaths']);
-  }
-
-  if (plugin.renderResourcePot) {
-    ensureFilters(plugin.renderResourcePot, ['moduleIds', 'resourcePotTypes']);
-  }
-
-  if (plugin.augmentResourceHash) {
-    ensureFilters(plugin.augmentResourceHash, [
-      'moduleIds',
-      'resourcePotTypes'
-    ]);
-  }
-
-  const pathCompatibleParts = [
-    { part: plugin.resolve, fields: ['importers'] },
-    { part: plugin.load, fields: ['resolvedPaths'] },
-    { part: plugin.transform, fields: ['resolvedPaths'] },
-    { part: plugin.augmentResourceHash, fields: ['moduleIds'] },
-    { part: plugin.renderResourcePot, fields: ['moduleIds'] }
-  ];
-
-  pathCompatibleParts.forEach(({ part, fields }) => {
-    ensurePathCompatibility(part, fields);
-  });
-  
-  if (plugin.resolve?.filters?.importers?.length) {
-    plugin.resolve.filters.importers =
-      plugin.resolve.filters.importers.map(normalizeFilterPath);
-  }
-
   if (plugin.load?.filters?.resolvedPaths?.length) {
-    plugin.load.filters.resolvedPaths =
-      plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
+    plugin.load.filters.resolvedPaths = normalizeFilters(
+      plugin.load.filters.resolvedPaths
+    );
   }
 
   if (plugin.transform?.filters?.resolvedPaths?.length) {
-    plugin.transform.filters.resolvedPaths =
-      plugin.transform.filters.resolvedPaths.map(normalizeFilterPath);
+    plugin.transform.filters.resolvedPaths = normalizeFilters(
+      plugin.transform.filters.resolvedPaths
+    );
   }
+
   if (plugin.augmentResourceHash?.filters?.moduleIds) {
-    plugin.augmentResourceHash.filters.moduleIds =
-      plugin.augmentResourceHash.filters.moduleIds.map(normalizeFilterPath);
+    plugin.augmentResourceHash.filters.moduleIds = normalizeFilters(
+      plugin.augmentResourceHash.filters.moduleIds
+    );
   }
 
   if (plugin.renderResourcePot?.filters?.moduleIds) {
-    plugin.renderResourcePot.filters.moduleIds =
-      plugin.renderResourcePot.filters.moduleIds.map(normalizeFilterPath);
+    plugin.renderResourcePot.filters.moduleIds = normalizeFilters(
+      plugin.renderResourcePot.filters.moduleIds
+    );
   }
 }
