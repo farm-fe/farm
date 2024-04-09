@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.0.16
+
+### Patch Changes
+
+- e1071eca: fix sass files watch and static assets transform
+- 6cbc9fa8: resolve config file with set NODE_ENV
+- 2ada5819: Add parsing in alias to node_modules
+
 ## 1.0.15
 
 ### Patch Changes
