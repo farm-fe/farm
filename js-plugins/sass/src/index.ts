@@ -215,7 +215,9 @@ async function resolveDependency(
         ctx
       );
       if (result) return result;
-    } catch (_error) {}
+    } catch (_error) {
+      /* do nothing */
+    }
   }
 
   if (default_import_error) {
@@ -259,7 +261,7 @@ async function compileScss(param: CompileCssParams) {
     root
   } = param;
 
-  const { css, sourceMap } = (await sassImpl.compileStringAsync(
+  const { css, sourceMap, loadedUrls } = (await sassImpl.compileStringAsync(
     `${additionContext}\n${transformParam.content}`,
     {
       ...(options?.sassOptions ?? {}),
@@ -267,16 +269,21 @@ async function compileScss(param: CompileCssParams) {
       url: pathToFileURL(transformParam.resolvedPath),
       importers: [
         {
-          canonicalize(url, _) {
+          async canonicalize(url, _) {
             // file:///xxxx
             // /xxx
             // ./xxx
-            return pathToFileURL(normalizePath(url, root));
+            const normalizedPath = normalizePath(url, root);
+            const normalizedUrl = path.relative(root, normalizedPath);
+            const filePath = await resolveDependency(
+              normalizedUrl,
+              transformParam,
+              ctx
+            );
+            return pathToFileURL(filePath);
           },
           async load(canonicalUrl) {
-            const file = fileURLToPath(canonicalUrl);
-            const url = path.relative(root, file);
-            const filePath = await resolveDependency(url, transformParam, ctx);
+            const filePath = fileURLToPath(canonicalUrl);
             const { contents } = await rebaseUrls(
               filePath,
               transformParam.resolvedPath,
@@ -302,6 +309,14 @@ async function compileScss(param: CompileCssParams) {
     } as StringOptions<'async'>
   )) as CompileResult;
 
+  for (const fileUrl of loadedUrls) {
+    const file = fileURLToPath(fileUrl);
+
+    if (file === transformParam.resolvedPath) continue;
+
+    ctx.addWatchFile(transformParam.resolvedPath, file);
+  }
+
   return { css, sourceMap };
 }
 
@@ -323,15 +338,8 @@ async function compileScssLegacy(param: CompileCssParams) {
         sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
         outFile: transformParam.resolvedPath,
         importer: [
-          function (url, importer, done) {
-            resolveDependency(
-              url,
-              {
-                ...transformParam,
-                moduleId: importer
-              },
-              ctx
-            ).then((resolvedPath) => {
+          function (url, _, done) {
+            resolveDependency(url, transformParam, ctx).then((resolvedPath) => {
               rebaseUrls(
                 resolvedPath,
                 transformParam.resolvedPath,
@@ -358,6 +366,11 @@ async function compileScssLegacy(param: CompileCssParams) {
           reject(err);
           return;
         }
+
+        result.stats.includedFiles.forEach((file) => {
+          if (file === transformParam.resolvedPath) return;
+          ctx.addWatchFile(transformParam.resolvedPath, file);
+        });
 
         resolve({ css: result.css.toString(), sourceMap: result.map });
       }

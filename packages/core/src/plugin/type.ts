@@ -208,8 +208,8 @@ export interface JsPlugin {
   };
 
   transformHtml?: {
-    order: 0 | 1 | 2;
-    executor: Callback<{ htmlResource: Resource }, string>;
+    order?: 0 | 1 | 2;
+    executor: Callback<{ htmlResource: Resource }, Resource>;
   };
 
   writeResources?: {

@@ -21,7 +21,7 @@ import {
   transformFarmConfigToRollupNormalizedOutputOptions,
   transformResourceInfo2RollupRenderedChunk,
   transformRollupResource2FarmResource,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
+  // VITE_PLUGIN_DEFAULT_MODULE_TYPE,
   normalizePath,
   revertNormalizePath,
   normalizeAdapterVirtualModule,
@@ -559,10 +559,8 @@ export class VitePluginAdapter implements JsPlugin {
                 typeof result.map === 'object' && result.map !== null
                   ? JSON.stringify(result.map)
                   : undefined,
-              moduleType:
-                params.moduleType === VITE_PLUGIN_DEFAULT_MODULE_TYPE
-                  ? formatTransformModuleType(id)
-                  : params.moduleType
+              // vite transform can only return js/css module
+              moduleType: formatTransformModuleType(id)
               // TODO support meta and sideEffects
             };
           }
