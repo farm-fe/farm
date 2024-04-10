@@ -42,7 +42,17 @@ export function buildErrorMessage(
 }
 
 export function logError(err: Error) {
-  const errorMessages = JSON.parse(err.message);
+  let errorMessages: string[] = [];
+  try {
+    errorMessages = JSON.parse(err.message);
+  } catch (_) {
+    throw new Error(err.message);
+  }
+
+  if (!Array.isArray(errorMessages) || errorMessages.length === 0) {
+    throw new Error(err.message);
+  }
+
   const formattedErrorMessages = errorMessages.map((errorMsg: any) => {
     try {
       const parsedErrorMsg = JSON.parse(errorMsg);

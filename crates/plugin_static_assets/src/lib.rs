@@ -124,11 +124,6 @@ impl Plugin for FarmPluginStaticAssets {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let path = Path::new(param.resolved_path);
     let extension = path.extension().and_then(|s| s.to_str());
-    let is_query_valid = param.query.is_empty() || is_asset_query(&param.query);
-    // ignore invalid query
-    if !is_query_valid {
-      return Ok(None);
-    }
 
     if let Some(source) = param.resolved_path.strip_prefix(PUBLIC_ASSET_PREFIX) {
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {

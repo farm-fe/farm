@@ -1,5 +1,15 @@
 # @farmfe/js-plugin-sass
 
+## 2.5.4
+
+### Patch Changes
+
+- e1071eca: fix sass files watch and static assets transform
+- Updated dependencies [e1071eca]
+- Updated dependencies [6cbc9fa8]
+- Updated dependencies [2ada5819]
+  - @farmfe/core@1.0.16
+
 ## 2.5.3
 
 ### Patch Changes

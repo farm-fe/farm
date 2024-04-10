@@ -124,8 +124,9 @@ async function copyTemplate(targetDir: string, options: IResultType) {
     fs.copyFileSync(gitignore, path.join(dest, '.gitignore'));
   }
 
+  const runText = options.type === 'js' ? 'pnpm dev' : 'pnpm build';
   console.log(colors.green('\n🎉 Plugin created successfully!\n'));
-  console.log(colors.cyan(`cd ${targetDir} && pnpm install && pnpm dev\n`));
+  console.log(colors.cyan(`cd ${targetDir} && pnpm install && ${runText}\n`));
 }
 
 function judgeNodeVersion() {

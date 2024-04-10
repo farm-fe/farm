@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.3
+
+### Patch Changes
+
+- 28a3ab14: chore: update template version
+
 ## 0.1.2
 
 ### Patch Changes
