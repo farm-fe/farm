@@ -125,7 +125,7 @@ async function copyTemplate(targetDir: string, options: IResultType) {
   }
 
   console.log(colors.green('\n🎉 Plugin created successfully!\n'));
-  console.log(colors.cyan(`cd ${targetDir} && pnpm install && pnpm dev\n`));
+  console.log(colors.cyan(`cd ${targetDir} && pnpm install && pnpm build\n`));
 }
 
 function judgeNodeVersion() {
