@@ -441,13 +441,10 @@ export async function normalizeUserCompilationConfig(
   }
 
   // lazyCompilation should be disabled in production mode
-  // so, it only happens in development mode
-  // https://github.com/farm-fe/farm/issues/962
   if (config.treeShaking && config.lazyCompilation) {
     logger.error(
-      'treeShaking option is not supported in lazyCompilation mode, treeShaking will be disabled.'
+      'treeShaking option is not supported in lazyCompilation mode. It may cause your app to crash, you can learn about it through this link: https://github.com/farm-fe/farm/issues/962'
     );
-    config.treeShaking = false;
   }
 
   if (config.minify === undefined) {
