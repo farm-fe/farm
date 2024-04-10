@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.5
+
+### Patch Changes
+
+- 28a3ab14: chore: update template version
+
 ## 1.6.4
 
 ### Patch Changes
