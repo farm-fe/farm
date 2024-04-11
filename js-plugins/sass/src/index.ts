@@ -131,7 +131,7 @@ export default function farmSassPlugin(
             sourceMap:
               typeof sourceMap === 'object'
                 ? JSON.stringify(sourceMap)
-                : sourceMap
+                : (sourceMap as string | undefined)
           };
         } catch (error) {
           throwError('transform', error);
