@@ -1984,13 +1984,12 @@ importers:
 
   packages/plugin-tools:
     dependencies:
-      '@napi-rs/cli':
-        specifier: ^2.15.2
-        version: 2.16.5
-    devDependencies:
       '@farmfe/utils':
         specifier: workspace:*
         version: link:../utils
+      '@napi-rs/cli':
+        specifier: ^2.15.2
+        version: 2.16.5
       cac:
         specifier: ^6.7.14
         version: 6.7.14
