@@ -1,5 +1,11 @@
 # @farmfe/plugin-tools
 
+## 0.1.0
+
+### Minor Changes
+
+- d330af58: Bump version
+
 ## 0.0.5
 
 ### Patch Changes

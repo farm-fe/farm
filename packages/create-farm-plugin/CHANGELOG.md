@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.4
+
+### Patch Changes
+
+- d330af58: update rust plugin template
+
 ## 0.1.3
 
 ### Patch Changes
