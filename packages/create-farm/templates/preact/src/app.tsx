@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks'
 import preactLogo from './assets/preact.svg'
-import FarmLogo from '/logo.png'
+import FarmLogo from './assets/logo.png'
 import './app.css'
 
 export function App() {
