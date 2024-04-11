@@ -78,7 +78,7 @@ export async function normalizePersistentCache(
   if (!config.persistentCache.buildDependencies) {
     config.persistentCache.buildDependencies = [];
   }
-
+  // TODO find latest lock file starting from root
   for (const lockfile of ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
     if (!config.persistentCache.buildDependencies.includes(lockfile)) {
       config.persistentCache.buildDependencies.push(lockfile);

@@ -53,6 +53,8 @@ export default function farmSassPlugin(
   const cwd = () => farmConfig.root ?? process.cwd();
 
   const resolvedPaths = options.filters?.resolvedPaths ?? DEFAULT_PATHS_REGEX;
+  // enable legacy mode by default
+  options.legacy = options.legacy ?? true;
 
   return {
     name: pluginName,
@@ -126,7 +128,10 @@ export default function farmSassPlugin(
           return {
             content: css,
             moduleType: 'css',
-            sourceMap: sourceMap && JSON.stringify(sourceMap)
+            sourceMap:
+              typeof sourceMap === 'object'
+                ? JSON.stringify(sourceMap)
+                : sourceMap
           };
         } catch (error) {
           throwError('transform', error);
@@ -270,13 +275,14 @@ async function compileScss(param: CompileCssParams) {
       importers: [
         {
           async canonicalize(url, _) {
+            if (urlCanParse(url)) return new URL(url);
             // file:///xxxx
             // /xxx
             // ./xxx
             const normalizedPath = normalizePath(url, root);
             const normalizedUrl = path.relative(root, normalizedPath);
             const filePath = await resolveDependency(
-              normalizedUrl,
+              normalizedUrl.replaceAll('\\', '/'),
               transformParam,
               ctx
             );
@@ -301,7 +307,8 @@ async function compileScss(param: CompileCssParams) {
             );
             return {
               contents: contents ?? (await readFile(filePath, 'utf-8')),
-              syntax: syntaxMap[path.extname(filePath)] ?? 'scss'
+              syntax: syntaxMap[path.extname(filePath)] ?? 'scss',
+              sourceMapUrl: canonicalUrl
             };
           }
         }
@@ -337,6 +344,7 @@ async function compileScssLegacy(param: CompileCssParams) {
         data: `${additionContext}\n${transformParam.content}`,
         sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
         outFile: transformParam.resolvedPath,
+        sourceMapRoot: path.dirname(transformParam.resolvedPath),
         importer: [
           function (url, _, done) {
             resolveDependency(url, transformParam, ctx).then((resolvedPath) => {
@@ -372,7 +380,10 @@ async function compileScssLegacy(param: CompileCssParams) {
           ctx.addWatchFile(transformParam.resolvedPath, file);
         });
 
-        resolve({ css: result.css.toString(), sourceMap: result.map });
+        resolve({
+          css: result.css.toString(),
+          sourceMap: result.map && result.map.toString()
+        });
       }
     );
   });
