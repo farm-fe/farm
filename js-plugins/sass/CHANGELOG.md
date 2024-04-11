@@ -1,5 +1,16 @@
 # @farmfe/js-plugin-sass
 
+## 2.6.0
+
+### Minor Changes
+
+- d330af58: Make legacy true default
+
+### Patch Changes
+
+- Updated dependencies [d330af58]
+  - @farmfe/core@1.0.17
+
 ## 2.5.4
 
 ### Patch Changes

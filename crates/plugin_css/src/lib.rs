@@ -66,55 +66,17 @@ mod dep_analyzer;
 mod source_replacer;
 pub mod transform_css_to_script;
 
-#[cache_item]
-struct CssModulesCache {
-  content_map: HashMap<String, String>,
-  sourcemap_map: HashMap<String, String>,
+pub struct FarmPluginCssResolve {}
+
+impl FarmPluginCssResolve {
+  pub fn new(_config: &Config) -> Self {
+    Self {}
+  }
 }
 
-pub struct FarmPluginCss {
-  css_modules_paths: Vec<Regex>,
-  ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
-  content_map: Mutex<HashMap<String, String>>,
-  sourcemap_map: Mutex<HashMap<String, String>>,
-}
-
-fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
-  let mut prefixer = swc_css_prefixer::prefixer(swc_css_prefixer::options::Options {
-    env: css_prefixer_config.targets.clone(),
-  });
-  prefixer.visit_mut_stylesheet(stylesheet);
-}
-
-impl Plugin for FarmPluginCss {
+impl Plugin for FarmPluginCssResolve {
   fn name(&self) -> &str {
-    "FarmPluginCss"
-  }
-  /// This plugin should be executed at last
-  fn priority(&self) -> i32 {
-    -99
-  }
-
-  /// Just load the cache, if the cache is invalidated, it will be reset when transform.
-  fn plugin_cache_loaded(
-    &self,
-    cache: &Vec<u8>,
-    _context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    let cache = deserialize!(cache, CssModulesCache);
-    let mut content_map = self.content_map.lock();
-
-    for (k, v) in cache.content_map {
-      content_map.insert(k, v);
-    }
-
-    let mut sourcemap_map = self.sourcemap_map.lock();
-
-    for (k, v) in cache.sourcemap_map {
-      sourcemap_map.insert(k, v);
-    }
-
-    Ok(Some(()))
+    "FarmPluginCssResolve"
   }
 
   fn resolve(
@@ -164,6 +126,58 @@ impl Plugin for FarmPluginCss {
     }
 
     Ok(None)
+  }
+}
+
+#[cache_item]
+struct CssModulesCache {
+  content_map: HashMap<String, String>,
+  sourcemap_map: HashMap<String, String>,
+}
+
+pub struct FarmPluginCss {
+  css_modules_paths: Vec<Regex>,
+  ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
+  content_map: Mutex<HashMap<String, String>>,
+  sourcemap_map: Mutex<HashMap<String, String>>,
+}
+
+fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
+  let mut prefixer = swc_css_prefixer::prefixer(swc_css_prefixer::options::Options {
+    env: css_prefixer_config.targets.clone(),
+  });
+  prefixer.visit_mut_stylesheet(stylesheet);
+}
+
+impl Plugin for FarmPluginCss {
+  fn name(&self) -> &str {
+    "FarmPluginCss"
+  }
+  /// This plugin should be executed at last
+  fn priority(&self) -> i32 {
+    -99
+  }
+
+  /// Just load the cache, if the cache is invalidated, it will be reset when transform.
+  fn plugin_cache_loaded(
+    &self,
+    cache: &Vec<u8>,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let cache = deserialize!(cache, CssModulesCache);
+    let mut content_map = self.content_map.lock();
+
+    for (k, v) in cache.content_map {
+      content_map.insert(k, v);
+    }
+
+    let mut sourcemap_map = self.sourcemap_map.lock();
+
+    for (k, v) in cache.sourcemap_map {
+      sourcemap_map.insert(k, v);
+    }
+
+    Ok(Some(()))
   }
 
   fn load(

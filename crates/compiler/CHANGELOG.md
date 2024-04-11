@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.5...farmfe_compiler-v0.0.6) - 2024-04-11
+
+### Fixed
+- sass import sourcemap ([#1154](https://github.com/farm-fe/farm/pull/1154))
+
 ## [0.0.5](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.4...farmfe_compiler-v0.0.5) - 2024-04-09
 
 ### Other
