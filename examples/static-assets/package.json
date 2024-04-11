@@ -12,5 +12,8 @@
     "start": "farm start",
     "build": "farm build",
     "preview": "farm preview"
+  },
+  "dependencies": {
+    "is-plain-object": "^5.0.0"
   }
 }

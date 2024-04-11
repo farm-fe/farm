@@ -48,8 +48,8 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:^1.0.16",
     "@farmfe/js-plugin-dts": "workspace:*",
-    "sass": "^1.62.1",
-    "sass-embedded": "^1.62.0"
+    "sass": "^1.74.1",
+    "sass-embedded": "^1.74.1"
   },
   "peerDependencies": {
     "@farmfe/core": "workspace:^1.0.16",

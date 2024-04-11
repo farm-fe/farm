@@ -19,7 +19,6 @@ export default defineConfig({
     output: {
       path: './build',
     },
-    sourcemap: false,
     persistentCache: false,
     // treeShaking: true,
     // minify: true,
@@ -33,5 +32,6 @@ export default defineConfig({
         return `$hoverColor: #f10215;`;
       }
     },
+    legacy: false,
   }) ],
 });
