@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.17
+
+### Patch Changes
+
+- d330af58: unlink temp bundled config file
+
 ## 1.0.16
 
 ### Patch Changes
