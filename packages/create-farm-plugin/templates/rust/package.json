@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/plugin-tools": "^0.1.0"
+    "@farmfe/plugin-tools": "latest"
   },
   "napi": {
     "name": "<FARM-RUST-PLUGIN-CARGO-NAME>",
