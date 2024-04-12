@@ -1,5 +1,6 @@
 <template>
   <div>
+    <img src="/logo.png" alt="">
     <test />
     <test1 />
     <aboute />
