@@ -101,7 +101,12 @@ impl ModuleGraph {
   /// we can get `module b` by `(module a, "./b")`.
   ///
   /// Panic if the dep does not exist or the source is not correct
-  pub fn get_dep_by_source_optional(&self, module_id: &ModuleId, source: &str) -> Option<ModuleId> {
+  pub fn get_dep_by_source_optional(
+    &self,
+    module_id: &ModuleId,
+    source: &str,
+    kind: Option<ResolveKind>,
+  ) -> Option<ModuleId> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -112,7 +117,10 @@ impl ModuleGraph {
       .detach();
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
-      if self.g[edge_index].iter().any(|e| e.source == *source) {
+      if self.g[edge_index]
+        .iter()
+        .any(|e| e.source == *source && (kind.is_none() || e.kind == *kind.as_ref().unwrap()))
+      {
         return Some(self.g[node_index].id.clone());
       }
     }
@@ -120,8 +128,13 @@ impl ModuleGraph {
     None
   }
 
-  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &str) -> ModuleId {
-    if let Some(id) = self.get_dep_by_source_optional(module_id, source) {
+  pub fn get_dep_by_source(
+    &self,
+    module_id: &ModuleId,
+    source: &str,
+    kind: Option<ResolveKind>,
+  ) -> ModuleId {
+    if let Some(id) = self.get_dep_by_source_optional(module_id, source, kind) {
       id
     } else {
       panic!("source `{}` is not a edge of `{:?}`", source, module_id);

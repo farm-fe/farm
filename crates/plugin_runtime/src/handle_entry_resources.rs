@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use farmfe_core::plugin::ResolveKind;
 use farmfe_core::resource::ResourceOrigin;
 use farmfe_core::{
   config::{ModuleFormat, TargetEnv, FARM_MODULE_SYSTEM},
@@ -133,7 +134,8 @@ pub fn get_export_info_of_entry_module(
         }
         ModuleDecl::ExportAll(export_all) => {
           let source = export_all.src.value.to_string();
-          let dep_module = module_graph.get_dep_by_source(entry_module_id, &source);
+          let dep_module =
+            module_graph.get_dep_by_source(entry_module_id, &source, Some(ResolveKind::ExportFrom));
           let mut dep_export_info =
             get_export_info_of_entry_module(&dep_module, module_graph, visited)
               .into_iter()

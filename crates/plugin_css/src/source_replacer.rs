@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
+  plugin::ResolveKind,
   resource::{Resource, ResourceOrigin},
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
@@ -43,7 +44,11 @@ impl<'a> VisitMut for SourceReplacer<'a> {
               return source.to_string();
             }
 
-            let dep_module = self.module_graph.get_dep_by_source(&self.module_id, source);
+            let dep_module = self.module_graph.get_dep_by_source(
+              &self.module_id,
+              source,
+              Some(ResolveKind::CssUrl),
+            );
 
             for resource in self.resources_map.values() {
               if let ResourceOrigin::Module(m_id) = &resource.origin {
@@ -108,7 +113,11 @@ impl<'a> VisitMut for SourceReplacer<'a> {
             if !is_source_ignored(&source)
               && self
                 .module_graph
-                .get_dep_by_source_optional(&self.module_id, &source)
+                .get_dep_by_source_optional(
+                  &self.module_id,
+                  &source,
+                  Some(ResolveKind::CssAtImport),
+                )
                 .is_some()
             {
               rules_to_remove.push(i);

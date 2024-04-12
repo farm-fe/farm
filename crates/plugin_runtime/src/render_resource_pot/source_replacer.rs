@@ -10,6 +10,7 @@
 use farmfe_core::{
   config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
+  plugin::ResolveKind,
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
@@ -85,6 +86,7 @@ impl SourceReplacer<'_> {
     }
 
     if is_commonjs_require(self.unresolved_mark, self.top_level_mark, &*call_expr) {
+      let args_len = call_expr.args.len();
       if let ExprOrSpread {
         spread: None,
         expr: box Expr::Lit(Lit::Str(str)),
@@ -117,9 +119,16 @@ impl SourceReplacer<'_> {
           return SourceReplaceResult::NotReplaced;
         }
 
+        // commonjs require has 2 arguments in farm
+        let kind = if args_len == 2 {
+          ResolveKind::Require
+        } else {
+          ResolveKind::Import
+        };
+
         let id = self
           .module_graph
-          .get_dep_by_source(&self.module_id, &source);
+          .get_dep_by_source(&self.module_id, &source, Some(kind));
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
 
@@ -148,9 +157,11 @@ impl SourceReplacer<'_> {
       {
         let source = str.value.to_string();
 
-        let id = self
-          .module_graph
-          .get_dep_by_source(&self.module_id, &source);
+        let id = self.module_graph.get_dep_by_source(
+          &self.module_id,
+          &source,
+          Some(ResolveKind::DynamicImport),
+        );
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
 
@@ -165,10 +176,6 @@ impl SourceReplacer<'_> {
           sym: FARM_DYNAMIC_REQUIRE.into(),
           optional: false,
         })));
-
-        let id = self
-          .module_graph
-          .get_dep_by_source(&self.module_id, &source);
 
         str.value = id.id(self.mode.clone()).into();
         str.span = DUMMY_SP;
