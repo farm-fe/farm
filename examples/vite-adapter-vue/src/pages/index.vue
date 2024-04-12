@@ -38,7 +38,7 @@ import Formatter from '../components/Formatter.vue';
   }
 
   .logo1 {
-    background-image: url('/logo.png');
+    background-image: url('../assets/sub/logo.png');
     width: 100px;
     height: 100px;
     background-size: contain;

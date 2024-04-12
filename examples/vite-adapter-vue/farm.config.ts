@@ -29,7 +29,7 @@ export default defineConfig({
     // compilation options here
     // persistentCache: false
     output:{
-      path: "/build",
+      path: "build",
       publicPath: "/vue-public-path/",
     }
   },
