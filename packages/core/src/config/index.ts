@@ -140,7 +140,8 @@ export async function resolveConfig(
   const loadedUserConfig = await loadConfigFile(
     configPath,
     inlineOptions,
-    logger
+    logger,
+    mode
   );
 
   if (!loadedUserConfig) {
@@ -445,9 +446,9 @@ export async function normalizeUserCompilationConfig(
   // https://github.com/farm-fe/farm/issues/962
   if (config.treeShaking && config.lazyCompilation) {
     logger.error(
-      'treeShaking option is not supported in lazyCompilation mode, treeShaking will be disabled.'
+      'treeShaking option is not supported in lazyCompilation mode, lazyCompilation will be disabled.'
     );
-    config.treeShaking = false;
+    config.lazyCompilation = false;
   }
 
   if (config.minify === undefined) {
@@ -572,7 +573,8 @@ export function normalizeDevServerOptions(
 async function readConfigFile(
   inlineOptions: FarmCLIOptions,
   configFilePath: string,
-  logger: Logger
+  logger: Logger,
+  mode: CompilationMode
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
     let userConfig: UserConfigExport;
@@ -624,7 +626,7 @@ async function readConfigFile(
           }
         },
         logger,
-        inlineOptions.mode as CompilationMode
+        mode as CompilationMode
       );
 
       const compiler = new Compiler({
@@ -860,7 +862,8 @@ async function resolveMergedUserConfig(
 export async function loadConfigFile(
   configPath: string,
   inlineOptions: FarmCLIOptions,
-  logger: Logger = new Logger()
+  logger: Logger = new Logger(),
+  mode: CompilationMode
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
   try {
@@ -870,7 +873,8 @@ export async function loadConfigFile(
       const config = await readConfigFile(
         inlineOptions,
         configFilePath,
-        logger
+        logger,
+        mode
       );
       return {
         config: config && parseUserConfig(config),

@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.18
+
+### Patch Changes
+
+- b67eb986: fix: resolve config mode error
+
 ## 1.0.17
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 import { LitElement, css, html } from 'lit'
 import { customElement } from 'lit/decorators.js'
 import litLogo from './assets/lit.svg'
-import FarmLogo from '/logo.png'
+import FarmLogo from './assets/logo.png'
 
 /**
  * An example element.
