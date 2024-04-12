@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import solidLogo from "./assets/solid.svg";
-import farmLogo from "/logo.png";
+import farmLogo from "./assets/logo.png";
 import "./App.css";
 
 function App() {
