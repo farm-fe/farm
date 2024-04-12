@@ -119,16 +119,28 @@ impl SourceReplacer<'_> {
           return SourceReplaceResult::NotReplaced;
         }
 
-        // commonjs require has 2 arguments in farm
-        let kind = if args_len == 2 {
-          ResolveKind::Require
-        } else {
-          ResolveKind::Import
-        };
-
-        let id = self
-          .module_graph
-          .get_dep_by_source(&self.module_id, &source, Some(kind));
+        let mut id = None;
+        // treat non dynamic import as the same
+        for kind in [
+          ResolveKind::Import,
+          ResolveKind::ExportFrom,
+          ResolveKind::Require,
+        ] {
+          if let Some(dep_id) =
+            self
+              .module_graph
+              .get_dep_by_source_optional(&self.module_id, &source, Some(kind))
+          {
+            id = Some(dep_id);
+            break;
+          }
+        }
+        let id = id.unwrap_or_else(|| {
+          panic!(
+            "Cannot find module id for source {:?} from {:?}",
+            source, self.module_id
+          )
+        });
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
 
