@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.6
+
+### Patch Changes
+
+- 918947b8: fix: adjust the position of the logo in the template
+
 ## 1.6.5
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # create-farm-plugin
 
+## 0.1.5
+
+### Patch Changes
+
+- ecc176af: fix: dependencies
+- ecc176af: fix: rust plugin template dependency missing.
+
 ## 0.1.4
 
 ### Patch Changes
