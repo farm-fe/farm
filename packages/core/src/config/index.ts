@@ -446,9 +446,9 @@ export async function normalizeUserCompilationConfig(
   // https://github.com/farm-fe/farm/issues/962
   if (config.treeShaking && config.lazyCompilation) {
     logger.error(
-      'treeShaking option is not supported in lazyCompilation mode, treeShaking will be disabled.'
+      'treeShaking option is not supported in lazyCompilation mode, lazyCompilation will be disabled.'
     );
-    config.treeShaking = false;
+    config.lazyCompilation = false;
   }
 
   if (config.minify === undefined) {
