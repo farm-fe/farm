@@ -12,7 +12,7 @@ use farmfe_core::{
 
 use farmfe_toolkit::{
   common::{
-    build_source_map, create_swc_source_map, load_source_original_source_map, PathFilter, Source,
+    build_source_map, create_swc_source_map, PathFilter, Source,
   },
   script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
   swc_ecma_visit::{VisitMut, VisitMutWith},
