@@ -28,6 +28,10 @@ export default defineConfig({
   compilation: {
     // compilation options here
     // persistentCache: false
+    output:{
+      path: "build",
+      publicPath: "/vue-public-path/",
+    }
   },
   plugins: [
     '@farmfe/plugin-sass',

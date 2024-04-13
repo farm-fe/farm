@@ -13,7 +13,7 @@ import Formatter from '../components/Formatter.vue';
       <div class="logo2" />
     </a>
     <a href="https://farmfe.org/" target="_blank">
-      <img src="../assets/logo.png" class="logo" alt="Farm logo" />
+      <img src="/logo.png" class="logo" alt="Farm logo" />
     </a>
     <a href="https://vuejs.org/" target="_blank">
       <my-svg-icon name="icon-vue" class="logo" style="height: 6.25rem; width: 6.25rem;" />
@@ -38,7 +38,7 @@ import Formatter from '../components/Formatter.vue';
   }
 
   .logo1 {
-    background-image: url('../assets/logo.png');
+    background-image: url('../assets/sub/logo.png');
     width: 100px;
     height: 100px;
     background-size: contain;

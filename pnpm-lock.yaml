@@ -6204,14 +6204,14 @@ packages:
   /@types/postcss-import@14.0.3:
     resolution: {integrity: sha512-raZhRVTf6Vw5+QbmQ7LOHSDML71A5rj4+EqDzAbrZPfxfoGzFxMHRCq16VlddGIZpHELw0BG4G0YE2ANkdZiIQ==}
     dependencies:
-      postcss: 8.4.35
+      postcss: 8.4.38
     dev: true
 
   /@types/postcss-url@10.0.4:
     resolution: {integrity: sha512-5QIO9NgbWmAkle65haRqkdgYPCOXheNsaFdbTJJQjT302yK3H49ql4t9a4y0NfpuPtU/UBo15VcV64WCSIMJKg==}
     dependencies:
       '@types/node': 18.18.8
-      postcss: 8.4.35
+      postcss: 8.4.38
     dev: true
 
   /@types/prettier@2.7.3:
@@ -6812,7 +6812,7 @@ packages:
     resolution: {integrity: sha512-KWhJ9k5nXuNtygPU7+t1rX6baZeqOYLEforUPjgNDBnLicfHCoi48H87Q8XyLZOrNNsmhuwKqtpDQWjEFe6Ekg==}
     dependencies:
       '@babel/parser': 7.24.1
-      postcss: 8.4.35
+      postcss: 8.4.38
       source-map: 0.6.1
     optionalDependencies:
       prettier: 2.8.8
@@ -6828,7 +6828,7 @@ packages:
       '@vue/shared': 3.3.12
       estree-walker: 2.0.2
       magic-string: 0.30.5
-      postcss: 8.4.35
+      postcss: 8.4.38
       source-map-js: 1.0.2
 
   /@vue/compiler-sfc@3.3.7:
@@ -6842,7 +6842,7 @@ packages:
       '@vue/shared': 3.3.7
       estree-walker: 2.0.2
       magic-string: 0.30.5
-      postcss: 8.4.35
+      postcss: 8.4.38
       source-map-js: 1.0.2
 
   /@vue/compiler-sfc@3.4.15:
@@ -6855,7 +6855,7 @@ packages:
       '@vue/shared': 3.4.15
       estree-walker: 2.0.2
       magic-string: 0.30.5
-      postcss: 8.4.35
+      postcss: 8.4.38
       source-map-js: 1.0.2
 
   /@vue/compiler-ssr@3.3.12:
@@ -9228,7 +9228,7 @@ packages:
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0, npm: '>=7.0.0'}
     dependencies:
       mdn-data: 2.0.28
-      source-map-js: 1.0.2
+      source-map-js: 1.2.0
 
   /css-tree@2.3.1:
     resolution: {integrity: sha512-6Fv1DV/TYw//QF5IzQdqsNDjx/wc8TrMBZsqjL9eW01tWb7R7k/mq+/VXfJCl7SoD5emsJop9cOByJZfs8hYIw==}
@@ -13348,6 +13348,7 @@ packages:
       nanoid: 3.3.7
       picocolors: 1.0.0
       source-map-js: 1.0.2
+    dev: true
 
   /postcss@8.4.38:
     resolution: {integrity: sha512-Wglpdk03BSfXkHoQa3b/oulrotAkwrlLDRSOb9D0bN86FdRyE9lppSp33aHNPgBa0JKCoB+drFLZkQoRRYae5A==}
