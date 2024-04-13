@@ -11,7 +11,9 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::{
-  common::{create_swc_source_map, load_source_original_source_map, PathFilter, Source},
+  common::{
+    build_source_map, create_swc_source_map, load_source_original_source_map, PathFilter, Source,
+  },
   script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
@@ -91,7 +93,6 @@ impl Plugin for FarmPulginStrip {
       return Ok(None);
     }
 
-    // strip code ...
     let (cm, _) = create_swc_source_map(Source {
       path: PathBuf::from(param.resolved_path),
       content: Arc::new(param.content.clone()),
@@ -111,12 +112,12 @@ impl Plugin for FarmPulginStrip {
     let re_functions_regex = create_regex_from_list(&functions).unwrap();
     let mut remover = StripCode::new(labels, re_functions_regex, remove_debugger_statements);
     ast.visit_mut_with(&mut remover);
-
+    let mut src_map = vec![];
     let transformed_content = codegen_module(
       &ast,
       context.config.script.target.clone(),
       cm.clone(),
-      None,
+      if source_map { Some(&mut src_map) } else { None },
       context.config.minify.enabled(),
       Some(CodeGenCommentsConfig {
         comments: &comments,
@@ -126,11 +127,16 @@ impl Plugin for FarmPulginStrip {
     .unwrap();
 
     let output_code = String::from_utf8(transformed_content).unwrap();
+
     let map = if source_map {
-      load_source_original_source_map(&output_code, param.resolved_path, "/*# sourceMappingURL")
+      let map = build_source_map(cm, &src_map);
+      let mut buf = vec![];
+      map.to_writer(&mut buf).expect("failed to write sourcemap");
+      Some(String::from_utf8(buf).unwrap())
     } else {
       None
     };
+
     Ok(Some(PluginTransformHookResult {
       content: output_code,
       source_map: map,
