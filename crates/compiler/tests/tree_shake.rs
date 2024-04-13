@@ -53,6 +53,7 @@ fn tree_shake_development() {
     |file, crate_path| {
       let cwd = file.parent().unwrap();
       let entry_name = "index".to_string();
+      println!("testing tree shake: {:?}", cwd);
 
       let mut config = create_config(cwd.into(), crate_path);
 

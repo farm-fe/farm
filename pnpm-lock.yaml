@@ -362,6 +362,19 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
 
+  examples/lazy-compilation:
+    dependencies:
+      core-js:
+        specifier: ^3.34.0
+        version: 3.36.1
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:^
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/less:
     dependencies:
       clsx:
