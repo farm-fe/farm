@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use farmfe_core::{
   config::{Config, Mode},
   module::{module_graph::ModuleGraph, ModuleId},
-  plugin::Plugin,
+  plugin::{Plugin, ResolveKind},
   rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
 use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
@@ -51,7 +51,11 @@ fn toposort(
           .into_iter()
           .filter(|import_info| {
             graph
-              .get_dep_by_source_optional(import_circle_module_id, &import_info.source)
+              .get_dep_by_source_optional(
+                import_circle_module_id,
+                &import_info.source,
+                Some(ResolveKind::Import),
+              )
               .is_some()
           })
           .collect::<Vec<_>>();
@@ -338,8 +342,11 @@ impl Plugin for FarmPluginTreeShake {
                   return false;
                 }
 
-                let module_id =
-                  module_graph.get_dep_by_source(&tree_shake_module_id, &import.source);
+                let module_id = module_graph.get_dep_by_source(
+                  &tree_shake_module_id,
+                  &import.source,
+                  Some(ResolveKind::Import),
+                );
 
                 let import_tree_shake_module = tree_shake_modules_map.get(&module_id).unwrap();
 
@@ -408,9 +415,11 @@ impl Plugin for FarmPluginTreeShake {
             && !check_need_remove_import.is_empty()
           {
             for import_info in &check_need_remove_import {
-              if let Some(import_module_id) =
-                module_graph.get_dep_by_source_optional(&tree_shake_module_id, &import_info.source)
-              {
+              if let Some(import_module_id) = module_graph.get_dep_by_source_optional(
+                &tree_shake_module_id,
+                &import_info.source,
+                Some(ResolveKind::Import),
+              ) {
                 wait_check_remove_import.insert(import_module_id);
               }
             }
@@ -480,8 +489,11 @@ impl Plugin for FarmPluginTreeShake {
                   &export_info,
                 );
 
-                let import_module_id =
-                  module_graph.get_dep_by_source(&tree_shake_module_id, &source);
+                let import_module_id = module_graph.get_dep_by_source(
+                  &tree_shake_module_id,
+                  &source,
+                  Some(ResolveKind::ExportFrom),
+                );
                 reanalyze_module(&import_module_id, module_graph, &mut tree_shake_modules_map);
                 tree_shake_modules_ids
                   .push_back((import_module_id, ShakeType::CircleRemove(false)));
@@ -568,8 +580,11 @@ fn add_used_exports_by_import_info(
   tree_shake_module_id: &ModuleId,
   import_info: &ImportInfo,
 ) {
-  let imported_module_id =
-    module_graph.get_dep_by_source(tree_shake_module_id, &import_info.source);
+  let imported_module_id = module_graph.get_dep_by_source(
+    tree_shake_module_id,
+    &import_info.source,
+    Some(ResolveKind::Import),
+  );
   let imported_module = module_graph.module(&imported_module_id).unwrap();
 
   if imported_module.external || !imported_module.module_type.is_script() {
@@ -633,8 +648,11 @@ fn remove_used_exports_by_import_info(
   import_info: &ImportInfo,
   cyclic_nodes: &Vec<ModuleId>,
 ) -> Option<(ModuleId, Option<(ModuleId, ImportInfo)>)> {
-  let imported_module_id =
-    module_graph.get_dep_by_source(tree_shake_module_id, &import_info.source);
+  let imported_module_id = module_graph.get_dep_by_source(
+    tree_shake_module_id,
+    &import_info.source,
+    Some(ResolveKind::Import),
+  );
   let mut delay_process_specifies = vec![];
   if !cyclic_nodes.contains(&imported_module_id) {
     return None;
@@ -725,7 +743,8 @@ fn removed_used_exports_by_export_info(
   export_info: &ExportInfo,
 ) -> Option<ModuleId> {
   if let Some(source) = &export_info.source {
-    let exported_module_id = module_graph.get_dep_by_source(tree_shake_module_id, source);
+    let exported_module_id =
+      module_graph.get_dep_by_source(tree_shake_module_id, source, Some(ResolveKind::ExportFrom));
     let exported_module = module_graph.module(&exported_module_id).unwrap();
 
     if !exported_module.module_type.is_script() || exported_module.external {
@@ -799,7 +818,8 @@ fn add_used_exports_by_export_info(
   export_info: &ExportInfo,
 ) {
   if let Some(source) = &export_info.source {
-    let exported_module_id = module_graph.get_dep_by_source(tree_shake_module_id, source);
+    let exported_module_id =
+      module_graph.get_dep_by_source(tree_shake_module_id, source, Some(ResolveKind::ExportFrom));
     let exported_module = module_graph.module(&exported_module_id).unwrap();
 
     if exported_module.external {
@@ -865,7 +885,8 @@ fn replace_used_export_by_export_info(
   export_info: &ExportInfo,
 ) {
   if let Some(source) = &export_info.source {
-    let exported_module_id = module_graph.get_dep_by_source(tree_shake_module_id, source);
+    let exported_module_id =
+      module_graph.get_dep_by_source(tree_shake_module_id, source, Some(ResolveKind::ExportFrom));
     let exported_module = module_graph.module(&exported_module_id).unwrap();
 
     if exported_module.external {

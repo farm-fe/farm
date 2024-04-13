@@ -45,6 +45,12 @@ impl ModuleGraphEdge {
     &self.0
   }
 
+  pub fn update_kind(&mut self, kind: ResolveKind) {
+    for item in &mut self.0 {
+      item.kind = kind.clone();
+    }
+  }
+
   pub fn iter(&self) -> impl Iterator<Item = &ModuleGraphEdgeDataItem> {
     self.0.iter()
   }
@@ -101,7 +107,12 @@ impl ModuleGraph {
   /// we can get `module b` by `(module a, "./b")`.
   ///
   /// Panic if the dep does not exist or the source is not correct
-  pub fn get_dep_by_source_optional(&self, module_id: &ModuleId, source: &str) -> Option<ModuleId> {
+  pub fn get_dep_by_source_optional(
+    &self,
+    module_id: &ModuleId,
+    source: &str,
+    kind: Option<ResolveKind>,
+  ) -> Option<ModuleId> {
     let i = self
       .id_index_map
       .get(module_id)
@@ -112,7 +123,10 @@ impl ModuleGraph {
       .detach();
 
     while let Some((edge_index, node_index)) = edges.next(&self.g) {
-      if self.g[edge_index].iter().any(|e| e.source == *source) {
+      if self.g[edge_index]
+        .iter()
+        .any(|e| e.source == *source && (kind.is_none() || e.kind == *kind.as_ref().unwrap()))
+      {
         return Some(self.g[node_index].id.clone());
       }
     }
@@ -120,12 +134,68 @@ impl ModuleGraph {
     None
   }
 
-  pub fn get_dep_by_source(&self, module_id: &ModuleId, source: &str) -> ModuleId {
-    if let Some(id) = self.get_dep_by_source_optional(module_id, source) {
+  pub fn get_edges_of_module(&self, module_id: &ModuleId) -> Vec<&ModuleGraphEdgeDataItem> {
+    let i = self
+      .id_index_map
+      .get(module_id)
+      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+    let mut edges = self
+      .g
+      .neighbors_directed(*i, EdgeDirection::Outgoing)
+      .detach();
+
+    let mut deps = vec![];
+
+    while let Some((edge_index, _)) = edges.next(&self.g) {
+      deps.extend(self.g[edge_index].iter());
+    }
+
+    deps
+  }
+
+  pub fn get_dep_by_source(
+    &self,
+    module_id: &ModuleId,
+    source: &str,
+    kind: Option<ResolveKind>,
+  ) -> ModuleId {
+    if let Some(id) = self.get_dep_by_source_optional(module_id, source, kind.clone()) {
       id
     } else {
-      panic!("source `{}` is not a edge of `{:?}`", source, module_id);
+      panic!(
+        "source `{}`(kind {:?}, module type {:?}) is not a edge of `{:?}`, available edges: {:?}",
+        source,
+        kind,
+        self.module(module_id).unwrap().module_type,
+        module_id,
+        self.get_edges_of_module(module_id)
+      );
     }
+  }
+
+  pub fn update_edge(
+    &mut self,
+    from: &ModuleId,
+    to: &ModuleId,
+    edge_info: ModuleGraphEdge,
+  ) -> Result<()> {
+    let from = self.id_index_map.get(from).ok_or_else(|| {
+      CompilationError::GenericError(format!(
+        r#"from node "{}" does not exist in the module graph when update edge"#,
+        from.relative_path()
+      ))
+    })?;
+
+    let to = self.id_index_map.get(to).ok_or_else(|| {
+      CompilationError::GenericError(format!(
+        r#"to node "{}" does not exist in the module graph when update edge"#,
+        to.relative_path()
+      ))
+    })?;
+
+    self.g.update_edge(*from, *to, edge_info);
+
+    Ok(())
   }
 
   pub fn module(&self, module_id: &ModuleId) -> Option<&Module> {
