@@ -1,5 +1,8 @@
 #![deny(clippy::all)]
 
+use std::{error::Error, path::PathBuf, sync::Arc};
+use regex::Regex;
+
 use farmfe_core::{
   config::{config_regex::ConfigRegex, Config},
   context::CompilationContext,
@@ -17,9 +20,6 @@ use farmfe_toolkit::{
   script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
-
-use regex::Regex;
-use std::{error::Error, path::PathBuf, sync::Arc};
 
 #[derive(serde::Deserialize, Clone)]
 pub struct Options {
