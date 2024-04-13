@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.5...farmfe_plugin_static_assets-v0.0.6) - 2024-04-13
+
+### Fixed
+- public resources have not been added publicPath prefix ([#1174](https://github.com/farm-fe/farm/pull/1174))
+
 ## [0.0.5](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.4...farmfe_plugin_static_assets-v0.0.5) - 2024-04-09
 
 ### Fixed
