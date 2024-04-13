@@ -1,0 +1,20 @@
+[package]
+name = "farmfe_pulgin_strip"
+version = "0.0.1"
+edition = "2021"
+authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
+license = "MIT"
+description = "Strip plugin of farm."
+homepage = "https://farmfe.org"
+repository = "https://github.com/farm-fe/farm"
+documentation = "https://docs.rs/farmfe_plugin_tree_shake"
+
+[dependencies]
+farmfe_core = { path = "../core", version = "0.4.5" }
+farmfe_toolkit = { path = "../toolkit", version = "0.0.6" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.6" }
+serde = { version = "1.0", features = ["derive"] }
+regex = "1.5.4"
+
+[features]
+profile = ["farmfe_core/profile"]
