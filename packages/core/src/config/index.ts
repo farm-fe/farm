@@ -12,7 +12,7 @@ import {
   resolveConfigResolvedHook,
   resolveFarmPlugins
 } from '../plugin/index.js';
-import { bindingPath, Config } from '../../binding/index.js';
+import { bindingPath, Config, PluginTransformHookParam } from '../../binding/index.js';
 import { Server } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
@@ -580,82 +580,75 @@ async function readConfigFile(
     let userConfig: UserConfigExport;
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
-    // if config is written in typescript, we need to compile it to javascript using farm first
-    if (configFilePath.endsWith('.ts')) {
-      const Compiler = (await import('../compiler/index.js')).Compiler;
-      const outputPath = path.join(
-        path.dirname(configFilePath),
-        'node_modules',
-        '.farm'
-      );
+    // we need transform all type farm.config with __dirname and __filename
+    const Compiler = (await import('../compiler/index.js')).Compiler;
+    const outputPath = path.join(
+      path.dirname(configFilePath),
+      'node_modules',
+      '.farm'
+    );
 
-      const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
-        .toString(16)
-        .split('.')
-        .join('')}}.mjs`;
+    const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
+      .toString(16)
+      .split('.')
+      .join('')}}.mjs`;
 
-      const normalizedConfig = await normalizeUserCompilationConfig(
-        {
-          compilation: {
-            input: {
-              [fileName]: configFilePath
-            },
-            output: {
-              entryFilename: '[entryName]',
-              path: outputPath,
-              format: 'esm',
-              targetEnv: 'node'
-            },
-            external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
-            partialBundling: {
-              enforceResources: [
-                {
-                  name: fileName,
-                  test: ['.+']
-                }
-              ]
-            },
-            watch: false,
-            sourcemap: false,
-            treeShaking: false,
-            minify: false,
-            presetEnv: false,
-            lazyCompilation: false,
-            persistentCache: false,
-            progress: false
-          }
-        },
-        logger,
-        mode as CompilationMode
-      );
+    const normalizedConfig = await normalizeUserCompilationConfig(
+      {
+        compilation: {
+          input: {
+            [fileName]: configFilePath
+          },
+          output: {
+            entryFilename: '[entryName]',
+            path: outputPath,
+            format: 'esm',
+            targetEnv: 'node'
+          },
+          external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
+          partialBundling: {
+            enforceResources: [
+              {
+                name: fileName,
+                test: ['.+']
+              }
+            ]
+          },
+          watch: false,
+          sourcemap: false,
+          treeShaking: false,
+          minify: false,
+          presetEnv: false,
+          lazyCompilation: false,
+          persistentCache: false,
+          progress: false
+        }
+      },
+      logger,
+      mode as CompilationMode
+    );
 
-      const compiler = new Compiler({
-        config: normalizedConfig,
-        jsPlugins: [replaceDirnamePlugin({ configFilePath })],
-        rustPlugins: []
-      });
+    const compiler = new Compiler({
+      config: normalizedConfig,
+      jsPlugins: [replaceDirnamePlugin({ configFilePath })],
+      rustPlugins: []
+    });
 
-      await compiler.compile();
+    await compiler.compile();
 
-      compiler.writeResourcesToDisk();
+    compiler.writeResourcesToDisk();
 
-      const filePath = isWindows
-        ? pathToFileURL(path.join(outputPath, fileName))
-        : path.join(outputPath, fileName);
+    const filePath = isWindows
+      ? pathToFileURL(path.join(outputPath, fileName))
+      : path.join(outputPath, fileName);
 
-      try {
-        // Change to vm.module of node or loaders as far as it is stable
-        userConfig = (await import(filePath as string)).default;
-      } finally {
-        fs.unlink(filePath, () => void 0);
-      }
-    } else {
-      const filePath = isWindows
-        ? pathToFileURL(configFilePath)
-        : configFilePath;
+    try {
       // Change to vm.module of node or loaders as far as it is stable
       userConfig = (await import(filePath as string)).default;
+    } finally {
+      fs.unlink(filePath, () => void 0);
     }
+
     const configEnv = { mode: inlineOptions.mode ?? process.env.NODE_ENV };
     const config = await (typeof userConfig === 'function'
       ? userConfig(configEnv)
@@ -977,33 +970,30 @@ export async function getConfigFilePath(
   return undefined;
 }
 
+// transform __dirname and __filename with resolve config file path
 export function replaceDirnamePlugin({ configFilePath }: { configFilePath: string }) {
-  const cwd = process.cwd();
-  const nodeModules = new RegExp(/^(?:.*[\\\/])?node_modules(?:[\\\/].*)?$/);
-  const loaderFilter = ['mjs', 'cjs', 'ts', 'tsx', 'js'];
+  const moduleTypes = ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'];
+  const resolvedPaths = [path.basename(configFilePath)];
   return {
     name: 'replace-dirname',
     transform: {
       filters: {
-        moduleTypes: ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'],
-        resolvedPaths: [path.basename(configFilePath)]
+        moduleTypes,
+        resolvedPaths
       },
-      async executor(param: any, ctx: any) {
+      async executor(param: PluginTransformHookParam) {
+        const { content, resolvedPath, moduleType } = param;
+        let replaceContent = content;
+        const dirPath = path.dirname(resolvedPath);
 
+        replaceContent = param.content
+          .replace('__dirname', JSON.stringify(dirPath))
+          .replace('__filename', JSON.stringify(resolvedPath));
 
-        if (!nodeModules.test(param.resolvedPath)) {
-          let contents = fs.readFileSync(param.resolvedPath, 'utf8');
-          const dirPath = path.dirname(param.resolvedPath);
-
-          contents = contents
-            .replace('__dirname', JSON.stringify(dirPath))
-            .replace('__filename', JSON.stringify(param.resolvedPath));
-
-        }
-
-        console.log(configFilePath);
-
-        console.log(param, ctx);
+        return {
+          content: replaceContent,
+          moduleType
+        };
       }
     }
   };
