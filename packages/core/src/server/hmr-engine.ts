@@ -1,3 +1,4 @@
+import fse from 'fs-extra';
 // queue all updates and compile them one by one
 
 import { isAbsolute, relative } from 'node:path';
@@ -48,6 +49,7 @@ export class HmrEngine {
 
     let updatedFilesStr = queue
       .map((item) => {
+        console.log('🤖 == HmrEngine == .map == item:', item);
         if (isAbsolute(item)) {
           return relative(this._compiler.config.config.root, item);
         } else {
@@ -137,7 +139,11 @@ export class HmrEngine {
     const paths = Array.isArray(absPath) ? absPath : [absPath];
 
     for (const path of paths) {
-      if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
+      if (
+        this._compiler.hasModule(path) &&
+        !this._updateQueue.includes(path) &&
+        fse.existsSync(path)
+      ) {
         const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
         const currentTimestamp = (await stat(path)).mtime.toISOString();
         // only update the file if the timestamp changed since last update
