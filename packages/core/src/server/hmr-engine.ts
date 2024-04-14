@@ -49,7 +49,6 @@ export class HmrEngine {
 
     let updatedFilesStr = queue
       .map((item) => {
-        console.log('🤖 == HmrEngine == .map == item:', item);
         if (isAbsolute(item)) {
           return relative(this._compiler.config.config.root, item);
         } else {
