@@ -430,11 +430,6 @@ export async function normalizeUserCompilationConfig(
       }
     }
 
-    if (isEmptyObject(input)) {
-      logger.error('The input under compilation must have a valid entry file');
-      return;
-    }
-
     config.input = input;
   }
 
