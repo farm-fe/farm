@@ -131,6 +131,104 @@ test('resolveUserConfig-prod', async () => {
   );
 });
 
+test('resolveUserConfig-input-html-prod', async () => {
+  const filePath = fileURLToPath(path.dirname(import.meta.url));
+  const configFilePath = path.join(
+    filePath,
+    'fixtures',
+    'config',
+    'input-html',
+    'farm.config.ts'
+  );
+  const config = await resolveConfig(
+    { configPath: configFilePath },
+    new Logger(),
+    'production'
+  );
+
+  expect(config.compilation.input).toEqual({
+    index: './index.html'
+  });
+
+  expect(config.compilation.define).toEqual({
+    FARM_PROCESS_ENV: {
+      NODE_ENV: 'production'
+    },
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'production'
+  });
+
+  expect(config.compilation.output).toEqual({
+    assetsFilename: '[resourceName].[contentHash].[ext]',
+    filename: '[resourceName].[contentHash].[ext]',
+    path: './dist',
+    publicPath: '/',
+    targetEnv: 'browser'
+  });
+
+  expect(config.compilation.lazyCompilation).toEqual(false);
+  expect(config.compilation.sourcemap).toEqual(true);
+  expect(config.compilation.minify).toEqual(true);
+
+  expect(config.compilation.presetEnv).toEqual({
+    options: {
+      targets: [
+        'edge >= 15',
+        'firefox >= 52',
+        'chrome >= 55',
+        'safari >= 11',
+        'opera >= 42',
+        'ios_saf >= 11.2',
+        'and_chr >= 119',
+        'and_ff >= 119',
+        'and_uc >= 15.5',
+        'samsung >= 6.4',
+        'and_qq >= 13.1',
+        'baidu >= 13.18',
+        'kaios >= 3.1',
+        'unreleased edge versions',
+        'unreleased firefox versions',
+        'unreleased chrome versions',
+        'unreleased safari versions',
+        'unreleased opera versions',
+        'unreleased ios_saf versions',
+        'unreleased and_chr versions',
+        'unreleased and_ff versions',
+        'unreleased and_uc versions',
+        'unreleased samsung versions',
+        'unreleased and_qq versions',
+        'unreleased baidu versions',
+        'unreleased kaios versions'
+      ]
+    }
+  });
+
+  expect(config.compilation.persistentCache).toEqual({
+    buildDependencies: [
+      configFilePath,
+      'module',
+      'package-lock.json',
+      'pnpm-lock.yaml',
+      'yarn.lock'
+    ],
+    envs: {
+      FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
+      NODE_ENV: 'production',
+      'package.json[name]': 'farm-fe',
+      'package.json[type]': 'unknown',
+      'package.json[browser]': 'unknown',
+      'package.json[exports]': 'unknown',
+      'package.json[main]': 'unknown',
+      'package.json[module]': 'unknown',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'production'
+    },
+    moduleCacheKeyStrategy: {}
+  });
+
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'production')
+  );
+});
+
 describe('normalize-dev-server-options', () => {
   test('default', () => {
     const options = normalizeDevServerOptions({}, 'development');
