@@ -430,6 +430,11 @@ export async function normalizeUserCompilationConfig(
       }
     }
 
+    if (isEmptyObject(input)) {
+      logger.error('The input under compilation must have a valid entry file');
+      return;
+    }
+
     config.input = input;
   }
 
@@ -460,7 +465,10 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.presetEnv === undefined) {
-    if (isProduction) {
+    if (
+      isProduction &&
+      Object.values(config.input).some((value) => value?.endsWith('.html'))
+    ) {
       config.presetEnv = true;
     } else {
       config.presetEnv = false;
