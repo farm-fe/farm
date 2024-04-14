@@ -12,5 +12,16 @@ export default defineConfig({
       }
     }
   },
-  vitePlugins: [createVuePlugin(), createSvgPlugin()]
+  vitePlugins: [createVuePlugin(), createSvgPlugin(), {
+    name: 'custom-plugin',
+    transform(code, id) {
+      if (id.endsWith('.png')) {
+        return {
+          code,
+          map: null
+        }
+      }
+      return null;
+    }
+  }]
 });
