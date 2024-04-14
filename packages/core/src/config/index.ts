@@ -104,7 +104,7 @@ async function handleServerPortConflict(
     mode !== 'production' &&
       (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
     // eslint-disable-next-line no-empty
-  } catch {}
+  } catch { }
 }
 
 /**
@@ -309,10 +309,10 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            userConfig.env[key];
-          return env;
-        }, {})
+        env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+          userConfig.env[key];
+        return env;
+      }, {})
   );
 
   const require = module.createRequire(import.meta.url);
@@ -362,7 +362,7 @@ export async function normalizeUserCompilationConfig(
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
       ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-          ?.name ?? FARM_DEFAULT_NAMESPACE
+        ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
@@ -402,8 +402,8 @@ export async function normalizeUserCompilationConfig(
     // TODO optimize get hmr logic
     config.define.FARM_HMR_PORT = String(
       (serverOptions.hmr.port || undefined) ??
-        serverOptions.port ??
-        DEFAULT_DEV_SERVER_OPTIONS.port
+      serverOptions.port ??
+      DEFAULT_DEV_SERVER_OPTIONS.port
     );
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
@@ -547,25 +547,25 @@ export function normalizeDevServerOptions(
     isProductionMode || hmrConfig === false
       ? false
       : merge(
-          {},
-          DEFAULT_HMR_OPTIONS,
-          {
-            host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
-            port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
-          },
-          hmrConfig === true ? {} : hmrConfig
-        );
+        {},
+        DEFAULT_HMR_OPTIONS,
+        {
+          host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
+          port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
+        },
+        hmrConfig === true ? {} : hmrConfig
+      );
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
     hmr,
     https: https
       ? {
-          ...https,
-          ca: tryAsFileRead(options.https.ca),
-          cert: tryAsFileRead(options.https.cert),
-          key: tryAsFileRead(options.https.key),
-          pfx: tryAsFileRead(options.https.pfx)
-        }
+        ...https,
+        ca: tryAsFileRead(options.https.ca),
+        cert: tryAsFileRead(options.https.cert),
+        key: tryAsFileRead(options.https.key),
+        pfx: tryAsFileRead(options.https.pfx)
+      }
       : undefined
   }) as NormalizedServerConfig;
 }
@@ -631,7 +631,7 @@ async function readConfigFile(
 
       const compiler = new Compiler({
         config: normalizedConfig,
-        jsPlugins: [],
+        jsPlugins: [replaceDirnamePlugin({ configFilePath })],
         rustPlugins: []
       });
 
@@ -948,8 +948,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Build failed due to errors: Can not resolve ${
-          isTargetNode ? 'index.js or index.ts' : 'index.html'
+        `Build failed due to errors: Can not resolve ${isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
       );
     }
@@ -976,4 +975,36 @@ export async function getConfigFilePath(
   }
 
   return undefined;
+}
+
+export function replaceDirnamePlugin({ configFilePath }: { configFilePath: string }) {
+  const cwd = process.cwd();
+  const nodeModules = new RegExp(/^(?:.*[\\\/])?node_modules(?:[\\\/].*)?$/);
+  const loaderFilter = ['mjs', 'cjs', 'ts', 'tsx', 'js'];
+  return {
+    name: 'replace-dirname',
+    transform: {
+      filters: {
+        moduleTypes: ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'],
+        resolvedPaths: [path.basename(configFilePath)]
+      },
+      async executor(param: any, ctx: any) {
+
+
+        if (!nodeModules.test(param.resolvedPath)) {
+          let contents = fs.readFileSync(param.resolvedPath, 'utf8');
+          const dirPath = path.dirname(param.resolvedPath);
+
+          contents = contents
+            .replace('__dirname', JSON.stringify(dirPath))
+            .replace('__filename', JSON.stringify(param.resolvedPath));
+
+        }
+
+        console.log(configFilePath);
+
+        console.log(param, ctx);
+      }
+    }
+  };
 }
