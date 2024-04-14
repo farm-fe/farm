@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.20
+
+### Patch Changes
+
+- 995cb6aa: Fix #1180
+
 ## 1.0.19
 
 ### Patch Changes
