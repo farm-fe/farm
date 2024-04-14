@@ -104,11 +104,15 @@ function normalizeTargetEnv(config: Config['config']) {
           config.presetEnv.options.targets = scriptTargets;
         }
       } else {
-        config.presetEnv = {
-          options: {
-            targets: scriptTargets
-          }
-        };
+        if (Object.values(config.input).some((v) => v?.endsWith('.html'))) {
+          config.presetEnv = {
+            options: {
+              targets: scriptTargets
+            }
+          };
+        } else {
+          config.presetEnv = false;
+        }
       }
     }
 

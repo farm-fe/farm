@@ -460,10 +460,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (config.presetEnv === undefined) {
-    if (
-      isProduction &&
-      Object.values(config.input).some((value) => value?.endsWith('.html'))
-    ) {
+    if (isProduction) {
       config.presetEnv = true;
     } else {
       config.presetEnv = false;
