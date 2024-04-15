@@ -24,36 +24,36 @@ export default {
   server: {
     hmr: true,
     cors: true,
-    middlewares: [
-      (server) => {
-        server.app().use(async (ctx, next) => {
-          await next();
+    // middlewares: [
+    //   (server) => {
+    //     server.app().use(async (ctx, next) => {
+    //       await next();
 
-          if (ctx.path === '/' || ctx.status === 404) {
-            // console.log('ctx.path', ctx.path);
-            const template = server
-              .getCompiler()
-              .resource('index_client.html')
-              .toString();
-            console.log('html template', template);
-            const render = await import('./dist/index.js').then(
-              (m) => m.default
-            );
-            const renderedHtml = render(ctx.path);
-            // console.log(renderedHtml);
-            const html = template.replace(
-              '{app-html-to-replace}',
-              renderedHtml
-            );
-            ctx.body = html;
-            ctx.type = 'text/html';
-            ctx.status = 200;
-          }
+    //       if (ctx.path === '/' || ctx.status === 404) {
+    //         // console.log('ctx.path', ctx.path);
+    //         const template = server
+    //           .getCompiler()
+    //           .resource('index_client.html')
+    //           .toString();
+    //         console.log('html template', template);
+    //         const render = await import('./dist/index.js').then(
+    //           (m) => m.default
+    //         );
+    //         const renderedHtml = render(ctx.path);
+    //         // console.log(renderedHtml);
+    //         const html = template.replace(
+    //           '{app-html-to-replace}',
+    //           renderedHtml
+    //         );
+    //         ctx.body = html;
+    //         ctx.type = 'text/html';
+    //         ctx.status = 200;
+    //       }
 
-          console.log('ctx.path outer', ctx.path);
-        });
-      }
-    ]
+    //       console.log('ctx.path outer', ctx.path);
+    //     });
+    //   }
+    // ]
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 };
