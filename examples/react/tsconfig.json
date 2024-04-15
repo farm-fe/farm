@@ -8,5 +8,5 @@
     "jsx": "react",
     "types": ["@farmfe/core/client"]
   },
-  "include": ["src", "farm.config.ts", "farm.config-test.ts"]
+  "include": ["src", "farm.config.js", "farm.config-test.ts"]
 }
