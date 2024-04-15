@@ -889,15 +889,15 @@ export async function loadConfigFile(
     // throw error can solve this problem,
     // it will not continue to affect the execution of
     // external code. We just need to return the default config.
+    const errorMessage = JSON.parse(error.message).join('\n');
+
     if (inlineOptions.mode === 'production') {
-      logger.error(`Failed to load config file: \n ${error.stack}`, {
+      logger.error(`Failed to load config file: ${errorMessage}`, {
         exit: true
       });
     }
 
-    throw new Error(
-      'Failed to load farm config file: ' + error + ' ' + error.stack
-    );
+    throw new Error(`Failed to load farm config file: ${errorMessage}`);
   }
 }
 
