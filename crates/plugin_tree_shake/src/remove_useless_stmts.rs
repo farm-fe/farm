@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
+  plugin::ResolveKind,
   swc_common::{Globals, Mark},
   swc_ecma_ast::{
     self, Ident, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
@@ -306,7 +307,16 @@ fn filter_stmts_to_remove(
   // determine whether to remove the statement
   // if the dep has side effects or contains self-executed statements, it should not be removed
   for (stmt_index, ty, source) in pending_transforms {
-    let dep_module_id = module_graph.get_dep_by_source_optional(tree_shake_module_id, &source);
+    let dep_module_id = module_graph.get_dep_by_source_optional(
+      tree_shake_module_id,
+      &source,
+      match ty {
+        PendingTransformType::Import => Some(ResolveKind::Import),
+        PendingTransformType::ExportFrom | PendingTransformType::ExportAll => {
+          Some(ResolveKind::ExportFrom)
+        }
+      },
+    );
 
     if let Some(dep_module_id) = dep_module_id {
       if let Some(tree_shake_module) = tree_shake_module_map.get(&dep_module_id) {

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/farm-fe/farm/compare/farmfe_swc_transformer_import_glob-v0.0.4...farmfe_swc_transformer_import_glob-v0.0.5) - 2024-04-13
+
+### Other
+- updated the following local packages: farmfe_core
+
 ## [0.0.4](https://github.com/farm-fe/farm/compare/farmfe_swc_transformer_import_glob-v0.0.3...farmfe_swc_transformer_import_glob-v0.0.4) - 2024-04-08
 
 ### Other

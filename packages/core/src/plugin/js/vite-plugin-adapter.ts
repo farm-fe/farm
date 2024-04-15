@@ -124,7 +124,7 @@ export class VitePluginAdapter implements JsPlugin {
     logger: Logger,
     mode: CompilationMode
   ) {
-    this.name = rawPlugin.name;
+    this.name = rawPlugin.name || `vite-plugin-adapted-${Date.now()}`;
     if (!rawPlugin.name) {
       throw new Error(
         `Vite plugin ${rawPlugin} is not compatible with Farm for now. Because plugin name is required in Farm.`
@@ -291,7 +291,7 @@ export class VitePluginAdapter implements JsPlugin {
 
   private getViteConfigEnv(): ConfigEnv {
     return {
-      ssrBuild: this._farmConfig.compilation?.output?.targetEnv === 'node',
+      isSsrBuild: this._farmConfig.compilation?.output?.targetEnv === 'node',
       command:
         this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
       mode: this._farmConfig.compilation?.mode
@@ -306,7 +306,7 @@ export class VitePluginAdapter implements JsPlugin {
       return this._rawPlugin.apply(this._viteConfig, {
         mode: this._farmConfig.compilation.mode,
         command,
-        ssrBuild: this._farmConfig.compilation.output?.targetEnv === 'node'
+        isSsrBuild: this._farmConfig.compilation.output?.targetEnv === 'node'
       });
     } else if (this._rawPlugin.apply === undefined) {
       return true;
@@ -558,17 +558,23 @@ export class VitePluginAdapter implements JsPlugin {
           );
 
           if (result) {
-            return {
-              content: getContentValue(result),
-              sourceMap:
-                typeof result.map === 'object' && result.map !== null
-                  ? JSON.stringify(result.map)
-                  : undefined,
-              moduleType: moduleTypesCouldTransform.includes(params.moduleType)
-                ? formatTransformModuleType(id)
-                : params.moduleType
-              // TODO support meta and sideEffects
-            };
+            const content = getContentValue(result);
+            // fix #1180, do not transform empty content
+            if (content) {
+              return {
+                content,
+                sourceMap:
+                  typeof result.map === 'object' && result.map !== null
+                    ? JSON.stringify(result.map)
+                    : undefined,
+                moduleType: moduleTypesCouldTransform.includes(
+                  params.moduleType
+                )
+                  ? formatTransformModuleType(id)
+                  : params.moduleType
+                // TODO support meta and sideEffects
+              };
+            }
           }
         }
       )

@@ -69,6 +69,8 @@ jobs:
         run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-lit --template lit --skip-install && cd my-test-app-lit && pnpm i && pnpm build
       - name: Test Create Farm Vanilla - ${{ matrix.settings.abi }}
         run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-vanilla --template vanilla --skip-install && cd my-test-app-vanilla && pnpm i && pnpm build
+      - name: Test Create Farm Preact - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-preact --template preact --skip-install && cd my-test-app-preact && pnpm i && pnpm build
 
   type-check:
     name: Type Check

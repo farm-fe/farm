@@ -1,6 +1,10 @@
 #![feature(path_file_prefix)]
 
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{
+  collections::HashMap,
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
@@ -124,10 +128,16 @@ impl Plugin for FarmPluginStaticAssets {
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let path = Path::new(param.resolved_path);
     let extension = path.extension().and_then(|s| s.to_str());
+    let public_path = context.config.output.public_path.clone();
 
     if let Some(source) = param.resolved_path.strip_prefix(PUBLIC_ASSET_PREFIX) {
+      // fix https://github.com/farm-fe/farm/issues/1165
+      let mut base_path = PathBuf::from(public_path);
+      base_path.push(source.trim_start_matches("/"));
+
+      let base_path_str = base_path.to_string_lossy().to_string();
       return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
-        content: format!("export default '{source}';"),
+        content: format!("export default '{base_path_str}';"),
         module_type: ModuleType::Js,
         source_map: None,
       }));

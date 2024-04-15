@@ -1,5 +1,25 @@
 # @farmfe/core
 
+## 1.0.20
+
+### Patch Changes
+
+- 995cb6aa: Fix #1180
+
+## 1.0.19
+
+### Patch Changes
+
+- ca10db6d: fix lazy compilation error when mixed import and dynamic import in the same module
+- f932167d: when both treeShakeing and lazyCompilation are enabled, disabling lazyCompilation is a better option
+- 8d08883e: fix: public resources have not been added publicPath prefix
+
+## 1.0.18
+
+### Patch Changes
+
+- b67eb986: fix: resolve config mode error
+
 ## 1.0.17
 
 ### Patch Changes

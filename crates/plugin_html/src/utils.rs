@@ -16,7 +16,7 @@ fn is_external_module(
 ) -> bool {
   let module_graph = context.module_graph.read();
 
-  if let Some(id) = module_graph.get_dep_by_source_optional(current_html_id, &source) {
+  if let Some(id) = module_graph.get_dep_by_source_optional(current_html_id, &source, None) {
     if let Some(m) = module_graph.module(&id) {
       return m.external;
     }

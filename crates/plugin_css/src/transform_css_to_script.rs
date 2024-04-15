@@ -9,6 +9,7 @@ use farmfe_core::{
   module::{
     CommentsMetaData, ModuleId, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData,
   },
+  plugin::ResolveKind,
   rayon::prelude::*,
   serialize,
   swc_common::Mark,
@@ -207,8 +208,15 @@ pub fn transform_css_deps(module_id: &ModuleId, context: &Arc<CompilationContext
   let module_graph = context.module_graph.read();
   let mut load_statements = Vec::new();
   let dep_modules = module_graph.dependencies(module_id);
+  let mut new_edges = vec![];
 
-  for (_, edge) in dep_modules {
+  for (dep_id, edge) in dep_modules {
+    // only transform css atImport
+    if edge.items().len() == 1 && edge.items()[0].kind != ResolveKind::CssAtImport {
+      continue;
+    }
+    new_edges.push((dep_id, edge.clone()));
+
     let relative_path = edge.items()[0].source.clone();
     let load_statement = format!(
       "import \"{}\";",
@@ -220,6 +228,16 @@ pub fn transform_css_deps(module_id: &ModuleId, context: &Arc<CompilationContext
     );
     load_statements.push(load_statement);
   }
+  drop(module_graph);
+
+  let mut module_graph = context.module_graph.write();
+  for (dep_id, mut edge) in new_edges {
+    // update edge kind to import
+    edge.update_kind(ResolveKind::Import);
+    module_graph.update_edge(module_id, &dep_id, edge).unwrap();
+  }
+  drop(module_graph);
+
   load_statements.join(" ")
 }
 

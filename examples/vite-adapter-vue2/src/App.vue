@@ -1,6 +1,7 @@
 <template>
   <t-space direction="vertical" style="width: 100%; text-align: center">
     <logo />
+    <img :src="farmLogo" alt="farm logo" style="width: 100px" />
     {{ res }}
     <h3>Welcome to use TDesign！</h3>
     <t-space>
@@ -32,11 +33,15 @@ import {
   CloudDownloadIcon
 } from 'tdesign-icons-vue';
 import Logo from './assets/svg/assets-t-logo.svg?component';
+import farmLogo from './assets/logo.png';
 import { res } from '@/index';
+
+console.log(farmLogo)
 export default {
   data() {
     return {
-      res
+      res,
+      farmLogo
     };
   },
   components: {
