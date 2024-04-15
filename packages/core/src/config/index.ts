@@ -987,8 +987,8 @@ export function replaceDirnamePlugin({ configFilePath }: { configFilePath: strin
         const dirPath = path.dirname(resolvedPath);
 
         replaceContent = param.content
-          .replace('__dirname', JSON.stringify(dirPath))
-          .replace('__filename', JSON.stringify(resolvedPath));
+          .replace(/__dirname/g, JSON.stringify(dirPath))
+          .replace(/__filename/g, JSON.stringify(resolvedPath));
 
         return {
           content: replaceContent,
