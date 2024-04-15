@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.0.21
+
+### Patch Changes
+
+- 1509e1ed: fix: format error message
+- e7154081: fix: the problem of hmr file not existing
+- 2d773109: Fix css @import url(./xxx) panic
+- d8104673: feat: Support parsing config file parsing `_ _ dirname` , ` _ _ filename`
+
 ## 1.0.20
 
 ### Patch Changes
