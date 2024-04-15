@@ -77,11 +77,11 @@ fn analyze_deps() {
         },
         PluginAnalyzeDepsHookResultEntry {
           source: "./index.css".to_string(),
-          kind: ResolveKind::CssUrl
+          kind: ResolveKind::CssAtImport
         },
         PluginAnalyzeDepsHookResultEntry {
           source: "./extension.css".to_string(),
-          kind: ResolveKind::CssUrl
+          kind: ResolveKind::CssAtImport
         },
         PluginAnalyzeDepsHookResultEntry {
           source: "./background.png".to_string(),

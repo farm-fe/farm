@@ -13,7 +13,7 @@ impl DepAnalyzer {
     Self { deps: vec![] }
   }
 
-  fn deal_url(&mut self, url: &Url) {
+  fn deal_url(&mut self, url: &Url, kind: ResolveKind) {
     if let Some(name) = &url.name.raw {
       if name == "url" {
         if let Some(value) = &url.value {
@@ -21,13 +21,13 @@ impl DepAnalyzer {
             box farmfe_core::swc_css_ast::UrlValue::Str(str) => {
               self.insert_dep(PluginAnalyzeDepsHookResultEntry {
                 source: str.value.to_string(),
-                kind: ResolveKind::CssUrl,
+                kind,
               });
             }
             box farmfe_core::swc_css_ast::UrlValue::Raw(raw) => {
               self.insert_dep(PluginAnalyzeDepsHookResultEntry {
                 source: raw.value.to_string(),
-                kind: ResolveKind::CssUrl,
+                kind,
               });
             }
           }
@@ -51,7 +51,7 @@ impl Visit for DepAnalyzer {
   fn visit_import_href(&mut self, import: &ImportHref) {
     match import {
       ImportHref::Url(url) => {
-        self.deal_url(url);
+        self.deal_url(url, ResolveKind::CssAtImport);
       }
       ImportHref::Str(str) => {
         self.insert_dep(PluginAnalyzeDepsHookResultEntry {
@@ -63,7 +63,7 @@ impl Visit for DepAnalyzer {
   }
 
   fn visit_url(&mut self, url: &Url) {
-    self.deal_url(url);
+    self.deal_url(url, ResolveKind::CssUrl);
   }
 }
 
