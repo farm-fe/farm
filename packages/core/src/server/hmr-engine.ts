@@ -139,8 +139,8 @@ export class HmrEngine {
 
     for (const path of paths) {
       if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
-        const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
         if (fse.existsSync(path)) {
+          const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
           const currentTimestamp = (await stat(path)).mtime.toISOString();
           // only update the file if the timestamp changed since last update
           if (!force && lastModifiedTimestamp === currentTimestamp) {
