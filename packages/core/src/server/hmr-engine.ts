@@ -138,19 +138,16 @@ export class HmrEngine {
     const paths = Array.isArray(absPath) ? absPath : [absPath];
 
     for (const path of paths) {
-      if (
-        this._compiler.hasModule(path) &&
-        !this._updateQueue.includes(path) &&
-        fse.existsSync(path)
-      ) {
+      if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
         const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
-        const currentTimestamp = (await stat(path)).mtime.toISOString();
-        // only update the file if the timestamp changed since last update
-        if (!force && lastModifiedTimestamp === currentTimestamp) {
-          continue;
+        if (fse.existsSync(path)) {
+          const currentTimestamp = (await stat(path)).mtime.toISOString();
+          // only update the file if the timestamp changed since last update
+          if (!force && lastModifiedTimestamp === currentTimestamp) {
+            continue;
+          }
+          this._lastModifiedTimestamp.set(path, currentTimestamp);
         }
-
-        this._lastModifiedTimestamp.set(path, currentTimestamp);
         // push the path into the queue
         this._updateQueue.push(path);
       }
