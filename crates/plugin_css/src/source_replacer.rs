@@ -7,7 +7,7 @@ use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
 };
-use farmfe_toolkit::swc_css_visit::VisitMut;
+use farmfe_toolkit::swc_css_visit::{VisitMut, VisitMutWith};
 
 use crate::dep_analyzer::is_source_ignored;
 
@@ -132,5 +132,7 @@ impl<'a> VisitMut for SourceReplacer<'a> {
     rules_to_remove.into_iter().for_each(|rtr| {
       stylesheet.rules.remove(rtr);
     });
+
+    stylesheet.visit_mut_children_with(self);
   }
 }
