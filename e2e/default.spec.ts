@@ -3,13 +3,9 @@ import { existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { startProjectAndTest } from './vitestSetup.js';
 import { logger } from './utils.js';
+// import { ssrExamples } from './test-utils.js';
 
-const excludeExamples: string[] = [
-  // TODO: add e2e test for ssr
-  'react-ssr',
-  'vue-ssr',
-  'solid-ssr'
-];
+const excludeExamples: string[] = [];
 
 test('Default E2E Tests', async () => {
   const examples = readdirSync('./examples');

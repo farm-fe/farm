@@ -1,6 +1,3 @@
+export * from './vitestSetup.js';
 
-export * from './vitestSetup'
-
-
-
-
+export const ssrExamples = ['react-ssr', 'vue-ssr', 'solid-ssr'];

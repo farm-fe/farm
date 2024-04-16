@@ -1,3 +1,5 @@
+import path from 'path';
+
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -36,9 +38,9 @@ export default {
               .resource('index_client.html')
               .toString();
             console.log('html template', template);
-            const render = await import('./dist/index.js').then(
-              (m) => m.default
-            );
+            const render = await import(
+              path.join(path.dirname(import.meta.url), 'dist', 'index.js')
+            ).then((m) => m.default);
             const renderedHtml = render(ctx.path);
             // console.log(renderedHtml);
             const html = template.replace(
