@@ -20,6 +20,6 @@
     "watch": "farm watch --config farm.config.server.ts",
     "build": "pnpm build:server && farm build",
     "build:server": "farm build --config farm.config.server.ts",
-    "preview": "farm preview"
+    "preview": "node server.js"
   }
 }

@@ -43,7 +43,8 @@ async function createServer() {
 }
 
 createServer().then((app) => {
-  app.listen(3000, () => {
-    console.log('HTTP server is running at http://localhost:3000');
+  const port = process.env.FARM_DEFAULT_SERVER_PORT || 3000;
+  app.listen(port, () => {
+    console.log('HTTP server is running at http://localhost:' + port);
   });
 });

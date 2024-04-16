@@ -9,7 +9,7 @@ const excludeExamples: string[] = [];
 
 test('Default E2E Tests', async () => {
   const examples = readdirSync('./examples');
-  // const examples = ['x-data-spreadsheet'];
+  // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
   logger(`Running E2E tests for ${examples.length} examples`);
 
   for (const example of examples) {

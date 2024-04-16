@@ -1001,7 +1001,7 @@ export function replaceDirnamePlugin() {
           .replace(/__dirname/g, JSON.stringify(dirPath))
           .replace(/__filename/g, JSON.stringify(resolvedPath))
           .replace(
-            /import\\.meta.\\url/g,
+            /import\.meta\.url/g,
             JSON.stringify(pathToFileURL(resolvedPath))
           );
 
