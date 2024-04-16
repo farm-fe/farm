@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "labels": ["dependencies"],
+  "schedule": ["every day"], 
+  "includePaths":["packages/create-farm-plugin/templates/**","packages/create-farm/templates/**"]
+  "rangeStrategy": "bump",
+  "packageRules": [
+    {
+      "packagePatterns": ["^@farmfe/"],
+      "groupName": "farmfe-packages",
+      "schedule": ["every day"]
+    },
+    {
+      "depTypeList": ["peerDependencies"],
+      "enabled": false,
+    },
+  ],
+}
