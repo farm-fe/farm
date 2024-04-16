@@ -41,7 +41,7 @@
     "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.0.20"
+    "@farmfe/core": "workspace:^1.0.21"
   },
   "files": [
     "build"
