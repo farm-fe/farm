@@ -1,6 +1,13 @@
 use std::sync::Arc;
 
-use farmfe_core::{context::CompilationContext, module::ModuleId, swc_html_ast::Element};
+use farmfe_core::{
+  config::ModuleFormat,
+  context::CompilationContext,
+  module::ModuleId,
+  resource::{Resource, ResourceOrigin, ResourceType},
+  swc_html_ast::Element,
+};
+use farmfe_toolkit::fs::transform_output_entry_filename;
 
 use crate::deps_analyzer::{
   get_href_link_value, get_link_css_code, get_script_src_value, get_script_type_module_code,
@@ -8,6 +15,7 @@ use crate::deps_analyzer::{
 
 pub const FARM_ENTRY: &str = "data-farm-entry-script";
 pub const FARM_RESOURCE: &str = "data-farm-resource";
+pub const FARM_RUNTIME_INJECT_RESOURCE: &str = "farm_runtime_resource";
 
 fn is_external_module(
   source: String,
@@ -73,4 +81,28 @@ pub fn is_script_resource(element: &Element) -> bool {
   }
 
   false
+}
+
+pub fn create_farm_runtime_output_resource(
+  bytes: Vec<u8>,
+  context: &Arc<CompilationContext>,
+) -> Resource {
+  let name = transform_output_entry_filename(
+    "[entryName]_[hash].[ext]".to_string(),
+    FARM_RUNTIME_INJECT_RESOURCE,
+    FARM_RUNTIME_INJECT_RESOURCE,
+    &bytes,
+    match context.config.output.format {
+      ModuleFormat::EsModule => "mjs",
+      ModuleFormat::CommonJs => "cjs",
+    },
+  );
+  Resource {
+    name: name.clone(),
+    bytes,
+    emitted: false,
+    resource_type: ResourceType::Js,
+    origin: ResourceOrigin::ResourcePot(name),
+    info: None,
+  }
 }

@@ -32,6 +32,7 @@ use farmfe_toolkit::{
   script::{module_type_from_id, swc_try_with::try_with},
 };
 use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
+use utils::create_farm_runtime_output_resource;
 
 mod absolute_path_handler;
 mod deps_analyzer;
@@ -384,10 +385,16 @@ impl Plugin for FarmPluginTransformHtml {
 
     let mut runtime_resources = vec![];
 
-    for resource in params.resources_map.values_mut() {
+    for resource in params.resources_map.values() {
       if matches!(resource.resource_type, ResourceType::Runtime) {
-        resource.emitted = false;
-        runtime_resources.push(resource.name.clone());
+        // rename runtime file, eg: FARM_RUNTIME_runtime ->  farm_runtime_resource.mjs
+        let output_runtime_resource =
+          create_farm_runtime_output_resource(resource.bytes.clone(), context);
+        params.resources_map.insert(
+          output_runtime_resource.name.clone(),
+          output_runtime_resource.clone(),
+        );
+        runtime_resources.push(output_runtime_resource.name);
         break;
       }
     }
