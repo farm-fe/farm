@@ -4,6 +4,7 @@ use std::{collections::HashMap, path::PathBuf};
 use absolute_path_handler::AbsolutePathHandler;
 use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
 use farmfe_core::config::minify::MinifyOptions;
+use farmfe_core::config::ModuleFormat;
 use farmfe_core::parking_lot::Mutex;
 use farmfe_core::{cache_item, deserialize, serialize};
 use farmfe_core::{
@@ -24,6 +25,7 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::common::{create_swc_source_map, PathFilter, Source};
+use farmfe_toolkit::fs::transform_output_entry_filename;
 use farmfe_toolkit::minify::minify_html_module;
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -382,11 +384,12 @@ impl Plugin for FarmPluginTransformHtml {
     // 2. inject script and css link in topo order
     // 3. execute direct script module dependency
 
-    let mut runtime_code = String::new();
+    let mut runtime_resources = vec![];
 
-    for resource in params.resources_map.values() {
+    for resource in params.resources_map.values_mut() {
       if matches!(resource.resource_type, ResourceType::Runtime) {
-        runtime_code = String::from_utf8(resource.bytes.to_vec()).unwrap();
+        resource.emitted = false;
+        runtime_resources.push(resource.name.clone());
         break;
       }
     }
@@ -507,7 +510,7 @@ impl Plugin for FarmPluginTransformHtml {
       drop(module_graph);
 
       let mut resources_injector = ResourcesInjector::new(
-        runtime_code.clone(),
+        runtime_resources.clone(),
         script_resources,
         css_resources,
         script_entries,
@@ -546,4 +549,36 @@ impl FarmPluginTransformHtml {
   pub fn new(_: &Config) -> Self {
     Self {}
   }
+}
+
+fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationContext>) -> Resource {
+  let bytes = runtime_code.to_string().into_bytes();
+  let name = transform_output_entry_filename(
+    "[entryName].[hash].[ext]".to_string(),
+    "__farm_runtime_html_inject",
+    "__farm_runtime_html_inject",
+    &bytes,
+    match context.config.output.format {
+      ModuleFormat::EsModule => "mjs",
+      ModuleFormat::CommonJs => "cjs",
+    },
+  );
+  Resource {
+    name: name.clone(),
+    bytes,
+    emitted: false,
+    // this resource should be Js instead of Runtime because it may cause duplicated runtime code when HMR if it's Runtime
+    resource_type: ResourceType::Js,
+    origin: ResourceOrigin::ResourcePot(name),
+    info: None,
+  }
+}
+fn find_key_for_value(map: HashMap<String, Resource>, target_value: Resource) -> Option<String> {
+  map.iter().find_map(|(key, value)| {
+    if value.name == target_value.name {
+      Some(key.clone())
+    } else {
+      None
+    }
+  })
 }

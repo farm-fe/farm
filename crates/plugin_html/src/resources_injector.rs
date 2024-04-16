@@ -30,7 +30,7 @@ pub struct ResourcesInjectorOptions {
 
 /// inject resources into the html ast
 pub struct ResourcesInjector {
-  runtime_code: String,
+  runtime_resource: Vec<String>,
   script_resources: Vec<String>,
   css_resources: Vec<String>,
   script_entries: Vec<String>,
@@ -41,7 +41,7 @@ pub struct ResourcesInjector {
 
 impl ResourcesInjector {
   pub fn new(
-    runtime_code: String,
+    runtime_resource: Vec<String>,
     script_resources: Vec<String>,
     css_resources: Vec<String>,
     script_entries: Vec<String>,
@@ -49,7 +49,7 @@ impl ResourcesInjector {
     options: ResourcesInjectorOptions,
   ) -> Self {
     Self {
-      runtime_code,
+      runtime_resource,
       css_resources,
       script_resources,
       script_entries,
@@ -61,6 +61,21 @@ impl ResourcesInjector {
 
   pub fn inject(&mut self, ast: &mut Document) {
     ast.visit_mut_with(self);
+  }
+
+  // Support isolate runtime resource (https://github.com/farm-fe/farm/issues/434)
+  fn inject_runtime_resources(&self, element: &mut Element) {
+    for runtime_resource in &self.runtime_resource {
+      let script_element = create_element(
+        "script",
+        None,
+        vec![
+          ("FARM_ENTRY_RUNTIME_CUSTOM", "true"),
+          ("src", &format!("/{}", runtime_resource)),
+        ],
+      );
+      element.children.push(Child::Element(script_element));
+    }
   }
 
   fn inject_initial_loaded_resources(&self, element: &mut Element) {
@@ -163,12 +178,7 @@ impl VisitMut for ResourcesInjector {
       self.inject_global_this(element);
 
       // inject runtime <script>
-      let script_element = create_element(
-        "script",
-        Some(&self.runtime_code),
-        vec![(FARM_ENTRY, "true")],
-      );
-      element.children.push(Child::Element(script_element));
+      self.inject_runtime_resources(element);
     } else if element.tag_name.to_string() == "body" {
       for script in &self.script_resources {
         element.children.push(Child::Element(create_element(
