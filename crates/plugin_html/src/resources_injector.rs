@@ -70,7 +70,7 @@ impl ResourcesInjector {
         "script",
         None,
         vec![
-          ("FARM_ENTRY_RUNTIME_CUSTOM", "true"),
+          (FARM_ENTRY, "true"),
           ("src", &format!("/{}", runtime_resource)),
         ],
       );
