@@ -12,7 +12,11 @@ import {
   resolveConfigResolvedHook,
   resolveFarmPlugins
 } from '../plugin/index.js';
-import { bindingPath, Config, PluginTransformHookParam } from '../../binding/index.js';
+import {
+  bindingPath,
+  Config,
+  PluginTransformHookParam
+} from '../../binding/index.js';
 import { Server } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
@@ -104,7 +108,7 @@ async function handleServerPortConflict(
     mode !== 'production' &&
       (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
     // eslint-disable-next-line no-empty
-  } catch { }
+  } catch {}
 }
 
 /**
@@ -155,7 +159,11 @@ export async function resolveConfig(
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
 
+  console.log(userConfig);
+  console.log(123123123132);
+
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
+  console.log(userConfig);
 
   const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
     Boolean
@@ -197,12 +205,14 @@ export async function resolveConfig(
   if (isHandleServerPortConflict) {
     await handleServerPortConflict(resolvedUserConfig, logger, mode);
   }
+  console.log(resolvedUserConfig);
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
     logger,
     mode
   );
+
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
@@ -241,6 +251,8 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development'
 ): Promise<Config['config']> {
   const { compilation, root } = userConfig;
+  console.log(root);
+
   // resolve root path
   const resolvedRootPath = normalizePath(
     root ? path.resolve(root) : process.cwd()
@@ -309,10 +321,10 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-        env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-          userConfig.env[key];
-        return env;
-      }, {})
+          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+            userConfig.env[key];
+          return env;
+        }, {})
   );
 
   const require = module.createRequire(import.meta.url);
@@ -362,7 +374,7 @@ export async function normalizeUserCompilationConfig(
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
       ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-        ?.name ?? FARM_DEFAULT_NAMESPACE
+          ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
     config.runtime.namespace = crypto
@@ -402,8 +414,8 @@ export async function normalizeUserCompilationConfig(
     // TODO optimize get hmr logic
     config.define.FARM_HMR_PORT = String(
       (serverOptions.hmr.port || undefined) ??
-      serverOptions.port ??
-      DEFAULT_DEV_SERVER_OPTIONS.port
+        serverOptions.port ??
+        DEFAULT_DEV_SERVER_OPTIONS.port
     );
     config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
     config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
@@ -547,25 +559,25 @@ export function normalizeDevServerOptions(
     isProductionMode || hmrConfig === false
       ? false
       : merge(
-        {},
-        DEFAULT_HMR_OPTIONS,
-        {
-          host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
-          port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
-        },
-        hmrConfig === true ? {} : hmrConfig
-      );
+          {},
+          DEFAULT_HMR_OPTIONS,
+          {
+            host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
+            port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
+          },
+          hmrConfig === true ? {} : hmrConfig
+        );
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
     hmr,
     https: https
       ? {
-        ...https,
-        ca: tryAsFileRead(options.https.ca),
-        cert: tryAsFileRead(options.https.cert),
-        key: tryAsFileRead(options.https.key),
-        pfx: tryAsFileRead(options.https.pfx)
-      }
+          ...https,
+          ca: tryAsFileRead(options.https.ca),
+          cert: tryAsFileRead(options.https.cert),
+          key: tryAsFileRead(options.https.key),
+          pfx: tryAsFileRead(options.https.pfx)
+        }
       : undefined
   }) as NormalizedServerConfig;
 }
@@ -595,6 +607,7 @@ async function readConfigFile(
 
     const normalizedConfig = await normalizeUserCompilationConfig(
       {
+        root: inlineOptions.root,
         compilation: {
           input: {
             [fileName]: configFilePath
@@ -653,6 +666,9 @@ async function readConfigFile(
     const config = await (typeof userConfig === 'function'
       ? userConfig(configEnv)
       : userConfig);
+
+    config.root = inlineOptions.root;
+
     if (!isObject(config)) {
       throw new Error(`config must export or return an object.`);
     }
@@ -941,7 +957,8 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
       logger.error(
-        `Build failed due to errors: Can not resolve ${isTargetNode ? 'index.js or index.ts' : 'index.html'
+        `Build failed due to errors: Can not resolve ${
+          isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
       );
     }
@@ -971,7 +988,11 @@ export async function getConfigFilePath(
 }
 
 // transform __dirname and __filename with resolve config file path
-export function replaceDirnamePlugin({ configFilePath }: { configFilePath: string }) {
+export function replaceDirnamePlugin({
+  configFilePath
+}: {
+  configFilePath: string;
+}) {
   const moduleTypes = ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'];
   const resolvedPaths = [path.basename(configFilePath)];
   return {

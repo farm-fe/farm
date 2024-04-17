@@ -41,6 +41,7 @@ cli
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
+  .alias('dev')
   .option('-l, --lazy', 'lazyCompilation')
   .option('--host <host>', 'specify host')
   .option('--port <port>', 'specify port')
@@ -54,7 +55,7 @@ cli
       options: FarmCLIServerOptions & GlobalFarmCLIOptions
     ) => {
       const resolveOptions = resolveCommandOptions(options);
-      const configPath = getConfigPath(options.config);
+      const configPath = getConfigPath(options.config, root);
 
       if (root && !path.isAbsolute(root)) {
         root = path.resolve(process.cwd(), root);
@@ -71,6 +72,8 @@ cli
         mode: options.mode
       };
 
+      console.log(defaultOptions);
+
       const { start } = await resolveCore();
       handleAsyncOperationErrors(
         start(defaultOptions),
@@ -81,7 +84,7 @@ cli
 
 // build command
 cli
-  .command('build', 'compile the project in production mode')
+  .command('build [root]', 'compile the project in production mode')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .option('-w, --watch', 'watch file change')
@@ -90,33 +93,38 @@ cli
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
   .option('--minify', 'code compression at build time')
-  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const configPath = getConfigPath(options.config);
-    const defaultOptions = {
-      compilation: {
-        watch: options.watch,
-        output: {
-          path: options?.outDir,
-          targetEnv: options?.target,
-          format: options?.format
+  .action(
+    async (
+      root: string,
+      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
+    ) => {
+      const configPath = getConfigPath(options.config, root);
+      const defaultOptions = {
+        compilation: {
+          watch: options.watch,
+          output: {
+            path: options?.outDir,
+            targetEnv: options?.target,
+            format: options?.format
+          },
+          input: {
+            index: options?.input
+          },
+          sourcemap: options.sourcemap,
+          minify: options.minify,
+          treeShaking: options.treeShaking
         },
-        input: {
-          index: options?.input
-        },
-        sourcemap: options.sourcemap,
-        minify: options.minify,
-        treeShaking: options.treeShaking
-      },
-      mode: options.mode,
-      configPath
-    };
+        mode: options.mode,
+        configPath
+      };
 
-    const { build } = await resolveCore();
-    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
-  });
+      const { build } = await resolveCore();
+      handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+    }
+  );
 
 cli
-  .command('watch', 'watch file change')
+  .command('watch [root]', 'watch file change')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .option('--target <target>', 'transpile targetEnv node, browser')
@@ -124,53 +132,63 @@ cli
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
   .option('--minify', 'code compression at build time')
-  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const configPath = getConfigPath(options.config);
-    const defaultOptions = {
-      compilation: {
-        output: {
-          path: options?.outDir,
-          targetEnv: options?.target,
-          format: options?.format
+  .action(
+    async (
+      root: string,
+      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
+    ) => {
+      const configPath = getConfigPath(options.config, root);
+      const defaultOptions = {
+        compilation: {
+          output: {
+            path: options?.outDir,
+            targetEnv: options?.target,
+            format: options?.format
+          },
+          input: {
+            index: options?.input
+          },
+          sourcemap: options.sourcemap,
+          minify: options.minify,
+          treeShaking: options.treeShaking
         },
-        input: {
-          index: options?.input
-        },
-        sourcemap: options.sourcemap,
-        minify: options.minify,
-        treeShaking: options.treeShaking
-      },
-      mode: options.mode,
-      configPath
-    };
+        mode: options.mode,
+        configPath
+      };
 
-    const { watch } = await resolveCore();
-    handleAsyncOperationErrors(
-      watch(defaultOptions),
-      'error during watch project'
-    );
-  });
+      const { watch } = await resolveCore();
+      handleAsyncOperationErrors(
+        watch(defaultOptions),
+        'error during watch project'
+      );
+    }
+  );
 
 cli
-  .command('preview', 'compile the project in watch mode')
+  .command('preview [root]', 'compile the project in watch mode')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server preview start')
-  .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
-    const configPath = getConfigPath(options.config);
-    const resolveOptions = resolveCommandOptions(options);
-    const defaultOptions = {
-      mode: options.mode,
-      server: resolveOptions,
-      configPath,
-      port: options.port
-    };
+  .action(
+    async (
+      root: string,
+      options: FarmCLIPreviewOptions & GlobalFarmCLIOptions
+    ) => {
+      const configPath = getConfigPath(options.config, root);
+      const resolveOptions = resolveCommandOptions(options);
+      const defaultOptions = {
+        mode: options.mode,
+        server: resolveOptions,
+        configPath,
+        port: options.port
+      };
 
-    const { preview } = await resolveCore();
-    handleAsyncOperationErrors(
-      preview(defaultOptions),
-      'Failed to start preview server'
-    );
-  });
+      const { preview } = await resolveCore();
+      handleAsyncOperationErrors(
+        preview(defaultOptions),
+        'Failed to start preview server'
+      );
+    }
+  );
 
 cli
   .command('clean [path]', 'Clean up the cache built incrementally')
@@ -179,9 +197,7 @@ cli
     'Recursively search for node_modules directories and clean them'
   )
   .action(async (cleanPath: string, options: ICleanOptions) => {
-    const rootPath = cleanPath
-      ? path.resolve(process.cwd(), cleanPath)
-      : process.cwd();
+    const rootPath = path.resolve(process.cwd(), cleanPath ?? '');
     const { clean } = await resolveCore();
 
     try {

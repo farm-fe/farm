@@ -148,8 +148,8 @@ export function resolveCommandOptions(
   return cleanOptions(resolveOptions);
 }
 
-export function getConfigPath(configPath: string) {
-  return path.join(process.cwd(), configPath ?? '');
+export function getConfigPath(configPath: string, root: string) {
+  return path.join(process.cwd(), configPath ?? '', root ?? '');
 }
 
 export async function handleAsyncOperationErrors<T>(
