@@ -16,13 +16,11 @@ export default {
     },
     // sourcemap: true,
     css: {
-      // modules: {
-      //   indentName: 'farm-[name]-[hash]'
-      // },
       prefixer: {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
+    // minify: false,
     persistentCache: false
     // treeShaking: true,
     // minify: true,babcl
@@ -41,7 +39,10 @@ export default {
               .getCompiler()
               .resource('client.html')
               .toString();
-            const curDir = process.platform === 'win32' ? pathToFileURL(__dirname) : __dirname;
+            const curDir =
+              process.platform === 'win32'
+                ? pathToFileURL(__dirname)
+                : __dirname;
             const render = await import(
               path.join(curDir.toString(), 'dist', 'index.js')
             ).then((m) => m.default);
@@ -49,7 +50,7 @@ export default {
 
             const html = template
               .replace('<div>app-html-to-replace</div>', renderedHtml)
-              .replace('</head>', generateHydrationScript());
+              .replace('<meta hydration />', generateHydrationScript());
             console.log(renderedHtml);
             ctx.body = html;
             ctx.type = 'text/html';
