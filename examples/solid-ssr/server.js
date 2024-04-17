@@ -2,6 +2,7 @@ import path from 'path';
 import fsp from 'fs/promises';
 import express from 'express';
 import { generateHydrationScript } from 'solid-js/web';
+import { pathToFileURL } from 'url';
 
 function resolve(p) {
   return path.resolve(p);
@@ -17,7 +18,8 @@ async function createServer() {
 
     try {
       let template = await fsp.readFile(resolve('build/client.html'), 'utf8');
-      let render = (await import(resolve('dist/index.js'))).default;
+      const serverEntry = resolve('dist/index.js');
+      let render = (await import(process.platform === 'win32' ? pathToFileURL(serverEntry) : serverEntry)).default;
 
       const renderedHtml = render(url);
 

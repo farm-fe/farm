@@ -19,7 +19,8 @@ async function createServer() {
       let render;
 
       template = await fsp.readFile(resolve('build/index_client.html'), 'utf8');
-      render = require(resolve('dist/index.js'));
+      const serverEntry = resolve('dist/index.js');
+      render = require(serverEntry);
 
       const renderedHtml = render(url);
       console.log(renderedHtml);
