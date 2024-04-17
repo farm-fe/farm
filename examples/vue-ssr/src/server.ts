@@ -9,11 +9,10 @@ export default async function render(url: string) {
   const app = createSSRApp(Main);
 
   const route = createRoute(createMemoryHistory());
-  app.use(route);
-
   route.push(url);
-
   await route.isReady();
+
+  app.use(route);
 
   return renderToString(app);
 }

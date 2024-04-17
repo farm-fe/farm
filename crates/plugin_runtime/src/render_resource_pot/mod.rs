@@ -59,8 +59,8 @@ mod source_replacer;
 /// ```js
 /// {
 ///   // commonjs or hybrid module system
-///   "a.js": async function(module, exports, require) {
-///       const b = await require('./b');
+///   "a.js": function(module, exports, require) {
+///       const b = require('./b');
 ///       console.log(b);
 ///    },
 ///    // esm module system
