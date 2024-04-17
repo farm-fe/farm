@@ -1,11 +1,13 @@
 {
-  "name": "@farmfe-examples/top-level-await",
-  "version": "0.0.1",
+  "name": "@farmfe-examples/script-entry",
+  "version": "0.0.87",
   "private": true,
   "type": "module",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*"
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:^",
+    "lodash": "^4.17.21"
   },
   "scripts": {
     "build": "farm build"

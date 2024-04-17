@@ -933,12 +933,6 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@farmfe/js-plugin-dts':
-        specifier: workspace:^
-        version: link:../../js-plugins/dts
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
 
   examples/server-proxy:
     devDependencies:
@@ -1106,6 +1100,25 @@ importers:
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
+
+  examples/top-level-await:
+    dependencies:
+      core-js:
+        specifier: ^3.35.1
+        version: 3.36.1
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-dts':
+        specifier: workspace:^
+        version: link:../../js-plugins/dts
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
 
   examples/vite-adapter-react:
     dependencies:
