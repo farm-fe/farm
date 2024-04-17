@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.0.22
+
+### Patch Changes
+
+- b29c6147: Fix loadConfig error message
+
 ## 1.0.21
 
 ### Patch Changes
