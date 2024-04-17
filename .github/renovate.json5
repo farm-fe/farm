@@ -3,7 +3,7 @@
   "extends": ["config:base"],
   "labels": ["dependencies"],
   "schedule": ["every day"], 
-  "includePaths":["packages/create-farm-plugin/templates/**","packages/create-farm/templates/**"]
+  "includePaths":["packages/create-farm-plugin/templates/**","packages/create-farm/templates/**"],
   "rangeStrategy": "bump",
   "packageRules": [
     {
