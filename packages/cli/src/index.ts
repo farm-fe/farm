@@ -55,7 +55,7 @@ cli
       options: FarmCLIServerOptions & GlobalFarmCLIOptions
     ) => {
       const resolveOptions = resolveCommandOptions(options);
-      const configPath = getConfigPath(options.config, root);
+      const configPath = getConfigPath(root, options.config);
 
       if (root && !path.isAbsolute(root)) {
         root = path.resolve(process.cwd(), root);
@@ -71,8 +71,6 @@ cli
         configPath,
         mode: options.mode
       };
-
-      console.log(defaultOptions);
 
       const { start } = await resolveCore();
       handleAsyncOperationErrors(
@@ -98,7 +96,7 @@ cli
       root: string,
       options: FarmCLIBuildOptions & GlobalFarmCLIOptions
     ) => {
-      const configPath = getConfigPath(options.config, root);
+      const configPath = getConfigPath(root, options.config);
       const defaultOptions = {
         compilation: {
           watch: options.watch,
@@ -137,7 +135,7 @@ cli
       root: string,
       options: FarmCLIBuildOptions & GlobalFarmCLIOptions
     ) => {
-      const configPath = getConfigPath(options.config, root);
+      const configPath = getConfigPath(root, options.config);
       const defaultOptions = {
         compilation: {
           output: {
@@ -173,7 +171,7 @@ cli
       root: string,
       options: FarmCLIPreviewOptions & GlobalFarmCLIOptions
     ) => {
-      const configPath = getConfigPath(options.config, root);
+      const configPath = getConfigPath(root, options.config);
       const resolveOptions = resolveCommandOptions(options);
       const defaultOptions = {
         mode: options.mode,

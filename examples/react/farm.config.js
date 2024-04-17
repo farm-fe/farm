@@ -6,7 +6,7 @@ export default defineConfig(() => {
   // console.log(__dirname);
   
   return {
-    root: './react',
+    // root: './react',
     compilation: {
       sourcemap: false,
       persistentCache: true,
@@ -23,7 +23,7 @@ export default defineConfig(() => {
       }
     },
     plugins: [
-      // ['@farmfe/plugin-react', { runtime: 'automatic' }],
+      ['@farmfe/plugin-react', { runtime: 'automatic' }],
       '@farmfe/plugin-sass',
     ],
   }

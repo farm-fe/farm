@@ -49,6 +49,7 @@ import type {
   ResolvedUserConfig,
   UserConfig,
   UserConfigExport,
+  UserConfigFnObject,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
@@ -57,10 +58,14 @@ import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 import merge from '../utils/merge.js';
 
 export * from './types.js';
+
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
   config: Promise<UserConfig>
 ): Promise<UserConfig>;
+export function defineFarmConfig(
+  config: UserConfigFnObject
+): UserConfigFnObject;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
@@ -159,11 +164,7 @@ export async function resolveConfig(
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
 
-  console.log(userConfig);
-  console.log(123123123132);
-
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
-  console.log(userConfig);
 
   const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
     Boolean
@@ -205,7 +206,6 @@ export async function resolveConfig(
   if (isHandleServerPortConflict) {
     await handleServerPortConflict(resolvedUserConfig, logger, mode);
   }
-  console.log(resolvedUserConfig);
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -251,7 +251,6 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development'
 ): Promise<Config['config']> {
   const { compilation, root } = userConfig;
-  console.log(root);
 
   // resolve root path
   const resolvedRootPath = normalizePath(
