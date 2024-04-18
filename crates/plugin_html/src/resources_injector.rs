@@ -4,7 +4,7 @@ use farmfe_core::{
   config::{Mode, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   module::ModuleId,
-  resource::ResourceType,
+  resource::{Resource, ResourceType},
   serde_json,
   swc_html_ast::{Child, Document, Element},
 };
@@ -30,7 +30,8 @@ pub struct ResourcesInjectorOptions {
 
 /// inject resources into the html ast
 pub struct ResourcesInjector {
-  runtime_resource: Vec<String>,
+  resources_needing_updating: Vec<Resource>,
+  runtime_resource: Vec<Resource>,
   script_resources: Vec<String>,
   css_resources: Vec<String>,
   script_entries: Vec<String>,
@@ -41,7 +42,8 @@ pub struct ResourcesInjector {
 
 impl ResourcesInjector {
   pub fn new(
-    runtime_resource: Vec<String>,
+    resources_needing_updating: Vec<Resource>,
+    runtime_resource: Vec<Resource>,
     script_resources: Vec<String>,
     css_resources: Vec<String>,
     script_entries: Vec<String>,
@@ -49,6 +51,7 @@ impl ResourcesInjector {
     options: ResourcesInjectorOptions,
   ) -> Self {
     Self {
+      resources_needing_updating,
       runtime_resource,
       css_resources,
       script_resources,
@@ -63,18 +66,27 @@ impl ResourcesInjector {
     ast.visit_mut_with(self);
   }
 
+  // insert the runtime and other resources that need to be inject in the resource_map.
+  pub fn update_resource(&mut self, resources_map: &mut HashMap<String, Resource>) {
+    for resource in &self.resources_needing_updating {
+      resources_map.insert(resource.name.clone(), resource.clone());
+    }
+  }
+
   // Support isolate runtime resource (https://github.com/farm-fe/farm/issues/434)
-  fn inject_runtime_resources(&self, element: &mut Element) {
-    for runtime_resource in &self.runtime_resource {
+  fn inject_runtime_resources(&mut self, element: &mut Element) {
+    for resource in &self.runtime_resource {
       let script_element = create_element(
         "script",
         None,
         vec![
           (FARM_ENTRY, "true"),
-          ("src", &format!("/{}", runtime_resource)),
+          ("src", &format!("/{}", resource.name)),
         ],
       );
       element.children.push(Child::Element(script_element));
+      // update the actual injected resources
+      self.resources_needing_updating.push(resource.clone());
     }
   }
 
