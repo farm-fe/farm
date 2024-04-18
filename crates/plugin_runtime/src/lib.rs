@@ -2,7 +2,7 @@
 
 use std::{
   any::Any,
-  collections::{HashMap, HashSet},
+  collections::{HashMap, HashSet, VecDeque},
   sync::Arc,
 };
 
@@ -279,11 +279,52 @@ impl Plugin for FarmPluginRuntime {
 
   fn module_graph_updated(
     &self,
-    _param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
-    _context: &Arc<CompilationContext>,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // detect async module like top level await when module graph updated
     // module graph updated is called when the module graph is updated
+    let mut async_modules = context.custom.get_mut(ASYNC_MODULES).unwrap();
+    let async_modules = async_modules.downcast_mut::<HashSet<ModuleId>>().unwrap();
+
+    for remove in &param.removed_modules_ids {
+      async_modules.remove(remove);
+    }
+
+    let module_graph = context.module_graph.read();
+    let mut added_async_modules = vec![];
+    // find added modules that contains top level await
+    let mut analyze_top_level_await = |module_id: &ModuleId| {
+      let module = module_graph.module(module_id).unwrap();
+
+      if module.module_type.is_script() {
+        let ast = &module.meta.as_script().ast;
+
+        if farmfe_toolkit::swc_ecma_utils::contains_top_level_await(ast) {
+          added_async_modules.push(module_id.clone());
+        }
+      }
+    };
+    for added in &param.added_modules_ids {
+      analyze_top_level_await(added);
+    }
+    for updated in &param.updated_modules_ids {
+      analyze_top_level_await(updated);
+    }
+
+    let mut queue = VecDeque::from(added_async_modules.into_iter().collect::<Vec<_>>());
+
+    while !queue.is_empty() {
+      let module_id = queue.pop_front().unwrap();
+      async_modules.insert(module_id.clone());
+
+      for (dept, edge) in module_graph.dependents(&module_id) {
+        if !async_modules.contains(&dept) && !edge.is_dynamic() {
+          queue.push_back(dept);
+        }
+      }
+    }
+
     Ok(Some(()))
   }
 

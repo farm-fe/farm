@@ -10,7 +10,8 @@
     "lodash": "^4.17.21"
   },
   "scripts": {
-    "build": "farm build"
+    "build": "farm build",
+    "watch": "farm watch"
   },
   "dependencies": {
     "core-js": "^3.35.1"

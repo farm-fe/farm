@@ -4,3 +4,5 @@ export default [
   'data3',
   'data4',
 ];
+
+export const data5 = 'data5';

@@ -21,8 +21,8 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
         // if any dependency is async module, then mark the module as async module
         let mut found = false;
 
-        for (dep, _) in module_graph.dependencies(&module_id) {
-          if async_modules.contains(&dep) {
+        for (dep, edge) in module_graph.dependencies(&module_id) {
+          if async_modules.contains(&dep) && !edge.is_dynamic() {
             found = true;
             break;
           }
