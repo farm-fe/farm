@@ -133,16 +133,26 @@ export class ModuleSystem {
         this.require.bind(this);
     }
     // initialize the new module
-    initializer(
+    const result = initializer(
       module,
       module.exports,
       this.require.bind(this),
       this.farmDynamicRequire.bind(this)
     );
-    // call the module initialized hook
-    this.pluginContainer.hookSerial('moduleInitialized', module);
-    // return the exports of the module
-    return module.exports;
+    // it's a async module, return the promise
+    if (result && result.then) {
+      return result.then(() => {
+        // call the module initialized hook
+        this.pluginContainer.hookSerial('moduleInitialized', module);
+        // return the exports of the module
+        return module.exports;
+      });
+    } else {
+      // call the module initialized hook
+      this.pluginContainer.hookSerial('moduleInitialized', module);
+      // return the exports of the module
+      return module.exports;
+    }
   }
 
   farmDynamicRequire(moduleId: string): Promise<any> {

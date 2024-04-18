@@ -1,6 +1,9 @@
 #![feature(box_patterns)]
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+  collections::{HashMap, HashSet},
+  sync::Arc,
+};
 
 use farmfe_core::{
   config::{
@@ -10,7 +13,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
-  module::{ModuleMetaData, ModuleType},
+  module::{ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
@@ -36,6 +39,7 @@ use render_resource_pot::*;
 
 pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
 
+mod find_async_modules;
 mod handle_entry_resources;
 mod insert_runtime_plugins;
 pub mod render_resource_pot;
@@ -50,6 +54,7 @@ pub mod render_resource_pot;
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
 pub struct FarmPluginRuntime {
   runtime_code: Mutex<Arc<String>>,
+  async_modules: Mutex<HashSet<ModuleId>>,
 }
 
 impl Plugin for FarmPluginRuntime {
@@ -255,6 +260,30 @@ impl Plugin for FarmPluginRuntime {
     } else {
       Ok(None)
     }
+  }
+
+  fn render_start(
+    &self,
+    _config: &Config,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    // detect async module like top level await when start rendering
+    // render start is only called once when the compilation start
+    self
+      .async_modules
+      .lock()
+      .extend(find_async_modules::find_async_modules(context));
+    Ok(Some(()))
+  }
+
+  fn module_graph_updated(
+    &self,
+    _param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    // detect async module like top level await when module graph updated
+    // module graph updated is called when the module graph is updated
+    Ok(Some(()))
   }
 
   fn process_resource_pots(
@@ -480,6 +509,7 @@ impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
     Self {
       runtime_code: Mutex::new(Arc::new(String::new())),
+      async_modules: Mutex::new(HashSet::new()),
     }
   }
 }
