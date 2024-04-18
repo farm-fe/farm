@@ -40,7 +40,10 @@ use farmfe_core::{
   }, // swc_ecma_ast::Function
 };
 
-use super::source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer};
+use super::{
+  source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer},
+  transform_async_module,
+};
 
 pub struct RenderModuleResult {
   pub rendered_module: RenderedModule,
@@ -53,6 +56,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
   module_graph: &ModuleGraph,
   is_enabled_minify: F,
   minify_options: &MinifyOptions,
+  is_async_module: bool,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let mut cloned_module = module.meta.as_script().ast.clone();
@@ -125,7 +129,16 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
       ..Default::default()
     }));
 
-    wrap_function(&mut cloned_module, unresolved_mark);
+    if matches!(
+      module.meta.as_script().module_system,
+      ModuleSystem::EsModule
+    ) && is_async_module
+    {
+      // transform async module to meet the requirements of farm runtime
+      transform_async_module::transform_async_module(&mut cloned_module);
+    }
+
+    wrap_function(&mut cloned_module, unresolved_mark, is_async_module);
 
     if minify_enabled {
       minify_js_module(
@@ -222,7 +235,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
 ///   exports.b = b;
 /// }
 /// ```
-fn wrap_function(module: &mut SwcModule, unresolved_mark: Mark) {
+fn wrap_function(module: &mut SwcModule, unresolved_mark: Mark, is_async_module: bool) {
   let body = module.body.take();
 
   module.body.push(ModuleItem::Stmt(Stmt::Decl(
@@ -277,7 +290,7 @@ fn wrap_function(module: &mut SwcModule, unresolved_mark: Mark) {
             .collect(),
         }),
         is_generator: false,
-        is_async: false,
+        is_async: is_async_module,
         type_params: None,
         return_type: None,
       }),

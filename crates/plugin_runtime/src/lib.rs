@@ -1,6 +1,7 @@
 #![feature(box_patterns)]
 
 use std::{
+  any::Any,
   collections::{HashMap, HashSet},
   sync::Arc,
 };
@@ -38,6 +39,7 @@ use insert_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::*;
 
 pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
+pub const ASYNC_MODULES: &str = "async_modules";
 
 mod find_async_modules;
 mod handle_entry_resources;
@@ -54,7 +56,6 @@ pub mod render_resource_pot;
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
 pub struct FarmPluginRuntime {
   runtime_code: Mutex<Arc<String>>,
-  async_modules: Mutex<HashSet<ModuleId>>,
 }
 
 impl Plugin for FarmPluginRuntime {
@@ -262,17 +263,17 @@ impl Plugin for FarmPluginRuntime {
     }
   }
 
-  fn render_start(
+  fn generate_start(
     &self,
-    _config: &Config,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // detect async module like top level await when start rendering
     // render start is only called once when the compilation start
-    self
-      .async_modules
-      .lock()
-      .extend(find_async_modules::find_async_modules(context));
+    context.custom.insert(
+      ASYNC_MODULES.to_string(),
+      Box::new(find_async_modules::find_async_modules(context)),
+    );
+
     Ok(Some(()))
   }
 
@@ -294,13 +295,14 @@ impl Plugin for FarmPluginRuntime {
     if !self.runtime_code.lock().is_empty() {
       return Ok(None);
     }
-
-    let module_graph = context.module_graph.write();
+    let async_modules = self.get_async_modules(context);
+    let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
+    let module_graph = context.module_graph.read();
 
     for resource_pot in resource_pots {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
         let RenderedJsResourcePot { mut bundle, .. } =
-          resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
+          resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
         bundle.prepend(
           r#"(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})("#,
@@ -340,12 +342,14 @@ impl Plugin for FarmPluginRuntime {
         ..Default::default()
       }));
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+      let async_modules = self.get_async_modules(context);
+      let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       let module_graph = context.module_graph.read();
       let RenderedJsResourcePot {
         mut bundle,
         rendered_modules,
         external_modules,
-      } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
+      } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
       let mut external_modules_str = None;
 
@@ -509,7 +513,13 @@ impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
     Self {
       runtime_code: Mutex::new(Arc::new(String::new())),
-      async_modules: Mutex::new(HashSet::new()),
     }
+  }
+
+  pub(crate) fn get_async_modules<'a>(
+    &'a self,
+    context: &'a Arc<CompilationContext>,
+  ) -> farmfe_core::dashmap::mapref::one::Ref<'_, String, Box<dyn Any + Send + Sync>> {
+    context.custom.get(ASYNC_MODULES).unwrap()
   }
 }

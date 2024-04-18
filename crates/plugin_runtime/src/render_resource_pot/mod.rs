@@ -52,6 +52,7 @@ mod transform_async_module;
 pub fn resource_pot_to_runtime_object(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
+  async_modules: &HashSet<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> Result<RenderedJsResourcePot> {
   let modules = Mutex::new(vec![]);
@@ -117,6 +118,7 @@ pub fn resource_pot_to_runtime_object(
         }
       }
 
+      let is_async_module = async_modules.contains(&m_id);
       let RenderModuleResult {
         rendered_module,
         external_modules,
@@ -126,6 +128,7 @@ pub fn resource_pot_to_runtime_object(
         module_graph,
         is_enabled_minify,
         &minify_options,
+        is_async_module,
         context,
       )?;
       let code = rendered_module.rendered_content.clone();

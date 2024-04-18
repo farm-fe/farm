@@ -35,7 +35,5 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
     }
   }
 
-  println!("{:?}", async_modules);
-
   async_modules
 }

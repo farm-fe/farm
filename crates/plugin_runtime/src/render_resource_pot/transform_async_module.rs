@@ -2,9 +2,9 @@ use farmfe_core::{
   config::FARM_REQUIRE,
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    ArrayLit, ArrayPat, AwaitExpr, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread, Id,
-    Ident, Lit, MemberExpr, MemberProp, Module, ModuleItem, Pat, Stmt, Str, VarDecl, VarDeclKind,
-    VarDeclarator,
+    ArrayLit, ArrayPat, AwaitExpr, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread,
+    ExprStmt, Ident, Lit, MemberExpr, MemberProp, Module, ModuleItem, Pat, Stmt, Str, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -31,9 +31,10 @@ use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 /// ```
 pub fn transform_async_module(ast: &mut Module) {
   let mut await_all = vec![];
+  let mut stmt_to_remove = vec![];
 
   // 1. collect top level farmRequire pattern
-  for item in &mut ast.body {
+  for (i, item) in ast.body.iter_mut().enumerate() {
     if let ModuleItem::Stmt(stmt) = item {
       match stmt {
         // const _sync = _interop_require_default._(farmRequire("475776c7"))
@@ -57,11 +58,23 @@ pub fn transform_async_module(ast: &mut Module) {
           }
         }
         // farmRequire("ea236e3d")
-        Stmt::Expr(expr) => {}
+        Stmt::Expr(ExprStmt { box expr, .. }) => {
+          if let Some(id) = try_get_farm_require_id(expr) {
+            await_all.push((None, id));
+            stmt_to_remove.push(i);
+          }
+        }
         _ => { /* ignore other stmts */ }
       }
     }
   }
+
+  // remove farmRequire stmt
+  stmt_to_remove.reverse();
+  for i in stmt_to_remove {
+    ast.body.remove(i);
+  }
+
   // 2. transform the patterns, example
   // let [_interop_require_default__f, _sync__f, _dep2__f] = await Promise.all([
   //   farmRequire("@swc/helpers/_/_interop_require_default"),
@@ -175,28 +188,35 @@ impl FarmRequireVisitor {
 
 impl VisitMut for FarmRequireVisitor {
   fn visit_mut_expr(&mut self, expr: &mut farmfe_core::swc_ecma_ast::Expr) {
-    if let Expr::Call(call_expr) = expr {
-      if let Callee::Expr(box Expr::Ident(Ident { sym, .. })) = &call_expr.callee {
-        if sym.to_string() == FARM_REQUIRE.to_string() && call_expr.args.len() == 1 {
-          if let ExprOrSpread {
-            expr: box Expr::Lit(Lit::Str(id)),
-            ..
-          } = &call_expr.args[0]
-          {
-            self.requires.push(id.value.to_string());
-            *expr = Expr::Ident(Ident::new(rename_ident(&self.name).into(), DUMMY_SP));
-            return;
-          }
-        }
-      }
+    if let Some(id) = try_get_farm_require_id(expr) {
+      self.requires.push(id);
+      *expr = Expr::Ident(Ident::new(rename_ident(&self.name).into(), DUMMY_SP));
+    } else {
+      expr.visit_mut_children_with(self);
     }
-
-    expr.visit_mut_children_with(self);
   }
 }
 
 fn rename_ident(name: &str) -> String {
   format!("{}__f", name)
+}
+
+fn try_get_farm_require_id(expr: &Expr) -> Option<String> {
+  if let Expr::Call(call_expr) = expr {
+    if let Callee::Expr(box Expr::Ident(Ident { sym, .. })) = &call_expr.callee {
+      if sym.to_string() == FARM_REQUIRE.to_string() && call_expr.args.len() == 1 {
+        if let ExprOrSpread {
+          expr: box Expr::Lit(Lit::Str(id)),
+          ..
+        } = &call_expr.args[0]
+        {
+          return Some(id.value.to_string());
+        }
+      }
+    }
+  }
+
+  None
 }
 #[cfg(test)]
 mod tests {
@@ -247,12 +267,12 @@ console.log(_dep2.default);
     let mut ast = parse(input);
     super::transform_async_module(&mut ast);
     let code = codegen(&ast);
-    println!("{}", code);
+
     let output = r#"
 const [_interop_require_default__f, _sync__f, _dep2__f] = await Promise.all([
-  farmRequire("@swc/helpers/_/_interop_require_default"),
-  farmRequire("475776c7"),
-  farmRequire("ea236e3d")
+    farmRequire("@swc/helpers/_/_interop_require_default"),
+    farmRequire("475776c7"),
+    farmRequire("ea236e3d")
 ]);
 const _interop_require_default = _interop_require_default__f;
 const _sync = _interop_require_default._(_sync__f);
@@ -270,14 +290,21 @@ const b = farmRequire("12345678");
 farmRequire("ea236e3d");
 console.log(b);
     "#;
+
+    let mut ast = parse(input);
+    super::transform_async_module(&mut ast);
+    let code = codegen(&ast);
+
     let output = r#"
-let [, b__f, ] = await Promise.all([
-  farmRequire("475776c7"),
-  farmRequire("12345678"),
-  farmRequire("ea236e3d")
+const [, b__f, ] = await Promise.all([
+    farmRequire("475776c7"),
+    farmRequire("12345678"),
+    farmRequire("ea236e3d")
 ]);
 const b = b__f;
 console.log(b);
     "#;
+
+    assert_eq!(code.trim(), output.trim());
   }
 }

@@ -13,6 +13,7 @@ use farmfe_core::{
 use farmfe_plugin_runtime::render_resource_pot::{
   resource_pot_to_runtime_object, RenderedJsResourcePot,
 };
+use farmfe_plugin_runtime::ASYNC_MODULES;
 use farmfe_toolkit::hash::base64_encode;
 use farmfe_utils::{hash::sha256, relative};
 
@@ -114,12 +115,14 @@ pub fn render_and_generate_update_resource(
         }
       }
 
+      let async_modules = context.custom.get(ASYNC_MODULES).unwrap();
+      let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       if !resource_pot.modules().is_empty() {
         let RenderedJsResourcePot {
           mut bundle,
           rendered_modules,
           ..
-        } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
+        } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
         bundle.prepend("(");
         bundle.append(")", None);
 
