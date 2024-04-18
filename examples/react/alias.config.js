@@ -17,7 +17,7 @@ export default defineConfig(() => {
       },
     },
     server: {
-      port: 6532,
+      port: 9652,
       hmr: {
         path: "/__farm_hmr",
       }

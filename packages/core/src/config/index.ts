@@ -253,9 +253,9 @@ export async function normalizeUserCompilationConfig(
   const { compilation, root } = userConfig;
 
   // resolve root path
-  const resolvedRootPath = normalizePath(
-    root ? path.resolve(root) : process.cwd()
-  );
+  const resolvedRootPath = normalizePath(root ?? process.cwd());
+
+  userConfig.root = resolvedRootPath;
 
   // resolve public path
   if (compilation?.output?.publicPath) {
@@ -270,14 +270,11 @@ export async function normalizeUserCompilationConfig(
     {},
     DEFAULT_COMPILATION_OPTIONS,
     {
-      input: inputIndexConfig
+      input: inputIndexConfig,
+      root: resolvedRootPath
     },
     compilation
   );
-
-  if (!config.root) {
-    config.root = resolvedRootPath;
-  }
 
   const isProduction = mode === 'production';
   const isDevelopment = mode === 'development';
@@ -958,7 +955,8 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
       logger.error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
-        }  from ${userConfig.root}. \n${errorMessage}`
+        }  from ${userConfig.root}. \n${errorMessage}`,
+        { exit: true }
       );
     }
   }

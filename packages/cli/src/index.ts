@@ -97,7 +97,13 @@ cli
       options: FarmCLIBuildOptions & GlobalFarmCLIOptions
     ) => {
       const configPath = getConfigPath(root, options.config);
+
+      if (root && !path.isAbsolute(root)) {
+        root = path.resolve(process.cwd(), root);
+      }
+
       const defaultOptions = {
+        root,
         compilation: {
           watch: options.watch,
           output: {
@@ -136,7 +142,13 @@ cli
       options: FarmCLIBuildOptions & GlobalFarmCLIOptions
     ) => {
       const configPath = getConfigPath(root, options.config);
+
+      if (root && !path.isAbsolute(root)) {
+        root = path.resolve(process.cwd(), root);
+      }
+
       const defaultOptions = {
+        root,
         compilation: {
           output: {
             path: options?.outDir,
@@ -172,8 +184,14 @@ cli
       options: FarmCLIPreviewOptions & GlobalFarmCLIOptions
     ) => {
       const configPath = getConfigPath(root, options.config);
+
+      if (root && !path.isAbsolute(root)) {
+        root = path.resolve(process.cwd(), root);
+      }
+
       const resolveOptions = resolveCommandOptions(options);
       const defaultOptions = {
+        root,
         mode: options.mode,
         server: resolveOptions,
         configPath,
@@ -194,8 +212,11 @@ cli
     '--recursive',
     'Recursively search for node_modules directories and clean them'
   )
-  .action(async (cleanPath: string, options: ICleanOptions) => {
-    const rootPath = path.resolve(process.cwd(), cleanPath ?? '');
+  .action(async (rootPath: string, options: ICleanOptions) => {
+    if (rootPath && !path.isAbsolute(rootPath)) {
+      rootPath = path.resolve(process.cwd(), rootPath);
+    }
+
     const { clean } = await resolveCore();
 
     try {
