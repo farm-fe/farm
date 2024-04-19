@@ -839,7 +839,7 @@ async function resolveMergedUserConfig(
     resolvedUserConfig.configFilePath = configFilePath;
   }
 
-  const resolvedRootPath = resolvedUserConfig.root;
+  const resolvedRootPath = resolvedUserConfig.root ?? process.cwd();
   const resolvedEnvPath = resolvedUserConfig.envDir
     ? resolvedUserConfig.envDir
     : resolvedRootPath;
@@ -911,12 +911,17 @@ export async function loadConfigFile(
     }
 
     if (inlineOptions.mode === 'production') {
-      logger.error(`Failed to load config file: ${errorMessage}`, {
-        exit: true
-      });
+      logger.error(
+        `Failed to load config file: ${errorMessage} \n ${error.stack}`,
+        {
+          exit: true
+        }
+      );
     }
 
-    throw new Error(`Failed to load farm config file: ${errorMessage}`);
+    throw new Error(
+      `Failed to load farm config file: ${errorMessage} \n ${error.stack}`
+    );
   }
 }
 
