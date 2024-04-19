@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
 
 import { cac } from 'cac';
 import {
@@ -7,7 +6,9 @@ import {
   getConfigPath,
   resolveCommandOptions,
   handleAsyncOperationErrors,
-  preventExperimentalWarning
+  preventExperimentalWarning,
+  resolveRootPath,
+  resolveCliConfig
 } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
@@ -51,15 +52,11 @@ cli
   .option('--strictPort', 'specified port is already in use, exit with error')
   .action(
     async (
-      root: string,
+      rootPath: string,
       options: FarmCLIServerOptions & GlobalFarmCLIOptions
     ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
       const resolveOptions = resolveCommandOptions(options);
-      const configPath = getConfigPath(root, options.config);
-
-      if (root && !path.isAbsolute(root)) {
-        root = path.resolve(process.cwd(), root);
-      }
 
       const defaultOptions = {
         root,
@@ -93,14 +90,10 @@ cli
   .option('--minify', 'code compression at build time')
   .action(
     async (
-      root: string,
+      rootPath: string,
       options: FarmCLIBuildOptions & GlobalFarmCLIOptions
     ) => {
-      const configPath = getConfigPath(root, options.config);
-
-      if (root && !path.isAbsolute(root)) {
-        root = path.resolve(process.cwd(), root);
-      }
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
       const defaultOptions = {
         root,
@@ -138,14 +131,10 @@ cli
   .option('--minify', 'code compression at build time')
   .action(
     async (
-      root: string,
+      rootPath: string,
       options: FarmCLIBuildOptions & GlobalFarmCLIOptions
     ) => {
-      const configPath = getConfigPath(root, options.config);
-
-      if (root && !path.isAbsolute(root)) {
-        root = path.resolve(process.cwd(), root);
-      }
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
       const defaultOptions = {
         root,
@@ -180,14 +169,10 @@ cli
   .option('--open', 'open browser on server preview start')
   .action(
     async (
-      root: string,
+      rootPath: string,
       options: FarmCLIPreviewOptions & GlobalFarmCLIOptions
     ) => {
-      const configPath = getConfigPath(root, options.config);
-
-      if (root && !path.isAbsolute(root)) {
-        root = path.resolve(process.cwd(), root);
-      }
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
       const resolveOptions = resolveCommandOptions(options);
       const defaultOptions = {
@@ -213,18 +198,15 @@ cli
     'Recursively search for node_modules directories and clean them'
   )
   .action(async (rootPath: string, options: ICleanOptions) => {
-    if (rootPath && !path.isAbsolute(rootPath)) {
-      rootPath = path.resolve(process.cwd(), rootPath);
-    }
-
+    const { root } = resolveCliConfig(rootPath, options);
     const { clean } = await resolveCore();
 
     try {
-      await clean(rootPath, options?.recursive);
+      await clean(root, options?.recursive);
     } catch (e) {
       const { Logger } = await import('@farmfe/core');
       const logger = new Logger();
-      logger.error(`Failed to clean cache:\n${e.stack}`);
+      logger.error(`Failed to clean cache: \n ${e.stack}`);
       process.exit(1);
     }
   });

@@ -253,7 +253,7 @@ export async function normalizeUserCompilationConfig(
   const { compilation, root } = userConfig;
 
   // resolve root path
-  const resolvedRootPath = normalizePath(root ?? process.cwd());
+  const resolvedRootPath = normalizePath(root);
 
   userConfig.root = resolvedRootPath;
 
@@ -760,7 +760,7 @@ function mergeInlineCliOptions(
 
   if (userConfig.root && !isAbsolute(userConfig.root)) {
     const resolvedRoot = path.resolve(
-      inlineOptions.configPath || process.cwd(),
+      inlineOptions.configPath,
       userConfig.root
     );
     userConfig.root = resolvedRoot;
@@ -832,7 +832,7 @@ async function resolveMergedUserConfig(
     resolvedUserConfig.configFilePath = configFilePath;
   }
 
-  const resolvedRootPath = resolvedUserConfig.root ?? process.cwd();
+  const resolvedRootPath = resolvedUserConfig.root;
   const resolvedEnvPath = resolvedUserConfig.envDir
     ? resolvedUserConfig.envDir
     : resolvedRootPath;
@@ -930,11 +930,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
 
       for (const entryFile of entryFiles) {
         try {
-          if (
-            fs.statSync(
-              path.resolve(userConfig?.root ?? process.cwd(), entryFile)
-            )
-          ) {
+          if (fs.statSync(path.resolve(userConfig?.root, entryFile))) {
             inputIndexConfig = { index: entryFile };
             break;
           }
@@ -944,11 +940,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
       }
     } else {
       try {
-        if (
-          fs.statSync(
-            path.resolve(userConfig?.root ?? process.cwd(), defaultHtmlPath)
-          )
-        ) {
+        if (fs.statSync(path.resolve(userConfig?.root, defaultHtmlPath))) {
           inputIndexConfig = { index: defaultHtmlPath };
         }
       } catch (error) {
