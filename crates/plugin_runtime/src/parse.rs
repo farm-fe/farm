@@ -1,3 +1,4 @@
+/// This file is not used and is only for reference purposes.
 use std::sync::Arc;
 
 use farmfe_core::{

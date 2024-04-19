@@ -482,7 +482,6 @@ export async function normalizeUserCompilationConfig(
 }
 
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
-  ignores: [],
   host: true,
   port:
     (process.env.FARM_DEFAULT_HMR_PORT &&

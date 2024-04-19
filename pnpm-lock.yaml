@@ -1107,6 +1107,19 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/top-level-await:
+    dependencies:
+      core-js:
+        specifier: ^3.35.1
+        version: 3.36.1
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/vite-adapter-react:
     dependencies:
       core-js:

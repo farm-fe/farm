@@ -1,5 +1,3 @@
-import { builtinModules } from 'module';
-
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -10,21 +8,18 @@ export default {
     },
     output: {
       path: 'dist',
-      filename: 'index.[ext]',
+      filename: '[resourceName].[ext]',
       targetEnv: 'node'
     },
-    external: [
-      ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`)
-    ],
-    partialBundling: {
-      enforceResources: [
-        {
-          name: 'node.bundle.js',
-          test: ['.+']
-        }
-      ]
-    },
+    lazyCompilation: false,
+    // partialBundling: {
+    //   enforceResources: [
+    //     {
+    //       name: 'node.bundle.js',
+    //       test: ['.+']
+    //     }
+    //   ]
+    // },
     minify: false,
     sourcemap: false,
     presetEnv: false
