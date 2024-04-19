@@ -19,7 +19,6 @@ use farmfe_toolkit::get_dynamic_resources_map::{
 use farmfe_toolkit::html::get_farm_global_this;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
-const FARM_SCRIPT_ENTRY: &str = "/*FARM_SCRIPT_ENTRY*/";
 
 pub enum ExportInfoOfEntryModule {
   Default,
@@ -299,13 +298,13 @@ pub fn handle_entry_resources(
           .clone(),
       )
       .unwrap();
-      // the script entry resource is not changed, we should not inject other resources
-      if entry_js_resource_code.contains(FARM_SCRIPT_ENTRY) {
-        continue;
-      }
 
       if !should_inject_runtime {
         should_inject_runtime = !dep_resources.is_empty();
+      }
+      // the script entry resource is not changed, we should not inject other resources
+      if !is_entry_js_resource_changed(&entry_js_resource_code, should_inject_runtime, context) {
+        continue;
       }
 
       // 1. import 'dep' or require('dep') to entry resource if target env is node
@@ -369,7 +368,6 @@ pub fn handle_entry_resources(
 
       // TODO support sourcemap
       entry_js_resource.bytes = vec![
-        FARM_SCRIPT_ENTRY.to_string(),
         if should_inject_runtime {
           let runtime_resource = if let Some(runtime_resource) = runtime_resource.as_ref() {
             runtime_resource
@@ -405,10 +403,7 @@ pub fn handle_entry_resources(
   }
 }
 
-fn create_runtime_code(
-  resources_map: &HashMap<String, Resource>,
-  context: &Arc<CompilationContext>,
-) -> String {
+fn create_runtime_code_init(context: &Arc<CompilationContext>) -> String {
   let node_specific_code = if context.config.output.target_env == TargetEnv::Node {
     match context.config.output.format {
       ModuleFormat::EsModule => {
@@ -432,6 +427,37 @@ fn create_runtime_code(
     }
   );
 
+  format!("{node_specific_code}{farm_global_this_code}")
+}
+
+fn is_entry_js_resource_changed(
+  entry_js_resource_code: &str,
+  should_inject_runtime: bool,
+  context: &Arc<CompilationContext>,
+) -> bool {
+  if entry_js_resource_code.starts_with(&create_runtime_code_init(context)) {
+    return false;
+  }
+
+  if should_inject_runtime {
+    let runtime_import = match context.config.output.format {
+      ModuleFormat::EsModule => "import \"./__farm_runtime",
+      ModuleFormat::CommonJs => "require(\"./__farm_runtime",
+    };
+    if entry_js_resource_code.starts_with(runtime_import) {
+      return false;
+    }
+  }
+
+  true
+}
+
+fn create_runtime_code(
+  resources_map: &HashMap<String, Resource>,
+  context: &Arc<CompilationContext>,
+) -> String {
+  let init_code = create_runtime_code_init(context);
+
   // 3. find runtime resource
   let runtime_resource_code = String::from_utf8(
     resources_map
@@ -443,7 +469,7 @@ fn create_runtime_code(
   )
   .unwrap();
 
-  format!("{node_specific_code}{farm_global_this_code}{runtime_resource_code}")
+  format!("{init_code}{runtime_resource_code}")
 }
 
 fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationContext>) -> Resource {
