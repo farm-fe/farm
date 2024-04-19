@@ -1,14 +1,18 @@
 {
-  "name": "@farmfe-examples/top-level-await",
-  "version": "0.0.1",
+  "name": "@farmfe-examples/script-entry",
+  "version": "0.0.87",
   "private": true,
   "type": "module",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*"
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:^",
+    "lodash": "^4.17.21"
   },
   "scripts": {
-    "build": "farm build"
+    "build:esm": "farm build && farm build && node test.mjs",
+    "build:cjs": "farm build -c farm.config.cjs.ts && farm build -c farm.config.cjs.ts && node test-cjs.cjs",
+    "build": "npm run build:esm && npm run build:cjs"
   },
   "dependencies": {
     "core-js": "^3.35.1"

@@ -19,6 +19,7 @@ use farmfe_toolkit::get_dynamic_resources_map::{
 use farmfe_toolkit::html::get_farm_global_this;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
+const FARM_SCRIPT_ENTRY: &str = "/*FARM_SCRIPT_ENTRY*/";
 
 pub enum ExportInfoOfEntryModule {
   Default,
@@ -290,6 +291,19 @@ pub fn handle_entry_resources(
         );
       dep_resources.sort();
 
+      let entry_js_resource_code = String::from_utf8(
+        resources_map
+          .get(&entry_js_resource_name)
+          .expect("entry resource is not found")
+          .bytes
+          .clone(),
+      )
+      .unwrap();
+      // the script entry resource is not changed, we should not inject other resources
+      if entry_js_resource_code.contains(FARM_SCRIPT_ENTRY) {
+        continue;
+      }
+
       if !should_inject_runtime {
         should_inject_runtime = !dep_resources.is_empty();
       }
@@ -330,14 +344,6 @@ pub fn handle_entry_resources(
       // 6. append export code
       let export_info_code = get_export_info_code(entry, &module_graph, context);
 
-      let entry_js_resource_code = String::from_utf8(
-        resources_map
-          .get(&entry_js_resource_name)
-          .expect("entry resource is not found")
-          .bytes
-          .clone(),
-      )
-      .unwrap();
       // split last line
       let (entry_js_resource_code, entry_js_resource_source_map) =
         if let Some((c, m)) = entry_js_resource_code.rsplit_once('\n') {
@@ -363,6 +369,7 @@ pub fn handle_entry_resources(
 
       // TODO support sourcemap
       entry_js_resource.bytes = vec![
+        FARM_SCRIPT_ENTRY.to_string(),
         if should_inject_runtime {
           let runtime_resource = if let Some(runtime_resource) = runtime_resource.as_ref() {
             runtime_resource
