@@ -7,7 +7,7 @@ export default defineConfig(() => {
   // console.log(__dirname);
 
   return {
-    root: path.resolve(process.cwd(), './html'),
+    // root: path.resolve(process.cwd(), './html'),
     compilation: {
       sourcemap: false,
       persistentCache: false,
