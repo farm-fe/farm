@@ -10,11 +10,14 @@ export default defineConfig(() => {
     root: path.resolve(process.cwd(), './html'),
     compilation: {
       sourcemap: false,
-      persistentCache: true,
+      persistentCache: false,
       presetEnv: false,
       progress: false,
       output: {
         publicPath: '/dist/'
+      },
+      input: {
+        index: './index.html'
       }
     },
     server: {

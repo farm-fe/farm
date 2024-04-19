@@ -663,7 +663,9 @@ async function readConfigFile(
       ? userConfig(configEnv)
       : userConfig);
 
-    config.root = inlineOptions.root;
+    if (!config.root) {
+      config.root = inlineOptions.root;
+    }
 
     if (!isObject(config)) {
       throw new Error(`config must export or return an object.`);
@@ -748,6 +750,7 @@ function mergeInlineCliOptions(
   userConfig: UserConfig,
   inlineOptions: FarmCLIOptions
 ): UserConfig {
+  const configRootPath = userConfig.root;
   if (inlineOptions.root) {
     const cliRoot = inlineOptions.root;
 
@@ -756,6 +759,10 @@ function mergeInlineCliOptions(
     } else {
       userConfig.root = cliRoot;
     }
+  }
+
+  if (configRootPath) {
+    userConfig.root = configRootPath;
   }
 
   if (userConfig.root && !isAbsolute(userConfig.root)) {
@@ -881,6 +888,7 @@ export async function loadConfigFile(
         logger,
         mode
       );
+
       return {
         config: config && parseUserConfig(config),
         configFilePath: configFilePath
