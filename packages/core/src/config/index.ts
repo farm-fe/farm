@@ -49,6 +49,7 @@ import type {
   ResolvedUserConfig,
   UserConfig,
   UserConfigExport,
+  UserConfigFnObject,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
@@ -57,10 +58,14 @@ import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 import merge from '../utils/merge.js';
 
 export * from './types.js';
+
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
   config: Promise<UserConfig>
 ): Promise<UserConfig>;
+export function defineFarmConfig(
+  config: UserConfigFnObject
+): UserConfigFnObject;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
@@ -207,6 +212,7 @@ export async function resolveConfig(
     logger,
     mode
   );
+
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
@@ -245,10 +251,11 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development'
 ): Promise<Config['config']> {
   const { compilation, root } = userConfig;
+
   // resolve root path
-  const resolvedRootPath = normalizePath(
-    root ? path.resolve(root) : process.cwd()
-  );
+  const resolvedRootPath = normalizePath(root);
+
+  userConfig.root = resolvedRootPath;
 
   // resolve public path
   if (compilation?.output?.publicPath) {
@@ -263,14 +270,11 @@ export async function normalizeUserCompilationConfig(
     {},
     DEFAULT_COMPILATION_OPTIONS,
     {
-      input: inputIndexConfig
+      input: inputIndexConfig,
+      root: resolvedRootPath
     },
     compilation
   );
-
-  if (!config.root) {
-    config.root = resolvedRootPath;
-  }
 
   const isProduction = mode === 'production';
   const isDevelopment = mode === 'development';
@@ -598,6 +602,7 @@ async function readConfigFile(
 
     const normalizedConfig = await normalizeUserCompilationConfig(
       {
+        root: inlineOptions.root,
         compilation: {
           input: {
             [fileName]: configFilePath
@@ -656,6 +661,11 @@ async function readConfigFile(
     const config = await (typeof userConfig === 'function'
       ? userConfig(configEnv)
       : userConfig);
+
+    if (!config.root) {
+      config.root = inlineOptions.root;
+    }
+
     if (!isObject(config)) {
       throw new Error(`config must export or return an object.`);
     }
@@ -739,6 +749,7 @@ function mergeInlineCliOptions(
   userConfig: UserConfig,
   inlineOptions: FarmCLIOptions
 ): UserConfig {
+  const configRootPath = userConfig.root;
   if (inlineOptions.root) {
     const cliRoot = inlineOptions.root;
 
@@ -749,9 +760,13 @@ function mergeInlineCliOptions(
     }
   }
 
+  if (configRootPath) {
+    userConfig.root = configRootPath;
+  }
+
   if (userConfig.root && !isAbsolute(userConfig.root)) {
     const resolvedRoot = path.resolve(
-      inlineOptions.configPath || process.cwd(),
+      inlineOptions.configPath,
       userConfig.root
     );
     userConfig.root = resolvedRoot;
@@ -872,6 +887,7 @@ export async function loadConfigFile(
         logger,
         mode
       );
+
       return {
         config: config && parseUserConfig(config),
         configFilePath: configFilePath
@@ -894,12 +910,17 @@ export async function loadConfigFile(
     }
 
     if (inlineOptions.mode === 'production') {
-      logger.error(`Failed to load config file: ${errorMessage}`, {
-        exit: true
-      });
+      logger.error(
+        `Failed to load config file: ${errorMessage} \n ${error.stack}`,
+        {
+          exit: true
+        }
+      );
     }
 
-    throw new Error(`Failed to load farm config file: ${errorMessage}`);
+    throw new Error(
+      `Failed to load farm config file: ${errorMessage} \n ${error.stack}`
+    );
   }
 }
 
@@ -921,11 +942,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
 
       for (const entryFile of entryFiles) {
         try {
-          if (
-            fs.statSync(
-              path.resolve(userConfig?.root ?? process.cwd(), entryFile)
-            )
-          ) {
+          if (fs.statSync(path.resolve(userConfig?.root, entryFile))) {
             inputIndexConfig = { index: entryFile };
             break;
           }
@@ -935,11 +952,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
       }
     } else {
       try {
-        if (
-          fs.statSync(
-            path.resolve(userConfig?.root ?? process.cwd(), defaultHtmlPath)
-          )
-        ) {
+        if (fs.statSync(path.resolve(userConfig?.root, defaultHtmlPath))) {
           inputIndexConfig = { index: defaultHtmlPath };
         }
       } catch (error) {
@@ -952,7 +965,8 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
       logger.error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
-        }  from ${userConfig.root}. \n${errorMessage}`
+        }  from ${userConfig.root}. \n${errorMessage}`,
+        { exit: true }
       );
     }
   }

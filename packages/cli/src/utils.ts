@@ -7,7 +7,7 @@ import spawn from 'cross-spawn';
 import type { build, preview, start, watch, clean } from '@farmfe/core';
 import { Logger } from '@farmfe/core';
 
-import type { GlobalFarmCLIOptions } from './types.js';
+import type { GlobalFarmCLIOptions, ICleanOptions } from './types.js';
 
 const logger = new Logger();
 interface installProps {
@@ -148,8 +148,8 @@ export function resolveCommandOptions(
   return cleanOptions(resolveOptions);
 }
 
-export function getConfigPath(configPath: string) {
-  return path.join(process.cwd(), configPath ?? '');
+export function getConfigPath(root: string, configPath: string) {
+  return path.resolve(root, configPath ?? '');
 }
 
 export async function handleAsyncOperationErrors<T>(
@@ -172,5 +172,23 @@ export function preventExperimentalWarning() {
       return undefined;
     }
     return defaultEmit.call(this, ...args);
+  };
+}
+
+export function resolveRootPath(rootPath = '') {
+  return rootPath && path.isAbsolute(rootPath)
+    ? rootPath
+    : path.resolve(process.cwd(), rootPath);
+}
+
+export function resolveCliConfig(
+  root: string,
+  options: GlobalFarmCLIOptions & ICleanOptions
+) {
+  root = resolveRootPath(root);
+  const configPath = getConfigPath(root, options.config);
+  return {
+    root,
+    configPath
   };
 }
