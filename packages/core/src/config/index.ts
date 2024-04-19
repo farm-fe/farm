@@ -639,7 +639,7 @@ async function readConfigFile(
 
     const compiler = new Compiler({
       config: normalizedConfig,
-      jsPlugins: [replaceDirnamePlugin({ configFilePath })],
+      jsPlugins: [replaceDirnamePlugin()],
       rustPlugins: []
     });
 
@@ -894,7 +894,13 @@ export async function loadConfigFile(
     // throw error can solve this problem,
     // it will not continue to affect the execution of
     // external code. We just need to return the default config.
-    const errorMessage = JSON.parse(error.message).join('\n');
+    let errorMessage = '';
+
+    try {
+      errorMessage = JSON.parse(error.message).join('\n');
+    } catch (e) {
+      errorMessage = error.message;
+    }
 
     if (inlineOptions.mode === 'production') {
       logger.error(`Failed to load config file: ${errorMessage}`, {
@@ -985,13 +991,9 @@ export async function getConfigFilePath(
 }
 
 // transform __dirname and __filename with resolve config file path
-export function replaceDirnamePlugin({
-  configFilePath
-}: {
-  configFilePath: string;
-}) {
+export function replaceDirnamePlugin() {
   const moduleTypes = ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'];
-  const resolvedPaths = [path.basename(configFilePath)];
+  const resolvedPaths: string[] = [];
   return {
     name: 'replace-dirname',
     transform: {
@@ -1006,7 +1008,11 @@ export function replaceDirnamePlugin({
 
         replaceContent = param.content
           .replace(/__dirname/g, JSON.stringify(dirPath))
-          .replace(/__filename/g, JSON.stringify(resolvedPath));
+          .replace(/__filename/g, JSON.stringify(resolvedPath))
+          .replace(
+            /import\.meta\.url/g,
+            JSON.stringify(pathToFileURL(resolvedPath))
+          );
 
         return {
           content: replaceContent,

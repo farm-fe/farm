@@ -61,6 +61,7 @@ import {
 import { readFile } from 'fs/promises';
 import {
   ViteDevServerAdapter,
+  ViteModuleGraphAdapter,
   createViteDevServerAdapter
 } from './vite-server-adapter.js';
 import { farmContextToViteContext } from './farm-to-vite-context.js';
@@ -99,6 +100,7 @@ export class VitePluginAdapter implements JsPlugin {
   private _viteConfig: ViteUserConfig;
   private _viteDevServer: ViteDevServerAdapter;
   private _logger: Logger;
+  private _moduleGraph: ViteModuleGraphAdapter;
 
   buildStart: JsPlugin['buildStart'];
   resolve: JsPlugin['resolve'];
@@ -604,11 +606,23 @@ export class VitePluginAdapter implements JsPlugin {
             ctx
           );
 
+          let moduleGraph: ViteModuleGraphAdapter;
+
+          if (this._viteDevServer) {
+            moduleGraph = this._viteDevServer.moduleGraph;
+          } else if (this._moduleGraph) {
+            moduleGraph = this._moduleGraph;
+          } else {
+            moduleGraph = new ViteModuleGraphAdapter(this.name);
+            this._moduleGraph = moduleGraph;
+          }
+
+          moduleGraph.context = ctx;
+
           const result = [];
-          this._viteDevServer.moduleGraph.context = ctx;
 
           for (const [file, _] of paths) {
-            const mods = this._viteDevServer.moduleGraph.getModulesByFile(
+            const mods = moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
             const filename = normalizePath(file);

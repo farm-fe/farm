@@ -7,5 +7,5 @@
     "noEmit": true,
     "jsx": "react"
   },
-  "include": ["src", "farm.config.mjs", "farm.config.server.mjs"]
+  "include": ["src", "farm.config.ts", "farm.config.server.ts"]
 }

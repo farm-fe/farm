@@ -1,5 +1,7 @@
 import solid from 'vite-plugin-solid';
 import { generateHydrationScript } from 'solid-js/web';
+import path from 'path';
+import { pathToFileURL } from 'url';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -14,13 +16,11 @@ export default {
     },
     // sourcemap: true,
     css: {
-      // modules: {
-      //   indentName: 'farm-[name]-[hash]'
-      // },
       prefixer: {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
+    // minify: false,
     persistentCache: false
     // treeShaking: true,
     // minify: true,babcl
@@ -39,14 +39,18 @@ export default {
               .getCompiler()
               .resource('client.html')
               .toString();
-            const render = await import('./dist/index.js').then(
-              (m) => m.default
-            );
+            const curDir =
+              process.platform === 'win32'
+                ? pathToFileURL(__dirname)
+                : __dirname;
+            const render = await import(
+              path.join(curDir.toString(), 'dist', 'index.js')
+            ).then((m) => m.default);
             const renderedHtml = render(ctx.path);
 
             const html = template
               .replace('<div>app-html-to-replace</div>', renderedHtml)
-              .replace('</head>', generateHydrationScript());
+              .replace('<meta hydration />', generateHydrationScript());
             console.log(renderedHtml);
             ctx.body = html;
             ctx.type = 'text/html';
