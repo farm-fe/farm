@@ -1,0 +1,49 @@
+{
+  "projectName": {
+    "message": "Project name:"
+  },
+  "shouldOverwrite": {
+    "dirForPrompts": {
+      "current": "Current directory",
+      "target": "Target directory"
+    },
+    "message": "is not empty. Remove existing files and continue?"
+  },
+  "packageName": {
+    "message": "Package name:",
+    "invalidMessage": "Invalid package.json name"
+  },
+  "validTemplate": {
+    "message": "isn't a valid template. Please choose from below: "
+  },
+  "selectFramework": {
+    "message": "Select a framework:"
+  },
+  "selectVariant": {
+    "message": "Select a variant:"
+  },
+  "needsTypeScript": {
+    "message": "Add TypeScript?"
+  },
+  "needsSass": {
+    "message": "Add Introduce Sass For Css Pre Processing"
+  },
+  "useCssPreProcessor":{
+    "message":"Select a Css Pre-Processor:"
+  },
+  "errors": {
+    "operationCancelled": "Operation cancelled"
+  },
+  "defaultToggleOptions": {
+    "active": "Yes",
+    "inactive": "No"
+  },
+  "copy": {
+    "scaffolding": "Template is being replicated",
+    "done": "Template copied Successfully!"
+  },
+  "infos": {
+    "scaffolding": "Scaffolding project in",
+    "done": "Done. Now run:"
+  }
+}

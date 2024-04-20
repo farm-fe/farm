@@ -13,6 +13,7 @@
   "scripts": {
     "build": "farm build",
     "dev": "farm watch",
+    "test": "npm run build && node bin/create-farm.mjs",
     "prepublishOnly": "npm run build"
   },
   "author": "",
@@ -43,5 +44,8 @@
     "minimist": "^1.2.8",
     "ora": "^6.3.0",
     "prompts": "^2.4.2"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10"
   }
 }
