@@ -21,6 +21,7 @@ interface IResultType {
   framework?: Framework;
   needsTypeScript?: boolean;
   needsSass?: boolean;
+  useCssPreProcessor?: string;
   variant?: string;
   argFrameWork?: string;
   autoInstall?: boolean;
@@ -68,11 +69,12 @@ const FRAMEWORKS: Framework[] = [
 ];
 
 const CSS_PRE_PROCESSOR = [
-  // { title: colors.sass('Rust-Sass'), value: 'rust-sass' },
-  // { title: colors.purple('Sass'), value: 'js-sass' },
-  { title: colors.less('Less'), value: 'js-less' }
-  // { title: colors.postcss('PostCss'), value: 'js-post-css' },
-  // { title: colors.tailwindcss('tailwindcss'), value: 'tailwindcss' },
+  { title: colors.sass('Rust-Sass'), value: 'rust-sass' },
+  { title: colors.purple('Sass'), value: 'js-sass' },
+  { title: colors.less('Less'), value: 'js-less' },
+  { title: colors.postcss('PostCss'), value: 'js-post-css' },
+  { title: colors.tailwindcss('Tailwindcss'), value: 'tailwindcss' },
+  { title: colors.red('None'), value: 'none' }
 ];
 
 const TEMPLATES = FRAMEWORKS.map(
@@ -219,7 +221,8 @@ async function createFarm() {
     packageManager,
     needsSass,
     needsTypeScript,
-    variant
+    variant,
+    useCssPreProcessor
   } = result;
 
   await copyTemplate(targetDir, {
@@ -228,7 +231,8 @@ async function createFarm() {
     packageManager,
     needsSass,
     needsTypeScript,
-    variant
+    variant,
+    useCssPreProcessor
   });
   await installationDeps(targetDir, !skipInstall, result);
 }
@@ -244,7 +248,7 @@ function isEmpty(path: string) {
 
 async function copyTemplate(targetDir: string, options: IResultType) {
   const spinner = await loadWithRocketGradient(language.copy.scaffolding);
-  const { variant, framework, needsSass, needsTypeScript } = options;
+  const { variant, framework, needsTypeScript, useCssPreProcessor } = options;
   const templateRoot = path.resolve(__dirname, '../templates');
   const callbacks: ((dataStore: any) => Promise<void>)[] = [];
   const root = path.join(cwd, targetDir);
@@ -262,8 +266,8 @@ async function copyTemplate(targetDir: string, options: IResultType) {
   const dest = path.join(cwd, targetDir);
   render(template);
   render('config/base/react');
-  if (needsSass) {
-    render('config/sass');
+  if (useCssPreProcessor !== 'none') {
+    render(`config/css-pre-processor/${useCssPreProcessor}`);
   }
   const dataStore = {};
   // Process callbacks
@@ -277,10 +281,6 @@ async function copyTemplate(targetDir: string, options: IResultType) {
       if (filepath.endsWith('.ejs')) {
         const template = fs.readFileSync(filepath, 'utf-8');
         const dest = filepath.replace(/\.ejs$/, '');
-        console.log(dest);
-
-        console.log(dataStore);
-
         const content = ejs.render(template, dataStore[dest]);
 
         fs.writeFileSync(dest, content);
