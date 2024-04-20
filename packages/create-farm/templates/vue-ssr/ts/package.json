@@ -1,0 +1,25 @@
+{
+  "name": "@farmfe-examples/vue-ssr",
+  "version": "0.0.2",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "clsx": "^1.2.1",
+    "core-js": "^3.30.1",
+    "express": "^4.18.2",
+    "vue": "^3.3.12",
+    "vue-router": "^4.2.1"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@vitejs/plugin-vue": "^4.4.0"
+  },
+  "scripts": {
+    "start": "farm start",
+    "watch": "farm watch --config farm.config.server.ts",
+    "build": "pnpm build:server && farm build",
+    "build:server": "farm build --config farm.config.server.ts",
+    "preview": "node server.js"
+  }
+}
