@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "jsxImportSource": "solid-js",
+    "jsx": "preserve",
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["./src", "farm.config.ts", "farm.config.server.ts"]
+}
