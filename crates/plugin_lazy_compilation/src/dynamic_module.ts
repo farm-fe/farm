@@ -32,8 +32,8 @@ const pageReload = debouncePageReload(500);
 
 async function fetch(path: string) {
   const url = `${serverUrl}${path}`;
-
-  return import('http').then((http) => {
+  const http = 'http';
+  return import(http).then((http) => {
     return new Promise((resolve, reject) => {
       http.get(url, (res: any) => {
         let data = '';
