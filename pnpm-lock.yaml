@@ -1966,6 +1966,9 @@ importers:
       '@farmfe/utils':
         specifier: workspace:*
         version: link:../utils
+      '@types/ejs':
+        specifier: ^3.1.5
+        version: 3.1.5
       '@types/minimist':
         specifier: ^1.2.2
         version: 1.2.4
@@ -6004,6 +6007,10 @@ packages:
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
     dependencies:
       '@types/ms': 0.7.34
+    dev: true
+
+  /@types/ejs@3.1.5:
+    resolution: {integrity: sha512-nv+GSx77ZtXiJzwKdsASqi+YQ5Z7vwHsTP0JY2SiQgjGckkBRKZnk8nIM+7oUZ1VCtuTz0+By4qVR7fqzp/Dfg==}
     dev: true
 
   /@types/envinfo@7.8.3:

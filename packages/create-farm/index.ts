@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import ejs from 'ejs';
-import { colors, reset } from './utils/color.js';
+import { colors } from './utils/color.js';
 
 import { loadWithRocketGradient } from './utils/gradient.js';
 import { getLanguage } from './utils/getLanguage.js';

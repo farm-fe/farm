@@ -96,7 +96,6 @@ export function getLanguage() {
   const locale = getLocale();
 
   const localesRoot = path.resolve(__dirname, '../locales');
-  console.log(localesRoot);
 
   const languageFilePath = path.resolve(localesRoot, `${locale}.json`);
   const doesLanguageExist = fs.existsSync(languageFilePath);

@@ -38,6 +38,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/utils": "workspace:*",
+    "@types/ejs": "^3.1.5",
     "@types/minimist": "^1.2.2",
     "@types/prompts": "^2.4.4",
     "gradient-string": "^2.0.2",
