@@ -67,7 +67,7 @@
     "react-refresh": "^0.14.0"
   },
   "engines": {
-    "node": ">= 16"
+    "node": ">=16.15.1"
   },
   "files": [
     "binding/binding.cjs",
