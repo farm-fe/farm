@@ -54,13 +54,52 @@ const FRAMEWORKS: Framework[] = [
       }
     ]
   },
-  { title: colors.green('Vue'), value: 'vue' },
+  {
+    title: colors.green('Vue'),
+    value: 'vue',
+    variants: [
+      {
+        title: colors.cyan('Vue'),
+        value: 'vue'
+      },
+      {
+        title: colors.cyan('Vue-SSR'),
+        value: 'vue-ssr'
+      }
+    ]
+  },
   {
     title: colors.cyan('Preact'),
     value: 'preact'
   },
-  { title: colors.blue('Solid'), value: 'solid' },
-  { title: colors.orange('Svelte'), value: 'svelte' },
+  {
+    title: colors.blue('Solid'),
+    value: 'solid',
+    variants: [
+      {
+        title: colors.cyan('Solid'),
+        value: 'solid'
+      },
+      {
+        title: colors.cyan('Solid-SSR'),
+        value: 'solid-ssr'
+      }
+    ]
+  },
+  {
+    title: colors.orange('Svelte'),
+    value: 'svelte',
+    variants: [
+      {
+        title: colors.cyan('Svelte'),
+        value: 'svelte'
+      },
+      {
+        title: colors.cyan('Svelte-SSR'),
+        value: 'svelte-ssr'
+      }
+    ]
+  },
   {
     title: colors.yellow('Vanilla'),
     value: 'vanilla'
@@ -170,9 +209,7 @@ async function createFarm() {
         },
         {
           name: 'needsTypeScript',
-          type: (arg: Framework | string) => {
-            return arg === 'react' ? 'toggle' : null;
-          },
+          type: 'toggle',
           message: language.needsTypeScript.message,
           initial: false,
           active: language.defaultToggleOptions.active,

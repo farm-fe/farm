@@ -1,5 +1,5 @@
 <script>
-  let count: number = 0
+  let count = 0
   const increment = () => {
     count += 1
   }
