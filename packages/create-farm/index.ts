@@ -72,7 +72,7 @@ const CSS_PRE_PROCESSOR = [
   { title: colors.sass('Rust-Sass'), value: 'rust-sass' },
   { title: colors.purple('Sass'), value: 'js-sass' },
   { title: colors.less('Less'), value: 'js-less' },
-  { title: colors.postcss('PostCss'), value: 'js-post-css' },
+  { title: colors.postcss('PostCSS'), value: 'js-postcss' },
   { title: colors.tailwindcss('Tailwindcss'), value: 'tailwindcss' },
   { title: colors.red('None'), value: 'none' }
 ];
@@ -288,7 +288,7 @@ async function copyTemplate(targetDir: string, options: IResultType) {
       }
     }
   );
-  if (needsTypeScript) {
+  if (needsTypeScript !== false) {
     preOrderDirectoryTraverse(
       root,
       () => {},

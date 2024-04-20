@@ -2,7 +2,6 @@ import { defineConfig } from '@farmfe/core';
 <%_ for (const { importer } of plugins) { _%>
 <%- importer %>
 <%_ } _%>
-
 export default defineConfig({
   plugins: [
   <%_ for (const { initializer } of plugins) { _%>
