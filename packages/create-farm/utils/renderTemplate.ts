@@ -63,8 +63,8 @@ function renderTemplate(
     // merge instead of overwriting
     const settings = JSON.parse(fs.readFileSync(dest, 'utf8'));
     const newSettings = JSON.parse(fs.readFileSync(src, 'utf8'));
-    const extensions = deepMerge(settings, newSettings);
-    fs.writeFileSync(dest, JSON.stringify(settings, null, 2) + '\n');
+    const meragedSettings = deepMerge(settings, newSettings);
+    fs.writeFileSync(dest, JSON.stringify(meragedSettings, null, 2) + '\n');
     return;
   }
 
