@@ -15,6 +15,6 @@
     "checkJs": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+  "include": ["ts/src/**/*.ts", "ts/src/**/*.js", "ts/src/**/*.svelte"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
