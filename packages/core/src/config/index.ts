@@ -12,7 +12,11 @@ import {
   resolveConfigResolvedHook,
   resolveFarmPlugins
 } from '../plugin/index.js';
-import { bindingPath, Config } from '../../binding/index.js';
+import {
+  bindingPath,
+  Config,
+  PluginTransformHookParam
+} from '../../binding/index.js';
 import { Server } from '../server/index.js';
 import { parseUserConfig } from './schema.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
@@ -45,6 +49,7 @@ import type {
   ResolvedUserConfig,
   UserConfig,
   UserConfigExport,
+  UserConfigFnObject,
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
@@ -53,10 +58,14 @@ import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 import merge from '../utils/merge.js';
 
 export * from './types.js';
+
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
   config: Promise<UserConfig>
 ): Promise<UserConfig>;
+export function defineFarmConfig(
+  config: UserConfigFnObject
+): UserConfigFnObject;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
@@ -203,6 +212,7 @@ export async function resolveConfig(
     logger,
     mode
   );
+
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
@@ -241,10 +251,11 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development'
 ): Promise<Config['config']> {
   const { compilation, root } = userConfig;
+
   // resolve root path
-  const resolvedRootPath = normalizePath(
-    root ? path.resolve(root) : process.cwd()
-  );
+  const resolvedRootPath = normalizePath(root);
+
+  userConfig.root = resolvedRootPath;
 
   // resolve public path
   if (compilation?.output?.publicPath) {
@@ -259,14 +270,11 @@ export async function normalizeUserCompilationConfig(
     {},
     DEFAULT_COMPILATION_OPTIONS,
     {
-      input: inputIndexConfig
+      input: inputIndexConfig,
+      root: resolvedRootPath
     },
     compilation
   );
-
-  if (!config.root) {
-    config.root = resolvedRootPath;
-  }
 
   const isProduction = mode === 'production';
   const isDevelopment = mode === 'development';
@@ -474,7 +482,6 @@ export async function normalizeUserCompilationConfig(
 }
 
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
-  ignores: [],
   host: true,
   port:
     (process.env.FARM_DEFAULT_HMR_PORT &&
@@ -580,86 +587,85 @@ async function readConfigFile(
     let userConfig: UserConfigExport;
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
-    // if config is written in typescript, we need to compile it to javascript using farm first
-    if (configFilePath.endsWith('.ts')) {
-      const Compiler = (await import('../compiler/index.js')).Compiler;
-      const outputPath = path.join(
-        path.dirname(configFilePath),
-        'node_modules',
-        '.farm'
-      );
+    // we need transform all type farm.config with __dirname and __filename
+    const Compiler = (await import('../compiler/index.js')).Compiler;
+    const outputPath = path.join(
+      path.dirname(configFilePath),
+      'node_modules',
+      '.farm'
+    );
 
-      const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
-        .toString(16)
-        .split('.')
-        .join('')}}.mjs`;
+    const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
+      .toString(16)
+      .split('.')
+      .join('')}}.mjs`;
 
-      const normalizedConfig = await normalizeUserCompilationConfig(
-        {
-          compilation: {
-            input: {
-              [fileName]: configFilePath
-            },
-            output: {
-              entryFilename: '[entryName]',
-              path: outputPath,
-              format: 'esm',
-              targetEnv: 'node'
-            },
-            external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
-            partialBundling: {
-              enforceResources: [
-                {
-                  name: fileName,
-                  test: ['.+']
-                }
-              ]
-            },
-            watch: false,
-            sourcemap: false,
-            treeShaking: false,
-            minify: false,
-            presetEnv: false,
-            lazyCompilation: false,
-            persistentCache: false,
-            progress: false
-          }
-        },
-        logger,
-        mode as CompilationMode
-      );
+    const normalizedConfig = await normalizeUserCompilationConfig(
+      {
+        root: inlineOptions.root,
+        compilation: {
+          input: {
+            [fileName]: configFilePath
+          },
+          output: {
+            entryFilename: '[entryName]',
+            path: outputPath,
+            format: 'esm',
+            targetEnv: 'node'
+          },
+          external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
+          partialBundling: {
+            enforceResources: [
+              {
+                name: fileName,
+                test: ['.+']
+              }
+            ]
+          },
+          watch: false,
+          sourcemap: false,
+          treeShaking: false,
+          minify: false,
+          presetEnv: false,
+          lazyCompilation: false,
+          persistentCache: false,
+          progress: false
+        }
+      },
+      logger,
+      mode as CompilationMode
+    );
 
-      const compiler = new Compiler({
-        config: normalizedConfig,
-        jsPlugins: [],
-        rustPlugins: []
-      });
+    const compiler = new Compiler({
+      config: normalizedConfig,
+      jsPlugins: [replaceDirnamePlugin()],
+      rustPlugins: []
+    });
 
-      await compiler.compile();
+    await compiler.compile();
 
-      compiler.writeResourcesToDisk();
+    compiler.writeResourcesToDisk();
 
-      const filePath = isWindows
-        ? pathToFileURL(path.join(outputPath, fileName))
-        : path.join(outputPath, fileName);
+    const filePath = isWindows
+      ? pathToFileURL(path.join(outputPath, fileName))
+      : path.join(outputPath, fileName);
 
-      try {
-        // Change to vm.module of node or loaders as far as it is stable
-        userConfig = (await import(filePath as string)).default;
-      } finally {
-        fs.unlink(filePath, () => void 0);
-      }
-    } else {
-      const filePath = isWindows
-        ? pathToFileURL(configFilePath)
-        : configFilePath;
+    try {
       // Change to vm.module of node or loaders as far as it is stable
       userConfig = (await import(filePath as string)).default;
+    } finally {
+      fs.unlink(filePath, () => void 0);
     }
+
     const configEnv = { mode: inlineOptions.mode ?? process.env.NODE_ENV };
     const config = await (typeof userConfig === 'function'
       ? userConfig(configEnv)
       : userConfig);
+
+    if (!config.root) {
+      config.root = inlineOptions.root;
+    }
+
     if (!isObject(config)) {
       throw new Error(`config must export or return an object.`);
     }
@@ -743,6 +749,7 @@ function mergeInlineCliOptions(
   userConfig: UserConfig,
   inlineOptions: FarmCLIOptions
 ): UserConfig {
+  const configRootPath = userConfig.root;
   if (inlineOptions.root) {
     const cliRoot = inlineOptions.root;
 
@@ -753,9 +760,13 @@ function mergeInlineCliOptions(
     }
   }
 
+  if (configRootPath) {
+    userConfig.root = configRootPath;
+  }
+
   if (userConfig.root && !isAbsolute(userConfig.root)) {
     const resolvedRoot = path.resolve(
-      inlineOptions.configPath || process.cwd(),
+      inlineOptions.configPath,
       userConfig.root
     );
     userConfig.root = resolvedRoot;
@@ -876,6 +887,7 @@ export async function loadConfigFile(
         logger,
         mode
       );
+
       return {
         config: config && parseUserConfig(config),
         configFilePath: configFilePath
@@ -889,14 +901,25 @@ export async function loadConfigFile(
     // throw error can solve this problem,
     // it will not continue to affect the execution of
     // external code. We just need to return the default config.
+    let errorMessage = '';
+
+    try {
+      errorMessage = JSON.parse(error.message).join('\n');
+    } catch (e) {
+      errorMessage = error.message;
+    }
+
     if (inlineOptions.mode === 'production') {
-      logger.error(`Failed to load config file: \n ${error.stack}`, {
-        exit: true
-      });
+      logger.error(
+        `Failed to load config file: ${errorMessage} \n ${error.stack}`,
+        {
+          exit: true
+        }
+      );
     }
 
     throw new Error(
-      'Failed to load farm config file: ' + error + ' ' + error.stack
+      `Failed to load farm config file: ${errorMessage} \n ${error.stack}`
     );
   }
 }
@@ -919,11 +942,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
 
       for (const entryFile of entryFiles) {
         try {
-          if (
-            fs.statSync(
-              path.resolve(userConfig?.root ?? process.cwd(), entryFile)
-            )
-          ) {
+          if (fs.statSync(path.resolve(userConfig?.root, entryFile))) {
             inputIndexConfig = { index: entryFile };
             break;
           }
@@ -933,11 +952,7 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
       }
     } else {
       try {
-        if (
-          fs.statSync(
-            path.resolve(userConfig?.root ?? process.cwd(), defaultHtmlPath)
-          )
-        ) {
+        if (fs.statSync(path.resolve(userConfig?.root, defaultHtmlPath))) {
           inputIndexConfig = { index: defaultHtmlPath };
         }
       } catch (error) {
@@ -950,7 +965,8 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
       logger.error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
-        }  from ${userConfig.root}. \n${errorMessage}`
+        }  from ${userConfig.root}. \n${errorMessage}`,
+        { exit: true }
       );
     }
   }
@@ -976,4 +992,37 @@ export async function getConfigFilePath(
   }
 
   return undefined;
+}
+
+// transform __dirname and __filename with resolve config file path
+export function replaceDirnamePlugin() {
+  const moduleTypes = ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'];
+  const resolvedPaths: string[] = [];
+  return {
+    name: 'replace-dirname',
+    transform: {
+      filters: {
+        moduleTypes,
+        resolvedPaths
+      },
+      async executor(param: PluginTransformHookParam) {
+        const { content, resolvedPath, moduleType } = param;
+        let replaceContent = content;
+        const dirPath = path.dirname(resolvedPath);
+
+        replaceContent = param.content
+          .replace(/__dirname/g, JSON.stringify(dirPath))
+          .replace(/__filename/g, JSON.stringify(resolvedPath))
+          .replace(
+            /import\.meta\.url/g,
+            JSON.stringify(pathToFileURL(resolvedPath))
+          );
+
+        return {
+          content: replaceContent,
+          moduleType
+        };
+      }
+    }
+  };
 }

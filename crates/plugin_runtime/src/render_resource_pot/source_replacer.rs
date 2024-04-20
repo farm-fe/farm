@@ -86,7 +86,6 @@ impl SourceReplacer<'_> {
     }
 
     if is_commonjs_require(self.unresolved_mark, self.top_level_mark, &*call_expr) {
-      let args_len = call_expr.args.len();
       if let ExprOrSpread {
         spread: None,
         expr: box Expr::Lit(Lit::Str(str)),

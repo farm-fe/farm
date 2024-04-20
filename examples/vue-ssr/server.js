@@ -1,6 +1,7 @@
 import path from 'path';
 import fsp from 'fs/promises';
 import express from 'express';
+import { pathToFileURL } from 'url';
 
 function resolve(p) {
   return path.resolve(p);
@@ -19,7 +20,8 @@ async function createServer() {
       let render;
 
       template = await fsp.readFile(resolve('build/client.html'), 'utf8');
-      render = (await import(resolve('dist/index.js'))).default;
+      const serverEntry = resolve('dist/index.js');
+      render = (await import(process.platform === 'win32' ? pathToFileURL(serverEntry) : serverEntry)).default;
 
       const renderedHtml = await render(url);
       console.log(renderedHtml);
@@ -43,7 +45,8 @@ async function createServer() {
 }
 
 createServer().then((app) => {
-  app.listen(3000, () => {
-    console.log('HTTP server is running at http://localhost:3000');
+  const port = process.env.FARM_DEFAULT_SERVER_PORT || 3000;
+  app.listen(port, () => {
+    console.log('HTTP server is running at http://localhost:' + port);
   });
 });

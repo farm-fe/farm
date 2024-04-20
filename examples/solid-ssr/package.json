@@ -20,8 +20,8 @@
   "scripts": {
     "start": "farm start",
     "watch": "farm watch --config farm.config.server.mjs",
-    "build": "farm build",
+    "build": "pnpm build:server && farm build",
     "build:server": "farm build --config farm.config.server.mjs",
-    "preview": "farm preview"
+    "preview": "node server.js"
   }
 }

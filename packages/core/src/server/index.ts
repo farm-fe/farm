@@ -29,7 +29,6 @@ import {
   proxy,
   records,
   resources,
-  // sirvMiddleware,
   staticMiddleware
 } from './middlewares/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
@@ -300,7 +299,7 @@ export class Server implements ImplDevServer {
   ): Promise<void> {
     let devPort = normalizedDevConfig.port;
     let hmrPort = normalizedDevConfig.hmr.port;
-    
+
     const { strictPort, host } = normalizedDevConfig;
     const httpServer = http.createServer();
     const isPortAvailable = (portToCheck: number) => {
@@ -331,7 +330,7 @@ export class Server implements ImplDevServer {
     };
 
     let isPortAvailableResult = await isPortAvailable(devPort);
-    
+
     while (isPortAvailableResult === false) {
       if (typeof normalizedDevConfig.hmr === 'object') {
         normalizedDevConfig.hmr.port = ++hmrPort;
@@ -382,7 +381,6 @@ export class Server implements ImplDevServer {
       ...(middlewares || []),
       compression,
       proxy,
-      // sirvMiddleware
       staticMiddleware
     ];
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);

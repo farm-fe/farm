@@ -63,7 +63,7 @@ export async function start(
 
     await devServer.listen();
   } catch (error) {
-    logger.error(`Failed to start the server: ${error.stack}`, { exit: true });
+    logger.error(`Failed to start the server: \n ${error}`, { exit: true });
   }
 }
 
@@ -98,6 +98,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
 
   const { root, output } = resolvedUserConfig.compilation;
   const distDir = path.resolve(root, output.path);
+
   try {
     statSync(distDir);
   } catch (err) {
@@ -126,6 +127,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     port,
     host
   };
+
   const server = new Server({ logger });
   server.createPreviewServer(previewOptions);
 }

@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
 
 import { cac } from 'cac';
 import {
@@ -7,7 +6,9 @@ import {
   getConfigPath,
   resolveCommandOptions,
   handleAsyncOperationErrors,
-  preventExperimentalWarning
+  preventExperimentalWarning,
+  resolveRootPath,
+  resolveCliConfig
 } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
 
@@ -41,6 +42,7 @@ cli
     'Compile the project in dev mode and serve it with farm dev server'
   )
   .alias('start')
+  .alias('dev')
   .option('-l, --lazy', 'lazyCompilation')
   .option('--host <host>', 'specify host')
   .option('--port <port>', 'specify port')
@@ -50,15 +52,11 @@ cli
   .option('--strictPort', 'specified port is already in use, exit with error')
   .action(
     async (
-      root: string,
+      rootPath: string,
       options: FarmCLIServerOptions & GlobalFarmCLIOptions
     ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
       const resolveOptions = resolveCommandOptions(options);
-      const configPath = getConfigPath(options.config);
-
-      if (root && !path.isAbsolute(root)) {
-        root = path.resolve(process.cwd(), root);
-      }
 
       const defaultOptions = {
         root,
@@ -81,7 +79,7 @@ cli
 
 // build command
 cli
-  .command('build', 'compile the project in production mode')
+  .command('build [root]', 'compile the project in production mode')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .option('-w, --watch', 'watch file change')
@@ -90,33 +88,40 @@ cli
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
   .option('--minify', 'code compression at build time')
-  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const configPath = getConfigPath(options.config);
-    const defaultOptions = {
-      compilation: {
-        watch: options.watch,
-        output: {
-          path: options?.outDir,
-          targetEnv: options?.target,
-          format: options?.format
-        },
-        input: {
-          index: options?.input
-        },
-        sourcemap: options.sourcemap,
-        minify: options.minify,
-        treeShaking: options.treeShaking
-      },
-      mode: options.mode,
-      configPath
-    };
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
-    const { build } = await resolveCore();
-    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
-  });
+      const defaultOptions = {
+        root,
+        compilation: {
+          watch: options.watch,
+          output: {
+            path: options?.outDir,
+            targetEnv: options?.target,
+            format: options?.format
+          },
+          input: {
+            index: options?.input
+          },
+          sourcemap: options.sourcemap,
+          minify: options.minify,
+          treeShaking: options.treeShaking
+        },
+        mode: options.mode,
+        configPath
+      };
+
+      const { build } = await resolveCore();
+      handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+    }
+  );
 
 cli
-  .command('watch', 'watch file change')
+  .command('watch [root]', 'watch file change')
   .option('-o, --outDir <dir>', 'output directory')
   .option('-i, --input <file>', 'input file path')
   .option('--target <target>', 'transpile targetEnv node, browser')
@@ -124,53 +129,67 @@ cli
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
   .option('--minify', 'code compression at build time')
-  .action(async (options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const configPath = getConfigPath(options.config);
-    const defaultOptions = {
-      compilation: {
-        output: {
-          path: options?.outDir,
-          targetEnv: options?.target,
-          format: options?.format
-        },
-        input: {
-          index: options?.input
-        },
-        sourcemap: options.sourcemap,
-        minify: options.minify,
-        treeShaking: options.treeShaking
-      },
-      mode: options.mode,
-      configPath
-    };
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
-    const { watch } = await resolveCore();
-    handleAsyncOperationErrors(
-      watch(defaultOptions),
-      'error during watch project'
-    );
-  });
+      const defaultOptions = {
+        root,
+        compilation: {
+          output: {
+            path: options?.outDir,
+            targetEnv: options?.target,
+            format: options?.format
+          },
+          input: {
+            index: options?.input
+          },
+          sourcemap: options.sourcemap,
+          minify: options.minify,
+          treeShaking: options.treeShaking
+        },
+        mode: options.mode,
+        configPath
+      };
+
+      const { watch } = await resolveCore();
+      handleAsyncOperationErrors(
+        watch(defaultOptions),
+        'error during watch project'
+      );
+    }
+  );
 
 cli
-  .command('preview', 'compile the project in watch mode')
+  .command('preview [root]', 'compile the project in watch mode')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server preview start')
-  .action(async (options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
-    const configPath = getConfigPath(options.config);
-    const resolveOptions = resolveCommandOptions(options);
-    const defaultOptions = {
-      mode: options.mode,
-      server: resolveOptions,
-      configPath,
-      port: options.port
-    };
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIPreviewOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
-    const { preview } = await resolveCore();
-    handleAsyncOperationErrors(
-      preview(defaultOptions),
-      'Failed to start preview server'
-    );
-  });
+      const resolveOptions = resolveCommandOptions(options);
+      const defaultOptions = {
+        root,
+        mode: options.mode,
+        server: resolveOptions,
+        configPath,
+        port: options.port
+      };
+
+      const { preview } = await resolveCore();
+      handleAsyncOperationErrors(
+        preview(defaultOptions),
+        'Failed to start preview server'
+      );
+    }
+  );
 
 cli
   .command('clean [path]', 'Clean up the cache built incrementally')
@@ -178,18 +197,16 @@ cli
     '--recursive',
     'Recursively search for node_modules directories and clean them'
   )
-  .action(async (cleanPath: string, options: ICleanOptions) => {
-    const rootPath = cleanPath
-      ? path.resolve(process.cwd(), cleanPath)
-      : process.cwd();
+  .action(async (rootPath: string, options: ICleanOptions) => {
+    const { root } = resolveCliConfig(rootPath, options);
     const { clean } = await resolveCore();
 
     try {
-      await clean(rootPath, options?.recursive);
+      await clean(root, options?.recursive);
     } catch (e) {
       const { Logger } = await import('@farmfe/core');
       const logger = new Logger();
-      logger.error(`Failed to clean cache:\n${e.stack}`);
+      logger.error(`Failed to clean cache: \n ${e.stack}`);
       process.exit(1);
     }
   });
