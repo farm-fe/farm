@@ -186,8 +186,8 @@ async function createFarm() {
           message:
             typeof argFramework === 'string' &&
             !TEMPLATES.includes(argFramework)
-              ? reset(`"${argFramework}" ${language.validTemplate.message}`)
-              : reset(language.selectFramework.message),
+              ? `"${argFramework}" ${language.validTemplate.message}`
+              : language.selectFramework.message,
           initial: 0,
           choices: FRAMEWORKS.map((framework) => ({
             title: framework.title,
@@ -198,7 +198,7 @@ async function createFarm() {
           type: (framework: Framework) =>
             framework && framework.variants ? 'select' : null,
           name: 'variant',
-          message: reset(language.selectVariant.message),
+          message: language.selectVariant.message,
           choices: (framework: Framework) =>
             framework.variants.map((variant) => {
               return {
@@ -354,7 +354,7 @@ async function copyTemplate(targetDir: string, options: IResultType) {
   }
   // copy(templatePath, dest);
   writePackageJson(dest, options);
-  spinner.text = language.copy.done;
+  spinner.text = colors.white(language.copy.done);
   spinner.succeed();
 }
 
@@ -402,7 +402,7 @@ async function installationDeps(
         ? ['install', '--no-frozen-lockfile']
         : ['install']
     );
-    spinner.text = language.infos.done;
+    spinner.text = colors.white(language.infos.done);
     spinner.succeed();
   }
   colors.handleBrandText(`\n > ${language.infos.done} ✨ ✨ \n`);
