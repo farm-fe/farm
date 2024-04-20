@@ -19,6 +19,7 @@ export function loadEnv(
   const env: Record<string, string> = {};
   const existsEnvFiles: string[] = [];
   const envFiles = [`.env`, `.env.local`, `.env.${mode}`, `.env.${mode}.local`];
+
   const parsed = Object.fromEntries(
     envFiles.flatMap((file) => {
       const filePath = path.join(envDir, file);

@@ -1,9 +1,7 @@
+import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
 
-/**
- * @type {import('@farmfe/core').UserConfig}
- */
-export default {
+export default defineConfig({
   compilation: {
     input: {
       index: './src/server.ts'
@@ -19,8 +17,16 @@ export default {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
     },
+    // partialBundling: {
+    //   enforceResources: [
+    //     {
+    //       name: 'index',
+    //       test: ['.*']
+    //     }
+    //   ]
+    // },
     persistentCache: false,
     lazyCompilation: false
   },
   vitePlugins: [vue()]
-};
+});

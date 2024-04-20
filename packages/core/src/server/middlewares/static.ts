@@ -7,14 +7,12 @@ import fs from 'fs';
 export function staticMiddleware(devServerContext: Server): Middleware {
   const { config } = devServerContext;
 
-  const staticMiddleware = serve(path.join(process.cwd(), config.output.path));
+  const staticMiddleware = serve(config.distDir);
 
   // Fallback
   const fallbackMiddleware: Middleware = async (ctx: Context, next: Next) => {
     ctx.type = 'html';
-    ctx.body = fs.createReadStream(
-      path.join(process.cwd(), config.output.path, 'index.html')
-    );
+    ctx.body = fs.createReadStream(path.join(config.distDir, 'index.html'));
     await next();
   };
 

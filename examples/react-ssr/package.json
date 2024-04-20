@@ -24,6 +24,6 @@
     "watch": "farm watch --config farm.config.server.mjs",
     "build": "pnpm build:server && farm build",
     "build:server": "farm build --config farm.config.server.mjs",
-    "preview": "farm preview"
+    "preview": "node server.js"
   }
 }
