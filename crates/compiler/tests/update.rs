@@ -4,7 +4,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 
 use common::generate_runtime;
-use farmfe_compiler::Compiler;
+use farmfe_compiler::{Compiler, DYNAMIC_VIRTUAL_SUFFIX};
 use farmfe_core::config::bool_or_obj::BoolOrObj;
 use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_core::config::persistent_cache::PersistentCacheConfig;
@@ -353,7 +353,7 @@ fn update_lazy_compilation() {
       compiler.compile().unwrap();
 
       let update_file = cwd.join("dep.ts").to_string_lossy().to_string();
-      let update_module_id = format!("virtual:FARMFE_DYNAMIC_IMPORT:{}", update_file);
+      let update_module_id = format!("{}{}", update_file, DYNAMIC_VIRTUAL_SUFFIX);
       let result = compiler
         .update(
           vec![(update_module_id.clone(), UpdateType::Updated)],
@@ -363,7 +363,10 @@ fn update_lazy_compilation() {
         .unwrap();
 
       assert_eq!(result.added_module_ids, vec!["dep.ts".into()]);
-      assert_eq!(result.updated_module_ids, vec![update_module_id.into()]);
+      assert_eq!(
+        result.updated_module_ids,
+        vec![format!("dep.ts{}", DYNAMIC_VIRTUAL_SUFFIX).into()]
+      );
       assert_eq!(result.removed_module_ids.len(), 0);
     }
   );
@@ -386,7 +389,7 @@ fn update_lazy_compilation_node() {
       compiler.compile().unwrap();
 
       let update_file = cwd.join("dep.ts").to_string_lossy().to_string();
-      let update_module_id = format!("virtual:FARMFE_DYNAMIC_IMPORT:{}", update_file);
+      let update_module_id = format!("{}{}", update_file, DYNAMIC_VIRTUAL_SUFFIX);
       let result = compiler
         .update(
           vec![(update_module_id.clone(), UpdateType::Updated)],
@@ -396,7 +399,10 @@ fn update_lazy_compilation_node() {
         .unwrap();
 
       assert_eq!(result.added_module_ids, vec!["dep.ts".into()]);
-      assert_eq!(result.updated_module_ids, vec![update_module_id.into()]);
+      assert_eq!(
+        result.updated_module_ids,
+        vec![format!("dep.ts{}", DYNAMIC_VIRTUAL_SUFFIX).into()]
+      );
       assert_eq!(result.removed_module_ids.len(), 0);
 
       asset_update_result_code(cwd, &result, Some("update0"));

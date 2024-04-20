@@ -12,7 +12,7 @@
     var _default = "dep";
 }
 ,
-"virtual:FARMFE_DYNAMIC_IMPORT:C:\\Users\\lj_bright\\Desktop\\code\\farm\\crates\\compiler\\tests\\fixtures\\update\\lazy-compilation\\dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+"dep.ts.farm_dynamic_import_virtual_module":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use farmfe_compiler::{DYNAMIC_VIRTUAL_PREFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_SUFFIX};
+use farmfe_compiler::{DYNAMIC_VIRTUAL_SUFFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_SUFFIX};
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
@@ -118,7 +118,7 @@ impl JsPluginAdapter {
   }
 
   pub fn is_internal_virtual_module(&self, path: &str) -> bool {
-    path.starts_with(DYNAMIC_VIRTUAL_PREFIX)
+    path.ends_with(DYNAMIC_VIRTUAL_SUFFIX)
       || FARM_CSS_MODULES_SUFFIX.is_match(path)
       || path.ends_with(RUNTIME_SUFFIX)
   }
