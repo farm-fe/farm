@@ -20,6 +20,7 @@ export class FileWatcher implements ImplFileWatcher {
   private _watcher: FSWatcher;
   private _logger: Logger;
   private _close = false;
+  private _watchedFiles = new Set<string>();
 
   constructor(
     public serverOrCompiler: Server | Compiler,
@@ -31,6 +32,31 @@ export class FileWatcher implements ImplFileWatcher {
 
   getInternalWatcher() {
     return this._watcher;
+  }
+
+  getExtraWatchedFiles() {
+    const compiler = this.getCompilerFromServerOrCompiler(
+      this.serverOrCompiler
+    );
+
+    return [
+      ...compiler.resolvedModulePaths(this._root),
+      ...compiler.resolvedWatchPaths()
+    ].filter(
+      (file) =>
+        !file.startsWith(this.options.root) && !file.includes('node_modules/')
+    );
+  }
+
+  watchExtraFiles() {
+    const files = this.getExtraWatchedFiles();
+
+    for (const file of files) {
+      if (!this._watchedFiles.has(file)) {
+        this._watcher.add(file);
+        this._watchedFiles.add(file);
+      }
+    }
   }
 
   async watch() {
@@ -68,15 +94,10 @@ export class FileWatcher implements ImplFileWatcher {
       }
     };
 
-    const watchedFiles = [
-      ...compiler.resolvedModulePaths(this._root),
-      ...compiler.resolvedWatchPaths()
-    ].filter(
-      (file) =>
-        !file.startsWith(this.options.root) && !file.includes('node_modules/')
-    );
+    const watchedFiles = this.getExtraWatchedFiles();
 
     const files = [this.options.root, ...watchedFiles];
+    this._watchedFiles = new Set(files);
     this._watcher = createWatcher(this.options, files);
 
     this._watcher.on('change', (path) => {

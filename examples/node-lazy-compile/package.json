@@ -8,8 +8,9 @@
     "@farmfe/core": "workspace:*"
   },
   "scripts": {
-    "start": "farm watch",
-    "build": "farm build && node dist/index.mjs"
+    "watch": "farm watch",
+    "build": "farm build",
+    "preview": "node dist/index.mjs"
   },
   "dependencies": {
     "core-js": "^3.35.1"

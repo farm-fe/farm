@@ -57,13 +57,19 @@ export async function start(
       logger
     );
 
-    createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+    const watcher = await createFileWatcher(
+      devServer,
+      resolvedUserConfig,
+      inlineConfig,
+      logger
+    );
     // call configureDevServer hook after both server and watcher are ready
     resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       plugin.configureDevServer?.(devServer)
     );
 
     await devServer.listen();
+    watcher.watchExtraFiles();
   } catch (error) {
     logger.error(`Failed to start the server: \n ${error}`, { exit: true });
   }
@@ -144,7 +150,7 @@ export async function watch(
     inlineConfig,
     logger,
     'development',
-    false
+    true
   );
 
   const hostname = await resolveHostname(resolvedUserConfig.server.host);
@@ -386,6 +392,7 @@ export async function createFileWatcher(
       await start(inlineConfig);
     });
   });
+  return fileWatcher;
 }
 
 export function logFileChanges(files: string[], root: string, logger: Logger) {

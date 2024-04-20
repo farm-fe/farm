@@ -80,6 +80,8 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
+    // mark the compilation as update
+    self.context.set_update();
     let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
 

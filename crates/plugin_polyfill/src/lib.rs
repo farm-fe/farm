@@ -86,11 +86,6 @@ impl Plugin for FarmPluginPolyfill {
     i32::MIN
   }
 
-  // should be called after all other plugins
-  fn priority(&self) -> i32 {
-    return 0;
-  }
-
   fn process_module(
     &self,
     param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,

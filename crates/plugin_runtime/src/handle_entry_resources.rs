@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
+use farmfe_core::enhanced_magic_string::magic_string::MagicString;
+use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::plugin::ResolveKind;
 use farmfe_core::resource::ResourceOrigin;
 use farmfe_core::{
@@ -12,11 +15,13 @@ use farmfe_core::{
   resource::{Resource, ResourceType},
   swc_ecma_ast::{self, Decl, ModuleDecl, ModuleItem, Pat},
 };
+use farmfe_toolkit::common::{append_source_map_comment, generate_source_map_resource};
 use farmfe_toolkit::fs::transform_output_entry_filename;
 use farmfe_toolkit::get_dynamic_resources_map::{
   get_dynamic_resources_code, get_dynamic_resources_map,
 };
 use farmfe_toolkit::html::get_farm_global_this;
+use farmfe_toolkit::sourcemap::SourceMap;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
@@ -200,15 +205,24 @@ fn get_export_info_code(
   }
 }
 
-pub fn get_entry_resource_and_dep_resources_name(
+#[derive(Debug, Default)]
+struct EntryResourceAndDepResources {
+  pub entry_js_resource_name: String,
+  pub entry_js_resource_source_map: Option<Resource>,
+  pub entry_js_resource_source_map_name: String,
+  pub entry_js_resource_code: Arc<String>,
+  pub dep_resources: Vec<String>,
+  pub dynamic_resources_code: String,
+}
+
+fn get_entry_resource_and_dep_resources_name(
   entry: &ModuleId,
   module: &Module,
   module_group_graph: &ModuleGroupGraph,
   resource_map: &HashMap<String, Resource>,
   context: &Arc<CompilationContext>,
-) -> (String, Vec<String>, String) {
-  let mut entry_js_resource_name = None;
-  let mut dep_resources = vec![];
+) -> EntryResourceAndDepResources {
+  let mut result = EntryResourceAndDepResources::default();
 
   let module_group_id = entry.clone();
   let module_group = module_group_graph
@@ -232,9 +246,15 @@ pub fn get_entry_resource_and_dep_resources_name(
           .expect("resource is not found");
 
         if matches!(resource.resource_type, ResourceType::Js) {
-          entry_js_resource_name = Some(resource.name.clone());
-          break;
+          result.entry_js_resource_name = resource.name.clone();
+        } else if matches!(resource.resource_type, ResourceType::SourceMap(_)) {
+          result.entry_js_resource_source_map_name = resource.name.clone();
         }
+      }
+      result.entry_js_resource_code = resource_pot.meta.rendered_content.clone();
+
+      if !resource_pot.meta.rendered_map_chain.is_empty() {
+        result.entry_js_resource_source_map = Some(generate_source_map_resource(resource_pot));
       }
     } else {
       for resource_id in resource_pot.resources() {
@@ -243,7 +263,7 @@ pub fn get_entry_resource_and_dep_resources_name(
           .expect("resource is not found");
 
         if matches!(resource.resource_type, ResourceType::Js) {
-          dep_resources.push(resource.name.clone());
+          result.dep_resources.push(resource.name.clone());
         }
       }
     }
@@ -254,22 +274,17 @@ pub fn get_entry_resource_and_dep_resources_name(
   let dynamic_resources_code =
     get_dynamic_resources_code(&dynamic_resources_map, context.config.mode.clone());
 
-  (
-    entry_js_resource_name.unwrap(),
-    dep_resources,
-    dynamic_resources_code,
-  )
+  result.dynamic_resources_code = dynamic_resources_code;
+  result
 }
 
 pub fn handle_entry_resources(
   resources_map: &mut HashMap<String, Resource>,
-  original_entry_resource_code: &HashMap<String, String>,
   context: &Arc<CompilationContext>,
-) -> HashMap<String, String> {
+) {
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
 
-  let mut result = HashMap::new();
   // create a runtime resource
   let mut runtime_code = None;
   let mut runtime_resource = None;
@@ -282,14 +297,20 @@ pub fn handle_entry_resources(
 
     // find entry resource and other resources that is required by entry resource
     if module.module_type.is_script() {
-      let (entry_js_resource_name, mut dep_resources, dynamic_resources_code) =
-        get_entry_resource_and_dep_resources_name(
-          entry,
-          module,
-          &module_group_graph,
-          resources_map,
-          context,
-        );
+      let EntryResourceAndDepResources {
+        entry_js_resource_name,
+        entry_js_resource_code,
+        entry_js_resource_source_map_name,
+        entry_js_resource_source_map,
+        mut dep_resources,
+        dynamic_resources_code,
+      } = get_entry_resource_and_dep_resources_name(
+        entry,
+        module,
+        &module_group_graph,
+        resources_map,
+        context,
+      );
       dep_resources.sort();
 
       if !should_inject_runtime {
@@ -332,34 +353,6 @@ pub fn handle_entry_resources(
       // 6. append export code
       let export_info_code = get_export_info_code(entry, &module_graph, context);
 
-      let entry_js_resource_code =
-        if let Some(code) = original_entry_resource_code.get(&entry_js_resource_name) {
-          code.clone()
-        } else {
-          let code = String::from_utf8(
-            resources_map
-              .get(&entry_js_resource_name)
-              .expect("entry resource is not found")
-              .bytes
-              .clone(),
-          )
-          .unwrap();
-          result.insert(entry_js_resource_name.clone(), code.clone());
-          code
-        };
-
-      // split last line
-      let (entry_js_resource_code, entry_js_resource_source_map) =
-        if let Some((c, m)) = entry_js_resource_code.rsplit_once('\n') {
-          if m.starts_with("//# sourceMappingURL=") {
-            (c.to_string(), format!("\n{}", m))
-          } else {
-            (entry_js_resource_code, "".to_string())
-          }
-        } else {
-          (entry_js_resource_code, "".to_string())
-        };
-
       let runtime_code = if let Some(runtime_code) = runtime_code.as_ref() {
         runtime_code
       } else {
@@ -371,8 +364,10 @@ pub fn handle_entry_resources(
         .get_mut(&entry_js_resource_name)
         .expect("entry resource is not found");
 
-      // TODO support sourcemap
-      entry_js_resource.bytes = vec![
+      let mut entry_bundle = MagicString::new(&entry_js_resource_code, None);
+
+      for pre in vec![
+        dep_resources_require_code,
         if should_inject_runtime {
           let runtime_resource = if let Some(runtime_resource) = runtime_resource.as_ref() {
             runtime_resource
@@ -388,16 +383,46 @@ pub fn handle_entry_resources(
         } else {
           runtime_code.clone()
         },
-        dep_resources_require_code,
-        entry_js_resource_code,
+      ] {
+        entry_bundle.prepend(&pre);
+      }
+
+      for post in vec![
         set_initial_loaded_resources_code,
         set_dynamic_resources_map_code,
         call_entry_code,
         export_info_code,
-        entry_js_resource_source_map,
-      ]
-      .join("")
-      .into_bytes();
+      ] {
+        entry_bundle.append(&post);
+      }
+
+      let entry_bundle_code = entry_bundle.to_string();
+      // update entry resource
+      entry_js_resource.bytes = entry_bundle_code.into_bytes();
+      // update sourcemap
+      if let Some(mut source_map) = entry_js_resource_source_map {
+        let entry_bundle_resource_map = entry_bundle
+          .generate_map(SourceMapOptions {
+            include_content: Some(true),
+            ..Default::default()
+          })
+          .unwrap();
+        let original_source_map = SourceMap::from_slice(&source_map.bytes).unwrap();
+        let collapsed_source_map = collapse_sourcemap_chain(
+          vec![original_source_map, entry_bundle_resource_map],
+          Default::default(),
+        );
+        let mut src_map = vec![];
+        collapsed_source_map
+          .to_writer(&mut src_map)
+          .expect("failed to write sourcemap");
+
+        source_map.bytes = src_map;
+        source_map.name = entry_js_resource_source_map_name.clone();
+        append_source_map_comment(entry_js_resource, &source_map, &context.config.sourcemap);
+        // update sourcemap resource
+        resources_map.insert(entry_js_resource_source_map_name, source_map);
+      }
     }
   }
 
@@ -406,8 +431,6 @@ pub fn handle_entry_resources(
       resources_map.insert(runtime_resource.name.clone(), runtime_resource);
     }
   }
-
-  return result;
 }
 
 fn create_runtime_code(
