@@ -1,5 +1,4 @@
 import { LitElement, css, html } from 'lit'
-import { customElement } from 'lit/decorators.js'
 import litLogo from './assets/lit.svg'
 import FarmLogo from './assets/logo.png'
 
@@ -9,7 +8,6 @@ import FarmLogo from './assets/logo.png'
  * @slot - This element has a slot
  * @csspart button - The button
  */
-@customElement('my-element')
 export class MyElement extends LitElement {
   render() {
     return html`
@@ -98,3 +96,5 @@ export class MyElement extends LitElement {
     }
   `
 }
+
+window.customElements.define('my-element', MyElement)
