@@ -36,16 +36,16 @@ wax = { version = "0.6", default-features = false, features = [
   "miette",
   "walk",
 ] }
-swc_ecma_ast = { version = "=0.111.0", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "=0.142.0" }
-swc_common = { version = "=0.33.14", features = [
+swc_ecma_ast = { version = "0.112.6", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "0.143.10" }
+swc_common = { version = "0.33.20", features = [
   "concurrent",
   "sourcemap",
   "rkyv-impl",
 ] }
-swc_css_ast = { version = "=0.140.15", features = ["rkyv-impl"] }
-swc_css_prefixer = { version = "=0.153.27" }
-swc_html_ast = { version = "=0.33.13", features = ["rkyv-impl"] }
+swc_css_ast = { version = "0.140.21", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "0.153.35" }
+swc_html_ast = { version = "0.33.20", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.18.0", features = [
   "packing",
@@ -53,7 +53,7 @@ puffin = { version = "0.18.0", features = [
   "serialization",
 ], optional = true }
 regex = "1.7.3"
-enhanced-magic-string = { version = "0.0.13" }
+enhanced-magic-string = { version = "0.0.14" }
 
 [features]
 profile = ["dep:puffin"]

@@ -198,8 +198,8 @@ impl RustPlugins {
               .transform(&serialized, Some(should_enable_comments_proxy))
               .with_context(|| {
                 format!(
-                  "failed to invoke `{}` as js transform plugin at {}",
-                  &p.name, plugin_name
+                  "failed to invoke `{}` as js transform plugin at {plugin_name}. {plugin_name} may not be compatible with current version of rust crate swc_core(v0.90) that Farm uses, please upgrade or downgrade version of swc plugin {plugin_name} to match the swc_core version.",
+                  &p.name
                 )
               })?;
           }
