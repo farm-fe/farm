@@ -6,7 +6,7 @@ use farmfe_core::{
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
 use farmfe_toolkit::html::get_farm_global_this;
-use farmfe_utils::stringify_query;
+use farmfe_utils::{relative, stringify_query};
 
 pub const DYNAMIC_VIRTUAL_SUFFIX: &str = ".farm_dynamic_import_virtual_module";
 const ORIGINAL_RESOLVED_PATH: &str = "FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH";
@@ -179,13 +179,19 @@ impl Plugin for FarmPluginLazyCompilation {
         }))
       } else {
         let resolved_path = param.meta.get(ORIGINAL_RESOLVED_PATH).unwrap();
+        let dir = std::path::Path::new(&param.resolved_path)
+          .parent()
+          .unwrap()
+          .to_string_lossy()
+          .to_string();
+        let relative_source = relative(&dir, &resolved_path);
         let content = format!(
           r#"
-          import _default_import from "{0}";
+          import _default_import from "./{0}";
           export default _default_import;
-          export * from "{0}";
+          export * from "./{0}";
         "#,
-          resolved_path.replace('\\', r"\\")
+          relative_source
         );
         Ok(Some(PluginLoadHookResult {
           content,
