@@ -319,12 +319,12 @@ async function copyTemplate(targetDir: string, options: IResultType) {
         const template = fs.readFileSync(filepath, 'utf-8');
         const dest = filepath.replace(/\.ejs$/, '');
         const content = ejs.render(template, dataStore[dest]);
-
         fs.writeFileSync(dest, content);
         fs.unlinkSync(filepath);
       }
     }
   );
+  // ts handle
   if (needsTypeScript !== false) {
     preOrderDirectoryTraverse(
       root,
@@ -348,6 +348,29 @@ async function copyTemplate(targetDir: string, options: IResultType) {
       (filepath) => {
         if (filepath.endsWith('.ts')) {
           fs.unlinkSync(filepath);
+        }
+      }
+    );
+  }
+  // css handle
+  if (useCssPreProcessor !== 'none') {
+    preOrderDirectoryTraverse(
+      root,
+      () => {},
+      (filepath) => {
+        if (filepath.endsWith('.css')) {
+          let cssFileExt = 'css';
+          if (useCssPreProcessor.endsWith('sass')) {
+            cssFileExt = 'scss';
+          } else if (useCssPreProcessor.endsWith('less')) {
+            cssFileExt = 'less';
+          }
+          const tsFilePath = filepath.replace(/\.css$/, `.${cssFileExt}`);
+          if (fs.existsSync(tsFilePath)) {
+            fs.unlinkSync(filepath);
+          } else {
+            fs.renameSync(filepath, tsFilePath);
+          }
         }
       }
     );
