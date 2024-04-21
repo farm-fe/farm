@@ -1193,9 +1193,9 @@ checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "enhanced-magic-string"
-version = "0.0.12"
+version = "0.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9f6fd29710ef1b16bd94ceab2dc01f15c046af3a91f30fe0b63fc07eab6c849"
+checksum = "b94f5854439bf9bd039c6aed7fd28724853f825bf171222f0686717eeafc2335"
 dependencies = [
  "base64 0.21.0",
  "farmfe_utils 0.0.4",

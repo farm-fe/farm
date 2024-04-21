@@ -22,6 +22,7 @@ use self::log_store::LogStore;
 
 pub mod log_store;
 pub(crate) const EMPTY_STR: &str = "";
+pub const IS_UPDATE: &str = "";
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
@@ -63,6 +64,14 @@ impl CompilationContext {
       resolve_cache: Box::new(Mutex::new(HashMap::new())),
       custom: Box::new(DashMap::new()),
     })
+  }
+
+  pub fn set_update(&self) {
+    self.custom.insert(IS_UPDATE.to_string(), Box::new(true));
+  }
+
+  pub fn is_update(&self) -> bool {
+    self.custom.contains_key(IS_UPDATE)
   }
 
   pub fn create_plugin_driver(plugins: Vec<Arc<dyn Plugin>>, record: bool) -> PluginDriver {

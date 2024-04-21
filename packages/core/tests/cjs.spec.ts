@@ -19,13 +19,13 @@ test('resolveUserConfig', async () => {
   console.log(config.compilation.define);
 
   expect(config.compilation.define).toEqual({
-    FARM_HMR_HOST: true,
-    FARM_HMR_PATH: '/__hmr',
-    FARM_HMR_PORT: '9000',
+    // FARM_HMR_HOST: true,
+    // FARM_HMR_PATH: '/__hmr',
+    // FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
       NODE_ENV: 'development'
     },
-    FARM_HMR_PROTOCOL: 'ws',
+    // FARM_HMR_PROTOCOL: 'ws',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'development'
   });
   expect(config.compilation.input).toEqual({
@@ -60,11 +60,11 @@ test('resolveUserConfig', async () => {
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
-      'package.json[module]': 'unknown',
-      FARM_HMR_HOST: 'true',
-      FARM_HMR_PATH: '/__hmr',
-      FARM_HMR_PORT: '9000',
-      FARM_HMR_PROTOCOL: 'ws'
+      'package.json[module]': 'unknown'
+      // FARM_HMR_HOST: 'true',
+      // FARM_HMR_PATH: '/__hmr',
+      // FARM_HMR_PORT: '9000',
+      // FARM_HMR_PROTOCOL: 'ws'
     },
     moduleCacheKeyStrategy: {}
   });

@@ -5,8 +5,9 @@ use std::{
 
 use farmfe_core::{
   config::{comments::CommentsConfig, config_regex::ConfigRegex, SourcemapConfig},
+  enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain,
   relative_path::RelativePath,
-  resource::{Resource, ResourceType},
+  resource::{resource_pot::ResourcePot, Resource, ResourceOrigin, ResourceType},
   swc_common::{
     comments::{Comment, CommentKind, SingleThreadedComments},
     source_map::SourceMapGenConfig,
@@ -67,6 +68,29 @@ pub fn append_source_map_comment(
   );
 
   resource.bytes.append(&mut source_map_comment.into_bytes());
+}
+
+pub fn generate_source_map_resource(resource_pot: &ResourcePot) -> Resource {
+  // collapse source map chain
+  let source_map_chain = resource_pot
+    .meta
+    .rendered_map_chain
+    .iter()
+    .map(|s| sourcemap::SourceMap::from_slice(s.as_bytes()).unwrap())
+    .collect::<Vec<_>>();
+  let collapsed_sourcemap = collapse_sourcemap_chain(source_map_chain, Default::default());
+  let mut src_map = vec![];
+  collapsed_sourcemap
+    .to_writer(&mut src_map)
+    .expect("failed to write sourcemap");
+  Resource {
+    bytes: src_map,
+    name: resource_pot.name.clone(),
+    emitted: false,
+    resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
+    origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+    info: None,
+  }
 }
 
 pub fn build_source_map(

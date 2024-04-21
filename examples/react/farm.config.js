@@ -9,7 +9,7 @@ export default defineConfig(() => {
   return {
     // root: path.resolve(process.cwd(), './html'),
     compilation: {
-      sourcemap: false,
+      sourcemap: true,
       persistentCache: false,
       presetEnv: false,
       progress: false,

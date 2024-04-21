@@ -7,8 +7,8 @@ import type { ILogger } from '../utils/logger.js';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { JsPlugin, Resource } from '../index.js';
 
-export const VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX =
-  'virtual:FARMFE_DYNAMIC_IMPORT:';
+export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
+  '.farm_dynamic_import_virtual_module';
 
 /**
  * Cause the update process is async, we need to keep the update queue to make sure the update process is executed in order.
@@ -198,8 +198,8 @@ export class Compiler {
   }
 
   transformModulePath(root: string, p: string): string {
-    if (p.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX)) {
-      return p.slice(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX.length);
+    if (p.endsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX)) {
+      return p.slice(0, -VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX.length);
     }
 
     if (path.isAbsolute(p)) {

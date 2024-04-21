@@ -394,11 +394,15 @@ export async function normalizeUserCompilationConfig(
   }
 
   setProcessEnv(config.mode);
-
+  // TODO add targetEnv `lib-browser` and `lib-node` support
+  const is_entry_html =
+    Object.keys(config.input).length === 0 ||
+    Object.values(config.input).some((value) => value.endsWith('.html'));
   if (
     config.output.targetEnv !== 'node' &&
     isArray(config.runtime.plugins) &&
     userConfig.server.hmr &&
+    is_entry_html &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     const publicPath = userConfig.compilation?.output?.publicPath ?? '/';

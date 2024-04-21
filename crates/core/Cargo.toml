@@ -53,7 +53,7 @@ puffin = { version = "0.18.0", features = [
   "serialization",
 ], optional = true }
 regex = "1.7.3"
-enhanced-magic-string = { version = "0.0.12" }
+enhanced-magic-string = { version = "0.0.13" }
 
 [features]
 profile = ["dep:puffin"]

@@ -70,7 +70,7 @@ import {
   proxyViteConfig,
   viteConfigToFarmConfig
 } from './farm-to-vite-config.js';
-import { VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX } from '../../compiler/index.js';
+import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
 import {
   transformResourceInfo2RollupResource,
   transformFarmConfigToRollupNormalizedInputOptions
@@ -875,7 +875,7 @@ export class VitePluginAdapter implements JsPlugin {
   // skip farm lazy compilation virtual module for vite plugin
   public static isFarmInternalVirtualModule(id: string) {
     return (
-      id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) ||
+      id.endsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX) ||
       // css has been handled before the virtual module is created
       FARM_CSS_MODULES_SUFFIX.test(id)
     );

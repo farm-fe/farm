@@ -82,7 +82,6 @@ const targetsMap: TargetsMap = {
 /**
  * Set up targets for the given targetEnv.
  * @param config
- * @param isProduction
  */
 function normalizeTargetEnv(config: Config['config']) {
   const aliasMap: Record<string, keyof TargetsMap> = {

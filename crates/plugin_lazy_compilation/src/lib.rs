@@ -6,9 +6,9 @@ use farmfe_core::{
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
 use farmfe_toolkit::html::get_farm_global_this;
-use farmfe_utils::stringify_query;
+use farmfe_utils::{relative, stringify_query};
 
-pub const DYNAMIC_VIRTUAL_PREFIX: &str = "virtual:FARMFE_DYNAMIC_IMPORT:";
+pub const DYNAMIC_VIRTUAL_SUFFIX: &str = ".farm_dynamic_import_virtual_module";
 const ORIGINAL_RESOLVED_PATH: &str = "FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH";
 
 pub struct FarmPluginLazyCompilation {}
@@ -43,8 +43,8 @@ impl Plugin for FarmPluginLazyCompilation {
 
     // If importer is a dynamic virtual module, we should resolve the dependency using the original importer
     if let Some(importer) = &param.importer {
-      if importer.to_string().starts_with(DYNAMIC_VIRTUAL_PREFIX) {
-        let original_importer = importer.to_string().replace(DYNAMIC_VIRTUAL_PREFIX, "");
+      if importer.to_string().ends_with(DYNAMIC_VIRTUAL_SUFFIX) {
+        let original_importer = importer.to_string().replace(DYNAMIC_VIRTUAL_SUFFIX, "");
         if let Some(res) = context.plugin_driver.resolve(
           &PluginResolveHookParam {
             importer: Some(original_importer.as_str().into()),
@@ -70,11 +70,13 @@ impl Plugin for FarmPluginLazyCompilation {
       }
     }
 
-    if param.source.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
-      let original_path = param.source.replace(DYNAMIC_VIRTUAL_PREFIX, "");
+    if param.source.ends_with(DYNAMIC_VIRTUAL_SUFFIX) {
+      let original_path = param.source.replace(DYNAMIC_VIRTUAL_SUFFIX, "");
+      let resolved_path =
+        ModuleId::from(original_path.as_str()).resolved_path(&context.config.root);
       let resolve_result = context.plugin_driver.resolve(
         &PluginResolveHookParam {
-          source: original_path.clone(),
+          source: resolved_path.clone(),
           ..param.clone()
         },
         context,
@@ -90,7 +92,7 @@ impl Plugin for FarmPluginLazyCompilation {
           resolve_result.resolved_path.clone(),
         );
         resolve_result.resolved_path =
-          format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resolve_result.resolved_path);
+          format!("{}{}", resolve_result.resolved_path, DYNAMIC_VIRTUAL_SUFFIX);
 
         return Ok(Some(resolve_result));
       } else {
@@ -99,7 +101,7 @@ impl Plugin for FarmPluginLazyCompilation {
           external: false,
           side_effects: false,
           query: vec![],
-          meta: HashMap::from([(ORIGINAL_RESOLVED_PATH.to_string(), original_path)]),
+          meta: HashMap::from([(ORIGINAL_RESOLVED_PATH.to_string(), resolved_path)]),
         }));
       }
     }
@@ -123,7 +125,7 @@ impl Plugin for FarmPluginLazyCompilation {
 
       if let Some(resolve_result) = resolve_result {
         Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
-          resolved_path: format!("{}{}", DYNAMIC_VIRTUAL_PREFIX, resolve_result.resolved_path),
+          resolved_path: format!("{}{}", resolve_result.resolved_path, DYNAMIC_VIRTUAL_SUFFIX),
           external: resolve_result.external,
           side_effects: resolve_result.side_effects,
           query: resolve_result.query,
@@ -149,7 +151,7 @@ impl Plugin for FarmPluginLazyCompilation {
       }
     }
 
-    if param.resolved_path.starts_with(DYNAMIC_VIRTUAL_PREFIX) {
+    if param.resolved_path.ends_with(DYNAMIC_VIRTUAL_SUFFIX) {
       if param.meta.get(ORIGINAL_RESOLVED_PATH).is_none() {
         let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
         let resolved_path = param.resolved_path;
@@ -177,13 +179,19 @@ impl Plugin for FarmPluginLazyCompilation {
         }))
       } else {
         let resolved_path = param.meta.get(ORIGINAL_RESOLVED_PATH).unwrap();
+        let dir = std::path::Path::new(&param.resolved_path)
+          .parent()
+          .unwrap()
+          .to_string_lossy()
+          .to_string();
+        let relative_source = relative(&dir, &resolved_path);
         let content = format!(
           r#"
-          import _default_import from "{0}";
+          import _default_import from "./{0}";
           export default _default_import;
-          export * from "{0}";
+          export * from "./{0}";
         "#,
-          resolved_path.replace('\\', r"\\")
+          relative_source
         );
         Ok(Some(PluginLoadHookResult {
           content,
