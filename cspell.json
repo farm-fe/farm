@@ -159,7 +159,8 @@
     "pageerror",
     "rsdoctor",
     "deepmerge",
-    "Mergeable"
+    "Mergeable",
+    "globset"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

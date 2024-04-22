@@ -51,3 +51,4 @@ swc_ecma_utils = "=0.126.0"
 lazy_static = "1.4.0"
 sourcemap = "6.2.3"
 anyhow = { version = "1.0.40", features = ["backtrace"] }
+globset = "0.4.14"
