@@ -33,7 +33,8 @@ import {
   normalizePath,
   normalizeBasePath,
   getAliasEntries,
-  transformAliasWithVite
+  transformAliasWithVite,
+  colors
 } from '../utils/index.js';
 import { urlRegex } from '../utils/http.js';
 import { JsPlugin } from '../index.js';
@@ -451,6 +452,18 @@ export async function normalizeUserCompilationConfig(
     } else {
       config.treeShaking = false;
     }
+  }
+
+  if (config.script?.plugins?.length) {
+    logger.info(
+      `Swc plugins are configured, note that Farm uses ${colors.yellow(
+        'swc_core v0.90'
+      )}, please make sure the plugin is ${colors.green(
+        'compatible'
+      )} with swc_core ${colors.yellow(
+        'swc_core v0.90'
+      )}. Otherwise, it may exit unexpectedly.`
+    );
   }
 
   // lazyCompilation should be disabled in production mode
