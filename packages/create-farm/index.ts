@@ -134,6 +134,7 @@ const argv = minimist<{
   template?: string;
   skipInstall: boolean;
   'skip-install': boolean;
+  e?: boolean;
 }>(process.argv.slice(2), { string: ['_'] });
 
 const cwd = process.cwd();
@@ -144,6 +145,7 @@ const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent);
 async function createFarm() {
   const argProjectName = formatTargetDir(argv._[0]);
   const argFramework = argv.template || argv.t;
+  const needExtension = argv.e;
   let targetDir = argProjectName || DEFAULT_TARGET_NAME;
   let result: IResultType = {};
   const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? true;
@@ -209,7 +211,7 @@ async function createFarm() {
         },
         {
           name: 'needsTypeScript',
-          type: 'toggle',
+          type: needExtension ? 'toggle' : null,
           message: language.needsTypeScript.message,
           initial: false,
           active: language.defaultToggleOptions.active,
@@ -217,7 +219,7 @@ async function createFarm() {
         },
         {
           name: 'useCssPreProcessor',
-          type: 'select',
+          type: needExtension ? 'select' : null,
           message: language.useCssPreProcessor.message,
           initial: 0,
           choices: CSS_PRE_PROCESSOR
@@ -259,7 +261,7 @@ async function createFarm() {
     needsSass,
     needsTypeScript,
     variant,
-    useCssPreProcessor
+    useCssPreProcessor = 'none'
   } = result;
 
   await copyTemplate(targetDir, {
@@ -352,25 +354,35 @@ async function copyTemplate(targetDir: string, options: IResultType) {
       }
     );
   }
-  // css handle
+  // Remove all the remaining `.css` files
   if (useCssPreProcessor !== 'none') {
     preOrderDirectoryTraverse(
       root,
       () => {},
       (filepath) => {
+        let cssFileExt = 'css';
+        if (useCssPreProcessor.endsWith('sass')) {
+          cssFileExt = 'scss';
+        } else if (useCssPreProcessor.endsWith('less')) {
+          cssFileExt = 'less';
+        }
+
         if (filepath.endsWith('.css')) {
-          let cssFileExt = 'css';
-          if (useCssPreProcessor.endsWith('sass')) {
-            cssFileExt = 'scss';
-          } else if (useCssPreProcessor.endsWith('less')) {
-            cssFileExt = 'less';
-          }
           const tsFilePath = filepath.replace(/\.css$/, `.${cssFileExt}`);
           if (fs.existsSync(tsFilePath)) {
             fs.unlinkSync(filepath);
           } else {
             fs.renameSync(filepath, tsFilePath);
           }
+        }
+        // cleanup
+        if (
+          !/.*\.(css|less|scss)$/.test(filepath) &&
+          filepath.includes('src') &&
+          /.*\.(js|ts|jsx|tsx|vue)$/.test(filepath)
+        ) {
+          const content = fs.readFileSync(filepath, 'utf8');
+          fs.writeFileSync(filepath, content.replace('.css', `.${cssFileExt}`));
         }
       }
     );
