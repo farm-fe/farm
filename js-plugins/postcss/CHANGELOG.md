@@ -1,6 +1,6 @@
 # @farmfe/js-plugin-postcss
 
-## 2.0.0
+## 1.6.0
 
 ### Patch Changes
 

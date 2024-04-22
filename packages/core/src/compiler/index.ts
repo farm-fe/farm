@@ -199,7 +199,7 @@ export class Compiler {
 
   transformModulePath(root: string, p: string): string {
     if (p.endsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX)) {
-      return p.slice(0, -VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX.length);
+      p = p.slice(0, -VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX.length);
     }
 
     if (path.isAbsolute(p)) {
