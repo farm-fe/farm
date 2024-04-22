@@ -33,7 +33,8 @@ import {
   normalizePath,
   normalizeBasePath,
   getAliasEntries,
-  transformAliasWithVite
+  transformAliasWithVite,
+  colors
 } from '../utils/index.js';
 import { urlRegex } from '../utils/http.js';
 import { JsPlugin } from '../index.js';
@@ -394,11 +395,15 @@ export async function normalizeUserCompilationConfig(
   }
 
   setProcessEnv(config.mode);
-
+  // TODO add targetEnv `lib-browser` and `lib-node` support
+  const is_entry_html =
+    Object.keys(config.input).length === 0 ||
+    Object.values(config.input).some((value) => value.endsWith('.html'));
   if (
     config.output.targetEnv !== 'node' &&
     isArray(config.runtime.plugins) &&
     userConfig.server.hmr &&
+    is_entry_html &&
     !config.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
@@ -447,6 +452,18 @@ export async function normalizeUserCompilationConfig(
     } else {
       config.treeShaking = false;
     }
+  }
+
+  if (config.script?.plugins?.length) {
+    logger.info(
+      `Swc plugins are configured, note that Farm uses ${colors.yellow(
+        'swc_core v0.90'
+      )}, please make sure the plugin is ${colors.green(
+        'compatible'
+      )} with swc_core ${colors.yellow(
+        'swc_core v0.90'
+      )}. Otherwise, it may exit unexpectedly.`
+    );
   }
 
   // lazyCompilation should be disabled in production mode

@@ -412,10 +412,6 @@ export function viteConfigToFarmConfig(
       farmConfig.compilation.sourcemap = Boolean(config.build.sourcemap);
     }
 
-    if (config.build?.minify !== undefined) {
-      farmConfig.compilation.minify = Boolean(config.build.minify);
-    }
-
     if (
       config.build.ssr !== undefined &&
       origFarmConfig.compilation?.lazyCompilation === undefined

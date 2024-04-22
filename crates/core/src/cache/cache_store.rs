@@ -9,7 +9,7 @@ use std::{
 
 use crate::config::Mode;
 
-const FARM_CACHE_VERSION: &str = "0.3.3";
+const FARM_CACHE_VERSION: &str = "0.4.0";
 const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
@@ -101,13 +101,13 @@ impl CacheStore {
     }
 
     if self.is_cache_changed(&store_key) {
-      if let Some(guard) = self.manifest.get(&store_key.name) {
-        let cache_file_path = cache_file_dir.join(guard.value());
+      // if let Some(guard) = self.manifest.get(&store_key.name) {
+      //   let cache_file_path = cache_file_dir.join(guard.value());
 
-        if cache_file_path.exists() && cache_file_path.is_file() {
-          std::fs::remove_file(cache_file_path)?;
-        }
-      }
+      //   if cache_file_path.exists() && cache_file_path.is_file() {
+      //     std::fs::remove_file(cache_file_path)?;
+      //   }
+      // }
 
       self
         .manifest

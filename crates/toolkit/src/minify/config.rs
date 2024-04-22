@@ -22,14 +22,19 @@ impl NormalizedMinifyOptions {
         serde_json::from_value::<TerserCompressorOptions>(value)
           .expect("FarmPluginMinify.compress option is invalid")
       })
-      .unwrap_or_default();
+      .unwrap_as_option(|default| match default {
+        Some(true) => Some(Default::default()),
+        _ => None,
+      });
 
-    if compress.const_to_let.is_none() {
-      compress.const_to_let = Some(true);
-    }
+    if let Some(compress) = &mut compress {
+      if compress.const_to_let.is_none() {
+        compress.const_to_let = Some(true);
+      }
 
-    if compress.toplevel.is_none() {
-      compress.toplevel = Some(TerserTopLevelOptions::Bool(true));
+      if compress.toplevel.is_none() {
+        compress.toplevel = Some(TerserTopLevelOptions::Bool(true));
+      }
     }
 
     // mangle
@@ -45,19 +50,16 @@ impl NormalizedMinifyOptions {
         _ => None,
       });
 
-    NormalizedMinifyOptions {
-      compress: Some(compress),
-      mangle,
-    }
+    NormalizedMinifyOptions { compress, mangle }
   }
 
   pub fn minify_options_for_module(minify: &MinifyOptions) -> NormalizedMinifyOptions {
-    let mut minify_options = Self::minify_options_for_resource_pot(minify);
+    let minify_options = Self::minify_options_for_resource_pot(minify);
 
-    minify_options.compress = minify_options.compress.map(|mut v| {
-      v.unused = Some(false);
-      v
-    });
+    // minify_options.compress = minify_options.compress.map(|mut v| {
+    //   v.unused = Some(false);
+    //   v
+    // });
 
     minify_options
   }

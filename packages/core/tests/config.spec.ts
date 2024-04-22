@@ -20,13 +20,13 @@ test('resolveUserConfig', async () => {
   );
 
   expect(config.compilation.define).toEqual({
-    FARM_HMR_HOST: true,
-    FARM_HMR_PATH: '/__hmr',
-    FARM_HMR_PORT: '9000',
+    // FARM_HMR_HOST: true,
+    // FARM_HMR_PATH: '/__hmr',
+    // FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
       NODE_ENV: 'development'
     },
-    FARM_HMR_PROTOCOL: 'ws',
+    // FARM_HMR_PROTOCOL: 'ws',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'development'
   });
   expect(config.compilation.input).toEqual({
@@ -61,11 +61,11 @@ test('resolveUserConfig', async () => {
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
-      'package.json[module]': 'unknown',
-      FARM_HMR_HOST: 'true',
-      FARM_HMR_PATH: '/__hmr',
-      FARM_HMR_PORT: '9000',
-      FARM_HMR_PROTOCOL: 'ws'
+      'package.json[module]': 'unknown'
+      // FARM_HMR_HOST: 'true',
+      // FARM_HMR_PATH: '/__hmr',
+      // FARM_HMR_PORT: '9000',
+      // FARM_HMR_PROTOCOL: 'ws'
     },
     moduleCacheKeyStrategy: {}
   });
@@ -102,6 +102,73 @@ test('resolveUserConfig-prod', async () => {
   expect(config.compilation.lazyCompilation).toEqual(false);
   expect(config.compilation.sourcemap).toEqual(true);
   expect(config.compilation.minify).toEqual(true);
+  expect(config.compilation.presetEnv).toEqual(false);
+  expect(config.compilation.persistentCache).toEqual({
+    buildDependencies: [
+      // path.join(filePath, '..', 'src', 'config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'util.ts'),
+      'module',
+      'package-lock.json',
+      'pnpm-lock.yaml',
+      'yarn.lock'
+    ],
+    envs: {
+      FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
+      NODE_ENV: 'production',
+      'package.json[name]': 'farm-fe',
+      'package.json[type]': 'unknown',
+      'package.json[browser]': 'unknown',
+      'package.json[exports]': 'unknown',
+      'package.json[main]': 'unknown',
+      'package.json[module]': 'unknown',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'production'
+    },
+    moduleCacheKeyStrategy: {}
+  });
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'production')
+  );
+});
+
+test('resolveUserConfig-input-html-prod', async () => {
+  const filePath = fileURLToPath(path.dirname(import.meta.url));
+  const configFilePath = path.join(
+    filePath,
+    'fixtures',
+    'config',
+    'input-html',
+    'farm.config.ts'
+  );
+  const config = await resolveConfig(
+    { configPath: configFilePath },
+    new Logger(),
+    'production'
+  );
+
+  expect(config.compilation.input).toEqual({
+    index: './index.html'
+  });
+
+  expect(config.compilation.define).toEqual({
+    FARM_PROCESS_ENV: {
+      NODE_ENV: 'production'
+    },
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'production'
+  });
+
+  expect(config.compilation.output).toEqual({
+    assetsFilename: '[resourceName].[contentHash].[ext]',
+    filename: '[resourceName].[contentHash].[ext]',
+    path: './dist',
+    publicPath: '/',
+    targetEnv: 'browser'
+  });
+
+  expect(config.compilation.lazyCompilation).toEqual(false);
+  expect(config.compilation.sourcemap).toEqual(true);
+  expect(config.compilation.minify).toEqual(true);
+
   expect(config.compilation.presetEnv).toEqual({
     options: {
       targets: [
@@ -134,11 +201,10 @@ test('resolveUserConfig-prod', async () => {
       ]
     }
   });
+
   expect(config.compilation.persistentCache).toEqual({
     buildDependencies: [
-      // path.join(filePath, '..', 'src', 'config.ts'),
-      path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
-      path.join(filePath, 'fixtures', 'config', 'util.ts'),
+      configFilePath,
       'module',
       'package-lock.json',
       'pnpm-lock.yaml',
@@ -157,6 +223,7 @@ test('resolveUserConfig-prod', async () => {
     },
     moduleCacheKeyStrategy: {}
   });
+
   expect(config.server).toEqual(
     normalizeDevServerOptions(config.server, 'production')
   );

@@ -13,7 +13,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/plugin-react": "workspace:^1.0.1",
-    "@swc/plugin-emotion": "^2.5.115",
+    "@swc/plugin-emotion": "^2.5.124",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"

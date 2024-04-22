@@ -546,6 +546,7 @@ impl Plugin for FarmPluginRuntime {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     handle_entry_resources::handle_entry_resources(param.resources_map, context);
+
     Ok(Some(()))
   }
 }

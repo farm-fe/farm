@@ -26,7 +26,7 @@ use farmfe_core::{
   serde_json::json,
 };
 
-use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
+use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
 use farmfe_toolkit::resolve::load_package_json;
 use farmfe_utils::stringify_query;
 
@@ -634,7 +634,7 @@ fn resolve_module(
         resolve_module_id_result.module_id.clone(),
         resolve_module_id_result.resolve_result.external,
         // treat all lazy virtual modules as mutable
-        !module_id_str.starts_with(DYNAMIC_VIRTUAL_PREFIX)
+        !module_id_str.ends_with(DYNAMIC_VIRTUAL_SUFFIX)
           && context
             .config
             .partial_bundling

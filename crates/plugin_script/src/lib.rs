@@ -10,7 +10,6 @@ use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
   config::{Config, ModuleFormat, TargetEnv},
   context::CompilationContext,
-  enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain,
   error::Result,
   module::{
     CommentsMetaData, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData,
@@ -30,13 +29,14 @@ use farmfe_core::{
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
-  common::{create_swc_source_map, load_source_original_source_map, Source},
+  common::{
+    create_swc_source_map, generate_source_map_resource, load_source_original_source_map, Source,
+  },
   fs::read_file_utf8,
   script::{
     module_type_from_id, parse_module, set_module_system_for_module_meta, swc_try_with::try_with,
     syntax_from_module_type, ParseScriptModuleResult,
   },
-  sourcemap::SourceMap,
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
@@ -291,26 +291,7 @@ impl Plugin for FarmPluginScript {
         && !resource_pot.meta.rendered_map_chain.is_empty()
       {
         // collapse source map chain
-        let source_map_chain = resource_pot
-          .meta
-          .rendered_map_chain
-          .iter()
-          .map(|s| SourceMap::from_slice(s.as_bytes()).unwrap())
-          .collect::<Vec<_>>();
-        let collapsed_sourcemap = collapse_sourcemap_chain(source_map_chain, Default::default());
-        let mut src_map = vec![];
-        collapsed_sourcemap
-          .to_writer(&mut src_map)
-          .expect("failed to write sourcemap");
-        let map = Resource {
-          bytes: src_map,
-          name: resource.name.clone(),
-          emitted: false,
-          resource_type: ResourceType::SourceMap(resource_pot.id.to_string()),
-          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          info: None,
-        };
-
+        let map = generate_source_map_resource(resource_pot);
         source_map = Some(map);
       }
 

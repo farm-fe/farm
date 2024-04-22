@@ -93,7 +93,7 @@ pub fn render_and_generate_update_resource(
 
   let is_lazy = updated_module_ids.iter().any(|id| {
     id.to_string()
-      .starts_with(farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX)
+      .ends_with(farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX)
   });
   let cached_enabled = context.config.persistent_cache.enabled() && is_lazy;
 
