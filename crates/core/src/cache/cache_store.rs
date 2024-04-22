@@ -101,13 +101,13 @@ impl CacheStore {
     }
 
     if self.is_cache_changed(&store_key) {
-      if let Some(guard) = self.manifest.get(&store_key.name) {
-        let cache_file_path = cache_file_dir.join(guard.value());
+      // if let Some(guard) = self.manifest.get(&store_key.name) {
+      //   let cache_file_path = cache_file_dir.join(guard.value());
 
-        if cache_file_path.exists() && cache_file_path.is_file() {
-          std::fs::remove_file(cache_file_path)?;
-        }
-      }
+      //   if cache_file_path.exists() && cache_file_path.is_file() {
+      //     std::fs::remove_file(cache_file_path)?;
+      //   }
+      // }
 
       self
         .manifest
