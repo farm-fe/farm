@@ -23,7 +23,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:^0.10.0"
+    "@farmfe/runtime": "workspace:^0.11.0"
   },
   "dependencies": {
     "core-js": "^3.30.1"
