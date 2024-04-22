@@ -101,13 +101,13 @@ impl CacheStore {
     }
 
     if self.is_cache_changed(&store_key) {
-      // if let Some(guard) = self.manifest.get(&store_key.name) {
-      //   let cache_file_path = cache_file_dir.join(guard.value());
+      if let Some(guard) = self.manifest.get(&store_key.name) {
+        let cache_file_path = cache_file_dir.join(guard.value());
 
-      //   if cache_file_path.exists() && cache_file_path.is_file() {
-      //     std::fs::remove_file(cache_file_path)?;
-      //   }
-      // }
+        if cache_file_path.exists() && cache_file_path.is_file() {
+          std::fs::remove_file(cache_file_path).ok();
+        }
+      }
 
       self
         .manifest
@@ -127,6 +127,16 @@ impl CacheStore {
     Ok(())
   }
 
+  pub fn write_manifest(&self) {
+    let manifest = self.manifest.clone().into_iter().collect::<HashMap<_, _>>();
+    let manifest_file_path = &self.cache_dir.join(FARM_CACHE_MANIFEST_FILE);
+    std::fs::write(
+      manifest_file_path,
+      serde_json::to_string(&manifest).unwrap(),
+    )
+    .unwrap();
+  }
+
   /// Write the cache map to the disk.
   pub fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
     let cache_file_dir = &self.cache_dir;
@@ -143,14 +153,7 @@ impl CacheStore {
       })
       .unwrap();
 
-    let manifest = self.manifest.clone().into_iter().collect::<HashMap<_, _>>();
-
-    let manifest_file_path = cache_file_dir.join(FARM_CACHE_MANIFEST_FILE);
-    std::fs::write(
-      manifest_file_path,
-      serde_json::to_string(&manifest).unwrap(),
-    )
-    .unwrap();
+    self.write_manifest();
   }
 
   pub fn read_cache(&self, name: &str) -> Option<Vec<u8>> {

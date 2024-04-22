@@ -1,7 +1,8 @@
 import { test, expect } from 'vitest';
 import { startProjectAndTest } from '../../e2e/vitestSetup';
-import { basename, dirname } from 'path';
+import path, { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync, writeFileSync } from 'fs';
 
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,38 @@ test(`e2e tests - ${name}`, async () => {
           'a[href="https://arco.design/react/docs/start"]'
         );
         expect(reactLink).toBeTruthy();
+
+        // browser HMR should work
+        if (command === 'start') {
+          const filePath = fileURLToPath(
+            path.join(
+              path.dirname(import.meta.url),
+              'src',
+              'pages',
+              'dashboard',
+              'workplace',
+              'docs.tsx'
+            )
+          );
+          const content = readFileSync(filePath, 'utf-8');
+          writeFileSync(
+            filePath,
+            content.replace(
+              'https://arco.design/react/docs/start',
+              'https://arco.design/react/docs/start/farm'
+            )
+          );
+          const reactLinkHmr = await page.waitForSelector(
+            'a[href="https://arco.design/react/docs/start/farm"]'
+          );
+          expect(reactLinkHmr).toBeTruthy();
+          // revert change
+          writeFileSync(filePath, content);
+          const reactLinkHmr2 = await page.waitForSelector(
+            'a[href="https://arco.design/react/docs/start"]'
+          );
+          expect(reactLinkHmr2).toBeTruthy();
+        }
       },
       command
     );

@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 1.0.1
+
+### Patch Changes
+
+- 4e8ebbcc: support cli root path options
+
 ## 1.0.0
 
 ### Major Changes

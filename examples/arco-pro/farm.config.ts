@@ -11,7 +11,7 @@ export default defineConfig(async (env) => {
       },
       // minify: false,
       presetEnv: false,
-      persistentCache: false,
+      // persistentCache: false,
       resolve: {
         symlinks: true,
         alias: {

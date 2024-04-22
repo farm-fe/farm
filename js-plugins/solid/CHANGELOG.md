@@ -1,5 +1,16 @@
 # @farmfe/js-plugin-solid
 
+## 2.6.0
+
+### Patch Changes
+
+- Updated dependencies [71b6bab7]
+- Updated dependencies [ef1b39bc]
+- Updated dependencies [3581ee5e]
+- Updated dependencies [86d17342]
+- Updated dependencies [4e8ebbcc]
+  - @farmfe/core@1.1.0
+
 ## 2.5.0
 
 ### Patch Changes
