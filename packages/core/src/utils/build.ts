@@ -28,7 +28,7 @@ export async function compilerHandler(
   try {
     await callback();
   } catch (error) {
-    logger.error(error, { exit: true });
+    logger.error(`test error ${error}`, { exit: true });
     return;
   }
 
