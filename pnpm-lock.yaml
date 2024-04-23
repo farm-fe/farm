@@ -1965,6 +1965,10 @@ importers:
         version: 0.14.0
 
   packages/create-farm:
+    dependencies:
+      cross-spawn:
+        specifier: ^7.0.3
+        version: 7.0.3
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1975,6 +1979,9 @@ importers:
       '@farmfe/utils':
         specifier: workspace:*
         version: link:../utils
+      '@types/cross-spawn':
+        specifier: ^6.0.2
+        version: 6.0.4
       '@types/minimist':
         specifier: ^1.2.2
         version: 1.2.4
