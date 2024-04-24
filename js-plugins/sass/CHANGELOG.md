@@ -1,5 +1,16 @@
 # @farmfe/js-plugin-sass
 
+## 2.7.1
+
+### Patch Changes
+
+- 67716076: \* added `persistentCache.globalBuiltinCacheKeyStrategy` to control internal persistent cache key, #1208
+  - fix define string #1112
+  - fix css @import without .css suffix #1230
+  - fix json transform #1231
+- Updated dependencies [67716076]
+  - @farmfe/core@1.1.1
+
 ## 2.7.0
 
 ### Patch Changes
