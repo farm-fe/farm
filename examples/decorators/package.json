@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "devDependencies": {
-    "@farmfe/cli": "^1.0.0",
+    "@farmfe/cli": "^1.0.1",
     "@farmfe/core": "^1.0.0-beta.0"
   },
   "scripts": {
