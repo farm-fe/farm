@@ -156,7 +156,7 @@ export async function watch(
   const hostname = await resolveHostname(resolvedUserConfig.server.host);
   resolvedUserConfig.compilation.define = {
     ...(resolvedUserConfig.compilation.define ?? {}),
-    [`'FARM_NODE_LAZY_COMPILE_SERVER_URL'`]: `http://${
+    FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
       hostname.host || 'localhost'
     }:${resolvedUserConfig.server.port}`
   };

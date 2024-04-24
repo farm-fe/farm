@@ -319,7 +319,7 @@ export async function normalizeUserCompilationConfig(
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
           env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            userConfig.env[key];
+            JSON.stringify(userConfig.env[key]);
           return env;
         }, {})
   );
@@ -418,9 +418,11 @@ export async function normalizeUserCompilationConfig(
         serverOptions.port ??
         DEFAULT_DEV_SERVER_OPTIONS.port
     );
-    config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
-    config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-    config.define.FARM_HMR_PATH = defineHmrPath;
+    config.define.FARM_HMR_HOST = JSON.stringify(userConfig.server.hmr.host);
+    config.define.FARM_HMR_PROTOCOL = JSON.stringify(
+      userConfig.server.hmr.protocol
+    );
+    config.define.FARM_HMR_PATH = JSON.stringify(defineHmrPath);
   }
 
   if (
@@ -601,7 +603,6 @@ async function readConfigFile(
   mode: CompilationMode
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
-    let userConfig: UserConfigExport;
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // we need transform all type farm.config with __dirname and __filename
@@ -667,11 +668,12 @@ async function readConfigFile(
       ? pathToFileURL(path.join(outputPath, fileName))
       : path.join(outputPath, fileName);
 
+    // Change to vm.module of node or loaders as far as it is stable
+    const userConfig = (await import(filePath as string)).default;
     try {
-      // Change to vm.module of node or loaders as far as it is stable
-      userConfig = (await import(filePath as string)).default;
-    } finally {
       fs.unlink(filePath, () => void 0);
+    } catch {
+      /** do nothing */
     }
 
     const configEnv = { mode: inlineOptions.mode ?? process.env.NODE_ENV };

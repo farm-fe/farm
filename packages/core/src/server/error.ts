@@ -29,7 +29,7 @@ export function cleanStack(stack: string) {
 }
 
 export function buildErrorMessage(
-  err: RollupError,
+  err: RollupError & { source: string },
   args: string[] = [],
   includeStack = true
 ): string {
@@ -37,6 +37,7 @@ export function buildErrorMessage(
   const loc = err.loc ? `:${err.loc.line}:${err.loc.column}` : '';
   if (err.id) args.push(`  File: ${colors.cyan(err.id)}${loc}`);
   if (err.frame) args.push(colors.yellow(pad(err.frame)));
+  else if (err.source) args.push(colors.yellow(err.source));
   if (includeStack && err.stack) args.push(pad(cleanStack(err.stack)));
   return args.join('\n');
 }
@@ -62,10 +63,14 @@ export function logError(err: Error, throwErrorFlag = true) {
       if (
         parsedErrorMsg &&
         typeof parsedErrorMsg === 'object' &&
-        parsedErrorMsg.message
+        (parsedErrorMsg.message || parsedErrorMsg.reason)
       ) {
         return `${buildErrorMessage(parsedErrorMsg, [
-          colors.red(`Internal server error: ${parsedErrorMsg.message}`)
+          colors.red(
+            `Internal server error: ${
+              parsedErrorMsg.message || parsedErrorMsg.reason
+            }`
+          )
         ])}`;
       } else {
         return colors.red(errorMsg);

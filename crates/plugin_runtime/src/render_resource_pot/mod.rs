@@ -100,21 +100,18 @@ pub fn resource_pot_to_runtime_object(
         if context.cache_manager.custom.has_cache(&store_key.name)
           && !context.cache_manager.custom.is_cache_changed(&store_key)
         {
-          let cache = context
-            .cache_manager
-            .custom
-            .read_cache(&store_key.name)
-            .unwrap();
-          let cached_rendered_script_module = deserialize!(&cache, CacheRenderedScriptModule);
-          let module = cached_rendered_script_module.to_magic_string(&context);
+          if let Some(cache) = context.cache_manager.custom.read_cache(&store_key.name) {
+            let cached_rendered_script_module = deserialize!(&cache, CacheRenderedScriptModule);
+            let module = cached_rendered_script_module.to_magic_string(&context);
 
-          modules.lock().push(RenderedScriptModule {
-            module,
-            id: cached_rendered_script_module.id,
-            rendered_module: cached_rendered_script_module.rendered_module,
-            external_modules: cached_rendered_script_module.external_modules,
-          });
-          return Ok(());
+            modules.lock().push(RenderedScriptModule {
+              module,
+              id: cached_rendered_script_module.id,
+              rendered_module: cached_rendered_script_module.rendered_module,
+              external_modules: cached_rendered_script_module.external_modules,
+            });
+            return Ok(());
+          }
         }
       }
 
