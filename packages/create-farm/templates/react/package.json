@@ -10,16 +10,16 @@
   },
   "dependencies": {
     "clsx": "^1.2.1",
-    "react": "18",
-    "react-dom": "18"
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@farmfe/cli": "^1.0.1",
     "@farmfe/core": "^1.1.1",
     "@farmfe/plugin-react": "^1.0.1",
-    "@types/react": "18",
+    "@types/react": "18.2.79",
     "core-js": "^3.36.1",
-    "@types/react-dom": "18",
+    "@types/react-dom": "18.2.25",
     "react-refresh": "^0.14.0"
   }
 }
