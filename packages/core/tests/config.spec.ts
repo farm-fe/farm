@@ -53,7 +53,7 @@ test('resolveUserConfig', async () => {
     ],
     envs: {
       FARM_PROCESS_ENV: '{"NODE_ENV":"development"}',
-      NODE_ENV: '"development"',
+      NODE_ENV: 'development',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
@@ -115,7 +115,7 @@ test('resolveUserConfig-prod', async () => {
     ],
     envs: {
       FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
-      NODE_ENV: '"production"',
+      NODE_ENV: 'production',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       'package.json[browser]': 'unknown',
@@ -213,7 +213,7 @@ test('resolveUserConfig-input-html-prod', async () => {
     ],
     envs: {
       FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
-      NODE_ENV: '"production"',
+      NODE_ENV: 'production',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       'package.json[browser]': 'unknown',

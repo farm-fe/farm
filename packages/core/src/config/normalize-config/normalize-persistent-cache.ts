@@ -43,7 +43,6 @@ export async function normalizePersistentCache(
     ...defaultGlobalBuiltinCacheKeyStrategy,
     ...globalBuiltinCacheKeyStrategy
   };
-  console.log(globalBuiltinCacheKeyStrategy);
 
   if (globalBuiltinCacheKeyStrategy.env) {
     config.persistentCache.envs = resolvedUserConfig.env;
@@ -172,6 +171,4 @@ export async function normalizePersistentCache(
 
     config.persistentCache.buildDependencies.sort();
   }
-
-  console.log(config.persistentCache);
 }
