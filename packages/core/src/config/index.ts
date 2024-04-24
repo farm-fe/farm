@@ -319,7 +319,7 @@ export async function normalizeUserCompilationConfig(
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
           env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            userConfig.env[key];
+            JSON.stringify(userConfig.env[key]);
           return env;
         }, {})
   );
@@ -418,9 +418,11 @@ export async function normalizeUserCompilationConfig(
         serverOptions.port ??
         DEFAULT_DEV_SERVER_OPTIONS.port
     );
-    config.define.FARM_HMR_HOST = userConfig.server.hmr.host;
-    config.define.FARM_HMR_PROTOCOL = userConfig.server.hmr.protocol;
-    config.define.FARM_HMR_PATH = defineHmrPath;
+    config.define.FARM_HMR_HOST = JSON.stringify(userConfig.server.hmr.host);
+    config.define.FARM_HMR_PROTOCOL = JSON.stringify(
+      userConfig.server.hmr.protocol
+    );
+    config.define.FARM_HMR_PATH = JSON.stringify(defineHmrPath);
   }
 
   if (

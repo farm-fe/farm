@@ -46,7 +46,7 @@ impl Plugin for FarmPluginDefine {
           serde_json::Value::Null => "null".to_string(),
           serde_json::Value::Bool(b) => (if *b { "true" } else { "false" }).to_string(),
           serde_json::Value::Number(num) => num.to_string(),
-          serde_json::Value::String(str) => format!("{:?}", str),
+          serde_json::Value::String(str) => str.to_string(),
           serde_json::Value::Array(arr) => serde_json::to_string(arr).unwrap(),
           serde_json::Value::Object(obj) => serde_json::to_string(obj).unwrap(),
         };
