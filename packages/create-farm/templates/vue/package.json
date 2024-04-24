@@ -9,7 +9,7 @@
     "clean": "farm clean"
   },
   "dependencies": {
-    "vue": "^3.4.0"
+    "vue": "^3.4.25"
   },
   "devDependencies": {
     "@farmfe/cli": "^1.0.1",
