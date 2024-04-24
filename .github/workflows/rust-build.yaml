@@ -98,7 +98,7 @@ jobs:
         run: pnpm --filter @farmfe/plugin-tools run build
       - run: rustup target add ${{ matrix.settings.target }}
         if: ${{ matrix.settings.target }}
-      - uses: arduino/setup-protoc@v1
+      - uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       # Use the v1 of this action
