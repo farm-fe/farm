@@ -158,29 +158,18 @@ async function createFarm() {
     return;
   }
   const { framework = argFramework, packageManager } = result;
-  const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
-
-  const isYarn1 = pkgManager === 'yarn' && pkgInfo?.version.startsWith('1.');
-
+  let chooseFramework: IResultType['framework'] = framework;
   if (framework === 'tauri') {
-    const tauriOption = await prompts(tauriTemplate as any);
-    console.log(tauriOption['tauri-framework']);
-
-    const { status } = spawn.sync(
-      'pnpm',
-      ['create', 'tauri-app', `--template ${tauriOption['tauri-framework']}`],
-      {
-        stdio: 'inherit'
-      }
-    );
-    // process.exit(status ?? 0);
+    const tauriOption = await prompts(tauriTemplate as prompts.PromptObject[]);
+    chooseFramework = `tauri/${tauriOption['tauri-framework']}`;
   }
-  // await copyTemplate(targetDir, {
-  //   framework,
-  //   projectName: targetDir,
-  //   packageManager
-  // });
-  // await installationDeps(targetDir, !skipInstall, result);
+
+  await copyTemplate(targetDir, {
+    framework: chooseFramework,
+    projectName: targetDir,
+    packageManager
+  });
+  await installationDeps(targetDir, !skipInstall, result);
 }
 
 function formatTargetDir(targetDir: string | undefined) {
