@@ -1,6 +1,12 @@
 #![feature(path_file_prefix)]
 
-use farmfe_core::{config::Config, plugin::Plugin, regex::Regex, serde_json};
+use farmfe_core::{
+  config::Config,
+  parking_lot::RwLock,
+  plugin::Plugin,
+  regex::Regex,
+  serde_json::{self, Value},
+};
 use farmfe_toolkit::lazy_static::lazy_static;
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
@@ -14,11 +20,16 @@ lazy_static! {
 const PLUGIN_NAME: &str = "FarmPluginDefine";
 const REGEX_PREFIX: &str = "$__farm_regex:";
 
-pub struct FarmPluginDefine {}
+pub struct FarmPluginDefine {
+  /// Sort define by key len desc
+  sorted_define: RwLock<Vec<(String, Value)>>,
+}
 
 impl FarmPluginDefine {
   pub fn new(_: &Config) -> Self {
-    Self {}
+    Self {
+      sorted_define: RwLock::new(vec![]),
+    }
   }
 }
 
@@ -31,17 +42,31 @@ impl Plugin for FarmPluginDefine {
     -99
   }
 
+  fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    let define = config.define.clone();
+    let mut sorted_define = define.into_iter().collect::<Vec<_>>();
+    sorted_define.sort_by_key(|b| std::cmp::Reverse(b.0.len()));
+
+    let mut self_sorted_define = self.sorted_define.write();
+
+    for item in sorted_define {
+      self_sorted_define.push(item);
+    }
+
+    Ok(Some(()))
+  }
+
   fn transform(
     &self,
     param: &farmfe_core::plugin::PluginTransformHookParam,
-    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    let define = &context.config.define;
+    let define = self.sorted_define.read();
 
     if !define.is_empty() {
       let mut content = String::new();
 
-      for (key, value) in define {
+      for (key, value) in &*define {
         let value = match value {
           serde_json::Value::Null => "null".to_string(),
           serde_json::Value::Bool(b) => (if *b { "true" } else { "false" }).to_string(),

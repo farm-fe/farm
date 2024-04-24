@@ -603,7 +603,6 @@ async function readConfigFile(
   mode: CompilationMode
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
-    let userConfig: UserConfigExport;
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // we need transform all type farm.config with __dirname and __filename
@@ -669,11 +668,12 @@ async function readConfigFile(
       ? pathToFileURL(path.join(outputPath, fileName))
       : path.join(outputPath, fileName);
 
+    // Change to vm.module of node or loaders as far as it is stable
+    const userConfig = (await import(filePath as string)).default;
     try {
-      // Change to vm.module of node or loaders as far as it is stable
-      userConfig = (await import(filePath as string)).default;
-    } finally {
       fs.unlink(filePath, () => void 0);
+    } catch {
+      /** do nothing */
     }
 
     const configEnv = { mode: inlineOptions.mode ?? process.env.NODE_ENV };

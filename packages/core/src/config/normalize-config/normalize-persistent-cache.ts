@@ -45,14 +45,16 @@ export async function normalizePersistentCache(
   };
 
   if (globalBuiltinCacheKeyStrategy.env) {
-    config.persistentCache.envs = resolvedUserConfig.env;
+    config.persistentCache.envs = {
+      ...(resolvedUserConfig.env ?? {}),
+      ...(config.persistentCache.envs ?? {})
+    };
   }
 
   if (globalBuiltinCacheKeyStrategy.define) {
     // all define options should be in envs
     if (config.define && typeof config.define === 'object') {
       config.persistentCache.envs = {
-        ...config.persistentCache.envs,
         ...Object.entries(config.define)
           .map(([k, v]) =>
             typeof v !== 'string' ? [k, JSON.stringify(v)] : [k, v]
@@ -60,7 +62,8 @@ export async function normalizePersistentCache(
           .reduce((acc, [k, v]) => {
             acc[k] = v;
             return acc;
-          }, {} as Record<string, string>)
+          }, {} as Record<string, string>),
+        ...config.persistentCache.envs
       };
     }
   }
