@@ -15,7 +15,6 @@ use crate::deps_analyzer::{
 
 pub const FARM_ENTRY: &str = "data-farm-entry-script";
 pub const FARM_RESOURCE: &str = "data-farm-resource";
-pub const FARM_RUNTIME_INJECT_RESOURCE: &str = "farm_runtime_resource";
 
 fn is_external_module(
   source: String,
@@ -85,12 +84,13 @@ pub fn is_script_resource(element: &Element) -> bool {
 
 pub fn create_farm_runtime_output_resource(
   bytes: Vec<u8>,
+  resource_name: &str,
   context: &Arc<CompilationContext>,
 ) -> Resource {
   let name = transform_output_entry_filename(
     "[entryName]_[hash].[ext]".to_string(),
-    FARM_RUNTIME_INJECT_RESOURCE,
-    FARM_RUNTIME_INJECT_RESOURCE,
+    resource_name,
+    resource_name,
     &bytes,
     match context.config.output.format {
       ModuleFormat::EsModule => "mjs",

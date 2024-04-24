@@ -28,7 +28,8 @@ const compilationConfigSchema = z
             'browser-es2017'
           ])
           .optional(),
-        format: z.enum(['cjs', 'esm']).optional()
+        format: z.enum(['cjs', 'esm']).optional(),
+        inlineFarmEntryScript: z.boolean().optional()
       })
       .strict()
       .optional(),

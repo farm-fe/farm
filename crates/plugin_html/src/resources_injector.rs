@@ -15,8 +15,8 @@ use farmfe_toolkit::{
 };
 
 use crate::utils::{
-  is_link_css_or_code, is_script_entry, is_script_resource, is_script_src_or_type_module_code,
-  FARM_ENTRY, FARM_RESOURCE,
+  create_farm_runtime_output_resource, is_link_css_or_code, is_script_entry, is_script_resource,
+  is_script_src_or_type_module_code, FARM_ENTRY, FARM_RESOURCE,
 };
 
 pub struct ResourcesInjectorOptions {
@@ -30,7 +30,7 @@ pub struct ResourcesInjectorOptions {
 
 /// inject resources into the html ast
 pub struct ResourcesInjector {
-  resources_needing_updating: Vec<Resource>,
+  additional_inject_resources: Vec<Resource>,
   runtime_resource: Vec<Resource>,
   script_resources: Vec<String>,
   css_resources: Vec<String>,
@@ -42,7 +42,7 @@ pub struct ResourcesInjector {
 
 impl ResourcesInjector {
   pub fn new(
-    resources_needing_updating: Vec<Resource>,
+    additional_inject_resources: Vec<Resource>,
     runtime_resource: Vec<Resource>,
     script_resources: Vec<String>,
     css_resources: Vec<String>,
@@ -51,7 +51,7 @@ impl ResourcesInjector {
     options: ResourcesInjectorOptions,
   ) -> Self {
     Self {
-      resources_needing_updating,
+      additional_inject_resources,
       runtime_resource,
       css_resources,
       script_resources,
@@ -68,7 +68,7 @@ impl ResourcesInjector {
 
   // insert the runtime and other resources that need to be inject in the resource_map.
   pub fn update_resource(&mut self, resources_map: &mut HashMap<String, Resource>) {
-    for resource in &self.resources_needing_updating {
+    for resource in &self.additional_inject_resources {
       resources_map.insert(resource.name.clone(), resource.clone());
     }
   }
@@ -86,7 +86,7 @@ impl ResourcesInjector {
       );
       element.children.push(Child::Element(script_element));
       // update the actual injected resources
-      self.resources_needing_updating.push(resource.clone());
+      self.additional_inject_resources.push(resource.clone());
     }
   }
 
@@ -112,18 +112,37 @@ impl ResourcesInjector {
     )));
   }
 
-  fn inject_dynamic_resources_map(&self, element: &mut Element) {
+  fn inject_dynamic_resources_map(&mut self, element: &mut Element) {
     let dynamic_resources_code =
       get_dynamic_resources_code(&self.dynamic_resources_map, self.options.mode.clone());
 
-    element.children.push(Child::Element(create_element(
-      "script",
-      Some(&format!(
-        r#"{}.{}.setDynamicModuleResourcesMap({});"#,
-        self.farm_global_this, FARM_MODULE_SYSTEM, dynamic_resources_code
-      )),
-      vec![(FARM_ENTRY, "true")],
-    )));
+    let finalize_code = format!(
+      r#"{}.{}.setDynamicModuleResourcesMap({});"#,
+      self.farm_global_this, FARM_MODULE_SYSTEM, dynamic_resources_code
+    );
+    let inline_farm_entry_script = self.options.context.config.output.inline_farm_entry_script;
+    if !inline_farm_entry_script {
+      let resource = create_farm_runtime_output_resource(
+        finalize_code.into_bytes(),
+        "dynamic_resources_map",
+        &self.options.context,
+      );
+      element.children.push(Child::Element(create_element(
+        "script",
+        None,
+        vec![
+          ("FARM_ENTRY", "true"),
+          ("src", &format!("/{}", resource.name)),
+        ],
+      )));
+      self.additional_inject_resources.push(resource);
+    } else {
+      element.children.push(Child::Element(create_element(
+        "script",
+        Some(&finalize_code),
+        vec![(FARM_ENTRY, "true")],
+      )));
+    }
   }
 
   fn inject_global_this(&self, element: &mut Element) {
@@ -141,6 +160,71 @@ impl ResourcesInjector {
       Some(&code),
       vec![(FARM_ENTRY, "true")],
     )));
+  }
+
+  fn inject_other_entry_file(&self, element: &mut Element) {
+    element.children.push(Child::Element(create_element(
+      "script",
+      Some(&format!(
+        r#"{}.{}.setPublicPaths(['{}']);"#,
+        self.farm_global_this, FARM_MODULE_SYSTEM, self.options.public_path
+      )),
+      vec![(FARM_ENTRY, "true")],
+    )));
+
+    element.children.push(Child::Element(create_element(
+      "script",
+      Some(&format!(
+        r#"{}.{}.bootstrap();"#,
+        self.farm_global_this, FARM_MODULE_SYSTEM
+      )),
+      vec![(FARM_ENTRY, "true")],
+    )));
+
+    for entry in &self.script_entries {
+      element.children.push(Child::Element(create_element(
+        "script",
+        Some(&format!(
+          r#"{}.{}.require("{}");"#,
+          self.farm_global_this, FARM_MODULE_SYSTEM, entry
+        )),
+        vec![(FARM_ENTRY, "true")],
+      )));
+    }
+  }
+
+  fn inject_resource_separate_file(&mut self, element: &mut Element) {
+    let mut finalize_code = String::new();
+    finalize_code.push_str(&format!(
+      r#"{}.{}.setPublicPaths(['{}']);"#,
+      self.farm_global_this, FARM_MODULE_SYSTEM, self.options.public_path
+    ));
+    finalize_code.push_str(&format!(
+      r#"{}.{}.bootstrap();"#,
+      self.farm_global_this, FARM_MODULE_SYSTEM
+    ));
+    for entry in &self.script_entries {
+      finalize_code.push_str(&format!(
+        r#"{}.{}.require("{}");"#,
+        self.farm_global_this, FARM_MODULE_SYSTEM, entry
+      ))
+    }
+    // create resource
+    let resource = create_farm_runtime_output_resource(
+      finalize_code.into_bytes(),
+      "farm_module_system",
+      &self.options.context,
+    );
+    // inject script
+    element.children.push(Child::Element(create_element(
+      "script",
+      None,
+      vec![
+        (FARM_ENTRY, "true"),
+        ("src", &format!("/{}", resource.name)),
+      ],
+    )));
+    self.additional_inject_resources.push(resource);
   }
 }
 
@@ -206,33 +290,12 @@ impl VisitMut for ResourcesInjector {
       self.inject_initial_loaded_resources(element);
       self.inject_dynamic_resources_map(element);
 
-      element.children.push(Child::Element(create_element(
-        "script",
-        Some(&format!(
-          r#"{}.{}.setPublicPaths(['{}']);"#,
-          self.farm_global_this, FARM_MODULE_SYSTEM, self.options.public_path
-        )),
-        vec![(FARM_ENTRY, "true")],
-      )));
+      let inline_farm_entry_script = self.options.context.config.output.inline_farm_entry_script;
 
-      element.children.push(Child::Element(create_element(
-        "script",
-        Some(&format!(
-          r#"{}.{}.bootstrap();"#,
-          self.farm_global_this, FARM_MODULE_SYSTEM
-        )),
-        vec![(FARM_ENTRY, "true")],
-      )));
-
-      for entry in &self.script_entries {
-        element.children.push(Child::Element(create_element(
-          "script",
-          Some(&format!(
-            r#"{}.{}.require("{}")"#,
-            self.farm_global_this, FARM_MODULE_SYSTEM, entry
-          )),
-          vec![(FARM_ENTRY, "true")],
-        )));
+      if inline_farm_entry_script {
+        self.inject_other_entry_file(element);
+      } else {
+        self.inject_resource_separate_file(element);
       }
     }
 

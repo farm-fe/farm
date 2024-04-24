@@ -140,6 +140,11 @@ export interface OutputConfig {
    * output modul format
    */
   format?: 'cjs' | 'esm';
+  /**
+   * Whether to inline the farm entry script, the default is true. 
+   * If set to false, the farm entry script will be output as a separate file, and the farm entry script will be loaded asynchronously.
+   */
+  inlineFarmEntryScript?: boolean;
 }
 
 export interface ResolveConfig {

@@ -41,6 +41,7 @@ mod utils;
 
 const BASE_HTML_CHILDREN_PLACEHOLDER: &str = "{{children}}";
 pub const UNRESOLVED_SLASH_MODULE: &str = "FARM_HTML_UNRESOLVED_SLASH_MODULE";
+pub const FARM_RUNTIME_INJECT_RESOURCE: &str = "farm_runtime_resource";
 
 #[cache_item]
 struct CachedHtmlInlineModuleMap {
@@ -388,8 +389,11 @@ impl Plugin for FarmPluginTransformHtml {
     for resource in params.resources_map.values() {
       if matches!(resource.resource_type, ResourceType::Runtime) {
         // rename runtime file, eg: FARM_RUNTIME_runtime ->  farm_runtime_resource.mjs
-        let output_runtime_resource =
-          create_farm_runtime_output_resource(resource.bytes.clone(), context);
+        let output_runtime_resource = create_farm_runtime_output_resource(
+          resource.bytes.clone(),
+          FARM_RUNTIME_INJECT_RESOURCE,
+          context,
+        );
         runtime_resources.push(output_runtime_resource);
         break;
       }
