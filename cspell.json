@@ -62,7 +62,10 @@
     "guolao",
     "hashbrown",
     "hasher",
+    "icns",
     "idents",
+    "IHDR",
+    "JIDA",
     "importee",
     "indicatif",
     "jfif",
@@ -170,6 +173,7 @@
     "rust-plugins/sass/ext/sass/**",
     "assets/**",
     "**/*.d.ts",
+    "**/packages/create-farm/templates/**",
     "**/LICENSE",
     "**/CHANGELOG.md",
     "**/gitignore"
