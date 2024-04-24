@@ -20,6 +20,7 @@ export class FileWatcher implements ImplFileWatcher {
   private _watcher: FSWatcher;
   private _logger: Logger;
   private _close = false;
+  private _watchedFiles = new Set<string>();
 
   constructor(
     public serverOrCompiler: Server | Compiler,
@@ -31,6 +32,37 @@ export class FileWatcher implements ImplFileWatcher {
 
   getInternalWatcher() {
     return this._watcher;
+  }
+
+  filterWatchFile(file: string, root: string): boolean {
+    return (
+      !file.startsWith(root) &&
+      !file.includes('node_modules/') &&
+      !file.includes('\0') &&
+      existsSync(file)
+    );
+  }
+
+  getExtraWatchedFiles() {
+    const compiler = this.getCompilerFromServerOrCompiler(
+      this.serverOrCompiler
+    );
+
+    return [
+      ...compiler.resolvedModulePaths(this._root),
+      ...compiler.resolvedWatchPaths()
+    ].filter((file) => this.filterWatchFile(file, this._root));
+  }
+
+  watchExtraFiles() {
+    const files = this.getExtraWatchedFiles();
+
+    for (const file of files) {
+      if (!this._watchedFiles.has(file)) {
+        this._watcher.add(file);
+        this._watchedFiles.add(file);
+      }
+    }
   }
 
   async watch() {
@@ -68,17 +100,10 @@ export class FileWatcher implements ImplFileWatcher {
       }
     };
 
-    const watchedFiles = [
-      ...compiler.resolvedModulePaths(this._root),
-      ...compiler.resolvedWatchPaths()
-    ].filter(
-      (file) =>
-        !file.startsWith(this.options.root) &&
-        !file.includes('node_modules/') &&
-        existsSync(file)
-    );
+    const watchedFiles = this.getExtraWatchedFiles();
 
     const files = [this.options.root, ...watchedFiles];
+    this._watchedFiles = new Set(files);
     this._watcher = createWatcher(this.options, files);
 
     this._watcher.on('change', (path) => {
@@ -97,8 +122,8 @@ export class FileWatcher implements ImplFileWatcher {
         );
         return resolvedPath;
       });
-      const filteredAdded = added.filter(
-        (file) => !file.startsWith(this.options.root)
+      const filteredAdded = added.filter((file) =>
+        this.filterWatchFile(file, this._root)
       );
 
       if (filteredAdded.length > 0) {
@@ -120,7 +145,7 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   close() {
-    this._close = false;
+    this._close = true;
     this._watcher = null;
     this.serverOrCompiler = null;
   }

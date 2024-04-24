@@ -1,10 +1,12 @@
 import { defineConfig } from '@farmfe/core';
 
 export default defineConfig(() => {
-  console.log(__dirname);
-  console.log(__filename);
+  // console.log(__dirname);
+  // console.log(__filename);
+  // console.log(__dirname);
   
   return {
+    root: './react',
     compilation: {
       sourcemap: false,
       persistentCache: true,
@@ -15,7 +17,7 @@ export default defineConfig(() => {
       },
     },
     server: {
-      port: 6532,
+      port: 9652,
       hmr: {
         path: "/__farm_hmr",
       }

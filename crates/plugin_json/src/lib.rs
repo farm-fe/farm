@@ -51,23 +51,19 @@ impl Plugin for FarmPluginJson {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Custom(ref suffix) if suffix == "json") {
-      let json = serde_json::from_str::<serde_json::Value>(&param.content).map_err(|e| {
-        CompilationError::TransformError {
-          resolved_path: param.resolved_path.to_string(),
-          msg: format!("JSON parse error: {:?}", e),
-        }
-      })?;
+      // if json value can not be parsed, means it's handled by other plugins
+      if let Ok(json) = serde_json::from_str::<serde_json::Value>(&param.content) {
+        let js = format!("module.exports = {}", json);
 
-      let js = format!("module.exports = {}", json);
-
-      Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-        content: js,
-        module_type: Some(ModuleType::Js),
-        source_map: None,
-        ignore_previous_source_map: false,
-      }))
-    } else {
-      Ok(None)
+        return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
+          content: js,
+          module_type: Some(ModuleType::Js),
+          source_map: None,
+          ignore_previous_source_map: false,
+        }));
+      }
     }
+
+    Ok(None)
   }
 }

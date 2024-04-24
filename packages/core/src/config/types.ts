@@ -66,8 +66,6 @@ export interface NormalizedConfig {
 }
 
 export interface UserHmrConfig {
-  /** ignored watch paths of the module graph, entries of this option should be a string regexp  */
-  ignores?: string[];
   host?: string | boolean;
   port?: number;
   path?: string;

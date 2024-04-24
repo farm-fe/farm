@@ -121,15 +121,15 @@ export const startProjectAndTest = async (
   cb: (page: Page) => Promise<void>,
   command = 'start'
 ) => {
-  // using bin path to spawn child process to avoid port conflicts issue
-  const cliBinPath = getFarmCLIBinPath(examplePath);
+  // // using bin path to spawn child process to avoid port conflicts issue
+  // const cliBinPath = getFarmCLIBinPath(examplePath);
 
-  if (!cliBinPath) {
-    throw new Error(`example ${examplePath} does not install @farmfe/cli`);
-  }
+  // if (!cliBinPath) {
+  //   throw new Error(`example ${examplePath} does not install @farmfe/cli`);
+  // }
   const port = getServerPort();
-  logger(`Executing node ${cliBinPath} ${command} in ${examplePath}`);
-  const child = execa('node', [cliBinPath, command], {
+  logger(`Executing npm run ${command} in ${examplePath}`);
+  const child = execa('npm', ['run', command], {
     cwd: examplePath,
     stdin: 'pipe',
     encoding: 'utf8',
@@ -203,4 +203,70 @@ export const startProjectAndTest = async (
       child.kill();
     }
   }
+};
+
+export const watchProjectAndTest = async (
+  examplePath: string,
+  cb: (log: string, done: () => void) => Promise<void>,
+  command = 'start'
+) => {
+  const port = getServerPort();
+  logger(`Executing npm run ${command} in ${examplePath}`);
+  const child = execa('npm', ['run', command], {
+    cwd: examplePath,
+    stdin: 'pipe',
+    encoding: 'utf8',
+    env: {
+      BROWSER: 'none',
+      NO_COLOR: 'true',
+      FARM_DEFAULT_SERVER_PORT: String(port),
+      FARM_DEFAULT_HMR_PORT: String(port)
+    }
+  });
+
+  return new Promise((resolve, reject) => {
+    let result = Buffer.alloc(0);
+    child.stdout?.on('data', async (chunk) => {
+      result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
+      const res = result.toString();
+      setTimeout(() => {
+        reject(new Error('timeout'));
+      }, 10000);
+      cb(res, () => resolve(null));
+    });
+
+    child.on('error', (error) => {
+      logger(
+        `child process error: ${examplePath} ${command} failed with error ${error}`,
+        {
+          color: 'red'
+        }
+      );
+      reject(
+        `child process error: ${examplePath} ${command} failed with error ${error}`
+      );
+    });
+
+    child.on('exit', (code) => {
+      if (code) {
+        logger(
+          `${examplePath} ${command} failed with code ${code}. ${result.toString(
+            'utf-8'
+          )}`,
+          {
+            color: 'red'
+          }
+        );
+        reject(new Error(`${examplePath} ${command} failed with code ${code}`));
+      }
+    });
+
+    onTestFinished(() => {
+      logger('try kill child process: ' + child.pid);
+      logger('current process id: ' + process.pid);
+      if (!child.killed) {
+        child.kill();
+      }
+    });
+  });
 };

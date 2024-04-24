@@ -4,12 +4,19 @@ interface RawLazyCompileResult {
   dynamicResourcesMap: Record<string, any>;
 }
 
-
 const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
 const moduleId = `MODULE_ID`;
 const modulePath = `MODULE_PATH`;
+const serverUrl = 'FARM_NODE_LAZY_COMPILE_SERVER_URL';
 
-const debouncePageReload = function(ms: number) {
+/**
+ * If the serverUrl is 'FARM_NODE_LAZY_COMPILE_SERVER_URL', it means the serverUrl is not set and it's not node lazy compile, and we should think it's a browser lazy compile.
+ * FARM_NODE_LAZY_COMPILE_SERVER_URL will be replaced by the real server url during the build process when node lazy compile is enabled.
+ */
+const isNodeLazyCompile =
+  serverUrl !== 'FARM_NODE_LAZY' + '_COMPILE_SERVER_URL';
+
+const debouncePageReload = function (ms: number) {
   let timer;
 
   return function () {
@@ -22,6 +29,27 @@ const debouncePageReload = function(ms: number) {
   };
 };
 const pageReload = debouncePageReload(500);
+
+async function fetch(path: string) {
+  const url = `${serverUrl}${path}`;
+  const http = 'http';
+  return import(http).then((http) => {
+    return new Promise((resolve, reject) => {
+      http.get(url, (res: any) => {
+        let data = '';
+        res.on('data', (chunk: any) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          resolve(JSON.parse(data));
+        });
+        res.on('error', (err: any) => {
+          reject(err);
+        });
+      });
+    });
+  });
+}
 
 const lazyCompilationRuntimePlugin = {
   name: 'farm-lazy-compilation',
@@ -68,7 +96,7 @@ if (compilingModules.has(modulePath)) {
         modulePath,
         moduleId,
         resolve,
-        promise,
+        promise
       ]);
     } else {
       promise = queueItem[2];
@@ -79,18 +107,25 @@ if (compilingModules.has(modulePath)) {
       const queue = [...FarmModuleSystem.lazyCompilingQueue];
       FarmModuleSystem.lazyCompilingQueue = [];
 
-      const url = '/__lazy_compile?paths=' + paths.join(',') + `&t=${Date.now()}`;
+      const url = `/__lazy_compile?paths=${paths.join(',')}&t=${Date.now()}${
+        isNodeLazyCompile ? '&node=true' : ''
+      }`;
 
-      promise = import(url).then((module: any) => {
-        const result: RawLazyCompileResult = module.default;
-        
+      const fetchLazyCompileResult = !isNodeLazyCompile
+        ? import(url)
+        : fetch(url);
+
+      promise = fetchLazyCompileResult.then((module: any) => {
+        const result: RawLazyCompileResult = module.default || module;
+
         if (result.dynamicResourcesMap) {
-          FarmModuleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
+          FarmModuleSystem.dynamicModuleResourcesMap =
+            result.dynamicResourcesMap;
         }
-       
+
         const mutableModules = eval(result.mutableModules);
         const immutableModules = eval(result.immutableModules);
-        
+
         const modules = { ...mutableModules, ...immutableModules };
 
         for (const moduleId in modules) {
@@ -114,10 +149,12 @@ if (compilingModules.has(modulePath)) {
         }
 
         // fix #878
-        FarmModuleSystem.addPlugin(lazyCompilationRuntimePlugin);
+        !isNodeLazyCompile &&
+          FarmModuleSystem.addPlugin(lazyCompilationRuntimePlugin);
         // The lazy compiled module should not contains side effects, as it may be executed twice
         const exports = FarmModuleSystem.require(moduleId);
-        FarmModuleSystem.removePlugin(lazyCompilationRuntimePlugin.name);
+        !isNodeLazyCompile &&
+          FarmModuleSystem.removePlugin(lazyCompilationRuntimePlugin.name);
 
         return exports;
       });

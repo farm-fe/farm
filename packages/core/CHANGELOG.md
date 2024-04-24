@@ -1,5 +1,28 @@
 # @farmfe/core
 
+## 1.1.0
+
+### Minor Changes
+
+- 71b6bab7: feat: disable polyfill when entry is not html
+- ef1b39bc: Top level await supported
+- 86d17342: Bump swc core version to v0.90
+
+### Patch Changes
+
+- 3581ee5e: Support lazy compilation when targeting node
+- 4e8ebbcc: support cli root path options
+- Updated dependencies [ef1b39bc]
+  - @farmfe/runtime@0.11.0
+  - @farmfe/runtime-plugin-hmr@3.5.1
+  - @farmfe/runtime-plugin-import-meta@0.2.0
+
+## 1.0.22
+
+### Patch Changes
+
+- b29c6147: Fix loadConfig error message
+
 ## 1.0.21
 
 ### Patch Changes

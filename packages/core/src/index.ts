@@ -33,6 +33,8 @@ import { __FARM_GLOBAL__ } from './config/_global.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 import { clearScreen } from './utils/share.js';
 import { logError } from './server/error.js';
+import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
+import { resolveHostname } from './utils/http.js';
 
 export async function start(
   inlineConfig: FarmCLIOptions & UserConfig
@@ -55,15 +57,21 @@ export async function start(
       logger
     );
 
-    createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+    const watcher = await createFileWatcher(
+      devServer,
+      resolvedUserConfig,
+      inlineConfig,
+      logger
+    );
     // call configureDevServer hook after both server and watcher are ready
     resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       plugin.configureDevServer?.(devServer)
     );
 
     await devServer.listen();
+    watcher.watchExtraFiles();
   } catch (error) {
-    logger.error(`Failed to start the server: \n ${error}`);
+    logger.error(`Failed to start the server: \n ${error}`, { exit: true });
   }
 }
 
@@ -98,6 +106,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
 
   const { root, output } = resolvedUserConfig.compilation;
   const distDir = path.resolve(root, output.path);
+
   try {
     statSync(distDir);
   } catch (err) {
@@ -126,6 +135,7 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
     port,
     host
   };
+
   const server = new Server({ logger });
   server.createPreviewServer(previewOptions);
 }
@@ -140,19 +150,44 @@ export async function watch(
     inlineConfig,
     logger,
     'development',
-    false
+    true
   );
+
+  const hostname = await resolveHostname(resolvedUserConfig.server.host);
+  resolvedUserConfig.compilation.define = {
+    ...(resolvedUserConfig.compilation.define ?? {}),
+    FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
+      hostname.host || 'localhost'
+    }:${resolvedUserConfig.server.port}`
+  };
 
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,
     true
   );
 
+  const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
+  let devServer: Server | undefined;
+  // create dev server for lazy compilation
+  if (lazyEnabled) {
+    devServer = new Server({
+      logger,
+      compiler: compilerFileWatcher.serverOrCompiler as Compiler
+    });
+    await devServer.createServer(resolvedUserConfig.server);
+    devServer.applyMiddlewares([lazyCompilation]);
+    await devServer.startServer(resolvedUserConfig.server);
+  }
+
   async function handleFileChange(files: string[]) {
     logFileChanges(files, resolvedUserConfig.root, logger);
 
     try {
       farmWatcher.close();
+
+      if (lazyEnabled && devServer) {
+        devServer.close();
+      }
 
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
 
@@ -357,6 +392,7 @@ export async function createFileWatcher(
       await start(inlineConfig);
     });
   });
+  return fileWatcher;
 }
 
 export function logFileChanges(files: string[], root: string, logger: Logger) {

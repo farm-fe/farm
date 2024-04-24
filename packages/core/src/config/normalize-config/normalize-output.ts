@@ -1,7 +1,10 @@
 import { browsersWithSupportForFeatures } from 'browserslist-generator';
 
 import { Config } from '../../../binding/index.js';
-import { mapTargetEnvValue } from '../../utils/share.js';
+import {
+  FARM_TARGET_BROWSER_ENVS,
+  mapTargetEnvValue
+} from '../../utils/share.js';
 
 export async function normalizeOutput(
   config: Config['config'],
@@ -79,7 +82,6 @@ const targetsMap: TargetsMap = {
 /**
  * Set up targets for the given targetEnv.
  * @param config
- * @param isProduction
  */
 function normalizeTargetEnv(config: Config['config']) {
   const aliasMap: Record<string, keyof TargetsMap> = {
@@ -104,11 +106,18 @@ function normalizeTargetEnv(config: Config['config']) {
           config.presetEnv.options.targets = scriptTargets;
         }
       } else {
-        config.presetEnv = {
-          options: {
-            targets: scriptTargets
-          }
-        };
+        if (
+          FARM_TARGET_BROWSER_ENVS.includes(targetEnv) &&
+          Object.values(config.input).some((v) => v?.endsWith('.html'))
+        ) {
+          config.presetEnv = {
+            options: {
+              targets: scriptTargets
+            }
+          };
+        } else {
+          config.presetEnv = false;
+        }
       }
     }
 

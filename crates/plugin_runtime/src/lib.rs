@@ -1,6 +1,10 @@
 #![feature(box_patterns)]
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+  any::Any,
+  collections::{HashMap, HashSet, VecDeque},
+  sync::Arc,
+};
 
 use farmfe_core::{
   config::{
@@ -10,7 +14,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
-  module::{ModuleMetaData, ModuleType},
+  module::{ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
@@ -35,7 +39,9 @@ use insert_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::*;
 
 pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
+pub const ASYNC_MODULES: &str = "async_modules";
 
+mod find_async_modules;
 mod handle_entry_resources;
 mod insert_runtime_plugins;
 pub mod render_resource_pot;
@@ -83,7 +89,10 @@ impl Plugin for FarmPluginRuntime {
 
     config.define.insert(
       "'<@__farm_global_this__@>'".to_string(),
-      serde_json::Value::String(get_farm_global_this(&config.runtime.namespace)),
+      serde_json::Value::String(format!(
+        "\"{}\"",
+        get_farm_global_this(&config.runtime.namespace)
+      )),
     );
 
     Ok(Some(()))
@@ -257,6 +266,71 @@ impl Plugin for FarmPluginRuntime {
     }
   }
 
+  fn generate_start(
+    &self,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    // detect async module like top level await when start rendering
+    // render start is only called once when the compilation start
+    context.custom.insert(
+      ASYNC_MODULES.to_string(),
+      Box::new(find_async_modules::find_async_modules(context)),
+    );
+
+    Ok(Some(()))
+  }
+
+  fn module_graph_updated(
+    &self,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    // detect async module like top level await when module graph updated
+    // module graph updated is called when the module graph is updated
+    let mut async_modules = context.custom.get_mut(ASYNC_MODULES).unwrap();
+    let async_modules = async_modules.downcast_mut::<HashSet<ModuleId>>().unwrap();
+
+    for remove in &param.removed_modules_ids {
+      async_modules.remove(remove);
+    }
+
+    let module_graph = context.module_graph.read();
+    let mut added_async_modules = vec![];
+    // find added modules that contains top level await
+    let mut analyze_top_level_await = |module_id: &ModuleId| {
+      let module = module_graph.module(module_id).unwrap();
+
+      if module.module_type.is_script() {
+        let ast = &module.meta.as_script().ast;
+
+        if farmfe_toolkit::swc_ecma_utils::contains_top_level_await(ast) {
+          added_async_modules.push(module_id.clone());
+        }
+      }
+    };
+    for added in &param.added_modules_ids {
+      analyze_top_level_await(added);
+    }
+    for updated in &param.updated_modules_ids {
+      analyze_top_level_await(updated);
+    }
+
+    let mut queue = VecDeque::from(added_async_modules.into_iter().collect::<Vec<_>>());
+
+    while !queue.is_empty() {
+      let module_id = queue.pop_front().unwrap();
+      async_modules.insert(module_id.clone());
+
+      for (dept, edge) in module_graph.dependents(&module_id) {
+        if !async_modules.contains(&dept) && !edge.is_dynamic() {
+          queue.push_back(dept);
+        }
+      }
+    }
+
+    Ok(Some(()))
+  }
+
   fn process_resource_pots(
     &self,
     resource_pots: &mut Vec<&mut ResourcePot>,
@@ -265,13 +339,14 @@ impl Plugin for FarmPluginRuntime {
     if !self.runtime_code.lock().is_empty() {
       return Ok(None);
     }
-
-    let module_graph = context.module_graph.write();
+    let async_modules = self.get_async_modules(context);
+    let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
+    let module_graph = context.module_graph.read();
 
     for resource_pot in resource_pots {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
         let RenderedJsResourcePot { mut bundle, .. } =
-          resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
+          resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
         bundle.prepend(
           r#"(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})("#,
@@ -311,12 +386,14 @@ impl Plugin for FarmPluginRuntime {
         ..Default::default()
       }));
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+      let async_modules = self.get_async_modules(context);
+      let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       let module_graph = context.module_graph.read();
       let RenderedJsResourcePot {
         mut bundle,
         rendered_modules,
         external_modules,
-      } = resource_pot_to_runtime_object(resource_pot, &module_graph, context)?;
+      } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
       let mut external_modules_str = None;
 
@@ -472,6 +549,7 @@ impl Plugin for FarmPluginRuntime {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     handle_entry_resources::handle_entry_resources(param.resources_map, context);
+
     Ok(Some(()))
   }
 }
@@ -481,5 +559,12 @@ impl FarmPluginRuntime {
     Self {
       runtime_code: Mutex::new(Arc::new(String::new())),
     }
+  }
+
+  pub(crate) fn get_async_modules<'a>(
+    &'a self,
+    context: &'a Arc<CompilationContext>,
+  ) -> farmfe_core::dashmap::mapref::one::Ref<'_, String, Box<dyn Any + Send + Sync>> {
+    context.custom.get(ASYNC_MODULES).unwrap()
   }
 }

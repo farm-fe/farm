@@ -2,15 +2,15 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use farmfe_core::module::Module;
-use farmfe_core::petgraph::visit::{EdgeRef, GraphProp, NodeRef};
+use farmfe_core::petgraph::visit::EdgeRef;
 use farmfe_core::petgraph::Direction::Outgoing;
 use farmfe_core::swc_common::Mark;
 use farmfe_core::swc_ecma_ast::{
-  op, BlockStmtOrExpr, Class, Decl, DefaultDecl, ExportDecl, ExportDefaultDecl, Expr, ExprStmt, Id,
-  ImportSpecifier, MemberProp, ModuleDecl, PatOrExpr, PropName, Stmt,
+  op, AssignTarget, BlockStmtOrExpr, Class, Decl, DefaultDecl, ExportDecl, ExportDefaultDecl, Expr,
+  ExprStmt, Id, ImportSpecifier, MemberProp, ModuleDecl, PropName, Stmt,
 };
 use farmfe_core::{
-  petgraph::{self, stable_graph::NodeIndex, stable_graph::StableDiGraph, EdgeDirection},
+  petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::ModuleItem,
 };
 use farmfe_toolkit::swc_ecma_utils::find_pat_ids;
@@ -109,7 +109,7 @@ impl ModuleAnalyze {
 
       let mut res = vec![];
 
-      while let Some((edge_index, node_index)) = walk.next(&self.g) {
+      while let Some((edge_index, _)) = walk.next(&self.g) {
         let (source, target) = self.g.edge_endpoints(edge_index).unwrap();
 
         let edge = self.g.edge_weight(edge_index).unwrap().clone();
@@ -380,7 +380,6 @@ impl ModuleAnalyze {
         .push(item_id.clone());
 
       let item = &items_map[&item_id];
-
       for decl in &item.var_decls {
         self
           .vars
@@ -394,6 +393,9 @@ impl ModuleAnalyze {
 
       for read in &item.read_vars {
         if let Some(read_id) = self.vars.get(read).cloned() {
+          if *item_id == read_id {
+            continue;
+          }
           self.add_edge(
             item_id.clone(),
             read_id,
@@ -407,6 +409,9 @@ impl ModuleAnalyze {
 
       for write in &item.write_vars {
         if let Some(write_id) = self.vars.get(write).cloned() {
+          if *item_id == write_id {
+            continue;
+          }
           self.add_edge(
             item_id.clone(),
             write_id,
@@ -719,14 +724,10 @@ impl Visit for CollectIdent {
     });
   }
 
-  fn visit_pat_or_expr(&mut self, n: &farmfe_core::swc_ecma_ast::PatOrExpr) {
-    if let PatOrExpr::Expr(e) = n {
-      self.with_mode(Mode::Write, |this| {
-        e.visit_children_with(this);
-      })
-    } else {
-      n.visit_children_with(self);
-    }
+  fn visit_assign_target(&mut self, n: &AssignTarget) {
+    self.with_enforce(Mode::Write, |this| {
+      n.visit_children_with(this);
+    });
   }
 
   fn visit_member_prop(&mut self, n: &MemberProp) {

@@ -17,6 +17,7 @@ export type ResolveKind =
   | 'cssUrl'
   | 'scriptSrc'
   | 'linkHref'
+  | 'hmrUpdate'
   | string;
 
 export * from './binding.js';
@@ -277,6 +278,27 @@ export interface PersistentCacheConfig {
     hash?: boolean;
   };
   envs?: Record<string, String>;
+  /**
+   * Whether to ignore the built-in keys of the cache, such as define, buildDependencies, lockfile, etc.
+   * If these keys are not ignored, the cache will be fully invalidated when these keys change.
+   * @default {
+   *  define: false,
+   *  buildDependencies: true,
+   *  lockfile: false
+   * }
+   */
+  globalBuiltinCacheKeyStrategy?: {
+    /** @default true */
+    define?: boolean;
+    /** @default true */
+    buildDependencies?: boolean;
+    /** @default true */
+    lockfile?: boolean;
+    /** @default true */
+    packageJson?: boolean;
+    /** @default true */
+    env?: boolean;
+  };
 };
 
 export interface PartialBundlingConfig {

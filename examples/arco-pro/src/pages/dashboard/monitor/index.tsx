@@ -1,17 +1,17 @@
-import { Space } from '@arco-design/web-react'
-import React from 'react'
-import { useSelector } from 'react-redux'
-import ChatPanel from './chat-panel'
-import DataStatistic from './data-statistic'
-import './mock'
-import QuickOperation from './quick-operation'
-import Studio from './studio'
-import StudioInformation from './studio-information'
-import StudioStatus from './studio-status'
-import styles from './style/index.module.less'
+import { Space } from '@arco-design/web-react';
+import React from 'react';
+import { useSelector } from 'react-redux';
+import ChatPanel from './chat-panel';
+import DataStatistic from './data-statistic';
+import './mock';
+import QuickOperation from './quick-operation';
+import Studio from './studio';
+import StudioInformation from './studio-information';
+import StudioStatus from './studio-status';
+import styles from './style/index.module.less';
 
 export default function Monitor() {
-  const userInfo = useSelector((state: any) => state.userInfo)
+  const userInfo = useSelector((state: any) => state.userInfo);
   return (
     <div>
       <div className={styles.layout}>
@@ -33,5 +33,5 @@ export default function Monitor() {
         </div>
       </div>
     </div>
-  )
+  );
 }

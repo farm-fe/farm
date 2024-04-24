@@ -243,7 +243,16 @@ const compilationConfigSchema = z
               hash: z.boolean().optional()
             })
             .optional(),
-          envs: z.record(z.string(), z.string()).optional()
+          envs: z.record(z.string(), z.string()).optional(),
+          globalBuiltinCacheKeyStrategy: z
+            .object({
+              env: z.boolean().optional(),
+              define: z.boolean().optional(),
+              buildDependencies: z.boolean().optional(),
+              lockfile: z.boolean().optional(),
+              packageJson: z.boolean().optional()
+            })
+            .optional()
         })
         .optional()
     ]),
@@ -297,7 +306,6 @@ const FarmConfigSchema = z
             z.boolean(),
             z
               .object({
-                ignores: z.array(z.string()).optional(),
                 host: z.union([z.string().nonempty(), z.boolean()]).optional(),
                 port: z.number().positive().int().optional(),
                 path: z.string().optional(),

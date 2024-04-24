@@ -2,6 +2,7 @@ import path from 'path';
 import fsp from 'fs/promises';
 import express from 'express';
 import { generateHydrationScript } from 'solid-js/web';
+import { pathToFileURL } from 'url';
 
 function resolve(p) {
   return path.resolve(p);
@@ -17,15 +18,20 @@ async function createServer() {
 
     try {
       let template = await fsp.readFile(resolve('build/client.html'), 'utf8');
-      let render = (await import(resolve('dist/index.js'))).default;
+      const serverEntry = resolve('dist/index.js');
+      let render = (
+        await import(
+          process.platform === 'win32'
+            ? pathToFileURL(serverEntry)
+            : serverEntry
+        )
+      ).default;
 
       const renderedHtml = render(url);
 
       let html = template
         .replace('<div>app-html-to-replace</div>', renderedHtml)
-        .replace('</head>', generateHydrationScript());
-      console.log(template.includes('<div>app-html-to-replace</div>'));
-      console.log(html.includes('<div>app-html-to-replace</div>'));
+        .replace('<meta hydration>', generateHydrationScript());
 
       res.setHeader('Content-Type', 'text/html');
       return res.status(200).end(html);
@@ -39,7 +45,8 @@ async function createServer() {
 }
 
 createServer().then((app) => {
-  app.listen(3000, () => {
-    console.log('HTTP server is running at http://localhost:3000');
+  const port = process.env.FARM_DEFAULT_SERVER_PORT || 3000;
+  app.listen(port, () => {
+    console.log('HTTP server is running at http://localhost:' + port);
   });
 });

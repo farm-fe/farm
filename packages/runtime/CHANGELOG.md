@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.11.0
+
+### Minor Changes
+
+- ef1b39bc: Top level await supported
+
 ## 0.10.0
 
 ### Minor Changes

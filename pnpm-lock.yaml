@@ -301,8 +301,8 @@ importers:
         specifier: workspace:^1.0.1
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
-        specifier: ^2.5.115
-        version: 2.5.115
+        specifier: ^2.5.124
+        version: 2.5.124
       '@types/react':
         specifier: '18'
         version: 18.2.35
@@ -485,6 +485,19 @@ importers:
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
+
+  examples/node-lazy-compile:
+    dependencies:
+      core-js:
+        specifier: ^3.35.1
+        version: 3.35.1
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   examples/node-server:
     dependencies:
@@ -1107,6 +1120,19 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/top-level-await:
+    dependencies:
+      core-js:
+        specifier: ^3.35.1
+        version: 3.36.1
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/vite-adapter-react:
     dependencies:
       core-js:
@@ -1175,7 +1201,7 @@ importers:
   examples/vite-adapter-svelte:
     devDependencies:
       '@farmfe/cli':
-        specifier: ^1.0.0
+        specifier: ^1.0.1
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -1461,12 +1487,12 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@farmfe/js-plugin-vue':
-        specifier: workspace:*
-        version: link:../../js-plugins/vue
-      swc-plugin-vue-jsx:
-        specifier: ^0.3.0
-        version: 0.3.0
+      '@vitejs/plugin-vue':
+        specifier: ^5.0.4
+        version: 5.0.4(vite@5.2.8)(vue@3.3.7)
+      '@vitejs/plugin-vue-jsx':
+        specifier: ^3.1.0
+        version: 3.1.0(vite@5.2.8)(vue@3.3.7)
 
   examples/vue-ssr:
     dependencies:
@@ -1823,7 +1849,7 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:0.10.0
+        specifier: workspace:0.11.0
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
         specifier: workspace:3.5.1
@@ -2027,7 +2053,7 @@ importers:
         version: 3.33.2
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.10.0
+        specifier: workspace:^0.11.0
         version: link:../runtime
 
   packages/runtime-plugin-import-meta:
@@ -2037,7 +2063,7 @@ importers:
         version: 3.30.1
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.10.0
+        specifier: workspace:^0.11.0
         version: link:../runtime
 
   packages/utils: {}
@@ -4816,14 +4842,20 @@ packages:
       - supports-color
     dev: false
 
+  /@swc/counter@0.1.3:
+    resolution: {integrity: sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ==}
+    dev: true
+
   /@swc/helpers@0.5.3:
     resolution: {integrity: sha512-FaruWX6KdudYloq1AHD/4nU+UsMTdNE8CKyrseXWEcgjDAbvkwJg2QGPAnfIJLIWsjZOSPLOAykK6fuYp4vp4A==}
     dependencies:
       tslib: 2.6.2
     dev: false
 
-  /@swc/plugin-emotion@2.5.115:
-    resolution: {integrity: sha512-3SuO6RbJESgVdmey0hwB5HR+ZU9sgLINTGdhRI+Uhr/KAhbZVvLxjf+g9/8g9RngECqljmd/xc0lZyNols8DVw==}
+  /@swc/plugin-emotion@2.5.124:
+    resolution: {integrity: sha512-t6Z6oHnJUIKsTyQkWKHDz8xhhJPGKfUNO4zRnHBGy5EfHTLTs00cn6I187Fno7cyR72ZCZn92RqiRn7TbRw07w==}
+    dependencies:
+      '@swc/counter': 0.1.3
     dev: true
 
   /@sxzz/popperjs-es@2.11.7:
@@ -16024,10 +16056,6 @@ packages:
       css-what: 6.1.0
       csso: 5.0.5
       picocolors: 1.0.0
-
-  /swc-plugin-vue-jsx@0.3.0:
-    resolution: {integrity: sha512-r861hOJ4TeUnwHDTAxx5h/FvoNmqb1DmoYJX5vYf1gzXYX1JusuV58B+cY+U6BYIDXStwgECULmzraoyVtDRWQ==}
-    dev: true
 
   /tailwindcss@3.3.5:
     resolution: {integrity: sha512-5SEZU4J7pxZgSkv7FP1zY8i2TIAOooNZ1e/OGtxIEv6GltpoiXUqWvLy89+a10qYTB1N5Ifkuw9lqQkN9sscvA==}

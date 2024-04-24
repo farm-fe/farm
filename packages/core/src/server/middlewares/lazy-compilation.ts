@@ -1,5 +1,5 @@
 /**
- * Lazy compilation middleware. Using the same logic as HMR middleware, but
+ * Lazy compilation middleware. Using the same logic as HMR middleware
  */
 
 import { relative } from 'node:path';
@@ -10,6 +10,7 @@ import { bold, clearScreen, cyan, green } from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { existsSync } from 'node:fs';
+import { logError } from '../error.js';
 
 export function lazyCompilation(devSeverContext: Server): Middleware {
   const compiler = devSeverContext.getCompiler();
@@ -36,14 +37,29 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       clearScreen();
       devSeverContext.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
-      const result = await compiler.update(paths);
+      // sync update when node is true
+      let result;
+      try {
+        result = await compiler.update(paths, Boolean(ctx.query.node));
+      } catch (e) {
+        logError(e);
+      }
+
+      if (!result) {
+        return;
+      }
+
+      if (ctx.query.node) {
+        compiler.writeResourcesToDisk();
+      }
+
       devSeverContext.logger.info(
         `${bold(green(`✓`))} Lazy compilation done(${bold(
           cyan(pathsStr)
         )}) in ${bold(green(`${Date.now() - start}ms`))}.`
       );
 
-      devSeverContext.hmrEngine.callUpdates(result);
+      devSeverContext.hmrEngine?.callUpdates?.(result);
 
       if (result) {
         let dynamicResourcesMap: Record<string, Resource[]> = null;
@@ -63,12 +79,20 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           }
         }
 
-        const code = `export default {
+        const code = !ctx.query.node
+          ? `export default {
           immutableModules: ${JSON.stringify(result.immutableModules.trim())},
           mutableModules: ${JSON.stringify(result.mutableModules.trim())},
           dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
+        }`
+          : `{
+          "immutableModules": ${JSON.stringify(result.immutableModules.trim())},
+          "mutableModules": ${JSON.stringify(result.mutableModules.trim())},
+          "dynamicResourcesMap": ${JSON.stringify(dynamicResourcesMap)}
         }`;
-        ctx.type = 'application/javascript';
+        ctx.type = !ctx.query.node
+          ? 'application/javascript'
+          : 'application/json';
         ctx.body = code;
       } else {
         throw new Error(`Lazy compilation result not found for paths ${paths}`);

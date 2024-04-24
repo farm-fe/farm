@@ -17,7 +17,7 @@ use farmfe_core::{
 };
 
 pub use farmfe_plugin_css::FARM_CSS_MODULES_SUFFIX;
-pub use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_PREFIX;
+pub use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
 pub use farmfe_plugin_runtime::RUNTIME_SUFFIX;
 
 pub mod build;
@@ -171,6 +171,7 @@ impl Compiler {
 fn write_cache(context: Arc<CompilationContext>) {
   farm_profile_function!("write_cache".to_string());
   context.cache_manager.write_cache();
+  context.cache_manager.custom.write_manifest();
 }
 
 pub fn write_cache_async(context: Arc<CompilationContext>) {

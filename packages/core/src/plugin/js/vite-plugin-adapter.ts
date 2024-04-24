@@ -61,6 +61,7 @@ import {
 import { readFile } from 'fs/promises';
 import {
   ViteDevServerAdapter,
+  ViteModuleGraphAdapter,
   createViteDevServerAdapter
 } from './vite-server-adapter.js';
 import { farmContextToViteContext } from './farm-to-vite-context.js';
@@ -69,7 +70,7 @@ import {
   proxyViteConfig,
   viteConfigToFarmConfig
 } from './farm-to-vite-config.js';
-import { VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX } from '../../compiler/index.js';
+import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
 import {
   transformResourceInfo2RollupResource,
   transformFarmConfigToRollupNormalizedInputOptions
@@ -99,6 +100,7 @@ export class VitePluginAdapter implements JsPlugin {
   private _viteConfig: ViteUserConfig;
   private _viteDevServer: ViteDevServerAdapter;
   private _logger: Logger;
+  private _moduleGraph: ViteModuleGraphAdapter;
 
   buildStart: JsPlugin['buildStart'];
   resolve: JsPlugin['resolve'];
@@ -524,7 +526,8 @@ export class VitePluginAdapter implements JsPlugin {
     // default module type and asset can be transformed by vite transform hook
     const moduleTypesCouldTransform = [
       VITE_PLUGIN_DEFAULT_MODULE_TYPE,
-      'asset'
+      'asset',
+      'json'
     ];
     return {
       filters: {
@@ -604,11 +607,23 @@ export class VitePluginAdapter implements JsPlugin {
             ctx
           );
 
+          let moduleGraph: ViteModuleGraphAdapter;
+
+          if (this._viteDevServer) {
+            moduleGraph = this._viteDevServer.moduleGraph;
+          } else if (this._moduleGraph) {
+            moduleGraph = this._moduleGraph;
+          } else {
+            moduleGraph = new ViteModuleGraphAdapter(this.name);
+            this._moduleGraph = moduleGraph;
+          }
+
+          moduleGraph.context = ctx;
+
           const result = [];
-          this._viteDevServer.moduleGraph.context = ctx;
 
           for (const [file, _] of paths) {
-            const mods = this._viteDevServer.moduleGraph.getModulesByFile(
+            const mods = moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
             const filename = normalizePath(file);
@@ -861,7 +876,7 @@ export class VitePluginAdapter implements JsPlugin {
   // skip farm lazy compilation virtual module for vite plugin
   public static isFarmInternalVirtualModule(id: string) {
     return (
-      id.startsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_PREFIX) ||
+      id.endsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX) ||
       // css has been handled before the virtual module is created
       FARM_CSS_MODULES_SUFFIX.test(id)
     );
