@@ -107,6 +107,18 @@ export const yellow = enabled
 export const blue = enabled
   ? createFormatter('\x1b[38;2;68;206;246m', '\x1b[39m')
   : String;
+export const less = enabled
+  ? createFormatter('\x1b[38;2;84;104;255m', '\x1b[39m')
+  : String;
+export const postcss = enabled
+  ? createFormatter('\x1b[38;2;205;72;37m', '\x1b[39m')
+  : String;
+export const tailwindcss = enabled
+  ? createFormatter('\x1b[38;2;2;132;199m', '\x1b[39m')
+  : String;
+export const sass = enabled
+  ? createFormatter('\x1b[38;2;191;64;128m', '\x1b[39m')
+  : String;
 export const magenta = enabled
   ? createFormatter('\x1b[38;2;180;0;100m', '\x1b[39m')
   : String;
@@ -227,6 +239,10 @@ export const colors = {
   blue,
   magenta,
   purple,
+  sass,
+  less,
+  tailwindcss,
+  postcss,
   orange,
   cyan,
   white,

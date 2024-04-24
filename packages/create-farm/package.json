@@ -13,6 +13,7 @@
   "scripts": {
     "build": "farm build",
     "dev": "farm watch",
+    "test": "npm run build && node bin/create-farm.mjs",
     "prepublishOnly": "npm run build"
   },
   "author": "",
@@ -37,11 +38,15 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/utils": "workspace:*",
+    "@types/ejs": "^3.1.5",
     "@types/minimist": "^1.2.2",
     "@types/prompts": "^2.4.4",
     "gradient-string": "^2.0.2",
     "minimist": "^1.2.8",
     "ora": "^6.3.0",
     "prompts": "^2.4.2"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10"
   }
 }

@@ -3,24 +3,127 @@ import prompts from 'prompts';
 import minimist from 'minimist';
 import path from 'node:path';
 import fs from 'node:fs';
-
 import { fileURLToPath } from 'node:url';
+
+import ejs from 'ejs';
 import { colors } from './utils/color.js';
 
 import { loadWithRocketGradient } from './utils/gradient.js';
+import { getLanguage } from './utils/getLanguage.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
 import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
-
+import renderTemplate from './utils/renderTemplate.js';
+import { preOrderDirectoryTraverse } from './utils/directoryTraverse.js';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 interface IResultType {
   packageName?: string;
   projectName?: string;
-  framework?: string;
+  framework?: Framework;
+  needsTypeScript?: boolean;
+  needsSass?: boolean;
+  useCssPreProcessor?: string;
+  variant?: string;
   argFrameWork?: string;
   autoInstall?: boolean;
   packageManager?: string;
 }
+
+type Framework = {
+  value: string;
+  title: string;
+  variants?: FrameworkVariant[];
+};
+type FrameworkVariant = {
+  value: string;
+  title: string;
+  customCommand?: string;
+};
+
+const FRAMEWORKS: Framework[] = [
+  {
+    title: colors.cyan('React'),
+    value: 'react',
+    variants: [
+      {
+        title: colors.cyan('React'),
+        value: 'react'
+      },
+      {
+        title: colors.cyan('React-SSR'),
+        value: 'react-ssr'
+      }
+    ]
+  },
+  {
+    title: colors.green('Vue'),
+    value: 'vue',
+    variants: [
+      {
+        title: colors.cyan('Vue'),
+        value: 'vue'
+      },
+      {
+        title: colors.cyan('Vue-SSR'),
+        value: 'vue-ssr'
+      }
+    ]
+  },
+  {
+    title: colors.cyan('Preact'),
+    value: 'preact'
+  },
+  {
+    title: colors.blue('Solid'),
+    value: 'solid',
+    variants: [
+      {
+        title: colors.cyan('Solid'),
+        value: 'solid'
+      },
+      {
+        title: colors.cyan('Solid-SSR'),
+        value: 'solid-ssr'
+      }
+    ]
+  },
+  {
+    title: colors.orange('Svelte'),
+    value: 'svelte',
+    variants: [
+      {
+        title: colors.cyan('Svelte'),
+        value: 'svelte'
+      },
+      {
+        title: colors.cyan('Svelte-SSR'),
+        value: 'svelte-ssr'
+      }
+    ]
+  },
+  {
+    title: colors.yellow('Vanilla'),
+    value: 'vanilla'
+  },
+  { title: colors.red('Lit'), value: 'lit' }
+];
+
+const CSS_PRE_PROCESSOR = [
+  { title: colors.sass('Rust-Sass'), value: 'rust-sass' },
+  { title: colors.purple('Sass'), value: 'js-sass' },
+  { title: colors.less('Less'), value: 'js-less' },
+  { title: colors.postcss('PostCSS'), value: 'js-postcss' },
+  { title: colors.tailwindcss('Tailwindcss'), value: 'tailwindcss' },
+  { title: colors.red('None'), value: 'none' }
+];
+
+const TEMPLATES = FRAMEWORKS.map(
+  (f) => (f.variants && f.variants.map((v) => v.value)) || [f.value]
+).reduce((a, b) => a.concat(b), []);
 // judge node version
 judgeNodeVersion();
+
+//
+const language = getLanguage();
 
 // command
 welcome();
@@ -31,6 +134,7 @@ const argv = minimist<{
   template?: string;
   skipInstall: boolean;
   'skip-install': boolean;
+  e?: boolean;
 }>(process.argv.slice(2), { string: ['_'] });
 
 const cwd = process.cwd();
@@ -41,6 +145,7 @@ const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent);
 async function createFarm() {
   const argProjectName = formatTargetDir(argv._[0]);
   const argFramework = argv.template || argv.t;
+  const needExtension = argv.e;
   let targetDir = argProjectName || DEFAULT_TARGET_NAME;
   let result: IResultType = {};
   const skipInstall = argv['skip-install'] ?? argv.skipInstall ?? true;
@@ -50,7 +155,7 @@ async function createFarm() {
         {
           type: argProjectName ? null : 'text',
           name: 'projectName',
-          message: 'Project name:',
+          message: language.packageName.message,
           initial: DEFAULT_TARGET_NAME,
           onState: (state) => {
             targetDir = formatTargetDir(state.value) || DEFAULT_TARGET_NAME;
@@ -62,14 +167,16 @@ async function createFarm() {
           name: 'overwrite',
           message: () =>
             (targetDir === '.'
-              ? '🚨 Current directory'
-              : `🚨 Target directory "${targetDir}"`) +
-            ` is not empty. Overwrite existing files and continue?`
+              ? `🚨 ${language.shouldOverwrite.dirForPrompts.current}`
+              : `🚨 ${language.shouldOverwrite.dirForPrompts.target} "${targetDir}"`) +
+            ` ${language.shouldOverwrite.message}`
         },
         {
           type: (_, { overwrite }: { overwrite?: boolean }) => {
             if (overwrite === false) {
-              throw new Error(colors.red('❌') + ' Operation cancelled');
+              throw new Error(
+                colors.red('❌') + `${language.errors.operationCancelled}`
+              );
             }
             return null;
           },
@@ -78,26 +185,44 @@ async function createFarm() {
         {
           type: argFramework ? null : 'select',
           name: 'framework',
-          message: 'Select a framework:',
+          message:
+            typeof argFramework === 'string' &&
+            !TEMPLATES.includes(argFramework)
+              ? `"${argFramework}" ${language.validTemplate.message}`
+              : language.selectFramework.message,
           initial: 0,
-          choices: [
-            {
-              title: colors.cyan('React'),
-              value: 'react'
-            },
-            { title: colors.green('Vue'), value: 'vue' },
-            {
-              title: colors.cyan('Preact'),
-              value: 'preact'
-            },
-            { title: colors.blue('Solid'), value: 'solid' },
-            { title: colors.orange('Svelte'), value: 'svelte' },
-            {
-              title: colors.yellow('Vanilla'),
-              value: 'vanilla'
-            },
-            { title: colors.red('Lit'), value: 'lit' }
-          ]
+          choices: FRAMEWORKS.map((framework) => ({
+            title: framework.title,
+            value: framework
+          }))
+        },
+        {
+          type: (framework: Framework) =>
+            framework && framework.variants ? 'select' : null,
+          name: 'variant',
+          message: language.selectVariant.message,
+          choices: (framework: Framework) =>
+            framework.variants.map((variant) => {
+              return {
+                title: variant.title,
+                value: variant.value
+              };
+            })
+        },
+        {
+          name: 'needsTypeScript',
+          type: needExtension ? 'toggle' : null,
+          message: language.needsTypeScript.message,
+          initial: false,
+          active: language.defaultToggleOptions.active,
+          inactive: language.defaultToggleOptions.inactive
+        },
+        {
+          name: 'useCssPreProcessor',
+          type: needExtension ? 'select' : null,
+          message: language.useCssPreProcessor.message,
+          initial: 0,
+          choices: CSS_PRE_PROCESSOR
         },
         {
           type: pkgInfo || skipInstall ? null : 'select',
@@ -120,7 +245,9 @@ async function createFarm() {
       ],
       {
         onCancel: () => {
-          throw new Error(colors.red('❌') + ' Operation cancelled');
+          throw new Error(
+            colors.red('❌') + ` ${language.errors.operationCancelled}`
+          );
         }
       }
     );
@@ -128,12 +255,23 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { framework = argFramework, packageManager } = result;
+  const {
+    framework = { title: argFramework, value: argFramework },
+    packageManager,
+    needsSass,
+    needsTypeScript,
+    variant,
+    useCssPreProcessor = 'none'
+  } = result;
 
   await copyTemplate(targetDir, {
-    framework,
     projectName: targetDir,
-    packageManager
+    framework,
+    packageManager,
+    needsSass,
+    needsTypeScript,
+    variant,
+    useCssPreProcessor
   });
   await installationDeps(targetDir, !skipInstall, result);
 }
@@ -148,16 +286,110 @@ function isEmpty(path: string) {
 }
 
 async function copyTemplate(targetDir: string, options: IResultType) {
-  const spinner = await loadWithRocketGradient('Copy template');
-  const dest = path.join(cwd, targetDir);
-  const templatePath = path.join(
-    fileURLToPath(import.meta.url),
-    `../../templates/${options.framework}`
-  );
-  copy(templatePath, dest);
+  const spinner = await loadWithRocketGradient(language.copy.scaffolding);
+  const { variant, framework, needsTypeScript, useCssPreProcessor } = options;
+  const templateRoot = path.resolve(__dirname, '../templates');
+  const callbacks: ((dataStore: any) => Promise<void>)[] = [];
+  const root = path.join(cwd, targetDir);
 
+  function render(templateName: string) {
+    const templateDir = path.resolve(templateRoot, './' + templateName);
+    renderTemplate(templateDir, root, callbacks);
+  }
+  let template = variant || framework.value;
+  if (needsTypeScript !== false) {
+    template += '/ts';
+  } else {
+    template += '/js';
+  }
+  const dest = path.join(cwd, targetDir);
+  render(template);
+  render('config/base/react');
+  if (useCssPreProcessor !== 'none') {
+    render(`config/css-pre-processor/${useCssPreProcessor}`);
+  }
+  const dataStore = {};
+  // Process callbacks
+  for (const cb of callbacks) {
+    await cb(dataStore);
+  }
+  preOrderDirectoryTraverse(
+    root,
+    () => {},
+    (filepath) => {
+      if (filepath.endsWith('.ejs')) {
+        const template = fs.readFileSync(filepath, 'utf-8');
+        const dest = filepath.replace(/\.ejs$/, '');
+        const content = ejs.render(template, dataStore[dest]);
+        fs.writeFileSync(dest, content);
+        fs.unlinkSync(filepath);
+      }
+    }
+  );
+  // ts handle
+  if (needsTypeScript !== false) {
+    preOrderDirectoryTraverse(
+      root,
+      () => {},
+      (filepath) => {
+        if (filepath.endsWith('.js')) {
+          const tsFilePath = filepath.replace(/\.js$/, '.ts');
+          if (fs.existsSync(tsFilePath)) {
+            fs.unlinkSync(filepath);
+          } else {
+            fs.renameSync(filepath, tsFilePath);
+          }
+        }
+      }
+    );
+  } else {
+    // Remove all the remaining `.ts` files
+    preOrderDirectoryTraverse(
+      root,
+      () => {},
+      (filepath) => {
+        if (filepath.endsWith('.ts')) {
+          fs.unlinkSync(filepath);
+        }
+      }
+    );
+  }
+  // Remove all the remaining `.css` files
+  if (useCssPreProcessor !== 'none') {
+    preOrderDirectoryTraverse(
+      root,
+      () => {},
+      (filepath) => {
+        let cssFileExt = 'css';
+        if (useCssPreProcessor.endsWith('sass')) {
+          cssFileExt = 'scss';
+        } else if (useCssPreProcessor.endsWith('less')) {
+          cssFileExt = 'less';
+        }
+
+        if (filepath.endsWith('.css')) {
+          const tsFilePath = filepath.replace(/\.css$/, `.${cssFileExt}`);
+          if (fs.existsSync(tsFilePath)) {
+            fs.unlinkSync(filepath);
+          } else {
+            fs.renameSync(filepath, tsFilePath);
+          }
+        }
+        // cleanup
+        if (
+          !/.*\.(css|less|scss)$/.test(filepath) &&
+          filepath.includes('src') &&
+          /.*\.(js|ts|jsx|tsx|vue)$/.test(filepath)
+        ) {
+          const content = fs.readFileSync(filepath, 'utf8');
+          fs.writeFileSync(filepath, content.replace('.css', `.${cssFileExt}`));
+        }
+      }
+    );
+  }
+  // copy(templatePath, dest);
   writePackageJson(dest, options);
-  spinner.text = 'Template copied Successfully!';
+  spinner.text = colors.white(language.copy.done);
   spinner.succeed();
 }
 
@@ -205,12 +437,10 @@ async function installationDeps(
         ? ['install', '--no-frozen-lockfile']
         : ['install']
     );
-    spinner.text = 'Dependencies Installed Successfully!';
+    spinner.text = colors.white(language.infos.done);
     spinner.succeed();
   }
-  colors.handleBrandText(
-    '\n > Initial Farm Project created successfully ✨ ✨ \n'
-  );
+  colors.handleBrandText(`\n > ${language.infos.done} ✨ ✨ \n`);
   colors.handleBrandText(`   cd ${targetDir} \n`);
 
   autoInstall
@@ -277,7 +507,7 @@ function copyDir(srcDir: string, destDir: string) {
 }
 
 function welcome() {
-  console.log(colors.BrandText('⚡ Welcome To Farm ! '));
+  console.log(colors.BrandText('⚡ Welcome To Farm !'));
 }
 
 createFarm();

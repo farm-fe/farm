@@ -17,19 +17,19 @@ This package provides official templates for the Rust Web Bundler [Farm](https:/
 With NPM:
 
 ```bash
-$ npm create farm@latest
+npm create farm@latest
 ```
 
 With Yarn:
 
 ```bash
-$ yarn create farm
+yarn create farm
 ```
 
 With PNPM:
 
 ```bash
-$ pnpm create farm
+pnpm create farm
 ```
 
 Then follow the prompts!

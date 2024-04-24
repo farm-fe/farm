@@ -1,0 +1,46 @@
+{
+  "projectName": {
+    "message": "请输入项目名称："
+  },
+  "shouldOverwrite": {
+    "dirForPrompts": {
+      "current": "当前目录",
+      "target": "目标文件夹"
+    },
+    "message": "非空，是否覆盖？"
+  },
+  "packageName": {
+    "message": "请输入包名称：",
+    "invalidMessage": "无效的 package.json 名称"
+  },
+  "validTemplate": {
+    "message": "不是有效的模板。请从以下选择: "
+  },
+  "selectFramework": {
+    "message": "选择一个框架: "
+  },
+  "selectVariant": {
+    "message": "选择一个变体: "
+  },
+  "needsTypeScript": {
+    "message": "是否使用 TypeScript 语法？"
+  },
+  "useCssPreProcessor": {
+    "message": "选择一个Css预处理器："
+  },
+  "errors": {
+    "operationCancelled": "操作取消"
+  },
+  "defaultToggleOptions": {
+    "active": "是",
+    "inactive": "否"
+  },
+  "copy": {
+    "scaffolding": "模版正在复制中",
+    "done": "复制模版成功"
+  },
+  "infos": {
+    "scaffolding": "正在初始化项目",
+    "done": "项目初始化完成，可执行以下命令："
+  }
+}

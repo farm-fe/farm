@@ -1,0 +1,6 @@
+{
+  "dependencies": {},
+  "devDependencies": {
+    "@farmfe/js-plugin-sass": "^2.6.0"
+  }
+}

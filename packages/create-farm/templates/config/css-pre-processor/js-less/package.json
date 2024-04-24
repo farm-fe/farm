@@ -1,0 +1,6 @@
+{
+  "dependencies": {},
+  "devDependencies": {
+    "@farmfe/js-plugin-less": "^1.6.2"
+  }
+}
