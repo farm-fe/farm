@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.1.1
+
+### Patch Changes
+
+- 67716076: \* added `persistentCache.globalBuiltinCacheKeyStrategy` to control internal persistent cache key, #1208
+  - fix define string #1112
+  - fix css @import without .css suffix #1230
+  - fix json transform #1231
+
 ## 1.1.0
 
 ### Minor Changes
