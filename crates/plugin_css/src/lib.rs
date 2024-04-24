@@ -103,26 +103,48 @@ impl Plugin for FarmPluginCssResolve {
       }));
     } else if matches!(param.kind, ResolveKind::CssAtImport | ResolveKind::CssUrl) {
       // if dep starts with '~', means it's from node_modules.
-      // otherwise it's always relative
       let source = if let Some(striped_source) = param.source.strip_suffix('~') {
         striped_source.to_string()
-      } else if !param.source.starts_with('.') {
-        format!("./{}", param.source)
       } else {
         param.source.clone()
       };
+      // fix #1230
+      let css_suffix = ".css";
+      let extensions = if matches!(param.kind, ResolveKind::CssAtImport) && !source.contains(".") {
+        vec![css_suffix, ""]
+      } else {
+        vec![""]
+      };
+      let resolve_css = |source: String| {
+        for ext in &extensions {
+          let source = format!("{source}{ext}");
+          if let Ok(Some(res)) = context.plugin_driver.resolve(
+            &PluginResolveHookParam {
+              source,
+              ..param.clone()
+            },
+            context,
+            &PluginHookContext {
+              caller: Some("FarmPluginCss".to_string()),
+              meta: Default::default(),
+            },
+          ) {
+            return Some(res);
+          }
+        }
 
-      return context.plugin_driver.resolve(
-        &PluginResolveHookParam {
-          source,
-          ..param.clone()
-        },
-        context,
-        &PluginHookContext {
-          caller: Some("FarmPluginCss".to_string()),
-          meta: Default::default(),
-        },
-      );
+        None
+      };
+      // try relative path first
+      if !source.starts_with('.') {
+        if let Some(res) = resolve_css(format!("./{}", source)) {
+          return Ok(Some(res));
+        }
+      }
+      // try original source in case it's in node_modules.
+      if let Some(res) = resolve_css(source) {
+        return Ok(Some(res));
+      }
     }
 
     Ok(None)

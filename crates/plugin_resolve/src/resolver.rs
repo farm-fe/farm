@@ -385,20 +385,20 @@ impl Resolver {
     // sort the alias by length, so that the longest alias will be matched first
     let mut alias_list: Vec<_> = context.config.resolve.alias.keys().collect();
     alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+
     for alias in alias_list {
       let replaced = context.config.resolve.alias.get(alias).unwrap();
+      let mut result = None;
 
       // try regex alias first
       if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
         let regex = regex::Regex::new(alias).unwrap();
         if regex.is_match(source) {
           let replaced = regex.replace(source, replaced.as_str()).to_string();
-          return self.resolve(&replaced, base_dir, kind, context);
+          result = self.resolve(&replaced, base_dir.clone(), kind, context);
         }
-      }
-
-      if alias.ends_with('$') && source == alias.trim_end_matches('$') {
-        return self.resolve(replaced, base_dir, kind, context);
+      } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+        result = self.resolve(replaced, base_dir.clone(), kind, context);
       } else if !alias.ends_with('$') && source.starts_with(alias) {
         // Add absolute path and values in node_modules package
 
@@ -408,14 +408,18 @@ impl Resolver {
           .to_string_lossy()
           .to_string();
         if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
-          return self.resolve(&new_source, base_dir, kind, context);
+          result = self.resolve(&new_source, base_dir.clone(), kind, context);
         }
-        let (result, _) =
+        let (res, _) =
           self._try_node_modules_internal(new_source.as_str(), base_dir.clone(), kind, context);
-        if let Some(resolve_result) = result {
+        if let Some(resolve_result) = res {
           let resolved_path = resolve_result.resolved_path;
-          return self.resolve(&resolved_path, base_dir, kind, context);
+          result = self.resolve(&resolved_path, base_dir.clone(), kind, context);
         }
+      }
+
+      if result.is_some() {
+        return result;
       }
     }
 

@@ -526,7 +526,8 @@ export class VitePluginAdapter implements JsPlugin {
     // default module type and asset can be transformed by vite transform hook
     const moduleTypesCouldTransform = [
       VITE_PLUGIN_DEFAULT_MODULE_TYPE,
-      'asset'
+      'asset',
+      'json'
     ];
     return {
       filters: {
