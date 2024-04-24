@@ -7,6 +7,7 @@ import {
   ResolvedUserConfig,
   clearScreen
 } from '../index.js';
+import { logError } from '../server/error.js';
 
 interface CompilerHandlerOptions {
   clear?: boolean;
@@ -28,7 +29,7 @@ export async function compilerHandler(
   try {
     await callback();
   } catch (error) {
-    logger.error(`test error ${error}`, { exit: true });
+    logger.error(`Compiler ${logError(error, false)}`);
     return;
   }
 

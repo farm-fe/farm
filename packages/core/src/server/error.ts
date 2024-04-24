@@ -41,7 +41,7 @@ export function buildErrorMessage(
   return args.join('\n');
 }
 
-export function logError(err: Error) {
+export function logError(err: Error, throwErrorFlag = true) {
   let errorMessages: string[] = [];
   try {
     errorMessages = JSON.parse(err.message);
@@ -50,10 +50,13 @@ export function logError(err: Error) {
   }
 
   if (!Array.isArray(errorMessages) || errorMessages.length === 0) {
-    throw new Error(err.message);
+    if (throwErrorFlag) {
+      throw new Error(err.message);
+    }
+    return err.message;
   }
 
-  const formattedErrorMessages = errorMessages.map((errorMsg: any) => {
+  const formattedErrorMessages = errorMessages.map((errorMsg: string) => {
     try {
       const parsedErrorMsg = JSON.parse(errorMsg);
       if (
@@ -72,7 +75,10 @@ export function logError(err: Error) {
     }
   });
   const errorMessage = formattedErrorMessages.join('\n');
-  throw new Error(errorMessage);
+  if (throwErrorFlag) {
+    throw new Error(errorMessage);
+  }
+  return errorMessage;
 }
 
 // TODO server logger e.g: DevServer.logger.error(msg);
