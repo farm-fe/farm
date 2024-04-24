@@ -22,7 +22,6 @@ use crate::utils::{
 pub struct ResourcesInjectorOptions {
   pub mode: Mode,
   pub public_path: String,
-  pub define: std::collections::HashMap<String, serde_json::Value>,
   pub namespace: String,
   pub current_html_id: ModuleId,
   pub context: Arc<CompilationContext>,
@@ -159,7 +158,7 @@ impl VisitMut for ResourcesInjector {
         )));
       }
 
-      // inject global define
+      // inject global this
       self.inject_global_this(element);
 
       // inject runtime <script>

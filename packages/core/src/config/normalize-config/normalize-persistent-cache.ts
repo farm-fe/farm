@@ -7,6 +7,14 @@ import { ResolvedUserConfig } from '../index.js';
 import { RustPlugin } from '../../plugin/index.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
 
+const defaultGlobalBuiltinCacheKeyStrategy = {
+  define: true,
+  buildDependencies: true,
+  lockfile: true,
+  packageJson: true,
+  env: true
+};
+
 export async function normalizePersistentCache(
   config: Config['config'],
   resolvedUserConfig: ResolvedUserConfig
@@ -22,32 +30,42 @@ export async function normalizePersistentCache(
     config.persistentCache = {
       buildDependencies: [],
       moduleCacheKeyStrategy: {},
-      envs: resolvedUserConfig.env
+      envs: {}
+    };
+  }
+  // globalCacheKeyStrategy should not be passed to rust
+  let { globalBuiltinCacheKeyStrategy } = config.persistentCache;
+  delete config.persistentCache.globalBuiltinCacheKeyStrategy;
+  if (!globalBuiltinCacheKeyStrategy) {
+    globalBuiltinCacheKeyStrategy = {};
+  }
+  globalBuiltinCacheKeyStrategy = {
+    ...defaultGlobalBuiltinCacheKeyStrategy,
+    ...globalBuiltinCacheKeyStrategy
+  };
+
+  if (globalBuiltinCacheKeyStrategy.env) {
+    config.persistentCache.envs = {
+      ...(resolvedUserConfig.env ?? {}),
+      ...(config.persistentCache.envs ?? {})
     };
   }
 
-  if (config.persistentCache.envs === undefined) {
-    config.persistentCache.envs = resolvedUserConfig.env;
-  } else if (typeof config.persistentCache.envs === 'object') {
-    config.persistentCache.envs = {
-      ...resolvedUserConfig.env,
-      ...config.persistentCache.envs
-    };
-  }
-
-  // all define options should be in envs
-  if (config.define && typeof config.define === 'object') {
-    config.persistentCache.envs = {
-      ...config.persistentCache.envs,
-      ...Object.entries(config.define)
-        .map(([k, v]) =>
-          typeof v !== 'string' ? [k, JSON.stringify(v)] : [k, v]
-        )
-        .reduce((acc, [k, v]) => {
-          acc[k] = v;
-          return acc;
-        }, {} as Record<string, string>)
-    };
+  if (globalBuiltinCacheKeyStrategy.define) {
+    // all define options should be in envs
+    if (config.define && typeof config.define === 'object') {
+      config.persistentCache.envs = {
+        ...Object.entries(config.define)
+          .map(([k, v]) =>
+            typeof v !== 'string' ? [k, JSON.stringify(v)] : [k, v]
+          )
+          .reduce((acc, [k, v]) => {
+            acc[k] = v;
+            return acc;
+          }, {} as Record<string, string>),
+        ...config.persistentCache.envs
+      };
+    }
   }
 
   // add type of package.json to envs
@@ -56,32 +74,41 @@ export async function normalizePersistentCache(
     'package.json'
   );
 
-  if (existsSync(packageJsonPath)) {
-    const s = readFileSync(packageJsonPath).toString();
-    const packageJson = JSON.parse(s);
-    const affectedKeys = [
-      'type',
-      'name',
-      'exports',
-      'browser',
-      'main',
-      'module'
-    ];
+  if (globalBuiltinCacheKeyStrategy.packageJson) {
+    if (existsSync(packageJsonPath)) {
+      const s = readFileSync(packageJsonPath).toString();
+      const packageJson = JSON.parse(s);
+      const affectedKeys = [
+        'type',
+        'name',
+        'exports',
+        'browser',
+        'main',
+        'module'
+      ];
 
-    for (const key of affectedKeys) {
-      const value = packageJson[key] ?? 'unknown';
-      config.persistentCache.envs[`package.json[${key}]`] =
-        typeof value !== 'string' ? JSON.stringify(value) : value;
+      for (const key of affectedKeys) {
+        const value = packageJson[key] ?? 'unknown';
+        config.persistentCache.envs[`package.json[${key}]`] =
+          typeof value !== 'string' ? JSON.stringify(value) : value;
+      }
     }
   }
 
   if (!config.persistentCache.buildDependencies) {
     config.persistentCache.buildDependencies = [];
   }
-  // TODO find latest lock file starting from root
-  for (const lockfile of ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
-    if (!config.persistentCache.buildDependencies.includes(lockfile)) {
-      config.persistentCache.buildDependencies.push(lockfile);
+
+  if (globalBuiltinCacheKeyStrategy.lockfile) {
+    // TODO find latest lock file starting from root
+    for (const lockfile of [
+      'package-lock.json',
+      'yarn.lock',
+      'pnpm-lock.yaml'
+    ]) {
+      if (!config.persistentCache.buildDependencies.includes(lockfile)) {
+        config.persistentCache.buildDependencies.push(lockfile);
+      }
     }
   }
 
@@ -94,7 +121,10 @@ export async function normalizePersistentCache(
   }
 
   // trace all build dependencies of the config file
-  if (resolvedUserConfig.configFilePath) {
+  if (
+    globalBuiltinCacheKeyStrategy.buildDependencies &&
+    resolvedUserConfig.configFilePath
+  ) {
     const files = resolvedUserConfig?.configFileDependencies?.length
       ? resolvedUserConfig.configFileDependencies
       : await traceDependencies(resolvedUserConfig.configFilePath);

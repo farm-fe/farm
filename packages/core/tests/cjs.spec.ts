@@ -26,7 +26,7 @@ test('resolveUserConfig', async () => {
       NODE_ENV: 'development'
     },
     // FARM_HMR_PROTOCOL: 'ws',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': 'development'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"development"'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -56,7 +56,7 @@ test('resolveUserConfig', async () => {
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
-        'development',
+        '"development"',
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',

@@ -515,7 +515,6 @@ impl Plugin for FarmPluginTransformHtml {
         ResourcesInjectorOptions {
           mode: context.config.mode.clone(),
           public_path: context.config.output.public_path.clone(),
-          define: context.config.define.clone(),
           namespace: context.config.runtime.namespace.clone(),
           current_html_id: current_html_id.clone(),
           context: context.clone(),

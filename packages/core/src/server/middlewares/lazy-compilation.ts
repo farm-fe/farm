@@ -10,6 +10,7 @@ import { bold, clearScreen, cyan, green } from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { existsSync } from 'node:fs';
+import { logError } from '../error.js';
 
 export function lazyCompilation(devSeverContext: Server): Middleware {
   const compiler = devSeverContext.getCompiler();
@@ -37,7 +38,16 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       devSeverContext.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
       // sync update when node is true
-      const result = await compiler.update(paths, Boolean(ctx.query.node));
+      let result;
+      try {
+        result = await compiler.update(paths, Boolean(ctx.query.node));
+      } catch (e) {
+        logError(e);
+      }
+
+      if (!result) {
+        return;
+      }
 
       if (ctx.query.node) {
         compiler.writeResourcesToDisk();

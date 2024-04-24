@@ -12,9 +12,6 @@ export default defineConfig({
         '@': path.resolve('src')
       }
     },
-    define: {
-      BTN: 'Click me',
-    },
     output: {
       path: './build',
     },

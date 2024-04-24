@@ -60,7 +60,7 @@ fn transform_json() {
     |file, _| {
       let result = generate_transform_fn(&file);
 
-      assert!(result.is_err());
+      assert!(matches!(result, Ok(None)));
     }
   );
 }
