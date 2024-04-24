@@ -12,8 +12,8 @@
     "solid-js": "^1.8.16"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.0",
-    "@farmfe/core": "^1.0.16",
+    "@farmfe/cli": "^1.0.1",
+    "@farmfe/core": "^1.1.1",
     "solid-refresh": "^0.7.5",
     "vite-plugin-solid": "^2.10.2"
   }

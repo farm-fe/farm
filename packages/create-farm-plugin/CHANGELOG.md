@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.6
+
+### Patch Changes
+
+- 73570318: chore(deps): update farmfe-packages
+
 ## 0.1.5
 
 ### Patch Changes

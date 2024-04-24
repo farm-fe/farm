@@ -3,6 +3,7 @@ import prompts from 'prompts';
 import minimist from 'minimist';
 import path from 'node:path';
 import fs from 'node:fs';
+import spawn from 'cross-spawn';
 
 import { fileURLToPath } from 'node:url';
 import { colors } from './utils/color.js';
@@ -19,6 +20,33 @@ interface IResultType {
   autoInstall?: boolean;
   packageManager?: string;
 }
+
+export const tauriTemplate = [
+  {
+    type: 'select',
+    name: 'tauri-framework',
+    message: 'Select a tauri framework:',
+    initial: 0,
+    choices: [
+      {
+        title: colors.cyan('React'),
+        value: 'react'
+      },
+      { title: colors.green('Vue'), value: 'vue' },
+      {
+        title: colors.cyan('Preact'),
+        value: 'preact'
+      },
+      { title: colors.blue('Solid'), value: 'solid' },
+      { title: colors.orange('Svelte'), value: 'svelte' },
+      {
+        title: colors.yellow('Vanilla'),
+        value: 'vanilla'
+      }
+    ]
+  }
+];
+
 // judge node version
 judgeNodeVersion();
 
@@ -96,7 +124,8 @@ async function createFarm() {
               title: colors.yellow('Vanilla'),
               value: 'vanilla'
             },
-            { title: colors.red('Lit'), value: 'lit' }
+            { title: colors.red('Lit'), value: 'lit' },
+            { title: colors.orange('Tauri'), value: 'tauri' }
           ]
         },
         {
@@ -129,9 +158,14 @@ async function createFarm() {
     return;
   }
   const { framework = argFramework, packageManager } = result;
+  let chooseFramework: IResultType['framework'] = framework;
+  if (framework === 'tauri') {
+    const tauriOption = await prompts(tauriTemplate as prompts.PromptObject[]);
+    chooseFramework = `tauri/${tauriOption['tauri-framework']}`;
+  }
 
   await copyTemplate(targetDir, {
-    framework,
+    framework: chooseFramework,
     projectName: targetDir,
     packageManager
   });
