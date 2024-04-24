@@ -17,6 +17,6 @@
     "@farmfe/cli": "^1.0.0",
     "@farmfe/core": "^1.0.16",
     "@preact/preset-vite": "^2.8.1",
-    "typescript": "^5.4.3"
+    "typescript": "^5.4.5"
   }
 }
