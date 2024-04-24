@@ -1,0 +1,27 @@
+{
+  "name": "react",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "farm",
+    "build": "tsc && farm build",
+    "preview": "farm preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@tauri-apps/api": "^1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@farmfe/cli": "^1.0.1",
+    "@farmfe/core": "^1.1.0",
+    "@farmfe/plugin-react": "^1.0.1",
+    "typescript": "^5.0.2",
+    "core-js": "^3.36.1",
+    "react-refresh": "^0.14.0",
+    "@tauri-apps/cli": "^1"
+  }
+}
