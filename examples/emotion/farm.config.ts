@@ -27,5 +27,5 @@ export default defineConfig({
     // treeShaking: true,
     // minify: true,
   },
-  plugins: [['@farmfe/plugin-react', { "runtime": "automatic", "importSource": "@emotion/react" }]],
+  plugins: [['@farmfe/plugin-react', { importSource: '@emotion/react' }]],
 });
