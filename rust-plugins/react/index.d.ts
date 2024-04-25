@@ -1,2 +1,2 @@
-const binPath: string;
+declare const binPath: string;
 export default binPath;
