@@ -59,6 +59,7 @@ fn main() {
       )],
       || {},
       false,
+      true,
     )
     .unwrap();
 }
