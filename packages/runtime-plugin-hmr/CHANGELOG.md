@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.2
+
+### Patch Changes
+
+- 492353f8: fix: lazy compilation concurrency issue
+
 ## 3.5.1
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @farmfe/core
 
+## 1.1.2
+
+### Patch Changes
+
+- 492353f8: fix: lazy compilation concurrency issue
+- 5b75ec27: feat: support isolate runtime resource
+- 8a79de4d: fix: format watch mode error message
+- Updated dependencies [492353f8]
+  - @farmfe/runtime-plugin-hmr@3.5.2
+  - @farmfe/runtime@0.11.1
+
 ## 1.1.1
 
 ### Patch Changes
