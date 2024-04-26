@@ -27,8 +27,10 @@ jobs:
               npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl
           - os: windows-latest
             abi: win32-x64-msvc
-          - os: macos-latest
+          - os: macos-13
             abi: darwin-x64
+          - os: macos-latest
+            abi: darwin-arm64
 
           # cross compile
           # windows. Note swc plugins is not supported on ia32 and arm64
@@ -56,11 +58,6 @@ jobs:
             abi: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             zig: true
-          # macos
-          - os: macos-latest
-            abi: darwin-arm64
-            target: aarch64-apple-darwin
-            zig: false
           # - os: ubuntu-latest
           #   abi: darwin-x64
           #   target: x86_64-apple-darwin

@@ -7,9 +7,14 @@
   "rangeStrategy": "bump",
   "packageRules": [
     {
-      "packagePatterns": ["^@farmfe/*"],
+      "matchPackagePatterns": ["*"],
+      "enabled": false,
+    },
+    {
+      "matchPackagePatterns": ["^@farmfe/*"],
       "groupName": "farmfe-packages",
-      "schedule": ["after 6pm every day",]
+      "schedule": ["after 6pm every day"],
+      "enabled": true,
     },
     {
       "depTypeList": ["peerDependencies"],

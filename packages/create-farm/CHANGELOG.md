@@ -1,5 +1,12 @@
 # create-farm
 
+## 1.6.7
+
+### Patch Changes
+
+- 73570318: chore(deps): update farmfe-packages
+- db61cb49: feat: add tauri template
+
 ## 1.6.6
 
 ### Patch Changes

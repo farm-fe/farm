@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "description": "use create-farm to create farm project",
   "exports": {
     ".": "./bin/create-farm.mjs"
@@ -37,11 +37,15 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/utils": "workspace:*",
+    "@types/cross-spawn": "^6.0.2",
     "@types/minimist": "^1.2.2",
     "@types/prompts": "^2.4.4",
     "gradient-string": "^2.0.2",
     "minimist": "^1.2.8",
     "ora": "^6.3.0",
     "prompts": "^2.4.2"
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.3"
   }
 }
