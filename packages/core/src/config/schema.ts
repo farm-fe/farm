@@ -70,7 +70,7 @@ const compilationConfigSchema = z
         path: z.string().optional(),
         plugins: z.array(z.string()).optional(),
         swcHelpersPath: z.string().optional(),
-        disabledInlineScript: z.boolean().optional()
+        isolate: z.boolean().optional()
       })
       .strict()
       .optional(),

@@ -78,7 +78,8 @@ export class Compiler {
   async update(
     paths: string[],
     sync = false,
-    ignoreCompilingCheck = false
+    ignoreCompilingCheck = false,
+    generateUpdateResource = true
   ): Promise<JsUpdateResult> {
     let resolve: (res: JsUpdateResult) => void;
 
@@ -100,7 +101,12 @@ export class Compiler {
           const next = this._updateQueue.shift();
 
           if (next) {
-            await this.update(next.paths, true, true).then(next.resolve);
+            await this.update(
+              next.paths,
+              true,
+              true,
+              generateUpdateResource
+            ).then(next.resolve);
           } else {
             this.compiling = false;
             for (const cb of this._onUpdateFinishQueue) {
@@ -110,7 +116,8 @@ export class Compiler {
             this._onUpdateFinishQueue = [];
           }
         },
-        sync
+        sync,
+        generateUpdateResource
       );
 
       return res as JsUpdateResult;

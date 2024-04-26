@@ -269,6 +269,7 @@ impl JsCompiler {
     paths: Vec<String>,
     callback: JsFunction,
     sync: bool,
+    generate_update_resource: bool,
   ) -> napi::Result<JsObject> {
     let context = self.compiler.context().clone();
     let thread_safe_callback: ThreadsafeFunction<(), ErrorStrategy::Fatal> =
@@ -289,6 +290,7 @@ impl JsCompiler {
             thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
           },
           sync,
+          generate_update_resource
         )
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
       {

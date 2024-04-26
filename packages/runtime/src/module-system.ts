@@ -54,6 +54,7 @@ export class ModuleSystem {
   private cache: Record<string, Module>;
   // external modules injected during compile
   private externalModules: Record<string, any>;
+  private reRegisterModules: boolean;
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
   // dynamic module entry and resources map
@@ -73,9 +74,9 @@ export class ModuleSystem {
     this.pluginContainer = new FarmRuntimePluginContainer([]);
     this.targetEnv = targetEnv;
     this.externalModules = {};
+    this.reRegisterModules = false;
   }
 
-  // TODO require should be async as we support `top level await`, This feature requires Node 16 and higher
   require(moduleId: string, isCJS = false): any {
     if (INTERNAL_MODULE_MAP[moduleId]) {
       return INTERNAL_MODULE_MAP[moduleId];
@@ -140,7 +141,7 @@ export class ModuleSystem {
       this.farmDynamicRequire.bind(this)
     );
     // it's a async module, return the promise
-    if (result && result.then) {
+    if (result && result instanceof Promise) {
       return result.then(() => {
         // call the module initialized hook
         this.pluginContainer.hookSerial('moduleInitialized', module);
@@ -166,6 +167,10 @@ export class ModuleSystem {
       }
     }
 
+    return this.loadDynamicResources(moduleId);
+  }
+
+  loadDynamicResources(moduleId: string, force = false): Promise<any> {
     const resources = this.dynamicModuleResourcesMap[moduleId];
 
     if (!resources || resources.length === 0) {
@@ -173,10 +178,19 @@ export class ModuleSystem {
         `Dynamic imported module "${moduleId}" does not belong to any resource`
       );
     }
-
+    // force reload resources
+    if (force) {
+      this.reRegisterModules = true;
+      this.clearCache(moduleId);
+    }
     // loading all required resources, and return the exports of the entry module
     return Promise.all(
-      resources.map((resource) => this.resourceLoader.load(resource))
+      resources.map((resource) => {
+        if (force) {
+          this.resourceLoader.setLoadedResource(resource.path, false);
+        }
+        return this.resourceLoader.load(resource);
+      })
     )
       .then(() => {
         if (!this.modules[moduleId]) {
@@ -184,7 +198,7 @@ export class ModuleSystem {
             `Dynamic imported module "${moduleId}" is not registered.`
           );
         }
-
+        this.reRegisterModules = false;
         const result = this.require(moduleId);
         // if the module is async, return the default export, the default export should be a promise
         if (result.__farm_async) {
@@ -201,7 +215,7 @@ export class ModuleSystem {
 
   register(moduleId: string, initializer: ModuleInitialization): void {
     // console.log(`[Farm] register module "${moduleId}"`, console.trace());
-    if (this.modules[moduleId]) {
+    if (this.modules[moduleId] && !this.reRegisterModules) {
       // throw new Error(
       //   `Module "${moduleId}" has registered! It should not be registered twice`
       // );

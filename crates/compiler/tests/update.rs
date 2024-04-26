@@ -127,7 +127,7 @@ fn update_without_dependencies_change() {
         .to_string_lossy()
         .to_string();
       let result = compiler
-        .update(vec![(update_file, UpdateType::Updated)], || {}, true)
+        .update(vec![(update_file, UpdateType::Updated)], || {}, true, true)
         .unwrap();
 
       assert_eq!(result.added_module_ids.len(), 0);
@@ -165,6 +165,7 @@ fn update_without_dependencies_change_css() {
           vec![(update_file.clone(), UpdateType::Updated)],
           || {},
           true,
+          true,
         )
         .unwrap();
 
@@ -175,7 +176,7 @@ fn update_without_dependencies_change_css() {
       asset_update_result_code(cwd.clone(), &result, Some("update1"));
 
       let result = compiler
-        .update(vec![(update_file, UpdateType::Updated)], || {}, false)
+        .update(vec![(update_file, UpdateType::Updated)], || {}, false, true)
         .unwrap();
 
       assert_eq!(result.added_module_ids.len(), 0);
@@ -230,6 +231,7 @@ fn update_with_dependencies_change_css_modules() {
           vec![(update_file.clone(), UpdateType::Updated)],
           || {},
           true,
+          true,
         )
         .unwrap();
       assert_eq!(result.added_module_ids.len(), 2,);
@@ -257,6 +259,7 @@ fn update_with_dependencies_change_css_modules() {
           vec![(update_file_css.clone(), UpdateType::Updated)],
           || {},
           true,
+          true,
         )
         .unwrap();
       assert_eq!(
@@ -278,7 +281,7 @@ fn update_with_dependencies_change_css_modules() {
       let mut original_ts_file = File::create(&update_file).unwrap();
       original_ts_file.write_all(original_ts.as_bytes()).unwrap();
       let result = compiler
-        .update(vec![(update_file, UpdateType::Updated)], || {}, false)
+        .update(vec![(update_file, UpdateType::Updated)], || {}, false, true)
         .unwrap();
 
       assert_eq!(result.added_module_ids.len(), 0);
@@ -316,7 +319,7 @@ fn update_css_and_css_raw() {
       .to_string();
 
     let result = compiler
-      .update(vec![(update_file, UpdateType::Updated)], || {}, true)
+      .update(vec![(update_file, UpdateType::Updated)], || {}, true, true)
       .unwrap();
 
     assert_eq!(
@@ -359,6 +362,7 @@ fn update_lazy_compilation() {
           vec![(update_module_id.clone(), UpdateType::Updated)],
           || {},
           true,
+          true,
         )
         .unwrap();
 
@@ -394,6 +398,7 @@ fn update_lazy_compilation_node() {
         .update(
           vec![(update_module_id.clone(), UpdateType::Updated)],
           || {},
+          true,
           true,
         )
         .unwrap();

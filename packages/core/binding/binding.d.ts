@@ -113,7 +113,7 @@ export class Compiler {
   /** sync compile */
   compileSync(): void
   /** TODO: usage example */
-  update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean): object
+  update(paths: Array<string>, callback: (...args: any[]) => any, sync: boolean, generateUpdateResource: boolean): object
   addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
   getParentFiles(resolvedPath: string): Array<string>

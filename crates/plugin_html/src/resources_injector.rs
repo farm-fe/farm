@@ -1,11 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Mode, FARM_MODULE_SYSTEM},
+  config::{custom::get_config_runtime_isolate, Mode, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   module::ModuleId,
-  resource::{self, Resource, ResourceType},
-  serde_json,
+  resource::{Resource, ResourceType},
   swc_html_ast::{Child, Document, Element},
 };
 use farmfe_toolkit::{
@@ -75,38 +74,28 @@ impl ResourcesInjector {
 
   // Support isolate runtime resource (https://github.com/farm-fe/farm/issues/434)
   fn inject_runtime_resources(&mut self, element: &mut Element) {
-    let inline_farm_entry_script = self
-      .options
-      .context
-      .config
-      .custom
-      .get("disabledInlineScript");
-
-    match inline_farm_entry_script {
-      Some(value) if value == "true" => {
-        let resource = create_farm_runtime_output_resource(
-          self.runtime_code.clone().into_bytes(),
-          FARM_RUNTIME_INJECT_RESOURCE,
-          &self.options.context,
-        );
-        let script_element = create_element(
-          "script",
-          None,
-          vec![
-            (FARM_ENTRY, "true"),
-            ("src", &format!("/{}", resource.name)),
-          ],
-        );
-        element.children.push(Child::Element(script_element));
-        self.additional_inject_resources.push(resource.clone());
-      }
-      _ => {
-        element.children.push(Child::Element(create_element(
-          "script",
-          Some(&self.runtime_code),
-          vec![(FARM_ENTRY, "true")],
-        )));
-      }
+    if get_config_runtime_isolate(&self.options.context) {
+      let resource = create_farm_runtime_output_resource(
+        self.runtime_code.clone().into_bytes(),
+        FARM_RUNTIME_INJECT_RESOURCE,
+        &self.options.context,
+      );
+      let script_element = create_element(
+        "script",
+        None,
+        vec![
+          (FARM_ENTRY, "true"),
+          ("src", &format!("/{}", resource.name)),
+        ],
+      );
+      element.children.push(Child::Element(script_element));
+      self.additional_inject_resources.push(resource.clone());
+    } else {
+      element.children.push(Child::Element(create_element(
+        "script",
+        Some(&self.runtime_code),
+        vec![(FARM_ENTRY, "true")],
+      )));
     }
   }
 
@@ -140,37 +129,28 @@ impl ResourcesInjector {
       r#"{}.{}.setDynamicModuleResourcesMap({});"#,
       self.farm_global_this, FARM_MODULE_SYSTEM, dynamic_resources_code
     );
-    let inline_farm_entry_script = self
-      .options
-      .context
-      .config
-      .custom
-      .get("disabledInlineScript");
 
-    match inline_farm_entry_script {
-      Some(value) if value == "true" => {
-        let resource = create_farm_runtime_output_resource(
-          finalize_code.into_bytes(),
-          "dynamic_resources_map",
-          &self.options.context,
-        );
-        element.children.push(Child::Element(create_element(
-          "script",
-          None,
-          vec![
-            ("FARM_ENTRY", "true"),
-            ("src", &format!("/{}", resource.name)),
-          ],
-        )));
-        self.additional_inject_resources.push(resource);
-      }
-      _ => {
-        element.children.push(Child::Element(create_element(
-          "script",
-          Some(&finalize_code),
-          vec![(FARM_ENTRY, "true")],
-        )));
-      }
+    if get_config_runtime_isolate(&self.options.context) {
+      let resource = create_farm_runtime_output_resource(
+        finalize_code.into_bytes(),
+        "dynamic_resources_map",
+        &self.options.context,
+      );
+      element.children.push(Child::Element(create_element(
+        "script",
+        None,
+        vec![
+          ("FARM_ENTRY", "true"),
+          ("src", &format!("/{}", resource.name)),
+        ],
+      )));
+      self.additional_inject_resources.push(resource);
+    } else {
+      element.children.push(Child::Element(create_element(
+        "script",
+        Some(&finalize_code),
+        vec![(FARM_ENTRY, "true")],
+      )));
     }
   }
 
@@ -319,22 +299,12 @@ impl VisitMut for ResourcesInjector {
       self.inject_initial_loaded_resources(element);
       self.inject_dynamic_resources_map(element);
 
-      let inline_farm_entry_script = self
-        .options
-        .context
-        .config
-        .custom
-        .get("disabledInlineScript");
-
-      match inline_farm_entry_script {
-        Some(value) if value == "true" => {
-          self.inject_resource_separate_file(element);
-        }
-        _ => {
-          self.inject_other_entry_file(element);
-        }
-      };
-    }
+      if get_config_runtime_isolate(&self.options.context) {
+        self.inject_resource_separate_file(element);
+      } else {
+        self.inject_other_entry_file(element);
+      }
+    };
 
     element.visit_mut_children_with(self);
   }

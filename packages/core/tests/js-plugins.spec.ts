@@ -41,10 +41,7 @@ test('Js Plugin Execution - resolve', async () => {
 
           return {
             resolvedPath,
-            query: [['foo', 'bar']],
-            sideEffects: false,
-            external: false,
-            meta: {}
+            query: [['foo', 'bar']]
           };
         }
       }
