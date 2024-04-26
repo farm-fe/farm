@@ -6,7 +6,13 @@ import { relative } from 'node:path';
 import { Context, Middleware, Next } from 'koa';
 
 import { Server } from '../index.js';
-import { bold, clearScreen, cyan, green } from '../../index.js';
+import {
+  VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
+  bold,
+  clearScreen,
+  cyan,
+  green
+} from '../../index.js';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { existsSync } from 'node:fs';
@@ -24,7 +30,11 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       const paths = (ctx.query.paths as string).split(',');
       const pathsStr = paths
         .map((p) => {
-          if (p.startsWith('/') && !existsSync(p)) {
+          if (
+            p.startsWith('/') &&
+            !p.endsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX) &&
+            !existsSync(p)
+          ) {
             return p;
           }
           const resolvedPath = compiler.transformModulePath(
@@ -40,7 +50,8 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       // sync update when node is true
       let result;
       try {
-        result = await compiler.update(paths, Boolean(ctx.query.node));
+        // sync regenerate resources
+        result = await compiler.update(paths, true, false, false);
       } catch (e) {
         logError(e);
       }
@@ -58,8 +69,6 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           cyan(pathsStr)
         )}) in ${bold(green(`${Date.now() - start}ms`))}.`
       );
-
-      devSeverContext.hmrEngine?.callUpdates?.(result);
 
       if (result) {
         let dynamicResourcesMap: Record<string, Resource[]> = null;
@@ -79,17 +88,12 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           }
         }
 
-        const code = !ctx.query.node
-          ? `export default {
-          immutableModules: ${JSON.stringify(result.immutableModules.trim())},
-          mutableModules: ${JSON.stringify(result.mutableModules.trim())},
-          dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
-        }`
-          : `{
-          "immutableModules": ${JSON.stringify(result.immutableModules.trim())},
-          "mutableModules": ${JSON.stringify(result.mutableModules.trim())},
+        const returnObj = `{
           "dynamicResourcesMap": ${JSON.stringify(dynamicResourcesMap)}
         }`;
+        const code = !ctx.query.node
+          ? `export default ${returnObj}`
+          : returnObj;
         ctx.type = !ctx.query.node
           ? 'application/javascript'
           : 'application/json';

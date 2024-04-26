@@ -35,7 +35,8 @@ pub fn parse_css_stylesheet(
   let config = ParserConfig {
     allow_wrong_line_comments: true,
     css_modules: true,
-    ..Default::default()
+    legacy_nesting: true,
+    legacy_ie: true,
   };
 
   let comments = SingleThreadedComments::default();

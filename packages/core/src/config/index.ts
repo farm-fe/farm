@@ -494,6 +494,12 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  // setting the custom configuration
+  config.custom = {
+    ...(config.custom || {}),
+    'runtime.isolate': `${!!config.runtime.isolate}`
+  };
+
   // normalize persistent cache at last
   await normalizePersistentCache(config, userConfig);
 

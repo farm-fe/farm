@@ -42,15 +42,15 @@ export interface PluginResolveHookResult {
   /// resolved path, normally a absolute path. you can also return a virtual path, and use [PluginLoadHookResult] to provide the content of the virtual path
   resolvedPath: string;
   /// whether this module should be external, if true, the module won't present in the final result
-  external: boolean;
+  external?: boolean;
   /// whether this module has side effects, affects tree shaking
-  sideEffects: boolean;
+  sideEffects?: boolean;
   /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [crate::utils::parse_query] is for you
-  query: [string, string][] | null;
+  query?: [string, string][];
   /// meta data of the module, will be passed to [PluginLoadHookParam] and [PluginTransformHookParam]
-  meta: Record<string, string> | null;
+  meta?: Record<string, string>;
 }
 
 export interface PluginLoadHookParam {
@@ -199,6 +199,11 @@ export interface RuntimeConfig {
    * By default, the name field of the project package.json is used as the namespace.
    */
   namespace?: string;
+  /**
+   * Whether to isolate the farm entry script, the default is false. 
+   * If set to true, the farm entry script will be emitted as a separate file.
+   */
+  isolate?: boolean;
 }
 
 export interface ScriptConfig {
@@ -414,6 +419,7 @@ export interface Config {
     presetEnv?: boolean | PresetEnvConfig;
     persistentCache?: boolean | PersistentCacheConfig;
     comments?: boolean | 'license';
+    custom?:Record<string, any>;
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]

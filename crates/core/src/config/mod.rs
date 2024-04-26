@@ -21,6 +21,7 @@ pub const FARM_MODULE_EXPORT: &str = "exports";
 pub mod bool_or_obj;
 pub mod comments;
 pub mod config_regex;
+pub mod custom;
 pub mod html;
 pub mod minify;
 pub mod partial_bundling;

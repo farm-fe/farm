@@ -9,7 +9,7 @@ export interface Resource {
 }
 
 // Injected during build
-export const __farm_global_this__: any = eval('<@__farm_global_this__@>');
+export const __farm_global_this__: any = '<@__farm_global_this__@>';
 
 export const targetEnv = __farm_global_this__.__FARM_TARGET_ENV__ || 'node';
 export const isBrowser =
@@ -92,8 +92,8 @@ export class ResourceLoader {
     }
   }
 
-  setLoadedResource(path: string) {
-    this._loadedResources[path] = true;
+  setLoadedResource(path: string, loaded = true) {
+    this._loadedResources[path] = loaded;
   }
 
   isResourceLoaded(path: string) {
@@ -114,6 +114,7 @@ export class ResourceLoader {
     promise
       .then(() => {
         this._loadedResources[resource.path] = true;
+        this._loadingResources[resource.path] = null;
       })
       .catch((e) => {
         console.warn(
@@ -124,6 +125,7 @@ export class ResourceLoader {
         if (index < this.publicPaths.length) {
           return this._load(url, resource, index);
         } else {
+          this._loadingResources[resource.path] = null;
           throw new Error(
             `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". ${e}`
           );

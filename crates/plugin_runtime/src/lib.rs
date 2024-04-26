@@ -90,7 +90,7 @@ impl Plugin for FarmPluginRuntime {
     config.define.insert(
       "'<@__farm_global_this__@>'".to_string(),
       serde_json::Value::String(format!(
-        "\"{}\"",
+        "{}",
         get_farm_global_this(&config.runtime.namespace)
       )),
     );
