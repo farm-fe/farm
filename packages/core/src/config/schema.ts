@@ -69,7 +69,8 @@ const compilationConfigSchema = z
       .object({
         path: z.string().optional(),
         plugins: z.array(z.string()).optional(),
-        swcHelpersPath: z.string().optional()
+        swcHelpersPath: z.string().optional(),
+        disabledInlineScript: z.boolean().optional()
       })
       .strict()
       .optional(),
