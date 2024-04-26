@@ -579,10 +579,10 @@ impl Compiler {
 
       let mut dynamic_resources = HashMap::new();
 
-      for html_entry_id in module_graph.entries.keys() {
+      for entry_id in module_graph.entries.keys() {
         dynamic_resources.extend(get_dynamic_resources_map(
           &module_group_graph,
-          html_entry_id,
+          entry_id,
           &resource_pot_map,
           &resources_map,
         ));

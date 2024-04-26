@@ -497,7 +497,7 @@ export async function normalizeUserCompilationConfig(
   // setting the custom configuration
   config.custom = {
     ...(config.custom || {}),
-    disabledInlineScript: `${!!config.runtime.disabledInlineScript}`
+    'runtime.isolate': `${!!config.runtime.isolate}`
   };
 
   // normalize persistent cache at last
