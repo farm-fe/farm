@@ -494,6 +494,12 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  // setting the custom configuration
+  config.custom = {
+    ...(config.custom || {}),
+    disabledInlineScript: `${!!config.runtime.disabledInlineScript}`
+  };
+
   // normalize persistent cache at last
   await normalizePersistentCache(config, userConfig);
 

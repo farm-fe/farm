@@ -28,8 +28,7 @@ const compilationConfigSchema = z
             'browser-es2017'
           ])
           .optional(),
-        format: z.enum(['cjs', 'esm']).optional(),
-        inlineFarmEntryScript: z.boolean().optional()
+        format: z.enum(['cjs', 'esm']).optional()
       })
       .strict()
       .optional(),
@@ -70,7 +69,8 @@ const compilationConfigSchema = z
       .object({
         path: z.string().optional(),
         plugins: z.array(z.string()).optional(),
-        swcHelpersPath: z.string().optional()
+        swcHelpersPath: z.string().optional(),
+        disabledInlineScript: z.boolean().optional()
       })
       .strict()
       .optional(),

@@ -141,11 +141,6 @@ export interface OutputConfig {
    * output modul format
    */
   format?: 'cjs' | 'esm';
-  /**
-   * Whether to inline the farm entry script, the default is true. 
-   * If set to false, the farm entry script will be output as a separate file, and the farm entry script will be loaded asynchronously.
-   */
-  inlineFarmEntryScript?: boolean;
 }
 
 export interface ResolveConfig {
@@ -204,6 +199,11 @@ export interface RuntimeConfig {
    * By default, the name field of the project package.json is used as the namespace.
    */
   namespace?: string;
+  /**
+   * Whether to inline the farm entry script, the default is false. 
+   * If set to true, the farm entry script will be output as a separate file.
+   */
+  disabledInlineScript?: boolean;
 }
 
 export interface ScriptConfig {
@@ -419,6 +419,7 @@ export interface Config {
     presetEnv?: boolean | PresetEnvConfig;
     persistentCache?: boolean | PersistentCacheConfig;
     comments?: boolean | 'license';
+    custom?:Record<string, any>;
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]

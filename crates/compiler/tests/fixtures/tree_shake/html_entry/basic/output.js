@@ -1,9 +1,3 @@
-//farm_runtime_resource_0ab0e11c.mjs:
- (function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"ec853507":function  (module, exports, farmRequire, farmDynamicRequire) {
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-}
-,},"ec853507");
-
 //index.html:
  <!DOCTYPE html>
 <html lang="en">
@@ -16,7 +10,10 @@
 (globalThis || window || global)['__farm_default_namespace__'] = {};
 (globalThis || window || global)['__farm_default_namespace__'] = {
   __FARM_TARGET_ENV__: 'browser',
-};</script><script data-farm-entry-script="true" src="/farm_runtime_resource_0ab0e11c.mjs"></script></head>
+};</script><script data-farm-entry-script="true">(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})({"ec853507":function  (module, exports, farmRequire, farmDynamicRequire) {
+    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+}
+,},"ec853507");</script></head>
 <body>
   
 

@@ -32,7 +32,6 @@ use farmfe_toolkit::{
   script::{module_type_from_id, swc_try_with::try_with},
 };
 use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
-use utils::create_farm_runtime_output_resource;
 
 mod absolute_path_handler;
 mod deps_analyzer;
@@ -41,7 +40,6 @@ mod utils;
 
 const BASE_HTML_CHILDREN_PLACEHOLDER: &str = "{{children}}";
 pub const UNRESOLVED_SLASH_MODULE: &str = "FARM_HTML_UNRESOLVED_SLASH_MODULE";
-pub const FARM_RUNTIME_INJECT_RESOURCE: &str = "farm_runtime_resource";
 
 #[cache_item]
 struct CachedHtmlInlineModuleMap {
@@ -384,17 +382,11 @@ impl Plugin for FarmPluginTransformHtml {
     // 2. inject script and css link in topo order
     // 3. execute direct script module dependency
 
-    let mut runtime_resources = vec![];
+    let mut runtime_code = String::new();
 
     for resource in params.resources_map.values() {
       if matches!(resource.resource_type, ResourceType::Runtime) {
-        // rename runtime file, eg: FARM_RUNTIME_runtime ->  farm_runtime_resource.mjs
-        let output_runtime_resource = create_farm_runtime_output_resource(
-          resource.bytes.clone(),
-          FARM_RUNTIME_INJECT_RESOURCE,
-          context,
-        );
-        runtime_resources.push(output_runtime_resource);
+        runtime_code = String::from_utf8(resource.bytes.to_vec()).unwrap();
         break;
       }
     }
@@ -516,7 +508,7 @@ impl Plugin for FarmPluginTransformHtml {
 
       let mut resources_injector = ResourcesInjector::new(
         vec![],
-        runtime_resources.clone(),
+        runtime_code.clone(),
         script_resources,
         css_resources,
         script_entries,
