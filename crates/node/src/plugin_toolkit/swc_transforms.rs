@@ -45,7 +45,7 @@ pub fn farm_swc_transform_react(
     },
     development,
     runtime: if let Some(runtime) = &swc_transforms_react_options.runtime {
-      Some(runtime.clone())
+      Some(*runtime)
     } else {
       Some(Runtime::Automatic)
     },
