@@ -507,6 +507,7 @@ impl Plugin for FarmPluginTransformHtml {
       drop(module_graph);
 
       let mut resources_injector = ResourcesInjector::new(
+        vec![],
         runtime_code.clone(),
         script_resources,
         css_resources,
@@ -526,7 +527,9 @@ impl Plugin for FarmPluginTransformHtml {
         .unwrap();
       let mut html_ast =
         parse_html_document(&resource_pot.id, resource_pot.meta.rendered_content.clone())?;
+
       resources_injector.inject(&mut html_ast);
+
       // set publicPath prefix
       let mut absolute_path_handler = AbsolutePathHandler {
         public_path: context.config.output.public_path.clone(),
@@ -535,6 +538,8 @@ impl Plugin for FarmPluginTransformHtml {
 
       let code = codegen_html_document(&html_ast, context.config.minify.enabled());
       html_resource.bytes = code.bytes().collect();
+
+      resources_injector.update_resource(params.resources_map);
     }
 
     Ok(None)

@@ -86,9 +86,10 @@ pub fn resource_pot_to_runtime_object(
           name: m_id.to_string() + "-resource_pot_to_runtime_object",
           key: sha256(
             format!(
-              "resource_pot_to_runtime_object_{}_{}",
+              "resource_pot_to_runtime_object_{}_{}_{}",
               content_hash,
-              m_id.to_string()
+              m_id.to_string(),
+              module.used_exports.join(",")
             )
             .as_bytes(),
             32,

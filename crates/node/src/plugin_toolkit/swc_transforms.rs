@@ -9,7 +9,7 @@ use farmfe_toolkit::{
   script::swc_try_with::try_with,
   swc_ecma_transforms::{
     helpers::inject_helpers,
-    react::{react, Options, RefreshOptions},
+    react::{react, Options, RefreshOptions, Runtime},
   },
   swc_ecma_visit::VisitMutWith,
 };
@@ -44,6 +44,11 @@ pub fn farm_swc_transform_react(
       None
     },
     development,
+    runtime: if let Some(runtime) = &swc_transforms_react_options.runtime {
+      Some(*runtime)
+    } else {
+      Some(Runtime::Automatic)
+    },
     ..swc_transforms_react_options
   };
 

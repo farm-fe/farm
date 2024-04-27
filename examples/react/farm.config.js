@@ -27,7 +27,7 @@ export default defineConfig(() => {
       }
     },
     plugins: [
-      ['@farmfe/plugin-react', { runtime: 'automatic' }],
+      '@farmfe/plugin-react',
       '@farmfe/plugin-sass'
     ]
   };

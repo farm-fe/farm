@@ -32,9 +32,15 @@ pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
       module_id.resolved_path(root)
     )
   });
-  file_meta
-    .modified()
-    .unwrap()
+  let system_time = file_meta.modified();
+
+  if let Ok(system_time) = system_time {
+    if let Ok(dur) = system_time.duration_since(SystemTime::UNIX_EPOCH) {
+      return dur.as_nanos();
+    }
+  }
+
+  SystemTime::now()
     .duration_since(SystemTime::UNIX_EPOCH)
     .unwrap()
     .as_nanos()

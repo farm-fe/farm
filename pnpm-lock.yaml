@@ -267,7 +267,7 @@ importers:
         version: 0.1.13
     devDependencies:
       '@farmfe/cli':
-        specifier: ^1.0.0
+        specifier: ^1.0.1
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -1849,10 +1849,10 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:0.11.0
+        specifier: workspace:0.11.1
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:3.5.1
+        specifier: workspace:3.5.2
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
         specifier: workspace:0.2.0
@@ -1965,6 +1965,10 @@ importers:
         version: 0.14.0
 
   packages/create-farm:
+    dependencies:
+      cross-spawn:
+        specifier: ^7.0.3
+        version: 7.0.3
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1975,6 +1979,9 @@ importers:
       '@farmfe/utils':
         specifier: workspace:*
         version: link:../utils
+      '@types/cross-spawn':
+        specifier: ^6.0.2
+        version: 6.0.4
       '@types/minimist':
         specifier: ^1.2.2
         version: 1.2.4
@@ -2053,7 +2060,7 @@ importers:
         version: 3.33.2
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.11.0
+        specifier: workspace:^0.11.1
         version: link:../runtime
 
   packages/runtime-plugin-import-meta:

@@ -41,7 +41,7 @@ export class HmrClient {
     // after the file is recompiled, the server will generated a update resource and send its id to the client
     // the client will apply the update
     socket.addEventListener('message', (event) => {
-      const result: HMRPayload = eval(`(${event.data})`);
+      const result: HMRPayload = new Function(`return (${event.data})`)();
       if (result?.type === 'closing') {
         this.closeConnectionGracefully();
         return;
@@ -240,8 +240,10 @@ export class HmrClient {
 
   handleFarmUpdate(result: RawHmrUpdateResult) {
     hasErrorOverlay() && clearOverlay();
-    const immutableModules = eval(result.immutableModules);
-    const mutableModules = eval(result.mutableModules);
+    const immutableModules = new Function(
+      `return ${result.immutableModules}`
+    )();
+    const mutableModules = new Function(`return ${result.mutableModules}`)();
     const modules = { ...immutableModules, ...mutableModules };
     this.applyHotUpdates(
       {
