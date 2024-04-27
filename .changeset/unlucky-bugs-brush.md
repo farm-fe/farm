@@ -1,5 +1,5 @@
 ---
-'@farmfe/plugin-react': major
+'@farmfe/plugin-react': minor
 ---
 
 assign `runtime` default value is `automatic`
