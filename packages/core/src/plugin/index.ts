@@ -1,7 +1,5 @@
-import { isArray, isObject } from '../utils/index.js';
 import { convertPlugin } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
-
 import type { JsPlugin } from './type.js';
 import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
 import merge from '../utils/merge.js';
@@ -9,7 +7,8 @@ import merge from '../utils/merge.js';
 export * from './js/index.js';
 export * from './rust/index.js';
 
-export async function resolveFarmPlugins(config: UserConfig) {
+// combing resolveFarmPlugin and resolveAsyncPlugin
+export async function resolveFarmPluginsAndAsyncPlugins(config: UserConfig) {
   const plugins = config.plugins ?? [];
 
   if (!plugins.length) {
@@ -20,7 +19,6 @@ export async function resolveFarmPlugins(config: UserConfig) {
   }
 
   const rustPlugins = [];
-
   const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
@@ -30,15 +28,15 @@ export async function resolveFarmPlugins(config: UserConfig) {
 
     if (
       typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
+      (Array.isArray(plugin) && typeof plugin[0] === 'string')
     ) {
       rustPlugins.push(
         await rustPluginResolver(plugin as string, config.root ?? process.cwd())
       );
-    } else if (isObject(plugin)) {
+    } else if (typeof plugin === 'object') {
       convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
-    } else if (isArray(plugin)) {
+    } else if (Array.isArray(plugin)) {
       for (const pluginNestItem of plugin as JsPlugin[]) {
         convertPlugin(pluginNestItem as JsPlugin);
         jsPlugins.push(pluginNestItem as JsPlugin);
@@ -50,14 +48,16 @@ export async function resolveFarmPlugins(config: UserConfig) {
     }
   }
 
+  const resolvedRustPlugins = await resolveAsyncPlugins(rustPlugins);
+  const resolvedJsPlugins = await resolveAsyncPlugins(jsPlugins);
+
   return {
-    rustPlugins,
-    jsPlugins
+    rustPlugins: resolvedRustPlugins,
+    jsPlugins: resolvedJsPlugins
   };
 }
 
-// resolve promise plugins
-export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
+async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
   return arr.reduce<Promise<T[]>>(async (acc, current) => {
     const flattenedAcc = await acc;
 
