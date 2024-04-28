@@ -66,8 +66,9 @@ pub fn resource_pot_to_runtime_object(
 
   let minify_enabled =
     matches!(minify_options.mode, MinifyMode::Module) && context.config.minify.enabled();
-  let is_enabled_minify =
-    |module_id: &ModuleId| minify_enabled && path_filter.execute(module_id.relative_path());
+  let is_enabled_minify = |module_id: &ModuleId| {
+    minify_enabled && path_filter.execute(&module_id.resolved_path(&context.config.root))
+  };
 
   resource_pot
     .modules()
