@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^1.0.1",
-    "@farmfe/core": "^1.1.1",
+    "@farmfe/core": "^1.1.2",
     "typescript": "^5.4.3"
   }
 }
