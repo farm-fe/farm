@@ -635,9 +635,6 @@ importers:
 
   examples/react:
     dependencies:
-      '@farmfe-examples/lib-for-browser':
-        specifier: workspace:^
-        version: link:../lib-for-browser
       '@reduxjs/toolkit':
         specifier: ^2.2.1
         version: 2.2.1(react-redux@7.2.9)(react@18.2.0)
@@ -690,6 +687,9 @@ importers:
       '@ant-design/icons':
         specifier: ^5.0.1
         version: 5.2.6(react-dom@18.2.0)(react@18.2.0)
+      '@farmfe-examples/lib-for-browser':
+        specifier: workspace:^
+        version: link:../lib-for-browser
       antd:
         specifier: ^5.4.2
         version: 5.11.0(react-dom@18.2.0)(react@18.2.0)
@@ -1349,7 +1349,7 @@ importers:
         version: 0.2.2(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.9.2(vue@2.6.14)
+        version: 1.9.3(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(vue-template-compiler@2.6.14)
@@ -1380,7 +1380,7 @@ importers:
         version: 0.2.2(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.9.2(vue@2.7.16)
+        version: 1.9.3(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(vue-template-compiler@2.6.14)
@@ -16137,8 +16137,8 @@ packages:
       vue: 2.7.16
     dev: false
 
-  /tdesign-vue@1.9.2(vue@2.6.14):
-    resolution: {integrity: sha512-C1+YdWWUMXf8ZlYJrwS3o92U0t+ERlgIknn7PdlAsgIcK1GaaNEQKKhENF/DwB2M7aGyOeLJnbtqo6ku3TCJ8A==}
+  /tdesign-vue@1.9.3(vue@2.6.14):
+    resolution: {integrity: sha512-PoKSvQsrL3kiu8+geSFWamu7m2TubeU7/MtsRxLkqOwQJK/LDIsKtLLrxi5fBKOEZpN5NOGPz9Q1YXJQpd241Q==}
     peerDependencies:
       vue: ~2.6.10
     dependencies:
@@ -16163,8 +16163,8 @@ packages:
       vue: 2.6.14
     dev: false
 
-  /tdesign-vue@1.9.2(vue@2.7.16):
-    resolution: {integrity: sha512-C1+YdWWUMXf8ZlYJrwS3o92U0t+ERlgIknn7PdlAsgIcK1GaaNEQKKhENF/DwB2M7aGyOeLJnbtqo6ku3TCJ8A==}
+  /tdesign-vue@1.9.3(vue@2.7.16):
+    resolution: {integrity: sha512-PoKSvQsrL3kiu8+geSFWamu7m2TubeU7/MtsRxLkqOwQJK/LDIsKtLLrxi5fBKOEZpN5NOGPz9Q1YXJQpd241Q==}
     peerDependencies:
       vue: ~2.6.10
     dependencies:
@@ -16988,7 +16988,7 @@ packages:
     dependencies:
       '@vue/component-compiler-utils': 3.3.0
       svgo: 3.2.0
-      vue-template-compiler: 2.6.14(vue@2.6.14)
+      vue-template-compiler: 2.6.14(vue@2.7.16)
     transitivePeerDependencies:
       - arc-templates
       - atpl
@@ -17372,6 +17372,7 @@ packages:
       de-indent: 1.0.2
       he: 1.2.0
       vue: 2.6.14
+    dev: true
 
   /vue-template-compiler@2.6.14(vue@2.7.16):
     resolution: {integrity: sha512-ODQS1SyMbjKoO1JBJZojSw6FE4qnh9rIpUZn2EUT86FKizx9uH5z6uXiIrm4/Nb/gwxTi/o17ZDEGWAXHvtC7g==}
@@ -17381,7 +17382,6 @@ packages:
       de-indent: 1.0.2
       he: 1.2.0
       vue: 2.7.16
-    dev: true
 
   /vue-template-es2015-compiler@1.9.1:
     resolution: {integrity: sha512-4gDntzrifFnCEvyoO8PqyJDmguXgVPxKiIxrBKjIowvL9l+N66196+72XVYR8BBf1Uv1Fgt3bGevJ+sEmxfZzw==}
