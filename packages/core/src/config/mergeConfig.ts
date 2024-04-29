@@ -1,3 +1,4 @@
+import path, { isAbsolute } from 'node:path';
 import { isString } from '../plugin/js/utils.js';
 import { isArray, isObject } from '../utils/share.js';
 import { FarmCLIOptions, UserConfig } from './types.js';
@@ -42,14 +43,50 @@ export function mergeConfig<T extends Record<string, any>>(
 }
 
 export function mergeFarmCliConfig(
-  cliOption: FarmCLIOptions,
+  cliOption: FarmCLIOptions & UserConfig,
   target: UserConfig
 ): UserConfig {
   let left: UserConfig = {};
 
-  if (cliOption.compilation) {
-    left.compilation = cliOption.compilation;
-    left = mergeConfig(left, { compilation: cliOption.compilation });
+  (
+    [
+      'clearScreen',
+      'compilation',
+      'envDir',
+      'envPrefix',
+      'plugins',
+      'publicDir',
+      'server',
+      'vitePlugins'
+    ] satisfies (keyof UserConfig)[]
+  ).forEach((key) => {
+    const value = cliOption[key];
+    if (value || typeof value === 'boolean') {
+      left = mergeConfig(left, { [key]: cliOption[key] });
+    }
+  });
+
+  {
+    // root
+    const configRootPath = target.root;
+
+    if (cliOption.root) {
+      const cliRoot = cliOption.root;
+
+      if (!isAbsolute(cliRoot)) {
+        target.root = path.resolve(process.cwd(), cliRoot);
+      } else {
+        target.root = cliRoot;
+      }
+    }
+    if (configRootPath) {
+      target.root = configRootPath;
+    }
+
+    if (target.root && !isAbsolute(target.root)) {
+      const resolvedRoot = path.resolve(cliOption.configPath, target.root);
+      target.root = resolvedRoot;
+    }
   }
 
   if (isString(cliOption.host) || typeof cliOption.host === 'boolean') {

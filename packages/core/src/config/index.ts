@@ -45,7 +45,6 @@ import { traceDependencies } from '../utils/trace-dependencies.js';
 import type {
   Alias,
   FarmCLIOptions,
-  FarmCLIServerOptions,
   NormalizedServerConfig,
   ResolvedUserConfig,
   UserConfig,
@@ -74,23 +73,18 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
 }
 
 async function getDefaultConfig(
+  config: UserConfig,
   inlineOptions: FarmCLIOptions,
   logger: Logger,
-  mode?: CompilationMode,
-  isHandleServerPortConflict = true
+  mode?: CompilationMode
 ) {
-  const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
-
   const resolvedUserConfig = await resolveMergedUserConfig(
-    mergedUserConfig,
+    config,
     undefined,
     inlineOptions.mode ?? mode
   );
-  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
 
-  if (isHandleServerPortConflict) {
-    await handleServerPortConflict(resolvedUserConfig, logger, mode);
-  }
+  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -123,7 +117,7 @@ async function handleServerPortConflict(
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCLIOptions,
+  inlineOptions: FarmCLIOptions & UserConfig,
   logger: Logger,
   mode?: CompilationMode,
   isHandleServerPortConflict = true
@@ -147,17 +141,11 @@ export async function resolveConfig(
     if (loadedUserConfig) {
       configPath = loadedUserConfig.configFilePath;
       rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
-
     }
   } else {
     mergeConfig(
       rawConfig,
-      await getDefaultConfig(
-        inlineOptions,
-        logger,
-        mode,
-        isHandleServerPortConflict
-      )
+      await getDefaultConfig(rawConfig, inlineOptions, logger, mode)
     );
   }
 
@@ -191,7 +179,7 @@ export async function resolveConfig(
 
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
 
-  const mergedUserConfig = mergeInlineCliOptions(config, inlineOptions);
+  const mergedUserConfig = mergeFarmCliConfig(inlineOptions, config);
 
   const resolvedUserConfig = await resolveMergedUserConfig(
     mergedUserConfig,
@@ -769,83 +757,6 @@ function checkClearScreen(inlineConfig: FarmCLIOptions) {
   ) {
     clearScreen();
   }
-}
-
-export function mergeInlineCliOptions(
-  userConfig: UserConfig,
-  inlineOptions: FarmCLIOptions
-): UserConfig {
-  const configRootPath = userConfig.root;
-
-  if (inlineOptions.root) {
-    const cliRoot = inlineOptions.root;
-
-    if (!isAbsolute(cliRoot)) {
-      userConfig.root = path.resolve(process.cwd(), cliRoot);
-    } else {
-      userConfig.root = cliRoot;
-    }
-  }
-
-  if (configRootPath) {
-    userConfig.root = configRootPath;
-  }
-
-  if (userConfig.root && !isAbsolute(userConfig.root)) {
-    const resolvedRoot = path.resolve(
-      inlineOptions.configPath,
-      userConfig.root
-    );
-    userConfig.root = resolvedRoot;
-  }
-
-  // set compiler options
-  ['minify', 'sourcemap'].forEach((option: keyof FarmCLIOptions) => {
-    if (inlineOptions[option] !== undefined) {
-      userConfig.compilation = {
-        ...(userConfig.compilation ?? {}),
-        [option]: inlineOptions[option]
-      };
-    }
-  });
-
-  const outputOptions = inlineOptions.compilation?.output;
-
-  if (outputOptions?.path) {
-    userConfig.compilation = {
-      ...(userConfig.compilation ?? {})
-    };
-
-    userConfig.compilation.output = {
-      ...(userConfig.compilation.output ?? {}),
-      path: outputOptions?.path
-    };
-  }
-
-  if (outputOptions?.targetEnv) {
-    userConfig.compilation = {
-      ...(userConfig.compilation ?? {})
-    };
-
-    userConfig.compilation.output = {
-      ...(userConfig.compilation.output ?? {}),
-      targetEnv: outputOptions?.targetEnv
-    };
-  }
-
-  // set server options
-  ['port', 'open', 'https', 'hmr', 'host', 'strictPort'].forEach(
-    (option: keyof FarmCLIServerOptions) => {
-      if (inlineOptions.server?.[option]) {
-        userConfig.server = {
-          ...(userConfig.server ?? {}),
-          [option]: inlineOptions.server[option]
-        };
-      }
-    }
-  );
-
-  return userConfig;
 }
 
 export async function resolveMergedUserConfig(

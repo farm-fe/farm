@@ -1,24 +1,24 @@
 import { describe, expect, test } from 'vitest';
-import { mergeInlineCliOptions } from '../../src/config/index.js';
+import { mergeFarmCliConfig } from '../../src/config/mergeConfig.js';
 import path from 'path';
 
-describe('mergeInlineCliOptions', () => {
+describe('mergeFarmCliConfig', () => {
   test('inlineOption.root not empty', () => {
-    const result = mergeInlineCliOptions({}, { root: '/path/to/' });
+    const result = mergeFarmCliConfig({}, { root: '/path/to/' });
 
     expect(result).toEqual({ root: '/path/to/' });
   });
 
   test('userConfig.root not empty', () => {
-    const result = mergeInlineCliOptions({ root: '/path/to/' }, {});
+    const result = mergeFarmCliConfig({ root: '/path/to/' }, {});
 
     expect(result).toEqual({ root: '/path/to/' });
   });
 
   test('userConfig.root both inlineOption not empty', () => {
-    const result = mergeInlineCliOptions(
-      { root: '/path/to/userConfig' },
-      { root: '/path/to/inlineOption' }
+    const result = mergeFarmCliConfig(
+      { root: '/path/to/inlineOption' },
+      { root: '/path/to/userConfig' }
     );
 
     expect(result).toEqual({ root: '/path/to/userConfig' });
@@ -26,18 +26,16 @@ describe('mergeInlineCliOptions', () => {
 
   test('userConfig.root relative, should have configPath', () => {
     expect(() => {
-      mergeInlineCliOptions(
-        { root: './path/userConfig' },
-        { root: './path/to/' }
-      );
+      mergeFarmCliConfig({ root: './path/to/' }, { root: './path/userConfig' });
     }).toThrow();
 
-    const result = mergeInlineCliOptions(
-      { root: './path/userConfig' },
-      { root: './path/to/', configPath: process.cwd() }
+    const result = mergeFarmCliConfig(
+      { root: './path/to/', configPath: process.cwd() },
+      { root: './path/userConfig' }
     );
+
     expect(result).toEqual({
-      root: path.resolve('./path/userConfig')
+      root: path.resolve(process.cwd(), './path/userConfig')
     });
   });
 });

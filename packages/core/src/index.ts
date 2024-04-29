@@ -84,7 +84,8 @@ export async function build(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'production'
+    'production',
+    false
   );
 
   try {
