@@ -57,6 +57,7 @@ import type {
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 import merge from '../utils/merge.js';
+import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 
 export * from './types.js';
 
@@ -132,38 +133,38 @@ export async function resolveConfig(
   inlineOptions.mode = inlineOptions.mode ?? mode;
 
   // configPath may be file or directory
-  const { configPath } = inlineOptions;
+  let { configPath } = inlineOptions;
+  let rawConfig: UserConfig = mergeFarmCliConfig(inlineOptions, {});
+
   // if the config file can not found, just merge cli options and return default
-  if (!configPath) {
-    return getDefaultConfig(
+  if (configPath) {
+    const loadedUserConfig = await loadConfigFile(
+      configPath,
       inlineOptions,
       logger,
-      mode,
-      isHandleServerPortConflict
+      mode
+    );
+    if (loadedUserConfig) {
+      configPath = loadedUserConfig.configFilePath;
+      rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
+
+    }
+  } else {
+    mergeConfig(
+      rawConfig,
+      await getDefaultConfig(
+        inlineOptions,
+        logger,
+        mode,
+        isHandleServerPortConflict
+      )
     );
   }
 
-  if (!path.isAbsolute(configPath)) {
-    throw new Error('configPath must be an absolute path');
-  }
-
-  const loadedUserConfig = await loadConfigFile(
-    configPath,
-    inlineOptions,
-    logger,
-    mode
-  );
-
-  if (!loadedUserConfig) {
-    return getDefaultConfig(
-      inlineOptions,
-      logger,
-      mode,
-      isHandleServerPortConflict
-    );
-  }
-
-  const { config: userConfig, configFilePath } = loadedUserConfig;
+  const { config: userConfig, configFilePath } = {
+    configFilePath: configPath,
+    config: rawConfig
+  };
 
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
@@ -619,10 +620,10 @@ async function readConfigFile(
       '.farm'
     );
 
-    const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
+    const fileName = `farm.config.bundle-${Date.now()}-${Math.random()
       .toString(16)
       .split('.')
-      .join('')}}.mjs`;
+      .join('')}.mjs`;
 
     const normalizedConfig = await normalizeUserCompilationConfig(
       {
@@ -770,11 +771,12 @@ function checkClearScreen(inlineConfig: FarmCLIOptions) {
   }
 }
 
-function mergeInlineCliOptions(
+export function mergeInlineCliOptions(
   userConfig: UserConfig,
   inlineOptions: FarmCLIOptions
 ): UserConfig {
   const configRootPath = userConfig.root;
+
   if (inlineOptions.root) {
     const cliRoot = inlineOptions.root;
 
@@ -846,7 +848,7 @@ function mergeInlineCliOptions(
   return userConfig;
 }
 
-async function resolveMergedUserConfig(
+export async function resolveMergedUserConfig(
   mergedUserConfig: UserConfig,
   configFilePath: string | undefined,
   mode: 'development' | 'production' | string

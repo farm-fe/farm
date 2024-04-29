@@ -3,11 +3,9 @@ import { readFileSync } from 'node:fs';
 import { cac } from 'cac';
 import {
   resolveCore,
-  getConfigPath,
   resolveCommandOptions,
   handleAsyncOperationErrors,
   preventExperimentalWarning,
-  resolveRootPath,
   resolveCliConfig
 } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
@@ -19,6 +17,8 @@ import type {
   GlobalFarmCLIOptions,
   ICleanOptions
 } from './types.js';
+import { UserConfig } from '@farmfe/core';
+import { getOptionFromBuildOption } from './config.js';
 
 const { version } = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url)).toString()
@@ -97,22 +97,8 @@ cli
 
       const defaultOptions = {
         root,
-        compilation: {
-          watch: options.watch,
-          output: {
-            path: options?.outDir,
-            targetEnv: options?.target,
-            format: options?.format
-          },
-          input: {
-            index: options?.input
-          },
-          sourcemap: options.sourcemap,
-          minify: options.minify,
-          treeShaking: options.treeShaking
-        },
-        mode: options.mode,
-        configPath
+        configPath,
+        ...getOptionFromBuildOption(options)
       };
 
       const { build } = await resolveCore();
@@ -138,21 +124,8 @@ cli
 
       const defaultOptions = {
         root,
-        compilation: {
-          output: {
-            path: options?.outDir,
-            targetEnv: options?.target,
-            format: options?.format
-          },
-          input: {
-            index: options?.input
-          },
-          sourcemap: options.sourcemap,
-          minify: options.minify,
-          treeShaking: options.treeShaking
-        },
-        mode: options.mode,
-        configPath
+        configPath,
+        ...getOptionFromBuildOption(options)
       };
 
       const { watch } = await resolveCore();
