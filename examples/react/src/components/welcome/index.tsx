@@ -3,8 +3,6 @@ import { FarmCard } from '../card/index';
 import { ButtonAction } from '../button/index';
 import './index.css';
 
-import { Button } from '@farmfe-examples/lib-for-browser';
-
 const images = import.meta.glob(
   ['../../../assets/*.svg', '../../../assets/*.png'],
   { as: 'url', eager: true }
@@ -26,7 +24,6 @@ export function Welcome() {
   return (
     <div className="farm-container">
       <img className="logo" src={logo} alt="" />
-      <Button />
       <FarmCard>
         <div className="main-desc">
           <h2 className="main-sub-title">

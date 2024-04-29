@@ -3,6 +3,7 @@
   "version": "0.0.2",
   "private": true,
   "dependencies": {
+    "@farmfe-examples/lib-for-browser": "workspace:^",
     "@ant-design/icons": "^5.0.1",
     "antd": "^5.4.2",
     "clsx": "^1.2.1",

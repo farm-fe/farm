@@ -1,8 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
+import { defineConfig } from '@farmfe/core'
 
 export default defineConfig({
   compilation: {
@@ -13,6 +9,7 @@ export default defineConfig({
       path: './build',
       publicPath: '/admin/'
     },
+    presetEnv: false,
     sourcemap: true,
     persistentCache: true
   },
