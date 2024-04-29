@@ -30,6 +30,9 @@
     "./package.json": "./package.json"
   },
   "scripts": {
+    "dev": "cargo watch -w src -s 'scripts/watch.sh'",
+    "bump": "npx changeset version",
+    "play": "cd playground && farm",
     "build": "farm-plugin-tools build --platform --cargo-name <FARM-RUST-PLUGIN-CARGO-NAME> -p <FARM-RUST-PLUGIN-CARGO-NAME> --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
