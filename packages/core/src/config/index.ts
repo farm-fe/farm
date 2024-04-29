@@ -78,10 +78,8 @@ async function getDefaultConfig(
   mode?: CompilationMode,
   isHandleServerPortConflict = true
 ) {
-  const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
-
   const resolvedUserConfig = await resolveMergedUserConfig(
-    mergedUserConfig,
+    inlineOptions,
     undefined,
     inlineOptions.mode ?? mode
   );
