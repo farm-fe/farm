@@ -131,7 +131,7 @@ export interface FarmCLIServerOptions {
   port?: number;
   open?: boolean;
   https?: SecureServerOptions;
-  hmr?: boolean;
+  hmr?: boolean | UserHmrConfig;
   host?: boolean | string;
   strictPort?: boolean;
 }
