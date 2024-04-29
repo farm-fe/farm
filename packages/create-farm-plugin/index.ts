@@ -124,6 +124,15 @@ async function copyTemplate(targetDir: string, options: IResultType) {
     fs.copyFileSync(gitignore, path.join(dest, '.gitignore'));
   }
 
+  // Modify package.json to add dependencies
+  const packageJsonPath = path.join(`${dest}/playground`, 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    const packageJsonContent = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    // Modify the dependencies object as needed
+    packageJsonContent.dependencies[options.pluginName] = 'workspace:*'; // Modify this line with your dependency and version
+    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJsonContent, null, 2));
+  }
+
   const runText = options.type === 'js' ? 'pnpm dev' : 'pnpm build';
   console.log(colors.green('\n🎉 Plugin created successfully!\n'));
   console.log(colors.cyan(`cd ${targetDir} && pnpm install && ${runText}\n`));
