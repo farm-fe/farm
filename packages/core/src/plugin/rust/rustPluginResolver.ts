@@ -15,7 +15,9 @@ type RustPluginPathObject = {
   options: Record<string, any>;
 };
 
-type RustPluginPathArray = [string, Record<string, any>];
+type RustPluginFunction = (
+  options?: Record<string, any>
+) => [string, typeof options];
 /**
  * Resolve the binary plugin file, return [filePath, jsonStringifiedOptions]
  * @param plugin rust plugin config
@@ -53,17 +55,20 @@ export async function rustPluginResolver(
       pluginPath = await import(pluginPath).then((m) => m.default);
     }
 
+    // Calling the plugin as a function
+    if (typeof pluginPath === 'function') {
+      const [_path, _options] = (pluginPath as RustPluginFunction)();
+      options = JSON.stringify({
+        ..._options,
+        ...JSON.parse(options)
+      });
+      pluginPath = _path;
+    }
+
     // The entry js file should return { binary: string, options: Record<string, any> } when it's not string
     if (typeof pluginPath !== 'string') {
-      let binary, pluginOptions;
-
-      if (Array.isArray(pluginPath)) {
-        [binary, pluginOptions] = pluginPath as RustPluginPathArray;
-      } else {
-        binary = (pluginPath as RustPluginPathObject).binary;
-        pluginOptions = (pluginPath as RustPluginPathObject).options;
-      }
-
+      const { binary, options: pluginOptions } =
+        pluginPath as RustPluginPathObject;
       options = JSON.stringify({
         ...pluginOptions,
         ...JSON.parse(options)
