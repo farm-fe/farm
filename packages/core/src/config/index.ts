@@ -45,7 +45,6 @@ import { traceDependencies } from '../utils/trace-dependencies.js';
 import type {
   Alias,
   FarmCLIOptions,
-  FarmCLIServerOptions,
   NormalizedServerConfig,
   ResolvedUserConfig,
   UserConfig,
@@ -57,6 +56,7 @@ import type {
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 import merge from '../utils/merge.js';
+import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 
 export * from './types.js';
 
@@ -73,23 +73,18 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
 }
 
 async function getDefaultConfig(
+  config: UserConfig,
   inlineOptions: FarmCLIOptions,
   logger: Logger,
-  mode?: CompilationMode,
-  isHandleServerPortConflict = true
+  mode?: CompilationMode
 ) {
-  const mergedUserConfig = mergeInlineCliOptions({}, inlineOptions);
-
   const resolvedUserConfig = await resolveMergedUserConfig(
-    mergedUserConfig,
+    config,
     undefined,
     inlineOptions.mode ?? mode
   );
-  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
 
-  if (isHandleServerPortConflict) {
-    await handleServerPortConflict(resolvedUserConfig, logger, mode);
-  }
+  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -122,7 +117,7 @@ async function handleServerPortConflict(
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCLIOptions,
+  inlineOptions: FarmCLIOptions & UserConfig,
   logger: Logger,
   mode?: CompilationMode,
   isHandleServerPortConflict = true
@@ -132,38 +127,36 @@ export async function resolveConfig(
   inlineOptions.mode = inlineOptions.mode ?? mode;
 
   // configPath may be file or directory
-  const { configPath } = inlineOptions;
+  let { configPath } = inlineOptions;
+  let rawConfig: UserConfig = mergeFarmCliConfig(inlineOptions, {});
+
   // if the config file can not found, just merge cli options and return default
-  if (!configPath) {
-    return getDefaultConfig(
+  if (configPath) {
+    if (!path.isAbsolute(configPath)) {
+      throw new Error('configPath must be an absolute path');
+    }
+
+    const loadedUserConfig = await loadConfigFile(
+      configPath,
       inlineOptions,
       logger,
-      mode,
-      isHandleServerPortConflict
+      mode
+    );
+    if (loadedUserConfig) {
+      configPath = loadedUserConfig.configFilePath;
+      rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
+    }
+  } else {
+    mergeConfig(
+      rawConfig,
+      await getDefaultConfig(rawConfig, inlineOptions, logger, mode)
     );
   }
 
-  if (!path.isAbsolute(configPath)) {
-    throw new Error('configPath must be an absolute path');
-  }
-
-  const loadedUserConfig = await loadConfigFile(
-    configPath,
-    inlineOptions,
-    logger,
-    mode
-  );
-
-  if (!loadedUserConfig) {
-    return getDefaultConfig(
-      inlineOptions,
-      logger,
-      mode,
-      isHandleServerPortConflict
-    );
-  }
-
-  const { config: userConfig, configFilePath } = loadedUserConfig;
+  const { config: userConfig, configFilePath } = {
+    configFilePath: configPath,
+    config: rawConfig
+  };
 
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
@@ -190,7 +183,7 @@ export async function resolveConfig(
 
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
 
-  const mergedUserConfig = mergeInlineCliOptions(config, inlineOptions);
+  const mergedUserConfig = mergeFarmCliConfig(inlineOptions, config);
 
   const resolvedUserConfig = await resolveMergedUserConfig(
     mergedUserConfig,
@@ -619,10 +612,10 @@ async function readConfigFile(
       '.farm'
     );
 
-    const fileName = `farm.config.bundle-{${Date.now()}-${Math.random()
+    const fileName = `farm.config.bundle-${Date.now()}-${Math.random()
       .toString(16)
       .split('.')
-      .join('')}}.mjs`;
+      .join('')}.mjs`;
 
     const normalizedConfig = await normalizeUserCompilationConfig(
       {
@@ -770,83 +763,7 @@ function checkClearScreen(inlineConfig: FarmCLIOptions) {
   }
 }
 
-function mergeInlineCliOptions(
-  userConfig: UserConfig,
-  inlineOptions: FarmCLIOptions
-): UserConfig {
-  const configRootPath = userConfig.root;
-  if (inlineOptions.root) {
-    const cliRoot = inlineOptions.root;
-
-    if (!isAbsolute(cliRoot)) {
-      userConfig.root = path.resolve(process.cwd(), cliRoot);
-    } else {
-      userConfig.root = cliRoot;
-    }
-  }
-
-  if (configRootPath) {
-    userConfig.root = configRootPath;
-  }
-
-  if (userConfig.root && !isAbsolute(userConfig.root)) {
-    const resolvedRoot = path.resolve(
-      inlineOptions.configPath,
-      userConfig.root
-    );
-    userConfig.root = resolvedRoot;
-  }
-
-  // set compiler options
-  ['minify', 'sourcemap'].forEach((option: keyof FarmCLIOptions) => {
-    if (inlineOptions[option] !== undefined) {
-      userConfig.compilation = {
-        ...(userConfig.compilation ?? {}),
-        [option]: inlineOptions[option]
-      };
-    }
-  });
-
-  const outputOptions = inlineOptions.compilation?.output;
-
-  if (outputOptions?.path) {
-    userConfig.compilation = {
-      ...(userConfig.compilation ?? {})
-    };
-
-    userConfig.compilation.output = {
-      ...(userConfig.compilation.output ?? {}),
-      path: outputOptions?.path
-    };
-  }
-
-  if (outputOptions?.targetEnv) {
-    userConfig.compilation = {
-      ...(userConfig.compilation ?? {})
-    };
-
-    userConfig.compilation.output = {
-      ...(userConfig.compilation.output ?? {}),
-      targetEnv: outputOptions?.targetEnv
-    };
-  }
-
-  // set server options
-  ['port', 'open', 'https', 'hmr', 'host', 'strictPort'].forEach(
-    (option: keyof FarmCLIServerOptions) => {
-      if (inlineOptions.server?.[option]) {
-        userConfig.server = {
-          ...(userConfig.server ?? {}),
-          [option]: inlineOptions.server[option]
-        };
-      }
-    }
-  );
-
-  return userConfig;
-}
-
-async function resolveMergedUserConfig(
+export async function resolveMergedUserConfig(
   mergedUserConfig: UserConfig,
   configFilePath: string | undefined,
   mode: 'development' | 'production' | string
