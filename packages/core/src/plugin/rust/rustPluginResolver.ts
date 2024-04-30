@@ -7,7 +7,7 @@ export type RustPlugin =
   | [
       string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Record<string, any>
+      Record<string, any> | undefined
     ];
 
 type RustPluginPathObject = {
@@ -33,7 +33,7 @@ export async function rustPluginResolver(
     options = '{}';
   } else if (Array.isArray(plugin) && plugin.length === 2) {
     pluginPath = plugin[0];
-    options = JSON.stringify(plugin[1]);
+    options = JSON.stringify(plugin[1]) ?? '{}';
   } else {
     throw new Error(
       'Invalid config: [plugins]. A rust plugin must be a string, or [string, Record<string, any>]'
