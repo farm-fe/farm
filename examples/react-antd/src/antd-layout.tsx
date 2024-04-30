@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
-
+import { Button as LibButton } from '@farmfe-examples/lib-for-browser';
 import { useNavigate, Outlet } from 'react-router-dom';
 
 import './main.css';
@@ -115,6 +115,7 @@ export const AntdLayout: React.FC = () => {
             <div>
               <img width={600} src={logo} />
             </div>
+            <LibButton /> 
             <Button type="primary" onClick={showModal}>
               Open Modal
             </Button>

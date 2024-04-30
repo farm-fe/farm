@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@farmfe-examples/lib-for-browser": "workspace:^",
     "@reduxjs/toolkit": "^2.2.1",
     "clsx": "^1.2.1",
     "core-js": "^3.30.1",
