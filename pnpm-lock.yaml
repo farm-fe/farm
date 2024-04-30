@@ -89,6 +89,15 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@types/node@18.18.8)
 
+  examples/api:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:^
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/arco-pro:
     dependencies:
       '@antv/data-set':

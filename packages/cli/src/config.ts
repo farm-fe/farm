@@ -4,42 +4,36 @@ import { FarmCLIBuildOptions, GlobalFarmCLIOptions } from './types.js';
 export function getOptionFromBuildOption(
   options: FarmCLIBuildOptions & GlobalFarmCLIOptions
 ): FarmCLIOptions & UserConfig {
-  const input: Record<string, string> = {};
-  if (options?.input) {
-    input.index = options.input;
-  }
-  const output: UserConfig['compilation']['output'] = {};
+  const {
+    input,
+    outDir,
+    target,
+    format,
+    watch,
+    minify,
+    sourcemap,
+    treeShaking,
+    mode
+  } = options;
 
-  if (options.outDir) {
-    output.path = options.outDir;
-  }
-  if (options.target) {
-    output.targetEnv = options.target;
-  }
-  if (options.format) {
-    output.format = options.format;
-  }
+  const output: UserConfig['compilation']['output'] = {
+    ...(outDir && { path: outDir }),
+    ...(target && { targetEnv: target }),
+    ...(format && { format })
+  };
 
-  const compilation: UserConfig['compilation'] = { input, output };
+  const compilation: UserConfig['compilation'] = {
+    input: { ...(input && { index: input }) },
+    output,
+    ...(watch && { watch }),
+    ...(minify && { minify }),
+    ...(sourcemap && { sourcemap }),
+    ...(treeShaking && { treeShaking })
+  };
 
-  if (typeof options?.watch === 'boolean') {
-    compilation.watch = options.watch;
-  }
-
-  if (options.minify) {
-    compilation.minify = options.minify;
-  }
-  if (options.sourcemap) {
-    compilation.sourcemap = options.sourcemap;
-  }
-
-  if (options.treeShaking) {
-    compilation.treeShaking = options.treeShaking;
-  }
-
-  const defaultOptions = {
+  const defaultOptions: FarmCLIOptions & UserConfig = {
     compilation,
-    mode: options.mode
+    ...(mode && { mode })
   };
 
   return defaultOptions;

@@ -8,7 +8,6 @@ import {
   preventExperimentalWarning,
   resolveCliConfig
 } from './utils.js';
-import { COMMANDS } from './plugin/index.js';
 import { getOptionFromBuildOption } from './config.js';
 
 import type {
@@ -179,24 +178,6 @@ cli
       const { Logger } = await import('@farmfe/core');
       const logger = new Logger();
       logger.error(`Failed to clean cache: \n ${e.stack}`);
-      process.exit(1);
-    }
-  });
-
-// create plugins command
-cli
-  .command('plugin [command]', 'Commands for manage plugins', {
-    allowUnknownOptions: true
-  })
-  .action(async (command: keyof typeof COMMANDS, args: unknown) => {
-    try {
-      COMMANDS[command](args);
-    } catch (e) {
-      const { Logger } = await import('@farmfe/core');
-      const logger = new Logger();
-      logger.error(
-        `The command arg parameter is incorrect. If you want to create a plugin in farm. such as "farm plugin create"\n${e.stack}`
-      );
       process.exit(1);
     }
   });
