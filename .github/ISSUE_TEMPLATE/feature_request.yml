@@ -1,6 +1,7 @@
-name: "\U0001F680 New feature"
+name: "💭 Feature Request"
 description: Suggest an idea for Farm
-labels: [":sparkles: feature request"]
+title: "[Feature Request]: "
+labels: ["enhancement: pending triage"]
 body:
   - type: markdown
     attributes:
