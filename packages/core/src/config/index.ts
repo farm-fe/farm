@@ -10,7 +10,7 @@ import {
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins
+  resolvePlugins
 } from '../plugin/index.js';
 import {
   bindingPath,
@@ -165,7 +165,7 @@ export async function resolveConfig(
 
   const { config: userConfig, configFilePath } = loadedUserConfig;
 
-  const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
+  const { jsPlugins, rustPlugins } = await resolvePlugins(userConfig);
 
   const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
     Boolean
