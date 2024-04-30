@@ -37,6 +37,7 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "scripts"
+    "scripts",
+    "options.d.ts"
   ]
 }
