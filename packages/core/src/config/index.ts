@@ -132,6 +132,10 @@ export async function resolveConfig(
 
   // if the config file can not found, just merge cli options and return default
   if (configPath) {
+    if (!path.isAbsolute(configPath)) {
+      throw new Error('configPath must be an absolute path');
+    }
+
     const loadedUserConfig = await loadConfigFile(
       configPath,
       inlineOptions,
