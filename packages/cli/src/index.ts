@@ -9,6 +9,7 @@ import {
   resolveCliConfig
 } from './utils.js';
 import { COMMANDS } from './plugin/index.js';
+import { getOptionFromBuildOption } from './config.js';
 
 import type {
   FarmCLIBuildOptions,
@@ -17,8 +18,6 @@ import type {
   GlobalFarmCLIOptions,
   ICleanOptions
 } from './types.js';
-import { UserConfig } from '@farmfe/core';
-import { getOptionFromBuildOption } from './config.js';
 
 const { version } = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url)).toString()
