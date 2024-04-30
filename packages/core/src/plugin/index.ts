@@ -9,8 +9,27 @@ import merge from '../utils/merge.js';
 export * from './js/index.js';
 export * from './rust/index.js';
 
-export async function resolveFarmPlugins(config: UserConfig) {
-  const plugins = config.plugins ?? [];
+export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
+  return arr.reduce<Promise<T[]>>(async (acc, current) => {
+    const flattenedAcc = await acc;
+
+    if (current instanceof Promise) {
+      const resolvedElement = await current;
+      return flattenedAcc.concat(resolvedElement);
+    } else if (Array.isArray(current)) {
+      const flattenedArray = await resolveAsyncPlugins(current);
+      return flattenedAcc.concat(flattenedArray);
+    } else {
+      return flattenedAcc.concat(current);
+    }
+  }, Promise.resolve([]));
+}
+
+export async function resolvePlugins(config: UserConfig) {
+  let plugins = config.plugins ?? [];
+
+  // First, resolve any promises and flatten the array
+  plugins = await resolveAsyncPlugins(plugins);
 
   if (!plugins.length) {
     return {
@@ -20,7 +39,6 @@ export async function resolveFarmPlugins(config: UserConfig) {
   }
 
   const rustPlugins = [];
-
   const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
@@ -54,23 +72,6 @@ export async function resolveFarmPlugins(config: UserConfig) {
     rustPlugins,
     jsPlugins
   };
-}
-
-// resolve promise plugins
-export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
-  return arr.reduce<Promise<T[]>>(async (acc, current) => {
-    const flattenedAcc = await acc;
-
-    if (current instanceof Promise) {
-      const resolvedElement = await current;
-      return flattenedAcc.concat(resolvedElement);
-    } else if (Array.isArray(current)) {
-      const flattenedArray = await resolveAsyncPlugins(current);
-      return flattenedAcc.concat(flattenedArray);
-    } else {
-      return flattenedAcc.concat(current);
-    }
-  }, Promise.resolve([]));
 }
 
 export async function resolveConfigHook(
