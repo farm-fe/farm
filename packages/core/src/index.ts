@@ -37,8 +37,9 @@ import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
 import { resolveHostname } from './utils/http.js';
 
 export async function start(
-  inlineConfig: FarmCLIOptions & UserConfig
+  inlineConfig?: FarmCLIOptions & UserConfig
 ): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
@@ -76,15 +77,17 @@ export async function start(
 }
 
 export async function build(
-  inlineConfig: FarmCLIOptions & UserConfig
+  inlineConfig?: FarmCLIOptions & UserConfig
 ): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('production');
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'production'
+    'production',
+    false
   );
 
   try {
@@ -96,7 +99,8 @@ export async function build(
   }
 }
 
-export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
+export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
@@ -141,8 +145,9 @@ export async function preview(inlineConfig: FarmCLIOptions): Promise<void> {
 }
 
 export async function watch(
-  inlineConfig: FarmCLIOptions & UserConfig
+  inlineConfig?: FarmCLIOptions & UserConfig
 ): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
@@ -206,7 +211,7 @@ export async function watch(
 
 export async function clean(
   rootPath: string,
-  recursive: boolean | undefined
+  recursive?: boolean | undefined
 ): Promise<void> {
   // TODO After optimizing the reading of config, put the clean method into compiler
   const logger = new Logger();
