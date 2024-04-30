@@ -121,4 +121,4 @@ switch (platform) {
     throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
-export default binPath;
+export default (options)=> [binPath, options];
