@@ -89,15 +89,6 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@types/node@18.18.8)
 
-  examples/api:
-    devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:^
-        version: link:../../packages/cli
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-
   examples/arco-pro:
     dependencies:
       '@antv/data-set':
@@ -745,6 +736,52 @@ importers:
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
+
+  examples/react-query:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.32.0
+        version: 5.32.0(react@18.2.0)
+      core-js:
+        specifier: ^3.36.1
+        version: 3.36.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+      react-router:
+        specifier: ^6.22.3
+        version: 6.22.3(react@18.2.0)
+      react-router-dom:
+        specifier: ^6.22.3
+        version: 6.22.3(react-dom@18.2.0)(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/plugin-react':
+        specifier: ^1.0.1
+        version: link:../../rust-plugins/react
+      '@tanstack/react-query-devtools':
+        specifier: ^5.32.0
+        version: 5.32.0(@tanstack/react-query@5.32.0)(react@18.2.0)
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
+      vite-plugin-pages:
+        specifier: ^0.32.0
+        version: 0.32.0(vite@5.2.8)
 
   examples/react-sass-js:
     dependencies:
@@ -4877,6 +4914,32 @@ packages:
   /@sxzz/popperjs-es@2.11.7:
     resolution: {integrity: sha512-Ccy0NlLkzr0Ex2FKvh2X+OyERHXJ88XJ1MXtsI9y9fGexlaXaVTPzBCRBwIxFkORuOb+uBqeu+RqnpgYTEZRUQ==}
     dev: false
+
+  /@tanstack/query-core@5.32.0:
+    resolution: {integrity: sha512-Z3flEgCat55DRXU5UMwYU1U+DgFZKA3iufyOKs+II7iRAo0uXkeU7PH5e6sOH1CGEag0IpKmZxlUFpCg6roSKw==}
+
+  /@tanstack/query-devtools@5.28.10:
+    resolution: {integrity: sha512-5UN629fKa5/1K/2Pd26gaU7epxRrYiT1gy+V+pW5K6hnf1DeUKK3pANSb2eHKlecjIKIhTwyF7k9XdyE2gREvQ==}
+    dev: true
+
+  /@tanstack/react-query-devtools@5.32.0(@tanstack/react-query@5.32.0)(react@18.2.0):
+    resolution: {integrity: sha512-KWrzLoUjs9JtDSH3H2qbm5MjjykyAT8DkvP8tukw3gBG4ziu5WaWHciBjMsYSe1JB79AOxxGovzjW/Cd9+ofVw==}
+    peerDependencies:
+      '@tanstack/react-query': ^5.32.0
+      react: ^18.0.0
+    dependencies:
+      '@tanstack/query-devtools': 5.28.10
+      '@tanstack/react-query': 5.32.0(react@18.2.0)
+      react: 18.2.0
+    dev: true
+
+  /@tanstack/react-query@5.32.0(react@18.2.0):
+    resolution: {integrity: sha512-+E3UudQtarnx9A6xhpgMZapyF+aJfNBGFMgI459FnduEZqT/9KhOWnMOneZahLRt52yzskSA0AuOyLkXHK0yBA==}
+    peerDependencies:
+      react: ^18.0.0
+    dependencies:
+      '@tanstack/query-core': 5.32.0
+      react: 18.2.0
 
   /@trysound/sax@0.2.0:
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
