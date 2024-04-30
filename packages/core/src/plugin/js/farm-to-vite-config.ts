@@ -33,7 +33,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     // @ts-ignore ignore this error
     command: config.compilation?.mode === 'production' ? 'build' : 'serve',
     resolve: {
-      alias: config.compilation?.resolve?.alias,
+      alias: config.compilation?.resolve?.alias ?? [],
       extensions: config.compilation?.resolve?.extensions,
       mainFields: config.compilation?.resolve?.mainFields,
       conditions: config.compilation?.resolve?.conditions,
