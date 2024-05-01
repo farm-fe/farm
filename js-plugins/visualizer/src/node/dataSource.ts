@@ -1,5 +1,5 @@
-import http from 'node:http';
-import { Compiler } from '@farmfe/core';
+import type http from 'node:http';
+import type { Compiler } from '@farmfe/core';
 import { getFarmEnvInfo } from './utils/envinfo';
 
 export function createDateSourceMiddleware(compiler: Compiler) {

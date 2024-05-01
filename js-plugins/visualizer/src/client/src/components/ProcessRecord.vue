@@ -30,11 +30,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ModuleRecord } from "@farmfe/core/binding";
-import { getProcessRecordsById } from "../api";
+import type { ModuleRecord } from "@farmfe/core/binding";
 import { ref, watch } from "vue";
+import { getProcessRecordsById } from "../api";
 const props = defineProps({
-  moduleId: String,
+  moduleId: String
 });
 
 const records = ref<ModuleRecord[]>([]);

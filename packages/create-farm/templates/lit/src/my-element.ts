@@ -1,7 +1,7 @@
-import { LitElement, css, html } from 'lit'
-import { customElement } from 'lit/decorators.js'
-import litLogo from './assets/lit.svg'
-import FarmLogo from './assets/logo.png'
+import { LitElement, css, html } from "lit";
+import { customElement } from "lit/decorators.js";
+import litLogo from "./assets/lit.svg";
+import FarmLogo from "./assets/logo.png";
 
 /**
  * An example element.
@@ -9,7 +9,7 @@ import FarmLogo from './assets/logo.png'
  * @slot - This element has a slot
  * @csspart button - The button
  */
-@customElement('my-element')
+@customElement("my-element")
 export class MyElement extends LitElement {
   render() {
     return html`
@@ -23,7 +23,7 @@ export class MyElement extends LitElement {
       </div>
       <slot></slot>
       <p class="read-the-docs">Click on the Farm and Lit logos to learn more</p>
-    `
+    `;
   }
 
   static styles = css`
@@ -96,11 +96,11 @@ export class MyElement extends LitElement {
         background-color: #f9f9f9;
       }
     }
-  `
+  `;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'my-element': MyElement
+    "my-element": MyElement;
   }
 }

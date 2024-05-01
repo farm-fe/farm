@@ -12,19 +12,27 @@
 </template>
 
 <script lang="ts">
-import { Card, Tree, Drawer } from "ant-design-vue";
+import type { Module } from "@farmfe/core/binding";
+import { Card, Drawer, Tree } from "ant-design-vue";
 import { defineComponent, ref } from "vue";
-import FileTree from "../../components/FileTree.vue";
-import ResourcePots from "../../components/ResourcePots.vue";
 import CodeViewer from "../../components/CodeViewer.vue";
-import ModuleList from '../../components/ModuleList.vue';
+import FileTree from "../../components/FileTree.vue";
+import ModuleList from "../../components/ModuleList.vue";
 import ModuleRecords from "../../components/ModuleRecords.vue";
-import { Module } from "@farmfe/core/binding";
-
+import ResourcePots from "../../components/ResourcePots.vue";
 
 export default defineComponent({
   name: "ModuleAnalyze",
-  components: { Card, Tree, ResourcePots, FileTree, CodeViewer, Drawer, ModuleList, ModuleRecords },
+  components: {
+    Card,
+    Tree,
+    ResourcePots,
+    FileTree,
+    CodeViewer,
+    Drawer,
+    ModuleList,
+    ModuleRecords
+  },
   setup() {
     const currentModule = ref<Module>();
     function handleSelect(module: Module) {
@@ -35,6 +43,6 @@ export default defineComponent({
       handleSelect,
       currentModule
     };
-  },
+  }
 });
 </script>

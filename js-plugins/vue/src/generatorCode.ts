@@ -1,33 +1,33 @@
 import path from 'path';
 import {
+  type EncodedSourceMap,
+  addMapping,
+  fromMap,
+  toEncodedMap
+} from '@jridgewell/gen-mapping';
+import { TraceMap, eachMapping } from '@jridgewell/trace-mapping';
+import {
+  type BindingMetadata,
+  type CompilerOptions,
+  type SFCDescriptor,
+  type SFCScriptBlock,
+  type SFCScriptCompileOptions,
+  type SFCStyleBlock,
+  type SFCTemplateBlock,
+  type SFCTemplateCompileResults,
   compileScript,
   compileTemplate,
-  SFCDescriptor,
-  SFCScriptBlock,
-  SFCTemplateBlock,
-  BindingMetadata,
-  rewriteDefault,
-  SFCStyleBlock,
-  SFCTemplateCompileResults,
-  SFCScriptCompileOptions,
-  CompilerOptions
+  rewriteDefault
 } from '@vue/compiler-sfc';
-import { error, warn, getHash, parsePath } from './utils.js';
-import {
-  QueryObj,
-  StylesCodeCache,
-  Union,
-  ResolvedOptions
-} from './farm-vue-types.js';
+import type { RawSourceMap } from 'source-map';
 import { cacheScript, isEqualBlock } from './farm-vue-hmr.js';
-import {
-  fromMap,
-  toEncodedMap,
-  addMapping,
-  EncodedSourceMap
-} from '@jridgewell/gen-mapping';
-import { eachMapping, TraceMap } from '@jridgewell/trace-mapping';
-import { RawSourceMap } from 'source-map';
+import type {
+  QueryObj,
+  ResolvedOptions,
+  StylesCodeCache,
+  Union
+} from './farm-vue-types.js';
+import { error, getHash, parsePath, warn } from './utils.js';
 
 type SourceMap = Omit<RawSourceMap, 'version'> & { version: 3 };
 

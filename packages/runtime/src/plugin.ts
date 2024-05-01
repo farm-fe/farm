@@ -1,4 +1,4 @@
-import { Module } from './module';
+import type { Module } from './module';
 import type { ModuleSystem } from './module-system';
 import type { Resource } from './resource-loader';
 

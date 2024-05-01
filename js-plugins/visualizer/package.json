@@ -53,7 +53,5 @@
     "preview": "cd src/client && farm preview",
     "prepublishOnly": "npm run build"
   },
-  "files": [
-    "build"
-  ]
+  "files": ["build"]
 }

@@ -1,4 +1,4 @@
-import type { Plugin, ModuleSystem } from '@farmfe/runtime';
+import type { ModuleSystem, Plugin } from '@farmfe/runtime';
 
 const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
 

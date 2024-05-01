@@ -1,14 +1,14 @@
-import {
+import type { PluginStats, Resource } from '@farmfe/core';
+import type {
   AnalyzeDepsRecord,
   Module,
   ModuleRecord,
+  ResolveRecord,
   ResourcePotRecord,
-  TransformRecord,
-  ResolveRecord
+  TransformRecord
 } from '@farmfe/core/binding';
+import type { FarmEnvInfo } from '../../../node/utils/envinfo';
 import { http } from '../http';
-import { FarmEnvInfo } from '../../../node/utils/envinfo';
-import { Resource, PluginStats } from '@farmfe/core';
 
 export function getModules(): Promise<Module[]> {
   return http.get<Module[]>('/__record/modules');

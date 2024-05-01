@@ -9,7 +9,7 @@
 
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
-import { UserServerConfig } from '../index.js';
+import type { UserServerConfig } from '../index.js';
 
 export interface ResolvedServerUrls {
   local: string[];

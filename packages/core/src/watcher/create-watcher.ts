@@ -1,9 +1,9 @@
 import path from 'node:path';
 
-import chokidar, { FSWatcher, WatchOptions } from 'chokidar';
+import chokidar, { type FSWatcher, type WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 
-import { ResolvedUserConfig } from '../index.js';
+import type { ResolvedUserConfig } from '../index.js';
 
 function resolveChokidarOptions(
   config: ResolvedUserConfig,

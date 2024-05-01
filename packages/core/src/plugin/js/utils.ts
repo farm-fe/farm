@@ -1,7 +1,8 @@
+import path from 'node:path';
 // import path from 'node:path';
 import * as querystring from 'node:querystring';
-import { JsResourcePotInfoData, Resource, ResourcePotInfo } from '../type.js';
-import {
+import fse from 'fs-extra';
+import type {
   InternalModuleFormat,
   NormalizedInputOptions,
   NormalizedOutputOptions,
@@ -10,9 +11,12 @@ import {
   RenderedChunk,
   RenderedModule
 } from 'rollup';
-import { Config } from '../../../binding/index.js';
-import path from 'node:path';
-import fse from 'fs-extra';
+import type { Config } from '../../../binding/index.js';
+import type {
+  JsResourcePotInfoData,
+  Resource,
+  ResourcePotInfo
+} from '../type.js';
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';

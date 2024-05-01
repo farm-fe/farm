@@ -1,11 +1,11 @@
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { expect, test } from 'vitest';
+import type { JsPlugin } from '../src/index.js';
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler
 } from './common.js';
-import { JsPlugin } from '../src/index.js';
 
 function getJsPluginsFixturesDir() {
   return path.resolve(getFixturesDir(), 'js-plugins');

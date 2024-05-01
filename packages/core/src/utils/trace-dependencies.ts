@@ -1,4 +1,4 @@
-import { Config } from '../../binding/index.js';
+import type { Config } from '../../binding/index.js';
 import { Compiler } from '../compiler/index.js';
 
 function createTraceDepCompiler(entry: string) {

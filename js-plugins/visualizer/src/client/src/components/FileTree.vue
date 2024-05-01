@@ -26,9 +26,9 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent } from "vue";
-import { Tree, Tag, Button } from "ant-design-vue";
 import { CodepenCircleFilled } from "@ant-design/icons-vue";
+import { Button, Tag, Tree } from "ant-design-vue";
+import { computed, defineComponent } from "vue";
 import { useResourcePotStore } from "../stores/resourcePot";
 import { genFileTree } from "../utils/file";
 import { formatSize } from "../utils/size";
@@ -57,8 +57,8 @@ export default defineComponent({
       getModuleInfo,
       resourcePotStore,
       formatSize,
-      viewSourceCode,
+      viewSourceCode
     };
-  },
+  }
 });
 </script>

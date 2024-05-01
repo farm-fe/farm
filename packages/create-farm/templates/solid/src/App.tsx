@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
-import solidLogo from "./assets/solid.svg";
 import farmLogo from "./assets/logo.png";
+import solidLogo from "./assets/solid.svg";
 import "./App.css";
 
 function App() {
@@ -9,10 +9,10 @@ function App() {
   return (
     <>
       <div>
-        <a href="https://farmfe.org/" target="_blank">
+        <a href="https://farmfe.org/" target="_blank" rel="noreferrer">
           <img src={farmLogo} class="logo" alt="Farm logo" />
         </a>
-        <a href="https://solidjs.com" target="_blank">
+        <a href="https://solidjs.com" target="_blank" rel="noreferrer">
           <img src={solidLogo} class="logo solid" alt="Solid logo" />
         </a>
       </div>

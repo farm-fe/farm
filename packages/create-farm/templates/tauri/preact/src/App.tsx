@@ -1,16 +1,16 @@
-import { useState } from 'preact/hooks';
-import preactLogo from './assets/preact.svg';
-import FarmLogo from './assets/logo.png';
-import { invoke } from '@tauri-apps/api/tauri';
-import './App.css';
+import { invoke } from "@tauri-apps/api/tauri";
+import { useState } from "preact/hooks";
+import FarmLogo from "./assets/logo.png";
+import preactLogo from "./assets/preact.svg";
+import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState('');
-  const [name, setName] = useState('');
+  const [greetMsg, setGreetMsg] = useState("");
+  const [name, setName] = useState("");
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke('greet', { name }));
+    setGreetMsg(await invoke("greet", { name }));
   }
 
   return (
@@ -18,13 +18,13 @@ function App() {
       <h1>Welcome to Tauri!</h1>
 
       <div class="row">
-        <a href="https://farmfe.org/" target="_blank">
+        <a href="https://farmfe.org/" target="_blank" rel="noreferrer">
           <img src={FarmLogo} class="logo" alt="Farm logo" />
         </a>
-        <a href="https://tauri.app" target="_blank">
+        <a href="https://tauri.app" target="_blank" rel="noreferrer">
           <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
         </a>
-        <a href="https://preactjs.com" target="_blank">
+        <a href="https://preactjs.com" target="_blank" rel="noreferrer">
           <img src={preactLogo} class="logo preact" alt="Preact logo" />
         </a>
       </div>

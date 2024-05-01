@@ -1,29 +1,34 @@
 export type ModuleType =
-  | 'ts'
-  | 'js'
-  | 'jsx'
-  | 'tsx'
-  | 'css'
-  | 'html'
-  | 'asset'
+  | "ts"
+  | "js"
+  | "jsx"
+  | "tsx"
+  | "css"
+  | "html"
+  | "asset"
   | string;
 
 export type ResolveKind =
   | { entry: string }
-  | 'import'
-  | 'dynamicImport'
-  | 'require'
-  | 'cssAtImport'
-  | 'cssUrl'
-  | 'scriptSrc'
-  | 'linkHref'
-  | 'hmrUpdate'
+  | "import"
+  | "dynamicImport"
+  | "require"
+  | "cssAtImport"
+  | "cssUrl"
+  | "scriptSrc"
+  | "linkHref"
+  | "hmrUpdate"
   | string;
 
-export * from './binding.js';
-import { Compiler } from './binding.js';
-import type { WatchOptions } from 'chokidar';
-import { JsMinifyOptions, SwcPresetEnvOptions, ScriptDecoratorsConfig, ScriptParseConfig } from './swc-config.js';
+export * from "./binding.js";
+import type { WatchOptions } from "chokidar";
+import { Compiler } from "./binding.js";
+import type {
+  JsMinifyOptions,
+  ScriptDecoratorsConfig,
+  ScriptParseConfig,
+  SwcPresetEnvOptions
+} from "./swc-config.js";
 export default Compiler;
 export const bindingPath: string;
 
@@ -95,16 +100,16 @@ export interface PluginTransformHookResult {
 
 type BrowserTargetsRecord = Partial<
   Record<
-    | 'chrome'
-    | 'opera'
-    | 'edge'
-    | 'firefox'
-    | 'safari'
-    | 'ie'
-    | 'ios'
-    | 'android'
-    | 'node'
-    | 'electron',
+    | "chrome"
+    | "opera"
+    | "edge"
+    | "firefox"
+    | "safari"
+    | "ie"
+    | "ios"
+    | "android"
+    | "node"
+    | "electron",
     string
   >
 > & { [key: string]: string };
@@ -136,11 +141,20 @@ export interface OutputConfig {
    * You can also set target env version like `node16`, `node-legacy`, 'browser-legacy`, 'browser-es2015', 'browser-2017', 'browser-esnext'. Farm will automatically downgrade syntax and inject polyfill according to the specified target env.
    * @default 'browser'
    */
-  targetEnv?: 'browser' | 'node' | 'node16' | 'node-legacy' | 'node-next' | 'browser-legacy' | 'browser-es2015' | 'browser-es2017' | 'browser-esnext';
+  targetEnv?:
+    | "browser"
+    | "node"
+    | "node16"
+    | "node-legacy"
+    | "node-next"
+    | "browser-legacy"
+    | "browser-es2015"
+    | "browser-es2017"
+    | "browser-esnext";
   /**
    * output modul format
    */
-  format?: 'cjs' | 'esm';
+  format?: "cjs" | "esm";
 }
 
 export interface ResolveConfig {
@@ -200,7 +214,7 @@ export interface RuntimeConfig {
    */
   namespace?: string;
   /**
-   * Whether to isolate the farm entry script, the default is false. 
+   * Whether to isolate the farm entry script, the default is false.
    * If set to true, the farm entry script will be emitted as a separate file.
    */
   isolate?: boolean;
@@ -209,17 +223,17 @@ export interface RuntimeConfig {
 export interface ScriptConfig {
   // specify target es version
   target?:
-  | 'es3'
-  | 'es5'
-  | 'es2015'
-  | 'es2016'
-  | 'es2017'
-  | 'es2018'
-  | 'es2019'
-  | 'es2020'
-  | 'es2021'
-  | 'es2022'
-  | 'esnext';
+    | "es3"
+    | "es5"
+    | "es2015"
+    | "es2016"
+    | "es2017"
+    | "es2018"
+    | "es2019"
+    | "es2020"
+    | "es2021"
+    | "es2022"
+    | "esnext";
   // config swc parser
   parser?: ScriptParseConfig;
   decorators?: ScriptDecoratorsConfig;
@@ -277,7 +291,7 @@ export interface PersistentCacheConfig {
     timestamp?: boolean;
     hash?: boolean;
   };
-  envs?: Record<string, String>;
+  envs?: Record<string, string>;
   /**
    * Whether to ignore the built-in keys of the cache, such as define, buildDependencies, lockfile, etc.
    * If these keys are not ignored, the cache will be fully invalidated when these keys change.
@@ -299,7 +313,7 @@ export interface PersistentCacheConfig {
     /** @default true */
     env?: boolean;
   };
-};
+}
 
 export interface PartialBundlingConfig {
   /**
@@ -323,8 +337,8 @@ export interface PartialBundlingConfig {
   groups?: {
     name: string;
     test: string[];
-    groupType?: 'mutable' | 'immutable';
-    resourceType?: 'all' | 'initial' | 'async';
+    groupType?: "mutable" | "immutable";
+    resourceType?: "all" | "initial" | "async";
   }[];
   /**
    * Array to match the modules that should always be in the same bundles, ignore all other constraints.
@@ -356,7 +370,7 @@ export interface PresetEnvConfig {
    * @see https://babeljs.io/docs/assumptions
    */
   assumptions?: any;
-};
+}
 
 export interface Config {
   config?: {
@@ -379,7 +393,7 @@ export interface Config {
      */
     external?: string[];
     externalNodeBuiltins?: boolean | string[];
-    mode?: 'development' | 'production';
+    mode?: "development" | "production";
     root?: string;
     runtime?: RuntimeConfig;
     watch?: boolean | WatchOptions;
@@ -400,7 +414,7 @@ export interface Config {
       - all: generate sourcemap for all files, and generate a separate sourcemap file
       - all-inline: Generate sourcemaps for all files, and inline sourcemaps into the product, do not generate separate files
      */
-    sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
+    sourcemap?: boolean | "inline" | "all" | "all-inline";
     /**
      * Configure the behavior of Farm's partial bundling. For details, please refer to https://farmfe.org/docs/features/partial-bundling
      */
@@ -418,8 +432,8 @@ export interface Config {
     progress?: boolean;
     presetEnv?: boolean | PresetEnvConfig;
     persistentCache?: boolean | PersistentCacheConfig;
-    comments?: boolean | 'license';
-    custom?:Record<string, any>;
+    comments?: boolean | "license";
+    custom?: Record<string, any>;
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]

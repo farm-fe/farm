@@ -1,10 +1,10 @@
-import path from 'path';
+import path from "path";
 // import { copyFile, readdir } from 'fs/promises';
 
-import { build } from '../dist/index.js';
+import { build } from "../dist/index.js";
 
 await build({
-  configPath: path.join(process.cwd(), 'farm.config.ts')
+  configPath: path.join(process.cwd(), "farm.config.ts")
 });
 
 // if (!process.env.FARM_PUBLISH) {

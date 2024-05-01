@@ -1,11 +1,11 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { Logger } from '../utils/logger.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
+import { Logger } from '../utils/logger.js';
 
-import type { ILogger } from '../utils/logger.js';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
-import { JsPlugin, Resource } from '../index.js';
+import type { JsPlugin, Resource } from '../index.js';
+import type { ILogger } from '../utils/logger.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
   '.farm_dynamic_import_virtual_module';

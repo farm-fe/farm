@@ -3,9 +3,8 @@
  */
 
 import { relative } from 'node:path';
-import { Context, Middleware, Next } from 'koa';
+import type { Context, Middleware, Next } from 'koa';
 
-import { Server } from '../index.js';
 import {
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
@@ -13,9 +12,10 @@ import {
   cyan,
   green
 } from '../../index.js';
+import type { Server } from '../index.js';
 
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { existsSync } from 'node:fs';
+import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { logError } from '../error.js';
 
 export function lazyCompilation(devSeverContext: Server): Middleware {

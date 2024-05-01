@@ -34,8 +34,5 @@
     "build:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z farm-plugin-tools build --platform --cargo-name farmfe_plugin_sass -p farmfe_plugin_sass --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
-  "files": [
-    "index.js",
-    "index.d.ts"
-  ]
+  "files": ["index.js", "index.d.ts"]
 }

@@ -30,7 +30,5 @@
     "@types/node": "^20.11.16",
     "cross-env": "^7.0.3"
   },
-  "files": [
-    "dist"
-  ]
+  "files": ["dist"]
 }

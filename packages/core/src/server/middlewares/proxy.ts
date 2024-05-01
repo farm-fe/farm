@@ -1,12 +1,13 @@
+import type Application from 'koa';
+import type { Context, Middleware, Next } from 'koa';
 import {
-  default as koaProxy,
-  IKoaProxiesOptions,
-  IBaseKoaProxiesOptions
+  type IBaseKoaProxiesOptions,
+  type IKoaProxiesOptions,
+  default as koaProxy
 } from 'koa-proxies';
+import type { UserConfig } from '../../config/types.js';
+import type { Logger } from '../../utils/logger.js';
 import type { Server } from '../index.js';
-import { UserConfig } from '../../config/types.js';
-import Application, { Middleware, Context, Next } from 'koa';
-import { Logger } from '../../utils/logger.js';
 
 export type ProxiesOptions = IKoaProxiesOptions;
 

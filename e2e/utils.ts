@@ -1,18 +1,21 @@
 export type SimpleUnwrapArray<T> = T extends ReadonlyArray<infer P> ? P : T;
 
-export function logger(msg: any, { title = 'FARM INFO', color = 'green' } = {}) {
+export function logger(
+  msg: any,
+  { title = "FARM INFO", color = "green" } = {}
+) {
   const COLOR_CODE = [
-    'black',
-    'red',
-    'green',
-    'yellow',
-    'blue',
-    'magenta',
-    'cyan',
-    'white',
+    "black",
+    "red",
+    "green",
+    "yellow",
+    "blue",
+    "magenta",
+    "cyan",
+    "white"
   ].indexOf(color);
   if (COLOR_CODE >= 0) {
-    const TITLE_STR = title ? `\x1b[4${COLOR_CODE};30m ${title} \x1b[0m ` : '';
+    const TITLE_STR = title ? `\x1b[4${COLOR_CODE};30m ${title} \x1b[0m ` : "";
     console.log(`${TITLE_STR}\x1b[3${COLOR_CODE}m${msg}\x1b[;0m`);
   } else {
     console.log(title ? `${title} ${msg}` : msg);
@@ -40,8 +43,10 @@ export const createDeferred = <T = any>(silent?: boolean) => {
   return deferred;
 };
 
-
-export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcurrent: number, fn: F) => {
+export const concurrentify = <F extends (...args: any) => Promise<any>>(
+  maxConcurrent: number,
+  fn: F
+) => {
   const queue = [] as {
     deferred: Deferred;
     args: any;
@@ -73,7 +78,7 @@ export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcu
       queue.push({
         deferred,
         ctx,
-        args,
+        args
       });
       return deferred.promise;
     }
@@ -88,7 +93,13 @@ export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcu
 
 export const concurrentMap = <
   Arr extends readonly unknown[],
-  F extends (item: SimpleUnwrapArray<Arr>, index: number, arr: Arr) => Promise<any>,
->(arr: Arr, maxConcurrent: number, cb: F) => arr.map(
-  concurrentify(maxConcurrent, cb) as any,
-) as ReturnType<F>[];
+  F extends (
+    item: SimpleUnwrapArray<Arr>,
+    index: number,
+    arr: Arr
+  ) => Promise<any>
+>(
+  arr: Arr,
+  maxConcurrent: number,
+  cb: F
+) => arr.map(concurrentify(maxConcurrent, cb) as any) as ReturnType<F>[];

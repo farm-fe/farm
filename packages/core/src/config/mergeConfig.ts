@@ -1,7 +1,7 @@
 import path, { isAbsolute } from 'node:path';
 import { isString } from '../plugin/js/utils.js';
 import { isArray, isObject } from '../utils/share.js';
-import { FarmCLIOptions, UserConfig } from './types.js';
+import type { FarmCLIOptions, UserConfig } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeConfig<T extends Record<string, any>>(
@@ -47,7 +47,6 @@ export function mergeFarmCliConfig(
   target: UserConfig
 ): UserConfig {
   let left: UserConfig = {};
-
   (
     [
       'clearScreen',

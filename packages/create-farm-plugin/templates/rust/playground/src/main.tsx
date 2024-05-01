@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import "./main.css";
-import reactLogo from "./assets/react.svg";
 import FarmLogo from "./assets/logo.png";
+import reactLogo from "./assets/react.svg";
 export function Main() {
   const [count, setCount] = useState(0);
-  console.log("rendering Main component")
+  console.log("rendering Main component");
   return (
     <>
       <div>
-        <a href="https://farmfe.org/" target="_blank">
+        <a href="https://farmfe.org/" target="_blank" rel="noreferrer">
           <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>
-        <a href="https://react.dev" target="_blank">
+        <a href="https://react.dev" target="_blank" rel="noreferrer">
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>

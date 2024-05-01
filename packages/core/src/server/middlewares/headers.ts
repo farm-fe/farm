@@ -1,5 +1,5 @@
-import { Middleware } from 'koa';
-import { Server } from '../index.js';
+import type { Middleware } from 'koa';
+import type { Server } from '../index.js';
 
 export function headers(devSeverContext: Server): Middleware {
   const { config } = devSeverContext;

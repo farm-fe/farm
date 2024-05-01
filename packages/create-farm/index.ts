@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-import prompts from 'prompts';
-import minimist from 'minimist';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
 import spawn from 'cross-spawn';
+import minimist from 'minimist';
+import prompts from 'prompts';
 
 import { fileURLToPath } from 'node:url';
 import { colors } from './utils/color.js';
 
-import { loadWithRocketGradient } from './utils/gradient.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
-import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
+import { loadWithRocketGradient } from './utils/gradient.js';
+import { shouldUsePnpm, shouldUseYarn } from './utils/packageManager.js';
 
 interface IResultType {
   packageName?: string;
@@ -274,7 +274,10 @@ function pkgFromUserAgent(userAgent: string | undefined) {
 
 function judgeNodeVersion() {
   const currentVersion = process.versions.node;
-  const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
+  const requiredMajorVersion = Number.parseInt(
+    currentVersion.split('.')[0],
+    10
+  );
   const minimumMajorVersion = 16;
   if (requiredMajorVersion < minimumMajorVersion) {
     console.log(

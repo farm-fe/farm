@@ -3,25 +3,30 @@ import http2 from 'node:http2';
 import Koa from 'koa';
 import compression from 'koa-compress';
 
-import { Compiler } from '../compiler/index.js';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import type { Compiler } from '../compiler/index.js';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
 import {
   DEFAULT_HMR_OPTIONS,
-  DevServerMiddleware,
-  NormalizedServerConfig,
+  type DevServerMiddleware,
+  type NormalizedServerConfig,
+  type UserPreviewServerConfig,
+  type UserServerConfig,
   normalizePublicDir,
-  normalizePublicPath,
-  UserPreviewServerConfig,
-  UserServerConfig
+  normalizePublicPath
 } from '../config/index.js';
-import { HmrEngine } from './hmr-engine.js';
-import { openBrowser } from './open.js';
+import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import {
+  Logger,
   bootstrap,
   clearScreen,
-  Logger,
   normalizeBasePath,
   printServerUrls
 } from '../utils/index.js';
+import type { FileWatcher } from '../watcher/index.js';
+import { logError } from './error.js';
+import { HmrEngine } from './hmr-engine.js';
 import {
   cors,
   headers,
@@ -31,14 +36,9 @@ import {
   resources,
   staticMiddleware
 } from './middlewares/index.js';
-import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { resolveHostname, resolveServerUrls } from '../utils/http.js';
+import { openBrowser } from './open.js';
+import type { Server as httpServer } from './type.js';
 import WsServer from './ws.js';
-import { Server as httpServer } from './type.js';
-import { promisify } from 'node:util';
-import { FileWatcher } from '../watcher/index.js';
-import { logError } from './error.js';
-import path from 'node:path';
 
 /**
  * Farm Dev Server, responsible for:

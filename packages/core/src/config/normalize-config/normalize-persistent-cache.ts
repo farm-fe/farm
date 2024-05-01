@@ -1,11 +1,11 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
 
-import { Config } from '../../../binding/index.js';
-import { ResolvedUserConfig } from '../index.js';
-import { RustPlugin } from '../../plugin/index.js';
+import type { Config } from '../../../binding/index.js';
+import type { RustPlugin } from '../../plugin/index.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
+import type { ResolvedUserConfig } from '../index.js';
 
 const defaultGlobalBuiltinCacheKeyStrategy = {
   define: true,

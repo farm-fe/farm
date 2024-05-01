@@ -1,16 +1,10 @@
 {
   "name": "@farmfe/plugin-sass-linux-x64-musl",
   "version": "0.0.0",
-  "os": [
-    "linux"
-  ],
-  "cpu": [
-    "x64"
-  ],
+  "os": ["linux"],
+  "cpu": ["x64"],
   "main": "index.farm",
-  "files": [
-    "index.farm"
-  ],
+  "files": ["index.farm"],
   "license": "MIT",
   "engines": {
     "node": ">= 10"

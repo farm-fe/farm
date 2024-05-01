@@ -1,7 +1,7 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import farmLogo from './assets/logo.png'
-  import Counter from './lib/Counter.svelte'
+import farmLogo from "./assets/logo.png";
+import svelteLogo from "./assets/svelte.svg";
+import Counter from "./lib/Counter.svelte";
 </script>
 
 <main>

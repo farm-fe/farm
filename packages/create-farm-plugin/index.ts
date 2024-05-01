@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import prompts from 'prompts';
-import minimist from 'minimist';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
+import minimist from 'minimist';
+import prompts from 'prompts';
 
 import { fileURLToPath } from 'node:url';
 import { colors } from '@farmfe/utils/colors';
@@ -127,10 +127,15 @@ async function copyTemplate(targetDir: string, options: IResultType) {
   // Modify package.json to add dependencies
   const packageJsonPath = path.join(`${dest}/playground`, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
-    const packageJsonContent = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const packageJsonContent = JSON.parse(
+      fs.readFileSync(packageJsonPath, 'utf-8')
+    );
     // Modify the dependencies object as needed
     packageJsonContent.dependencies[options.pluginName] = 'workspace:*'; // Modify this line with your dependency and version
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJsonContent, null, 2));
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify(packageJsonContent, null, 2)
+    );
   }
 
   const runText = options.type === 'js' ? 'pnpm dev' : 'pnpm build';
@@ -140,7 +145,10 @@ async function copyTemplate(targetDir: string, options: IResultType) {
 
 function judgeNodeVersion() {
   const currentVersion = process.versions.node;
-  const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
+  const requiredMajorVersion = Number.parseInt(
+    currentVersion.split('.')[0],
+    10
+  );
   const minimumMajorVersion = 16;
   if (requiredMajorVersion < minimumMajorVersion) {
     console.log(

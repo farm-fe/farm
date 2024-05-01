@@ -2,10 +2,10 @@ import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRawType } from 'ws';
 
-import { WebSocketServer as WebSocketServerRaw, WebSocket } from 'ws';
-import { Logger, NormalizedServerConfig, red } from '../index.js';
-import { Server } from './type.js';
-import { HmrEngine } from './hmr-engine.js';
+import { WebSocket, WebSocketServer as WebSocketServerRaw } from 'ws';
+import { Logger, type NormalizedServerConfig, red } from '../index.js';
+import type { HmrEngine } from './hmr-engine.js';
+import type { Server } from './type.js';
 
 import type { ILogger } from '../index.js';
 

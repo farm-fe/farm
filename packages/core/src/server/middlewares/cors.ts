@@ -1,6 +1,6 @@
-import { Middleware } from 'koa';
-import { Server } from '../index.js';
 import { default as koaCors } from '@koa/cors';
+import type { Middleware } from 'koa';
+import type { Server } from '../index.js';
 
 export function cors(devSeverContext: Server): Middleware {
   const { config } = devSeverContext;

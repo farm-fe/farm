@@ -1,9 +1,9 @@
+import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
+import { createPinia } from 'pinia';
 // register vue composition api globally
 import { createApp } from 'vue';
-import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 
 import 'ant-design-vue/dist/reset.css';
 import './style.css';

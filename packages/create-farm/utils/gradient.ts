@@ -110,7 +110,7 @@ function hexToRgb(hex: string) {
   hex = hex.replace(/^#/, '');
 
   // Parse the hex string to obtain RGB values
-  const bigint = parseInt(hex, 16);
+  const bigint = Number.parseInt(hex, 16);
   const r = (bigint >> 16) & 255;
   const g = (bigint >> 8) & 255;
   const b = bigint & 255;

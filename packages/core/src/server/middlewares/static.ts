@@ -1,8 +1,8 @@
-import { Middleware, Context, Next } from 'koa';
-import { Server } from '../index.js';
-import serve from 'koa-static';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import type { Context, Middleware, Next } from 'koa';
+import serve from 'koa-static';
+import type { Server } from '../index.js';
 
 export function staticMiddleware(devServerContext: Server): Middleware {
   const { config } = devServerContext;

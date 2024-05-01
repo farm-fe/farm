@@ -1,10 +1,10 @@
-import type { UserConfig } from '@farmfe/core';
-import { DefaultLogger } from './logger.js';
-import chalk from 'chalk';
-import glob from 'fast-glob';
 import os from 'node:os';
 import { relative, resolve } from 'node:path';
-import { CompilerOptions, Project, SourceFile } from 'ts-morph';
+import type { UserConfig } from '@farmfe/core';
+import chalk from 'chalk';
+import glob from 'fast-glob';
+import { type CompilerOptions, Project, type SourceFile } from 'ts-morph';
+import { DefaultLogger } from './logger.js';
 import {
   ensureAbsolute,
   ensureArray,
@@ -153,9 +153,6 @@ export default class Context {
           if (!this.options.copyDtsFiles) {
             continue;
           }
-
-          // includedFiles.add(file);
-          continue;
         }
 
         // includedFiles.add(
@@ -190,7 +187,7 @@ export default class Context {
     const service = this.project.getLanguageService();
     const outputFiles = this.project
       .getSourceFiles()
-      .map((sourceFile) =>
+      .flatMap((sourceFile) =>
         service
           .getEmitOutput(sourceFile, true)
           .getOutputFiles()
@@ -202,7 +199,6 @@ export default class Context {
             content: outputFile.getText()
           }))
       )
-      .flat()
       .concat(dtsOutputFiles);
     let entryRoot = this.options.entryRoot ?? '';
     entryRoot =

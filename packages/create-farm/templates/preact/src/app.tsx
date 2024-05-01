@@ -1,18 +1,18 @@
-import { useState } from 'preact/hooks'
-import preactLogo from './assets/preact.svg'
-import FarmLogo from './assets/logo.png'
-import './app.css'
+import { useState } from "preact/hooks";
+import FarmLogo from "./assets/logo.png";
+import preactLogo from "./assets/preact.svg";
+import "./app.css";
 
 export function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <>
       <div>
-        <a href="https://farmfe.org/" target="_blank">
+        <a href="https://farmfe.org/" target="_blank" rel="noreferrer">
           <img src={FarmLogo} class="logo" alt="Farm logo" />
         </a>
-        <a href="https://preactjs.com" target="_blank">
+        <a href="https://preactjs.com" target="_blank" rel="noreferrer">
           <img src={preactLogo} class="logo preact" alt="Preact logo" />
         </a>
       </div>
@@ -29,5 +29,5 @@ export function App() {
         Click on the Farm and Preact logos to learn more
       </p>
     </>
-  )
+  );
 }

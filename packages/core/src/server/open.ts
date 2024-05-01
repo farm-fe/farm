@@ -10,18 +10,18 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import open from 'open';
-import { execa } from 'execa';
 import { execSync } from 'child_process';
-import { cyan, Logger, red } from '../utils/index.js';
+import { execa } from 'execa';
+import open from 'open';
+import { Logger, cyan, red } from '../utils/index.js';
 
 // https://github.com/sindresorhus/open#app
 const OSX_CHROME = 'google chrome';
 
-const enum Actions {
-  NONE,
-  BROWSER,
-  SCRIPT
+enum Actions {
+  NONE = 0,
+  BROWSER = 1,
+  SCRIPT = 2
 }
 
 function getBrowserEnv() {

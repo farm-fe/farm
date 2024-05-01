@@ -1,19 +1,19 @@
 import { Module } from './module';
-import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
+import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
 import {
-  Resource,
+  type Resource,
   ResourceLoader,
   isBrowser,
   targetEnv
 } from './resource-loader';
 
+// @ts-ignore swc helpers does not have type definition
+import { _export_star } from '@swc/helpers/_/_export_star';
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore swc helpers does not have type definition
 import { _interop_require_default } from '@swc/helpers/_/_interop_require_default';
 // @ts-ignore swc helpers does not have type definition
 import { _interop_require_wildcard } from '@swc/helpers/_/_interop_require_wildcard';
-// @ts-ignore swc helpers does not have type definition
-import { _export_star } from '@swc/helpers/_/_export_star';
 
 const __global_this__ = globalThis || window;
 

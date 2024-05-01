@@ -17,13 +17,13 @@ export default defineComponent({
   name: "CodeViewer",
   props: {
     code: String,
-    language: String,
+    language: String
   },
   setup() {
     const MONACO_EDITOR_OPTIONS = {
       automaticLayout: true,
       formatOnType: true,
-      formatOnPaste: true,
+      formatOnPaste: true
     };
 
     const editorRef = shallowRef();
@@ -34,9 +34,9 @@ export default defineComponent({
         return "javascript";
       }
       const data = lang.toLocaleLowerCase();
-      if( data === "js" || data === "runtime") {
+      if (data === "js" || data === "runtime") {
         return "javascript";
-      }else {
+      } else {
         return data;
       }
     }
@@ -46,6 +46,6 @@ export default defineComponent({
       handleMount,
       formatLanguage
     };
-  },
+  }
 });
 </script>

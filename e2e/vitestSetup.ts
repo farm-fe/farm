@@ -1,9 +1,9 @@
-import { chromium, type Page } from 'playwright-chromium';
-import { join } from 'path';
-import { logger } from './utils.js';
-import { inject, onTestFinished } from 'vitest';
-import { execa } from 'execa';
-import { existsSync } from 'fs';
+import { existsSync } from "fs";
+import { join } from "path";
+import { execa } from "execa";
+import { type Page, chromium } from "playwright-chromium";
+import { inject, onTestFinished } from "vitest";
+import { logger } from "./utils.js";
 
 // export const browserLogs: string[] = [];
 // export const browserErrors: Error[] = [];
@@ -16,7 +16,7 @@ globalVar.CURRENT_PORT = 9100;
 function getServerPort(): number {
   const incPort = () => {
     globalVar.CURRENT_PORT += 10;
-    console.log('generate port', globalVar.CURRENT_PORT);
+    console.log("generate port", globalVar.CURRENT_PORT);
     return globalVar.CURRENT_PORT;
   };
   return incPort();
@@ -31,13 +31,13 @@ const visitPage = async (
   if (!path) return;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  const wsEndpoint = inject('wsEndpoint');
+  const wsEndpoint = inject("wsEndpoint");
   if (!wsEndpoint) {
-    throw new Error('wsEndpoint not found');
+    throw new Error("wsEndpoint not found");
   }
 
   // make sure rawCb is called only once
-  const cb = (function () {
+  const cb = (() => {
     let called = false;
     return async (page: Page) => {
       if (called) return;
@@ -51,7 +51,7 @@ const visitPage = async (
   page && pageMap.set(path, page);
   logger(`open the page: ${path} ${examplePath}`);
   try {
-    page?.on('console', (msg) => {
+    page?.on("console", (msg) => {
       logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
       // browserLogs.push(msg.text());
     });
@@ -61,15 +61,15 @@ const visitPage = async (
       reject = re;
     });
 
-    page?.on('pageerror', (error) => {
+    page?.on("pageerror", (error) => {
       logger(`command ${command} ${examplePath} -> ${path}: ${error}`, {
-        color: 'red'
+        color: "red"
       });
       reject(error);
     });
 
-    page?.on('load', async () => {
-      console.log(command, 'page load');
+    page?.on("load", async () => {
+      console.log(command, "page load");
     });
 
     await page?.goto(path);
@@ -82,14 +82,14 @@ const visitPage = async (
         logger(
           `command ${command} test error: ${examplePath} start failed with error ${e}`,
           {
-            color: 'red'
+            color: "red"
           }
         );
         reject(e);
       })
       .finally(() => {
         page?.close({
-          reason: 'test finished',
+          reason: "test finished",
           runBeforeUnload: false
         });
       });
@@ -103,23 +103,23 @@ const visitPage = async (
 
 const getFarmCLIBinPath = (examplePath: string) => {
   try {
-    const binPath = join('node_modules', '@farmfe', 'cli', 'bin', 'farm.mjs');
+    const binPath = join("node_modules", "@farmfe", "cli", "bin", "farm.mjs");
     const fullBinPath = join(examplePath, binPath);
 
     if (existsSync(fullBinPath)) {
       return binPath;
     }
-    return '';
+    return "";
   } catch (error) {
     // console.error(' read json failed', error);
-    return '';
+    return "";
   }
 };
 
 export const startProjectAndTest = async (
   examplePath: string,
   cb: (page: Page) => Promise<void>,
-  command = 'start'
+  command = "start"
 ) => {
   // // using bin path to spawn child process to avoid port conflicts issue
   // const cliBinPath = getFarmCLIBinPath(examplePath);
@@ -129,13 +129,13 @@ export const startProjectAndTest = async (
   // }
   const port = getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
-  const child = execa('npm', ['run', command], {
+  const child = execa("npm", ["run", command], {
     cwd: examplePath,
-    stdin: 'pipe',
-    encoding: 'utf8',
+    stdin: "pipe",
+    encoding: "utf8",
     env: {
-      BROWSER: 'none',
-      NO_COLOR: 'true',
+      BROWSER: "none",
+      NO_COLOR: "true",
       FARM_DEFAULT_SERVER_PORT: String(port),
       FARM_DEFAULT_HMR_PORT: String(port)
     }
@@ -145,10 +145,10 @@ export const startProjectAndTest = async (
     let result = Buffer.alloc(0);
     const urlRegex =
       /((http|https):\/\/(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d+)?(\/[^\s]*)?/g;
-    child.stdout?.on('data', async (chunk) => {
+    child.stdout?.on("data", async (chunk) => {
       result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
       const res = result.toString();
-      const replacer = res.replace(/\n/g, '');
+      const replacer = res.replace(/\n/g, "");
 
       const matches = replacer.match(urlRegex);
       const pagePath = matches && (matches[1] || matches[0]);
@@ -158,11 +158,11 @@ export const startProjectAndTest = async (
       }
     });
 
-    child.on('error', (error) => {
+    child.on("error", (error) => {
       logger(
         `child process error: ${examplePath} ${command} failed with error ${error}`,
         {
-          color: 'red'
+          color: "red"
         }
       );
       reject(
@@ -170,14 +170,14 @@ export const startProjectAndTest = async (
       );
     });
 
-    child.on('exit', (code) => {
+    child.on("exit", (code) => {
       if (code) {
         logger(
           `${examplePath} ${command} failed with code ${code}. ${result.toString(
-            'utf-8'
+            "utf-8"
           )}`,
           {
-            color: 'red'
+            color: "red"
           }
         );
         reject(new Error(`${examplePath} ${command} failed with code ${code}`));
@@ -185,8 +185,8 @@ export const startProjectAndTest = async (
     });
 
     onTestFinished(() => {
-      logger('try kill child process: ' + child.pid);
-      logger('current process id: ' + process.pid);
+      logger("try kill child process: " + child.pid);
+      logger("current process id: " + process.pid);
       if (!child.killed) {
         child.kill();
       }
@@ -196,7 +196,7 @@ export const startProjectAndTest = async (
   try {
     await visitPage(pagePath, examplePath, cb, command);
   } catch (e) {
-    console.log('visit page error: ', e);
+    console.log("visit page error: ", e);
     throw e;
   } finally {
     if (!child.killed) {
@@ -208,17 +208,17 @@ export const startProjectAndTest = async (
 export const watchProjectAndTest = async (
   examplePath: string,
   cb: (log: string, done: () => void) => Promise<void>,
-  command = 'start'
+  command = "start"
 ) => {
   const port = getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
-  const child = execa('npm', ['run', command], {
+  const child = execa("npm", ["run", command], {
     cwd: examplePath,
-    stdin: 'pipe',
-    encoding: 'utf8',
+    stdin: "pipe",
+    encoding: "utf8",
     env: {
-      BROWSER: 'none',
-      NO_COLOR: 'true',
+      BROWSER: "none",
+      NO_COLOR: "true",
       FARM_DEFAULT_SERVER_PORT: String(port),
       FARM_DEFAULT_HMR_PORT: String(port)
     }
@@ -226,20 +226,20 @@ export const watchProjectAndTest = async (
 
   return new Promise((resolve, reject) => {
     let result = Buffer.alloc(0);
-    child.stdout?.on('data', async (chunk) => {
+    child.stdout?.on("data", async (chunk) => {
       result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
       const res = result.toString();
       setTimeout(() => {
-        reject(new Error('timeout'));
+        reject(new Error("timeout"));
       }, 10000);
       cb(res, () => resolve(null));
     });
 
-    child.on('error', (error) => {
+    child.on("error", (error) => {
       logger(
         `child process error: ${examplePath} ${command} failed with error ${error}`,
         {
-          color: 'red'
+          color: "red"
         }
       );
       reject(
@@ -247,14 +247,14 @@ export const watchProjectAndTest = async (
       );
     });
 
-    child.on('exit', (code) => {
+    child.on("exit", (code) => {
       if (code) {
         logger(
           `${examplePath} ${command} failed with code ${code}. ${result.toString(
-            'utf-8'
+            "utf-8"
           )}`,
           {
-            color: 'red'
+            color: "red"
           }
         );
         reject(new Error(`${examplePath} ${command} failed with code ${code}`));
@@ -262,8 +262,8 @@ export const watchProjectAndTest = async (
     });
 
     onTestFinished(() => {
-      logger('try kill child process: ' + child.pid);
-      logger('current process id: ' + process.pid);
+      logger("try kill child process: " + child.pid);
+      logger("current process id: " + process.pid);
       if (!child.killed) {
         child.kill();
       }

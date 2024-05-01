@@ -1,9 +1,9 @@
+import { fileURLToPath } from 'node:url';
 import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
-import { JsPlugin } from '../src/plugin/type.js';
 import { normalizeUserCompilationConfig } from '../src/config/index.js';
-import { fileURLToPath } from 'node:url';
 import { Logger } from '../src/index.js';
+import type { JsPlugin } from '../src/plugin/type.js';
 
 export async function getCompiler(
   root: string,

@@ -1,10 +1,10 @@
+import fs from 'node:fs';
 /* eslint-disable no-prototype-builtins */
 import os from 'node:os';
-import fs from 'node:fs';
-import readline from 'node:readline';
 import path, { dirname } from 'node:path';
+import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { Config } from '../../binding/index.js';
+import type { Config } from '../../binding/index.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
@@ -132,7 +132,7 @@ export function mergeObjects<
 
 export async function asyncFlatten<T>(arr: T[]): Promise<T[]> {
   do {
-    arr = (await Promise.all(arr)).flat(Infinity) as any;
+    arr = (await Promise.all(arr)).flat(Number.POSITIVE_INFINITY) as any;
   } while (arr.some((v: any) => v?.then));
   return arr;
 }

@@ -1,3 +1,3 @@
-import { runTaskQueue } from './build.mjs';
+import { runTaskQueue } from "./build.mjs";
 
 await runTaskQueue();

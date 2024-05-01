@@ -1,6 +1,6 @@
 // Farm's HMR client is compatible with Vite, see https://vitejs.dev/guide/api-hmr.html.
 // And it's inspired by both Vite and esm-hmr, see https://github.com/FredKSchott/esm-hmr
-import { HmrClient } from './hmr-client';
+import type { HmrClient } from './hmr-client';
 import { logger } from './logger';
 
 export class HotModuleState {

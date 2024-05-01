@@ -2,8 +2,8 @@
  * record middleware.
  */
 
-import { Context, Middleware } from 'koa';
-import { Server } from '../index.js';
+import type { Context, Middleware } from 'koa';
+import type { Server } from '../index.js';
 
 export function records(devServer: Server): Middleware {
   const compiler = devServer.getCompiler();

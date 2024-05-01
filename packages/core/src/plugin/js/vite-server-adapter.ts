@@ -1,9 +1,9 @@
 // import { watch } from 'chokidar';
-import { FSWatcher } from 'chokidar';
-import { Server } from '../../index.js';
-import { Server as httpServer } from '../../server/type.js';
-import WsServer from '../../server/ws.js';
-import { CompilationContext, ViteModule } from '../type.js';
+import type { FSWatcher } from 'chokidar';
+import type { Server } from '../../index.js';
+import type { Server as httpServer } from '../../server/type.js';
+import type WsServer from '../../server/ws.js';
+import type { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
 export class ViteDevServerAdapter {

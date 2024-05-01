@@ -1,1 +1,1 @@
-console.log('runtime/index.js')
+console.log("runtime/index.js");

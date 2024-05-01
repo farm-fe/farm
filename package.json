@@ -7,6 +7,7 @@
     "pnpm": ">=8"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.7.2",
     "@changesets/cli": "^2.26.0",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
@@ -21,6 +22,7 @@
     "execa": "^7.1.1",
     "lint-staged": "^13.0.3",
     "nanospinner": "^1.1.0",
+    "playwright-chromium": "^1.42.1",
     "prettier": "^2.7.1",
     "prettier-eslint": "^15.0.1",
     "prettier-eslint-cli": "^7.1.0",
@@ -29,8 +31,7 @@
     "simple-git-hooks": "^2.10.0",
     "typescript": "^4.9.4",
     "vite": "^5.2.6",
-    "vitest": "^1.4.0",
-    "playwright-chromium": "^1.42.1"
+    "vitest": "^1.4.0"
   },
   "scripts": {
     "postinstall": "simple-git-hooks",
@@ -39,6 +40,7 @@
     "test": "cross-env NODE_OPTIONS=--trace-exit vitest run",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
     "start": "pnpm --filter @farmfe/cli start",
+    "check": "biome check . --diagnostic-level=warn --apply",
     "release": "node scripts/release.mjs",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
     "bump": "node scripts/bump.mjs",
@@ -47,12 +49,8 @@
     "test-e2e": "vitest run -c vitest.config.e2e.ts"
   },
   "lint-staged": {
-    "packages/**/*.ts": [
-      "prettier-eslint --write"
-    ],
-    "js-plugins/**/*.ts": [
-      "prettier-eslint --write"
-    ]
+    "packages/**/*.ts": ["prettier-eslint --write"],
+    "js-plugins/**/*.ts": ["prettier-eslint --write"]
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",

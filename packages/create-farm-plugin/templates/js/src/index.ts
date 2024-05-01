@@ -1,14 +1,12 @@
 // import { readFileSync } from 'node:fs';
-import type { JsPlugin } from '@farmfe/core';
+import type { JsPlugin } from "@farmfe/core";
 
-interface Options {
-  /* Your options here */
-}
+type Options = {};
 
 export default function farmPlugin(options: Options): JsPlugin {
   return {
-    name: '<FARM-JS-PLUGIN-NPM-NAME>',
-    /* Your plugin hooks here: */ 
+    name: "<FARM-JS-PLUGIN-NPM-NAME>"
+    /* Your plugin hooks here: */
 
     // config(config) {
     //   console.log('options', options);

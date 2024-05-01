@@ -1,6 +1,6 @@
+import path from 'path';
 import { describe, expect, test } from 'vitest';
 import { mergeFarmCliConfig } from '../../src/config/mergeConfig.js';
-import path from 'path';
 
 describe('mergeFarmCliConfig', () => {
   test('inlineOption.root not empty', () => {

@@ -36,15 +36,15 @@
 </template>
 
 <script lang="ts">
-import { Card, Tree, Drawer } from "ant-design-vue";
-import { computed, defineComponent, ref, reactive } from "vue";
-import { getResourcesMap } from "../../api";
 import type { Resource } from "@farmfe/core";
+import { Card, Drawer, Tree } from "ant-design-vue";
+import { computed, defineComponent, reactive, ref } from "vue";
+import { getResourcesMap } from "../../api";
+import CodeViewer from "../../components/CodeViewer.vue";
+import FileTree from "../../components/FileTree.vue";
 import ResourcePots from "../../components/ResourcePots.vue";
 import { useResourcePotStore } from "../../stores/resourcePot";
 import { genFileTree } from "../../utils/file";
-import FileTree from "../../components/FileTree.vue";
-import CodeViewer from "../../components/CodeViewer.vue";
 
 export default defineComponent({
   name: "BundleAnalyze",
@@ -56,7 +56,7 @@ export default defineComponent({
     const sourceFile = reactive({
       name: "",
       code: "",
-      language: "javascript",
+      language: "javascript"
     });
     getResourcesMap().then((rawData) => {
       resourcePots.value = Object.values(rawData);
@@ -66,7 +66,11 @@ export default defineComponent({
       return genFileTree(moduleIds);
     });
 
-    function handleViewCode(data: { name: string; code: string; language?: string }) {
+    function handleViewCode(data: {
+      name: string;
+      code: string;
+      language?: string;
+    }) {
       sourceFile.name = data.name;
       sourceFile.code = data.code;
       sourceFile.language = data.language || "javascript";
@@ -79,8 +83,8 @@ export default defineComponent({
       treeData,
       isOpened,
       sourceFile,
-      handleViewCode,
+      handleViewCode
     };
-  },
+  }
 });
 </script>

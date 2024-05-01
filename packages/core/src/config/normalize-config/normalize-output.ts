@@ -1,6 +1,6 @@
 import { browsersWithSupportForFeatures } from 'browserslist-generator';
 
-import { Config } from '../../../binding/index.js';
+import type { Config } from '../../../binding/index.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue

@@ -1,20 +1,20 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { isAbsolute } from 'node:path';
+import type { CompilationMode } from '../../config/env.js';
 import {
   type JsPlugin,
-  normalizeDevServerOptions,
+  type Logger,
   type UserConfig,
-  Logger
+  normalizeDevServerOptions
 } from '../../index.js';
+import merge from '../../utils/merge.js';
+import { resolveAsyncPlugins } from '../index.js';
 import {
   DEFAULT_FILTERS,
-  getCssModuleType,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
+  getCssModuleType
 } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolveAsyncPlugins } from '../index.js';
-import merge from '../../utils/merge.js';
-import { CompilationMode } from '../../config/env.js';
-import { isAbsolute } from 'node:path';
 
 // export * from './jsPluginAdapter.js';
 export { VitePluginAdapter } from './vite-plugin-adapter.js';

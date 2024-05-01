@@ -1,15 +1,15 @@
 import { createRequire } from 'node:module';
 
-import { FSWatcher } from 'chokidar';
+import type { FSWatcher } from 'chokidar';
 
 import { Compiler } from '../compiler/index.js';
 import { Server } from '../server/index.js';
-import { compilerHandler, Logger } from '../utils/index.js';
+import { Logger, compilerHandler } from '../utils/index.js';
 
+import { existsSync } from 'node:fs';
+import type { JsUpdateResult } from '../../binding/binding.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 import { createWatcher } from './create-watcher.js';
-import { existsSync } from 'node:fs';
-import { JsUpdateResult } from '../../binding/binding.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;

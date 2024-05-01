@@ -1,6 +1,6 @@
-import type { GlobalSetupContext } from 'vitest/node';
-import { chromium } from 'playwright-chromium';
-import type { BrowserServer } from 'playwright-chromium';
+import { chromium } from "playwright-chromium";
+import type { BrowserServer } from "playwright-chromium";
+import type { GlobalSetupContext } from "vitest/node";
 
 let browserServer: BrowserServer | undefined;
 
@@ -11,7 +11,7 @@ export async function setup({ provide }: GlobalSetupContext): Promise<void> {
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  provide('wsEndpoint', browserServer.wsEndpoint());
+  provide("wsEndpoint", browserServer.wsEndpoint());
 }
 
 export async function teardown(): Promise<void> {

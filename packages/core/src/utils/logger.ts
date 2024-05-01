@@ -1,7 +1,7 @@
+import type { Config } from '../../binding/index.js';
+import { type ColorFunction, PersistentCacheBrand, colors } from './color.js';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { pad, version } from './share.js';
-import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
-import { Config } from '../../binding/index.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 

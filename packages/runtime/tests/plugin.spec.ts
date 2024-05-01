@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { expect, test } from 'vitest';
 import { Module } from '../src/module';
 import { FarmRuntimePluginContainer } from '../src/plugin';
 

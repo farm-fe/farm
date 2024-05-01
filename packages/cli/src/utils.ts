@@ -2,10 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import walkdir from 'walkdir';
-import spawn from 'cross-spawn';
-import type { build, preview, start, watch, clean } from '@farmfe/core';
+import type { build, clean, preview, start, watch } from '@farmfe/core';
 import { Logger } from '@farmfe/core';
+import spawn from 'cross-spawn';
+import walkdir from 'walkdir';
 
 import type { GlobalFarmCLIOptions, ICleanOptions } from './types.js';
 

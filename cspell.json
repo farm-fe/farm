@@ -56,6 +56,7 @@
     "esbuild",
     "execa",
     "farmfe",
+    "Filenaming",
     "flac",
     "Fock",
     "gnueabihf",
@@ -65,10 +66,10 @@
     "icns",
     "idents",
     "IHDR",
-    "JIDA",
     "importee",
     "indicatif",
     "jfif",
+    "JIDA",
     "jridgewell",
     "jsnext",
     "kolorist",
@@ -177,5 +178,5 @@
     "**/LICENSE",
     "**/CHANGELOG.md",
     "**/gitignore"
-  ]
+  ],
 }

@@ -1,12 +1,12 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "@farmfe/core";
 
 export default defineConfig({
   compilation: {
     persistentCache: false,
     output: {
-      targetEnv: 'node'
+      targetEnv: "node"
     },
     sourcemap: false,
-    presetEnv: false,
+    presetEnv: false
   }
 });

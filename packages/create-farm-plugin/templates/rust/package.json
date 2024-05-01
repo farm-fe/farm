@@ -36,7 +36,5 @@
     "build": "farm-plugin-tools build --platform --cargo-name <FARM-RUST-PLUGIN-CARGO-NAME> -p <FARM-RUST-PLUGIN-CARGO-NAME> --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
-  "files": [
-    "scripts"
-  ]
+  "files": ["scripts"]
 }
