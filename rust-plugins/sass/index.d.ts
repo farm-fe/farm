@@ -5,6 +5,6 @@ export interface SassOptions {
   additionalData?: string;
 }
 
-
-declare const binPath: (options?:SassOptions)=>[string,SassOptions];
+declare const binPath: string;
+export const farmPluginSass: (options?:SassOptions)=>[string,SassOptions];
 export default binPath;

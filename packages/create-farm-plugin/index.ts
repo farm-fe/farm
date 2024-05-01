@@ -127,10 +127,15 @@ async function copyTemplate(targetDir: string, options: IResultType) {
   // Modify package.json to add dependencies
   const packageJsonPath = path.join(`${dest}/playground`, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
-    const packageJsonContent = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const packageJsonContent = JSON.parse(
+      fs.readFileSync(packageJsonPath, 'utf-8')
+    );
     // Modify the dependencies object as needed
     packageJsonContent.dependencies[options.pluginName] = 'workspace:*'; // Modify this line with your dependency and version
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJsonContent, null, 2));
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify(packageJsonContent, null, 2)
+    );
   }
 
   const runText = options.type === 'js' ? 'pnpm dev' : 'pnpm build';
@@ -165,8 +170,8 @@ function replaceNamePlaceholders(
       replace: () => options.pluginName
     },
     {
-      name: '<FARM-RUST-PLUGIN-NPM-NAME>',
-      replace: () => options.pluginName
+      name: '<FARM-RUST-PLUGIN-EXPORT-NAME>',
+      replace: () => toCamelCase(options.pluginName)
     },
     {
       name: '<FARM-RUST-PLUGIN-CARGO-NAME>',
@@ -225,6 +230,16 @@ function copyDir(srcDir: string, destDir: string, options: IResultType) {
       copy(srcFile, destFile, options);
     }
   }
+}
+
+function toCamelCase(str: string) {
+  // remove scope
+  const index = str.indexOf('/');
+  const trimmedStr = index !== -1 ? str.slice(index + 1) : str;
+
+  return trimmedStr.replace(/-([a-z])/g, function (_, letter) {
+    return letter.toUpperCase();
+  });
 }
 
 function welcome() {

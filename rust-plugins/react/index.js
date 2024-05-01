@@ -119,4 +119,5 @@ switch (platform) {
     throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
-export default (options)=>[binPath,options];
+export const farmPluginReact = (options)=>[binPath,options];
+export default binPath;

@@ -121,4 +121,5 @@ switch (platform) {
     throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
-export default (options)=>[binPath, options];
+export const farmPluginSass =  (options)=>[binPath, options];
+export default binPath;
