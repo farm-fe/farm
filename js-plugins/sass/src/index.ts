@@ -10,7 +10,7 @@ import type {
 import { getAdditionContext, rebaseUrls } from "@farmfe/core";
 import { readFile } from "fs/promises";
 import type { CompileResult, LegacyOptions, StringOptions } from "sass";
-import * as Sass from "sass";
+import type * as Sass from "sass";
 import { pluginName, throwError, tryRead } from "./options.js";
 import { getSassImplementation } from "./utils.js";
 
@@ -347,7 +347,7 @@ async function compileScssLegacy(param: CompileCssParams) {
         outFile: transformParam.resolvedPath,
         sourceMapRoot: path.dirname(transformParam.resolvedPath),
         importer: [
-          function (url, _, done) {
+          (url, _, done) => {
             resolveDependency(url, transformParam, ctx).then((resolvedPath) => {
               rebaseUrls(
                 resolvedPath,

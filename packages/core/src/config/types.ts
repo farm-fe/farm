@@ -1,10 +1,10 @@
-import { SecureServerOptions } from "node:http2";
-import { Server } from "../index.js";
+import type { SecureServerOptions } from "node:http2";
+import type { Server } from "../index.js";
 
 import type { OutgoingHttpHeaders } from "http";
 import type cors from "@koa/cors";
-import { WatchOptions } from "chokidar";
-import { Middleware } from "koa";
+import type { WatchOptions } from "chokidar";
+import type { Middleware } from "koa";
 import type { Config } from "../../binding/index.js";
 import type { RustPlugin } from "../plugin/rust/index.js";
 import type { JsPlugin } from "../plugin/type.js";
