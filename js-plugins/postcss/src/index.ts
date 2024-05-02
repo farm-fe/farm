@@ -1,13 +1,13 @@
-import path from 'path';
+import path from "path";
 import {
   type JsPlugin,
   type ResolvedUserConfig,
   checkPublicFile
-} from '@farmfe/core';
-import glob from 'fast-glob';
-import type { ProcessOptions, Processor } from 'postcss';
-import postcssLoadConfig from 'postcss-load-config';
-import { getPostcssImplementation, pluginName, tryRead } from './utils.js';
+} from "@farmfe/core";
+import glob from "fast-glob";
+import type { ProcessOptions, Processor } from "postcss";
+import postcssLoadConfig from "postcss-load-config";
+import { getPostcssImplementation, pluginName, tryRead } from "./utils.js";
 
 export type PostcssPluginOptions = {
   /**
@@ -62,7 +62,7 @@ export default function farmPostcssPlugin(
     transform: {
       filters: {
         resolvedPaths: options.filters?.resolvedPaths,
-        moduleTypes: options.filters?.moduleTypes ?? ['css']
+        moduleTypes: options.filters?.moduleTypes ?? ["css"]
       },
       async executor(param, context) {
         try {
@@ -71,8 +71,8 @@ export default function farmPostcssPlugin(
             options.internalPlugins?.postcssImport ?? false;
 
           if (enablePostcssImport) {
-            const atImport = getPostcssImplementation('postcss-import');
-            const postcssUrl = getPostcssImplementation('postcss-url');
+            const atImport = getPostcssImplementation("postcss-import");
+            const postcssUrl = getPostcssImplementation("postcss-url");
 
             postcssPlugins.unshift(
               atImport({
@@ -85,8 +85,8 @@ export default function farmPostcssPlugin(
                   try {
                     const resolvedInfo = await context.resolve(
                       {
-                        kind: 'import',
-                        importer: path.resolve(basedir, '*'),
+                        kind: "import",
+                        importer: path.resolve(basedir, "*"),
                         source: id
                       },
                       {
@@ -114,7 +114,7 @@ export default function farmPostcssPlugin(
                   const implementation = getPostcssImplementation();
                   const urlRebasePostcssProcessor: Processor = implementation([
                     postcssUrl({
-                      url: 'rebase'
+                      url: "rebase"
                     })
                   ]);
                   const { css } = await urlRebasePostcssProcessor.process(
@@ -138,30 +138,30 @@ export default function farmPostcssPlugin(
           );
 
           // record CSS dependencies from @imports
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === "development") {
             for (const message of messages) {
-              if (message.type === 'dependency') {
+              if (message.type === "dependency") {
                 context.addWatchFile(
                   param.resolvedPath,
                   message.file as string
                 );
-              } else if (message.type === 'dir-dependency') {
-                const { dir, glob: globPattern = '**' } = message;
+              } else if (message.type === "dir-dependency") {
+                const { dir, glob: globPattern = "**" } = message;
                 // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies
                 const files = glob.sync(path.join(dir, globPattern), {
-                  ignore: ['**/node_modules/**']
+                  ignore: ["**/node_modules/**"]
                 });
                 for (const file of files) {
                   context.addWatchFile(param.resolvedPath, file);
                 }
-              } else if (message.type === 'warning') {
+              } else if (message.type === "warning") {
                 console.warn(`[${pluginName}] ${message.text}`);
               }
             }
           }
           return {
             content: css,
-            moduleType: 'css',
+            moduleType: "css",
             sourceMap: map && JSON.stringify(map.toJSON())
           };
         } catch (error) {
@@ -169,8 +169,8 @@ export default function farmPostcssPlugin(
         }
 
         return {
-          content: '',
-          moduleType: 'css'
+          content: "",
+          moduleType: "css"
         };
       }
     }

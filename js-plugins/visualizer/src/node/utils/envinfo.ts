@@ -1,4 +1,4 @@
-import envinfo from 'envinfo';
+import envinfo from "envinfo";
 
 export interface EnvInfo {
   version: string;
@@ -29,17 +29,17 @@ export interface FarmEnvInfo {
     Safari?: EnvInfo;
   };
   npmPackages: {
-    '@farmfe/core': PackageInfo | string;
+    "@farmfe/core": PackageInfo | string;
   };
 }
 
 export function getFarmEnvInfo() {
   return envinfo.run(
     {
-      System: ['OS', 'CPU', 'Memory', 'Shell'],
-      Binaries: ['Node', 'Yarn', 'npm', 'pnpm'],
-      Browsers: ['Chrome', 'Firefox', 'Safari'],
-      npmPackages: ['@farmfe/core', 'react']
+      System: ["OS", "CPU", "Memory", "Shell"],
+      Binaries: ["Node", "Yarn", "npm", "pnpm"],
+      Browsers: ["Chrome", "Firefox", "Safari"],
+      npmPackages: ["@farmfe/core", "react"]
     },
     { json: true, showNotFound: true }
   );

@@ -1,15 +1,15 @@
-import chalk, { type ChalkInstance } from 'chalk';
+import chalk, { type ChalkInstance } from "chalk";
 
 export const brandColor = chalk.rgb(113, 26, 95);
 
-type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+type LogLevelNames = "trace" | "debug" | "info" | "warn" | "error";
 
 enum LogLevel {
-  Trace = 'trace',
-  Debug = 'debug',
-  Info = 'info',
-  Warn = 'warn',
-  Error = 'error'
+  Trace = "trace",
+  Debug = "debug",
+  Info = "info",
+  Warn = "warn",
+  Error = "error"
 }
 
 export interface Logger {
@@ -45,17 +45,17 @@ export class DefaultLogger implements Logger {
   }
 
   private brandPrefix(color?: string | ChalkInstance) {
-    const { name = 'Farm' } = this.options;
+    const { name = "Farm" } = this.options;
 
     let prefixColor: string | ChalkInstance | undefined;
-    if (typeof this.options.brandColor === 'string') {
+    if (typeof this.options.brandColor === "string") {
       prefixColor = this.options.brandColor;
-    } else if (typeof color !== 'undefined') {
+    } else if (typeof color !== "undefined") {
       prefixColor = color;
     }
 
     this.prefix = prefixColor
-      ? typeof prefixColor === 'string'
+      ? typeof prefixColor === "string"
         ? chalk.bold(chalk.hex(prefixColor)(`[ ${name} ] `))
         : chalk.bold(prefixColor(`[ ${name} ] `))
       : chalk.bold(brandColor(`[ ${name} ] `));
@@ -69,8 +69,8 @@ export class DefaultLogger implements Logger {
   ): void {
     if (this.levelValues[level] <= this.levelValues[level]) {
       const loggerMessage = color
-        ? color(`${showBanner ? this.prefix : ''}${message}`)
-        : `${showBanner ? this.prefix : ''}${message}`;
+        ? color(`${showBanner ? this.prefix : ""}${message}`)
+        : `${showBanner ? this.prefix : ""}${message}`;
       console.log(loggerMessage);
     }
   }
@@ -81,7 +81,7 @@ export class DefaultLogger implements Logger {
   }
 
   debug(message: string): void {
-    this.brandPrefix('#ff8c00');
+    this.brandPrefix("#ff8c00");
     this.logMessage(LogLevel.Debug, message, chalk.blue);
   }
 

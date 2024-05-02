@@ -1,27 +1,27 @@
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { extname } from 'node:path';
-import { transformSync } from '@babel/core';
-import ts from '@babel/preset-typescript';
-import { createFilter } from '@rollup/pluginutils';
-import solid from 'babel-preset-solid';
-import { mergeAndConcat } from 'merge-anything';
-import solidRefresh from 'solid-refresh/babel';
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { extname } from "node:path";
+import { transformSync } from "@babel/core";
+import ts from "@babel/preset-typescript";
+import { createFilter } from "@rollup/pluginutils";
+import solid from "babel-preset-solid";
+import { mergeAndConcat } from "merge-anything";
+import solidRefresh from "solid-refresh/babel";
 
-import type { TransformOptions } from '@babel/core';
-import type { JsPlugin } from '@farmfe/core';
-import type { Options } from './types.js';
+import type { TransformOptions } from "@babel/core";
+import type { JsPlugin } from "@farmfe/core";
+import type { Options } from "./types.js";
 
 // TODO: HMR
 const require = createRequire(import.meta.url);
 
-const runtimePublicPath = '/@solid-refresh';
-const runtimeFilePath = require.resolve('solid-refresh/dist/solid-refresh.mjs');
-const runtimeCode = readFileSync(runtimeFilePath, 'utf-8');
+const runtimePublicPath = "/@solid-refresh";
+const runtimeFilePath = require.resolve("solid-refresh/dist/solid-refresh.mjs");
+const runtimeCode = readFileSync(runtimeFilePath, "utf-8");
 
 function tryToReadFileSync(path: string) {
   try {
-    return readFileSync(path, 'utf-8');
+    return readFileSync(path, "utf-8");
   } catch (error) {
     console.error(`[Farm Plugin Solid]: ${error.type}: ${error.message}`);
   }
@@ -36,14 +36,14 @@ export default function farmPluginSolid(
   let replaceDev = false;
   let projectRoot = process.cwd();
 
-  const extensionsToWatch = [...(options.extensions ?? []), '.tsx', '.jsx'];
+  const extensionsToWatch = [...(options.extensions ?? []), ".tsx", ".jsx"];
   const allExtensions = extensionsToWatch.map((extension) =>
     // An extension can be a string or a tuple [extension, options]
-    typeof extension === 'string' ? extension : extension[0]
+    typeof extension === "string" ? extension : extension[0]
   );
 
   return {
-    name: 'farm-plugin-solid',
+    name: "farm-plugin-solid",
     config(config) {
       return {
         compilation: {
@@ -59,8 +59,8 @@ export default function farmPluginSolid(
       const root = config.root ?? process.cwd();
       const mode = config.compilation?.mode;
       // We inject the dev mode only if the use˜r explicitly wants it or if we are in dev (serve) mode
-      needHmr = mode !== 'production';
-      replaceDev = options.dev === true || mode === 'development';
+      needHmr = mode !== "production";
+      replaceDev = options.dev === true || mode === "development";
       projectRoot = root ?? process.cwd();
 
       if (!config.compilation.resolve) {
@@ -69,12 +69,12 @@ export default function farmPluginSolid(
 
       config.compilation.resolve.conditions = [
         ...(config.compilation.resolve.conditions ?? []),
-        'solid',
-        ...(replaceDev ? ['development'] : [])
+        "solid",
+        ...(replaceDev ? ["development"] : [])
       ];
       config.compilation.resolve.alias = {
         ...(config.compilation.resolve.alias ?? {}),
-        'solid-refresh': runtimePublicPath
+        "solid-refresh": runtimePublicPath
       };
     },
     load: {
@@ -85,7 +85,7 @@ export default function farmPluginSolid(
         if (param.resolvedPath === runtimePublicPath) {
           return {
             content: runtimeCode,
-            moduleType: 'solid-refresh'
+            moduleType: "solid-refresh"
           };
         }
 
@@ -93,13 +93,13 @@ export default function farmPluginSolid(
 
         return {
           content: source,
-          moduleType: 'solid'
+          moduleType: "solid"
         };
       }
     },
     transform: {
       filters: {
-        moduleTypes: ['solid', 'solid-refresh']
+        moduleTypes: ["solid", "solid-refresh"]
       },
       async executor(param) {
         const isSsr = options.ssr;
@@ -114,19 +114,19 @@ export default function farmPluginSolid(
 
         const inNodeModules = /node_modules/.test(param.resolvedPath);
 
-        let solidOptions: { generate: 'ssr' | 'dom'; hydratable: boolean };
+        let solidOptions: { generate: "ssr" | "dom"; hydratable: boolean };
 
         if (options.ssr) {
           if (isSsr) {
-            solidOptions = { generate: 'ssr', hydratable: true };
+            solidOptions = { generate: "ssr", hydratable: true };
           } else {
-            solidOptions = { generate: 'dom', hydratable: true };
+            solidOptions = { generate: "dom", hydratable: true };
           }
         } else {
-          solidOptions = { generate: 'dom', hydratable: false };
+          solidOptions = { generate: "dom", hydratable: false };
         }
 
-        param.resolvedPath = param.resolvedPath.replace(/\?.+$/, '');
+        param.resolvedPath = param.resolvedPath.replace(/\?.+$/, "");
 
         const opts: TransformOptions = {
           babelrc: false,
@@ -137,7 +137,7 @@ export default function farmPluginSolid(
           presets: [[solid, { ...solidOptions, ...(options.solid ?? {}) }]],
           plugins:
             needHmr && !isSsr && !inNodeModules
-              ? [[solidRefresh, { bundler: 'standard' }]]
+              ? [[solidRefresh, { bundler: "standard" }]]
               : [],
           sourceMaps: true,
           // Vite handles sourcemap flattening
@@ -147,8 +147,8 @@ export default function farmPluginSolid(
         // We need to know if the current file extension has a typescript options tied to it
         const shouldBeProcessedWithTypescript = extensionsToWatch.some(
           (extension) => {
-            if (typeof extension === 'string') {
-              return extension.includes('tsx');
+            if (typeof extension === "string") {
+              return extension.includes("tsx");
             }
 
             const [extensionName, extensionOptions] = extension;
@@ -166,7 +166,7 @@ export default function farmPluginSolid(
         let babelUserOptions: TransformOptions = {};
 
         if (options.babel) {
-          if (typeof options.babel === 'function') {
+          if (typeof options.babel === "function") {
             const babelOptions = options.babel(
               param.content,
               param.resolvedPath,
@@ -186,7 +186,7 @@ export default function farmPluginSolid(
           opts
         ) as TransformOptions;
 
-        const { code = '', map = {} } = transformSync(
+        const { code = "", map = {} } = transformSync(
           param.content,
           babelOptions
         );
@@ -194,7 +194,7 @@ export default function farmPluginSolid(
         return {
           content: code,
           sourceMap: JSON.stringify(map),
-          moduleType: 'js'
+          moduleType: "js"
         };
       }
     }

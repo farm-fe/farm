@@ -1,18 +1,18 @@
-import { existsSync } from 'fs';
-import path from 'path';
+import { existsSync } from "fs";
+import path from "path";
 import {
   type Compiler,
   type JsPlugin,
   type UserConfig,
   getAdditionContext
-} from '@farmfe/core';
-import { createLessResolvePlugin } from './plugin-resolve.js';
+} from "@farmfe/core";
+import { createLessResolvePlugin } from "./plugin-resolve.js";
 import {
   getLessImplementation,
   pluginName,
   throwError,
   tryRead
-} from './utils.js';
+} from "./utils.js";
 
 export type LessPluginOptions = {
   lessOptions?: Less.Options;
@@ -29,7 +29,7 @@ export type LessPluginOptions = {
 export default function farmLessPlugin(
   options: LessPluginOptions = {}
 ): JsPlugin {
-  let farmConfig: UserConfig['compilation'];
+  let farmConfig: UserConfig["compilation"];
   let compiler: Compiler;
   const implementation: LessStatic = getLessImplementation(
     options?.implementation
@@ -49,7 +49,7 @@ export default function farmLessPlugin(
       }
 
       config.compilation.resolve.extensions = [
-        ...new Set(config.compilation.resolve.extensions.concat('less'))
+        ...new Set(config.compilation.resolve.extensions.concat("less"))
       ];
       return config;
     },
@@ -67,7 +67,7 @@ export default function farmLessPlugin(
     // @ts-ignore it will be removed in the future
     configDevServer() {
       console.warn(
-        '[@farmfe/js-plugin-less] Your plugin version is not compatible with the current farm version, please update @farmfe/core to the latest version, otherwise the plugin may not work properly.'
+        "[@farmfe/js-plugin-less] Your plugin version is not compatible with the current farm version, please update @farmfe/core to the latest version, otherwise the plugin may not work properly."
       );
     },
     configureCompiler(c) {
@@ -75,7 +75,7 @@ export default function farmLessPlugin(
     },
     load: {
       filters: {
-        resolvedPaths: options.filters?.resolvedPaths ?? ['\\.less$']
+        resolvedPaths: options.filters?.resolvedPaths ?? ["\\.less$"]
       },
       async executor(param) {
         if (param.query.length === 0 && existsSync(param.resolvedPath)) {
@@ -83,7 +83,7 @@ export default function farmLessPlugin(
 
           return {
             content: data,
-            moduleType: 'less'
+            moduleType: "less"
           };
         }
 
@@ -93,12 +93,12 @@ export default function farmLessPlugin(
     transform: {
       filters: {
         resolvedPaths: options.filters?.resolvedPaths,
-        moduleTypes: options.filters?.moduleTypes ?? ['less']
+        moduleTypes: options.filters?.moduleTypes ?? ["less"]
       },
       async executor(param, ctx) {
         try {
-          const isProd = farmConfig.mode === 'production';
-          let relData = '';
+          const isProd = farmConfig.mode === "production";
+          let relData = "";
           const fileRoot = path.dirname(param.resolvedPath);
           const configPaths = options.lessOptions?.paths;
           const additionContext = await getAdditionContext(
@@ -112,7 +112,7 @@ export default function farmLessPlugin(
           if (additionContext) {
             relData = `${additionContext}\n${param.content}`;
             //  If the additionalData is a function, it might be return null or undefined, so we need to check it
-            if (typeof relData !== 'string') {
+            if (typeof relData !== "string") {
               relData = param.content;
             }
           } else {
@@ -144,15 +144,15 @@ export default function farmLessPlugin(
           }
           return {
             content: css,
-            moduleType: 'css',
+            moduleType: "css",
             sourceMap: map
           };
         } catch (error) {
-          throwError('transform', error);
+          throwError("transform", error);
         }
         return {
-          content: '',
-          moduleType: 'css'
+          content: "",
+          moduleType: "css"
         };
       }
     }

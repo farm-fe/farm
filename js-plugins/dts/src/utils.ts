@@ -5,15 +5,15 @@ import path, {
   normalize,
   sep,
   resolve
-} from 'node:path';
+} from "node:path";
 
-import extra from 'fs-extra';
-import typescript from 'typescript';
+import extra from "fs-extra";
+import typescript from "typescript";
 
-import crypto from 'crypto';
-import fs from 'node:fs';
-import type { CompilerOptions } from 'ts-morph';
-import { throwError } from './options.js';
+import crypto from "crypto";
+import fs from "node:fs";
+import type { CompilerOptions } from "ts-morph";
+import { throwError } from "./options.js";
 
 const windowsSlashRE = /\\+/g;
 const globSuffixRE = /^((?:.*\.[^.]+)|(?:\*+))$/;
@@ -38,11 +38,11 @@ export function error({ id, message }) {
 
 export function parsePath(resolvedPath: string) {
   const { dir, base } = path.parse(resolvedPath);
-  const [filename, query] = base.split('?');
+  const [filename, query] = base.split("?");
   const queryObj: Record<string, string> = {};
   if (query) {
-    query.split('&').forEach((keyValue) => {
-      const [key, value] = keyValue.split('=');
+    query.split("&").forEach((keyValue) => {
+      const [key, value] = keyValue.split("=");
       queryObj[key] = value;
     });
   }
@@ -54,7 +54,7 @@ export function parsePath(resolvedPath: string) {
 }
 
 export function slash(p: string): string {
-  return p.replace(windowsSlashRE, '/');
+  return p.replace(windowsSlashRE, "/");
 }
 
 export function normalizePath(id: string): string {
@@ -63,9 +63,9 @@ export function normalizePath(id: string): string {
 
 export function getHash(text: string, start = 0, end = 8) {
   return crypto
-    .createHash('sha256')
+    .createHash("sha256")
     .update(text)
-    .digest('hex')
+    .digest("hex")
     .substring(start, end)
     .toLocaleLowerCase();
 }
@@ -86,14 +86,14 @@ export function callWithErrorHandle<
 export function isNativeObj<
   T extends Record<string, any> = Record<string, any>
 >(value: T): value is T {
-  return Object.prototype.toString.call(value) === '[object Object]';
+  return Object.prototype.toString.call(value) === "[object Object]";
 }
 
 export function isPromise(value: unknown): value is Promise<any> {
   return (
     !!value &&
-    (typeof value === 'function' || typeof value === 'object') &&
-    typeof (value as any).then === 'function'
+    (typeof value === "function" || typeof value === "object") &&
+    typeof (value as any).then === "function"
   );
 }
 
@@ -102,7 +102,7 @@ export function isArray(val: unknown): val is unknown[] {
 }
 
 export function isRegExp(reg: unknown): reg is RegExp {
-  return Object.prototype.toString.call(reg) === '[object RegExp]';
+  return Object.prototype.toString.call(reg) === "[object RegExp]";
 }
 
 export function getResolvedOptions(defaultVueOptions: any) {
@@ -115,24 +115,24 @@ export function getResolvedOptions(defaultVueOptions: any) {
   for (const key in defaultVueOptions) {
     const val = defaultVueOptions[key as keyof any];
     switch (key) {
-      case 'include':
+      case "include":
         resolvedOptions.include = (
           isArray(val) ? val : [val]
-        ) as any['include'];
-      case 'exclude':
+        ) as any["include"];
+      case "exclude":
         resolvedOptions.exclude = (
           isArray(val) ? val : [val]
-        ) as any['exclude'];
-      case 'isProduction':
+        ) as any["exclude"];
+      case "isProduction":
         if (val === true) resolvedOptions.isProduction = true;
-      case 'sourceMap':
+      case "sourceMap":
         if (val === true) resolvedOptions.sourceMap = true;
-      case 'script':
-        resolvedOptions.script = (val ? val : {}) as any['script'];
-      case 'template':
-        resolvedOptions.template = (val ? val : {}) as any['template'];
-      case 'style':
-        resolvedOptions.style = (val ? val : {}) as any['style'];
+      case "script":
+        resolvedOptions.script = (val ? val : {}) as any["script"];
+      case "template":
+        resolvedOptions.template = (val ? val : {}) as any["template"];
+      case "style":
+        resolvedOptions.style = (val ? val : {}) as any["style"];
     }
   }
   resolvedOptions.sourceMap =
@@ -210,7 +210,7 @@ export function mergeObjects<
 export function isObject<T extends Record<string, any> = Record<string, any>>(
   value: T
 ): value is T {
-  return Object.prototype.toString.call(value) === '[object Object]';
+  return Object.prototype.toString.call(value) === "[object Object]";
 }
 
 export function getTsConfig(
@@ -258,9 +258,9 @@ export function ensureArray<T>(value: T | T[]) {
 
 export async function tryRead(filename: string) {
   try {
-    return await fs.promises.readFile(filename, 'utf-8');
+    return await fs.promises.readFile(filename, "utf-8");
   } catch (e) {
-    throwError('readFile', e);
+    throwError("readFile", e);
   }
 }
 
@@ -272,7 +272,7 @@ export function queryPublicPath(paths: string[]) {
   const speRE = /[\\/]/;
 
   if (paths.length === 0) {
-    return '';
+    return "";
   } else if (paths.length === 1) {
     return dirname(paths[0]);
   }
@@ -303,7 +303,7 @@ export function queryPublicPath(paths: string[]) {
     for (let i = 0; i <= index; ++i) {
       if (publicUnits[i] !== units[i]) {
         if (!i) {
-          return '';
+          return "";
         }
 
         index = i - 1;
@@ -348,7 +348,7 @@ export async function runParallel<T>(
 
 export async function tryToReadFileSync(path: string) {
   try {
-    return await fs.promises.readFile(path, 'utf-8');
+    return await fs.promises.readFile(path, "utf-8");
   } catch (error) {
     console.error(`[Farm Plugin Dts]: ${error.type}: ${error.message}`);
   }
@@ -356,9 +356,9 @@ export async function tryToReadFileSync(path: string) {
 
 export function normalizeGlob(path: string) {
   if (/[\\/]$/.test(path)) {
-    return path + '**';
+    return path + "**";
   } else if (!globSuffixRE.test(path.split(/[\\/]/).pop()!)) {
-    return path + '/**';
+    return path + "/**";
   }
 
   return path;
@@ -376,7 +376,7 @@ export async function writeFileWithCheck(filePath: string, content: string) {
   }
 
   // 写文件
-  await extra.writeFile(filePath, content, 'utf-8');
+  await extra.writeFile(filePath, content, "utf-8");
 }
 
 export function transformAliasImport(
@@ -422,12 +422,12 @@ export function transformAliasImport(
           isDynamic ? simpleDynamicImportRE : simpleStaticImportRE,
           `$1'${matchResult[1].replace(
             matchedAlias.find,
-            (truthPath.startsWith('.') ? truthPath : `./${truthPath}`) +
-              (typeof matchedAlias.find === 'string' &&
-              matchedAlias.find.endsWith('/')
-                ? '/'
-                : '')
-          )}'${isDynamic ? ')' : ''}`
+            (truthPath.startsWith(".") ? truthPath : `./${truthPath}`) +
+              (typeof matchedAlias.find === "string" &&
+              matchedAlias.find.endsWith("/")
+                ? "/"
+                : "")
+          )}'${isDynamic ? ")" : ""}`
         );
       }
     }
@@ -443,7 +443,7 @@ function isAliasMatch(alias: any, importee: string) {
 
   return (
     importee.indexOf(alias.find) === 0 &&
-    (alias.find.endsWith('/') ||
-      importee.substring(alias.find.length)[0] === '/')
+    (alias.find.endsWith("/") ||
+      importee.substring(alias.find.length)[0] === "/")
   );
 }

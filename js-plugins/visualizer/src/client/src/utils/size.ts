@@ -1,6 +1,6 @@
 export function formatSize(bytes?: number) {
   if (bytes === undefined || bytes === null) {
-    return '0 bytes';
+    return "0 bytes";
   }
   let size: string;
 
@@ -15,7 +15,7 @@ export function formatSize(bytes?: number) {
   } else if (bytes === 1) {
     size = `${bytes} byte`;
   } else {
-    size = '0 bytes';
+    size = "0 bytes";
   }
   return size;
 }

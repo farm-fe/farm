@@ -1,9 +1,9 @@
-import fs from 'fs';
-import path from 'path';
-import type { JsPlugin, UserConfig } from '@farmfe/core';
-import { parse } from '@vue/compiler-sfc';
-import { compileStyle } from '@vue/compiler-sfc';
-import { handleHmr } from './farm-vue-hmr.js';
+import fs from "fs";
+import path from "path";
+import type { JsPlugin, UserConfig } from "@farmfe/core";
+import { parse } from "@vue/compiler-sfc";
+import { compileStyle } from "@vue/compiler-sfc";
+import { handleHmr } from "./farm-vue-hmr.js";
 import {
   type CacheDescriptor,
   type FarmVuePluginOptions,
@@ -12,8 +12,8 @@ import {
   PreProcessorsType,
   type StylesCodeCache,
   type ValueOf
-} from './farm-vue-types.js';
-import { genMainCode } from './generatorCode.js';
+} from "./farm-vue-types.js";
+import { genMainCode } from "./generatorCode.js";
 import {
   callWithErrorHandle,
   error,
@@ -25,30 +25,33 @@ import {
   isSass,
   isStyl,
   loadPreProcessor
-} from './utils.js';
+} from "./utils.js";
 
 const stylesCodeCache: StylesCodeCache = {};
-const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
+const applyStyleLangs = ["less", "sass", "scss", "stylus"];
 const cacheDescriptor: CacheDescriptor = {};
 
 const parseQuery = (query: [string, string][]) =>
-  query.reduce((pre, [key, value]) => {
-    pre[key] = value;
+  query.reduce(
+    (pre, [key, value]) => {
+      pre[key] = value;
 
-    return pre;
-  }, {} as Record<string, string>);
+      return pre;
+    },
+    {} as Record<string, string>
+  );
 
 export default function farmVuePlugin(
   farmVuePluginOptions: FarmVuePluginOptions = {}
 ): JsPlugin {
   // options hooks to get farmConfig
-  let farmConfig: UserConfig['compilation'];
+  let farmConfig: UserConfig["compilation"];
   const resolvedOptions = getResolvedOptions(farmVuePluginOptions);
   const exclude = handleExclude(resolvedOptions);
   const include = handleInclude(resolvedOptions);
 
   return {
-    name: 'farm-vue-plugin',
+    name: "farm-vue-plugin",
     config(config) {
       return {
         compilation: {
@@ -67,17 +70,17 @@ export default function farmVuePlugin(
     },
     load: {
       filters: {
-        resolvedPaths: ['\\.vue($|\\?)', ...include]
+        resolvedPaths: ["\\.vue($|\\?)", ...include]
       },
       async executor(params, ctx, hookContext) {
         const { resolvedPath } = params;
-        let source = '';
+        let source = "";
 
         const query = parseQuery(params.query);
         const { vue, lang, hash, scoped, index } = query;
 
         // handle .vue file
-        if (vue === 'true' && hash) {
+        if (vue === "true" && hash) {
           let cssCode = stylesCodeCache[hash];
           // if lang is not "css", use preProcessor to handle
           if (applyStyleLangs.includes(lang)) {
@@ -94,7 +97,7 @@ export default function farmVuePlugin(
             id: `data-v-${scoped ?? getHash(resolvedPath)}`,
             scoped: block.scoped,
             filename: descriptor.filename,
-            isProd: farmConfig.mode === 'production',
+            isProd: farmConfig.mode === "production",
             // preprocessLang: lang !== 'css' ? lang as 'less' | 'sass' | 'scss' | 'stylus' : undefined,
             // preprocessCustomRequire: loadPreProcessor,
             ...resolvedOptions.style
@@ -108,12 +111,12 @@ export default function farmVuePlugin(
           }
           return {
             content: styleCode,
-            moduleType: 'css'
+            moduleType: "css"
           };
         }
 
         try {
-          source = await fs.promises.readFile(resolvedPath, 'utf-8');
+          source = await fs.promises.readFile(resolvedPath, "utf-8");
         } catch (err) {
           error({
             id: resolvedPath,
@@ -125,14 +128,14 @@ export default function farmVuePlugin(
         }
         return {
           content: source,
-          moduleType: 'vue'
+          moduleType: "vue"
         };
       }
     },
     // add hmr code in root file
     transform: {
       filters: {
-        moduleTypes: ['vue']
+        moduleTypes: ["vue"]
       },
       async executor(params, ctx) {
         try {
@@ -157,7 +160,7 @@ export default function farmVuePlugin(
             const { descriptor } = result;
 
             const enableHMR =
-              resolvedOptions.hmr && farmConfig.mode !== 'production';
+              resolvedOptions.hmr && farmConfig.mode !== "production";
 
             const beforeDescriptor = cacheDescriptor[resolvedPath];
             // set descriptors cache to hmr
@@ -203,8 +206,8 @@ export default function farmVuePlugin(
             );
             return {
               content:
-                'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
-              moduleType: 'js'
+                "console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)",
+              moduleType: "js"
             };
           }
         } catch (err) {
@@ -221,27 +224,27 @@ async function preProcession(
   moduleType: string,
   options?: { paths: string[] }
 ) {
-  const __default = { css: styleCode, map: '' };
+  const __default = { css: styleCode, map: "" };
   let processor: ValueOf<PreProcessors>;
   try {
     // load less/sass/stylus preprocessor
     // compile style code to css
     switch (moduleType) {
-      case 'less':
+      case "less":
         processor = await loadPreProcessor(PreProcessorsType.less);
         return await compilePreProcessorCodeToCss(styleCode, processor, {
           paths: options.paths ?? []
         });
-      case 'sass':
-      case 'scss':
+      case "sass":
+      case "scss":
         processor = await loadPreProcessor(PreProcessorsType.sass);
         return await compilePreProcessorCodeToCss(styleCode, processor, {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          indentedSyntax: moduleType === 'sass',
+          indentedSyntax: moduleType === "sass",
           includePaths: options.paths ?? []
         });
-      case 'stylus':
+      case "stylus":
         processor = await loadPreProcessor(PreProcessorsType.stylus);
         return await compilePreProcessorCodeToCss(styleCode, processor, {
           paths: options.paths ?? []

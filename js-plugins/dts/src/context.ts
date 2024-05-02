@@ -1,10 +1,10 @@
-import os from 'node:os';
-import { relative, resolve } from 'node:path';
-import type { UserConfig } from '@farmfe/core';
-import chalk from 'chalk';
-import glob from 'fast-glob';
-import { type CompilerOptions, Project, type SourceFile } from 'ts-morph';
-import { DefaultLogger } from './logger.js';
+import os from "node:os";
+import { relative, resolve } from "node:path";
+import type { UserConfig } from "@farmfe/core";
+import chalk from "chalk";
+import glob from "fast-glob";
+import { type CompilerOptions, Project, type SourceFile } from "ts-morph";
+import { DefaultLogger } from "./logger.js";
 import {
   ensureAbsolute,
   ensureArray,
@@ -20,19 +20,19 @@ import {
   transformAliasImport,
   tryToReadFileSync,
   writeFileWithCheck
-} from './utils.js';
+} from "./utils.js";
 export default class Context {
-  config: UserConfig['compilation'] & { root?: string };
+  config: UserConfig["compilation"] & { root?: string };
   options: any;
   project: Project | undefined;
   include: string[];
   exclude: string[];
-  logger = new DefaultLogger({ name: 'FarmDtsPlugin' });
-  handleResolveOptions(options: any = {}, config: UserConfig['compilation']) {
+  logger = new DefaultLogger({ name: "FarmDtsPlugin" });
+  handleResolveOptions(options: any = {}, config: UserConfig["compilation"]) {
     this.config = config;
     let libFolderPath: string;
     const defaultOption: any = {
-      tsconfigPath: 'tsconfig.json',
+      tsconfigPath: "tsconfig.json",
       aliasesExclude: [],
       staticImport: false,
       clearPureImport: true,
@@ -44,7 +44,7 @@ export default class Context {
     };
 
     const userOptions = mergeObjects(defaultOption, options);
-    const isDev = this.config.mode === 'development';
+    const isDev = this.config.mode === "development";
     const root = this.config.root || process.cwd();
     const sourceDtsFiles: any = new Set<SourceFile>();
     const outputFiles = new Map<string, string>();
@@ -83,10 +83,10 @@ export default class Context {
       this.project.getFileSystem().readFileSync
     );
     this.include = ensureArray(
-      options.include ?? tsConfigOptions.include ?? '**/*'
+      options.include ?? tsConfigOptions.include ?? "**/*"
     ).map(normalizeGlob);
     this.exclude = ensureArray(
-      options.exclude ?? tsConfigOptions.exclude ?? 'node_modules/**'
+      options.exclude ?? tsConfigOptions.exclude ?? "node_modules/**"
     ).map(normalizeGlob);
 
     const aliasOptions: any = config?.resolve?.alias ?? [];
@@ -108,8 +108,8 @@ export default class Context {
               (isRegExp(find)
                 ? find.toString() === alias.toString()
                 : isRegExp(alias)
-                ? find.match(alias)?.[0]
-                : find === alias)
+                  ? find.match(alias)?.[0]
+                  : find === alias)
           )
       );
     }
@@ -180,7 +180,7 @@ export default class Context {
           this.project.formatDiagnosticsWithColorAndContext(diagnostics)
         );
       }
-      if (typeof this.options.afterDiagnostic === 'function') {
+      if (typeof this.options.afterDiagnostic === "function") {
         const result = this.options.afterDiagnostic(diagnostics);
         isPromise(result) && (await result);
       }
@@ -203,7 +203,7 @@ export default class Context {
           }))
       )
       .concat(dtsOutputFiles);
-    let entryRoot = this.options.entryRoot ?? '';
+    let entryRoot = this.options.entryRoot ?? "";
     entryRoot =
       entryRoot || queryPublicPath(outputFiles.map((file: any) => file.path));
     entryRoot = ensureAbsolute(entryRoot, this.options.root);

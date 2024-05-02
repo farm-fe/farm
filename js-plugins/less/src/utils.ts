@@ -1,20 +1,20 @@
-import fs from 'fs';
-import { createRequire } from 'module';
-import { throwError as t } from '@farmfe/core';
+import fs from "fs";
+import { createRequire } from "module";
+import { throwError as t } from "@farmfe/core";
 
 const __require = createRequire(import.meta.url);
 
-export const { name: pluginName } = __require('../../package.json');
+export const { name: pluginName } = __require("../../package.json");
 
 export function getLessImplementation(implementation?: string | any) {
   let resolvedImplementation = implementation;
 
-  if (!implementation || typeof implementation === 'string') {
-    const lessImplPkg = implementation || 'less';
+  if (!implementation || typeof implementation === "string") {
+    const lessImplPkg = implementation || "less";
     try {
       resolvedImplementation = __require(lessImplPkg);
     } catch (e) {
-      throwError('Implementation', e);
+      throwError("Implementation", e);
     }
   }
 
@@ -23,9 +23,9 @@ export function getLessImplementation(implementation?: string | any) {
 
 export async function tryRead(filename: string) {
   try {
-    return await fs.promises.readFile(filename, 'utf-8');
+    return await fs.promises.readFile(filename, "utf-8");
   } catch (e) {
-    throwError('readFile', e);
+    throwError("readFile", e);
   }
 }
 

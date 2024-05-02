@@ -22,8 +22,7 @@
       "packages/runtime-plugin-import-meta/**",
       "packages/create-farm/**",
       "packages/create-farm-plugin/**",
-      "rust-plugins/**",
-      "js-plugins/**"
+      "rust-plugins/**"
     ],
     "ignoreUnknown": true
   },

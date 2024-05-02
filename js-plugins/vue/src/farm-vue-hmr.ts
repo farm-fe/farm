@@ -3,14 +3,14 @@ import type {
   SFCScriptBlock,
   SFCStyleBlock,
   SFCTemplateBlock
-} from '@vue/compiler-sfc';
+} from "@vue/compiler-sfc";
 import {
   CacheDescriptor,
   QueryObj,
   type ResolvedOptions,
   type StylesCodeCache
-} from './farm-vue-types.js';
-import { genMainCode } from './generatorCode.js';
+} from "./farm-vue-types.js";
+import { genMainCode } from "./generatorCode.js";
 
 export const cacheScript = new WeakMap();
 
@@ -112,7 +112,7 @@ function hasScriptChanged(prev: SFCDescriptor, next: SFCDescriptor) {
     return true;
   }
   // if cssVars changed, it means that script changed
-  if (prev.cssVars.join('') !== next.cssVars.join('')) {
+  if (prev.cssVars.join("") !== next.cssVars.join("")) {
     return true;
   }
   const prevResolvedScript = cacheScript.get(prev);

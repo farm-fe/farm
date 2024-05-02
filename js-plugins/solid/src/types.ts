@@ -1,4 +1,4 @@
-import type { TransformOptions } from '@babel/core';
+import type { TransformOptions } from "@babel/core";
 
 export type FilterPattern =
   | ReadonlyArray<string | RegExp>
@@ -204,7 +204,7 @@ export interface Options {
      *
      * @default "dom"
      */
-    generate?: 'ssr' | 'dom' | 'universal';
+    generate?: "ssr" | "dom" | "universal";
 
     /**
      * Indicate whether the output should contain hydratable markers.

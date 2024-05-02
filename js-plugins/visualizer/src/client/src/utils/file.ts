@@ -10,7 +10,7 @@
  * let rootDir = getRootDir('/src/utils/file.ts');
  * console.log(rootDir); // Output: 'src'
  */
-export const getRootDir = (filePath: string, sep = '/'): string | null => {
+export const getRootDir = (filePath: string, sep = "/"): string | null => {
   // Find the position of the first separator in the file path
   const idx = filePath?.indexOf(sep);
   if (idx === -1) {
@@ -20,7 +20,7 @@ export const getRootDir = (filePath: string, sep = '/'): string | null => {
   if (idx === 0) {
     // If the separator is at the beginning of the path, it means the root directory is an empty string.
     // Then recursively call the getRootDir function to find the next separator.
-    return sep + (getRootDir(filePath?.slice(1)) || '');
+    return sep + (getRootDir(filePath?.slice(1)) || "");
   }
   // If the separator is in the middle of the path, return the part from the beginning to the first separator, which is the root directory name.
   return filePath?.slice(0, idx);
@@ -33,7 +33,7 @@ export interface FileNode {
   isLeaf?: boolean;
 }
 
-export function genFileTree(files: string[], sep = '/'): FileNode[] {
+export function genFileTree(files: string[], sep = "/"): FileNode[] {
   const sepRegexp = new RegExp(sep);
 
   const res =
@@ -58,7 +58,7 @@ export function genFileTree(files: string[], sep = '/'): FileNode[] {
           parent = exist;
           dir = getRootDir(basename);
           basename = dir
-            ? basename.slice(dir.length).replace(sepRegexp, '')
+            ? basename.slice(dir.length).replace(sepRegexp, "")
             : basename;
         }
 
@@ -72,7 +72,7 @@ export function genFileTree(files: string[], sep = '/'): FileNode[] {
 
         return t;
       },
-      { title: '', key: '', children: [] }
+      { title: "", key: "", children: [] }
     ).children || [];
 
   res.forEach((fileNode) => {
@@ -95,7 +95,7 @@ export function genFileTree(files: string[], sep = '/'): FileNode[] {
 export function flattenDirectory(
   n: FileNode,
   parent: FileNode,
-  sep = '/'
+  sep = "/"
 ): void {
   // Skip flattening if the current node is a leaf node
   if (n.isLeaf) return;

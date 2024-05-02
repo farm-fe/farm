@@ -1,5 +1,5 @@
-import { createRequire } from 'module';
-import { throwError } from './options.js';
+import { createRequire } from "module";
+import { throwError } from "./options.js";
 
 const __require = createRequire(import.meta.url);
 /**
@@ -7,15 +7,15 @@ const __require = createRequire(import.meta.url);
  * @returns
  */
 async function getDefaultSassImplementation() {
-  let sassImplPkg = 'sass';
+  let sassImplPkg = "sass";
   try {
-    __require.resolve('sass');
+    __require.resolve("sass");
   } catch {
     try {
-      __require.resolve('sass-embedded');
-      sassImplPkg = 'sass-embedded';
+      __require.resolve("sass-embedded");
+      sassImplPkg = "sass-embedded";
     } catch {
-      sassImplPkg = 'sass';
+      sassImplPkg = "sass";
     }
   }
   return __require(sassImplPkg).default ?? __require(sassImplPkg);
@@ -34,16 +34,16 @@ export function getSassImplementation(implementation?: string | any) {
     try {
       resolvedImplementation = getDefaultSassImplementation();
     } catch (error) {
-      throwError('SassImplementation', error);
+      throwError("SassImplementation", error);
       process.exit(error);
     }
   }
   // if config
-  if (typeof implementation === 'string') {
+  if (typeof implementation === "string") {
     try {
       resolvedImplementation = __require(implementation);
     } catch (error) {
-      throwError('SassImplementation', error);
+      throwError("SassImplementation", error);
       process.exit(error);
     }
   }

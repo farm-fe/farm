@@ -1,6 +1,6 @@
-import fs from 'fs';
-import type { JsPlugin } from '@farmfe/core';
-import type { ConfigPlugin, Config as SvgrOptions } from '@svgr/core';
+import fs from "fs";
+import type { JsPlugin } from "@farmfe/core";
+import type { ConfigPlugin, Config as SvgrOptions } from "@svgr/core";
 
 export interface FarmSvgrPluginOptions {
   svgrOptions?: SvgrOptions;
@@ -15,23 +15,23 @@ export default function farmSvgrPlugin(
   const { svgrOptions, filters } = options;
 
   return {
-    name: '@farmfe/js-plugin-svgr',
+    name: "@farmfe/js-plugin-svgr",
     load: {
-      filters: { resolvedPaths: filters?.resolvedPaths ?? ['\\.svg$'] },
+      filters: { resolvedPaths: filters?.resolvedPaths ?? ["\\.svg$"] },
       async executor(param) {
         if (
           param.query.some(
-            ([key, _]) => key === 'raw' || key === 'url' || key === 'inline'
+            ([key, _]) => key === "raw" || key === "url" || key === "inline"
           )
         ) {
           return null;
         }
 
-        const { transform } = await import('@svgr/core');
-        const mod = await import('@svgr/plugin-jsx');
+        const { transform } = await import("@svgr/core");
+        const mod = await import("@svgr/plugin-jsx");
         const jsx = mod.default ?? mod;
 
-        const svgCode = await fs.promises.readFile(param.resolvedPath, 'utf8');
+        const svgCode = await fs.promises.readFile(param.resolvedPath, "utf8");
         const componentCode = await transform(svgCode, svgrOptions, {
           filePath: param.resolvedPath,
           caller: {
@@ -40,7 +40,7 @@ export default function farmSvgrPlugin(
         });
         return {
           content: componentCode,
-          moduleType: 'jsx'
+          moduleType: "jsx"
         };
       }
     }

@@ -1,4 +1,4 @@
-import type { Diagnostic, ts } from 'ts-morph';
+import type { Diagnostic, ts } from "ts-morph";
 
 export interface DtsPluginOptions {
   /**

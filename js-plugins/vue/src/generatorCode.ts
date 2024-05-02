@@ -1,11 +1,11 @@
-import path from 'path';
+import path from "path";
 import {
   type EncodedSourceMap,
   addMapping,
   fromMap,
   toEncodedMap
-} from '@jridgewell/gen-mapping';
-import { TraceMap, eachMapping } from '@jridgewell/trace-mapping';
+} from "@jridgewell/gen-mapping";
+import { TraceMap, eachMapping } from "@jridgewell/trace-mapping";
 import {
   type BindingMetadata,
   type CompilerOptions,
@@ -18,20 +18,20 @@ import {
   compileScript,
   compileTemplate,
   rewriteDefault
-} from '@vue/compiler-sfc';
-import type { RawSourceMap } from 'source-map';
-import { cacheScript, isEqualBlock } from './farm-vue-hmr.js';
+} from "@vue/compiler-sfc";
+import type { RawSourceMap } from "source-map";
+import { cacheScript, isEqualBlock } from "./farm-vue-hmr.js";
 import type {
   QueryObj,
   ResolvedOptions,
   StylesCodeCache,
   Union
-} from './farm-vue-types.js';
-import { error, getHash, parsePath, warn } from './utils.js';
+} from "./farm-vue-types.js";
+import { error, getHash, parsePath, warn } from "./utils.js";
 
-type SourceMap = Omit<RawSourceMap, 'version'> & { version: 3 };
+type SourceMap = Omit<RawSourceMap, "version"> & { version: 3 };
 
-const assignFilenameCode = genFileNameCode('App.vue');
+const assignFilenameCode = genFileNameCode("App.vue");
 const assignRenderCode = `_sfc_main.render = typeof render === "function" ? render : undefined`;
 const exportDefaultCode = `export default _sfc_main`;
 const defaultScriptCode = `const _sfc_main = {}`;
@@ -50,7 +50,7 @@ module.meta.hot.accept((mod) => {
 `;
 
 export function genTemplateCode(
-  templateCompilerOptions: ResolvedOptions['template'],
+  templateCompilerOptions: ResolvedOptions["template"],
   descriptor: SFCDescriptor,
   template: SFCTemplateBlock | null,
   filename: string,
@@ -62,15 +62,15 @@ export function genTemplateCode(
   | { code: string; map: RawSourceMap } {
   if (template) {
     // if using TS, support TS syntax in template expressions
-    const expressionPlugins: CompilerOptions['expressionPlugins'] =
+    const expressionPlugins: CompilerOptions["expressionPlugins"] =
       templateCompilerOptions?.compilerOptions?.expressionPlugins ?? [];
     const lang = descriptor.scriptSetup?.lang || descriptor.script?.lang;
     if (
       lang &&
       /tsx?$/.test(lang) &&
-      !expressionPlugins.includes('typescript')
+      !expressionPlugins.includes("typescript")
     ) {
-      expressionPlugins.push('typescript');
+      expressionPlugins.push("typescript");
     }
 
     const result = compileTemplate({
@@ -104,31 +104,31 @@ export function genTemplateCode(
     }
     return {
       ...result,
-      code: code.replace(/\nexport (function|const)/, '\n$1')
+      code: code.replace(/\nexport (function|const)/, "\n$1")
     };
   }
   return {
-    code: '',
+    code: "",
     map: {} as RawSourceMap
   };
 }
 
 export function genScriptCode(
-  scriptCompilerOptions: ResolvedOptions['script'],
+  scriptCompilerOptions: ResolvedOptions["script"],
   descriptor: SFCDescriptor,
   hash: string
 ): Union<SFCScriptBlock, { code: string; moduleType: string }> {
-  let moduleType = 'js';
-  let code = '';
+  let moduleType = "js";
+  let code = "";
   let result: SFCScriptBlock = {} as SFCScriptBlock;
   const script = descriptor.script || descriptor.scriptSetup;
-  const babelParserPlugins: SFCScriptCompileOptions['babelParserPlugins'] = [];
+  const babelParserPlugins: SFCScriptCompileOptions["babelParserPlugins"] = [];
 
-  if (script?.lang === 'ts' || script?.lang === 'tsx') {
-    babelParserPlugins.push('typescript');
+  if (script?.lang === "ts" || script?.lang === "tsx") {
+    babelParserPlugins.push("typescript");
   }
-  if (script?.lang === 'jsx' || script?.lang === 'tsx') {
-    babelParserPlugins.push('jsx');
+  if (script?.lang === "jsx" || script?.lang === "tsx") {
+    babelParserPlugins.push("jsx");
   }
 
   if (scriptCompilerOptions.babelParserPlugins) {
@@ -143,7 +143,7 @@ export function genScriptCode(
       babelParserPlugins
     }));
     cacheScript.set(descriptor, result);
-    code += rewriteDefault(content, '_sfc_main', babelParserPlugins);
+    code += rewriteDefault(content, "_sfc_main", babelParserPlugins);
     if (script?.lang) moduleType = script.lang;
   }
   // default script code
@@ -158,7 +158,7 @@ export function genScriptCode(
 }
 
 function genStyleCode(
-  styleCompilerOptions: ResolvedOptions['style'],
+  styleCompilerOptions: ResolvedOptions["style"],
   style: SFCStyleBlock,
   stylesCodeCache: StylesCodeCache,
   stylesCodeArr: string[],
@@ -169,7 +169,7 @@ function genStyleCode(
   isHmr = false
 ) {
   const {
-    attrs: { lang = 'css', scoped }
+    attrs: { lang = "css", scoped }
   } = style;
 
   const queryStr = genQueryStr({
@@ -180,7 +180,7 @@ function genStyleCode(
     t: isHmr ? Date.now() : 0
   });
 
-  const importPath = path.normalize(resolvedPath) + '?' + queryStr;
+  const importPath = path.normalize(resolvedPath) + "?" + queryStr;
 
   const hashName = getHash(importPath);
   if (!stylesCodeCache[hashName]) {
@@ -188,12 +188,12 @@ function genStyleCode(
   }
 
   stylesCodeArr.push(
-    'import ' + JSON.stringify(importPath + `&hash=${hashName}`)
+    "import " + JSON.stringify(importPath + `&hash=${hashName}`)
   );
 }
 
 export function genStylesCode(
-  styleCompilerOptions: ResolvedOptions['style'],
+  styleCompilerOptions: ResolvedOptions["style"],
   descriptor: SFCDescriptor,
   stylesCodeCache: StylesCodeCache,
   resolvedPath: string,
@@ -242,7 +242,7 @@ export function genStylesCode(
     }
   }
 
-  return stylesCodeArr.join('\r\n');
+  return stylesCodeArr.join("\r\n");
 }
 
 export function genQueryStr(queryObj: QueryObj) {
@@ -251,7 +251,7 @@ export function genQueryStr(queryObj: QueryObj) {
     if (queryObj[key] === 0 || queryObj[key])
       queryStrArr.push(`${key}=${queryObj[key]}`);
   }
-  return queryStrArr.join('&');
+  return queryStrArr.join("&");
 }
 
 export function genAssignHmrIdCode(hash: string) {
@@ -268,14 +268,14 @@ export function genOtherCode(
   const otherCodeArr = [
     assignRenderCode,
     genFileNameCode(filename),
-    hasScoped ? genAssignScopedCode(hash) : '',
+    hasScoped ? genAssignScopedCode(hash) : "",
     genAssignHmrIdCode(hash),
-    isHmr ? defaultHmrCode : '',
-    isHmr ? `_sfc_main._rerender_only=${rerenderOnly}` : '',
+    isHmr ? defaultHmrCode : "",
+    isHmr ? `_sfc_main._rerender_only=${rerenderOnly}` : "",
     exportDefaultCode
   ];
 
-  return otherCodeArr.join('\r\n');
+  return otherCodeArr.join("\r\n");
 }
 
 export function genAssignScopedCode(hash: string) {
@@ -320,7 +320,7 @@ export function genMainCode(
     hasScoped,
     hash
   );
-  let resolvedMap: EncodedSourceMap | string = '';
+  let resolvedMap: EncodedSourceMap | string = "";
   //only "sourceMap === true" should generator source-map
   if ((templateMap || scriptMap) && sourceMap) {
     resolvedMap = genSourceMap(
@@ -351,10 +351,10 @@ export function genMainCode(
 
   output.push(scriptCode, templateCode, stylesCode, otherCode);
   return {
-    source: output.join('\r\n'),
+    source: output.join("\r\n"),
     moduleType,
     map:
-      typeof resolvedMap === 'string'
+      typeof resolvedMap === "string"
         ? resolvedMap
         : JSON.stringify(resolvedMap)
   };
