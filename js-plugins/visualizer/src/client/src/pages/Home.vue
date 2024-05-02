@@ -18,19 +18,19 @@
 import { defineComponent, ref } from "vue";
 import { Card } from "ant-design-vue";
 import { getFarmEnvInfo } from "../api";
-import { FarmEnvInfo } from "../../../node/utils/envinfo";
+import type { FarmEnvInfo } from "../../../node/utils/envinfo";
 
 export default defineComponent({
-    name: "Home",
-    components: {
-        Card,
-    },
-    setup() {
-        const envInfo = ref<FarmEnvInfo | undefined>(undefined);
-        getFarmEnvInfo().then((res) => {          
-            envInfo.value = res;
-        });
-        return { envInfo};
-    }
+  name: "Home",
+  components: {
+    Card
+  },
+  setup() {
+    const envInfo = ref<FarmEnvInfo | undefined>(undefined);
+    getFarmEnvInfo().then((res) => {
+      envInfo.value = res;
+    });
+    return { envInfo };
+  }
 });
 </script>

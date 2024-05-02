@@ -1,5 +1,5 @@
-import { DevServerMiddleware, JsPlugin, Server } from '@farmfe/core';
-import { Context, Middleware } from 'koa';
+import type { DevServerMiddleware, JsPlugin, Server } from '@farmfe/core';
+import type { Context, Middleware } from 'koa';
 import { getFarmEnvInfo } from './node/utils/envinfo';
 
 export function records(devServer: Server): Middleware {

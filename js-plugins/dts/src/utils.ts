@@ -7,12 +7,12 @@ import path, {
   resolve
 } from 'node:path';
 
-import typescript from 'typescript';
 import extra from 'fs-extra';
+import typescript from 'typescript';
 
 import crypto from 'crypto';
 import fs from 'node:fs';
-import { CompilerOptions } from 'ts-morph';
+import type { CompilerOptions } from 'ts-morph';
 import { throwError } from './options.js';
 
 const windowsSlashRE = /\\+/g;
@@ -61,7 +61,7 @@ export function normalizePath(id: string): string {
   return posix.normalize(slash(id));
 }
 
-export function getHash(text: string, start: number = 0, end: number = 8) {
+export function getHash(text: string, start = 0, end = 8) {
   return crypto
     .createHash('sha256')
     .update(text)

@@ -29,7 +29,7 @@ import { Card, Tag, Button } from "ant-design-vue";
 import { CodepenCircleFilled } from "@ant-design/icons-vue";
 import { formatSize } from "../utils/size";
 import { getModules } from "../api";
-import { Module } from "@farmfe/core/binding";
+import type { Module } from "@farmfe/core/binding";
 
 export default defineComponent({
   name: "ResourcePots",
@@ -37,7 +37,7 @@ export default defineComponent({
     Card,
     Tag,
     Button,
-    CodepenCircleFilled,
+    CodepenCircleFilled
   },
   setup(_, { emit }) {
     const moduleList = ref<Module[]>([]);
@@ -45,7 +45,6 @@ export default defineComponent({
     const filterList = computed(() => {
       return moduleList.value.filter((item) => !item.immutable);
     });
-
 
     getModules().then((res) => {
       moduleList.value = res;
@@ -57,6 +56,6 @@ export default defineComponent({
     }
 
     return { current, formatSize, selectModule, moduleList, filterList };
-  },
+  }
 });
 </script>

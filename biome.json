@@ -20,7 +20,8 @@
       "packages/core/tests/**",
       "packages/create-farm/**",
       "packages/create-farm-plugin/**",
-      "rust-plugins/**"
+      "rust-plugins/**",
+      "packages/**"
     ],
     "ignoreUnknown": true
   },

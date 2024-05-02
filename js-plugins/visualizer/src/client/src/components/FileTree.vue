@@ -57,8 +57,8 @@ export default defineComponent({
       getModuleInfo,
       resourcePotStore,
       formatSize,
-      viewSourceCode,
+      viewSourceCode
     };
-  },
+  }
 });
 </script>

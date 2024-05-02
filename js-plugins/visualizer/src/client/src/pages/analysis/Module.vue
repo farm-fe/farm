@@ -17,14 +17,22 @@ import { defineComponent, ref } from "vue";
 import FileTree from "../../components/FileTree.vue";
 import ResourcePots from "../../components/ResourcePots.vue";
 import CodeViewer from "../../components/CodeViewer.vue";
-import ModuleList from '../../components/ModuleList.vue';
+import ModuleList from "../../components/ModuleList.vue";
 import ModuleRecords from "../../components/ModuleRecords.vue";
-import { Module } from "@farmfe/core/binding";
-
+import type { Module } from "@farmfe/core/binding";
 
 export default defineComponent({
   name: "ModuleAnalyze",
-  components: { Card, Tree, ResourcePots, FileTree, CodeViewer, Drawer, ModuleList, ModuleRecords },
+  components: {
+    Card,
+    Tree,
+    ResourcePots,
+    FileTree,
+    CodeViewer,
+    Drawer,
+    ModuleList,
+    ModuleRecords
+  },
   setup() {
     const currentModule = ref<Module>();
     function handleSelect(module: Module) {
@@ -35,6 +43,6 @@ export default defineComponent({
       handleSelect,
       currentModule
     };
-  },
+  }
 });
 </script>

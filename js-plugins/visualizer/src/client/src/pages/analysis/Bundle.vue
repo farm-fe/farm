@@ -56,7 +56,7 @@ export default defineComponent({
     const sourceFile = reactive({
       name: "",
       code: "",
-      language: "javascript",
+      language: "javascript"
     });
     getResourcesMap().then((rawData) => {
       resourcePots.value = Object.values(rawData);
@@ -66,7 +66,11 @@ export default defineComponent({
       return genFileTree(moduleIds);
     });
 
-    function handleViewCode(data: { name: string; code: string; language?: string }) {
+    function handleViewCode(data: {
+      name: string;
+      code: string;
+      language?: string;
+    }) {
       sourceFile.name = data.name;
       sourceFile.code = data.code;
       sourceFile.language = data.language || "javascript";
@@ -79,8 +83,8 @@ export default defineComponent({
       treeData,
       isOpened,
       sourceFile,
-      handleViewCode,
+      handleViewCode
     };
-  },
+  }
 });
 </script>

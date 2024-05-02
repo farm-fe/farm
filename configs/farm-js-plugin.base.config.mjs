@@ -1,22 +1,22 @@
-import { builtinModules } from 'module';
+import { builtinModules } from "module";
 
-const format = process.env.FARM_FORMAT || 'cjs';
-const ext = format === 'esm' ? 'mjs' : 'cjs';
+const format = process.env.FARM_FORMAT || "cjs";
+const ext = format === "esm" ? "mjs" : "cjs";
 
 export function createFarmJsPluginBuildConfig(plugins, options = {}) {
   return {
     compilation: {
       input: {
-        index: './src/index.ts'
+        index: "./src/index.ts"
       },
       output: {
         path: `build/${format}`,
         entryFilename: `[entryName].${ext}`,
-        targetEnv: 'node',
+        targetEnv: "node",
         format
       },
       external: [
-        '@farmfe/core',
+        "@farmfe/core",
         ...builtinModules.map((m) => `^${m}$`),
         ...builtinModules.map((m) => `^node:${m}$`),
         ...(options.external || [])
@@ -24,8 +24,8 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
       partialBundling: {
         enforceResources: [
           {
-            name: 'index.js',
-            test: ['.+']
+            name: "index.js",
+            test: [".+"]
           }
         ]
       },

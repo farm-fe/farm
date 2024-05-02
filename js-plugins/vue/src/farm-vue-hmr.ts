@@ -1,14 +1,14 @@
-import {
+import type {
   SFCDescriptor,
   SFCScriptBlock,
-  SFCTemplateBlock,
-  SFCStyleBlock
+  SFCStyleBlock,
+  SFCTemplateBlock
 } from '@vue/compiler-sfc';
 import {
   CacheDescriptor,
   QueryObj,
-  ResolvedOptions,
-  StylesCodeCache
+  type ResolvedOptions,
+  type StylesCodeCache
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 

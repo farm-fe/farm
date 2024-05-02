@@ -1,5 +1,5 @@
-import { builtinModules } from 'module';
-import farmDtsPlugin from '@farmfe/js-plugin-dts';
+import { builtinModules } from "module";
+import farmDtsPlugin from "@farmfe/js-plugin-dts";
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -7,13 +7,13 @@ import farmDtsPlugin from '@farmfe/js-plugin-dts';
 export default {
   compilation: {
     input: {
-      index: './src/farm-vue-plugin.ts'
+      index: "./src/farm-vue-plugin.ts"
     },
     output: {
-      path: 'build',
-      entryFilename: '[entryName].cjs',
-      targetEnv: 'node',
-      format: 'cjs'
+      path: "build",
+      entryFilename: "[entryName].cjs",
+      targetEnv: "node",
+      format: "cjs"
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
@@ -22,21 +22,21 @@ export default {
     partialBundling: {
       enforceResources: [
         {
-          name: 'index.js',
-          test: ['.+']
+          name: "index.js",
+          test: [".+"]
         }
       ]
     },
     minify: false,
     sourcemap: false,
-    presetEnv: false,
+    presetEnv: false
   },
   server: {
     hmr: false
   },
   plugins: [
     farmDtsPlugin({
-      tsConfigPath: './tsconfig.json'
+      tsConfigPath: "./tsconfig.json"
     })
   ]
 };

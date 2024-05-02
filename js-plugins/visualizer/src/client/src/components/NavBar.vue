@@ -94,14 +94,14 @@ export default defineComponent({
   setup() {
     const isOpen = ref(false);
     const route = useRoute();
-    
+
     const navigation = [
       { name: "Dashboard", href: "/dashboard" },
       { name: "Module Analysis", href: "/analysis/module" },
       { name: "Plugin Analysis", href: "/analysis/plugin" },
-      { name: "Bundle Analysis", href: "/analysis/bundle" },
+      { name: "Bundle Analysis", href: "/analysis/bundle" }
     ];
     return { isOpen, navigation, route };
-  },
+  }
 });
 </script>

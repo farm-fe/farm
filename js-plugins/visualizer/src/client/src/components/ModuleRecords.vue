@@ -49,13 +49,13 @@ export default defineComponent({
   },
   props: {
     moduleId: {
-      type: String,
-    },
+      type: String
+    }
   },
   setup() {
     const activeKey = ref("resolve");
     return { activeKey };
-  },
+  }
 });
 </script>
 

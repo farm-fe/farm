@@ -1,16 +1,17 @@
 import fs from 'fs';
 import path from 'path';
+import type { JsPlugin, UserConfig } from '@farmfe/core';
 import { parse } from '@vue/compiler-sfc';
-import { JsPlugin, UserConfig } from '@farmfe/core';
+import { compileStyle } from '@vue/compiler-sfc';
 import { handleHmr } from './farm-vue-hmr.js';
 import {
-  CacheDescriptor,
-  FarmVuePluginOptions,
-  PreProcessors,
-  PreProcessorsOptions,
+  type CacheDescriptor,
+  type FarmVuePluginOptions,
+  type PreProcessors,
+  type PreProcessorsOptions,
   PreProcessorsType,
-  StylesCodeCache,
-  ValueOf
+  type StylesCodeCache,
+  type ValueOf
 } from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 import {
@@ -25,7 +26,6 @@ import {
   isStyl,
   loadPreProcessor
 } from './utils.js';
-import { compileStyle } from '@vue/compiler-sfc';
 
 const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];

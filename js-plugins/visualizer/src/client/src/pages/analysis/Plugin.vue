@@ -8,7 +8,7 @@
 import { computed, defineComponent, ref } from "vue";
 import { Card, Table } from "ant-design-vue";
 import { getPluginStats } from "../../api";
-import { PluginStats } from "@farmfe/core";
+import type { PluginStats } from "@farmfe/core";
 
 interface TableDataType {
   plugin_name: string;
@@ -20,7 +20,7 @@ export default defineComponent({
   name: "PluginAnalyze",
   components: {
     Card,
-    Table,
+    Table
   },
   setup() {
     const plugin_stats = ref<PluginStats | null>(null);
@@ -41,7 +41,7 @@ export default defineComponent({
               plugin_name: pluginName,
               hook: hookName,
               calls: callCount,
-              duration: totalDuration / 1000,
+              duration: totalDuration / 1000
             });
           }
         }
@@ -55,7 +55,7 @@ export default defineComponent({
         return Object.keys(plugin_stats.value).map((pluginName) => {
           return {
             text: pluginName,
-            value: pluginName,
+            value: pluginName
           };
         });
       } else {
@@ -70,29 +70,31 @@ export default defineComponent({
           dataIndex: "plugin_name",
           key: "plugin_name",
           filters: pluginFilter.value,
-          onFilter: (value: string, record: TableDataType) => record.plugin_name.indexOf(value) === 0,
+          onFilter: (value: string, record: TableDataType) =>
+            record.plugin_name.indexOf(value) === 0
         },
         {
           title: "Hook",
           dataIndex: "hook",
-          key: "hook",
+          key: "hook"
         },
         {
           title: "Calls",
           dataIndex: "calls",
           key: "calls",
-          sorter: (a: TableDataType, b: TableDataType) => a.calls - b.calls,
+          sorter: (a: TableDataType, b: TableDataType) => a.calls - b.calls
         },
         {
           title: "Duration(ms)",
           dataIndex: "duration",
           key: "duration",
-          sorter: (a: TableDataType, b: TableDataType) => a.duration - b.duration,
-        },
+          sorter: (a: TableDataType, b: TableDataType) =>
+            a.duration - b.duration
+        }
       ];
     });
 
     return { tableData, columns };
-  },
+  }
 });
 </script>

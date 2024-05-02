@@ -1,4 +1,5 @@
-import http, { createServer } from 'node:http';
+import type http from 'node:http';
+import { createServer } from 'node:http';
 import sirv from 'sirv';
 
 interface RecordViewerServerOptions {

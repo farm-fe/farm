@@ -3,9 +3,9 @@
   "exclude": ["node_modules"],
   "include": [
     "src/**/*.ts",
-     "src/**/*.d.ts",
-     "src/**/*.vue", 
-     "farm.config.mjs"
+    "src/**/*.d.ts",
+    "src/**/*.vue",
+    "farm.config.mjs"
   ],
   "compilerOptions": {
     "target": "ESNext",
@@ -20,5 +20,5 @@
     "lib": ["ESNext", "DOM"],
     "skipLibCheck": true,
     "noEmit": true
-  },
+  }
 }

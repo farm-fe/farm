@@ -53,7 +53,7 @@
     "js-plugins/**/*.ts": ["prettier-eslint --write"]
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged",
+    "pre-commit": "pnpm check",
     "pre-push": "",
     "preserveUnused": true
   },
