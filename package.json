@@ -49,8 +49,8 @@
     "vitest": "^1.4.0"
   },
   "lint-staged": {
-    "packages/**/*.ts": ["biome check --no-errors-on-unmatched --files-ignore-unknown=true"],
-    "js-plugins/**/*.ts": ["biome check --no-errors-on-unmatched --files-ignore-unknown=true"]
+    "packages/**/*.ts": ["biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"],
+    "js-plugins/**/*.ts": ["biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"]
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm check",
