@@ -1,8 +1,0 @@
-{
-  "root": true,
-  "extends": "../../.eslintrc.base.json",
-  "parserOptions": {
-    "project": ["./packages/runtime-plugin-import-meta/tsconfig.json"]
-  },
-  "rules": {}
-}

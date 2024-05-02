@@ -1,6 +1,0 @@
-**/binding/**
-**/templates/**
-**/dist/**
-**/node_modules/**
-**/*.config.js
-**/*.config.ts
