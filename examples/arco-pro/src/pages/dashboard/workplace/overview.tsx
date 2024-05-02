@@ -57,21 +57,30 @@ function Overview() {
   const userInfo = useSelector((state: any) => state.userInfo || {})
 
   const fetchData = () => {
+    let isMounted = true;
     setLoading(true)
     axios
       .get('/api/workplace/overview-content')
       .then((res) => {
-        setData(res.data)
+        if (isMounted) {
+          setData(res.data);
+        }
       })
       .finally(() => {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false);
+        }
       })
+    return () => {
+      isMounted = false;
+    };
   }
 
   useEffect(() => {
-    fetchData()
+    const cleanup = fetchData(); 
+    return cleanup;
   }, [])
-  
+
   return (
     <Card>
       <Typography.Title heading={5}>

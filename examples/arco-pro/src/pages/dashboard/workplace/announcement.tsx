@@ -12,19 +12,28 @@ function Announcement() {
   const t = useLocale(locale)
 
   const fetchData = () => {
+    let isMounted = true
     setLoading(true)
     axios
       .get('/api/workplace/announcement')
       .then((res) => {
-        setData(res.data)
+        if (isMounted) {
+          setData(res.data)
+        }
       })
       .finally(() => {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       })
+    return () => {
+      isMounted = false
+    };
   }
 
   useEffect(() => {
-    fetchData()
+    const cleanup = fetchData();
+    return cleanup;
   }, [])
 
   function getTagColor(type) {
