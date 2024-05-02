@@ -1,15 +1,15 @@
-import { SecureServerOptions } from 'node:http2';
-import { Server } from '../index.js';
+import { SecureServerOptions } from "node:http2";
+import { Server } from "../index.js";
 
-import type cors from '@koa/cors';
-import type { OutgoingHttpHeaders } from 'http';
-import type { Logger } from '../utils/index.js';
-import type { ProxiesOptions } from '../server/middlewares/proxy.js';
-import type { JsPlugin } from '../plugin/type.js';
-import type { RustPlugin } from '../plugin/rust/index.js';
-import type { Config } from '../../binding/index.js';
-import { Middleware } from 'koa';
-import { WatchOptions } from 'chokidar';
+import type { OutgoingHttpHeaders } from "http";
+import type cors from "@koa/cors";
+import { WatchOptions } from "chokidar";
+import { Middleware } from "koa";
+import type { Config } from "../../binding/index.js";
+import type { RustPlugin } from "../plugin/rust/index.js";
+import type { JsPlugin } from "../plugin/type.js";
+import type { ProxiesOptions } from "../server/middlewares/proxy.js";
+import type { Logger } from "../utils/index.js";
 
 export interface ConfigEnv {
   mode: string;
@@ -30,7 +30,7 @@ export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
   https?: SecureServerOptions;
-  protocol?: 'http' | 'https';
+  protocol?: "http" | "https";
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
@@ -55,7 +55,7 @@ export interface UserPreviewServerConfig {
 }
 
 export type NormalizedServerConfig = Required<
-  Omit<UserServerConfig, 'hmr'> & {
+  Omit<UserServerConfig, "hmr"> & {
     hmr: Required<UserHmrConfig>;
   }
 >;
@@ -73,13 +73,13 @@ export interface UserHmrConfig {
   watchOptions?: WatchOptions;
 }
 
-type InternalConfig = Config['config'] extends undefined
+type InternalConfig = Config["config"] extends undefined
   ? object
-  : Required<Config>['config'];
+  : Required<Config>["config"];
 
 type AvailableUserConfigKeys = Exclude<
   keyof InternalConfig,
-  'configFilePath' | 'env' | 'coreLibPath' | 'root'
+  "configFilePath" | "env" | "coreLibPath" | "root"
 >;
 
 export interface UserConfig {
@@ -113,18 +113,18 @@ export interface ResolvedUserConfig extends UserConfig {
   configFilePath?: string;
   envMode?: string;
   configFileDependencies?: string[];
-  compilation?: Config['config'];
+  compilation?: Config["config"];
   server?: NormalizedServerConfig;
   jsPlugins?: JsPlugin[];
   rustPlugins?: [string, string][];
 }
 
 export interface GlobalFarmCLIOptions {
-  '--'?: string[];
+  "--"?: string[];
   c?: boolean | string;
   config?: string;
   m?: string;
-  mode?: 'development' | 'production';
+  mode?: "development" | "production";
 }
 
 export interface FarmCLIServerOptions {
@@ -155,7 +155,7 @@ export interface FarmCLIOptions
   logger?: Logger;
   config?: string;
   configPath?: string;
-  compilation?: Config['config'];
+  compilation?: Config["config"];
   mode?: string;
   root?: string;
   server?: FarmCLIServerOptions;

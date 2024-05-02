@@ -1,22 +1,22 @@
+import { existsSync } from "fs";
+import path, { isAbsolute } from "path";
+import { fileURLToPath, pathToFileURL } from "url";
 import type {
+  CompilationContext,
   JsPlugin,
-  UserConfig,
   PluginTransformHookParam,
-  CompilationContext
-} from '@farmfe/core';
-import { getAdditionContext, rebaseUrls } from '@farmfe/core';
-import type { StringOptions, CompileResult, LegacyOptions } from 'sass';
-import * as Sass from 'sass';
-import { pluginName, throwError, tryRead } from './options.js';
-import { fileURLToPath, pathToFileURL } from 'url';
-import { getSassImplementation } from './utils.js';
-import path, { isAbsolute } from 'path';
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
+  UserConfig
+} from "@farmfe/core";
+import { getAdditionContext, rebaseUrls } from "@farmfe/core";
+import { readFile } from "fs/promises";
+import type { CompileResult, LegacyOptions, StringOptions } from "sass";
+import * as Sass from "sass";
+import { pluginName, throwError, tryRead } from "./options.js";
+import { getSassImplementation } from "./utils.js";
 
 export type SassPluginOptions<Legacy = boolean> = {
   sassOptions?: Partial<
-    Legacy extends false ? StringOptions<'async'> : LegacyOptions<'async'>
+    Legacy extends false ? StringOptions<"async"> : LegacyOptions<"async">
   >;
   filters?: {
     resolvedPaths?: string[];
@@ -40,12 +40,12 @@ export type SassPluginOptions<Legacy = boolean> = {
     | ((content?: string, resolvePath?: string) => string | Promise<string>);
 };
 
-const DEFAULT_PATHS_REGEX = ['\\.(s[ac]ss)$'];
+const DEFAULT_PATHS_REGEX = ["\\.(s[ac]ss)$"];
 
 export default function farmSassPlugin(
   options: SassPluginOptions = {}
 ): JsPlugin {
-  let farmConfig!: UserConfig['compilation'];
+  let farmConfig!: UserConfig["compilation"];
   const implementation = getSassImplementation(options.implementation);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -66,7 +66,7 @@ export default function farmSassPlugin(
       }
 
       config.compilation.resolve.extensions = [
-        ...new Set(config.compilation.resolve.extensions.concat('scss', 'sass'))
+        ...new Set(config.compilation.resolve.extensions.concat("scss", "sass"))
       ];
       return config;
     },
@@ -87,7 +87,7 @@ export default function farmSassPlugin(
           const data = await tryRead(param.resolvedPath);
           return {
             content: data,
-            moduleType: 'sass'
+            moduleType: "sass"
           };
         }
 
@@ -97,7 +97,7 @@ export default function farmSassPlugin(
     transform: {
       filters: {
         resolvedPaths: options.filters?.resolvedPaths,
-        moduleTypes: options.filters?.moduleTypes ?? ['sass']
+        moduleTypes: options.filters?.moduleTypes ?? ["sass"]
       },
       async executor(param, ctx) {
         try {
@@ -127,19 +127,19 @@ export default function farmSassPlugin(
 
           return {
             content: css,
-            moduleType: 'css',
+            moduleType: "css",
             sourceMap:
-              typeof sourceMap === 'object'
+              typeof sourceMap === "object"
                 ? JSON.stringify(sourceMap)
                 : (sourceMap as string | undefined)
           };
         } catch (error) {
-          throwError('transform', error);
+          throwError("transform", error);
         }
 
         return {
-          content: '',
-          moduleType: 'css'
+          content: "",
+          moduleType: "css"
         };
       }
     }
@@ -171,11 +171,11 @@ async function resolveDependencyWithPrefix(
     {
       source: filename,
       importer: transformParam.moduleId,
-      kind: 'cssAtImport'
+      kind: "cssAtImport"
     },
     {
       meta: {},
-      caller: '@farmfe/js-plugin-sass'
+      caller: "@farmfe/js-plugin-sass"
     }
   );
 
@@ -197,13 +197,13 @@ async function resolveDependency(
     }
   }
 
-  const try_prefix_list = ['_'];
+  const try_prefix_list = ["_"];
   let default_import_error;
   try {
     const result = await resolveDependencyWithPrefix(
       url,
       transformParam,
-      '',
+      "",
       ctx
     );
     if (result) return result;
@@ -231,8 +231,8 @@ async function resolveDependency(
 }
 
 const syntaxMap: Record<string, string> = {
-  '.css': 'css',
-  '.sass': 'indent'
+  ".css": "css",
+  ".sass": "indent"
 };
 
 function urlCanParse(file: string): boolean {
@@ -282,7 +282,7 @@ async function compileScss(param: CompileCssParams) {
             const normalizedPath = normalizePath(url, root);
             const normalizedUrl = path.relative(root, normalizedPath);
             const filePath = await resolveDependency(
-              normalizedUrl.replaceAll('\\', '/'),
+              normalizedUrl.replaceAll("\\", "/"),
               transformParam,
               ctx
             );
@@ -293,7 +293,7 @@ async function compileScss(param: CompileCssParams) {
             const { contents } = await rebaseUrls(
               filePath,
               transformParam.resolvedPath,
-              '$',
+              "$",
               (id, importer) => {
                 return resolveDependency(
                   id,
@@ -306,14 +306,14 @@ async function compileScss(param: CompileCssParams) {
               }
             );
             return {
-              contents: contents ?? (await readFile(filePath, 'utf-8')),
-              syntax: syntaxMap[path.extname(filePath)] ?? 'scss',
+              contents: contents ?? (await readFile(filePath, "utf-8")),
+              syntax: syntaxMap[path.extname(filePath)] ?? "scss",
               sourceMapUrl: canonicalUrl
             };
           }
         }
       ]
-    } as StringOptions<'async'>
+    } as StringOptions<"async">
   )) as CompileResult;
 
   for (const fileUrl of loadedUrls) {
@@ -340,7 +340,7 @@ async function compileScssLegacy(param: CompileCssParams) {
   return new Promise<{ css: string; sourceMap: unknown }>((resolve, reject) => {
     sassImpl.render(
       {
-        includePaths: ['node_modules'],
+        includePaths: ["node_modules"],
         ...(options?.sassOptions ?? {}),
         data: `${additionContext}\n${transformParam.content}`,
         sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
@@ -352,7 +352,7 @@ async function compileScssLegacy(param: CompileCssParams) {
               rebaseUrls(
                 resolvedPath,
                 transformParam.resolvedPath,
-                '$',
+                "$",
                 (id, importer) => {
                   return resolveDependency(
                     id,

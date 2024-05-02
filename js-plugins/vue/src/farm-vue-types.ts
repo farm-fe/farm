@@ -1,12 +1,12 @@
-import Less from 'less';
-import Sass from 'sass';
-import Stylus from 'stylus';
 import {
   SFCDescriptor,
   SFCScriptCompileOptions,
-  SFCTemplateCompileOptions,
-  SFCStyleCompileOptions
-} from '@vue/compiler-sfc';
+  SFCStyleCompileOptions,
+  SFCTemplateCompileOptions
+} from "@vue/compiler-sfc";
+import Less from "less";
+import Sass from "sass";
+import Stylus from "stylus";
 
 export interface outputData {
   id: string;
@@ -32,36 +32,36 @@ export type PreProcessors = {
 };
 
 export enum PreProcessorsType {
-  less = 'less',
-  sass = 'sass',
-  stylus = 'stylus'
+  less = "less",
+  sass = "sass",
+  stylus = "stylus"
 }
 
 export type PreProcessorsOptions<T> = T extends typeof Less
   ? Less.Options
   : T extends typeof Sass
-  ? Sass.Options<'async'>
-  : T extends typeof Stylus
-  ? Stylus.RenderOptions
-  : never;
+    ? Sass.Options<"async">
+    : T extends typeof Stylus
+      ? Stylus.RenderOptions
+      : never;
 
 export interface FarmVuePluginOptions {
   include?: string | RegExp | (string | RegExp)[];
   exclude?: string | RegExp | (string | RegExp)[];
   isProduction?: boolean;
   sourceMap?: boolean;
-  script?: Partial<Pick<SFCScriptCompileOptions, 'babelParserPlugins'>>;
+  script?: Partial<Pick<SFCScriptCompileOptions, "babelParserPlugins">>;
   template?: Partial<
     Pick<
       SFCTemplateCompileOptions,
-      | 'compiler'
-      | 'compilerOptions'
-      | 'preprocessOptions'
-      | 'preprocessCustomRequire'
-      | 'transformAssetUrls'
+      | "compiler"
+      | "compilerOptions"
+      | "preprocessOptions"
+      | "preprocessCustomRequire"
+      | "transformAssetUrls"
     >
   >;
-  style?: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+  style?: Partial<Pick<SFCStyleCompileOptions, "trim">>;
   /**
    * If not set, it is considered to be `true` in `development` mode.
    */
@@ -78,18 +78,18 @@ export interface ResolvedOptions {
   exclude: (string | RegExp)[];
   isProduction: boolean;
   sourceMap: boolean;
-  script: Partial<Pick<SFCScriptCompileOptions, 'babelParserPlugins'>>;
+  script: Partial<Pick<SFCScriptCompileOptions, "babelParserPlugins">>;
   template: Partial<
     Pick<
       SFCTemplateCompileOptions,
-      | 'compiler'
-      | 'compilerOptions'
-      | 'preprocessOptions'
-      | 'preprocessCustomRequire'
-      | 'transformAssetUrls'
+      | "compiler"
+      | "compilerOptions"
+      | "preprocessOptions"
+      | "preprocessCustomRequire"
+      | "transformAssetUrls"
     >
   >;
-  style: Partial<Pick<SFCStyleCompileOptions, 'trim'>>;
+  style: Partial<Pick<SFCStyleCompileOptions, "trim">>;
   hmr?: boolean;
   ssr: boolean;
 }
