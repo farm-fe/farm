@@ -1,0 +1,66 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.7.2/schema.json",
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "organizeImports": {
+    "enabled": true,
+    "include": ["./**/*.js", "./**/*.ts", "./**/*.mjs"]
+  },
+  "files": {
+    "ignore": [
+      "crates/**",
+      "examples/**",
+      "cspell.json",
+      "e2e/**",
+      "*.d.ts",
+      "packages/core/tests/**",
+      "packages/create-farm/**",
+      "packages/create-farm-plugin/**",
+      "rust-plugins/**"
+    ],
+    "ignoreUnknown": true
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80,
+    "attributePosition": "auto"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "performance": { "noDelete": "off" },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": { "filenameCases": ["camelCase", "export", "PascalCase"] }
+        },
+        "useConst": "warn",
+        "useDefaultParameterLast": "off"
+      },
+      "suspicious": { "noConfusingVoidType": "off", "noExplicitAny": "off" }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingComma": "none",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "quoteStyle": "double",
+      "attributePosition": "auto"
+    }
+  }
+}
