@@ -1,5 +1,5 @@
-import { builtinModules } from 'module';
-import input from './util.js';
+import { builtinModules } from "module";
+import input from "./util.js";
 
 export default {
   compilation: {

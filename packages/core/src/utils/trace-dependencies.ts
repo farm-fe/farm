@@ -1,5 +1,5 @@
-import { Config } from '../../binding/index.js';
-import { Compiler } from '../compiler/index.js';
+import type { Config } from "../../binding/index.js";
+import { Compiler } from "../compiler/index.js";
 
 function createTraceDepCompiler(entry: string) {
   const config = getDefaultTraceDepCompilerConfig(entry);
@@ -15,7 +15,7 @@ export async function traceDependencies(
     const files = await compiler.traceDependencies();
     return files;
   } catch (error) {
-    console.error('Error tracing dependencies:', error);
+    console.error("Error tracing dependencies:", error);
     throw error;
   }
 }
@@ -29,7 +29,7 @@ function getDefaultTraceDepCompilerConfig(entry: string): Config {
       resolve: {
         autoExternalFailedResolve: true
       },
-      external: ['^[^./].*'],
+      external: ["^[^./].*"],
       sourcemap: false,
       presetEnv: false,
       persistentCache: false,
@@ -38,15 +38,15 @@ function getDefaultTraceDepCompilerConfig(entry: string): Config {
     },
     jsPlugins: [
       {
-        name: 'trace-dependencies-ignore-node-file-plugin',
+        name: "trace-dependencies-ignore-node-file-plugin",
         load: {
           filters: {
-            resolvedPaths: ['\\.node$']
+            resolvedPaths: ["\\.node$"]
           },
           executor: () => {
             return {
-              content: '',
-              moduleType: 'js'
+              content: "",
+              moduleType: "js"
             };
           }
         }

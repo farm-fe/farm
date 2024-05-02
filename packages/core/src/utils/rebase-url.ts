@@ -24,9 +24,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 
-import path from 'node:path';
-import fse from 'fs-extra';
-import { normalizeBasePath } from './share.js';
+import path from "node:path";
+import fse from "fs-extra";
+import { normalizeBasePath } from "./share.js";
 
 const nonEscapedDoubleQuoteRe = /(?<!\\)(")/g;
 
@@ -65,7 +65,7 @@ export async function rebaseUrls(
     return { file };
   }
 
-  const content = await fse.readFile(file, 'utf-8');
+  const content = await fse.readFile(file, "utf-8");
   // no url()
   const hasUrls = cssUrlRE.test(content);
   // data-uri() calls
@@ -79,7 +79,7 @@ export async function rebaseUrls(
 
   let rebased;
   const rebaseFn = async (url: string) => {
-    if (url[0] === '/') return url;
+    if (url[0] === "/") return url;
     // ignore url's starting with variable
     if (url.startsWith(variablePrefix)) return url;
 
@@ -133,7 +133,7 @@ function rewriteCssDataUris(
 ): Promise<string> {
   return asyncReplace(css, cssDataUriRE, async (match) => {
     const [matched, rawUrl] = match;
-    return await doUrlReplace(rawUrl.trim(), matched, replacer, 'data-uri');
+    return await doUrlReplace(rawUrl.trim(), matched, replacer, "data-uri");
   });
 }
 
@@ -141,7 +141,7 @@ function skipUrlReplacer(rawUrl: string) {
   return (
     isExternalUrl(rawUrl) ||
     isDataUrl(rawUrl) ||
-    rawUrl[0] === '#' ||
+    rawUrl[0] === "#" ||
     functionCallRE.test(rawUrl)
   );
 }
@@ -149,9 +149,9 @@ async function doUrlReplace(
   rawUrl: string,
   matched: string,
   replacer: CssUrlReplacer,
-  funcName = 'url'
+  funcName = "url"
 ) {
-  let wrap = '';
+  let wrap = "";
   const first = rawUrl[0];
   if (first === `"` || first === `'`) {
     wrap = first;
@@ -164,7 +164,7 @@ async function doUrlReplace(
 
   let newUrl = await replacer(rawUrl);
   // The new url might need wrapping even if the original did not have it, e.g. if a space was added during replacement
-  if (wrap === '' && newUrl !== encodeURI(newUrl)) {
+  if (wrap === "" && newUrl !== encodeURI(newUrl)) {
     wrap = '"';
   }
   // If wrapping in single quotes and newUrl also contains single quotes, switch to double quotes.
@@ -184,13 +184,13 @@ async function doImportCSSReplace(
   matched: string,
   replacer: CssUrlReplacer
 ) {
-  let wrap = '';
+  let wrap = "";
   const first = rawUrl[0];
   if (first === `"` || first === `'`) {
     wrap = first;
     rawUrl = rawUrl.slice(1, -1);
   }
-  if (isExternalUrl(rawUrl) || isDataUrl(rawUrl) || rawUrl[0] === '#') {
+  if (isExternalUrl(rawUrl) || isDataUrl(rawUrl) || rawUrl[0] === "#") {
     return matched;
   }
 
@@ -204,7 +204,7 @@ async function asyncReplace(
 ): Promise<string> {
   let match: RegExpExecArray | null;
   let remaining = input;
-  let rewritten = '';
+  let rewritten = "";
   while ((match = re.exec(remaining))) {
     rewritten += remaining.slice(0, match.index);
     rewritten += await replacer(match);

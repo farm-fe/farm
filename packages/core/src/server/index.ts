@@ -1,27 +1,32 @@
-import http from 'node:http';
-import http2 from 'node:http2';
-import Koa from 'koa';
-import compression from 'koa-compress';
+import http from "node:http";
+import http2 from "node:http2";
+import Koa from "koa";
+import compression from "koa-compress";
 
-import { Compiler } from '../compiler/index.js';
+import path from "node:path";
+import { promisify } from "node:util";
+import type { Compiler } from "../compiler/index.js";
+import { __FARM_GLOBAL__ } from "../config/_global.js";
 import {
   DEFAULT_HMR_OPTIONS,
-  DevServerMiddleware,
-  NormalizedServerConfig,
+  type DevServerMiddleware,
+  type NormalizedServerConfig,
+  type UserPreviewServerConfig,
+  type UserServerConfig,
   normalizePublicDir,
-  normalizePublicPath,
-  UserPreviewServerConfig,
-  UserServerConfig
-} from '../config/index.js';
-import { HmrEngine } from './hmr-engine.js';
-import { openBrowser } from './open.js';
+  normalizePublicPath
+} from "../config/index.js";
+import { resolveHostname, resolveServerUrls } from "../utils/http.js";
 import {
+  Logger,
   bootstrap,
   clearScreen,
-  Logger,
   normalizeBasePath,
   printServerUrls
-} from '../utils/index.js';
+} from "../utils/index.js";
+import type { FileWatcher } from "../watcher/index.js";
+import { logError } from "./error.js";
+import { HmrEngine } from "./hmr-engine.js";
 import {
   cors,
   headers,
@@ -30,15 +35,10 @@ import {
   records,
   resources,
   staticMiddleware
-} from './middlewares/index.js';
-import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { resolveHostname, resolveServerUrls } from '../utils/http.js';
-import WsServer from './ws.js';
-import { Server as httpServer } from './type.js';
-import { promisify } from 'node:util';
-import { FileWatcher } from '../watcher/index.js';
-import { logError } from './error.js';
-import path from 'node:path';
+} from "./middlewares/index.js";
+import { openBrowser } from "./open.js";
+import type { Server as httpServer } from "./type.js";
+import WsServer from "./ws.js";
 
 /**
  * Farm Dev Server, responsible for:
@@ -102,7 +102,7 @@ export class Server implements ImplDevServer {
         compiler.config.config.output?.publicPath,
         logger,
         false
-      ) || '/';
+      ) || "/";
   }
 
   getCompiler(): Compiler {
@@ -115,7 +115,7 @@ export class Server implements ImplDevServer {
 
   async listen(): Promise<void> {
     if (!this.server) {
-      this.logger.error('HTTP server is not created yet');
+      this.logger.error("HTTP server is not created yet");
       return;
     }
     const { port, open, protocol, hostname } = this.config;
@@ -133,7 +133,7 @@ export class Server implements ImplDevServer {
 
     if (open) {
       const publicPath =
-        this.publicPath === '/' ? this.publicPath : `/${this.publicPath}`;
+        this.publicPath === "/" ? this.publicPath : `/${this.publicPath}`;
       const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
       openBrowser(serverUrl);
     }
@@ -147,7 +147,7 @@ export class Server implements ImplDevServer {
     }
 
     if (this.config.writeToDisk) {
-      const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
+      const base = this.publicPath.match(/^https?:\/\//) ? "" : this.publicPath;
       this.compiler.writeResourcesToDisk(base);
     } else {
       this.compiler.callWriteResourcesHook();
@@ -182,7 +182,7 @@ export class Server implements ImplDevServer {
 
   async close() {
     if (!this.server) {
-      this.logger.error('HTTP server is not created yet');
+      this.logger.error("HTTP server is not created yet");
     }
     // the server is already closed
     if (!this.server.listening) {
@@ -215,7 +215,7 @@ export class Server implements ImplDevServer {
     options: NormalizedServerConfig & UserPreviewServerConfig
   ) {
     const { https, host } = options;
-    const protocol = https ? 'https' : 'http';
+    const protocol = https ? "https" : "http";
     const hostname = await resolveHostname(host);
     const publicPath =
       this.compiler?.config.config.output?.publicPath ??
@@ -251,7 +251,7 @@ export class Server implements ImplDevServer {
 
   public createWebSocket() {
     if (!this.server) {
-      throw new Error('Websocket requires a server.');
+      throw new Error("Websocket requires a server.");
     }
     this.ws = new WsServer(this.server, this.config, this.hmrEngine);
   }
@@ -259,9 +259,9 @@ export class Server implements ImplDevServer {
   private invalidateVite() {
     // Note: path should be Farm's id, which is a relative path in dev mode,
     // but in vite, it's a url path like /xxx/xxx.js
-    this.ws.on('vite:invalidate', ({ path, message }) => {
+    this.ws.on("vite:invalidate", ({ path, message }) => {
       // find hmr boundary starting from the parent of the file
-      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
+      this.logger.info(`HMR invalidate: ${path}. ${message ?? ""} `);
       const parentFiles = this.compiler.getParentFiles(path);
       this.hmrEngine.hmrUpdate(parentFiles, true);
     });
@@ -279,7 +279,7 @@ export class Server implements ImplDevServer {
 
   public async createDevServer(options: NormalizedServerConfig) {
     if (!this.compiler) {
-      throw new Error('DevServer requires a compiler for development mode.');
+      throw new Error("DevServer requires a compiler for development mode.");
     }
 
     await this.createServer(options);
@@ -305,14 +305,14 @@ export class Server implements ImplDevServer {
     const isPortAvailable = (portToCheck: number) => {
       return new Promise((resolve, reject) => {
         const onError = async (error: { code: string }) => {
-          if (error.code === 'EADDRINUSE') {
+          if (error.code === "EADDRINUSE") {
             clearScreen();
             if (strictPort) {
-              httpServer.removeListener('error', onError);
+              httpServer.removeListener("error", onError);
               reject(new Error(`Port ${devPort} is already in use`));
             } else {
               logger.warn(`Port ${devPort} is in use, trying another one...`);
-              httpServer.removeListener('error', onError);
+              httpServer.removeListener("error", onError);
               resolve(false);
             }
           } else {
@@ -320,8 +320,8 @@ export class Server implements ImplDevServer {
             reject(true);
           }
         };
-        httpServer.on('error', onError);
-        httpServer.on('listening', () => {
+        httpServer.on("error", onError);
+        httpServer.on("listening", () => {
           httpServer.close();
           resolve(true);
         });
@@ -332,7 +332,7 @@ export class Server implements ImplDevServer {
     let isPortAvailableResult = await isPortAvailable(devPort);
 
     while (isPortAvailableResult === false) {
-      if (typeof normalizedDevConfig.hmr === 'object') {
+      if (typeof normalizedDevConfig.hmr === "object") {
         normalizedDevConfig.hmr.port = ++hmrPort;
       }
 
@@ -414,7 +414,7 @@ export class Server implements ImplDevServer {
     if (this.resolvedUrls) {
       printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);
     } else {
-      throw new Error('cannot print server URLs with Server Error.');
+      throw new Error("cannot print server URLs with Server Error.");
     }
   }
 }

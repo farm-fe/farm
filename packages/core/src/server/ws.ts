@@ -1,15 +1,15 @@
-import type { IncomingMessage } from 'node:http';
-import type { Duplex } from 'node:stream';
-import type { WebSocket as WebSocketRawType } from 'ws';
+import type { IncomingMessage } from "node:http";
+import type { Duplex } from "node:stream";
+import type { WebSocket as WebSocketRawType } from "ws";
 
-import { WebSocketServer as WebSocketServerRaw, WebSocket } from 'ws';
-import { Logger, NormalizedServerConfig, red } from '../index.js';
-import { Server } from './type.js';
-import { HmrEngine } from './hmr-engine.js';
+import { WebSocket, WebSocketServer as WebSocketServerRaw } from "ws";
+import { Logger, type NormalizedServerConfig, red } from "../index.js";
+import type { HmrEngine } from "./hmr-engine.js";
+import type { Server } from "./type.js";
 
-import type { ILogger } from '../index.js';
+import type { ILogger } from "../index.js";
 
-const HMR_HEADER = 'farm_hmr';
+const HMR_HEADER = "farm_hmr";
 
 export interface IWebSocketServer {
   clients: Set<WebSocketClient>;
@@ -22,11 +22,11 @@ export interface IWebSocketServer {
 }
 
 const wsServerEvents = [
-  'connection',
-  'error',
-  'headers',
-  'listening',
-  'message'
+  "connection",
+  "error",
+  "headers",
+  "listening",
+  "message"
 ];
 export type WebSocketCustomListener<T> = (
   data: T,
@@ -34,7 +34,7 @@ export type WebSocketCustomListener<T> = (
 ) => void;
 export interface WebSocketClient {
   send(payload: any): void;
-  send(event: string, payload?: any['data']): void;
+  send(event: string, payload?: any["data"]): void;
   rawSend(str: string): void;
   socket: WebSocketRawType;
 }
@@ -60,7 +60,7 @@ export default class WsServer implements IWebSocketServer {
       this.wss = new WebSocketServerRaw({ noServer: true });
       this.connection();
       // TODO IF not have httpServer
-      this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+      this.httpServer.on("upgrade", this.upgradeWsServer.bind(this));
     } catch (err) {
       this.handleSocketError(err);
     }
@@ -85,9 +85,9 @@ export default class WsServer implements IWebSocketServer {
   // the send method is reserved for migration vite
   send(...args: any[]) {
     let payload: any;
-    if (typeof args[0] === 'string') {
+    if (typeof args[0] === "string") {
       payload = {
-        type: 'custom',
+        type: "custom",
         event: args[0],
         data: args[1]
       };
@@ -95,7 +95,7 @@ export default class WsServer implements IWebSocketServer {
       payload = args[0];
     }
 
-    if (payload.type === 'error' && !this.wss.clients.size) {
+    if (payload.type === "error" && !this.wss.clients.size) {
       this.bufferedError = payload;
       return;
     }
@@ -112,7 +112,7 @@ export default class WsServer implements IWebSocketServer {
   private isHMRRequest(request: IncomingMessage): boolean {
     return (
       request.url === this.config.hmr.path &&
-      request.headers['sec-websocket-protocol'] === HMR_HEADER
+      request.headers["sec-websocket-protocol"] === HMR_HEADER
     );
   }
 
@@ -122,7 +122,7 @@ export default class WsServer implements IWebSocketServer {
     head: Buffer
   ) {
     this.wss.handleUpgrade(request, socket, head, (ws: WebSocketRawType) => {
-      this.wss.emit('connection', ws, request);
+      this.wss.emit("connection", ws, request);
     });
   }
 
@@ -135,7 +135,7 @@ export default class WsServer implements IWebSocketServer {
   // a custom method defined by farm to send custom events
   public sendCustomEvent<T extends string>(event: T, payload?: any) {
     // Send a custom event to all clients
-    this.send({ type: 'custom', event, data: payload });
+    this.send({ type: "custom", event, data: payload });
   }
 
   public on(event: string, listener: (...args: any[]) => void) {
@@ -155,33 +155,33 @@ export default class WsServer implements IWebSocketServer {
   }
 
   connection() {
-    this.wss.on('connection', (socket: WebSocketRawType) => {
-      socket.on('message', (raw) => {
+    this.wss.on("connection", (socket: WebSocketRawType) => {
+      socket.on("message", (raw) => {
         if (!this.customListeners.size) return;
         let parsed: any;
         try {
           parsed = JSON.parse(String(raw));
         } catch {
-          this.logger.error('Failed to parse WebSocket message: ' + raw);
+          this.logger.error("Failed to parse WebSocket message: " + raw);
         }
         // transform vite js-update to farm update
-        if (parsed?.type === 'js-update' && parsed?.path) {
+        if (parsed?.type === "js-update" && parsed?.path) {
           this.hmrEngine.hmrUpdate(parsed.path, true);
           return;
         }
 
-        if (!parsed || parsed.type !== 'custom' || !parsed.event) return;
+        if (!parsed || parsed.type !== "custom" || !parsed.event) return;
         const listeners = this.customListeners.get(parsed.event);
         if (!listeners?.size) return;
         const client = this.getSocketClient(socket);
         listeners.forEach((listener) => listener(parsed.data, client));
       });
 
-      socket.on('error', (err: Error & { code: string }) => {
+      socket.on("error", (err: Error & { code: string }) => {
         return this.handleSocketError(err);
       });
 
-      socket.send(JSON.stringify({ type: 'connected' }));
+      socket.send(JSON.stringify({ type: "connected" }));
 
       if (this.bufferedError) {
         socket.send(JSON.stringify(this.bufferedError));
@@ -192,7 +192,7 @@ export default class WsServer implements IWebSocketServer {
 
   public async close() {
     if (this.upgradeWsServer && this.httpServer) {
-      this.httpServer.off('upgrade', this.upgradeWsServer);
+      this.httpServer.off("upgrade", this.upgradeWsServer);
     }
     await this.terminateAllClients();
     await this.closeWebSocketServer();
@@ -203,12 +203,12 @@ export default class WsServer implements IWebSocketServer {
     const terminatePromises = Array.from(this.wss.clients).map((client) => {
       return new Promise((resolve) => {
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'closing' }));
-          client.close(1000, 'Server shutdown');
+          client.send(JSON.stringify({ type: "closing" }));
+          client.close(1000, "Server shutdown");
         }
         // Temporarily remove the direct shutdown of ws
         // client.terminate();
-        client.once('close', () => resolve(true));
+        client.once("close", () => resolve(true));
       });
     });
     return Promise.all(terminatePromises);
@@ -251,9 +251,9 @@ export default class WsServer implements IWebSocketServer {
 
   private sendMessage(socket: WebSocketRawType, ...args: any[]) {
     let payload: any;
-    if (typeof args[0] === 'string') {
+    if (typeof args[0] === "string") {
       payload = {
-        type: 'custom',
+        type: "custom",
         event: args[0],
         data: args[1]
       };
@@ -264,7 +264,7 @@ export default class WsServer implements IWebSocketServer {
   }
 
   private handleSocketError(err: Error & { code: string }) {
-    if (err.code === 'EADDRINUSE') {
+    if (err.code === "EADDRINUSE") {
       this.logger.error(red(`WebSocket server error: Port is already in use`), {
         error: err
       });

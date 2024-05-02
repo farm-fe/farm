@@ -1,8 +1,8 @@
-import { z } from 'zod';
-import { fromZodError } from 'zod-validation-error';
-import { SecureServerOptions } from 'node:http2';
+import type { SecureServerOptions } from "node:http2";
+import { z } from "zod";
+import { fromZodError } from "zod-validation-error";
 
-import type { UserConfig } from './types.js';
+import type { UserConfig } from "./types.js";
 
 const compilationConfigSchema = z
   .object({
@@ -17,18 +17,18 @@ const compilationConfigSchema = z
         assetsFilename: z.string().optional(),
         targetEnv: z
           .enum([
-            'browser',
-            'node',
-            'node-legacy',
-            'node-next',
-            'node-16',
-            'browser-legacy',
-            'browser-esnext',
-            'browser-es2015',
-            'browser-es2017'
+            "browser",
+            "node",
+            "node-legacy",
+            "node-next",
+            "node-16",
+            "browser-legacy",
+            "browser-esnext",
+            "browser-es2015",
+            "browser-es2017"
           ])
           .optional(),
-        format: z.enum(['cjs', 'esm']).optional()
+        format: z.enum(["cjs", "esm"]).optional()
       })
       .strict()
       .optional(),
@@ -84,17 +84,17 @@ const compilationConfigSchema = z
       .object({
         target: z
           .enum([
-            'es3',
-            'es5',
-            'es2015',
-            'es2016',
-            'es2017',
-            'es2018',
-            'es2019',
-            'es2020',
-            'es2021',
-            'es2022',
-            'esnext'
+            "es3",
+            "es5",
+            "es2015",
+            "es2016",
+            "es2017",
+            "es2018",
+            "es2019",
+            "es2020",
+            "es2021",
+            "es2022",
+            "esnext"
           ])
           .optional(),
         parser: z
@@ -129,7 +129,7 @@ const compilationConfigSchema = z
             legacyDecorator: z.boolean().optional(),
             decoratorMetadata: z.boolean().optional(),
             decoratorVersion: z
-              .union([z.literal('2021-12'), z.literal('2022-03')])
+              .union([z.literal("2021-12"), z.literal("2022-03")])
               .optional(),
             includes: z.array(z.string()).optional(),
             excludes: z.array(z.string()).optional()
@@ -142,9 +142,9 @@ const compilationConfigSchema = z
     sourcemap: z
       .union([
         z.boolean(),
-        z.literal('all'),
-        z.literal('inline'),
-        z.literal('all-inline')
+        z.literal("all"),
+        z.literal("inline"),
+        z.literal("all-inline")
       ])
       .optional(),
     partialBundling: z
@@ -157,8 +157,8 @@ const compilationConfigSchema = z
             z.object({
               name: z.string(),
               test: z.array(z.string()),
-              groupType: z.enum(['mutable', 'immutable']).optional(),
-              resourceType: z.enum(['all', 'initial', 'async']).optional()
+              groupType: z.enum(["mutable", "immutable"]).optional(),
+              resourceType: z.enum(["all", "initial", "async"]).optional()
             })
           )
           .optional(),
@@ -191,8 +191,8 @@ const compilationConfigSchema = z
           include: z.array(z.string()).optional(),
           mode: z
             .union([
-              z.literal('minify-module'),
-              z.literal('minify-resource-pot')
+              z.literal("minify-module"),
+              z.literal("minify-resource-pot")
             ])
             .optional()
         })
@@ -256,7 +256,7 @@ const compilationConfigSchema = z
         })
         .optional()
     ]),
-    comments: z.union([z.boolean(), z.literal('license')]).optional()
+    comments: z.union([z.boolean(), z.literal("license")]).optional()
   })
   .strict();
 
@@ -279,7 +279,7 @@ const FarmConfigSchema = z
         host: z
           .union([
             z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/),
-            z.literal('localhost'),
+            z.literal("localhost"),
             z.boolean()
           ])
           .optional(),

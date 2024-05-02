@@ -1,10 +1,10 @@
-import module from 'node:module';
+import module from "node:module";
 
-import { Config } from '../../../binding/index.js';
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import type { Config } from "../../../binding/index.js";
 
-export function normalizeExternal(config: Config['config']) {
+export function normalizeExternal(config: Config["config"]) {
   const defaultExternals: string[] = [];
   const externalNodeBuiltins = config.externalNodeBuiltins ?? true;
 
@@ -13,11 +13,11 @@ export function normalizeExternal(config: Config['config']) {
       defaultExternals.push(...externalNodeBuiltins);
     } else if (externalNodeBuiltins === true) {
       let packageJson: any = {};
-      const pkgPath = path.join(config.root || process.cwd(), 'package.json');
+      const pkgPath = path.join(config.root || process.cwd(), "package.json");
       // the project installed polyfill
       if (existsSync(pkgPath)) {
         try {
-          packageJson = JSON.parse(readFileSync(pkgPath, 'utf8'));
+          packageJson = JSON.parse(readFileSync(pkgPath, "utf8"));
         } catch {
           /**/
         }
@@ -36,7 +36,7 @@ export function normalizeExternal(config: Config['config']) {
 
   config.external = [
     ...(config.external ?? []),
-    '^node:',
+    "^node:",
     ...defaultExternals.map((m) => `^${m}($|/promises$)`)
   ];
 }

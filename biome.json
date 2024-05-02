@@ -17,7 +17,6 @@
       "cspell.json",
       "e2e/**",
       "*.d.ts",
-      "packages/core/**",
       "packages/runtime/**",
       "packages/runtime-plugin-hmr/**",
       "packages/runtime-plugin-import-meta/**",

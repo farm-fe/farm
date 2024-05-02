@@ -1,10 +1,10 @@
-import path from 'path';
-import fs from 'fs';
-import { UserConfig } from '../config/types.js';
-import { withTrailingSlash } from './path.js';
-import { normalizePath } from './share.js';
-import { ERR_SYMLINK_IN_RECURSIVE_READDIR, recursiveReaddir } from './file.js';
-import { cleanUrl } from './url.js';
+import fs from "fs";
+import path from "path";
+import type { UserConfig } from "../config/types.js";
+import { ERR_SYMLINK_IN_RECURSIVE_READDIR, recursiveReaddir } from "./file.js";
+import { withTrailingSlash } from "./path.js";
+import { normalizePath } from "./share.js";
+import { cleanUrl } from "./url.js";
 
 const publicFilesMap = new WeakMap<UserConfig, Set<string>>();
 
@@ -12,7 +12,7 @@ export async function checkPublicFile(url: string, config: UserConfig) {
   // note if the file is in /public, the resolver would have returned it
   // as-is so it's not going to be a fully resolved path.
   const { publicDir } = config;
-  if (!publicDir || url[0] !== '/') {
+  if (!publicDir || url[0] !== "/") {
     return;
   }
   await initPublicFiles(config);

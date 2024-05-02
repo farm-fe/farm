@@ -1,15 +1,15 @@
-import { createRequire } from 'node:module';
+import { createRequire } from "node:module";
 
-import { FSWatcher } from 'chokidar';
+import type { FSWatcher } from "chokidar";
 
-import { Compiler } from '../compiler/index.js';
-import { Server } from '../server/index.js';
-import { compilerHandler, Logger } from '../utils/index.js';
+import { Compiler } from "../compiler/index.js";
+import { Server } from "../server/index.js";
+import { Logger, compilerHandler } from "../utils/index.js";
 
-import type { ResolvedUserConfig } from '../config/index.js';
-import { createWatcher } from './create-watcher.js';
-import { existsSync } from 'node:fs';
-import { JsUpdateResult } from '../../binding/binding.js';
+import { existsSync } from "node:fs";
+import type { JsUpdateResult } from "../../binding/binding.js";
+import type { ResolvedUserConfig } from "../config/index.js";
+import { createWatcher } from "./create-watcher.js";
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -37,8 +37,8 @@ export class FileWatcher implements ImplFileWatcher {
   filterWatchFile(file: string, root: string): boolean {
     return (
       !file.startsWith(root) &&
-      !file.includes('node_modules/') &&
-      !file.includes('\0') &&
+      !file.includes("node_modules/") &&
+      !file.includes("\0") &&
       existsSync(file)
     );
   }
@@ -106,7 +106,7 @@ export class FileWatcher implements ImplFileWatcher {
     this._watchedFiles = new Set(files);
     this._watcher = createWatcher(this.options, files);
 
-    this._watcher.on('change', (path) => {
+    this._watcher.on("change", (path) => {
       if (this._close) return;
       handlePathChange(path);
     });

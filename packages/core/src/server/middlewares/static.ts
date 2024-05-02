@@ -1,8 +1,8 @@
-import { Middleware, Context, Next } from 'koa';
-import { Server } from '../index.js';
-import serve from 'koa-static';
-import path from 'path';
-import fs from 'fs';
+import fs from "fs";
+import path from "path";
+import type { Context, Middleware, Next } from "koa";
+import serve from "koa-static";
+import type { Server } from "../index.js";
 
 export function staticMiddleware(devServerContext: Server): Middleware {
   const { config } = devServerContext;
@@ -11,8 +11,8 @@ export function staticMiddleware(devServerContext: Server): Middleware {
 
   // Fallback
   const fallbackMiddleware: Middleware = async (ctx: Context, next: Next) => {
-    ctx.type = 'html';
-    ctx.body = fs.createReadStream(path.join(config.distDir, 'index.html'));
+    ctx.type = "html";
+    ctx.body = fs.createReadStream(path.join(config.distDir, "index.html"));
     await next();
   };
 
@@ -33,7 +33,7 @@ export function staticMiddleware(devServerContext: Server): Middleware {
           await fallbackMiddleware(ctx, next);
         });
       } catch (error) {
-        this.logger.error('Static file handling error:', error);
+        this.logger.error("Static file handling error:", error);
         ctx.status = 500;
       }
     } else {

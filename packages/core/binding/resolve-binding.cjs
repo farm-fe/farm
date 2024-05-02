@@ -1,236 +1,258 @@
-const { existsSync, readFileSync } = require('fs')
-const { join } = require('path')
+const { existsSync, readFileSync } = require("fs");
+const { join } = require("path");
 
-const { platform, arch } = process
+const { platform, arch } = process;
 
-let nativeBindingPath = null
-let localFileExisted = false
-let loadError = null
+let nativeBindingPath = null;
+let localFileExisted = false;
+let loadError = null;
 
 function isMusl() {
   // For Node 10
-  if (!process.report || typeof process.report.getReport !== 'function') {
+  if (!process.report || typeof process.report.getReport !== "function") {
     try {
-      return readFileSync('/usr/bin/ldd', 'utf8').includes('musl')
+      return readFileSync("/usr/bin/ldd", "utf8").includes("musl");
     } catch (e) {
-      return true
+      return true;
     }
   } else {
-    const { glibcVersionRuntime } = process.report.getReport().header
-    return !glibcVersionRuntime
+    const { glibcVersionRuntime } = process.report.getReport().header;
+    return !glibcVersionRuntime;
   }
 }
 
 switch (platform) {
-  case 'android':
+  case "android":
     switch (arch) {
-      case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'farm.android-arm64.node'))
+      case "arm64":
+        localFileExisted = existsSync(
+          join(__dirname, "farm.android-arm64.node")
+        );
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.android-arm64.node')
+            nativeBindingPath = require.resolve("./farm.android-arm64.node");
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-android-arm64')
+            nativeBindingPath = require.resolve("@farmfe/core-android-arm64");
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
-      case 'arm':
-        localFileExisted = existsSync(join(__dirname, 'farm.android-arm-eabi.node'))
+        break;
+      case "arm":
+        localFileExisted = existsSync(
+          join(__dirname, "farm.android-arm-eabi.node")
+        );
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.android-arm-eabi.node')
+            nativeBindingPath = require.resolve("./farm.android-arm-eabi.node");
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-android-arm-eabi')
+            nativeBindingPath = require.resolve(
+              "@farmfe/core-android-arm-eabi"
+            );
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
+        break;
       default:
-        throw new Error(`Unsupported architecture on Android ${arch}`)
+        throw new Error(`Unsupported architecture on Android ${arch}`);
     }
-    break
-  case 'win32':
+    break;
+  case "win32":
     switch (arch) {
-      case 'x64':
+      case "x64":
         localFileExisted = existsSync(
-          join(__dirname, 'farm.win32-x64-msvc.node')
-        )
+          join(__dirname, "farm.win32-x64-msvc.node")
+        );
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.win32-x64-msvc.node')
+            nativeBindingPath = require.resolve("./farm.win32-x64-msvc.node");
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-win32-x64-msvc')
+            nativeBindingPath = require.resolve("@farmfe/core-win32-x64-msvc");
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
-      case 'ia32':
+        break;
+      case "ia32":
         localFileExisted = existsSync(
-          join(__dirname, 'farm.win32-ia32-msvc.node')
-        )
+          join(__dirname, "farm.win32-ia32-msvc.node")
+        );
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.win32-ia32-msvc.node')
+            nativeBindingPath = require.resolve("./farm.win32-ia32-msvc.node");
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-win32-ia32-msvc')
+            nativeBindingPath = require.resolve("@farmfe/core-win32-ia32-msvc");
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
-      case 'arm64':
+        break;
+      case "arm64":
         localFileExisted = existsSync(
-          join(__dirname, 'farm.win32-arm64-msvc.node')
-        )
+          join(__dirname, "farm.win32-arm64-msvc.node")
+        );
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.win32-arm64-msvc.node')
+            nativeBindingPath = require.resolve("./farm.win32-arm64-msvc.node");
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-win32-arm64-msvc')
+            nativeBindingPath = require.resolve(
+              "@farmfe/core-win32-arm64-msvc"
+            );
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
+        break;
       default:
-        throw new Error(`Unsupported architecture on Windows: ${arch}`)
+        throw new Error(`Unsupported architecture on Windows: ${arch}`);
     }
-    break
-  case 'darwin':
+    break;
+  case "darwin":
     switch (arch) {
-      case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'farm.darwin-x64.node'))
+      case "x64":
+        localFileExisted = existsSync(join(__dirname, "farm.darwin-x64.node"));
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.darwin-x64.node')
+            nativeBindingPath = require.resolve("./farm.darwin-x64.node");
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-darwin-x64')
+            nativeBindingPath = require.resolve("@farmfe/core-darwin-x64");
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
-      case 'arm64':
+        break;
+      case "arm64":
         localFileExisted = existsSync(
-          join(__dirname, 'farm.darwin-arm64.node')
-        )
+          join(__dirname, "farm.darwin-arm64.node")
+        );
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.darwin-arm64.node')
+            nativeBindingPath = require.resolve("./farm.darwin-arm64.node");
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-darwin-arm64')
+            nativeBindingPath = require.resolve("@farmfe/core-darwin-arm64");
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
+        break;
       default:
-        throw new Error(`Unsupported architecture on macOS: ${arch}`)
+        throw new Error(`Unsupported architecture on macOS: ${arch}`);
     }
-    break
-  case 'freebsd':
-    if (arch !== 'x64') {
-      throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
+    break;
+  case "freebsd":
+    if (arch !== "x64") {
+      throw new Error(`Unsupported architecture on FreeBSD: ${arch}`);
     }
-    localFileExisted = existsSync(join(__dirname, 'farm.freebsd-x64.node'))
+    localFileExisted = existsSync(join(__dirname, "farm.freebsd-x64.node"));
     try {
       if (localFileExisted) {
-        nativeBindingPath = require.resolve('./farm.freebsd-x64.node')
+        nativeBindingPath = require.resolve("./farm.freebsd-x64.node");
       } else {
-        nativeBindingPath = require.resolve('@farmfe/core-freebsd-x64')
+        nativeBindingPath = require.resolve("@farmfe/core-freebsd-x64");
       }
     } catch (e) {
-      loadError = e
+      loadError = e;
     }
-    break
-  case 'linux':
+    break;
+  case "linux":
     switch (arch) {
-      case 'x64':
+      case "x64":
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'farm.linux-x64-musl.node')
-          )
+            join(__dirname, "farm.linux-x64-musl.node")
+          );
           try {
             if (localFileExisted) {
-              nativeBindingPath = require.resolve('./farm.linux-x64-musl.node')
+              nativeBindingPath = require.resolve("./farm.linux-x64-musl.node");
             } else {
-              nativeBindingPath = require.resolve('@farmfe/core-linux-x64-musl')
+              nativeBindingPath = require.resolve(
+                "@farmfe/core-linux-x64-musl"
+              );
             }
           } catch (e) {
-            loadError = e
+            loadError = e;
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'farm.linux-x64-gnu.node')
-          )
+            join(__dirname, "farm.linux-x64-gnu.node")
+          );
           try {
             if (localFileExisted) {
-              nativeBindingPath = require.resolve('./farm.linux-x64-gnu.node')
+              nativeBindingPath = require.resolve("./farm.linux-x64-gnu.node");
             } else {
-              nativeBindingPath = require.resolve('@farmfe/core-linux-x64-gnu')
+              nativeBindingPath = require.resolve("@farmfe/core-linux-x64-gnu");
             }
           } catch (e) {
-            loadError = e
+            loadError = e;
           }
         }
-        break
-      case 'arm64':
+        break;
+      case "arm64":
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'farm.linux-arm64-musl.node')
-          )
+            join(__dirname, "farm.linux-arm64-musl.node")
+          );
           try {
             if (localFileExisted) {
-              nativeBindingPath = require.resolve('./farm.linux-arm64-musl.node')
+              nativeBindingPath = require.resolve(
+                "./farm.linux-arm64-musl.node"
+              );
             } else {
-              nativeBindingPath = require.resolve('@farmfe/core-linux-arm64-musl')
+              nativeBindingPath = require.resolve(
+                "@farmfe/core-linux-arm64-musl"
+              );
             }
           } catch (e) {
-            loadError = e
+            loadError = e;
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'farm.linux-arm64-gnu.node')
-          )
+            join(__dirname, "farm.linux-arm64-gnu.node")
+          );
           try {
             if (localFileExisted) {
-              nativeBindingPath = require.resolve('./farm.linux-arm64-gnu.node')
+              nativeBindingPath = require.resolve(
+                "./farm.linux-arm64-gnu.node"
+              );
             } else {
-              nativeBindingPath = require.resolve('@farmfe/core-linux-arm64-gnu')
+              nativeBindingPath = require.resolve(
+                "@farmfe/core-linux-arm64-gnu"
+              );
             }
           } catch (e) {
-            loadError = e
+            loadError = e;
           }
         }
-        break
-      case 'arm':
+        break;
+      case "arm":
         localFileExisted = existsSync(
-          join(__dirname, 'farm.linux-arm-gnueabihf.node')
-        )
+          join(__dirname, "farm.linux-arm-gnueabihf.node")
+        );
         try {
           if (localFileExisted) {
-            nativeBindingPath = require.resolve('./farm.linux-arm-gnueabihf.node')
+            nativeBindingPath = require.resolve(
+              "./farm.linux-arm-gnueabihf.node"
+            );
           } else {
-            nativeBindingPath = require.resolve('@farmfe/core-linux-arm-gnueabihf')
+            nativeBindingPath = require.resolve(
+              "@farmfe/core-linux-arm-gnueabihf"
+            );
           }
         } catch (e) {
-          loadError = e
+          loadError = e;
         }
-        break
+        break;
       default:
-        throw new Error(`Unsupported architecture on Linux: ${arch}`)
+        throw new Error(`Unsupported architecture on Linux: ${arch}`);
     }
-    break
+    break;
   default:
-    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`)
+    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
 if (loadError) {
-  throw loadError
+  throw loadError;
 }
 
 module.exports = nativeBindingPath;

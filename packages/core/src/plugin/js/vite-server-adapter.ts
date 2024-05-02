@@ -1,10 +1,10 @@
 // import { watch } from 'chokidar';
-import { FSWatcher } from 'chokidar';
-import { Server } from '../../index.js';
-import { Server as httpServer } from '../../server/type.js';
-import WsServer from '../../server/ws.js';
-import { CompilationContext, ViteModule } from '../type.js';
-import { throwIncompatibleError } from './utils.js';
+import type { FSWatcher } from "chokidar";
+import type { Server } from "../../index.js";
+import type { Server as httpServer } from "../../server/type.js";
+import type WsServer from "../../server/ws.js";
+import type { CompilationContext, ViteModule } from "../type.js";
+import { throwIncompatibleError } from "./utils.js";
 
 export class ViteDevServerAdapter {
   moduleGraph: ViteModuleGraphAdapter;
@@ -30,8 +30,8 @@ export class ViteDevServerAdapter {
         use: (...args: any[]) => {
           if (
             args.length === 2 &&
-            typeof args[0] === 'string' &&
-            typeof args[1] === 'function'
+            typeof args[0] === "string" &&
+            typeof args[1] === "function"
           ) {
             this.middlewareCallbacks.push((req: any, res: any, next: any) => {
               const [url, cb] = args;
@@ -39,21 +39,21 @@ export class ViteDevServerAdapter {
                 cb(req, res, next);
               }
             });
-          } else if (args.length === 1 && typeof args[0] === 'function') {
+          } else if (args.length === 1 && typeof args[0] === "function") {
             this.middlewareCallbacks.push(args[0]);
           }
         }
       },
       {
         get(target, key) {
-          if (key === 'use') {
+          if (key === "use") {
             return target[key as keyof typeof target];
           }
 
           throwIncompatibleError(
             pluginName,
-            'viteDevServer.middlewares',
-            ['use'],
+            "viteDevServer.middlewares",
+            ["use"],
             key
           );
         }
@@ -92,7 +92,7 @@ export class ViteModuleGraphAdapter {
   }
 
   async getModuleByUrl(url: string): Promise<ViteModule | undefined> {
-    if (url.startsWith('/')) {
+    if (url.startsWith("/")) {
       url = url.slice(1);
       const raw = this.context.viteGetModuleById(url);
 
@@ -114,17 +114,17 @@ function proxyViteModuleNode(
 ) {
   const proxy = new Proxy(node, {
     get(target, key) {
-      if (key === 'importers') {
+      if (key === "importers") {
         return context.viteGetImporters(target.id);
       }
 
-      const allowedKeys = ['url', 'id', 'file', 'type'];
+      const allowedKeys = ["url", "id", "file", "type"];
 
       if (allowedKeys.includes(String(key))) {
         return target[key as keyof typeof target];
       }
 
-      throwIncompatibleError(pluginName, 'viteModuleNode', allowedKeys, key);
+      throwIncompatibleError(pluginName, "viteModuleNode", allowedKeys, key);
     }
   });
 
@@ -141,19 +141,19 @@ export function createViteDevServerAdapter(
     {
       get(target, key) {
         const allowedKeys = [
-          'moduleGraph',
-          'config',
-          'watcher',
-          'middlewares',
-          'middlewareCallbacks',
-          'ws',
-          'httpServer'
+          "moduleGraph",
+          "config",
+          "watcher",
+          "middlewares",
+          "middlewareCallbacks",
+          "ws",
+          "httpServer"
         ];
         if (allowedKeys.includes(String(key))) {
           return target[key as keyof typeof target];
         }
 
-        throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
+        throwIncompatibleError(pluginName, "viteDevServer", allowedKeys, key);
       }
     }
   );
@@ -165,10 +165,10 @@ export function createViteModuleGraphAdapter(pluginName: string) {
   const proxy = new Proxy(new ViteModuleGraphAdapter(pluginName), {
     get(target, key) {
       const allowedKeys = [
-        'getModulesByFile',
-        'getModuleById',
-        'getModuleByUrl',
-        'invalidateModule'
+        "getModulesByFile",
+        "getModuleById",
+        "getModuleByUrl",
+        "invalidateModule"
       ];
       const ownkeys = Reflect.ownKeys(target);
 
@@ -176,15 +176,15 @@ export function createViteModuleGraphAdapter(pluginName: string) {
         return target[key as keyof typeof target];
       }
 
-      throwIncompatibleError(pluginName, 'viteModuleGraph', allowedKeys, key);
+      throwIncompatibleError(pluginName, "viteModuleGraph", allowedKeys, key);
     },
     set(target, p, newValue, _receiver) {
-      if (p === 'context') {
+      if (p === "context") {
         target.context = newValue;
         return true;
       }
 
-      throwIncompatibleError(pluginName, 'viteModuleGraph', ['context'], p);
+      throwIncompatibleError(pluginName, "viteModuleGraph", ["context"], p);
     }
   });
 

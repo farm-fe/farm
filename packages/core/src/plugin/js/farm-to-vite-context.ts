@@ -1,8 +1,8 @@
-import type { PluginContext } from 'rollup';
-import type { UserConfig } from '../../config/types.js';
-import type { CompilationContext } from '../type.js';
-import { Logger } from '../../utils/logger.js';
-import { normalizePath, revertNormalizePath } from './utils.js';
+import type { PluginContext } from "rollup";
+import type { UserConfig } from "../../config/types.js";
+import { Logger } from "../../utils/logger.js";
+import type { CompilationContext } from "../type.js";
+import { normalizePath, revertNormalizePath } from "./utils.js";
 
 const contextCache = new Map<string, PluginContext>();
 
@@ -20,7 +20,7 @@ export function farmContextToViteContext(
   const logger = new Logger();
 
   const log = (message: any) => {
-    if (typeof message === 'function') {
+    if (typeof message === "function") {
       message = message();
     }
 
@@ -44,23 +44,23 @@ export function farmContextToViteContext(
     },
     debug: log,
     emitFile: (params) => {
-      if (params.type === 'asset') {
+      if (params.type === "asset") {
         let content: number[] = [];
 
-        if (typeof params.source === 'string') {
+        if (typeof params.source === "string") {
           content = [...Buffer.from(params.source)];
         } else {
           content = [...params.source];
         }
 
         farmContext.emitFile({
-          resolvedPath: currentHandlingFile ?? 'vite-plugin-adapter',
+          resolvedPath: currentHandlingFile ?? "vite-plugin-adapter",
           name: params.fileName ?? params.name,
           content,
-          resourceType: 'asset'
+          resourceType: "asset"
         });
 
-        return 'vite-plugin-adapter-unsupported-reference-id';
+        return "vite-plugin-adapter-unsupported-reference-id";
       } else {
         throw new Error(
           `Vite plugin ${pluginName} is not compatible with Farm for now. Because emitFile(called by hook ${pluginName}.${hookName}) can only emit asset in Farm.`
@@ -69,16 +69,16 @@ export function farmContextToViteContext(
     },
     error: (message): never => {
       let msgObj = message as any;
-      if (typeof msgObj !== 'object') {
+      if (typeof msgObj !== "object") {
         msgObj = {
           message: message as string
         };
       }
 
-      if (msgObj.code && !msgObj.code.startsWith('PLUGIN_')) {
-        msgObj.pluginCode = 'PLUGIN_ERROR';
+      if (msgObj.code && !msgObj.code.startsWith("PLUGIN_")) {
+        msgObj.pluginCode = "PLUGIN_ERROR";
       } else {
-        msgObj.code = 'PLUGIN_ERROR';
+        msgObj.code = "PLUGIN_ERROR";
       }
 
       msgObj.plugin = pluginName;
@@ -114,8 +114,8 @@ export function farmContextToViteContext(
       );
     },
     meta: {
-      rollupVersion: '3.29.4',
-      watchMode: config.compilation?.mode !== 'production'
+      rollupVersion: "3.29.4",
+      watchMode: config.compilation?.mode !== "production"
     },
     parse: (_) => {
       throw new Error(
@@ -136,7 +136,7 @@ export function farmContextToViteContext(
         {
           source,
           importer,
-          kind: options.isEntry ? 'entry' : 'import'
+          kind: options.isEntry ? "entry" : "import"
         },
         {
           meta: {},
@@ -148,7 +148,7 @@ export function farmContextToViteContext(
         return {
           id: normalizePath(farmResolveResult.resolvedPath),
           external: farmResolveResult.external,
-          resolvedBy: 'vite-plugin-adapter-farm-resolve',
+          resolvedBy: "vite-plugin-adapter-farm-resolve",
           moduleSideEffects: farmResolveResult.sideEffects,
           meta: {
             ...farmResolveResult.meta,
@@ -164,15 +164,15 @@ export function farmContextToViteContext(
     },
     setAssetSource(assetReferenceId, source) {
       this.emitFile({
-        type: 'asset',
+        type: "asset",
         source,
         name: assetReferenceId
       });
     },
     warn: (message) => {
-      if (typeof message === 'object') {
+      if (typeof message === "object") {
         farmContext.warn(JSON.stringify(message));
-      } else if (typeof message === 'function') {
+      } else if (typeof message === "function") {
         farmContext.warn(JSON.stringify(message()));
       } else {
         farmContext.warn(message);
@@ -189,7 +189,7 @@ export function farmContextToViteContext(
     // @ts-ignore Vite specific property
     getCombinedSourcemap() {
       logger.warn(
-        '`vite-plugin-adapter`: getCombinedSourcemap is not supported in Farm for now. It will always return undefined.'
+        "`vite-plugin-adapter`: getCombinedSourcemap is not supported in Farm for now. It will always return undefined."
       );
       return undefined;
     }

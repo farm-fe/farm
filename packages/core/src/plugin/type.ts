@@ -1,4 +1,4 @@
-import {
+import type {
   Config,
   PluginLoadHookParam,
   PluginLoadHookResult,
@@ -6,29 +6,34 @@ import {
   PluginResolveHookResult,
   PluginTransformHookParam,
   PluginTransformHookResult
-} from '../../binding/index.js';
-import { Compiler, Server, ResolvedUserConfig, UserConfig } from '../index.js';
+} from "../../binding/index.js";
+import type {
+  Compiler,
+  ResolvedUserConfig,
+  Server,
+  UserConfig
+} from "../index.js";
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
 // eslint-disable-next-line @typescript-eslint/ban-types
 type LiteralUnion<T extends string> = T | (string & {});
 
 type ResourcePotType = LiteralUnion<
-  'runtime' | 'js' | 'css' | 'html' | 'asset'
+  "runtime" | "js" | "css" | "html" | "asset"
 >;
 
 export interface CompilationContextEmitFileParams {
   resolvedPath: string;
   name: string;
   content: number[];
-  resourceType: 'runtime' | 'js' | 'css' | 'html' | string;
+  resourceType: "runtime" | "js" | "css" | "html" | string;
 }
 
 export interface ViteModule {
   url: string;
   id: string;
   file: string;
-  type: 'js' | 'css';
+  type: "js" | "css";
 }
 
 export interface CompilationContext {
@@ -112,13 +117,13 @@ export interface Resource {
   bytes: number[];
   emitted: boolean;
   resourceType: string;
-  origin: { type: 'ResourcePot' | 'Module'; value: string };
+  origin: { type: "ResourcePot" | "Module"; value: string };
   info?: ResourcePotInfo;
 }
 
 export type PluginFinalizeResourcesHookParams = {
   resourcesMap: Record<string, Resource>;
-  config: Config['config'];
+  config: Config["config"];
 };
 
 type Callback<P, R> = (
@@ -179,7 +184,7 @@ export interface JsPlugin {
   buildEnd?: { executor: Callback<Record<string, never>, void> };
 
   renderStart?: {
-    executor: Callback<Config['config'], void>;
+    executor: Callback<Config["config"], void>;
   };
 
   renderResourcePot?: JsPluginHook<
@@ -203,7 +208,7 @@ export interface JsPlugin {
   finalizeResources?: {
     executor: Callback<
       PluginFinalizeResourcesHookParams,
-      PluginFinalizeResourcesHookParams['resourcesMap']
+      PluginFinalizeResourcesHookParams["resourcesMap"]
     >;
   };
 
@@ -237,7 +242,7 @@ export interface JsPlugin {
   };
 }
 
-export { rustPluginResolver } from './rust/rustPluginResolver.js';
+export { rustPluginResolver } from "./rust/rustPluginResolver.js";
 export type {
   PluginResolveHookParam,
   PluginResolveHookResult,
@@ -245,4 +250,4 @@ export type {
   PluginLoadHookResult,
   PluginTransformHookParam,
   PluginTransformHookResult
-} from '../../binding/index.js';
+} from "../../binding/index.js";

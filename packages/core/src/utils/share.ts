@@ -1,10 +1,10 @@
+import fs from "node:fs";
 /* eslint-disable no-prototype-builtins */
-import os from 'node:os';
-import fs from 'node:fs';
-import readline from 'node:readline';
-import path, { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { Config } from '../../binding/index.js';
+import os from "node:os";
+import path, { dirname } from "node:path";
+import readline from "node:readline";
+import { fileURLToPath } from "node:url";
+import type { Config } from "../../binding/index.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
@@ -13,22 +13,22 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const splitRE = /\r?\n/;
 
 export const FARM_TARGET_NODE_ENVS = [
-  'node',
-  'node16',
-  'node-legacy',
-  'node-next'
+  "node",
+  "node16",
+  "node-legacy",
+  "node-next"
 ];
 export const FARM_TARGET_BROWSER_ENVS = [
-  'browser',
-  'browser-legacy',
-  'browser-es2015',
-  'browser-es2017',
-  'browser-esnext'
+  "browser",
+  "browser-legacy",
+  "browser-es2015",
+  "browser-es2017",
+  "browser-esnext"
 ];
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
-  return Object.prototype.toString.call(value) === '[object Object]';
+  return Object.prototype.toString.call(value) === "[object Object]";
 }
 
 export function isArray(value: unknown): value is unknown[] {
@@ -41,13 +41,13 @@ export function isEmptyObject<T extends object>(obj: T): boolean {
 }
 
 export const isUndefined = (obj: any): obj is undefined =>
-  typeof obj === 'undefined';
-export const isString = (val: any): val is string => typeof val === 'string';
-export const isNumber = (val: any): val is number => typeof val === 'number';
+  typeof obj === "undefined";
+export const isString = (val: any): val is string => typeof val === "string";
+export const isNumber = (val: any): val is number => typeof val === "number";
 export const isEmpty = (array: any): boolean => !(array && array.length > 0);
-export const isSymbol = (val: any): val is symbol => typeof val === 'symbol';
+export const isSymbol = (val: any): val is symbol => typeof val === "symbol";
 
-export const isWindows = os.platform() === 'win32';
+export const isWindows = os.platform() === "win32";
 
 export function pad(source: string, n = 2): string {
   const lines = source.split(splitRE);
@@ -57,17 +57,17 @@ export function pad(source: string, n = 2): string {
 export function clearScreen() {
   try {
     const repeatCount = process.stdout.rows - 2;
-    const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+    const blank = repeatCount > 0 ? "\n".repeat(repeatCount) : "";
     console.log(blank);
     readline.cursorTo(process.stdout, 0, 0);
     readline.clearScreenDown(process.stdout);
   } catch (error) {
-    console.error('Failed to clear screen:', error);
+    console.error("Failed to clear screen:", error);
   }
 }
 
 export const version = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '../../package.json')).toString()
+  fs.readFileSync(path.resolve(__dirname, "../../package.json")).toString()
 ).version;
 
 export function normalizePath(id: string): string {
@@ -76,7 +76,7 @@ export function normalizePath(id: string): string {
 
 export function normalizeBasePath(basePath: string): string {
   return path.posix.normalize(
-    isWindows ? basePath.replace(/\\/g, '/') : basePath
+    isWindows ? basePath.replace(/\\/g, "/") : basePath
   );
 }
 
@@ -117,7 +117,7 @@ export function mergeObjects<
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
       if (
         merged.hasOwnProperty(key) &&
-        typeof obj2[key] === 'object' &&
+        typeof obj2[key] === "object" &&
         !Array.isArray(obj2[key])
       ) {
         merged[key] = mergeObjects(merged[key], obj2[key]);
@@ -132,7 +132,7 @@ export function mergeObjects<
 
 export async function asyncFlatten<T>(arr: T[]): Promise<T[]> {
   do {
-    arr = (await Promise.all(arr)).flat(Infinity) as any;
+    arr = (await Promise.all(arr)).flat(Number.POSITIVE_INFINITY) as any;
   } while (arr.some((v: any) => v?.then));
   return arr;
 }
@@ -145,17 +145,17 @@ export function sleep(ms: number) {
 export function preventExperimentalWarning() {
   const defaultEmit = process.emit;
   process.emit = function (...args: any[]) {
-    if (args[1].name === 'ExperimentalWarning') {
+    if (args[1].name === "ExperimentalWarning") {
       return undefined;
     }
     return defaultEmit.call(this, ...args);
   };
 }
 
-export function mapTargetEnvValue(config: Config['config']) {
+export function mapTargetEnvValue(config: Config["config"]) {
   if (FARM_TARGET_NODE_ENVS.includes(config.output.targetEnv)) {
-    config.output.targetEnv = 'node';
+    config.output.targetEnv = "node";
   } else if (FARM_TARGET_BROWSER_ENVS.includes(config.output.targetEnv)) {
-    config.output.targetEnv = 'browser';
+    config.output.targetEnv = "browser";
   }
 }

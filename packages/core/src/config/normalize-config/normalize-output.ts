@@ -1,17 +1,17 @@
-import { browsersWithSupportForFeatures } from 'browserslist-generator';
+import { browsersWithSupportForFeatures } from "browserslist-generator";
 
-import { Config } from '../../../binding/index.js';
+import type { Config } from "../../../binding/index.js";
 import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue
-} from '../../utils/share.js';
+} from "../../utils/share.js";
 
 export async function normalizeOutput(
-  config: Config['config'],
+  config: Config["config"],
   isProduction: boolean
 ) {
   if (!config.output.targetEnv) {
-    config.output.targetEnv = 'browser';
+    config.output.targetEnv = "browser";
   }
 
   if (isProduction) {
@@ -19,10 +19,10 @@ export async function normalizeOutput(
       config.output = {};
     }
     if (!config.output.filename) {
-      config.output.filename = '[resourceName].[contentHash].[ext]';
+      config.output.filename = "[resourceName].[contentHash].[ext]";
     }
     if (!config.output.assetsFilename) {
-      config.output.assetsFilename = '[resourceName].[contentHash].[ext]';
+      config.output.assetsFilename = "[resourceName].[contentHash].[ext]";
     }
   }
 
@@ -35,58 +35,58 @@ export async function normalizeOutput(
   mapTargetEnvValue(config);
 }
 
-type TargetEnvKeys = Config['config']['output']['targetEnv'];
+type TargetEnvKeys = Config["config"]["output"]["targetEnv"];
 
 type TargetsForTargetEnv = Record<
   TargetEnvKeys,
   {
-    scriptGenTarget?: Config['config']['script']['target'];
+    scriptGenTarget?: Config["config"]["script"]["target"];
     scriptTargets: string[] | null;
     cssTargets: string[] | null;
   } | null
 >;
-type TargetsMap = Omit<TargetsForTargetEnv, 'node' | 'browser'>;
+type TargetsMap = Omit<TargetsForTargetEnv, "node" | "browser">;
 
-const es2015Browsers = browsersWithSupportForFeatures('es6');
-const es2017Browsers = browsersWithSupportForFeatures('async-functions');
-const LEGACY_BROWSERS = ['ie >= 9'];
+const es2015Browsers = browsersWithSupportForFeatures("es6");
+const es2017Browsers = browsersWithSupportForFeatures("async-functions");
+const LEGACY_BROWSERS = ["ie >= 9"];
 
 const targetsMap: TargetsMap = {
   node16: {
-    scriptTargets: ['node 16'],
+    scriptTargets: ["node 16"],
     cssTargets: null
   },
-  'node-legacy': {
-    scriptTargets: ['node 10'],
+  "node-legacy": {
+    scriptTargets: ["node 10"],
     cssTargets: null
   },
-  'node-next': null,
-  'browser-legacy': {
+  "node-next": null,
+  "browser-legacy": {
     scriptTargets: LEGACY_BROWSERS,
     cssTargets: LEGACY_BROWSERS,
-    scriptGenTarget: 'es5'
+    scriptGenTarget: "es5"
   },
-  'browser-es2015': {
+  "browser-es2015": {
     scriptTargets: es2015Browsers,
     cssTargets: es2015Browsers,
-    scriptGenTarget: 'es2015'
+    scriptGenTarget: "es2015"
   },
-  'browser-es2017': {
+  "browser-es2017": {
     scriptTargets: es2017Browsers,
     cssTargets: es2017Browsers,
-    scriptGenTarget: 'es2017'
+    scriptGenTarget: "es2017"
   },
-  'browser-esnext': null
+  "browser-esnext": null
 };
 
 /**
  * Set up targets for the given targetEnv.
  * @param config
  */
-function normalizeTargetEnv(config: Config['config']) {
+function normalizeTargetEnv(config: Config["config"]) {
   const aliasMap: Record<string, keyof TargetsMap> = {
-    node: 'node16',
-    browser: 'browser-es2017'
+    node: "node16",
+    browser: "browser-es2017"
   };
 
   const targetEnv = (aliasMap[config.output.targetEnv] ??
@@ -100,7 +100,7 @@ function normalizeTargetEnv(config: Config['config']) {
       // null means disable presetEnv
       if (scriptTargets == null) {
         config.presetEnv = false;
-      } else if (typeof config.presetEnv === 'object') {
+      } else if (typeof config.presetEnv === "object") {
         config.presetEnv.options ??= {};
         if (!config.presetEnv.options.targets) {
           config.presetEnv.options.targets = scriptTargets;
@@ -108,7 +108,7 @@ function normalizeTargetEnv(config: Config['config']) {
       } else {
         if (
           FARM_TARGET_BROWSER_ENVS.includes(targetEnv) &&
-          Object.values(config.input).some((v) => v?.endsWith('.html'))
+          Object.values(config.input).some((v) => v?.endsWith(".html"))
         ) {
           config.presetEnv = {
             options: {
@@ -122,14 +122,14 @@ function normalizeTargetEnv(config: Config['config']) {
     }
 
     config.script ??= { plugins: [] };
-    config.script.target = config.script.target ?? scriptGenTarget ?? 'esnext';
+    config.script.target = config.script.target ?? scriptGenTarget ?? "esnext";
 
     if (!config)
       if (config.css?.prefixer !== null) {
         if (cssTargets == null) {
           config.css ??= {};
           config.css.prefixer = null;
-        } else if (typeof config.css?.prefixer === 'object') {
+        } else if (typeof config.css?.prefixer === "object") {
           if (!config.css.prefixer.targets) {
             config.css.prefixer.targets = cssTargets;
           }
@@ -145,7 +145,7 @@ function normalizeTargetEnv(config: Config['config']) {
     config.presetEnv = false;
 
     config.script ??= { plugins: [] };
-    config.script.target = 'esnext';
+    config.script.target = "esnext";
 
     config.css ??= {};
     config.css.prefixer = null;

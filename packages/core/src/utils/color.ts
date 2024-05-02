@@ -1,1 +1,1 @@
-export * from '@farmfe/utils/colors';
+export * from "@farmfe/utils/colors";

@@ -1,16 +1,16 @@
+import type { Config } from "../../binding/index.js";
+import { type ColorFunction, PersistentCacheBrand, colors } from "./color.js";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { pad, version } from './share.js';
-import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
-import { Config } from '../../binding/index.js';
+import { pad, version } from "./share.js";
 
-type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+type LogLevelNames = "trace" | "debug" | "info" | "warn" | "error";
 
 enum LogLevel {
-  Trace = 'trace',
-  Debug = 'debug',
-  Info = 'info',
-  Warn = 'warn',
-  Error = 'error'
+  Trace = "trace",
+  Debug = "debug",
+  Info = "info",
+  Warn = "warn",
+  Error = "error"
 }
 
 export interface ILogger {
@@ -35,9 +35,9 @@ interface LoggerOptions {
 }
 
 const LOGGER_METHOD = {
-  info: 'log',
-  warn: 'warn',
-  error: 'error'
+  info: "log",
+  warn: "warn",
+  error: "error"
 } as const;
 
 const warnOnceMessages = new Set();
@@ -61,7 +61,7 @@ export class Logger implements Logger {
   }
 
   private brandPrefix(color?: (s: string | string[]) => string): void {
-    const { name = 'Farm' } = this.options;
+    const { name = "Farm" } = this.options;
     const formattedName = colors.bold(name);
     const formattedPrefix = colors.bold(`[ ${formattedName} ]`);
     this.prefix = color ? color(formattedPrefix) : formattedPrefix;
@@ -76,9 +76,9 @@ export class Logger implements Logger {
     const loggerMethod =
       level in LOGGER_METHOD
         ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD]
-        : 'log';
+        : "log";
     if (this.levelValues[level] <= this.levelValues[level]) {
-      const prefix = showBanner ? this.prefix + ' ' : '';
+      const prefix = showBanner ? this.prefix + " " : "";
       const loggerMessage = color ? color(prefix + message) : prefix + message;
       console[loggerMethod](loggerMessage);
     }
@@ -159,19 +159,19 @@ export function printServerUrls(
   previewFlag = false
 ): void {
   if (previewFlag)
-    logger.info(colors.bold(colors.magenta('preview server running at: \n')));
+    logger.info(colors.bold(colors.magenta("preview server running at: \n")));
   const colorUrl = (url: string) =>
     colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
 
   const logUrl = (url: string, type: string) =>
     logger.info(
-      `${colors.bold(colors.magenta('>'))} ${colors.bold(type)}${colors.bold(
+      `${colors.bold(colors.magenta(">"))} ${colors.bold(type)}${colors.bold(
         colorUrl(url)
       )}`
     );
 
-  urls.local.map((url: string) => logUrl(url, 'Local:   '));
-  urls.network.map((url: string) => logUrl(url, 'Network: '));
+  urls.local.map((url: string) => logUrl(url, "Local:   "));
+  urls.network.map((url: string) => logUrl(url, "Network: "));
 }
 
 export function bootstrapLogger(options?: LoggerOptions): Logger {
@@ -182,17 +182,17 @@ export function bootstrap(times: number, config: Config) {
   const usePersistentCache = config.config.persistentCache;
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)
-    : '';
+    : "";
 
   console.log(
-    '\n',
-    colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`))
+    "\n",
+    colors.bold(colors.brandColor(`${"ϟ"}  Farm  v${version}`))
   );
   console.log(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
-      'Ready in'
+      "Ready in"
     )} ${colors.bold(colors.green(`${times}ms`))} ${persistentCacheFlag}`,
-    '\n'
+    "\n"
   );
 }
 
@@ -204,16 +204,16 @@ export function buildErrorMessage(
   includeStack = true
 ): string {
   if (err.plugin) args.push(`  Plugin: ${colors.magenta(err.plugin)}`);
-  const loc = err.loc ? `:${err.loc.line}:${err.loc.column}` : '';
+  const loc = err.loc ? `:${err.loc.line}:${err.loc.column}` : "";
   if (err.id) args.push(`  File: ${colors.cyan(err.id)}${loc}`);
   if (err.frame) args.push(colors.yellow(pad(err.frame)));
   if (includeStack && err.stack) args.push(pad(cleanStack(err.stack)));
-  return args.join('\n');
+  return args.join("\n");
 }
 
 function cleanStack(stack: string) {
   return stack
     .split(/\n/g)
     .filter((l) => /^\s*at/.test(l))
-    .join('\n');
+    .join("\n");
 }

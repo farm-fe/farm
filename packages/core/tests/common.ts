@@ -1,9 +1,9 @@
-import path from 'path';
-import { Compiler } from '../src/compiler/index.js';
-import { JsPlugin } from '../src/plugin/type.js';
-import { normalizeUserCompilationConfig } from '../src/config/index.js';
-import { fileURLToPath } from 'node:url';
-import { Logger } from '../src/index.js';
+import { fileURLToPath } from "node:url";
+import path from "path";
+import { Compiler } from "../src/compiler/index.js";
+import { normalizeUserCompilationConfig } from "../src/config/index.js";
+import { Logger } from "../src/index.js";
+import type { JsPlugin } from "../src/plugin/type.js";
 
 export async function getCompiler(
   root: string,
@@ -14,7 +14,7 @@ export async function getCompiler(
 ): Promise<Compiler> {
   const originalExit = process.exit;
   process.exit = (code) => {
-    console.trace('call process.exit when test');
+    console.trace("call process.exit when test");
     return originalExit(code);
   };
 
@@ -23,12 +23,12 @@ export async function getCompiler(
       root,
       compilation: {
         input: input ?? {
-          index: './index.ts?foo=bar' // Farm does not recommand using query strings in input. We just use it for testing.
+          index: "./index.ts?foo=bar" // Farm does not recommand using query strings in input. We just use it for testing.
         },
         output: {
-          path: path.join('dist', p),
-          entryFilename: '[entryName].mjs',
-          targetEnv: 'node',
+          path: path.join("dist", p),
+          entryFilename: "[entryName].mjs",
+          targetEnv: "node",
           ...(output ?? {})
         },
         progress: false,
@@ -39,7 +39,7 @@ export async function getCompiler(
       plugins
     },
     new Logger(),
-    'production'
+    "production"
   );
 
   return new Compiler({
@@ -51,9 +51,9 @@ export async function getCompiler(
 
 export function getFixturesDir() {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(currentDir, 'fixtures');
+  return path.resolve(currentDir, "fixtures");
 }
 
 export function getOutputFilePath(root: string, p: string) {
-  return path.join(root, 'dist', p, 'index.mjs');
+  return path.join(root, "dist", p, "index.mjs");
 }

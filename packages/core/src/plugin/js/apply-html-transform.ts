@@ -10,7 +10,7 @@ export interface HtmlTagDescriptor {
   /**
    * default: 'head-prepend'
    */
-  injectTo?: 'head' | 'body' | 'head-prepend' | 'body-prepend';
+  injectTo?: "head" | "body" | "head-prepend" | "body-prepend";
 }
 
 export function applyHtmlTransform(
@@ -32,13 +32,13 @@ export function applyHtmlTransform(
 
   for (const tag of tags) {
     switch (tag.injectTo) {
-      case 'body':
+      case "body":
         (bodyTags ??= []).push(tag);
         break;
-      case 'body-prepend':
+      case "body-prepend":
         (bodyPrependTags ??= []).push(tag);
         break;
-      case 'head':
+      case "head":
         (headTags ??= []).push(tag);
         break;
       default:
@@ -151,11 +151,11 @@ function prependInjectFallback(html: string, tags: HtmlTagDescriptor[]) {
   return serializeTags(tags) + html;
 }
 
-const unaryTags = new Set(['link', 'meta', 'base']);
+const unaryTags = new Set(["link", "meta", "base"]);
 
 function serializeTag(
   { tag, attrs, children }: HtmlTagDescriptor,
-  indent = ''
+  indent = ""
 ): string {
   if (unaryTags.has(tag)) {
     return `<${tag}${serializeAttrs(attrs)}>`;
@@ -168,23 +168,23 @@ function serializeTag(
 }
 
 function serializeTags(
-  tags: HtmlTagDescriptor['children'],
-  indent = ''
+  tags: HtmlTagDescriptor["children"],
+  indent = ""
 ): string {
-  if (typeof tags === 'string') {
+  if (typeof tags === "string") {
     return tags;
   } else if (tags && tags.length) {
     return tags
       .map((tag) => `${indent}${serializeTag(tag, indent)}\n`)
-      .join('');
+      .join("");
   }
-  return '';
+  return "";
 }
 
-function serializeAttrs(attrs: HtmlTagDescriptor['attrs']): string {
-  let res = '';
+function serializeAttrs(attrs: HtmlTagDescriptor["attrs"]): string {
+  let res = "";
   for (const key in attrs) {
-    if (typeof attrs[key] === 'boolean') {
+    if (typeof attrs[key] === "boolean") {
       res += attrs[key] ? ` ${key}` : ``;
     } else {
       res += ` ${key}=${JSON.stringify(attrs[key])}`;
@@ -193,6 +193,6 @@ function serializeAttrs(attrs: HtmlTagDescriptor['attrs']): string {
   return res;
 }
 
-function incrementIndent(indent = '') {
-  return `${indent}${indent[0] === '\t' ? '\t' : '  '}`;
+function incrementIndent(indent = "") {
+  return `${indent}${indent[0] === "\t" ? "\t" : "  "}`;
 }

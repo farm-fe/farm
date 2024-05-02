@@ -1,7 +1,7 @@
-import { FSWatcher } from 'chokidar';
-import { ResolvedUserConfig } from '../config/index.js';
-import { createWatcher } from './create-watcher.js';
-import { existsSync } from 'fs';
+import { existsSync } from "fs";
+import type { FSWatcher } from "chokidar";
+import type { ResolvedUserConfig } from "../config/index.js";
+import { createWatcher } from "./create-watcher.js";
 
 export class ConfigWatcher {
   private watcher: FSWatcher;
@@ -10,7 +10,7 @@ export class ConfigWatcher {
   constructor(private resolvedUserConfig: ResolvedUserConfig) {
     if (!resolvedUserConfig) {
       throw new Error(
-        'Invalid resolvedUserConfig provided to Farm JsConfigWatcher'
+        "Invalid resolvedUserConfig provided to Farm JsConfigWatcher"
       );
     }
   }
@@ -33,7 +33,7 @@ export class ConfigWatcher {
     );
     const chokidarOptions = {
       awaitWriteFinish:
-        process.platform === 'linux'
+        process.platform === "linux"
           ? undefined
           : {
               stabilityThreshold: 10,
@@ -46,7 +46,7 @@ export class ConfigWatcher {
       chokidarOptions
     );
 
-    this.watcher.on('change', (path) => {
+    this.watcher.on("change", (path) => {
       if (this._close) return;
       if (watchedFiles.includes(path)) {
         handle([path]);

@@ -1,13 +1,13 @@
-import { performance } from 'node:perf_hooks';
-import { Logger } from './logger.js';
+import { performance } from "node:perf_hooks";
+import { Logger } from "./logger.js";
 
-import { PersistentCacheBrand, bold, green } from './color.js';
 import {
   FARM_TARGET_NODE_ENVS,
-  ResolvedUserConfig,
+  type ResolvedUserConfig,
   clearScreen
-} from '../index.js';
-import { logError } from '../server/error.js';
+} from "../index.js";
+import { logError } from "../server/error.js";
+import { PersistentCacheBrand, bold, green } from "./color.js";
 
 interface CompilerHandlerOptions {
   clear?: boolean;
@@ -34,7 +34,7 @@ export async function compilerHandler(
   }
 
   const elapsedTime = Math.floor(performance.now() - startTime);
-  const persistentCacheText = persistentCache ? bold(PersistentCacheBrand) : '';
+  const persistentCacheText = persistentCache ? bold(PersistentCacheBrand) : "";
   logger.info(
     `Build completed in ${bold(
       green(`${elapsedTime}ms`)

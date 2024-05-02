@@ -1,13 +1,13 @@
-import { isArray, isObject } from '../utils/index.js';
-import { convertPlugin } from './js/index.js';
-import { rustPluginResolver } from './rust/index.js';
+import { isArray, isObject } from "../utils/index.js";
+import { convertPlugin } from "./js/index.js";
+import { rustPluginResolver } from "./rust/index.js";
 
-import type { JsPlugin } from './type.js';
-import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
-import merge from '../utils/merge.js';
+import type { ResolvedUserConfig, UserConfig } from "../config/index.js";
+import merge from "../utils/merge.js";
+import type { JsPlugin } from "./type.js";
 
-export * from './js/index.js';
-export * from './rust/index.js';
+export * from "./js/index.js";
+export * from "./rust/index.js";
 
 export async function resolveFarmPlugins(config: UserConfig) {
   const plugins = config.plugins ?? [];
@@ -29,8 +29,8 @@ export async function resolveFarmPlugins(config: UserConfig) {
     }
 
     if (
-      typeof plugin === 'string' ||
-      (isArray(plugin) && typeof plugin[0] === 'string')
+      typeof plugin === "string" ||
+      (isArray(plugin) && typeof plugin[0] === "string")
     ) {
       rustPlugins.push(
         await rustPluginResolver(plugin as string, config.root ?? process.cwd())
@@ -120,7 +120,7 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   const sortedPlugins = plugins
     .filter(
       (plugin): plugin is JsPlugin & { priority: number } =>
-        typeof plugin === 'object' && typeof plugin.priority === 'number'
+        typeof plugin === "object" && typeof plugin.priority === "number"
     )
     .sort((a, b) => b.priority - a.priority);
 
@@ -134,7 +134,7 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
 
   const normalPlugins = plugins.filter(
     (plugin) =>
-      (typeof plugin === 'object' && typeof plugin.priority !== 'number') ||
+      (typeof plugin === "object" && typeof plugin.priority !== "number") ||
       plugin?.priority === DEFAULT_PRIORITY
   );
 

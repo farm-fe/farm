@@ -1,16 +1,16 @@
-import type { UserConfig as ViteUserConfig } from 'vite';
-import type { UserConfig } from '../../config/types.js';
+import type { UserConfig as ViteUserConfig } from "vite";
+import type { UserConfig } from "../../config/types.js";
+import type { Logger } from "../../index.js";
+import merge from "../../utils/merge.js";
+import { VITE_DEFAULT_ASSETS } from "./constants.js";
 import {
   deleteUndefinedPropertyDeeply,
   throwIncompatibleError
-} from './utils.js';
-import merge from '../../utils/merge.js';
-import { Logger } from '../../index.js';
-import { VITE_DEFAULT_ASSETS } from './constants.js';
+} from "./utils.js";
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   const vitePlugins = config.vitePlugins.filter(Boolean).map((plugin) => {
-    if (typeof plugin === 'function') {
+    if (typeof plugin === "function") {
       return plugin().vitePlugin;
     } else {
       return plugin;
@@ -25,13 +25,13 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
 
   const viteConfig: ViteUserConfig = {
     root: config.root,
-    base: config.compilation?.output?.publicPath ?? '/',
-    publicDir: config.publicDir ?? 'public',
+    base: config.compilation?.output?.publicPath ?? "/",
+    publicDir: config.publicDir ?? "public",
     mode: config.compilation?.mode,
     define: config.compilation?.define,
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore ignore this error
-    command: config.compilation?.mode === 'production' ? 'build' : 'serve',
+    command: config.compilation?.mode === "production" ? "build" : "serve",
     resolve: {
       alias: config.compilation?.resolve?.alias,
       extensions: config.compilation?.resolve?.extensions,
@@ -51,14 +51,14 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       proxy: config.server?.proxy as any,
       open: config.server?.open,
       watch:
-        typeof config.server?.hmr === 'object'
+        typeof config.server?.hmr === "object"
           ? config.server.hmr?.watchOptions ?? {}
           : {}
       // other options are not supported in farm
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore ignore this error
-    isProduction: config.compilation?.mode === 'production',
+    isProduction: config.compilation?.mode === "production",
     css: config.compilation?.css?._viteCssOptions ?? {},
     build: {
       outDir: config.compilation?.output?.path,
@@ -71,7 +71,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
         config.compilation?.minify !== undefined
           ? Boolean(config.compilation?.minify)
           : undefined,
-      ssr: config.compilation?.output?.targetEnv === 'node',
+      ssr: config.compilation?.output?.targetEnv === "node",
       rollupOptions: {
         output: {
           assetFileNames: config.compilation?.output?.assetsFilename,
@@ -82,7 +82,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       // other options are not supported in farm
     },
     // TODO make it configurable
-    cacheDir: 'node_modules/.farm/cache',
+    cacheDir: "node_modules/.farm/cache",
     envDir: config.envDir,
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
@@ -103,11 +103,11 @@ function getTargetField(
   },
   getter?: (target: any, key: string) => any
 ): any {
-  if (typeof key !== 'string') {
+  if (typeof key !== "string") {
     return target[key as unknown as keyof typeof target];
   }
 
-  const internalKeys = ['then', 'length', 'constructor', 'prototype'];
+  const internalKeys = ["then", "length", "constructor", "prototype"];
 
   if (internalKeys.includes(key)) {
     return (target as Record<string, any>)[key];
@@ -147,18 +147,18 @@ function createProxyObj(
 
 function mapResolve(pluginName: string, obj: any = {}) {
   const allowedResolveKeys = [
-    'alias',
-    'extensions',
-    'mainFields',
-    'conditions',
-    'preserveSymlinks',
+    "alias",
+    "extensions",
+    "mainFields",
+    "conditions",
+    "preserveSymlinks",
     // farm do not set any thing for dedupe, it should always be undefined
-    'dedupe'
+    "dedupe"
   ];
 
   return createProxyObj(
     pluginName,
-    'viteConfig.resolve',
+    "viteConfig.resolve",
     allowedResolveKeys,
     obj
   );
@@ -166,20 +166,20 @@ function mapResolve(pluginName: string, obj: any = {}) {
 
 function mapServer(pluginName: string, obj: any = {}) {
   const allowedServerKeys = [
-    'hmr',
-    'port',
-    'host',
-    'strictPort',
-    'https',
-    'proxy',
-    'open',
-    'origin',
-    'watch'
+    "hmr",
+    "port",
+    "host",
+    "strictPort",
+    "https",
+    "proxy",
+    "open",
+    "origin",
+    "watch"
   ];
 
   return createProxyObj(
     pluginName,
-    'viteConfig.server',
+    "viteConfig.server",
     allowedServerKeys,
     obj
   );
@@ -187,29 +187,29 @@ function mapServer(pluginName: string, obj: any = {}) {
 
 function mapCss(pluginName: string, obj: any = {}) {
   const allowedCssKeys = [
-    'devSourcemap',
-    'transformer',
-    'modules',
-    'postcss',
-    'preprocessorOptions'
+    "devSourcemap",
+    "transformer",
+    "modules",
+    "postcss",
+    "preprocessorOptions"
   ];
 
-  return createProxyObj(pluginName, 'viteConfig.css', allowedCssKeys, obj);
+  return createProxyObj(pluginName, "viteConfig.css", allowedCssKeys, obj);
 }
 
 function mapBuild(pluginName: string, obj: any = {}) {
   const allowedBuildKeys = [
-    'outDir',
-    'sourcemap',
-    'minify',
-    'cssMinify',
-    'ssr',
-    'watch',
-    'rollupOptions',
-    'assetsDir'
+    "outDir",
+    "sourcemap",
+    "minify",
+    "cssMinify",
+    "ssr",
+    "watch",
+    "rollupOptions",
+    "assetsDir"
   ];
 
-  return createProxyObj(pluginName, 'viteConfig.build', allowedBuildKeys, obj);
+  return createProxyObj(pluginName, "viteConfig.build", allowedBuildKeys, obj);
 }
 
 export function proxyViteConfig(
@@ -220,32 +220,32 @@ export function proxyViteConfig(
   return new Proxy(viteConfig, {
     get(target, key) {
       const allowedKeys = [
-        'root',
-        'base',
-        'publicDir',
-        'mode',
-        'define',
-        'command',
-        'resolve',
-        'plugins',
-        'server',
-        'isProduction',
-        'css',
-        'build',
-        'logger',
-        'cacheDir',
-        'envDir',
-        'assetsInclude',
+        "root",
+        "base",
+        "publicDir",
+        "mode",
+        "define",
+        "command",
+        "resolve",
+        "plugins",
+        "server",
+        "isProduction",
+        "css",
+        "build",
+        "logger",
+        "cacheDir",
+        "envDir",
+        "assetsInclude",
         // these fields are always undefined in farm
         // they are only used for compatibility
-        'legacy',
-        'optimizeDeps',
-        'ssr',
-        'logLevel',
-        'experimental',
-        'test',
-        'clearScreen',
-        'customLogger'
+        "legacy",
+        "optimizeDeps",
+        "ssr",
+        "logLevel",
+        "experimental",
+        "test",
+        "clearScreen",
+        "customLogger"
       ];
 
       return getTargetField(
@@ -254,7 +254,7 @@ export function proxyViteConfig(
         allowedKeys,
         {
           pluginName,
-          keyName: 'viteConfig'
+          keyName: "viteConfig"
         },
         (target, key) => {
           const keyMapper: Record<
@@ -274,7 +274,7 @@ export function proxyViteConfig(
                     )}"`
                   );
 
-                  if (optimizeDepsKey === 'esbuildOptions') {
+                  if (optimizeDepsKey === "esbuildOptions") {
                     return {};
                   }
                   return undefined;
@@ -328,7 +328,7 @@ export function viteConfigToFarmConfig(
   if (config.publicDir) {
     farmConfig.publicDir = config.publicDir;
   }
-  if (config.mode === 'development' || config.mode === 'production') {
+  if (config.mode === "development" || config.mode === "production") {
     farmConfig.compilation.mode = config.mode;
   }
   if (config.define) {
@@ -349,7 +349,7 @@ export function viteConfigToFarmConfig(
           farmConfig.compilation.resolve.alias = {};
         }
 
-        const farmRegexPrefix = '$__farm_regex:';
+        const farmRegexPrefix = "$__farm_regex:";
 
         for (const { find, replacement } of config.resolve.alias) {
           if (find instanceof RegExp) {
@@ -380,7 +380,7 @@ export function viteConfigToFarmConfig(
         farmConfig.server?.hmr === undefined
       ) {
         farmConfig.server.hmr = {
-          ...(typeof origFarmConfig?.server?.hmr === 'object'
+          ...(typeof origFarmConfig?.server?.hmr === "object"
             ? origFarmConfig.server.hmr
             : {}),
           watchOptions: config.server.watch
@@ -388,13 +388,13 @@ export function viteConfigToFarmConfig(
       }
     }
 
-    if (typeof config.server.host === 'string') {
+    if (typeof config.server.host === "string") {
       farmConfig.server.host = config.server.host;
     }
 
     farmConfig.server.strictPort = config.server.strictPort;
     farmConfig.server.https =
-      typeof config.server.https === 'boolean'
+      typeof config.server.https === "boolean"
         ? undefined
         : config.server.https;
     farmConfig.server.proxy = config.server.proxy as any;
@@ -421,7 +421,7 @@ export function viteConfigToFarmConfig(
 
     if (config.build.rollupOptions?.output !== undefined) {
       if (!Array.isArray(config.build.rollupOptions.output)) {
-        const keys = ['assetFileNames', 'entryFilename', 'filename'];
+        const keys = ["assetFileNames", "entryFilename", "filename"];
 
         for (const k of keys) {
           /* eslint-disable @typescript-eslint/ban-ts-comment */

@@ -1,7 +1,7 @@
+import deepmerge, { type Options } from "deepmerge";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ignore type check
-import { isPlainObject } from 'is-plain-object';
-import deepmerge, { Options } from 'deepmerge';
+import { isPlainObject } from "is-plain-object";
 
 function isValueSameDeep(target: any, source: any): boolean {
   if (target === source) {
@@ -29,11 +29,11 @@ function isMergeableObject(obj: any) {
   return isPlainObject(obj) || Array.isArray(obj);
 }
 
-const arrayMerge: Options['arrayMerge'] = (target, source, options) => {
+const arrayMerge: Options["arrayMerge"] = (target, source, options) => {
   const destination = target.slice();
 
   source.forEach((item, index) => {
-    if (typeof destination[index] === 'undefined') {
+    if (typeof destination[index] === "undefined") {
       destination[index] = options.cloneUnlessOtherwiseSpecified(item, options);
     } else if (!destination.find((dest) => isValueSameDeep(dest, item))) {
       destination.push(item);

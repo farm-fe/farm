@@ -7,21 +7,21 @@
  * https://github.com/facebook/create-react-app/blob/master/LICENSE
  */
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import open from 'open';
-import { execa } from 'execa';
-import { execSync } from 'child_process';
-import { cyan, Logger, red } from '../utils/index.js';
+import { execSync } from "child_process";
+import { execa } from "execa";
+import open from "open";
+import { Logger, cyan, red } from "../utils/index.js";
 
 // https://github.com/sindresorhus/open#app
-const OSX_CHROME = 'google chrome';
+const OSX_CHROME = "google chrome";
 
-const enum Actions {
-  NONE,
-  BROWSER,
-  SCRIPT
+enum Actions {
+  NONE = 0,
+  BROWSER = 1,
+  SCRIPT = 2
 }
 
 function getBrowserEnv() {
@@ -33,9 +33,9 @@ function getBrowserEnv() {
   if (!value) {
     // Default.
     action = Actions.BROWSER;
-  } else if (value.toLowerCase().endsWith('.js')) {
+  } else if (value.toLowerCase().endsWith(".js")) {
     action = Actions.SCRIPT;
-  } else if (value.toLowerCase() === 'none') {
+  } else if (value.toLowerCase() === "none") {
     action = Actions.NONE;
   } else {
     action = Actions.BROWSER;
@@ -45,16 +45,16 @@ function getBrowserEnv() {
 
 function executeNodeScript(scriptPath: string, url: string) {
   const extraArgs = process.argv.slice(2);
-  const child = execa('node', [scriptPath, ...extraArgs, url], {
-    stdio: 'inherit'
+  const child = execa("node", [scriptPath, ...extraArgs, url], {
+    stdio: "inherit"
   });
-  child.on('close', (code: number) => {
+  child.on("close", (code: number) => {
     if (code !== 0) {
       console.log();
       console.log(
-        red('The script specified as BROWSER environment variable failed.')
+        red("The script specified as BROWSER environment variable failed.")
       );
-      console.log(cyan(scriptPath) + ' exited with code ' + code + '.');
+      console.log(cyan(scriptPath) + " exited with code " + code + ".");
       console.log();
       return;
     }
@@ -68,8 +68,8 @@ function startBrowserProcess(browser: string | undefined, url: string) {
   // Chrome with AppleScript. This lets us reuse an
   // existing tab when possible instead of creating a new one.
   const shouldTryOpenChromeWithAppleScript =
-    process.platform === 'darwin' &&
-    (typeof browser !== 'string' || browser === OSX_CHROME);
+    process.platform === "darwin" &&
+    (typeof browser !== "string" || browser === OSX_CHROME);
 
   const dirname = path.dirname(fileURLToPath(import.meta.url));
   if (shouldTryOpenChromeWithAppleScript) {
@@ -78,8 +78,8 @@ function startBrowserProcess(browser: string | undefined, url: string) {
       // on OS X Google Chrome with AppleScript
       execSync('ps cax | grep "Google Chrome"');
       execSync('osascript openChrome.applescript "' + encodeURI(url) + '"', {
-        cwd: path.resolve(dirname, '../../bin'),
-        stdio: 'ignore'
+        cwd: path.resolve(dirname, "../../bin"),
+        stdio: "ignore"
       });
       return true;
     } catch (err) {
@@ -91,7 +91,7 @@ function startBrowserProcess(browser: string | undefined, url: string) {
   // In this case, instead of passing the string `open` to `open` function (which won't work),
   // just ignore it (thus ensuring the intended behavior, i.e. opening the system browser):
   // https://github.com/facebook/create-react-app/pull/1690#issuecomment-283518768
-  if (process.platform === 'darwin' && browser === 'open') {
+  if (process.platform === "darwin" && browser === "open") {
     browser = undefined;
   }
 
@@ -124,6 +124,6 @@ export function openBrowser(url: string) {
     case Actions.BROWSER:
       return startBrowserProcess(value, url);
     default:
-      throw new Error('Not implemented.');
+      throw new Error("Not implemented.");
   }
 }

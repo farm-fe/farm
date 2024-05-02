@@ -2,21 +2,21 @@
  * Lazy compilation middleware. Using the same logic as HMR middleware
  */
 
-import { relative } from 'node:path';
-import { Context, Middleware, Next } from 'koa';
+import { relative } from "node:path";
+import type { Context, Middleware, Next } from "koa";
 
-import { Server } from '../index.js';
 import {
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
   clearScreen,
   cyan,
   green
-} from '../../index.js';
+} from "../../index.js";
+import type { Server } from "../index.js";
 
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { existsSync } from 'node:fs';
-import { logError } from '../error.js';
+import { existsSync } from "node:fs";
+import type { Resource } from "@farmfe/runtime/src/resource-loader.js";
+import { logError } from "../error.js";
 
 export function lazyCompilation(devSeverContext: Server): Middleware {
   const compiler = devSeverContext.getCompiler();
@@ -26,12 +26,12 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
   }
 
   return async (ctx: Context, next: Next) => {
-    if (ctx.path === '/__lazy_compile') {
-      const paths = (ctx.query.paths as string).split(',');
+    if (ctx.path === "/__lazy_compile") {
+      const paths = (ctx.query.paths as string).split(",");
       const pathsStr = paths
         .map((p) => {
           if (
-            p.startsWith('/') &&
+            p.startsWith("/") &&
             !p.endsWith(VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX) &&
             !existsSync(p)
           ) {
@@ -43,7 +43,7 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           );
           return relative(compiler.config.config.root, resolvedPath);
         })
-        .join(', ');
+        .join(", ");
       clearScreen();
       devSeverContext.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
@@ -83,7 +83,7 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
 
             dynamicResourcesMap[key] = value.map((r) => ({
               path: r[0],
-              type: r[1] as 'script' | 'link'
+              type: r[1] as "script" | "link"
             }));
           }
         }
@@ -95,8 +95,8 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           ? `export default ${returnObj}`
           : returnObj;
         ctx.type = !ctx.query.node
-          ? 'application/javascript'
-          : 'application/json';
+          ? "application/javascript"
+          : "application/json";
         ctx.body = code;
       } else {
         throw new Error(`Lazy compilation result not found for paths ${paths}`);

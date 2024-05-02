@@ -1,7 +1,7 @@
-import path, { isAbsolute } from 'node:path';
-import { isString } from '../plugin/js/utils.js';
-import { isArray, isObject } from '../utils/share.js';
-import { FarmCLIOptions, UserConfig } from './types.js';
+import path, { isAbsolute } from "node:path";
+import { isString } from "../plugin/js/utils.js";
+import { isArray, isObject } from "../utils/share.js";
+import type { FarmCLIOptions, UserConfig } from "./types.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeConfig<T extends Record<string, any>>(
@@ -50,18 +50,18 @@ export function mergeFarmCliConfig(
 
   (
     [
-      'clearScreen',
-      'compilation',
-      'envDir',
-      'envPrefix',
-      'plugins',
-      'publicDir',
-      'server',
-      'vitePlugins'
+      "clearScreen",
+      "compilation",
+      "envDir",
+      "envPrefix",
+      "plugins",
+      "publicDir",
+      "server",
+      "vitePlugins"
     ] satisfies (keyof UserConfig)[]
   ).forEach((key) => {
     const value = cliOption[key];
-    if (value || typeof value === 'boolean') {
+    if (value || typeof value === "boolean") {
       left = mergeConfig(left, { [key]: cliOption[key] });
     }
   });
@@ -89,11 +89,11 @@ export function mergeFarmCliConfig(
     }
   }
 
-  if (isString(cliOption.host) || typeof cliOption.host === 'boolean') {
+  if (isString(cliOption.host) || typeof cliOption.host === "boolean") {
     left = mergeConfig(left, { server: { host: cliOption.host } });
   }
 
-  if (typeof cliOption.minify === 'boolean') {
+  if (typeof cliOption.minify === "boolean") {
     left = mergeConfig(left, { compilation: { minify: cliOption.minify } });
   }
 
@@ -114,7 +114,7 @@ export function mergeFarmCliConfig(
   if (cliOption.mode) {
     left = mergeConfig(left, {
       compilation: {
-        mode: cliOption.mode as UserConfig['compilation']['mode']
+        mode: cliOption.mode as UserConfig["compilation"]["mode"]
       }
     });
   }

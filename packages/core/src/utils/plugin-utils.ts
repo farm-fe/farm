@@ -1,7 +1,7 @@
-import fs from 'node:fs';
-import { isAbsolute, join } from 'node:path';
-import { CompilationContext } from '../plugin/type.js';
-import { Alias } from '../config/types.js';
+import fs from "node:fs";
+import { isAbsolute, join } from "node:path";
+import type { Alias } from "../config/types.js";
+import type { CompilationContext } from "../plugin/type.js";
 
 export const getAdditionContext = async (
   cwd: string,
@@ -26,24 +26,24 @@ export const getAdditionContext = async (
       filepath = join(cwd, file);
     }
     try {
-      result.push(fs.readFileSync(filepath, 'utf-8'));
+      result.push(fs.readFileSync(filepath, "utf-8"));
 
       ctx.addWatchFile(currentFile, filepath);
     } catch (error) {
-      throwError(pluginName, 'read', error);
+      throwError(pluginName, "read", error);
     }
     return result;
   }, []);
 
   if (additionalData) {
-    if (typeof additionalData === 'string') {
+    if (typeof additionalData === "string") {
       result.push(additionalData);
     } else {
       result.push(await additionalData(content, currentFile));
     }
   }
 
-  return result.join('\n');
+  return result.join("\n");
 };
 
 export function throwError(pluginName: string, type: string, error: Error) {
@@ -65,7 +65,7 @@ export function getAliasEntries(
         // TODO add support for customResolver
       };
     });
-  } else if (typeof entries === 'object') {
+  } else if (typeof entries === "object") {
     return Object.entries(entries).map(([key, value]) => {
       return { find: key, replacement: value };
     });

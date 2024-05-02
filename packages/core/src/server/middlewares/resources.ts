@@ -2,14 +2,14 @@
  * Serve resources that stored in memory. This middleware will be enabled when server.writeToDisk is false.
  */
 
-import path, { extname } from 'node:path';
-import { Context, Middleware, Next } from 'koa';
-import { Compiler } from '../../compiler/index.js';
-import { Server } from '../index.js';
-import koaStatic from 'koa-static';
-import { NormalizedServerConfig } from '../../config/types.js';
-import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from "node:fs";
+import path, { extname } from "node:path";
+import type { Context, Middleware, Next } from "koa";
+import koaStatic from "koa-static";
+import type { Compiler } from "../../compiler/index.js";
+import type { NormalizedServerConfig } from "../../config/types.js";
+import { generateFileTree, generateFileTreeHtml } from "../../utils/index.js";
+import type { Server } from "../index.js";
 
 export function resourcesMiddleware(
   compiler: Compiler,
@@ -18,7 +18,7 @@ export function resourcesMiddleware(
 ) {
   return async (ctx: Context, next: Next) => {
     await next();
-    if (ctx.method !== 'HEAD' && ctx.method !== 'GET') return;
+    if (ctx.method !== "HEAD" && ctx.method !== "GET") return;
     // the response is already handled
     if (ctx.body || ctx.status !== 404) return;
 
@@ -29,22 +29,22 @@ export function resourcesMiddleware(
       });
     }
     // Fallback to index.html if the resource is not found
-    let resourcePath = ctx.url?.slice(1) || 'index.html'; // remove leading slash
+    let resourcePath = ctx.url?.slice(1) || "index.html"; // remove leading slash
 
     // output_files
-    if (resourcePath === '_output_files') {
+    if (resourcePath === "_output_files") {
       const files = Object.keys(compiler.resources()).sort();
       const fileTree = generateFileTree(files);
-      ctx.type = '.html';
+      ctx.type = ".html";
       ctx.body = generateFileTreeHtml(fileTree);
       return;
     }
 
-    const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
+    const base = publicPath.match(/^https?:\/\//) ? "" : publicPath;
     let finalResourcePath = resourcePath;
 
     if (base && resourcePath.startsWith(base)) {
-      resourcePath = resourcePath.replace(new RegExp(`([^/]+)${base}`), '$1/');
+      resourcePath = resourcePath.replace(new RegExp(`([^/]+)${base}`), "$1/");
       finalResourcePath = resourcePath.slice(base.length);
     }
 
@@ -84,17 +84,17 @@ export function resourcesMiddleware(
     // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
     if (!resource) {
       // if request mime is not html, return 404
-      if (!ctx.accepts('html')) {
+      if (!ctx.accepts("html")) {
         ctx.status = 404;
       } else if (config.spa !== false) {
-        const pathComps = resourcePath.split('/');
+        const pathComps = resourcePath.split("/");
 
         while (pathComps.length > 0) {
-          const pathStr = pathComps.join('/') + '.html';
+          const pathStr = pathComps.join("/") + ".html";
           const resource = compiler.resources()[pathStr];
 
           if (resource) {
-            ctx.type = '.html';
+            ctx.type = ".html";
             ctx.body = resource;
             return;
           }
@@ -102,10 +102,10 @@ export function resourcesMiddleware(
           pathComps.pop();
         }
 
-        const indexHtml = compiler.resources()['index.html'];
+        const indexHtml = compiler.resources()["index.html"];
 
         if (indexHtml) {
-          ctx.type = '.html';
+          ctx.type = ".html";
           ctx.body = indexHtml;
           return;
         }
@@ -114,7 +114,7 @@ export function resourcesMiddleware(
         ctx.status = 404;
       }
     } else {
-      ctx.type = extname(ctx?.path?.slice?.(1) || 'index.html');
+      ctx.type = extname(ctx?.path?.slice?.(1) || "index.html");
       ctx.body = resource;
     }
   };
@@ -133,7 +133,7 @@ export function resources(devSeverContext: Server): Middleware | Middleware[] {
   } else {
     middlewares.push(
       koaStatic(devSeverContext.getCompiler().config.config.output.path, {
-        extensions: ['html']
+        extensions: ["html"]
       })
     );
   }

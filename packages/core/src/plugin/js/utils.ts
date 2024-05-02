@@ -1,7 +1,8 @@
+import path from "node:path";
 // import path from 'node:path';
-import * as querystring from 'node:querystring';
-import { JsResourcePotInfoData, Resource, ResourcePotInfo } from '../type.js';
-import {
+import * as querystring from "node:querystring";
+import fse from "fs-extra";
+import type {
   InternalModuleFormat,
   NormalizedInputOptions,
   NormalizedOutputOptions,
@@ -9,15 +10,18 @@ import {
   OutputChunk,
   RenderedChunk,
   RenderedModule
-} from 'rollup';
-import { Config } from '../../../binding/index.js';
-import path from 'node:path';
-import fse from 'fs-extra';
-import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
+} from "rollup";
+import type { Config } from "../../../binding/index.js";
+import type {
+  JsResourcePotInfoData,
+  Resource,
+  ResourcePotInfo
+} from "../type.js";
+import { VITE_ADAPTER_VIRTUAL_MODULE } from "./constants.js";
 
-export type WatchChangeEvents = 'create' | 'update' | 'delete';
+export type WatchChangeEvents = "create" | "update" | "delete";
 
-export function convertEnforceToPriority(value: 'pre' | 'post' | undefined) {
+export function convertEnforceToPriority(value: "pre" | "post" | undefined) {
   const defaultPriority = 100;
   const enforceToPriority = {
     pre: 101,
@@ -33,24 +37,24 @@ export function convertWatchEventChange(
   value: WatchChangeEvents
 ): WatchChangeEvents {
   const watchEventChange = {
-    Added: 'create',
-    Updated: 'update',
-    Removed: 'delete'
+    Added: "create",
+    Updated: "update",
+    Removed: "delete"
   } as unknown as { [key in WatchChangeEvents]: WatchChangeEvents };
 
   return watchEventChange[value];
 }
 
 export function getContentValue(content: any): string {
-  return encodeStr(typeof content === 'string' ? content : content!.code);
+  return encodeStr(typeof content === "string" ? content : content!.code);
 }
 
 export function isString(variable: unknown): variable is string {
-  return typeof variable === 'string';
+  return typeof variable === "string";
 }
 
 export function isObject(variable: unknown): variable is object {
-  return typeof variable === 'object' && variable !== null;
+  return typeof variable === "object" && variable !== null;
 }
 
 export function customParseQueryString(url: string | null) {
@@ -58,7 +62,7 @@ export function customParseQueryString(url: string | null) {
     return [];
   }
 
-  const queryString = url.split('?')[1];
+  const queryString = url.split("?")[1];
 
   const parsedParams = querystring.parse(queryString);
   const paramsArray = [];
@@ -71,38 +75,38 @@ export function customParseQueryString(url: string | null) {
 }
 
 export const VITE_PLUGIN_DEFAULT_MODULE_TYPE =
-  'VITE_PLUGIN_DEFAULT_MODULE_TYPE';
+  "VITE_PLUGIN_DEFAULT_MODULE_TYPE";
 
 export const CSS_LANGS_RES: [RegExp, string][] = [
-  [/\.(less)(?:$|\?)/, 'less'],
-  [/\.(scss|sass)(?:$|\?)/, 'sass'],
-  [/\.(styl|stylus)(?:$|\?)/, 'stylus'],
-  [/\.(css)(?:$|\?)/, 'css']
+  [/\.(less)(?:$|\?)/, "less"],
+  [/\.(scss|sass)(?:$|\?)/, "sass"],
+  [/\.(styl|stylus)(?:$|\?)/, "stylus"],
+  [/\.(css)(?:$|\?)/, "css"]
 ];
 
 export const JS_LANGS_RES: [RegExp, string][] = [
-  [/\.(js|mjs|cjs|)(?:$|\?)/, 'js'],
+  [/\.(js|mjs|cjs|)(?:$|\?)/, "js"],
   // jsx
-  [/\.(jsx)(?:$|\?)/, 'jsx'],
+  [/\.(jsx)(?:$|\?)/, "jsx"],
   // ts
-  [/\.(ts|cts|mts)(?:$|\?)/, 'ts'],
+  [/\.(ts|cts|mts)(?:$|\?)/, "ts"],
   // tsx
-  [/\.(tsx)(?:$|\?)/, 'tsx']
+  [/\.(tsx)(?:$|\?)/, "tsx"]
 ];
 
-export const DEFAULT_FILTERS = ['!node_modules'];
+export const DEFAULT_FILTERS = ["!node_modules"];
 // farm css modules query
 export const FARM_CSS_MODULES_SUFFIX = /(?:\?|&)farm_css_modules/;
 
 export const stringifyQuery = (query: [string, string][]) => {
   if (!query.length) {
-    return '';
+    return "";
   }
 
-  let queryStr = '';
+  let queryStr = "";
 
   for (const [key, value] of query) {
-    queryStr += `${key}${value ? `=${value}` : ''}&`;
+    queryStr += `${key}${value ? `=${value}` : ""}&`;
   }
 
   return `${queryStr.slice(0, -1)}`;
@@ -111,7 +115,7 @@ export const stringifyQuery = (query: [string, string][]) => {
 export function formatId(id: string, query: [string, string][]): string {
   // remove the adapter internal virtual module flag
   if (isStartAdapterVirtualModule(id)) {
-    id = id?.replace(VITE_ADAPTER_VIRTUAL_MODULE, '');
+    id = id?.replace(VITE_ADAPTER_VIRTUAL_MODULE, "");
   }
 
   if (!query.length) {
@@ -127,7 +131,7 @@ export function isStartAdapterVirtualModule(id: string) {
 }
 
 export function isStartsWithSlash(str: string) {
-  return str?.startsWith('/');
+  return str?.startsWith("/");
 }
 
 export function addAdapterVirtualModuleFlag(id: string) {
@@ -146,20 +150,20 @@ export function normalizeAdapterVirtualModule(id: string) {
 // normalize path for windows the same as Vite
 export function normalizePath(p: string): string {
   return path.posix.normalize(
-    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
+    process.platform === "win32" ? p.replace(/\\/g, "/") : p
   );
 }
 
 export const removeQuery = (path: string) => {
-  const queryIndex = path.indexOf('?');
+  const queryIndex = path.indexOf("?");
   if (queryIndex !== -1) {
     return path.slice(0, queryIndex);
   }
-  return revertNormalizePath(path.concat(''));
+  return revertNormalizePath(path.concat(""));
 };
 
 export function revertNormalizePath(p: string): string {
-  return process.platform === 'win32' ? p.replace(/\//g, '\\') : p;
+  return process.platform === "win32" ? p.replace(/\//g, "\\") : p;
 }
 
 export function getCssModuleType(id: string): string | null {
@@ -195,7 +199,7 @@ export function formatLoadModuleType(id: string): string {
     return jsModuleType;
   }
 
-  return 'js';
+  return "js";
 }
 
 export function formatTransformModuleType(id: string): string {
@@ -205,15 +209,15 @@ export function formatTransformModuleType(id: string): string {
 // normalize invalid characters in id, for example: \0
 // because characters like \0 have issues when passing to Farm's rust compiler
 export function encodeStr(str: string): string {
-  return str.replace(/\0/g, '\\0');
+  return str.replace(/\0/g, "\\0");
 }
 
 export function decodeStr(str: string): string {
-  return str.replace(/\\0/g, '\0');
+  return str.replace(/\\0/g, "\0");
 }
 
 export function deleteUndefinedPropertyDeeply(obj: any) {
-  if (typeof obj !== 'object') {
+  if (typeof obj !== "object") {
     return;
   }
 
@@ -226,7 +230,7 @@ export function deleteUndefinedPropertyDeeply(obj: any) {
       obj[key] = obj[key].filter((item: any) => item !== undefined);
     } else if (obj[key] === undefined) {
       delete obj[key];
-    } else if (typeof obj[key] === 'object') {
+    } else if (typeof obj[key] === "object") {
       deleteUndefinedPropertyDeeply(obj[key]);
     }
   }
@@ -242,7 +246,7 @@ export function throwIncompatibleError(
     `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses ${readingObject}['${String(
       key
     )}'] which is not supported by Farm. Current supported keys are: ${allowedKeys.join(
-      ','
+      ","
     )}`
   );
 }
@@ -289,7 +293,7 @@ export function transformResourceInfo2RollupRenderedChunk(
     isImplicitEntry,
     moduleIds,
     name,
-    type: 'chunk'
+    type: "chunk"
   } satisfies RenderedChunk;
 }
 
@@ -297,11 +301,11 @@ export function transformResourceInfo2RollupResource(
   resource: Resource
 ): OutputChunk | OutputAsset {
   // Rollup/Vite only treat js files as chunk
-  if (resource.info && resource.resourceType === 'js') {
-    const source = Buffer.from(resource.bytes).toString('utf-8');
+  if (resource.info && resource.resourceType === "js") {
+    const source = Buffer.from(resource.bytes).toString("utf-8");
     return {
       ...transformResourceInfo2RollupRenderedChunk(resource.info),
-      type: 'chunk',
+      type: "chunk",
       code: source,
       name: resource.name,
       map: undefined,
@@ -314,7 +318,7 @@ export function transformResourceInfo2RollupResource(
       name: resource.name,
       needsCodeReference: false,
       source: Uint8Array.from(resource.bytes),
-      type: 'asset'
+      type: "asset"
     } satisfies OutputAsset;
   }
 }
@@ -323,7 +327,7 @@ export function transformRollupResource2FarmResource(
   chunk: OutputChunk | OutputAsset,
   originResource: Resource
 ): Resource {
-  if (chunk.type === 'chunk') {
+  if (chunk.type === "chunk") {
     return {
       ...originResource,
       bytes: Array.from(Buffer.from(chunk.code)) as number[],
@@ -351,33 +355,33 @@ const notSupport: (method: string) => (...args: any[]) => any =
 const noop: (...args: any) => any = () => void 0;
 
 function transformFarmFormatToRollupFormat(
-  config: Config['config']['output']
+  config: Config["config"]["output"]
 ): InternalModuleFormat {
-  if (config.format === 'esm') {
-    return 'es';
-  } else if (config.format === 'cjs') {
-    if (config.targetEnv === 'node') return 'cjs';
-    return 'amd';
+  if (config.format === "esm") {
+    return "es";
+  } else if (config.format === "cjs") {
+    if (config.targetEnv === "node") return "cjs";
+    return "amd";
   }
 }
 
 export function transformFarmConfigToRollupNormalizedOutputOptions(
-  config: Config['config']
+  config: Config["config"]
 ): NormalizedOutputOptions {
   return {
-    amd: { autoId: false, define: 'define', forceJsExtensionForImports: false },
+    amd: { autoId: false, define: "define", forceJsExtensionForImports: false },
     assetFileNames: config.output.assetsFilename,
     chunkFileNames: config.output.filename,
     compact: Boolean(config.minify),
     dir: config.output.path,
     dynamicImportInCjs: true,
     entryFileNames: config.output.entryFilename,
-    esModule: 'if-default-prop',
+    esModule: "if-default-prop",
     experimentalMinChunkSize:
       config.partialBundling.targetMinSize ||
       config.partialBundling.targetMinSize ||
       1,
-    exports: 'auto',
+    exports: "auto",
     extend: false,
     externalImportAssertions: false,
     // externalImportAttributes: true,
@@ -407,13 +411,13 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
     strict: true,
     systemNullSetters: true,
     validate: false,
-    banner: notSupport('banner'),
-    footer: notSupport('footer'),
-    interop: notSupport('interop'),
-    outro: notSupport('outro'),
-    intro: notSupport('intro'),
-    sanitizeFileName: notSupport('sanitizeFileName'),
-    sourcemapIgnoreList: notSupport('sourcemapIgnoreList'),
+    banner: notSupport("banner"),
+    footer: notSupport("footer"),
+    interop: notSupport("interop"),
+    outro: notSupport("outro"),
+    intro: notSupport("intro"),
+    sanitizeFileName: notSupport("sanitizeFileName"),
+    sourcemapIgnoreList: notSupport("sourcemapIgnoreList"),
 
     dynamicImportFunction: undefined,
     experimentalDeepDynamicChunkOptimization: false,
@@ -430,19 +434,19 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
 }
 
 export function transformFarmConfigToRollupNormalizedInputOptions(
-  config: Config['config']
+  config: Config["config"]
 ): NormalizedInputOptions {
   return {
-    context: 'undefined',
+    context: "undefined",
     experimentalCacheExpiry: 10,
     experimentalLogSideEffects: false,
     input: config.input,
-    logLevel: 'info',
-    makeAbsoluteExternalsRelative: 'ifRelativeSource',
+    logLevel: "info",
+    makeAbsoluteExternalsRelative: "ifRelativeSource",
     maxParallelFileOps: 20,
     perf: false,
     plugins: [],
-    preserveEntrySignatures: 'exports-only',
+    preserveEntrySignatures: "exports-only",
     preserveSymlinks: false,
     shimMissingExports: false,
     strictDeprecations: false,

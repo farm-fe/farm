@@ -1,11 +1,11 @@
-import { expect, test } from 'vitest';
-import merge from './merge.js';
+import { expect, test } from "vitest";
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
   DEFAULT_HMR_OPTIONS
-} from '../config/index.js';
+} from "../config/index.js";
+import merge from "./merge.js";
 
-test('merge - base', () => {
+test("merge - base", () => {
   const target = { a: 1, b: 2 };
   const source = { b: 3, c: 4 };
   const result = merge(target, source);
@@ -13,7 +13,7 @@ test('merge - base', () => {
   expect(result).toEqual({ a: 1, b: 3, c: 4 });
 });
 
-test('merge - nested', () => {
+test("merge - nested", () => {
   const hmr = merge(
     {},
     DEFAULT_HMR_OPTIONS,
@@ -36,9 +36,9 @@ test('merge - nested', () => {
   });
 });
 
-test('merge - remove duplication', () => {
-  const res = merge({ css: [1, 'a', { a: 1 }] }, { css: [2, 'a', { b: 2 }] });
-  expect(res).toEqual({ css: [1, 'a', { a: 1 }, 2, { b: 2 }] });
+test("merge - remove duplication", () => {
+  const res = merge({ css: [1, "a", { a: 1 }] }, { css: [2, "a", { b: 2 }] });
+  expect(res).toEqual({ css: [1, "a", { a: 1 }, 2, { b: 2 }] });
 
   const res2 = merge(
     { css: [{ b: 1 }, { a: 1 }] },
@@ -47,12 +47,12 @@ test('merge - remove duplication', () => {
   expect(res2).toEqual({ css: [{ b: 1 }, { a: 1 }, { b: 2 }] });
 });
 
-test('merge - preserve custom object', () => {
+test("merge - preserve custom object", () => {
   class SuperSpecial {
     special: string;
 
     constructor() {
-      this.special = 'oh yeah man totally';
+      this.special = "oh yeah man totally";
     }
   }
 
@@ -60,7 +60,7 @@ test('merge - preserve custom object', () => {
 
   const target: any = {
     someProperty: {
-      cool: 'oh for sure'
+      cool: "oh for sure"
     }
   };
 
@@ -71,8 +71,8 @@ test('merge - preserve custom object', () => {
   };
 
   const defaultOutput = merge(target, source);
-  expect(defaultOutput.someProperty.cool).toBe('oh for sure');
+  expect(defaultOutput.someProperty.cool).toBe("oh for sure");
   expect(defaultOutput.someProperty.special).toBe(undefined);
   expect(defaultOutput.someProperty.ins instanceof SuperSpecial).toBe(true);
-  expect(defaultOutput.someProperty.ins.special).toBe('oh yeah man totally');
+  expect(defaultOutput.someProperty.ins.special).toBe("oh yeah man totally");
 });

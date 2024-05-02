@@ -1,16 +1,16 @@
-import fse from 'fs-extra';
+import fse from "fs-extra";
 // queue all updates and compile them one by one
 
-import { isAbsolute, relative } from 'node:path';
-import { stat } from 'node:fs/promises';
+import { stat } from "node:fs/promises";
+import { isAbsolute, relative } from "node:path";
 
-import { Compiler } from '../compiler/index.js';
-import { Server } from './index.js';
-import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
-import { JsUpdateResult } from '../../binding/binding.js';
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { WebSocketClient } from './ws.js';
-import { logError } from './error.js';
+import type { Resource } from "@farmfe/runtime/src/resource-loader.js";
+import type { JsUpdateResult } from "../../binding/binding.js";
+import type { Compiler } from "../compiler/index.js";
+import { type Logger, bold, clearScreen, cyan, green } from "../utils/index.js";
+import { logError } from "./error.js";
+import type { Server } from "./index.js";
+import type { WebSocketClient } from "./ws.js";
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
@@ -22,7 +22,11 @@ export class HmrEngine {
 
   private _lastModifiedTimestamp: Map<string, string>;
 
-  constructor(compiler: Compiler, devServer: Server, private _logger: Logger) {
+  constructor(
+    compiler: Compiler,
+    devServer: Server,
+    private _logger: Logger
+  ) {
     this._compiler = compiler;
     this._devServer = devServer;
     // this._lastAttemptWasError = false;
@@ -59,7 +63,7 @@ export class HmrEngine {
           return relative(this._compiler.config.config.root, resolvedPath);
         }
       })
-      .join(', ');
+      .join(", ");
     if (updatedFilesStr.length >= 100) {
       updatedFilesStr =
         updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
@@ -89,7 +93,7 @@ export class HmrEngine {
           }
           dynamicResourcesMap[key] = value.map((r) => ({
             path: r[0],
-            type: r[1] as 'script' | 'link'
+            type: r[1] as "script" | "link"
           }));
         }
       }
@@ -158,7 +162,7 @@ export class HmrEngine {
         await this.recompileAndSendResult();
       } catch (e) {
         // eslint-disable-next-line no-control-regex
-        const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
+        const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, "");
         const errorStr = `${JSON.stringify({
           message: serialization
         })}`;
@@ -177,5 +181,5 @@ export class HmrEngine {
 }
 
 function formatHmrResult(array: string[]) {
-  return array.map((item) => `'${item.replaceAll('\\', '\\\\')}'`).join(', ');
+  return array.map((item) => `'${item.replaceAll("\\", "\\\\")}'`).join(", ");
 }

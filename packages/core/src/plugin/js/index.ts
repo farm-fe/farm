@@ -1,23 +1,23 @@
+import { existsSync, readFileSync } from "node:fs";
+import { isAbsolute } from "node:path";
+import type { CompilationMode } from "../../config/env.js";
 import {
   type JsPlugin,
-  normalizeDevServerOptions,
+  type Logger,
   type UserConfig,
-  Logger
-} from '../../index.js';
+  normalizeDevServerOptions
+} from "../../index.js";
+import merge from "../../utils/merge.js";
+import { resolveAsyncPlugins } from "../index.js";
 import {
   DEFAULT_FILTERS,
-  getCssModuleType,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE
-} from './utils.js';
-import { VitePluginAdapter } from './vite-plugin-adapter.js';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolveAsyncPlugins } from '../index.js';
-import merge from '../../utils/merge.js';
-import { CompilationMode } from '../../config/env.js';
-import { isAbsolute } from 'node:path';
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
+  getCssModuleType
+} from "./utils.js";
+import { VitePluginAdapter } from "./vite-plugin-adapter.js";
 
 // export * from './jsPluginAdapter.js';
-export { VitePluginAdapter } from './vite-plugin-adapter.js';
+export { VitePluginAdapter } from "./vite-plugin-adapter.js";
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];
@@ -46,7 +46,7 @@ export async function handleVitePlugins(
     let vitePlugin = vitePluginObj,
       filters = DEFAULT_FILTERS;
 
-    if (typeof vitePluginObj === 'function') {
+    if (typeof vitePluginObj === "function") {
       const { vitePlugin: plugin, filters: f } = vitePluginObj();
       vitePlugin = plugin;
       filters = f;
@@ -60,7 +60,7 @@ export async function handleVitePlugins(
   // this plugin is only for compatibility
   if (vitePlugins.length) {
     jsPlugins.push({
-      name: 'farm:load',
+      name: "farm:load",
       // has to be the last one
       priority: -100,
       load: {
@@ -83,14 +83,14 @@ export async function handleVitePlugins(
               );
               return {
                 content: `export default await import('/@id/' + '${resolvedPath}');`,
-                moduleType: 'js'
+                moduleType: "js"
               };
             }
 
             return null;
           }
 
-          const content = readFileSync(resolvedPath, 'utf-8');
+          const content = readFileSync(resolvedPath, "utf-8");
 
           return {
             content,
@@ -111,7 +111,7 @@ export async function handleVitePlugins(
             return null;
           }
           const cssModules = userConfig.compilation?.css?.modules?.paths ?? [
-            '\\.module\\.(css|less|sass|scss)$'
+            "\\.module\\.(css|less|sass|scss)$"
           ];
           // skip css module because it will be handled by Farm
           const isCssModules = cssModules.some((reg) =>
@@ -123,7 +123,7 @@ export async function handleVitePlugins(
           if (getCssModuleType(moduleId) && !isCssModules) {
             return {
               content,
-              moduleType: 'css'
+              moduleType: "css"
             };
           }
 
@@ -167,7 +167,7 @@ export function processVitePlugin(
 }
 
 function normalizeFilterPath(path: string): string {
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     return compatibleWin32Path(path);
   }
 
@@ -175,7 +175,7 @@ function normalizeFilterPath(path: string): string {
 }
 
 function compatibleWin32Path(path: string): string {
-  return path.replaceAll('/', '\\\\');
+  return path.replaceAll("/", "\\\\");
 }
 
 export function convertPlugin(plugin: JsPlugin): void {

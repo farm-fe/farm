@@ -1,19 +1,19 @@
-import path from 'path';
-import { pathToFileURL } from 'url';
-import { expect, test } from 'vitest';
+import path from "path";
+import { pathToFileURL } from "url";
+import { expect, test } from "vitest";
+import type { JsPlugin } from "../src/index.js";
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler
-} from './common.js';
-import { JsPlugin } from '../src/index.js';
+} from "./common.js";
 
 function getJsPluginsFixturesDir() {
-  return path.resolve(getFixturesDir(), 'js-plugins');
+  return path.resolve(getFixturesDir(), "js-plugins");
 }
 
 function getOutputFilePath(p: string) {
   const root = getJsPluginsFixturesDir();
-  return path.join(root, 'dist', p, 'index.mjs');
+  return path.join(root, "dist", p, "index.mjs");
 }
 
 function getCompiler(p: string, plugins: JsPlugin[]) {
@@ -21,27 +21,27 @@ function getCompiler(p: string, plugins: JsPlugin[]) {
   return getInternalCompiler(root, p, plugins);
 }
 
-test('Js Plugin Execution - resolve', async () => {
+test("Js Plugin Execution - resolve", async () => {
   const root = getJsPluginsFixturesDir();
-  const resolvedPath = path.join(root, 'resolved.ts');
-  const compiler = await getCompiler('resolve', [
+  const resolvedPath = path.join(root, "resolved.ts");
+  const compiler = await getCompiler("resolve", [
     {
-      name: 'test-resolve',
+      name: "test-resolve",
       priority: 1000,
       resolve: {
         filters: {
-          sources: ['\\./index.ts'],
-          importers: ['None']
+          sources: ["\\./index.ts"],
+          importers: ["None"]
         },
         executor: async (param) => {
           console.log(param);
-          expect(param.source).toBe('./index.ts?foo=bar');
+          expect(param.source).toBe("./index.ts?foo=bar");
           expect(param.importer).toBe(null);
-          expect(param.kind).toEqual({ entry: 'index' });
+          expect(param.kind).toEqual({ entry: "index" });
 
           return {
             resolvedPath,
-            query: [['foo', 'bar']]
+            query: [["foo", "bar"]]
           };
         }
       }
@@ -51,9 +51,9 @@ test('Js Plugin Execution - resolve', async () => {
   await compiler.compile();
   await compiler.writeResourcesToDisk();
 
-  const outputFilePath = getOutputFilePath('resolve');
+  const outputFilePath = getOutputFilePath("resolve");
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     const result = await import(pathToFileURL(outputFilePath).toString());
     expect(result.default).toBe(2);
   } else {
@@ -62,21 +62,21 @@ test('Js Plugin Execution - resolve', async () => {
   }
 });
 
-test('Js Plugin Execution - load', async () => {
+test("Js Plugin Execution - load", async () => {
   const root = getJsPluginsFixturesDir();
-  const compiler = await getCompiler('load', [
+  const compiler = await getCompiler("load", [
     {
-      name: 'test-load',
+      name: "test-load",
       priority: 1000,
       load: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
+          resolvedPaths: [path.join(root, "index.ts").replaceAll("\\", "\\\\")]
         },
         executor: async (param) => {
           console.log(param);
           return {
-            content: 'export default 33;',
-            moduleType: 'ts'
+            content: "export default 33;",
+            moduleType: "ts"
           };
         }
       }
@@ -86,9 +86,9 @@ test('Js Plugin Execution - load', async () => {
   await compiler.compile();
   await compiler.writeResourcesToDisk();
 
-  const outputFilePath = getOutputFilePath('load');
+  const outputFilePath = getOutputFilePath("load");
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     const result = await import(pathToFileURL(outputFilePath).toString());
     expect(result.default).toBe(33);
   } else {
@@ -97,22 +97,22 @@ test('Js Plugin Execution - load', async () => {
   }
 });
 
-test('Js Plugin Execution - transform', async () => {
+test("Js Plugin Execution - transform", async () => {
   const root = getJsPluginsFixturesDir();
-  const compiler = await getCompiler('transform', [
+  const compiler = await getCompiler("transform", [
     {
-      name: 'test-transform',
+      name: "test-transform",
       priority: 1000,
       transform: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
-          moduleTypes: ['ts']
+          resolvedPaths: [path.join(root, "index.ts").replaceAll("\\", "\\\\")],
+          moduleTypes: ["ts"]
         },
         executor: async (param) => {
           console.log(param);
-          expect(param.moduleType).toBe('ts');
+          expect(param.moduleType).toBe("ts");
           return {
-            content: 'export default 44;'
+            content: "export default 44;"
           };
         }
       }
@@ -122,9 +122,9 @@ test('Js Plugin Execution - transform', async () => {
   await compiler.compile();
   await compiler.writeResourcesToDisk();
 
-  const outputFilePath = getOutputFilePath('transform');
+  const outputFilePath = getOutputFilePath("transform");
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     const result = await import(pathToFileURL(outputFilePath).toString());
     expect(result.default).toBe(44);
   } else {
@@ -133,15 +133,15 @@ test('Js Plugin Execution - transform', async () => {
   }
 });
 
-test('Js Plugin Execution - full', async () => {
+test("Js Plugin Execution - full", async () => {
   const root = getJsPluginsFixturesDir();
-  const resolvedPath = path.join(root, 'resolved.ts');
+  const resolvedPath = path.join(root, "resolved.ts");
   let builsStartEexcuted = false;
   let buildEndEexcuted = false;
 
-  const compiler = await getCompiler('full', [
+  const compiler = await getCompiler("full", [
     {
-      name: 'test-full',
+      name: "test-full",
       priority: 1000,
       buildStart: {
         executor: async () => {
@@ -150,18 +150,18 @@ test('Js Plugin Execution - full', async () => {
       },
       resolve: {
         filters: {
-          sources: ['.*'],
-          importers: ['.ts$']
+          sources: [".*"],
+          importers: [".ts$"]
         },
         executor: async (param) => {
           console.log(param);
 
-          if (param.source === './resolved?lang=ts&index=1') {
+          if (param.source === "./resolved?lang=ts&index=1") {
             return {
               resolvedPath,
               query: [
-                ['lang', 'ts'],
-                ['index', '1']
+                ["lang", "ts"],
+                ["index", "1"]
               ],
               sideEffects: false,
               external: false,
@@ -180,12 +180,12 @@ test('Js Plugin Execution - full', async () => {
       },
       load: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
+          resolvedPaths: [path.join(root, "index.ts").replaceAll("\\", "\\\\")]
         },
         executor: async (param) => {
           return {
             content: 'import "./resolved?lang=ts&index=1"; export default 2;',
-            moduleType: 'ts'
+            moduleType: "ts"
           };
         }
       },
@@ -203,9 +203,9 @@ test('Js Plugin Execution - full', async () => {
   expect(builsStartEexcuted).toBe(true);
   expect(buildEndEexcuted).toBe(true);
 
-  const outputFilePath = getOutputFilePath('full');
+  const outputFilePath = getOutputFilePath("full");
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     const result = await import(pathToFileURL(outputFilePath).toString());
     expect(result.default).toBe(2);
   } else {

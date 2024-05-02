@@ -1,53 +1,53 @@
-export * from './compiler/index.js';
-export * from './config/index.js';
-export * from './server/index.js';
-export * from './plugin/type.js';
-export * from './utils/index.js';
+export * from "./compiler/index.js";
+export * from "./config/index.js";
+export * from "./server/index.js";
+export * from "./plugin/type.js";
+export * from "./utils/index.js";
 
-import path from 'node:path';
-import fs from 'node:fs/promises';
-import { statSync } from 'node:fs';
-import fse from 'fs-extra';
+import { statSync } from "node:fs";
+import fs from "node:fs/promises";
+import path from "node:path";
+import fse from "fs-extra";
 
-import { Compiler } from './compiler/index.js';
+import { Compiler } from "./compiler/index.js";
+import { loadEnv, setProcessEnv } from "./config/env.js";
 import {
+  type UserConfig,
   getConfigFilePath,
   normalizePublicDir,
-  resolveConfig,
-  UserConfig
-} from './config/index.js';
-import { Logger } from './utils/logger.js';
-import { Server } from './server/index.js';
-import { FileWatcher } from './watcher/index.js';
-import { compilerHandler } from './utils/build.js';
-import { loadEnv, setProcessEnv } from './config/env.js';
-import { colors } from './utils/color.js';
+  resolveConfig
+} from "./config/index.js";
+import { Server } from "./server/index.js";
+import { compilerHandler } from "./utils/build.js";
+import { colors } from "./utils/color.js";
+import { Logger } from "./utils/logger.js";
+import { FileWatcher } from "./watcher/index.js";
 
+import { __FARM_GLOBAL__ } from "./config/_global.js";
 import type {
   FarmCLIOptions,
   ResolvedUserConfig,
   UserPreviewServerConfig
-} from './config/types.js';
-import { JsPlugin } from './plugin/type.js';
-import { __FARM_GLOBAL__ } from './config/_global.js';
-import { ConfigWatcher } from './watcher/config-watcher.js';
-import { clearScreen } from './utils/share.js';
-import { logError } from './server/error.js';
-import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-import { resolveHostname } from './utils/http.js';
+} from "./config/types.js";
+import type { JsPlugin } from "./plugin/type.js";
+import { logError } from "./server/error.js";
+import { lazyCompilation } from "./server/middlewares/lazy-compilation.js";
+import { resolveHostname } from "./utils/http.js";
+import { clearScreen } from "./utils/share.js";
+import { ConfigWatcher } from "./watcher/config-watcher.js";
 
 export async function start(
   inlineConfig?: FarmCLIOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('development');
+  setProcessEnv("development");
 
   try {
     const resolvedUserConfig = await resolveConfig(
       inlineConfig,
       logger,
-      'development'
+      "development"
     );
 
     const compiler = await createCompiler(resolvedUserConfig);
@@ -81,12 +81,12 @@ export async function build(
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('production');
+  setProcessEnv("production");
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'production',
+    "production",
     false
   );
 
@@ -105,7 +105,7 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'production'
+    "production"
   );
 
   const { root, output } = resolvedUserConfig.compilation;
@@ -114,7 +114,7 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
   try {
     statSync(distDir);
   } catch (err) {
-    if (err.code === 'ENOENT') {
+    if (err.code === "ENOENT") {
       throw new Error(
         `The directory "${distDir}" does not exist. Did you build your project?`
       );
@@ -149,12 +149,12 @@ export async function watch(
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('development');
+  setProcessEnv("development");
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     logger,
-    'development',
+    "development",
     true
   );
 
@@ -162,7 +162,7 @@ export async function watch(
   resolvedUserConfig.compilation.define = {
     ...(resolvedUserConfig.compilation.define ?? {}),
     FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
-      hostname.host || 'localhost'
+      hostname.host || "localhost"
     }:${resolvedUserConfig.server.port}`
   };
 
@@ -218,12 +218,12 @@ export async function clean(
 
   const nodeModulesFolders = recursive
     ? await findNodeModulesRecursively(rootPath)
-    : [path.join(rootPath, 'node_modules')];
+    : [path.join(rootPath, "node_modules")];
 
   await Promise.all(
     nodeModulesFolders.map(async (nodeModulesPath) => {
       // TODO Bug .farm cacheDir folder not right
-      const farmFolderPath = path.join(nodeModulesPath, '.farm');
+      const farmFolderPath = path.join(nodeModulesPath, ".farm");
       try {
         const stats = await fs.stat(farmFolderPath);
         if (stats.isDirectory()) {
@@ -234,7 +234,7 @@ export async function clean(
           );
         }
       } catch (error) {
-        if (error.code === 'ENOENT') {
+        if (error.code === "ENOENT") {
           logger.warn(
             `No cached files found in ${colors.bold(
               colors.green(nodeModulesPath)
@@ -262,7 +262,7 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
       const stats = await fs.stat(fullPath);
 
       if (stats.isDirectory()) {
-        if (item === 'node_modules') {
+        if (item === "node_modules") {
           result.push(fullPath);
         } else {
           await traverse(fullPath);
@@ -335,7 +335,7 @@ async function copyPublicDirectory(
       );
       logger.info(
         `Public directory resources copied ${colors.bold(
-          colors.green('successfully')
+          colors.green("successfully")
         )}.`
       );
     }
@@ -363,9 +363,9 @@ export async function createFileWatcher(
 ) {
   if (
     devServer.config.hmr &&
-    resolvedUserConfig.compilation.mode === 'production'
+    resolvedUserConfig.compilation.mode === "production"
   ) {
-    logger.error('HMR cannot be enabled in production mode.');
+    logger.error("HMR cannot be enabled in production mode.");
     return;
   }
 
@@ -403,12 +403,12 @@ export async function createFileWatcher(
 export function logFileChanges(files: string[], root: string, logger: Logger) {
   const changedFiles = files
     .map((file) => path.relative(root, file))
-    .join(', ');
+    .join(", ");
   logger.info(
     colors.bold(colors.green(`${changedFiles} changed, server will restart.`))
   );
 }
 
-export { defineFarmConfig as defineConfig } from './config/index.js';
+export { defineFarmConfig as defineConfig } from "./config/index.js";
 
 export { loadEnv };

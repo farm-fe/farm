@@ -1,17 +1,17 @@
-import path from 'node:path';
+import path from "node:path";
+import type { JsPlugin } from "../../src/index.js";
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler
-} from '../common.js';
-import { JsPlugin } from '../../src/index.js';
+} from "../common.js";
 
 export function getJsPluginsFixturesDir(hookName: string) {
-  return path.resolve(getFixturesDir(), 'js-plugins-hooks', hookName);
+  return path.resolve(getFixturesDir(), "js-plugins-hooks", hookName);
 }
 
 export function getOutputFilePath(p: string, hookName: string) {
   const root = getJsPluginsFixturesDir(hookName);
-  return path.join(root, 'dist', p, 'index.mjs');
+  return path.join(root, "dist", p, "index.mjs");
 }
 
 export function getCompiler(

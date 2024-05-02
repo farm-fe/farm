@@ -1,26 +1,26 @@
-import path from 'path';
-import type { UserConfig } from './src/index.js';
+import path from "path";
+import type { UserConfig } from "./src/index.js";
 
-const VIRTUAL_SUFFIX = '.virtual.farm';
+const VIRTUAL_SUFFIX = ".virtual.farm";
 
-export default <UserConfig>{
+export default (<UserConfig>{
   compilation: {
     input: {
-      index: 'src/index.ts'
+      index: "src/index.ts"
     },
     output: {
-      path: 'dist/cjs',
-      format: 'cjs',
-      targetEnv: 'node',
-      entryFilename: 'index.cjs'
+      path: "dist/cjs",
+      format: "cjs",
+      targetEnv: "node",
+      entryFilename: "index.cjs"
     },
     external: [
-      '@farmfe/core',
+      "@farmfe/core",
       // 'bufferutil',
       // 'utf-8-validate',
       // 'fsevents',
-      'chokidar',
-      'browserslist-generator'
+      "chokidar",
+      "browserslist-generator"
     ].map((id) => `^${id}$`),
     presetEnv: false,
     minify: false,
@@ -30,8 +30,8 @@ export default <UserConfig>{
     partialBundling: {
       enforceResources: [
         {
-          name: 'index',
-          test: ['.+']
+          name: "index",
+          test: [".+"]
         }
       ]
     }
@@ -39,15 +39,15 @@ export default <UserConfig>{
   plugins: [
     // external external binding
     {
-      name: 'external-binding',
+      name: "external-binding",
       priority: 102,
       resolve: {
         filters: {
-          sources: ['(binding|resolve-binding)\\.cjs$'],
-          importers: ['binding/index.js', `${VIRTUAL_SUFFIX}$`]
+          sources: ["(binding|resolve-binding)\\.cjs$"],
+          importers: ["binding/index.js", `${VIRTUAL_SUFFIX}$`]
         },
         async executor(param, context, hookContext) {
-          if (hookContext?.caller === 'external-binding') {
+          if (hookContext?.caller === "external-binding") {
             return null;
           }
 
@@ -55,13 +55,13 @@ export default <UserConfig>{
             const relativePath = path
               .relative(
                 process.cwd(),
-                param.importer.replace(VIRTUAL_SUFFIX, '')
+                param.importer.replace(VIRTUAL_SUFFIX, "")
               )
-              .replace(/\\/g, '/');
-            console.log('relativePath', relativePath);
+              .replace(/\\/g, "/");
+            console.log("relativePath", relativePath);
             if (
-              relativePath === 'binding/binding.cjs' ||
-              relativePath === 'binding/resolve-binding.cjs'
+              relativePath === "binding/binding.cjs" ||
+              relativePath === "binding/resolve-binding.cjs"
             ) {
               return {
                 resolvedPath: `../../${relativePath}`,
@@ -71,7 +71,7 @@ export default <UserConfig>{
           }
 
           const result = await context.resolve(param, {
-            caller: 'external-binding',
+            caller: "external-binding",
             meta: {}
           });
 
@@ -88,25 +88,25 @@ export default <UserConfig>{
       load: {
         filters: {
           resolvedPaths: [
-            'packages/core/binding/binding.cjs',
-            'packages/core/binding/resolve-binding.cjs'
+            "packages/core/binding/binding.cjs",
+            "packages/core/binding/resolve-binding.cjs"
           ]
         },
         async executor({ resolvedPath }) {
-          console.log('resolvedPath', resolvedPath);
+          console.log("resolvedPath", resolvedPath);
           if (resolvedPath.endsWith(VIRTUAL_SUFFIX)) {
             const relativePath = path
-              .relative(process.cwd(), resolvedPath.replace(VIRTUAL_SUFFIX, ''))
-              .replace(/\\/g, '/');
+              .relative(process.cwd(), resolvedPath.replace(VIRTUAL_SUFFIX, ""))
+              .replace(/\\/g, "/");
 
             if (
-              relativePath === 'binding/binding.cjs' ||
-              relativePath === 'binding/resolve-binding.cjs'
+              relativePath === "binding/binding.cjs" ||
+              relativePath === "binding/resolve-binding.cjs"
             ) {
               console.log(`module.exports = require('../../${relativePath}');`);
               return {
                 content: `module.exports = require('../../${relativePath}');`,
-                moduleType: 'js'
+                moduleType: "js"
               };
             }
           }
@@ -116,4 +116,4 @@ export default <UserConfig>{
       }
     }
   ]
-};
+});

@@ -1,9 +1,9 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import fs from "node:fs";
+import path from "node:path";
 
-import { parse } from 'dotenv';
-import { expand } from 'dotenv-expand';
-import { arraify, getFileSystemStats } from '../utils/index.js';
+import { parse } from "dotenv";
+import { expand } from "dotenv-expand";
+import { arraify, getFileSystemStats } from "../utils/index.js";
 
 // Because of the limitation of dotenv-expand,
 // learn from the operation method of vite to dotenv.
@@ -14,7 +14,7 @@ import { arraify, getFileSystemStats } from '../utils/index.js';
 export function loadEnv(
   mode: string,
   envDir: string,
-  prefixes: string | string[] = ['FARM_', 'VITE_']
+  prefixes: string | string[] = ["FARM_", "VITE_"]
 ): [env: Record<string, string>, existsEnvFiles: string[]] {
   const env: Record<string, string> = {};
   const existsEnvFiles: string[] = [];
@@ -41,7 +41,7 @@ export function loadEnv(
   return [env, existsEnvFiles];
 }
 
-export type CompilationMode = 'development' | 'production';
+export type CompilationMode = "development" | "production";
 
 export function setProcessEnv(mode: CompilationMode) {
   process.env.NODE_ENV = mode;

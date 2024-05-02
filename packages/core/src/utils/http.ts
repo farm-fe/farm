@@ -7,9 +7,9 @@
  * https://github.com/vitejs/vite/blob/main/LICENSE
  */
 
-import type { AddressInfo, Server } from 'node:net';
-import os from 'node:os';
-import { UserServerConfig } from '../index.js';
+import type { AddressInfo, Server } from "node:net";
+import os from "node:os";
+import type { UserServerConfig } from "../index.js";
 
 export interface ResolvedServerUrls {
   local: string[];
@@ -24,16 +24,16 @@ export interface Hostname {
 export const urlRegex = /^(https?:)?\/\/([^/]+)/;
 
 export const loopbackHosts = new Set([
-  'localhost',
-  '127.0.0.1',
-  '::1',
-  '0000:0000:0000:0000:0000:0000:0000:0001'
+  "localhost",
+  "127.0.0.1",
+  "::1",
+  "0000:0000:0000:0000:0000:0000:0000:0001"
 ]);
 
 export const wildcardHosts = new Set([
-  '0.0.0.0',
-  '::',
-  '0000:0000:0000:0000:0000:0000:0000:0000'
+  "0.0.0.0",
+  "::",
+  "0000:0000:0000:0000:0000:0000:0000:0000"
 ]);
 
 export async function resolveServerUrls(
@@ -51,9 +51,9 @@ export async function resolveServerUrls(
   const local: string[] = [];
   const network: string[] = [];
   const hostname = await resolveHostname(options.host);
-  const protocol = options.https ? 'https' : 'http';
+  const protocol = options.https ? "https" : "http";
   const { port } = getAddressHostnamePort(address);
-  const base = publicPath || '';
+  const base = publicPath || "";
 
   if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
     const url = createServerUrl(protocol, hostname.name, port, base);
@@ -71,15 +71,15 @@ export async function resolveServerUrls(
         (detail) =>
           detail &&
           detail.address &&
-          (detail.family === 'IPv4' ||
+          (detail.family === "IPv4" ||
             // @ts-expect-error Node 18.0 - 18.3 returns number
             detail.family === 4)
       )
       .forEach((detail) => {
-        let host = detail.address.replace('127.0.0.1', hostname.name);
-        host = host.includes(':') ? `[${host}]` : host;
+        let host = detail.address.replace("127.0.0.1", hostname.name);
+        host = host.includes(":") ? `[${host}]` : host;
         const url = createServerUrl(protocol, host, port, base);
-        detail.address.includes('127.0.0.1')
+        detail.address.includes("127.0.0.1")
           ? local.push(url)
           : network.push(url);
       });
@@ -93,7 +93,7 @@ export async function resolveHostname(
 ): Promise<Hostname> {
   let host: string | undefined;
   if (optionsHost === undefined || optionsHost === false) {
-    host = 'localhost';
+    host = "localhost";
   } else if (optionsHost === true) {
     host = undefined;
   } else {
@@ -101,7 +101,7 @@ export async function resolveHostname(
   }
 
   const name =
-    host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
+    host === undefined || wildcardHosts.has(host) ? "localhost" : host;
 
   return { host, name };
 }
@@ -110,7 +110,7 @@ function getAddressHostnamePort(server: AddressInfo): {
   host: string;
   port: number;
 } {
-  const hostname = server.address || 'localhost';
+  const hostname = server.address || "localhost";
   const port = server.port;
   return { host: hostname, port };
 }
@@ -121,6 +121,6 @@ function createServerUrl(
   port: number,
   publicPath: string
 ): string {
-  const hostnameName = hostname.includes(':') ? `[${hostname}]` : hostname;
+  const hostnameName = hostname.includes(":") ? `[${hostname}]` : hostname;
   return `${protocol}://${hostnameName}:${port}${publicPath}`;
 }

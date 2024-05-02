@@ -1,10 +1,10 @@
 const windowsSlashRE = /\\/g;
 export function slash(p: string): string {
-  return p.replace(windowsSlashRE, '/');
+  return p.replace(windowsSlashRE, "/");
 }
 
 export function withTrailingSlash(path: string): string {
-  if (path[path.length - 1] !== '/') {
+  if (path[path.length - 1] !== "/") {
     return `${path}/`;
   }
   return path;

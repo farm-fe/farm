@@ -1,1 +1,1 @@
-export default 'render-resource-pot-return-value';
+export default "render-resource-pot-return-value";

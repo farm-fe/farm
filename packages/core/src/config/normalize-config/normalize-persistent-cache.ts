@@ -1,11 +1,11 @@
-import { createRequire } from 'node:module';
-import path from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import path from "node:path";
 
-import { Config } from '../../../binding/index.js';
-import { ResolvedUserConfig } from '../index.js';
-import { RustPlugin } from '../../plugin/index.js';
-import { traceDependencies } from '../../utils/trace-dependencies.js';
+import type { Config } from "../../../binding/index.js";
+import type { RustPlugin } from "../../plugin/index.js";
+import { traceDependencies } from "../../utils/trace-dependencies.js";
+import type { ResolvedUserConfig } from "../index.js";
 
 const defaultGlobalBuiltinCacheKeyStrategy = {
   define: true,
@@ -16,7 +16,7 @@ const defaultGlobalBuiltinCacheKeyStrategy = {
 };
 
 export async function normalizePersistentCache(
-  config: Config['config'],
+  config: Config["config"],
   resolvedUserConfig: ResolvedUserConfig
 ) {
   if (
@@ -53,16 +53,19 @@ export async function normalizePersistentCache(
 
   if (globalBuiltinCacheKeyStrategy.define) {
     // all define options should be in envs
-    if (config.define && typeof config.define === 'object') {
+    if (config.define && typeof config.define === "object") {
       config.persistentCache.envs = {
         ...Object.entries(config.define)
           .map(([k, v]) =>
-            typeof v !== 'string' ? [k, JSON.stringify(v)] : [k, v]
+            typeof v !== "string" ? [k, JSON.stringify(v)] : [k, v]
           )
-          .reduce((acc, [k, v]) => {
-            acc[k] = v;
-            return acc;
-          }, {} as Record<string, string>),
+          .reduce(
+            (acc, [k, v]) => {
+              acc[k] = v;
+              return acc;
+            },
+            {} as Record<string, string>
+          ),
         ...config.persistentCache.envs
       };
     }
@@ -71,7 +74,7 @@ export async function normalizePersistentCache(
   // add type of package.json to envs
   const packageJsonPath = path.join(
     config.root ?? process.cwd(),
-    'package.json'
+    "package.json"
   );
 
   if (globalBuiltinCacheKeyStrategy.packageJson) {
@@ -79,18 +82,18 @@ export async function normalizePersistentCache(
       const s = readFileSync(packageJsonPath).toString();
       const packageJson = JSON.parse(s);
       const affectedKeys = [
-        'type',
-        'name',
-        'exports',
-        'browser',
-        'main',
-        'module'
+        "type",
+        "name",
+        "exports",
+        "browser",
+        "main",
+        "module"
       ];
 
       for (const key of affectedKeys) {
-        const value = packageJson[key] ?? 'unknown';
+        const value = packageJson[key] ?? "unknown";
         config.persistentCache.envs[`package.json[${key}]`] =
-          typeof value !== 'string' ? JSON.stringify(value) : value;
+          typeof value !== "string" ? JSON.stringify(value) : value;
       }
     }
   }
@@ -102,9 +105,9 @@ export async function normalizePersistentCache(
   if (globalBuiltinCacheKeyStrategy.lockfile) {
     // TODO find latest lock file starting from root
     for (const lockfile of [
-      'package-lock.json',
-      'yarn.lock',
-      'pnpm-lock.yaml'
+      "package-lock.json",
+      "yarn.lock",
+      "pnpm-lock.yaml"
     ]) {
       if (!config.persistentCache.buildDependencies.includes(lockfile)) {
         config.persistentCache.buildDependencies.push(lockfile);
@@ -112,7 +115,7 @@ export async function normalizePersistentCache(
     }
   }
 
-  if (config?.output?.targetEnv === 'node') {
+  if (config?.output?.targetEnv === "node") {
     if (!config.persistentCache.moduleCacheKeyStrategy) {
       config.persistentCache.moduleCacheKeyStrategy = {};
     }
@@ -140,19 +143,19 @@ export async function normalizePersistentCache(
     }
 
     const rustPlugins = resolvedUserConfig.plugins?.filter(
-      (plugin) => typeof plugin === 'string' || Array.isArray(plugin)
+      (plugin) => typeof plugin === "string" || Array.isArray(plugin)
     ) as RustPlugin[];
 
     packages.push(...(rustPlugins ?? []));
 
     if (packages?.length) {
       // console.log('packages', config);
-      const require = createRequire(path.join(config.root, 'package.json'));
+      const require = createRequire(path.join(config.root, "package.json"));
 
       for (const p of packages) {
         try {
           let packageJsonPath: string;
-          if (typeof p === 'string') {
+          if (typeof p === "string") {
             packageJsonPath = require.resolve(`${p}/package.json`);
           } else {
             packageJsonPath = require.resolve(`${p[0]}/package.json`);
@@ -162,9 +165,9 @@ export async function normalizePersistentCache(
           const key = `${packageJson.name}@${packageJson.version}`;
           config.persistentCache.buildDependencies.push(key);
         } catch (e) {
-          if (typeof p === 'string') {
+          if (typeof p === "string") {
             config.persistentCache.buildDependencies.push(p);
-          } else if (Array.isArray(p) && typeof p[0] === 'string') {
+          } else if (Array.isArray(p) && typeof p[0] === "string") {
             config.persistentCache.buildDependencies.push(p[0]);
           }
           continue;

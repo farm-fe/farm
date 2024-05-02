@@ -1,9 +1,9 @@
-import path from 'node:path';
+import path from "node:path";
 
-import chokidar, { FSWatcher, WatchOptions } from 'chokidar';
-import glob from 'fast-glob';
+import chokidar, { type FSWatcher, type WatchOptions } from "chokidar";
+import glob from "fast-glob";
 
-import { ResolvedUserConfig } from '../index.js';
+import type { ResolvedUserConfig } from "../index.js";
 
 function resolveChokidarOptions(
   config: ResolvedUserConfig,
@@ -11,10 +11,10 @@ function resolveChokidarOptions(
 ) {
   const { ignored = [], ...userChokidarOptions } =
     config.server?.hmr?.watchOptions ?? {};
-  let cacheDir = path.resolve(config.root, 'node_modules', '.farm', 'cache');
+  let cacheDir = path.resolve(config.root, "node_modules", ".farm", "cache");
 
   if (
-    typeof config.compilation?.persistentCache === 'object' &&
+    typeof config.compilation?.persistentCache === "object" &&
     config.compilation.persistentCache.cacheDir
   ) {
     cacheDir = config.compilation.persistentCache.cacheDir;
@@ -26,20 +26,20 @@ function resolveChokidarOptions(
 
   const options: WatchOptions = {
     ignored: [
-      '**/.git/**',
-      '**/node_modules/**',
-      '**/test-results/**', // Playwright
-      glob.escapePath(cacheDir) + '/**',
+      "**/.git/**",
+      "**/node_modules/**",
+      "**/test-results/**", // Playwright
+      glob.escapePath(cacheDir) + "/**",
       glob.escapePath(
         path.resolve(config.root, config.compilation.output.path)
-      ) + '/**',
+      ) + "/**",
       ...(Array.isArray(ignored) ? ignored : [ignored])
     ],
     ignoreInitial: true,
     ignorePermissionErrors: true,
     // for windows and macos, we need to wait for the file to be written
     awaitWriteFinish:
-      process.platform === 'linux'
+      process.platform === "linux"
         ? undefined
         : {
             stabilityThreshold: 10,

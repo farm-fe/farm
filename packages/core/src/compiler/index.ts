@@ -1,14 +1,14 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { Logger } from '../utils/logger.js';
-import { Compiler as BindingCompiler } from '../../binding/index.js';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { Compiler as BindingCompiler } from "../../binding/index.js";
+import { Logger } from "../utils/logger.js";
 
-import type { ILogger } from '../utils/logger.js';
-import type { Config, JsUpdateResult } from '../../binding/index.js';
-import { JsPlugin, Resource } from '../index.js';
+import type { Config, JsUpdateResult } from "../../binding/index.js";
+import type { JsPlugin, Resource } from "../index.js";
+import type { ILogger } from "../utils/logger.js";
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
-  '.farm_dynamic_import_virtual_module';
+  ".farm_dynamic_import_virtual_module";
 
 /**
  * Cause the update process is async, we need to keep the update queue to make sure the update process is executed in order.
@@ -50,7 +50,7 @@ export class Compiler {
 
   async compile() {
     if (this.compiling) {
-      this.logger.error('Already compiling', {
+      this.logger.error("Already compiling", {
         exit: true
       });
     }
@@ -66,7 +66,7 @@ export class Compiler {
 
   compileSync() {
     if (this.compiling) {
-      this.logger.error('Already compiling', {
+      this.logger.error("Already compiling", {
         exit: true
       });
     }
@@ -151,7 +151,7 @@ export class Compiler {
     return this._bindingCompiler.pluginStats() as PluginStats;
   }
 
-  writeResourcesToDisk(base = ''): void {
+  writeResourcesToDisk(base = ""): void {
     const resources = this.resources();
     const configOutputPath = this.config.config.output.path;
     const outputPath = path.isAbsolute(configOutputPath)
@@ -160,8 +160,8 @@ export class Compiler {
 
     for (const [name, resource] of Object.entries(resources)) {
       // remove query params and hash of name
-      const nameWithoutQuery = name.split('?')[0];
-      const nameWithoutHash = nameWithoutQuery.split('#')[0];
+      const nameWithoutQuery = name.split("?")[0];
+      const nameWithoutHash = nameWithoutQuery.split("#")[0];
 
       const filePath = path.join(outputPath, base, nameWithoutHash);
 
@@ -213,8 +213,8 @@ export class Compiler {
       return p;
     }
 
-    if (p.includes('?')) {
-      return path.join(root, p.split('?')[0]);
+    if (p.includes("?")) {
+      return path.join(root, p.split("?")[0]);
     }
 
     return path.join(root, p);
