@@ -1,5 +1,5 @@
-import { cac } from 'cac';
 import { createSpawnCmd } from '@farmfe/utils';
+import { cac } from 'cac';
 
 import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
 
