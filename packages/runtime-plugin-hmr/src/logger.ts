@@ -1,15 +1,15 @@
 export class Logger {
   debug(message: string) {
-    console.debug('[Farm HMR]', message);
+    console.debug("[Farm HMR]", message);
   }
   log(message: string) {
-    console.log('[Farm HMR]', message);
+    console.log("[Farm HMR]", message);
   }
   warn(message: string) {
-    console.warn('[Farm HMR] Warning:', message);
+    console.warn("[Farm HMR] Warning:", message);
   }
   error(message: string) {
-    console.warn('[Farm HMR] Error:', message);
+    console.warn("[Farm HMR] Error:", message);
   }
 }
 

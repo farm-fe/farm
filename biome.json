@@ -18,8 +18,6 @@
       "e2e/**",
       "*.d.ts",
       "packages/runtime/**",
-      "packages/runtime-plugin-hmr/**",
-      "packages/runtime-plugin-import-meta/**",
       "packages/create-farm/**",
       "packages/create-farm-plugin/**",
       "rust-plugins/**"

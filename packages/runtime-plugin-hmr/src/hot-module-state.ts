@@ -1,7 +1,7 @@
 // Farm's HMR client is compatible with Vite, see https://vitejs.dev/guide/api-hmr.html.
 // And it's inspired by both Vite and esm-hmr, see https://github.com/FredKSchott/esm-hmr
-import { HmrClient } from './hmr-client';
-import { logger } from './logger';
+import type { HmrClient } from "./hmr-client";
+import { logger } from "./logger";
 
 export class HotModuleState {
   acceptCallbacks: Array<{ deps: string[]; fn: (mods: any[]) => void }> = [];
@@ -16,13 +16,13 @@ export class HotModuleState {
 
   // the same as vite's hot.accept
   accept(deps?: any, callback?: (mods: any[]) => void) {
-    if (typeof deps === 'function' || !deps) {
+    if (typeof deps === "function" || !deps) {
       // self-accept hot.accept(() => {})
       this.acceptCallbacks.push({
         deps: [this.id],
         fn: ([mod]) => deps?.(mod)
       });
-    } else if (typeof deps === 'string') {
+    } else if (typeof deps === "string") {
       // accept a single dependency hot.accept('./dep.js', () => {})
       this.acceptCallbacks.push({
         deps: [deps],
@@ -32,7 +32,7 @@ export class HotModuleState {
       // accept multiple dependencies hot.accept(['./dep1.js', './dep2.js'], () => {})
       this.acceptCallbacks.push({ deps, fn: callback });
     } else {
-      throw new Error('invalid hot.accept call');
+      throw new Error("invalid hot.accept call");
     }
   }
 
@@ -48,7 +48,7 @@ export class HotModuleState {
     _: string | readonly string[],
     _callback: (data: any) => void
   ): void {
-    logger.debug('acceptExports is not supported for now');
+    logger.debug("acceptExports is not supported for now");
   }
 
   decline() {
@@ -56,14 +56,14 @@ export class HotModuleState {
   }
 
   invalidate(message?: string) {
-    this.hmrClient.notifyListeners('vite:invalidate', {
+    this.hmrClient.notifyListeners("vite:invalidate", {
       path: this.id,
       message
     });
     // notify the server to find the boundary starting from the parents of this module
-    this.send('vite:invalidate', { path: this.id, message });
-    this.send('farm:invalidate', { path: this.id, message });
-    logger.debug(`invalidate ${this.id}${message ? `: ${message}` : ''}`);
+    this.send("vite:invalidate", { path: this.id, message });
+    this.send("farm:invalidate", { path: this.id, message });
+    logger.debug(`invalidate ${this.id}${message ? `: ${message}` : ""}`);
   }
 
   on<T extends string>(event: T, cb: (payload: any) => void): void {
@@ -94,7 +94,7 @@ export class HotModuleState {
   send<T extends string>(event: T, data?: any): void {
     if (this.hmrClient.socket.readyState === WebSocket.OPEN) {
       this.hmrClient.socket.send(
-        JSON.stringify({ type: 'custom', event, data })
+        JSON.stringify({ type: "custom", event, data })
       );
     }
   }

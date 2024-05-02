@@ -1,18 +1,18 @@
-import type { ModuleSystem } from '@farmfe/runtime';
-import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
-import { HotModuleState } from './hot-module-state';
-import { logger } from './logger';
-import { ErrorOverlay, overlayId } from './overlay';
+import type { ModuleSystem } from "@farmfe/runtime";
+import type { HotModuleState } from "./hot-module-state";
+import { logger } from "./logger";
+import { ErrorOverlay, overlayId } from "./overlay";
+import type { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from "./types";
 
 // Inject during compile time
 const hmrPort = Number(FARM_HMR_PORT);
 
 const hmrHost =
-  typeof FARM_HMR_HOST === 'boolean'
-    ? window.location.hostname || 'localhost'
-    : FARM_HMR_HOST || 'localhost';
+  typeof FARM_HMR_HOST === "boolean"
+    ? window.location.hostname || "localhost"
+    : FARM_HMR_HOST || "localhost";
 
-const socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+const socketProtocol = location.protocol === "https:" ? "wss" : "ws";
 const socketHostUrl = `${hmrHost}:${hmrPort}${FARM_HMR_PATH}`;
 
 export class HmrClient {
@@ -28,21 +28,21 @@ export class HmrClient {
   constructor(private moduleSystem: ModuleSystem) {}
 
   connect() {
-    logger.debug('connecting to the server...');
+    logger.debug("connecting to the server...");
 
     // setup websocket connection
     const socket = new WebSocket(
       `${socketProtocol}://${socketHostUrl}`,
-      'farm_hmr'
+      "farm_hmr"
     );
     this.socket = socket;
     // listen for the message from the server
     // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
     // after the file is recompiled, the server will generated a update resource and send its id to the client
     // the client will apply the update
-    socket.addEventListener('message', (event) => {
+    socket.addEventListener("message", (event) => {
       const result: HMRPayload = new Function(`return (${event.data})`)();
-      if (result?.type === 'closing') {
+      if (result?.type === "closing") {
         this.closeConnectionGracefully();
         return;
       }
@@ -50,22 +50,22 @@ export class HmrClient {
     });
 
     socket.addEventListener(
-      'open',
+      "open",
       () => {
-        this.notifyListeners('vite:ws:connect', { webSocket: socket });
-        this.notifyListeners('farm:ws:connect', { webSocket: socket });
+        this.notifyListeners("vite:ws:connect", { webSocket: socket });
+        this.notifyListeners("farm:ws:connect", { webSocket: socket });
       },
       { once: true }
     );
 
-    socket.addEventListener('close', async () => {
+    socket.addEventListener("close", async () => {
       // TODO Do you want to do an elegant cleaning?
       // if (wasClean) return;
 
-      this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
-      this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
+      this.notifyListeners("vite:ws:disconnect", { webSocket: socket });
+      this.notifyListeners("farm:ws:disconnect", { webSocket: socket });
 
-      logger.debug('disconnected from the server, please reload the page.');
+      logger.debug("disconnected from the server, please reload the page.");
       await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
       location.reload();
     });
@@ -80,7 +80,7 @@ export class HmrClient {
     ) {
       return;
     }
-    this.socket.close(1000, 'Client closing connection');
+    this.socket.close(1000, "Client closing connection");
   }
 
   async applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {
@@ -131,7 +131,7 @@ export class HmrClient {
             chain.length > 1 ? chain[chain.length - 2] : undefined;
 
           if (!hotContext) {
-            console.error('hot context is empty for ', boundary);
+            console.error("hot context is empty for ", boundary);
             location.reload();
           }
 
@@ -193,44 +193,44 @@ export class HmrClient {
    */
   async handleMessage(payload: HMRPayload) {
     switch (payload.type) {
-      case 'farm-update':
-        this.notifyListeners('farm:beforeUpdate', payload);
+      case "farm-update":
+        this.notifyListeners("farm:beforeUpdate", payload);
         this.handleFarmUpdate(payload.result);
-        this.notifyListeners('farm:afterUpdate', payload);
+        this.notifyListeners("farm:afterUpdate", payload);
         break;
-      case 'error': {
-        this.notifyListeners('vite:error', payload);
-        this.notifyListeners('farm:error', payload);
+      case "error": {
+        this.notifyListeners("vite:error", payload);
+        this.notifyListeners("farm:error", payload);
         createOverlay(payload.err);
         break;
       }
-      case 'connected':
-        logger.debug('connected to the server');
+      case "connected":
+        logger.debug("connected to the server");
         break;
-      case 'update':
-        this.notifyListeners('vite:beforeUpdate', payload);
+      case "update":
+        this.notifyListeners("vite:beforeUpdate", payload);
         await Promise.all(
           payload.updates.map(async (update) => {
-            if (update.type === 'js-update') {
+            if (update.type === "js-update") {
               this.socket.send(JSON.stringify(update));
               return;
             }
 
-            logger.warn('css link update is not supported yet');
+            logger.warn("css link update is not supported yet");
           })
         );
-        this.notifyListeners('vite:afterUpdate', payload);
+        this.notifyListeners("vite:afterUpdate", payload);
         break;
-      case 'custom':
+      case "custom":
         this.notifyListeners(payload.event, payload.data);
         break;
-      case 'full-reload':
-        this.notifyListeners('vite:beforeFullReload', payload);
+      case "full-reload":
+        this.notifyListeners("vite:beforeFullReload", payload);
         location.reload();
         break;
-      case 'prune':
-        this.notifyListeners('vite:beforePrune', payload);
-        this.notifyListeners('farm:beforePrune', payload);
+      case "prune":
+        this.notifyListeners("vite:beforePrune", payload);
+        this.notifyListeners("farm:beforePrune", payload);
         break;
 
       default:
@@ -275,12 +275,12 @@ function hasErrorOverlay() {
 export function waitForWindowShow() {
   return new Promise<void>((resolve) => {
     const onChange = async () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         resolve();
-        document.removeEventListener('visibilitychange', onChange);
+        document.removeEventListener("visibilitychange", onChange);
       }
     };
-    document.addEventListener('visibilitychange', onChange);
+    document.addEventListener("visibilitychange", onChange);
   });
 }
 
@@ -289,7 +289,7 @@ async function waitForSuccessfulPing(
   hostAndPath: string,
   ms = 1000
 ) {
-  const pingHostProtocol = socketProtocol === 'wss' ? 'https' : 'http';
+  const pingHostProtocol = socketProtocol === "wss" ? "https" : "http";
 
   const ping = async () => {
     // A fetch on a websocket URL will return a successful promise with status 400,
@@ -297,11 +297,11 @@ async function waitForSuccessfulPing(
     // When running on middleware mode, it returns status 426, and an cors error happens if mode is not no-cors
     try {
       await fetch(`${pingHostProtocol}://${hostAndPath}`, {
-        mode: 'no-cors',
+        mode: "no-cors",
         headers: {
           // Custom headers won't be included in a request with no-cors so (ab)use one of the
           // safelisted headers to identify the ping request
-          Accept: 'text/x-farm-ping'
+          Accept: "text/x-farm-ping"
         }
       });
       return true;
@@ -318,7 +318,7 @@ async function waitForSuccessfulPing(
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === "visible") {
       if (await ping()) {
         break;
       }

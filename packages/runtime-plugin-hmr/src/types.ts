@@ -1,4 +1,4 @@
-import type { Resource } from '@farmfe/runtime/src/resource-loader';
+import type { Resource } from "@farmfe/runtime/src/resource-loader";
 
 // export interface HmrUpdatePacket {
 //   id: string;
@@ -46,21 +46,21 @@ export type HMRPayload =
   | ClosingPayload;
 
 export interface FarmHmrPayload {
-  type: 'farm-update';
+  type: "farm-update";
   result: RawHmrUpdateResult;
 }
 
 export interface ConnectedPayload {
-  type: 'connected';
+  type: "connected";
 }
 
 export interface UpdatePayload {
-  type: 'update';
+  type: "update";
   updates: Update[];
 }
 
 export interface Update {
-  type: 'js-update' | 'css-update';
+  type: "js-update" | "css-update";
   path: string;
   acceptedPath: string;
   timestamp: number;
@@ -71,27 +71,27 @@ export interface Update {
 }
 
 export interface PrunePayload {
-  type: 'prune';
+  type: "prune";
   paths: string[];
 }
 
 export interface FullReloadPayload {
-  type: 'full-reload';
+  type: "full-reload";
   path?: string;
 }
 
 export interface CustomPayload {
-  type: 'custom';
+  type: "custom";
   event: string;
   data?: any;
 }
 
 export interface ClosingPayload {
-  type: 'closing';
+  type: "closing";
 }
 
 export interface ErrorPayload {
-  type: 'error';
+  type: "error";
   err: {
     [name: string]: any;
     message: string;
