@@ -1,11 +1,11 @@
 export interface GlobalFarmCLIOptions {
-  '--'?: string[];
+  "--"?: string[];
   c?: boolean | string;
   config?: string;
   configPath?: string;
   m?: string;
   base?: string;
-  mode?: 'development' | 'production';
+  mode?: "development" | "production";
   w?: boolean;
   watch?: boolean;
   watchPath?: string;
@@ -34,17 +34,17 @@ export interface FarmCLIBuildOptions {
   sourcemap?: boolean;
   minify?: boolean;
   treeShaking?: boolean;
-  format?: 'cjs' | 'esm';
+  format?: "cjs" | "esm";
   target?:
-    | 'browser'
-    | 'node'
-    | 'node16'
-    | 'node-legacy'
-    | 'node-next'
-    | 'browser-legacy'
-    | 'browser-es2015'
-    | 'browser-es2017'
-    | 'browser-esnext';
+    | "browser"
+    | "node"
+    | "node16"
+    | "node-legacy"
+    | "node-next"
+    | "browser-legacy"
+    | "browser-es2015"
+    | "browser-es2017"
+    | "browser-esnext";
 }
 
 export interface FarmCLIPreviewOptions {

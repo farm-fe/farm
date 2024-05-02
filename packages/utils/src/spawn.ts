@@ -1,6 +1,6 @@
-import { type StdioOptions, spawn } from 'child_process';
+import { type StdioOptions, spawn } from "child_process";
 
-export function createSpawnCmd(dest: string, stdio: StdioOptions = 'inherit') {
+export function createSpawnCmd(dest: string, stdio: StdioOptions = "inherit") {
   return (cmd: string, args?: string[]): Promise<unknown> => {
     const ls = spawn(cmd, args, {
       cwd: dest,
@@ -8,7 +8,7 @@ export function createSpawnCmd(dest: string, stdio: StdioOptions = 'inherit') {
       shell: true
     });
     return new Promise((resolve, reject) => {
-      ls.on('close', (code: any) => {
+      ls.on("close", (code: any) => {
         code === 0 ? resolve(true) : reject(false);
       });
     }).catch((err) => {

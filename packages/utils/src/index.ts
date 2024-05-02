@@ -1,2 +1,2 @@
-export * from './color.js';
-export * from './spawn.js';
+export * from "./color.js";
+export * from "./spawn.js";

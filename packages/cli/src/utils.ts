@@ -1,13 +1,13 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import readline from 'node:readline';
-import { fileURLToPath } from 'node:url';
-import type { build, clean, preview, start, watch } from '@farmfe/core';
-import { Logger } from '@farmfe/core';
-import spawn from 'cross-spawn';
-import walkdir from 'walkdir';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import readline from "node:readline";
+import { fileURLToPath } from "node:url";
+import type { build, clean, preview, start, watch } from "@farmfe/core";
+import { Logger } from "@farmfe/core";
+import spawn from "cross-spawn";
+import walkdir from "walkdir";
 
-import type { GlobalFarmCLIOptions, ICleanOptions } from './types.js';
+import type { GlobalFarmCLIOptions, ICleanOptions } from "./types.js";
 
 const logger = new Logger();
 interface installProps {
@@ -17,8 +17,8 @@ interface installProps {
 
 export const TEMPLATES_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'templates'
+  "..",
+  "templates"
 );
 
 export async function resolveCore(): Promise<{
@@ -29,7 +29,7 @@ export async function resolveCore(): Promise<{
   clean: typeof clean;
 }> {
   try {
-    return import('@farmfe/core');
+    return import("@farmfe/core");
   } catch (err) {
     logger.error(
       `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
@@ -59,9 +59,9 @@ export function copyFiles(
     }
   });
 
-  if (!existsSync(path.join(dest, '.gitignore'))) {
+  if (!existsSync(path.join(dest, ".gitignore"))) {
     writeFileSync(
-      path.join(dest, '.gitignore'),
+      path.join(dest, ".gitignore"),
       `
 node_modules
 *.farm`
@@ -73,23 +73,23 @@ export async function install(options: installProps): Promise<void> {
   const cwd = options.cwd;
   return new Promise((resolve, reject) => {
     const command = options.package;
-    const args = ['install'];
+    const args = ["install"];
 
     const child = spawn(command, args, {
       cwd,
-      stdio: 'inherit'
+      stdio: "inherit"
     });
 
-    child.once('close', (code: number) => {
+    child.once("close", (code: number) => {
       if (code !== 0) {
         reject({
-          command: `${command} ${args.join(' ')}`
+          command: `${command} ${args.join(" ")}`
         });
         return;
       }
       resolve();
     });
-    child.once('error', reject);
+    child.once("error", reject);
   });
 }
 /**
@@ -98,7 +98,7 @@ export async function install(options: installProps): Promise<void> {
  * @returns
  */
 export function formatTargetDir(targetDir: string | undefined) {
-  return targetDir?.trim()?.replace(/\/+$/g, '');
+  return targetDir?.trim()?.replace(/\/+$/g, "");
 }
 
 /**
@@ -117,7 +117,7 @@ export function filterDuplicateOptions<T>(options: T) {
  */
 export function clearScreen() {
   const repeatCount = process.stdout.rows - 2;
-  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
+  const blank = repeatCount > 0 ? "\n".repeat(repeatCount) : "";
   console.log(blank);
   readline.cursorTo(process.stdout, 0, 0);
   readline.clearScreenDown(process.stdout);
@@ -126,7 +126,7 @@ export function clearScreen() {
 export function cleanOptions(options: GlobalFarmCLIOptions) {
   const resolveOptions = { ...options };
 
-  delete resolveOptions['--'];
+  delete resolveOptions["--"];
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
@@ -149,7 +149,7 @@ export function resolveCommandOptions(
 }
 
 export function getConfigPath(root: string, configPath: string) {
-  return path.resolve(root, configPath ?? '');
+  return path.resolve(root, configPath ?? "");
 }
 
 export async function handleAsyncOperationErrors<T>(
@@ -168,14 +168,14 @@ export async function handleAsyncOperationErrors<T>(
 export function preventExperimentalWarning() {
   const defaultEmit = process.emit;
   process.emit = function (...args: any[]) {
-    if (args[1].name === 'ExperimentalWarning') {
+    if (args[1].name === "ExperimentalWarning") {
       return undefined;
     }
     return defaultEmit.call(this, ...args);
   };
 }
 
-export function resolveRootPath(rootPath = '') {
+export function resolveRootPath(rootPath = "") {
   return rootPath && path.isAbsolute(rootPath)
     ? rootPath
     : path.resolve(process.cwd(), rootPath);

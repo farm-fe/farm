@@ -1,14 +1,14 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 
-import { cac } from 'cac';
-import { getOptionFromBuildOption } from './config.js';
+import { cac } from "cac";
+import { getOptionFromBuildOption } from "./config.js";
 import {
   handleAsyncOperationErrors,
   preventExperimentalWarning,
   resolveCliConfig,
   resolveCommandOptions,
   resolveCore
-} from './utils.js';
+} from "./utils.js";
 
 import type {
   FarmCLIBuildOptions,
@@ -16,38 +16,38 @@ import type {
   FarmCLIServerOptions,
   GlobalFarmCLIOptions,
   ICleanOptions
-} from './types.js';
+} from "./types.js";
 
 const { version } = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url)).toString()
+  readFileSync(new URL("../package.json", import.meta.url)).toString()
 );
 
-const cli = cac('farm');
+const cli = cac("farm");
 
 // common command
 cli
-  .option('-c, --config <file>', 'use specified config file')
-  .option('-m, --mode <mode>', 'set env mode')
-  .option('--base <path>', 'public base path')
-  .option('--clearScreen', 'allow/disable clear screen when logging', {
+  .option("-c, --config <file>", "use specified config file")
+  .option("-m, --mode <mode>", "set env mode")
+  .option("--base <path>", "public base path")
+  .option("--clearScreen", "allow/disable clear screen when logging", {
     default: true
   });
 
 // dev command
 cli
   .command(
-    '[root]',
-    'Compile the project in dev mode and serve it with farm dev server'
+    "[root]",
+    "Compile the project in dev mode and serve it with farm dev server"
   )
-  .alias('start')
-  .alias('dev')
-  .option('-l, --lazy', 'lazyCompilation')
-  .option('--host <host>', 'specify host')
-  .option('--port <port>', 'specify port')
-  .option('--open', 'open browser on server start')
-  .option('--hmr', 'enable hot module replacement')
-  .option('--cors', 'enable cors')
-  .option('--strictPort', 'specified port is already in use, exit with error')
+  .alias("start")
+  .alias("dev")
+  .option("-l, --lazy", "lazyCompilation")
+  .option("--host <host>", "specify host")
+  .option("--port <port>", "specify port")
+  .option("--open", "open browser on server start")
+  .option("--hmr", "enable hot module replacement")
+  .option("--cors", "enable cors")
+  .option("--strictPort", "specified port is already in use, exit with error")
   .action(
     async (
       rootPath: string,
@@ -70,22 +70,22 @@ cli
       const { start } = await resolveCore();
       handleAsyncOperationErrors(
         start(defaultOptions),
-        'Failed to start server'
+        "Failed to start server"
       );
     }
   );
 
 // build command
 cli
-  .command('build [root]', 'compile the project in production mode')
-  .option('-o, --outDir <dir>', 'output directory')
-  .option('-i, --input <file>', 'input file path')
-  .option('-w, --watch', 'watch file change')
-  .option('--target <target>', 'transpile targetEnv node, browser')
-  .option('--format <format>', 'transpile format esm, commonjs')
-  .option('--sourcemap', 'output source maps for build')
-  .option('--treeShaking', 'Eliminate useless code without side effects')
-  .option('--minify', 'code compression at build time')
+  .command("build [root]", "compile the project in production mode")
+  .option("-o, --outDir <dir>", "output directory")
+  .option("-i, --input <file>", "input file path")
+  .option("-w, --watch", "watch file change")
+  .option("--target <target>", "transpile targetEnv node, browser")
+  .option("--format <format>", "transpile format esm, commonjs")
+  .option("--sourcemap", "output source maps for build")
+  .option("--treeShaking", "Eliminate useless code without side effects")
+  .option("--minify", "code compression at build time")
   .action(
     async (
       rootPath: string,
@@ -100,19 +100,19 @@ cli
       };
 
       const { build } = await resolveCore();
-      handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+      handleAsyncOperationErrors(build(defaultOptions), "error during build");
     }
   );
 
 cli
-  .command('watch [root]', 'watch file change')
-  .option('-o, --outDir <dir>', 'output directory')
-  .option('-i, --input <file>', 'input file path')
-  .option('--target <target>', 'transpile targetEnv node, browser')
-  .option('--format <format>', 'transpile format esm, commonjs')
-  .option('--sourcemap', 'output source maps for build')
-  .option('--treeShaking', 'Eliminate useless code without side effects')
-  .option('--minify', 'code compression at build time')
+  .command("watch [root]", "watch file change")
+  .option("-o, --outDir <dir>", "output directory")
+  .option("-i, --input <file>", "input file path")
+  .option("--target <target>", "transpile targetEnv node, browser")
+  .option("--format <format>", "transpile format esm, commonjs")
+  .option("--sourcemap", "output source maps for build")
+  .option("--treeShaking", "Eliminate useless code without side effects")
+  .option("--minify", "code compression at build time")
   .action(
     async (
       rootPath: string,
@@ -129,15 +129,15 @@ cli
       const { watch } = await resolveCore();
       handleAsyncOperationErrors(
         watch(defaultOptions),
-        'error during watch project'
+        "error during watch project"
       );
     }
   );
 
 cli
-  .command('preview [root]', 'compile the project in watch mode')
-  .option('--port <port>', 'specify port')
-  .option('--open', 'open browser on server preview start')
+  .command("preview [root]", "compile the project in watch mode")
+  .option("--port <port>", "specify port")
+  .option("--open", "open browser on server preview start")
   .action(
     async (
       rootPath: string,
@@ -157,16 +157,16 @@ cli
       const { preview } = await resolveCore();
       handleAsyncOperationErrors(
         preview(defaultOptions),
-        'Failed to start preview server'
+        "Failed to start preview server"
       );
     }
   );
 
 cli
-  .command('clean [path]', 'Clean up the cache built incrementally')
+  .command("clean [path]", "Clean up the cache built incrementally")
   .option(
-    '--recursive',
-    'Recursively search for node_modules directories and clean them'
+    "--recursive",
+    "Recursively search for node_modules directories and clean them"
   )
   .action(async (rootPath: string, options: ICleanOptions) => {
     const { root } = resolveCliConfig(rootPath, options);
@@ -175,7 +175,7 @@ cli
     try {
       await clean(root, options?.recursive);
     } catch (e) {
-      const { Logger } = await import('@farmfe/core');
+      const { Logger } = await import("@farmfe/core");
       const logger = new Logger();
       logger.error(`Failed to clean cache: \n ${e.stack}`);
       process.exit(1);
@@ -183,8 +183,8 @@ cli
   });
 
 // Listening for unknown command
-cli.on('command:*', async () => {
-  const { Logger } = await import('@farmfe/core');
+cli.on("command:*", async () => {
+  const { Logger } = await import("@farmfe/core");
   const logger = new Logger();
   logger.error(
     'Unknown command place Run "farm --help" to see available commands'

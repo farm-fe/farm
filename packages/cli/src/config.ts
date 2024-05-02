@@ -1,5 +1,5 @@
-import type { FarmCLIOptions, UserConfig } from '@farmfe/core';
-import type { FarmCLIBuildOptions, GlobalFarmCLIOptions } from './types.js';
+import type { FarmCLIOptions, UserConfig } from "@farmfe/core";
+import type { FarmCLIBuildOptions, GlobalFarmCLIOptions } from "./types.js";
 
 export function getOptionFromBuildOption(
   options: FarmCLIBuildOptions & GlobalFarmCLIOptions
@@ -16,13 +16,13 @@ export function getOptionFromBuildOption(
     mode
   } = options;
 
-  const output: UserConfig['compilation']['output'] = {
+  const output: UserConfig["compilation"]["output"] = {
     ...(outDir && { path: outDir }),
     ...(target && { targetEnv: target }),
     ...(format && { format })
   };
 
-  const compilation: UserConfig['compilation'] = {
+  const compilation: UserConfig["compilation"] = {
     input: { ...(input && { index: input }) },
     output,
     ...(watch && { watch }),

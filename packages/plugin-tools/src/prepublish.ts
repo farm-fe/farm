@@ -1,22 +1,22 @@
-import { execSync } from 'child_process';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import { execSync } from "child_process";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 /**
  * Farm plugin prepublish command, publish all packages under npm directory
  */
 export async function prepublish(): Promise<void> {
-  const npmDir = path.join(process.cwd(), 'npm');
+  const npmDir = path.join(process.cwd(), "npm");
   const packages = await fs.readdir(npmDir);
   const currentPkgJson = JSON.parse(
-    await fs.readFile(path.join(process.cwd(), 'package.json'), 'utf-8')
+    await fs.readFile(path.join(process.cwd(), "package.json"), "utf-8")
   );
   const currentPackageVersion = currentPkgJson.version;
   const packageNames = [];
 
   for (const pkg of packages) {
-    const pkgJsonPath = path.join(npmDir, pkg, 'package.json');
-    const pkgJson = JSON.parse(await fs.readFile(pkgJsonPath, 'utf-8'));
+    const pkgJsonPath = path.join(npmDir, pkg, "package.json");
+    const pkgJson = JSON.parse(await fs.readFile(pkgJsonPath, "utf-8"));
     const pkgName = pkgJson.name;
     pkgJson.version = currentPackageVersion;
 
@@ -25,7 +25,7 @@ export async function prepublish(): Promise<void> {
     // execute npm publish under the pkg directory
     execSync(`npm publish`, {
       cwd: path.join(npmDir, pkg),
-      stdio: 'inherit'
+      stdio: "inherit"
     });
 
     packageNames.push(pkgName);
@@ -42,7 +42,7 @@ export async function prepublish(): Promise<void> {
   };
   // write current package.json
   await fs.writeFile(
-    path.join(process.cwd(), 'package.json'),
+    path.join(process.cwd(), "package.json"),
     JSON.stringify(currentPkgJson, null, 2)
   );
 }

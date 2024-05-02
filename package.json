@@ -49,8 +49,8 @@
     "vitest": "^1.4.0"
   },
   "lint-staged": {
-    "packages/**/*.ts": ["prettier-eslint --write"],
-    "js-plugins/**/*.ts": ["prettier-eslint --write"]
+    "packages/**/*.ts": [""],
+    "js-plugins/**/*.ts": [""]
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm check",

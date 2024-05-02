@@ -1,10 +1,10 @@
-import { createSpawnCmd } from '@farmfe/utils';
-import { cac } from 'cac';
+import { createSpawnCmd } from "@farmfe/utils";
+import { cac } from "cac";
 
-import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
+import { resolveNapiRsCli } from "./resolve-napi-rs-cli.js";
 
-import { copyArtifacts } from './copy-artifacts.js';
-import { prepublish } from './prepublish.js';
+import { copyArtifacts } from "./copy-artifacts.js";
+import { prepublish } from "./prepublish.js";
 
 const getArg = (argsObj: any, args: string[], name: string) => {
   const index = args.indexOf(name);
@@ -15,7 +15,7 @@ const getArg = (argsObj: any, args: string[], name: string) => {
   // get argsObj['abi']
   const value = argsObj[name.slice(2)];
 
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const res = args[index + 1];
     args.splice(index, 2);
     return res;
@@ -24,21 +24,21 @@ const getArg = (argsObj: any, args: string[], name: string) => {
   }
 };
 
-const cli = cac('farm-plugin-tools');
+const cli = cac("farm-plugin-tools");
 
 cli
-  .command('build', 'Build Farm Rust Plugin for current platform')
+  .command("build", "Build Farm Rust Plugin for current platform")
   .allowUnknownOptions()
   .action(async (argsObj) => {
     const cliPath = resolveNapiRsCli();
     const args = process.argv.slice(3);
-    const abi = getArg(argsObj, args, '--abi');
+    const abi = getArg(argsObj, args, "--abi");
 
     // all args are passed to napi-rs directly
     // 1. build with napi-rs
     try {
-      const spawn = createSpawnCmd(process.cwd(), 'inherit');
-      await spawn('node', [cliPath, 'build', ...args]);
+      const spawn = createSpawnCmd(process.cwd(), "inherit");
+      await spawn("node", [cliPath, "build", ...args]);
     } catch (e) {
       process.exit(1);
     }
@@ -52,8 +52,8 @@ cli
 
 cli
   .command(
-    'prepublish',
-    'Publish platform packages before publish your Rust Plugin'
+    "prepublish",
+    "Publish platform packages before publish your Rust Plugin"
   )
   .allowUnknownOptions()
   .action(async () => {
