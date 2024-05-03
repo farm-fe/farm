@@ -1,4 +1,5 @@
 import type { JsPlugin } from '@farmfe/core';
+import path from 'node:path';
 
 import Context from './context.js';
 import { pluginName } from './options.js';
@@ -40,10 +41,14 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
       },
       async executor(params) {
         const { resolvedPath, content } = params;
+        const [url] = resolvedPath.split('?');
         ctx.handleTransform(resolvedPath);
+
+        const ext = path.extname(url).slice(1);
+
         return {
           content,
-          moduleType: 'ts'
+          moduleType: ext || 'ts'
         };
       }
     },
