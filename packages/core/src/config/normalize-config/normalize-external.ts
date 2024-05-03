@@ -67,6 +67,7 @@ export function normalizeExternal(
   }
 
   resolvedCompilation.external = [
+    ...resolvedCompilation.external,
     ...normalizedExternal,
     '^node:',
     ...defaultExternals.map((m) => `^${m}($|/promises$)`)

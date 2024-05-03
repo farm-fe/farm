@@ -235,6 +235,14 @@ export async function resolveConfig(
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
+ *
+ *
+ * ResolvedUserConfig is a parameter passed to rust Compiler,
+ * and ResolvedUserConfig is generated from UserConfig.
+ * When UserConfig is different from ResolvedUserConfig,
+ * a legal value should be given to the ResolvedUserConfig field here,
+ * and converted from UserConfig in the subsequent process.
+ *
  * @param config
  * @returns resolved config that parsed to rust compiler
  */
@@ -260,11 +268,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   const inputIndexConfig = checkCompilationInputValue(userConfig, logger);
-  // ResolvedUserConfig is a parameter passed to rust Compiler,
-  // and ResolvedUserConfig is generated from UserConfig.
-  // When UserConfig is different from ResolvedUserConfig,
-  // a legal value should be given to the ResolvedUserConfig field here,
-  // and converted from UserConfig in the subsequent process.
+
   const resolvedCompilation: ResolvedCompilation = merge(
     {},
     DEFAULT_COMPILATION_OPTIONS,
@@ -631,7 +635,7 @@ async function readConfigFile(
       .split('.')
       .join('')}.mjs`;
 
-    const defaultConfig: ResolvedUserConfig = {
+    const tsDefaultUserConfig: UserConfig = {
       root: inlineOptions.root,
       compilation: {
         input: {
@@ -643,7 +647,7 @@ async function readConfigFile(
           format: 'esm',
           targetEnv: 'node'
         },
-        external: [],
+        external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
         partialBundling: {
           enforceResources: [
             {
@@ -662,15 +666,15 @@ async function readConfigFile(
         progress: false
       }
     };
+    const tsDefaultResolvedUserConfig: ResolvedUserConfig = await resolveMergedUserConfig(
+      tsDefaultUserConfig,
+      undefined,
+      'development'
+    );
+
     const normalizedConfig = await normalizeUserCompilationConfig(
-      defaultConfig,
-      {
-        ...defaultConfig,
-        compilation: {
-          ...defaultConfig.compilation,
-          external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']
-        }
-      },
+      tsDefaultResolvedUserConfig,
+      tsDefaultUserConfig,
       logger,
       mode as CompilationMode
     );
@@ -789,7 +793,7 @@ export async function resolveMergedUserConfig(
   mergedUserConfig: UserConfig,
   configFilePath: string | undefined,
   mode: 'development' | 'production' | string
-) {
+): Promise<ResolvedUserConfig> {
   const serverConfig: NormalizedServerConfig = {
     ...DEFAULT_DEV_SERVER_OPTIONS,
     ...mergedUserConfig.server,

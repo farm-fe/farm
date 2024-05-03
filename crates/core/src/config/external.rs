@@ -31,12 +31,7 @@ impl ExternalConfig {
   }
 
   pub fn find_match(&self, source: &str) -> Option<&ExternalConfigItem> {
-    for item in &self.0 {
-      if item.is_match(source) {
-        return Some(item);
-      }
-    }
-    None
+    self.0.iter().find(|item| item.is_match(source))
   }
 
   pub fn is_external(&self, source: &str) -> bool {

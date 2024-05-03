@@ -2,8 +2,10 @@ import ReactDom from 'react-dom';
 import React from 'react';
 import $ from 'jquery';
 
-console.log({
-  React,
-  ReactDom,
-  $
-});
+document.body.innerHTML = `
+<div id="root">
+  <div>jquery: ${$}</div>
+  <div>react-dom: ${ReactDom}</div>
+  <div>react: ${React}</div>
+</div>
+`;
