@@ -1360,6 +1360,7 @@ dependencies = [
  "farmfe_plugin_script",
  "farmfe_plugin_static_assets",
  "farmfe_plugin_tree_shake",
+ "farmfe_testing",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.4",
@@ -1620,6 +1621,19 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.4",
+]
+
+[[package]]
+name = "farmfe_testing"
+version = "0.1.0"
+dependencies = [
+ "glob",
+ "heck 0.4.1",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn 2.0.60",
 ]
 
 [[package]]
@@ -1969,6 +1983,12 @@ dependencies = [
  "log",
  "xml-rs",
 ]
+
+[[package]]
+name = "glob"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "glow"

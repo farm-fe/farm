@@ -71,7 +71,7 @@ impl Plugin for FarmPluginResolve {
     {
       farm_profile_scope!("plugin_resolve::resolve::check_external".to_string());
       // check external first, if the source is set as external, return it immediately
-      if context.config.external.iter().any(|e| e.is_match(source)) {
+      if context.config.external.is_external(source) {
         return Ok(Some(PluginResolveHookResult {
           resolved_path: param.source.clone(),
           external: true,

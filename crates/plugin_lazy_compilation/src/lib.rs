@@ -108,11 +108,7 @@ impl Plugin for FarmPluginLazyCompilation {
 
     // if the source is imported by dynamic import and it's not external source
     if matches!(param.kind, ResolveKind::DynamicImport)
-      && !context
-        .config
-        .external
-        .iter()
-        .any(|e| e.is_match(&param.source))
+      && !context.config.external.is_external(&param.source)
     {
       let resolve_result = context.plugin_driver.resolve(
         param,

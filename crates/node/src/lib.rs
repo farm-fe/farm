@@ -167,13 +167,24 @@ impl JsCompiler {
       .expect("rustPlugins should be an array of js strings")
     };
 
-    let config: Config = env
+    let farmfe_serde_value: farmfe_core::serde_json::Value = env
       .from_js_value(
         config
           .get_named_property::<JsObject>("config")
           .expect("config should exist"),
       )
       .expect("can not transform js config object to rust config");
+
+    // println!("config: {:#?}", farmfe_serde_value);
+    let config: Config = farmfe_core::serde_json::from_value(farmfe_serde_value).unwrap();
+
+    // let config: Config = env
+    //   .from_js_value(
+    //     config
+    //       .get_named_property::<JsObject>("config")
+    //       .expect("config should exist"),
+    //   )
+    //   .expect("can not transform js config object to rust config");
 
     let mut plugins_adapters = vec![];
 
@@ -290,7 +301,7 @@ impl JsCompiler {
             thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
           },
           sync,
-          generate_update_resource
+          generate_update_resource,
         )
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
       {

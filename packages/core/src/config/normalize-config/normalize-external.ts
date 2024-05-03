@@ -2,18 +2,25 @@ import module from 'node:module';
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { Config } from '../../../binding/index.js';
+import { ResolvedCompilation, UserConfig } from '../types.js';
+import { isObject } from '../../utils/share.js';
 
-export function normalizeExternal(config: Config['config']) {
+export function normalizeExternal(
+  config: UserConfig,
+  resolvedCompilation: ResolvedCompilation
+) {
   const defaultExternals: string[] = [];
-  const externalNodeBuiltins = config.externalNodeBuiltins ?? true;
+  const externalNodeBuiltins = config.compilation?.externalNodeBuiltins ?? true;
 
   if (externalNodeBuiltins) {
     if (Array.isArray(externalNodeBuiltins)) {
       defaultExternals.push(...externalNodeBuiltins);
     } else if (externalNodeBuiltins === true) {
       let packageJson: any = {};
-      const pkgPath = path.join(config.root || process.cwd(), 'package.json');
+      const pkgPath = path.join(
+        resolvedCompilation.root || process.cwd(),
+        'package.json'
+      );
       // the project installed polyfill
       if (existsSync(pkgPath)) {
         try {
@@ -26,7 +33,7 @@ export function normalizeExternal(config: Config['config']) {
       defaultExternals.push(
         ...[...module.builtinModules].filter(
           (m) =>
-            !config.resolve?.alias?.[m] &&
+            !resolvedCompilation.resolve?.alias?.[m] &&
             !packageJson?.devDependencies?.[m] &&
             !packageJson?.dependencies?.[m]
         )
@@ -34,8 +41,33 @@ export function normalizeExternal(config: Config['config']) {
     }
   }
 
-  config.external = [
-    ...(config.external ?? []),
+  const normalizedExternal: ResolvedCompilation['external'] = [];
+
+  /**
+   *
+   * `["^node:.*$", { "jquery": "$" }]`
+   * =>
+   * `["^node:.*$", { pattern: "jquery", globalName: "$" }]`
+   */
+  for (const external of config?.compilation?.external ?? []) {
+    if (typeof external === 'string') {
+      normalizedExternal.push(external);
+    } else if (isObject(external)) {
+      for (const key in external) {
+        if (!Object.hasOwn(external, key)) {
+          continue;
+        }
+
+        normalizedExternal.push({
+          pattern: key,
+          globalName: external[key]
+        });
+      }
+    }
+  }
+
+  resolvedCompilation.external = [
+    ...normalizedExternal,
     '^node:',
     ...defaultExternals.map((m) => `^${m}($|/promises$)`)
   ];

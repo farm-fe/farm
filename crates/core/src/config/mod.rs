@@ -6,8 +6,7 @@ use swc_css_prefixer::options::Targets;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
 use self::{
-  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
-  partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
+  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, external::ExternalConfig, html::HtmlConfig, partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
@@ -28,6 +27,7 @@ pub mod partial_bundling;
 pub mod persistent_cache;
 pub mod preset_env;
 pub mod script;
+pub mod external;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -37,7 +37,7 @@ pub struct Config {
   pub root: String,
   pub mode: Mode,
   pub resolve: ResolveConfig,
-  pub external: Vec<ConfigRegex>,
+  pub external: ExternalConfig,
   pub define: HashMap<String, serde_json::Value>,
   pub runtime: RuntimeConfig,
   pub script: ScriptConfig,
@@ -74,7 +74,7 @@ impl Default for Config {
       mode: Mode::Development,
       resolve: ResolveConfig::default(),
       define: HashMap::new(),
-      external: vec![],
+      external: ExternalConfig::default(),
       runtime: Default::default(),
       script: Default::default(),
       css: Default::default(),

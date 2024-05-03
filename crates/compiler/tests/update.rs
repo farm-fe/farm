@@ -7,6 +7,7 @@ use common::generate_runtime;
 use farmfe_compiler::{Compiler, DYNAMIC_VIRTUAL_SUFFIX};
 use farmfe_core::config::bool_or_obj::BoolOrObj;
 use farmfe_core::config::config_regex::ConfigRegex;
+use farmfe_core::config::external::{ExternalConfig, ExternalConfigItem};
 use farmfe_core::config::persistent_cache::PersistentCacheConfig;
 use farmfe_core::config::TargetEnv;
 use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
@@ -34,10 +35,10 @@ fn create_compiler_internal(
         ..Default::default()
       },
       mode: Mode::Development,
-      external: vec![
-        ConfigRegex::new("^react-refresh$"),
-        ConfigRegex::new("^module$"),
-      ],
+      external: ExternalConfig(vec![
+        ExternalConfigItem::Default(ConfigRegex::new("^react-refresh$")),
+        ExternalConfigItem::Default(ConfigRegex::new("^module$")),
+      ]),
       sourcemap: SourcemapConfig::Bool(false),
       progress: false,
       lazy_compilation,

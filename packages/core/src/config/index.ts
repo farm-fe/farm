@@ -4,11 +4,6 @@ import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import {
-  Config,
-  PluginTransformHookParam,
-  bindingPath
-} from '../../binding/index.js';
 import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
@@ -18,6 +13,7 @@ import {
   resolveConfigResolvedHook,
   resolveFarmPlugins
 } from '../plugin/index.js';
+import { bindingPath, PluginTransformHookParam } from '../../binding/index.js';
 import { Server } from '../server/index.js';
 import { urlRegex } from '../utils/http.js';
 import {
@@ -50,6 +46,7 @@ import type {
   Alias,
   FarmCLIOptions,
   NormalizedServerConfig,
+  ResolvedCompilation,
   ResolvedUserConfig,
   UserConfig,
   UserConfigExport,
@@ -88,6 +85,7 @@ async function getDefaultConfig(
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
+    config,
     logger,
     mode
   );
@@ -203,6 +201,7 @@ export async function resolveConfig(
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
+    mergedUserConfig,
     logger,
     mode
   );
@@ -230,9 +229,9 @@ export async function resolveConfig(
   return resolvedUserConfig;
 }
 
-type ServerConfig = {
-  server?: NormalizedServerConfig;
-};
+// type ServerConfig = {
+//   server?: NormalizedServerConfig;
+// };
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
@@ -240,16 +239,17 @@ type ServerConfig = {
  * @returns resolved config that parsed to rust compiler
  */
 export async function normalizeUserCompilationConfig(
-  userConfig: ResolvedUserConfig,
+  resolvedUserConfig: ResolvedUserConfig,
+  userConfig: UserConfig,
   logger: Logger,
   mode: CompilationMode = 'development'
-): Promise<Config['config']> {
-  const { compilation, root } = userConfig;
+): Promise<ResolvedCompilation> {
+  const { compilation, root } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
 
-  userConfig.root = resolvedRootPath;
+  resolvedUserConfig.root = resolvedRootPath;
 
   // resolve public path
   if (compilation?.output?.publicPath) {
@@ -260,7 +260,12 @@ export async function normalizeUserCompilationConfig(
   }
 
   const inputIndexConfig = checkCompilationInputValue(userConfig, logger);
-  const config: Config['config'] & ServerConfig = merge(
+  // ResolvedUserConfig is a parameter passed to rust Compiler,
+  // and ResolvedUserConfig is generated from UserConfig.
+  // When UserConfig is different from ResolvedUserConfig,
+  // a legal value should be given to the ResolvedUserConfig field here,
+  // and converted from UserConfig in the subsequent process.
+  const resolvedCompilation: ResolvedCompilation = merge(
     {},
     DEFAULT_COMPILATION_OPTIONS,
     {
@@ -272,47 +277,50 @@ export async function normalizeUserCompilationConfig(
 
   const isProduction = mode === 'production';
   const isDevelopment = mode === 'development';
-  config.mode = config.mode ?? mode;
+  resolvedCompilation.mode = resolvedCompilation.mode ?? mode;
 
-  config.coreLibPath = bindingPath;
+  resolvedCompilation.coreLibPath = bindingPath;
 
-  normalizeOutput(config, isProduction);
-  normalizeExternal(config);
+  normalizeOutput(resolvedCompilation, isProduction);
+  normalizeExternal(userConfig, resolvedCompilation);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
-  if (!config.assets?.publicDir) {
-    if (!config.assets) {
-      config.assets = {};
+  if (!resolvedCompilation.assets?.publicDir) {
+    if (!resolvedCompilation.assets) {
+      resolvedCompilation.assets = {};
     }
 
-    const userPublicDir = userConfig.publicDir
-      ? userConfig.publicDir
-      : join(config.root, 'public');
+    const userPublicDir = resolvedUserConfig.publicDir
+      ? resolvedUserConfig.publicDir
+      : join(resolvedCompilation.root, 'public');
 
     if (isAbsolute(userPublicDir)) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
-      config.assets.publicDir = userPublicDir;
+      resolvedCompilation.assets.publicDir = userPublicDir;
     } else {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
-      config.assets.publicDir = join(config.root, userPublicDir);
+      resolvedCompilation.assets.publicDir = join(
+        resolvedCompilation.root,
+        userPublicDir
+      );
     }
   }
 
-  config.define = Object.assign(
+  resolvedCompilation.define = Object.assign(
     {
       // skip self define
-      ['FARM' + '_PROCESS_ENV']: userConfig.env
+      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env
     },
-    config?.define,
+    resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
-    config.output?.targetEnv === 'node'
+    resolvedCompilation.output?.targetEnv === 'node'
       ? {}
-      : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
+      : Object.keys(resolvedUserConfig.env || {}).reduce((env: any, key) => {
           env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            JSON.stringify(userConfig.env[key]);
+            JSON.stringify(resolvedUserConfig.env[key]);
           return env;
         }, {})
   );
@@ -323,42 +331,43 @@ export async function normalizeUserCompilationConfig(
     '@farmfe/runtime-plugin-import-meta'
   );
 
-  if (!config.runtime) {
-    config.runtime = {
+  if (!resolvedCompilation.runtime) {
+    resolvedCompilation.runtime = {
       path: require.resolve('@farmfe/runtime'),
       plugins: []
     };
   }
 
-  if (!config.runtime.path) {
-    config.runtime.path = require.resolve('@farmfe/runtime');
+  if (!resolvedCompilation.runtime.path) {
+    resolvedCompilation.runtime.path = require.resolve('@farmfe/runtime');
   }
 
-  if (!config.runtime.swcHelpersPath) {
-    config.runtime.swcHelpersPath = path.dirname(
+  if (!resolvedCompilation.runtime.swcHelpersPath) {
+    resolvedCompilation.runtime.swcHelpersPath = path.dirname(
       require.resolve('@swc/helpers/package.json')
     );
   }
 
-  if (!config.runtime.plugins) {
-    config.runtime.plugins = [];
+  if (!resolvedCompilation.runtime.plugins) {
+    resolvedCompilation.runtime.plugins = [];
   } else {
     // make sure all plugin paths are absolute
-    config.runtime.plugins = config.runtime.plugins.map((plugin) => {
-      if (!path.isAbsolute(plugin)) {
-        if (!plugin.startsWith('.')) {
-          // resolve plugin from node_modules
-          return require.resolve(plugin);
-        } else {
-          return path.resolve(resolvedRootPath, plugin);
+    resolvedCompilation.runtime.plugins =
+      resolvedCompilation.runtime.plugins.map((plugin) => {
+        if (!path.isAbsolute(plugin)) {
+          if (!plugin.startsWith('.')) {
+            // resolve plugin from node_modules
+            return require.resolve(plugin);
+          } else {
+            return path.resolve(resolvedRootPath, plugin);
+          }
         }
-      }
 
-      return plugin;
-    });
+        return plugin;
+      });
   }
   // set namespace to package.json name field's hash
-  if (!config.runtime.namespace) {
+  if (!resolvedCompilation.runtime.namespace) {
     // read package.json name field
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
     const packageJsonExists = fs.existsSync(packageJsonPath);
@@ -367,62 +376,67 @@ export async function normalizeUserCompilationConfig(
           ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
-    config.runtime.namespace = crypto
+    resolvedCompilation.runtime.namespace = crypto
       .createHash('md5')
       .update(namespaceName)
       .digest('hex');
   }
 
   if (isProduction) {
-    config.lazyCompilation = false;
-  } else if (config.lazyCompilation === undefined) {
+    resolvedCompilation.lazyCompilation = false;
+  } else if (resolvedCompilation.lazyCompilation === undefined) {
     if (isDevelopment) {
-      config.lazyCompilation = true;
+      resolvedCompilation.lazyCompilation = true;
     } else {
-      config.lazyCompilation = false;
+      resolvedCompilation.lazyCompilation = false;
     }
   }
 
-  if (config.mode === undefined) {
-    config.mode = mode;
+  if (resolvedCompilation.mode === undefined) {
+    resolvedCompilation.mode = mode;
   }
 
-  setProcessEnv(config.mode);
+  setProcessEnv(resolvedCompilation.mode);
   // TODO add targetEnv `lib-browser` and `lib-node` support
   const is_entry_html =
-    Object.keys(config.input).length === 0 ||
-    Object.values(config.input).some((value) => value.endsWith('.html'));
+    Object.keys(resolvedCompilation.input).length === 0 ||
+    Object.values(resolvedCompilation.input).some((value) =>
+      value.endsWith('.html')
+    );
   if (
-    config.output.targetEnv !== 'node' &&
-    isArray(config.runtime.plugins) &&
-    userConfig.server.hmr &&
+    resolvedCompilation.output.targetEnv !== 'node' &&
+    isArray(resolvedCompilation.runtime.plugins) &&
+    resolvedUserConfig.server?.hmr &&
     is_entry_html &&
-    !config.runtime.plugins.includes(hmrClientPluginPath)
+    !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
   ) {
-    const publicPath = userConfig.compilation?.output?.publicPath ?? '/';
-    const hmrPath = userConfig.server.hmr.path;
-    const serverOptions = userConfig.server;
+    const publicPath =
+      resolvedUserConfig.compilation?.output?.publicPath ?? '/';
+    const hmrPath = resolvedUserConfig.server.hmr.path;
+    const serverOptions = resolvedUserConfig.server;
     const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
 
-    config.runtime.plugins.push(hmrClientPluginPath);
+    resolvedCompilation.runtime.plugins.push(hmrClientPluginPath);
     // TODO optimize get hmr logic
-    config.define.FARM_HMR_PORT = String(
+    resolvedCompilation.define.FARM_HMR_PORT = String(
       (serverOptions.hmr.port || undefined) ??
         serverOptions.port ??
         DEFAULT_DEV_SERVER_OPTIONS.port
     );
-    config.define.FARM_HMR_HOST = JSON.stringify(userConfig.server.hmr.host);
-    config.define.FARM_HMR_PROTOCOL = JSON.stringify(
-      userConfig.server.hmr.protocol
+    resolvedCompilation.define.FARM_HMR_HOST = JSON.stringify(
+      resolvedUserConfig.server.hmr.host
     );
-    config.define.FARM_HMR_PATH = JSON.stringify(defineHmrPath);
+    resolvedCompilation.define.FARM_HMR_PROTOCOL = JSON.stringify(
+      resolvedUserConfig.server.hmr.protocol
+    );
+    resolvedCompilation.define.FARM_HMR_PATH = JSON.stringify(defineHmrPath);
   }
 
   if (
-    isArray(config.runtime.plugins) &&
-    !config.runtime.plugins.includes(ImportMetaPluginPath)
+    isArray(resolvedCompilation.runtime.plugins) &&
+    !resolvedCompilation.runtime.plugins.includes(ImportMetaPluginPath)
   ) {
-    config.runtime.plugins.push(ImportMetaPluginPath);
+    resolvedCompilation.runtime.plugins.push(ImportMetaPluginPath);
   }
 
   // we should not deep merge compilation.input
@@ -438,18 +452,18 @@ export async function normalizeUserCompilationConfig(
       }
     }
 
-    config.input = input;
+    resolvedCompilation.input = input;
   }
 
-  if (config.treeShaking === undefined) {
+  if (resolvedCompilation.treeShaking === undefined) {
     if (isProduction) {
-      config.treeShaking = true;
+      resolvedCompilation.treeShaking = true;
     } else {
-      config.treeShaking = false;
+      resolvedCompilation.treeShaking = false;
     }
   }
 
-  if (config.script?.plugins?.length) {
+  if (resolvedCompilation.script?.plugins?.length) {
     logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
         'swc_core v0.90'
@@ -464,39 +478,39 @@ export async function normalizeUserCompilationConfig(
   // lazyCompilation should be disabled in production mode
   // so, it only happens in development mode
   // https://github.com/farm-fe/farm/issues/962
-  if (config.treeShaking && config.lazyCompilation) {
+  if (resolvedCompilation.treeShaking && resolvedCompilation.lazyCompilation) {
     logger.error(
       'treeShaking option is not supported in lazyCompilation mode, lazyCompilation will be disabled.'
     );
-    config.lazyCompilation = false;
+    resolvedCompilation.lazyCompilation = false;
   }
 
-  if (config.minify === undefined) {
+  if (resolvedCompilation.minify === undefined) {
     if (isProduction) {
-      config.minify = true;
+      resolvedCompilation.minify = true;
     } else {
-      config.minify = false;
+      resolvedCompilation.minify = false;
     }
   }
 
-  if (config.presetEnv === undefined) {
+  if (resolvedCompilation.presetEnv === undefined) {
     if (isProduction) {
-      config.presetEnv = true;
+      resolvedCompilation.presetEnv = true;
     } else {
-      config.presetEnv = false;
+      resolvedCompilation.presetEnv = false;
     }
   }
 
   // setting the custom configuration
-  config.custom = {
-    ...(config.custom || {}),
-    'runtime.isolate': `${!!config.runtime.isolate}`
+  resolvedCompilation.custom = {
+    ...(resolvedCompilation.custom || {}),
+    'runtime.isolate': `${!!resolvedCompilation.runtime.isolate}`
   };
 
   // normalize persistent cache at last
-  await normalizePersistentCache(config, userConfig);
+  await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
 
-  return config;
+  return resolvedCompilation;
 }
 
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
@@ -530,7 +544,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   writeToDisk: false
 };
 
-export const DEFAULT_COMPILATION_OPTIONS: Partial<Config['config']> = {
+export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
   output: {
     path: './dist',
     publicPath: '/'
@@ -617,36 +631,44 @@ async function readConfigFile(
       .split('.')
       .join('')}.mjs`;
 
+    const defaultConfig: ResolvedUserConfig = {
+      root: inlineOptions.root,
+      compilation: {
+        input: {
+          [fileName]: configFilePath
+        },
+        output: {
+          entryFilename: '[entryName]',
+          path: outputPath,
+          format: 'esm',
+          targetEnv: 'node'
+        },
+        external: [],
+        partialBundling: {
+          enforceResources: [
+            {
+              name: fileName,
+              test: ['.+']
+            }
+          ]
+        },
+        watch: false,
+        sourcemap: false,
+        treeShaking: false,
+        minify: false,
+        presetEnv: false,
+        lazyCompilation: false,
+        persistentCache: false,
+        progress: false
+      }
+    };
     const normalizedConfig = await normalizeUserCompilationConfig(
+      defaultConfig,
       {
-        root: inlineOptions.root,
+        ...defaultConfig,
         compilation: {
-          input: {
-            [fileName]: configFilePath
-          },
-          output: {
-            entryFilename: '[entryName]',
-            path: outputPath,
-            format: 'esm',
-            targetEnv: 'node'
-          },
-          external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
-          partialBundling: {
-            enforceResources: [
-              {
-                name: fileName,
-                test: ['.+']
-              }
-            ]
-          },
-          watch: false,
-          sourcemap: false,
-          treeShaking: false,
-          minify: false,
-          presetEnv: false,
-          lazyCompilation: false,
-          persistentCache: false,
-          progress: false
+          ...defaultConfig.compilation,
+          external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']
         }
       },
       logger,
@@ -670,7 +692,7 @@ async function readConfigFile(
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
-      fs.unlink(filePath, () => void 0);
+      // fs.unlink(filePath, () => void 0);
     } catch {
       /** do nothing */
     }
@@ -768,7 +790,24 @@ export async function resolveMergedUserConfig(
   configFilePath: string | undefined,
   mode: 'development' | 'production' | string
 ) {
-  const resolvedUserConfig = { ...mergedUserConfig } as ResolvedUserConfig;
+  const serverConfig: NormalizedServerConfig = {
+    ...DEFAULT_DEV_SERVER_OPTIONS,
+    ...mergedUserConfig.server,
+    hmr: {
+      ...DEFAULT_HMR_OPTIONS,
+      ...(isObject(mergedUserConfig.server?.hmr)
+        ? mergedUserConfig.server.hmr
+        : {})
+    }
+  };
+  const resolvedUserConfig: ResolvedUserConfig = {
+    ...mergedUserConfig,
+    compilation: {
+      ...mergedUserConfig.compilation,
+      external: []
+    },
+    server: serverConfig
+  };
 
   // set internal config
   resolvedUserConfig.envMode = mode;
