@@ -1,0 +1,66 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.7.2/schema.json",
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "files": {
+    "ignore": [
+      "crates/**",
+      "examples/**",
+      "tsconfig.base.json",
+      "tsconfig.json",
+      "cspell.json",
+      "e2e/**",
+      "*.e2e.ts",
+      "*.d.ts",
+      "packages/runtime/**",
+      "packages/create-farm/templates/**",
+      "packages/create-farm-plugin/templates/**",
+      "rust-plugins/**"
+    ],
+    "ignoreUnknown": true
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 100,
+    "attributePosition": "auto"
+  },
+  "organizeImports": {
+    "enabled": true,
+    "include": ["./**/*.js", "./**/*.ts", "./**/*.mjs"]
+  },
+  "linter": {
+    "enabled": false,
+    "rules": {
+      "recommended": true
+    },
+    "ignore": [
+      "**/binding/**",
+      "**/templates/**",
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/*.config.js",
+      "**/*.config.ts"
+    ]
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "single",
+      "quoteProperties": "asNeeded",
+      "trailingComma": "none",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "quoteStyle": "single",
+      "attributePosition": "auto"
+    }
+  }
+}

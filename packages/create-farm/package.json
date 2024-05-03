@@ -17,18 +17,8 @@
   },
   "author": "",
   "license": "MIT",
-  "keywords": [
-    "farm",
-    "create farm",
-    "rust bundler",
-    "bundler",
-    "build tool",
-    "web bundler"
-  ],
-  "files": [
-    "dist",
-    "templates"
-  ],
+  "keywords": ["farm", "create farm", "rust bundler", "bundler", "build tool", "web bundler"],
+  "files": ["dist", "templates"],
   "repository": {
     "type": "git",
     "url": "https://github.com/farm-fe/farm"

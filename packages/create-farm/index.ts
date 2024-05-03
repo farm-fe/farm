@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-import prompts from 'prompts';
-import minimist from 'minimist';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
 import spawn from 'cross-spawn';
+import minimist from 'minimist';
+import prompts from 'prompts';
 
 import { fileURLToPath } from 'node:url';
 import { colors } from './utils/color.js';
 
-import { loadWithRocketGradient } from './utils/gradient.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
-import { shouldUseYarn, shouldUsePnpm } from './utils/packageManager.js';
+import { loadWithRocketGradient } from './utils/gradient.js';
+import { shouldUsePnpm, shouldUseYarn } from './utils/packageManager.js';
 
 interface IResultType {
   packageName?: string;
@@ -85,13 +85,10 @@ async function createFarm() {
           }
         },
         {
-          type: () =>
-            !fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm',
+          type: () => (!fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm'),
           name: 'overwrite',
           message: () =>
-            (targetDir === '.'
-              ? '🚨 Current directory'
-              : `🚨 Target directory "${targetDir}"`) +
+            (targetDir === '.' ? '🚨 Current directory' : `🚨 Target directory "${targetDir}"`) +
             ` is not empty. Overwrite existing files and continue?`
         },
         {
@@ -196,9 +193,7 @@ async function copyTemplate(targetDir: string, options: IResultType) {
 }
 
 function writePackageJson(dest: string, options: IResultType) {
-  const pkg = JSON.parse(
-    fs.readFileSync(path.join(dest, `package.json`), 'utf-8')
-  );
+  const pkg = JSON.parse(fs.readFileSync(path.join(dest, `package.json`), 'utf-8'));
 
   pkg.name = options.projectName;
 
@@ -211,55 +206,39 @@ function writePackageJson(dest: string, options: IResultType) {
   const packageJsonPath = path.join(dest, 'package.json');
   const { name, ...rest } = pkg;
   const sortedPackageJson = { name, ...rest };
-  fs.writeFileSync(
-    packageJsonPath,
-    JSON.stringify(sortedPackageJson, null, 2) + '\n'
-  );
+  fs.writeFileSync(packageJsonPath, JSON.stringify(sortedPackageJson, null, 2) + '\n');
 }
 
 function getCurrentPkgManager(options: IResultType) {
   const pkgManager = pkgInfo ? pkgInfo.name : 'npm';
-  const currentPkgManager =
-    (pkgInfo ? pkgManager : options.packageManager) ?? 'npm';
+  const currentPkgManager = (pkgInfo ? pkgManager : options.packageManager) ?? 'npm';
   return currentPkgManager;
 }
 
-async function installationDeps(
-  targetDir: string,
-  autoInstall: boolean,
-  options: IResultType
-) {
+async function installationDeps(targetDir: string, autoInstall: boolean, options: IResultType) {
   const currentPkgManager = getCurrentPkgManager(options);
   if (autoInstall) {
     const cmdInherit = createSpawnCmd(path.resolve(cwd, targetDir), 'ignore');
     const spinner = await loadWithRocketGradient('Install Dependencies');
     await cmdInherit(
       currentPkgManager,
-      currentPkgManager === 'pnpm'
-        ? ['install', '--no-frozen-lockfile']
-        : ['install']
+      currentPkgManager === 'pnpm' ? ['install', '--no-frozen-lockfile'] : ['install']
     );
     spinner.text = 'Dependencies Installed Successfully!';
     spinner.succeed();
   }
-  colors.handleBrandText(
-    '\n > Initial Farm Project created successfully ✨ ✨ \n'
-  );
+  colors.handleBrandText('\n > Initial Farm Project created successfully ✨ ✨ \n');
   colors.handleBrandText(`   cd ${targetDir} \n`);
 
   autoInstall
     ? autoInstallText(currentPkgManager)
     : colors.handleBrandText(
-        `   ${currentPkgManager} install \n\n   ${autoInstallText(
-          currentPkgManager
-        )}`
+        `   ${currentPkgManager} install \n\n   ${autoInstallText(currentPkgManager)}`
       );
 }
 
 function autoInstallText(currentPkgManager: string) {
-  return `${currentPkgManager} ${
-    currentPkgManager === 'npm' ? 'run start' : 'start'
-  } `;
+  return `${currentPkgManager} ${currentPkgManager === 'npm' ? 'run start' : 'start'} `;
 }
 
 function pkgFromUserAgent(userAgent: string | undefined) {
@@ -277,12 +256,8 @@ function judgeNodeVersion() {
   const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
   const minimumMajorVersion = 16;
   if (requiredMajorVersion < minimumMajorVersion) {
-    console.log(
-      colors.yellow(`create-farm unsupported Node.js v${currentVersion}.`)
-    );
-    console.log(
-      colors.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
-    );
+    console.log(colors.yellow(`create-farm unsupported Node.js v${currentVersion}.`));
+    console.log(colors.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`));
     process.exit(1);
   }
 }
