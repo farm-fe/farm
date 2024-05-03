@@ -30,7 +30,11 @@ export const loopbackHosts = new Set([
   '0000:0000:0000:0000:0000:0000:0000:0001'
 ]);
 
-export const wildcardHosts = new Set(['0.0.0.0', '::', '0000:0000:0000:0000:0000:0000:0000:0000']);
+export const wildcardHosts = new Set([
+  '0.0.0.0',
+  '::',
+  '0000:0000:0000:0000:0000:0000:0000:0000'
+]);
 
 export async function resolveServerUrls(
   server: Server,
@@ -75,7 +79,9 @@ export async function resolveServerUrls(
         let host = detail.address.replace('127.0.0.1', hostname.name);
         host = host.includes(':') ? `[${host}]` : host;
         const url = createServerUrl(protocol, host, port, base);
-        detail.address.includes('127.0.0.1') ? local.push(url) : network.push(url);
+        detail.address.includes('127.0.0.1')
+          ? local.push(url)
+          : network.push(url);
       });
   }
 
@@ -94,7 +100,8 @@ export async function resolveHostname(
     host = optionsHost;
   }
 
-  const name = host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
+  const name =
+    host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
 
   return { host, name };
 }

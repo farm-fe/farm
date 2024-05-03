@@ -31,7 +31,9 @@ export async function resolveCore(): Promise<{
   try {
     return import('@farmfe/core');
   } catch (err) {
-    logger.error(`Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`);
+    logger.error(
+      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
+    );
     process.exit(1);
   }
 }
@@ -138,7 +140,9 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
   return resolveOptions;
 }
 
-export function resolveCommandOptions(options: GlobalFarmCLIOptions): GlobalFarmCLIOptions {
+export function resolveCommandOptions(
+  options: GlobalFarmCLIOptions
+): GlobalFarmCLIOptions {
   const resolveOptions = { ...options };
   filterDuplicateOptions(resolveOptions);
   return cleanOptions(resolveOptions);
@@ -172,10 +176,15 @@ export function preventExperimentalWarning() {
 }
 
 export function resolveRootPath(rootPath = '') {
-  return rootPath && path.isAbsolute(rootPath) ? rootPath : path.resolve(process.cwd(), rootPath);
+  return rootPath && path.isAbsolute(rootPath)
+    ? rootPath
+    : path.resolve(process.cwd(), rootPath);
 }
 
-export function resolveCliConfig(root: string, options: GlobalFarmCLIOptions & ICleanOptions) {
+export function resolveCliConfig(
+  root: string,
+  options: GlobalFarmCLIOptions & ICleanOptions
+) {
   root = resolveRootPath(root);
   const configPath = getConfigPath(root, options.config);
   return {

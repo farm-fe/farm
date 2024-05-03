@@ -23,7 +23,16 @@ import { Module } from '@farmfe/core/binding';
 
 export default defineComponent({
   name: 'ModuleAnalyze',
-  components: { Card, Tree, ResourcePots, FileTree, CodeViewer, Drawer, ModuleList, ModuleRecords },
+  components: {
+    Card,
+    Tree,
+    ResourcePots,
+    FileTree,
+    CodeViewer,
+    Drawer,
+    ModuleList,
+    ModuleRecords
+  },
   setup() {
     const currentModule = ref<Module>();
     function handleSelect(module: Module) {

@@ -61,7 +61,10 @@ export default function merge<T>(target: T, ...sources: Partial<T>[]): T {
 
         if (sourceValue === undefined) {
           continue;
-        } else if (isMergeableObject(destination[key]) && isMergeableObject(sourceValue)) {
+        } else if (
+          isMergeableObject(destination[key]) &&
+          isMergeableObject(sourceValue)
+        ) {
           destination[key] = deepmerge(destination[key], sourceValue, options);
         } else {
           destination[key] = sourceValue;

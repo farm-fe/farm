@@ -1,4 +1,11 @@
-import path, { posix, isAbsolute, dirname, normalize, sep, resolve } from 'node:path';
+import path, {
+  posix,
+  isAbsolute,
+  dirname,
+  normalize,
+  sep,
+  resolve
+} from 'node:path';
 
 import extra from 'fs-extra';
 import typescript from 'typescript';
@@ -13,7 +20,8 @@ const globSuffixRE = /^((?:.*\.[^.]+)|(?:\*+))$/;
 
 const globalImportRE =
   /(?:(?:import|export)\s?(?:type)?\s?(?:(?:\{[^;\n]+\})|(?:[^;\n]+))\s?from\s?['"][^;\n]+['"])|(?:import\(['"][^;\n]+?['"]\))/g;
-const staticImportRE = /(?:import|export)\s?(?:type)?\s?\{?.+\}?\s?from\s?['"](.+)['"]/;
+const staticImportRE =
+  /(?:import|export)\s?(?:type)?\s?\{?.+\}?\s?from\s?['"](.+)['"]/;
 const dynamicImportRE = /import\(['"]([^;\n]+?)['"]\)/;
 const simpleStaticImportRE = /((?:import|export).+from\s?)['"](.+)['"]/;
 const simpleDynamicImportRE = /(import\()['"](.+)['"]\)/;
@@ -75,9 +83,9 @@ export function callWithErrorHandle<
   }
 }
 
-export function isNativeObj<T extends Record<string, any> = Record<string, any>>(
-  value: T
-): value is T {
+export function isNativeObj<
+  T extends Record<string, any> = Record<string, any>
+>(value: T): value is T {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
 
@@ -108,9 +116,13 @@ export function getResolvedOptions(defaultVueOptions: any) {
     const val = defaultVueOptions[key as keyof any];
     switch (key) {
       case 'include':
-        resolvedOptions.include = (isArray(val) ? val : [val]) as any['include'];
+        resolvedOptions.include = (
+          isArray(val) ? val : [val]
+        ) as any['include'];
       case 'exclude':
-        resolvedOptions.exclude = (isArray(val) ? val : [val]) as any['exclude'];
+        resolvedOptions.exclude = (
+          isArray(val) ? val : [val]
+        ) as any['exclude'];
       case 'isProduction':
         if (val === true) resolvedOptions.isProduction = true;
       case 'sourceMap':
@@ -123,7 +135,8 @@ export function getResolvedOptions(defaultVueOptions: any) {
         resolvedOptions.style = (val ? val : {}) as any['style'];
     }
   }
-  resolvedOptions.sourceMap = resolvedOptions.isProduction === true ? false : true;
+  resolvedOptions.sourceMap =
+    resolvedOptions.isProduction === true ? false : true;
   return resolvedOptions;
 }
 
@@ -147,10 +160,10 @@ export function resolveAbsolutePath(path: string, root: string) {
   return path ? (isAbsolute(path) ? path : resolve(root, path)) : root;
 }
 
-export function mergeObjects<T extends Record<string, unknown>, U extends Record<string, unknown>>(
-  sourceObj: T,
-  targetObj: U
-) {
+export function mergeObjects<
+  T extends Record<string, unknown>,
+  U extends Record<string, unknown>
+>(sourceObj: T, targetObj: U) {
   const loop: Array<{
     source: Record<string, any>;
     target: Record<string, any>;
@@ -318,7 +331,9 @@ export async function runParallel<T>(
     ret.push(p);
 
     if (maxConcurrency <= source.length) {
-      const e: Promise<any> = p.then(() => executing.splice(executing.indexOf(e), 1));
+      const e: Promise<any> = p.then(() =>
+        executing.splice(executing.indexOf(e), 1)
+      );
 
       executing.push(e);
 
@@ -382,19 +397,25 @@ export function transformAliasImport(
     }
 
     if (matchResult?.[1]) {
-      const matchedAlias = aliases.find((alias) => isAliasMatch(alias, matchResult![1]));
+      const matchedAlias = aliases.find((alias) =>
+        isAliasMatch(alias, matchResult![1])
+      );
 
       if (matchedAlias) {
         if (
           exclude.some((e) =>
-            isRegExp(e) ? e.test(matchResult![1]) : String(e) === matchResult![1]
+            isRegExp(e)
+              ? e.test(matchResult![1])
+              : String(e) === matchResult![1]
           )
         ) {
           return str;
         }
 
         const truthPath = isAbsolute(matchedAlias.replacement)
-          ? normalizePath(path.relative(dirname(filePath), matchedAlias.replacement))
+          ? normalizePath(
+              path.relative(dirname(filePath), matchedAlias.replacement)
+            )
           : normalizePath(matchedAlias.replacement);
 
         return str.replace(
@@ -402,7 +423,10 @@ export function transformAliasImport(
           `$1'${matchResult[1].replace(
             matchedAlias.find,
             (truthPath.startsWith('.') ? truthPath : `./${truthPath}`) +
-              (typeof matchedAlias.find === 'string' && matchedAlias.find.endsWith('/') ? '/' : '')
+              (typeof matchedAlias.find === 'string' &&
+              matchedAlias.find.endsWith('/')
+                ? '/'
+                : '')
           )}'${isDynamic ? ')' : ''}`
         );
       }
@@ -419,6 +443,7 @@ function isAliasMatch(alias: any, importee: string) {
 
   return (
     importee.indexOf(alias.find) === 0 &&
-    (alias.find.endsWith('/') || importee.substring(alias.find.length)[0] === '/')
+    (alias.find.endsWith('/') ||
+      importee.substring(alias.find.length)[0] === '/')
   );
 }

@@ -41,7 +41,9 @@ const parseQuery = (query: [string, string][]) =>
     {} as Record<string, string>
   );
 
-export default function farmVuePlugin(farmVuePluginOptions: FarmVuePluginOptions = {}): JsPlugin {
+export default function farmVuePlugin(
+  farmVuePluginOptions: FarmVuePluginOptions = {}
+): JsPlugin {
   // options hooks to get farmConfig
   let farmConfig: UserConfig['compilation'];
   const resolvedOptions = getResolvedOptions(farmVuePluginOptions);
@@ -54,7 +56,9 @@ export default function farmVuePlugin(farmVuePluginOptions: FarmVuePluginOptions
       return {
         compilation: {
           lazyCompilation:
-            resolvedOptions.ssr === true ? false : config.compilation?.lazyCompilation
+            resolvedOptions.ssr === true
+              ? false
+              : config.compilation?.lazyCompilation
         },
         server: {
           hmr: resolvedOptions.hmr ?? config.server?.hmr
@@ -146,17 +150,23 @@ export default function farmVuePlugin(farmVuePluginOptions: FarmVuePluginOptions
           const { resolvedPath, content: source } = params;
 
           // transform vue
-          const result = callWithErrorHandle<null, typeof parse, [string]>(this, parse, [source]);
+          const result = callWithErrorHandle<null, typeof parse, [string]>(
+            this,
+            parse,
+            [source]
+          );
 
           if (result) {
             const { descriptor } = result;
 
-            const enableHMR = resolvedOptions.hmr && farmConfig.mode !== 'production';
+            const enableHMR =
+              resolvedOptions.hmr && farmConfig.mode !== 'production';
 
             const beforeDescriptor = cacheDescriptor[resolvedPath];
             // set descriptors cache to hmr
             if (!beforeDescriptor) {
-              if (Object.keys(query).length === 0) cacheDescriptor[resolvedPath] = descriptor;
+              if (Object.keys(query).length === 0)
+                cacheDescriptor[resolvedPath] = descriptor;
             } else if (enableHMR) {
               const isHmr = handleHmr(
                 resolvedOptions,
@@ -178,7 +188,12 @@ export default function farmVuePlugin(farmVuePluginOptions: FarmVuePluginOptions
               source: mainCode,
               moduleType,
               map
-            } = genMainCode(resolvedOptions, descriptor, stylesCodeCache, resolvedPath);
+            } = genMainCode(
+              resolvedOptions,
+              descriptor,
+              stylesCodeCache,
+              resolvedPath
+            );
             return {
               content: mainCode,
               moduleType,
@@ -186,7 +201,9 @@ export default function farmVuePlugin(farmVuePluginOptions: FarmVuePluginOptions
             };
           } // default
           else {
-            console.error(`[farm-vue-plugin]:there is no path can be match,please check!`);
+            console.error(
+              `[farm-vue-plugin]:there is no path can be match,please check!`
+            );
             return {
               content:
                 'console.log(`[farm-vue-plugin]:error:there is no path can be match,please check!`)',
@@ -202,7 +219,11 @@ export default function farmVuePlugin(farmVuePluginOptions: FarmVuePluginOptions
   };
 }
 
-async function preProcession(styleCode: string, moduleType: string, options?: { paths: string[] }) {
+async function preProcession(
+  styleCode: string,
+  moduleType: string,
+  options?: { paths: string[] }
+) {
   const __default = { css: styleCode, map: '' };
   let processor: ValueOf<PreProcessors>;
   try {
@@ -237,20 +258,26 @@ async function preProcession(styleCode: string, moduleType: string, options?: { 
   return __default;
 }
 
-export async function compilePreProcessorCodeToCss<T extends ValueOf<PreProcessors>>(
+export async function compilePreProcessorCodeToCss<
+  T extends ValueOf<PreProcessors>
+>(
   styleCode: string,
   preProcessor: T,
   options?: PreProcessorsOptions<T>
 ): Promise<{ css: string }> {
   if (isLess(preProcessor)) {
     return await new Promise((resolve, reject) => {
-      preProcessor.render(styleCode, options as Less.Options, (error, { css }) => {
-        if (error) {
-          reject(error);
-        }
+      preProcessor.render(
+        styleCode,
+        options as Less.Options,
+        (error, { css }) => {
+          if (error) {
+            reject(error);
+          }
 
-        resolve({ css });
-      });
+          resolve({ css });
+        }
+      );
     });
   }
 
@@ -259,7 +286,9 @@ export async function compilePreProcessorCodeToCss<T extends ValueOf<PreProcesso
       preProcessor.render(
         {
           data: styleCode,
-          ...((options as PreProcessorsOptions<PreProcessors[PreProcessorsType.sass]>) ?? {})
+          ...((options as PreProcessorsOptions<
+            PreProcessors[PreProcessorsType.sass]
+          >) ?? {})
         },
         (exception, { css }) => {
           if (exception) {

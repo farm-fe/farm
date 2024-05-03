@@ -111,9 +111,13 @@ export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
 // build chain
 export const buildJsPlugins = async () => {
-  await execa(DEFAULT_PACKAGE_MANAGER, ['--filter', './js-plugins/**', 'build'], {
-    cwd: CWD
-  });
+  await execa(
+    DEFAULT_PACKAGE_MANAGER,
+    ['--filter', './js-plugins/**', 'build'],
+    {
+      cwd: CWD
+    }
+  );
 
   // // First, build Dts
   // await buildDts();
@@ -124,9 +128,15 @@ export const buildJsPlugins = async () => {
 
 export const buildRustPlugins = () => Promise.all(rustPlugins());
 
-export const copyArtifacts = () => batchBuildPlugins(PKG_RUST_PLUGIN, 'copy-artifacts');
+export const copyArtifacts = () =>
+  batchBuildPlugins(PKG_RUST_PLUGIN, 'copy-artifacts');
 
-export async function runTask(taskName, task, processText = 'Building', finishedText = 'Build') {
+export async function runTask(
+  taskName,
+  task,
+  processText = 'Building',
+  finishedText = 'Build'
+) {
   const spinner = createSpinner(`${processText} ${taskName}`).start();
   try {
     await task();
@@ -150,9 +160,16 @@ export function resolveNodeVersion() {
   }
 }
 
-export function batchBuildPlugins(baseDir, command = 'build', packageManager = 'pnpm') {
+export function batchBuildPlugins(
+  baseDir,
+  command = 'build',
+  packageManager = 'pnpm'
+) {
   const pluginNameMap = fs.readdirSync(baseDir).filter((file) => {
-    return fs.statSync(join(baseDir, file)).isDirectory() && !excludedJsPlugin.includes(file);
+    return (
+      fs.statSync(join(baseDir, file)).isDirectory() &&
+      !excludedJsPlugin.includes(file)
+    );
   });
   const path = pluginNameMap.map((subDir) => resolve(baseDir, subDir));
   return path.map((item) => {

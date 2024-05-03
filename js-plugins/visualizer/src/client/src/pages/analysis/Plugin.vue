@@ -88,7 +88,8 @@ export default defineComponent({
           title: 'Duration(ms)',
           dataIndex: 'duration',
           key: 'duration',
-          sorter: (a: TableDataType, b: TableDataType) => a.duration - b.duration
+          sorter: (a: TableDataType, b: TableDataType) =>
+            a.duration - b.duration
         }
       ];
     });

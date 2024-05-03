@@ -28,8 +28,13 @@ export async function resolveFarmPlugins(config: UserConfig) {
       continue;
     }
 
-    if (typeof plugin === 'string' || (isArray(plugin) && typeof plugin[0] === 'string')) {
-      rustPlugins.push(await rustPluginResolver(plugin as string, config.root ?? process.cwd()));
+    if (
+      typeof plugin === 'string' ||
+      (isArray(plugin) && typeof plugin[0] === 'string')
+    ) {
+      rustPlugins.push(
+        await rustPluginResolver(plugin as string, config.root ?? process.cwd())
+      );
     } else if (isObject(plugin)) {
       convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
@@ -39,7 +44,9 @@ export async function resolveFarmPlugins(config: UserConfig) {
         jsPlugins.push(pluginNestItem as JsPlugin);
       }
     } else {
-      throw new Error(`plugin ${plugin} is not supported, Please pass the correct plugin type`);
+      throw new Error(
+        `plugin ${plugin} is not supported, Please pass the correct plugin type`
+      );
     }
   }
 
@@ -95,7 +102,10 @@ export async function resolveConfigHook(
   return conf;
 }
 
-export async function resolveConfigResolvedHook(config: ResolvedUserConfig, plugins: JsPlugin[]) {
+export async function resolveConfigResolvedHook(
+  config: ResolvedUserConfig,
+  plugins: JsPlugin[]
+) {
   for (const p of plugins) {
     if (p.configResolved) {
       await p.configResolved(config);
@@ -114,9 +124,13 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
     )
     .sort((a, b) => b.priority - a.priority);
 
-  const prePlugins = sortedPlugins.filter((plugin) => plugin?.priority > DEFAULT_PRIORITY);
+  const prePlugins = sortedPlugins.filter(
+    (plugin) => plugin?.priority > DEFAULT_PRIORITY
+  );
 
-  const postPlugins = sortedPlugins.filter((plugin) => plugin?.priority < DEFAULT_PRIORITY);
+  const postPlugins = sortedPlugins.filter(
+    (plugin) => plugin?.priority < DEFAULT_PRIORITY
+  );
 
   const normalPlugins = plugins.filter(
     (plugin) =>
@@ -127,6 +141,9 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   return [...prePlugins, ...normalPlugins, ...postPlugins];
 }
 
-export function getSortedPluginHooks(plugins: JsPlugin[], hookName: keyof JsPlugin): any {
+export function getSortedPluginHooks(
+  plugins: JsPlugin[],
+  hookName: keyof JsPlugin
+): any {
   return plugins.map((p: JsPlugin) => p[hookName]).filter(Boolean);
 }

@@ -66,7 +66,11 @@ export default defineComponent({
       return genFileTree(moduleIds);
     });
 
-    function handleViewCode(data: { name: string; code: string; language?: string }) {
+    function handleViewCode(data: {
+      name: string;
+      code: string;
+      language?: string;
+    }) {
       sourceFile.name = data.name;
       sourceFile.code = data.code;
       sourceFile.language = data.language || 'javascript';

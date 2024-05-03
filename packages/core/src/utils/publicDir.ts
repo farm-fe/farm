@@ -19,7 +19,9 @@ export async function checkPublicFile(url: string, config: UserConfig) {
   const fileName = cleanUrl(url);
   const publicFiles = getPublicFiles(config);
   if (publicFiles) {
-    return publicFiles.has(fileName) ? normalizePath(path.join(publicDir, fileName)) : undefined;
+    return publicFiles.has(fileName)
+      ? normalizePath(path.join(publicDir, fileName))
+      : undefined;
   }
 
   const publicFile = normalizePath(path.join(publicDir, fileName));
@@ -30,7 +32,9 @@ export async function checkPublicFile(url: string, config: UserConfig) {
   return fs.existsSync(publicFile) ? publicFile : undefined;
 }
 
-export async function initPublicFiles(config: UserConfig): Promise<Set<string> | undefined> {
+export async function initPublicFiles(
+  config: UserConfig
+): Promise<Set<string> | undefined> {
   let fileNames: string[];
   try {
     fileNames = await recursiveReaddir(config.publicDir);
@@ -40,7 +44,9 @@ export async function initPublicFiles(config: UserConfig): Promise<Set<string> |
     }
     throw e;
   }
-  const publicFiles = new Set(fileNames.map((fileName) => fileName.slice(config.publicDir.length)));
+  const publicFiles = new Set(
+    fileNames.map((fileName) => fileName.slice(config.publicDir.length))
+  );
   publicFilesMap.set(config, publicFiles);
   return publicFiles;
 }

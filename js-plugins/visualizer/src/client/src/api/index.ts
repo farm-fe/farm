@@ -20,7 +20,9 @@ export function getResolveRecordsById(id?: string): Promise<ResolveRecord[]> {
   });
 }
 
-export function getTransformRecordsById(id?: string): Promise<TransformRecord[]> {
+export function getTransformRecordsById(
+  id?: string
+): Promise<TransformRecord[]> {
   return http.get<TransformRecord[]>('/__record/transform', {
     id
   });
@@ -30,12 +32,16 @@ export function getProcessRecordsById(id?: string): Promise<ModuleRecord[]> {
     id
   });
 }
-export function getAnalyzeDepsRecordsById(id?: string): Promise<AnalyzeDepsRecord[]> {
+export function getAnalyzeDepsRecordsById(
+  id?: string
+): Promise<AnalyzeDepsRecord[]> {
   return http.get<AnalyzeDepsRecord[]>('/__record/analyze_deps', {
     id
   });
 }
-export function getResourcePotRecordsById(id?: string): Promise<ResourcePotRecord[]> {
+export function getResourcePotRecordsById(
+  id?: string
+): Promise<ResourcePotRecord[]> {
   return http.get<ResourcePotRecord[]>('/__record/resource_pot', {
     id
   });

@@ -57,7 +57,9 @@ export function genFileTree(files: string[], sep = '/'): FileNode[] {
 
           parent = exist;
           dir = getRootDir(basename);
-          basename = dir ? basename.slice(dir.length).replace(sepRegexp, '') : basename;
+          basename = dir
+            ? basename.slice(dir.length).replace(sepRegexp, '')
+            : basename;
         }
 
         if (parent.children?.some((e) => e.key === file)) return t;
@@ -75,7 +77,9 @@ export function genFileTree(files: string[], sep = '/'): FileNode[] {
 
   res.forEach((fileNode) => {
     fileNode.children &&
-      fileNode.children.forEach((child) => flattenDirectory(child, fileNode, sep));
+      fileNode.children.forEach((child) =>
+        flattenDirectory(child, fileNode, sep)
+      );
   });
 
   return res;
@@ -88,7 +92,11 @@ export function genFileTree(files: string[], sep = '/'): FileNode[] {
  * @param {FileNode} parent - Parent directory node.
  * @param {string} [sep='/'] - File path separator, default is '/'.
  */
-export function flattenDirectory(n: FileNode, parent: FileNode, sep = '/'): void {
+export function flattenDirectory(
+  n: FileNode,
+  parent: FileNode,
+  sep = '/'
+): void {
   // Skip flattening if the current node is a leaf node
   if (n.isLeaf) return;
 

@@ -73,7 +73,9 @@ export interface UserHmrConfig {
   watchOptions?: WatchOptions;
 }
 
-type InternalConfig = Config['config'] extends undefined ? object : Required<Config>['config'];
+type InternalConfig = Config['config'] extends undefined
+  ? object
+  : Required<Config>['config'];
 
 type AvailableUserConfigKeys = Exclude<
   keyof InternalConfig,
@@ -90,7 +92,12 @@ export interface UserConfig {
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
-  vitePlugins?: (null | undefined | object | (() => { vitePlugin: any; filters: string[] }))[];
+  vitePlugins?: (
+    | null
+    | undefined
+    | object
+    | (() => { vitePlugin: any; filters: string[] })
+  )[];
   /** config related to compilation */
   compilation?: Pick<InternalConfig, AvailableUserConfigKeys>;
   /** config related to dev server */
@@ -142,7 +149,9 @@ export interface FarmCLIPreviewOptions {
   host?: string | boolean;
 }
 
-export interface FarmCLIOptions extends FarmCLIBuildOptions, FarmCLIPreviewOptions {
+export interface FarmCLIOptions
+  extends FarmCLIBuildOptions,
+    FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
   configPath?: string;

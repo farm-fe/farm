@@ -15,7 +15,9 @@ import { pluginName, throwError, tryRead } from './options.js';
 import { getSassImplementation } from './utils.js';
 
 export type SassPluginOptions<Legacy = boolean> = {
-  sassOptions?: Partial<Legacy extends false ? StringOptions<'async'> : LegacyOptions<'async'>>;
+  sassOptions?: Partial<
+    Legacy extends false ? StringOptions<'async'> : LegacyOptions<'async'>
+  >;
   filters?: {
     resolvedPaths?: string[];
     moduleTypes?: string[];
@@ -33,12 +35,16 @@ export type SassPluginOptions<Legacy = boolean> = {
    */
   implementation?: string | undefined;
   globals?: string[];
-  additionalData?: string | ((content?: string, resolvePath?: string) => string | Promise<string>);
+  additionalData?:
+    | string
+    | ((content?: string, resolvePath?: string) => string | Promise<string>);
 };
 
 const DEFAULT_PATHS_REGEX = ['\\.(s[ac]ss)$'];
 
-export default function farmSassPlugin(options: SassPluginOptions = {}): JsPlugin {
+export default function farmSassPlugin(
+  options: SassPluginOptions = {}
+): JsPlugin {
   let farmConfig!: UserConfig['compilation'];
   const implementation = getSassImplementation(options.implementation);
 
@@ -67,7 +73,8 @@ export default function farmSassPlugin(options: SassPluginOptions = {}): JsPlugi
     configResolved: (config) => {
       farmConfig = config.compilation;
       const preprocessorOptions =
-        config.compilation?.css?._viteCssOptions?.preprocessorOptions?.scss ?? {};
+        config.compilation?.css?._viteCssOptions?.preprocessorOptions?.scss ??
+        {};
       options.sassOptions = {
         ...options.sassOptions,
         ...preprocessorOptions
@@ -155,7 +162,10 @@ async function resolveDependencyWithPrefix(
   prefix: string,
   ctx: CompilationContext
 ) {
-  const filename = path.posix.join(path.posix.dirname(url), `${prefix}${path.posix.basename(url)}`);
+  const filename = path.posix.join(
+    path.posix.dirname(url),
+    `${prefix}${path.posix.basename(url)}`
+  );
 
   const result = await ctx.resolve(
     {
@@ -190,7 +200,12 @@ async function resolveDependency(
   const try_prefix_list = ['_'];
   let default_import_error;
   try {
-    const result = await resolveDependencyWithPrefix(url, transformParam, '', ctx);
+    const result = await resolveDependencyWithPrefix(
+      url,
+      transformParam,
+      '',
+      ctx
+    );
     if (result) return result;
   } catch (error) {
     default_import_error = error;
@@ -198,7 +213,12 @@ async function resolveDependency(
 
   for (const prefix of try_prefix_list) {
     try {
-      const result = await resolveDependencyWithPrefix(url, transformParam, prefix, ctx);
+      const result = await resolveDependencyWithPrefix(
+        url,
+        transformParam,
+        prefix,
+        ctx
+      );
       if (result) return result;
     } catch (_error) {
       /* do nothing */
@@ -236,7 +256,15 @@ function normalizePath(file: string, root: string): string {
 }
 
 async function compileScss(param: CompileCssParams) {
-  const { transformParam, additionContext, sassImpl, sourceMapEnabled, options, ctx, root } = param;
+  const {
+    transformParam,
+    additionContext,
+    sassImpl,
+    sourceMapEnabled,
+    options,
+    ctx,
+    root
+  } = param;
 
   const { css, sourceMap, loadedUrls } = (await sassImpl.compileStringAsync(
     `${additionContext}\n${transformParam.content}`,
@@ -300,7 +328,14 @@ async function compileScss(param: CompileCssParams) {
 }
 
 async function compileScssLegacy(param: CompileCssParams) {
-  const { transformParam, additionContext, sassImpl, sourceMapEnabled, options, ctx } = param;
+  const {
+    transformParam,
+    additionContext,
+    sassImpl,
+    sourceMapEnabled,
+    options,
+    ctx
+  } = param;
 
   return new Promise<{ css: string; sourceMap: unknown }>((resolve, reject) => {
     sassImpl.render(
@@ -314,16 +349,21 @@ async function compileScssLegacy(param: CompileCssParams) {
         importer: [
           function (url, _, done) {
             resolveDependency(url, transformParam, ctx).then((resolvedPath) => {
-              rebaseUrls(resolvedPath, transformParam.resolvedPath, '$', (id, importer) => {
-                return resolveDependency(
-                  id,
-                  {
-                    ...transformParam,
-                    moduleId: importer
-                  },
-                  ctx
-                );
-              }).then(({ contents }) => {
+              rebaseUrls(
+                resolvedPath,
+                transformParam.resolvedPath,
+                '$',
+                (id, importer) => {
+                  return resolveDependency(
+                    id,
+                    {
+                      ...transformParam,
+                      moduleId: importer
+                    },
+                    ctx
+                  );
+                }
+              ).then(({ contents }) => {
                 done({ file: resolvedPath, contents });
               });
             });

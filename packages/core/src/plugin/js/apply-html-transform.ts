@@ -65,7 +65,11 @@ const bodyPrependInjectRE = /([ \t]*)<body[^>]*>/i;
 
 const doctypePrependInjectRE = /<!doctype html>/i;
 
-function injectToHead(html: string, tags: HtmlTagDescriptor[], prepend = false) {
+function injectToHead(
+  html: string,
+  tags: HtmlTagDescriptor[],
+  prepend = false
+) {
   if (tags.length === 0) return html;
 
   if (prepend) {
@@ -97,7 +101,11 @@ function injectToHead(html: string, tags: HtmlTagDescriptor[], prepend = false) 
   return prependInjectFallback(html, tags);
 }
 
-function injectToBody(html: string, tags: HtmlTagDescriptor[], prepend = false) {
+function injectToBody(
+  html: string,
+  tags: HtmlTagDescriptor[],
+  prepend = false
+) {
   if (tags.length === 0) return html;
 
   if (prepend) {
@@ -110,7 +118,10 @@ function injectToBody(html: string, tags: HtmlTagDescriptor[], prepend = false) 
     }
     // if no there is no body tag, inject after head or fallback to prepend in html
     if (headInjectRE.test(html)) {
-      return html.replace(headInjectRE, (match, p1) => `${match}\n${serializeTags(tags, p1)}`);
+      return html.replace(
+        headInjectRE,
+        (match, p1) => `${match}\n${serializeTags(tags, p1)}`
+      );
     }
     return prependInjectFallback(html, tags);
   } else {
@@ -142,7 +153,10 @@ function prependInjectFallback(html: string, tags: HtmlTagDescriptor[]) {
 
 const unaryTags = new Set(['link', 'meta', 'base']);
 
-function serializeTag({ tag, attrs, children }: HtmlTagDescriptor, indent = ''): string {
+function serializeTag(
+  { tag, attrs, children }: HtmlTagDescriptor,
+  indent = ''
+): string {
   if (unaryTags.has(tag)) {
     return `<${tag}${serializeAttrs(attrs)}>`;
   } else {
@@ -153,11 +167,16 @@ function serializeTag({ tag, attrs, children }: HtmlTagDescriptor, indent = ''):
   }
 }
 
-function serializeTags(tags: HtmlTagDescriptor['children'], indent = ''): string {
+function serializeTags(
+  tags: HtmlTagDescriptor['children'],
+  indent = ''
+): string {
   if (typeof tags === 'string') {
     return tags;
   } else if (tags && tags.length) {
-    return tags.map((tag) => `${indent}${serializeTag(tag, indent)}\n`).join('');
+    return tags
+      .map((tag) => `${indent}${serializeTag(tag, indent)}\n`)
+      .join('');
   }
   return '';
 }

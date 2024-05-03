@@ -27,7 +27,9 @@ function tryToReadFileSync(path: string) {
   }
 }
 
-export default function farmPluginSolid(options: Partial<Options> = {}): JsPlugin {
+export default function farmPluginSolid(
+  options: Partial<Options> = {}
+): JsPlugin {
   const filter = createFilter(options.include, options.exclude);
 
   let needHmr = false;
@@ -45,7 +47,8 @@ export default function farmPluginSolid(options: Partial<Options> = {}): JsPlugi
     config(config) {
       return {
         compilation: {
-          lazyCompilation: options.ssr === true ? false : config.compilation?.lazyCompilation
+          lazyCompilation:
+            options.ssr === true ? false : config.compilation?.lazyCompilation
         },
         server: {
           hmr: options.ssr === true ? false : config.server?.hmr
@@ -102,7 +105,10 @@ export default function farmPluginSolid(options: Partial<Options> = {}): JsPlugi
         const isSsr = options.ssr;
         const currentFileExtension = extname(param.resolvedPath);
 
-        if (!filter(param.resolvedPath) || !allExtensions.includes(currentFileExtension)) {
+        if (
+          !filter(param.resolvedPath) ||
+          !allExtensions.includes(currentFileExtension)
+        ) {
           return;
         }
 
@@ -130,23 +136,27 @@ export default function farmPluginSolid(options: Partial<Options> = {}): JsPlugi
           sourceFileName: param.resolvedPath,
           presets: [[solid, { ...solidOptions, ...(options.solid ?? {}) }]],
           plugins:
-            needHmr && !isSsr && !inNodeModules ? [[solidRefresh, { bundler: 'standard' }]] : [],
+            needHmr && !isSsr && !inNodeModules
+              ? [[solidRefresh, { bundler: 'standard' }]]
+              : [],
           sourceMaps: true,
           // Vite handles sourcemap flattening
           inputSourceMap: false as any
         };
 
         // We need to know if the current file extension has a typescript options tied to it
-        const shouldBeProcessedWithTypescript = extensionsToWatch.some((extension) => {
-          if (typeof extension === 'string') {
-            return extension.includes('tsx');
+        const shouldBeProcessedWithTypescript = extensionsToWatch.some(
+          (extension) => {
+            if (typeof extension === 'string') {
+              return extension.includes('tsx');
+            }
+
+            const [extensionName, extensionOptions] = extension;
+            if (extensionName !== currentFileExtension) return false;
+
+            return extensionOptions.typescript;
           }
-
-          const [extensionName, extensionOptions] = extension;
-          if (extensionName !== currentFileExtension) return false;
-
-          return extensionOptions.typescript;
-        });
+        );
 
         if (shouldBeProcessedWithTypescript) {
           opts.presets.push([ts, options.typescript ?? {}]);
@@ -157,16 +167,29 @@ export default function farmPluginSolid(options: Partial<Options> = {}): JsPlugi
 
         if (options.babel) {
           if (typeof options.babel === 'function') {
-            const babelOptions = options.babel(param.content, param.resolvedPath, isSsr);
-            babelUserOptions = babelOptions instanceof Promise ? await babelOptions : babelOptions;
+            const babelOptions = options.babel(
+              param.content,
+              param.resolvedPath,
+              isSsr
+            );
+            babelUserOptions =
+              babelOptions instanceof Promise
+                ? await babelOptions
+                : babelOptions;
           } else {
             babelUserOptions = options.babel;
           }
         }
 
-        const babelOptions = mergeAndConcat(babelUserOptions, opts) as TransformOptions;
+        const babelOptions = mergeAndConcat(
+          babelUserOptions,
+          opts
+        ) as TransformOptions;
 
-        const { code = '', map = {} } = transformSync(param.content, babelOptions);
+        const { code = '', map = {} } = transformSync(
+          param.content,
+          babelOptions
+        );
 
         return {
           content: code,

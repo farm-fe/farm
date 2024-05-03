@@ -1,7 +1,11 @@
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { expect, test } from 'vitest';
-import { getCompiler, getJsPluginsFixturesDir, getOutputFilePath } from './common.js';
+import {
+  getCompiler,
+  getJsPluginsFixturesDir,
+  getOutputFilePath
+} from './common.js';
 
 test('Js Plugin Execution - buildStart/buildEnd', async () => {
   const hookName = 'build-start-end';

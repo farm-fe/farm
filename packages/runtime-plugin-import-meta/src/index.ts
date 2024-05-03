@@ -19,9 +19,10 @@ export default (<Plugin>{
 
     const { location } = __global_this__;
     const url = location
-      ? `${location.protocol}//${location.host}${publicPath.replace(/\/$/, '')}/${
-          module.id
-        }?t=${Date.now()}`
+      ? `${location.protocol}//${location.host}${publicPath.replace(
+          /\/$/,
+          ''
+        )}/${module.id}?t=${Date.now()}`
       : module.resource_pot;
     module.meta.url = url;
   }

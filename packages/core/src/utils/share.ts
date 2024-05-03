@@ -12,7 +12,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const splitRE = /\r?\n/;
 
-export const FARM_TARGET_NODE_ENVS = ['node', 'node16', 'node-legacy', 'node-next'];
+export const FARM_TARGET_NODE_ENVS = [
+  'node',
+  'node16',
+  'node-legacy',
+  'node-next'
+];
 export const FARM_TARGET_BROWSER_ENVS = [
   'browser',
   'browser-legacy',
@@ -35,7 +40,8 @@ export function isEmptyObject<T extends object>(obj: T): boolean {
   return Reflect.ownKeys(obj).length === 0;
 }
 
-export const isUndefined = (obj: any): obj is undefined => typeof obj === 'undefined';
+export const isUndefined = (obj: any): obj is undefined =>
+  typeof obj === 'undefined';
 export const isString = (val: any): val is string => typeof val === 'string';
 export const isNumber = (val: any): val is number => typeof val === 'number';
 export const isEmpty = (array: any): boolean => !(array && array.length > 0);
@@ -69,7 +75,9 @@ export function normalizePath(id: string): string {
 }
 
 export function normalizeBasePath(basePath: string): string {
-  return path.posix.normalize(isWindows ? basePath.replace(/\\/g, '/') : basePath);
+  return path.posix.normalize(
+    isWindows ? basePath.replace(/\\/g, '/') : basePath
+  );
 }
 
 export function arraify<T>(target: T | T[]): T[] {
@@ -99,10 +107,10 @@ export function toArray<T>(array?: Nullable<ArrayAble<T>>): Array<T> {
   return array ? (Array.isArray(array) ? array : [array]) : [];
 }
 
-export function mergeObjects<T extends Record<string, any>, U extends Record<string, any>>(
-  obj1: T,
-  obj2: U
-): T & U {
+export function mergeObjects<
+  T extends Record<string, any>,
+  U extends Record<string, any>
+>(obj1: T, obj2: U): T & U {
   const merged: Record<string, any> = { ...obj1 };
 
   Object.keys(obj2).forEach((key) => {

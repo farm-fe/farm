@@ -29,7 +29,9 @@ export type PostcssPluginOptions = {
   };
 };
 
-export default function farmPostcssPlugin(options: PostcssPluginOptions = {}): JsPlugin {
+export default function farmPostcssPlugin(
+  options: PostcssPluginOptions = {}
+): JsPlugin {
   let postcssProcessor: Processor;
   let postcssOptions: ProcessOptions;
   let postcssPlugins: postcssLoadConfig.ResultPlugin[] = [];
@@ -61,7 +63,8 @@ export default function farmPostcssPlugin(options: PostcssPluginOptions = {}): J
       async executor(param, context) {
         try {
           const sourceMapEnabled = context.sourceMapEnabled(param.moduleId);
-          const enablePostcssImport = options.internalPlugins?.postcssImport ?? false;
+          const enablePostcssImport =
+            options.internalPlugins?.postcssImport ?? false;
 
           if (enablePostcssImport) {
             const atImport = getPostcssImplementation('postcss-import');
@@ -94,7 +97,9 @@ export default function farmPostcssPlugin(options: PostcssPluginOptions = {}): J
                     // context.resolve will throw an error if it doesn't resolve, so it needs to be wrapped in a try block here.
                   }
                   if (!path.isAbsolute(id)) {
-                    console.error(`Unable to resolve \`@import "${id}"\` from ${basedir}`);
+                    console.error(
+                      `Unable to resolve \`@import "${id}"\` from ${basedir}`
+                    );
                   }
 
                   return id;
@@ -108,10 +113,13 @@ export default function farmPostcssPlugin(options: PostcssPluginOptions = {}): J
                       url: 'rebase'
                     })
                   ]);
-                  const { css } = await urlRebasePostcssProcessor.process(content, {
-                    from: id,
-                    to: param.resolvedPath
-                  });
+                  const { css } = await urlRebasePostcssProcessor.process(
+                    content,
+                    {
+                      from: id,
+                      to: param.resolvedPath
+                    }
+                  );
                   return css;
                 }
               })
@@ -119,17 +127,23 @@ export default function farmPostcssPlugin(options: PostcssPluginOptions = {}): J
           }
           postcssProcessor = implementation(postcssPlugins);
 
-          const { css, map, messages } = await postcssProcessor.process(param.content, {
-            ...postcssOptions,
-            from: param.resolvedPath,
-            map: sourceMapEnabled
-          });
+          const { css, map, messages } = await postcssProcessor.process(
+            param.content,
+            {
+              ...postcssOptions,
+              from: param.resolvedPath,
+              map: sourceMapEnabled
+            }
+          );
 
           // record CSS dependencies from @imports
           if (process.env.NODE_ENV === 'development') {
             for (const message of messages) {
               if (message.type === 'dependency') {
-                context.addWatchFile(param.resolvedPath, message.file as string);
+                context.addWatchFile(
+                  param.resolvedPath,
+                  message.file as string
+                );
               } else if (message.type === 'dir-dependency') {
                 const { dir, glob: globPattern = '**' } = message;
                 // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies

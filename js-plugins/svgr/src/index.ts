@@ -9,7 +9,9 @@ export interface FarmSvgrPluginOptions {
   };
 }
 
-export default function farmSvgrPlugin(options: FarmSvgrPluginOptions = {}): JsPlugin {
+export default function farmSvgrPlugin(
+  options: FarmSvgrPluginOptions = {}
+): JsPlugin {
   const { svgrOptions, filters } = options;
 
   return {
@@ -17,7 +19,11 @@ export default function farmSvgrPlugin(options: FarmSvgrPluginOptions = {}): JsP
     load: {
       filters: { resolvedPaths: filters?.resolvedPaths ?? ['\\.svg$'] },
       async executor(param) {
-        if (param.query.some(([key, _]) => key === 'raw' || key === 'url' || key === 'inline')) {
+        if (
+          param.query.some(
+            ([key, _]) => key === 'raw' || key === 'url' || key === 'inline'
+          )
+        ) {
           return null;
         }
 

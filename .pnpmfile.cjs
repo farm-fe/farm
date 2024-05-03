@@ -5,7 +5,9 @@ function readPackage(pkg, context) {
     pkg.peerDependencies = {
       vue: pkg.version
     };
-    context.log(`${pkg.name}@${pkg.version} => vue@${pkg.version} in peerDependencies`);
+    context.log(
+      `${pkg.name}@${pkg.version} => vue@${pkg.version} in peerDependencies`
+    );
   }
 
   return pkg;

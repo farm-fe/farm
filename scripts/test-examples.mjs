@@ -1,4 +1,9 @@
-import { buildCli, buildCoreCjs, buildExamples, buildJsPlugins } from './build.mjs';
+import {
+  buildCli,
+  buildCoreCjs,
+  buildExamples,
+  buildJsPlugins
+} from './build.mjs';
 
 console.log('Building CLI...');
 await buildCli();

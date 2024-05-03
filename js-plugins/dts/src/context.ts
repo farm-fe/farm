@@ -53,7 +53,9 @@ export default class Context {
       options.outputDir ? options.outputDir : this.config.output?.path,
       root
     );
-    const outDir = options.outputDir ? options.outputDir : this.config.output?.path;
+    const outDir = options.outputDir
+      ? options.outputDir
+      : this.config.output?.path;
     const aliasesExclude = userOptions?.aliasesExclude ?? [];
     const tsConfigPath = resolveAbsolutePath(userOptions.tsconfigPath, root);
     libFolderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
@@ -76,13 +78,16 @@ export default class Context {
       libFolderPath
     };
     this.project = new Project(mergeCompilerOptions);
-    const tsConfigOptions = getTsConfig(tsConfigPath, this.project.getFileSystem().readFileSync);
-    this.include = ensureArray(options.include ?? tsConfigOptions.include ?? '**/*').map(
-      normalizeGlob
+    const tsConfigOptions = getTsConfig(
+      tsConfigPath,
+      this.project.getFileSystem().readFileSync
     );
-    this.exclude = ensureArray(options.exclude ?? tsConfigOptions.exclude ?? 'node_modules/**').map(
-      normalizeGlob
-    );
+    this.include = ensureArray(
+      options.include ?? tsConfigOptions.include ?? '**/*'
+    ).map(normalizeGlob);
+    this.exclude = ensureArray(
+      options.exclude ?? tsConfigOptions.exclude ?? 'node_modules/**'
+    ).map(normalizeGlob);
 
     const aliasOptions: any = config?.resolve?.alias ?? [];
     let aliases: any[] = [];
@@ -142,7 +147,9 @@ export default class Context {
       const dtsRE = /\.d\.(m|c)?tsx?$/;
       for (const file of files) {
         if (dtsRE.test(file)) {
-          this.options.sourceDtsFiles.add(this.project.addSourceFileAtPath(file));
+          this.options.sourceDtsFiles.add(
+            this.project.addSourceFileAtPath(file)
+          );
           if (!this.options.copyDtsFiles) {
             continue;
           }
@@ -159,15 +166,19 @@ export default class Context {
       this.project.compilerOptions.set({ allowJs: true });
     }
 
-    const dtsOutputFiles = Array.from(this.options.sourceDtsFiles).map((sourceFile: any) => ({
-      path: sourceFile.getFilePath(),
-      content: sourceFile.getFullText()
-    }));
+    const dtsOutputFiles = Array.from(this.options.sourceDtsFiles).map(
+      (sourceFile: any) => ({
+        path: sourceFile.getFilePath(),
+        content: sourceFile.getFullText()
+      })
+    );
     const startTime = performance.now();
     if (!this.options.skipDiagnostics) {
       const diagnostics = this.project.getPreEmitDiagnostics();
       if (diagnostics?.length) {
-        console.warn(this.project.formatDiagnosticsWithColorAndContext(diagnostics));
+        console.warn(
+          this.project.formatDiagnosticsWithColorAndContext(diagnostics)
+        );
       }
       if (typeof this.options.afterDiagnostic === 'function') {
         const result = this.options.afterDiagnostic(diagnostics);
@@ -194,7 +205,8 @@ export default class Context {
       .flat()
       .concat(dtsOutputFiles);
     let entryRoot = this.options.entryRoot ?? '';
-    entryRoot = entryRoot || queryPublicPath(outputFiles.map((file: any) => file.path));
+    entryRoot =
+      entryRoot || queryPublicPath(outputFiles.map((file: any) => file.path));
     entryRoot = ensureAbsolute(entryRoot, this.options.root);
     await runParallel(os.cpus().length, outputFiles, async (outputFile) => {
       let filePath = outputFile.path;
@@ -217,7 +229,9 @@ export default class Context {
     this.logger.info(
       `⚡️ Dts Plugin Build completed in ${chalk.bold(
         chalk.green(`${elapsedTime}ms`)
-      )}! Resources emitted to ${chalk.bold(chalk.green(this.options.outputDir))}.`
+      )}! Resources emitted to ${chalk.bold(
+        chalk.green(this.options.outputDir)
+      )}.`
     );
   }
 }

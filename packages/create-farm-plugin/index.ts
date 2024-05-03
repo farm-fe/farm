@@ -66,10 +66,13 @@ async function createFarm() {
           }
         },
         {
-          type: () => (!fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm'),
+          type: () =>
+            !fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm',
           name: 'overwrite',
           message: () =>
-            (targetDir === '.' ? '🚨 Current directory' : `🚨 Target directory "${targetDir}"`) +
+            (targetDir === '.'
+              ? '🚨 Current directory'
+              : `🚨 Target directory "${targetDir}"`) +
             ` is not empty. Overwrite existing files and continue?`
         },
         {
@@ -92,7 +95,8 @@ async function createFarm() {
     console.log(cancelled.message);
     return;
   }
-  const { type = argTemplate, pluginName: finalPluginName = argPluginName } = result;
+  const { type = argTemplate, pluginName: finalPluginName = argPluginName } =
+    result;
 
   await copyTemplate(targetDir, { type, pluginName: finalPluginName });
 }
@@ -108,7 +112,10 @@ function isEmpty(path: string) {
 
 async function copyTemplate(targetDir: string, options: IResultType) {
   const dest = path.join(cwd, targetDir);
-  const templatePath = path.join(fileURLToPath(import.meta.url), `../../templates/${options.type}`);
+  const templatePath = path.join(
+    fileURLToPath(import.meta.url),
+    `../../templates/${options.type}`
+  );
   copy(templatePath, dest, options);
 
   // copy .gitignore file if exists
@@ -120,10 +127,15 @@ async function copyTemplate(targetDir: string, options: IResultType) {
   // Modify package.json to add dependencies
   const packageJsonPath = path.join(`${dest}/playground`, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
-    const packageJsonContent = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const packageJsonContent = JSON.parse(
+      fs.readFileSync(packageJsonPath, 'utf-8')
+    );
     // Modify the dependencies object as needed
     packageJsonContent.dependencies[options.pluginName] = 'workspace:*'; // Modify this line with your dependency and version
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJsonContent, null, 2));
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify(packageJsonContent, null, 2)
+    );
   }
 
   const runText = options.type === 'js' ? 'pnpm dev' : 'pnpm build';
@@ -136,13 +148,22 @@ function judgeNodeVersion() {
   const requiredMajorVersion = parseInt(currentVersion.split('.')[0], 10);
   const minimumMajorVersion = 16;
   if (requiredMajorVersion < minimumMajorVersion) {
-    console.log(colors.yellow(`create-farm-plugin unsupported Node.js v${currentVersion}.`));
-    console.log(colors.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`));
+    console.log(
+      colors.yellow(
+        `create-farm-plugin unsupported Node.js v${currentVersion}.`
+      )
+    );
+    console.log(
+      colors.yellow(`Please use Node.js v${minimumMajorVersion} or higher.`)
+    );
     process.exit(1);
   }
 }
 
-function replaceNamePlaceholders(content: string, options: IResultType): string {
+function replaceNamePlaceholders(
+  content: string,
+  options: IResultType
+): string {
   const PLACEHOLDERS = [
     {
       name: '<FARM-RUST-PLUGIN-NPM-NAME>',
@@ -156,7 +177,9 @@ function replaceNamePlaceholders(content: string, options: IResultType): string 
       name: '<FARM-RUST-PLUGIN-CARGO-NAME>',
       replace: () => {
         // replace @ to empty string and all invalid characters to _
-        return options.pluginName.replace(/@/g, '').replace(/[^a-zA-Z0-9_]/g, '_');
+        return options.pluginName
+          .replace(/@/g, '')
+          .replace(/[^a-zA-Z0-9_]/g, '_');
       }
     },
     {

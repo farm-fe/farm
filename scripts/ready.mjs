@@ -1,6 +1,11 @@
 import os from 'node:os';
 import { execa } from 'execa';
-import { DEFAULT_PACKAGE_MANAGER, buildCoreCjs, buildExamples, runTaskQueue } from './build.mjs';
+import {
+  DEFAULT_PACKAGE_MANAGER,
+  buildCoreCjs,
+  buildExamples,
+  runTaskQueue
+} from './build.mjs';
 
 const cwd = process.cwd();
 
@@ -25,7 +30,11 @@ console.log('Cargo clippy');
 await execa('cargo', ['clippy'], { cwd });
 
 console.log('TypeScript check');
-await execa(DEFAULT_PACKAGE_MANAGER, ['run', '--filter', '"@farmfe/*"', 'type-check'], { cwd });
+await execa(
+  DEFAULT_PACKAGE_MANAGER,
+  ['run', '--filter', '"@farmfe/*"', 'type-check'],
+  { cwd }
+);
 
 console.log('Unit Test');
 await execa(DEFAULT_PACKAGE_MANAGER, ['run', 'test'], { cwd });

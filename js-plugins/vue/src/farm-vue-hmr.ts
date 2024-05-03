@@ -1,5 +1,15 @@
-import { SFCDescriptor, SFCScriptBlock, SFCStyleBlock, SFCTemplateBlock } from '@vue/compiler-sfc';
-import { CacheDescriptor, QueryObj, ResolvedOptions, StylesCodeCache } from './farm-vue-types.js';
+import {
+  SFCDescriptor,
+  SFCScriptBlock,
+  SFCStyleBlock,
+  SFCTemplateBlock
+} from '@vue/compiler-sfc';
+import {
+  CacheDescriptor,
+  QueryObj,
+  ResolvedOptions,
+  StylesCodeCache
+} from './farm-vue-types.js';
 import { genMainCode } from './generatorCode.js';
 
 export const cacheScript = new WeakMap();
@@ -31,7 +41,10 @@ function diffDescriptor(
   // if script changed, rerender from root.
   const scriptChanged = hasScriptChanged(prevDescriptor, descriptor);
   // if only template changed, rerender from current node.
-  const templateChanged = hasTemplateChanged(prevDescriptor.template!, descriptor.template!);
+  const templateChanged = hasTemplateChanged(
+    prevDescriptor.template!,
+    descriptor.template!
+  );
   // if style changed, insert new style.
   const [deleteStyles, addStyles] = hasStyleChanged(
     prevDescriptor.styles || [],

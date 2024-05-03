@@ -9,7 +9,9 @@ const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url));
 
 export const PLUGIN_DIR_CLIENT = resolve(PLUGIN_DIR, '../client');
 
-export default function farmRecorderPlugin(options: RecordViewerOptions = {}): JsPlugin {
+export default function farmRecorderPlugin(
+  options: RecordViewerOptions = {}
+): JsPlugin {
   let farmConfig: UserConfig['compilation'];
   const recordViewerOptions: RecordViewerOptions = options;
 

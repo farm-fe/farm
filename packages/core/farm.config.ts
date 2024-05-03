@@ -53,7 +53,10 @@ export default (<UserConfig>{
 
           if (param.importer.endsWith(VIRTUAL_SUFFIX)) {
             const relativePath = path
-              .relative(process.cwd(), param.importer.replace(VIRTUAL_SUFFIX, ''))
+              .relative(
+                process.cwd(),
+                param.importer.replace(VIRTUAL_SUFFIX, '')
+              )
               .replace(/\\/g, '/');
             console.log('relativePath', relativePath);
             if (

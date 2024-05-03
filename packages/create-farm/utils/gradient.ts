@@ -17,7 +17,11 @@ const gradientColors = [
 // export const rocketAscii = '■■▶'
 export const rocketAscii = '▶';
 
-const referenceGradient = [...gradientColors, ...[...gradientColors].reverse(), ...gradientColors];
+const referenceGradient = [
+  ...gradientColors,
+  ...[...gradientColors].reverse(),
+  ...gradientColors
+];
 
 const sleep = (ms: number) =>
   new Promise((resolve) => {
@@ -47,7 +51,9 @@ function getIntroAnimFrames() {
       new Array(Math.abs(gradientColors.length - end - 1)),
       () => ' '
     );
-    const gradientArr = gradientColors.slice(0, end).map((g) => applyBackgroundColor(' ', g));
+    const gradientArr = gradientColors
+      .slice(0, end)
+      .map((g) => applyBackgroundColor(' ', g));
     frames.push([...leadingSpacesArr, ...gradientArr].join(''));
   }
   return frames;

@@ -171,7 +171,9 @@ export class ErrorOverlay extends HTMLElement {
 
     codeframeRE.lastIndex = 0;
     const hasFrame = err.frame && codeframeRE.test(err.frame);
-    const message = hasFrame ? err.message.replace(codeframeRE, '') : err.message;
+    const message = hasFrame
+      ? err.message.replace(codeframeRE, '')
+      : err.message;
     if (err.plugin) {
       this.text('.plugin', `[plugin:${err.plugin}] `);
     }

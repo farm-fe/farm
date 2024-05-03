@@ -51,7 +51,10 @@ cli
   });
 
 cli
-  .command('prepublish', 'Publish platform packages before publish your Rust Plugin')
+  .command(
+    'prepublish',
+    'Publish platform packages before publish your Rust Plugin'
+  )
   .allowUnknownOptions()
   .action(async () => {
     await prepublish();

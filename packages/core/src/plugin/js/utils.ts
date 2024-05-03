@@ -24,10 +24,14 @@ export function convertEnforceToPriority(value: 'pre' | 'post' | undefined) {
     post: 98
   };
 
-  return enforceToPriority[value!] !== undefined ? enforceToPriority[value!] : defaultPriority;
+  return enforceToPriority[value!] !== undefined
+    ? enforceToPriority[value!]
+    : defaultPriority;
 }
 
-export function convertWatchEventChange(value: WatchChangeEvents): WatchChangeEvents {
+export function convertWatchEventChange(
+  value: WatchChangeEvents
+): WatchChangeEvents {
   const watchEventChange = {
     Added: 'create',
     Updated: 'update',
@@ -66,7 +70,8 @@ export function customParseQueryString(url: string | null) {
   return paramsArray as [string, string][];
 }
 
-export const VITE_PLUGIN_DEFAULT_MODULE_TYPE = 'VITE_PLUGIN_DEFAULT_MODULE_TYPE';
+export const VITE_PLUGIN_DEFAULT_MODULE_TYPE =
+  'VITE_PLUGIN_DEFAULT_MODULE_TYPE';
 
 export const CSS_LANGS_RES: [RegExp, string][] = [
   [/\.(less)(?:$|\?)/, 'less'],
@@ -133,13 +138,16 @@ export function normalizeAdapterVirtualModule(id: string) {
   const path = removeQuery(id);
   // If resolveIdResult is a path starting with / and the file at that path does not exist
   // then it is considered an internal virtual module
-  if (isStartsWithSlash(path) && !fse.pathExistsSync(path)) return addAdapterVirtualModuleFlag(id);
+  if (isStartsWithSlash(path) && !fse.pathExistsSync(path))
+    return addAdapterVirtualModuleFlag(id);
   return id;
 }
 
 // normalize path for windows the same as Vite
 export function normalizePath(p: string): string {
-  return path.posix.normalize(process.platform === 'win32' ? p.replace(/\\/g, '/') : p);
+  return path.posix.normalize(
+    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
+  );
 }
 
 export const removeQuery = (path: string) => {
@@ -233,11 +241,15 @@ export function throwIncompatibleError(
   throw new Error(
     `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses ${readingObject}['${String(
       key
-    )}'] which is not supported by Farm. Current supported keys are: ${allowedKeys.join(',')}`
+    )}'] which is not supported by Farm. Current supported keys are: ${allowedKeys.join(
+      ','
+    )}`
   );
 }
 
-export function transformResourceInfo2RollupRenderedChunk(info: ResourcePotInfo): RenderedChunk {
+export function transformResourceInfo2RollupRenderedChunk(
+  info: ResourcePotInfo
+): RenderedChunk {
   const { modules, moduleIds, name, data } = info;
 
   const {
@@ -330,9 +342,10 @@ export function transformRollupResource2FarmResource(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const notSupport: (method: string) => (...args: any[]) => any = (method) => () => {
-  console.warn(`${method} not support`);
-};
+const notSupport: (method: string) => (...args: any[]) => any =
+  (method) => () => {
+    console.warn(`${method} not support`);
+  };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const noop: (...args: any) => any = () => void 0;
@@ -361,7 +374,9 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
     entryFileNames: config.output.entryFilename,
     esModule: 'if-default-prop',
     experimentalMinChunkSize:
-      config.partialBundling.targetMinSize || config.partialBundling.targetMinSize || 1,
+      config.partialBundling.targetMinSize ||
+      config.partialBundling.targetMinSize ||
+      1,
     exports: 'auto',
     extend: false,
     externalImportAssertions: false,

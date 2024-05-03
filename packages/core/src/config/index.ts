@@ -4,7 +4,11 @@ import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { Config, PluginTransformHookParam, bindingPath } from '../../binding/index.js';
+import {
+  Config,
+  PluginTransformHookParam,
+  bindingPath
+} from '../../binding/index.js';
 import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
@@ -57,8 +61,12 @@ import type {
 export * from './types.js';
 
 export function defineFarmConfig(config: UserConfig): UserConfig;
-export function defineFarmConfig(config: Promise<UserConfig>): Promise<UserConfig>;
-export function defineFarmConfig(config: UserConfigFnObject): UserConfigFnObject;
+export function defineFarmConfig(
+  config: Promise<UserConfig>
+): Promise<UserConfig>;
+export function defineFarmConfig(
+  config: UserConfigFnObject
+): UserConfigFnObject;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
@@ -98,7 +106,8 @@ async function handleServerPortConflict(
   // check port availability: auto increment the port if a conflict occurs
 
   try {
-    mode !== 'production' && (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
+    mode !== 'production' &&
+      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
     // eslint-disable-next-line no-empty
   } catch {}
 }
@@ -127,13 +136,21 @@ export async function resolveConfig(
       throw new Error('configPath must be an absolute path');
     }
 
-    const loadedUserConfig = await loadConfigFile(configPath, inlineOptions, logger, mode);
+    const loadedUserConfig = await loadConfigFile(
+      configPath,
+      inlineOptions,
+      logger,
+      mode
+    );
     if (loadedUserConfig) {
       configPath = loadedUserConfig.configFilePath;
       rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
     }
   } else {
-    mergeConfig(rawConfig, await getDefaultConfig(rawConfig, inlineOptions, logger, mode));
+    mergeConfig(
+      rawConfig,
+      await getDefaultConfig(rawConfig, inlineOptions, logger, mode)
+    );
   }
 
   const { config: userConfig, configFilePath } = {
@@ -143,16 +160,26 @@ export async function resolveConfig(
 
   const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
-  const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(Boolean);
+  const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
+    Boolean
+  );
 
   let vitePluginAdapters: JsPlugin[] = [];
   const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
   // run config and configResolved hook
   if (vitePlugins.length) {
-    vitePluginAdapters = await handleVitePlugins(vitePlugins, userConfig, logger, mode);
+    vitePluginAdapters = await handleVitePlugins(
+      vitePlugins,
+      userConfig,
+      logger,
+      mode
+    );
   }
 
-  const sortFarmJsPlugins = getSortedPlugins([...rawJsPlugins, ...vitePluginAdapters]);
+  const sortFarmJsPlugins = getSortedPlugins([
+    ...rawJsPlugins,
+    ...vitePluginAdapters
+  ]);
 
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
 
@@ -165,7 +192,10 @@ export async function resolveConfig(
   );
 
   // normalize server config first cause it may be used in normalizeUserCompilationConfig
-  resolvedUserConfig.server = normalizeDevServerOptions(resolvedUserConfig.server, mode);
+  resolvedUserConfig.server = normalizeDevServerOptions(
+    resolvedUserConfig.server,
+    mode
+  );
 
   if (isHandleServerPortConflict) {
     await handleServerPortConflict(resolvedUserConfig, logger, mode);
@@ -223,7 +253,10 @@ export async function normalizeUserCompilationConfig(
 
   // resolve public path
   if (compilation?.output?.publicPath) {
-    compilation.output.publicPath = normalizePublicPath(compilation.output.publicPath, logger);
+    compilation.output.publicPath = normalizePublicPath(
+      compilation.output.publicPath,
+      logger
+    );
   }
 
   const inputIndexConfig = checkCompilationInputValue(userConfig, logger);
@@ -253,7 +286,9 @@ export async function normalizeUserCompilationConfig(
       config.assets = {};
     }
 
-    const userPublicDir = userConfig.publicDir ? userConfig.publicDir : join(config.root, 'public');
+    const userPublicDir = userConfig.publicDir
+      ? userConfig.publicDir
+      : join(config.root, 'public');
 
     if (isAbsolute(userPublicDir)) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -276,16 +311,17 @@ export async function normalizeUserCompilationConfig(
     config.output?.targetEnv === 'node'
       ? {}
       : Object.keys(userConfig.env || {}).reduce((env: any, key) => {
-          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] = JSON.stringify(
-            userConfig.env[key]
-          );
+          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+            JSON.stringify(userConfig.env[key]);
           return env;
         }, {})
   );
 
   const require = module.createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
-  const ImportMetaPluginPath = require.resolve('@farmfe/runtime-plugin-import-meta');
+  const ImportMetaPluginPath = require.resolve(
+    '@farmfe/runtime-plugin-import-meta'
+  );
 
   if (!config.runtime) {
     config.runtime = {
@@ -299,7 +335,9 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (!config.runtime.swcHelpersPath) {
-    config.runtime.swcHelpersPath = path.dirname(require.resolve('@swc/helpers/package.json'));
+    config.runtime.swcHelpersPath = path.dirname(
+      require.resolve('@swc/helpers/package.json')
+    );
   }
 
   if (!config.runtime.plugins) {
@@ -325,11 +363,14 @@ export async function normalizeUserCompilationConfig(
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
     const packageJsonExists = fs.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
-      ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))?.name ??
-        FARM_DEFAULT_NAMESPACE
+      ? JSON.parse(fs.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
+          ?.name ?? FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
-    config.runtime.namespace = crypto.createHash('md5').update(namespaceName).digest('hex');
+    config.runtime.namespace = crypto
+      .createHash('md5')
+      .update(namespaceName)
+      .digest('hex');
   }
 
   if (isProduction) {
@@ -366,14 +407,21 @@ export async function normalizeUserCompilationConfig(
     config.runtime.plugins.push(hmrClientPluginPath);
     // TODO optimize get hmr logic
     config.define.FARM_HMR_PORT = String(
-      (serverOptions.hmr.port || undefined) ?? serverOptions.port ?? DEFAULT_DEV_SERVER_OPTIONS.port
+      (serverOptions.hmr.port || undefined) ??
+        serverOptions.port ??
+        DEFAULT_DEV_SERVER_OPTIONS.port
     );
     config.define.FARM_HMR_HOST = JSON.stringify(userConfig.server.hmr.host);
-    config.define.FARM_HMR_PROTOCOL = JSON.stringify(userConfig.server.hmr.protocol);
+    config.define.FARM_HMR_PROTOCOL = JSON.stringify(
+      userConfig.server.hmr.protocol
+    );
     config.define.FARM_HMR_PATH = JSON.stringify(defineHmrPath);
   }
 
-  if (isArray(config.runtime.plugins) && !config.runtime.plugins.includes(ImportMetaPluginPath)) {
+  if (
+    isArray(config.runtime.plugins) &&
+    !config.runtime.plugins.includes(ImportMetaPluginPath)
+  ) {
     config.runtime.plugins.push(ImportMetaPluginPath);
   }
 
@@ -407,7 +455,9 @@ export async function normalizeUserCompilationConfig(
         'swc_core v0.90'
       )}, please make sure the plugin is ${colors.green(
         'compatible'
-      )} with swc_core ${colors.yellow('swc_core v0.90')}. Otherwise, it may exit unexpectedly.`
+      )} with swc_core ${colors.yellow(
+        'swc_core v0.90'
+      )}. Otherwise, it may exit unexpectedly.`
     );
   }
 
@@ -452,7 +502,9 @@ export async function normalizeUserCompilationConfig(
 export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   host: true,
   port:
-    (process.env.FARM_DEFAULT_HMR_PORT && Number(process.env.FARM_DEFAULT_HMR_PORT)) ?? undefined,
+    (process.env.FARM_DEFAULT_HMR_PORT &&
+      Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
+    undefined,
   path: '/__hmr',
   protocol: 'ws',
   watchOptions: {}
@@ -461,7 +513,9 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   headers: {},
   port:
-    (process.env.FARM_DEFAULT_SERVER_PORT && Number(process.env.FARM_DEFAULT_SERVER_PORT)) || 9000,
+    (process.env.FARM_DEFAULT_SERVER_PORT &&
+      Number(process.env.FARM_DEFAULT_SERVER_PORT)) ||
+    9000,
   https: undefined,
   protocol: 'http',
   hostname: { name: 'localhost', host: undefined },
@@ -483,7 +537,19 @@ export const DEFAULT_COMPILATION_OPTIONS: Partial<Config['config']> = {
   },
   sourcemap: true,
   resolve: {
-    extensions: ['tsx', 'mts', 'cts', 'ts', 'jsx', 'mjs', 'js', 'cjs', 'json', 'html', 'css']
+    extensions: [
+      'tsx',
+      'mts',
+      'cts',
+      'ts',
+      'jsx',
+      'mjs',
+      'js',
+      'cjs',
+      'json',
+      'html',
+      'css'
+    ]
   }
 };
 
@@ -540,7 +606,11 @@ async function readConfigFile(
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
     // we need transform all type farm.config with __dirname and __filename
     const Compiler = (await import('../compiler/index.js')).Compiler;
-    const outputPath = path.join(path.dirname(configFilePath), 'node_modules', '.farm');
+    const outputPath = path.join(
+      path.dirname(configFilePath),
+      'node_modules',
+      '.farm'
+    );
 
     const fileName = `farm.config.bundle-${Date.now()}-${Math.random()
       .toString(16)
@@ -606,7 +676,9 @@ async function readConfigFile(
     }
 
     const configEnv = { mode: inlineOptions.mode ?? process.env.NODE_ENV };
-    const config = await (typeof userConfig === 'function' ? userConfig(configEnv) : userConfig);
+    const config = await (typeof userConfig === 'function'
+      ? userConfig(configEnv)
+      : userConfig);
 
     if (!config.root) {
       config.root = inlineOptions.root;
@@ -621,7 +693,9 @@ async function readConfigFile(
 
 export function normalizePublicDir(root: string, userPublicDir?: string) {
   const publicDir = userPublicDir ?? 'public';
-  const absPublicDirPath = path.isAbsolute(publicDir) ? publicDir : path.join(root, publicDir);
+  const absPublicDirPath = path.isAbsolute(publicDir)
+    ? publicDir
+    : path.join(root, publicDir);
   return absPublicDirPath;
 }
 
@@ -631,11 +705,18 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
  * @param isPrefixNeeded  whether to add a prefix to the publicPath
  * @returns  normalized publicPath
  */
-export function normalizePublicPath(publicPath = '/', logger: Logger, isPrefixNeeded = true) {
+export function normalizePublicPath(
+  publicPath = '/',
+  logger: Logger,
+  isPrefixNeeded = true
+) {
   let normalizedPublicPath = publicPath;
   let warning = false;
   // normalize relative path
-  if (normalizedPublicPath.startsWith('.') || normalizedPublicPath.startsWith('..')) {
+  if (
+    normalizedPublicPath.startsWith('.') ||
+    normalizedPublicPath.startsWith('..')
+  ) {
     warning = true;
     normalizedPublicPath = normalizedPublicPath.replace(/^\.+/, '');
   }
@@ -674,7 +755,10 @@ export function normalizePublicPath(publicPath = '/', logger: Logger, isPrefixNe
 }
 
 function checkClearScreen(inlineConfig: FarmCLIOptions) {
-  if (inlineConfig.clearScreen && !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__) {
+  if (
+    inlineConfig.clearScreen &&
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
+  ) {
     clearScreen();
   }
 }
@@ -697,7 +781,9 @@ export async function resolveMergedUserConfig(
   }
 
   const resolvedRootPath = resolvedUserConfig.root ?? process.cwd();
-  const resolvedEnvPath = resolvedUserConfig.envDir ? resolvedUserConfig.envDir : resolvedRootPath;
+  const resolvedEnvPath = resolvedUserConfig.envDir
+    ? resolvedUserConfig.envDir
+    : resolvedRootPath;
 
   const [userEnv, existsEnvFiles] = loadEnv(
     resolvedUserConfig.envMode ?? mode,
@@ -706,7 +792,9 @@ export async function resolveMergedUserConfig(
   );
 
   resolvedUserConfig.envFiles = [
-    ...(Array.isArray(resolvedUserConfig.envFiles) ? resolvedUserConfig.envFiles : []),
+    ...(Array.isArray(resolvedUserConfig.envFiles)
+      ? resolvedUserConfig.envFiles
+      : []),
     ...existsEnvFiles
   ];
 
@@ -735,7 +823,12 @@ export async function loadConfigFile(
     const configFilePath = await getConfigFilePath(configPath);
 
     if (configFilePath) {
-      const config = await readConfigFile(inlineOptions, configFilePath, logger, mode);
+      const config = await readConfigFile(
+        inlineOptions,
+        configFilePath,
+        logger,
+        mode
+      );
 
       return {
         config: config && parseUserConfig(config),
@@ -759,12 +852,17 @@ export async function loadConfigFile(
     }
 
     if (inlineOptions.mode === 'production') {
-      logger.error(`Failed to load config file: ${errorMessage} \n ${error.stack}`, {
-        exit: true
-      });
+      logger.error(
+        `Failed to load config file: ${errorMessage} \n ${error.stack}`,
+        {
+          exit: true
+        }
+      );
     }
 
-    throw new Error(`Failed to load farm config file: ${errorMessage} \n ${error.stack}`);
+    throw new Error(
+      `Failed to load farm config file: ${errorMessage} \n ${error.stack}`
+    );
   }
 }
 
@@ -818,11 +916,14 @@ function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
   return inputIndexConfig;
 }
 
-export async function getConfigFilePath(configPath: string): Promise<string | undefined> {
+export async function getConfigFilePath(
+  configPath: string
+): Promise<string | undefined> {
   if (fs.statSync(configPath).isDirectory()) {
     for (const name of DEFAULT_CONFIG_NAMES) {
       const resolvedPath = path.join(configPath, name);
-      const isFile = fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile();
+      const isFile =
+        fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile();
 
       if (isFile) {
         return resolvedPath;
@@ -854,7 +955,10 @@ export function replaceDirnamePlugin() {
         replaceContent = param.content
           .replace(/__dirname/g, JSON.stringify(dirPath))
           .replace(/__filename/g, JSON.stringify(resolvedPath))
-          .replace(/import\.meta\.url/g, JSON.stringify(pathToFileURL(resolvedPath)));
+          .replace(
+            /import\.meta\.url/g,
+            JSON.stringify(pathToFileURL(resolvedPath))
+          );
 
         return {
           content: replaceContent,

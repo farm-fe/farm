@@ -20,7 +20,9 @@ export function staticMiddleware(devServerContext: Server): Middleware {
     const requestPath = ctx.request?.path;
 
     if (requestPath && requestPath.startsWith(config.output.publicPath)) {
-      const modifiedPath = requestPath.substring(config.output.publicPath.length);
+      const modifiedPath = requestPath.substring(
+        config.output.publicPath.length
+      );
 
       ctx.request.path = `/${modifiedPath}`;
 

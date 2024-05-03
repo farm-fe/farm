@@ -1,6 +1,9 @@
 import path from 'node:path';
 import { JsPlugin } from '../../src/index.js';
-import { getFixturesDir, getCompiler as getInternalCompiler } from '../common.js';
+import {
+  getFixturesDir,
+  getCompiler as getInternalCompiler
+} from '../common.js';
 
 export function getJsPluginsFixturesDir(hookName: string) {
   return path.resolve(getFixturesDir(), 'js-plugins-hooks', hookName);

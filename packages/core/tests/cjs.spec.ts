@@ -2,7 +2,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { expect, test } from 'vitest';
 
-import { normalizeDevServerOptions, resolveConfig } from '../dist/cjs/index.cjs';
+import {
+  normalizeDevServerOptions,
+  resolveConfig
+} from '../dist/cjs/index.cjs';
 import { Logger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {
@@ -52,7 +55,8 @@ test('resolveUserConfig', async () => {
       NODE_ENV: 'development',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"development"',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+        '"development"',
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
@@ -64,5 +68,7 @@ test('resolveUserConfig', async () => {
     },
     moduleCacheKeyStrategy: {}
   });
-  expect(config.server).toEqual(normalizeDevServerOptions(config.server, 'development'));
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'development')
+  );
 });

@@ -49,49 +49,98 @@ const createFormatter =
       : open + string + close;
   };
 
-const replaceClose = (string: string, close: string, replace: string, index: number): string => {
+const replaceClose = (
+  string: string,
+  close: string,
+  replace: string,
+  index: number
+): string => {
   const start = string.substring(0, index) + replace;
   const end = string.substring(index + close.length);
   const nextIndex = end.indexOf(close);
-  return ~nextIndex ? start + replaceClose(end, close, replace, nextIndex) : start + end;
+  return ~nextIndex
+    ? start + replaceClose(end, close, replace, nextIndex)
+    : start + end;
 };
 
-export const reset: StylerEnabled = enabled ? (s: string) => `\x1b[0m${s}\x1b[0m` : String;
+export const reset: StylerEnabled = enabled
+  ? (s: string) => `\x1b[0m${s}\x1b[0m`
+  : String;
 export const bold: StylerEnabled = enabled
   ? createFormatter('\x1b[1m', '\x1b[22m', '\x1b[22m\x1b[1m')
   : String;
-export const dim = enabled ? createFormatter('\x1b[2m', '\x1b[22m', '\x1b[22m\x1b[2m') : String;
-export const italic: StylerEnabled = enabled ? createFormatter('\x1b[3m', '\x1b[23m') : String;
-export const underline: StylerEnabled = enabled ? createFormatter('\x1b[4m', '\x1b[24m') : String;
-export const inverse: StylerEnabled = enabled ? createFormatter('\x1b[7m', '\x1b[27m') : String;
-export const hidden: StylerEnabled = enabled ? createFormatter('\x1b[8m', '\x1b[28m') : String;
+export const dim = enabled
+  ? createFormatter('\x1b[2m', '\x1b[22m', '\x1b[22m\x1b[2m')
+  : String;
+export const italic: StylerEnabled = enabled
+  ? createFormatter('\x1b[3m', '\x1b[23m')
+  : String;
+export const underline: StylerEnabled = enabled
+  ? createFormatter('\x1b[4m', '\x1b[24m')
+  : String;
+export const inverse: StylerEnabled = enabled
+  ? createFormatter('\x1b[7m', '\x1b[27m')
+  : String;
+export const hidden: StylerEnabled = enabled
+  ? createFormatter('\x1b[8m', '\x1b[28m')
+  : String;
 export const strikethrough: StylerEnabled = enabled
   ? createFormatter('\x1b[9m', '\x1b[29m')
   : String;
 
 export const debugColor = createFormatter('\x1b[38;2;255;140;0m', '\x1b[39m');
-export const brandColor = enabled ? createFormatter('\x1b[38;2;113;26;95m', '\x1b[39m') : String;
+export const brandColor = enabled
+  ? createFormatter('\x1b[38;2;113;26;95m', '\x1b[39m')
+  : String;
 
 // black
-export const black = enabled ? createFormatter('\x1b[38;2;0;0;0m', '\x1b[39m') : String;
-export const red = enabled ? createFormatter('\x1b[38;2;219;90;107m', '\x1b[39m') : String;
+export const black = enabled
+  ? createFormatter('\x1b[38;2;0;0;0m', '\x1b[39m')
+  : String;
+export const red = enabled
+  ? createFormatter('\x1b[38;2;219;90;107m', '\x1b[39m')
+  : String;
 export const green = enabled ? createFormatter('\x1b[32m', '\x1b[39m') : String;
-export const yellow = enabled ? createFormatter('\x1b[33m', '\x1b[39m') : String;
-export const blue = enabled ? createFormatter('\x1b[38;2;68;206;246m', '\x1b[39m') : String;
-export const magenta = enabled ? createFormatter('\x1b[38;2;180;0;100m', '\x1b[39m') : String;
-export const purple = enabled ? createFormatter('\x1b[38;2;140;67;86m', '\x1b[39m') : String;
-export const orange = enabled ? createFormatter('\x1b[38;2;255;137;54m', '\x1b[39m') : String;
+export const yellow = enabled
+  ? createFormatter('\x1b[33m', '\x1b[39m')
+  : String;
+export const blue = enabled
+  ? createFormatter('\x1b[38;2;68;206;246m', '\x1b[39m')
+  : String;
+export const magenta = enabled
+  ? createFormatter('\x1b[38;2;180;0;100m', '\x1b[39m')
+  : String;
+export const purple = enabled
+  ? createFormatter('\x1b[38;2;140;67;86m', '\x1b[39m')
+  : String;
+export const orange = enabled
+  ? createFormatter('\x1b[38;2;255;137;54m', '\x1b[39m')
+  : String;
 export const cyan = enabled ? createFormatter('\x1b[36m', '\x1b[39m') : String;
 export const white = enabled ? createFormatter('\x1b[37m', '\x1b[39m') : String;
 
-export const bgBlack = enabled ? createFormatter('\x1b[40m', '\x1b[49m') : String;
+export const bgBlack = enabled
+  ? createFormatter('\x1b[40m', '\x1b[49m')
+  : String;
 export const bgRed = enabled ? createFormatter('\x1b[41m', '\x1b[49m') : String;
-export const bgGreen = enabled ? createFormatter('\x1b[42m', '\x1b[49m') : String;
-export const bgYellow = enabled ? createFormatter('\x1b[43m', '\x1b[49m') : String;
-export const bgBlue = enabled ? createFormatter('\x1b[44m', '\x1b[49m') : String;
-export const bgMagenta = enabled ? createFormatter('\x1b[45m', '\x1b[49m') : String;
-export const bgCyan = enabled ? createFormatter('\x1b[46m', '\x1b[49m') : String;
-export const bgWhite = enabled ? createFormatter('\x1b[47m', '\x1b[49m') : String;
+export const bgGreen = enabled
+  ? createFormatter('\x1b[42m', '\x1b[49m')
+  : String;
+export const bgYellow = enabled
+  ? createFormatter('\x1b[43m', '\x1b[49m')
+  : String;
+export const bgBlue = enabled
+  ? createFormatter('\x1b[44m', '\x1b[49m')
+  : String;
+export const bgMagenta = enabled
+  ? createFormatter('\x1b[45m', '\x1b[49m')
+  : String;
+export const bgCyan = enabled
+  ? createFormatter('\x1b[46m', '\x1b[49m')
+  : String;
+export const bgWhite = enabled
+  ? createFormatter('\x1b[47m', '\x1b[49m')
+  : String;
 
 export function gradientString(text: string, colors: number[][]) {
   const steps = text.length;
@@ -111,7 +160,11 @@ export function gradientString(text: string, colors: number[][]) {
   return output;
 }
 
-export function interpolateColor(color1: number[], color2: number[], factor: number) {
+export function interpolateColor(
+  color1: number[],
+  color2: number[],
+  factor: number
+) {
   return [
     Math.round(color1[0] + (color2[0] - color1[0]) * factor),
     Math.round(color1[1] + (color2[1] - color1[1]) * factor),

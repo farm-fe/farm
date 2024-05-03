@@ -44,7 +44,12 @@ import type {
 import path from 'path';
 import fse from 'fs-extra';
 import { readFile } from 'fs/promises';
-import type { FunctionPluginHooks, OutputBundle, RenderChunkHook, ResolveIdResult } from 'rollup';
+import type {
+  FunctionPluginHooks,
+  OutputBundle,
+  RenderChunkHook,
+  ResolveIdResult
+} from 'rollup';
 import {
   Config,
   PluginLoadHookParam,
@@ -137,20 +142,26 @@ export class VitePluginAdapter implements JsPlugin {
     this.filters = filters;
 
     const hooksMap = {
-      buildStart: () => (this.buildStart = this.viteBuildStartToFarmBuildStart()),
+      buildStart: () =>
+        (this.buildStart = this.viteBuildStartToFarmBuildStart()),
       resolveId: () => (this.resolve = this.viteResolveIdToFarmResolve()),
       load: () => (this.load = this.viteLoadToFarmLoad()),
       transform: () => (this.transform = this.viteTransformToFarmTransform()),
       buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
       // closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
-      handleHotUpdate: () => (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
+      handleHotUpdate: () =>
+        (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
       renderChunk: () =>
-        (this.renderResourcePot = this.viteHandleRenderChunkToFarmRenderResourcePot()),
-      renderStart: () => (this.renderStart = this.viteRenderStartToFarmRenderStart()),
+        (this.renderResourcePot =
+          this.viteHandleRenderChunkToFarmRenderResourcePot()),
+      renderStart: () =>
+        (this.renderStart = this.viteRenderStartToFarmRenderStart()),
       augmentChunkHash: () =>
-        (this.augmentResourceHash = this.viteAugmentChunkHashToFarmAugmentResourceHash()),
+        (this.augmentResourceHash =
+          this.viteAugmentChunkHashToFarmAugmentResourceHash()),
       generateBundle: () =>
-        (this.finalizeResources = this.viteGenerateBundleToFarmFinalizeResources()),
+        (this.finalizeResources =
+          this.viteGenerateBundleToFarmFinalizeResources()),
       transformIndexHtml: () =>
         (this.transformHtml = this.viteTransformIndexHtmlToFarmTransformHtml()),
       'writeBundle|closeBundle': () =>
@@ -170,7 +181,10 @@ export class VitePluginAdapter implements JsPlugin {
       const hookNames = hookNameGroup.split('|');
 
       for (const hookName of hookNames) {
-        if (rawPlugin[hookName as keyof Plugin] || alwaysExecutedHooks.includes(hookName)) {
+        if (
+          rawPlugin[hookName as keyof Plugin] ||
+          alwaysExecutedHooks.includes(hookName)
+        ) {
           if (mode !== 'production' && productionOnlyHooks.includes(hookName)) {
             continue;
           }
@@ -225,7 +239,11 @@ export class VitePluginAdapter implements JsPlugin {
         this._logger
       );
 
-      this._farmConfig = viteConfigToFarmConfig(this._viteConfig, this._farmConfig, this.name);
+      this._farmConfig = viteConfigToFarmConfig(
+        this._viteConfig,
+        this._farmConfig,
+        this.name
+      );
     }
 
     return this._farmConfig;
@@ -233,7 +251,11 @@ export class VitePluginAdapter implements JsPlugin {
 
   async configResolved(config: ResolvedUserConfig) {
     this._farmConfig = config;
-    this._viteConfig = proxyViteConfig(farmUserConfigToViteConfig(config), this.name, this._logger);
+    this._viteConfig = proxyViteConfig(
+      farmUserConfigToViteConfig(config),
+      this.name,
+      this._logger
+    );
 
     if (!this._rawPlugin.configResolved) return;
 
@@ -248,9 +270,16 @@ export class VitePluginAdapter implements JsPlugin {
   }
 
   async configureDevServer(devServer: Server) {
-    const hook = this.wrapRawPluginHook('configureServer', this._rawPlugin.configureServer);
+    const hook = this.wrapRawPluginHook(
+      'configureServer',
+      this._rawPlugin.configureServer
+    );
 
-    this._viteDevServer = createViteDevServerAdapter(this.name, this._viteConfig, devServer);
+    this._viteDevServer = createViteDevServerAdapter(
+      this.name,
+      this._viteConfig,
+      devServer
+    );
 
     if (hook) {
       await hook(this._viteDevServer);
@@ -273,13 +302,15 @@ export class VitePluginAdapter implements JsPlugin {
   private getViteConfigEnv(): ConfigEnv {
     return {
       isSsrBuild: this._farmConfig.compilation?.output?.targetEnv === 'node',
-      command: this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
+      command:
+        this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve',
       mode: this._farmConfig.compilation?.mode
     };
   }
 
   private shouldExecutePlugin() {
-    const command = this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve';
+    const command =
+      this._farmConfig.compilation?.mode === 'production' ? 'build' : 'serve';
 
     if (typeof this._rawPlugin.apply === 'function') {
       return this._rawPlugin.apply(this._viteConfig, {
@@ -307,7 +338,9 @@ export class VitePluginAdapter implements JsPlugin {
     hook?: ObjectHook<(...args: any[]) => any, { sequential?: boolean }>,
     farmContext?: CompilationContext,
     currentHandlingFile?: string
-  ): (...args: any[]) => any | undefined | Promise<(...args: any[]) => any | undefined> {
+  ): (
+    ...args: any[]
+  ) => any | undefined | Promise<(...args: any[]) => any | undefined> {
     if (hook === undefined) {
       return undefined;
     }
@@ -351,7 +384,11 @@ export class VitePluginAdapter implements JsPlugin {
   private viteBuildStartToFarmBuildStart(): JsPlugin['buildStart'] {
     return {
       executor: this.wrapExecutor((_, context) => {
-        const hook = this.wrapRawPluginHook('buildStart', this._rawPlugin.buildStart, context);
+        const hook = this.wrapRawPluginHook(
+          'buildStart',
+          this._rawPlugin.buildStart,
+          context
+        );
         if (this._viteDevServer) {
           this._viteDevServer.moduleGraph.context = context;
         }
@@ -371,14 +408,21 @@ export class VitePluginAdapter implements JsPlugin {
         ): Promise<PluginResolveHookResult> => {
           if (
             VitePluginAdapter.isFarmInternalVirtualModule(params.source) ||
-            (params.importer && VitePluginAdapter.isFarmInternalVirtualModule(params.importer)) ||
+            (params.importer &&
+              VitePluginAdapter.isFarmInternalVirtualModule(params.importer)) ||
             hookContext?.caller === this.name + '.resolveId'
           ) {
             return null;
           }
 
-          const hook = this.wrapRawPluginHook('resolveId', this._rawPlugin.resolveId, context);
-          const absImporterPath = normalizePath(path.resolve(process.cwd(), params.importer ?? ''));
+          const hook = this.wrapRawPluginHook(
+            'resolveId',
+            this._rawPlugin.resolveId,
+            context
+          );
+          const absImporterPath = normalizePath(
+            path.resolve(process.cwd(), params.importer ?? '')
+          );
           let resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
             absImporterPath,
@@ -395,7 +439,9 @@ export class VitePluginAdapter implements JsPlugin {
               meta: {}
             };
           } else if (isObject(resolveIdResult)) {
-            const resolveId = normalizeAdapterVirtualModule(resolveIdResult?.id);
+            const resolveId = normalizeAdapterVirtualModule(
+              resolveIdResult?.id
+            );
             return {
               resolvedPath: removeQuery(encodeStr(resolveId)),
               query: customParseQueryString(resolveId),
@@ -408,9 +454,15 @@ export class VitePluginAdapter implements JsPlugin {
 
           // handles paths starting with / in the vite plugin,
           // returning the correct path if the file exists in our root path
-          const rootAbsolutePath = path.join(this._farmConfig.root, params.source);
+          const rootAbsolutePath = path.join(
+            this._farmConfig.root,
+            params.source
+          );
 
-          if (isStartsWithSlash(params.source) && fse.pathExistsSync(rootAbsolutePath)) {
+          if (
+            isStartsWithSlash(params.source) &&
+            fse.pathExistsSync(rootAbsolutePath)
+          ) {
             return {
               resolvedPath: removeQuery(encodeStr(rootAbsolutePath)),
               query: customParseQueryString(rootAbsolutePath),
@@ -446,7 +498,8 @@ export class VitePluginAdapter implements JsPlugin {
             params.moduleId
           );
 
-          const isSSR = this._farmConfig.compilation.output?.targetEnv === 'node';
+          const isSSR =
+            this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = normalizePath(decodeStr(params.resolvedPath));
 
           // append query
@@ -479,7 +532,11 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteTransformToFarmTransform(): JsPlugin['transform'] {
     // default module type and asset can be transformed by vite transform hook
-    const moduleTypesCouldTransform = [VITE_PLUGIN_DEFAULT_MODULE_TYPE, 'asset', 'json'];
+    const moduleTypesCouldTransform = [
+      VITE_PLUGIN_DEFAULT_MODULE_TYPE,
+      'asset',
+      'json'
+    ];
     return {
       filters: {
         resolvedPaths: this.filters
@@ -499,12 +556,17 @@ export class VitePluginAdapter implements JsPlugin {
             context,
             params.moduleId
           );
-          const isSSR = this._farmConfig.compilation.output?.targetEnv === 'node';
+          const isSSR =
+            this._farmConfig.compilation.output?.targetEnv === 'node';
           const resolvedPath = normalizePath(decodeStr(params.resolvedPath));
           // append query
           const id = formatId(resolvedPath, params.query);
 
-          const result = await hook?.(params.content, id, isSSR ? { ssr: true } : undefined);
+          const result = await hook?.(
+            params.content,
+            id,
+            isSSR ? { ssr: true } : undefined
+          );
 
           if (result) {
             const content = getContentValue(result);
@@ -516,7 +578,9 @@ export class VitePluginAdapter implements JsPlugin {
                   typeof result.map === 'object' && result.map !== null
                     ? JSON.stringify(result.map)
                     : undefined,
-                moduleType: moduleTypesCouldTransform.includes(params.moduleType)
+                moduleType: moduleTypesCouldTransform.includes(
+                  params.moduleType
+                )
                   ? formatTransformModuleType(id)
                   : params.moduleType
                 // TODO support meta and sideEffects
@@ -531,7 +595,11 @@ export class VitePluginAdapter implements JsPlugin {
   private viteBuildEndToFarmBuildEnd(): JsPlugin['buildEnd'] {
     return {
       executor: this.wrapExecutor((_, context) => {
-        const hook = this.wrapRawPluginHook('buildEnd', this._rawPlugin.buildEnd, context);
+        const hook = this.wrapRawPluginHook(
+          'buildEnd',
+          this._rawPlugin.buildEnd,
+          context
+        );
         return hook?.();
       })
     };
@@ -539,58 +607,62 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteHandleHotUpdateToFarmUpdateModules(): JsPlugin['updateModules'] {
     return {
-      executor: this.wrapExecutor(async ({ paths }: { paths: [string, string][] }, ctx) => {
-        const hook = this.wrapRawPluginHook(
-          'handleHotUpdate',
-          this._rawPlugin.handleHotUpdate,
-          ctx
-        );
+      executor: this.wrapExecutor(
+        async ({ paths }: { paths: [string, string][] }, ctx) => {
+          const hook = this.wrapRawPluginHook(
+            'handleHotUpdate',
+            this._rawPlugin.handleHotUpdate,
+            ctx
+          );
 
-        let moduleGraph: ViteModuleGraphAdapter;
+          let moduleGraph: ViteModuleGraphAdapter;
 
-        if (this._viteDevServer) {
-          moduleGraph = this._viteDevServer.moduleGraph;
-        } else if (this._moduleGraph) {
-          moduleGraph = this._moduleGraph;
-        } else {
-          moduleGraph = new ViteModuleGraphAdapter(this.name);
-          this._moduleGraph = moduleGraph;
-        }
-
-        moduleGraph.context = ctx;
-
-        const result = [];
-
-        for (const [file, _] of paths) {
-          const mods = moduleGraph.getModulesByFile(file) as unknown as ModuleNode[];
-          const filename = normalizePath(file);
-          const ctx: HmrContext = {
-            file: filename,
-            timestamp: Date.now(),
-            modules: (mods ?? []).map(
-              (m) =>
-                ({
-                  ...m,
-                  id: normalizePath(m.id),
-                  file: normalizePath(m.file)
-                }) as ModuleNode
-            ),
-            read: function (): string | Promise<string> {
-              return readFile(file, 'utf-8');
-            },
-            server: this._viteDevServer as unknown as ViteDevServer
-          };
-          const updateMods: ModuleNode[] = await hook?.(ctx);
-
-          if (updateMods) {
-            result.push(...updateMods.map((mod) => mod.id));
+          if (this._viteDevServer) {
+            moduleGraph = this._viteDevServer.moduleGraph;
+          } else if (this._moduleGraph) {
+            moduleGraph = this._moduleGraph;
           } else {
-            result.push(...mods.map((mod) => mod.id));
+            moduleGraph = new ViteModuleGraphAdapter(this.name);
+            this._moduleGraph = moduleGraph;
           }
-        }
 
-        return [...new Set(result)].map((id) => revertNormalizePath(id));
-      })
+          moduleGraph.context = ctx;
+
+          const result = [];
+
+          for (const [file, _] of paths) {
+            const mods = moduleGraph.getModulesByFile(
+              file
+            ) as unknown as ModuleNode[];
+            const filename = normalizePath(file);
+            const ctx: HmrContext = {
+              file: filename,
+              timestamp: Date.now(),
+              modules: (mods ?? []).map(
+                (m) =>
+                  ({
+                    ...m,
+                    id: normalizePath(m.id),
+                    file: normalizePath(m.file)
+                  }) as ModuleNode
+              ),
+              read: function (): string | Promise<string> {
+                return readFile(file, 'utf-8');
+              },
+              server: this._viteDevServer as unknown as ViteDevServer
+            };
+            const updateMods: ModuleNode[] = await hook?.(ctx);
+
+            if (updateMods) {
+              result.push(...updateMods.map((mod) => mod.id));
+            } else {
+              result.push(...mods.map((mod) => mod.id));
+            }
+          }
+
+          return [...new Set(result)].map((id) => revertNormalizePath(id));
+        }
+      )
     };
   }
 
@@ -599,30 +671,36 @@ export class VitePluginAdapter implements JsPlugin {
       filters: {
         moduleIds: this.filters
       },
-      executor: this.wrapExecutor(async (param: PluginRenderResourcePotParams, ctx) => {
-        if (param.resourcePotInfo.resourcePotType !== 'js') {
-          return;
-        }
-
-        const hook = this.wrapRawPluginHook('renderChunk', this._rawPlugin.renderChunk, ctx);
-
-        const result: ReturnType<RenderChunkHook> = await hook(
-          param.content,
-          transformResourceInfo2RollupRenderedChunk(param.resourcePotInfo),
-          {},
-          {
-            chunks: {}
+      executor: this.wrapExecutor(
+        async (param: PluginRenderResourcePotParams, ctx) => {
+          if (param.resourcePotInfo.resourcePotType !== 'js') {
+            return;
           }
-        );
 
-        if (result) {
-          if (typeof result === 'string') {
-            return { content: result };
-          } else if (typeof result === 'object') {
-            return { content: result.code, sourceMap: result.map };
+          const hook = this.wrapRawPluginHook(
+            'renderChunk',
+            this._rawPlugin.renderChunk,
+            ctx
+          );
+
+          const result: ReturnType<RenderChunkHook> = await hook(
+            param.content,
+            transformResourceInfo2RollupRenderedChunk(param.resourcePotInfo),
+            {},
+            {
+              chunks: {}
+            }
+          );
+
+          if (result) {
+            if (typeof result === 'string') {
+              return { content: result };
+            } else if (typeof result === 'object') {
+              return { content: result.code, sourceMap: result.map };
+            }
           }
         }
-      })
+      )
     };
   }
 
@@ -659,7 +737,9 @@ export class VitePluginAdapter implements JsPlugin {
           context
         ) as OmitThis<FunctionPluginHooks['augmentChunkHash']>;
 
-        const hash = await hook?.(transformResourceInfo2RollupRenderedChunk(param));
+        const hash = await hook?.(
+          transformResourceInfo2RollupRenderedChunk(param)
+        );
 
         return hash;
       })
@@ -668,30 +748,41 @@ export class VitePluginAdapter implements JsPlugin {
 
   private viteGenerateBundleToFarmFinalizeResources(): JsPlugin['finalizeResources'] {
     return {
-      executor: this.wrapExecutor(async (param: PluginFinalizeResourcesHookParams, context) => {
-        const hook = this.wrapRawPluginHook(
-          'generateBundle',
-          this._rawPlugin.generateBundle,
-          context
-        );
+      executor: this.wrapExecutor(
+        async (param: PluginFinalizeResourcesHookParams, context) => {
+          const hook = this.wrapRawPluginHook(
+            'generateBundle',
+            this._rawPlugin.generateBundle,
+            context
+          );
 
-        const bundles = Object.entries(param.resourcesMap).reduce((res, [key, val]) => {
-          res[key] = transformResourceInfo2RollupResource(val);
-          return res;
-        }, {} as OutputBundle);
+          const bundles = Object.entries(param.resourcesMap).reduce(
+            (res, [key, val]) => {
+              res[key] = transformResourceInfo2RollupResource(val);
+              return res;
+            },
+            {} as OutputBundle
+          );
 
-        await hook?.(transformFarmConfigToRollupNormalizedOutputOptions(param.config), bundles);
+          await hook?.(
+            transformFarmConfigToRollupNormalizedOutputOptions(param.config),
+            bundles
+          );
 
-        const result = Object.entries(bundles).reduce(
-          (res, [key, val]) => {
-            res[key] = transformRollupResource2FarmResource(val, param.resourcesMap[key]);
-            return res;
-          },
-          {} as PluginFinalizeResourcesHookParams['resourcesMap']
-        );
+          const result = Object.entries(bundles).reduce(
+            (res, [key, val]) => {
+              res[key] = transformRollupResource2FarmResource(
+                val,
+                param.resourcesMap[key]
+              );
+              return res;
+            },
+            {} as PluginFinalizeResourcesHookParams['resourcesMap']
+          );
 
-        return result;
-      })
+          return result;
+        }
+      )
     };
   }
 
@@ -711,44 +802,64 @@ export class VitePluginAdapter implements JsPlugin {
 
     return {
       order: orderMap[order] ?? 1,
-      executor: this.wrapExecutor(async (params: { htmlResource: Resource }, context) => {
-        const { htmlResource } = params;
-        const hook = this.wrapRawPluginHook(
-          'transformIndexHtml',
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore ignore type error
-          this._rawPlugin.transformIndexHtml,
-          context
-        );
+      executor: this.wrapExecutor(
+        async (params: { htmlResource: Resource }, context) => {
+          const { htmlResource } = params;
+          const hook = this.wrapRawPluginHook(
+            'transformIndexHtml',
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore ignore type error
+            this._rawPlugin.transformIndexHtml,
+            context
+          );
 
-        const result = await this.callViteTransformIndexHtmlHook(htmlResource, hook);
+          const result = await this.callViteTransformIndexHtmlHook(
+            htmlResource,
+            hook
+          );
 
-        if (result) {
-          htmlResource.bytes = [...Buffer.from(result)];
+          if (result) {
+            htmlResource.bytes = [...Buffer.from(result)];
+          }
+
+          return htmlResource;
         }
-
-        return htmlResource;
-      })
+      )
     };
   }
 
   private viteWriteCloseBundleToFarmWriteResources(): JsPlugin['writeResources'] {
     return {
-      executor: this.wrapExecutor(async (param: PluginFinalizeResourcesHookParams, context) => {
-        const hook = this.wrapRawPluginHook('writeBundle', this._rawPlugin.writeBundle, context);
+      executor: this.wrapExecutor(
+        async (param: PluginFinalizeResourcesHookParams, context) => {
+          const hook = this.wrapRawPluginHook(
+            'writeBundle',
+            this._rawPlugin.writeBundle,
+            context
+          );
 
-        if (hook) {
-          const bundles = Object.entries(param.resourcesMap).reduce((res, [key, val]) => {
-            res[key] = transformResourceInfo2RollupResource(val);
-            return res;
-          }, {} as OutputBundle);
+          if (hook) {
+            const bundles = Object.entries(param.resourcesMap).reduce(
+              (res, [key, val]) => {
+                res[key] = transformResourceInfo2RollupResource(val);
+                return res;
+              },
+              {} as OutputBundle
+            );
 
-          await hook?.(transformFarmConfigToRollupNormalizedOutputOptions(param.config), bundles);
+            await hook?.(
+              transformFarmConfigToRollupNormalizedOutputOptions(param.config),
+              bundles
+            );
+          }
+
+          const closeBundle = this.wrapRawPluginHook(
+            'closeBundle',
+            this._rawPlugin.closeBundle
+          );
+          return closeBundle?.();
         }
-
-        const closeBundle = this.wrapRawPluginHook('closeBundle', this._rawPlugin.closeBundle);
-        return closeBundle?.();
-      })
+      )
     };
   }
 

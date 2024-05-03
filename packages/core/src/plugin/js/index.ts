@@ -1,10 +1,19 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import { CompilationMode } from '../../config/env.js';
-import { type JsPlugin, Logger, type UserConfig, normalizeDevServerOptions } from '../../index.js';
+import {
+  type JsPlugin,
+  Logger,
+  type UserConfig,
+  normalizeDevServerOptions
+} from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
-import { DEFAULT_FILTERS, VITE_PLUGIN_DEFAULT_MODULE_TYPE, getCssModuleType } from './utils.js';
+import {
+  DEFAULT_FILTERS,
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
+  getCssModuleType
+} from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 // export * from './jsPluginAdapter.js';
@@ -25,7 +34,10 @@ export async function handleVitePlugins(
   if (vitePlugins.length) {
     userConfig = merge({}, userConfig, {
       compilation: userConfig.compilation,
-      server: normalizeDevServerOptions(userConfig.server, userConfig.compilation?.mode ?? mode)
+      server: normalizeDevServerOptions(
+        userConfig.server,
+        userConfig.compilation?.mode ?? mode
+      )
     });
   }
   const flatVitePlugins = await resolveAsyncPlugins(vitePlugins);
@@ -102,7 +114,9 @@ export async function handleVitePlugins(
             '\\.module\\.(css|less|sass|scss)$'
           ];
           // skip css module because it will be handled by Farm
-          const isCssModules = cssModules.some((reg) => new RegExp(reg).test(moduleId));
+          const isCssModules = cssModules.some((reg) =>
+            new RegExp(reg).test(moduleId)
+          );
 
           // treat all scss/less/.etc lang as css
           // plugin should handle css module by itself
@@ -221,11 +235,13 @@ export function convertPlugin(plugin: JsPlugin): void {
   }
 
   if (plugin.resolve?.filters?.importers?.length) {
-    plugin.resolve.filters.importers = plugin.resolve.filters.importers.map(normalizeFilterPath);
+    plugin.resolve.filters.importers =
+      plugin.resolve.filters.importers.map(normalizeFilterPath);
   }
 
   if (plugin.load?.filters?.resolvedPaths?.length) {
-    plugin.load.filters.resolvedPaths = plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
+    plugin.load.filters.resolvedPaths =
+      plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
   }
 
   if (plugin.transform?.filters?.resolvedPaths?.length) {

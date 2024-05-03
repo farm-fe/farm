@@ -36,19 +36,34 @@ import { resolveHostname } from './utils/http.js';
 import { clearScreen } from './utils/share.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 
-export async function start(inlineConfig?: FarmCLIOptions & UserConfig): Promise<void> {
+export async function start(
+  inlineConfig?: FarmCLIOptions & UserConfig
+): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
   try {
-    const resolvedUserConfig = await resolveConfig(inlineConfig, logger, 'development');
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      logger,
+      'development'
+    );
 
     const compiler = await createCompiler(resolvedUserConfig);
 
-    const devServer = await createDevServer(compiler, resolvedUserConfig, logger);
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
 
-    const watcher = await createFileWatcher(devServer, resolvedUserConfig, inlineConfig, logger);
+    const watcher = await createFileWatcher(
+      devServer,
+      resolvedUserConfig,
+      inlineConfig,
+      logger
+    );
     // call configureDevServer hook after both server and watcher are ready
     resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       plugin.configureDevServer?.(devServer)
@@ -61,12 +76,19 @@ export async function start(inlineConfig?: FarmCLIOptions & UserConfig): Promise
   }
 }
 
-export async function build(inlineConfig?: FarmCLIOptions & UserConfig): Promise<void> {
+export async function build(
+  inlineConfig?: FarmCLIOptions & UserConfig
+): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('production');
 
-  const resolvedUserConfig = await resolveConfig(inlineConfig, logger, 'production', false);
+  const resolvedUserConfig = await resolveConfig(
+    inlineConfig,
+    logger,
+    'production',
+    false
+  );
 
   try {
     await createBundleHandler(resolvedUserConfig);
@@ -80,7 +102,11 @@ export async function build(inlineConfig?: FarmCLIOptions & UserConfig): Promise
 export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
-  const resolvedUserConfig = await resolveConfig(inlineConfig, logger, 'production');
+  const resolvedUserConfig = await resolveConfig(
+    inlineConfig,
+    logger,
+    'production'
+  );
 
   const { root, output } = resolvedUserConfig.compilation;
   const distDir = path.resolve(root, output.path);
@@ -89,7 +115,9 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
     statSync(distDir);
   } catch (err) {
     if (err.code === 'ENOENT') {
-      throw new Error(`The directory "${distDir}" does not exist. Did you build your project?`);
+      throw new Error(
+        `The directory "${distDir}" does not exist. Did you build your project?`
+      );
     }
   }
 
@@ -97,7 +125,9 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
   const serverConfig = {
     ...resolvedUserConfig.server,
     host: inlineConfig.host ?? true,
-    port: inlineConfig.port ?? (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
+    port:
+      inlineConfig.port ??
+      (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
   };
   await Server.resolvePortConflict(serverConfig, logger);
   const port = serverConfig.port;
@@ -114,22 +144,32 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
   server.createPreviewServer(previewOptions);
 }
 
-export async function watch(inlineConfig?: FarmCLIOptions & UserConfig): Promise<void> {
+export async function watch(
+  inlineConfig?: FarmCLIOptions & UserConfig
+): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
-  const resolvedUserConfig = await resolveConfig(inlineConfig, logger, 'development', true);
+  const resolvedUserConfig = await resolveConfig(
+    inlineConfig,
+    logger,
+    'development',
+    true
+  );
 
   const hostname = await resolveHostname(resolvedUserConfig.server.host);
   resolvedUserConfig.compilation.define = {
     ...(resolvedUserConfig.compilation.define ?? {}),
-    FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${hostname.host || 'localhost'}:${
-      resolvedUserConfig.server.port
-    }`
+    FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
+      hostname.host || 'localhost'
+    }:${resolvedUserConfig.server.port}`
   };
 
-  const compilerFileWatcher = await createBundleHandler(resolvedUserConfig, true);
+  const compilerFileWatcher = await createBundleHandler(
+    resolvedUserConfig,
+    true
+  );
 
   const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
   let devServer: Server | undefined;
@@ -164,10 +204,15 @@ export async function watch(inlineConfig?: FarmCLIOptions & UserConfig): Promise
     }
   }
 
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(handleFileChange);
+  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
+    handleFileChange
+  );
 }
 
-export async function clean(rootPath: string, recursive?: boolean | undefined): Promise<void> {
+export async function clean(
+  rootPath: string,
+  recursive?: boolean | undefined
+): Promise<void> {
   // TODO After optimizing the reading of config, put the clean method into compiler
   const logger = new Logger();
 
@@ -184,16 +229,22 @@ export async function clean(rootPath: string, recursive?: boolean | undefined): 
         if (stats.isDirectory()) {
           await fs.rm(farmFolderPath, { recursive: true, force: true });
           // TODO optimize nodeModulePath path e.g: /Users/xxx/node_modules/.farm/cache
-          logger.info(`Cache cleaned at ${colors.bold(colors.green(nodeModulesPath))}`);
+          logger.info(
+            `Cache cleaned at ${colors.bold(colors.green(nodeModulesPath))}`
+          );
         }
       } catch (error) {
         if (error.code === 'ENOENT') {
-          logger.warn(`No cached files found in ${colors.bold(colors.green(nodeModulesPath))}`);
+          logger.warn(
+            `No cached files found in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}`
+          );
         } else {
           logger.error(
-            `Error cleaning cache in ${colors.bold(colors.green(nodeModulesPath))}: ${
-              error.message
-            }`
+            `Error cleaning cache in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}: ${error.message}`
           );
         }
       }
@@ -248,7 +299,11 @@ export async function createBundleHandler(
 }
 
 export async function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
-  const { jsPlugins, rustPlugins, compilation: compilationConfig } = resolvedUserConfig;
+  const {
+    jsPlugins,
+    rustPlugins,
+    compilation: compilationConfig
+  } = resolvedUserConfig;
 
   const compiler = new Compiler({
     config: compilationConfig,
@@ -274,9 +329,14 @@ async function copyPublicDirectory(
 
   try {
     if (await fse.pathExists(absPublicDirPath)) {
-      await fse.copy(absPublicDirPath, resolvedUserConfig.compilation.output.path);
+      await fse.copy(
+        absPublicDirPath,
+        resolvedUserConfig.compilation.output.path
+      );
       logger.info(
-        `Public directory resources copied ${colors.bold(colors.green('successfully'))}.`
+        `Public directory resources copied ${colors.bold(
+          colors.green('successfully')
+        )}.`
       );
     }
   } catch (error) {
@@ -301,7 +361,10 @@ export async function createFileWatcher(
   inlineConfig: FarmCLIOptions & UserConfig,
   logger: Logger
 ) {
-  if (devServer.config.hmr && resolvedUserConfig.compilation.mode === 'production') {
+  if (
+    devServer.config.hmr &&
+    resolvedUserConfig.compilation.mode === 'production'
+  ) {
     logger.error('HMR cannot be enabled in production mode.');
     return;
   }
@@ -338,8 +401,12 @@ export async function createFileWatcher(
 }
 
 export function logFileChanges(files: string[], root: string, logger: Logger) {
-  const changedFiles = files.map((file) => path.relative(root, file)).join(', ');
-  logger.info(colors.bold(colors.green(`${changedFiles} changed, server will restart.`)));
+  const changedFiles = files
+    .map((file) => path.relative(root, file))
+    .join(', ');
+  logger.info(
+    colors.bold(colors.green(`${changedFiles} changed, server will restart.`))
+  );
 }
 
 export { defineFarmConfig as defineConfig } from './config/index.js';

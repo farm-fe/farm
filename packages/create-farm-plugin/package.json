@@ -20,7 +20,14 @@
     "name": "bright wu",
     "email": "1521488775@qq.com"
   },
-  "keywords": ["farm", "farm-plugin", "create-farm-plugin", "rust", "build tool", "bundler"],
+  "keywords": [
+    "farm",
+    "farm-plugin",
+    "create-farm-plugin",
+    "rust",
+    "build tool",
+    "bundler"
+  ],
   "files": ["bin", "dist", "templates"],
   "repository": {
     "type": "git",

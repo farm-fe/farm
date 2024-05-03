@@ -35,7 +35,10 @@ cli
 
 // dev command
 cli
-  .command('[root]', 'Compile the project in dev mode and serve it with farm dev server')
+  .command(
+    '[root]',
+    'Compile the project in dev mode and serve it with farm dev server'
+  )
   .alias('start')
   .alias('dev')
   .option('-l, --lazy', 'lazyCompilation')
@@ -45,24 +48,32 @@ cli
   .option('--hmr', 'enable hot module replacement')
   .option('--cors', 'enable cors')
   .option('--strictPort', 'specified port is already in use, exit with error')
-  .action(async (rootPath: string, options: FarmCLIServerOptions & GlobalFarmCLIOptions) => {
-    const { root, configPath } = resolveCliConfig(rootPath, options);
-    const resolveOptions = resolveCommandOptions(options);
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIServerOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
+      const resolveOptions = resolveCommandOptions(options);
 
-    const defaultOptions = {
-      root,
-      compilation: {
-        lazyCompilation: options.lazy
-      },
-      server: resolveOptions,
-      clearScreen: options.clearScreen,
-      configPath,
-      mode: options.mode
-    };
+      const defaultOptions = {
+        root,
+        compilation: {
+          lazyCompilation: options.lazy
+        },
+        server: resolveOptions,
+        clearScreen: options.clearScreen,
+        configPath,
+        mode: options.mode
+      };
 
-    const { start } = await resolveCore();
-    handleAsyncOperationErrors(start(defaultOptions), 'Failed to start server');
-  });
+      const { start } = await resolveCore();
+      handleAsyncOperationErrors(
+        start(defaultOptions),
+        'Failed to start server'
+      );
+    }
+  );
 
 // build command
 cli
@@ -75,18 +86,23 @@ cli
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
   .option('--minify', 'code compression at build time')
-  .action(async (rootPath: string, options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const { root, configPath } = resolveCliConfig(rootPath, options);
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
-    const defaultOptions = {
-      root,
-      configPath,
-      ...getOptionFromBuildOption(options)
-    };
+      const defaultOptions = {
+        root,
+        configPath,
+        ...getOptionFromBuildOption(options)
+      };
 
-    const { build } = await resolveCore();
-    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
-  });
+      const { build } = await resolveCore();
+      handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+    }
+  );
 
 cli
   .command('watch [root]', 'watch file change')
@@ -97,42 +113,61 @@ cli
   .option('--sourcemap', 'output source maps for build')
   .option('--treeShaking', 'Eliminate useless code without side effects')
   .option('--minify', 'code compression at build time')
-  .action(async (rootPath: string, options: FarmCLIBuildOptions & GlobalFarmCLIOptions) => {
-    const { root, configPath } = resolveCliConfig(rootPath, options);
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
-    const defaultOptions = {
-      root,
-      configPath,
-      ...getOptionFromBuildOption(options)
-    };
+      const defaultOptions = {
+        root,
+        configPath,
+        ...getOptionFromBuildOption(options)
+      };
 
-    const { watch } = await resolveCore();
-    handleAsyncOperationErrors(watch(defaultOptions), 'error during watch project');
-  });
+      const { watch } = await resolveCore();
+      handleAsyncOperationErrors(
+        watch(defaultOptions),
+        'error during watch project'
+      );
+    }
+  );
 
 cli
   .command('preview [root]', 'compile the project in watch mode')
   .option('--port <port>', 'specify port')
   .option('--open', 'open browser on server preview start')
-  .action(async (rootPath: string, options: FarmCLIPreviewOptions & GlobalFarmCLIOptions) => {
-    const { root, configPath } = resolveCliConfig(rootPath, options);
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIPreviewOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
 
-    const resolveOptions = resolveCommandOptions(options);
-    const defaultOptions = {
-      root,
-      mode: options.mode,
-      server: resolveOptions,
-      configPath,
-      port: options.port
-    };
+      const resolveOptions = resolveCommandOptions(options);
+      const defaultOptions = {
+        root,
+        mode: options.mode,
+        server: resolveOptions,
+        configPath,
+        port: options.port
+      };
 
-    const { preview } = await resolveCore();
-    handleAsyncOperationErrors(preview(defaultOptions), 'Failed to start preview server');
-  });
+      const { preview } = await resolveCore();
+      handleAsyncOperationErrors(
+        preview(defaultOptions),
+        'Failed to start preview server'
+      );
+    }
+  );
 
 cli
   .command('clean [path]', 'Clean up the cache built incrementally')
-  .option('--recursive', 'Recursively search for node_modules directories and clean them')
+  .option(
+    '--recursive',
+    'Recursively search for node_modules directories and clean them'
+  )
   .action(async (rootPath: string, options: ICleanOptions) => {
     const { root } = resolveCliConfig(rootPath, options);
     const { clean } = await resolveCore();
@@ -151,7 +186,9 @@ cli
 cli.on('command:*', async () => {
   const { Logger } = await import('@farmfe/core');
   const logger = new Logger();
-  logger.error('Unknown command place Run "farm --help" to see available commands');
+  logger.error(
+    'Unknown command place Run "farm --help" to see available commands'
+  );
 });
 
 // warning::: use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning

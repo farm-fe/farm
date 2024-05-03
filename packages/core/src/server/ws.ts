@@ -21,8 +21,17 @@ export interface IWebSocketServer {
   off(event: string, listener: any): void;
 }
 
-const wsServerEvents = ['connection', 'error', 'headers', 'listening', 'message'];
-export type WebSocketCustomListener<T> = (data: T, client: WebSocketClient) => void;
+const wsServerEvents = [
+  'connection',
+  'error',
+  'headers',
+  'listening',
+  'message'
+];
+export type WebSocketCustomListener<T> = (
+  data: T,
+  client: WebSocketClient
+) => void;
 export interface WebSocketClient {
   send(payload: any): void;
   send(event: string, payload?: any['data']): void;
@@ -57,7 +66,11 @@ export default class WsServer implements IWebSocketServer {
     }
   }
 
-  private upgradeWsServer(request: IncomingMessage, socket: Duplex, head: Buffer) {
+  private upgradeWsServer(
+    request: IncomingMessage,
+    socket: Duplex,
+    head: Buffer
+  ) {
     if (this.isHMRRequest(request)) {
       this.handleHMRUpgrade(request, socket, head);
     }
@@ -103,14 +116,20 @@ export default class WsServer implements IWebSocketServer {
     );
   }
 
-  private handleHMRUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer) {
+  private handleHMRUpgrade(
+    request: IncomingMessage,
+    socket: Duplex,
+    head: Buffer
+  ) {
     this.wss.handleUpgrade(request, socket, head, (ws: WebSocketRawType) => {
       this.wss.emit('connection', ws, request);
     });
   }
 
   get clients(): Set<WebSocketClient> {
-    return new Set(Array.from(this.wss.clients).map(this.getSocketClient.bind(this)));
+    return new Set(
+      Array.from(this.wss.clients).map(this.getSocketClient.bind(this))
+    );
   }
 
   // a custom method defined by farm to send custom events
@@ -250,9 +269,12 @@ export default class WsServer implements IWebSocketServer {
         error: err
       });
     } else {
-      this.logger.error(red(`WebSocket server error:\n${err.stack || err.message}`), {
-        error: err
-      });
+      this.logger.error(
+        red(`WebSocket server error:\n${err.stack || err.message}`),
+        {
+          error: err
+        }
+      );
     }
   }
 }

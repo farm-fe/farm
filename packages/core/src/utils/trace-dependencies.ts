@@ -7,7 +7,9 @@ function createTraceDepCompiler(entry: string) {
   return new Compiler(config);
 }
 
-export async function traceDependencies(configFilePath: string): Promise<string[]> {
+export async function traceDependencies(
+  configFilePath: string
+): Promise<string[]> {
   try {
     const compiler = createTraceDepCompiler(configFilePath);
     const files = await compiler.traceDependencies();

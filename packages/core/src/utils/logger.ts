@@ -74,7 +74,9 @@ export class Logger implements Logger {
     showBanner = true
   ): void {
     const loggerMethod =
-      level in LOGGER_METHOD ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD] : 'log';
+      level in LOGGER_METHOD
+        ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD]
+        : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
       const prefix = showBanner ? this.prefix + ' ' : '';
       const loggerMessage = color ? color(prefix + message) : prefix + message;
@@ -151,14 +153,21 @@ export class Logger implements Logger {
   }
 }
 
-export function printServerUrls(urls: any, logger: Logger, previewFlag = false): void {
-  if (previewFlag) logger.info(colors.bold(colors.magenta('preview server running at: \n')));
+export function printServerUrls(
+  urls: any,
+  logger: Logger,
+  previewFlag = false
+): void {
+  if (previewFlag)
+    logger.info(colors.bold(colors.magenta('preview server running at: \n')));
   const colorUrl = (url: string) =>
     colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
 
   const logUrl = (url: string, type: string) =>
     logger.info(
-      `${colors.bold(colors.magenta('>'))} ${colors.bold(type)}${colors.bold(colorUrl(url))}`
+      `${colors.bold(colors.magenta('>'))} ${colors.bold(type)}${colors.bold(
+        colorUrl(url)
+      )}`
     );
 
   urls.local.map((url: string) => logUrl(url, 'Local:   '));
@@ -171,20 +180,29 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
 
 export function bootstrap(times: number, config: Config) {
   const usePersistentCache = config.config.persistentCache;
-  const persistentCacheFlag = usePersistentCache ? colors.bold(PersistentCacheBrand) : '';
+  const persistentCacheFlag = usePersistentCache
+    ? colors.bold(PersistentCacheBrand)
+    : '';
 
-  console.log('\n', colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`)));
   console.log(
-    `${colors.bold(colors.green(` ✓`))}  ${colors.bold('Ready in')} ${colors.bold(
-      colors.green(`${times}ms`)
-    )} ${persistentCacheFlag}`,
+    '\n',
+    colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`))
+  );
+  console.log(
+    `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
+      'Ready in'
+    )} ${colors.bold(colors.green(`${times}ms`))} ${persistentCacheFlag}`,
     '\n'
   );
 }
 
 export const logger = new Logger();
 
-export function buildErrorMessage(err: any, args: string[] = [], includeStack = true): string {
+export function buildErrorMessage(
+  err: any,
+  args: string[] = [],
+  includeStack = true
+): string {
   if (err.plugin) args.push(`  Plugin: ${colors.magenta(err.plugin)}`);
   const loc = err.loc ? `:${err.loc.line}:${err.loc.column}` : '';
   if (err.id) args.push(`  File: ${colors.cyan(err.id)}${loc}`);

@@ -9,7 +9,9 @@ export class ConfigWatcher {
 
   constructor(private resolvedUserConfig: ResolvedUserConfig) {
     if (!resolvedUserConfig) {
-      throw new Error('Invalid resolvedUserConfig provided to Farm JsConfigWatcher');
+      throw new Error(
+        'Invalid resolvedUserConfig provided to Farm JsConfigWatcher'
+      );
     }
   }
 
@@ -21,10 +23,14 @@ export class ConfigWatcher {
     const watchedFilesSet = new Set<string>([
       ...(this.resolvedUserConfig.envFiles ?? []),
       ...(this.resolvedUserConfig.configFileDependencies ?? []),
-      ...(this.resolvedUserConfig.configFilePath ? [this.resolvedUserConfig.configFilePath] : [])
+      ...(this.resolvedUserConfig.configFilePath
+        ? [this.resolvedUserConfig.configFilePath]
+        : [])
     ]);
 
-    const watchedFiles = Array.from(watchedFilesSet).filter((file) => file && existsSync(file));
+    const watchedFiles = Array.from(watchedFilesSet).filter(
+      (file) => file && existsSync(file)
+    );
     const chokidarOptions = {
       awaitWriteFinish:
         process.platform === 'linux'
@@ -34,7 +40,11 @@ export class ConfigWatcher {
               pollInterval: 80
             }
     };
-    this.watcher = createWatcher(this.resolvedUserConfig, watchedFiles, chokidarOptions);
+    this.watcher = createWatcher(
+      this.resolvedUserConfig,
+      watchedFiles,
+      chokidarOptions
+    );
 
     this.watcher.on('change', (path) => {
       if (this._close) return;

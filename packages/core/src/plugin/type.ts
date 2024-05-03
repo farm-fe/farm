@@ -13,7 +13,9 @@ import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
 // eslint-disable-next-line @typescript-eslint/ban-types
 type LiteralUnion<T extends string> = T | (string & {});
 
-type ResourcePotType = LiteralUnion<'runtime' | 'js' | 'css' | 'html' | 'asset'>;
+type ResourcePotType = LiteralUnion<
+  'runtime' | 'js' | 'css' | 'html' | 'asset'
+>;
 
 export interface CompilationContextEmitFileParams {
   resolvedPath: string;
@@ -162,7 +164,11 @@ export interface JsPlugin {
     PluginResolveHookResult
   >;
 
-  load?: JsPluginHook<{ resolvedPaths: string[] }, PluginLoadHookParam, PluginLoadHookResult>;
+  load?: JsPluginHook<
+    { resolvedPaths: string[] },
+    PluginLoadHookParam,
+    PluginLoadHookResult
+  >;
 
   transform?: JsPluginHook<
     { resolvedPaths?: string[]; moduleTypes?: string[] },
@@ -208,7 +214,9 @@ export interface JsPlugin {
   };
 
   writeResources?: {
-    executor: (param: PluginFinalizeResourcesHookParams) => void | Promise<void>;
+    executor: (
+      param: PluginFinalizeResourcesHookParams
+    ) => void | Promise<void>;
   };
 
   pluginCacheLoaded?: {
@@ -222,7 +230,10 @@ export interface JsPlugin {
   finish?: { executor: Callback<Record<string, never>, void> };
 
   updateModules?: {
-    executor: Callback<{ paths: [string, string][] }, string[] | undefined | null | void>;
+    executor: Callback<
+      { paths: [string, string][] },
+      string[] | undefined | null | void
+    >;
   };
 }
 

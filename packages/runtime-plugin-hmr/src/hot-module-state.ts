@@ -44,7 +44,10 @@ export class HotModuleState {
     this.hmrClient.pruneMap.set(this.id, callback);
   }
 
-  acceptExports(_: string | readonly string[], _callback: (data: any) => void): void {
+  acceptExports(
+    _: string | readonly string[],
+    _callback: (data: any) => void
+  ): void {
     logger.debug('acceptExports is not supported for now');
   }
 
@@ -90,7 +93,9 @@ export class HotModuleState {
 
   send<T extends string>(event: T, data?: any): void {
     if (this.hmrClient.socket.readyState === WebSocket.OPEN) {
-      this.hmrClient.socket.send(JSON.stringify({ type: 'custom', event, data }));
+      this.hmrClient.socket.send(
+        JSON.stringify({ type: 'custom', event, data })
+      );
     }
   }
 }

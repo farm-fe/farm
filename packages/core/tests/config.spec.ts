@@ -56,7 +56,8 @@ test('resolveUserConfig', async () => {
       NODE_ENV: 'development',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"development"',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+        '"development"',
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
@@ -68,7 +69,9 @@ test('resolveUserConfig', async () => {
     },
     moduleCacheKeyStrategy: {}
   });
-  expect(config.server).toEqual(normalizeDevServerOptions(config.server, 'development'));
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'development')
+  );
 });
 
 test('resolveUserConfig-prod', async () => {
@@ -119,17 +122,30 @@ test('resolveUserConfig-prod', async () => {
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
       'package.json[module]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"'
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+        '"production"'
     },
     moduleCacheKeyStrategy: {}
   });
-  expect(config.server).toEqual(normalizeDevServerOptions(config.server, 'production'));
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'production')
+  );
 });
 
 test('resolveUserConfig-input-html-prod', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
-  const configFilePath = path.join(filePath, 'fixtures', 'config', 'input-html', 'farm.config.ts');
-  const config = await resolveConfig({ configPath: configFilePath }, new Logger(), 'production');
+  const configFilePath = path.join(
+    filePath,
+    'fixtures',
+    'config',
+    'input-html',
+    'farm.config.ts'
+  );
+  const config = await resolveConfig(
+    { configPath: configFilePath },
+    new Logger(),
+    'production'
+  );
 
   expect(config.compilation.input).toEqual({
     index: './index.html'
@@ -204,12 +220,15 @@ test('resolveUserConfig-input-html-prod', async () => {
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
       'package.json[module]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"'
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+        '"production"'
     },
     moduleCacheKeyStrategy: {}
   });
 
-  expect(config.server).toEqual(normalizeDevServerOptions(config.server, 'production'));
+  expect(config.server).toEqual(
+    normalizeDevServerOptions(config.server, 'production')
+  );
 });
 
 describe('normalize-dev-server-options', () => {
@@ -234,7 +253,9 @@ describe('normalize-dev-server-options', () => {
 
 describe('parseUserConfig', () => {
   test('non-objects', () => {
-    expect(() => parseUserConfig('should throw')).toThrowError('Expected object, received string');
+    expect(() => parseUserConfig('should throw')).toThrowError(
+      'Expected object, received string'
+    );
   });
 
   test('extraneous config', () => {

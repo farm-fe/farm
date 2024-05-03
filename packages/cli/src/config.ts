@@ -4,7 +4,17 @@ import { FarmCLIBuildOptions, GlobalFarmCLIOptions } from './types.js';
 export function getOptionFromBuildOption(
   options: FarmCLIBuildOptions & GlobalFarmCLIOptions
 ): FarmCLIOptions & UserConfig {
-  const { input, outDir, target, format, watch, minify, sourcemap, treeShaking, mode } = options;
+  const {
+    input,
+    outDir,
+    target,
+    format,
+    watch,
+    minify,
+    sourcemap,
+    treeShaking,
+    mode
+  } = options;
 
   const output: UserConfig['compilation']['output'] = {
     ...(outDir && { path: outDir }),

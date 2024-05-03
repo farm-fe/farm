@@ -1,7 +1,11 @@
 import { performance } from 'node:perf_hooks';
 import { Logger } from './logger.js';
 
-import { FARM_TARGET_NODE_ENVS, ResolvedUserConfig, clearScreen } from '../index.js';
+import {
+  FARM_TARGET_NODE_ENVS,
+  ResolvedUserConfig,
+  clearScreen
+} from '../index.js';
 import { logError } from '../server/error.js';
 import { PersistentCacheBrand, bold, green } from './color.js';
 
@@ -14,7 +18,9 @@ export async function compilerHandler(
   config: ResolvedUserConfig,
   options?: CompilerHandlerOptions
 ) {
-  const IS_TARGET_NODE = FARM_TARGET_NODE_ENVS.includes(config.compilation.output.targetEnv);
+  const IS_TARGET_NODE = FARM_TARGET_NODE_ENVS.includes(
+    config.compilation.output.targetEnv
+  );
   IS_TARGET_NODE && options?.clear && clearScreen();
   const { persistentCache, output } = config.compilation;
   const logger = new Logger();

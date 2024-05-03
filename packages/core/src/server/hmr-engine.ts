@@ -65,7 +65,8 @@ export class HmrEngine {
       })
       .join(', ');
     if (updatedFilesStr.length >= 100) {
-      updatedFilesStr = updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
+      updatedFilesStr =
+        updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
     try {
@@ -73,11 +74,15 @@ export class HmrEngine {
       const start = Date.now();
       const result = await this._compiler.update(queue);
       this._logger.info(
-        `${bold(cyan(updatedFilesStr))} updated in ${bold(green(`${Date.now() - start}ms`))}`
+        `${bold(cyan(updatedFilesStr))} updated in ${bold(
+          green(`${Date.now() - start}ms`)
+        )}`
       );
 
       // clear update queue after update finished
-      this._updateQueue = this._updateQueue.filter((item) => !queue.includes(item));
+      this._updateQueue = this._updateQueue.filter(
+        (item) => !queue.includes(item)
+      );
 
       let dynamicResourcesMap: Record<string, Resource[]> = null;
 
@@ -92,7 +97,14 @@ export class HmrEngine {
           }));
         }
       }
-      const { added, changed, removed, immutableModules, mutableModules, boundaries } = result;
+      const {
+        added,
+        changed,
+        removed,
+        immutableModules,
+        mutableModules,
+        boundaries
+      } = result;
       const resultStr = `{
         added: [${formatHmrResult(added)}],
         changed: [${formatHmrResult(changed)}],

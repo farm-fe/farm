@@ -51,7 +51,9 @@ function executeNodeScript(scriptPath: string, url: string) {
   child.on('close', (code: number) => {
     if (code !== 0) {
       console.log();
-      console.log(red('The script specified as BROWSER environment variable failed.'));
+      console.log(
+        red('The script specified as BROWSER environment variable failed.')
+      );
       console.log(cyan(scriptPath) + ' exited with code ' + code + '.');
       console.log();
       return;
@@ -66,7 +68,8 @@ function startBrowserProcess(browser: string | undefined, url: string) {
   // Chrome with AppleScript. This lets us reuse an
   // existing tab when possible instead of creating a new one.
   const shouldTryOpenChromeWithAppleScript =
-    process.platform === 'darwin' && (typeof browser !== 'string' || browser === OSX_CHROME);
+    process.platform === 'darwin' &&
+    (typeof browser !== 'string' || browser === OSX_CHROME);
 
   const dirname = path.dirname(fileURLToPath(import.meta.url));
   if (shouldTryOpenChromeWithAppleScript) {

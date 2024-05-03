@@ -67,7 +67,9 @@ export function createLessResolvePlugin(
         );
         return {
           filename: resolved.resolvedPath,
-          contents: result.contents ?? (await fs.readFile(resolved.resolvedPath, 'utf-8'))
+          contents:
+            result.contents ??
+            (await fs.readFile(resolved.resolvedPath, 'utf-8'))
         };
       } else {
         return super.loadFile(filename, dir, opts, env);

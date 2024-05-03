@@ -1,6 +1,8 @@
 import { execSync } from 'child_process';
 
-const result = execSync('cargo metadata --format-version 1 --no-deps --manifest-path Cargo.toml');
+const result = execSync(
+  'cargo metadata --format-version 1 --no-deps --manifest-path Cargo.toml'
+);
 const data = JSON.parse(result.toString());
 
 const crates = data.packages.map((pkg) => {
