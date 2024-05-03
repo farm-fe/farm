@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fse from 'fs-extra';
 
-import { Compiler } from "./compiler/index.js";
+import { Compiler } from './compiler/index.js';
 import { loadEnv, setProcessEnv } from './config/env.js';
 import {
   UserConfig,
